@@ -10,3 +10,7 @@ behavior.
 - Collective Behavior and Intelligence
     - Center for Collective Behavior, Max Planck Institute of Animal Behavior (https://www.ab.mpg.de/couzin)
 - More to come: Sapolski, All the psychologists, etc.
+
+# Wiki
+
+https://github.com/patrickkidd/btcopilot/wiki/Frankenstein-Phase-%E2%80%90-R&D
