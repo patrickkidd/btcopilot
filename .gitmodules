@@ -1,0 +1,3 @@
+[submodule "btcopilot-sources"]
+	path = btcopilot-sources
+	url = ./btcopilot-sources
