@@ -1,0 +1,35 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[[source]]
+url = "https://download.pytorch.org/whl/cpu"
+verify_ssl = true
+name = "torch"
+
+[packages]
+langchain = "*"
+chromadb = "*"
+sentence-transformers = "*"
+pypdf2 = "*"
+uvicorn = "*"
+fastapi = "*"
+transformers = "*"
+langchain-community = "*"
+pypdf = "*"
+langchain-huggingface = "*"
+langchain-chroma = "*"
+accelerate = "*"
+torch = { index="torch" }
+torchvision = { index="torch" }
+torchaudio = { index="torch" }
+langchain-text-splitters = "*"
+langgraph = "*"
+langchain-groq = "*"
+langchain-docling = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
