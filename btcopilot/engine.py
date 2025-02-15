@@ -1,6 +1,7 @@
 # from cachetools import TTLCache
 import os.path
 import logging
+import time
 from dataclasses import dataclass
 
 from btcopilot import EMBEDDINGS_MODEL, LLM_MODEL
@@ -12,6 +13,18 @@ _log = logging.getLogger(__name__)
 class Response:
     answer: str
     sources: list[dict]
+    vectors_time: float = 0.0
+    llm_time: float = 0.0
+    total_time: float = 0.0
+
+    def __str__(self):
+        return (
+            f"Answer: {self.answer}\n"
+            f"Sources: {self.sources}\n"
+            f"Vector DB Time: {self.vectors_time}\n"
+            f"LLM Time: {self.llm_time}\n"
+            f"Total Time: {self.total_time}\n"
+        )
 
 
 class Engine:
@@ -37,7 +50,7 @@ class Engine:
         if not self._llm:
             from langchain_ollama import OllamaLLM
 
-            self._llm = OllamaLLM(model="mistral", temperature=0)
+            self._llm = OllamaLLM(model=LLM_MODEL, temperature=0)
             _log.info(f"Created LLM using {LLM_MODEL}")
         return self._llm
 
@@ -67,17 +80,21 @@ class Engine:
     """
         NUM_RESULTS = 5
 
+        total_start_time = vector_start_time = time.perf_counter()
         doc_results = self.vector_db().similarity_search_with_score(
             question, k=NUM_RESULTS
         )
-        _log.info(f"Using {len(doc_results)} matching results.")
+        vector_end_time = time.perf_counter()
+        _log.info(f"Using {len(doc_results)} matching results for this query.")
 
         context_text = "\n\n---\n\n".join(
             [doc.page_content for doc, _score in doc_results]
         )
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
         prompt = prompt_template.format(context=context_text, question=question)
+        llm_start_time = time.perf_counter()
         response_text = self.llm().invoke(prompt)
+        total_end_time = llm_end_time = time.perf_counter()
         sources = [
             {
                 "source": doc.metadata.get("chapter_id", None),
@@ -85,7 +102,13 @@ class Engine:
             }
             for doc, _score in doc_results
         ]
-        response = Response(answer=response_text, sources=sources)
+        response = Response(
+            answer=response_text,
+            sources=sources,
+            vectors_time=(vector_end_time - vector_start_time),
+            llm_time=(llm_end_time - llm_start_time),
+            total_time=(total_end_time - total_start_time),
+        )
         self._on_response(response)
         return response
 

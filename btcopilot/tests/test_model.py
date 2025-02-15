@@ -1,3 +1,59 @@
 """
 Validity tests for the model and source material.
 """
+
+import sys
+import os.path
+import logging
+
+import pytest
+
+from btcopilot import Engine
+from btcopilot.tests.data import quizzes
+
+_log = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="session")
+def engine():
+    DATA_DIR = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "instance", "vector_db")
+    )
+    if not os.path.exists(DATA_DIR):
+        pytest.fail(
+            "No vector db found. Create it with `flask ingest` in the root folder of the repo."
+        )
+    _engine = Engine(data_dir=DATA_DIR)
+    _log.info(f"Initializing vector db from {DATA_DIR}..")
+    _engine.vector_db()
+    _log.info(f"Initializing llm..")
+    _engine.llm()
+    _log.info(f"Engine initialized.")
+    yield _engine
+
+
+EVAL_PROMPT = """
+Expected Response: {expected_response}
+Actual Response: {actual_response}
+---
+(Answer with 'true' or 'false') Does the actual response match the expected response? 
+"""
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("question, answer", quizzes.FTICP_QUIZ)
+def test_bowens_book(engine, question, answer):
+
+    response = engine.ask(question)
+    check_prompt = EVAL_PROMPT.format(
+        expected_response=answer, actual_response=response.answer
+    )
+
+    evaluation_results_str = engine.llm().invoke(check_prompt)
+    evaluation_results_str_cleaned = evaluation_results_str.strip().lower()
+    result = f"\n\n**** QUESTION:{question}\n\n**** EXPECTED ANSWER:{answer}\n\n**** RECEIVED ANSWER: {response}\n\n"
+    _log.info(result)
+    _log.info(f"Copilot vector db time: {response.vectors_time}")
+    _log.info(f"Copilot llm time: {response.llm_time}")
+    _log.info(f"Copilot total time: {response.total_time}")
+    assert "true" in evaluation_results_str_cleaned, result
