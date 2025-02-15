@@ -24,11 +24,11 @@ def engine():
             "No vector db found. Create it with `flask ingest` in the root folder of the repo."
         )
     _engine = Engine(data_dir=DATA_DIR)
-    _log.info(f"Initializing vector db from {DATA_DIR}..")
+    _log.debug(f"Initializing vector db from {DATA_DIR}..")
     _engine.vector_db()
-    _log.info(f"Initializing llm..")
+    _log.debug(f"Initializing llm..")
     _engine.llm()
-    _log.info(f"Engine initialized.")
+    _log.debug(f"Engine initialized.")
     yield _engine
 
 
@@ -41,19 +41,18 @@ Actual Response: {actual_response}
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize("question, answer", quizzes.FTICP_QUIZ)
-def test_bowens_book(engine, question, answer):
+@pytest.mark.parametrize("question, correct_answer", quizzes.FTICP_QUIZ)
+def test_bowens_book(engine, question, correct_answer):
 
     response = engine.ask(question)
     check_prompt = EVAL_PROMPT.format(
-        expected_response=answer, actual_response=response.answer
+        expected_response=correct_answer, actual_response=response.answer
     )
 
-    evaluation_results_str = engine.llm().invoke(check_prompt)
-    evaluation_results_str_cleaned = evaluation_results_str.strip().lower()
-    result = f"\n\n**** QUESTION:{question}\n\n**** EXPECTED ANSWER:{answer}\n\n**** RECEIVED ANSWER: {response}\n\n"
+    status = engine.llm().invoke(check_prompt).strip().lower()
+    result = f"\n\n**** QUESTION:{question}\n\n**** EXPECTED ANSWER:{correct_answer}\n\n**** RECEIVED ANSWER: {response.answer}\n\n"
     _log.info(result)
-    _log.info(f"Copilot vector db time: {response.vectors_time}")
-    _log.info(f"Copilot llm time: {response.llm_time}")
-    _log.info(f"Copilot total time: {response.total_time}")
-    assert "true" in evaluation_results_str_cleaned, result
+    _log.debug(f"Copilot vector db time: {response.vectors_time}")
+    _log.debug(f"Copilot llm time: {response.llm_time}")
+    _log.debug(f"Copilot total time: {response.total_time}")
+    assert "true" == status, result
