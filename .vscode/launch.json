@@ -5,11 +5,54 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "btcopilot",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "btcopilot",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "variablePresentation": {
+                "all": "hide",
+                "protected": "inline",
+            },
+        },
+        {
+            "name": "ingest",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "flask",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "variablePresentation": {
+                "all": "hide",
+                "protected": "inline",
+            },
+            "args": [
+                "ingest",
+                "--data-dir",
+                "${workspaceFolder}/tests/data/vector_db",
+                "--sources-dir",
+                "${workspaceFolder}/../btcopilot/btcopilot/tests/data"
+            ],
+            "env": {
+                "FLASK_APP": "btcopilot",
+            },
+        },
+        {
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal"
-        }
+        },
+        {
+            "name": "Debug Unit Test",
+            "type": "debugpy",
+            "purpose": "debug-test",
+            "justMyCode": false,
+            "args": [
+                "-svvx"
+            ],
+        },
     ]
 }

@@ -1,7 +1,13 @@
 # BT Copilot
 
-AI Chatbot for theoretical discussion about biological research on human
-behavior.
+AI Chatbot service for Bowen theory - the human family as a bioliogical unit
+with clinical applications.
+
+## Provides:
+
+- A Large Language Model (LLM) RAG engine trained on a defined corpus of
+  academic literature.
+- A REST service to access the engine.
 
 ## Sources
 
@@ -14,6 +20,26 @@ behavior.
 # Wiki
 
 https://github.com/patrickkidd/btcopilot/wiki/Frankenstein-Phase-%E2%80%90-R&D
+
+# Token Limits for Popular Models
+
+- GPT-4 (8k and 32k token models):
+  - Default GPT-4 has a context window of 8,192 tokens.
+  - GPT-4-32k offers a larger 32,768 token window, but it's more expensive and slower.
+- Mistral and similar open-source LLMs:
+  - Typically have 4k–8k token limits (depending on the specific model and configuration).
+- Tokens include all text: your prompt + the model's response. So, a 4k-token model leaves room for ~3k tokens for input and ~1k for output.
+
+Practical Numbers:
+- A single token is roughly 4 characters in English.
+- For GPT-4 (8k): ~6,000 words total for the entire conversation (timeline + literature + user query + LLM response).
+
+Here’s a rough idea of token usage:
+- Timeline (10 years, summarized)	~500 tokens
+- Academic context (5 chunks)	~2,000 tokens
+- Prompt structure and query	~500 tokens
+- Total	~3,000 tokens
+This fits comfortably within an 8k-token model. For larger datasets, you'd need summarization, chunking, or a larger context model.
 
 # Development Journal
 
@@ -63,3 +89,7 @@ Sources: ['22 - Toward the Differentiation of Self in Ones Family of Origin.pdf'
 
 Sources: ['9 - The Use of Family Theory in Clinical Practice.pdf', '12 - Alcoholism and the Family.pdf', '17 - An Interview with Murray Bowen.pdf', '16 - Theory in the Practice of Psychotherapy.pdf', '16 - Theory in the Practice of Psychotherapy.pdf']
   ```
+- 2025-02-15: First copilot chat in app UI! The answers are slow, but they work!
+  ![BT Copilot Logo](./doc/first_copilot_chat.jpg)
+  - LLM: `deepseek-r1:14b`
+  - Embeddings: `sentence-transformers/all-MiniLM-L6-v2`
