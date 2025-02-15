@@ -4,15 +4,19 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+flask = "*"
+pypdf = "*"
 langchain = "*"
 langchain-ollama = "*"
 langchain-community = "*"
 langchain-text-splitters = "*"
 langchain-huggingface = "*"
 langchain-chroma = "*"
-pypdf = "*"
+flask-sqlalchemy = "*"
 
 [dev-packages]
+pytest = "*"
+mock = "*"
 
 [requires]
 python_version = "3.11"
