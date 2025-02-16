@@ -1,7 +1,9 @@
 EMBEDDINGS_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
-# Best so far
-LLM_MODEL = "mistral"
+# # Best so far
+# LLM_MODEL = "mistral"
+
+LLM_MODEL = "gpt-4o-mini"
 
 # LLM_MODEL = "mistral:7b-text-q8_0"
 

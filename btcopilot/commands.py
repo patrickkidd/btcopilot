@@ -2,6 +2,7 @@
 Command-line tools to manage the database and service.
 """
 
+import sys
 import re
 import os.path
 import logging
@@ -34,6 +35,8 @@ def ingest(sources_dir, data_dir):
     from langchain.docstore.document import Document
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+    if data_dir is None:
+        data_dir = os.path.join(os.getcwd(), "vector_db")
     engine = Engine(data_dir)
 
     entries = []
@@ -106,3 +109,7 @@ def ingest(sources_dir, data_dir):
 
 # def update_from_sources_dir()
 # def list_conversations()
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    ingest()
