@@ -1,7 +1,12 @@
 # from cachetools import TTLCache
+
+import os
 import logging
 import time
 from dataclasses import dataclass
+
+from langchain.prompts import ChatPromptTemplate
+from langchain_core.messages import AIMessage
 
 from btcopilot import EMBEDDINGS_MODEL, LLM_MODEL
 
@@ -47,11 +52,27 @@ class Engine:
 
     def llm(self):
         if not self._llm:
-            from langchain_ollama import OllamaLLM
+            # from langchain_ollama import OllamaLLM
 
-            self._llm = OllamaLLM(model=LLM_MODEL, temperature=0)
+            # self._llm = OllamaLLM(model=LLM_MODEL, temperature=0)
+
+            from langchain_openai import ChatOpenAI
+
+            self._llm = ChatOpenAI(
+                model=LLM_MODEL,
+                temperature=0,
+                openai_api_key=os.getenv("OPENAI_API_KEY"),
+            )
             _log.info(f"Created LLM using {LLM_MODEL}")
         return self._llm
+
+    def invoke_llm(self, question: str) -> str:
+        ai_message = self.llm().invoke(question)
+        if isinstance(ai_message, AIMessage):
+            response_text = ai_message.content
+        else:
+            response_text = ai_message
+        return response_text.strip()
 
     def vector_db(self):
         if not self._vector_db:
@@ -68,8 +89,6 @@ class Engine:
         return self._vector_db
 
     def ask(self, question: str, conversation_id=None) -> Response:
-        from langchain.prompts import ChatPromptTemplate
-
         PROMPT_TEMPLATE = """
     Ansert the following question based only on the following context: {context}
 
@@ -92,7 +111,7 @@ class Engine:
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
         prompt = prompt_template.format(context=context_text, question=question)
         llm_start_time = time.perf_counter()
-        response_text = self.llm().invoke(prompt)
+        response_text = self.invoke_llm(prompt)
         total_end_time = llm_end_time = time.perf_counter()
         sources = [
             {
