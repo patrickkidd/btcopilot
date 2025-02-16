@@ -7,9 +7,8 @@ with clinical applications.
 
 ## Provides:
 
-- A Large Language Model (LLM) RAG engine trained on a defined corpus of
-  academic literature.
-- A REST service to access the engine.
+Python API for a Large Language Model (LLM) RAG engine trained on a defined
+corpus of clinical and scientific literature. Literature: [btcopilot/index.py](botcopilot/index.py)
 
 ## Sources
 

@@ -1,15 +1,14 @@
 import pytest
 import mock
-from flask import current_app
 
-from btcopilot import Engine, Response
+from btcopilot import Engine
 
 
 ANSWER = "There is no point"
 
 
-@pytest.fixture(autouse=True)
-def engine(flask_app):
+@pytest.fixture
+def engine(tmp_path):
     from langchain.docstore.document import Document
 
     with mock.patch.object(
@@ -30,7 +29,7 @@ def engine(flask_app):
     ):
         with mock.patch.object(Engine, "llm") as llm:
             llm.return_value.invoke.return_value = ANSWER
-            yield Engine(flask_app)
+            yield Engine(tmp_path)
 
 
 def test_ask(engine):

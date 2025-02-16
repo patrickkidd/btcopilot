@@ -2,7 +2,6 @@
 Validity tests for the model and source material.
 """
 
-import sys
 import os.path
 import logging
 

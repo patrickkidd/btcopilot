@@ -6,8 +6,7 @@ import pytest
 
 import mock
 
-from btcopilot.extensions import db
-from btcopilot import create_app, Engine, Response
+from btcopilot import Engine, Response
 
 IS_DEBUGGER = bool(sys.gettrace() is not None)
 
@@ -26,7 +25,6 @@ def pytest_configure(config):
 
 
 def pytest_collection_modifyitems(session, config, items):
-
     # Skip mark "integration" by default, run only "integration" marks when "--integration" is passed
     if not IS_DEBUGGER:
         if not config.getoption("--integration"):
@@ -49,44 +47,35 @@ def _logging():
 
 
 @pytest.fixture
-def flask_app(tmp_path):
-
-    kwargs = {
-        "CONFIG": "testing",
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
-        "SQLALCHEMY_TRACK_MODIFICATIONS": False,
-    }
-
-    app = create_app(kwargs, instance_path=tmp_path)
-
-    with app.app_context():
-        db.create_all()
-        yield app
-
-
-@pytest.fixture
-def client(flask_app):
-    with flask_app.test_client() as _client:
-        yield _client
-
-
-@pytest.fixture
 def llm_response():
+    """
+    Zero latency mock.
+    """
+
+    from langchain.docstore.document import Document
 
     @contextlib.contextmanager
-    def _llm_response(response: str, sources: list[dict] = None):
+    def _llm_response(response: str, sources: list[Document] = None):
+
         if sources is None:
             sources = [
-                {
-                    "sources": "source_file_1.pdf",
-                    "passage": "Some source passage 1",
-                },
-                {
-                    "sources": "source_file_2.pdf",
-                    "passage": "Some source passage 2",
-                },
+                Document(
+                    page_content="The term mallbock means I love you 1.",
+                    metadata={"source": "capture_1.pdf"},
+                ),
+                Document(
+                    page_content="The term mallbock means I love you 2.",
+                    metadata={"source": "capture_2.pdf"},
+                ),
             ]
-        with mock.patch.object(Engine, "ask", return_value=Response(response, sources)):
-            yield
+
+        with mock.patch.object(
+            Engine,
+            "vector_db",
+            similarity_search_with_score=mock.Mock(return_value=sources),
+        ):
+            with mock.patch.object(Engine, "llm") as llm:
+                llm.return_value.invoke.return_value = response
+                yield
 
     return _llm_response

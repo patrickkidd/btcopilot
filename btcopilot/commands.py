@@ -3,26 +3,15 @@ Command-line tools to manage the database and service.
 """
 
 import re
-import sys
 import os.path
 import logging
 import hashlib
 
 import click
-from flask import Blueprint, current_app
 
 from btcopilot import Engine
 
 _log = logging.getLogger(__name__)
-
-
-def init_app(app):
-    app.cli.add_command(ingest)
-
-
-def _ensure_logging():
-    if not logging.getLogger().handlers:
-        logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 
 def normalize_whitespace(text):
@@ -40,15 +29,12 @@ def ingest(sources_dir, data_dir):
     """
     Sync the database with the sources directory.
     """
-    _ensure_logging()
 
     from langchain_community.document_loaders import PyPDFLoader
     from langchain.docstore.document import Document
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-    engine = current_app.engine
-    if data_dir:
-        engine.set_data_dir(data_dir)
+    engine = Engine(data_dir)
 
     entries = []
     if sources_dir:
