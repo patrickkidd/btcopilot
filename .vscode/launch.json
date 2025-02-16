@@ -5,18 +5,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "btcopilot",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "btcopilot",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "variablePresentation": {
-                "all": "hide",
-                "protected": "inline",
-            },
-        },
-        {
             "name": "ingest",
             "type": "debugpy",
             "request": "launch",

@@ -1,5 +1,4 @@
 # from cachetools import TTLCache
-import os.path
 import logging
 import time
 from dataclasses import dataclass
@@ -68,7 +67,7 @@ class Engine:
             _log.info(f"Loaded vector db from {self.data_dir()}")
         return self._vector_db
 
-    def ask(self, question: str) -> Response:
+    def ask(self, question: str, conversation_id=None) -> Response:
         from langchain.prompts import ChatPromptTemplate
 
         PROMPT_TEMPLATE = """
