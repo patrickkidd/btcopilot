@@ -6,6 +6,7 @@ import re
 import sys
 import os.path
 import logging
+import hashlib
 
 import click
 from flask import Blueprint, current_app
@@ -24,23 +25,16 @@ def _ensure_logging():
         logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 
-DEFAULT_DOCUMENTS_DIR = os.path.realpath(
-    os.path.join(
-        os.path.dirname(__file__),
-        "..",
-        "btcopilot-sources",
-        "bowentheory",
-        "FTiCP Chapters",
-    )
-)
-
-
 def normalize_whitespace(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
+def doc_id(text):
+    return hashlib.md5(text.encode()).hexdigest()
+
+
 @click.command()
-@click.option("--sources-dir", default=DEFAULT_DOCUMENTS_DIR)
+@click.option("--sources-dir", default=None)
 @click.option("--data-dir", default=None)
 def ingest(sources_dir, data_dir):
     """
@@ -56,26 +50,48 @@ def ingest(sources_dir, data_dir):
     if data_dir:
         engine.set_data_dir(data_dir)
 
-    _log.info(f"Loading documents from {sources_dir} into {engine.data_dir()}")
+    entries = []
+    if sources_dir:
+        _log.info(f"Loading documents from {sources_dir} into {engine.data_dir()}")
+
+        for file in os.listdir(sources_dir):
+            if file.endswith(".pdf"):
+                entries.append(
+                    {
+                        "path": os.path.join(sources_dir, file),
+                        "title": file,
+                        "authors": [],
+                    }
+                )
+    else:
+        _log.info(f"Loading documents from default corpus into {engine.data_dir()}")
+        from btcopilot.index import INDEX
+
+        entries = INDEX
 
     documents = []
-    for file in os.listdir(sources_dir):
-        if file.endswith(".pdf"):
-            loader = PyPDFLoader(os.path.join(sources_dir, file))
-            docs = loader.load()
-            for doc in docs:
-                doc.page_content = normalize_whitespace(doc.page_content)
-            chapter_text = " ".join(doc.page_content for doc in docs)
-            doc = Document(
-                page_content=chapter_text,
-                metadata={"source_id": "FTiCP Chapters", "chapter_id": file},
-            )
-            documents.append(doc)
+    ids = []
+    for entry in entries:
+        _log.info(f"Reading {entry['path']}...")
+        loader = PyPDFLoader(entry["path"])
+        docs = loader.load()
+        for doc in docs:
+            doc.page_content = normalize_whitespace(doc.page_content)
+        file_text = " ".join(doc.page_content for doc in docs)
+        doc = Document(
+            page_content=file_text,
+            metadata={
+                "title": entry["title"],
+                "authors": ",".join(entry["authors"]),
+            },
+        )
+        documents.append(doc)
+        ids.append(doc_id(doc.page_content))
     if not documents:
         _log.error(f"No documents found in sources directory {sources_dir}")
         return
 
-    _log.info(f"Loaded {len(documents)} chapters into memory.")
+    _log.info(f"Read {len(documents)} files into memory, loading into vector db...")
     # # For filtering out existing documents
     # # id's are included by default
     # existing_docs = btcopilot.vector_db.db.get(include=[])

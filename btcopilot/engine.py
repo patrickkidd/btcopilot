@@ -97,7 +97,7 @@ class Engine:
         total_end_time = llm_end_time = time.perf_counter()
         sources = [
             {
-                "source": doc.metadata.get("chapter_id", None),
+                "source": doc.metadata.get("file_name", None),
                 "passage": doc.page_content,
             }
             for doc, _score in doc_results

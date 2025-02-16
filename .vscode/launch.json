@@ -29,10 +29,10 @@
             },
             "args": [
                 "ingest",
-                "--data-dir",
-                "${workspaceFolder}/tests/data/vector_db",
+                // "--data-dir",
+                // "${workspaceFolder}/tests/data/vector_db",
                 "--sources-dir",
-                "${workspaceFolder}/../btcopilot/btcopilot/tests/data"
+                "${workspaceFolder}/btcopilot-sources/collective-intelligence"
             ],
             "env": {
                 "FLASK_APP": "btcopilot",
