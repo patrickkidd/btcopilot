@@ -52,8 +52,13 @@ def ingest(sources_dir, data_dir):
     else:
         _log.info(f"Loading documents from default corpus into {engine.data_dir()}")
         from btcopilot.index import INDEX
+        from pathlib import Path
 
         entries = INDEX
+
+        # Adjust paths relative to this file when called from fdserver
+        for entry in entries:
+            entry["path"] = str(Path(__file__).parent.parent / entry["path"])
 
     documents = []
     ids = []
