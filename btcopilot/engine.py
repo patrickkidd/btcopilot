@@ -1,3 +1,12 @@
+"""
+BT Copilot API core
+
+EXPERIMENTATION:
+- K (max matched results on query)
+- Splitting params
+- llm model
+"""
+
 # from cachetools import TTLCache
 
 import os
@@ -52,6 +61,7 @@ class Engine:
 
     def llm(self):
         if not self._llm:
+            _log.info(f"Creating LLM using {LLM_MODEL}...")
             # from langchain_ollama import OllamaLLM
 
             # self._llm = OllamaLLM(model=LLM_MODEL, temperature=0)
@@ -67,6 +77,9 @@ class Engine:
         return self._llm
 
     def invoke_llm(self, question: str) -> str:
+        """
+        Translate from various return types to a simple string.
+        """
         ai_message = self.llm().invoke(question)
         if isinstance(ai_message, AIMessage):
             response_text = ai_message.content
@@ -76,6 +89,7 @@ class Engine:
 
     def vector_db(self):
         if not self._vector_db:
+            _log.info(f"Loading vector db from {self.data_dir()}...")
             from langchain_huggingface import HuggingFaceEmbeddings
             from langchain_chroma import Chroma
 
@@ -115,7 +129,9 @@ class Engine:
         total_end_time = llm_end_time = time.perf_counter()
         sources = [
             {
-                "source": doc.metadata.get("file_name", None),
+                "fd_file_name": doc.metadata["fd_file_name"],
+                "fd_authors": doc.metadata["fd_authors"],
+                "fd_title": doc.metadata["fd_title"],
                 "passage": doc.page_content,
             }
             for doc, _score in doc_results

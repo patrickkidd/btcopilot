@@ -3,8 +3,8 @@ import logging
 import contextlib
 
 import pytest
-
 import mock
+from langchain.docstore.document import Document
 
 from btcopilot import Engine, Response
 
@@ -52,27 +52,20 @@ def llm_response():
     Zero latency mock.
     """
 
-    from langchain.docstore.document import Document
-
     @contextlib.contextmanager
     def _llm_response(response: str, sources: list[Document] = None):
 
         if sources is None:
-            sources = [
-                Document(
-                    page_content="The term mallbock means I love you 1.",
-                    metadata={"source": "capture_1.pdf"},
-                ),
-                Document(
-                    page_content="The term mallbock means I love you 2.",
-                    metadata={"source": "capture_2.pdf"},
-                ),
-            ]
+            sources = []
 
         with mock.patch.object(
             Engine,
             "vector_db",
-            similarity_search_with_score=mock.Mock(return_value=sources),
+            return_value=mock.Mock(
+                similarity_search_with_score=mock.Mock(
+                    return_value=[(x, 1.0) for x in sources]
+                )
+            ),
         ):
             with mock.patch.object(Engine, "llm") as llm:
                 llm.return_value.invoke.return_value = response
