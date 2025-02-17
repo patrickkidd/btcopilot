@@ -13,5 +13,16 @@ authors = [
 [project.urls]
 repository = "https://github.com/patrickkidd/btcopilot"
 
+dependencies = [
+    "click",
+    "pypdf",
+    "langchain",
+    "langchain-chroma",
+    "langchain-community",
+    "langchain-huggingface",
+    "langchain-openai",
+    langchain-text-splitters",
+]
+
 [tool.setuptools]
 packages = ["btcopilot"]
