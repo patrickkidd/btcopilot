@@ -1,0 +1,3 @@
+graft btcopilot
+prune btcopilot/**/__pycache__
+prune btcopilot/**/.pytest_cache
