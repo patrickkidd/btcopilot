@@ -1,4 +1,10 @@
 INDEX = [
+    # Family Diagram App
+    {
+        "path": "btcopilot-sources/familydiagram/Family Diagram Manual.md",
+        "title": "Family Diagram App User Manual",
+        "authors": ["Patrick Stinson"],
+    },
     # Bowen (1978) - Family Therapy in clinical practice
     {
         "path": "btcopilot-sources/bowentheory/FTiCP Chapters/0 - Introduction.pdf",

@@ -31,9 +31,12 @@ def ingest(sources_dir, data_dir):
     Sync the database with the sources directory.
     """
 
-    from langchain_community.document_loaders import PyPDFLoader
+    from langchain_community.document_loaders import PyPDFLoader, TextLoader
     from langchain.docstore.document import Document
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    from langchain_text_splitters import (
+        RecursiveCharacterTextSplitter,
+        MarkdownTextSplitter,
+    )
 
     if data_dir is None:
         data_dir = os.path.join(os.getcwd(), "vector_db")
@@ -64,23 +67,42 @@ def ingest(sources_dir, data_dir):
             entry["path"] = str(Path(__file__).parent.parent / entry["path"])
 
     documents = []
-    ids = []
     for entry in entries:
-        _log.info(f"Reading {entry['path']}...")
-        loader = PyPDFLoader(entry["path"])
-        docs = loader.load()
+        fpath = entry["path"]
+        _log.info(f"Reading {fpath}...")
+
+        if fpath.endswith(".pdf"):
+            loader = PyPDFLoader(entry["path"])
+            docs = loader.load()
+            for doc in docs:
+                doc.page_content = normalize_whitespace(doc.page_content)
+            docs = RecursiveCharacterTextSplitter(
+                chunk_size=1000,
+                chunk_overlap=200,
+                add_start_index=True,  # track index in original document
+            ).split_documents(docs)
+        elif fpath.endswith(".md"):
+            loader = TextLoader(entry["path"])
+            docs = loader.load()
+            docs = MarkdownTextSplitter(
+                chunk_size=1000, chunk_overlap=200
+            ).split_documents(documents)
+        else:
+            raise ValueError(f"Unsupported file type: {entry['path']}")
         for doc in docs:
-            doc.page_content = normalize_whitespace(doc.page_content)
-        file_text = " ".join(doc.page_content for doc in docs)
-        doc = Document(
-            page_content=file_text,
-            metadata={
-                "title": entry["title"],
-                "authors": ",".join(entry["authors"]),
-            },
-        )
-        documents.append(doc)
-        ids.append(doc_id(doc.page_content))
+            doc.metadata["fd_file_name"] = fpath
+            doc.metadata["fd_title"] = entry["title"]
+            doc.metadata["fd_authors"] = ",".join(entry["authors"])
+        # file_text = " ".join(doc.page_content for doc in docs)
+        # doc = Document(
+        #     page_content=file_text,
+        #     metadata={
+        #         "title": entry["title"],
+        #         "authors": ",".join(entry["authors"]),
+        #     },
+        # )
+        documents.extend(docs)
+        # ids.append(doc_id(doc.page_content))
     if not documents:
         _log.error(f"No documents found in sources directory {sources_dir}")
         return
@@ -91,20 +113,14 @@ def ingest(sources_dir, data_dir):
     # existing_docs = btcopilot.vector_db.db.get(include=[])
     # existing_ids = existing_docs["ids"]
 
-    splits = RecursiveCharacterTextSplitter(
-        chunk_size=400,
-        chunk_overlap=100,
-        add_start_index=True,  # track index in original document
-    ).split_documents(documents)
-
     # # Figure out how to use the flask app's engine with custom arguments.
     # with current_app.app_context():
     #     # To set explicit id's for upsert logic
     #     # , ids=[doc.id for doc in documents])
     #     engine = current_app.engine
-    engine.vector_db().add_documents(splits)
+    engine.vector_db().add_documents(documents)
 
-    _log.info(f"{len(splits)} document splits ingested and stored.")
+    _log.info(f"{len(documents)} document splits ingested and stored.")
 
 
 # def update_from_sources_dir()
