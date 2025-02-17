@@ -17,7 +17,7 @@ dependencies = [
     "langchain-community",
     "langchain-huggingface",
     "langchain-openai",
-    langchain-text-splitters",
+    "langchain-text-splitters",
 ]
 
 [project.urls]
