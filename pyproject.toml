@@ -9,10 +9,6 @@ description = "BT Copilot"
 authors = [
     { name="Patrick Stinson", email="patrick@alaskafamilysystems.com" }
 ]
-
-[project.urls]
-repository = "https://github.com/patrickkidd/btcopilot"
-
 dependencies = [
     "click",
     "pypdf",
@@ -23,6 +19,9 @@ dependencies = [
     "langchain-openai",
     langchain-text-splitters",
 ]
+
+[project.urls]
+repository = "https://github.com/patrickkidd/btcopilot"
 
 [tool.setuptools]
 packages = ["btcopilot"]
