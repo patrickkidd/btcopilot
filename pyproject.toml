@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "btcopilot"
+version = "1.0.0"
+description = "BT Copilot"
+authors = [
+    { name="Patrick Stinson", email="patrick@alaskafamilysystems.com" }
+]
+
+[project.urls]
+repository = "https://github.com/patrickkidd/btcopilot"
+
+[tool.setuptools]
+packages = ["btcopilot"]
