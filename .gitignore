@@ -2,6 +2,7 @@
 models/*
 instance/
 vector_db/
+btcopilot-sources/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
