@@ -1,0 +1,78 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Python package
+
+on:
+  push:
+    branches: [ "release" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    env:
+      TWINE_REPOSITORY_URL: "${{ secrets.TWINE_REPOSITORY_URL }}"
+      TWINE_USERNAME: "${{ secrets.TWINE_USERNAME }}"
+      TWINE_PASSWORD: "${{ secrets.TWINE_PASSWORD }}"
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.11'
+    - run: |
+        python -m pip install --upgrade pip
+        pip install build wheel
+
+    - name: Generate unique version
+      id: vars
+      run: |
+        echo "version=$(date +%Y.%m.%d.%H%M%S)+$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+  
+    - name: Increment version
+      run: |
+        sed -i "s/version = \"[^\"]*\"/version = \"${{ env.version }}\"/" pyproject.toml
+  
+    - name: Build
+      run: |
+        python -m build . --no-isolation
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-wheel
+        path: dist/*.whl
+
+    - run: |
+        mv dist/*.whl .
+        echo "WHEEL_FILENAME=`ls *.whl`" >> $GITHUB_ENV
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.version }}
+        release_name: Release ${{ env.version }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ${{ env.WHEEL_FILENAME }}
+        asset_name: ${{ env.WHEEL_FILENAME }}
+        asset_content_type: application/zip
+
+    - name: Push to pypi.familydiagram.com
+      run: |
+        pip install twine
+        twine upload --repository-url $TWINE_REPOSITORY_URL --username $TWINE_USERNAME --password $TWINE_PASSWORD *.whl
+  
