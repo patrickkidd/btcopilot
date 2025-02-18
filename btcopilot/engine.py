@@ -173,6 +173,7 @@ class Engine:
             [doc.page_content for doc, _score in doc_results]
         )
         if events:
+            _log.info(f"Using {len(events)} timeline events for this query.")
             context_timeseries = formatTimelineData(events)
             prompt_template = ChatPromptTemplate.from_template(
                 PROMPT_TEMPLATE_WITH_TIMESERIES
