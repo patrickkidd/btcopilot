@@ -1,7 +1,8 @@
 import pytest
 import mock
 
-from btcopilot import Engine
+from btcopilot import Engine, Event
+from btcopilot.engine import formatTimelineData
 
 
 ANSWER = "There is no point"
@@ -37,3 +38,25 @@ def test_ask(engine):
     assert response.answer == ANSWER
     engine.vector_db().similarity_search_with_score.assert_called_once()
     engine.llm().invoke.assert_called_once()
+
+
+def test_ask_with_events(engine):
+    events = [
+        Event(
+            dateTime="2021-01-01",
+            description="Bonded",
+            people=["Alice", "Bob"],
+            variables={"anxiety": "down"},
+        ),
+        Event(
+            dateTime="2022-01-01",
+            description="First argument",
+            people=["Alice", "Bob"],
+            variables={"anxiety": "up"},
+        ),
+    ]
+    response = engine.ask("Where is the shift?", events=events)
+    s_timeseries = formatTimelineData(events)
+    assert response.answer == ANSWER
+    engine.vector_db().similarity_search_with_score.assert_called_once()
+    assert s_timeseries in engine.llm().invoke.call_args[0][0]

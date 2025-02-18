@@ -12,5 +12,5 @@ LLM_MODEL = "gpt-4o-mini"
 # LLM_MODEL = "deepseek-r1:14b"
 # LLM_MODEL = "deepseek-r1:1.5b"
 
-from .engine import Engine, Response
+from .engine import Engine, Event, Response
 from . import commands

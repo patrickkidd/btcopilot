@@ -18,11 +18,23 @@ corpus of clinical and scientific literature. Literature: [btcopilot/index.py](b
     - Center for Collective Behavior, Max Planck Institute of Animal Behavior (https://www.ab.mpg.de/couzin)
 - More to come: Sapolski, All the psychologists, etc.
 
-# Wiki
+## Academic Projects
+
+The following are non-technical theoretical challenges for Bowen theory:
+
+- Define Bowen theory quiz
+  - Consists of a series of questions and answers stored here: [btcopilot/tests/data/quizzes.py]
+  - Used to automatically test the accuracy of model repsponse
+  - Should attach the theory from many different angles
+- ** Define necessary timeseries for shift
+- Define chat prompts for timeline data
+  - Biggest impact to how the data is evaluated
+
+## Wiki
 
 https://github.com/patrickkidd/btcopilot/wiki/Frankenstein-Phase-%E2%80%90-R&D
 
-# Token Limits for Popular Models
+## Token Limits for Popular Models
 
 - GPT-4 (8k and 32k token models):
   - Default GPT-4 has a context window of 8,192 tokens.
