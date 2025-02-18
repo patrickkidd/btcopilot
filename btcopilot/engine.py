@@ -22,6 +22,41 @@ from btcopilot import EMBEDDINGS_MODEL, LLM_MODEL
 _log = logging.getLogger(__name__)
 
 
+PROMPT_TEMPLATE = """
+Answer the following question based only on the following academic literature:
+
+QUESTION:
+{question}
+-------------------------
+THEORETICAL LITERATURE:
+
+{literature}
+"""
+
+PROMPT_TEMPLATE_WITH_TIMESERIES = """
+The following is 1) timeseries data from a family's emotional functioning, 2) a
+question about the timeseries, and C) literature containing the concepts used to
+evaluate the timeseries. Answer the question based only on the timeseries and
+literature.
+
+-------------------------
+TIMESERIES:
+
+{timeseries}
+-------------------------
+QUESTION:
+
+{question}
+-------------------------
+THEORETICAL LITERATURE:
+
+{literature}
+"""
+
+
+NUM_RESULTS = 5
+
+
 @dataclass
 class Response:
     answer: str
@@ -38,6 +73,27 @@ class Response:
             f"LLM Time: {self.llm_time}\n"
             f"Total Time: {self.total_time}\n"
         )
+
+
+@dataclass
+class Event:
+    dateTime: str
+    description: str
+    people: list[str]
+    variables: dict[str, str]
+
+
+def formatTimelineData(events: list[Event]) -> str:
+    timelineData = ""
+    for event in events:
+        s_variables = ", ".join(f"{k}: {v}" for k, v in event.variables.items())
+        timelineData += (
+            f"Timestamp: {event.dateTime}\t"
+            f"Description: {event.description}\t"
+            f"People: {', '.join(event.people)}\t"
+            f"Variables: {s_variables}\n"
+        )
+    return timelineData
 
 
 class Engine:
@@ -102,15 +158,9 @@ class Engine:
             _log.info(f"Loaded vector db from {self.data_dir()}")
         return self._vector_db
 
-    def ask(self, question: str, conversation_id=None) -> Response:
-        PROMPT_TEMPLATE = """
-    Ansert the following question based only on the following context: {context}
-
-    ---
-
-    Answer the question based on the above context: {question}
-    """
-        NUM_RESULTS = 5
+    def ask(
+        self, question: str, events: list[Event] = None, conversation_id: str = None
+    ) -> Response:
 
         total_start_time = vector_start_time = time.perf_counter()
         doc_results = self.vector_db().similarity_search_with_score(
@@ -119,11 +169,24 @@ class Engine:
         vector_end_time = time.perf_counter()
         _log.info(f"Using {len(doc_results)} matching results for this query.")
 
-        context_text = "\n\n---\n\n".join(
+        context_literature = "\n\n---\n\n".join(
             [doc.page_content for doc, _score in doc_results]
         )
-        prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-        prompt = prompt_template.format(context=context_text, question=question)
+        if events:
+            context_timeseries = formatTimelineData(events)
+            prompt_template = ChatPromptTemplate.from_template(
+                PROMPT_TEMPLATE_WITH_TIMESERIES
+            )
+            prompt = prompt_template.format(
+                literature=context_literature,
+                question=question,
+                timeseries=context_timeseries,
+            )
+        else:
+            prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+            prompt = prompt_template.format(
+                literature=context_literature, question=question
+            )
         llm_start_time = time.perf_counter()
         response_text = self.invoke_llm(prompt)
         total_end_time = llm_end_time = time.perf_counter()
