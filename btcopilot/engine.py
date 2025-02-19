@@ -36,8 +36,8 @@ THEORETICAL LITERATURE:
 PROMPT_TEMPLATE_WITH_TIMESERIES = """
 The following is 1) timeseries data from a family's emotional functioning, 2) a
 question about the timeseries, and C) literature containing the concepts used to
-evaluate the timeseries. Answer the question based only on the timeseries and
-literature.
+evaluate the timeseries. Answer the question about the timeseries using only the
+provided academic literature.
 
 -------------------------
 TIMESERIES:
