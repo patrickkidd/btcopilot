@@ -11,10 +11,6 @@ jobs:
   build:
 
     runs-on: ubuntu-24.04
-    env:
-      TWINE_REPOSITORY_URL: "${{ secrets.TWINE_REPOSITORY_URL }}"
-      TWINE_USERNAME: "${{ secrets.TWINE_USERNAME }}"
-      TWINE_PASSWORD: "${{ secrets.TWINE_PASSWORD }}"
     
     steps:
     - uses: actions/checkout@v4
@@ -50,6 +46,70 @@ jobs:
         mv dist/*.whl .
         echo "WHEEL_FILENAME=`ls *.whl`" >> $GITHUB_ENV
 
+  test:
+    
+    runs-on: ubuntu-24.04
+    needs: build
+    steps:
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.11'
+        
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: python-wheel
+        path: dist
+
+    - name: Get latest release info
+      run: |
+        latest_release=$(curl -s https://api.github.com/repos/patrickkidd/btcopilot/releases/latest)
+        asset_url=$(echo "$latest_release" | jq -r '.assets[0].browser_download_url')
+        echo "asset_url=$asset_url" >> $GITHUB_ENV
+        echo $asset_url
+    
+    - name: Download btcopilot wheel
+      run: |
+        # Download the asset using the URL from the previous step
+        curl -L -O "$asset_url"
+
+    - name: Install wheel
+      run: |
+        ls -la dist
+        ls -la
+        pip install --upgrade pip
+        pip install dist/*.whl
+        pip install pytest mock snapshottest
+        python -c "import btcopilot.tests; print(btcopilot.tests)"
+
+    # - name: Setup tmate session
+    #   uses: mxschmitt/action-tmate@v3
+  
+    - name: Test with pytest
+      run: |
+        pytest -svv --disable-warnings --pyargs fdserver.tests
+
+  release:
+    runs-on: ubuntu-24.04
+    env:
+      TWINE_REPOSITORY_URL: "${{ secrets.TWINE_REPOSITORY_URL }}"
+      TWINE_USERNAME: "${{ secrets.TWINE_USERNAME }}"
+      TWINE_PASSWORD: "${{ secrets.TWINE_PASSWORD }}"
+    needs: [build, test]
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: python-wheel
+        path: dist
+
+    - run: |
+        ls -la ./dist
+        mv dist/*.whl .
+        echo "WHEEL_FILENAME=`ls *.whl`" >> $GITHUB_ENV    
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -71,8 +131,8 @@ jobs:
         asset_name: ${{ env.WHEEL_FILENAME }}
         asset_content_type: application/zip
 
-    - name: Push to pypi.familydiagram.com
+    - name: Push to pypi repo
       run: |
         pip install twine
-        twine upload --repository-url $TWINE_REPOSITORY_URL --username $TWINE_USERNAME --password $TWINE_PASSWORD *.whl
+        twine upload --verbose --repository-url $TWINE_REPOSITORY_URL --username $TWINE_USERNAME --password $TWINE_PASSWORD *.whl
   
