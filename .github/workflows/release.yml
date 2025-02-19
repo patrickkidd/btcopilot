@@ -83,12 +83,12 @@ jobs:
         pip install pytest mock snapshottest
         python -c "import btcopilot.tests; print(btcopilot.tests)"
 
-    # - name: Setup tmate session
-    #   uses: mxschmitt/action-tmate@v3
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
   
     - name: Test with pytest
       run: |
-        pipenv run pytest -svv --disable-warnings --pyargs fdserver.tests
+        pytest -svv --disable-warnings --pyargs fdserver.tests
 
   release:
     runs-on: ubuntu-24.04
