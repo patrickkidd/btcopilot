@@ -19,14 +19,22 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: '3.11'
-    - run: |
-        python -m pip install --upgrade pip
-        pip install build wheel
+
+    - name: pipenv install
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
+      run: |
+        # python -m pip install --upgrade pip
+        pip install pipenv
+        mkdir .venv
+        pipenv install --dev
 
     - name: Generate unique version
-      id: vars
+      id: set_version
       run: |
-        echo "version=$(date +%Y.%m.%d.%H%M%S)+$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        version=$(date +%Y.%m.%d.%H%M%S)+$(git rev-parse --short HEAD)
+        echo "version=${version}" >> $GITHUB_ENV
+        echo "version=${version}" >> "$GITHUB_OUTPUT"
   
     - name: Increment version
       run: |
@@ -34,17 +42,13 @@ jobs:
   
     - name: Build
       run: |
-        python -m build . --no-isolation
+        pipenv run python -m build . --no-isolation
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: python-wheel
         path: dist/*.whl
-
-    - run: |
-        mv dist/*.whl .
-        echo "WHEEL_FILENAME=`ls *.whl`" >> $GITHUB_ENV
 
   test:
     
@@ -70,11 +74,6 @@ jobs:
         echo "asset_url=$asset_url" >> $GITHUB_ENV
         echo $asset_url
     
-    - name: Download btcopilot wheel
-      run: |
-        # Download the asset using the URL from the previous step
-        curl -L -O "$asset_url"
-
     - name: Install wheel
       run: |
         ls -la dist
@@ -84,12 +83,12 @@ jobs:
         pip install pytest mock snapshottest
         python -c "import btcopilot.tests; print(btcopilot.tests)"
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
+    # - name: Setup tmate session
+    #   uses: mxschmitt/action-tmate@v3
   
     - name: Test with pytest
       run: |
-        pytest -svv --disable-warnings --pyargs fdserver.tests
+        pipenv run pytest -svv --disable-warnings --pyargs fdserver.tests
 
   release:
     runs-on: ubuntu-24.04
@@ -116,8 +115,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ env.version }}
-        release_name: Release ${{ env.version }}
+        tag_name: ${{needs.build.outputs.version}}
+        release_name: ${{needs.build.outputs.version}}
         draft: false
         prerelease: false
 
