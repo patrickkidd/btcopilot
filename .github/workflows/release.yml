@@ -88,7 +88,7 @@ jobs:
   
     - name: Test with pytest
       run: |
-        pytest -svv --disable-warnings --pyargs fdserver.tests
+        pytest -svv --disable-warnings --pyargs btcopilot.tests
 
   release:
     runs-on: ubuntu-24.04
