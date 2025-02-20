@@ -85,9 +85,6 @@ jobs:
         pip install pytest mock snapshottest
         python -c "import btcopilot.tests; print(btcopilot.tests)"
 
-    # - name: Setup tmate session
-    #   uses: mxschmitt/action-tmate@v3
-  
     - name: Test with pytest
       run: |
         pytest -svv --disable-warnings --pyargs btcopilot.tests
@@ -132,8 +129,11 @@ jobs:
         asset_name: ${{ env.WHEEL_FILENAME }}
         asset_content_type: application/zip
 
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+  
     - name: Push to pypi repo
       run: |
-        pip install twine
+        pip install twine  
         twine upload --verbose --repository-url $TWINE_REPOSITORY_URL --username $TWINE_USERNAME --password $TWINE_PASSWORD *.whl
   
