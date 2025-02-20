@@ -6,7 +6,6 @@ build-backend = "setuptools.build_meta"
 name = "btcopilot"
 version = "1.0.0"
 description = "BT Copilot"
-license = {file = "LICENSE"}
 authors = [
     { name="Patrick Stinson", email="patrick@alaskafamilysystems.com" }
 ]
@@ -26,3 +25,4 @@ repository = "https://github.com/patrickkidd/btcopilot"
 
 [tool.setuptools]
 packages = ["btcopilot"]
+license_files = ["LICENSE"]
