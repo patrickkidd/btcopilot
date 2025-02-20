@@ -135,5 +135,5 @@ jobs:
     - name: Push to pypi repo
       run: |
         pip install twine
-        twine upload --verbose --repository-url $TWINE_REPOSITORY_URL --username $TWINE_USERNAME --password $TWINE_PASSWORD *.whl
+        twine upload --verbose --repository-url $TWINE_REPOSITORY_URL --username $TWINE_USERNAME --password $TWINE_PASSWORD dist/*.whl
   
