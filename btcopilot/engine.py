@@ -162,6 +162,8 @@ class Engine:
         self, question: str, events: list[Event] = None, conversation_id: str = None
     ) -> Response:
 
+        _log.info(f"Querying with question: {question}")
+
         total_start_time = vector_start_time = time.perf_counter()
         doc_results = self.vector_db().similarity_search_with_score(
             question, k=NUM_RESULTS
@@ -200,6 +202,7 @@ class Engine:
             }
             for doc, _score in doc_results
         ]
+        _log.info(f"Response: {response_text}")
         response = Response(
             answer=response_text,
             sources=sources,
