@@ -21,15 +21,8 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: '3.11'
-
-    - name: pipenv install
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
-      run: |
-        # python -m pip install --upgrade pip
-        pip install pipenv
-        mkdir .venv
-        pipenv install --dev
+    - run: |
+        python -m pip install --upgrade pip build setuptools wheel
 
     - name: Generate unique version
       id: set_version
@@ -44,7 +37,7 @@ jobs:
   
     - name: Build
       run: |
-        pipenv run python -m build . --no-isolation
+        python -m build . --no-isolation
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -71,18 +64,15 @@ jobs:
 
     - name: Get latest release info
       run: |
-        latest_release=$(curl -s https://api.github.com/repos/patrickkidd/btcopilot/releases/latest)
-        asset_url=$(echo "$latest_release" | jq -r '.assets[0].browser_download_url')
         echo "asset_url=$asset_url" >> $GITHUB_ENV
         echo $asset_url
     
     - name: Install wheel
       run: |
-        ls -la dist
-        ls -la
-        pip install --upgrade pip
-        pip install dist/*.whl
-        pip install pytest mock snapshottest
+        latest_release=$(curl -s https://api.github.com/repos/patrickkidd/btcopilot/releases/latest)
+        asset_url=$(echo "$latest_release" | jq -r '.assets[0].browser_download_url')
+        pip install --upgrade pip pytest mock snapshottest
+        pip install $asset_url
         python -c "import btcopilot.tests; print(btcopilot.tests)"
 
     - name: Test with pytest
