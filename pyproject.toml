@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "btcopilot"
 version = "1.0.0"
 description = "BT Copilot"
-license = "Apache-2.0"
+license = { file = "LICENSE" }
 authors = [
     { name="Patrick Stinson", email="patrick@alaskafamilysystems.com" }
 ]
