@@ -83,8 +83,8 @@ jobs:
         pip install pytest mock snapshottest
         python -c "import btcopilot.tests; print(btcopilot.tests)"
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
+    # - name: Setup tmate session
+    #   uses: mxschmitt/action-tmate@v3
   
     - name: Test with pytest
       run: |
