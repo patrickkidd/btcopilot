@@ -119,8 +119,8 @@ jobs:
         asset_name: ${{ env.WHEEL_FILENAME }}
         asset_content_type: application/zip
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
+    # - name: Setup tmate session
+    #   uses: mxschmitt/action-tmate@v3
   
     - name: Push to pypi repo
       run: |
