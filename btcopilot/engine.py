@@ -54,9 +54,6 @@ THEORETICAL LITERATURE:
 """
 
 
-NUM_RESULTS = 5
-
-
 @dataclass
 class Response:
     answer: str
@@ -101,10 +98,11 @@ class Engine:
     The resource-intensive part of the app. Can be shared across tests if necessary.
     """
 
-    def __init__(self, data_dir: str):
+    def __init__(self, data_dir: str, k: int = 5):
         self._llm = None
         self._vector_db = None
         self._data_dir = data_dir
+        self._k = 5
         # self._conversation_chains = TTLCache(maxsize=1000, ttl=3600)
 
     def data_dir(self) -> str:
@@ -165,9 +163,7 @@ class Engine:
         _log.info(f"Query with question: {question}")
 
         total_start_time = vector_start_time = time.perf_counter()
-        doc_results = self.vector_db().similarity_search_with_score(
-            question, k=NUM_RESULTS
-        )
+        doc_results = self.vector_db().similarity_search_with_score(question, k=self._k)
         vector_end_time = time.perf_counter()
         _log.info(f"Using {len(doc_results)} matching results for this query.")
 
