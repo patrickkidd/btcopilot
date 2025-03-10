@@ -12,8 +12,11 @@ langchain-community = "*"
 langchain-huggingface = "*"
 langchain-openai = "*"
 langchain-text-splitters = "*"
+spacy = "*"
+mistralai = "*"
 
 [dev-packages]
 langchain-ollama = "*"
 pytest = "*"
 mock = "*"
+ipykernel = "*"

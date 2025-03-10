@@ -11,6 +11,7 @@ import hashlib
 import click
 
 from btcopilot import Engine
+from btcopilot.splitting import split_markdown_semantically
 
 _log = logging.getLogger(__name__)
 
@@ -37,6 +38,8 @@ def ingest(sources_dir, data_dir):
         RecursiveCharacterTextSplitter,
         MarkdownTextSplitter,
     )
+
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
     if data_dir is None:
         data_dir = os.path.join(os.getcwd(), "vector_db")
@@ -82,11 +85,10 @@ def ingest(sources_dir, data_dir):
                 add_start_index=True,  # track index in original document
             ).split_documents(docs)
         elif fpath.endswith(".md"):
-            loader = TextLoader(entry["path"])
-            docs = loader.load()
-            docs = MarkdownTextSplitter(
-                chunk_size=1000, chunk_overlap=200
-            ).split_documents(documents)
+            docs = [
+                Document(page_content=x)
+                for x in split_markdown_semantically(file_path=fpath)
+            ]
         else:
             raise ValueError(f"Unsupported file type: {entry['path']}")
         for doc in docs:
