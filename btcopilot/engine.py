@@ -102,7 +102,7 @@ class Engine:
         self._llm = None
         self._vector_db = None
         self._data_dir = data_dir
-        self._k = 5
+        self._k = k
         # self._conversation_chains = TTLCache(maxsize=1000, ttl=3600)
 
     def data_dir(self) -> str:
