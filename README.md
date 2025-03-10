@@ -186,8 +186,10 @@ INFO     test_model:test_model.py:57 Copilot llm time: 36.359419119005906
 INFO     test_model:test_model.py:58 Copilot total time: 38.17371924100007
 ```
 
-## 2024-02-19 - Added support for timeline events, released in [Family Diagram v2 Beta](https://alaskafamilysystems.com/family-diagram/family-diagram-phase-2-beta/)!
+## 2025-02-19 - Added support for timeline events, released in [Family Diagram v2 Beta](https://alaskafamilysystems.com/family-diagram/family-diagram-phase-2-beta/)!
 
 - You can now include timeseries events in the query! You can ask the model to
   analyze the timeseries data and draw conclusions from the literature.
 - Added Kerr's Family Evaluation (1988) to sources.
+
+## 2025-03-09 - Using Mistral's PDF OCR doc to read pdfs more accurately, and `spacy`'s semantic splitting to passages to start and end with sentances that make a single point.
