@@ -193,3 +193,19 @@ INFO     test_model:test_model.py:58 Copilot total time: 38.17371924100007
 - Added Kerr's Family Evaluation (1988) to sources.
 
 ## 2025-03-09 - Using Mistral's PDF OCR doc to read pdfs more accurately, and `spacy`'s semantic splitting to passages to start and end with sentances that make a single point.
+
+## 2025-06-28 - Working Bowen theory on data extraction from chat discussion. Using Havstad's SARF data model. Basically trying to build a Bowen theory coach bot. 
+- Started trying to extract data from each individual text message. Discovered data points exist across messages.
+- Clarifyed data model:
+  - People: siblings + offspring
+  - Events: variable shifts; Symptom, Anxiety, Relationship, Functioning
+    - Relationship sub-divides into Mechanism & Triangle (negative), Defined self (positive)
+    - Triangle; insides + outside
+    - Mechanism: movers + recipients
+  - Have to figure out what to do with special events w/o apparent variable shifts, e.g. birth, death, marriage, divorce
+- Moved to managing a rolling pool of data points from chat conversation. Much more sophisticated and complicated.
+  - Moved to pending data pool (PDP) model where user confirms inferred / extracted data points.
+  - llm only provides deltas for pending pool to avoid data loss from hallucinations when re-writing the entire pending pool every call.
+  - Division between persistent database and PDP. Deltas are the core atomic component to validate.
+- Plan to build personal mobile app with web-based auditing system to scale model training with human feedback.
+  - Potential to generate database for family research, complete with data model.

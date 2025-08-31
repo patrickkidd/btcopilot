@@ -223,11 +223,11 @@ class Engine:
 # retreiver = vector_db.as_retriever()
 # from langchain.chains import ConversationalRetrievalChain
 # from langchain.memory import ConversationBufferMemory
-# from langchain_community.chat_message_histories import SQLChatMessageHistory
+# from langchain_community.chat_message_histories import SQLStatementHistory
 
 
-#         if conversation_id is None:  # New thread
-#             chat_memory = SQLChatMessageHistory(
+#         if conversation_id is None:  # New discussion
+#             chat_memory = SQLStatementHistory(
 #                 connection_string=str(db.engine.url), conversation_id=conversation_id
 #             )
 #             memory = ConversationBufferMemory(
