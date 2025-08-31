@@ -27,11 +27,31 @@
             },
         },
         {
+            "name": "orchstrator",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "bin/orchestration.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "variablePresentation": {
+                "all": "hide",
+                "protected": "inline",
+            },
+            "args": [
+            ],
+            "env": {
+                "FLASK_APP": "btcopilot",
+            },
+        },        
+        {
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "args": [
+                "/Users/patrick/Documents/2 - Work/2 - Family Diagram App/2 - Copilot/bowentheory/FE Chapters/10 - Family Evaluation.pdf"
+            ]
         },
         {
             "name": "Debug Unit Test",
