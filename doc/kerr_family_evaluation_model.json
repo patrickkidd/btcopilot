@@ -1,0 +1,109 @@
+{
+  "focus_person": {
+    "name": "string",
+    "birth_year": "n umber",
+    "gender": "string",
+    "occupation": "string",
+    "symptoms": ["string"],
+    "functional_level": "string",  // e.g. "high", "moderate", "low"
+    "differentiation_level": "string",  // qualitative + later scored (e.g. 0–100)
+    "relationship_patterns": {
+      "with_mother": "string",
+      "with_father": "string",
+      "with_siblings": ["string"],
+      "with_partner": "string",
+      "with_children": ["string"]
+    }
+  },
+
+  "nuclear_family": {
+    "partner": {
+      "name": "string",
+      "birth_year": "number",
+      "occupation": "string",
+      "relationship_quality": "string"
+    },
+    "children": [
+      {
+        "name": "string",
+        "birth_year": "number",
+        "gender": "string",
+        "symptoms_or_behavior_issues": ["string"]
+      }
+    ],
+    "emotional_cutoff": {
+      "with_who": ["string"],  // e.g. ["mother", "father", "sibling"]
+      "description": "string"
+    },
+    "anxiety_binding_mechanisms": {
+      "conflict": "boolean",
+      "distance": "boolean",
+      "overfunctioning_underfunctioning": "boolean",
+      "child_focus": "boolean",
+      "notes": "string"
+    }
+  },
+
+  "family_of_origin": {
+    "mother": {
+      "name": "string",
+      "birth_year": "number",
+      "occupation": "string",
+      "functional_level": "string",
+      "differentiation_level": "string"
+    },
+    "father": {
+      "name": "string",
+      "birth_year": "number",
+      "occupation": "string",
+      "functional_level": "string",
+      "differentiation_level": "string"
+    },
+    "siblings": [
+      {
+        "name": "string",
+        "birth_year": "number",
+        "gender": "string",
+        "relationship_with_focus_person": "string",
+        "symptoms": ["string"]
+      }
+    ],
+    "birth_order": "string",
+    "emotional_patterns_in_family": "string"
+  },
+
+  "extended_family": {
+    "grandparents": [
+      {
+        "side": "maternal/paternal",
+        "name": "string",
+        "symptoms": ["string"],
+        "relationship_quality_with_children": "string"
+      }
+    ],
+    "other_key_figures": [
+      {
+        "name": "string",
+        "relation": "string",
+        "description": "string"
+      }
+    ],
+    "transgenerational_patterns": "string"
+  },
+
+  "timeline_of_symptom_development": [
+    {
+      "year": "number",
+      "event": "string",
+      "emotional_context": "string",
+      "symptoms_or_changes": ["string"]
+    }
+  ],
+
+  "summary_analysis": {
+    "primary_symptom_function": "string",  // What purpose symptoms serve in family system
+    "key_differentiation_dynamics": "string",
+    "multigenerational_projection": "string",
+    "therapy_goals": ["string"]
+  }
+}
