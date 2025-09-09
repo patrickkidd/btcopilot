@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+.user-card {
+    transition: background-color 0.2s ease;
+}
+.user-card.drag-over, .box.drag-over {
+    background-color: #e6fffa !important;
+    border: 2px dashed #00d1b2 !important;
+}
+.user-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.license-card {
+    border: 1px solid #dbdbdb;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+.license-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+.activation-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div>
+    <h1 class="title">My Auditor Dashboard</h1>
+    <p class="subtitle">Manage your diagrams and discussions</p>
+    
+    <div class="notification is-info is-light">
+        <strong>Your Auditor Tools:</strong>
+        <ul>
+            <li>Review and manage your own diagrams and discussions</li>
+            <li>Provide feedback on AI responses and data extraction quality</li>
+            <li><strong>Drag and drop audio files</strong> onto diagram cards to automatically transcribe and create discussions (MP3, WAV, M4A, MP4, FLAC, OGG, WEBM, AAC)</li>
+            <li><strong>Drag and drop JSON files</strong> to import previously exported discussions</li>
+            <li>Your feedback is anonymous and won't be seen by other auditors</li>
+        </ul>
+    </div>
+
+    <!-- Main Content: User Detail View -->
+    <div class="content">
+        {% include "partials/user_detail_content.html" with context %}
+    </div>
+
+</div>
+
+<script>
+// Drag and drop functionality for audio/JSON files
+function setupDragAndDrop() {
+    const boxes = document.querySelectorAll('.box');
+    
+    boxes.forEach(box => {
+        box.addEventListener('dragover', handleDragOver);
+        box.addEventListener('dragleave', handleDragLeave);
+        box.addEventListener('drop', handleDrop);
+    });
+}
+
+function handleDragOver(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = 'copy';
+    event.currentTarget.classList.add('drag-over');
+}
+
+function handleDragLeave(event) {
+    event.stopPropagation();
+    event.currentTarget.classList.remove('drag-over');
+}
+
+function handleDrop(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.classList.remove('drag-over');
+    
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+        // Handle file upload logic here
+        console.log('Files dropped:', files);
+        // This would integrate with existing audio/JSON upload functionality
+    }
+}
+
+
+
+async function handleAudioFileSelect(event, userId, diagramId) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    console.log('Processing audio file:', file.name, 'for diagram:', diagramId);
+    
+    // Validate it's an audio file
+    if (!file.type.startsWith('audio/')) {
+        alert('Please select an audio file. Supported formats: MP3, WAV, M4A, MP4, FLAC, OGG, WEBM, AAC');
+        return;
+    }
+    
+    const confirmMessage = `Upload "${file.name}" to this diagram for transcription and analysis?`;
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    // Find the drop zone container for progress display
+    const dropZone = event.target.closest('.box');
+    const originalContent = dropZone.innerHTML;
+    
+    try {
+        // Show progress
+        dropZone.innerHTML = `
+            <div class="notification is-info">
+                <p><strong>Processing "${file.name}"...</strong></p>
+                <progress class="progress is-small is-primary" value="20" max="100">20%</progress>
+                <p class="is-size-7" id="upload-status">Getting upload token...</p>
+            </div>
+        `;
+        
+        // Get API key for AssemblyAI
+        const keyResponse = await fetch('/therapist/discussions/upload_token');
+        const keyData = await keyResponse.json();
+        
+        if (!keyData.success) {
+            throw new Error(keyData.error || 'Failed to get upload token');
+        }
+        
+        // Update progress
+        const progressBar = dropZone.querySelector('.progress');
+        const statusEl = dropZone.querySelector('#upload-status');
+        if (progressBar) progressBar.value = 30;
+        if (statusEl) statusEl.textContent = 'Uploading to transcription service...';
+        
+        // Upload to AssemblyAI
+        const uploadResponse = await fetch('https://api.assemblyai.com/v2/upload', {
+            method: 'POST',
+            headers: {
+                'authorization': `${keyData.api_key}`,
+            },
+            body: file
+        });
+        
+        if (!uploadResponse.ok) {
+            throw new Error(`Upload failed: ${await uploadResponse.text()}`);
+        }
+        
+        const uploadData = await uploadResponse.json();
+        
+        // Update progress
+        if (progressBar) progressBar.value = 60;
+        if (statusEl) statusEl.textContent = 'Requesting transcription...';
+        
+        // Request transcription
+        const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
+            method: 'POST',
+            headers: {
+                'authorization': `${keyData.api_key}`,
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+                audio_url: uploadData.upload_url,
+                speaker_labels: true
+            })
+        });
+        
+        if (!transcriptResponse.ok) {
+            throw new Error(`Transcription request failed: ${await transcriptResponse.text()}`);
+        }
+        
+        const transcriptRequest = await transcriptResponse.json();
+        
+        // Update progress
+        if (progressBar) progressBar.value = 80;
+        if (statusEl) statusEl.textContent = 'Creating discussion...';
+        
+        // Poll for completion (simplified version)
+        let transcriptData;
+        let attempts = 0;
+        const maxAttempts = 60; // 5 minutes max
+        
+        while (attempts < maxAttempts) {
+            const pollResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptRequest.id}`, {
+                headers: { 'authorization': `${keyData.api_key}` }
+            });
+            
+            transcriptData = await pollResponse.json();
+            
+            if (transcriptData.status === 'completed') {
+                break;
+            } else if (transcriptData.status === 'error') {
+                throw new Error('Transcription failed: ' + transcriptData.error);
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+            attempts++;
+        }
+        
+        if (attempts >= maxAttempts) {
+            throw new Error('Transcription timeout');
+        }
+        
+        // Create discussion on server
+        const createResponse = await fetch(`/therapist/discussions/transcript?title=${encodeURIComponent(file.name)}&diagram_id=${diagramId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(transcriptData)
+        });
+        
+        const createData = await createResponse.json();
+        if (!createData.success) {
+            throw new Error(createData.error || 'Failed to create discussion');
+        }
+        
+        // Success!
+        if (progressBar) progressBar.value = 100;
+        if (statusEl) statusEl.textContent = 'Complete! Processing statements...';
+        
+        setTimeout(() => {
+            location.reload();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Upload error:', error);
+        dropZone.innerHTML = `
+            <div class="notification is-danger">
+                <button class="delete" onclick="this.parentElement.outerHTML = '${originalContent.replace(/'/g, '\\\'')}'"></button>
+                <p><strong>Upload failed:</strong> ${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+function handleJsonFileSelect(event, userId, diagramId) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Create a fake drop event to reuse existing handleDiagramJsonDrop functionality
+    const fakeEvent = {
+        preventDefault: () => {},
+        stopPropagation: () => {},
+        currentTarget: {
+            classList: {
+                remove: () => {}
+            },
+            innerHTML: 'Processing...'
+        },
+        dataTransfer: {
+            files: [file]
+        }
+    };
+    
+    // Use the existing handleDiagramJsonDrop function if available, or implement inline
+    if (typeof handleDiagramJsonDrop === 'function') {
+        handleDiagramJsonDrop(fakeEvent, diagramId);
+    } else {
+        // Inline implementation based on audit_index.html
+        handleJsonDropInline(fakeEvent, diagramId);
+    }
+}
+
+async function handleJsonDropInline(event, diagramId) {
+    const files = event.dataTransfer.files;
+    if (files.length === 0) return;
+    
+    const file = files[0];
+    
+    // Validate it's a JSON file
+    if (!file.name.endsWith('.json') && file.type !== 'application/json') {
+        alert('Please drop a JSON file (exported discussion)');
+        return;
+    }
+    
+    const confirmMessage = `Import "${file.name}" as a new discussion for this diagram?`;
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    try {
+        // Read the file content
+        const content = await file.text();
+        const jsonData = JSON.parse(content);
+        
+        // Validate it looks like a discussion export
+        if (!jsonData.id || !jsonData.statements) {
+            alert('Invalid discussion export format');
+            return;
+        }
+        
+        // Import the discussion
+        const response = await fetch('/therapist/discussions/import', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                discussion: jsonData,
+                diagram_id: diagramId
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(`Discussion imported successfully! ID: ${result.discussion_id}`);
+            location.reload();
+        } else {
+            alert('Import failed: ' + (result.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error importing JSON:', error);
+        alert('Failed to import discussion: ' + error.message);
+    }
+}
+
+// Initialize drag and drop when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    setupDragAndDrop();
+    setupDiagramDragAndDrop();
+});
+
+function setupDiagramDragAndDrop() {
+    // Add drag and drop to diagram audio/json zones
+    const audioZones = document.querySelectorAll('[id^="audio-drop-zone-diagram-"]');
+    const jsonZones = document.querySelectorAll('[id^="json-drop-zone-diagram-"]');
+    
+    audioZones.forEach(zone => {
+        const diagramId = zone.id.replace('audio-drop-zone-diagram-', '');
+        zone.addEventListener('dragover', handleAudioDragOver);
+        zone.addEventListener('dragleave', handleAudioDragLeave);
+        zone.addEventListener('drop', (e) => handleAudioDrop(e, diagramId));
+    });
+    
+    jsonZones.forEach(zone => {
+        const diagramId = zone.id.replace('json-drop-zone-diagram-', '');
+        zone.addEventListener('dragover', handleJsonDragOver);
+        zone.addEventListener('dragleave', handleJsonDragLeave);
+        zone.addEventListener('drop', (e) => handleJsonDropInline(e, diagramId));
+    });
+}
+
+function handleJsonDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    event.currentTarget.classList.add('drag-over');
+}
+
+function handleJsonDragLeave(event) {
+    event.currentTarget.classList.remove('drag-over');
+}
+
+function handleAudioDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    event.currentTarget.classList.add('drag-over');
+}
+
+function handleAudioDragLeave(event) {
+    event.currentTarget.classList.remove('drag-over');
+}
+
+async function handleAudioDrop(event, diagramId) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.classList.remove('drag-over');
+    
+    const files = event.dataTransfer.files;
+    if (files.length === 0) return;
+    
+    const file = files[0];
+    
+    // Create a fake file input event and call the existing handler
+    const fakeEvent = {
+        target: {
+            files: [file],
+            closest: () => event.currentTarget
+        }
+    };
+    
+    // Call the same handler as click selection
+    await handleAudioFileSelect(fakeEvent, null, diagramId);
+}
+</script>
+
+<script src="{{ url_for("static", filename="js/user-detail-component.js") if url_for else "/static/js/user-detail-component.js" }}"></script>
+{% endblock %}

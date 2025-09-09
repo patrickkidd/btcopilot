@@ -1,0 +1,86 @@
+<!-- User Basic Information Section -->
+<div class="box" data-user-id="{{ user.id }}">
+    <h4 class="title is-5">
+        <span class="icon"><i class="fas fa-user-circle"></i></span>
+        Basic Information
+    </h4>
+    
+    <table class="table is-fullwidth is-borderless">
+        <tbody>
+            <tr>
+                <th width="20%">Username</th>
+                <td><span class="tag is-primary">{{ user.username }}</span></td>
+            </tr>
+            <tr>
+                <th>Name</th>
+                <td>{{ user.full_name() or 'No name' }}</td>
+            </tr>
+            <tr>
+                <th>Email</th>
+                <td>{{ user.username }}</td>
+            </tr>
+            <tr>
+                <th>Status</th>
+                <td><span class="tag {% if user.status == 'confirmed' %}is-success{% elif user.status == 'pending' %}is-warning{% else %}is-light{% endif %}">{{ user.status }}</span></td>
+            </tr>
+            <tr>
+                <th>Created</th>
+                <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else 'N/A' }}</td>
+            </tr>
+            <tr>
+                <th>Roles</th>
+                <td>
+                    {% if "admin" in (current_user.roles if current_user.roles else []) and is_modal|default(false) %}
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div id="detail-roles-display">
+                                {% for role in user.roles.split(',') if role.strip() %}
+                                    <span class="tag is-small {% if role.strip() == 'admin' %}is-danger{% elif role.strip() == 'auditor' %}is-warning{% elif role.strip() == 'subscriber' %}is-info{% else %}is-light{% endif %}">{{ role.strip() }}</span>
+                                {% endfor %}
+                            </div>
+                            <button class="button is-small is-info" id="edit-roles-btn" onclick="startEditRoles()">
+                                <span class="icon"><i class="fas fa-edit"></i></span>
+                                <span>Edit Roles</span>
+                            </button>
+                        </div>
+                        <div id="detail-roles-edit" style="display: none;">
+                            <div class="field">
+                                <label class="checkbox">
+                                    <input type="checkbox" id="role-subscriber" value="subscriber" {% if 'subscriber' in user.roles %}checked{% endif %}>
+                                    Subscriber
+                                </label>
+                            </div>
+                            <div class="field">
+                                <label class="checkbox">
+                                    <input type="checkbox" id="role-admin" value="admin" {% if 'admin' in user.roles %}checked{% endif %}>
+                                    Admin
+                                </label>
+                            </div>
+                            <div class="field">
+                                <label class="checkbox">
+                                    <input type="checkbox" id="role-auditor" value="auditor" {% if 'auditor' in user.roles %}checked{% endif %}>
+                                    Auditor
+                                </label>
+                            </div>
+                            <div class="field">
+                                <div class="control">
+                                    <button class="button is-success is-small" onclick="saveUserRoles()">
+                                        <span class="icon"><i class="fas fa-save"></i></span>
+                                        <span>Save</span>
+                                    </button>
+                                    <button class="button is-light is-small" onclick="cancelEditRoles()">
+                                        <span class="icon"><i class="fas fa-times"></i></span>
+                                        <span>Cancel</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        {% for role in user.roles.split(',') if role.strip() %}
+                            <span class="tag is-small {% if role.strip() == 'admin' %}is-danger{% elif role.strip() == 'auditor' %}is-warning{% elif role.strip() == 'subscriber' %}is-info{% else %}is-light{% endif %}">{{ role.strip() }}</span>
+                        {% endfor %}
+                    {% endif %}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

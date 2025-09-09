@@ -1,0 +1,60 @@
+{# Reusable macro for displaying discussion boxes #}
+{% macro discussion_box(discussion, delete_function_name="", user_id=none, username="", current_user=none) %}
+<a href="{{ url_for('therapist.discussions.audit', discussion_id=discussion.id) }}" 
+   class="box is-clickable mb-3 has-background-white-bis">
+    <div class="media">
+        <div class="media-left">
+            <span class="icon is-large has-text-primary">
+                <i class="fas fa-comments fa-2x"></i>
+            </span>
+        </div>
+        <div class="media-content">
+            <p class="title is-6">Discussion #{{ discussion.id }}</p>
+            <p class="subtitle is-7 mb-2">
+                {% if discussion.created_at %}
+                Created: {{ discussion.created_at.strftime('%Y-%m-%d %H:%M') }}
+                {% endif %}
+                {% if discussion.updated_at and discussion.updated_at != discussion.created_at %}
+                | Updated: {{ discussion.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                {% endif %}
+            </p>
+            <div class="tags">
+                {% if discussion.statements %}
+                <span class="tag is-success is-light">
+                    {{ discussion.statements|length }} statements
+                </span>
+                {% else %}
+                    {% set ai_messages = discussion.messages|selectattr('origin', 'equalto', 'ai')|list if discussion.messages else [] %}
+                    {% if ai_messages %}
+                    <span class="tag is-success is-light">
+                        {{ ai_messages|length }} AI responses
+                    </span>
+                    {% endif %}
+                {% endif %}
+                {% if discussion.summary %}
+                <span class="tag is-info is-light">Has summary</span>
+                {% endif %}
+            </div>
+            {% if discussion.summary %}
+            <p class="is-size-7 has-text-grey mt-2">
+                {{ discussion.summary[:100] }}{% if discussion.summary|length > 100 %}...{% endif %}
+            </p>
+            {% endif %}
+        </div>
+        <div class="media-right">
+            {% if current_user and "admin" in (current_user.roles if current_user.roles else []) %}
+            <button class="button is-small is-danger mr-2" 
+                    onclick="event.preventDefault(); event.stopPropagation(); {{ delete_function_name }}({{ discussion.id }}, {{ user_id }}, '{{ username }}');"
+                    title="Delete this discussion (Admin only)">
+                <span class="icon is-small">
+                    <i class="fas fa-trash"></i>
+                </span>
+            </button>
+            {% endif %}
+            <span class="icon has-text-grey">
+                <i class="fas fa-chevron-right"></i>
+            </span>
+        </div>
+    </div>
+</a>
+{% endmacro %}
