@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container is-max-desktop">
+    <div class="content">
+        <h1 class="title is-3">
+            <span class="icon is-large">
+                <i class="fas fa-clipboard-list"></i>
+            </span>
+            Feedback Review Dashboard
+        </h1>
+        <p class="subtitle">Review and approve user feedback for model training</p>
+        
+        {% if review_data %}
+        <div class="table-container">
+            <table class="table is-fullwidth is-striped">
+                <thead>
+                    <tr>
+                        <th>Discussion</th>
+                        <th>User</th>
+                        <th>Statements with Feedback</th>
+                        <th>Total Feedback</th>
+                        <th>Approved</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in review_data %}
+                    <tr class="{{ 'has-background-warning-light' if item.needs_review else 'has-background-success-light' }}">
+                        <td>
+                            <strong>Discussion #{{ item.discussion.id }}</strong>
+                            {% if item.discussion.summary %}
+                            <br><small class="has-text-grey">{{ item.discussion.summary[:100] }}...</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.discussion.user %}
+                            <span class="tag is-info">{{ item.discussion.user.username }}</span>
+                            {% else %}
+                            <span class="tag is-light">Unknown</span>
+                            {% endif %}
+                        </td>
+                        <td class="has-text-centered">
+                            <span class="tag is-primary">{{ item.statements_with_feedback }}</span>
+                        </td>
+                        <td class="has-text-centered">
+                            <span class="tag">{{ item.total_feedback }}</span>
+                        </td>
+                        <td class="has-text-centered">
+                            <span class="tag {{ 'is-success' if item.approved_feedback > 0 else 'is-light' }}">
+                                {{ item.approved_feedback }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if item.needs_review %}
+                            <span class="tag is-warning">
+                                <span class="icon">
+                                    <i class="fas fa-clock"></i>
+                                </span>
+                                <span>Needs Review</span>
+                            </span>
+                            {% else %}
+                            <span class="tag is-success">
+                                <span class="icon">
+                                    <i class="fas fa-check"></i>
+                                </span>
+                                <span>Complete</span>
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('therapist.admin.feedback_review_discussion', discussion_id=item.discussion.id) }}" 
+                               class="button is-small is-primary">
+                                <span class="icon">
+                                    <i class="fas fa-eye"></i>
+                                </span>
+                                <span>Review</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Summary Statistics -->
+        <div class="box mt-5">
+            <h4 class="title is-5">Summary</h4>
+            <div class="columns">
+                <div class="column">
+                    <div class="has-text-centered">
+                        <p class="heading">Discussions with Feedback</p>
+                        <p class="title">{{ review_data|length }}</p>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="has-text-centered">
+                        <p class="heading">Need Review</p>
+                        <p class="title has-text-warning">{{ review_data|selectattr("needs_review")|list|length }}</p>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="has-text-centered">
+                        <p class="heading">Total Feedback</p>
+                        <p class="title">{{ review_data|sum(attribute="total_feedback") }}</p>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="has-text-centered">
+                        <p class="heading">Approved</p>
+                        <p class="title has-text-success">{{ review_data|sum(attribute="approved_feedback") }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% else %}
+        <div class="notification is-info">
+            <div class="has-text-centered">
+                <p class="title is-5">No feedback to review</p>
+                <p>There are currently no discussions with extraction feedback that need review.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.table td {
+    vertical-align: middle;
+}
+</style>
+
+{% endblock %}
