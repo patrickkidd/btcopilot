@@ -11,7 +11,8 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify
 
 from ..auth import require_admin, get_current_user
-from ..models import Discussion, Statement, Feedback, get_session
+from ..models import Discussion, Statement, Feedback
+from ...extensions import db
 from ..utils import get_breadcrumbs
 
 _log = logging.getLogger(__name__)
