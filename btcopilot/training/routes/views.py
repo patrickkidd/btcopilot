@@ -8,10 +8,21 @@ from . import training_bp
 
 @training_bp.route('/')
 def index():
-    """Main training application landing page"""
-    # This will be implemented to redirect based on user role
-    # For now, simple landing page
-    return render_template('training_index.html')
+    """Main training application landing page with role-based redirection"""
+    from ..auth import get_current_user, _check_role, UserRole
+    
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('training.auth.login'))
+
+    # Use the role checking system (works in both standalone and integrated modes)
+    if _check_role(user, UserRole.Admin):
+        return redirect(url_for('training.admin.index'))
+    elif _check_role(user, UserRole.Auditor):
+        return redirect(url_for('training.audit.index'))
+    
+    # Default fallback - show audit page for any authenticated user
+    return redirect(url_for('training.audit.index'))
 
 
 @training_bp.context_processor

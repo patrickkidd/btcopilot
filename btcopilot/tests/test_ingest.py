@@ -6,6 +6,7 @@ from click.testing import CliRunner
 from btcopilot import commands
 
 
+@pytest.mark.e2e
 @pytest.mark.skipif(
     os.getenv("GITHUB_ACTIONS") == "true", reason="No huggingface on Github actions"
 )

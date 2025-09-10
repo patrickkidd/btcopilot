@@ -209,3 +209,7 @@ INFO     test_model:test_model.py:58 Copilot total time: 38.17371924100007
   - Division between persistent database and PDP. Deltas are the core atomic component to validate.
 - Plan to build personal mobile app with web-based auditing system to scale model training with human feedback.
   - Potential to generate database for family research, complete with data model.
+
+## 2025-09-08 - Integrated web-based machine learning system for S.A.R.F (Havstad, 2018) model.
+- Domain-experts trained in Bowen theory can correct AI-generated codes from text and audio transcripts toward fine-tuning an AI model to be better in the future.
+- All proprietary data and other components of resulting intelligence are retained in a private repository, but using the framework in this package.

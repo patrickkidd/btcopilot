@@ -46,6 +46,7 @@ def truthy(x):
         return bool(x)
 
 
+@pytest.mark.e2e
 @pytest.mark.integration
 @pytest.mark.parametrize("question, correct_answer", quizzes.FTICP_QUIZ)
 def test_bowens_book(engine, question, correct_answer):
