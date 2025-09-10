@@ -26,6 +26,9 @@ from .prompts import prompts_bp
 from .admin import admin_bp
 from .auth import auth_bp
 from .discussions import discussions_bp
+from .diagrams import diagrams_bp
+from .speakers import speakers_bp
+from .stream import stream_bp
 
 training_bp.register_blueprint(audit_bp)
 training_bp.register_blueprint(feedback_bp) 
@@ -33,6 +36,9 @@ training_bp.register_blueprint(prompts_bp)
 training_bp.register_blueprint(admin_bp)
 training_bp.register_blueprint(auth_bp)
 training_bp.register_blueprint(discussions_bp)
+training_bp.register_blueprint(diagrams_bp)
+training_bp.register_blueprint(speakers_bp)
+training_bp.register_blueprint(stream_bp)
 
 
 @training_bp.before_request
