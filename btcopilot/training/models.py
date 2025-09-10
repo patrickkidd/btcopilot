@@ -11,33 +11,9 @@ application that provides the database session.
 import enum
 from sqlalchemy import Column, Text, Integer, ForeignKey, JSON, String, Boolean, DateTime, Enum
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
-
-# Import base mixins from btcopilot
+# Import database infrastructure and base mixins from btcopilot
+from ..extensions import db
 from ..modelmixin import ModelMixin
-
-# Create a base class for our models
-Base = declarative_base()
-
-# Global session reference for integration
-_session = None
-
-def set_session(session):
-    """Set the database session for model operations."""
-    global _session
-    _session = session
-
-def get_session():
-    """Get the current database session."""
-    if _session:
-        return _session
-    # Fallback for standalone operation
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-    engine = create_engine('sqlite:///:memory:')
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    return Session()
 
 
 class SpeakerType(enum.StrEnum):
@@ -46,7 +22,7 @@ class SpeakerType(enum.StrEnum):
     Subject = "subject"
 
 
-class Statement(Base, ModelMixin):
+class Statement(db.Model, ModelMixin):
     """Individual statements in a discussion with extraction data"""
 
     __tablename__ = "statements"
@@ -81,7 +57,7 @@ class Statement(Base, ModelMixin):
         return f"<Statement {self.id}: {self.text[:50] if self.text else 'None'}...>"
 
 
-class Discussion(Base, ModelMixin):
+class Discussion(db.Model, ModelMixin):
     """A discussion thread containing multiple statements"""
 
     __tablename__ = "discussions"
@@ -162,7 +138,7 @@ class Discussion(Base, ModelMixin):
         return f"<Discussion {self.id}: {self.summary[:50] if self.summary else 'None'}...>"
 
 
-class Speaker(Base, ModelMixin):
+class Speaker(db.Model, ModelMixin):
     """Speakers in discussions (e.g., user, AI, family members)"""
 
     __tablename__ = "speakers"
@@ -195,7 +171,7 @@ class Speaker(Base, ModelMixin):
         return f"<Speaker {self.id}: {self.name} ({self.type})>"
 
 
-class Feedback(Base, ModelMixin):
+class Feedback(db.Model, ModelMixin):
     """Stores feedback from domain experts on AI responses"""
 
     __tablename__ = "feedbacks"
@@ -237,6 +213,5 @@ __all__ = [
     'Discussion', 
     'Speaker',
     'SpeakerType',
-    'Feedback',
-    'Base'
+    'Feedback'
 ]

@@ -44,9 +44,15 @@ def get_breadcrumbs(current_page):
 
 
 def get_auditor_id(request, session):
-    """
-    Get auditor ID from request/session for audit tracking.
-    This is a placeholder - should be implemented by parent app.
-    """
-    # This will be overridden by parent application's user system
-    return session.get('user_id', 'anonymous')
+    """Get auditor ID from request headers or use current user's ID"""
+    # First check for explicit header (for testing)
+    if request.headers.get("X-Auditor-Id"):
+        return request.headers.get("X-Auditor-Id")
+    
+    # Use current user's ID as auditor ID via Flask g context
+    from flask import g
+    if hasattr(g, 'current_user') and g.current_user and hasattr(g.current_user, 'id'):
+        return str(g.current_user.id)  # Convert to string for consistency
+    
+    # This shouldn't happen in practice since routes require login
+    return "anonymous"

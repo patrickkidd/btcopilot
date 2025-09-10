@@ -29,7 +29,4 @@ def init_app(app):
 
     app.register_blueprint(training_bp, url_prefix="/training")
 
-    # Configure security headers for web routes
-    from . import security
-
-    security.init_app(app)
+    # Security headers handled by btcopilot extensions
