@@ -18,6 +18,12 @@ def pytest_addoption(parser):
         default=False,
         help="Tun integration tests",
     )
+    parser.addoption(
+        "--e2e",
+        action="store_true",
+        default=False,
+        help="run end-to-end tests (requires external dependencies)",
+    )
 
 
 def pytest_configure(config):
@@ -39,6 +45,13 @@ def pytest_collection_modifyitems(session, config, items):
             for item in items:
                 if "integration" not in [x.name for x in item.own_markers]:
                     item.add_marker(skip_mark)
+    
+    # Skip e2e tests by default, only run when --e2e is passed
+    if not config.getoption("--e2e"):
+        skip_e2e = pytest.mark.skip(reason="Requires passing --e2e to run")
+        for item in items:
+            if "e2e" in [x.name for x in item.own_markers]:
+                item.add_marker(skip_e2e)
 
 
 @pytest.fixture(autouse=True, scope="session")
