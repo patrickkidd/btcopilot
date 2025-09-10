@@ -5,6 +5,18 @@ These are generic/example prompts that demonstrate the prompt structure.
 The parent application should override these with proprietary versions.
 """
 
+# Global overrides for integration
+_prompt_overrides = {}
+
+def update_prompts(overrides):
+    """Update prompts with overrides from parent application."""
+    global _prompt_overrides
+    _prompt_overrides.update(overrides)
+
+def get_prompt(name, default=None):
+    """Get a prompt, checking for overrides first."""
+    return _prompt_overrides.get(name, default or globals().get(name, ""))
+
 # Stand-in role prompt for extraction system
 ROLE_COACH_NOT_THERAPIST = """
 **Role & Goal**

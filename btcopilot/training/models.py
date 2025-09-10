@@ -19,6 +19,26 @@ from ..modelmixin import ModelMixin
 # Create a base class for our models
 Base = declarative_base()
 
+# Global session reference for integration
+_session = None
+
+def set_session(session):
+    """Set the database session for model operations."""
+    global _session
+    _session = session
+
+def get_session():
+    """Get the current database session."""
+    if _session:
+        return _session
+    # Fallback for standalone operation
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    engine = create_engine('sqlite:///:memory:')
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    return Session()
+
 
 class SpeakerType(enum.StrEnum):
     """Enum for speaker types in discussions"""

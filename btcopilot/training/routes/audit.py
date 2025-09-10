@@ -7,10 +7,12 @@ be overridden by the parent application.
 """
 
 import logging
-from flask import Blueprint, render_template, request, session
+from flask import Blueprint, render_template, request, session, jsonify, redirect, url_for
+from datetime import datetime
 
-from ..models import Discussion
-from ..utils import get_breadcrumbs, get_auditor_id
+from ..auth import require_auditor_or_admin, get_current_user, get_auditor_id
+from ..models import Discussion, Statement, get_session
+from ..utils import get_breadcrumbs
 
 _log = logging.getLogger(__name__)
 
@@ -27,6 +29,7 @@ audit_bp = Blueprint(
 
 
 @audit_bp.route("/")
+@require_auditor_or_admin
 def index():
     """
     Audit dashboard showing available discussions for review.

@@ -4,9 +4,11 @@ Training web application routes.
 Provides web-based interfaces for AI training data collection and review.
 All routes use standard web authentication (sessions, CSRF) rather than
 API authentication methods.
+
+When integrated with fdserver, authentication is handled by the parent application.
 """
 
-from flask import Blueprint
+from flask import Blueprint, g, request
 
 # Main blueprint for the training web application
 training_bp = Blueprint(
@@ -29,6 +31,22 @@ training_bp.register_blueprint(feedback_bp)
 training_bp.register_blueprint(prompts_bp)
 training_bp.register_blueprint(admin_bp)
 training_bp.register_blueprint(auth_bp)
+
+
+@training_bp.before_request
+def setup_integration_context():
+    """Set up context for integration with parent application."""
+    # Check if we're running in integrated mode (fdserver provides these)
+    if hasattr(g, 'db_session'):
+        # Use fdserver's database session
+        from ..models import set_session
+        set_session(g.db_session)
+    
+    if hasattr(g, 'custom_prompts'):
+        # Use fdserver's prompt overrides
+        from .. import prompts
+        prompts.update_prompts(g.custom_prompts)
+
 
 # Import route handlers to register them
 from . import views
