@@ -8,7 +8,7 @@ API authentication methods.
 When integrated with fdserver, authentication is handled by the parent application.
 """
 
-from flask import Blueprint, g, request
+from flask import Blueprint, g, request, render_template, redirect, url_for
 
 # Main blueprint for the training web application
 training_bp = Blueprint(
@@ -46,6 +46,21 @@ def setup_integration_context():
         # Use fdserver's prompt overrides
         from .. import prompts
         prompts.update_prompts(g.custom_prompts)
+
+
+# Error handlers for training web interface
+@training_bp.errorhandler(404)
+def handle_404(e):
+    """Handle 404 errors for training web interface with template rendering."""
+    from ..auth import get_current_user
+    current_user = get_current_user()
+    return render_template('errors/404.html', current_user=current_user), 404
+
+
+@training_bp.errorhandler(403)
+def handle_403(e):
+    """Handle 403 errors for training web interface - redirect to login."""
+    return redirect(url_for('training.auth.login', next=request.url))
 
 
 # Import route handlers to register them
