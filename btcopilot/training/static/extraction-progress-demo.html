@@ -47,7 +47,7 @@
             <h3 class="subtitle">How it works:</h3>
             <div class="content">
                 <ol>
-                    <li>The progress bar polls <code>/therapist/discussions/{id}/progress</code> every 2 seconds</li>
+                    <li>The progress bar polls <code>/training/discussions/{id}/progress</code> every 2 seconds</li>
                     <li>It shows the number of statements processed out of the total</li>
                     <li>The progress bar automatically hides when all statements are processed</li>
                     <li>If extraction stalls, it can trigger the background job to continue</li>
@@ -68,7 +68,7 @@ window.extractionProgress.destroy();</code></pre>
         </div>
     </div>
     
-    <script src="/therapist/static/js/extraction-progress.js"></script>
+    <script src="/training/static/js/extraction-progress.js"></script>
     <script>
         function startDemo() {
             // In a real app, this would use the actual discussion ID

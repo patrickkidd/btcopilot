@@ -30,7 +30,7 @@ def test_speaker(test_user):
 @pytest.mark.parametrize(
     "endpoint,method",
     [
-        ("/therapist/speakers/1", "PUT"),
+        ("/training/speakers/1", "PUT"),
     ],
 )
 def test_requires_auditor_or_admin(subscriber, endpoint, method, caplog):
@@ -61,7 +61,7 @@ def test_requires_auditor_or_admin(subscriber, endpoint, method, caplog):
 def test_update_success(auditor, test_speaker):
     """Test successful speaker update"""
     response = auditor.put(
-        f"/therapist/speakers/{test_speaker.id}",
+        f"/training/speakers/{test_speaker.id}",
         json={
             "type": "expert",
             "name": "Updated Speaker",
@@ -79,7 +79,7 @@ def test_update_success(auditor, test_speaker):
 def test_update_invalid_type(auditor, test_speaker):
     """Test speaker update with invalid type"""
     response = auditor.put(
-        f"/therapist/speakers/{test_speaker.id}",
+        f"/training/speakers/{test_speaker.id}",
         json={"type": "invalid"},
     )
     assert response.status_code == 400
@@ -89,7 +89,7 @@ def test_update_invalid_type(auditor, test_speaker):
 def test_update_not_found(auditor):
     """Test speaker update with non-existent speaker"""
     response = auditor.put(
-        "/therapist/speakers/99999",
+        "/training/speakers/99999",
         json={"name": "Test"},
     )
     assert response.status_code == 404
@@ -99,7 +99,7 @@ def test_update_not_found(auditor):
 def test_update_no_body(auditor, test_speaker):
     """Test speaker update with no request body"""
     response = auditor.put(
-        f"/therapist/speakers/{test_speaker.id}",
+        f"/training/speakers/{test_speaker.id}",
         json={},
     )
     assert response.status_code == 400
@@ -109,7 +109,7 @@ def test_update_no_body(auditor, test_speaker):
 def test_update_no_valid_fields(auditor, test_speaker):
     """Test speaker update with no valid fields"""
     response = auditor.put(
-        f"/therapist/speakers/{test_speaker.id}",
+        f"/training/speakers/{test_speaker.id}",
         json={"invalid_field": "value"},
     )
     assert response.status_code == 400
@@ -119,7 +119,7 @@ def test_update_no_valid_fields(auditor, test_speaker):
 def test_map_speaker_existing_person(auditor, test_speaker):
     """Test mapping speaker to existing person"""
     response = auditor.put(
-        f"/therapist/speakers/{test_speaker.id}",
+        f"/training/speakers/{test_speaker.id}",
         json={
             "person_id": 5,
         },
@@ -151,7 +151,7 @@ def test_map_speaker_create_new_person(auditor, test_speaker, test_user):
     db.session.commit()
 
     response = auditor.put(
-        f"/therapist/speakers/{test_speaker.id}",
+        f"/training/speakers/{test_speaker.id}",
         json={
             "person_id": -1,  # Dummy ID to trigger person creation
             "name": "New Person",
@@ -176,7 +176,7 @@ def test_map_speaker_create_new_person(auditor, test_speaker, test_user):
 def test_update_speaker_not_found_for_person_mapping(auditor):
     """Test mapping non-existent speaker"""
     response = auditor.put(
-        "/therapist/speakers/99999",
+        "/training/speakers/99999",
         json={
             "person_id": 1,
         },

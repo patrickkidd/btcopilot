@@ -182,7 +182,7 @@ class AudioUploadClient {
             const statusEl = document.getElementById(`status-${userId || `diagram-${diagramId}`}`);
             if (statusEl) statusEl.textContent = 'Getting upload token...';
             
-            const keyResponse = await fetch('/therapist/discussions/upload_token');
+            const keyResponse = await fetch('/training/discussions/upload_token');
             const keyData = await keyResponse.json();
             
             if (!keyData.success) {
@@ -202,7 +202,7 @@ class AudioUploadClient {
             if (statusEl) statusEl.textContent = 'Creating discussion...';
             
             // Send transcript to server with appropriate context
-            let url = '/therapist/discussions/transcript';
+            let url = '/training/discussions/transcript';
             const params = new URLSearchParams();
             
             params.append('title', file.name);

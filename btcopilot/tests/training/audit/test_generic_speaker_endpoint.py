@@ -90,17 +90,17 @@ def test_rest_api_design_compliance():
     endpoint_patterns = {
         "create_discussion": {
             "method": "POST",
-            "path": "/therapist/discussions",
+            "path": "/training/discussions",
             "description": "Create new discussion from transcript",
         },
         "update_speaker": {
             "method": "PUT",
-            "path": "/therapist/speakers/{speaker_id}",
+            "path": "/training/speakers/{speaker_id}",
             "description": "Update speaker by ID",
         },
         "map_speaker": {
             "method": "POST",
-            "path": "/therapist/audit/map_speaker",
+            "path": "/training/audit/map_speaker",
             "description": "Map speaker to person (legacy endpoint)",
         },
     }

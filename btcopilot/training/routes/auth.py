@@ -60,10 +60,10 @@ def needs_captcha(ip_address):
     return failed_attempts[ip_address]["count"] >= CAPTCHA_THRESHOLD
 
 
-auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
-@auth_bp.after_request
+@bp.after_request
 def _(response):
     return add_security_headers(response)
 
@@ -104,7 +104,7 @@ def clear_failed_attempts(ip_address):
         del failed_attempts[ip_address]
 
 
-@auth_bp.route("/login", methods=["GET", "POST"])
+@bp.route("/login", methods=["GET", "POST"])
 def login():
     """Login page with password authentication"""
     ip_address = get_remote_address()
@@ -234,7 +234,7 @@ def login():
         return redirect(url_for("training.training_root"))
 
 
-@auth_bp.route("/logout", methods=["POST"])
+@bp.route("/logout", methods=["POST"])
 def logout():
     from flask_wtf.csrf import validate_csrf
 

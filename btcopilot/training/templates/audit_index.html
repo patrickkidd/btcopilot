@@ -322,7 +322,7 @@ This will permanently delete:
 This action cannot be undone`;
 
     if (confirm(message)) {
-        fetch(`/therapist/discussions/${discussionId}`, {
+        fetch(`/training/discussions/${discussionId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -353,7 +353,7 @@ This will:
 Continue?`;
 
     if (confirm(message)) {
-        fetch(`/therapist/discussions/${discussionId}/extract`, {
+        fetch(`/training/discussions/${discussionId}/extract`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -433,7 +433,7 @@ async function handleJsonDrop(event, userId) {
         `;
         
         // Send to server
-        const response = await fetch('/therapist/discussions/import', {
+        const response = await fetch('/training/discussions/import', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(jsonData)
@@ -518,7 +518,7 @@ async function handleDiagramJsonDrop(event, diagramId) {
         `;
         
         // Send to server
-        const response = await fetch(`/therapist/discussions/import?diagram_id=${diagramId}`, {
+        const response = await fetch(`/training/discussions/import?diagram_id=${diagramId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(jsonData)

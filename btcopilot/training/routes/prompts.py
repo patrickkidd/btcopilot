@@ -281,7 +281,7 @@ def coach_chat():
     current_prompts = data.get("current_prompts", {})
 
     chat_prompt = f"""
-    You are an expert AI prompt engineer helping improve PDP (Pending Data Pool) extraction system prompts used in btcopilot/therapist/prompts.py. These prompts are loaded by pdp.py for extracting psychological/therapeutic data from user conversations.
+    You are an expert AI prompt engineer helping improve PDP (Pending Data Pool) extraction system prompts used in btcopilot/training/prompts.py. These prompts are loaded by pdp.py for extracting psychological/therapeutic data from user conversations.
 
     **YOUR ROLE**: Help refine the system prompts that instruct the AI to extract:
     - People (with relationships, confidence levels)  

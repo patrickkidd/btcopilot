@@ -17,7 +17,7 @@ def test_get(test_user, logged_in):
     test_user.free_diagram.set_database(database)
     db.session.commit()
 
-    response = logged_in.get("/therapist/pdp")
+    response = logged_in.get("/personal/pdp")
     assert response.status_code == 200
     assert response.json == database.pdp.model_dump()
 
@@ -39,7 +39,7 @@ def test_accept(test_user, logged_in, id, pdp):
     db.session.commit()
 
     response = logged_in.post(
-        f"/therapist/diagrams/{logged_in.user.free_diagram_id}/pdp/{-id}/accept"
+        f"/personal/diagrams/{logged_in.user.free_diagram_id}/pdp/{-id}/accept"
     )
     assert response.status_code == 200
     assert response.json["success"] is True
@@ -71,7 +71,7 @@ def test_reject(test_user, logged_in, id, pdp):
     db.session.commit()
 
     response = logged_in.post(
-        f"/therapist/diagrams/{logged_in.user.free_diagram_id}/pdp/{-id}/reject"
+        f"/personal/diagrams/{logged_in.user.free_diagram_id}/pdp/{-id}/reject"
     )
     assert response.status_code == 200
     assert response.json["success"] is True
