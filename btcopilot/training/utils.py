@@ -8,7 +8,7 @@ import vedana
 def get_breadcrumbs(current_page=None):
     """Generate breadcrumbs for therapist pages"""
     breadcrumbs = [
-        {"title": "Therapist", "url": url_for("training.therapist_root")},
+        {"title": "Therapist", "url": url_for("training.training_root")},
     ]
 
     if current_page == "audit":

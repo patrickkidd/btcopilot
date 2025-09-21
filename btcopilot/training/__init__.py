@@ -1,1 +1,5 @@
-from .routes import bp as training_bp
+from . import routes
+
+
+def init_app(app):
+    app.register_blueprint(routes.bp)

@@ -85,6 +85,13 @@ def pytest_configure(config):
 #             item.add_marker(skip_marker)
 
 
+@pytest.fixture(autouse=True)
+def e2e(request):
+    if request.node.get_closest_marker("e2e") is not None:
+        if not request.config.getoption("--e2e"):
+            pytest.skip("need --e2e option to run")
+
+
 @pytest.fixture(scope="session", autouse=True)
 def extensions():
     """

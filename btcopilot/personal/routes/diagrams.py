@@ -6,10 +6,9 @@ import vedana
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
-from btcopilot.models import Diagram
+from btcopilot.pro.models import Diagram, AccessRight
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.models.speaker import Speaker
-from btcopilot.models.etc import AccessRight
 
 _log = logging.getLogger(__name__)
 
