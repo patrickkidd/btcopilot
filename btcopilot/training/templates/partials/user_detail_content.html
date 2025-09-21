@@ -1,0 +1,20 @@
+<!-- User Detail Content - Clean Server-Side Rendered Template -->
+
+<!-- User basic info and activity summary -->
+<div class="columns">
+    <div class="column is-6">
+        {% include "partials/user_basic_info.html" with context %}
+    </div>
+    <div class="column is-6">
+        {% include "partials/user_activity_summary.html" with context %}
+    </div>
+</div>
+
+<!-- Diagrams Section -->
+{% include "partials/user_diagrams.html" with context %}
+
+<!-- Discussions Section -->
+{% include "partials/user_discussions.html" with context %}
+
+<!-- Licenses Section -->
+{% include "partials/user_licenses.html" with context %}

@@ -1,0 +1,11 @@
+# docker build -t builder --build-arg ssh_pub_key="$(cat ~/.ssh/id_rsa.pub)" --build-arg ssh_priv_key="$(cat ~/.ssh/id_rsa)" - < Dockerfile.builder 
+# RUN apk add openssh-client
+# ARG ssh_priv_key
+# ARG ssh_pub_key
+# RUN mkdir -p ~/.ssh
+# RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+# RUN echo "$ssh_priv_key" > ~/.ssh/id_rsa && \
+#     chmod 600 ~/.ssh/id_rsa
+# RUN echo "$ssh_pub_key" > ~/.ssh/id_rsa.pub && \
+#     chmod 600 ~/.ssh/id_rsa.pub
+# RUN git clone git@github.com:patrickkidd/vedanaprivate.git

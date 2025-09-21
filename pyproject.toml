@@ -11,15 +11,81 @@ authors = [
     { name="Patrick Stinson", email="patrick@alaskafamilysystems.com" }
 ]
 dependencies = [
+    "bcrypt",
+    "celery==5.5.3",
     "click",
-    "pypdf",
+    "ddtrace",
+    "gunicorn",
+    "flask",
+    "flask-bcrypt",
+    "flask-cli",
+    "flask-graphql",
+    "flask-mail",
+    "flask-sqlalchemy",
+    "flask-wtf",
+    "chromadb",
+    "openai",
+    "psycopg2-binary",
+    "vedana @ git+https://github.com/patrickkidd/vedana.git@release",
+]
+
+[project.optional-dependencies]
+pro = [
+    "pygments",
+    "python-dateutil",
+    "stripe",
+    "alembic",
+    "cachetools",
+    "rich",
+    "sip==6.8.6",
+    "pyqt5==5.15.11",
+    "pyqt5-sip==12.15.0",
+    "pyqt5-qt5==5.15.2",
+]
+
+training = [
+    "assemblyai",
+    "chromadb",
     "langchain",
     "langchain-chroma",
     "langchain-community",
     "langchain-huggingface",
     "langchain-openai",
     "langchain-text-splitters",
+    "nest_asyncio",
+    "pydantic_ai",
+    "pypdf",
 ]
+
+test = [
+    "black",
+    "build",
+    "freezegun",
+    "mock",
+    "playwright",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-playwright",
+    "requests",
+    "snapshottest",
+]
+
+ingestion = [
+    "spacy",
+    "mistralai",
+    "pymupdf4llm",
+]
+
+misc = [
+    "graphene-sqlalchemy",
+]
+
+all = [
+    "btcopilot[pro]",
+    "btcopilot[personal]",
+    "btcopilot[training]",
+]
+
 
 [project.urls]
 repository = "https://github.com/patrickkidd/btcopilot"

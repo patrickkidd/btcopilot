@@ -1,0 +1,52 @@
+<!-- User Licenses Section -->
+<div class="box">
+    <h4 class="title is-5">
+        <span class="icon"><i class="fas fa-key"></i></span>
+        Purchased Licenses
+    </h4>
+    {% if user.licenses %}
+        {% for license in user.licenses %}
+            <div class="box mb-3" style="border: 1px solid #dbdbdb;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <div>
+                        <strong>{{ license.policy.name if license.policy else 'Unknown Policy' }}</strong>
+                        {% if license.policy and license.policy.amount and license.policy.interval %}
+                            <span class="has-text-grey ml-2">${{ license.policy.amount }}/{{ license.policy.interval }}</span>
+                        {% endif %}
+                    </div>
+                    <span class="tag {% if license.active %}is-success{% elif license.canceled %}is-danger{% else %}is-warning{% endif %}">
+                        {% if license.active %}Active{% elif license.canceled %}Canceled{% else %}Inactive{% endif %}
+                    </span>
+                </div>
+                
+                {% if license.days_old() is not none %}
+                    <small class="has-text-grey">{{ license.days_old() }} days old</small>
+                {% endif %}
+                
+                <div>
+                    <strong class="is-size-7">Created:</strong> 
+                    {{ license.created_at.strftime('%Y-%m-%d %H:%M') if license.created_at else 'N/A' }}
+                </div>
+                
+                {% if license.activations %}
+                    <div class="mt-3">
+                        <strong class="is-size-7">Device Activations ({{ license.activations|length }}/{{ license.policy.maxActivations if license.policy else '?' }}):</strong>
+                        {% for activation in license.activations %}
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
+                                <span class="icon is-small"><i class="fas fa-desktop"></i></span>
+                                <span>{{ activation.machine.name if activation.machine else 'Unknown Device' }}</span>
+                                {% if activation.created_at %}
+                                    <small class="has-text-grey">{{ activation.created_at.strftime('%Y-%m-%d') }}</small>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="notification is-light">
+            <p class="has-text-grey">No licenses found</p>
+        </div>
+    {% endif %}
+</div>

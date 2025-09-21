@@ -1,0 +1,165 @@
+{% comment %}
+Simple Extracted Data Display Component (Read-only)
+
+Usage:
+{% include "components/extracted_data_simple.html" with data=extracted_data %}
+
+Parameters:
+- data: The extracted data object containing people, events, deletes
+- show_summary: Boolean, whether to show summary tags (default: true)
+- show_details: Boolean, whether to show full details (default: false)
+{% endcomment %}
+
+{% if show_summary is not defined %}
+    {% set show_summary = true %}
+{% endif %}
+{% if show_details is not defined %}
+    {% set show_details = false %}
+{% endif %}
+
+<div class="extracted-data-simple">
+    {% if data %}
+        {% if show_summary %}
+        <!-- Summary Tags -->
+        <div class="data-summary mb-2">
+            <div class="tags are-small">
+                {% if data.people %}
+                <span class="tag is-success is-light">
+                    <span class="icon is-small"><i class="fas fa-users"></i></span>
+                    <span>{{ data.people|length }} People</span>
+                </span>
+                {% endif %}
+                {% if data.events %}
+                <span class="tag is-info is-light">
+                    <span class="icon is-small"><i class="fas fa-calendar-alt"></i></span>
+                    <span>{{ data.events|length }} Events</span>
+                </span>
+                {% endif %}
+                {% if data.deletes %}
+                <span class="tag is-danger is-light">
+                    <span class="icon is-small"><i class="fas fa-trash"></i></span>
+                    <span>{{ data.deletes|length }} Deletes</span>
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if show_details %}
+        <!-- Detailed Data Display -->
+        <div class="data-details">
+            <!-- People Section -->
+            {% if data.people %}
+            <div class="people-section mb-3">
+                <h6 class="title is-6">
+                    <span class="icon"><i class="fas fa-users"></i></span>
+                    People ({{ data.people|length }})
+                </h6>
+                {% for person in data.people %}
+                <div class="person-item box is-small">
+                    <div class="is-flex is-align-items-center">
+                        <strong>{{ person.name or 'Unnamed' }}</strong>
+                        {% if person.id %}<span class="tag is-light ml-2">ID: {{ person.id }}</span>{% endif %}
+                        {% if person.confidence %}
+                        <span class="tag is-success is-light ml-2">{{ (person.confidence * 100)|round }}%</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Events Section -->
+            {% if data.events %}
+            <div class="events-section mb-3">
+                <h6 class="title is-6">
+                    <span class="icon"><i class="fas fa-calendar-alt"></i></span>
+                    Events ({{ data.events|length }})
+                </h6>
+                {% for event in data.events %}
+                <div class="event-item box is-small">
+                    <div class="event-header mb-2">
+                        <strong>{{ event.description or ('Event #' + event.id|string) }}</strong>
+                        {% if event.id %}<span class="tag is-light ml-2">ID: {{ event.id }}</span>{% endif %}
+                        {% if event.confidence %}
+                        <span class="tag is-info is-light ml-2">{{ (event.confidence * 100)|round }}%</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Variable Indicators -->
+                    <div class="variables-display">
+                        <div class="columns is-mobile is-multiline">
+                            {% if event.symptom %}
+                            <div class="column is-half-mobile is-one-quarter-tablet">
+                                <div class="field">
+                                    <label class="label is-small">Symptom</label>
+                                    <span class="shift-indicator shift-{{ event.symptom.shift }}">
+                                        {{ event.symptom.shift }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if event.anxiety %}
+                            <div class="column is-half-mobile is-one-quarter-tablet">
+                                <div class="field">
+                                    <label class="label is-small">Anxiety</label>
+                                    <span class="shift-indicator shift-{{ event.anxiety.shift }}">
+                                        {{ event.anxiety.shift }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if event.functioning %}
+                            <div class="column is-half-mobile is-one-quarter-tablet">
+                                <div class="field">
+                                    <label class="label is-small">Functioning</label>
+                                    <span class="shift-indicator shift-{{ event.functioning.shift }}">
+                                        {{ event.functioning.shift }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if event.relationship %}
+                            <div class="column is-half-mobile is-one-quarter-tablet">
+                                <div class="field">
+                                    <label class="label is-small">Relationship</label>
+                                    <span class="shift-indicator shift-relationship">
+                                        {{ event.relationship.kind }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Deletes Section -->
+            {% if data.deletes %}
+            <div class="deletes-section">
+                <h6 class="title is-6">
+                    <span class="icon"><i class="fas fa-trash"></i></span>
+                    Items to Delete ({{ data.deletes|length }})
+                </h6>
+                <div class="tags">
+                    {% for delete_id in data.deletes %}
+                    <span class="tag is-danger is-light">ID: {{ delete_id }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% else %}
+    <!-- No Data -->
+    <div class="notification is-light">
+        <span class="icon"><i class="fas fa-info-circle"></i></span>
+        <span>No extracted data available</span>
+    </div>
+    {% endif %}
+</div>

@@ -1,0 +1,124 @@
+<!-- User Diagrams Section -->
+<div class="box">
+    <div class="level">
+        <div class="level-left">
+            <div class="level-item">
+                <h4 class="title is-5">
+                    <span class="icon"><i class="fas fa-project-diagram"></i></span>
+                    Diagrams
+                </h4>
+            </div>
+        </div>
+        <div class="level-right">
+            <div class="level-item">
+                <button class="button is-primary" onclick="createNewDiagram()">
+                    <span class="icon">
+                        <i class="fas fa-plus"></i>
+                    </span>
+                    <span>New Diagram</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    {% if user.diagrams %}
+        {% for diagram in user.diagrams %}
+            <div class="box mb-3">
+                <div class="media">
+                    <div class="media-left">
+                        <span class="icon is-large has-text-primary">
+                            <i class="fas fa-project-diagram fa-2x"></i>
+                        </span>
+                    </div>
+                    <div class="media-content">
+                        <span class="has-text-grey is-size-7">
+                            ID: {{ diagram.id|string }} {% if diagram.id == user.free_diagram_id %} (Free Diagram) {% endif %}
+                        </span>
+                        <p class="title is-6">
+                            {{ diagram.name or '' }}
+                        </p>
+                        {% if diagram.description %}
+                            <p class="subtitle is-7 mb-2">{{ diagram.description }}</p>
+                        {% endif %}
+                        <div class="tags">
+                            {% if diagram.created_at %}
+                                <span class="tag is-light">{{ diagram.created_at.strftime('%Y-%m-%d') }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        {% if diagram.discussions %}
+                            <div class="mt-3">
+                                <strong class="is-size-7">Discussions ({{ diagram.discussions|length }}):</strong>
+                                <div class="mt-2">
+                                    {% for discussion in diagram.discussions %}
+                                        <div class="mb-2">
+                                            <a href="/therapist/discussions/{{ discussion.id }}/audit" class="button is-info is-fullwidth">
+                                                <span class="icon">
+                                                    <i class="fas fa-comments"></i>
+                                                </span>
+                                                <span>Discussion {{ discussion.id }}</span>
+                                                {% if discussion.summary %}
+                                                    <span class="is-size-7 ml-2">- {{ discussion.summary[:50] }}{% if discussion.summary|length > 50 %}...{% endif %}</span>
+                                                {% endif %}
+                                            </a>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="mt-3">
+                                <span class="has-text-grey is-size-7">No discussions</span>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Import Audio/JSON for this diagram -->
+                        <div class="columns is-variable is-1 mt-3">
+                            <div class="column">
+                                <div class="box has-text-centered" 
+                                     id="audio-drop-zone-diagram-{{ diagram.id }}"
+                                     style="border: 1px dashed #dbdbdb; padding: 1rem; transition: all 0.2s ease; cursor: pointer;"
+                                     onclick="document.getElementById('audio-file-diagram-{{ diagram.id }}').click()">
+                                    <input type="file" id="audio-file-diagram-{{ diagram.id }}" style="display: none;" 
+                                           accept=".mp3,.wav,.m4a,.mp4,.flac,.ogg,.webm,.aac" 
+                                           onchange="handleAudioFileSelect(event, {{ user.id }}, {{ diagram.id }})">
+                                    <p class="is-size-7 has-text-grey">
+                                        <span class="icon is-small"><i class="fas fa-microphone"></i></span>
+                                        Drop audio file
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="column">
+                                <div class="box has-text-centered" 
+                                     id="json-drop-zone-diagram-{{ diagram.id }}"
+                                     style="border: 1px dashed #3273dc; padding: 1rem; background: #f8fbff; transition: all 0.2s ease; cursor: pointer;"
+                                     onclick="document.getElementById('json-file-diagram-{{ diagram.id }}').click()">
+                                    <input type="file" id="json-file-diagram-{{ diagram.id }}" style="display: none;" 
+                                           accept=".json" 
+                                           onchange="handleJsonFileSelect(event, {{ user.id }}, {{ diagram.id }})">
+                                    <p class="is-size-7 has-text-primary">
+                                        <span class="icon is-small"><i class="fas fa-file-code"></i></span>
+                                        Drop JSON file
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="media-right">
+                        {% if current_user.has_role(vedana.ROLE_ADMIN) %}
+                            <button class="button is-small is-danger" 
+                                    onclick="deleteDiagram({{ diagram.id }}, '{{ diagram.name or 'Diagram ' + diagram.id|string }}')">
+                                <span class="icon is-small">
+                                    <i class="fas fa-trash"></i>
+                                </span>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="notification is-light">
+            <p class="has-text-grey">No diagrams found</p>
+        </div>
+    {% endif %}
+</div>
