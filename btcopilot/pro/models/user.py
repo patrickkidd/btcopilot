@@ -140,7 +140,7 @@ class User(db.Model, ModelMixin):
             return False
 
     def set_free_diagram(self, bdata=None, updated_at=None, _commit=False):
-        from btcopilot.models import Diagram
+        from btcopilot.pro.models import Diagram
 
         if bdata is None:
             bdata = pickle.dumps({})

@@ -1,8 +1,12 @@
 from flask import Blueprint, jsonify
 
 from btcopilot import auth
+from .discussions import bp as discussions_bp
+from .diagrams import diagrams_bp
 
 bp = Blueprint("personal", __name__, url_prefix="/personal")
+bp.register_blueprint(discussions_bp)
+bp.register_blueprint(diagrams_bp)
 
 
 @bp.route("/pdp", methods=["GET"])
@@ -21,3 +25,7 @@ def pdp():
         return jsonify(database.pdp.model_dump())
     else:
         return jsonify({})
+
+
+def init_app(app):
+    app.register_blueprint(bp)

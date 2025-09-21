@@ -24,7 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Testing
 - **Run all tests**: `pytest -vv tests` (from pipenv shell)
 - **Test with async support**: Tests use `--asyncio-mode=auto` (configured in btcopilot/tests/pytest.ini)
-- **Specific test directories**: `tests/` (main), `tests/therapist/` (therapist module)
+- **Specific test directories**: `tests/` (main), `tests/training/` (training module)
 - Whenever I paste a stack trace that means a test did not catch it, so add a test to reproduce that error if one did not already exist.
 
 ### Database Management
@@ -37,16 +37,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Flask Application Factory**: `btcopilot/app.py:create_app()` - main app initialization with extensions, error handlers, and module registration
 - **Main Package**: `btcopilot/__init__.py` - imports and exposes core components
 - **API Endpoints**:
-  - `btcopilot/v1.py` - REST API using pickle protocol over HTTPS
-  - `btcopilot/therapist/routes.py` - REST API for personal mobile app using JSON
+  - `btcopilot/pro/routes.py` - REST API using pickle protocol over HTTPS
+  - `btcopilot/personal/routes.py` - REST API for personal mobile app using JSON
 - **Management CLI**:
   `manage.py` - Flask CLI commands and utilities
   `btcopilot/commands.py` - click commands management interface.
 
 ### Key Modules
-- **Models** (`btcopilot/models/`): SQLAlchemy models including User, Diagram, License, Session, Statement/Discussion
-- **Therapist Module** (`btcopilot/therapist/`): Personal mobile app API with AI-powered data extraction from discussions for four variables; symptom, anxiety, relationship, functioning.
-  - *JSON-BASED data schema*: `btcopilot/therapist/database.py`
+- **Pro** (`btcopilot/pro/models/`): Pro desktop app, including SQLAlchemy models User, Diagram, License, Session, Statement/Discussion
+- **Personal** (`btcopilot/personal/`): Personal mobile app API with AI-powered data extraction from discussions for four variables; symptom, anxiety, relationship, functioning.
+  - *JSON-BASED data schema*: `btcopilot/personal/database.py`
+- **Training** (`btcopilot/training`): Domain-expert human feedback system for fine-tuning AI model for the personal app.
 - **Extensions** (`btcopilot/extensions/`): Flask extensions setup (database, LLM, chroma vector store)
 - **Authentication**: `btcopilot/auth.py` - user authentication with current_user
 

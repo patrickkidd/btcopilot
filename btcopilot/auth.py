@@ -17,13 +17,13 @@ def is_pro_app_request():
 
 
 def is_personal_app_request():
-    return request.path.startswith("/therapist") and (
+    return request.path.startswith("/personal") and (
         request.is_json or request.method in ["DELETE", "PUT", "PATCH"]
     )
 
 
 def is_training_app_request() -> bool:
-    return request.path.startswith("/training/")
+    return request.path.startswith("/training")
 
 
 def _set_tracing_tags(user):
@@ -56,19 +56,17 @@ def current_user() -> Union[User, None]:
     """
     Get the current authenticated user (possibly cached).
 
-    For desktop app (/v1/*): Returns user if signature is valid
-    For therapist app (/therapist/*): Returns user if session is valid
+    For pro/personal apps (/v1/*, /personal/*): Returns user if signature is valid
+    For training app (/training/*): Returns user if session is valid
     """
     if "current_user" in g:
         return g.current_user
 
-    # Desktop app authentication (/v1/* endpoints)
-    if is_pro_app_request():
-        return _authenticate_desktop_app()
+    if is_pro_app_request() or is_personal_app_request():
+        return _authenticate_pro_personal_apps()
 
-    # Therapist web app authentication (/therapist/* endpoints)
-    elif request.path.startswith("/therapist/"):
-        return _authenticate_personal_app()
+    elif is_training_app_request():
+        return _authenticate_training_app()
 
     # Other requests (root, static, etc.) - no authentication required
     return None
@@ -179,7 +177,7 @@ def minimum_role(role):
     return decorator
 
 
-def _authenticate_desktop_app() -> User | None:
+def _authenticate_pro_personal_apps() -> User | None:
     """Handle desktop app authentication using FD-Authentication header.
 
     Desktop app authentication is completely controlled by signed headers.
@@ -223,8 +221,8 @@ def _authenticate_desktop_app() -> User | None:
     return user
 
 
-def _authenticate_personal_app() -> User | None:
-    """Authenticate user for personal app (/therapist/*) - supports both session and signature auth."""
+def _authenticate_training_app() -> User | None:
+    """Authenticate user for personal app (/training/*) - supports both session and signature auth."""
     # First, try session-based authentication (for web users)
     user_id = session.get("user_id")
     if user_id:
@@ -236,14 +234,6 @@ def _authenticate_personal_app() -> User | None:
         else:
             # Invalid session - clear it
             session.clear()
-
-    # If no valid session, try signature-based authentication (for desktop app)
-    auth_header = request.headers.get("FD-Authentication")
-    if auth_header:
-        # Use the existing desktop authentication logic
-        user = _authenticate_desktop_app()
-        if user:
-            return user
 
     # If both methods fail, return unauthorized
     return _handle_unauthorized(401)
