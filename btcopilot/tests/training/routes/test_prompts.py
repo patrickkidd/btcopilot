@@ -44,11 +44,11 @@ def discussion(test_user):
 @pytest.mark.parametrize(
     "endpoint,method",
     [
-        ("/therapist/prompts/defaults", "GET"),
-        ("/therapist/prompts/1", "GET"),
-        ("/therapist/prompts/1", "POST"),
-        ("/therapist/prompts/", "GET"),
-        ("/therapist/prompts/test", "POST"),
+        ("/training/prompts/defaults", "GET"),
+        ("/training/prompts/1", "GET"),
+        ("/training/prompts/1", "POST"),
+        ("/training/prompts/", "GET"),
+        ("/training/prompts/test", "POST"),
     ],
 )
 def test_requires_admin_or_auditor(subscriber, endpoint, method, caplog):
@@ -76,7 +76,7 @@ def test_default_prompts(auditor):
             with patch(
                 "btcopilot.personal.prompts.DATA_MODEL_DEFINITIONS", "test_data_model"
             ):
-                response = auditor.get("/therapist/prompts/defaults")
+                response = auditor.get("/training/prompts/defaults")
                 assert response.status_code == 200
                 assert response.json is not None
                 assert "ROLE_COACH_NOT_THERAPIST" in response.json
@@ -85,7 +85,7 @@ def test_default_prompts(auditor):
 def test_get_message_prompts(auditor, discussion):
     """Test getting custom prompts for a message"""
     statement = discussion.statements[0]
-    response = auditor.get(f"/therapist/prompts/{statement.id}")
+    response = auditor.get(f"/training/prompts/{statement.id}")
     assert response.status_code == 200
     assert "custom_prompts" in response.json
 
@@ -96,7 +96,7 @@ def test_set_message_prompts(auditor, discussion):
     custom_prompts = {"custom_prompt": "test prompt"}
 
     response = auditor.post(
-        f"/therapist/prompts/{statement.id}",
+        f"/training/prompts/{statement.id}",
         json={"custom_prompts": custom_prompts},
     )
     assert response.status_code == 200
@@ -105,14 +105,14 @@ def test_set_message_prompts(auditor, discussion):
 
 def test_message_prompts_not_found(auditor):
     """Test getting prompts for non-existent message"""
-    response = auditor.get("/therapist/prompts/99999")
+    response = auditor.get("/training/prompts/99999")
     assert response.status_code == 404
 
 
 def test_index_page(admin, test_user):
     """Test access to prompt lab page (requires admin)"""
     # This tests the web page endpoint
-    response = admin.get("/therapist/prompts/")
+    response = admin.get("/training/prompts/")
     assert response.status_code == 200
 
 
@@ -128,7 +128,7 @@ def test_test_prompts_endpoint(admin, discussion):
         mock_ask.return_value = mock_response
 
         response = admin.post(
-            "/therapist/prompts/test",
+            "/training/prompts/test",
             json={
                 "discussion_id": discussion.id,
                 "message": "Test message",

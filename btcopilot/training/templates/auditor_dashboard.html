@@ -127,7 +127,7 @@ async function handleAudioFileSelect(event, userId, diagramId) {
         `;
         
         // Get API key for AssemblyAI
-        const keyResponse = await fetch('/therapist/discussions/upload_token');
+        const keyResponse = await fetch('/training/discussions/upload_token');
         const keyData = await keyResponse.json();
         
         if (!keyData.success) {
@@ -209,7 +209,7 @@ async function handleAudioFileSelect(event, userId, diagramId) {
         }
         
         // Create discussion on server
-        const createResponse = await fetch(`/therapist/discussions/transcript?title=${encodeURIComponent(file.name)}&diagram_id=${diagramId}`, {
+        const createResponse = await fetch(`/training/discussions/transcript?title=${encodeURIComponent(file.name)}&diagram_id=${diagramId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(transcriptData)
@@ -296,7 +296,7 @@ async function handleJsonDropInline(event, diagramId) {
         }
         
         // Import the discussion
-        const response = await fetch('/therapist/discussions/import', {
+        const response = await fetch('/training/discussions/import', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

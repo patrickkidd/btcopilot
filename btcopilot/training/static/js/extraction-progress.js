@@ -49,7 +49,7 @@ class ExtractionProgress {
     
     async checkProgress() {
         try {
-            const response = await fetch(`/therapist/discussions/${this.discussionId}/progress`);
+            const response = await fetch(`/training/discussions/${this.discussionId}/progress`);
             
             if (!response.ok) {
                 console.error('Failed to fetch extraction progress:', response.status);

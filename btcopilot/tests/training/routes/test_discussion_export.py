@@ -8,7 +8,7 @@ from btcopilot.personal.models import Discussion, Statement, SpeakerType
 
 def test_export_success(auditor, discussion):
     """Test successful discussion export"""
-    response = auditor.get(f"/therapist/discussions/{discussion.id}/export")
+    response = auditor.get(f"/training/discussions/{discussion.id}/export")
     assert response.status_code == 200
 
     # Check headers
@@ -64,7 +64,7 @@ def test_export_with_statements(auditor, discussion):
     db.session.add_all([subject_stmt, expert_stmt])
     db.session.commit()
 
-    response = auditor.get(f"/therapist/discussions/{discussion.id}/export")
+    response = auditor.get(f"/training/discussions/{discussion.id}/export")
     assert response.status_code == 200
 
     data = json.loads(response.data)
@@ -90,7 +90,7 @@ def test_export_with_statements(auditor, discussion):
 def test_export_permission_denied(flask_app, discussion, test_user_2):
     """Test that users without auditor role cannot access export endpoint"""
     with flask_app.test_client(user=test_user_2) as client:
-        response = client.get(f"/therapist/discussions/{discussion.id}/export")
+        response = client.get(f"/training/discussions/{discussion.id}/export")
         # Users without ROLE_AUDITOR get redirected to login
         assert response.status_code == 302
         assert "/auth/login" in response.headers.get("Location", "")
@@ -98,7 +98,7 @@ def test_export_permission_denied(flask_app, discussion, test_user_2):
 
 def test_export_auditor_access(auditor, discussion):
     """Test that auditors can export any discussion"""
-    response = auditor.get(f"/therapist/discussions/{discussion.id}/export")
+    response = auditor.get(f"/training/discussions/{discussion.id}/export")
     assert response.status_code == 200
 
     data = json.loads(response.data)
@@ -107,13 +107,13 @@ def test_export_auditor_access(auditor, discussion):
 
 def test_export_not_found(auditor):
     """Test 404 for non-existent discussion"""
-    response = auditor.get("/therapist/discussions/99999/export")
+    response = auditor.get("/training/discussions/99999/export")
     assert response.status_code == 404
 
 
 def test_export_json_format(auditor, discussion):
     """Test that exported JSON is properly formatted"""
-    response = auditor.get(f"/therapist/discussions/{discussion.id}/export")
+    response = auditor.get(f"/training/discussions/{discussion.id}/export")
     assert response.status_code == 200
 
     # Should be valid JSON
@@ -139,7 +139,7 @@ def test_export_empty_statements(auditor, test_user):
     db.session.add(discussion)
     db.session.commit()
 
-    response = auditor.get(f"/therapist/discussions/{discussion.id}/export")
+    response = auditor.get(f"/training/discussions/{discussion.id}/export")
     assert response.status_code == 200
 
     data = json.loads(response.data)
@@ -149,7 +149,7 @@ def test_export_empty_statements(auditor, test_user):
 
 def test_export_filename_format(auditor, discussion):
     """Test that export filename follows expected format"""
-    response = auditor.get(f"/therapist/discussions/{discussion.id}/export")
+    response = auditor.get(f"/training/discussions/{discussion.id}/export")
     assert response.status_code == 200
 
     content_disposition = response.headers["Content-Disposition"]
@@ -173,7 +173,7 @@ def test_export_unicode_handling(auditor, discussion):
     db.session.add(unicode_stmt)
     db.session.commit()
 
-    response = auditor.get(f"/therapist/discussions/{discussion.id}/export")
+    response = auditor.get(f"/training/discussions/{discussion.id}/export")
     assert response.status_code == 200
 
     # Should be valid JSON with unicode characters

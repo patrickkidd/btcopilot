@@ -2592,7 +2592,7 @@ ASSEMBLY_AI_TRANSCRIPT_JSON = {
 
 def test_create_discussion_from_transcript_success(flask_app, auditor):
     response = auditor.post(
-        f"/therapist/discussions/transcript?diagram_id={auditor.user.free_diagram_id}",
+        f"/training/discussions/transcript?diagram_id={auditor.user.free_diagram_id}",
         json=ASSEMBLY_AI_TRANSCRIPT_JSON,
     )
 

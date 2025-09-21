@@ -416,7 +416,7 @@
             }
             
             try {
-                const response = await fetch(`/therapist/prompts/thread/${threadId}`);
+                const response = await fetch(`/training/prompts/thread/${threadId}`);
                 const data = await response.json();
                 
                 const container = document.getElementById('messages-container');
@@ -457,7 +457,7 @@
             document.getElementById('results').classList.remove('show');
             
             try {
-                const response = await fetch('/therapist/prompts/test', {
+                const response = await fetch('/training/prompts/test', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -560,7 +560,7 @@
         
         async function loadArtifact(statementId) {
             try {
-                const response = await fetch(`/therapist/prompts/load-artifact/${statementId}`);
+                const response = await fetch(`/training/prompts/load-artifact/${statementId}`);
                 const artifact = await response.json();
                 
                 if (response.ok) {
@@ -701,7 +701,7 @@
             const prompts = getCurrentPrompts();
             
             try {
-                const response = await fetch('/therapist/prompts/suggest-improvements', {
+                const response = await fetch('/training/prompts/suggest-improvements', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -738,7 +738,7 @@
             const prompts = getCurrentPrompts();
             
             try {
-                const response = await fetch('/therapist/prompts/test-extraction', {
+                const response = await fetch('/training/prompts/test-extraction', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -819,7 +819,7 @@
             sendButton.disabled = true;
             
             try {
-                const response = await fetch('/therapist/prompts/coach-chat', {
+                const response = await fetch('/training/prompts/coach-chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

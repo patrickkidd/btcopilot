@@ -6,7 +6,7 @@ from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerTyp
 def test_progress_endpoint(auditor, discussion):
     """Test the extraction progress endpoint returns correct counts"""
     # Get initial progress
-    response = auditor.get(f"/therapist/discussions/{discussion.id}/progress")
+    response = auditor.get(f"/training/discussions/{discussion.id}/progress")
     assert response.status_code == 200
 
     data = response.json
@@ -45,7 +45,7 @@ def test_progress_with_processed_statements(auditor, discussion):
         db.session.add(statement)
     db.session.commit()
 
-    response = auditor.get(f"/therapist/discussions/{discussion.id}/progress")
+    response = auditor.get(f"/training/discussions/{discussion.id}/progress")
     assert response.status_code == 200
 
     data = response.json
@@ -63,7 +63,7 @@ def test_progress_all_processed(auditor, discussion):
             statement.pdp_deltas = {"events": [], "people": []}
     db.session.commit()
 
-    response = auditor.get(f"/therapist/discussions/{discussion.id}/progress")
+    response = auditor.get(f"/training/discussions/{discussion.id}/progress")
     assert response.status_code == 200
 
     data = response.json
@@ -96,7 +96,7 @@ def test_progress_no_subject_statements(auditor, test_user):
     db.session.add(statement)
     db.session.commit()
 
-    response = auditor.get(f"/therapist/discussions/{discussion.id}/progress")
+    response = auditor.get(f"/training/discussions/{discussion.id}/progress")
     assert response.status_code == 200
 
     data = response.json
@@ -110,7 +110,7 @@ def test_progress_permission_denied(flask_app, discussion, test_user_2):
     """Test that users can only see progress for their own discussions"""
     # Try to access another user's discussion progress
     with flask_app.test_client(user=test_user_2) as client:
-        response = client.get(f"/therapist/discussions/{discussion.id}/progress")
+        response = client.get(f"/training/discussions/{discussion.id}/progress")
         # GET requests are web requests, expect redirect to login
         assert response.status_code == 302
         assert "/auth/login" in response.headers.get("Location", "")
@@ -119,7 +119,7 @@ def test_progress_permission_denied(flask_app, discussion, test_user_2):
 def test_progress_auditor_access(auditor, discussion):
     """Test that auditors can see progress for any discussion"""
     # Auditor should be able to see any user's discussion progress
-    response = auditor.get(f"/therapist/discussions/{discussion.id}/progress")
+    response = auditor.get(f"/training/discussions/{discussion.id}/progress")
     assert response.status_code == 200
 
     data = response.json
@@ -129,7 +129,7 @@ def test_progress_auditor_access(auditor, discussion):
 
 def test_progress_nonexistent_discussion(auditor):
     """Test 404 for non-existent discussion"""
-    response = auditor.get("/therapist/discussions/99999/progress")
+    response = auditor.get("/training/discussions/99999/progress")
     assert response.status_code == 404
 
 
@@ -155,7 +155,7 @@ def test_progress_empty_statements(auditor, discussion):
     db.session.add_all([empty_statement, none_statement])
     db.session.commit()
 
-    response = auditor.get(f"/therapist/discussions/{discussion.id}/progress")
+    response = auditor.get(f"/training/discussions/{discussion.id}/progress")
     assert response.status_code == 200
 
     data = response.json

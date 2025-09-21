@@ -23,7 +23,7 @@ def feedback(discussion):
 
 
 def test_admin_feedback(admin):
-    response = admin.get("/therapist/feedback")
+    response = admin.get("/training/feedback")
     assert response.status_code == 200
 
 
@@ -31,7 +31,7 @@ def test_create(auditor, discussion):
     statement = discussion.statements[0]
     with patch("btcopilot.training.sse.sse_manager.publish"):
         response = auditor.post(
-            "/therapist/feedback/",
+            "/training/feedback/",
             json={
                 "message_id": statement.id,
                 "feedback_type": "extraction",
@@ -45,7 +45,7 @@ def test_create(auditor, discussion):
 
 def test_create_missing_fields(auditor):
     response = auditor.post(
-        "/therapist/feedback/",
+        "/training/feedback/",
         json={"message_id": 1},  # Missing feedback_type
     )
     assert response.status_code == 400
@@ -55,7 +55,7 @@ def test_create_missing_fields(auditor):
 def test_create_duplicate(auditor, feedback):
     statement = feedback.statement
     response = auditor.post(
-        "/therapist/feedback/",
+        "/training/feedback/",
         json={
             "message_id": statement.id,
             "feedback_type": "extraction",
@@ -68,19 +68,19 @@ def test_create_duplicate(auditor, feedback):
 
 def test_delete(auditor, feedback):
     with patch("btcopilot.training.sse.sse_manager.publish"):
-        response = auditor.delete(f"/therapist/feedback/{feedback.id}")
+        response = auditor.delete(f"/training/feedback/{feedback.id}")
         # Should either succeed (200) or not be found (404)
         assert response.status_code in [200, 404]
 
 
 def test_delete_not_found(auditor):
-    response = auditor.delete("/therapist/feedback/99999")
+    response = auditor.delete("/training/feedback/99999")
     assert response.status_code == 404
     assert "not found" in response.json["error"]
 
 
 def test_admin_download(admin):
-    response = admin.get("/therapist/feedback/download")
+    response = admin.get("/training/feedback/download")
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "application/json"
     assert "attachment" in response.headers["Content-Disposition"]

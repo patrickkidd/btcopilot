@@ -211,7 +211,7 @@ def test_import_discussion_from_json_success(auditor):
     export_data = create_sample_discussion_fixture()
 
     response = auditor.post(
-        f"/therapist/discussions/import?diagram_id={auditor.user.free_diagram_id}",
+        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
         json=export_data,
     )
 
@@ -263,7 +263,7 @@ def test_import_discussion_preserves_person_mapping(auditor):
     export_data = create_person_mapping_fixture()
 
     response = auditor.post(
-        f"/therapist/discussions/import?diagram_id={auditor.user.free_diagram_id}",
+        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
         json=export_data,
     )
 
@@ -279,7 +279,7 @@ def test_import_discussion_requires_auditor_role(logged_in):
     export_data = {"id": 1, "summary": "Test", "statements": []}
 
     response = logged_in.post(
-        f"/therapist/discussions/import?diagram_id={logged_in.user.free_diagram_id}",
+        f"/training/discussions/import?diagram_id={logged_in.user.free_diagram_id}",
         json=export_data,
     )
 
@@ -292,7 +292,7 @@ def test_import_discussion_to_current_user_free_diagram(auditor):
     export_data = {"id": 1, "summary": "Test", "statements": []}
 
     response = auditor.post(
-        "/therapist/discussions/import",
+        "/training/discussions/import",
         json=export_data,
     )
 
@@ -307,7 +307,7 @@ def test_import_discussion_validates_diagram_exists(auditor):
     export_data = {"id": 1, "summary": "Test", "statements": []}
 
     response = auditor.post(
-        "/therapist/discussions/import?diagram_id=99999",
+        "/training/discussions/import?diagram_id=99999",
         json=export_data,  # Non-existent diagram
     )
 
@@ -321,7 +321,7 @@ def test_import_discussion_handles_malformed_json(auditor):
     export_data = {"not_a_discussion": "invalid"}
 
     response = auditor.post(
-        f"/therapist/discussions/import?diagram_id={auditor.user.free_diagram_id}",
+        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
         json=export_data,
     )
 
@@ -346,7 +346,7 @@ def test_import_discussion_without_speakers(auditor):
     }
 
     response = auditor.post(
-        f"/therapist/discussions/import?diagram_id={auditor.user.free_diagram_id}",
+        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
         json=export_data,
     )
 
@@ -363,7 +363,7 @@ def test_import_discussion_complex_pdp_deltas(auditor):
     export_data = create_complex_pdp_fixture()
 
     response = auditor.post(
-        f"/therapist/discussions/import?diagram_id={auditor.user.free_diagram_id}",
+        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
         json=export_data,
     )
 
@@ -396,7 +396,7 @@ def test_import_discussion_handles_duplicate_speaker_ids(auditor):
     }
 
     response = auditor.post(
-        f"/therapist/discussions/import?diagram_id={auditor.user.free_diagram_id}",
+        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
         json=export_data,
     )
 
@@ -434,7 +434,7 @@ def test_import_discussion_order_fallback(auditor):
     }
 
     response = auditor.post(
-        f"/therapist/discussions/import?diagram_id={auditor.user.free_diagram_id}",
+        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
         json=export_data,
     )
 
@@ -457,7 +457,7 @@ def test_import_discussion_preserves_pdp_deltas(auditor):
     export_data = create_complex_pdp_discussion_fixture()
 
     response = auditor.post(
-        f"/therapist/discussions/import?diagram_id={auditor.user.free_diagram_id}",
+        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
         json=export_data,
     )
 
@@ -542,7 +542,7 @@ def test_import_discussion_handles_null_pdp_deltas(auditor):
     }
 
     response = auditor.post(
-        f"/therapist/discussions/import?diagram_id={auditor.user.free_diagram_id}",
+        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
         json=json_data,
     )
 
@@ -593,7 +593,7 @@ def test_import_discussion_no_extracting_when_no_processing_needed(auditor):
     }
 
     response = auditor.post(
-        f"/therapist/discussions/import?diagram_id={auditor.user.free_diagram_id}",
+        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
         json=json_data,
     )
 

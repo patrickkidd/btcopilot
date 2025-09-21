@@ -18,7 +18,7 @@ def test_delete_diagram_with_discussions_admin(admin, diagram_with_full_data):
     assert AccessRight.query.count() == 1
 
     # Delete the diagram
-    response = admin.delete(f"/therapist/diagrams/{diagram.id}")
+    response = admin.delete(f"/training/diagrams/{diagram.id}")
     assert response.status_code == 200
     assert response.json["success"] is True
 
@@ -41,7 +41,7 @@ def test_delete_diagram_owner_without_discussions(logged_in, simple_diagram):
     )  # free_diagram + our diagram
 
     # Delete the diagram
-    response = logged_in.delete(f"/therapist/diagrams/{diagram.id}")
+    response = logged_in.delete(f"/training/diagrams/{diagram.id}")
     assert response.status_code == 200
     assert response.json["success"] is True
 
@@ -61,7 +61,7 @@ def test_delete_diagram_owner_with_discussions_denied(logged_in, discussion):
     assert Discussion.query.count() == 1
 
     # Try to delete the diagram
-    response = logged_in.delete(f"/therapist/diagrams/{diagram_id}")
+    response = logged_in.delete(f"/training/diagrams/{diagram_id}")
     assert response.status_code == 400
     assert "Only admins can delete diagrams with discussions" in response.json["error"]
 
@@ -90,7 +90,7 @@ def test_delete_diagram_unauthorized(logged_in, test_user_2):
     db.session.commit()
 
     # Try to delete as logged_in user
-    response = logged_in.delete(f"/therapist/diagrams/{diagram.id}")
+    response = logged_in.delete(f"/training/diagrams/{diagram.id}")
     assert response.status_code == 403
     assert response.json["error"] == "Access denied"
 
@@ -100,7 +100,7 @@ def test_delete_diagram_unauthorized(logged_in, test_user_2):
 
 def test_delete_diagram_not_found(admin):
     """Test 404 for non-existent diagram"""
-    response = admin.delete("/therapist/diagrams/99999")
+    response = admin.delete("/training/diagrams/99999")
     assert response.status_code == 404
     assert response.json["error"] == "Diagram not found"
 
@@ -189,7 +189,7 @@ def test_delete_diagram_cascade_order(admin):
     )
 
     # Delete diagram - this should cascade properly
-    response = admin.delete(f"/therapist/diagrams/{diagram.id}")
+    response = admin.delete(f"/training/diagrams/{diagram.id}")
     assert response.status_code == 200
     assert response.json["success"] is True
 

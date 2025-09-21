@@ -1132,7 +1132,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         
         // Delete feedback without confirmation (used internally after clearCorrections confirmation)
         deleteFeedbackDirect(feedbackId, feedbackType, messageId) {
-            fetch('/therapist/feedback/' + feedbackId, {
+            fetch('/training/feedback/' + feedbackId, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1537,7 +1537,7 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
         
         // Quick approval function
         approveFeedback(feedbackId) {
-            fetch('/therapist/admin/quick-approve', {
+            fetch('/training/admin/quick-approve', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1562,7 +1562,7 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
         
         // Approve statement extraction function
         approveStatement(statementId) {
-            fetch('/therapist/admin/approve-statement', {
+            fetch('/training/admin/approve-statement', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1587,7 +1587,7 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
         
         // Unapprove feedback function
         unapproveFeedback(feedbackId) {
-            fetch('/therapist/admin/unapprove-feedback', {
+            fetch('/training/admin/unapprove-feedback', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1612,7 +1612,7 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
         
         // Unapprove statement extraction function  
         unapproveStatement(statementId) {
-            fetch('/therapist/admin/unapprove-statement', {
+            fetch('/training/admin/unapprove-statement', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1845,7 +1845,7 @@ function toggleCumulativeSection(messageId) {
 }
 
 function submitFeedback(messageId, type, thumbsDown, comment) {
-    fetch('/therapist/feedback', {
+    fetch('/training/feedback', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1880,7 +1880,7 @@ function autoSaveExtractionFeedback(messageId, editedData) {
         return Promise.reject(new Error('Invalid message ID'));
     }
     
-    return fetch('/therapist/feedback', {
+    return fetch('/training/feedback', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1922,7 +1922,7 @@ function submitExtractionFeedback(messageId, thumbsDown, editedData) {
     const commentEl = document.getElementById('extraction-comment-' + messageId);
     const comment = commentEl ? commentEl.value : null;
     
-    fetch('/therapist/feedback', {
+    fetch('/training/feedback', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1955,7 +1955,7 @@ function deleteFeedback(feedbackId, feedbackType, messageId) {
         return;
     }
     
-    fetch('/therapist/feedback/' + feedbackId, {
+    fetch('/training/feedback/' + feedbackId, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
@@ -2010,7 +2010,7 @@ if (!document.querySelector('link[href*="font-awesome"]')) {
 // Initialize default prompts on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Fetch default prompts from the server
-    fetch('/therapist/prompts/defaults')
+    fetch('/training/prompts/defaults')
         .then(response => response.json())
         .then(data => {
             defaultPrompts = data;
@@ -2031,7 +2031,7 @@ window.openPromptEditor = function(messageId) {
     currentPromptMessageId = messageId;
     
     // Fetch any existing custom prompts for this message
-    fetch(`/therapist/prompts/${messageId}`)
+    fetch(`/training/prompts/${messageId}`)
         .then(response => response.json())
         .then(data => {
             currentCustomPrompts = data.custom_prompts || {};
@@ -2048,7 +2048,7 @@ window.openPromptEditor = function(messageId) {
 
 window.viewPromptDiff = function(messageId) {
     // Fetch the custom prompts for this message and show diff
-    fetch(`/therapist/prompts/${messageId}`)
+    fetch(`/training/prompts/${messageId}`)
         .then(response => response.json())
         .then(data => {
             renderPromptDiff(data.custom_prompts || {});
@@ -2263,7 +2263,7 @@ function saveCustomPrompts() {
     });
     
     // Save to server
-    fetch(`/therapist/prompts/${currentPromptMessageId}`, {
+    fetch(`/training/prompts/${currentPromptMessageId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -2778,7 +2778,7 @@ function updateSpeakerType(speakerId) {
     const select = document.getElementById(`speaker-type-${speakerId}`);
     const speakerType = select.value;
     
-    fetch(`/therapist/speakers/${speakerId}`, {
+    fetch(`/training/speakers/${speakerId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -3181,7 +3181,7 @@ Continue?`;
         extractionBtn.classList.add('is-loading');
         extractionBtn.querySelector('span:last-child').textContent = 'Triggering...';
         
-        fetch(`/therapist/discussions/${discussionId}/extract`, {
+        fetch(`/training/discussions/${discussionId}/extract`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -3223,7 +3223,7 @@ This will:
 Continue?`;
 
     if (confirm(message)) {
-        fetch(`/therapist/discussions/${discussionId}/clear-extracted`, {
+        fetch(`/training/discussions/${discussionId}/clear-extracted`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -3256,7 +3256,7 @@ function startProgressPolling(discussionId) {
     
     // Poll every 2 seconds
     progressInterval = setInterval(() => {
-        fetch(`/therapist/discussions/${discussionId}/progress`)
+        fetch(`/training/discussions/${discussionId}/progress`)
             .then(response => response.json())
             .then(data => {
                 updateProgressDisplay(data);
@@ -3361,7 +3361,7 @@ function toggleApproval(type, id) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Updating...';
     
-    fetch('/therapist/admin/approve', {
+    fetch('/training/admin/approve', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -3477,7 +3477,7 @@ function exportTestCases() {
     btn.classList.add('is-loading');
     btn.querySelector('span:last-child').textContent = 'Exporting...';
     
-    fetch('/therapist/admin/export-test-cases', {
+    fetch('/training/admin/export-test-cases', {
         method: 'POST'
     })
     .then(response => response.json())

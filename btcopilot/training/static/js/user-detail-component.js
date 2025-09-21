@@ -7,7 +7,7 @@
 // User Detail Modal Functions
 function showUserDetailModal(userId) {
     // Load user details as HTML
-    fetch(`/therapist/admin/users/${userId}/detail-html`, {
+    fetch(`/training/admin/users/${userId}/detail-html`, {
         credentials: 'same-origin'
     })
         .then(response => {
@@ -114,7 +114,7 @@ function saveUserRoles() {
     saveButton.innerHTML = '<span class="icon"><i class="fas fa-spinner fa-spin"></i></span><span>Saving...</span>';
 
     // Send PUT request to update user roles
-    fetch(`/therapist/admin/users/${userId}`, {
+    fetch(`/training/admin/users/${userId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ function loadAllUsers() {
     showLoadingState();
     
     // Fetch ALL users from the new dedicated endpoint
-    fetch('/therapist/admin/users', {
+    fetch('/training/admin/users', {
         method: 'GET',
         credentials: 'same-origin',
         headers: {
@@ -485,7 +485,7 @@ function createNewDiagram() {
         user_id: parseInt(targetUserId)
     };
     
-    fetch('/therapist/diagrams', {
+    fetch('/training/diagrams', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -527,7 +527,7 @@ This will permanently:
 This action cannot be undone!`;
 
     if (confirm(message)) {
-        fetch(`/therapist/admin/users/${userId}/clear-database?confirm=true`, {
+        fetch(`/training/admin/users/${userId}/clear-database?confirm=true`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -581,7 +581,7 @@ This will permanently delete:
 This action cannot be undone!`;
 
     if (confirm(message)) {
-        fetch(`/therapist/diagrams/${diagramId}`, {
+        fetch(`/training/diagrams/${diagramId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',

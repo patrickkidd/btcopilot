@@ -19,14 +19,14 @@ from btcopilot.tests.training.conftest import flask_json
 
 def test_audit(auditor, discussion):
     discussion_id = discussion.id
-    response = auditor.get(f"/therapist/discussions/{discussion_id}/audit")
+    response = auditor.get(f"/training/discussions/{discussion_id}/audit")
     assert response.status_code == 200
     assert response.data is not None
 
 
 def test_audit_403(subscriber, discussion):
     discussion_id = discussion.id
-    response = subscriber.get(f"/therapist/discussions/{discussion_id}/audit")
+    response = subscriber.get(f"/training/discussions/{discussion_id}/audit")
     # GET requests are web requests, expect redirect to login
     assert response.status_code == 302
     assert "/auth/login" in response.headers.get("Location", "")
@@ -81,7 +81,7 @@ def test_audit_shows_pdp_deltas_for_subject_statements_only(auditor):
     db.session.commit()
 
     # Test audit page
-    response = auditor.get(f"/therapist/discussions/{discussion.id}/audit")
+    response = auditor.get(f"/training/discussions/{discussion.id}/audit")
     assert response.status_code == 200
 
     # The audit page should only show PDP deltas for Subject statements
@@ -91,7 +91,7 @@ def test_audit_shows_pdp_deltas_for_subject_statements_only(auditor):
 def test_create_discussion_from_transcript_requires_auditor(subscriber):
     """Test that transcript creation requires auditor role"""
     response = subscriber.post(
-        "/therapist/discussions/transcript",
+        "/training/discussions/transcript",
         json={"text": "Test transcript"},
     )
     assert response.status_code == 403
@@ -100,7 +100,7 @@ def test_create_discussion_from_transcript_requires_auditor(subscriber):
 def test_create_discussion_from_transcript_to_current_user(auditor):
     """Test creating transcript in current user's free diagram when no diagram_id provided"""
     response = auditor.post(
-        "/therapist/discussions/transcript",
+        "/training/discussions/transcript",
         json={"text": "Test transcript", "utterances": []},
     )
     assert response.status_code == 200
@@ -121,27 +121,27 @@ def test_delete_failed_non_owner(logged_in, test_user_2):
     )
     db.session.add(discussion)
     db.session.merge(discussion)
-    response = logged_in.delete(f"/therapist/discussions/{discussion.id}")
+    response = logged_in.delete(f"/training/discussions/{discussion.id}")
     assert response.status_code == 403
 
 
 def test_delete_success(admin, discussion):
     """Test successful discussion deletion"""
     discussion_id = discussion.id
-    response = admin.delete(f"/therapist/discussions/{discussion_id}")
+    response = admin.delete(f"/training/discussions/{discussion_id}")
     assert response.status_code == 200
     assert response.json["success"] is True
 
 
 def test_delete_not_found(admin):
     """Test 404 for non-existent discussion"""
-    response = admin.delete("/therapist/discussions/99999")
+    response = admin.delete("/training/discussions/99999")
     assert response.status_code == 404
 
 
 def test_extract_requires_admin(logged_in, discussion):
     """Test that triggering extraction requires admin role"""
-    response = logged_in.post(f"/therapist/discussions/{discussion.id}/extract")
+    response = logged_in.post(f"/training/discussions/{discussion.id}/extract")
     # POST requests are web requests, expect redirect to login
     assert response.status_code == 302
     assert "/auth/login" in response.headers.get("Location", "")
@@ -151,7 +151,7 @@ def test_extract_success(mock_celery, admin, discussion):
     # Initially extracting should be False
     assert discussion.extracting == False
 
-    response = admin.post(f"/therapist/discussions/{discussion.id}/extract")
+    response = admin.post(f"/training/discussions/{discussion.id}/extract")
     assert response.status_code == 200
     assert response.json["success"] is True
 
@@ -167,7 +167,7 @@ def test_extract_success(mock_celery, admin, discussion):
 
 def test_extract_not_found(admin):
     """Test 404 for non-existent discussion"""
-    response = admin.post("/therapist/discussions/99999/extract")
+    response = admin.post("/training/discussions/99999/extract")
     assert response.status_code == 404
 
 
@@ -199,9 +199,7 @@ def test_extracting_flag_reset_on_completion(admin, discussion):
 
 def test_clear_extracted_data_requires_auditor(subscriber, discussion):
     """Test that clearing extracted data requires auditor role"""
-    response = subscriber.post(
-        f"/therapist/discussions/{discussion.id}/clear-extracted"
-    )
+    response = subscriber.post(f"/training/discussions/{discussion.id}/clear-extracted")
     # POST requests are web requests, expect redirect to login
     assert response.status_code == 302
     assert "/auth/login" in response.headers.get("Location", "")
@@ -240,7 +238,7 @@ def test_clear_extracted_data_success(auditor, discussion):
     db.session.commit()
 
     # Clear extracted data
-    response = auditor.post(f"/therapist/discussions/{discussion.id}/clear-extracted")
+    response = auditor.post(f"/training/discussions/{discussion.id}/clear-extracted")
     assert response.status_code == 200
     assert response.json["success"] is True
     # Should report clearing at least the 2 we just added
@@ -298,7 +296,7 @@ def discussion_with_statements(admin):
 
 def trigger_extraction(admin, discussion_id):
     """Helper to trigger extraction and verify it started"""
-    response = admin.post(f"/therapist/discussions/{discussion_id}/extract")
+    response = admin.post(f"/training/discussions/{discussion_id}/extract")
     assert response.status_code == 200
     return response
 
@@ -311,7 +309,7 @@ def run_extraction(admin):
 
 def clear_extraction(admin, discussion_id):
     """Helper to clear extracted data"""
-    response = admin.post(f"/therapist/discussions/{discussion_id}/clear-extracted")
+    response = admin.post(f"/training/discussions/{discussion_id}/clear-extracted")
     assert response.status_code == 200
     return response
 
@@ -394,13 +392,13 @@ def test_clear_during_extraction(mock_celery, admin):
     db.session.commit()
 
     # Trigger extraction
-    response = admin.post(f"/therapist/discussions/{discussion.id}/extract")
+    response = admin.post(f"/training/discussions/{discussion.id}/extract")
     assert response.status_code == 200
     db.session.refresh(discussion)
     assert discussion.extracting is True
 
     # Clear while extraction is "in progress"
-    response = admin.post(f"/therapist/discussions/{discussion.id}/clear-extracted")
+    response = admin.post(f"/training/discussions/{discussion.id}/clear-extracted")
     assert response.status_code == 200
 
     # Verify extraction was stopped
@@ -478,7 +476,7 @@ def test_progress_endpoint_after_clear(admin):
     db.session.commit()
 
     # Check progress before clearing
-    response = admin.get(f"/therapist/discussions/{discussion.id}/progress")
+    response = admin.get(f"/training/discussions/{discussion.id}/progress")
     assert response.status_code == 200
     data = response.json
     assert data["total"] == 3
@@ -487,14 +485,14 @@ def test_progress_endpoint_after_clear(admin):
     assert data["extracting"] is False
 
     # Clear extracted data
-    response = admin.post(f"/therapist/discussions/{discussion.id}/clear-extracted")
+    response = admin.post(f"/training/discussions/{discussion.id}/clear-extracted")
     assert response.status_code == 200
 
     # Force a new database session to avoid cache issues
     db.session.close()
 
     # Check progress after clearing
-    response = admin.get(f"/therapist/discussions/{discussion.id}/progress")
+    response = admin.get(f"/training/discussions/{discussion.id}/progress")
     assert response.status_code == 200
     data = response.json
     assert data["total"] == 3
@@ -506,7 +504,7 @@ def test_progress_endpoint_after_clear(admin):
 def test_celery_task_queueing(mock_celery, admin, discussion):
     """Test that Celery tasks are queued correctly"""
     # Test extraction task queueing
-    response = admin.post(f"/therapist/discussions/{discussion.id}/extract")
+    response = admin.post(f"/training/discussions/{discussion.id}/extract")
     assert response.status_code == 200
 
     # Verify the correct task was queued with correct arguments
@@ -518,7 +516,7 @@ def test_celery_task_queueing(mock_celery, admin, discussion):
     mock_celery.send_task.reset_mock()
 
     # Test that task is not queued for non-existent discussion
-    response = admin.post("/therapist/discussions/99999/extract")
+    response = admin.post("/training/discussions/99999/extract")
     assert response.status_code == 404
 
     # Verify no task was queued for invalid discussion
