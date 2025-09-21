@@ -1,0 +1,500 @@
+{% extends "therapist_base.html" %}
+
+{% block content %}
+<style>
+    .admin-section {
+        margin-bottom: 2rem;
+    }
+    .danger-action {
+        border: 2px solid #ff3860;
+        background-color: #fff5f5;
+    }
+    .json-viewer {
+        background-color: #f5f5f5;
+        padding: 1rem;
+        border-radius: 4px;
+        white-space: pre-wrap;
+        font-family: monospace;
+        font-size: 0.875rem;
+    }
+    .user-row.is-clickable:hover {
+        background-color: #0067cd !important;
+        transition: background-color 0.2s ease;
+    }
+    .license-card {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    .license-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    .license-status {
+        font-size: 0.875rem;
+    }
+    .activation-item {
+        background: #e8f4f8;
+        border-radius: 4px;
+        padding: 0.5rem;
+        margin: 0.25rem 0;
+        font-size: 0.875rem;
+    }
+    .audio-drop-zone.drag-over {
+        background-color: #e6fffa !important;
+        border-color: #00d1b2 !important;
+    }
+</style>
+
+<div>
+            <h1 class="title">
+                <span class="icon"><i class="fas fa-shield-alt"></i></span>
+                Therapist Admin Dashboard
+            </h1>
+            <p class="subtitle">Manage threads and user data</p>
+            
+        </div>
+
+        <!-- Feedback Statistics Section -->
+        <div class="admin-section">
+            <div class="box">
+                <div class="level">
+                    <div class="level-left">
+                        <div class="level-item">
+                            <div>
+                                <h2 class="title is-4">
+                                    <span class="icon"><i class="fas fa-chart-line"></i></span>
+                                    Audit Feedback Statistics
+                                </h2>
+                                <p class="subtitle is-6">Auditors contributed: {{ feedback_stats.auditors }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="level-item">
+                            <div class="buttons">
+                                <a href="{{ url_for('training.feedback.index') }}" class="button is-primary">
+                                    <span class="icon"><i class="fas fa-list-alt"></i></span>
+                                    <span>View Detailed Feedback</span>
+                                </a>
+                                <a href="{{ url_for('training.prompts.index') }}" class="button is-info">
+                                    <span class="icon"><i class="fas fa-flask"></i></span>
+                                    <span>Prompt Playground</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="columns is-multiline">
+                    <div class="column is-3">
+                        <div class="notification is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
+                            <p class="heading">Total Feedback</p>
+                            <p class="title is-3">{{ feedback_stats.total }}</p>
+                            <p class="subtitle is-6">&nbsp;</p>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <div class="notification is-info is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
+                            <p class="heading">Conversation Reviews</p>
+                            <p class="title is-3">{{ feedback_stats.conversations }}</p>
+                            <p class="subtitle is-6">&nbsp;</p>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <div class="notification is-warning is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
+                            <p class="heading">Extraction Reviews</p>
+                            <p class="title is-3">{{ feedback_stats.extractions }}</p>
+                            <p class="subtitle is-6">&nbsp;</p>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <div class="notification is-danger is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
+                            <p class="heading">Issues Flagged</p>
+                            <p class="title is-3">{{ feedback_stats.issues }}</p>
+                            <p class="subtitle is-6">{{ feedback_stats.issue_rate }}% of total</p>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if feedback_stats.total > 0 %}
+                <div class="content">
+                    <div class="level">
+                        <div class="level-left">
+                            <div class="level-item">
+                                <div>
+                                    <p class="heading">Quality Score</p>
+                                    <progress class="progress is-primary is-medium" value="{{ 100 - feedback_stats.issue_rate }}" max="100">
+                                        {{ 100 - feedback_stats.issue_rate }}%
+                                    </progress>
+                                    <p class="help">{{ 100 - feedback_stats.issue_rate }}% of reviews passed without issues</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="notification is-warning is-light">
+                    <strong>No feedback submitted yet.</strong><br>
+                    Auditors need to review AI responses before statistics will appear here.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Discussions Section -->
+        <div class="admin-section">
+            <div class="box">
+                <div class="is-clickable" onclick="toggleDiscussions()" style="cursor: pointer;">
+                    <h2 class="title is-4 mb-0" style="display: inline-block;">
+                        <span class="icon"><i class="fas fa-comments"></i></span>
+                        Discussions
+                        <span class="icon is-small ml-2">
+                            <i id="discussions-toggle-icon" class="fas fa-chevron-down"></i>
+                        </span>
+                    </h2>
+                    <p class="subtitle is-6 mt-2">Total discussions: {{ discussions|length }}</p>
+                </div>
+                
+                {% if discussions %}
+                <div class="table-container" id="discussions-content" style="display: block;">
+                    <table class="table is-fullwidth is-striped is-hoverable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Statements</th>
+                                <th>Summary</th>
+                                <th>Last Topic</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for discussion in discussions %}
+                            <tr>
+                                <td>
+                                    <a href="/therapist/discussions/{{ discussion.id }}/audit" class="has-text-weight-bold" title="View in audit system">
+                                        {{ discussion.id }}
+                                        <span class="icon is-small ml-1">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </span>
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="tag is-info">
+                                        {{ discussion.user.username if discussion.user else 'Unknown' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="tag is-light">
+                                        {{ discussion.statements|length }} statements
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="content is-small">
+                                        {{ discussion.summary[:100] + '...' if discussion.summary and discussion.summary|length > 100 else discussion.summary or 'No summary' }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="content is-small">
+                                        {{ discussion.last_topic[:50] + '...' if discussion.last_topic and discussion.last_topic|length > 50 else discussion.last_topic or 'No topic' }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <small>{{ discussion.created_at.strftime('%Y-%m-%d %H:%M') if discussion.created_at else 'N/A' }}</small>
+                                </td>
+                                <td>
+                                    <div class="field has-addons">
+                                        <p class="control">
+                                            <a href="{{ url_for('training.prompts.index') }}?discussion={{ discussion.id }}" class="button is-small is-info" title="Experiment with prompts on this discussion">
+                                                <span class="icon"><i class="fas fa-flask"></i></span>
+                                            </a>
+                                        </p>
+                                        <p class="control">
+                                            <button class="button is-small is-danger" 
+                                                    onclick="deleteDiscussion({{ discussion.id }}, '{{ (discussion.user.username if discussion.user else 'Unknown')|safe }}', {{ discussion.messages|length }})"
+                                                    title="Delete this discussion">
+                                                <span class="icon"><i class="fas fa-trash"></i></span>
+                                            </button>
+                                        </p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="notification is-info" id="discussions-content">
+                    <strong>No discussions found.</strong><br>
+                    No discussions exist in the system yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Users Section -->
+        <div class="admin-section">
+            <div class="box" id="users-section-container">
+                <h2 class="title is-4">
+                    <span class="icon"><i class="fas fa-users"></i></span>
+                    Users
+                </h2>
+                <p class="subtitle is-6 user-count">Showing 0 users</p>
+                
+                <!-- Search and Filter Controls -->
+                <div class="box has-background-light mb-4">
+                    <div class="columns is-multiline">
+                        <div class="column is-4">
+                            <div class="field">
+                                <label class="label is-small">Search Username/Name</label>
+                                <div class="control has-icons-left">
+                                    <input class="input is-small" type="text" id="search-text" placeholder="Search username or name...">
+                                    <span class="icon is-small is-left">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-2">
+                            <div class="field">
+                                <label class="label is-small">Role</label>
+                                <div class="control">
+                                    <div class="select is-small is-fullwidth">
+                                        <select id="filter-role">
+                                            <option value="all">All Roles</option>
+                                            <option value="subscriber">Subscriber</option>
+                                            <option value="auditor">Auditor</option>
+                                            <option value="admin">Admin</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns">
+                        <div class="column">
+                            <button class="button is-small is-light" onclick="clearFilters()">
+                                <span class="icon is-small">
+                                    <i class="fas fa-times"></i>
+                                </span>
+                                <span>Clear Filters</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Users table will be populated by JavaScript -->
+                <div class="table-container">
+                    <table class="table is-fullwidth is-striped is-hoverable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Name</th>
+                                <th>Roles</th>
+                                <th>Status</th>
+                                <th>Discussions</th>
+                                <th>Diagrams</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <!-- Loading state - will be replaced by JavaScript -->
+                            <tr>
+                                <td colspan="8" class="has-text-centered">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading users...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    <!-- User Data Modal -->
+    <div class="modal" id="userDataModal">
+        <div class="modal-background" onclick="hideUserData()"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">User Database Data</p>
+                <button class="delete" onclick="hideUserData()"></button>
+            </header>
+            <section class="modal-card-body">
+                <div id="userDataContent" class="json-viewer"></div>
+            </section>
+        </div>
+    </div>
+
+    <!-- User Detail Modal -->
+    <div class="modal" id="userDetailModal">
+        <div class="modal-background" onclick="hideUserDetailModal()"></div>
+        <div class="modal-card" style="width: 80%; max-width: 1000px;">
+            <header class="modal-card-head">
+                <p class="modal-card-title">
+                    <span class="icon"><i class="fas fa-user"></i></span>
+                    <span id="userDetailTitle">User Details</span>
+                </p>
+                <button class="delete" onclick="hideUserDetailModal()"></button>
+            </header>
+            <section class="modal-card-body">
+                <div id="userDetailContent">
+                    <!-- Content loaded dynamically via AJAX -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        function toggleDiscussions() {
+            const content = document.getElementById('discussions-content');
+            const icon = document.getElementById('discussions-toggle-icon');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                content.style.display = 'none';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-right');
+            }
+        }
+
+        function deleteDiscussion(threadId, username, messageCount) {
+            const message = `Are you sure you want to delete thread ${threadId}?
+            
+This will permanently delete:
+- The thread owned by user: ${username}
+- All ${messageCount} messages in this thread
+- All associated feedback data
+
+This action cannot be undone!`;
+
+            if (confirm(message)) {
+                fetch(`/therapist/discussions/${threadId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.debug('Discussion deleted successfully!');
+                        location.reload();
+                    } else {
+                        alert('Error from server deleting thread: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Error from server deleting thread: ' + error);
+                });
+            }
+        }
+
+
+
+        // JSON Drop Handlers
+        function handleJsonDragOver(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.dataTransfer.dropEffect = 'copy';
+            event.currentTarget.classList.add('drag-over');
+        }
+
+        function handleJsonDragLeave(event) {
+            event.stopPropagation();
+            event.currentTarget.classList.remove('drag-over');
+        }
+
+        async function handleJsonDrop(event, userId) {
+            event.preventDefault();
+            event.stopPropagation(); // Stop event from bubbling up to card
+            event.currentTarget.classList.remove('drag-over');
+            
+            const files = event.dataTransfer.files;
+            if (files.length === 0) return;
+            
+            const file = files[0];
+            
+            // Validate it's a JSON file
+            if (!file.name.endsWith('.json') && file.type !== 'application/json') {
+                alert('Please drop a JSON file (exported discussion)');
+                return;
+            }
+            
+            const confirmMessage = `Import "${file.name}" as a new discussion for this user?`;
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            const element = event.currentTarget;
+            const originalContent = element.innerHTML;
+            
+            try {
+                // Read the file content
+                const content = await file.text();
+                const jsonData = JSON.parse(content);
+                
+                // Validate it looks like a discussion export
+                if (!jsonData.id || !jsonData.statements) {
+                    alert('Invalid discussion JSON format. Please use an exported discussion file.');
+                    return;
+                }
+                
+                // Show progress
+                element.innerHTML = `
+                    <div class="has-text-centered">
+                        <span class="icon is-large has-text-primary">
+                            <i class="fas fa-spinner fa-pulse fa-2x"></i>
+                        </span>
+                        <p class="is-size-7 mt-2">Importing discussion...</p>
+                    </div>
+                `;
+                
+                // Send to server
+                const response = await fetch('/therapist/discussions/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(jsonData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    element.innerHTML = `
+                        <div class="has-text-centered has-text-success">
+                            <span class="icon is-large">
+                                <i class="fas fa-check-circle fa-2x"></i>
+                            </span>
+                            <p class="is-size-7 mt-2">Import successful!</p>
+                        </div>
+                    `;
+                    
+                    // Refresh the page after a delay
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    element.innerHTML = originalContent;
+                    alert('Import failed: ' + (result.error || 'Unknown error'));
+                }
+                
+            } catch (error) {
+                console.error('Import error:', error);
+                alert('Error importing file: ' + error.message);
+                element.innerHTML = originalContent;
+            }
+        }
+    </script>
+
+    <script src="{{ url_for('training.audit.static', filename='js/user-detail-component.js') }}"></script>
+    <script src="{{ url_for('training.audit.static', filename='js/audio-upload-client.js') }}"></script>
+</div>
+{% endblock %}

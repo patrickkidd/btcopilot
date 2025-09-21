@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extraction Progress Demo</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .demo-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .progress {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1 class="title">Statement Extraction Progress Demo</h1>
+        
+        <div class="box">
+            <h2 class="subtitle">Discussion Details</h2>
+            <div class="content" data-discussion-id="123">
+                <p>This demo shows the extraction progress bar for a discussion.</p>
+                <p>Discussion ID: <strong>123</strong></p>
+            </div>
+            
+            <div class="field">
+                <button class="button is-primary" onclick="startDemo()">
+                    <span class="icon"><i class="fas fa-play"></i></span>
+                    <span>Start Extraction Progress Demo</span>
+                </button>
+                <button class="button" onclick="stopDemo()">
+                    <span class="icon"><i class="fas fa-stop"></i></span>
+                    <span>Stop Demo</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Progress bar will appear here -->
+        <div id="progress-container"></div>
+        
+        <div class="box mt-5">
+            <h3 class="subtitle">How it works:</h3>
+            <div class="content">
+                <ol>
+                    <li>The progress bar polls <code>/therapist/discussions/{id}/progress</code> every 2 seconds</li>
+                    <li>It shows the number of statements processed out of the total</li>
+                    <li>The progress bar automatically hides when all statements are processed</li>
+                    <li>If extraction stalls, it can trigger the background job to continue</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="box">
+            <h3 class="subtitle">Integration Example:</h3>
+            <pre><code>// Initialize extraction progress for a discussion
+window.extractionProgress.init(discussionId);
+
+// Or specify a custom container
+window.extractionProgress.init(discussionId, 'my-container-id');
+
+// Clean up when done
+window.extractionProgress.destroy();</code></pre>
+        </div>
+    </div>
+    
+    <script src="/therapist/static/js/extraction-progress.js"></script>
+    <script>
+        function startDemo() {
+            // In a real app, this would use the actual discussion ID
+            window.extractionProgress.init(123);
+        }
+        
+        function stopDemo() {
+            window.extractionProgress.destroy();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,3568 @@
+{% extends "therapist_base.html" %}
+{% block content %}
+
+<script>
+// Make diagram people data available to JavaScript
+window.diagramPeople = [
+{% if discussion.diagram %}
+    {% set database = discussion.diagram.get_database() %}
+    {% for person in database.people %}
+    {
+        id: {{ person.id }},
+        name: {{ person.name | tojson }}
+    }{{ "," if not loop.last else "" }}
+    {% endfor %}
+{% endif %}
+];
+</script>
+
+<style>
+/* Speaker-specific color variations - iPhone Messages app theme with more noticeable differences */
+
+/* User message bubbles - Striking blue variations while staying in blue spectrum */
+.user-message-bubble.speaker-1 { background: #007AFF; color: white; } /* iPhone Messages blue (base) */
+.user-message-bubble.speaker-2 { background: #ADD8E6; color: black; } /* Light blue - pastel with black text */
+.user-message-bubble.speaker-3 { background: #001F3F; color: white; } /* Navy blue - very dark */
+.user-message-bubble.speaker-4 { background: #89CFF0; color: black; } /* Baby blue - very light with black text */
+.user-message-bubble.speaker-5 { background: #0047AB; color: white; } /* Cobalt blue - rich dark */
+.user-message-bubble.speaker-6 { background: #66B3FF; color: black; } /* Sky blue - bright light with black text */
+.user-message-bubble.speaker-7 { background: #191970; color: white; } /* Midnight blue - darkest */
+.user-message-bubble.speaker-8 { background: #87CEEB; color: black; } /* Sky blue - medium light with black text */
+
+/* AI message bubbles - iPhone grey with more distinct variations */
+.ai-message-bubble.speaker-1 { background: #E9E9EB; border-color: #D1D1D6; } /* iPhone Messages grey (base) */
+.ai-message-bubble.speaker-2 { background: #F2F2F7; border-color: #E5E5EA; } /* Lighter grey */
+.ai-message-bubble.speaker-3 { background: #E5E5EA; border-color: #D1D1D6; } /* Medium grey */
+.ai-message-bubble.speaker-4 { background: #F0F0F5; border-color: #E0E0E5; } /* Off-white grey */
+.ai-message-bubble.speaker-5 { background: #EBEBF0; border-color: #D6D6DB; } /* Cool grey */
+.ai-message-bubble.speaker-6 { background: #F5F5F8; border-color: #E8E8ED; } /* Warm grey */
+.ai-message-bubble.speaker-7 { background: #EFEFF4; border-color: #DCDCE1; } /* Neutral grey */
+.ai-message-bubble.speaker-8 { background: #E8E8ED; border-color: #CFCFD4; } /* Darker grey */
+
+/* Expanded AI message bubbles - maintain iPhone style with green highlight */
+.ai-message-bubble.expanded.speaker-1 { background: #FFFFFF; border-color: #34C759; } /* iPhone green */
+.ai-message-bubble.expanded.speaker-2 { background: #FEFEFF; border-color: #34C759; }
+.ai-message-bubble.expanded.speaker-3 { background: #FDFDFE; border-color: #34C759; }
+.ai-message-bubble.expanded.speaker-4 { background: #FCFCFD; border-color: #34C759; }
+.ai-message-bubble.expanded.speaker-5 { background: #FAFAFB; border-color: #34C759; }
+.ai-message-bubble.expanded.speaker-6 { background: #F9F9FA; border-color: #34C759; }
+.ai-message-bubble.expanded.speaker-7 { background: #F8F8F9; border-color: #34C759; }
+.ai-message-bubble.expanded.speaker-8 { background: #F7F7F8; border-color: #34C759; }
+
+/* Relationship field horizontal layout - Override Bulma CSS with high specificity */
+.mechanism-details,
+.triangle-details {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem;
+}
+
+.mechanism-field,
+.triangle-field {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    flex-wrap: nowrap !important;
+}
+
+.field-label {
+    flex-shrink: 0 !important;
+    min-width: fit-content !important;
+    color: #666;
+    display: inline-block !important;
+}
+
+.relationship-people-container {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+    flex-wrap: wrap !important;
+    flex: 1 !important;
+}
+
+/* Critical: Ensure template elements don't break layout */
+.relationship-people-container template {
+    display: contents !important;
+}
+
+/* Admin-only statement ID styling - very subtle */
+.admin-statement-id {
+    opacity: 0.5;
+    font-size: 0.65em;
+    font-weight: 300;
+    margin-left: 4px;
+    color: #999 !important;
+}
+
+/* Override any Bulma div defaults that might cause stacking */
+.mechanism-field > div,
+.triangle-field > div {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+}
+
+.person-tag {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+    padding: 0.125rem 0.5rem !important;
+    background: #e8f4ff !important;
+    border: 1px solid #b3d9ff !important;
+    border-radius: 4px !important;
+    font-size: 0.85rem !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+}
+
+.person-tag.editable {
+    cursor: pointer !important;
+}
+
+.person-tag.editable:hover {
+    background: #d1e9ff !important;
+    border-color: #80bfff !important;
+}
+
+.person-tag .delete-person {
+    margin-left: 0.25rem !important;
+    color: #ff4444 !important;
+    cursor: pointer !important;
+    font-size: 0.75rem !important;
+}
+
+.person-tag .delete-person:hover {
+    color: #ff0000 !important;
+}
+
+/* Ensure each mechanism field is on its own row but content within is horizontal */
+.mechanism-details .mechanism-field,
+.triangle-details .triangle-field {
+    margin-bottom: 0.25rem !important;
+    width: 100% !important;
+}
+
+/* Remove all borders from extracted data tables */
+.extracted-data-component table,
+.extracted-data-component table td,
+.extracted-data-component table tr {
+    border: none !important;
+}
+
+</style>
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <div>
+                <p class="subtitle is-6">
+                    {{ discussion.created_at.strftime('%Y-%m-%d %H:%M') }}
+                </p>
+            </div>
+        </div>
+        <div class="level-item">
+            <div class="field is-grouped">
+                <p class="control">
+                    <button class="button is-small is-outlined" onclick="expandAllMessages()">
+                        <span class="icon"><i class="fas fa-expand"></i></span>
+                        <span>Expand All</span>
+                    </button>
+                </p>
+                <p class="control">
+                    <button class="button is-small is-outlined" onclick="collapseAllMessages()">
+                        <span class="icon"><i class="fas fa-compress"></i></span>
+                        <span>Collapse All</span>
+                    </button>
+                </p>
+                <p class="control">
+                    <button class="button is-small is-outlined is-danger" onclick="clearExtractedData({{ discussion.id }})">
+                        <span class="icon"><i class="fas fa-trash-alt"></i></span>
+                        <span>Clear Extracted</span>
+                    </button>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <div class="tags">
+                {% set ai_messages = statements|selectattr('statement.speaker.type', 'equalto', 'expert')|list %}
+                <span class="tag is-success">{{ ai_messages|length }} AI responses</span>
+            </div>
+        </div>
+        <div class="level-item">
+            <a href="{{ url_for('training.discussions.export', discussion_id=discussion.id) }}" 
+               class="button is-small is-outlined is-primary"
+               title="Export discussion as JSON file">
+                <span class="icon"><i class="fas fa-download"></i></span>
+                <span>Export JSON</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- {% if discussion.summary %}
+<div class="notification is-info is-light">
+    <strong>Discussion Summary:</strong> {{ discussion.summary }}
+</div>
+{% endif %} -->
+
+<!-- Extraction Progress Bar -->
+<div id="progress-container" data-discussion-id="{{ discussion.id }}"></div>
+
+<!-- Speaker mappings are now computed in Python and passed to template -->
+{% if unique_speakers %}
+<div class="card mb-4">
+    <div class="card-header is-clickable" onclick="toggleSpeakerMapping()">
+        <h5 class="card-header-title">
+            <span class="icon"><i class="fas fa-users"></i></span>
+            Speaker Mapping ({{ unique_speakers|length }} speakers detected)
+        </h5>
+        <button class="card-header-icon">
+            <span class="icon" id="speaker-toggle-icon">
+                <i class="fas fa-angle-down"></i>
+            </span>
+        </button>
+    </div>
+    <div id="speaker-mapping-content" class="card-content" style="display: none;">
+        <div class="content">
+            <p class="has-text-grey mb-3">Map detected speakers to people in the user's database:</p>
+            <table class="table is-fullwidth">
+                <thead>
+                    <tr>
+                        <th>Transcription Speaker</th>
+                        <th>Type</th>
+                        <th>Person</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for speaker in unique_speakers %}
+                    <tr class="speaker-mapping-row" data-speaker-id="{{ speaker.id }}">
+                        <td>
+                            <strong>{{ speaker.name }}</strong>
+                        </td>
+                        <td>
+                            <div class="select">
+                                <select id="speaker-type-{{ speaker.id }}" onchange="updateSpeakerType({{ speaker.id }})">
+                                    <option value="subject" {% if speaker.type == 'subject' %}selected{% endif %}>Subject</option>
+                                    <option value="expert" {% if speaker.type == 'expert' %}selected{% endif %}>Expert</option>
+                                </select>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="field has-addons" style="margin-bottom: 0;">
+                                <div class="control">
+                                    <div class="select">
+                                        <select id="person-select-{{ speaker.id }}" onchange="updateSpeakerMapping({{ speaker.id }})">
+                                            <option value="">Select a person...</option>
+                                            
+                                            {# Always show default User and Assistant options #}
+                                            <option value="1" {% if speaker.person_id == 1 %}selected{% endif %}>User</option>
+                                            <option value="2" {% if speaker.person_id == 2 %}selected{% endif %}>Assistant</option>
+                                            
+                                            {# Show other people from database (excluding defaults to avoid duplicates) #}
+                                            {% if discussion.diagram %}
+                                                {% set database = discussion.diagram.get_database() %}
+                                                {% for person in database.people %}
+                                                    {% if person.id != 1 and person.id != 2 %}
+                                                    <option value="{{ person.id }}" 
+                                                            {% if speaker.person_id == person.id %}selected{% endif %}>
+                                                        {{ person.name }}
+                                                    </option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                            <option value="new">+ Create new person</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="control">
+                                    <button class="button is-info" onclick="showNewPersonModal({{ speaker.id }}, '{{ speaker.name }}')" 
+                                            title="Create new person">
+                                        <span class="icon is-small">
+                                            <i class="fas fa-plus"></i>
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="speaker-status-{{ speaker.id }}" class="help"></div>
+                        </td>
+                        <td></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Extraction Button -->
+        {% if current_user and current_user.has_role(vedana.ROLE_ADMIN) %}
+        <div class="has-text-centered mt-4 pt-3" style="border-top: 1px solid #dbdbdb;">
+            <button id="trigger-extraction-btn" 
+                    class="button is-primary" 
+                    onclick="triggerExtractionForDiscussion({{ discussion.id }})"
+                    disabled>
+                <span class="icon">
+                    <i class="fas fa-play"></i>
+                </span>
+                <span>Extract Data</span>
+            </button>
+            
+            <button id="export-test-cases-btn" 
+                    class="button is-info ml-2" 
+                    onclick="exportTestCases()">
+                <span class="icon">
+                    <i class="fas fa-download"></i>
+                </span>
+                <span>Export Test Cases</span>
+            </button>
+            
+            <p class="help has-text-grey mt-2">
+                Extract: Only available when all speakers are mapped to people<br>
+                Export: Exports all approved test cases to ./model_tests/data/
+            </p>
+            
+            <!-- Progress display (hidden by default) -->
+            <div id="extraction-progress" style="display: none;" class="mt-3">
+                <div class="extraction-progress-container" style="padding: 2rem; text-align: center;">
+                    <div class="icon is-large has-text-primary">
+                        <i class="fas fa-cogs fa-pulse fa-3x"></i>
+                    </div>
+                    <h3 class="title is-5 mt-3">Extracting Data</h3>
+                    <progress class="progress is-primary" max="100" id="extraction-progress-bar" value="0"></progress>
+                    <p class="subtitle is-6 mt-2" id="extraction-progress-text">Processing statements...</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- New Person Modal -->
+<div class="modal" id="new-person-modal">
+    <div class="modal-background" onclick="closeNewPersonModal()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Create New Person</p>
+            <button class="delete" onclick="closeNewPersonModal()"></button>
+        </header>
+        <section class="modal-card-body">
+            <div class="field">
+                <label class="label">Name</label>
+                <div class="control">
+                    <input class="input" type="text" id="new-person-name" placeholder="Enter person's name">
+                </div>
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-success" onclick="createNewPerson()">Create Person</button>
+            <button class="button" onclick="closeNewPersonModal()">Cancel</button>
+        </footer>
+    </div>
+</div>
+
+<!-- Relationship Person Selector Modal -->
+<div class="modal" id="relationship-person-modal">
+    <div class="modal-background" onclick="closeRelationshipPersonModal()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title" id="relationship-person-modal-title">Select Person</p>
+            <button class="delete" onclick="closeRelationshipPersonModal()"></button>
+        </header>
+        <section class="modal-card-body">
+            <div class="field">
+                <label class="label">Person</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select id="relationship-person-select">
+                            <!-- Options dynamically populated by showRelationshipPersonModal() -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="field" id="new-person-name-field" style="display: none;">
+                <label class="label">New Person Name</label>
+                <div class="control">
+                    <input class="input" type="text" id="relationship-new-person-name" placeholder="Enter person's name">
+                </div>
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-success" onclick="confirmRelationshipPersonSelection()">Select</button>
+            <button class="button" onclick="closeRelationshipPersonModal()">Cancel</button>
+        </footer>
+    </div>
+</div>
+
+<!-- Audit Table Layout -->
+<div class="audit-table-container">
+    <table class="table is-fullwidth audit-messages-table">
+        <thead>
+            <tr>
+                <th class="audit-header">💬 Conversational Flow</th>
+                <th class="audit-header">📊 Changes to Notes</th>
+                <th class="audit-header">📝 Cumulative Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in statements %}
+            <tr class="message-row" data-message-id="{{ item.statement.id }}">
+                
+                {% if item.statement.speaker and item.statement.speaker.type == 'subject' %}
+                <!-- User Message Row -->
+                <td class="chat-cell">
+                    <!-- Speaker name above message bubble -->
+                    <div class="speaker-name has-text-grey-light is-size-7 mb-1" style="font-size: 10px; text-align: right; font-weight: 500; opacity: 0.7;">
+                        {{ item.person_name if item.person_name else item.statement.speaker.name }}
+                    </div>
+                    <div class="chat-message-container user-message-container">
+                        <div class="timestamp-left">
+                            <small class="has-text-grey is-size-7">
+                                {{ item.statement.created_at.strftime('%H:%M') if item.statement.created_at else '--:--' }}
+                                {% if current_user and current_user.has_role(vedana.ROLE_ADMIN) %}
+                                <span class="admin-statement-id" title="Statement ID">·{{ item.statement.id }}</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="user-message-bubble speaker-{{ subject_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.type == 'subject' and item.statement.speaker.id in subject_speaker_map else 1 }}">
+                            {{ item.statement.text }}
+                        </div>
+                    </div>
+                </td>
+                
+                <!-- Data cell for Subject statements (where extracted data is stored) -->
+                <td class="data-cell">
+                    {% if item.pdp_deltas %}
+                        {% set data = item.pdp_deltas %}
+                        {% set cumulative_pdp = item.cumulative_pdp %}
+                        {% set collapsed = true %}
+                        {% set show_feedback = true %}
+                        {% set message_id = item.statement.id %}
+                        {% set feedback_data = item.ext_feedback %}
+                        {% set component_id = item.statement.id %}
+                        {% set editable_mode = true %}
+                        {% set all_ext_feedback = item.all_ext_feedback or [] %}
+                        {% set all_ext_feedback_dict = item.all_ext_feedback_dict or [] %}
+                        {% set admin_ext_feedback = item.admin_ext_feedback %}
+                        {% set approved = item.approved %}
+                        {% set approved_by = item.approved_by %}
+                        {% set approved_at = item.approved_at %}
+                        {% include "components/extracted_data_display.html" %}
+                    {% else %}
+                        <div class="user-data-placeholder">
+                            <small class="has-text-grey">No data extracted</small>
+                        </div>
+                    {% endif %}
+                </td>
+                
+                <!-- Cumulative Notes column for Subject statements -->
+                <td class="data-cell">
+                    {% if item.cumulative_pdp %}
+                        {% set data = item.cumulative_pdp %}
+                        {% set cumulative_pdp = item.cumulative_pdp %}
+                        {% set collapsed = true %}
+                        {% set show_feedback = false %}
+                        {% set component_id = item.statement.id %}
+                        {% set is_cumulative = true %}
+                        {% set editable_mode = false %}
+                        {% set onclick_function = 'toggleCumulativeSection' %}
+                        {% set id_prefix = 'cumulative' %}
+                        {% include "components/extracted_data_display.html" %}
+                    {% else %}
+                        <div class="user-data-placeholder">
+                            <small class="has-text-grey">No cumulative data yet</small>
+                        </div>
+                    {% endif %}
+                </td>
+                
+                {% else %}
+                <!-- AI Message Row -->
+                <td class="chat-cell">
+                    <!-- Collapsed View -->
+                    <div class="collapsed-ai-message" id="chat-collapsed-{{ item.statement.id }}" {% if item.has_conv_feedback or item.has_ext_feedback %}style="display: none;"{% endif %}>
+                        <!-- Speaker name above message bubble -->
+                        <div class="speaker-name has-text-grey-light is-size-7 mb-1" style="font-size: 10px; text-align: left; font-weight: 500; opacity: 0.7;">
+                            {{ item.person_name if item.person_name else (item.statement.speaker.name if item.statement.speaker else 'AI') }}
+                        </div>
+                        <div class="chat-message-container ai-message-container">
+                            <div class="ai-message-bubble speaker-{{ expert_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.type == 'expert' and item.statement.speaker.id in expert_speaker_map else 1 }} is-clickable" onclick="toggleAIMessage({{ item.statement.id }})">
+                                <div class="ai-message-content">
+                                    {{ item.statement.text }}
+                                    {% if item.has_conv_feedback %}
+                                    <span class="tag is-success is-light is-small float-right ml-2">✓</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="timestamp-right">
+                                <div class="is-flex is-align-items-center">
+                                    {% if item.get('is_last_ai', False) %}
+                                    <button class="button is-small is-ghost mr-2" 
+                                            onclick="event.stopPropagation(); openPromptEditor({{ item.statement.id }})"
+                                            title="Edit prompts for this message">
+                                        <span class="icon is-small"><i class="fas fa-edit"></i></span>
+                                    </button>
+                                    {% endif %}
+                                    {% if item.statement.custom_prompts %}
+                                    <span class="tag is-warning is-small mr-2" 
+                                          onclick="event.stopPropagation(); viewPromptDiff({{ item.statement.id }})"
+                                          title="Custom prompts used - click to view changes"
+                                          style="cursor: pointer;">📝</span>
+                                    {% endif %}
+                                    <small class="has-text-grey is-size-7">
+                                        {{ item.statement.created_at.strftime('%H:%M') if item.statement.created_at else '--:--' }}
+                                        {% if current_user and current_user.has_role(vedana.ROLE_ADMIN) %}
+                                        <span class="admin-statement-id" title="Statement ID">·{{ item.statement.id }}</span>
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Expanded View -->
+                    <div class="expanded-ai-message is-clickable" id="chat-expanded-{{ item.statement.id }}" {% if item.has_conv_feedback or item.has_ext_feedback %}style="display: block;"{% else %}style="display: none;"{% endif %} onclick="toggleAIMessage({{ item.statement.id }})">
+                        <!-- Speaker name above message bubble -->
+                        <div class="speaker-name has-text-grey-light is-size-7 mb-1" style="font-size: 10px; text-align: left; font-weight: 500; opacity: 0.7;">
+                            {{ item.person_name if item.person_name else (item.statement.speaker.name if item.statement.speaker else 'AI') }}
+                        </div>
+                        <div class="chat-message-container ai-message-container">
+                            <div class="ai-message-bubble expanded speaker-{{ expert_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.type == 'expert' and item.statement.speaker.id in expert_speaker_map else 1 }}">
+                                <div class="ai-message-content">
+                                    {{ item.statement.text }}
+                                    <!-- <div class="has-text-right mt-2">
+                                        <small class="has-text-grey is-size-7">(click anywhere to collapse)</small>
+                                    </div> -->
+                                </div>
+                            </div>
+                            <div class="timestamp-right">
+                                <div class="is-flex is-align-items-center">
+                                    {% if item.get('is_last_ai', False) %}
+                                    <button class="button is-small is-ghost mr-2" 
+                                            onclick="event.stopPropagation(); openPromptEditor({{ item.statement.id }})"
+                                            title="Edit prompts for this message">
+                                        <span class="icon is-small"><i class="fas fa-edit"></i></span>
+                                    </button>
+                                    {% endif %}
+                                    {% if item.statement.custom_prompts %}
+                                    <span class="tag is-warning is-small mr-2" 
+                                          onclick="event.stopPropagation(); viewPromptDiff({{ item.statement.id }})"
+                                          title="Custom prompts used - click to view changes"
+                                          style="cursor: pointer;">📝</span>
+                                    {% endif %}
+                                    <small class="has-text-grey is-size-7">
+                                        {{ item.statement.created_at.strftime('%H:%M') if item.statement.created_at else '--:--' }}
+                                        {% if current_user and current_user.has_role(vedana.ROLE_ADMIN) %}
+                                        <span class="admin-statement-id" title="Statement ID">·{{ item.statement.id }}</span>
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Conversation Feedback Controls (Outside bubble) -->
+                        <div class="conversation-feedback mt-3 p-3 {% if item.has_conv_feedback %}feedback-submitted{% endif %}" onclick="event.stopPropagation()"
+                                    <div x-data="{ 
+                                        thumbsDown: false, 
+                                        comment: '', 
+                                        submitted: {{ 'true' if item.has_conv_feedback else 'false' }} 
+                                    }">
+                                        {% if item.has_conv_feedback and item.conv_feedback %}
+                                        <div class="notification is-success is-light is-small">
+                                            <strong>Your feedback:</strong>
+                                            {{ '👎 Needs work' if item.conv_feedback.thumbs_down else '' }}<br>
+                                            {% if item.conv_feedback.comment %}
+                                            <small>{{ item.conv_feedback.comment }}</small>
+                                            {% endif %}
+                                            <div class="mt-2 has-text-right">
+                                                <button class="button is-small is-danger is-outlined" 
+                                                        onclick="deleteFeedback({{ item.conv_feedback.id }}, 'conversation', {{ item.statement.id }})">
+                                                    <span class="icon is-small"><i class="fas fa-trash"></i></span>
+                                                    <span>Delete</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <div class="field">
+                                            <div class="control">
+                                                <button class="thumbs-button is-small" 
+                                                        :class="{ 'is-active': thumbsDown }"
+                                                        @click="thumbsDown = !thumbsDown"
+                                                        :disabled="submitted">
+                                                    👎 Needs work
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="field">
+                                            <div class="control">
+                                                <textarea class="textarea is-small" 
+                                                          x-model="comment"
+                                                          placeholder="Comments on conversation flow..."
+                                                          rows="2"
+                                                          :disabled="submitted"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="field">
+                                            <button class="button is-primary is-small"
+                                                    @click="submitFeedback({{ item.statement.id }}, 'conversation', thumbsDown, comment)"
+                                                    x-show="!submitted">
+                                                Submit
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                        </div>
+                    </div>
+                </td>
+                
+                <!-- Data column for Expert statements (Empty placeholder - they don't generate data) -->
+                <td class="data-cell"></td>
+                
+                <!-- Cumulative Notes column for Expert statements (Empty placeholder - they don't generate data) -->
+                <td class="data-cell"></td>
+                
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+// Component extracted data functions
+function toggleExtractedData(componentId) {
+    // Data section elements  
+    const dataCollapsed = document.getElementById('data-collapsed-' + componentId);
+    const dataExpanded = document.getElementById('data-expanded-' + componentId);
+    
+    // Cumulative section elements (synchronize with data section)
+    const cumulativeCollapsed = document.getElementById('cumulative-collapsed-' + componentId);
+    const cumulativeExpanded = document.getElementById('cumulative-expanded-' + componentId);
+    
+    // Check current state using display style
+    const isExpanded = dataExpanded && dataExpanded.style.display !== 'none';
+    
+    if (isExpanded) {
+        // Collapse both data and cumulative sections
+        if (dataCollapsed && dataExpanded) {
+            dataCollapsed.style.display = 'block';
+            dataExpanded.style.display = 'none';
+        }
+        if (cumulativeCollapsed && cumulativeExpanded) {
+            cumulativeCollapsed.style.display = 'block';
+            cumulativeExpanded.style.display = 'none';
+        }
+    } else {
+        // Expand both data and cumulative sections
+        if (dataCollapsed && dataExpanded) {
+            dataCollapsed.style.display = 'none';
+            dataExpanded.style.display = 'block';
+        }
+        if (cumulativeCollapsed && cumulativeExpanded) {
+            cumulativeCollapsed.style.display = 'none';
+            cumulativeExpanded.style.display = 'block';
+        }
+    }
+}
+
+// Helper function for component extracted data display
+function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submitted, componentId, editableMode = false, messageId = null, editedExtraction = null, feedbackId = null) {
+    // Use edited extraction if available, otherwise use original data
+    const displayData = editedExtraction || extractedData;
+    
+    return {
+        extractedData: displayData,
+        originalExtractedData: extractedData,
+        editedExtraction: editedExtraction,
+        cumulativePdp: cumulativePdp,
+        thumbsDown: thumbsDown,
+        submitted: submitted,
+        componentId: componentId,
+        editableMode: editableMode,
+        messageId: messageId,
+        feedbackId: feedbackId,
+        
+        // Editing state
+        editingField: null,
+        editingValue: '',
+        hoveredField: null,
+        originalData: JSON.parse(JSON.stringify(displayData || {people: [], events: [], delete: []})),
+        hasChanges: false,
+        autoSaveTimeout: null,
+        saveTimeout: null,
+        personDataVersion: 0, // Reactive key to force updates when person data changes
+        
+        // Core editing methods
+        isEditing(field) {
+            return this.editingField === field;
+        },
+        
+        startEdit(field, value) {
+            if (!this.editableMode) return;
+            this.editingField = field;
+            this.editingValue = value || '';
+        },
+        
+        startEditShift(field, value) {
+            if (!this.editableMode) return;
+            this.editingField = field;
+            this.editingValue = value || 'same';
+        },
+        
+        startEditRelationship(field, value) {
+            if (!this.editableMode) return;
+            this.editingField = field;
+            this.editingValue = value || 'distance';
+        },
+        
+        cancelEdit() {
+            this.editingField = null;
+            this.editingValue = '';
+        },
+        
+        // Save methods
+        savePersonName(personIndex, newValue) {
+            if (!this.extractedData.people[personIndex]) return;
+            this.extractedData.people[personIndex].name = newValue;
+            this.cancelEdit();
+            
+            // Increment version to force reactivity updates for all person name references
+            this.personDataVersion++;
+            
+            this.autoSave();
+        },
+        
+        saveEventDescription(eventIndex, newValue) {
+            if (!this.extractedData.events[eventIndex]) return;
+            this.extractedData.events[eventIndex].description = newValue;
+            this.cancelEdit();
+            this.autoSave();
+        },
+        
+        saveEventDateTime(eventIndex, newValue) {
+            if (!this.extractedData.events[eventIndex]) return;
+            this.extractedData.events[eventIndex].dateTime = newValue;
+            this.cancelEdit();
+            this.autoSave();
+        },
+        
+        saveVariableShift(eventIndex, varType, newValue) {
+            if (!this.extractedData.events[eventIndex]) return;
+            if (newValue === 'none' || !newValue) {
+                delete this.extractedData.events[eventIndex][varType];
+            } else {
+                // Preserve existing rationale when updating shift
+                const existingVar = this.extractedData.events[eventIndex][varType] || {};
+                this.extractedData.events[eventIndex][varType] = { 
+                    shift: newValue,
+                    ...(existingVar.rationale && { rationale: existingVar.rationale })
+                };
+            }
+            this.autoSave();
+        },
+        
+        saveRelationshipKind(eventIndex, newKind) {
+            if (!this.extractedData.events[eventIndex]) return;
+            const event = this.extractedData.events[eventIndex];
+            
+            // Preserve existing people arrays and rationale if possible
+            const oldRel = event.relationship || {};
+            event.relationship = { kind: newKind };
+            
+            // Preserve rationale
+            if (oldRel.rationale) {
+                event.relationship.rationale = oldRel.rationale;
+            }
+            
+            if (newKind === 'triangle') {
+                // Convert from mechanism to triangle
+                event.relationship.inside_a = oldRel.movers || [];
+                event.relationship.inside_b = oldRel.recipients || [];
+                event.relationship.outside = [];
+            } else {
+                // Convert from triangle to mechanism
+                event.relationship.movers = oldRel.inside_a || oldRel.movers || [];
+                event.relationship.recipients = oldRel.inside_b || oldRel.recipients || [];
+            }
+            
+            this.autoSave();
+        },
+        
+        // Add/Remove methods
+        addPerson() {
+            if (!this.extractedData.people) this.extractedData.people = [];
+            this.extractedData.people.push({
+                id: -Date.now(), // Negative ID for new items
+                name: 'New Person',
+                spouses: [],
+                offspring: [],
+                parents: [],
+                confidence: 0.5
+            });
+            this.autoSave();
+        },
+        
+        addEvent() {
+            if (!this.extractedData.events) this.extractedData.events = [];
+            this.extractedData.events.push({
+                id: -Date.now(),
+                description: 'New Event',
+                dateTime: new Date().toISOString().split('T')[0],
+                people: [],
+                confidence: 0.5
+            });
+            this.autoSave();
+        },
+        
+        addVariable(eventIndex, varType) {
+            if (!this.extractedData.events[eventIndex]) return;
+            if (varType === 'relationship') {
+                this.extractedData.events[eventIndex].relationship = {
+                    kind: 'distance',
+                    movers: [],
+                    recipients: [],
+                    inside_a: [],
+                    inside_b: [],
+                    outside: []
+                };
+            } else {
+                this.extractedData.events[eventIndex][varType] = { shift: 'same' };
+            }
+            this.autoSave();
+        },
+        
+        removePerson(personIndex) {
+            const person = this.extractedData.people[personIndex];
+            if (person && [1, 2].includes(person.id)) {
+                alert('System people (User and Assistant) cannot be deleted.');
+                return;
+            }
+            if (confirm('Remove this person?')) {
+                this.extractedData.people.splice(personIndex, 1);
+                this.autoSave();
+            }
+        },
+        
+        removeEvent(eventIndex) {
+            if (confirm('Remove this event?')) {
+                this.extractedData.events.splice(eventIndex, 1);
+                this.autoSave();
+            }
+        },
+        
+        removeVariable(eventIndex, varType) {
+            if (!this.extractedData.events[eventIndex]) return;
+            delete this.extractedData.events[eventIndex][varType];
+            this.autoSave();
+        },
+        
+        // Delete management methods
+        addDelete() {
+            if (!this.extractedData.delete) this.extractedData.delete = [];
+            
+            // Get available IDs from cumulative data only (not current delta)
+            const availableIds = this.getCumulativeOnlyIds();
+            
+            if (availableIds.length === 0) {
+                alert('No items available to delete from previous data.');
+                return;
+            }
+            
+            // Show modal to select which ID to delete
+            this.showDeleteSelectionModal(availableIds);
+        },
+        
+        removeDelete(deleteIndex) {
+            if (confirm('Remove this delete entry?')) {
+                this.extractedData.delete.splice(deleteIndex, 1);
+                this.autoSave();
+            }
+        },
+        
+        startEditDelete(deleteIndex, currentId) {
+            if (!this.editableMode) return;
+            this.editingField = 'delete-' + deleteIndex + '-id';
+            this.editingValue = currentId;
+        },
+        
+        saveDeleteId(deleteIndex, newId) {
+            if (!this.extractedData.delete || deleteIndex >= this.extractedData.delete.length) return;
+            this.extractedData.delete[deleteIndex] = newId;
+            this.cancelEdit();
+            this.autoSave();
+        },
+        
+        getCumulativeOnlyIds() {
+            const availableIds = [];
+            
+            // Only get IDs from cumulative data (previous data), not from current delta
+            // This includes database items and cumulative PDP items
+            
+            // Collect all people IDs from diagram (database people) with positive IDs
+            const diagramPeople = window.diagramPeople || [];
+            diagramPeople.forEach(person => {
+                if (person.id > 0) {
+                    availableIds.push({
+                        id: person.id,
+                        label: `Person ${person.id}: ${person.name || 'Unnamed'}`,
+                        type: 'person'
+                    });
+                }
+            });
+            
+            // Collect all event IDs from diagram (database events) with positive IDs
+            const diagramEvents = window.diagramEvents || [];
+            diagramEvents.forEach(event => {
+                if (event.id > 0) {
+                    availableIds.push({
+                        id: event.id,
+                        label: `Event ${event.id}: ${event.description || 'No description'}`,
+                        type: 'event'
+                    });
+                }
+            });
+            
+            // Add cumulative PDP data if available (but exclude current extracted data)
+            if (this.cumulativePdp) {
+                if (this.cumulativePdp.people) {
+                    this.cumulativePdp.people.forEach(person => {
+                        if (person.id) {
+                            availableIds.push({
+                                id: person.id,
+                                label: `Person ${person.id}: ${person.name || 'Unnamed'} (PDP)`,
+                                type: 'person'
+                            });
+                        }
+                    });
+                }
+                if (this.cumulativePdp.events) {
+                    this.cumulativePdp.events.forEach(event => {
+                        if (event.id) {
+                            availableIds.push({
+                                id: event.id,
+                                label: `Event ${event.id}: ${event.description || 'No description'} (PDP)`,
+                                type: 'event'
+                            });
+                        }
+                    });
+                }
+            }
+            
+            // Remove duplicates based on ID and sort
+            const uniqueIds = availableIds.filter((item, index, self) => 
+                index === self.findIndex(t => t.id === item.id)
+            );
+            
+            return uniqueIds.sort((a, b) => a.id - b.id);
+        },
+        
+        getAllAvailableIds() {
+            // Keep this method for the edit dropdown to show all available IDs
+            return this.getCumulativeOnlyIds();
+        },
+        
+        showDeleteSelectionModal(availableIds) {
+            // Store context globally so modal can access it
+            window.deleteSelectionContext = {
+                component: this,
+                availableIds: availableIds
+            };
+            
+            // Create and show a modal for selecting which ID to delete
+            const modalHtml = `
+                <div class="modal is-active" id="delete-selection-modal">
+                    <div class="modal-background" onclick="window.deleteSelectionContext.component.closeDeleteSelectionModal()"></div>
+                    <div class="modal-card">
+                        <header class="modal-card-head">
+                            <p class="modal-card-title">Select Item to Delete</p>
+                            <button class="delete" aria-label="close" onclick="window.deleteSelectionContext.component.closeDeleteSelectionModal()"></button>
+                        </header>
+                        <section class="modal-card-body">
+                            <div class="field">
+                                <label class="label">Choose an item from previous data to delete:</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select id="delete-item-select">
+                                            ${availableIds.map(item => 
+                                                `<option value="${item.id}">${item.label}</option>`
+                                            ).join('')}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <footer class="modal-card-foot">
+                            <button class="button is-danger" onclick="window.deleteSelectionContext.component.confirmDeleteSelection()">Add Delete</button>
+                            <button class="button" onclick="window.deleteSelectionContext.component.closeDeleteSelectionModal()">Cancel</button>
+                        </footer>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to page
+            const modalContainer = document.createElement('div');
+            modalContainer.innerHTML = modalHtml;
+            document.body.appendChild(modalContainer);
+            
+            // Store reference for cleanup
+            this.deleteModalContainer = modalContainer;
+        },
+        
+        closeDeleteSelectionModal() {
+            if (this.deleteModalContainer) {
+                document.body.removeChild(this.deleteModalContainer);
+                this.deleteModalContainer = null;
+            }
+            // Clean up global context
+            if (window.deleteSelectionContext) {
+                delete window.deleteSelectionContext;
+            }
+        },
+        
+        confirmDeleteSelection() {
+            const selectElement = document.getElementById('delete-item-select');
+            if (selectElement) {
+                const selectedId = parseInt(selectElement.value);
+                this.extractedData.delete.push(selectedId);
+                this.autoSave();
+            }
+            this.closeDeleteSelectionModal();
+        },
+        
+        getItemDescription(itemId) {
+            // Convert to number for comparison
+            const numericId = typeof itemId === 'string' ? parseInt(itemId) : itemId;
+            
+            // Check diagram people
+            const diagramPeople = window.diagramPeople || [];
+            const person = diagramPeople.find(p => p.id === numericId);
+            if (person) {
+                return `Person: ${person.name || 'Unnamed'}`;
+            }
+            
+            // Check diagram events
+            const diagramEvents = window.diagramEvents || [];
+            const event = diagramEvents.find(e => e.id === numericId);
+            if (event) {
+                return `Event: ${event.description || 'No description'}`;
+            }
+            
+            // Check extracted data
+            if (this.extractedData) {
+                const extractedPerson = (this.extractedData.people || []).find(p => p.id === numericId);
+                if (extractedPerson) {
+                    return `Person: ${extractedPerson.name || 'Unnamed'} (from extraction)`;
+                }
+                
+                const extractedEvent = (this.extractedData.events || []).find(e => e.id === numericId);
+                if (extractedEvent) {
+                    return `Event: ${extractedEvent.description || 'No description'} (from extraction)`;
+                }
+            }
+            
+            // Check cumulative PDP
+            if (this.cumulativePdp) {
+                const pdpPerson = (this.cumulativePdp.people || []).find(p => p.id === numericId);
+                if (pdpPerson) {
+                    return `Person: ${pdpPerson.name || 'Unnamed'} (PDP)`;
+                }
+                
+                const pdpEvent = (this.cumulativePdp.events || []).find(e => e.id === numericId);
+                if (pdpEvent) {
+                    return `Event: ${pdpEvent.description || 'No description'} (PDP)`;
+                }
+            }
+            
+            return `ID ${numericId} (not found)`;
+        },
+        
+        // Auto-save functionality
+        autoSave() {
+            if (!this.editableMode || !this.messageId) return;
+            
+            clearTimeout(this.saveTimeout);
+            this.hasChanges = true;
+            
+            // Debounce saves by 1 second
+            this.saveTimeout = setTimeout(() => {
+                this.saveExtractedData();
+            }, 1000);
+        },
+        
+        saveExtractedData() {
+            if (!this.messageId) return;
+            
+            // Submit as feedback - ensure messageId is an integer
+            const msgId = parseInt(this.messageId);
+            if (isNaN(msgId)) {
+                console.error('Invalid message ID:', this.messageId);
+                return;
+            }
+            submitExtractionFeedback(msgId, false, this.extractedData);
+            this.hasChanges = false;
+            // Update the edited extraction to show this is now the corrected version
+            this.editedExtraction = JSON.parse(JSON.stringify(this.extractedData));
+        },
+        
+        clearCorrections() {
+            if (!this.messageId) return;
+            
+            console.log('clearCorrections called:', {
+                editedExtraction: !!this.editedExtraction,
+                feedbackId: this.feedbackId,
+                messageId: this.messageId
+            });
+            
+            // Always confirm before clearing corrections
+            if (!confirm('Are you sure you want to reset all corrections? This will restore the original extraction but will not delete auditing feedback.')) {
+                return;
+            }
+            
+            // Delete existing feedback to clear corrections
+            if (this.editedExtraction && this.feedbackId) {
+                // Delete the feedback directly without additional confirmation
+                this.deleteFeedbackDirect(this.feedbackId, 'extraction', this.messageId);
+            } else {
+                // Fallback: just reset local data if no feedback ID
+                this.extractedData = JSON.parse(JSON.stringify(this.originalExtractedData));
+                this.editedExtraction = null;
+                this.hasChanges = false;
+                console.log('Reset completed without server deletion');
+            }
+        },
+        
+        // Delete feedback without confirmation (used internally after clearCorrections confirmation)
+        deleteFeedbackDirect(feedbackId, feedbackType, messageId) {
+            fetch('/therapist/feedback/' + feedbackId, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Auditor-Id': '{{ current_auditor }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reset the component state
+                    this.extractedData = JSON.parse(JSON.stringify(this.originalExtractedData));
+                    this.editedExtraction = null;
+                    this.hasChanges = false;
+                    this.feedbackId = null;
+                    
+                    showNotification('Feedback deleted and extraction reset', 'is-success');
+                } else {
+                    showNotification('Failed to delete feedback', 'is-danger');
+                }
+            })
+            .catch(error => {
+                showNotification('Network error: ' + error.message, 'is-danger');
+            });
+        },
+        
+        getPersonName(personId, version = null) {
+            // Version parameter is used to force Alpine.js reactivity updates
+            // Convert to number for comparison since JSON may serialize as string
+            const numericId = typeof personId === 'string' ? parseInt(personId) : personId;
+            
+            // Collect all people from all sources
+            const allPeople = [];
+            
+            // Add from diagram (database people) - these have positive IDs
+            const diagramPeople = window.diagramPeople || [];
+            allPeople.push(...diagramPeople);
+            
+            // For cumulative display, we need to check the data that was passed in
+            // When displaying cumulative data, `this.extractedData` contains the cumulative PDP
+            const dataToCheck = this.extractedData || this.cumulativePdp;
+            if (dataToCheck && dataToCheck.people) {
+                allPeople.push(...dataToCheck.people);
+            }
+            
+            // Also check cumulativePdp if it's different from extractedData
+            if (this.cumulativePdp && this.cumulativePdp !== dataToCheck && this.cumulativePdp.people) {
+                allPeople.push(...this.cumulativePdp.people);
+            }
+            
+            // Find person by ID - try exact match first
+            let person = allPeople.find(p => p.id === numericId);
+            if (person && person.name) {
+                return person.name;
+            }
+            
+            // Try string comparison as fallback (in case of type mismatches)
+            person = allPeople.find(p => String(p.id) === String(numericId));
+            if (person && person.name) {
+                return person.name;
+            }
+            
+            // Special case: if looking for negative ID and we have cumulative data, search more thoroughly
+            if (numericId < 0 && (this.extractedData || this.cumulativePdp)) {
+                const cumulativeData = this.extractedData || this.cumulativePdp;
+                if (cumulativeData && cumulativeData.people) {
+                    const negativePerson = cumulativeData.people.find(p => p.id === numericId || p.id === String(numericId));
+                    if (negativePerson && negativePerson.name) {
+                        return negativePerson.name;
+                    }
+                }
+            }
+            
+            // Hardcoded fallbacks for known system people
+            if (numericId === 1) return 'User';
+            if (numericId === 2) return 'Assistant';
+            
+            // Generic fallback for extracted people (negative IDs)
+            if (numericId < 0) return `Person ${Math.abs(numericId)}`;
+            return `Person ${numericId}`;
+        },
+
+        // Relationship person editing
+        editRelationshipPerson(eventIndex, fieldName, personIndex, currentId) {
+            console.log('=== editRelationshipPerson called ===');
+            console.log('Event index:', eventIndex, 'Field name:', fieldName, 'Person index:', personIndex);
+            console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
+            
+            // Store context for modal callback including reference to this component
+            window.relationshipPersonContext = {
+                eventIndex,
+                fieldName,
+                personIndex,
+                isEdit: true,
+                component: this, // Store reference to the Alpine component
+                componentId: this.componentId, // Store component ID to identify correct component
+                messageId: this.messageId // Store message ID for debugging
+            };
+            
+            // Set modal title and pre-select current person
+            document.getElementById('relationship-person-modal-title').textContent = `Edit ${fieldName} Person`;
+            const select = document.getElementById('relationship-person-select');
+            select.value = currentId.toString();
+            
+            // Show modal
+            showRelationshipPersonModal();
+        },
+
+        addRelationshipPerson(eventIndex, fieldName) {
+            console.log('=== addRelationshipPerson called ===');
+            console.log('Event index:', eventIndex, 'Field name:', fieldName);
+            console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
+            
+            // Store context for modal callback including reference to this component
+            window.relationshipPersonContext = {
+                eventIndex,
+                fieldName,
+                personIndex: null,
+                isEdit: false,
+                component: this, // Store reference to the Alpine component
+                componentId: this.componentId, // Store component ID to identify correct component
+                messageId: this.messageId // Store message ID for debugging
+            };
+            
+            console.log('Set relationship context with component:', window.relationshipPersonContext);
+            
+            // Set modal title and reset selection
+            document.getElementById('relationship-person-modal-title').textContent = `Add ${fieldName} Person`;
+            document.getElementById('relationship-person-select').value = '';
+            document.getElementById('relationship-new-person-name').value = '';
+            document.getElementById('new-person-name-field').style.display = 'none';
+            
+            // Show modal
+            showRelationshipPersonModal();
+        },
+
+        removeRelationshipPerson(eventIndex, fieldName, personIndex) {
+            if (confirm('Remove this person from ' + fieldName + '?')) {
+                this.extractedData.events[eventIndex].relationship[fieldName].splice(personIndex, 1);
+                this.autoSave();
+            }
+        },
+
+        // Internal callback for handling person selection from modal
+        handlePersonSelection(eventIndexOrPersonIndex, fieldName, personIndexOrListIndex, personId, isEdit, newPersonData = null) {
+            console.log('=== handlePersonSelection called internally ===');
+            console.log('Parameters:', { eventIndexOrPersonIndex, fieldName, personIndexOrListIndex, personId, isEdit, newPersonData });
+            
+            // Add new person to people array if provided
+            if (newPersonData) {
+                console.log('Adding new person to extractedData.people:', newPersonData);
+                if (!this.extractedData.people) this.extractedData.people = [];
+                
+                // Check if person already exists to avoid duplicates
+                const existingPerson = this.extractedData.people.find(p => p.name === newPersonData.name);
+                if (!existingPerson) {
+                    this.extractedData.people.push(newPersonData);
+                } else {
+                    personId = existingPerson.id;
+                }
+            }
+            
+            // Determine the context based on field names and window context
+            const context = window.relationshipPersonContext || {};
+            const isPersonField = context.isPersonField || false;
+            const isEventPeople = (fieldName === 'people' && !isPersonField);
+            
+            if (isPersonField) {
+                // Handle Person list fields (spouses, offspring, parents)
+                const personIndex = eventIndexOrPersonIndex; // This is actually personIndex for Person fields
+                const listIndex = personIndexOrListIndex;    // This is listIndex for Person fields
+                const person = this.extractedData.people[personIndex];
+                
+                console.log(`Handling Person field: ${fieldName} for person at index ${personIndex}`);
+                
+                if (isEdit) {
+                    console.log('EDIT mode - updating person list field at index', listIndex);
+                    console.log('Before update:', person[fieldName]);
+                    person[fieldName][listIndex] = personId;
+                    console.log('After update:', person[fieldName]);
+                } else {
+                    console.log('ADD mode - adding person to', fieldName);
+                    if (!person[fieldName]) {
+                        console.log('Creating new array for', fieldName);
+                        person[fieldName] = [];
+                    }
+                    console.log('Before push:', person[fieldName]);
+                    person[fieldName].push(personId);
+                    console.log('After push:', person[fieldName]);
+                }
+            } else if (isEventPeople) {
+                // Handle event.people array
+                const eventIndex = eventIndexOrPersonIndex;
+                const personIndex = personIndexOrListIndex;
+                const event = this.extractedData.events[eventIndex];
+                
+                if (isEdit) {
+                    console.log('EDIT mode - updating event.people at index', personIndex);
+                    console.log('Before update:', event.people);
+                    event.people[personIndex] = personId;
+                    console.log('After update:', event.people);
+                } else {
+                    console.log('ADD mode - adding person to event.people');
+                    if (!event.people) {
+                        console.log('Creating new people array for event');
+                        event.people = [];
+                    }
+                    console.log('Before push:', event.people);
+                    event.people.push(personId);
+                    console.log('After push:', event.people);
+                }
+            } else {
+                // Handle relationship data
+                const eventIndex = eventIndexOrPersonIndex;
+                const personIndex = personIndexOrListIndex;
+                const event = this.extractedData.events[eventIndex];
+                
+                if (isEdit) {
+                    console.log('EDIT mode - updating person at index', personIndex);
+                    console.log('Before update:', event.relationship[fieldName]);
+                    event.relationship[fieldName][personIndex] = personId;
+                    console.log('After update:', event.relationship[fieldName]);
+                } else {
+                    console.log('ADD mode - adding person to', fieldName);
+                    if (!event.relationship[fieldName]) {
+                        console.log('Creating new array for', fieldName);
+                        event.relationship[fieldName] = [];
+                    }
+                    console.log('Before push:', event.relationship[fieldName]);
+                    event.relationship[fieldName].push(personId);
+                    console.log('After push:', event.relationship[fieldName]);
+                }
+            }
+            
+            // Trigger auto-save
+            this.autoSave();
+            console.log('=== handlePersonSelection completed ===');
+        },
+
+        // Event People Management Functions
+        addEventPerson(eventIndex) {
+            console.log('=== addEventPerson called ===');
+            console.log('Event index:', eventIndex);
+            console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
+            
+            // Store context for modal callback including reference to this component
+            window.relationshipPersonContext = {
+                eventIndex,
+                fieldName: 'people', // Special field name for event people
+                personIndex: null,
+                isEdit: false,
+                component: this, // Store reference to the Alpine component
+                isEventPeople: true // Flag to indicate this is for event.people, not relationship
+            };
+            
+            showRelationshipPersonModal();
+        },
+
+        editEventPerson(eventIndex, personIndex, currentId) {
+            console.log('=== editEventPerson called ===');
+            console.log('Event index:', eventIndex, 'Person index:', personIndex);
+            console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
+            
+            // Store context for modal callback including reference to this component
+            window.relationshipPersonContext = {
+                eventIndex,
+                fieldName: 'people', // Special field name for event people
+                personIndex,
+                isEdit: true,
+                currentPersonId: currentId,
+                component: this, // Store reference to the Alpine component
+                isEventPeople: true // Flag to indicate this is for event.people, not relationship
+            };
+            
+            showRelationshipPersonModal();
+        },
+
+        removeEventPerson(eventIndex, personIndex) {
+            if (confirm('Remove this person from event?')) {
+                this.extractedData.events[eventIndex].people.splice(personIndex, 1);
+                this.autoSave();
+            }
+        },
+
+        // Person List Field Management Functions
+        addPersonListItem(personIndex, fieldName) {
+            console.log('=== addPersonListItem called ===');
+            console.log('Person index:', personIndex, 'Field name:', fieldName);
+            console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
+            
+            // Store context for modal callback including reference to this component
+            window.relationshipPersonContext = {
+                personIndex, // Use personIndex instead of eventIndex for Person fields
+                fieldName,
+                listIndex: null,
+                isEdit: false,
+                component: this, // Store reference to the Alpine component
+                isPersonField: true // Flag to indicate this is for person list fields, not event/relationship
+            };
+            
+            showRelationshipPersonModal();
+        },
+
+        editPersonListItem(personIndex, fieldName, listIndex, currentId) {
+            console.log('=== editPersonListItem called ===');
+            console.log('Person index:', personIndex, 'Field name:', fieldName, 'List index:', listIndex);
+            console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
+            
+            // Store context for modal callback including reference to this component
+            window.relationshipPersonContext = {
+                personIndex, // Use personIndex instead of eventIndex for Person fields
+                fieldName,
+                listIndex,
+                isEdit: true,
+                currentPersonId: currentId,
+                component: this, // Store reference to the Alpine component
+                isPersonField: true // Flag to indicate this is for person list fields, not event/relationship
+            };
+            
+            showRelationshipPersonModal();
+        },
+
+        removePersonListItem(personIndex, fieldName, listIndex) {
+            const fieldDisplayName = fieldName === 'spouses' ? 'spouses' : 
+                                   fieldName === 'offspring' ? 'offspring' : 'parents';
+            if (confirm(`Remove this person from ${fieldDisplayName}?`)) {
+                this.extractedData.people[personIndex][fieldName].splice(listIndex, 1);
+                this.autoSave();
+            }
+        },
+
+        savePersonConfidence(personIndex, newValue) {
+            if (!this.extractedData.people[personIndex]) return;
+            this.extractedData.people[personIndex].confidence = newValue;
+            this.cancelEdit();
+            this.autoSave();
+        },
+
+        autoSave() {
+            // Auto-save edited extraction with debounce
+            if (!this.messageId) return;
+            
+            clearTimeout(this.autoSaveTimeout);
+            this.autoSaveTimeout = setTimeout(() => {
+                this.hasChanges = true;
+                // Submit the changes as auto-save (no page reload)
+                autoSaveExtractionFeedback(this.messageId, this.extractedData)
+                    .then(data => {
+                        this.hasChanges = false;
+                        // Update the edited extraction to show this is now the corrected version
+                        this.editedExtraction = JSON.parse(JSON.stringify(this.extractedData));
+                    })
+                    .catch(error => {
+                        console.error('Auto-save failed:', error);
+                        this.hasChanges = false; // Reset flag even on failure
+                    });
+            }, 500); // Reduced from 1000ms to 500ms for more immediate saves
+        },
+
+        getAllPeople() {
+            const allPeople = [];
+            
+            if (this.extractedData && this.extractedData.people) {
+                allPeople.push(...this.extractedData.people);
+            }
+            
+            if (this.cumulativePdp && this.cumulativePdp.people) {
+                allPeople.push(...this.cumulativePdp.people);
+            }
+            
+            return allPeople;
+        }
+    };
+}
+
+// Enhanced component with feedback review capabilities
+function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDown, submitted, componentId, editableMode = false, messageId = null, editedExtraction = null, feedbackId = null, allFeedback = [], approved = false, approvedBy = null, approvedAt = null, adminFeedbackId = null) {
+    const baseComponent = componentExtractedData(extractedData, cumulativePdp, thumbsDown, submitted, componentId, editableMode, messageId, editedExtraction, feedbackId);
+    
+    return {
+        ...baseComponent,
+        allFeedback: allFeedback,
+        reviewMode: false,
+        selectedIndex: -1, // -1 = original, 0+ = feedback index
+        selectedFeedback: null,
+        // Initialize extractedData to show AI original by default
+        extractedData: baseComponent.originalExtractedData,
+        // Statement approval data
+        approved: approved,
+        approvedBy: approvedBy,
+        approvedAt: approvedAt,
+        adminFeedbackId: adminFeedbackId,
+        
+        // Override extracted data based on selected feedback
+        get currentDisplayData() {
+            if (this.selectedIndex === -1) {
+                return this.originalExtractedData; // Show original AI extraction
+            } else if (this.selectedIndex >= 0 && this.allFeedback[this.selectedIndex]) {
+                return this.allFeedback[this.selectedIndex].edited_extraction || this.originalExtractedData;
+            }
+            return this.originalExtractedData;
+        },
+        
+        // Quick approval function
+        approveFeedback(feedbackId) {
+            fetch('/therapist/admin/quick-approve', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    feedback_id: feedbackId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Reload to show updated approval status
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Network error');
+            });
+        },
+        
+        // Approve statement extraction function
+        approveStatement(statementId) {
+            fetch('/therapist/admin/approve-statement', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    statement_id: statementId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Reload to show updated approval status and mutual exclusivity
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Network error');
+            });
+        },
+        
+        // Unapprove feedback function
+        unapproveFeedback(feedbackId) {
+            fetch('/therapist/admin/unapprove-feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    feedback_id: feedbackId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Reload to show updated approval status
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Network error');
+            });
+        },
+        
+        // Unapprove statement extraction function  
+        unapproveStatement(statementId) {
+            fetch('/therapist/admin/unapprove-statement', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    statement_id: statementId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Reload to show updated approval status
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Network error');
+            });
+        },
+        
+        // Override clearCorrections to use adminFeedbackId when available
+        clearCorrections() {
+            if (!this.messageId) return;
+            
+            console.log('clearCorrections called:', {
+                editedExtraction: !!this.editedExtraction,
+                adminFeedbackId: this.adminFeedbackId,
+                messageId: this.messageId
+            });
+            
+            // Always confirm before clearing corrections
+            if (!confirm('Are you sure you want to reset all corrections? This will restore the original extraction but will not delete auditing feedback.')) {
+                return;
+            }
+            
+            // Use adminFeedbackId if available, otherwise fall back to regular feedbackId
+            const targetFeedbackId = this.adminFeedbackId || this.feedbackId;
+            
+            // Delete existing feedback to clear corrections
+            if (this.editedExtraction && targetFeedbackId) {
+                // Delete the feedback directly without additional confirmation
+                this.deleteFeedbackDirect(targetFeedbackId, 'extraction', this.messageId);
+            } else {
+                // Fallback: just reset local data if no feedback ID
+                this.extractedData = JSON.parse(JSON.stringify(this.originalExtractedData));
+                this.editedExtraction = null;
+                this.hasChanges = false;
+                showNotification('Extraction reset to original', 'is-success');
+            }
+        },
+
+        // Update displayed data when selection changes
+        selectFeedback(index, feedback) {
+            this.selectedIndex = index;
+            this.selectedFeedback = feedback;
+            
+            // Update the extracted data to show the selected version
+            if (index === -1) {
+                this.extractedData = JSON.parse(JSON.stringify(this.originalExtractedData));
+                // When on AI original, use admin's own feedback for editedExtraction if available
+                const adminFeedback = this.allFeedback.find(f => f.auditor_id === '{{ current_auditor }}');
+                this.editedExtraction = adminFeedback ? adminFeedback.edited_extraction : null;
+                this.feedbackId = adminFeedback ? adminFeedback.id : null;
+            } else if (feedback && feedback.edited_extraction) {
+                // Merge the correction with the original data to ensure completeness
+                const originalData = JSON.parse(JSON.stringify(this.originalExtractedData));
+                const correctionData = JSON.parse(JSON.stringify(feedback.edited_extraction));
+                
+                // Merge the data - correction takes precedence but original fills gaps
+                this.extractedData = {
+                    people: correctionData.people || originalData.people || [],
+                    events: correctionData.events || originalData.events || [],
+                    delete: correctionData.delete || originalData.delete || []
+                };
+                // Update editedExtraction and feedbackId to match current selection
+                this.editedExtraction = feedback.edited_extraction;
+                this.feedbackId = feedback.id;
+            } else {
+                // Fallback to original data if no edited_extraction
+                this.extractedData = JSON.parse(JSON.stringify(this.originalExtractedData));
+                this.editedExtraction = null;
+                this.feedbackId = null;
+            }
+        }
+    };
+}
+
+// Two-Column Collapsible AI Message Functions
+function toggleAIMessage(messageId) {
+    // Chat column elements
+    const chatCollapsed = document.getElementById('chat-collapsed-' + messageId);
+    const chatExpanded = document.getElementById('chat-expanded-' + messageId);
+    
+    // Data column elements
+    const dataCollapsed = document.getElementById('data-collapsed-' + messageId);
+    const dataExpanded = document.getElementById('data-expanded-' + messageId);
+    
+    // Check current state (using chat column as reference)
+    const isExpanded = chatExpanded && chatExpanded.style.display !== 'none';
+    
+    if (isExpanded) {
+        // Collapse both columns
+        if (chatCollapsed && chatExpanded) {
+            chatCollapsed.style.display = 'block';
+            chatExpanded.style.display = 'none';
+        }
+        if (dataCollapsed && dataExpanded) {
+            dataCollapsed.style.display = 'block';
+            dataExpanded.style.display = 'none';
+        }
+    } else {
+        // Expand both columns
+        if (chatCollapsed && chatExpanded) {
+            chatCollapsed.style.display = 'none';
+            chatExpanded.style.display = 'block';
+        }
+        if (dataCollapsed && dataExpanded) {
+            dataCollapsed.style.display = 'none';
+            dataExpanded.style.display = 'block';
+        }
+    }
+}
+
+function expandAllMessages() {
+    // Expand AI messages
+    document.querySelectorAll('[id^="chat-collapsed-"]').forEach(chatCollapsed => {
+        const messageId = chatCollapsed.id.replace('chat-collapsed-', '');
+        const chatExpanded = document.getElementById('chat-expanded-' + messageId);
+        
+        if (chatExpanded) {
+            chatCollapsed.style.display = 'none';
+            chatExpanded.style.display = 'block';
+        }
+    });
+    
+    // Expand data sections for Subject statements
+    document.querySelectorAll('[id^="data-collapsed-"]').forEach(dataCollapsed => {
+        const messageId = dataCollapsed.id.replace('data-collapsed-', '');
+        const dataExpanded = document.getElementById('data-expanded-' + messageId);
+        
+        if (dataExpanded) {
+            dataCollapsed.style.display = 'none';
+            dataExpanded.style.display = 'block';
+        }
+    });
+    
+    // Expand cumulative sections for all statements
+    document.querySelectorAll('[id^="cumulative-collapsed-"]').forEach(cumulativeCollapsed => {
+        const messageId = cumulativeCollapsed.id.replace('cumulative-collapsed-', '');
+        const cumulativeExpanded = document.getElementById('cumulative-expanded-' + messageId);
+        
+        if (cumulativeExpanded) {
+            cumulativeCollapsed.style.display = 'none';
+            cumulativeExpanded.style.display = 'block';
+        }
+    });
+}
+
+function collapseAllMessages() {
+    // Collapse AI messages
+    document.querySelectorAll('[id^="chat-expanded-"]').forEach(chatExpanded => {
+        const messageId = chatExpanded.id.replace('chat-expanded-', '');
+        const chatCollapsed = document.getElementById('chat-collapsed-' + messageId);
+        
+        if (chatCollapsed) {
+            chatCollapsed.style.display = 'block';
+            chatExpanded.style.display = 'none';
+        }
+    });
+    
+    // Collapse data sections for Subject statements
+    document.querySelectorAll('[id^="data-expanded-"]').forEach(dataExpanded => {
+        const messageId = dataExpanded.id.replace('data-expanded-', '');
+        const dataCollapsed = document.getElementById('data-collapsed-' + messageId);
+        
+        if (dataCollapsed) {
+            dataCollapsed.style.display = 'block';
+            dataExpanded.style.display = 'none';
+        }
+    });
+    
+    // Collapse cumulative sections for all statements
+    document.querySelectorAll('[id^="cumulative-expanded-"]').forEach(cumulativeExpanded => {
+        const messageId = cumulativeExpanded.id.replace('cumulative-expanded-', '');
+        const cumulativeCollapsed = document.getElementById('cumulative-collapsed-' + messageId);
+        
+        if (cumulativeCollapsed) {
+            cumulativeCollapsed.style.display = 'block';
+            cumulativeExpanded.style.display = 'none';
+        }
+    });
+}
+
+
+function toggleCumulativeSection(messageId) {
+    // Cumulative section elements
+    const cumulativeCollapsed = document.getElementById('cumulative-collapsed-' + messageId);
+    const cumulativeExpanded = document.getElementById('cumulative-expanded-' + messageId);
+    
+    // Data section elements (synchronize with cumulative section)
+    const dataCollapsed = document.getElementById('data-collapsed-' + messageId);
+    const dataExpanded = document.getElementById('data-expanded-' + messageId);
+    
+    // Check current state
+    const isExpanded = cumulativeExpanded && cumulativeExpanded.style.display !== 'none';
+    
+    if (isExpanded) {
+        // Collapse both cumulative and data sections
+        if (cumulativeCollapsed && cumulativeExpanded) {
+            cumulativeCollapsed.style.display = 'block';
+            cumulativeExpanded.style.display = 'none';
+        }
+        if (dataCollapsed && dataExpanded) {
+            dataCollapsed.style.display = 'block';
+            dataExpanded.style.display = 'none';
+        }
+    } else {
+        // Expand both cumulative and data sections
+        if (cumulativeCollapsed && cumulativeExpanded) {
+            cumulativeCollapsed.style.display = 'none';
+            cumulativeExpanded.style.display = 'block';
+        }
+        if (dataCollapsed && dataExpanded) {
+            dataCollapsed.style.display = 'none';
+            dataExpanded.style.display = 'block';
+        }
+    }
+}
+
+function submitFeedback(messageId, type, thumbsDown, comment) {
+    fetch('/therapist/feedback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Auditor-Id': '{{ current_auditor }}'
+        },
+        body: JSON.stringify({
+            message_id: messageId,
+            feedback_type: type,
+            thumbs_down: thumbsDown,
+            comment: comment || null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Feedback submitted successfully!', 'is-success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('Error: ' + (data.error || 'Unknown error'), 'is-danger');
+        }
+    })
+    .catch(error => {
+        showNotification('Network error: ' + error.message, 'is-danger');
+    });
+}
+
+// Auto-save function - doesn't reload page, minimal notifications
+function autoSaveExtractionFeedback(messageId, editedData) {
+    messageId = parseInt(messageId);
+    if (isNaN(messageId)) {
+        console.error('Invalid message ID for auto-save:', messageId);
+        return Promise.reject(new Error('Invalid message ID'));
+    }
+    
+    return fetch('/therapist/feedback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Auditor-Id': '{{ current_auditor }}'
+        },
+        body: JSON.stringify({
+            message_id: messageId,
+            feedback_type: 'extraction',
+            thumbs_down: false, // Auto-save is always positive feedback with corrections
+            comment: null,
+            edited_extraction: editedData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Auto-save successful:', data.updated ? 'updated' : 'created');
+            return data;
+        } else {
+            console.error('Auto-save error:', data.error);
+            throw new Error(data.error || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        console.error('Auto-save network error:', error.message);
+        throw error;
+    });
+}
+
+// Manual feedback function - shows notifications and reloads page
+function submitExtractionFeedback(messageId, thumbsDown, editedData) {
+    // Ensure messageId is an integer
+    messageId = parseInt(messageId);
+    if (isNaN(messageId)) {
+        console.error('Invalid message ID for feedback submission:', messageId);
+        return;
+    }
+    
+    const commentEl = document.getElementById('extraction-comment-' + messageId);
+    const comment = commentEl ? commentEl.value : null;
+    
+    fetch('/therapist/feedback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Auditor-Id': '{{ current_auditor }}'
+        },
+        body: JSON.stringify({
+            message_id: messageId,
+            feedback_type: 'extraction',
+            thumbs_down: thumbsDown,
+            comment: comment,
+            edited_extraction: editedData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Data review submitted successfully!', 'is-success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('Error: ' + (data.error || 'Unknown error'), 'is-danger');
+        }
+    })
+    .catch(error => {
+        showNotification('Network error: ' + error.message, 'is-danger');
+    });
+}
+
+function deleteFeedback(feedbackId, feedbackType, messageId) {
+    if (!confirm('Are you sure you want to delete this feedback? You can then re-submit new feedback.')) {
+        return;
+    }
+    
+    fetch('/therapist/feedback/' + feedbackId, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Auditor-Id': '{{ current_auditor }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Feedback deleted successfully! You can now re-submit.', 'is-success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('Error: ' + (data.error || 'Unknown error'), 'is-danger');
+        }
+    })
+    .catch(error => {
+        showNotification('Network error: ' + error.message, 'is-danger');
+    });
+}
+
+
+// Auto-refresh on new messages for this discussion
+document.body.addEventListener('sse:message', function(event) {
+    try {
+        const data = JSON.parse(event.detail.data);
+        if (data.type === 'new_message' && data.discussion_id === {{ discussion.id }}) {
+            showNotification('New message in this discussion - refreshing...', 'is-info');
+            setTimeout(() => location.reload(), 2000);
+        }
+    } catch (e) {
+        // Ignore ping messages
+    }
+});
+
+// Prompt Editor Functions - Global scope
+var currentPromptMessageId = null;
+var defaultPrompts = {};
+var currentCustomPrompts = {};
+
+// Data Editor Functions - Global scope
+var currentEditingData = {};
+var currentMessageId = null;
+
+// Add Font Awesome for icons
+if (!document.querySelector('link[href*="font-awesome"]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
+    document.head.appendChild(link);
+}
+
+// Initialize default prompts on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Fetch default prompts from the server
+    fetch('/therapist/prompts/defaults')
+        .then(response => response.json())
+        .then(data => {
+            defaultPrompts = data;
+        })
+        .catch(error => {
+            console.error('Error loading default prompts:', error);
+            // Fallback defaults
+            defaultPrompts = {
+                'ROLE_COACH_NOT_THERAPIST': 'Default role prompt...',
+                'BOWEN_THEORY_COACHING_IN_A_NUTSHELL': 'Default Bowen theory prompt...',
+                'DATA_MODEL_DEFINITIONS': 'Default data model prompt...'
+            };
+        });
+});
+
+// Prompt Editor Functions
+window.openPromptEditor = function(messageId) {
+    currentPromptMessageId = messageId;
+    
+    // Fetch any existing custom prompts for this message
+    fetch(`/therapist/prompts/${messageId}`)
+        .then(response => response.json())
+        .then(data => {
+            currentCustomPrompts = data.custom_prompts || {};
+            renderPromptEditor(false);
+            document.getElementById('promptEditorModal').classList.add('is-active');
+        })
+        .catch(error => {
+            console.error('Error loading prompts:', error);
+            currentCustomPrompts = {};
+            renderPromptEditor(false);
+            document.getElementById('promptEditorModal').classList.add('is-active');
+        });
+}
+
+window.viewPromptDiff = function(messageId) {
+    // Fetch the custom prompts for this message and show diff
+    fetch(`/therapist/prompts/${messageId}`)
+        .then(response => response.json())
+        .then(data => {
+            renderPromptDiff(data.custom_prompts || {});
+            document.getElementById('promptDiffModal').classList.add('is-active');
+        })
+        .catch(error => {
+            console.error('Error loading prompt diff:', error);
+        });
+}
+
+function closePromptEditor() {
+    document.getElementById('promptEditorModal').classList.remove('is-active');
+    currentPromptMessageId = null;
+    currentCustomPrompts = {};
+}
+
+function closePromptDiff() {
+    document.getElementById('promptDiffModal').classList.remove('is-active');
+}
+
+function renderPromptEditor(isDiffView = false) {
+    const container = document.getElementById('promptEditorContent');
+    const title = document.getElementById('promptModalTitle');
+    const saveBtn = document.getElementById('savePromptsBtn');
+    const resetBtn = document.getElementById('resetPromptsBtn');
+    
+    if (isDiffView) {
+        title.textContent = 'Prompt Changes Used';
+        saveBtn.style.display = 'none';
+        resetBtn.style.display = 'none';
+    } else {
+        title.textContent = 'Edit System Prompts';
+        saveBtn.style.display = 'inline-flex';
+        resetBtn.style.display = Object.keys(currentCustomPrompts).length > 0 ? 'inline-flex' : 'none';
+    }
+    
+    const promptKeys = ['ROLE_COACH_NOT_THERAPIST', 'BOWEN_THEORY_COACHING_IN_A_NUTSHELL', 'DATA_MODEL_DEFINITIONS'];
+    const promptTitles = {
+        'ROLE_COACH_NOT_THERAPIST': 'Role: Coach Not Therapist',
+        'BOWEN_THEORY_COACHING_IN_A_NUTSHELL': 'Bowen Theory Coaching',
+        'DATA_MODEL_DEFINITIONS': 'Data Model Definitions'
+    };
+    
+    let html = '<div class="columns is-multiline">';
+    
+    promptKeys.forEach(key => {
+        const defaultValue = defaultPrompts[key] || '';
+        const customValue = currentCustomPrompts[key] || defaultValue;
+        const hasChanges = currentCustomPrompts[key] && currentCustomPrompts[key] !== defaultValue;
+        
+        html += `
+            <div class="column is-full">
+                <div class="card">
+                    <header class="card-header">
+                        <p class="card-header-title">
+                            ${promptTitles[key]}
+                            ${hasChanges ? '<span class="tag is-warning ml-2">Modified</span>' : ''}
+                        </p>
+                    </header>
+                    <div class="card-content">
+                        <div class="field">
+                            <div class="control">
+                                <textarea class="textarea" 
+                                          id="prompt-${key}" 
+                                          rows="15"
+                                          style="font-family: monospace; font-size: 13px;"
+                                          placeholder="Enter custom prompt or leave empty to use default..."
+                                          oninput="autoResizeTextarea(this)"></textarea>
+                            </div>
+                        </div>
+                        ${hasChanges ? `
+                        <div class="field">
+                            <button class="button is-small is-outlined" onclick="resetSinglePrompt('${key}')">
+                                <span class="icon is-small"><i class="fas fa-undo"></i></span>
+                                <span>Reset to Default</span>
+                            </button>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+    
+    // Set textarea values programmatically and auto-resize after DOM is ready
+    setTimeout(() => {
+        promptKeys.forEach(key => {
+            const textarea = document.getElementById(`prompt-${key}`);
+            if (textarea) {
+                const defaultValue = defaultPrompts[key] || '';
+                const customValue = currentCustomPrompts[key] || defaultValue;
+                // Set value programmatically to preserve exact content
+                textarea.value = customValue;
+                autoResizeTextarea(textarea);
+            }
+        });
+    }, 50);
+}
+
+function renderPromptDiff(customPrompts) {
+    const container = document.getElementById('promptDiffContent');
+    const promptKeys = ['ROLE_COACH_NOT_THERAPIST', 'BOWEN_THEORY_COACHING_IN_A_NUTSHELL', 'DATA_MODEL_DEFINITIONS'];
+    const promptTitles = {
+        'ROLE_COACH_NOT_THERAPIST': 'Role: Coach Not Therapist',
+        'BOWEN_THEORY_COACHING_IN_A_NUTSHELL': 'Bowen Theory Coaching',
+        'DATA_MODEL_DEFINITIONS': 'Data Model Definitions'
+    };
+    
+    let html = '<div class="columns is-multiline">';
+    let hasChanges = false;
+    
+    promptKeys.forEach(key => {
+        const defaultValue = defaultPrompts[key] || '';
+        const customValue = customPrompts[key];
+        
+        if (customValue && customValue !== defaultValue) {
+            hasChanges = true;
+            
+            // Create unified diff using jsdiff with full context
+            const defaultLines = defaultValue.split('\n');
+            const customLines = customValue.split('\n');
+            const contextSize = Math.max(defaultLines.length, customLines.length);
+            
+            const diff = Diff.createPatch(
+                `${key}.txt`,
+                defaultValue,
+                customValue,
+                'Original',
+                'Modified',
+                { context: contextSize }
+            );
+            
+            // Generate HTML diff using diff2html
+            const diffHtml = Diff2Html.html(diff, {
+                drawFileList: false,
+                matching: 'lines',
+                outputFormat: 'side-by-side',
+                synchronisedScroll: true,
+                highlight: true,
+                renderNothingWhenEmpty: false
+            });
+            
+            html += `
+                <div class="column is-full">
+                    <div class="card">
+                        <header class="card-header">
+                            <p class="card-header-title">${promptTitles[key]}</p>
+                        </header>
+                        <div class="card-content">
+                            ${diffHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    if (!hasChanges) {
+        html += '<div class="column is-full"><div class="notification is-info">No custom prompts were used for this message.</div></div>';
+    }
+    
+    html += '</div>';
+    container.innerHTML = html;
+
+}
+
+function autoResizeTextarea(textarea) {
+    // Reset height to auto to get accurate scrollHeight
+    textarea.style.height = 'auto';
+    // Get the scroll height (actual content height)
+    const scrollHeight = textarea.scrollHeight;
+    // Set minimum height if scrollHeight is 0 or too small
+    const minHeight = 200;
+    const actualHeight = Math.max(scrollHeight, minHeight);
+    // Set height to full content height
+    textarea.style.height = actualHeight + 'px';
+    textarea.style.maxHeight = 'none';
+    textarea.style.overflowY = 'hidden';
+}
+
+function resetSinglePrompt(key) {
+    const textarea = document.getElementById(`prompt-${key}`);
+    if (textarea) {
+        textarea.value = defaultPrompts[key] || '';
+        autoResizeTextarea(textarea);
+        delete currentCustomPrompts[key];
+        renderPromptEditor(false); // Re-render to update UI
+    }
+}
+
+function resetToDefaults() {
+    currentCustomPrompts = {};
+    renderPromptEditor(false);
+}
+
+function saveCustomPrompts() {
+    // Collect current values from textareas
+    const promptKeys = ['ROLE_COACH_NOT_THERAPIST', 'BOWEN_THEORY_COACHING_IN_A_NUTSHELL', 'DATA_MODEL_DEFINITIONS'];
+    const updatedPrompts = {};
+    
+    promptKeys.forEach(key => {
+        const textarea = document.getElementById(`prompt-${key}`);
+        if (textarea && textarea.value !== '') {
+            const defaultValue = defaultPrompts[key] || '';
+            if (textarea.value !== defaultValue) {
+                updatedPrompts[key] = textarea.value;
+            }
+        }
+    });
+    
+    // Save to server
+    fetch(`/therapist/prompts/${currentPromptMessageId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Auditor-Id': '{{ current_auditor }}'
+        },
+        body: JSON.stringify({ custom_prompts: updatedPrompts })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Custom prompts saved successfully!', 'is-success');
+            closePromptEditor();
+            // Refresh the page to show the indicator
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('Error: ' + (data.error || 'Unknown error'), 'is-danger');
+        }
+    })
+    .catch(error => {
+        showNotification('Network error: ' + error.message, 'is-danger');
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+window.openDataEditor = function(messageId, extractedData) {
+    currentMessageId = messageId;
+    currentEditingData = JSON.parse(JSON.stringify(extractedData || {people: [], events: [], deletes: []}));
+    
+    renderDataEditor();
+    document.getElementById('dataEditorModal').classList.add('is-active');
+}
+
+function closeDataEditor() {
+    document.getElementById('dataEditorModal').classList.remove('is-active');
+    currentEditingData = {};
+    currentMessageId = null;
+}
+
+function renderDataEditor() {
+    const container = document.getElementById('dataEditorContent');
+    
+    container.innerHTML = `
+        <div class="tabs is-small">
+            <ul>
+                <li class="is-active" onclick="switchEditorTab('people', this)"><a>People</a></li>
+                <li onclick="switchEditorTab('events', this)"><a>Events</a></li>
+                <li onclick="switchEditorTab('deletes', this)"><a>Deletes</a></li>
+            </ul>
+        </div>
+        
+        <div id="editor-people" class="editor-tab">
+            ${renderPeopleEditor()}
+        </div>
+        
+        <div id="editor-events" class="editor-tab" style="display: none;">
+            ${renderEventsEditor()}
+        </div>
+        
+        <div id="editor-deletes" class="editor-tab" style="display: none;">
+            ${renderDeletesEditor()}
+        </div>
+    `;
+}
+
+function switchEditorTab(tab, element) {
+    // Update tab styling
+    document.querySelectorAll('.tabs li').forEach(li => li.classList.remove('is-active'));
+    element.classList.add('is-active');
+    
+    // Show/hide tab content
+    document.querySelectorAll('.editor-tab').forEach(tab => tab.style.display = 'none');
+    document.getElementById('editor-' + tab).style.display = 'block';
+}
+
+function renderPeopleEditor() {
+    const people = currentEditingData.people || [];
+    let html = `
+        <div class="field">
+            <button class="button is-primary is-small" onclick="addPerson()">
+                <span class="icon is-small"><i class="fas fa-plus"></i></span>
+                <span>Add Person</span>
+            </button>
+        </div>
+    `;
+    
+    people.forEach((person, index) => {
+        html += `
+            <div class="box is-small" id="person-${index}">
+                <div class="field is-grouped">
+                    <div class="control is-expanded">
+                        <h6 class="subtitle is-6">Person ${index + 1}</h6>
+                    </div>
+                    <div class="control">
+                        <button class="button is-danger is-small" onclick="removePerson(${index})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="columns">
+                    <div class="column">
+                        <div class="field">
+                            <label class="label is-small">ID</label>
+                            <div class="control">
+                                <input class="input is-small" type="number" value="${person.id || ''}" 
+                                       onchange="updatePersonField(${index}, 'id', parseInt(this.value) || null)">
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label is-small">Name</label>
+                            <div class="control">
+                                <input class="input is-small" type="text" value="${person.name || ''}" 
+                                       onchange="updatePersonField(${index}, 'name', this.value)">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="column">
+                        <div class="field">
+                            <label class="label is-small">Confidence</label>
+                            <div class="control">
+                                <input class="input is-small" type="number" min="0" max="1" step="0.01" 
+                                       value="${person.confidence || ''}" 
+                                       onchange="updatePersonField(${index}, 'confidence', parseFloat(this.value) || null)">
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label is-small">Spouses (IDs, comma-separated)</label>
+                            <div class="control">
+                                <input class="input is-small" type="text" value="${(person.spouses || []).join(',')}" 
+                                       onchange="updatePersonField(${index}, 'spouses', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label is-small">Offspring (IDs, comma-separated)</label>
+                            <div class="control">
+                                <input class="input is-small" type="text" value="${(person.offspring || []).join(',')}" 
+                                       onchange="updatePersonField(${index}, 'offspring', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label is-small">Parents (IDs, comma-separated)</label>
+                            <div class="control">
+                                <input class="input is-small" type="text" value="${(person.parents || []).join(',')}" 
+                                       onchange="updatePersonField(${index}, 'parents', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    return html;
+}
+
+function renderEventsEditor() {
+    const events = currentEditingData.events || [];
+    let html = `
+        <div class="field">
+            <button class="button is-primary is-small" onclick="addEvent()">
+                <span class="icon is-small"><i class="fas fa-plus"></i></span>
+                <span>Add Event</span>
+            </button>
+        </div>
+    `;
+    
+    events.forEach((event, index) => {
+        html += `
+            <div class="box is-small" id="event-${index}">
+                <div class="field is-grouped">
+                    <div class="control is-expanded">
+                        <h6 class="subtitle is-6">Event ${index + 1}</h6>
+                    </div>
+                    <div class="control">
+                        <button class="button is-danger is-small" onclick="removeEvent(${index})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="columns">
+                    <div class="column">
+                        <div class="field">
+                            <label class="label is-small">ID</label>
+                            <div class="control">
+                                <input class="input is-small" type="number" value="${event.id || ''}" 
+                                       onchange="updateEventField(${index}, 'id', parseInt(this.value) || null)">
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label is-small">Description</label>
+                            <div class="control">
+                                <textarea class="textarea is-small" rows="2" 
+                                          onchange="updateEventField(${index}, 'description', this.value)">${event.description || ''}</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label is-small">Date/Time</label>
+                            <div class="control">
+                                <input class="input is-small" type="datetime-local" value="${event.dateTime || ''}" 
+                                       onchange="updateEventField(${index}, 'dateTime', this.value)">
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label is-small">People (IDs, comma-separated)</label>
+                            <div class="control">
+                                <input class="input is-small" type="text" value="${(event.people || []).join(',')}" 
+                                       onchange="updateEventField(${index}, 'people', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label is-small">Confidence</label>
+                            <div class="control">
+                                <input class="input is-small" type="number" min="0" max="1" step="0.01" 
+                                       value="${event.confidence || ''}" 
+                                       onchange="updateEventField(${index}, 'confidence', parseFloat(this.value) || null)">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="column">
+                        <!-- Variables Section -->
+                        <h6 class="subtitle is-6">Variables</h6>
+                        
+                        <!-- Symptom -->
+                        <div class="field">
+                            <label class="label is-small">Symptom Shift</label>
+                            <div class="control">
+                                <div class="select is-small is-fullwidth">
+                                    <select onchange="updateEventVariable(${index}, 'symptom', this.value)">
+                                        <option value="">None</option>
+                                        <option value="up" ${event.symptom?.shift === 'up' ? 'selected' : ''}>Up</option>
+                                        <option value="down" ${event.symptom?.shift === 'down' ? 'selected' : ''}>Down</option>
+                                        <option value="same" ${event.symptom?.shift === 'same' ? 'selected' : ''}>Same</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Anxiety -->
+                        <div class="field">
+                            <label class="label is-small">Anxiety Shift</label>
+                            <div class="control">
+                                <div class="select is-small is-fullwidth">
+                                    <select onchange="updateEventVariable(${index}, 'anxiety', this.value)">
+                                        <option value="">None</option>
+                                        <option value="up" ${event.anxiety?.shift === 'up' ? 'selected' : ''}>Up</option>
+                                        <option value="down" ${event.anxiety?.shift === 'down' ? 'selected' : ''}>Down</option>
+                                        <option value="same" ${event.anxiety?.shift === 'same' ? 'selected' : ''}>Same</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Functioning -->
+                        <div class="field">
+                            <label class="label is-small">Functioning Shift</label>
+                            <div class="control">
+                                <div class="select is-small is-fullwidth">
+                                    <select onchange="updateEventVariable(${index}, 'functioning', this.value)">
+                                        <option value="">None</option>
+                                        <option value="up" ${event.functioning?.shift === 'up' ? 'selected' : ''}>Up</option>
+                                        <option value="down" ${event.functioning?.shift === 'down' ? 'selected' : ''}>Down</option>
+                                        <option value="same" ${event.functioning?.shift === 'same' ? 'selected' : ''}>Same</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Relationship -->
+                        <div class="field">
+                            <label class="label is-small">Relationship Type</label>
+                            <div class="control">
+                                <div class="select is-small is-fullwidth">
+                                    <select onchange="updateEventRelationship(${index}, this.value)">
+                                        <option value="">None</option>
+                                        <option value="triangle" ${event.relationship?.kind === 'triangle' ? 'selected' : ''}>Triangle</option>
+                                        <option value="conflict" ${event.relationship?.kind === 'conflict' ? 'selected' : ''}>Conflict</option>
+                                        <option value="distance" ${event.relationship?.kind === 'distance' ? 'selected' : ''}>Distance</option>
+                                        <option value="reciprocity" ${event.relationship?.kind === 'reciprocity' ? 'selected' : ''}>Reciprocity</option>
+                                        <option value="child-focus" ${event.relationship?.kind === 'child-focus' ? 'selected' : ''}>Child Focus</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Relationship-specific fields -->
+                        <div id="relationship-fields-${index}">
+                            ${renderRelationshipFields(event, index)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    return html;
+}
+
+function renderRelationshipFields(event, eventIndex) {
+    if (!event.relationship) return '';
+    
+    const rel = event.relationship;
+    let html = '';
+    
+    if (rel.kind === 'triangle') {
+        html = `
+            <div class="field">
+                <label class="label is-small">Inside A (IDs, comma-separated)</label>
+                <div class="control">
+                    <input class="input is-small" type="text" value="${(rel.inside_a || []).join(',')}" 
+                           onchange="updateRelationshipField(${eventIndex}, 'inside_a', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                </div>
+            </div>
+            <div class="field">
+                <label class="label is-small">Inside B (IDs, comma-separated)</label>
+                <div class="control">
+                    <input class="input is-small" type="text" value="${(rel.inside_b || []).join(',')}" 
+                           onchange="updateRelationshipField(${eventIndex}, 'inside_b', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                </div>
+            </div>
+            <div class="field">
+                <label class="label is-small">Outside (IDs, comma-separated)</label>
+                <div class="control">
+                    <input class="input is-small" type="text" value="${(rel.outside || []).join(',')}" 
+                           onchange="updateRelationshipField(${eventIndex}, 'outside', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                </div>
+            </div>
+        `;
+    } else if (['conflict', 'distance', 'reciprocity', 'child-focus'].includes(rel.kind)) {
+        html = `
+            <div class="field">
+                <label class="label is-small">Movers (IDs, comma-separated)</label>
+                <div class="control">
+                    <input class="input is-small" type="text" value="${(rel.movers || []).join(',')}" 
+                           onchange="updateRelationshipField(${eventIndex}, 'movers', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                </div>
+            </div>
+            <div class="field">
+                <label class="label is-small">Recipients (IDs, comma-separated)</label>
+                <div class="control">
+                    <input class="input is-small" type="text" value="${(rel.recipients || []).join(',')}" 
+                           onchange="updateRelationshipField(${eventIndex}, 'recipients', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                </div>
+            </div>
+        `;
+    }
+    
+    return html;
+}
+
+function renderDeletesEditor() {
+    const deletes = currentEditingData.deletes || [];
+    return `
+        <div class="field">
+            <label class="label">Item IDs to Delete (comma-separated)</label>
+            <div class="control">
+                <input class="input" type="text" value="${deletes.join(',')}" 
+                       onchange="updateDeletes(this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))"
+                       placeholder="Enter IDs of people or events to delete">
+            </div>
+            <p class="help">Enter the IDs of people or events that should be deleted from the database</p>
+        </div>
+    `;
+}
+
+// Update functions
+function updatePersonField(index, field, value) {
+    if (!currentEditingData.people[index]) return;
+    currentEditingData.people[index][field] = value;
+}
+
+function updateEventField(index, field, value) {
+    if (!currentEditingData.events[index]) return;
+    currentEditingData.events[index][field] = value;
+}
+
+function updateEventVariable(index, variable, shift) {
+    if (!currentEditingData.events[index]) return;
+    if (shift) {
+        currentEditingData.events[index][variable] = { shift: shift };
+    } else {
+        delete currentEditingData.events[index][variable];
+    }
+}
+
+function updateEventRelationship(index, kind) {
+    if (!currentEditingData.events[index]) return;
+    if (kind) {
+        const baseRelationship = { kind: kind };
+        if (kind === 'triangle') {
+            baseRelationship.inside_a = [];
+            baseRelationship.inside_b = [];
+            baseRelationship.outside = [];
+        } else {
+            baseRelationship.movers = [];
+            baseRelationship.recipients = [];
+        }
+        currentEditingData.events[index].relationship = baseRelationship;
+    } else {
+        delete currentEditingData.events[index].relationship;
+    }
+    
+    // Re-render relationship fields
+    document.getElementById('relationship-fields-' + index).innerHTML = renderRelationshipFields(currentEditingData.events[index], index);
+}
+
+function updateRelationshipField(eventIndex, field, value) {
+    if (!currentEditingData.events[eventIndex] || !currentEditingData.events[eventIndex].relationship) return;
+    currentEditingData.events[eventIndex].relationship[field] = value;
+}
+
+function updateDeletes(deleteIds) {
+    currentEditingData.deletes = deleteIds;
+}
+
+// Add/Remove functions
+function addPerson() {
+    if (!currentEditingData.people) currentEditingData.people = [];
+    currentEditingData.people.push({
+        id: null,
+        name: '',
+        spouses: [],
+        offspring: [],
+        parents: [],
+        confidence: null
+    });
+    renderDataEditor();
+}
+
+function removePerson(index) {
+    const person = currentEditingData.people[index];
+    if (person && [1, 2].includes(person.id)) {
+        alert('System people (User and Assistant) cannot be deleted.');
+        return;
+    }
+    currentEditingData.people.splice(index, 1);
+    renderDataEditor();
+}
+
+function addEvent() {
+    if (!currentEditingData.events) currentEditingData.events = [];
+    currentEditingData.events.push({
+        id: null,
+        description: '',
+        dateTime: new Date().toISOString().split('T')[0],
+        people: [],
+        confidence: null
+    });
+    renderDataEditor();
+}
+
+function removeEvent(index) {
+    currentEditingData.events.splice(index, 1);
+    renderDataEditor();
+}
+
+function saveEditedData() {
+    // Submit the auditor's corrected deltas as feedback
+    // This stores what the auditor thinks the extraction SHOULD have been
+    submitExtractionFeedback(currentMessageId, false, currentEditingData);
+    closeDataEditor();
+}
+
+// Speaker Mapping Functions
+function toggleSpeakerMapping() {
+    const content = document.getElementById('speaker-mapping-content');
+    const icon = document.getElementById('speaker-toggle-icon');
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.innerHTML = '<i class="fas fa-angle-up"></i>';
+    } else {
+        content.style.display = 'none';
+        icon.innerHTML = '<i class="fas fa-angle-down"></i>';
+    }
+}
+
+function updateSpeakerMapping(speakerId) {
+    const select = document.getElementById(`person-select-${speakerId}`);
+    const personId = select.value;
+    
+    if (personId === 'new') {
+        showNewPersonModal(speakerId, '');
+        return;
+    }
+    
+    if (personId === '') {
+        // Clear mapping
+        saveSpeakerMapping(speakerId, null);
+        return;
+    }
+    
+    saveSpeakerMapping(speakerId, parseInt(personId));
+}
+
+function updateSpeakerType(speakerId) {
+    const select = document.getElementById(`speaker-type-${speakerId}`);
+    const speakerType = select.value;
+    
+    fetch(`/therapist/speakers/${speakerId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            type: speakerType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`Speaker type updated to ${speakerType}`, 'is-success');
+            // Reload the page to reflect the changes in message display
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('Error updating speaker type: ' + (data.error || 'Unknown error'), 'is-danger');
+            // Revert the select to the original value
+            location.reload();
+        }
+    })
+    .catch(error => {
+        showNotification('Network error: ' + error.message, 'is-danger');
+        location.reload();
+    });
+}
+
+function saveSpeakerMapping(speakerId, personId) {
+    const statusDiv = document.getElementById(`speaker-status-${speakerId}`);
+    statusDiv.innerHTML = '<span class="tag is-warning is-light">Saving...</span>';
+    
+    fetch(`{{ url_for('training.speakers.update', speaker_id=0) }}`.replace('/0', `/${speakerId}`), {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            person_id: personId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusDiv.innerHTML = '<span class="tag is-success is-light">✓ Saved</span>';
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 2000);
+            // Update the select element to reflect the saved mapping
+            const select = document.getElementById(`person-select-${speakerId}`);
+            if (select) {
+                select.value = personId || '';
+            }
+            // Check if both speakers are now mapped and update extraction button
+            updateExtractionButtonState();
+        } else {
+            statusDiv.innerHTML = '<span class="tag is-danger is-light">Error</span>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        statusDiv.innerHTML = '<span class="tag is-danger is-light">Network error</span>';
+    });
+}
+
+let currentNewPersonSpeakerId = null;
+
+function showNewPersonModal(speakerId, speakerName) {
+    currentNewPersonSpeakerId = speakerId;
+    document.getElementById('new-person-name').value = speakerName;
+    document.getElementById('new-person-modal').classList.add('is-active');
+}
+
+function closeNewPersonModal() {
+    document.getElementById('new-person-modal').classList.remove('is-active');
+    const speakerId = currentNewPersonSpeakerId;
+    currentNewPersonSpeakerId = null;
+    
+    // Reset the select to prevent 'new' from being selected
+    if (speakerId) {
+        const select = document.getElementById(`person-select-${speakerId}`);
+        if (select) {
+            select.value = '';
+        }
+    }
+    
+    // Update extraction button state
+    updateExtractionButtonState();
+}
+
+function createNewPerson() {
+    const name = document.getElementById('new-person-name').value.trim();
+    
+    if (!name) {
+        alert('Please enter a name for the new person');
+        return;
+    }
+    
+    fetch(`{{ url_for('training.speakers.update', speaker_id=0) }}`.replace('/0', `/${currentNewPersonSpeakerId}`), {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            person_id: -1,  // Dummy ID to trigger person creation
+            name: name
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeNewPersonModal();
+            showNotification(`New person "${name}" created and mapped!`, 'is-success');
+            // Update extraction button state
+            updateExtractionButtonState();
+            // Reload the page to update the person list
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            alert('Error creating person: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Network error creating person');
+    });
+}
+
+// Relationship Person Modal Functions
+function showRelationshipPersonModal() {
+    document.getElementById('relationship-person-modal').classList.add('is-active');
+    
+    // Dynamically populate person options from all sources
+    const select = document.getElementById('relationship-person-select');
+    const newPersonField = document.getElementById('new-person-name-field');
+    
+    // Get Alpine component data from context (correct instance) or fallback
+    let alpineData;
+    const context = window.relationshipPersonContext;
+    
+    if (context && context.component) {
+        // Use the component from the context (correct instance)
+        alpineData = context.component;
+        console.log('Using component from context for modal population');
+    } else {
+        // Fallback to finding first component (may be wrong instance)
+        console.warn('No component in context, falling back to first component');
+        const extractedDataEl = document.querySelector('[x-data*="componentExtractedData"]');
+        if (!extractedDataEl || !extractedDataEl._x_dataStack) {
+            console.error('Could not find Alpine.js component data');
+            return;
+        }
+        alpineData = extractedDataEl._x_dataStack[0];
+    }
+    
+    // Clear existing options
+    select.innerHTML = '';
+    
+    // Collect all people from different sources
+    const allPeople = [];
+    const seenIds = new Set();
+    
+    // Always add default User and Assistant (same as speaker mapping section)
+    allPeople.push({
+        id: 1,
+        name: "User",
+        source: "System"
+    });
+    seenIds.add(1);
+    
+    allPeople.push({
+        id: 2,
+        name: "Assistant",
+        source: "System"
+    });
+    seenIds.add(2);
+    
+    // Add Diagram people (from database) - positive IDs, excluding User and Assistant to avoid duplicates
+    const diagramPeople = window.diagramPeople || [];
+    diagramPeople.forEach(person => {
+        if (person.id && !seenIds.has(person.id)) {
+            allPeople.push({
+                id: person.id,
+                name: person.name || `Person ${person.id}`,
+                source: "Diagram"
+            });
+            seenIds.add(person.id);
+        }
+    });
+    
+    // Add Cumulative PDP people (from previous statements)
+    if (alpineData.cumulativePdp && alpineData.cumulativePdp.people) {
+        alpineData.cumulativePdp.people.forEach(person => {
+            if (person.id && !seenIds.has(person.id)) {
+                allPeople.push({
+                    id: person.id,
+                    name: person.name || `Person ${Math.abs(person.id)}`,
+                    source: "Previous Statements"
+                });
+                seenIds.add(person.id);
+            }
+        });
+    }
+    
+    // Add Current Delta people (from current statement's extraction)
+    if (alpineData.extractedData && alpineData.extractedData.people) {
+        alpineData.extractedData.people.forEach(person => {
+            if (person.id && !seenIds.has(person.id)) {
+                allPeople.push({
+                    id: person.id,
+                    name: person.name || `Person ${Math.abs(person.id)}`,
+                    source: "Current Statement"
+                });
+                seenIds.add(person.id);
+            }
+        });
+    }
+    
+    // Add default/instructional option based on whether people exist
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    if (allPeople.length > 0) {
+        defaultOption.textContent = 'Select existing person...';
+    } else {
+        defaultOption.textContent = 'No existing people - create new person below';
+        defaultOption.disabled = true;
+    }
+    select.appendChild(defaultOption);
+    
+    // Group people by source and add to select
+    const sources = ["System", "Diagram", "Previous Statements", "Current Statement"];
+    sources.forEach(source => {
+        const peopleInSource = allPeople.filter(p => p.source === source);
+        if (peopleInSource.length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = source;
+            
+            peopleInSource.forEach(person => {
+                const option = document.createElement('option');
+                option.value = person.id.toString();
+                option.textContent = person.name;
+                optgroup.appendChild(option);
+            });
+            
+            select.appendChild(optgroup);
+        }
+    });
+    
+    // Always add "Create new person" option (most important for empty lists)
+    const newOption = document.createElement('option');
+    newOption.value = 'new';
+    newOption.textContent = '+ Create new person';
+    select.appendChild(newOption);
+    
+    // If no people exist, auto-select the "Create new person" option
+    if (allPeople.length === 0) {
+        select.value = 'new';
+        // Trigger the change event to show the name input field
+        const changeEvent = new Event('change');
+        select.dispatchEvent(changeEvent);
+    }
+    
+    // Handle new person field visibility
+    const changeHandler = function() {
+        if (this.value === 'new') {
+            newPersonField.style.display = 'block';
+            document.getElementById('relationship-new-person-name').focus();
+        } else {
+            newPersonField.style.display = 'none';
+        }
+    };
+    
+    // Remove any existing event listeners and add new one
+    select.removeEventListener('change', changeHandler);
+    select.addEventListener('change', changeHandler);
+}
+
+function closeRelationshipPersonModal() {
+    document.getElementById('relationship-person-modal').classList.remove('is-active');
+    document.getElementById('new-person-name-field').style.display = 'none';
+    window.relationshipPersonContext = null;
+}
+
+function confirmRelationshipPersonSelection() {
+    console.log('=== Starting confirmRelationshipPersonSelection ===');
+    const context = window.relationshipPersonContext;
+    console.log('Context:', context);
+    
+    if (!context) {
+        console.error('No relationship person context found');
+        return;
+    }
+    
+    if (!context.component) {
+        console.error('No Alpine component reference found in context');
+        return;
+    }
+    
+    const select = document.getElementById('relationship-person-select');
+    const selectedValue = select.value;
+    console.log('Selected value:', selectedValue);
+    
+    if (!selectedValue) {
+        alert('Please select a person or create a new one');
+        return;
+    }
+    
+    let personId, newPersonData = null;
+    
+    if (selectedValue === 'new') {
+        // Create new person
+        const personName = document.getElementById('relationship-new-person-name').value.trim();
+        if (!personName) {
+            alert('Please enter a name for the new person');
+            return;
+        }
+        
+        // Generate unique negative ID for audit-only person
+        personId = -Date.now() - Math.floor(Math.random() * 1000);
+        newPersonData = {
+            id: personId,
+            name: personName,
+            confidence: 0.8,
+            auditOnly: true
+        };
+        
+        console.log('Created new person data:', newPersonData);
+    } else {
+        // Use existing person
+        personId = parseInt(selectedValue);
+        console.log('Using existing person ID:', personId);
+    }
+    
+    // Use the Alpine component's internal callback method
+    console.log('Calling component handlePersonSelection method...');
+    
+    // For Person fields, use personIndex as first parameter, listIndex as third parameter
+    // For Event/Relationship fields, use eventIndex as first parameter, personIndex as third parameter
+    const firstParam = context.isPersonField ? context.personIndex : context.eventIndex;
+    const thirdParam = context.isPersonField ? context.listIndex : context.personIndex;
+    
+    context.component.handlePersonSelection(
+        firstParam,
+        context.fieldName,
+        thirdParam,
+        personId,
+        context.isEdit,
+        newPersonData
+    );
+    
+    closeRelationshipPersonModal();
+}
+
+// Extraction button functions
+function updateExtractionButtonState() {
+    const extractionBtn = document.getElementById('trigger-extraction-btn');
+    if (!extractionBtn) return;
+    
+    // Check if all speakers are mapped
+    const speakerSelects = document.querySelectorAll('[id^="person-select-"]');
+    let allSpeakersMapped = true;
+    let speakerCount = 0;
+    
+    speakerSelects.forEach(select => {
+        speakerCount++;
+        if (!select.value || select.value === '' || select.value === 'new') {
+            allSpeakersMapped = false;
+        }
+    });
+    
+    // Only enable if we have at least 2 speakers and all are mapped
+    if (speakerCount >= 2 && allSpeakersMapped) {
+        extractionBtn.disabled = false;
+        extractionBtn.classList.remove('is-loading');
+        extractionBtn.querySelector('span:last-child').textContent = 'Trigger Background Extraction';
+    } else {
+        extractionBtn.disabled = true;
+        extractionBtn.classList.remove('is-loading');
+        if (speakerCount < 2) {
+            extractionBtn.querySelector('span:last-child').textContent = 'Need at least 2 speakers';
+        } else if (!allSpeakersMapped) {
+            extractionBtn.querySelector('span:last-child').textContent = 'Map all speakers first';
+        } else {
+            extractionBtn.querySelector('span:last-child').textContent = 'Extract data from discussion';
+        }
+    }
+}
+
+function triggerExtractionForDiscussion(discussionId) {
+    const extractionBtn = document.getElementById('trigger-extraction-btn');
+    const message = `Are you sure you want to trigger background extraction for this discussion?
+
+This will:
+- Set the extracting flag to true for this discussion
+- Run background extraction for all unprocessed statements
+- Automatically set extracting to false when complete
+
+Continue?`;
+
+    if (confirm(message)) {
+        // Show loading state
+        extractionBtn.disabled = true;
+        extractionBtn.classList.add('is-loading');
+        extractionBtn.querySelector('span:last-child').textContent = 'Triggering...';
+        
+        fetch(`/therapist/discussions/${discussionId}/extract`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Background extraction triggered successfully!', 'is-success');
+                
+                // Hide button and show progress bar
+                extractionBtn.style.display = 'none';
+                document.getElementById('extraction-progress').style.display = 'block';
+                
+                // Start polling for progress
+                startProgressPolling(discussionId);
+            } else {
+                showNotification('Error triggering extraction: ' + (data.error || 'Unknown error'), 'is-danger');
+                resetExtractionButton();
+            }
+        })
+        .catch(error => {
+            showNotification('Error triggering extraction: ' + error.message, 'is-danger');
+            resetExtractionButton();
+        });
+    }
+}
+
+function clearExtractedData(discussionId) {
+    const message = `Are you sure you want to clear all extracted data from this discussion?
+    
+This will:
+- Remove all PDP deltas from every statement
+- Clear the cumulative extracted data  
+- Stop any extraction in progress
+- Cancel any scheduled extraction jobs
+- Cannot be undone
+
+Continue?`;
+
+    if (confirm(message)) {
+        fetch(`/therapist/discussions/${discussionId}/clear-extracted`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Success: ${data.message}`);
+                location.reload(); // Refresh to show cleared data
+            } else {
+                alert(`Error: ${data.message || 'Failed to clear extracted data'}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error clearing extracted data:', error);
+            alert('Error: Failed to clear extracted data');
+        });
+    }
+}
+
+let progressInterval;
+
+function startProgressPolling(discussionId) {
+    // Clear any existing interval
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+    
+    // Poll every 2 seconds
+    progressInterval = setInterval(() => {
+        fetch(`/therapist/discussions/${discussionId}/progress`)
+            .then(response => response.json())
+            .then(data => {
+                updateProgressDisplay(data);
+                
+                // Check if backend set extracting to false (extraction complete)
+                if (!data.extracting) {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                    showExtractionComplete();
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching progress:', error);
+                clearInterval(progressInterval);
+                progressInterval = null;
+                resetExtractionButton();
+            });
+    }, 2000);
+}
+
+function updateProgressDisplay(data) {
+    const progressText = document.getElementById('extraction-progress-text');
+    const progressBar = document.getElementById('extraction-progress-bar');
+    
+    const processed = data.processed || 0;
+    const total = data.total || 0;
+    const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
+    
+    if (progressText) {
+        progressText.textContent = `Processing statements... ${processed}/${total} (${percentage}%)`;
+    }
+    
+    if (progressBar) {
+        progressBar.value = percentage;
+    }
+}
+
+function showExtractionComplete() {
+    const progressText = document.getElementById('extraction-progress-text');
+    const progressBar = document.getElementById('extraction-progress-bar');
+    
+    if (progressText) {
+        progressText.textContent = 'Extraction completed successfully!';
+        progressText.classList.add('has-text-success');
+    }
+    
+    if (progressBar) {
+        progressBar.value = 100;
+        progressBar.classList.remove('is-primary');
+        progressBar.classList.add('is-success');
+    }
+    
+    // Refresh page to show extracted data
+    setTimeout(() => {
+        window.location.reload();
+    }, 2000);
+}
+
+function resetExtractionButton() {
+    const extractionBtn = document.getElementById('trigger-extraction-btn');
+    const progressDiv = document.getElementById('extraction-progress');
+    
+    if (extractionBtn) {
+        extractionBtn.style.display = 'inline-flex';
+        extractionBtn.disabled = false;
+        extractionBtn.classList.remove('is-loading');
+        extractionBtn.querySelector('span:last-child').textContent = 'Trigger Background Extraction';
+    }
+    
+    if (progressDiv) {
+        progressDiv.style.display = 'none';
+    }
+}
+
+// Check extraction button state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        updateExtractionButtonState();
+        updateExportButtonState();
+        
+        // Only start progress updates if discussion.extracting is true on page load
+        {% if discussion.extracting %}
+        const extractionBtn = document.getElementById('trigger-extraction-btn');
+        if (extractionBtn) {
+            extractionBtn.style.display = 'none';
+            document.getElementById('extraction-progress').style.display = 'block';
+            startProgressPolling({{ discussion.id }});
+        }
+        {% endif %}
+    }, 100);
+});
+
+// Approval functions
+function toggleApproval(type, id) {
+    const btnId = type === 'feedback' ? `approve-btn-feedback-${id}` : `approve-btn-${id}`;
+    const statusId = type === 'feedback' ? `feedback-approval-status-${id}` : `approval-status-${id}`;
+    
+    const btn = document.getElementById(btnId);
+    const statusDiv = document.getElementById(statusId);
+    
+    // Show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Updating...';
+    
+    fetch('/therapist/admin/approve', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            type: type,
+            [`${type}_id`]: id
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the approval status UI
+            const approvalInfo = statusDiv.querySelector('.approval-info');
+            
+            if (data.approved) {
+                // Show approved state
+                const approvedDate = new Date(data.approved_at).toLocaleDateString('en-US', {
+                    month: '2-digit', 
+                    day: '2-digit', 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false
+                });
+                
+                const approvedText = type === 'feedback' ? 'Corrections Approved' : 'Original Approved';
+                approvalInfo.innerHTML = `
+                    <span class="tag is-success is-small">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        ${approvedText}
+                    </span>
+                    <small class="has-text-grey ml-2">
+                        by ${data.approved_by} on ${approvedDate}
+                    </small>
+                `;
+                
+                btn.style.backgroundColor = '#ff3860';
+                btn.style.borderColor = '#ff3860';
+                btn.style.color = 'white';
+                btn.innerHTML = '<i class="fas fa-times mr-1"></i>Remove';
+            } else {
+                // Show pending state
+                const pendingText = type === 'feedback' ? 'Corrections Pending Approval' : 'Original Pending Approval';
+                const tagClass = type === 'feedback' ? 'tag is-warning is-small' : 'tag is-light is-small';
+                approvalInfo.innerHTML = `<span class="${tagClass}">${pendingText}</span>`;
+                
+                btn.style.backgroundColor = '#48c78e';
+                btn.style.borderColor = '#48c78e';
+                btn.style.color = 'white';
+                btn.innerHTML = '<i class="fas fa-check mr-1"></i>Approve';
+            }
+            
+            // Show success notification
+            showNotification(data.message, 'is-success');
+            
+            // Update export button state
+            updateExportButtonState();
+        } else {
+            showNotification(data.error || 'Failed to update approval status', 'is-danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Network error occurred', 'is-danger');
+    })
+    .finally(() => {
+        btn.disabled = false;
+    });
+}
+
+function updateExportButtonState() {
+    const btn = document.getElementById('export-test-cases-btn');
+    if (!btn) return;
+    
+    // Count approved statements and feedbacks on the page
+    let exportableCount = 0;
+    
+    // Count approved statements by checking for success tags in approval info
+    document.querySelectorAll('[id^="approval-status-"]').forEach(statusDiv => {
+        const approvalInfo = statusDiv.querySelector('.approval-info');
+        const successTag = approvalInfo ? approvalInfo.querySelector('.tag.is-success') : null;
+        if (successTag && successTag.textContent.trim().includes('Approved')) {
+            exportableCount++;
+        }
+    });
+    
+    // Count approved feedbacks by checking for success tags in feedback approval info
+    document.querySelectorAll('[id^="feedback-approval-status-"]').forEach(statusDiv => {
+        const approvalInfo = statusDiv.querySelector('.approval-info');
+        const successTag = approvalInfo ? approvalInfo.querySelector('.tag.is-success') : null;
+        if (successTag && successTag.textContent.trim().includes('Approved')) {
+            exportableCount++;
+        }
+    });
+    
+    // Update button state
+    const buttonText = btn.querySelector('span:last-child');
+    if (exportableCount > 0) {
+        btn.disabled = false;
+        buttonText.textContent = `Export Test Cases (${exportableCount} available)`;
+    } else {
+        btn.disabled = true;
+        buttonText.textContent = 'Export Test Cases (0 available)';
+    }
+}
+
+function exportTestCases() {
+    const btn = document.getElementById('export-test-cases-btn');
+    if (!btn) return;
+    
+    // Show loading state
+    btn.disabled = true;
+    btn.classList.add('is-loading');
+    btn.querySelector('span:last-child').textContent = 'Exporting...';
+    
+    fetch('/therapist/admin/export-test-cases', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.count > 0) {
+                showNotification(`Successfully exported ${data.count} test case${data.count === 1 ? '' : 's'} to ./model_tests/data/`, 'is-success');
+            } else {
+                showNotification('No approved test cases available to export', 'is-info');
+            }
+        } else {
+            showNotification(data.error || 'Export failed', 'is-danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Network error occurred', 'is-danger');
+    })
+    .finally(() => {
+        btn.classList.remove('is-loading');
+        // Update button state after export
+        updateExportButtonState();
+    });
+}
+
+</script>
+
+<!-- Data Editor Modal -->
+<!-- Prompt Editor Modal -->
+<div class="modal" id="promptEditorModal">
+    <div class="modal-background" onclick="closePromptEditor()"></div>
+    <div class="modal-card" style="width: 95vw; max-width: none; height: 90vh;">
+        <header class="modal-card-head">
+            <p class="modal-card-title" id="promptModalTitle">Edit System Prompts</p>
+            <button class="delete" onclick="closePromptEditor()"></button>
+        </header>
+        <section class="modal-card-body" style="max-height: none; overflow-y: auto; padding: 30px;">
+            <div id="promptEditorContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-success" id="savePromptsBtn" onclick="saveCustomPrompts()">Save Custom Prompts</button>
+            <button class="button is-warning" id="resetPromptsBtn" onclick="resetToDefaults()" style="display: none;">Reset to Defaults</button>
+            <button class="button" onclick="closePromptEditor()">Cancel</button>
+        </footer>
+    </div>
+</div>
+
+<!-- Prompt Diff Viewer Modal -->
+<div class="modal" id="promptDiffModal">
+    <div class="modal-background" onclick="closePromptDiff()"></div>
+    <div class="modal-card" style="width: 95vw; max-width: none; height: 90vh; display: flex; flex-direction: column;">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Prompt Changes Used</p>
+            <button class="delete" onclick="closePromptDiff()"></button>
+        </header>
+        <section class="modal-card-body" style="flex: 1; overflow-y: auto; padding: 30px; max-height: none;">
+            <div id="promptDiffContent" style="height: 100%;">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button" onclick="closePromptDiff()">Close</button>
+        </footer>
+    </div>
+</div>
+
+<div class="modal" id="dataEditorModal">
+    <div class="modal-background" onclick="closeDataEditor()"></div>
+    <div class="modal-card" style="width: 90vw; max-width: 1200px;">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Improve Extracted Data</p>
+            <button class="delete" onclick="closeDataEditor()"></button>
+        </header>
+        <section class="modal-card-body" style="max-height: 70vh; overflow-y: auto;">
+            <div id="dataEditorContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-success" onclick="saveEditedData()">Save Changes</button>
+            <button class="button" onclick="closeDataEditor()">Cancel</button>
+        </footer>
+    </div>
+</div>
+
+{% endblock %}

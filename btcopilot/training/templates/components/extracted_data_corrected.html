@@ -1,0 +1,80 @@
+{#
+Corrected Extracted Data Display Component
+
+This template displays the corrected/expected extraction data from auditor feedback.
+Used within the main extracted_data_display.html component.
+
+Expected context: correctedData variable containing the corrected extraction
+#}
+
+<!-- People Section -->
+<template x-if="correctedData.people && correctedData.people.length > 0">
+    <div class="people-section mb-1">
+        <div class="is-size-7 has-text-weight-bold has-text-info">
+            <span class="icon is-small"><i class="fas fa-users"></i></span>
+            People:
+        </div>
+        <template x-for="(person, index) in correctedData.people" :key="index">
+            <div class="person-item mb-1 p-1 has-background-info-light">
+                <span class="is-size-7" x-text="person.name || ('Person #' + person.id)"></span>
+                <span x-show="person.confidence" class="tag is-info is-light is-small ml-1" 
+                      x-text="(person.confidence * 100).toFixed(0) + '%'"></span>
+            </div>
+        </template>
+    </div>
+</template>
+
+<!-- Events Section -->
+<template x-if="correctedData.events && correctedData.events.length > 0">
+    <div class="events-section mb-1">
+        <div class="is-size-7 has-text-weight-bold has-text-info">
+            <span class="icon is-small"><i class="fas fa-calendar-alt"></i></span>
+            Events:
+        </div>
+        <template x-for="(event, index) in correctedData.events" :key="index">
+            <div class="event-item mb-1 p-1 has-background-info-light">
+                <div class="is-size-7">
+                    <strong x-text="event.description || ('Event #' + event.id)"></strong>
+                    <span x-show="event.confidence" class="tag is-info is-light is-small ml-1" 
+                          x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
+                </div>
+                <div class="variables-compact mt-1">
+                    <template x-if="event.symptom">
+                        <span class="shift-indicator is-small" 
+                              :class="'shift-' + event.symptom.shift" 
+                              x-text="'S:' + event.symptom.shift"></span>
+                    </template>
+                    <template x-if="event.anxiety">
+                        <span class="shift-indicator is-small ml-1" 
+                              :class="'shift-' + event.anxiety.shift" 
+                              x-text="'A:' + event.anxiety.shift"></span>
+                    </template>
+                    <template x-if="event.functioning">
+                        <span class="shift-indicator is-small ml-1" 
+                              :class="'shift-' + event.functioning.shift" 
+                              x-text="'F:' + event.functioning.shift"></span>
+                    </template>
+                    <template x-if="event.relationship">
+                        <span class="shift-indicator shift-relationship is-small ml-1" 
+                              x-text="'R:' + event.relationship.kind"></span>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>
+
+<!-- Deletes Section -->
+<template x-if="correctedData.deletes && correctedData.deletes.length > 0">
+    <div class="deletes-section mb-1">
+        <div class="is-size-7 has-text-weight-bold has-text-info">
+            <span class="icon is-small"><i class="fas fa-trash"></i></span>
+            Items to Delete:
+        </div>
+        <div class="tags are-small">
+            <template x-for="(deleteId, index) in correctedData.deletes" :key="index">
+                <span class="tag is-danger is-light is-small" x-text="'ID: ' + deleteId"></span>
+            </template>
+        </div>
+    </div>
+</template>
