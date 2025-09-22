@@ -315,15 +315,12 @@ def init_celery(app):
 
     # Register tasks only once
     if not hasattr(celery, "_tasks_registered"):
-        from btcopilot import tasks
 
-        # Register tasks with decorators
-        celery.task(tasks.sync_with_stripe, name="sync_with_stripe")
-        celery.task(tasks.expire_stale_sessions, name="expire_stale_sessions")
-        celery.task(tasks.extract_next_statement, name="extract_next_statement")
-        celery.task(
-            tasks.extract_discussion_statements, name="extract_discussion_statements"
-        )
+        from btcopilot import pro, personal, training
+
+        pro.init_celery(celery)
+        personal.init_celery(celery)
+        training.init_celery(celery)
 
         # Mark tasks as registered to avoid duplicate registration
         celery._tasks_registered = True
