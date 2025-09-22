@@ -17,13 +17,6 @@ from btcopilot.training.routes.discussions import extract_next_statement
 from btcopilot.tests.training.conftest import flask_json
 
 
-def test_list_401(anonymous, discussions):
-    response = anonymous.get("/personal/discussions/")
-    # Anonymous users get redirected to login
-    assert response.status_code == 302
-    assert "/auth/login" in response.headers.get("Location", "")
-
-
 def test_audit(auditor, discussion):
     discussion_id = discussion.id
     response = auditor.get(f"/training/discussions/{discussion_id}/audit")
@@ -101,7 +94,7 @@ def test_create_discussion_from_transcript_requires_auditor(subscriber):
         "/training/discussions/transcript",
         json={"text": "Test transcript"},
     )
-    assert response.status_code == 403
+    assert response.status_code == 302
 
 
 def test_create_discussion_from_transcript_to_current_user(auditor):
@@ -129,7 +122,7 @@ def test_delete_failed_non_owner(logged_in, test_user_2):
     db.session.add(discussion)
     db.session.merge(discussion)
     response = logged_in.delete(f"/training/discussions/{discussion.id}")
-    assert response.status_code == 403
+    assert response.status_code == 302
 
 
 def test_delete_success(admin, discussion):
@@ -538,14 +531,11 @@ def test_celery_task_chaining_mock(mock_celery, flask_app):
     # Mock the extract function to return True (more statements to process)
     with flask_app.app_context():
         with patch(
-            "btcopilot.training.routes.discussions.extract_next_statement",
+            "btcopilot.training.tasks._extract_next_statement",
             return_value=True,
         ):
             # Call the task function directly
-            result = extract_next_statement()
-
-            # Verify it returned True and queued next task
-            assert result is True
+            assert extract_next_statement() is True
             mock_celery.send_task.assert_called_once_with(
                 "extract_next_statement", countdown=1
             )

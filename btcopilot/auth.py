@@ -234,4 +234,11 @@ def _authenticate_training_app() -> User | None:
             session.clear()
 
     # If both methods fail, return unauthorized
-    return _handle_unauthorized(401)
+
+    from werkzeug.exceptions import HTTPException
+
+    redirect_response = redirect(url_for("training.auth.login", next=request.url))
+    # Create a proper HTTP exception with the redirect response
+    exception = HTTPException()
+    exception.response = redirect_response
+    raise exception

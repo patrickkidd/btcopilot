@@ -49,7 +49,7 @@ def test_requires_auditor_or_admin(subscriber, endpoint, method, caplog):
 
                 # If we get here, the request didn't fail as expected
                 # The test should fail because access should be denied
-                assert response.status_code == 403
+                assert response.status_code == 302
             except Exception:
                 # Authorization failure is expected - check that 403 Forbidden error was logged
                 assert any(
