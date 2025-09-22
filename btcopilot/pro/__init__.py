@@ -125,3 +125,10 @@ from . import routes
 
 def init_app(app):
     routes.init_app(app)
+
+
+def init_celery(celery):
+    from . import tasks
+
+    celery.task(tasks.sync_with_stripe, name="sync_with_stripe")
+    celery.task(tasks._expire_stale_sessions, name="expire_stale_sessions")
