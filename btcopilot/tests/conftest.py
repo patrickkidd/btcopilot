@@ -11,6 +11,8 @@ import typing_extensions  # preemptive
 import pytest
 import flask
 from flask.testing import FlaskClient
+
+# from flask.testing import FlaskClient
 import pydantic
 from mock import patch
 from sqlalchemy import create_engine
@@ -23,7 +25,6 @@ from flask_mail import Mail
 
 import vedana
 from btcopilot import create_app
-from btcopilot import extensions
 from btcopilot.extensions import db
 from btcopilot.params import truthy
 from btcopilot.pro.models import (
@@ -38,7 +39,6 @@ from btcopilot.pro.models import (
 
 # Import personal models to register them with SQLAlchemy
 from btcopilot.personal.models import Discussion, Statement, Speaker
-from btcopilot.tests.pro.fdencryptiontestclient import FDEncryptionTestClient
 
 
 # HARDWARE_UUID = (
@@ -178,7 +178,6 @@ def flask_app(request, tmp_path):
 
     # db.session = app.db.create_scoped_session()
     # A default. Just override to have something else.
-    app.test_client_class = FDEncryptionTestClient
 
     # Apparently, required for app.config['TESTING'] == True
     extensions.mail = Mail()
@@ -408,50 +407,6 @@ def test_user_diagrams(test_user, test_user_2):
 def anonymous(flask_app):
     flask_app.test_client_class = FlaskClient
     with flask_app.test_client() as client:
-        yield client
-
-
-@pytest.fixture
-def logged_in(flask_app, test_user):
-    test_user.roles = vedana.ROLE_SUBSCRIBER
-    db.session.merge(test_user)
-    db.session.commit()
-    flask_app.test_client_class = FlaskClient
-    with flask_app.test_client(use_cookies=True) as client:
-        client.user = test_user
-        with client.session_transaction() as sess:
-            sess["user_id"] = test_user.id
-        yield client
-
-
-@pytest.fixture
-def subscriber(logged_in):
-    return logged_in
-
-
-@pytest.fixture
-def auditor(flask_app, test_user):
-    test_user.roles = vedana.ROLE_AUDITOR
-    db.session.merge(test_user)
-    db.session.commit()
-    flask_app.test_client_class = FlaskClient
-    with flask_app.test_client(use_cookies=True) as client:
-        client.user = test_user
-        with client.session_transaction() as sess:
-            sess["user_id"] = test_user.id
-        yield client
-
-
-@pytest.fixture
-def admin(flask_app, test_user):
-    test_user.roles = vedana.ROLE_ADMIN
-    db.session.merge(test_user)
-    db.session.commit()
-    flask_app.test_client_class = FlaskClient
-    with flask_app.test_client(use_cookies=True) as client:
-        client.user = test_user
-        with client.session_transaction() as sess:
-            sess["user_id"] = test_user.id
         yield client
 
 

@@ -60,7 +60,7 @@ _log = logging.getLogger(__name__)
 _log.level = logging.INFO
 
 
-bp = Blueprint("v1", __name__, url_prefix="/v1")
+bp = Blueprint("v1", __name__, url_prefix="/v1", template_folder="templates")
 
 
 def init_app(app):

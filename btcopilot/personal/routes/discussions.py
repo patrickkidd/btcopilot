@@ -1,11 +1,116 @@
-from flask import Blueprint, jsonify, request
+import logging
+import pickle
+
+from flask import Blueprint, jsonify, request, abort
+from sqlalchemy.orm import subqueryload
 
 from btcopilot.extensions import db
+from btcopilot import auth
+from btcopilot.pro.models import Diagram
 from btcopilot.personal import Response, ask
+from btcopilot.personal.database import Database, Person
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
 
+_log = logging.getLogger(__name__)
 
 bp = Blueprint("discussions", __name__, url_prefix="/discussions")
+
+
+def _create_initial_database() -> Database:
+    """Create initial database with User and Assistant people."""
+    initial_database = Database()
+
+    # Add User person (ID will be 1)
+    user_person = Person(
+        name="User", spouses=[], offspring=[], parents=[], confidence=1.0
+    )
+    initial_database.add_person(user_person)
+
+    # Add Assistant person (ID will be 2)
+    assistant_person = Person(
+        name="Assistant", spouses=[], offspring=[], parents=[], confidence=1.0
+    )
+    initial_database.add_person(assistant_person)
+
+    return initial_database
+
+
+def _create_discussion(data: dict) -> Discussion:
+    user = auth.current_user()
+
+    # Ensure user has a free_diagram
+    if not user.free_diagram:
+        # Create initial database with User and Assistant people
+        initial_database = _create_initial_database()
+
+        diagram = Diagram(
+            user_id=user.id,
+            name=f"{user.username} Personal Case File",
+            data=pickle.dumps({"database": initial_database.model_dump()}),
+        )
+
+        db.session.add(diagram)
+        db.session.flush()
+        user.free_diagram_id = diagram.id
+
+    discussion = Discussion(
+        user_id=user.id,
+        diagram_id=user.free_diagram_id,
+        summary="New Discussion",
+        speakers=[
+            Speaker(name="User", type=SpeakerType.Subject, person_id=1),
+            Speaker(name="Assistant", type=SpeakerType.Expert, person_id=2),
+        ],
+    )
+    db.session.add(discussion)
+    db.session.flush()
+
+    # Update discussion with speaker IDs for chat
+    discussion.chat_user_speaker_id = discussion.speakers[0].id
+    discussion.chat_ai_speaker_id = discussion.speakers[1].id
+
+    db.session.commit()
+
+    return discussion
+
+
+@bp.route("", methods=["POST"])
+@bp.route("/", methods=["POST"])
+def create():
+    data = request.get_json(silent=True) or {}
+    discussion = _create_discussion(data)
+    if "statement" in data:
+        response: Response = ask(discussion, data["statement"])
+    db.session.commit()
+    db.session.merge(discussion)
+
+    ret = discussion.as_dict(include=["speakers", "statements"])
+    if "statement" in data:
+        ret["pdp"] = response.pdp.model_dump()
+        ret["statement"] = response.statement
+
+    return jsonify(ret)
+
+
+@bp.route("")
+@bp.route("/")
+def index():
+    discussions = (
+        Discussion.query.options(subqueryload(Discussion.statements))
+        .filter_by(user_id=auth.current_user().id)
+        .all()
+    )
+    return jsonify([discussion.as_dict() for discussion in discussions])
+
+
+@bp.route("/<int:discussion_id>", methods=["GET"])
+def get(discussion_id: int):
+    discussion = Discussion.query.get(discussion_id)
+    if not discussion:
+        return abort(404)
+    elif discussion.user_id != auth.current_user().id:
+        return abort(401)
+    return jsonify(discussion.as_dict(include=["speakers", "statements"]))
 
 
 @bp.route("/<int:discussion_id>/statements", methods=["POST"])
@@ -97,3 +202,12 @@ def chat(discussion_id: int):
     db.session.commit()
 
     return jsonify({"statement": response.statement, "pdp": response.pdp.model_dump()})
+
+
+# @bp.route("/<int:discussion_id>/statements", methods=["GET"])
+# def statements(discussion_id: int):
+#     discussion = Discussion.query.get(discussion_id)
+#     if discussion.user_id != auth.current_user().id:
+#         return abort(401)
+#     _log.debug(f"Discussion: {discussion} with {len(discussion.statements)} statements")
+#     return jsonify([stmt.as_dict() for stmt in discussion.statements])

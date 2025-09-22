@@ -10,17 +10,17 @@ from btcopilot.personal.database import Person
 _log = logging.getLogger(__name__)
 
 # Create the speakers blueprint
-speakers_bp = Blueprint(
+bp = Blueprint(
     "speakers",
     __name__,
     url_prefix="/speakers",
     template_folder="../templates",
     static_folder="../static",
 )
-speakers_bp = minimum_role(vedana.ROLE_AUDITOR)(speakers_bp)
+bp = minimum_role(vedana.ROLE_AUDITOR)(bp)
 
 
-@speakers_bp.route("/<int:speaker_id>", methods=["PUT"])
+@bp.route("/<int:speaker_id>", methods=["PUT"])
 def update(speaker_id):
     """Update a speaker's properties, optionally creating a new person"""
 

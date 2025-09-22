@@ -12,7 +12,7 @@ from flask import Blueprint, request, jsonify
 
 _log = logging.getLogger(__name__)
 
-diagrams_bp = Blueprint(
+bp = Blueprint(
     "diagrams",
     __name__,
     url_prefix="/diagrams",
@@ -20,7 +20,7 @@ diagrams_bp = Blueprint(
 )
 
 
-@diagrams_bp.route("", methods=["POST"])
+@bp.route("", methods=["POST"])
 def create():
     """Create a new diagram for the auditor"""
     current_user = auth.current_user()
@@ -67,7 +67,7 @@ def create():
     )
 
 
-@diagrams_bp.route("/<int:diagram_id>", methods=["DELETE"])
+@bp.route("/<int:diagram_id>", methods=["DELETE"])
 def delete(diagram_id):
     """Delete a diagram - auditors can delete their own, admins can delete any"""
     from btcopilot.training.models import Feedback

@@ -17,7 +17,6 @@ from flask import (
     make_response,
 )
 from sqlalchemy import create_engine
-from sqlalchemy.orm import subqueryload
 
 
 import vedana
@@ -36,25 +35,6 @@ from btcopilot.training.utils import get_breadcrumbs, get_auditor_id
 import vedana
 
 _log = logging.getLogger(__name__)
-
-
-def _create_initial_database() -> Database:
-    """Create initial database with User and Assistant people."""
-    initial_database = Database()
-
-    # Add User person (ID will be 1)
-    user_person = Person(
-        name="User", spouses=[], offspring=[], parents=[], confidence=1.0
-    )
-    initial_database.add_person(user_person)
-
-    # Add Assistant person (ID will be 2)
-    assistant_person = Person(
-        name="Assistant", spouses=[], offspring=[], parents=[], confidence=1.0
-    )
-    initial_database.add_person(assistant_person)
-
-    return initial_database
 
 
 def _next_statement() -> Statement:
@@ -207,64 +187,14 @@ def extract_next_statement(*args, **kwargs):
 
 
 # Create the discussions blueprint
-discussions_bp = Blueprint(
+bp = Blueprint(
     "discussions",
     __name__,
     url_prefix="/discussions",
     template_folder="../templates",
     static_folder="../static",
 )
-discussions_bp = minimum_role(vedana.ROLE_SUBSCRIBER)(discussions_bp)
-
-
-@discussions_bp.route("")
-@discussions_bp.route("/")
-def index():
-    discussions = (
-        Discussion.query.options(subqueryload(Discussion.statements))
-        .filter_by(user_id=auth.current_user().id)
-        .all()
-    )
-    return jsonify([discussion.as_dict() for discussion in discussions])
-
-
-def _create_discussion(data: dict) -> Discussion:
-    user = auth.current_user()
-
-    # Ensure user has a free_diagram
-    if not user.free_diagram:
-        # Create initial database with User and Assistant people
-        initial_database = _create_initial_database()
-
-        diagram = Diagram(
-            user_id=user.id,
-            name=f"{user.username} Personal Case File",
-            data=pickle.dumps({"database": initial_database.model_dump()}),
-        )
-
-        db.session.add(diagram)
-        db.session.flush()
-        user.free_diagram_id = diagram.id
-
-    discussion = Discussion(
-        user_id=user.id,
-        diagram_id=user.free_diagram_id,
-        summary="New Discussion",
-        speakers=[
-            Speaker(name="User", type=SpeakerType.Subject, person_id=1),
-            Speaker(name="Assistant", type=SpeakerType.Expert, person_id=2),
-        ],
-    )
-    db.session.add(discussion)
-    db.session.flush()
-
-    # Update discussion with speaker IDs for chat
-    discussion.chat_user_speaker_id = discussion.speakers[0].id
-    discussion.chat_ai_speaker_id = discussion.speakers[1].id
-
-    db.session.commit()
-
-    return discussion
+bp = minimum_role(vedana.ROLE_SUBSCRIBER)(bp)
 
 
 def _create_assembly_ai_transcript(data: dict):
@@ -542,25 +472,7 @@ def _create_import(data: dict):
     )
 
 
-@discussions_bp.route("", methods=["POST"])
-@discussions_bp.route("/", methods=["POST"])
-def create():
-    data = request.get_json(silent=True) or {}
-    discussion = _create_discussion(data)
-    if "statement" in data:
-        response: Response = ask(discussion, data["statement"])
-    db.session.commit()
-    db.session.merge(discussion)
-
-    ret = discussion.as_dict(include=["speakers", "statements"])
-    if "statement" in data:
-        ret["pdp"] = response.pdp.model_dump()
-        ret["statement"] = response.statement
-
-    return jsonify(ret)
-
-
-@discussions_bp.route("/import", methods=["POST"])
+@bp.route("/import", methods=["POST"])
 @minimum_role(vedana.ROLE_AUDITOR)
 def import_discussion():
     diagram_id = request.args.get("diagram_id", type=int)
@@ -569,7 +481,7 @@ def import_discussion():
     return _create_import({"diagram_id": diagram_id, "json_data": json_data})
 
 
-@discussions_bp.route("/transcript", methods=["POST"])
+@bp.route("/transcript", methods=["POST"])
 @minimum_role(vedana.ROLE_AUDITOR)
 def create_from_transcript():
     diagram_id = request.args.get("diagram_id", type=int)
@@ -581,27 +493,7 @@ def create_from_transcript():
     )
 
 
-@discussions_bp.route("/<int:discussion_id>", methods=["GET"])
-def get(discussion_id: int):
-    discussion = Discussion.query.get(discussion_id)
-    if not discussion:
-        return abort(404)
-    elif discussion.user_id != auth.current_user().id:
-        return abort(401)
-    return jsonify(discussion.as_dict(include=["speakers", "statements"]))
-
-
-@discussions_bp.route("/<int:discussion_id>/statements", methods=["GET"])
-@minimum_role(vedana.ROLE_AUDITOR)
-def statements(discussion_id: int):
-    discussion = Discussion.query.get(discussion_id)
-    if discussion.user_id != auth.current_user().id:
-        return abort(401)
-    _log.debug(f"Discussion: {discussion} with {len(discussion.statements)} statements")
-    return jsonify([stmt.as_dict() for stmt in discussion.statements])
-
-
-@discussions_bp.route("/upload_token")
+@bp.route("/upload_token")
 @minimum_role(vedana.ROLE_AUDITOR)
 def upload_token():
     """Get AssemblyAI API key for client-side upload"""
@@ -616,7 +508,7 @@ def upload_token():
     return jsonify({"success": True, "api_key": api_key})
 
 
-@discussions_bp.route("/<int:discussion_id>/audit")
+@bp.route("/<int:discussion_id>/audit")
 @minimum_role(vedana.ROLE_AUDITOR)
 def audit(discussion_id):
     """View a specific discussion for audit (from audit system)"""
@@ -868,7 +760,7 @@ def audit(discussion_id):
     )
 
 
-@discussions_bp.route("/<int:discussion_id>/extract", methods=["POST"])
+@bp.route("/<int:discussion_id>/extract", methods=["POST"])
 @minimum_role(vedana.ROLE_ADMIN)
 def extract(discussion_id: int):
     """Trigger background extraction for a specific discussion"""
@@ -894,7 +786,7 @@ def extract(discussion_id: int):
     return jsonify({"success": True, "message": "Extraction triggered successfully"})
 
 
-@discussions_bp.route("/<int:discussion_id>/progress", methods=["GET"])
+@bp.route("/<int:discussion_id>/progress", methods=["GET"])
 @minimum_role(vedana.ROLE_AUDITOR)
 def progress(discussion_id: int):
     """Get extraction progress for statements in a discussion"""
@@ -966,7 +858,7 @@ def progress(discussion_id: int):
     )
 
 
-@discussions_bp.route("/<int:discussion_id>/export", methods=["GET"])
+@bp.route("/<int:discussion_id>/export", methods=["GET"])
 @minimum_role(vedana.ROLE_AUDITOR)
 def export(discussion_id: int):
     """Export a discussion as JSON file"""
@@ -1004,7 +896,7 @@ def export(discussion_id: int):
     return response
 
 
-@discussions_bp.route("/<int:discussion_id>/clear-extracted", methods=["POST"])
+@bp.route("/<int:discussion_id>/clear-extracted", methods=["POST"])
 @minimum_role(vedana.ROLE_AUDITOR)
 def clear_extracted_data(discussion_id):
     """Clear all extracted PDP data from a discussion"""
@@ -1076,7 +968,7 @@ def clear_extracted_data(discussion_id):
     )
 
 
-@discussions_bp.route("/<int:discussion_id>", methods=["DELETE"])
+@bp.route("/<int:discussion_id>", methods=["DELETE"])
 def delete(discussion_id):
     """Delete a specific discussion and all its messages"""
     current_user = auth.current_user()

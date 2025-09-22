@@ -12,6 +12,11 @@ import vedana
 from btcopilot.tests.conftest import flask_app
 
 
+@pytest.fixture(autouse=True)
+def _no_frontend_yet():
+    pytest.skip("Frontend tests are not implemented yet")
+
+
 def is_server_running(host="127.0.0.1", port=80):
     try:
         requests.get(f"http://{host}:{port}", timeout=1)

@@ -5,13 +5,9 @@ import json
 from functools import lru_cache
 import logging
 
+import pydantic_ai
 
 _log = logging.getLogger(__name__)
-
-
-from pydantic_ai import Agent
-from pydantic_ai.models.openai import OpenAIModel
-from pydantic_ai.providers.openai import OpenAIProvider
 
 
 class LLMFunction(enum.StrEnum):
@@ -98,6 +94,10 @@ class LLM:
         start_time = time.time()
         # _log.debug(f"Starting OpenAI request")
         if response_format:
+            from pydantic_ai import Agent
+            from pydantic_ai.models.openai import OpenAIModel
+            from pydantic_ai.providers.openai import OpenAIProvider
+
             model = OpenAIModel(
                 "gpt-4o-mini",
                 provider=OpenAIProvider(api_key=os.environ["OPENAI_API_KEY"]),
@@ -182,5 +182,5 @@ class LLM:
             # No event loop in current thread, create a new one
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
+
         return loop.run_until_complete(self.submit(llm_type, prompt, **kwargs))

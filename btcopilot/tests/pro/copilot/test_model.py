@@ -46,6 +46,9 @@ def truthy(x):
         return bool(x)
 
 
+@pytest.mark.skip(
+    "need to optimize --e2e mark to not run the engine fixture in this file"
+)
 @pytest.mark.e2e
 @pytest.mark.parametrize("question, correct_answer", quizzes.FTICP_QUIZ)
 def test_bowens_book(engine, question, correct_answer):

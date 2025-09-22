@@ -14,7 +14,6 @@ import logging
 import time
 from dataclasses import dataclass
 
-from langchain.prompts import ChatPromptTemplate
 from langchain_core.messages import AIMessage
 
 from btcopilot import EMBEDDINGS_MODEL, LLM_MODEL
@@ -159,6 +158,7 @@ class Engine:
     def ask(
         self, question: str, events: list[Event] = None, conversation_id: str = None
     ) -> Response:
+        from langchain.prompts import ChatPromptTemplate
 
         _log.info(f"Query with question: {question}")
 

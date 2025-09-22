@@ -474,7 +474,7 @@ def create_stripe_Subscription(user, policy, license, card):
 ## TODO: Maybe also cancel licenses in a webhook from Stripe?
 def sync_with_stripe():
     import stripe
-    from btcopilot.models import License, Policy, User
+    from btcopilot.pro.models import License, Policy, User
 
     _log.info(f"Starting...")
     # Expire old subscriptions

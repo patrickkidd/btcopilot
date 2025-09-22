@@ -22,15 +22,15 @@ from btcopilot.personal.chat import Response, ask
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.training.security import add_security_headers
 
-from .audit import audit_bp
-from .admin import admin_bp
-from .stream import stream_bp
-from .speakers import speakers_bp
-from .prompts import prompts_bp
-from .discussions import discussions_bp
-from .feedback import feedback_bp
-from .diagrams import diagrams_bp
-from .auth import auth_bp
+from .audit import bp as audit_bp
+from .admin import bp as admin_bp
+from .stream import bp as stream_bp
+from .speakers import bp as speakers_bp
+from .prompts import bp as prompts_bp
+from .discussions import bp as discussions_bp
+from .feedback import bp as feedback_bp
+from .diagrams import bp as diagrams_bp
+from .auth import bp as auth_bp
 
 
 _log = logging.getLogger(__name__)
@@ -63,6 +63,7 @@ bp.register_blueprint(prompts_bp)
 bp.register_blueprint(discussions_bp)
 bp.register_blueprint(feedback_bp)
 bp.register_blueprint(diagrams_bp)
+bp.register_blueprint(auth_bp)
 
 
 @bp.before_request
@@ -115,8 +116,8 @@ def init_app(app):
     # Set session timeout
     app.permanent_session_lifetime = datetime.timedelta(hours=8)
 
-    # Register auth routes directly with app (no authentication required)
-    app.register_blueprint(auth_bp)
+    # # Register auth routes directly with app (no authentication required)
+    # app.register_blueprint(auth_bp)
 
     # Register parent blueprint with app (child blueprints already registered at import time)
     app.register_blueprint(bp)
@@ -127,7 +128,7 @@ def training_root():
     """Redirect to appropriate page based on user role"""
     user = btcopilot_auth.current_user()
     if not user:
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("training.auth.login"))
 
     if user.has_role(vedana.ROLE_ADMIN):
         return redirect(url_for("training.admin.index"))
@@ -143,7 +144,7 @@ def subscriber_landing():
     """Landing page for subscribers with limited functionality"""
     user = btcopilot_auth.current_user()
     if not user:
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("training.auth.login"))
 
     # Only allow subscribers to access this page
     if not user.has_role(vedana.ROLE_AUDITOR) or user.has_role(vedana.ROLE_ADMIN):

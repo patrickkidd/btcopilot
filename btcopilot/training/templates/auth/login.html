@@ -57,7 +57,7 @@
                         {% endif %}
                     {% endwith %}
                     
-                    <form method="POST" action="{{ url_for('auth.login') }}">
+                    <form method="POST" action="{{ url_for('training.auth.login') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <div class="field">
                             <label class="label">Username</label>

@@ -4,9 +4,12 @@ import pytest
 from mock import patch, AsyncMock
 import flask.json
 
+import vedana
 from btcopilot.extensions import db
 from btcopilot.personal.database import PDPDeltas
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
+
+from btcopilot.tests.personal.conftest import discussion, discussions
 
 
 def pytest_configure(config):
@@ -14,6 +17,57 @@ def pytest_configure(config):
         "markers",
         "extraction_flow: mock PDP extraction for testing extraction lifecycle",
     )
+
+
+@pytest.fixture
+def logged_in(flask_app, test_user):
+    test_user.roles = vedana.ROLE_SUBSCRIBER
+    db.session.merge(test_user)
+    db.session.commit()
+    # flask_app.test_client_class = FlaskClient
+    with flask_app.test_client(use_cookies=True) as client:
+        client.user = test_user
+        with client.session_transaction() as sess:
+            sess["user_id"] = test_user.id
+        yield client
+
+
+@pytest.fixture
+def subscriber(flask_app, test_user):
+    test_user.roles = vedana.ROLE_SUBSCRIBER
+    db.session.merge(test_user)
+    db.session.commit()
+    with flask_app.test_client(use_cookies=True) as client:
+        client.user = test_user
+        with client.session_transaction() as sess:
+            sess["user_id"] = test_user.id
+        yield client
+
+
+@pytest.fixture
+def auditor(flask_app, test_user):
+    test_user.roles = vedana.ROLE_AUDITOR
+    db.session.merge(test_user)
+    db.session.commit()
+    # flask_app.test_client_class = FlaskClient
+    with flask_app.test_client(use_cookies=True) as client:
+        client.user = test_user
+        with client.session_transaction() as sess:
+            sess["user_id"] = test_user.id
+        yield client
+
+
+@pytest.fixture
+def admin(flask_app, test_user):
+    test_user.roles = vedana.ROLE_ADMIN
+    db.session.merge(test_user)
+    db.session.commit()
+    # flask_app.test_client_class = FlaskClient
+    with flask_app.test_client(use_cookies=True) as client:
+        client.user = test_user
+        with client.session_transaction() as sess:
+            sess["user_id"] = test_user.id
+        yield client
 
 
 @pytest.fixture(autouse=True)
@@ -57,58 +111,6 @@ def extraction_flow(request):
             yield {"extractions": extractions}
         else:
             yield None
-
-
-@pytest.fixture
-def discussions(test_user):
-    _discussions = [
-        Discussion(user_id=test_user.id, summary=f"test thread {i}") for i in range(3)
-    ]
-    db.session.add_all(_discussions)
-    db.session.commit()
-    return _discussions
-
-
-@pytest.fixture
-def discussion(test_user):
-    discussion = Discussion(
-        user_id=test_user.id,
-        diagram_id=test_user.free_diagram_id,
-        summary="Test discussion",
-    )
-    db.session.add(discussion)
-    db.session.commit()
-
-    # Create speakers for the discussion
-    family_speaker = Speaker(
-        discussion_id=discussion.id,
-        name="Family Member",
-        type=SpeakerType.Subject,
-        person_id=1,
-    )
-    expert_speaker = Speaker(
-        discussion_id=discussion.id,
-        name="Expert",
-        type=SpeakerType.Expert,
-    )
-    db.session.add_all([family_speaker, expert_speaker])
-    db.session.commit()
-
-    # Create statements
-    statement1 = Statement(
-        discussion_id=discussion.id, speaker_id=family_speaker.id, text="Hello", order=0
-    )
-    statement2 = Statement(
-        discussion_id=discussion.id,
-        speaker_id=expert_speaker.id,
-        text="Hi there",
-        pdp_deltas={"events": [{"symptom": {"shift": "better"}}]},
-        order=1,
-    )
-    db.session.add_all([statement1, statement2])
-    db.session.commit()
-
-    return discussion
 
 
 @pytest.fixture

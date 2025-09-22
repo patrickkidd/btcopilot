@@ -26,6 +26,7 @@ dependencies = [
     "chromadb",
     "openai",
     "psycopg2-binary",
+    "numpy<2",
     "vedana @ git+https://github.com/patrickkidd/vedana.git@release",
 ]
 
@@ -36,6 +37,7 @@ pro = [
     "stripe",
     "alembic",
     "cachetools",
+    "sentence_transformers",
     "rich",
     "sip==6.8.6",
     "pyqt5==5.15.11",

@@ -11,17 +11,17 @@ from btcopilot.training.sse import sse_manager
 _log = logging.getLogger(__name__)
 
 # Create the stream blueprint
-stream_bp = Blueprint(
+bp = Blueprint(
     "stream",
     __name__,
     url_prefix="/stream",
     template_folder="../templates",
     static_folder="../static",
 )
-stream_bp = minimum_role(vedana.ROLE_AUDITOR)(stream_bp)
+bp = minimum_role(vedana.ROLE_AUDITOR)(bp)
 
 
-@stream_bp.route("/")
+@bp.route("/")
 def stream():
     """Server-sent events for real-time updates"""
 
@@ -64,7 +64,7 @@ def stream():
     return response
 
 
-@stream_bp.route("/test-sse")
+@bp.route("/test-sse")
 def test_sse():
     """Test endpoint to manually trigger SSE messages"""
 

@@ -7,17 +7,17 @@ from btcopilot.personal.database import Database, PDP, Person, Event
 from btcopilot.personal.models import Discussion
 
 
-def test_get(test_user, logged_in):
+def test_get(subscriber):
     database = Database(
         pdp=PDP(
             people=[Person(id=-1, name="you")],
             events=[Event(id=-2, description="something happened")],
         )
     )
-    test_user.free_diagram.set_database(database)
+    subscriber.user.free_diagram.set_database(database)
     db.session.commit()
 
-    response = logged_in.get("/personal/pdp")
+    response = subscriber.get("/personal/pdp")
     assert response.status_code == 200
     assert response.json == database.pdp.model_dump()
 
@@ -30,21 +30,23 @@ def test_get(test_user, logged_in):
     ],
     ids=["person", "event"],
 )
-def test_accept(test_user, logged_in, id, pdp):
-    discussion = Discussion(user_id=test_user.id, diagram_id=test_user.free_diagram.id)
+def test_accept(subscriber, id, pdp):
+    discussion = Discussion(
+        user_id=subscriber.user.id, diagram_id=subscriber.user.free_diagram.id
+    )
     db.session.add(discussion)
     db.session.commit()
 
-    test_user.free_diagram.set_database(Database(pdp=pdp))
+    subscriber.user.free_diagram.set_database(Database(pdp=pdp))
     db.session.commit()
 
-    response = logged_in.post(
-        f"/personal/diagrams/{logged_in.user.free_diagram_id}/pdp/{-id}/accept"
+    response = subscriber.post(
+        f"/personal/diagrams/{subscriber.user.free_diagram_id}/pdp/{-id}/accept"
     )
     assert response.status_code == 200
     assert response.json["success"] is True
 
-    user = User.query.get(test_user.id)
+    user = User.query.get(subscriber.user.id)
     returned = user.free_diagram.get_database()
     expected = Database()
     if pdp.people:
@@ -62,21 +64,23 @@ def test_accept(test_user, logged_in, id, pdp):
     ],
     ids=["person", "event"],
 )
-def test_reject(test_user, logged_in, id, pdp):
-    discussion = Discussion(user_id=test_user.id, diagram_id=test_user.free_diagram.id)
+def test_reject(subscriber, id, pdp):
+    discussion = Discussion(
+        user_id=subscriber.user.id, diagram_id=subscriber.user.free_diagram.id
+    )
     db.session.add(discussion)
     db.session.commit()
 
-    test_user.free_diagram.set_database(Database(pdp=pdp))
+    subscriber.user.free_diagram.set_database(Database(pdp=pdp))
     db.session.commit()
 
-    response = logged_in.post(
-        f"/personal/diagrams/{logged_in.user.free_diagram_id}/pdp/{-id}/reject"
+    response = subscriber.post(
+        f"/personal/diagrams/{subscriber.user.free_diagram_id}/pdp/{-id}/reject"
     )
     assert response.status_code == 200
     assert response.json["success"] is True
 
-    user = User.query.get(test_user.id)
+    user = User.query.get(subscriber.user.id)
     returned = user.free_diagram.get_database()
     expected = Database()
     assert returned == expected

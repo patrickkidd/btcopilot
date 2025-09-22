@@ -547,7 +547,7 @@
                 <span>{{ current_user.username }}</span>
             </div>
             <div class="navbar-item">
-                <form method="POST" action="{{ url_for('auth.logout') }}" style="display: inline;">
+                <form method="POST" action="{{ url_for('training.auth.logout') }}" style="display: inline;">
                     <button type="submit" class="navbar-item" style="background: none; border: none; color: white; cursor: pointer; padding: 0.5rem 0.75rem;">
                         <span class="icon">
                             <i class="fas fa-sign-out-alt"></i>

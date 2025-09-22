@@ -13,17 +13,17 @@ from btcopilot.training.utils import get_breadcrumbs, get_auditor_id
 _log = logging.getLogger(__name__)
 
 # Create the audit blueprint
-audit_bp = Blueprint(
+bp = Blueprint(
     "audit",
     __name__,
     url_prefix="/audit",
     template_folder="../templates",
     static_folder="../static",
 )
-audit_bp = minimum_role(vedana.ROLE_AUDITOR)(audit_bp)
+bp = minimum_role(vedana.ROLE_AUDITOR)(bp)
 
 
-@audit_bp.route("/")
+@bp.route("/")
 def index():
     user = auth.current_user()
 

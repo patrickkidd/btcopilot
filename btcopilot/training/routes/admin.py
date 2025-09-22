@@ -16,13 +16,13 @@ from btcopilot.training.utils import get_breadcrumbs
 
 _log = logging.getLogger(__name__)
 
-admin_bp = Blueprint(
+bp = Blueprint(
     "admin",
     __name__,
     url_prefix="/admin",
     template_folder="../templates",
 )
-admin_bp = minimum_role(vedana.ROLE_ADMIN)(admin_bp)
+bp = minimum_role(vedana.ROLE_ADMIN)(bp)
 
 
 # Simple in-memory cache for feedback statistics
@@ -243,7 +243,7 @@ def get_users_for_admin(search=None, role_filter=None, for_index=False):
         }
 
 
-@admin_bp.route("/")
+@bp.route("/")
 def index():
     current_user = auth.current_user()
 
@@ -272,7 +272,7 @@ def index():
     )
 
 
-@admin_bp.route("/users", methods=["GET"])
+@bp.route("/users", methods=["GET"])
 def users_list():
     """Get all users for admin interface - no filtering, client-side only"""
     current_user = auth.current_user()
@@ -293,7 +293,7 @@ def users_list():
     )
 
 
-@admin_bp.route("/users/search", methods=["GET"])
+@bp.route("/users/search", methods=["GET"])
 def users_search():
     """Search users for admin interface (no pagination, default to auditor role)"""
     current_user = auth.current_user()
@@ -317,7 +317,7 @@ def users_search():
     )
 
 
-@admin_bp.route("/users/<int:user_id>/details", methods=["GET"])
+@bp.route("/users/<int:user_id>/details", methods=["GET"])
 def user_details(user_id):
     """Get detailed user information including discussions and licenses"""
     current_user = auth.current_user()
@@ -351,7 +351,7 @@ def user_details(user_id):
     return jsonify(user_data)
 
 
-@admin_bp.route("/users/<int:user_id>/detail-html", methods=["GET"])
+@bp.route("/users/<int:user_id>/detail-html", methods=["GET"])
 def user_detail_html(user_id):
     """Get detailed user information as HTML for modal"""
     current_user = auth.current_user()
@@ -392,7 +392,7 @@ def user_detail_html(user_id):
     )
 
 
-@admin_bp.route("/users/<int:user_id>/clear-database", methods=["DELETE"])
+@bp.route("/users/<int:user_id>/clear-database", methods=["DELETE"])
 def user_clear_db(user_id):
     """Clear a user's database JSON column"""
     admin_user = auth.current_user()
@@ -420,7 +420,7 @@ def user_clear_db(user_id):
     )
 
 
-@admin_bp.route("/users/<int:user_id>", methods=["PUT", "PATCH"])
+@bp.route("/users/<int:user_id>", methods=["PUT", "PATCH"])
 def user_update(user_id):
     admin_user = auth.current_user()
     target_user = User.query.get_or_404(user_id)
@@ -516,7 +516,7 @@ def user_update(user_id):
         return jsonify({"success": True, "message": "No changes made", "changes": {}})
 
 
-@admin_bp.route("/approve", methods=["POST"])
+@bp.route("/approve", methods=["POST"])
 def approve():
     """Approve a statement extraction or feedback as ground truth for testing"""
     current_user = auth.current_user()
@@ -675,7 +675,7 @@ def approve():
         )
 
 
-@admin_bp.route("/export-test-cases", methods=["POST"])
+@bp.route("/export-test-cases", methods=["POST"])
 def export_test_cases():
     """Export approved test cases that haven't been exported yet"""
     current_user = auth.current_user()
@@ -701,7 +701,7 @@ def export_test_cases():
         return jsonify({"error": f"Export failed: {str(e)}"}), 500
 
 
-@admin_bp.route("/reject-feedback", methods=["POST"])
+@bp.route("/reject-feedback", methods=["POST"])
 def reject_feedback():
     """Reject feedback with a reason"""
     current_user = auth.current_user()
@@ -747,7 +747,7 @@ def reject_feedback():
     )
 
 
-@admin_bp.route("/approve-statement", methods=["POST"])
+@bp.route("/approve-statement", methods=["POST"])
 def approve_statement():
     """Approve the AI-generated extraction as correct (positive training example)"""
     current_user = auth.current_user()
@@ -810,7 +810,7 @@ def approve_statement():
     )
 
 
-@admin_bp.route("/quick-approve", methods=["POST"])
+@bp.route("/quick-approve", methods=["POST"])
 def quick_approve():
     """Quick approve feedback for inline review - same logic as main approve but returns minimal response"""
     current_user = auth.current_user()
@@ -882,7 +882,7 @@ def quick_approve():
     )
 
 
-@admin_bp.route("/unapprove-feedback", methods=["POST"])
+@bp.route("/unapprove-feedback", methods=["POST"])
 @minimum_role(vedana.ROLE_ADMIN)
 def unapprove_feedback():
     data = request.get_json()
@@ -915,7 +915,7 @@ def unapprove_feedback():
     )
 
 
-@admin_bp.route("/unapprove-statement", methods=["POST"])
+@bp.route("/unapprove-statement", methods=["POST"])
 @minimum_role(vedana.ROLE_ADMIN)
 def unapprove_statement():
     data = request.get_json()

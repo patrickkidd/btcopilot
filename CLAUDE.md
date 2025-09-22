@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Environment Setup
-- **Virtual environment**: `pipenv shell` (uses Pipfile for dependencies)
+- **Virtual environment**: `.venv/bin/activate` (uses pyproject.toml for dependencies)
 - **Start PostgreSQL**: `docker-compose up fd-server` (requires `docker volume create familydiagram_postgres` first)
 
 ### Running the Application
@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Debug Celery beat**: Use VSCode "Celery Beat" configuration
 
 ### Testing
-- **Run all tests**: `pytest -vv tests` (from pipenv shell)
+- **Run all tests**: `pytest -vv tests`
 - **Test with async support**: Tests use `--asyncio-mode=auto` (configured in btcopilot/tests/pytest.ini)
 - **Specific test directories**: `tests/` (main), `tests/training/` (training module)
 - Whenever I paste a stack trace that means a test did not catch it, so add a test to reproduce that error if one did not already exist.

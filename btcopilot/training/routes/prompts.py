@@ -21,17 +21,17 @@ from btcopilot.training.export_tests import (
 _log = logging.getLogger(__name__)
 
 # Create the prompts blueprint
-prompts_bp = Blueprint(
+bp = Blueprint(
     "prompts",
     __name__,
     url_prefix="/prompts",
     template_folder="../templates",
     static_folder="../static",
 )
-prompts_bp = minimum_role(vedana.ROLE_AUDITOR)(prompts_bp)
+bp = minimum_role(vedana.ROLE_AUDITOR)(bp)
 
 
-@prompts_bp.route("/")
+@bp.route("/")
 def index():
     user = auth.current_user()
 
@@ -61,7 +61,7 @@ def index():
     )
 
 
-@prompts_bp.route("/test", methods=["POST"])
+@bp.route("/test", methods=["POST"])
 def test():
     data = request.json
     discussion_id = data.get("discussion_id")
@@ -95,7 +95,7 @@ def test():
             delattr(g, "custom_prompts")
 
 
-@prompts_bp.route("/defaults")
+@bp.route("/defaults")
 def defaults():
     return jsonify(
         {
@@ -106,7 +106,7 @@ def defaults():
     )
 
 
-@prompts_bp.route("/<int:message_id>", methods=["GET", "POST"])
+@bp.route("/<int:message_id>", methods=["GET", "POST"])
 def message_prompts(message_id):
     """Get or set custom prompts for a specific message"""
 
@@ -132,7 +132,7 @@ def message_prompts(message_id):
         return jsonify({"success": True})
 
 
-@prompts_bp.route("/load-artifact/<int:statement_id>")
+@bp.route("/load-artifact/<int:statement_id>")
 def load_artifact(statement_id):
     """Load complete extraction artifact for a statement"""
     statement = Statement.query.get_or_404(statement_id)
@@ -157,7 +157,7 @@ def load_artifact(statement_id):
     return jsonify(artifact)
 
 
-@prompts_bp.route("/suggest-improvements", methods=["POST"])
+@bp.route("/suggest-improvements", methods=["POST"])
 def suggest_improvements():
     """Get AI suggestions for improving prompts based on artifact"""
     data = request.json
@@ -206,7 +206,7 @@ def suggest_improvements():
         return jsonify({"error": str(e)}), 500
 
 
-@prompts_bp.route("/test-extraction", methods=["POST"])
+@bp.route("/test-extraction", methods=["POST"])
 def test_extraction():
     """Test extraction with modified prompts on specific artifact"""
     data = request.json
@@ -269,7 +269,7 @@ def test_extraction():
         return jsonify({"error": str(e)}), 500
 
 
-@prompts_bp.route("/coach-chat", methods=["POST"])
+@bp.route("/coach-chat", methods=["POST"])
 def coach_chat():
     """Interactive chat for prompt refinement"""
     data = request.json
