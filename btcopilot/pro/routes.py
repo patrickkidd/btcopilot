@@ -836,6 +836,8 @@ def access_right(id=None):
 @bp.route("/copilot/chat/<int:conversation_id>", methods=["POST", "DELETE"])
 @encrypted
 def copilot_chat(conversation_id: int = None):
+    from btcopilot.pro.copilot import Event
+
     args = pickle.loads(request.data)
     session = Session.query.filter_by(token=args["session"]).first()
     if not session:
