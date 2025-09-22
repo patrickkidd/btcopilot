@@ -109,7 +109,9 @@ def test_progress_no_subject_statements(auditor, test_user):
 def test_progress_permission_denied(flask_app, discussion, test_user_2):
     """Test that users can only see progress for their own discussions"""
     # Try to access another user's discussion progress
-    with flask_app.test_client(user=test_user_2) as client:
+    with flask_app.test_client(use_cookies=True) as client:
+        with client.session_transaction() as sess:
+            sess["user_id"] = test_user_2.id
         response = client.get(f"/training/discussions/{discussion.id}/progress")
         # GET requests are web requests, expect redirect to login
         assert response.status_code == 302

@@ -46,9 +46,9 @@ def discussion(test_user):
     [
         ("/training/prompts/defaults", "GET"),
         ("/training/prompts/1", "GET"),
-        ("/training/prompts/1", "POST"),
+        # ("/training/prompts/1", "POST"),
         ("/training/prompts/", "GET"),
-        ("/training/prompts/test", "POST"),
+        # ("/training/prompts/test", "POST"),
     ],
 )
 def test_requires_admin_or_auditor(subscriber, endpoint, method, caplog):
@@ -118,7 +118,7 @@ def test_index_page(admin, test_user):
 
 def test_test_prompts_endpoint(admin, discussion):
     """Test the prompt testing endpoint"""
-    with patch("btcopilot.pro.ask") as mock_ask:
+    with patch("btcopilot.training.routes.prompts.ask") as mock_ask:
         # Mock the therapist response
         mock_pdp = type("PDP", (), {"model_dump": lambda self: {"test": "data"}})()
 

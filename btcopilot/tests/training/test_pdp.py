@@ -1,4 +1,5 @@
 import logging
+import asyncio
 
 import pytest
 from mock import patch
@@ -22,7 +23,7 @@ from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerTyp
 _log = logging.getLogger(__name__)
 
 
-async def test_update(test_user):
+def test_update(test_user):
 
     discussion = Discussion(
         user=test_user,
@@ -40,7 +41,7 @@ async def test_update(test_user):
         with patch(
             "btcopilot.personal.pdp.apply_deltas", return_value={"dummy": "data"}
         ):
-            returned = await pdp.update(discussion, Database(), "blah blah")
+            returned = asyncio.run(pdp.update(discussion, Database(), "blah blah"))
     assert returned == ({"dummy": "data"}, {})
 
 
