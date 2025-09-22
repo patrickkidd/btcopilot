@@ -17,9 +17,7 @@ def is_pro_app_request():
 
 
 def is_personal_app_request():
-    return request.path.startswith("/personal") and (
-        request.is_json or request.method in ["DELETE", "PUT", "PATCH"]
-    )
+    return request.path.startswith("/personal")
 
 
 def is_training_app_request() -> bool:
@@ -80,7 +78,7 @@ def _handle_unauthorized(status_code):
         # For web requests, redirect to login
         from werkzeug.exceptions import HTTPException
 
-        redirect_response = redirect(url_for("auth.login", next=request.url))
+        redirect_response = redirect(url_for("training.auth.login", next=request.url))
         # Create a proper HTTP exception with the redirect response
         exception = HTTPException()
         exception.response = redirect_response

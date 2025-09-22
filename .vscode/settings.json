@@ -2,7 +2,7 @@
     "python.languageServer": "Pylance",
     "python.testing.pytestArgs": [
         "btcopilot/tests",
-        "-svvx"
+        "-svv"
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,

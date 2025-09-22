@@ -17,6 +17,13 @@ from btcopilot.training.routes.discussions import extract_next_statement
 from btcopilot.tests.training.conftest import flask_json
 
 
+def test_list_401(anonymous, discussions):
+    response = anonymous.get("/personal/discussions/")
+    # Anonymous users get redirected to login
+    assert response.status_code == 302
+    assert "/auth/login" in response.headers.get("Location", "")
+
+
 def test_audit(auditor, discussion):
     discussion_id = discussion.id
     response = auditor.get(f"/training/discussions/{discussion_id}/audit")

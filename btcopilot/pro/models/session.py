@@ -36,7 +36,7 @@ class Session(db.Model, ModelMixin):
         return token
 
     def account_editor_dict(self):
-        from btcopilot.models import User, Policy
+        from btcopilot.pro.models import User, Policy
         from btcopilot import pro
 
         if not self.user.free_diagram:

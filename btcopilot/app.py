@@ -93,7 +93,7 @@ def create_app(app_class=Flask, config: dict = None, instance_path: str = None):
         if is_pro_app_request() or is_personal_app_request():
             return "Forbidden", 403
         else:
-            return redirect(url_for("auth.login", next=request.url))
+            return redirect(url_for("training.auth.login", next=request.url))
 
     @app.errorhandler(404)
     def _(e):
@@ -102,7 +102,7 @@ def create_app(app_class=Flask, config: dict = None, instance_path: str = None):
         except HTTPException as e:
             user = None
         # if not user or user.IS_ANONYMOUS:
-        #     return redirect(url_for("auth.login", next=request.url))
+        #     return redirect(url_for("training.auth.login", next=request.url))
         # else:
         return (
             render_template("errors/404.html", current_user=user, vedana=vedana),

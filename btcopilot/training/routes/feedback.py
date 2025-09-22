@@ -17,12 +17,12 @@ from btcopilot.training.utils import get_auditor_id, get_breadcrumbs
 _log = logging.getLogger(__name__)
 
 # Create the feedback blueprint
-feedback_bp = Blueprint(
+bp = Blueprint(
     "feedback",
     __name__,
     url_prefix="/feedback",
 )
-feedback_bp = minimum_role(vedana.ROLE_AUDITOR)(feedback_bp)
+bp = minimum_role(vedana.ROLE_AUDITOR)(bp)
 
 
 def compile_feedback_datapoints():
@@ -168,8 +168,8 @@ def compile_feedback_datapoints():
     return datapoints
 
 
-@feedback_bp.route("")
-@feedback_bp.route("/")
+@bp.route("")
+@bp.route("/")
 @minimum_role(vedana.ROLE_ADMIN)
 def index():
     """Admin view of all feedback"""
@@ -204,8 +204,8 @@ def index():
     )
 
 
-@feedback_bp.route("", methods=["POST"])
-@feedback_bp.route("/", methods=["POST"])
+@bp.route("", methods=["POST"])
+@bp.route("/", methods=["POST"])
 def create():
     data = request.json
     auditor_id = get_auditor_id(request, session)
@@ -276,7 +276,7 @@ def create():
     return jsonify({"success": True, "created": True, "feedback_id": feedback.id})
 
 
-@feedback_bp.route("/download")
+@bp.route("/download")
 @minimum_role(vedana.ROLE_ADMIN)
 def download():
     """Download feedback datapoints as JSON file"""
@@ -399,7 +399,7 @@ def download():
     return response
 
 
-@feedback_bp.route("/<int:feedback_id>", methods=["DELETE"])
+@bp.route("/<int:feedback_id>", methods=["DELETE"])
 def delete(feedback_id):
     auditor_id = get_auditor_id(request, session)
 

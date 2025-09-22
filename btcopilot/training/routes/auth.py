@@ -244,7 +244,7 @@ def logout():
     except Exception as e:
         _log.warning(f"CSRF validation failed for logout: {e}")
         flash("Invalid security token", "error")
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("training.auth.login"))
 
     if "user_id" in session:
         user_id = session["user_id"]
@@ -252,4 +252,4 @@ def logout():
 
     session.clear()
     flash("You have been logged out", "info")
-    return redirect(url_for("auth.login"))
+    return redirect(url_for("training.auth.login"))

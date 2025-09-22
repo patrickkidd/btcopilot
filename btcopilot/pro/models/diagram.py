@@ -49,7 +49,7 @@ class Diagram(db.Model, ModelMixin):
         self.data = pickle.dumps(data)
 
     def grant_access(self, user, right, _commit=False):
-        from btcopilot.models import AccessRight
+        from btcopilot.pro.models import AccessRight
 
         AccessRight.query.filter_by(diagram_id=self.id, user_id=user.id).delete()
         access_right = AccessRight(diagram_id=self.id, user_id=user.id, right=right)
@@ -58,7 +58,7 @@ class Diagram(db.Model, ModelMixin):
             db.session.commit()
 
     def check_write_access(self, user):
-        from btcopilot.models import AccessRight
+        from btcopilot.pro.models import AccessRight
 
         if user.id == self.user_id:
             return True
@@ -70,7 +70,7 @@ class Diagram(db.Model, ModelMixin):
         return False
 
     def check_read_access(self, user):
-        from btcopilot.models import AccessRight
+        from btcopilot.pro.models import AccessRight
 
         if user.id == self.user_id:
             return True
