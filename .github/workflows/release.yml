@@ -67,6 +67,9 @@ jobs:
         echo "asset_url=$asset_url" >> $GITHUB_ENV
         echo $asset_url
     
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+  
     - name: Install wheel
       run: |
         pip install --upgrade pip
@@ -127,9 +130,6 @@ jobs:
         asset_name: ${{ env.WHEEL_FILENAME }}
         asset_content_type: application/zip
 
-    # - name: Setup tmate session
-    #   uses: mxschmitt/action-tmate@v3
-  
     - name: Push to pypi repo
       run: |
         pip install -U twine packaging
