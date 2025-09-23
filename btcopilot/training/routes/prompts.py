@@ -84,7 +84,7 @@ def test():
         return jsonify(
             {
                 "success": True,
-                "message": response.message,
+                "message": response.statement,
                 "pdp": response.pdp.model_dump(),
                 "prompts_used": list(custom_prompts.keys()),
             }
