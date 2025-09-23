@@ -118,14 +118,14 @@ def test_index_page(admin, test_user):
 
 def test_test_prompts_endpoint(admin, discussion):
     """Test the prompt testing endpoint"""
-    with patch("btcopilot.training.routes.prompts.ask") as mock_ask:
+    with patch("btcopilot.training.routes.prompts.ask") as ask:
         # Mock the therapist response
         mock_pdp = type("PDP", (), {"model_dump": lambda self: {"test": "data"}})()
 
         mock_response = type(
-            "Response", (), {"message": "Test response", "pdp": mock_pdp}
+            "Response", (), {"statement": "Test response", "pdp": mock_pdp}
         )()
-        mock_ask.return_value = mock_response
+        ask.return_value = mock_response
 
         response = admin.post(
             "/training/prompts/test",

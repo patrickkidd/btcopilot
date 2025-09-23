@@ -20,7 +20,7 @@ def test_success_new(anonymous, test_user):
     )
 
 
-def test_success_existng(anonymous, test_user):
+def test_success_existing(anonymous, test_user):
     session = Session(user_id=test_user.id)
     db.session.add(session)
     db.session.commit()

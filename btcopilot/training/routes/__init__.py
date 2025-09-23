@@ -71,7 +71,7 @@ def _():
     # Skip authentication for auth routes and login endpoint (handled separately)
     if request.endpoint and (
         request.endpoint.startswith("training.auth.")
-        or request.endpoint == "training.auth.login"
+        or request.endpoint in ("training.auth.login", "training.login")
     ):
         return
 

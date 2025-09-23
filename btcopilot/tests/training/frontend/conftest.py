@@ -1,6 +1,7 @@
 import pytest
 import requests
 import time
+from pathlib import Path
 from urllib.parse import urlparse
 from playwright.sync_api import Page, Browser, BrowserContext, Route
 from flask.testing import FlaskClient
@@ -10,6 +11,14 @@ from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerTyp
 import vedana
 
 from btcopilot.tests.conftest import flask_app
+
+
+def pytest_ignore_collect(path, config):
+    """
+    Skip all tests in this directory.
+    """
+    if Path(__file__).parent == path.dirpath():
+        return True
 
 
 @pytest.fixture(autouse=True)

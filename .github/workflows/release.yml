@@ -67,13 +67,10 @@ jobs:
         echo "asset_url=$asset_url" >> $GITHUB_ENV
         echo $asset_url
     
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-  
     - name: Install wheel
       run: |
         pip install --upgrade pip
-        pip install --extra-index-url=$TWINE_REPOSITORY_URL `dist/*.whl`[pro,personal,training,test]
+        pip install --extra-index-url=$TWINE_REPOSITORY_URL `ls dist/*.whl`[pro,personal,training,test]
 
         # latest_release=$(curl -s https://api.github.com/repos/patrickkidd/vedana/releases/latest)
         # vedana_asset_url=$(echo "$latest_release" | jq -r '.assets[0].browser_download_url')
@@ -86,6 +83,9 @@ jobs:
 
         python -c "import btcopilot.tests; print(btcopilot.tests)"
 
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+  
     - name: Test with pytest
       run: |
         pytest -svv --disable-warnings --pyargs btcopilot.tests
