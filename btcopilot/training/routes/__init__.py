@@ -70,7 +70,8 @@ bp.register_blueprint(auth_bp)
 def _():
     # Skip authentication for auth routes and login endpoint (handled separately)
     if request.endpoint and (
-        request.endpoint.startswith("auth.") or request.endpoint == "training.login"
+        request.endpoint.startswith("training.auth.")
+        or request.endpoint == "training.auth.login"
     ):
         return
 

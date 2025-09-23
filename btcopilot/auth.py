@@ -221,6 +221,7 @@ def _authenticate_pro_personal_apps() -> User | None:
 
 def _authenticate_training_app() -> User | None:
     """Authenticate user for personal app (/training/*) - supports both session and signature auth."""
+
     # First, try session-based authentication (for web users)
     user_id = session.get("user_id")
     if user_id:
