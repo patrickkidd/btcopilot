@@ -67,7 +67,7 @@ jobs:
         echo "asset_url=$asset_url" >> $GITHUB_ENV
         echo $asset_url
     
-    - name: Install wheel
+    - name: Install wheels
       run: |
         pip install --upgrade pip
         pip install --extra-index-url=$TWINE_REPOSITORY_URL `ls dist/*.whl`[pro,personal,training,test]
