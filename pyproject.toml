@@ -65,6 +65,7 @@ dependencies = [
     "pypdf",
 ]
 
+[project.optional-dependencies]
 test = [
     "black",
     "build",
