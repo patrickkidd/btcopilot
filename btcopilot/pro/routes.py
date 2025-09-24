@@ -132,7 +132,7 @@ def deprecated(func):
     return _wrapper
 
 
-@bp.route("/hello")
+@bp.route("/health")
 def hello():
     return "Hello, World!"
 
