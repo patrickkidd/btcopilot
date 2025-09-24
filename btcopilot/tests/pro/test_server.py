@@ -34,7 +34,7 @@ def test_config():
 
 def test_hello(flask_app):
     with flask_app.test_client() as client:
-        response = client.get("/v1/hello")
+        response = client.get("/v1/health")
     assert response.status_code == 200
     assert response.data == b"Hello, World!"
 
