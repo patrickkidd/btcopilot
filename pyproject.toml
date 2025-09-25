@@ -28,8 +28,7 @@ dependencies = [
     "openai",
     "psycopg2-binary",
     "numpy<2",
-    "vedana",
-    # "vedana @ git+https://github.com/patrickkidd/vedana.git@release",
+    "vedana @ git+https://github.com/patrickkidd/vedana.git@release",
 
     # pro
 
