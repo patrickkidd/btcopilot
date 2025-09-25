@@ -508,7 +508,7 @@ def upload_token():
     return jsonify({"success": True, "api_key": api_key})
 
 
-@bp.route("/<int:discussion_id>/audit")
+@bp.route("/<int:discussion_id>")
 @minimum_role(vedana.ROLE_AUDITOR)
 def audit(discussion_id):
     """View a specific discussion for audit (from audit system)"""
