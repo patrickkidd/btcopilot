@@ -1,29 +1,91 @@
 # BT Copilot
 
-AI Chatbot service for Bowen theory - the human family as a bioliogical unit
-with clinical applications. It is the AI engine for [the Family Diagram
-app](https://familydiagram.com)
+AI-driven intelligence for Bowen theory - Research and tools to evaluate the
+impact of the family system on individual clinical symptoms. The AI engine for
+the [Family Diagram](https://familydiagram.com)
 
 Scroll down for development journal.
 
-## Provides:
+## Provides
 
-Python API for a Large Language Model (LLM) RAG engine trained on a defined
-corpus of clinical and scientific literature. Literature:
-[btcopilot/index.py](botcopilot/index.py)
+__Web-based SARF ML Training System__
 
-## Conceptual Overview
+A web app where domain experts in Bowen theory correct clinical data extracted
+from clinical audio transcripts and patient chat threads. The audit feedback
+becomes ground-truth data for training an AI model to do this autonomously. Data
+is extracted using the SARF data model; Symptom, Anxiety, Relationship,
+Functioning. They are four qualitative variables that shift over a clinical
+timeline. The model extracts people, events, and variable shifts from
+conversations like clinical interviews and chat threads. This will provide the
+intelligence for a personal/mobile self-help app.
+
+__Backend server for Family Diagram app__
+
+An AI assistant for the Family Diagram app. BT
+Copilot lets you ask questions about the current case file based on the academic
+and scientific literature for Bowen theory.
+
+## SARF web auditing system
+
+The SARF model scans a text conversation between any number of people and
+compiles a database of people, and events containing shifts in four variables -
+SARF. SARF are  Symptom, Anxiety, Relationship, Functioning. These four
+variables represent the basic clinical hypothesis of Bowen theory.
+
+The web auditing system is for domain-experts to read through case examples and
+audit/correct the AI-extracted data. Those corrections will be used for a few
+different outcomes:
+- To train/fine-tune an AI model to do the extraction very well.
+  - If model alignment is achieved (if the model ends up working), it will be
+    integrated into the [Family Diagram app](https://familydiagram.com) to
+    automatically fill out a diagram for the user.
+- To conduct a formal, scalable inter-rater reliability study for the SARF data
+  model. Such a study would be the first formal study at scale for Bowen theory
+  in general.
+  - If IRR is achieved for the SARF data model then the auditing system can be
+    expanded to serve as a standardized "Bowen test" for certification.
+
+Each auditor gets their own dashboard:
+
+![Auditor Dashboard](doc/images/1--Auditor-Dashboard.jpg)
+
+Audio transcripts are automatically converted to text threads with speakers
+detected. Auditors can map detected speakers to people in the case file so that
+multiple transcripts and chat threads contribute to the case file.
+
+![Auditing a discussion](doc/images/2--Discussion-Audit.jpg)
+
+The core of the auditing system is the SARF editor. Every statement from the clinical subject(s) runs the AI extraction model, which spits out any deltas to the current database that it detects. Sometimes these are accurate, sometimes they are not. In any case, the auditor can input their own corrected version. These corrections are:
+- retained to improve the model
+- added to a growing test suite to ensure that an improvement in one area does
+  not break another area.
+
+This body of corrections becomes "ground truth" for coding the SARF model in Bowen theory, which is an essential task for any clinical evaluation.
+
+![The SARF editor](doc/images/3--Discussion-SARF-Editor.jpg)
+
+Source Code: [btcopilot/training](btcopilot/training)
+
+## SARF Personal/Mobile App Server
+
+The personal mobile app contains the core logic and data extraction for the SARF
+training system. This app is currently in development here:
+[github.com/patrickkidd/familydiagram](github.com/patrickkidd/familydiagram)
+
+Source Code: [btcopilot/personal](btcopilot/personal)
+
+## Family Diagram App Copilot Server
 
 In a nuthsell, BT Copilot evaluates a family diagram based on the academic
-literature.
+literature. It is currenly launched inthe [Family Diagram](https://familydiagram.com) app, which will become the "Pro" version while the personal/mobile version is coming soon.
 
 BT suggests that emotional problems in an individual are tightly linked to
-immature interactions, driven by chronic anxiety, between people in that
+interpersonal transactions, driven by chronic anxiety, between people in that
 person's nuclear family. BT describes how this process occurs over time and how
 to document it.
 
-Unfortunately, BT has no formal (statistical) models that can be converted into
-a software tool. Bowen theory's models are still only conceptual and scattered
+Unfortunately, BT has no formal scientific models that can be applied to a
+software tool. Bowen theory's models are only conceptual and scattered
 throughout the academic literature. Application still relies on a person trained
 in the theory, which makes application an art instead and not a science.
 
@@ -31,6 +93,8 @@ Luckily, the BT literature is surprisingly consistent across many authors. The
 AI revolution is driven by one key innovatyion - computers both understanding
 and writing human language. BT Copilot uses AI to build a model from the
 literature so that it can analyze the family's role in an individual's symptom.
+
+Source Code: [btcopilot/pro](btcopilot/pro)
 
 ## Practical Overview
 
