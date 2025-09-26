@@ -1,20 +1,20 @@
 services:
 
-  # fd-flask:
-  #   build: .
-  #   container_name: fd-flask
-  #   depends_on:
-  #     fd-postgres:
-  #       condition: service_healthy
-  #   ports:
-  #     - 8888:8888
-  #   environment:
-  #     - FLASK_CONFIG=development
-  #     - FLASK_DEBUG=0
-  #     # - FLASK_SQLALCHEMY_TRACK_MODIFICATIONS=False
-  #     - FLASK_SQLALCHEMY_DATABASE_URI=postgresql://familydiagram:pks@fd-postgres:5432/familydiagram
-  #     - FLASK_MAIL_DEBUG=1
-  #   command: python manage.py run -h 0.0.0.0 -p 8888
+  fd-flask:
+    build: .
+    container_name: fd-flask
+    depends_on:
+      fd-postgres:
+        condition: service_healthy
+    ports:
+      - 8888:8888
+    environment:
+      - FLASK_CONFIG=development
+      - FLASK_DEBUG=0
+      # - FLASK_SQLALCHEMY_TRACK_MODIFICATIONS=False
+      - FLASK_SQLALCHEMY_DATABASE_URI=postgresql://familydiagram:pks@fd-postgres:5432/familydiagram
+      - FLASK_MAIL_DEBUG=1
+    command: python -m flask --app btcopilot run -h 0.0.0.0 -p 8888
 
   fd-postgres:
     image: postgres:16-alpine
