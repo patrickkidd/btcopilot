@@ -10,7 +10,7 @@ from btcopilot.personal.database import (
     Person,
     Anxiety,
     Functioning,
-    VariableShift,
+    Shift,
     Triangle,
     Conflict,
     RelationshipKind,
@@ -73,8 +73,8 @@ def create_complex_pdp_discussion_fixture():
             Event(
                 id=1,
                 description="Work anxiety discussion",
-                anxiety=Anxiety(shift=VariableShift.Up),
-                functioning=Functioning(shift=VariableShift.Down),
+                anxiety=Anxiety(shift=Shift.Up),
+                functioning=Functioning(shift=Shift.Down),
             )
         ],
         people=[Person(id=1, name="User")],
@@ -85,9 +85,7 @@ def create_complex_pdp_discussion_fixture():
             Event(
                 id=2,
                 description="Boss relationship strain",
-                relationship=Conflict(
-                    movers=[1], recipients=[2], shift=VariableShift.Down
-                ),
+                relationship=Conflict(movers=[1], recipients=[2], shift=Shift.Down),
             )
         ],
         people=[Person(id=1, name="User"), Person(id=2, name="Boss")],
@@ -493,9 +491,9 @@ def test_import_discussion_preserves_pdp_deltas(auditor):
     event1 = first_subject.pdp_deltas["events"][0]
     assert event1["description"] == "Work anxiety discussion"
     assert "anxiety" in event1
-    assert event1["anxiety"]["shift"] == VariableShift.Up
+    assert event1["anxiety"]["shift"] == Shift.Up
     assert "functioning" in event1
-    assert event1["functioning"]["shift"] == VariableShift.Down
+    assert event1["functioning"]["shift"] == Shift.Down
 
     # Second subject statement
     second_subject = next(s for s in subject_statements if s.order == 2)

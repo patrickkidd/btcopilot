@@ -9,7 +9,7 @@ from btcopilot.personal.database import (
     Event,
     Person,
     Anxiety,
-    VariableShift,
+    Shift,
     Conflict,
     RelationshipKind,
 )
@@ -52,10 +52,10 @@ def test_extract_next_statement(mock_pdp_update, mock_celery, flask_app, discuss
             Event(
                 id=1,
                 description="Work anxiety and family conflict",
-                anxiety=Anxiety(shift=VariableShift.Down),
+                anxiety=Anxiety(shift=Shift.Down),
                 relationship=Conflict(
                     kind=RelationshipKind.Conflict,
-                    shift=VariableShift.Up,
+                    shift=Shift.Up,
                     movers=[1],
                     recipients=[2],
                 ),

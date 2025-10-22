@@ -158,7 +158,7 @@ Event (id, description, dateTime, people[], variables)
 
 ### Medium Impact
 - Mechanism mover/recipient misassignment
-- Variable shift direction errors (up/down/same)
+- Shift direction errors (up/down/same)
 - Timeline/dating inaccuracies
 
 ### Low Impact (Address Last)

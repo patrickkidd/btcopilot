@@ -577,7 +577,7 @@ Parameters:
                                                     <span x-show="!isEditing('event-' + index + '-symptom-shift')" x-text="event.symptom.shift"></span>
                                                     <select x-show="isEditing('event-' + index + '-symptom-shift')" 
                                                             x-model="editingValue"
-                                                            @change="saveVariableShift(index, 'symptom', $event.target.value); cancelEdit()"
+                                                            @change="saveShift(index, 'symptom', $event.target.value); cancelEdit()"
                                                             @blur="cancelEdit()"
                                                             @keydown.escape="cancelEdit()"
                                                             class="inline-edit-select symptom-select">
@@ -626,7 +626,7 @@ Parameters:
                                                     <span x-show="!isEditing('event-' + index + '-anxiety-shift')" x-text="event.anxiety.shift"></span>
                                                     <select x-show="isEditing('event-' + index + '-anxiety-shift')" 
                                                             x-model="editingValue"
-                                                            @change="saveVariableShift(index, 'anxiety', $event.target.value); cancelEdit()"
+                                                            @change="saveShift(index, 'anxiety', $event.target.value); cancelEdit()"
                                                             @blur="cancelEdit()"
                                                             @keydown.escape="cancelEdit()"
                                                             class="inline-edit-select anxiety-select">
@@ -675,7 +675,7 @@ Parameters:
                                                     <span x-show="!isEditing('event-' + index + '-functioning-shift')" x-text="event.functioning.shift"></span>
                                                     <select x-show="isEditing('event-' + index + '-functioning-shift')" 
                                                             x-model="editingValue"
-                                                            @change="saveVariableShift(index, 'functioning', $event.target.value); cancelEdit()"
+                                                            @change="saveShift(index, 'functioning', $event.target.value); cancelEdit()"
                                                             @blur="cancelEdit()"
                                                             @keydown.escape="cancelEdit()"
                                                             class="inline-edit-select functioning-select">
@@ -1393,7 +1393,7 @@ Parameters:
                                                     <span x-show="!isEditing('event-' + index + '-symptom-shift')" x-text="event.symptom.shift"></span>
                                                     <select x-show="isEditing('event-' + index + '-symptom-shift')" 
                                                             x-model="editingValue"
-                                                            @change="saveVariableShift(index, 'symptom', $event.target.value); cancelEdit()"
+                                                            @change="saveShift(index, 'symptom', $event.target.value); cancelEdit()"
                                                             @blur="cancelEdit()"
                                                             @keydown.escape="cancelEdit()"
                                                             class="inline-edit-select symptom-select">
@@ -1442,7 +1442,7 @@ Parameters:
                                                     <span x-show="!isEditing('event-' + index + '-anxiety-shift')" x-text="event.anxiety.shift"></span>
                                                     <select x-show="isEditing('event-' + index + '-anxiety-shift')" 
                                                             x-model="editingValue"
-                                                            @change="saveVariableShift(index, 'anxiety', $event.target.value); cancelEdit()"
+                                                            @change="saveShift(index, 'anxiety', $event.target.value); cancelEdit()"
                                                             @blur="cancelEdit()"
                                                             @keydown.escape="cancelEdit()"
                                                             class="inline-edit-select anxiety-select">
@@ -1491,7 +1491,7 @@ Parameters:
                                                     <span x-show="!isEditing('event-' + index + '-functioning-shift')" x-text="event.functioning.shift"></span>
                                                     <select x-show="isEditing('event-' + index + '-functioning-shift')" 
                                                             x-model="editingValue"
-                                                            @change="saveVariableShift(index, 'functioning', $event.target.value); cancelEdit()"
+                                                            @change="saveShift(index, 'functioning', $event.target.value); cancelEdit()"
                                                             @blur="cancelEdit()"
                                                             @keydown.escape="cancelEdit()"
                                                             class="inline-edit-select functioning-select">

@@ -745,7 +745,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             this.autoSave();
         },
         
-        saveVariableShift(eventIndex, varType, newValue) {
+        saveShift(eventIndex, varType, newValue) {
             if (!this.extractedData.events[eventIndex]) return;
             if (newValue === 'none' || !newValue) {
                 delete this.extractedData.events[eventIndex][varType];

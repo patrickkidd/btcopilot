@@ -13,7 +13,7 @@ from btcopilot.personal.database import (
     Triangle,
     Anxiety,
     Conflict,
-    VariableShift,
+    Shift,
     RelationshipKind,
     Person,
     Event,
@@ -71,7 +71,7 @@ TEST_ADD_PERSON_AND_CONFLICT = {
                 id=-3,
                 description="Felt anxious after being yelled at by mother",
                 dateTime="the other day",
-                anxiety=Anxiety(shift=VariableShift.Up.value),
+                anxiety=Anxiety(shift=Shift.Up.value),
             ),
             Event(
                 id=-4,
@@ -99,7 +99,7 @@ TEST_ADD_PERSON_AND_CONFLICT = {
                 id=-3,
                 description="Felt anxious after being yelled at by mother",
                 dateTime="the other day",
-                anxiety=Anxiety(shift=VariableShift.Up.value),
+                anxiety=Anxiety(shift=Shift.Up.value),
             ),
             Event(
                 id=-4,

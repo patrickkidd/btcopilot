@@ -10,7 +10,7 @@ from btcopilot.personal.database import (
     Event,
     Person,
     Anxiety,
-    VariableShift,
+    Shift,
 )
 from btcopilot.training.routes.discussions import extract_next_statement
 
@@ -51,11 +51,7 @@ def test_audit_shows_pdp_deltas_for_subject_statements_only(auditor):
 
     # Create PDP deltas
     test_deltas = PDPDeltas(
-        events=[
-            Event(
-                id=1, description="Test event", anxiety=Anxiety(shift=VariableShift.Up)
-            )
-        ],
+        events=[Event(id=1, description="Test event", anxiety=Anxiety(shift=Shift.Up))],
         people=[Person(id=1, name="User")],
     )
 

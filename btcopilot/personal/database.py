@@ -12,27 +12,27 @@ class Person(BaseModel):
     parents: list[int] = Field(default_factory=list)
 
 
-class VariableShift(enum.StrEnum):
+class Shift(enum.StrEnum):
     Up = "up"
     Down = "down"
     Same = "same"
 
 
 class Variable(BaseModel):
-    shift: VariableShift | None = None
+    shift: Shift | None = None
     rationale: str | None = None  # for auditing
 
 
 class Anxiety(Variable):
-    shift: VariableShift
+    shift: Shift
 
 
 class Symptom(Variable):
-    shift: VariableShift
+    shift: Shift
 
 
 class Functioning(Variable):
-    shift: VariableShift
+    shift: Shift
 
 
 class RelationshipKind(enum.StrEnum):
