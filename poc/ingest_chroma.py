@@ -1,7 +1,7 @@
 import os
 import re
 from langchain_community.document_loaders import PyPDFLoader
-from langchain.docstore.document import Document
+from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 import btcopilot

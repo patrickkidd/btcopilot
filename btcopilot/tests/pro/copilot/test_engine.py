@@ -10,7 +10,7 @@ ANSWER = "There is no point"
 
 @pytest.fixture
 def engine(tmp_path):
-    from langchain.docstore.document import Document
+    from langchain_core.documents import Document
 
     with mock.patch.object(
         Engine,

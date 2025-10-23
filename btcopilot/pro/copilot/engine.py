@@ -158,7 +158,7 @@ class Engine:
     def ask(
         self, question: str, events: list[Event] = None, conversation_id: str = None
     ) -> Response:
-        from langchain.prompts import ChatPromptTemplate
+        from langchain_core.prompts import ChatPromptTemplate
 
         _log.info(f"Query with question: {question}")
 

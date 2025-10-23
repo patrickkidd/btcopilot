@@ -1,5 +1,5 @@
 def query_rag(query_text: str):
-    from langchain.prompts import ChatPromptTemplate
+    from langchain_core.prompts import ChatPromptTemplate
     from btcopilot import vector_db, LLM_MODEL
 
     # from langchain_community.llms.ollama import Ollama

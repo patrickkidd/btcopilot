@@ -33,7 +33,7 @@ def ingest(sources_dir, data_dir):
     """
 
     from langchain_community.document_loaders import PyPDFLoader, TextLoader
-    from langchain.docstore.document import Document
+    from langchain_core.documents import Document
     from langchain_text_splitters import (
         RecursiveCharacterTextSplitter,
         MarkdownTextSplitter,

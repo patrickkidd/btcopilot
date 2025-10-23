@@ -2,7 +2,7 @@ import contextlib
 
 import pytest
 import mock
-from langchain.docstore.document import Document
+from langchain_core.documents import Document
 
 from btcopilot.pro.copilot import Engine
 
