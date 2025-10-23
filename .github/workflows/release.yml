@@ -5,7 +5,7 @@ name: Release
 
 on:
   push:
-    branches: [ "master", "FD-238-open-source-3" ]
+    branches: [ "master" ]
 
 jobs:
   build:
