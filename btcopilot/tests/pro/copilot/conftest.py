@@ -1,7 +1,7 @@
 import contextlib
 
 import pytest
-import mock
+from mock import Mock, patch
 from langchain_core.documents import Document
 
 from btcopilot.pro.copilot import Engine
@@ -19,17 +19,20 @@ def llm_response():
         if sources is None:
             sources = []
 
-        with mock.patch.object(
-            Engine,
-            "vector_db",
-            return_value=mock.Mock(
-                similarity_search_with_score=mock.Mock(
-                    return_value=[(x, 1.0) for x in sources]
-                )
+        with (
+            patch.object(
+                Engine,
+                "vector_db",
+                return_value=Mock(
+                    similarity_search_with_score=Mock(
+                        return_value=[(x, 1.0) for x in sources]
+                    )
+                ),
             ),
+            patch.object(Engine, "llm") as llm,
+            patch.object(Engine, "_chat_template") as _chat_template,
         ):
-            with mock.patch.object(Engine, "llm") as llm:
-                llm.return_value.invoke.return_value = response
-                yield
+            llm.return_value.invoke.return_value = response
+            yield
 
     return _llm_response

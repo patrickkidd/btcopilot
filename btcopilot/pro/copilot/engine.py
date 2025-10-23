@@ -155,10 +155,17 @@ class Engine:
             _log.info(f"Loaded vector db from {self.data_dir()}")
         return self._vector_db
 
+    def _chat_template(self, kind):
+        """
+        Mockable stub
+        """
+        from langchain_core.prompts import ChatPromptTemplate
+
+        return ChatPromptTemplate.from_template(kind)
+
     def ask(
         self, question: str, events: list[Event] = None, conversation_id: str = None
     ) -> Response:
-        from langchain_core.prompts import ChatPromptTemplate
 
         _log.info(f"Query with question: {question}")
 
@@ -173,16 +180,14 @@ class Engine:
         if events:
             _log.info(f"Using {len(events)} timeline events for this query.")
             context_timeseries = formatTimelineData(events)
-            prompt_template = ChatPromptTemplate.from_template(
-                PROMPT_TEMPLATE_WITH_TIMESERIES
-            )
+            prompt_template = self._chat_template(PROMPT_TEMPLATE_WITH_TIMESERIES)
             prompt = prompt_template.format(
                 literature=context_literature,
                 question=question,
                 timeseries=context_timeseries,
             )
         else:
-            prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+            prompt_template = self._chat_template(PROMPT_TEMPLATE)
             prompt = prompt_template.format(
                 literature=context_literature, question=question
             )

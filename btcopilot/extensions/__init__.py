@@ -359,10 +359,10 @@ def init_app(app):
     init_logging(app)
     init_celery(app)
 
-    if app.config.get("CONFIG") == "production":
-        # init_bugsnag(app)
-        init_datadog(app)
+    # if app.config.get("CONFIG") == "production":
+    #     init_bugsnag(app)
 
+    init_datadog(app)
     init_stripe(app)
 
     db.init_app(app)
