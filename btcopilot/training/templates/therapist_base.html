@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Chatbot Audit System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="git-sha" content="{{ git_sha }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html@3.4.47/bundles/css/diff2html.min.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/diff@5.1.0/dist/diff.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/diff2html@3.4.47/bundles/js/diff2html.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    <style>
+        .level-item .title {
+            margin-bottom: 2rem;
+        }
+        .message-user { 
+            background-color: #e8f4fd; 
+            margin-right: 15%; 
+            border-left: 4px solid #3273dc;
+        }
+        .message-ai { 
+            background-color: #f5f5f5; 
+            margin-left: 15%; 
+            border-left: 4px solid #48c774;
+        }
+        .feedback-submitted { 
+            opacity: 0.6; 
+            pointer-events: none; 
+            background-color: #f0f8f0;
+        }
+        .feedback-submitted .button { 
+            pointer-events: auto; 
+        }
+        .thumbs-button { 
+            font-size: 1.5rem; 
+            cursor: pointer; 
+            padding: 0.75rem; 
+            border: none;
+            border-radius: 4px;
+            background: transparent;
+            transition: all 0.2s ease;
+        }
+        .thumbs-button:hover {
+            background-color: #f5f5f5;
+        }
+        .thumbs-button.is-active { 
+            background-color: #ffdddd; 
+            color: #d73502;
+        }
+        .json-field { 
+            margin-bottom: 0.75rem; 
+        }
+        .json-viewer { 
+            background: #f9f9f9; 
+            padding: 1rem; 
+            border-radius: 4px; 
+            border: 1px solid #e1e1e1;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        .variable-section {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: #fafafa;
+        }
+        .variable-header {
+            font-weight: bold;
+            color: #363636;
+            margin-bottom: 0.5rem;
+            text-transform: capitalize;
+        }
+        .relationship-kind {
+            display: inline-block;
+            background: #3273dc;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+        }
+        .person-ref {
+            background: #48c774;
+            color: white;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            margin: 0.1rem;
+            display: inline-block;
+        }
+        .shift-indicator {
+            font-weight: bold;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+        .shift-up { background: #ffeb3b; color: #333; }
+        .shift-down { background: #f44336; color: white; }
+        .shift-same { background: #9e9e9e; color: white; }
+        .shift-relationship { background: #f44336; color: white; }
+        .audit-stats {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 0.8rem;
+        }
+        
+        /* Audit Table Layout */
+        .audit-table-container {
+            padding: 0.5rem;
+        }
+        .audit-messages-table {
+            margin-bottom: 0;
+        }
+        .audit-messages-table thead th {
+            border-bottom: 2px solid #dbdbdb;
+            font-weight: 600;
+            padding: 0.75rem;
+        }
+        .audit-header {
+            color: #363636;
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: left;
+            vertical-align: middle;
+        }
+        
+        /* Column-specific widths */
+        .audit-header:nth-child(1),
+        .audit-messages-table td:nth-child(1) {
+            width: 30%; /* Conversational Flow */
+        }
+        
+        .audit-header:nth-child(2),
+        .audit-messages-table td:nth-child(2) {
+            width: 30%; /* Extracted Data */
+        }
+        
+        .audit-header:nth-child(3),
+        .audit-messages-table td:nth-child(3) {
+            width: 30%; /* Cumulative Notes */
+        }
+
+        /* Don't show [RENAMED] boxed label since prompts aren't really files. */
+        .d2h-moved-tag {
+            display: none;
+        }
+        
+        /* Table Cell Styles */
+        .chat-cell, .data-cell {
+            vertical-align: top;
+            padding: 0.75rem;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .chat-cell {
+            border-right: 1px solid #dbdbdb;
+        }
+        /* Chat Message Layout */
+        .chat-message-container {
+            display: flex;
+            align-items: flex-end;
+            margin-bottom: 0.5rem;
+            gap: 0.5rem;
+        }
+        .user-message-container {
+            justify-content: flex-end;
+        }
+        .ai-message-container {
+            justify-content: flex-start;
+        }
+        
+        /* Message Bubbles */
+        .user-message-bubble {
+            background: #3273dc;
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 18px 18px 4px 18px;
+            max-width: 70%;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+        .ai-message-bubble {
+            background: #f5f5f5;
+            color: #363636;
+            padding: 0.75rem 1rem;
+            border-radius: 18px 18px 18px 4px;
+            max-width: 70%;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+            border: 1px solid #e0e0e0;
+        }
+        .ai-message-bubble.expanded {
+            max-width: 85%;
+            background: white;
+            border: 2px solid #48c774;
+        }
+        .ai-message-bubble.is-clickable:hover {
+            background: #eeeeee;
+            border-color: #48c774;
+        }
+        
+        /* Message Content */
+        .ai-message-content {
+            margin-bottom: 0;
+        }
+        .ai-message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .ai-message-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            justify-content: flex-end;
+        }
+        
+        /* Timestamps */
+        .timestamp-left, .timestamp-right {
+            min-width: 3rem;
+            display: flex;
+            align-items: flex-end;
+        }
+        .timestamp-left {
+            justify-content: flex-end;
+            padding-right: 0.5rem;
+        }
+        .timestamp-right {
+            justify-content: flex-start;
+            padding-left: 0.5rem;
+        }
+        
+        /* Data Column Styles */
+        .collapsed-data-section, .expanded-data-section {
+            background: white;
+            border: 1px solid #dbdbdb;
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-size: 0.875rem;
+        }
+        .collapsed-data-section, .expanded-data-section {
+            border-left: 3px solid #ff9800;
+        }
+        .user-data-placeholder {
+            padding: 1rem;
+            text-align: center;
+            background: #f9f9f9;
+            border-radius: 6px;
+        }
+        
+        /* Message Headers */
+        .message-header, .data-header {
+            display: flex;
+            align-items: center;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #363636; /* Ensure text is visible */
+        }
+        .message-header .toggle-icon, .data-header .toggle-icon {
+            margin-left: auto;
+            transition: transform 0.2s ease;
+        }
+        .is-clickable:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* Message Content */
+        .message-content {
+            font-size: 0.85rem;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        /* Data Summary Styles */
+        .data-summary {
+            font-size: 0.8rem;
+        }
+        .variable-summary {
+            display: flex;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+        }
+        .shift-indicator.is-small {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.3rem;
+        }
+        
+        /* Data Details Styles */
+        .data-details {
+            font-size: 0.8rem;
+        }
+        .section-header {
+            color: #363636;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid #dbdbdb;
+            padding-bottom: 0.25rem;
+        }
+        .person-item, .event-item {
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        .variables-compact {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.25rem;
+        }
+        .variable-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        /* Feedback Controls */
+        .conversation-feedback, .data-feedback {
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+        .conversation-feedback {
+            border-left: 3px solid #17a2b8;
+        }
+        .data-feedback {
+            border-left: 3px solid #ffc107;
+        }
+        .thumbs-button.is-small {
+            font-size: 1rem;
+            padding: 0.5rem;
+        }
+        .textarea.is-small {
+            font-size: 0.8rem;
+        }
+        .notification.is-small {
+            padding: 0.75rem;
+            font-size: 0.8rem;
+        }
+        
+        /* Prompt editor button styles */
+        .button.is-ghost {
+            background: none;
+            border: none;
+            color: #666;
+            padding: 0.25rem;
+        }
+        
+        .button.is-ghost:hover {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .audit-columns .column {
+                font-size: 0.8rem;
+            }
+            .message-content {
+                font-size: 0.8rem;
+            }
+        }
+        
+        /* Custom header theme matching login gradient */
+        .navbar.is-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .navbar.is-primary .navbar-brand > .navbar-item,
+        .navbar.is-primary .navbar-brand .navbar-link {
+            color: rgba(255, 255, 255, 0.95);
+        }
+        
+        .navbar.is-primary .navbar-brand > a.navbar-item:focus,
+        .navbar.is-primary .navbar-brand > a.navbar-item:hover,
+        .navbar.is-primary .navbar-brand .navbar-link:focus,
+        .navbar.is-primary .navbar-brand .navbar-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .navbar.is-primary .navbar-item,
+        .navbar.is-primary .navbar-link {
+            color: rgba(255, 255, 255, 0.95);
+        }
+        
+        .navbar.is-primary a.navbar-item:focus,
+        .navbar.is-primary a.navbar-item:hover,
+        .navbar.is-primary .navbar-link:focus,
+        .navbar.is-primary .navbar-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .navbar.is-primary .navbar-burger {
+            color: rgba(255, 255, 255, 0.95);
+        }
+        
+        @media screen and (max-width: 1023px) {
+            .navbar.is-primary .navbar-menu {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            }
+        }
+        
+        /* Card headers with gradient accent */
+        .card-header {
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+        }
+        
+        .card-header-title {
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        /* Custom button styling to match theme */
+        .button.is-success {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+            transition: all 0.2s ease;
+        }
+        
+        .button.is-success:hover,
+        .button.is-success.is-hovered {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .button.is-success:active,
+        .button.is-success.is-active {
+            background: linear-gradient(135deg, #4e5ec6 0%, #5e377e 100%);
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.4);
+            transform: translateY(0);
+        }
+        
+        /* Progress bars with gradient */
+        .progress.is-success::-webkit-progress-value {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .progress.is-success::-moz-progress-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        /* Tags with theme colors */
+        .tag.is-success {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        /* Approval badges should be green, not purple theme */
+        .meta-controls .tag.is-success {
+            background-color: #48c78e !important;
+            background: #48c78e !important;
+            color: #fff !important;
+            width: 20px !important;
+            height: 20px !important;
+            min-width: 20px !important;
+            min-height: 20px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 !important;
+        }
+        
+        /* Hover effects for approval buttons to show unapproval */
+        .meta-controls .tag.is-success:hover {
+            background-color: #f14668 !important;
+            background: #f14668 !important;
+            color: #fff !important;
+        }
+        
+        .tag.is-success.is-light {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar is-primary">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="{{ url_for('training.training_root') }}">
+                <strong>Family Diagram</strong>
+            </a>
+            
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarMenu">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+        
+        <div id="navbarMenu" class="navbar-menu">
+            <div class="navbar-start">
+                {% if current_user and current_user.has_role(vedana.ROLE_AUDITOR) %}
+                <a class="navbar-item" href="{{ url_for('training.audit.index') }}">
+                    <span class="icon">
+                        <i class="fas fa-user-check"></i>
+                    </span>
+                    <span>Audit</span>
+                </a>
+                <a class="navbar-item" href="{{ url_for('training.prompts.index') }}">
+                    <span class="icon">
+                        <i class="fas fa-flask"></i>
+                    </span>
+                    <span>Lab</span>
+                </a>
+                {% endif %}
+                {% if current_user and current_user.has_role(vedana.ROLE_ADMIN) %}
+                <a class="navbar-item" href="{{ url_for('training.admin.index') }}">
+                    <span class="icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </span>
+                    <span>Admin</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="navbar-end">
+            {% if current_user %}
+            <div class="navbar-item">
+                <span class="icon">
+                    <i class="fas fa-user"></i>
+                </span>
+                <span>{{ current_user.username }}</span>
+            </div>
+            <div class="navbar-item">
+                <form method="POST" action="{{ url_for('training.auth.logout') }}" style="display: inline;">
+                    <button type="submit" class="navbar-item" style="background: none; border: none; color: white; cursor: pointer; padding: 0.5rem 0.75rem;">
+                        <span class="icon">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </span>
+                        <span>Logout</span>
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+    
+    <!-- Breadcrumb Navigation -->
+    {% if breadcrumbs %}
+    <nav class="breadcrumb has-arrow-separator" aria-label="breadcrumbs" style="padding: 0.75rem 1.5rem; background-color: #fafafa; border-bottom: 1px solid #dbdbdb;">
+        <div class="container">
+            <ul>
+                {% for breadcrumb in breadcrumbs %}
+                <li{% if loop.last %} class="is-active"{% endif %}>
+                    {% if breadcrumb.url and not loop.last %}
+                    <a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a>
+                    {% else %}
+                    <a>{{ breadcrumb.title }}</a>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <section class="section">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </section>
+    
+    <!-- Real-time updates via SSE (DISABLED) -->
+    <!-- <div hx-ext="sse" sse-connect="/training/stream" sse-swap="none"></div> -->
+    
+    <script>
+        // Mobile navbar toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all "navbar-burger" elements
+            const navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+            
+            // Check if there are any navbar burgers
+            if (navbarBurgers.length > 0) {
+                // Add a click event on each of them
+                navbarBurgers.forEach(el => {
+                    el.addEventListener('click', () => {
+                        // Get the target from the "data-target" attribute
+                        const target = el.dataset.target;
+                        const targetElement = document.getElementById(target);
+                        
+                        // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
+                        el.classList.toggle('is-active');
+                        targetElement.classList.toggle('is-active');
+                    });
+                });
+            }
+            
+            // Debug HTMX SSE connection
+            console.log('DOM loaded, checking HTMX SSE connection...');
+            
+            // Check if HTMX is loaded
+            if (typeof htmx !== 'undefined') {
+                console.log('HTMX is loaded');
+            } else {
+                console.error('HTMX is not loaded!');
+            }
+            
+            // Add HTMX event listeners for SSE debugging
+            document.body.addEventListener('htmx:sseConnect', function(event) {
+                console.log('HTMX SSE connected:', event);
+            });
+            
+            document.body.addEventListener('htmx:sseError', function(event) {
+                console.error('HTMX SSE error:', event);
+            });
+            
+            document.body.addEventListener('htmx:sseClose', function(event) {
+                console.log('HTMX SSE closed:', event);
+            });
+            
+            // Force HTMX to process the SSE element
+            setTimeout(function() {
+                const sseElement = document.getElementById('sse-connection');
+                if (sseElement) {
+                    console.log('Processing SSE element:', sseElement);
+                    
+                    // Check if SSE extension is loaded
+                    if (typeof htmx.ext !== 'undefined' && htmx.ext.sse) {
+                        console.log('HTMX SSE extension is loaded');
+                    } else {
+                        console.error('HTMX SSE extension is NOT loaded!');
+                    }
+                    
+                    htmx.process(sseElement);
+                    
+                    // Add direct SSE event listener to the element
+                    sseElement.addEventListener('sse:message', function(event) {
+                        console.log('Direct SSE message on element:', event.detail);
+                    });
+                    
+                    // Try to manually trigger SSE connection
+                    console.log('Attempting to manually trigger SSE connection...');
+                    htmx.trigger(sseElement, 'htmx:load');
+                }
+                
+                // Fallback: Create native EventSource connection (DISABLED)
+                // console.log('Creating fallback EventSource connection...');
+                // try {
+                //     const eventSource = new EventSource('/training/stream');
+                //     
+                //     eventSource.onopen = function(event) {
+                //         console.log('Native EventSource connected:', event);
+                //         showNotification('Real-time updates connected (native)', 'is-success');
+                //     };
+                //     
+                //     eventSource.onmessage = function(event) {
+                //         console.log('Native EventSource message:', event.data);
+                //         try {
+                //             const data = JSON.parse(event.data);
+                //             handleSSEMessage(data);
+                //         } catch (e) {
+                //             console.log('Native EventSource parse error:', e);
+                //         }
+                //     };
+                //     
+                //     eventSource.onerror = function(event) {
+                //         console.error('Native EventSource error:', event);
+                //         if (eventSource.readyState === EventSource.CLOSED) {
+                //             console.log('Native EventSource connection closed');
+                //         }
+                //     };
+                //     
+                // } catch (e) {
+                //     console.error('Failed to create native EventSource:', e);
+                // }
+            }, 500);
+        });
+
+        // Alpine.js store for audit messages
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('audit', {
+                newMessages: [],
+                addMessages(messages) {
+                    console.log('Adding messages to Alpine store:', messages);
+                    this.newMessages.push(...messages);
+                    console.log('Alpine store now has', this.newMessages.length, 'new messages');
+                }
+            });
+        });
+
+        // Common SSE message handler
+        function handleSSEMessage(data) {
+            console.log('Handling SSE message:', data);
+            if (data.type === 'new_feedback') {
+                // Show notification
+                showNotification('New feedback submitted', 'is-info');
+                console.log('New feedback notification shown');
+            } else if (data.type === 'new_message_pair') {
+                // Append new message pair (user + AI) live if we're viewing that thread
+                console.log('New message pair in discussion:', data.discussion_id);
+                const currentDiscussionId = getCurrentDiscussionId();
+                if (currentDiscussionId && currentDiscussionId == data.discussion_id) {
+                    showNotification('New messages detected - adding to view...', 'is-info');
+                    // Add to Alpine store
+                    Alpine.store('audit').addMessages([
+                        {
+                            message: data.user_message,
+                            has_conv_feedback: false,
+                            has_ext_feedback: false,
+                            pdp_deltas: null
+                        },
+                        {
+                            message: data.ai_message,
+                            has_conv_feedback: false,
+                            has_ext_feedback: false,
+                            pdp_deltas: data.ai_message.pdp_deltas
+                        }
+                    ]);
+                    showNotification('New messages added to audit view', 'is-success');
+                } else {
+                    showNotification('New messages in another thread', 'is-info');
+                }
+            } else if (data.type === 'ping') {
+                console.log('SSE ping received - connection alive');
+            } else if (data.type === 'connected') {
+                console.log('SSE connection established:', data.message);
+                showNotification('Real-time updates connected', 'is-success');
+            } else if (data.type === 'test') {
+                console.log('SSE test message received:', data);
+                showNotification('Test message received via SSE', 'is-info');
+            } else {
+                console.log('Unknown SSE message type:', data.type);
+            }
+        }
+
+        // Handle SSE messages (HTMX)
+        document.body.addEventListener('sse:message', function(event) {
+            console.log('HTMX SSE message received:', event.detail);
+            try {
+                const data = JSON.parse(event.detail.data);
+                handleSSEMessage(data);
+            } catch (e) {
+                console.log('HTMX SSE message parse error:', e, event.detail.data);
+            }
+        });
+
+        function getCurrentDiscussionId() {
+            const match = window.location.pathname.match(/\/thread\/(\d+)/);
+            return match ? parseInt(match[1]) : null;
+        }
+        function showNotification(message, type = 'is-info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type} is-light`;
+            notification.style.cssText = 'position: fixed; top: 70px; right: 20px; z-index: 1000; min-width: 300px;';
+            notification.innerHTML = `
+                <button class="delete" onclick="this.parentElement.remove()"></button>
+                ${message}
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+    </script>
+    
+    <!-- Extraction Progress Scripts -->
+    <script src="{{ url_for('training.audit.static', filename='js/extraction-progress.js') }}"></script>
+    
+    <!-- Version Footer -->
+    <footer class="footer mt-6" style="padding: 1rem 1.5rem;">
+        <div class="content has-text-centered">
+            <p class="has-text-grey-light">
+                <small>Version: {{ git_sha }}</small>
+            </p>
+        </div>
+    </footer>
+    
+    <script>
+        // Configure HTMX to include CSRF token in all requests
+        document.body.addEventListener('htmx:configRequest', function(evt) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            evt.detail.headers['X-CSRFToken'] = csrfToken;
+        });
+        
+        // Configure fetch requests to include CSRF token
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            if (!options.headers) {
+                options.headers = {};
+            }
+            
+            // Add CSRF token to POST, PUT, PATCH, DELETE requests
+            if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method.toUpperCase())) {
+                options.headers['X-CSRFToken'] = csrfToken;
+            }
+            
+            return originalFetch(url, options);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+{% extends "therapist_base.html" %}
+
+{% block head %}
+<style>
+.hero-body {
+    padding: 3rem 1.5rem;
+}
+.content-box {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero is-info">
+    <div class="hero-body">
+        <div class="container">
+            <div class="content-box">
+                <h1 class="title is-2">
+                    <span class="icon is-large">
+                        <i class="fas fa-user-circle"></i>
+                    </span>
+                    <br>
+                    Welcome, Subscriber!
+                </h1>
+                <h2 class="subtitle is-4">
+                    Account management functionality is not available yet.
+                </h2>
+                
+                <div class="box has-background-light mt-5">
+                    <div class="content">
+                        <p class="has-text-grey-dark">
+                            <strong>Your account status:</strong> Subscriber<br>
+                            <strong>Account:</strong> {{ current_user.username }}<br>
+                            <strong>Name:</strong> {{ current_user.full_name() or 'Not set' }}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="content mt-5">
+                    <p>Please check back later for subscriber features, or contact support if you need assistance.</p>
+                </div>
+                
+                <div class="mt-6">
+                    <form method="POST" action="{{ url_for('training.auth.logout') }}">
+                        <button type="submit" class="button is-primary is-large">
+                            <span class="icon">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </span>
+                            <span>Log Out</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

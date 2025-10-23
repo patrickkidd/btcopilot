@@ -1,0 +1,31 @@
+<!-- User Activity Summary Section -->
+<div class="box">
+    <h4 class="title is-5">
+        <span class="icon"><i class="fas fa-chart-bar"></i></span>
+        Activity Summary
+    </h4>
+    
+    <table class="table is-fullwidth is-borderless">
+        <tbody>
+            <tr>
+                <th width="20%">Discussions</th>
+                <td><span class="tag is-info">{{ user_summary.discussion_count if user_summary else (user_discussions|length if user_discussions else 0) }}</span></td>
+            </tr>
+            <tr>
+                <th>Diagrams</th>
+                <td><span class="tag is-light">{{ user_summary.diagram_count if user_summary else (user.diagrams|length if user.diagrams else 0) }}</span></td>
+            </tr>
+            <tr>
+                <th>Active Licenses</th>
+                <td>
+                    {% set active_licenses = user.licenses|selectattr('active')|list|length if user.licenses else 0 %}
+                    <span class="tag is-success">{{ active_licenses }}</span>
+                </td>
+            </tr>
+            <tr>
+                <th>Total Licenses</th>
+                <td><span class="tag is-light">{{ user.licenses|length if user.licenses else 0 }}</span></td>
+            </tr>
+        </tbody>
+    </table>
+</div>

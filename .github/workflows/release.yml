@@ -1,11 +1,11 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: Python package
+name: Release
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "FD-238-open-source-3" ]
 
 jobs:
   build:
@@ -67,14 +67,25 @@ jobs:
         echo "asset_url=$asset_url" >> $GITHUB_ENV
         echo $asset_url
     
-    - name: Install wheel
+    - name: Install wheels
       run: |
-        latest_release=$(curl -s https://api.github.com/repos/patrickkidd/btcopilot/releases/latest)
-        asset_url=$(echo "$latest_release" | jq -r '.assets[0].browser_download_url')
-        pip install --upgrade pip pytest mock snapshottest
-        pip install $asset_url
+        pip install --upgrade pip
+        pip install --extra-index-url=$TWINE_REPOSITORY_URL `ls dist/*.whl`[pro,personal,training,test]
+
+        # latest_release=$(curl -s https://api.github.com/repos/patrickkidd/vedana/releases/latest)
+        # vedana_asset_url=$(echo "$latest_release" | jq -r '.assets[0].browser_download_url')
+        # pip install $vedana_asset_url
+
+        # latest_release=$(curl -s https://api.github.com/repos/patrickkidd/btcopilot/releases/latest)
+        # btcopilot_asset_url=$(echo "$latest_release" | jq -r '.assets[0].browser_download_url')
+        # pip install --upgrade pip pytest mock snapshottest
+        # pip install $btcopilot_asset_url
+
         python -c "import btcopilot.tests; print(btcopilot.tests)"
 
+    # - name: Setup tmate session
+    #   uses: mxschmitt/action-tmate@v3
+  
     - name: Test with pytest
       run: |
         pytest -svv --disable-warnings --pyargs btcopilot.tests
@@ -119,9 +130,6 @@ jobs:
         asset_name: ${{ env.WHEEL_FILENAME }}
         asset_content_type: application/zip
 
-    # - name: Setup tmate session
-    #   uses: mxschmitt/action-tmate@v3
-  
     - name: Push to pypi repo
       run: |
         pip install -U twine packaging

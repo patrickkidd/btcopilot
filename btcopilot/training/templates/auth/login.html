@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Login - Family Diagram</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .login-card {
+            max-width: 400px;
+            width: 100%;
+            margin: 2rem;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-header h1 {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .login-header p {
+            color: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1 class="title is-2">Family Diagram</h1>
+                <p class="subtitle is-5">Please sign in to continue</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-content">
+                    <!-- Flash messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="notification is-{{ 'danger' if category == 'error' else 'info' }} is-light">
+                                    <button class="delete" onclick="this.parentElement.style.display='none'"></button>
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <form method="POST" action="{{ url_for('training.auth.login') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="field">
+                            <label class="label">Username</label>
+                            <div class="control has-icons-left">
+                                <input class="input" 
+                                       type="text" 
+                                       name="username" 
+                                       placeholder="Enter your username"
+                                       value="{{ request.form.get('username', '') }}"
+                                       required
+                                       autocomplete="username">
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label">Password</label>
+                            <div class="control has-icons-left">
+                                <input class="input" 
+                                       type="password" 
+                                       name="password" 
+                                       placeholder="Enter your password"
+                                       required
+                                       autocomplete="current-password">
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        {% if captcha %}
+                        <div class="field">
+                            <label class="label">Security Check</label>
+                            <div class="field is-grouped">
+                                <div class="control">
+                                    <span class="tag is-warning is-medium">{{ captcha.question }}</span>
+                                </div>
+                                <div class="control">
+                                    <input class="input" 
+                                           type="number" 
+                                           name="captcha_answer" 
+                                           placeholder="Answer"
+                                           required
+                                           style="width: 100px;"
+                                           autocomplete="off">
+                                </div>
+                            </div>
+                            <p class="help">Please solve this simple math problem to continue</p>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Preserve next parameter for redirect after login -->
+                        {% if request.args.get('next') %}
+                            <input type="hidden" name="next" value="{{ request.args.get('next') }}">
+                        {% endif %}
+                        
+                        <div class="field">
+                            <div class="control">
+                                <button class="button is-primary is-fullwidth" type="submit">
+                                    <span class="icon">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                    </span>
+                                    <span>Sign In</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <footer class="card-footer">
+                    <div class="card-footer-item">
+                        <small class="has-text-grey">
+                            <i class="fas fa-shield-alt"></i>
+                            Your session is secured and will expire after 8 hours of inactivity
+                        </small>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Auto-focus username field
+        document.addEventListener('DOMContentLoaded', function() {
+            const usernameField = document.querySelector('input[name="username"]');
+            if (usernameField && !usernameField.value) {
+                usernameField.focus();
+            }
+        });
+        
+        // Basic client-side validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const username = document.querySelector('input[name="username"]').value.trim();
+            const password = document.querySelector('input[name="password"]').value;
+            
+            if (!username || !password) {
+                e.preventDefault();
+                alert('Please enter both username and password');
+            }
+        });
+    </script>
+</body>
+</html>

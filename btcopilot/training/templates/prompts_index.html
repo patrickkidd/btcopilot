@@ -1,0 +1,872 @@
+{% extends "therapist_base.html" %}
+{% block content %}
+<style>
+    /* Prompt editor specific styles */
+    .prompt-section {
+        margin-bottom: 2rem;
+    }
+    
+    .prompt-editor {
+        margin-bottom: 1.5rem;
+    }
+    
+    .prompt-editor h3 {
+        margin-bottom: 0.5rem;
+        color: #34495e;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    
+    .prompt-editor textarea {
+        width: 100%;
+        min-height: 150px;
+        height: auto;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: 'Monaco', 'Courier New', monospace;
+        font-size: 0.875rem;
+        background-color: #f9f9f9;
+        resize: vertical;
+    }
+    
+    .prompt-editor textarea:focus {
+        outline: none;
+        border-color: #3273dc;
+        background-color: white;
+    }
+    
+    .test-section {
+        margin-top: 2rem;
+    }
+    
+    .thread-selector {
+        margin-bottom: 1.5rem;
+    }
+    
+    .message-input {
+        margin-bottom: 1.5rem;
+    }
+    
+    .results {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+        display: none;
+    }
+    
+    .results.show {
+        display: block;
+    }
+    
+    .response-message {
+        background-color: white;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .pdp-data {
+        background-color: #e8f4f8;
+        border: 1px solid #b8daff;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .pdp-data h4 {
+        margin-top: 0;
+        color: #004085;
+    }
+    
+    pre {
+        background-color: #f5f5f5;
+        padding: 1rem;
+        border-radius: 4px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    .thread-messages {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-top: 1rem;
+        background-color: #fafafa;
+    }
+    
+    .message {
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        border-radius: 4px;
+    }
+    
+    .message.user {
+        background-color: #e3f2fd;
+        margin-left: 3rem;
+    }
+    
+    .message.ai {
+        background-color: #f5f5f5;
+        margin-right: 3rem;
+    }
+    
+    .message-header {
+        font-size: 0.75rem;
+        color: #666;
+        margin-bottom: 0.5rem;
+    }
+    
+    .loading {
+        display: none;
+        margin-top: 1rem;
+    }
+    
+    .loading.show {
+        display: block;
+    }
+    
+    .error {
+        background-color: #fee;
+        border: 1px solid #fcc;
+        color: #c33;
+        padding: 0.75rem;
+        border-radius: 4px;
+        margin-top: 1rem;
+    }
+    
+    .artifact-section {
+        margin-bottom: 2rem;
+    }
+    
+    .artifact-display {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .artifact-comparison {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .artifact-column {
+        flex: 1;
+    }
+    
+    .extraction-correct {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .extraction-incorrect {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .chat-interface {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .chat-message {
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        border-radius: 4px;
+    }
+    
+    .chat-message.user {
+        background-color: #007bff;
+        color: white;
+        margin-left: 2rem;
+    }
+    
+    .chat-message.assistant {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        margin-right: 2rem;
+    }
+    </style>
+
+<div>
+    <h1 class="title">
+        <span class="icon"><i class="fas fa-flask"></i></span>
+        Prompt Lab
+    </h1>
+    <p class="subtitle">Experiment with different system prompts to see how they affect the AI's responses.</p>
+    
+    <div class="prompt-section">
+        <div class="box">
+            <!-- <h2 class="title is-4">
+                <span class="icon"><i class="fas fa-code"></i></span>
+                System Prompts
+            </h2> -->
+            
+            <div class="prompt-editor">
+                <h3>ROLE_COACH_NOT_THERAPIST</h3>
+                <textarea id="prompt-role" data-prompt-key="ROLE_COACH_NOT_THERAPIST">{{ default_prompts.ROLE_COACH_NOT_THERAPIST }}</textarea>
+            </div>
+            
+            <div class="prompt-editor">
+                <h3>BOWEN_THEORY_COACHING_IN_A_NUTSHELL</h3>
+                <textarea id="prompt-bowen" data-prompt-key="BOWEN_THEORY_COACHING_IN_A_NUTSHELL">{{ default_prompts.BOWEN_THEORY_COACHING_IN_A_NUTSHELL }}</textarea>
+            </div>
+            
+            <div class="prompt-editor">
+                <h3>DATA_MODEL_DEFINITIONS</h3>
+                <textarea id="prompt-data" data-prompt-key="DATA_MODEL_DEFINITIONS">{{ default_prompts.DATA_MODEL_DEFINITIONS }}</textarea>
+            </div>
+            
+            <button class="button is-primary" onclick="resetPrompts()">
+                <span class="icon"><i class="fas fa-undo"></i></span>
+                <span>Reset to Defaults</span>
+            </button>
+        </div>
+    </div>
+    
+    <div class="artifact-section">
+        <div class="box">
+            <h2 class="title is-4">
+                <span class="icon"><i class="fas fa-bug"></i></span>
+                Test with Extraction Artifact
+            </h2>
+            
+            
+            <div id="artifact-display" class="artifact-display" style="display: none;">
+                <div class="level">
+                    <div class="level-left">
+                        <h3 class="title is-5">User Statement</h3>
+                    </div>
+                    <div class="level-right">
+                        <span id="artifact-id-badge" class="tag is-info"></span>
+                    </div>
+                </div>
+                <pre id="artifact-statement" class="has-background-light"></pre>
+                
+                <div class="artifact-comparison">
+                    <div class="artifact-column">
+                        <h4 class="title is-6">AI Extracted (Original)</h4>
+                        <div id="artifact-ai-extracted" class="extraction-incorrect" style="padding: 1rem; border-radius: 4px;">
+                            <!-- Content will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="artifact-column">
+                        <h4 class="title is-6">Expected (Corrected)</h4>
+                        <div id="artifact-corrected" class="extraction-correct" style="padding: 1rem; border-radius: 4px;">
+                            <!-- Content will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="field is-grouped" style="margin-top: 1rem;">
+                    <div class="control">
+                        <button class="button is-primary" onclick="testWithCurrentPrompts()">
+                            <span class="icon"><i class="fas fa-play"></i></span>
+                            <span>Test with Current Prompts</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <button class="button is-info" onclick="getAISuggestions()">
+                            <span class="icon"><i class="fas fa-lightbulb"></i></span>
+                            <span>Get AI Suggestions</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="suggestions-panel" style="display: none; margin-top: 1rem;">
+                    <h4 class="title is-6">AI Suggestions</h4>
+                    <div id="suggestions-content" class="content has-background-info-light" style="padding: 1rem; border-radius: 4px;">
+                    </div>
+                </div>
+                
+                <div id="chat-section" style="display: none; margin-top: 1rem;">
+                    <h4 class="title is-6">Chat with AI Coach</h4>
+                    <div id="chat-history" class="chat-interface"></div>
+                    <div id="chat-loading" class="notification is-info is-light" style="display: none;">
+                        <span class="icon"><i class="fas fa-spinner fa-spin"></i></span>
+                        <span>AI is thinking...</span>
+                    </div>
+                    <div class="field has-addons">
+                        <div class="control is-expanded">
+                            <input class="input" type="text" id="chat-input" placeholder="Ask for help improving the prompts..." onkeypress="handleChatKeypress(event)">
+                        </div>
+                        <div class="control">
+                            <button class="button is-primary" id="chat-send-btn" onclick="sendChatMessage()">
+                                <span class="icon"><i class="fas fa-paper-plane"></i></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="test-results" style="display: none; margin-top: 1rem;">
+                    <h4 class="title is-6">Test Results</h4>
+                    <div id="test-results-content"></div>
+                </div>
+                
+                <details style="margin-top: 1rem;">
+                    <summary class="title is-6">Database Context</summary>
+                    <pre id="artifact-database" class="has-background-light" style="font-size: 0.75rem;"></pre>
+                </details>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <div class="box">
+            <h2 class="title is-4">
+                <span class="icon"><i class="fas fa-comments"></i></span>
+                Test on Discussion
+            </h2>
+            
+            <div class="thread-selector">
+                <div class="field">
+                    <label class="label" for="thread-select">Select Discussion:</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select id="thread-select" onchange="loadDiscussionMessages()">
+                                <option value="">Select a thread...</option>
+                                {% for discussion in discussions %}
+                                <option value="{{ discussion.id }}"{% if preselected_discussion_id == discussion.id %} selected{% endif %}>
+                                    Discussion #{{ discussion.id }} - {{ discussion.user.username if discussion.user else 'Unknown' }} 
+                                    ({{ discussion.messages|length }} messages)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="thread-messages" class="thread-messages" style="display: none;">
+                <h3 class="title is-5">Recent Statement</h3>
+                <div id="messages-container"></div>
+            </div>
+            
+            <div class="message-input">
+                <div class="field">
+                    <label class="label" for="test-message">Test Statement:</label>
+                    <div class="control">
+                        <textarea class="textarea" id="test-message" placeholder="Enter a test statement to see how the AI responds with your custom prompts..."></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="field is-grouped">
+                <div class="control">
+                    <button class="button is-primary" onclick="testPrompts()">
+                        <span class="icon"><i class="fas fa-play"></i></span>
+                        <span>Test Response</span>
+                    </button>
+                </div>
+                <div class="control">
+                    <button class="button is-light" onclick="clearResults()">
+                        <span class="icon"><i class="fas fa-eraser"></i></span>
+                        <span>Clear Results</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="loading">
+                <div class="notification is-info">
+                    <span class="icon"><i class="fas fa-spinner fa-spin"></i></span>
+                    <span>Processing...</span>
+                </div>
+            </div>
+            
+            <div id="results" class="results">
+                <h3 class="title is-5">Results</h3>
+                <div id="results-content"></div>
+            </div>
+        </div>
+    </div>
+</div>
+    
+    <script>
+        const defaultPrompts = {{ default_prompts | tojson }};
+        
+        function resetPrompts() {
+            document.getElementById('prompt-role').value = defaultPrompts.ROLE_COACH_NOT_THERAPIST;
+            document.getElementById('prompt-bowen').value = defaultPrompts.BOWEN_THEORY_COACHING_IN_A_NUTSHELL;
+            document.getElementById('prompt-data').value = defaultPrompts.DATA_MODEL_DEFINITIONS;
+            
+            // Auto-resize textareas after reset
+            const textareas = document.querySelectorAll('.prompt-editor textarea');
+            textareas.forEach(textarea => {
+                autoResizeTextarea(textarea);
+            });
+        }
+        
+        async function loadDiscussionMessages() {
+            const threadId = document.getElementById('thread-select').value;
+            if (!threadId) {
+                document.getElementById('thread-messages').style.display = 'none';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/training/prompts/thread/${threadId}`);
+                const data = await response.json();
+                
+                const container = document.getElementById('messages-container');
+                container.innerHTML = '';
+                
+                data.messages.forEach(msg => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `message ${msg.origin}`;
+                    messageDiv.innerHTML = `
+                        <div class="message-header">${msg.origin.toUpperCase()} - ${new Date(msg.created_at).toLocaleString()}</div>
+                        <div>${msg.text}</div>
+                    `;
+                    container.appendChild(messageDiv);
+                });
+                
+                document.getElementById('thread-messages').style.display = 'block';
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+        
+        async function testPrompts() {
+            const discussionId = document.getElementById('thread-select').value;
+            const message = document.getElementById('test-message').value;
+            
+            if (!discussionId || !message) {
+                alert('Please select a discussion and enter a test message.');
+                return;
+            }
+            
+            const prompts = {
+                ROLE_COACH_NOT_THERAPIST: document.getElementById('prompt-role').value,
+                BOWEN_THEORY_COACHING_IN_A_NUTSHELL: document.getElementById('prompt-bowen').value,
+                DATA_MODEL_DEFINITIONS: document.getElementById('prompt-data').value
+            };
+            
+            document.querySelector('.loading').classList.add('show');
+            document.getElementById('results').classList.remove('show');
+            
+            try {
+                const response = await fetch('/training/prompts/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        discussion_id: discussionId,
+                        message: message,
+                        prompts: prompts
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayResults(data);
+                } else {
+                    displayError(data.error || 'An error occurred');
+                }
+            } catch (error) {
+                displayError('Network error: ' + error.message);
+            } finally {
+                document.querySelector('.loading').classList.remove('show');
+            }
+        }
+        
+        function displayResults(data) {
+            const resultsContent = document.getElementById('results-content');
+            resultsContent.innerHTML = `
+                <div class="response-message">
+                    <h4>AI Response:</h4>
+                    <p>${data.message}</p>
+                </div>
+                ${data.pdp ? `
+                    <div class="pdp-data">
+                        <h4>Extracted PDP Data:</h4>
+                        <pre>${JSON.stringify(data.pdp, null, 2)}</pre>
+                    </div>
+                ` : ''}
+                <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                    Prompts used: ${data.prompts_used.join(', ')}
+                </div>
+            `;
+            document.getElementById('results').classList.add('show');
+        }
+        
+        function displayError(error) {
+            const resultsContent = document.getElementById('results-content');
+            resultsContent.innerHTML = `<div class="error">${error}</div>`;
+            document.getElementById('results').classList.add('show');
+        }
+        
+        function clearResults() {
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('test-message').value = '';
+        }
+
+        // Auto-resize textarea to fit content
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.max(150, textarea.scrollHeight) + 'px';
+        }
+        
+        // Auto-load preselected thread on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-resize all prompt textareas
+            const textareas = document.querySelectorAll('.prompt-editor textarea');
+            textareas.forEach(textarea => {
+                autoResizeTextarea(textarea);
+                
+                // Also resize on input
+                textarea.addEventListener('input', function() {
+                    autoResizeTextarea(this);
+                });
+            });
+            
+            const threadSelect = document.getElementById('thread-select');
+            if (threadSelect.value) {
+                loadDiscussionMessages();
+            }
+            
+            // Check if artifact ID is in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const statementId = urlParams.get('statement_id');
+            if (statementId) {
+                loadArtifact(statementId);
+            }
+        });
+        
+        // Artifact functionality
+        let currentArtifact = null;
+        let lastTestResult = null;
+        
+        function loadArtifactFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const statementId = urlParams.get('statement_id');
+            if (statementId) {
+                loadArtifact(statementId);
+            }
+        }
+        
+        async function loadArtifact(statementId) {
+            try {
+                const response = await fetch(`/training/prompts/load-artifact/${statementId}`);
+                const artifact = await response.json();
+                
+                if (response.ok) {
+                    currentArtifact = artifact;
+                    displayArtifact(artifact);
+                } else {
+                    console.error('Error loading artifact:', artifact.error);
+                }
+            } catch (error) {
+                console.error('Network error:', error.message);
+            }
+        }
+        
+        function displayArtifact(artifact) {
+            // Show user statement
+            document.getElementById('artifact-statement').textContent = artifact.inputs.user_statement;
+            
+            // Show artifact ID
+            document.getElementById('artifact-id-badge').textContent = `Statement #${artifact.statement_id}`;
+            
+            // Show extractions using the visual format
+            document.getElementById('artifact-ai-extracted').innerHTML = renderExtractedData(artifact.ai_extracted);
+            document.getElementById('artifact-corrected').innerHTML = renderExtractedData(artifact.corrected);
+            
+            // Show database context
+            document.getElementById('artifact-database').textContent = JSON.stringify(artifact.inputs.database, null, 2);
+            
+            // Show the artifact panel
+            document.getElementById('artifact-display').style.display = 'block';
+            
+            // Scroll to artifact section
+            document.querySelector('.artifact-section').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function renderExtractedData(data) {
+            if (!data) {
+                return '<div class="has-text-grey">No data</div>';
+            }
+            
+            let html = '';
+            
+            // People Section
+            if (data.people && data.people.length > 0) {
+                html += `
+                    <div class="people-section mb-3">
+                        <div class="is-size-7 has-text-weight-bold has-text-info">
+                            <span class="icon is-small"><i class="fas fa-users"></i></span>
+                            People:
+                        </div>`;
+                
+                data.people.forEach(person => {
+                    html += `
+                        <div class="person-item mb-1 p-2" style="background: #f8f9fa; border-radius: 4px; border: 1px solid #e9ecef;">
+                            <span class="is-size-7">${person.name || ('Person #' + person.id)}</span>
+                            ${person.confidence ? `<span class="tag is-info is-light is-small ml-1">${(person.confidence * 100).toFixed(0)}%</span>` : ''}
+                        </div>`;
+                });
+                
+                html += '</div>';
+            }
+            
+            // Events Section
+            if (data.events && data.events.length > 0) {
+                html += `
+                    <div class="events-section mb-3">
+                        <div class="is-size-7 has-text-weight-bold has-text-info">
+                            <span class="icon is-small"><i class="fas fa-calendar-alt"></i></span>
+                            Events:
+                        </div>`;
+                
+                data.events.forEach(event => {
+                    html += `
+                        <div class="event-item mb-1 p-2" style="background: #f8f9fa; border-radius: 4px; border: 1px solid #e9ecef;">
+                            <div class="is-size-7">
+                                <strong>${event.description || ('Event #' + event.id)}</strong>
+                                ${event.confidence ? `<span class="tag is-info is-light is-small ml-1">${(event.confidence * 100).toFixed(0)}%</span>` : ''}
+                            </div>
+                            <div class="variables-compact mt-1">`;
+                    
+                    if (event.symptom) {
+                        html += `<span class="shift-indicator shift-${event.symptom.shift} is-small">S:${event.symptom.shift}</span>`;
+                    }
+                    if (event.anxiety) {
+                        html += `<span class="shift-indicator shift-${event.anxiety.shift} is-small ml-1">A:${event.anxiety.shift}</span>`;
+                    }
+                    if (event.functioning) {
+                        html += `<span class="shift-indicator shift-${event.functioning.shift} is-small ml-1">F:${event.functioning.shift}</span>`;
+                    }
+                    if (event.relationship) {
+                        html += `<span class="shift-indicator shift-relationship is-small ml-1">R:${event.relationship.kind}</span>`;
+                    }
+                    
+                    html += `
+                            </div>
+                        </div>`;
+                });
+                
+                html += '</div>';
+            }
+            
+            // Deletes Section  
+            if (data.delete && data.delete.length > 0) {
+                html += `
+                    <div class="deletes-section mb-3">
+                        <div class="is-size-7 has-text-weight-bold has-text-info">
+                            <span class="icon is-small"><i class="fas fa-trash"></i></span>
+                            Items to Delete:
+                        </div>
+                        <div class="tags are-small">`;
+                
+                data.delete.forEach(deleteId => {
+                    html += `<span class="tag is-danger is-light is-small">ID: ${deleteId}</span>`;
+                });
+                
+                html += '</div></div>';
+            }
+            
+            if (!html) {
+                html = '<div class="has-text-grey">No extraction data</div>';
+            }
+            
+            return html;
+        }
+        
+        async function getAISuggestions() {
+            if (!currentArtifact) {
+                alert('No artifact loaded');
+                return;
+            }
+            
+            const button = event.target.closest('button');
+            const originalContent = button.innerHTML;
+            
+            // Show loading state
+            button.classList.add('is-loading');
+            button.disabled = true;
+            
+            const prompts = getCurrentPrompts();
+            
+            try {
+                const response = await fetch('/training/prompts/suggest-improvements', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        artifact: currentArtifact,
+                        prompts: prompts
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('suggestions-content').innerHTML = marked.parse(data.suggestions);
+                    document.getElementById('suggestions-panel').style.display = 'block';
+                    document.getElementById('chat-section').style.display = 'block';
+                } else {
+                    alert('Error getting suggestions: ' + data.error);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            } finally {
+                // Remove loading state
+                button.classList.remove('is-loading');
+                button.disabled = false;
+                button.innerHTML = originalContent;
+            }
+        }
+        
+        async function testWithCurrentPrompts() {
+            if (!currentArtifact) {
+                alert('No artifact loaded');
+                return;
+            }
+            
+            const prompts = getCurrentPrompts();
+            
+            try {
+                const response = await fetch('/training/prompts/test-extraction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        artifact: currentArtifact,
+                        prompts: prompts
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    lastTestResult = data;
+                    displayTestResults(data);
+                } else {
+                    alert('Error testing extraction: ' + data.error);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+        
+        function displayTestResults(results) {
+            const content = document.getElementById('test-results-content');
+            
+            const matchStatus = results.matches ? 
+                '<span class="tag is-success">✓ Perfect Match!</span>' : 
+                '<span class="tag is-warning">⚠ Needs Improvement</span>';
+            
+            content.innerHTML = `
+                <div class="level">
+                    <div class="level-left">
+                        <h5 class="title is-6">New Test Result</h5>
+                    </div>
+                    <div class="level-right">
+                        ${matchStatus}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <div style="flex: 1;">
+                        <h6 class="subtitle is-6">New Extraction</h6>
+                        <div class="has-background-light" style="padding: 0.5rem; border-radius: 4px;">
+                            ${renderExtractedData(results.extracted)}
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h6 class="subtitle is-6">Expected</h6>
+                        <div class="extraction-correct" style="padding: 0.5rem; border-radius: 4px;">
+                            ${renderExtractedData(results.expected)}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('test-results').style.display = 'block';
+        }
+        
+        function getCurrentPrompts() {
+            return {
+                PDP_ROLE_AND_INSTRUCTIONS: document.getElementById('prompt-role').value,
+                PDP_EXAMPLES: document.getElementById('prompt-data').value
+            };
+        }
+        
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const sendButton = document.getElementById('chat-send-btn');
+            const loadingDiv = document.getElementById('chat-loading');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            // Add user message to chat
+            addChatMessage(message, 'user');
+            input.value = '';
+            
+            // Show loading indicator and disable input
+            loadingDiv.style.display = 'block';
+            input.disabled = true;
+            sendButton.disabled = true;
+            
+            try {
+                const response = await fetch('/training/prompts/coach-chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        artifact: currentArtifact,
+                        current_prompts: getCurrentPrompts(),
+                        last_test_result: lastTestResult
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addChatMessage(data.response, 'assistant');
+                } else {
+                    addChatMessage('Error: ' + data.error, 'assistant');
+                }
+            } catch (error) {
+                addChatMessage('Network error: ' + error.message, 'assistant');
+            } finally {
+                // Hide loading indicator and re-enable input
+                loadingDiv.style.display = 'none';
+                input.disabled = false;
+                sendButton.disabled = false;
+                input.focus();
+            }
+        }
+        
+        function addChatMessage(message, sender) {
+            const chatHistory = document.getElementById('chat-history');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${sender}`;
+            
+            if (sender === 'assistant') {
+                messageDiv.innerHTML = marked.parse(message);
+            } else {
+                messageDiv.innerHTML = message.replace(/\n/g, '<br>');
+            }
+            
+            chatHistory.appendChild(messageDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+        
+        function handleChatKeypress(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
+        }
+    </script>
+{% endblock %}

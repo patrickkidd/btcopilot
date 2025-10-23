@@ -1,0 +1,565 @@
+{% extends "therapist_base.html" %}
+{% from "macros/discussion_box.html" import discussion_box %}
+
+{% block head %}
+<style>
+.user-card {
+    transition: background-color 0.2s ease;
+}
+.user-card.drag-over, .box.drag-over {
+    background-color: #e6fffa !important;
+    border: 2px dashed #00d1b2 !important;
+}
+.user-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div>
+    <h1 class="title">Therapist Chat Audit System</h1>
+    <p class="subtitle">Review AI responses and data extraction quality</p>
+    
+    <div class="notification is-info is-light">
+        <strong>Instructions:</strong>
+        <ul>
+            <li>Click on any thread to review AI chat responses and extracted data</li>
+            <li>Provide thumbs down + comments for problematic conversation flow</li>
+            <li>Edit extracted data if the AI missed important information</li>
+            <li><strong>Drag and drop audio files</strong> onto user cards to automatically transcribe and create discussions (MP3, WAV, M4A, MP4, FLAC, OGG, WEBM, AAC)</li>
+            <li><strong>Drag and drop JSON files</strong> to import previously exported discussions</li>
+            <li>Your feedback is anonymous and won't be seen by other auditors</li>
+        </ul>
+    </div>
+    
+    {% if not users %}
+    <div class="notification is-warning">
+        <strong>No chat data found.</strong><br>
+        Users need to have active discussions for audit content to appear here.
+    </div>
+    {% else %}
+    
+    <!-- Auditor's Own Diagrams Section -->
+    {% if auditor_diagrams %}
+    <div class="card mb-5">
+        <header class="card-header">
+            <p class="card-header-title">
+                <span class="icon">
+                    <i class="fas fa-user-shield"></i>
+                </span>
+                My Diagrams ({{ auditor_diagrams|length }})
+                <span class="tag is-primary ml-2">Auditor</span>
+            </p>
+            <button class="card-header-icon" onclick="toggleCard('auditor-diagrams')">
+                <span class="icon toggle-icon" id="icon-auditor-diagrams">
+                    <i class="fas fa-angle-down"></i>
+                </span>
+            </button>
+        </header>
+        <div id="auditor-diagrams" class="card-content">
+            <div class="content">
+                <div class="level mb-4">
+                    <div class="level-left">
+                        <div class="level-item">
+                            <p class="has-text-grey">Create and manage your own diagrams for testing and analysis</p>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="level-item">
+                            <button class="button is-primary is-small" onclick="createNewDiagram()">
+                                <span class="icon is-small">
+                                    <i class="fas fa-plus"></i>
+                                </span>
+                                <span>New Diagram</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                {% for diagram in auditor_diagrams %}
+                <div class="box mb-3" data-diagram-id="{{ diagram.id }}">
+                    <div class="media">
+                        <div class="media-left">
+                            <span class="icon is-large has-text-info">
+                                <i class="fas fa-project-diagram fa-2x"></i>
+                            </span>
+                        </div>
+                        <div class="media-content">
+                            <p class="title is-6">{{ diagram.name }}</p>
+                            <p class="subtitle is-7 mb-2">
+                                {% if diagram.created_at %}
+                                Created: {{ diagram.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                {% endif %}
+                                {% if diagram.updated_at and diagram.updated_at != diagram.created_at %}
+                                | Updated: {{ diagram.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                                {% endif %}
+                            </p>
+                            <div class="tags">
+                                {% if diagram.discussions %}
+                                <span class="tag is-success is-light">
+                                    {{ diagram.discussions|length }} discussions
+                                </span>
+                                {% endif %}
+                                <span class="tag is-info is-light">ID: {{ diagram.id }}</span>
+                            </div>
+                        </div>
+                        <div class="media-right">
+                            <button class="button is-small is-danger" 
+                                    onclick="deleteDiagram({{ diagram.id }}, '{{ diagram.name }}')"
+                                    title="Delete this diagram">
+                                <span class="icon is-small">
+                                    <i class="fas fa-trash"></i>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- List discussions for this diagram -->
+                    {% if diagram.discussions %}
+                    <div class="mt-3 mb-3">
+                        {% for thread in diagram.discussions %}
+                        {{ discussion_box(thread, delete_function_name="deleteDiscussion", user_id=thread.user_id, username=(thread.user.username if thread.user else 'User #' + thread.user_id|string), current_user=current_user, vedana=vedana) }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Upload zones for this diagram -->
+                    <div class="columns is-variable is-2 mt-3">
+                        <div class="column">
+                            <div class="box has-text-centered audio-drop-zone" 
+                                 id="audio-drop-zone-diagram-{{ diagram.id }}"
+                                 data-diagram-id="{{ diagram.id }}"
+                                 ondrop="handleDiagramAudioDrop(event, {{ diagram.id }})" 
+                                 ondragover="handleAudioDragOver(event)"
+                                 ondragleave="handleAudioDragLeave(event)"
+                                 style="border: 1px dashed #dbdbdb; padding: 1rem; background: #fafafa; transition: all 0.2s ease;">
+                                <p class="is-size-7 has-text-grey">
+                                    <span class="icon is-small"><i class="fas fa-microphone"></i></span>
+                                    Drop audio file<br>
+                                    <span class="is-size-7 has-text-grey-light">MP3, WAV, M4A, MP4, FLAC, OGG, WEBM, AAC</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="column">
+                            <div class="box has-text-centered" 
+                                 id="json-drop-zone-diagram-{{ diagram.id }}"
+                                 data-diagram-id="{{ diagram.id }}"
+                                 ondrop="handleDiagramJsonDrop(event, {{ diagram.id }})" 
+                                 ondragover="handleJsonDragOver(event)"
+                                 ondragleave="handleJsonDragLeave(event)"
+                                 style="border: 1px dashed #3273dc; padding: 1rem; background: #f0f7ff; transition: all 0.2s ease;">
+                                <p class="is-size-7 has-text-primary">
+                                    <span class="icon is-small"><i class="fas fa-file-code"></i></span>
+                                    Drop JSON export<br>
+                                    <span class="is-size-7 has-text-primary-light">Import exported discussion</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                {% if not auditor_diagrams %}
+                <div class="notification is-light">
+                    <p>No diagrams yet. Create your first diagram to get started!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="columns">
+        <div class="column">
+            <h2 class="subtitle">Users with Discussions ({{ users|length }})</h2>
+        </div>
+        <div class="column is-narrow">
+            <div class="field is-grouped">
+                {% if current_user and current_user.has_role(vedana.ROLE_ADMIN) %}
+                <p class="control">
+                    <a href="{{ url_for('training.prompts.index') }}" class="button is-info is-small">
+                        <span class="icon is-small">
+                            <i class="fas fa-flask"></i>
+                        </span>
+                        <span>Prompt Lab</span>
+                    </a>
+                </p>
+                {% endif %}
+                <p class="control">
+                    <button class="button is-small" onclick="expandAll()">Expand All</button>
+                </p>
+                <p class="control">
+                    <button class="button is-small" onclick="collapseAll()">Collapse All</button>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    {% for user in users %}
+    <div class="card mb-4 user-card" 
+         data-user-id="{{ user.id }}" 
+         ondrop="handleAudioDrop(event, {{ user.id }})" 
+         ondragover="handleAudioDragOver(event)"
+         ondragleave="handleAudioDragLeave(event)">
+        <header class="card-header is-clickable" onclick="toggleCard('user-{{ user.id }}')">
+            <p class="card-header-title">
+                <span class="icon">
+                    <i class="fas fa-user"></i>
+                </span>
+                {{ user.username or 'User #' + user.id|string }}
+                <span class="tag is-info ml-2">{{ user.discussions|length }} threads</span>
+                {% if user.discussions %}
+                <span class="tag is-light ml-1">
+                    {% set total_messages = user.discussions|map(attribute='messages')|map('length')|sum %}
+                    {{ total_messages }} total messages
+                </span>
+                {% endif %}
+                
+                {% if current_user and current_user.has_role(vedana.ROLE_ADMIN) %}
+                <button class="button is-small is-danger ml-2" 
+                        onclick="event.stopPropagation(); clearUserDatabase({{ user.id }}, {{ (user.username or 'User #' + user.id|string)|tojson }})"
+                        title="Clear user's database (Admin only)">
+                    <span class="icon is-small">
+                        <i class="fas fa-trash"></i>
+                    </span>
+                    <span>Clear free diagram</span>
+                </button>
+                {% endif %}
+            </p>
+            <button class="card-header-icon" onclick="event.stopPropagation(); toggleCard('user-{{ user.id }}')">
+                <span class="icon toggle-icon" id="icon-user-{{ user.id }}">
+                    <i class="fas fa-angle-down"></i>
+                </span>
+            </button>
+        </header>
+        <div id="user-{{ user.id }}" class="card-content" style="display: none;">
+            <div class="content">
+                {% if not user.discussions %}
+                <p class="has-text-grey">No threads for this user.</p>
+                {% else %}
+                {% for thread in user.discussions %}
+                {{ discussion_box(thread, delete_function_name="deleteDiscussion", user_id=user.id, username=(user.username or 'User #' + user.id|string), current_user=current_user, vedana=vedana) }}
+                {% endfor %}
+                {% endif %}
+                
+                <!-- Upload boxes shown for all users -->
+                <div class="columns is-variable is-2 mt-3">
+                    <div class="column">
+                        <div class="box has-text-centered" 
+                             style="border: 1px dashed #dbdbdb; padding: 1rem; background: #fafafa;"
+                             ondrop="handleAudioDrop(event, {{ user.id }})" 
+                             ondragover="handleAudioDragOver(event)"
+                             ondragleave="handleAudioDragLeave(event)">
+                            <p class="is-size-7 has-text-grey">
+                                <span class="icon is-small"><i class="fas fa-microphone"></i></span>
+                                Drop audio file<br>
+                                <span class="is-size-7 has-text-grey-light">MP3, WAV, M4A, MP4, FLAC, OGG, WEBM, AAC</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="box has-text-centered" 
+                             style="border: 1px dashed #3273dc; padding: 1rem; background: #f0f7ff;"
+                             ondrop="handleJsonDrop(event, {{ user.id }})" 
+                             ondragover="handleJsonDragOver(event)"
+                             ondragleave="handleJsonDragLeave(event)">
+                            <p class="is-size-7 has-text-primary">
+                                <span class="icon is-small"><i class="fas fa-file-code"></i></span>
+                                Drop JSON export<br>
+                                <span class="is-size-7 has-text-primary-light">Import exported discussion</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    
+    {% endif %}
+</div>
+
+<script>
+function toggleCard(id) {
+    const el = document.getElementById(id);
+    const icon = document.getElementById('icon-' + id);
+    
+    if (el.style.display === 'none' || el.style.display === '') {
+        el.style.display = 'block';
+        if (icon) icon.innerHTML = '<i class="fas fa-angle-up"></i>';
+    } else {
+        el.style.display = 'none';
+        if (icon) icon.innerHTML = '<i class="fas fa-angle-down"></i>';
+    }
+}
+
+function expandAll() {
+    {% for user in users %}
+    document.getElementById('user-{{ user.id }}').style.display = 'block';
+    const icon{{ user.id }} = document.getElementById('icon-user-{{ user.id }}');
+    if (icon{{ user.id }}) icon{{ user.id }}.innerHTML = '<i class="fas fa-angle-up"></i>';
+    {% endfor %}
+}
+
+function collapseAll() {
+    {% for user in users %}
+    document.getElementById('user-{{ user.id }}').style.display = 'none';
+    const icon{{ user.id }} = document.getElementById('icon-user-{{ user.id }}');
+    if (icon{{ user.id }}) icon{{ user.id }}.innerHTML = '<i class="fas fa-angle-down"></i>';
+    {% endfor %}
+}
+
+
+function deleteDiscussion(discussionId, userId, username) {
+    const message = `Are you sure you want to delete Discussion #${discussionId} for user "${username}"?
+    
+This will permanently delete:
+- The discussion and all its statements
+- All associated feedback data
+- All extracted PDP deltas
+
+This action cannot be undone`;
+
+    if (confirm(message)) {
+        fetch(`/training/discussions/${discussionId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting discussion: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error deleting discussion: ' + error);
+        });
+    }
+}
+
+function triggerExtraction(discussionId, username) {
+    const message = `Are you sure you want to trigger background extraction for Discussion #${discussionId} for user "${username}"?
+    
+This will:
+- Set the extracting flag to true
+- Run background extraction for all unprocessed statements
+- Automatically set extracting to false when complete
+
+Continue?`;
+
+    if (confirm(message)) {
+        fetch(`/training/discussions/${discussionId}/extract`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Just reload, no alert needed since the UI will reflect the change
+                location.reload();
+            } else {
+                alert('Error triggering extraction: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error triggering extraction: ' + error);
+        });
+    }
+}
+
+// JSON Drop Handlers
+function handleJsonDragOver(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = 'copy';
+    event.currentTarget.classList.add('drag-over');
+}
+
+function handleJsonDragLeave(event) {
+    event.stopPropagation();
+    event.currentTarget.classList.remove('drag-over');
+}
+
+async function handleJsonDrop(event, userId) {
+    event.preventDefault();
+    event.stopPropagation(); // Stop event from bubbling up to card
+    event.currentTarget.classList.remove('drag-over');
+    
+    const files = event.dataTransfer.files;
+    if (files.length === 0) return;
+    
+    const file = files[0];
+    
+    // Validate it's a JSON file
+    if (!file.name.endsWith('.json') && file.type !== 'application/json') {
+        alert('Please drop a JSON file (exported discussion)');
+        return;
+    }
+    
+    const confirmMessage = `Import "${file.name}" as a new discussion for this user?`;
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    const element = event.currentTarget;
+    const originalContent = element.innerHTML;
+    
+    try {
+        // Read the file content
+        const content = await file.text();
+        const jsonData = JSON.parse(content);
+        
+        // Validate it looks like a discussion export
+        if (!jsonData.id || !jsonData.statements) {
+            alert('Invalid discussion JSON format. Please use an exported discussion file.');
+            return;
+        }
+        
+        // Show progress
+        element.innerHTML = `
+            <div class="has-text-centered">
+                <span class="icon is-large has-text-primary">
+                    <i class="fas fa-spinner fa-pulse fa-2x"></i>
+                </span>
+                <p class="is-size-7 mt-2">Importing discussion...</p>
+            </div>
+        `;
+        
+        // Send to server
+        const response = await fetch('/training/discussions/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(jsonData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            element.innerHTML = `
+                <div class="has-text-centered has-text-success">
+                    <span class="icon is-large">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </span>
+                    <p class="is-size-7 mt-2">Import complete</p>
+                </div>
+            `;
+            
+            // Refresh the page after a delay
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            element.innerHTML = originalContent;
+            alert('Import failed: ' + (result.error || 'Unknown error'));
+        }
+        
+    } catch (error) {
+        console.error('Import error:', error);
+        alert('Error importing file: ' + error.message);
+        element.innerHTML = originalContent;
+    }
+}
+
+// Auditor diagram management functions
+
+
+// Note: handleDiagramAudioDrop is now defined in audio-upload-client.js
+
+async function handleDiagramJsonDrop(event, diagramId) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.classList.remove('drag-over');
+    
+    const files = event.dataTransfer.files;
+    if (files.length === 0) return;
+    
+    const file = files[0];
+    
+    // Validate it's a JSON file
+    if (!file.name.endsWith('.json') && file.type !== 'application/json') {
+        alert('Please drop a JSON file (exported discussion)');
+        return;
+    }
+    
+    const confirmMessage = `Import "${file.name}" as a new discussion for this diagram?`;
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    const element = event.currentTarget;
+    const originalContent = element.innerHTML;
+    
+    try {
+        // Read the file content
+        const content = await file.text();
+        const jsonData = JSON.parse(content);
+        
+        // Validate it looks like a discussion export
+        if (!jsonData.id || !jsonData.statements) {
+            alert('Invalid discussion JSON format. Please use an exported discussion file.');
+            return;
+        }
+        
+        // Show progress
+        element.innerHTML = `
+            <div class="has-text-centered">
+                <span class="icon is-large has-text-primary">
+                    <i class="fas fa-spinner fa-pulse fa-2x"></i>
+                </span>
+                <p class="is-size-7 mt-2">Importing discussion...</p>
+            </div>
+        `;
+        
+        // Send to server
+        const response = await fetch(`/training/discussions/import?diagram_id=${diagramId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(jsonData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            element.innerHTML = `
+                <div class="has-text-centered has-text-success">
+                    <span class="icon is-large">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </span>
+                    <p class="is-size-7 mt-2">Import complete</p>
+                </div>
+            `;
+            
+            // Refresh after delay
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            element.innerHTML = originalContent;
+            alert('Import failed: ' + (result.error || 'Unknown error'));
+        }
+        
+    } catch (error) {
+        console.error('Import error:', error);
+        alert('Error importing file: ' + error.message);
+        element.innerHTML = originalContent;
+    }
+}
+
+// Add Font Awesome for icons
+if (!document.querySelector('link[href*="font-awesome"]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
+    document.head.appendChild(link);
+}
+</script>
+
+<script src="{{ url_for('training.audit.static', filename='js/audio-upload-client.js') }}"></script>
+{% endblock %}
