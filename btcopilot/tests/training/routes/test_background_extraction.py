@@ -3,8 +3,8 @@ from unittest.mock import patch, AsyncMock
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.training.routes.discussions import extract_next_statement
-from btcopilot.personal.database import (
-    Database,
+from btcopilot.schema import (
+    Diagram,
     PDPDeltas,
     Event,
     Person,
@@ -64,7 +64,7 @@ def test_extract_next_statement(mock_pdp_update, mock_celery, flask_app, discuss
         people=[Person(id=1, name="User"), Person(id=2, name="Mom")],
     )
 
-    mock_pdp_update.return_value = (Database().pdp, mock_pdp_deltas)
+    mock_pdp_update.return_value = (Diagram().pdp, mock_pdp_deltas)
 
     # Get initial count of Subject statements (all should be unprocessed in this test)
     subject_statements = (
@@ -96,7 +96,7 @@ def test_extract_next_statement(mock_pdp_update, mock_celery, flask_app, discuss
     assert len(call_args) == 3
     discussion, database, text = call_args
     assert isinstance(discussion, Discussion)
-    assert isinstance(database, Database)
+    assert isinstance(database, Diagram)
     assert text == "I'm feeling anxious about work lately"
 
     db.session.refresh(subject_statements[0])
@@ -188,7 +188,7 @@ def test_extract_next_statement_idempotent(mock_pdp_update, flask_app, discussio
     discussion.extracting = True
     db.session.commit()
 
-    mock_pdp_update.return_value = (Database().pdp, PDPDeltas(events=[], people=[]))
+    mock_pdp_update.return_value = (Diagram().pdp, PDPDeltas(events=[], people=[]))
 
     # Run the background processing multiple times
     with flask_app.app_context():
@@ -268,7 +268,7 @@ def test_extract_next_statement_ordering(mock_pdp_update, flask_app, test_user):
 
     async def mock_async_update(discussion, database, text):
         processed_texts.append(text)
-        return (Database().pdp, PDPDeltas(events=[], people=[]))
+        return (Diagram().pdp, PDPDeltas(events=[], people=[]))
 
     mock_pdp_update.side_effect = mock_async_update
 

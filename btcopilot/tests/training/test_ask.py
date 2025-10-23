@@ -10,7 +10,7 @@ import pytest
 from btcopilot.extensions import db
 from btcopilot.personal import ResponseDirection, ask
 from btcopilot.personal.models import Discussion
-from btcopilot.personal.database import Person, Event, Conflict
+from btcopilot.schema import Person, Event, Conflict
 
 
 @pytest.mark.chat_flow(

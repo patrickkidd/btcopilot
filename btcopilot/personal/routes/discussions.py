@@ -4,11 +4,11 @@ import pickle
 from flask import Blueprint, jsonify, request, abort
 from sqlalchemy.orm import subqueryload
 
+from btcopilot.schema import Diagram, Person
 from btcopilot.extensions import db
 from btcopilot import auth
 from btcopilot.pro.models import Diagram
 from btcopilot.personal import Response, ask
-from btcopilot.personal.database import Database, Person
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
 
 _log = logging.getLogger(__name__)
@@ -16,9 +16,9 @@ _log = logging.getLogger(__name__)
 bp = Blueprint("discussions", __name__, url_prefix="/discussions")
 
 
-def _create_initial_database() -> Database:
+def _create_initial_database() -> Diagram:
     """Create initial database with User and Assistant people."""
-    initial_database = Database()
+    initial_database = Diagram()
 
     # Add User person (ID will be 1)
     user_person = Person(

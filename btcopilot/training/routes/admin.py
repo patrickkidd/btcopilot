@@ -8,8 +8,8 @@ import vedana
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
-from btcopilot.pro.models import User, License, Diagram
-from btcopilot.personal.database import Database
+from btcopilot.pro.models import User, License, Diagram as DiagramFile
+from btcopilot.schema import Diagram
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_breadcrumbs
@@ -105,8 +105,8 @@ def build_user_summary(user, include_discussion_count=True):
             # Efficiently count discussions for users without loaded diagrams
             discussion_count = (
                 db.session.query(func.count(Discussion.id))
-                .join(Diagram)
-                .filter(Diagram.user_id == user.id)
+                .join(DiagramFile)
+                .filter(DiagramFile.user_id == user.id)
                 .scalar()
                 or 0
             )
@@ -142,17 +142,17 @@ def get_users_for_admin(search=None, role_filter=None, for_index=False):
 
         # Admin users (always include these first)
         admin_users = User.query.filter(User.roles.like("%admin%")).options(
-            subqueryload(User.diagrams).subqueryload(Diagram.discussions),
+            subqueryload(User.diagrams).subqueryload(DiagramFile.discussions),
             subqueryload(User.licenses).subqueryload(License.policy),
             subqueryload(User.licenses).subqueryload(License.activations),
         )
 
         # Users with discussions (prioritize these)
         users_with_discussions = (
-            User.query.join(Diagram, Diagram.user_id == User.id)
+            User.query.join(DiagramFile, DiagramFile.user_id == User.id)
             .join(Discussion)
             .options(
-                subqueryload(User.diagrams).subqueryload(Diagram.discussions),
+                subqueryload(User.diagrams).subqueryload(DiagramFile.discussions),
                 subqueryload(User.licenses).subqueryload(License.policy),
                 subqueryload(User.licenses).subqueryload(License.activations),
             )
@@ -328,7 +328,7 @@ def user_details(user_id):
             return jsonify({"error": "Access denied"}), 403
 
     user = User.query.options(
-        subqueryload(User.diagrams).subqueryload(Diagram.discussions),
+        subqueryload(User.diagrams).subqueryload(DiagramFile.discussions),
         subqueryload(User.licenses).subqueryload(License.policy),
         subqueryload(User.licenses).subqueryload(License.activations),
     ).get_or_404(user_id)
@@ -363,7 +363,7 @@ def user_detail_html(user_id):
 
     user = User.query.options(
         subqueryload(User.diagrams)
-        .subqueryload(Diagram.discussions)
+        .subqueryload(DiagramFile.discussions)
         .subqueryload(Discussion.statements),
         subqueryload(User.licenses).subqueryload(License.policy),
         subqueryload(User.licenses).subqueryload(License.activations),
@@ -401,7 +401,7 @@ def user_clear_db(user_id):
     # Clear the user's free diagram database
     if target_user.free_diagram:
 
-        target_user.free_diagram.set_database(Database.create_with_defaults())
+        target_user.free_diagram.set_dataclass(Diagram.create_with_defaults())
 
     old_database = {}
     db.session.commit()

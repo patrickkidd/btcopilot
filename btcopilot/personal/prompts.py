@@ -131,7 +131,7 @@ Example: SPARSE DELTA - Only new information extracted
 
 Input: "My brother-in-law didn't talk to us when he got home from work."
 
-Database: {
+Diagram: {
     "people": [
         {"id": 1, "name": "User", "confidence": 1.0},
         {"id": 2, "name": "Assistant", "confidence": 1.0},
@@ -167,7 +167,7 @@ Alice triangles brother against mother
 
 Input: "I (Alice) was at upset at her birthday party and told her brother about her mom's meddling. Then I got in a fight with him."
 
-Database: (has one committed entry and no PDP entries yet)
+Diagram: (has one committed entry and no PDP entries yet)
 
 {
     "people": [

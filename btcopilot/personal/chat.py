@@ -5,11 +5,11 @@ import logging
 from dataclasses import dataclass
 from flask import g
 
+from btcopilot.schema import Diagram, PDP
 from btcopilot.extensions import db, ai_log, llm, LLMFunction
 from btcopilot.async_utils import gather
 from btcopilot.personal import pdp
 from btcopilot.personal.models import Discussion, Statement
-from btcopilot.personal.database import Database, PDP
 from btcopilot.personal.prompts import (
     ROLE_COACH_NOT_THERAPIST,
     BOWEN_THEORY_COACHING_IN_A_NUTSHELL,
@@ -61,7 +61,7 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
     if discussion.diagram:
         database = discussion.diagram.get_database()
     else:
-        database = Database()
+        database = Diagram()
     results = gather(
         pdp.update(discussion, database, user_statement),
         detect_response_direction(user_statement, discussion),
@@ -73,7 +73,7 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
     # Write to disk
     database.pdp = new_pdp
     if discussion.diagram:
-        discussion.diagram.set_database(database)
+        discussion.diagram.set_dataclass(database)
 
     statement = Statement(
         discussion_id=discussion.id,
@@ -190,7 +190,7 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
 
 
 def _generate_response(
-    discussion: Discussion, database: Database, meta_prompt: str
+    discussion: Discussion, diagram: Diagram, meta_prompt: str
 ) -> str:
     """
     Generate a response from the AI based on the conversation history and the

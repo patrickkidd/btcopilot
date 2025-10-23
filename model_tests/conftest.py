@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from btcopilot.personal.database import Database, PDPDeltas
+from btcopilot.schema import PDPDeltas
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 
 

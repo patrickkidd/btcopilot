@@ -1,9 +1,11 @@
 import pickle
+from dataclasses import asdict
 
 from sqlalchemy import Column, Boolean, String, Integer, LargeBinary, ForeignKey
 from sqlalchemy.orm import relationship
 
 import vedana
+import btcopilot.schema
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
 
@@ -34,19 +36,13 @@ class Diagram(db.Model, ModelMixin):
 
     discussions = relationship("Discussion", back_populates="diagram")
 
-    def get_database(self) -> "Database":
-        import PyQt5.sip
-        from btcopilot.personal.database import Database
+    def get_dataclass(self) -> "btcopilot.schema.Diagram":
+        from btcopilot.schema import Diagram
 
-        data = pickle.loads(self.data) if self.data else {}
-        return Database(**data.get("database", {}))
+        return Diagram(**self.data)
 
-    def set_database(self, database: "Database"):
-        import PyQt5.sip
-
-        data = pickle.loads(self.data) if self.data else {}
-        data["database"] = database.model_dump()
-        self.data = pickle.dumps(data)
+    def set_dataclass(self, diagram: "btcopilot.schema.Diagram"):
+        self.data = asdict(diagram)
 
     def grant_access(self, user, right, _commit=False):
         from btcopilot.pro.models import AccessRight

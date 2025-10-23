@@ -2,7 +2,7 @@ import vedana
 from btcopilot import auth
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram, AccessRight
-from btcopilot.personal.database import Database
+from btcopilot.schema import Diagram
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.models.speaker import Speaker
 
@@ -43,8 +43,8 @@ def create():
     )
 
     # Initialize with database containing default User and Assistant people
-    database_with_defaults = Database.create_with_defaults()
-    diagram.set_database(database_with_defaults)
+    database_with_defaults = Diagram.create_with_defaults()
+    diagram.set_dataclass(database_with_defaults)
 
     db.session.add(diagram)
     db.session.commit()

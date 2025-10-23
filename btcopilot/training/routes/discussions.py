@@ -23,9 +23,9 @@ import vedana
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram, User
+from btcopilot.pro.models import Diagram as DiagramFile, User
 from btcopilot.personal import pdp, Response, ask
-from btcopilot.personal.database import Database, PDP, PDPDeltas, Person, Event
+from btcopilot.schema import Diagram, PDP, PDPDeltas, Person, Event
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_breadcrumbs, get_auditor_id
@@ -103,7 +103,7 @@ def extract_next_statement(*args, **kwargs):
         if discussion.diagram:
             database = discussion.diagram.get_database()
         else:
-            database = Database()
+            database = Diagram()
 
         try:
             # Apply nest_asyncio to allow nested event loops in Celery workers
@@ -117,7 +117,7 @@ def extract_next_statement(*args, **kwargs):
             # Update database and statement
             database.pdp = new_pdp
             if discussion.diagram:
-                discussion.diagram.set_database(database)
+                discussion.diagram.set_dataclass(database)
             if pdp_deltas:
                 statement.pdp_deltas = pdp_deltas.model_dump()
                 _log.info(
@@ -209,9 +209,9 @@ def _create_assembly_ai_transcript(data: dict):
 
     if diagram_id:
         # Create in specific diagram
-        diagram = Diagram.query.filter_by(id=diagram_id).first()
+        diagram = DiagramFile.query.filter_by(id=diagram_id).first()
         if not diagram:
-            return jsonify({"error": "Diagram not found"}), 404
+            return jsonify({"error": "DiagramFile not found"}), 404
 
         target_user = diagram.user
         target_diagram_id = diagram_id
@@ -226,7 +226,7 @@ def _create_assembly_ai_transcript(data: dict):
             # Create initial database with User and Assistant people
             initial_database = _create_initial_database()
 
-            diagram = Diagram(
+            diagram = DiagramFile(
                 user_id=target_user.id,
                 name=f"{target_user.username} Personal Case File",
                 data=pickle.dumps({"database": initial_database.model_dump()}),
@@ -345,9 +345,9 @@ def _create_import(data: dict):
 
     if diagram_id:
         # Import to specific diagram
-        diagram = Diagram.query.filter_by(id=diagram_id).first()
+        diagram = DiagramFile.query.filter_by(id=diagram_id).first()
         if not diagram:
-            return jsonify({"error": "Diagram not found"}), 404
+            return jsonify({"error": "DiagramFile not found"}), 404
 
         target_user = diagram.user
         target_diagram_id = diagram_id
@@ -362,7 +362,7 @@ def _create_import(data: dict):
             # Create initial database with User and Assistant people
             initial_database = _create_initial_database()
 
-            diagram = Diagram(
+            diagram = DiagramFile(
                 user_id=target_user.id,
                 name=f"{target_user.username} Personal Case File",
                 data=pickle.dumps({"database": initial_database.model_dump()}),
@@ -946,7 +946,7 @@ def clear_extracted_data(discussion_id):
         # Ensure last_id accounts for default people
         database.last_id = max(database.last_id, 2)
 
-        discussion.diagram.set_database(database)
+        discussion.diagram.set_dataclass(database)
 
     db.session.commit()
 

@@ -9,7 +9,7 @@ from btcopilot.auth import minimum_role
 from btcopilot.extensions import db, llm, LLMFunction
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal import prompts, ask, Response
-from btcopilot.personal.database import Database
+from btcopilot.schema import Diagram
 from btcopilot.personal.pdp import update
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_breadcrumbs
@@ -178,7 +178,7 @@ def suggest_improvements():
     {json.dumps(artifact['corrected'], indent=2)}
     
     CONTEXT:
-    - Database had {len(artifact['inputs']['database']['people'])} people and {len(artifact['inputs']['database']['events'])} events
+    - Diagram had {len(artifact['inputs']['database']['people'])} people and {len(artifact['inputs']['database']['events'])} events
     - Conversation history had {len(artifact['inputs']['conversation_history'])} messages
     - PDP before this statement had {len(artifact['inputs']['current_pdp']['people'])} people and {len(artifact['inputs']['current_pdp']['events'])} events
     
@@ -229,7 +229,7 @@ def test_extraction():
 
             # Create discussion and database objects for testing
             discussion = Discussion.query.get(artifact["discussion_id"])
-            database = Database(**artifact["inputs"]["database"])
+            database = Diagram(**artifact["inputs"]["database"])
 
             # Run extraction with modified prompts (using asyncio.run for sync context)
             import asyncio

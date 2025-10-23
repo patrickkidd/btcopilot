@@ -5,7 +5,7 @@ import vedana
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.personal.models import Speaker, SpeakerType
-from btcopilot.personal.database import Person
+from btcopilot.schema import Person
 
 _log = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ def update(speaker_id):
                 confidence=1.0,
             )
             database.add_person(person)
-            diagram.set_database(database)
+            diagram.set_dataclass(database)
             db.session.add(diagram)
             speaker.person_id = person.id
             created_person = person

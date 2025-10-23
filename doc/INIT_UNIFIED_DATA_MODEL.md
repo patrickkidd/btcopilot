@@ -20,4 +20,15 @@ Proposed Solution
 6. Use generic data classes that can be converted to pydantic classes or something?
 7. Replace pickle+Qt FD file format with JSON+btcopilot.schema
 
-Do this first; it's foundational and low-risk if your current data volume is small (migrate manually or script deltas). 
+Rules:
+- Don't worry about maintaining backwaard compatibility within the  btcopilot
+  repo, there is no production data there. Just get the code right as of now.
+- The schema is used to define the object relationships and value ranges for
+  enums, etc to pydantic_ai, so we need to define all of that hierarchy with
+  value spaces in a single schema class under PDP and Database as before. I
+  realize I changed the relationship subdivisions, but I did have classes and
+  subclasses for the different relationship kinds, variable shift values,etc. If
+  these aren't needed anymore that's fine, but the key requirement is passing
+  the complete expected output object hierarchy and value spaces as a single
+  pydantic class to pydantic_ai for the expected structured outputs
+- Don't use __all__ in python modules, it isn't necessary for this mostly private code base.

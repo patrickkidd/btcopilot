@@ -16,9 +16,7 @@ class Speaker(db.Model, ModelMixin):
     __tablename__ = "speakers"
 
     discussion_id = Column(Integer, ForeignKey("discussions.id"))
-    person_id = Column(
-        Integer
-    )  # References a Person in personal.database.Database JSON data
+    person_id = Column(Integer)  # References a Person in btco[ilot.schema JSON data
     name = Column(String(255))  # Speaker name/identifier
     type = Column(Enum(SpeakerType))  # 'expert' or 'family'
 

@@ -2,8 +2,8 @@ import logging
 
 import pytest
 
-from btcopilot.personal.database import (
-    Database,
+from btcopilot.schema import (
+    Diagram,
     PDP,
     Person,
     Event,
@@ -99,7 +99,7 @@ def test_PDEvent_as_dict(relationship):
 
 @pytest.fixture
 def database():
-    return Database(
+    return Diagram(
         people=[
             Person(id=1, name="Alice"),
             Person(id=2, name="Bob"),
@@ -211,9 +211,9 @@ def as_dict():
     }
 
 
-def test_Database_model_dump(database, as_dict):
+def test_Diagram_model_dump(database, as_dict):
     assert database.model_dump() == as_dict
 
 
 def test_from_dict(database, as_dict):
-    assert Database(**as_dict) == database
+    assert Diagram(**as_dict) == database

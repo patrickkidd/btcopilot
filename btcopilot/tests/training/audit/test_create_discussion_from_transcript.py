@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import Mock, patch
 
 from btcopilot.personal.models import Discussion, Speaker, Statement, SpeakerType
-from btcopilot.personal.database import Person
+from btcopilot.schema import Person
 
 
 def test_speaker_type_enum_values():

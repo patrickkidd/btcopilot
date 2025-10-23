@@ -1,5 +1,6 @@
 from btcopilot.extensions import db
-from btcopilot.pro.models import Diagram, AccessRight
+from btcopilot.pro.models import Diagram as DiagramFile, AccessRight
+from btcopilot.schema import Diagram
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.training.models import Feedback
 
@@ -72,9 +73,6 @@ def test_delete_diagram_owner_with_discussions_denied(logged_in, discussion):
 
 def test_delete_diagram_unauthorized(logged_in, test_user_2):
     """Test that user cannot delete another user's diagram"""
-    from btcopilot.pro.models import Diagram
-    from btcopilot.personal.database import Database
-
     # Create a diagram for user 2
     diagram = Diagram(
         user_id=test_user_2.id,
@@ -83,8 +81,8 @@ def test_delete_diagram_unauthorized(logged_in, test_user_2):
     )
 
     # Initialize with empty database
-    empty_database = Database()
-    diagram.set_database(empty_database)
+    empty_database = Diagram()
+    diagram.set_dataclass(empty_database)
 
     db.session.add(diagram)
     db.session.commit()
@@ -107,9 +105,6 @@ def test_delete_diagram_not_found(admin):
 
 def test_delete_diagram_cascade_order(admin):
     """Test that deletion happens in correct cascade order to avoid foreign key issues"""
-    from btcopilot.pro.models import Diagram
-    from btcopilot.personal.database import Database
-
     # Create complex diagram structure
     diagram = Diagram(
         user_id=admin.user.id,
@@ -118,8 +113,8 @@ def test_delete_diagram_cascade_order(admin):
     )
 
     # Initialize with empty database
-    empty_database = Database()
-    diagram.set_database(empty_database)
+    empty_database = Diagram()
+    diagram.set_dataclass(empty_database)
 
     db.session.add(diagram)
     db.session.commit()

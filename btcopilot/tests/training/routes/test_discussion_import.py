@@ -4,7 +4,7 @@ import pytest
 
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
-from btcopilot.personal.database import (
+from btcopilot.schema import (
     PDPDeltas,
     Event,
     Person,

@@ -6,8 +6,8 @@ from mock import patch
 
 from btcopilot.personal import pdp
 from btcopilot.personal.pdp import PDP, PDPDeltas
-from btcopilot.personal.database import (
-    Database,
+from btcopilot.schema import (
+    Diagram,
     Person,
     Event,
     Triangle,
@@ -41,7 +41,7 @@ def test_update(test_user):
         with patch(
             "btcopilot.personal.pdp.apply_deltas", return_value={"dummy": "data"}
         ):
-            returned = asyncio.run(pdp.update(discussion, Database(), "blah blah"))
+            returned = asyncio.run(pdp.update(discussion, Diagram(), "blah blah"))
     assert returned == ({"dummy": "data"}, {})
 
 

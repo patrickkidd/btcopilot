@@ -3,23 +3,23 @@ import pytest
 from btcopilot.extensions import db
 from btcopilot.pro.models import User
 from btcopilot.personal import pdp
-from btcopilot.personal.database import Database, PDP, Person, Event
+from btcopilot.schema import Diagram, PDP, Person, Event
 from btcopilot.personal.models import Discussion
 
 
 def test_get(subscriber):
-    database = Database(
+    diagram = Diagram(
         pdp=PDP(
             people=[Person(id=-1, name="you")],
             events=[Event(id=-2, description="something happened")],
         )
     )
-    subscriber.user.free_diagram.set_database(database)
+    subscriber.user.free_diagram.set_diagram(diagram)
     db.session.commit()
 
     response = subscriber.get("/personal/pdp")
     assert response.status_code == 200
-    assert response.json == database.pdp.model_dump()
+    assert response.json == diagram.pdp.model_dump()
 
 
 @pytest.mark.parametrize(
@@ -37,7 +37,7 @@ def test_accept(subscriber, id, pdp):
     db.session.add(discussion)
     db.session.commit()
 
-    subscriber.user.free_diagram.set_database(Database(pdp=pdp))
+    subscriber.user.free_diagram.set_diagram(Diagram(pdp=pdp))
     db.session.commit()
 
     response = subscriber.post(
@@ -47,8 +47,8 @@ def test_accept(subscriber, id, pdp):
     assert response.json["success"] is True
 
     user = User.query.get(subscriber.user.id)
-    returned = user.free_diagram.get_database()
-    expected = Database()
+    returned = user.free_diagram.get_dataclass()
+    expected = Diagram()
     if pdp.people:
         expected.add_person(pdp.people[0])
     else:
@@ -71,7 +71,7 @@ def test_reject(subscriber, id, pdp):
     db.session.add(discussion)
     db.session.commit()
 
-    subscriber.user.free_diagram.set_database(Database(pdp=pdp))
+    subscriber.user.free_diagram.set_diagram(Diagram(pdp=pdp))
     db.session.commit()
 
     response = subscriber.post(
@@ -81,6 +81,6 @@ def test_reject(subscriber, id, pdp):
     assert response.json["success"] is True
 
     user = User.query.get(subscriber.user.id)
-    returned = user.free_diagram.get_database()
-    expected = Database()
+    returned = user.free_diagram.get_dataclass()
+    expected = Diagram()
     assert returned == expected

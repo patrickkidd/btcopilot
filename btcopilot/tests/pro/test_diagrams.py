@@ -267,8 +267,8 @@ def _test_set_diagram_shown(flask_app, admin_client):
 
 
 # def test_set_database_doesnt_overwrite_scene(test_user):
-#     from btcopilot.personal.database import Database
+#     from btcopilot.schema import Diagram
 
 #     diagram = Diagram(data=SIP_DIAGRAM, user=test_user)
-#     diagram.set_database(Database())
+#     diagram.set_dataclass(Diagram())
 #     assert b"version\x94\x8c\x051.5.0" in diagram.data

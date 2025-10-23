@@ -79,7 +79,7 @@ def pdp_accept(diagram_id: int, pdp_id: int):
     pdp_id = -pdp_id  # Convert to negative ID for PDP items
 
     def done():
-        diagram.set_database(database)
+        diagram.set_dataclass(database)
         db.session.commit()
         return jsonify(success=True)
 
@@ -117,7 +117,7 @@ def pdp_reject(diagram_id: int, pdp_id: int):
     pdp_id = -pdp_id  # Convert to negative ID for PDP items
 
     def done():
-        diagram.set_database(database)
+        diagram.set_dataclass(database)
         db.session.commit()
         return jsonify(success=True)
 

@@ -1,7 +1,7 @@
 import pytest
 
-from btcopilot.personal.database import (
-    Database,
+from btcopilot.schema import (
+    Diagram,
     PDP,
     Person,
     Event,
@@ -34,7 +34,7 @@ def test_shift_topic():
             ),
         ],
     )
-    database = Database(
+    database = Diagram(
         pdp=PDP(
             people=[
                 Person(
