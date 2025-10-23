@@ -19,14 +19,14 @@ from btcopilot.tests.training.conftest import flask_json
 
 def test_audit(auditor, discussion):
     discussion_id = discussion.id
-    response = auditor.get(f"/training/discussions/{discussion_id}/audit")
+    response = auditor.get(f"/training/discussions/{discussion_id}")
     assert response.status_code == 200
     assert response.data is not None
 
 
 def test_audit_403(subscriber, discussion):
     discussion_id = discussion.id
-    response = subscriber.get(f"/training/discussions/{discussion_id}/audit")
+    response = subscriber.get(f"/training/discussions/{discussion_id}")
     # GET requests are web requests, expect redirect to login
     assert response.status_code == 302
     assert "/auth/login" in response.headers.get("Location", "")
@@ -77,7 +77,7 @@ def test_audit_shows_pdp_deltas_for_subject_statements_only(auditor):
     db.session.commit()
 
     # Test audit page
-    response = auditor.get(f"/training/discussions/{discussion.id}/audit")
+    response = auditor.get(f"/training/discussions/{discussion.id}")
     assert response.status_code == 200
 
     # The audit page should only show PDP deltas for Subject statements

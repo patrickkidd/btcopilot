@@ -174,7 +174,7 @@ def audit_page(authenticated_auditor_context: BrowserContext) -> Page:
 def discussion_audit_page(authenticated_auditor_context: BrowserContext) -> Page:
     page = authenticated_auditor_context.new_page()
     discussion_id = authenticated_auditor_context.discussion_id
-    page.goto(f"http://testserver/therapist/discussions/{discussion_id}/audit")
+    page.goto(f"http://testserver/therapist/discussions/{discussion_id}")
     return page
 
 
@@ -311,7 +311,7 @@ def class_auditor_context(
 def class_discussion_page(class_auditor_context: BrowserContext) -> Page:
     page = class_auditor_context.new_page()
     discussion_id = class_auditor_context.discussion_id
-    page.goto(f"http://testserver/therapist/discussions/{discussion_id}/audit")
+    page.goto(f"http://testserver/therapist/discussions/{discussion_id}")
     return page
 
 

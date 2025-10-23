@@ -17,12 +17,12 @@ class TestAuditWorkflowIntegration:
         )
 
         # Find and click on a discussion
-        discussion_link = index_page.locator("a[href*='/audit']").first
+        discussion_link = index_page.locator("a[href*='/training/discussions/']").first
         if discussion_link.is_visible():
             discussion_link.click()
 
             # Should navigate to discussion audit page
-            expect(index_page).to_have_url("**/audit")
+            expect(index_page).to_have_url("**/discussions/")
 
             # Look for AI messages to provide feedback on
             ai_messages = index_page.locator(".ai-message-bubble")
@@ -97,7 +97,7 @@ class TestAuditWorkflowIntegration:
                 detail_link.click()
 
                 # Verify we're on the correct discussion page
-                expect(page).to_have_url("**/audit")
+                expect(page).to_have_url("**/discussions/")
 
                 # Check that discussion data matches
                 detail_title = page.locator(".title, h1").text_content()
@@ -134,7 +134,9 @@ class TestAuditWorkflowIntegration:
         page = authenticated_auditor_context.new_page()
 
         # Try to access non-existent discussion
-        page.goto(f"http://{flask_app.config['SERVER_NAME']}/therapist/999999/audit")
+        page.goto(
+            f"http://{flask_app.config['SERVER_NAME']}/training/discussions/999999"
+        )
 
         # Should handle 404 gracefully
         expect(page.locator("body")).to_be_visible()
@@ -153,12 +155,12 @@ class TestAuditWorkflowIntegration:
         expect(page.locator("h1.title")).to_contain_text("Therapist Chat Audit System")
 
         # Navigate to a discussion
-        discussion_link = page.locator("a[href*='/audit']").first
+        discussion_link = page.locator("a[href*='/training/discussions/']").first
         if discussion_link.is_visible():
             discussion_link.click()
 
             # Should still be authenticated
-            expect(page).to_have_url("**/audit")
+            expect(page).to_have_url("**/discussions/")
 
             # Should be able to interact with page (indicating session is active)
             interactive_elements = page.locator("button, a, input")
