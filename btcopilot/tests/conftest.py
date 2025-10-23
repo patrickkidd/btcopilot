@@ -104,7 +104,6 @@ def extensions():
         "init_logging": btcopilot.extensions.init_logging,
         "init_excepthook": btcopilot.extensions.init_excepthook,
         "init_mail": btcopilot.extensions.init_mail,
-        "init_bugsnag": btcopilot.extensions.init_bugsnag,
         "init_datadog": btcopilot.extensions.init_datadog,
         "init_stripe": btcopilot.extensions.init_stripe,
         "init_chroma": btcopilot.extensions.init_chroma,
@@ -113,7 +112,6 @@ def extensions():
     with contextlib.ExitStack() as stack:
         stack.enter_context(patch("btcopilot.extensions.init_logging"))
         stack.enter_context(patch("btcopilot.extensions.init_excepthook"))
-        stack.enter_context(patch("btcopilot.extensions.init_bugsnag"))
         stack.enter_context(patch("btcopilot.extensions.init_datadog"))
         stack.enter_context(patch("btcopilot.extensions.init_stripe"))
         stack.enter_context(patch("btcopilot.extensions.init_chroma"))

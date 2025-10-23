@@ -360,7 +360,7 @@ def init_app(app):
     init_celery(app)
 
     if app.config.get("CONFIG") == "production":
-        init_bugsnag(app)
+        # init_bugsnag(app)
         init_datadog(app)
 
     init_stripe(app)
