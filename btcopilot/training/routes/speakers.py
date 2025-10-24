@@ -1,11 +1,11 @@
 import logging
 from flask import Blueprint, request, jsonify
 
-import vedana
+import btcopilot
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.personal.models import Speaker, SpeakerType
-from btcopilot.personal.database import Person
+from btcopilot.schema import Person
 
 _log = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ bp = Blueprint(
     template_folder="../templates",
     static_folder="../static",
 )
-bp = minimum_role(vedana.ROLE_AUDITOR)(bp)
+bp = minimum_role(btcopilot.ROLE_AUDITOR)(bp)
 
 
 @bp.route("/<int:speaker_id>", methods=["PUT"])
@@ -49,18 +49,11 @@ def update(speaker_id):
                 )
 
             diagram = speaker.discussion.diagram
-            database = diagram.get_database()
+            database = diagram.get_diagram_data()
 
-            person = Person(
-                name=data["name"],
-                birthDate="",
-                spouses=[],
-                offspring=[],
-                parents=[],
-                confidence=1.0,
-            )
+            person = Person(name=data["name"], confidence=1.0)
             database.add_person(person)
-            diagram.set_database(database)
+            diagram.set_diagram_data(database)
             db.session.add(diagram)
             speaker.person_id = person.id
             created_person = person

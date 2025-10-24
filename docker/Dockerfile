@@ -11,7 +11,6 @@ COPY Pipfile .
 RUN mkdir .venv
 RUN pipenv install
 
-# COPY ../vedana vedana
 COPY btcopilot ./btcopilot
 
 ENV PYTHONDONTWRITEBYTECODE 1

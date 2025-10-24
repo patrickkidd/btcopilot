@@ -2,7 +2,7 @@ import logging
 import pytest
 from mock import patch
 
-import vedana
+import btcopilot
 from btcopilot.extensions import db
 from btcopilot.pro.models import User
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
@@ -44,7 +44,7 @@ def test_admin_dashboard(admin):
 def test_user_update(admin, test_user):
     response = admin.put(
         f"/training/admin/users/{test_user.id}",
-        json={"roles": [vedana.ROLE_SUBSCRIBER, vedana.ROLE_ADMIN]},
+        json={"roles": [btcopilot.ROLE_SUBSCRIBER, btcopilot.ROLE_ADMIN]},
     )
     assert response.status_code == 200
     assert response.json["success"] is True

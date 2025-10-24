@@ -1,7 +1,7 @@
 import logging
 from flask import Blueprint, render_template, request, session
 
-import vedana
+import btcopilot
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
@@ -20,7 +20,7 @@ bp = Blueprint(
     template_folder="../templates",
     static_folder="../static",
 )
-bp = minimum_role(vedana.ROLE_AUDITOR)(bp)
+bp = minimum_role(btcopilot.ROLE_AUDITOR)(bp)
 
 
 @bp.route("/")
@@ -58,6 +58,6 @@ def index():
         user_summary=user_summary,
         user_discussions=user_discussions,
         current_user=user,
-        vedana=vedana,
+        btcopilot=btcopilot,
         breadcrumbs=breadcrumbs,
     )

@@ -4,6 +4,7 @@ from mock import patch
 
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
+from btcopilot.schema import asdict, PDP
 
 
 @pytest.fixture
@@ -120,10 +121,9 @@ def test_test_prompts_endpoint(admin, discussion):
     """Test the prompt testing endpoint"""
     with patch("btcopilot.training.routes.prompts.ask") as ask:
         # Mock the therapist response
-        mock_pdp = type("PDP", (), {"model_dump": lambda self: {"test": "data"}})()
 
         mock_response = type(
-            "Response", (), {"statement": "Test response", "pdp": mock_pdp}
+            "Response", (), {"statement": "Test response", "pdp": PDP()}
         )()
         ask.return_value = mock_response
 

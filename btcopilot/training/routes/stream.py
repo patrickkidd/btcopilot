@@ -3,7 +3,7 @@ import queue
 from datetime import datetime
 from flask import Blueprint, jsonify, Response
 
-import vedana
+import btcopilot
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.training.sse import sse_manager
@@ -18,7 +18,7 @@ bp = Blueprint(
     template_folder="../templates",
     static_folder="../static",
 )
-bp = minimum_role(vedana.ROLE_AUDITOR)(bp)
+bp = minimum_role(btcopilot.ROLE_AUDITOR)(bp)
 
 
 @bp.route("/")

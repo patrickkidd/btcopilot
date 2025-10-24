@@ -8,7 +8,7 @@ from flask.testing import FlaskClient
 from btcopilot.extensions import db
 from btcopilot.pro.models import User
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
-import vedana
+import btcopilot
 
 from btcopilot.tests.conftest import flask_app
 
@@ -110,7 +110,7 @@ def authenticated_auditor_context(browser: Browser, flask_app) -> BrowserContext
         status="confirmed",
     )
     auditor_user._plaintext_password = "testpass"
-    auditor_user.set_role(vedana.ROLE_AUDITOR)
+    auditor_user.set_role(btcopilot.ROLE_AUDITOR)
 
     db.session.add(auditor_user)
     db.session.commit()
@@ -191,7 +191,7 @@ def logged_in_page(browser: Browser, flask_app) -> Page:
                 status="confirmed",
             )
             user._plaintext_password = "testpass"
-            user.set_role(vedana.ROLE_SUBSCRIBER)
+            user.set_role(btcopilot.ROLE_SUBSCRIBER)
             db.session.add(user)
             db.session.commit()
 
@@ -227,7 +227,7 @@ def therapist_test_data(therapist_flask_app):
         status="confirmed",
     )
     auditor_user._plaintext_password = "testpass"
-    auditor_user.set_role(vedana.ROLE_AUDITOR)
+    auditor_user.set_role(btcopilot.ROLE_AUDITOR)
 
     db.session.add(auditor_user)
     db.session.commit()

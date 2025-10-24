@@ -516,7 +516,7 @@ function createNewDiagram() {
 }
 
 // Clear user database function
-function clearUserDatabase(userId, username) {
+function clearUserDiagramData(userId, username) {
     const message = `Are you sure you want to clear the database for user "${username}"?
     
 This will permanently:

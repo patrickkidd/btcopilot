@@ -3,7 +3,8 @@ import pickle
 from sqlalchemy import Column, Boolean, String, Integer, LargeBinary, ForeignKey
 from sqlalchemy.orm import relationship
 
-import vedana
+import btcopilot
+from btcopilot.schema import DiagramData
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
 
@@ -34,18 +35,26 @@ class Diagram(db.Model, ModelMixin):
 
     discussions = relationship("Discussion", back_populates="diagram")
 
-    def get_database(self) -> "Database":
+    def get_diagram_data(self) -> DiagramData:
         import PyQt5.sip
-        from btcopilot.personal.database import Database
+        from btcopilot.schema import DiagramData, PDP
 
         data = pickle.loads(self.data) if self.data else {}
-        return Database(**data.get("database", {}))
+        return DiagramData(
+            people=data.get("people", []),
+            events=data.get("events", []),
+            pdp=data.get("pdp", PDP()),
+            last_id=data.get("last_id", 0),
+        )
 
-    def set_database(self, database: "Database"):
+    def set_diagram_data(self, diagram_data: DiagramData):
         import PyQt5.sip
 
         data = pickle.loads(self.data) if self.data else {}
-        data["database"] = database.model_dump()
+        data["people"] = diagram_data.people
+        data["events"] = diagram_data.events
+        data["pdp"] = diagram_data.pdp
+        data["last_id"] = diagram_data.last_id
         self.data = pickle.dumps(data)
 
     def grant_access(self, user, right, _commit=False):
@@ -65,7 +74,7 @@ class Diagram(db.Model, ModelMixin):
         for access_right in AccessRight.query.filter_by(
             diagram_id=self.id, user_id=user.id
         ):
-            if access_right.right == vedana.ACCESS_READ_WRITE:
+            if access_right.right == btcopilot.ACCESS_READ_WRITE:
                 return True
         return False
 
@@ -78,8 +87,8 @@ class Diagram(db.Model, ModelMixin):
             diagram_id=self.id, user_id=user.id
         ):
             if access_right.right in (
-                vedana.ACCESS_READ_ONLY,
-                vedana.ACCESS_READ_WRITE,
+                btcopilot.ACCESS_READ_ONLY,
+                btcopilot.ACCESS_READ_WRITE,
             ):
                 return True
         return False

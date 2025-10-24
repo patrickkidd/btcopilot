@@ -2,13 +2,14 @@ import logging
 from flask import Blueprint, request, jsonify, abort
 from sqlalchemy.orm import subqueryload
 
-import vedana
+import btcopilot
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram, AccessRight
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.models.speaker import Speaker
+from btcopilot.schema import asdict
 
 _log = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ def get(diagram_id):
     if not diagram:
         abort(404)
 
-    if diagram.user_id != user.id and not user.has_role(vedana.ROLE_ADMIN):
+    if diagram.user_id != user.id and not user.has_role(btcopilot.ROLE_ADMIN):
         abort(403)
 
     ret = diagram.as_dict(
@@ -33,7 +34,7 @@ def get(diagram_id):
         },
         exclude="data",
     )
-    ret["database"] = diagram.get_database().model_dump()
+    ret["diagram_data"] = asdict(diagram.get_diagram_data())
 
     return jsonify(ret)
 
@@ -75,11 +76,11 @@ def pdp_accept(diagram_id: int, pdp_id: int):
     if diagram.user_id != auth.current_user().id:
         return jsonify(success=False, message="Unauthorized"), 401
 
-    database = diagram.get_database()
+    database = diagram.get_diagram_data()
     pdp_id = -pdp_id  # Convert to negative ID for PDP items
 
     def done():
-        diagram.set_database(database)
+        diagram.set_diagram_data(database)
         db.session.commit()
         return jsonify(success=True)
 
@@ -113,11 +114,11 @@ def pdp_reject(diagram_id: int, pdp_id: int):
     if diagram.user_id != auth.current_user().id:
         return jsonify(success=False, message="Unauthorized"), 401
 
-    database = diagram.get_database()
+    database = diagram.get_diagram_data()
     pdp_id = -pdp_id  # Convert to negative ID for PDP items
 
     def done():
-        diagram.set_database(database)
+        diagram.set_diagram_data(database)
         db.session.commit()
         return jsonify(success=True)
 

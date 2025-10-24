@@ -6,7 +6,7 @@ from werkzeug.datastructures import Headers
 import wsgiref.handlers
 import flask.testing
 
-import vedana
+import btcopilot
 from btcopilot import version
 from btcopilot.pro.models import User
 
@@ -31,8 +31,8 @@ class FDEncryptionTestClient(flask.testing.FlaskClient):
             user = _user.username
             secret = _user.secret.encode("utf-8")
         else:
-            user = vedana.ANON_USER
-            secret = vedana.ANON_SECRET
+            user = btcopilot.ANON_USER
+            secret = btcopilot.ANON_SECRET
         if kwargs["method"] in ["POST", "PUT"]:
             data = kwargs.get("data", b"")
         else:
@@ -45,10 +45,10 @@ class FDEncryptionTestClient(flask.testing.FlaskClient):
         resource = args[0]
         parts = urllib.parse.urlparse(resource)
         # path = parts.path
-        signature = vedana.sign(
+        signature = btcopilot.sign(
             secret, kwargs["method"], content_md5, content_type, date, resource
         )
-        auth_header = vedana.httpAuthHeader(user, signature)
+        auth_header = btcopilot.httpAuthHeader(user, signature)
         auth_headers = Headers(
             {
                 "FD-Authentication": auth_header,

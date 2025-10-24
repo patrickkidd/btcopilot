@@ -1,6 +1,6 @@
 import pytest
 
-import vedana
+import btcopilot
 from btcopilot.extensions import db
 
 
@@ -14,7 +14,7 @@ def pro_client(flask_app):
 
 @pytest.fixture
 def subscriber(test_user, flask_app):
-    test_user.roles = vedana.ROLE_SUBSCRIBER
+    test_user.roles = btcopilot.ROLE_SUBSCRIBER
     db.session.merge(test_user)
     db.session.commit()
     with flask_app.test_client(use_cookies=True, user=test_user) as client:
@@ -26,7 +26,7 @@ def subscriber(test_user, flask_app):
 
 @pytest.fixture
 def admin(flask_app, test_user):
-    test_user.roles = vedana.ROLE_ADMIN
+    test_user.roles = btcopilot.ROLE_ADMIN
     db.session.merge(test_user)
     db.session.commit()
     with flask_app.test_client(use_cookies=True, user=test_user) as client:

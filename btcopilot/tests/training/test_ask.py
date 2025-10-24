@@ -7,10 +7,10 @@ import logging
 
 import pytest
 
+from btcopilot.schema import Person, Event, EventKind, RelationshipKind
 from btcopilot.extensions import db
 from btcopilot.personal import ResponseDirection, ask
 from btcopilot.personal.models import Discussion
-from btcopilot.personal.database import Person, Event, Conflict
 
 
 @pytest.mark.chat_flow(
@@ -27,8 +27,10 @@ from btcopilot.personal.database import Person, Event, Conflict
         "events": [
             Event(
                 id=-3,
+                kind=EventKind.Shift,
                 description="Argued at birthday party",
-                relationship=Conflict(movers=[-1], recipients=[-2]),
+                relationship=RelationshipKind.Conflict,
+                relationshipTargets=[-2],
             ),
         ],
     },

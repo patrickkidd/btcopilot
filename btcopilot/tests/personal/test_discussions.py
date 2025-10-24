@@ -5,7 +5,7 @@ import pytest
 from btcopilot.extensions import db
 from btcopilot.pro.models import User, Diagram
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
-from btcopilot.personal.database import PDPDeltas, Person, Event
+from btcopilot.schema import PDPDeltas, Person, Event, EventKind, asdict
 
 from btcopilot.tests.training.conftest import flask_json
 
@@ -34,19 +34,26 @@ def test_get(subscriber, discussions):
             Statement(
                 text="blah",
                 speaker=Speaker(type=SpeakerType.Subject),
-                pdp_deltas=PDPDeltas(
-                    people=[Person(id=-1, name="hey")], events=[]
-                ).model_dump(),
+                pdp_deltas=asdict(
+                    PDPDeltas(people=[Person(id=-1, name="hey")], events=[])
+                ),
             ),
             Statement(
                 text="blah",
                 speaker=Speaker(type=SpeakerType.Subject),
-                pdp_deltas=PDPDeltas(
-                    people=[],
-                    events=[
-                        Event(id=-2, description="something happened", people=[-1])
-                    ],
-                ).model_dump(),
+                pdp_deltas=asdict(
+                    PDPDeltas(
+                        people=[],
+                        events=[
+                            Event(
+                                id=-2,
+                                kind=EventKind.Shift,
+                                description="something happened",
+                                person=-1,
+                            )
+                        ],
+                    )
+                ),
             ),
         ],
     )

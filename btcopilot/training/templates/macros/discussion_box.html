@@ -1,5 +1,5 @@
 {# Reusable macro for displaying discussion boxes #}
-{% macro discussion_box(discussion, delete_function_name="", user_id=none, username="", current_user=none, vedana=none) %}
+{% macro discussion_box(discussion, delete_function_name="", user_id=none, username="", current_user=none, btcopilot=none) %}
 <a href="{{ url_for('training.discussions.audit', discussion_id=discussion.id) }}" 
    class="box is-clickable mb-3 has-background-white-bis">
     <div class="media">
@@ -42,7 +42,7 @@
             {% endif %}
         </div>
         <div class="media-right">
-            {% if current_user and current_user.has_role(vedana.ROLE_ADMIN) %}
+            {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) %}
             <button class="button is-small is-danger mr-2" 
                     onclick="event.preventDefault(); event.stopPropagation(); {{ delete_function_name }}({{ discussion.id }}, {{ user_id }}, '{{ username }}');"
                     title="Delete this discussion (Admin only)">

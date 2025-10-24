@@ -4,7 +4,7 @@ import datetime
 
 from flask import current_app, Blueprint
 
-import vedana
+import btcopilot
 from btcopilot.extensions import db, ensure_stripe_Plan, sync_with_stripe
 from btcopilot.pro import tasks, SESSION_EXPIRATION_DAYS
 from btcopilot.pro.routes import bp
@@ -33,10 +33,10 @@ def init_app(app):
 
 @bp.cli.command("create-alpha-license")
 def create_alpha_license():
-    policies = Policy.query.filter_by(code=vedana.LICENSE_ALPHA)
+    policies = Policy.query.filter_by(code=btcopilot.LICENSE_ALPHA)
     if policies.count() == 0:
         _log.info(
-            "Policy %s not found (run flask update-policies?)" % vedana.LICENSE_ALPHA
+            "Policy %s not found (run flask update-policies?)" % btcopilot.LICENSE_ALPHA
         )
         return
     policy = policies.first()
@@ -48,10 +48,10 @@ def create_alpha_license():
 
 @bp.cli.command("create-beta-license")
 def create_beta_license():
-    policies = Policy.query.filter_by(code=vedana.LICENSE_BETA)
+    policies = Policy.query.filter_by(code=btcopilot.LICENSE_BETA)
     if policies.count() == 0:
         _log.info(
-            "Policy %s not found (run flask update-policies?)" % vedana.LICENSE_BETA
+            "Policy %s not found (run flask update-policies?)" % btcopilot.LICENSE_BETA
         )
         return
     policy = policies.first()
@@ -63,11 +63,11 @@ def create_beta_license():
 
 @bp.cli.command("create-professional-annual-license")
 def create_professional_annual_license():
-    policies = Policy.query.filter_by(code=vedana.LICENSE_PROFESSIONAL_ANNUAL)
+    policies = Policy.query.filter_by(code=btcopilot.LICENSE_PROFESSIONAL_ANNUAL)
     if policies.count() == 0:
         _log.info(
             "Policy %s not found (run flask update-policies?)"
-            % vedana.LICENSE_PROFESSIONAL_ANNUAL
+            % btcopilot.LICENSE_PROFESSIONAL_ANNUAL
         )
         return
     policy = policies.first()
@@ -79,11 +79,11 @@ def create_professional_annual_license():
 
 @bp.cli.command("create-client-license")
 def create_client_annual_license():
-    policies = Policy.query.filter_by(code=vedana.LICENSE_CLIENT_ONCE)
+    policies = Policy.query.filter_by(code=btcopilot.LICENSE_CLIENT_ONCE)
     if policies.count() == 0:
         _log.info(
             "Policy %s not found (run flask update-policies?)"
-            % vedana.LICENSE_CLIENT_ONCE
+            % btcopilot.LICENSE_CLIENT_ONCE
         )
         return
     policy = policies.first()
@@ -148,7 +148,11 @@ def set_user_roles(username, roles):
         click.echo(f"Cannot find user: {username}", err=True)
         return 1
     for role in roles.split(","):
-        if not role in (vedana.ROLE_SUBSCRIBER, vedana.ROLE_ADMIN, vedana.ROLE_AUDITOR):
+        if not role in (
+            btcopilot.ROLE_SUBSCRIBER,
+            btcopilot.ROLE_ADMIN,
+            btcopilot.ROLE_AUDITOR,
+        ):
             click.echo(f"Invalid role: {role}")
             return 1
     user.roles = roles

@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Boolean, String, Integer, Float
 from sqlalchemy.orm import relationship
 
-import vedana
+import btcopilot
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
 

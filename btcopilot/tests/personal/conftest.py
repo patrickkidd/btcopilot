@@ -5,7 +5,7 @@ from mock import patch, AsyncMock
 
 from btcopilot.extensions import db
 from btcopilot.personal import ResponseDirection
-from btcopilot.personal.database import PDP, PDPDeltas
+from btcopilot.schema import PDP, PDPDeltas
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.tests.pro.conftest import pro_client, subscriber, admin
 

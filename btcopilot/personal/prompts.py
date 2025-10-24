@@ -131,7 +131,7 @@ Example: SPARSE DELTA - Only new information extracted
 
 Input: "My brother-in-law didn't talk to us when he got home from work."
 
-Database: {
+DiagramData: {
     "people": [
         {"id": 1, "name": "User", "confidence": 1.0},
         {"id": 2, "name": "Assistant", "confidence": 1.0},

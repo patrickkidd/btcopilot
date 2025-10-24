@@ -55,9 +55,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **AI/ML Stack**: OpenAI API (GPT-4o-mini), Hugging Face embeddings, ChromaDB vector store, LangChain
 - **Payment Processing**: Stripe integration for licensing
 - **Database**: PostgreSQL with SQLAlchemy ORM
-- **Third-party Libraries**: 
-  - `vedana` (private Git dependency for core functionality)
-  - `btcopilot` (private Git dependency for AI copilot features)
 
 ### Data Architecture
 - **Vector Database**: ChromaDB for embeddings stored in instance/vector_db/

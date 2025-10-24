@@ -3,62 +3,7 @@
 These are simplified unit tests that focus on the core business logic.
 """
 
-from btcopilot.personal.database import Person
-
-
-def test_person_model_creation():
-    """Test Person model creation with required fields"""
-    person = Person(
-        id=1,
-        name="John Doe",
-        birthDate="1990-01-01",
-        spouses=[],
-        offspring=[],
-        parents=[],
-        confidence=1.0,
-    )
-
-    assert person.id == 1
-    assert person.name == "John Doe"
-    assert person.spouses == []
-    assert person.offspring == []
-    assert person.parents == []
-    assert person.confidence == 1.0
-
-
-def test_person_model_validation():
-    """Test Person model with different confidence values"""
-    person_high_conf = Person(
-        id=2,
-        name="Jane Smith",
-        birthDate="1985-05-15",
-        spouses=[],
-        offspring=[],
-        parents=[],
-        confidence=0.95,
-    )
-
-    assert person_high_conf.confidence == 0.95
-    assert person_high_conf.name == "Jane Smith"
-
-
-def test_person_with_relationships():
-    """Test Person model with family relationships"""
-    person = Person(
-        id=3,
-        name="Parent Person",
-        birthDate="1960-01-01",
-        spouses=[4],  # List of person IDs
-        offspring=[5],  # List of person IDs
-        parents=[],
-        confidence=1.0,
-    )
-
-    assert len(person.spouses) == 1
-    assert len(person.offspring) == 1
-    assert len(person.parents) == 0
-    assert person.spouses[0] == 4
-    assert person.offspring[0] == 5
+from btcopilot.schema import Person
 
 
 def test_speaker_to_person_mapping_logic():
@@ -73,26 +18,6 @@ def test_speaker_to_person_mapping_logic():
 
     assert speaker_data["person_id"] == 123
     assert speaker_data["name"] == "Speaker A"
-
-
-def test_new_person_creation_logic():
-    """Test the logic for creating a new person"""
-    # Input data for new person
-    person_input = {"name": "New Person", "birth_date": "1990-01-01"}
-
-    # Simulate person creation
-    new_person = Person(
-        id=None,  # Would be assigned by database
-        name=person_input["name"],
-        birthDate=person_input["birth_date"],
-        spouses=[],
-        offspring=[],
-        parents=[],
-        confidence=1.0,
-    )
-
-    assert new_person.name == "New Person"
-    assert new_person.confidence == 1.0
 
 
 def test_validation_logic():

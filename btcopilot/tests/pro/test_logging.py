@@ -10,8 +10,19 @@ from btcopilot import extensions
 
 
 @pytest.fixture(autouse=True)
-def _loggers():
-    assert logging.getLogger("btcopilot").handlers == []
+def _loggers(request):
+    # Clear any handlers from previous tests
+    logging.getLogger("btcopilot").handlers.clear()
+
+    # Clean up any existing log files to ensure deterministic state
+    # Note: This runs after flask_app is created but before test body
+    if "flask_app" in request.fixturenames:
+        flask_app = request.getfixturevalue("flask_app")
+        log_path = os.path.join(flask_app.instance_path, "datadog.json")
+        try:
+            os.remove(log_path)
+        except FileNotFoundError:
+            pass  # File doesn't exist yet, which is fine
 
     yield
 

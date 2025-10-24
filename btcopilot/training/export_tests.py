@@ -9,7 +9,7 @@ from typing import Dict, Any
 
 from btcopilot.extensions import db
 from btcopilot.personal.models import Statement, SpeakerType
-from btcopilot.personal.database import Database
+from btcopilot.schema import DiagramData, asdict
 from btcopilot.personal.pdp import cumulative
 from btcopilot.training.models import Feedback
 
@@ -138,12 +138,12 @@ def create_statement_test_case(statement: Statement) -> Dict[str, Any]:
     # Get diagram database
     database = {}
     if discussion.diagram:
-        database = discussion.diagram.get_database().model_dump()
+        database = asdict(discussion.diagram.get_diagram_data())
     else:
-        database = Database().model_dump()
+        database = asdict(DiagramData())
 
     # Calculate cumulative PDP up to this statement (not including it)
-    cumulative_pdp = cumulative(discussion, statement).model_dump()
+    cumulative_pdp = asdict(cumulative(discussion, statement))
 
     return {
         "test_id": f"stmt_{statement.id}",
@@ -193,12 +193,12 @@ def create_feedback_test_case(feedback: Feedback) -> Dict[str, Any]:
     # Get diagram database
     database = {}
     if discussion.diagram:
-        database = discussion.diagram.get_database().model_dump()
+        database = asdict(discussion.diagram.get_diagram_data())
     else:
-        database = Database().model_dump()
+        database = asdict(DiagramData())
 
     # Calculate cumulative PDP up to this statement (not including it)
-    cumulative_pdp = cumulative(discussion, statement).model_dump()
+    cumulative_pdp = asdict(cumulative(discussion, statement))
 
     return {
         "test_id": f"feedback_{feedback.id}",

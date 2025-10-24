@@ -4,9 +4,9 @@ import pytest
 from mock import patch, AsyncMock
 import flask.json
 
-import vedana
+import btcopilot
 from btcopilot.extensions import db
-from btcopilot.personal.database import PDPDeltas
+from btcopilot.schema import PDPDeltas
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 
 from btcopilot.tests.personal.conftest import discussion, discussions
@@ -21,7 +21,7 @@ def pytest_configure(config):
 
 @pytest.fixture
 def logged_in(flask_app, test_user):
-    test_user.roles = vedana.ROLE_SUBSCRIBER
+    test_user.roles = btcopilot.ROLE_SUBSCRIBER
     db.session.merge(test_user)
     db.session.commit()
     # flask_app.test_client_class = FlaskClient
@@ -34,7 +34,7 @@ def logged_in(flask_app, test_user):
 
 @pytest.fixture
 def subscriber(flask_app, test_user):
-    test_user.roles = vedana.ROLE_SUBSCRIBER
+    test_user.roles = btcopilot.ROLE_SUBSCRIBER
     db.session.merge(test_user)
     db.session.commit()
     with flask_app.test_client(use_cookies=True) as client:
@@ -46,7 +46,7 @@ def subscriber(flask_app, test_user):
 
 @pytest.fixture
 def auditor(flask_app, test_user):
-    test_user.roles = vedana.ROLE_AUDITOR
+    test_user.roles = btcopilot.ROLE_AUDITOR
     db.session.merge(test_user)
     db.session.commit()
     # flask_app.test_client_class = FlaskClient
@@ -59,7 +59,7 @@ def auditor(flask_app, test_user):
 
 @pytest.fixture
 def admin(flask_app, test_user):
-    test_user.roles = vedana.ROLE_ADMIN
+    test_user.roles = btcopilot.ROLE_ADMIN
     db.session.merge(test_user)
     db.session.commit()
     # flask_app.test_client_class = FlaskClient
@@ -117,7 +117,7 @@ def extraction_flow(request):
 def diagram_with_full_data(test_user):
     """Create a diagram with discussions, speakers, statements, feedbacks, and access rights"""
     from btcopilot.pro.models import Diagram, AccessRight
-    from btcopilot.personal.database import Database
+    from btcopilot.schema import DiagramData
     from btcopilot.training.models import Feedback
 
     # Create diagram
@@ -128,8 +128,8 @@ def diagram_with_full_data(test_user):
     )
 
     # Initialize with empty database
-    empty_database = Database()
-    diagram.set_database(empty_database)
+    empty_database = DiagramData()
+    diagram.set_diagram_data(empty_database)
 
     db.session.add(diagram)
     db.session.commit()
@@ -206,7 +206,7 @@ def diagram_with_full_data(test_user):
 def simple_diagram(test_user):
     """Create a simple diagram without discussions"""
     from btcopilot.pro.models import Diagram
-    from btcopilot.personal.database import Database
+    from btcopilot.schema import DiagramData
 
     diagram = Diagram(
         user_id=test_user.id,
@@ -215,8 +215,8 @@ def simple_diagram(test_user):
     )
 
     # Initialize with empty database
-    empty_database = Database()
-    diagram.set_database(empty_database)
+    empty_database = DiagramData()
+    diagram.set_diagram_data(empty_database)
 
     db.session.add(diagram)
     db.session.commit()

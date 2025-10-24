@@ -3,13 +3,13 @@ import json
 from flask import Blueprint, request, jsonify, render_template, g
 from sqlalchemy.orm import subqueryload
 
-import vedana
+import btcopilot
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db, llm, LLMFunction
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal import prompts, ask, Response
-from btcopilot.personal.database import Database
+from btcopilot.schema import DiagramData, asdict
 from btcopilot.personal.pdp import update
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_breadcrumbs
@@ -28,7 +28,7 @@ bp = Blueprint(
     template_folder="../templates",
     static_folder="../static",
 )
-bp = minimum_role(vedana.ROLE_AUDITOR)(bp)
+bp = minimum_role(btcopilot.ROLE_AUDITOR)(bp)
 
 
 @bp.route("/")
@@ -57,7 +57,7 @@ def index():
         breadcrumbs=breadcrumbs,
         preselected_discussion_id=preselected_discussion_id,
         current_user=user,
-        vedana=vedana,
+        btcopilot=btcopilot,
     )
 
 
@@ -85,7 +85,7 @@ def test():
             {
                 "success": True,
                 "message": response.statement,
-                "pdp": response.pdp.model_dump(),
+                "pdp": asdict(response.pdp),
                 "prompts_used": list(custom_prompts.keys()),
             }
         )
@@ -229,7 +229,7 @@ def test_extraction():
 
             # Create discussion and database objects for testing
             discussion = Discussion.query.get(artifact["discussion_id"])
-            database = Database(**artifact["inputs"]["database"])
+            database = DiagramData(**artifact["inputs"]["diagram_data"])
 
             # Run extraction with modified prompts (using asyncio.run for sync context)
             import asyncio
@@ -243,7 +243,7 @@ def test_extraction():
             )
 
             # Compare results
-            extracted = result_deltas.model_dump()
+            extracted = asdict(result_deltas)
             expected = artifact["corrected"]
 
             # Simple comparison - could be enhanced

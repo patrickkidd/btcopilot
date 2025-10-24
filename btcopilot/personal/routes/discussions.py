@@ -4,11 +4,11 @@ import pickle
 from flask import Blueprint, jsonify, request, abort
 from sqlalchemy.orm import subqueryload
 
-from btcopilot.extensions import db
 from btcopilot import auth
+from btcopilot.extensions import db
+from btcopilot.schema import DiagramData, Person, asdict
 from btcopilot.pro.models import Diagram
 from btcopilot.personal import Response, ask
-from btcopilot.personal.database import Database, Person
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
 
 _log = logging.getLogger(__name__)
@@ -16,9 +16,9 @@ _log = logging.getLogger(__name__)
 bp = Blueprint("discussions", __name__, url_prefix="/discussions")
 
 
-def _create_initial_database() -> Database:
+def _create_initial_database() -> DiagramData:
     """Create initial database with User and Assistant people."""
-    initial_database = Database()
+    initial_database = DiagramData()
 
     # Add User person (ID will be 1)
     user_person = Person(
@@ -46,7 +46,7 @@ def _create_discussion(data: dict) -> Discussion:
         diagram = Diagram(
             user_id=user.id,
             name=f"{user.username} Personal Case File",
-            data=pickle.dumps({"database": initial_database.model_dump()}),
+            data=pickle.dumps({"diagram_data": asdict(initial_database)}),
         )
 
         db.session.add(diagram)
@@ -86,7 +86,7 @@ def create():
 
     ret = discussion.as_dict(include=["speakers", "statements"])
     if "statement" in data:
-        ret["pdp"] = response.pdp.model_dump()
+        ret["pdp"] = asdict(response.pdp)
         ret["statement"] = response.statement
 
     return jsonify(ret)
@@ -201,7 +201,7 @@ def chat(discussion_id: int):
 
     db.session.commit()
 
-    return jsonify({"statement": response.statement, "pdp": response.pdp.model_dump()})
+    return jsonify({"statement": response.statement, "pdp": asdict(response.pdp)})
 
 
 # @bp.route("/<int:discussion_id>/statements", methods=["GET"])

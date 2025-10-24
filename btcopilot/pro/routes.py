@@ -28,7 +28,7 @@ from flask_mail import Message
 from sqlalchemy import inspect
 from sqlalchemy.orm import defer
 
-import vedana
+import btcopilot
 
 from btcopilot import version, auth
 from btcopilot.extensions import (
@@ -180,7 +180,7 @@ def diagrams(id=None):
                 .filter(
                     AccessRight.user_id == user_id,
                     AccessRight.right.in_(
-                        [vedana.ACCESS_READ_ONLY, vedana.ACCESS_READ_WRITE]
+                        [btcopilot.ACCESS_READ_ONLY, btcopilot.ACCESS_READ_WRITE]
                     ),
                 )
                 .options(defer(Diagram.data))
@@ -218,7 +218,7 @@ def diagrams(id=None):
             return ("Not Found", 404)
         if request.method in ("GET", "HEAD"):  # data
             if not diagram.check_read_access(g.user) and not g.user.has_role(
-                vedana.ROLE_ADMIN
+                btcopilot.ROLE_ADMIN
             ):
                 return ("Access Denied", 401)
         if request.method == "GET":  # data

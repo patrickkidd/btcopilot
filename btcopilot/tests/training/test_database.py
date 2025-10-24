@@ -2,104 +2,68 @@ import logging
 
 import pytest
 
-from btcopilot.personal.database import (
-    Database,
+from btcopilot.schema import (
+    DiagramData,
     PDP,
     Person,
     Event,
-    Distance,
-    Conflict,
-    Reciprocity,
-    ChildFocus,
-    Triangle,
     RelationshipKind,
-    Shift,
-    Anxiety,
-    Symptom,
-    Functioning,
+    EventKind,
+    VariableShift,
+    asdict,
 )
 
 _log = logging.getLogger(__name__)
 
 
-def test_distance_model_dump():
-    d = Distance(movers=[-1], recipients=[])
-    assert d.model_dump() == {
-        "kind": RelationshipKind.Distance,
-        "movers": [-1],
-        "recipients": [],
-        "rationale": None,
-        "shift": None,
-    }
-
-
-def test_triangle_model_dump():
-    d = Triangle(inside_a=[-1], inside_b=[-2], outside=[-3])
-    assert d.model_dump() == {
-        "kind": RelationshipKind.Triangle,
-        "inside_a": [-1],
-        "inside_b": [-2],
-        "outside": [-3],
-        "rationale": None,
-        "shift": None,
-    }
-
-
 def test_PDPerson_as_dict():
-    assert Person(id=1, name="Alice", confidence=0.9).model_dump() == {
+    assert asdict(Person(id=1, name="Alice", confidence=0.9)) == {
         "id": 1,
         "name": "Alice",
-        "offspring": [],
+        "last_name": None,
         "spouses": [],
-        "parents": [],
+        "parent_a": None,
+        "parent_b": None,
         "confidence": 0.9,
     }
 
 
-@pytest.mark.parametrize(
-    "relationship",
-    [
-        Distance(movers=[-1], recipients=[]),
-        Conflict(movers=[-1], recipients=[]),
-        Reciprocity(movers=[-1], recipients=[]),
-        ChildFocus(movers=[-1], recipients=[]),
-        Triangle(inside_a=[-1], inside_b=[], outside=[]),
-    ],
-    ids=[
-        "Distance",
-        "Conflict",
-        "Reciprocity",
-        "ChildFocus",
-        "Triangle",
-    ],
-)
-def test_PDEvent_as_dict(relationship):
-    assert Event(
-        id=-2,
-        description="Brother-in-law stopped talking during spring break due to stress.",
-        dateTime="2025-03-01",
-        relationship=relationship,
-        people=[-1],
-        anxiety=Anxiety(shift=Shift.Up),
-        symptom=Symptom(shift=Shift.Down),
-        functioning=Functioning(shift=Shift.Same),
-        confidence=0.7,
-    ).model_dump() == {
+def test_PDEvent_as_dict():
+    assert asdict(
+        Event(
+            id=-2,
+            kind=EventKind.Shift,
+            description="Brother-in-law stopped talking during spring break due to stress.",
+            dateTime="2025-03-01",
+            relationship=RelationshipKind.Distance,
+            person=-1,
+            anxiety=VariableShift.Up,
+            symptom=VariableShift.Down,
+            functioning=VariableShift.Same,
+            confidence=0.7,
+        )
+    ) == {
         "id": -2,
+        "kind": "shift",
+        "person": -1,
+        "spouse": None,
+        "child": None,
         "description": "Brother-in-law stopped talking during spring break due to stress.",
         "dateTime": "2025-03-01",
-        "people": [-1],
-        "symptom": {"shift": Shift.Down, "rationale": None},
-        "anxiety": {"shift": Shift.Up, "rationale": None},
-        "relationship": relationship.model_dump(),
-        "functioning": {"shift": Shift.Same, "rationale": None},
+        "endDateTime": None,
+        "symptom": "down",
+        "anxiety": "up",
+        "relationship": "distance",
+        "relationshipTargets": [],
+        "relationshipTriangles": [],
+        "functioning": "same",
         "confidence": 0.7,
     }
 
 
 @pytest.fixture
 def database():
-    return Database(
+    return DiagramData(
         people=[
             Person(id=1, name="Alice"),
             Person(id=2, name="Bob"),
@@ -107,16 +71,14 @@ def database():
         events=[
             Event(
                 id=3,
+                kind=EventKind.Shift,
                 description="Alice and Bob had a conversation",
                 dateTime="2023-10-01T12:00:00Z",
-                symptom=Symptom(shift=Shift.Down),
-                anxiety=Anxiety(shift=Shift.Up),
-                functioning=Functioning(shift=Shift.Same),
-                relationship=Triangle(
-                    inside_a=[1],
-                    inside_b=[2],
-                    outside=[],
-                ),
+                symptom=VariableShift.Down,
+                anxiety=VariableShift.Up,
+                functioning=VariableShift.Same,
+                relationship=RelationshipKind.Distance,
+                relationshipTargets=[1, 2],
             )
         ],
         pdp=PDP(
@@ -124,6 +86,7 @@ def database():
             events=[
                 Event(
                     id=-2,
+                    kind=EventKind.Shift,
                     description="Conversation between Alice and Bob",
                     dateTime="2023-08-01T12:00:00Z",
                 )
@@ -139,17 +102,19 @@ def as_dict():
             {
                 "id": 1,
                 "name": "Alice",
+                "last_name": None,
                 "spouses": [],
-                "offspring": [],
-                "parents": [],
+                "parent_a": None,
+                "parent_b": None,
                 "confidence": None,
             },
             {
                 "id": 2,
                 "name": "Bob",
+                "last_name": None,
                 "spouses": [],
-                "offspring": [],
-                "parents": [],
+                "parent_a": None,
+                "parent_b": None,
                 "confidence": None,
             },
         ],
@@ -157,29 +122,19 @@ def as_dict():
         "events": [
             {
                 "id": 3,
+                "kind": "shift",
+                "person": None,
+                "spouse": None,
+                "child": None,
                 "description": "Alice and Bob had a conversation",
                 "dateTime": "2023-10-01T12:00:00Z",
-                "people": [],
-                "symptom": {
-                    "shift": Shift.Down,
-                    "rationale": None,
-                },
-                "anxiety": {
-                    "shift": Shift.Up,
-                    "rationale": None,
-                },
-                "functioning": {
-                    "shift": Shift.Same,
-                    "rationale": None,
-                },
-                "relationship": {
-                    "kind": RelationshipKind.Triangle,
-                    "inside_a": [1],
-                    "inside_b": [2],
-                    "outside": [],
-                    "rationale": None,
-                    "shift": None,
-                },
+                "endDateTime": None,
+                "symptom": "down",
+                "anxiety": "up",
+                "relationship": "distance",
+                "relationshipTargets": [1, 2],
+                "relationshipTriangles": [],
+                "functioning": "same",
                 "confidence": None,
             }
         ],
@@ -188,21 +143,28 @@ def as_dict():
                 {
                     "id": -1,
                     "name": "Alice",
+                    "last_name": None,
                     "spouses": [],
-                    "offspring": [],
-                    "parents": [],
+                    "parent_a": None,
+                    "parent_b": None,
                     "confidence": None,
                 }
             ],
             "events": [
                 {
                     "id": -2,
+                    "kind": "shift",
+                    "person": None,
+                    "spouse": None,
+                    "child": None,
                     "description": "Conversation between Alice and Bob",
                     "dateTime": "2023-08-01T12:00:00Z",
-                    "people": [],
+                    "endDateTime": None,
                     "symptom": None,
                     "anxiety": None,
                     "relationship": None,
+                    "relationshipTargets": [],
+                    "relationshipTriangles": [],
                     "functioning": None,
                     "confidence": None,
                 }
@@ -211,9 +173,41 @@ def as_dict():
     }
 
 
-def test_Database_model_dump(database, as_dict):
-    assert database.model_dump() == as_dict
+def test_Database_asdict(database, as_dict):
+    assert asdict(database) == as_dict
 
 
 def test_from_dict(database, as_dict):
-    assert Database(**as_dict) == database
+    from btcopilot.schema import from_dict
+
+    reconstructed = from_dict(DiagramData, as_dict)
+    assert reconstructed == database
+
+
+def test_bidirectional_conversion():
+    """Test that asdict() and from_dict() work together"""
+    from btcopilot.schema import from_dict
+
+    # Create an event with enums
+    original = Event(
+        id=1,
+        kind=EventKind.Shift,
+        person=10,
+        description="Test event",
+        anxiety=VariableShift.Up,
+        relationship=RelationshipKind.Distance,
+        relationshipTargets=[1, 2],
+    )
+
+    # Convert to dict (enums become strings)
+    dict_form = asdict(original)
+    assert dict_form["kind"] == "shift"
+    assert dict_form["anxiety"] == "up"
+    assert dict_form["relationship"] == "distance"
+
+    # Convert back to dataclass (strings become enums)
+    reconstructed = from_dict(Event, dict_form)
+    assert reconstructed == original
+    assert isinstance(reconstructed.kind, EventKind)
+    assert isinstance(reconstructed.anxiety, VariableShift)
+    assert isinstance(reconstructed.relationship, RelationshipKind)

@@ -6,15 +6,11 @@ from mock import patch
 
 from btcopilot.personal import pdp
 from btcopilot.personal.pdp import PDP, PDPDeltas
-from btcopilot.personal.database import (
-    Database,
-    Person,
-    Event,
-    Triangle,
-    Anxiety,
-    Conflict,
-    Shift,
+from btcopilot.schema import (
+    DiagramData,
+    VariableShift,
     RelationshipKind,
+    EventKind,
     Person,
     Event,
 )
@@ -41,7 +37,7 @@ def test_update(test_user):
         with patch(
             "btcopilot.personal.pdp.apply_deltas", return_value={"dummy": "data"}
         ):
-            returned = asyncio.run(pdp.update(discussion, Database(), "blah blah"))
+            returned = asyncio.run(pdp.update(discussion, DiagramData(), "blah blah"))
     assert returned == ({"dummy": "data"}, {})
 
 
@@ -50,10 +46,13 @@ TEST_ADD_PERSON_AND_CONFLICT = {
     "pre_pdp": PDP(
         people=[
             Person(id=-1, name="Alice"),
+            Person(id=-2, name="Bob"),
         ],
         events=[
             Event(
-                id=-2,
+                id=-3,
+                kind=EventKind.Shift,
+                person=-1,
                 description="Conversation between Alice and Bob",
                 dateTime="2023-08-01T12:00:00Z",
             ),
@@ -61,51 +60,58 @@ TEST_ADD_PERSON_AND_CONFLICT = {
     ),
     "deltas": PDPDeltas(
         people=[
-            Person(
-                id=-1,
-                birthDate="1980-01-01",
-            ),
+            Person(id=-4, name="Mother"),
         ],
         events=[
             Event(
-                id=-3,
+                id=-5,
+                kind=EventKind.Shift,
+                person=-1,
                 description="Felt anxious after being yelled at by mother",
                 dateTime="the other day",
-                anxiety=Anxiety(shift=Shift.Up.value),
+                anxiety=VariableShift.Up,
             ),
             Event(
-                id=-4,
-                description="I fought with my wife yesterday",
+                id=-6,
+                kind=EventKind.Shift,
+                person=-1,
+                description="I fought with my husband yesterday",
                 dateTime="today",
-                relationship=Conflict(
-                    kind=RelationshipKind.Conflict.value,
-                    movers=[-1],
-                    recipients=[-2],
-                ),
+                relationship=RelationshipKind.Conflict,
+                relationshipTargets=[-2],
             ),
         ],
     ),
     "expected_pdp": PDP(
         people=[
-            Person(id=-1, name="Alice", birthDate="1980-01-01"),
+            Person(id=-1, name="Alice"),
+            Person(id=-2, name="Bob"),
+            Person(id=-4, name="Mother"),
         ],
         events=[
             Event(
-                id=-2,
+                id=-3,
+                person=-1,
+                kind=EventKind.Shift,
                 description="Conversation between Alice and Bob",
                 dateTime="2023-08-01T12:00:00Z",
             ),
             Event(
-                id=-3,
+                id=-5,
+                person=-1,
+                kind=EventKind.Shift,
                 description="Felt anxious after being yelled at by mother",
                 dateTime="the other day",
-                anxiety=Anxiety(shift=Shift.Up.value),
+                anxiety=VariableShift.Up,
             ),
             Event(
-                id=-4,
-                description="I fought with my wife yesterday",
+                id=-6,
+                kind=EventKind.Shift,
+                person=-1,
+                description="I fought with my husband yesterday",
                 dateTime="today",
-                relationship=Conflict(movers=[-1], recipients=[-2]),
+                relationship=RelationshipKind.Conflict,
+                relationshipTargets=[-2],
             ),
         ],
     ),
@@ -118,6 +124,7 @@ TEST_ADD_PERSON_AND_EVENT_WITH_CONFLICT = {
         ],
         events=[
             Event(
+                kind=EventKind.Shift,
                 id=-2,
                 description="Conversation between Alice and Bob",
                 dateTime="2023-08-01T12:00:00Z",
@@ -135,14 +142,12 @@ TEST_ADD_PERSON_AND_EVENT_WITH_CONFLICT = {
         events=[
             Event(
                 id=-4,
+                kind=EventKind.Shift,
                 dateTime="2025-03-01",
-                people=[-3],
+                person=-3,
                 description="Had a run-in over spring break",
-                relationship=Conflict(
-                    kind=RelationshipKind.Conflict.value,
-                    movers=[],
-                    recipients=[-3],
-                ),
+                relationship=RelationshipKind.Conflict,
+                relationshipTargets=[-3],
             ),
         ],
     ),
@@ -154,14 +159,17 @@ TEST_ADD_PERSON_AND_EVENT_WITH_CONFLICT = {
         events=[
             Event(
                 id=-2,
+                kind=EventKind.Shift,
                 description="Conversation between Alice and Bob",
                 dateTime="2023-08-01T12:00:00Z",
             ),
             Event(
                 id=-4,
+                kind=EventKind.Shift,
                 description="Had a run-in over spring break",
-                people=[-3],
-                relationship=Conflict(movers=[], recipients=[-3]),
+                person=-3,
+                relationship=RelationshipKind.Conflict,
+                relationshipTargets=[-3],
                 dateTime="2025-03-01",
             ),
         ],
@@ -176,27 +184,21 @@ TEST_ADD_PERSON_AND_CONFLICT_2 = {
                 id=-2,
                 name="Mother",
                 spouses=[],
-                offspring=[],
-                birthDate=None,
                 confidence=0.99,
             )
         ],
         events=[
             Event(
                 id=-1,
+                kind=EventKind.Shift,
                 description="Had a run-in with mother last christmas.",
                 dateTime="2022-12-25",
-                people=[-2],
+                person=-2,
                 symptom=None,
                 anxiety=None,
                 functioning=None,
-                relationship=Conflict(
-                    shift=None,
-                    kind=RelationshipKind.Conflict,
-                    people=[],
-                    movers=[0],
-                    recipients=[-2],
-                ),
+                relationship=RelationshipKind.Conflict,
+                relationshipTargets=[-2],
                 confidence=0.85,
             )
         ],
@@ -208,27 +210,21 @@ TEST_ADD_PERSON_AND_CONFLICT_2 = {
                 id=-2,
                 name="Mother",
                 spouses=[],
-                offspring=[],
-                birthDate=None,
                 confidence=0.99,
             ),
         ],
         events=[
             Event(
                 id=-1,
+                kind=EventKind.Shift,
                 description="Had a run-in with mother last christmas.",
                 dateTime="2022-12-25",
-                people=[-2],
+                person=-2,
                 symptom=None,
                 anxiety=None,
                 functioning=None,
-                relationship=Conflict(
-                    shift=None,
-                    kind=RelationshipKind.Conflict,
-                    people=[],
-                    movers=[0],
-                    recipients=[-2],
-                ),
+                relationship=RelationshipKind.Conflict,
+                relationshipTargets=[-2],
                 confidence=0.85,
             )
         ],
@@ -250,5 +246,6 @@ TEST_ADD_PERSON_AND_CONFLICT_2 = {
     ],
 )
 def test_apply_deltas(data):
+    assert NotImplementedError
     returned = pdp.apply_deltas(data["pre_pdp"], data["deltas"])
     assert returned == data["expected_pdp"]

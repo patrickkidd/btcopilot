@@ -19,20 +19,20 @@ from flask import (
 from sqlalchemy import create_engine
 
 
-import vedana
+import btcopilot
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram, User
 from btcopilot.personal import pdp, Response, ask
-from btcopilot.personal.database import Database, PDP, PDPDeltas, Person, Event
+from btcopilot.schema import DiagramData, PDP, PDPDeltas, Person, Event, asdict
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_breadcrumbs, get_auditor_id
 
 
 # from btcopilot.training.sse import sse_manager
-import vedana
+import btcopilot
 
 _log = logging.getLogger(__name__)
 
@@ -101,9 +101,9 @@ def extract_next_statement(*args, **kwargs):
 
         # Get or create diagram database
         if discussion.diagram:
-            database = discussion.diagram.get_database()
+            database = discussion.diagram.get_diagram_data()
         else:
-            database = Database()
+            database = DiagramData()
 
         try:
             # Apply nest_asyncio to allow nested event loops in Celery workers
@@ -117,9 +117,9 @@ def extract_next_statement(*args, **kwargs):
             # Update database and statement
             database.pdp = new_pdp
             if discussion.diagram:
-                discussion.diagram.set_database(database)
+                discussion.diagram.set_diagram_data(database)
             if pdp_deltas:
-                statement.pdp_deltas = pdp_deltas.model_dump()
+                statement.pdp_deltas = asdict(pdp_deltas)
                 _log.info(
                     f"Stored PDP deltas on statement {statement.id}: {len(pdp_deltas.events)} events, {len(pdp_deltas.people)} people"
                 )
@@ -194,13 +194,13 @@ bp = Blueprint(
     template_folder="../templates",
     static_folder="../static",
 )
-bp = minimum_role(vedana.ROLE_SUBSCRIBER)(bp)
+bp = minimum_role(btcopilot.ROLE_SUBSCRIBER)(bp)
 
 
 def _create_assembly_ai_transcript(data: dict):
     # Require auditor role for transcript creation
     current_user = auth.current_user()
-    if not current_user.has_role(vedana.ROLE_AUDITOR):
+    if not current_user.has_role(btcopilot.ROLE_AUDITOR):
         return jsonify({"error": "Unauthorized"}), 403
 
     transcript_data = data["transcript_data"]
@@ -229,8 +229,8 @@ def _create_assembly_ai_transcript(data: dict):
             diagram = Diagram(
                 user_id=target_user.id,
                 name=f"{target_user.username} Personal Case File",
-                data=pickle.dumps({"database": initial_database.model_dump()}),
             )
+            diagram.set_diagram_data(initial_database)
             db.session.add(diagram)
             db.session.flush()
             target_user.free_diagram_id = diagram.id
@@ -334,7 +334,7 @@ def _create_import(data: dict):
     user = auth.current_user()
 
     # Require auditor role for JSON import
-    if not user.has_role(vedana.ROLE_AUDITOR):
+    if not user.has_role(btcopilot.ROLE_AUDITOR):
         return jsonify({"error": "Unauthorized"}), 403
 
     json_data = data["json_data"]
@@ -365,8 +365,8 @@ def _create_import(data: dict):
             diagram = Diagram(
                 user_id=target_user.id,
                 name=f"{target_user.username} Personal Case File",
-                data=pickle.dumps({"database": initial_database.model_dump()}),
             )
+            diagram.set_diagram_data(initial_database)
             db.session.add(diagram)
             db.session.flush()
             target_user.free_diagram_id = diagram.id
@@ -473,7 +473,7 @@ def _create_import(data: dict):
 
 
 @bp.route("/import", methods=["POST"])
-@minimum_role(vedana.ROLE_AUDITOR)
+@minimum_role(btcopilot.ROLE_AUDITOR)
 def import_discussion():
     diagram_id = request.args.get("diagram_id", type=int)
     json_data = request.get_json()
@@ -482,7 +482,7 @@ def import_discussion():
 
 
 @bp.route("/transcript", methods=["POST"])
-@minimum_role(vedana.ROLE_AUDITOR)
+@minimum_role(btcopilot.ROLE_AUDITOR)
 def create_from_transcript():
     diagram_id = request.args.get("diagram_id", type=int)
     title = request.args.get("title")
@@ -494,7 +494,7 @@ def create_from_transcript():
 
 
 @bp.route("/upload_token")
-@minimum_role(vedana.ROLE_AUDITOR)
+@minimum_role(btcopilot.ROLE_AUDITOR)
 def upload_token():
     """Get AssemblyAI API key for client-side upload"""
     api_key = os.getenv("ASSEMBLYAI_API_KEY")
@@ -509,7 +509,7 @@ def upload_token():
 
 
 @bp.route("/<int:discussion_id>")
-@minimum_role(vedana.ROLE_AUDITOR)
+@minimum_role(btcopilot.ROLE_AUDITOR)
 def audit(discussion_id):
     """View a specific discussion for audit (from audit system)"""
     current_user = auth.current_user()
@@ -529,7 +529,7 @@ def audit(discussion_id):
 
     for stmt in sorted_statements:
         # For admin users, get ALL feedback; for auditors, get only their own
-        if current_user.has_role(vedana.ROLE_ADMIN):
+        if current_user.has_role(btcopilot.ROLE_ADMIN):
             # Admin sees all feedback
             conv_feedback = (
                 Feedback.query.filter_by(
@@ -594,7 +594,7 @@ def audit(discussion_id):
         # Get person name if speaker is mapped to a person
         person_name = None
         if stmt.speaker and stmt.speaker.person_id and discussion.diagram:
-            database = discussion.diagram.get_database()
+            database = discussion.diagram.get_diagram_data()
             if database.people:
                 for person in database.people:
                     if person.id == stmt.speaker.person_id:
@@ -611,13 +611,13 @@ def audit(discussion_id):
 
         # Create cumulative PDP snapshot for this statement
         cumulative_pdp = (
-            cumulative_pdp_state.model_dump()
+            asdict(cumulative_pdp_state)
             if cumulative_pdp_state.people or cumulative_pdp_state.events
             else None
         )
 
         # Handle different feedback data structures for admin vs auditor
-        if current_user.has_role(vedana.ROLE_ADMIN):
+        if current_user.has_role(btcopilot.ROLE_ADMIN):
             # Convert feedback objects to dictionaries using as_dict() method
             all_conv_feedback_dict = [
                 feedback.as_dict(exclude=["statement", "updated_at"])
@@ -717,7 +717,7 @@ def audit(discussion_id):
 
     # Create user mapping for admin display
     auditor_user_map = {}
-    if current_user.has_role(vedana.ROLE_ADMIN):
+    if current_user.has_role(btcopilot.ROLE_ADMIN):
         # Collect all unique auditor IDs from all feedback
         all_auditor_ids = set()
         for item in statements_with_feedback:
@@ -752,7 +752,7 @@ def audit(discussion_id):
         current_auditor=auditor_id,
         breadcrumbs=breadcrumbs,
         current_user=current_user,
-        vedana=vedana,
+        btcopilot=btcopilot,
         unique_speakers=unique_speakers,
         subject_speaker_map=subject_speaker_map,
         expert_speaker_map=expert_speaker_map,
@@ -761,7 +761,7 @@ def audit(discussion_id):
 
 
 @bp.route("/<int:discussion_id>/extract", methods=["POST"])
-@minimum_role(vedana.ROLE_ADMIN)
+@minimum_role(btcopilot.ROLE_ADMIN)
 def extract(discussion_id: int):
     """Trigger background extraction for a specific discussion"""
     current_user = auth.current_user()
@@ -787,7 +787,7 @@ def extract(discussion_id: int):
 
 
 @bp.route("/<int:discussion_id>/progress", methods=["GET"])
-@minimum_role(vedana.ROLE_AUDITOR)
+@minimum_role(btcopilot.ROLE_AUDITOR)
 def progress(discussion_id: int):
     """Get extraction progress for statements in a discussion"""
     current_user = auth.current_user()
@@ -798,7 +798,7 @@ def progress(discussion_id: int):
 
     # Check permissions - user can only see their own discussions or auditors can see any
     if discussion.user_id != current_user.id and not current_user.has_role(
-        vedana.ROLE_AUDITOR
+        btcopilot.ROLE_AUDITOR
     ):
         return abort(403)
 
@@ -859,7 +859,7 @@ def progress(discussion_id: int):
 
 
 @bp.route("/<int:discussion_id>/export", methods=["GET"])
-@minimum_role(vedana.ROLE_AUDITOR)
+@minimum_role(btcopilot.ROLE_AUDITOR)
 def export(discussion_id: int):
     """Export a discussion as JSON file"""
     current_user = auth.current_user()
@@ -870,7 +870,7 @@ def export(discussion_id: int):
 
     # Check permissions - user can only export their own discussions or auditors can export any
     if discussion.user_id != current_user.id and not current_user.has_role(
-        vedana.ROLE_AUDITOR
+        btcopilot.ROLE_AUDITOR
     ):
         return abort(403)
 
@@ -897,7 +897,7 @@ def export(discussion_id: int):
 
 
 @bp.route("/<int:discussion_id>/clear-extracted", methods=["POST"])
-@minimum_role(vedana.ROLE_AUDITOR)
+@minimum_role(btcopilot.ROLE_AUDITOR)
 def clear_extracted_data(discussion_id):
     """Clear all extracted PDP data from a discussion"""
     current_user = auth.current_user()
@@ -927,7 +927,7 @@ def clear_extracted_data(discussion_id):
 
     # Clear PDP data from the diagram if it exists
     if discussion.diagram:
-        database = discussion.diagram.get_database()
+        database = discussion.diagram.get_diagram_data()
         database.pdp.people = []
         database.pdp.events = []
 
@@ -946,7 +946,7 @@ def clear_extracted_data(discussion_id):
         # Ensure last_id accounts for default people
         database.last_id = max(database.last_id, 2)
 
-        discussion.diagram.set_database(database)
+        discussion.diagram.set_diagram_data(database)
 
     db.session.commit()
 
@@ -977,7 +977,7 @@ def delete(discussion_id):
     discussion_owner = discussion.user.username if discussion.user else "Unknown"
 
     if current_user.id != discussion.user_id and not current_user.has_role(
-        vedana.ROLE_ADMIN
+        btcopilot.ROLE_ADMIN
     ):
         return abort(403)
 
