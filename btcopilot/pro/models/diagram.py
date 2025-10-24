@@ -87,8 +87,8 @@ class Diagram(db.Model, ModelMixin):
             diagram_id=self.id, user_id=user.id
         ):
             if access_right.right in (
-                btcopilot.ot.ACCESS_READ_ONLY,
-                btcopilot.ot.ACCESS_READ_WRITE,
+                btcopilot.ACCESS_READ_ONLY,
+                btcopilot.ACCESS_READ_WRITE,
             ):
                 return True
         return False

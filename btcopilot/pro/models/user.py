@@ -127,12 +127,12 @@ class User(db.Model, ModelMixin):
         self.roles = role
 
     def has_role(self, role: str):
-        if role == btcopilot.ot.ROLE_SUBSCRIBER:
+        if role == btcopilot.ROLE_SUBSCRIBER:
             # Everyone is at least a subscriber"""
             return True
 
         my_roles = self.roles.split(",")
-        if btcopilot.ot.ROLE_ADMIN in my_roles:
+        if btcopilot.ROLE_ADMIN in my_roles:
             return True
         elif role in my_roles:
             return True
