@@ -6,7 +6,7 @@ import flask.json
 
 import vedana
 from btcopilot.extensions import db
-from btcopilot.personal.database import PDPDeltas
+from btcopilot.schema import PDPDeltas
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 
 from btcopilot.tests.personal.conftest import discussion, discussions
@@ -117,7 +117,7 @@ def extraction_flow(request):
 def diagram_with_full_data(test_user):
     """Create a diagram with discussions, speakers, statements, feedbacks, and access rights"""
     from btcopilot.pro.models import Diagram, AccessRight
-    from btcopilot.personal.database import Database
+    from btcopilot.schema import DiagramData
     from btcopilot.training.models import Feedback
 
     # Create diagram
@@ -128,7 +128,7 @@ def diagram_with_full_data(test_user):
     )
 
     # Initialize with empty database
-    empty_database = Database()
+    empty_database = DiagramData()
     diagram.set_database(empty_database)
 
     db.session.add(diagram)
@@ -206,7 +206,7 @@ def diagram_with_full_data(test_user):
 def simple_diagram(test_user):
     """Create a simple diagram without discussions"""
     from btcopilot.pro.models import Diagram
-    from btcopilot.personal.database import Database
+    from btcopilot.schema import DiagramData
 
     diagram = Diagram(
         user_id=test_user.id,
@@ -215,7 +215,7 @@ def simple_diagram(test_user):
     )
 
     # Initialize with empty database
-    empty_database = Database()
+    empty_database = DiagramData()
     diagram.set_database(empty_database)
 
     db.session.add(diagram)

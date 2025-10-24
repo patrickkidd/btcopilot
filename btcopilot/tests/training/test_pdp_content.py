@@ -1,11 +1,10 @@
 import pytest
 
-from btcopilot.personal.database import (
-    Database,
+from btcopilot.schema import (
+    DiagramData,
     PDP,
     Person,
     Event,
-    Conflict,
     RelationshipKind,
 )
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
@@ -34,7 +33,7 @@ def test_shift_topic():
             ),
         ],
     )
-    database = Database(
+    diagram_data = DiagramData(
         pdp=PDP(
             people=[
                 Person(
@@ -63,13 +62,8 @@ def test_shift_topic():
                     symptom=None,
                     anxiety=None,
                     functioning=None,
-                    relationship=Conflict(
-                        shift=None,
-                        kind=RelationshipKind.Conflict,
-                        people=[],
-                        movers=[0],
-                        recipients=[-2],
-                    ),
+                    relationship=RelationshipKind.Conflict,
+                    relationshipTargets=[-2],
                     confidence=0.85,
                 )
             ],
@@ -78,4 +72,4 @@ def test_shift_topic():
 
     user_message = "I went for my turn at the chinese auction and she told me which one to pick and I threw up"
 
-    pdp_deltas = one_result(pdp.update(discussion, database, user_message))
+    pdp_deltas = one_result(pdp.update(discussion, diagram_data, user_message))

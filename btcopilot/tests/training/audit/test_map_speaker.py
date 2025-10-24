@@ -3,7 +3,7 @@
 These are simplified unit tests that focus on the core business logic.
 """
 
-from btcopilot.personal.database import Person
+from btcopilot.schema import Person
 
 
 def test_person_model_creation():

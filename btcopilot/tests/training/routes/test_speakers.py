@@ -130,7 +130,7 @@ def test_map_speaker_existing_person(auditor, test_speaker):
 
 
 def test_map_speaker_create_new_person(auditor, test_speaker, test_user):
-    """Test mapping speaker and creating new person (with Diagram-based Database)"""
+    """Test mapping speaker and creating new person (with Diagram-based DiagramData)"""
 
     # Create a diagram for the test user
     diagram = Diagram(

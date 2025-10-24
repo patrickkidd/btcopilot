@@ -25,7 +25,7 @@ from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram, User
 from btcopilot.personal import pdp, Response, ask
-from btcopilot.personal.database import Database, PDP, PDPDeltas, Person, Event
+from btcopilot.schema import DiagramData, PDP, PDPDeltas, Person, Event
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_breadcrumbs, get_auditor_id
@@ -103,7 +103,7 @@ def extract_next_statement(*args, **kwargs):
         if discussion.diagram:
             database = discussion.diagram.get_database()
         else:
-            database = Database()
+            database = DiagramData()
 
         try:
             # Apply nest_asyncio to allow nested event loops in Celery workers

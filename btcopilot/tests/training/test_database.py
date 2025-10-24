@@ -1,22 +1,16 @@
 import logging
+from dataclasses import asdict
 
 import pytest
 
-from btcopilot.personal.database import (
-    Database,
+from btcopilot.schema import (
+    DiagramData,
     PDP,
     Person,
     Event,
-    Distance,
-    Conflict,
-    Reciprocity,
-    ChildFocus,
-    Triangle,
     RelationshipKind,
-    Shift,
-    Anxiety,
-    Symptom,
-    Functioning,
+    EventKind,
+    VariableShift,
 )
 
 _log = logging.getLogger(__name__)
@@ -56,50 +50,36 @@ def test_PDPerson_as_dict():
     }
 
 
-@pytest.mark.parametrize(
-    "relationship",
-    [
-        Distance(movers=[-1], recipients=[]),
-        Conflict(movers=[-1], recipients=[]),
-        Reciprocity(movers=[-1], recipients=[]),
-        ChildFocus(movers=[-1], recipients=[]),
-        Triangle(inside_a=[-1], inside_b=[], outside=[]),
-    ],
-    ids=[
-        "Distance",
-        "Conflict",
-        "Reciprocity",
-        "ChildFocus",
-        "Triangle",
-    ],
-)
-def test_PDEvent_as_dict(relationship):
-    assert Event(
-        id=-2,
-        description="Brother-in-law stopped talking during spring break due to stress.",
-        dateTime="2025-03-01",
-        relationship=relationship,
-        people=[-1],
-        anxiety=Anxiety(shift=Shift.Up),
-        symptom=Symptom(shift=Shift.Down),
-        functioning=Functioning(shift=Shift.Same),
-        confidence=0.7,
-    ).model_dump() == {
+def test_PDEvent_as_dict():
+    assert asdict(
+        Event(
+            id=-2,
+            kind=EventKind.Shift,
+            description="Brother-in-law stopped talking during spring break due to stress.",
+            dateTime="2025-03-01",
+            relationship=RelationshipKind.Distance,
+            person=-1,
+            anxiety=VariableShift.Up,
+            symptom=VariableShift.Down,
+            functioning=VariableShift.Same,
+            confidence=0.7,
+        )
+    ) == {
         "id": -2,
         "description": "Brother-in-law stopped talking during spring break due to stress.",
         "dateTime": "2025-03-01",
-        "people": [-1],
-        "symptom": {"shift": Shift.Down, "rationale": None},
-        "anxiety": {"shift": Shift.Up, "rationale": None},
-        "relationship": relationship.model_dump(),
-        "functioning": {"shift": Shift.Same, "rationale": None},
+        "person": -1,
+        "symptom": VariableShift.Up.value,
+        "anxiety": VariableShift.Down.value,
+        "relationship": RelationshipKind.Distance.value,
+        "functioning": VariableShift.Same,
         "confidence": 0.7,
     }
 
 
 @pytest.fixture
 def database():
-    return Database(
+    return DiagramData(
         people=[
             Person(id=1, name="Alice"),
             Person(id=2, name="Bob"),
@@ -216,4 +196,4 @@ def test_Database_model_dump(database, as_dict):
 
 
 def test_from_dict(database, as_dict):
-    assert Database(**as_dict) == database
+    assert DiagramData(**as_dict) == database

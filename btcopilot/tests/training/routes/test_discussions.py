@@ -5,12 +5,12 @@ import pytest
 from btcopilot.extensions import db
 from btcopilot.pro.models import User, Diagram
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
-from btcopilot.personal.database import (
+from btcopilot.schema import (
     PDPDeltas,
     Event,
     Person,
-    Anxiety,
-    Shift,
+    VariableShift,
+    EventKind,
 )
 from btcopilot.training.routes.discussions import extract_next_statement
 
@@ -51,7 +51,15 @@ def test_audit_shows_pdp_deltas_for_subject_statements_only(auditor):
 
     # Create PDP deltas
     test_deltas = PDPDeltas(
-        events=[Event(id=1, description="Test event", anxiety=Anxiety(shift=Shift.Up))],
+        events=[
+            Event(
+                id=1,
+                kind=EventKind.Shift,
+                person=1,
+                description="Test event",
+                anxiety=VariableShift.Up,
+            )
+        ],
         people=[Person(id=1, name="User")],
     )
 
@@ -224,7 +232,7 @@ def test_clear_extracted_data_success(auditor, discussion):
         speaker_id=subject_speaker.id,
         text="Second statement",
         pdp_deltas=PDPDeltas(
-            people=[], events=[Event(id=-2, description="Event occurred", people=[-1])]
+            people=[], events=[Event(id=-2, description="Event occurred", person=-1)]
         ).model_dump(),
     )
     db.session.add_all([stmt1, stmt2])
@@ -327,9 +335,28 @@ def verify_extraction_state(
     extractions=[
         PDPDeltas(
             people=[Person(id=-1, name="User")],
-            events=[Event(id=-1, description="Feels anxious")],
+            events=[
+                Event(
+                    id=-1,
+                    kind=EventKind.Shift,
+                    person=-1,
+                    description="Feels anxious",
+                    anxiety=VariableShift.Up,
+                )
+            ],
         ),
-        PDPDeltas(people=[], events=[Event(id=-2, description="Having difficulty")]),
+        PDPDeltas(
+            people=[],
+            events=[
+                Event(
+                    id=-2,
+                    kind=EventKind.Shift,
+                    person=-1,
+                    description="Having difficulty",
+                    functioning=VariableShift.Down,
+                )
+            ],
+        ),
         PDPDeltas(people=[Person(id=-3, name="New User")], events=[]),
     ]
 )

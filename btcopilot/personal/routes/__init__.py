@@ -15,14 +15,14 @@ def pdp():
     Returns the current PDP (Person Data Points) for the logged-in user.
     """
     user = auth.current_user()
-    # database = Database(**user.database)
+    # diagram_data = DiagramData(**user.diagram_data)
     # pdp_data = {
-    #     "people": [person.model_dump() for person in database.pdp.people],
-    #     "events": [event.model_dump() for event in database.pdp.events],
+    #     "people": [person.model_dump() for person in diagram_data.pdp.people],
+    #     "events": [event.model_dump() for event in diagram_data.pdp.events],
     # }
     if user.free_diagram:
-        database = user.free_diagram.get_database()
-        return jsonify(database.pdp.model_dump())
+        diagram_data = user.free_diagram.get_diagram_data()
+        return jsonify(diagram_data.pdp.model_dump())
     else:
         return jsonify({})
 

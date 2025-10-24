@@ -218,7 +218,7 @@
                 
                 {% if current_user and current_user.has_role(vedana.ROLE_ADMIN) %}
                 <button class="button is-small is-danger ml-2" 
-                        onclick="event.stopPropagation(); clearUserDatabase({{ user.id }}, {{ (user.username or 'User #' + user.id|string)|tojson }})"
+                        onclick="event.stopPropagation(); clearUserDiagramData({{ user.id }}, {{ (user.username or 'User #' + user.id|string)|tojson }})"
                         title="Clear user's database (Admin only)">
                     <span class="icon is-small">
                         <i class="fas fa-trash"></i>

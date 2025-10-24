@@ -4,15 +4,12 @@ import pytest
 
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
-from btcopilot.personal.database import (
+from btcopilot.schema import (
     PDPDeltas,
     Event,
     Person,
-    Anxiety,
-    Functioning,
-    Shift,
-    Triangle,
-    Conflict,
+    VariableShift,
+    EventKind,
     RelationshipKind,
 )
 
@@ -73,8 +70,8 @@ def create_complex_pdp_discussion_fixture():
             Event(
                 id=1,
                 description="Work anxiety discussion",
-                anxiety=Anxiety(shift=Shift.Up),
-                functioning=Functioning(shift=Shift.Down),
+                anxiety=VariableShift.Up,
+                functioning=VariableShift.Down,
             )
         ],
         people=[Person(id=1, name="User")],
@@ -84,8 +81,10 @@ def create_complex_pdp_discussion_fixture():
         events=[
             Event(
                 id=2,
+                person=1,
                 description="Boss relationship strain",
-                relationship=Conflict(movers=[1], recipients=[2], shift=Shift.Down),
+                relationship=RelationshipKind.Conflict,
+                relationshipTargets=[2],
             )
         ],
         people=[Person(id=1, name="User"), Person(id=2, name="Boss")],

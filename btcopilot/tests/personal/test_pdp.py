@@ -1,17 +1,32 @@
+from dataclasses import asdict
+
 import pytest
 
+from btcopilot.schema import (
+    DiagramData,
+    PDP,
+    Person,
+    Event,
+    EventKind,
+    RelationshipKind,
+)
 from btcopilot.extensions import db
 from btcopilot.pro.models import User
-from btcopilot.personal import pdp
-from btcopilot.personal.database import Database, PDP, Person, Event
 from btcopilot.personal.models import Discussion
 
 
 def test_get(subscriber):
-    database = Database(
+    database = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="you")],
-            events=[Event(id=-2, description="something happened")],
+            events=[
+                Event(
+                    id=-2,
+                    kind=EventKind.Shift,
+                    person=-1,
+                    description="something happened",
+                )
+            ],
         )
     )
     subscriber.user.free_diagram.set_database(database)
@@ -19,14 +34,26 @@ def test_get(subscriber):
 
     response = subscriber.get("/personal/pdp")
     assert response.status_code == 200
-    assert response.json == database.pdp.model_dump()
+    assert response.json == asdict(database.pdp)
 
 
 @pytest.mark.parametrize(
     "id, pdp",
     [
         (-1, PDP(people=[Person(id=-1, name="you")])),
-        (-2, PDP(events=[Event(id=-2, description="something happened")])),
+        (
+            -2,
+            PDP(
+                events=[
+                    Event(
+                        id=-2,
+                        kind=EventKind.Shift,
+                        person=-1,
+                        description="something happened",
+                    )
+                ]
+            ),
+        ),
     ],
     ids=["person", "event"],
 )
@@ -37,7 +64,7 @@ def test_accept(subscriber, id, pdp):
     db.session.add(discussion)
     db.session.commit()
 
-    subscriber.user.free_diagram.set_database(Database(pdp=pdp))
+    subscriber.user.free_diagram.set_database(DiagramData(pdp=pdp))
     db.session.commit()
 
     response = subscriber.post(
@@ -48,7 +75,7 @@ def test_accept(subscriber, id, pdp):
 
     user = User.query.get(subscriber.user.id)
     returned = user.free_diagram.get_database()
-    expected = Database()
+    expected = DiagramData()
     if pdp.people:
         expected.add_person(pdp.people[0])
     else:
@@ -60,7 +87,19 @@ def test_accept(subscriber, id, pdp):
     "id, pdp",
     [
         (-1, PDP(people=[Person(id=-1, name="you")])),
-        (-2, PDP(events=[Event(id=-2, description="something happened")])),
+        (
+            -2,
+            PDP(
+                events=[
+                    Event(
+                        id=-2,
+                        kind=EventKind.Shift,
+                        person=-1,
+                        description="something happened",
+                    )
+                ]
+            ),
+        ),
     ],
     ids=["person", "event"],
 )
@@ -71,7 +110,7 @@ def test_reject(subscriber, id, pdp):
     db.session.add(discussion)
     db.session.commit()
 
-    subscriber.user.free_diagram.set_database(Database(pdp=pdp))
+    subscriber.user.free_diagram.set_database(DiagramData(pdp=pdp))
     db.session.commit()
 
     response = subscriber.post(
@@ -82,5 +121,5 @@ def test_reject(subscriber, id, pdp):
 
     user = User.query.get(subscriber.user.id)
     returned = user.free_diagram.get_database()
-    expected = Database()
+    expected = DiagramData()
     assert returned == expected

@@ -5,7 +5,7 @@ import vedana
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.personal.models import Speaker, SpeakerType
-from btcopilot.personal.database import Person
+from btcopilot.schema import Person
 
 _log = logging.getLogger(__name__)
 

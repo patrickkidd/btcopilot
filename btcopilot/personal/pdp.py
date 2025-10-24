@@ -5,8 +5,8 @@ from rich.pretty import pretty_repr
 
 from btcopilot.extensions import llm, LLMFunction, ai_log
 from btcopilot.personal.models import Discussion, Statement
-from btcopilot.personal.database import (
-    Database,
+from btcopilot.schema import (
+    DiagramData,
     PDP,
     PDPDeltas,
     Person,
@@ -52,7 +52,7 @@ def cumulative(discussion: Discussion, up_to_statement: Statement) -> PDP:
 
 
 async def update(
-    thread: Discussion, database: Database, user_message: str
+    thread: Discussion, diagram_data: DiagramData, user_message: str
 ) -> tuple[PDP, PDPDeltas]:
     """
     Compiles prompts, runs llm, and returns both updated PDP and the deltas that were applied.
@@ -71,14 +71,14 @@ async def update(
     **IMPORTANT - CONTEXT FOR DELTA EXTRACTION:**
     
     You are analyzing ONLY the new user statement below for NEW information that
-    should be added to or updated in the existing database. The conversation
+    should be added to or updated in the existing diagram_data. The conversation
     history is provided as context to help you understand references and
     relationships mentioned in the new statement, but do NOT re-extract
-    information from previous messages that is already captured in the database.
+    information from previous messages that is already captured in the diagram_data.
     
-    **Existing Database State (DO NOT RE-EXTRACT THIS DATA):**
+    **Existing Diagram State (DO NOT RE-EXTRACT THIS DATA):**
 
-    {database.model_dump()}
+    {diagram_data.model_dump()}
 
     **Conversation History (for context only):**
 
@@ -101,7 +101,7 @@ async def update(
 
     ai_log.info(f"DELTAS:\n\n{pretty_repr(pdp_deltas)}")
 
-    new_pdp = apply_deltas(database.pdp, pdp_deltas)
+    new_pdp = apply_deltas(diagram_data.pdp, pdp_deltas)
     ai_log.info(f"New PDP: {pretty_repr(new_pdp)}")
     return new_pdp, pdp_deltas
 

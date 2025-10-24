@@ -9,7 +9,7 @@ from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.pro.models import User, License, Diagram
-from btcopilot.personal.database import Database
+from btcopilot.schema import DiagramData
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_breadcrumbs
@@ -401,7 +401,7 @@ def user_clear_db(user_id):
     # Clear the user's free diagram database
     if target_user.free_diagram:
 
-        target_user.free_diagram.set_database(Database.create_with_defaults())
+        target_user.free_diagram.set_diagram_data(DiagramData.create_with_defaults())
 
     old_database = {}
     db.session.commit()

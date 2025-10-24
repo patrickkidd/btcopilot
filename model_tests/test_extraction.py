@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from btcopilot.personal import pdp
-from btcopilot.personal.database import Database, PDPDeltas
+from btcopilot.schema import DiagramData, PDPDeltas
 from .conftest import make_discussion, assert_deltas_equal
 
 
@@ -80,7 +80,7 @@ async def test_extraction_accuracy(test_cases):
             expected_output = case["expected_output"]
 
             # Build database context
-            database = Database(**inputs["database"])
+            database = DiagramData(**inputs["database"])
 
             # Build discussion context
             discussion = make_discussion(inputs["conversation_history"])

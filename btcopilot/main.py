@@ -1,5 +1,5 @@
 def main_server():
-    from btcopilot import create_app
+    from btcopilot.app import create_app
 
     app = create_app()
     app.engine.llm()

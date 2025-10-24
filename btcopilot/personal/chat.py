@@ -9,7 +9,7 @@ from btcopilot.extensions import db, ai_log, llm, LLMFunction
 from btcopilot.async_utils import gather
 from btcopilot.personal import pdp
 from btcopilot.personal.models import Discussion, Statement
-from btcopilot.personal.database import Database, PDP
+from btcopilot.schema import DiagramData, PDP
 from btcopilot.personal.prompts import (
     ROLE_COACH_NOT_THERAPIST,
     BOWEN_THEORY_COACHING_IN_A_NUTSHELL,
@@ -59,11 +59,11 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
 
     ai_log.info(f"User statement: {user_statement}")
     if discussion.diagram:
-        database = discussion.diagram.get_database()
+        diagram_data = discussion.diagram.get_diagram_data()
     else:
-        database = Database()
+        diagram_data = DiagramData()
     results = gather(
-        pdp.update(discussion, database, user_statement),
+        pdp.update(discussion, diagram_data, user_statement),
         detect_response_direction(user_statement, discussion),
     )
 
@@ -71,9 +71,9 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
     ai_log.info(f"Response direction: {response_direction}")
 
     # Write to disk
-    database.pdp = new_pdp
+    diagram_data.pdp = new_pdp
     if discussion.diagram:
-        discussion.diagram.set_database(database)
+        discussion.diagram.set_diagram_data(diagram_data)
 
     statement = Statement(
         discussion_id=discussion.id,
@@ -172,12 +172,12 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
     else:
         raise ValueError(f"Unknown response direction: {response_direction}")
 
-    ai_response = _generate_response(discussion, database, meta_prompt)
+    ai_response = _generate_response(discussion, diagram_data, meta_prompt)
     ai_log.info(f"AI response: {ai_response}")
 
     response = Response(
         statement=ai_response,
-        pdp=database.pdp,
+        pdp=diagram_data.pdp,
     )
     ai_statement = Statement(
         discussion_id=discussion.id,
@@ -190,7 +190,7 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
 
 
 def _generate_response(
-    discussion: Discussion, database: Database, meta_prompt: str
+    discussion: Discussion, diagram_data: DiagramData, meta_prompt: str
 ) -> str:
     """
     Generate a response from the AI based on the conversation history and the
