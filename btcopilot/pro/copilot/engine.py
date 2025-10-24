@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 from langchain_core.messages import AIMessage
 
-from btcopilot import EMBEDDINGS_MODEL, LLM_MODEL
+from btcopilot.extensions import EMBEDDINGS_MODEL, LLM_MODEL
 
 _log = logging.getLogger(__name__)
 

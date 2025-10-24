@@ -2,7 +2,7 @@ import logging
 import json
 from flask import Blueprint, request, jsonify, session, abort, render_template
 
-import vedana
+import btcopilot
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
@@ -22,7 +22,7 @@ bp = Blueprint(
     __name__,
     url_prefix="/feedback",
 )
-bp = minimum_role(vedana.ROLE_AUDITOR)(bp)
+bp = minimum_role(btcopilot.ROLE_AUDITOR)(bp)
 
 
 def compile_feedback_datapoints():
@@ -170,7 +170,7 @@ def compile_feedback_datapoints():
 
 @bp.route("")
 @bp.route("/")
-@minimum_role(vedana.ROLE_ADMIN)
+@minimum_role(btcopilot.ROLE_ADMIN)
 def index():
     """Admin view of all feedback"""
     user = auth.current_user()
@@ -200,7 +200,7 @@ def index():
         datapoints=datapoints,
         breadcrumbs=breadcrumbs,
         current_user=user,
-        vedana=vedana,
+        btcopilot=btcopilot,
     )
 
 
@@ -277,7 +277,7 @@ def create():
 
 
 @bp.route("/download")
-@minimum_role(vedana.ROLE_ADMIN)
+@minimum_role(btcopilot.ROLE_ADMIN)
 def download():
     """Download feedback datapoints as JSON file"""
 

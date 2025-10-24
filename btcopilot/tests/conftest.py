@@ -23,7 +23,7 @@ from sqlalchemy.orm import scoped_session
 from flask_mail import Mail
 
 
-import vedana
+import btcopilot
 from btcopilot.app import create_app
 from btcopilot.extensions import db
 from btcopilot.params import truthy
@@ -243,8 +243,8 @@ def test_user_2(flask_app):
 @pytest.fixture
 def test_policy(flask_app):
     policy = Policy(
-        code=vedana.LICENSE_PROFESSIONAL_MONTHLY,
-        product=vedana.LICENSE_PROFESSIONAL,
+        code=btcopilot.LICENSE_PROFESSIONAL_MONTHLY,
+        product=btcopilot.LICENSE_PROFESSIONAL,
         name="Unit Test Monthly",
         interval="month",
         amount=0.99,
@@ -293,8 +293,8 @@ def test_session(test_user):
 @pytest.fixture
 def test_client_policy(flask_app):
     policy = Policy(
-        code=vedana.LICENSE_CLIENT_ONCE,
-        product=vedana.LICENSE_CLIENT,
+        code=btcopilot.LICENSE_CLIENT_ONCE,
+        product=btcopilot.LICENSE_CLIENT,
         name="Automated Test Client Once",
         interval=None,
         amount=0.99,

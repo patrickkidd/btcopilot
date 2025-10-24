@@ -1,5 +1,3 @@
-from dataclasses import asdict
-
 import pytest
 
 from btcopilot.schema import (
@@ -8,7 +6,7 @@ from btcopilot.schema import (
     Person,
     Event,
     EventKind,
-    RelationshipKind,
+    asdict,
 )
 from btcopilot.extensions import db
 from btcopilot.pro.models import User

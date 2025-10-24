@@ -134,7 +134,9 @@ def test_map_speaker_create_new_person(auditor, test_speaker, test_user):
 
     # Create a diagram for the test user
     diagram = Diagram(
-        user_id=test_user.id, name="Test Diagram", data=pickle.dumps({"database": {}})
+        user_id=test_user.id,
+        name="Test Diagram",
+        data=pickle.dumps({}),
     )
     db.session.add(diagram)
     db.session.flush()

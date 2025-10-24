@@ -30,7 +30,7 @@
             <tr>
                 <th>Roles</th>
                 <td>
-                    {% if current_user.has_role(vedana.ROLE_ADMIN) and is_modal|default(false) %}
+                    {% if current_user.has_role(btcopilot.ROLE_ADMIN) and is_modal|default(false) %}
                         <div style="display: flex; align-items: center; justify-content: space-between;">
                             <div id="detail-roles-display">
                                 {% for role in user.roles.split(',') if role.strip() %}

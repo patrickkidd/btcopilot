@@ -1,5 +1,4 @@
 import pickle
-from dataclasses import asdict
 
 import pytest
 
@@ -12,6 +11,7 @@ from btcopilot.schema import (
     Person,
     VariableShift,
     EventKind,
+    asdict,
 )
 from btcopilot.training.routes.discussions import extract_next_statement
 

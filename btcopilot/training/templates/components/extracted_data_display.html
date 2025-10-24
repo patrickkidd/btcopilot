@@ -94,7 +94,7 @@ Parameters:
     </div>
     
     <!-- Admin Tabbed Interface (replaces expanded data section when admin has corrections) -->
-    {% if current_user and current_user.has_role(vedana.ROLE_ADMIN) and all_ext_feedback and not is_cumulative %}
+    {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) and all_ext_feedback and not is_cumulative %}
     <div class="admin-tabbed-data" id="{{ id_prefix }}-expanded-{{ component_id }}" style="display: {% if collapsed %}none{% else %}block{% endif %}" x-data='componentExtractedDataWithReview({{ data|tojson }}, {{ cumulative_pdp|tojson if cumulative_pdp else "null" }}, {{ "true" if feedback_data and feedback_data.thumbs_down else "false" }}, false, "{{ component_id }}", {{ "true" if editable_mode else "false" }}, {{ message_id|tojson if message_id else "null" }}, {{ feedback_data.edited_extraction|tojson if feedback_data and feedback_data.edited_extraction else "null" }}, {{ feedback_data.id|tojson if feedback_data and feedback_data.id else "null" }}, {{ all_ext_feedback_dict|tojson if all_ext_feedback_dict else "[]" }}, {{ approved|tojson if approved else "false" }}, {{ approved_by|tojson if approved_by else "null" }}, {{ approved_at|tojson if approved_at else "null" }}, {{ admin_ext_feedback.id|tojson if admin_ext_feedback and admin_ext_feedback.id else "null" }})'>
         <!-- Navigation Tabs -->
         <div class="tabs is-small is-boxed mb-0">
@@ -151,7 +151,7 @@ Parameters:
                                 <!-- Meta Controls (positioned absolutely in header) -->
                                 <div class="meta-controls" style="position: absolute; right: 0; top: -2px; display: flex; align-items: center; gap: 4px;">
                                     <!-- Approval Controls (Admin only) -->
-                                    {% if current_user and current_user.has_role(vedana.ROLE_ADMIN) and message_id and not is_cumulative %}
+                                    {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) and message_id and not is_cumulative %}
                                     
                                     <!-- Test Prompts Button -->
                                     <button class="button is-info is-small" 
@@ -1073,7 +1073,7 @@ Parameters:
                                 <!-- Meta Controls (positioned absolutely in header) -->
                                 <div class="meta-controls" style="position: absolute; right: 0; top: -2px; display: flex; align-items: center; gap: 4px;">
                                     <!-- Approval Controls (Admin only) -->
-                                    {% if current_user and current_user.has_role(vedana.ROLE_ADMIN) and message_id and not is_cumulative %}
+                                    {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) and message_id and not is_cumulative %}
                                     
                                     <!-- Test Prompts Button -->
                                     <button class="button is-info is-small" 

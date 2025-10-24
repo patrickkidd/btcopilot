@@ -4,11 +4,10 @@ Test fixtures and configuration for data extraction model tests
 
 import pytest
 import json
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from btcopilot.schema import DiagramData, PDPDeltas
+from btcopilot.schema import DiagramData, PDPDeltas, asdict
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 
 

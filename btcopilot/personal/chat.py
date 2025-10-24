@@ -2,14 +2,14 @@ import enum
 import textwrap
 import logging
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from flask import g
 
 from btcopilot.extensions import db, ai_log, llm, LLMFunction
 from btcopilot.async_utils import gather
 from btcopilot.personal import pdp
 from btcopilot.personal.models import Discussion, Statement
-from btcopilot.schema import DiagramData, PDP
+from btcopilot.schema import DiagramData, PDP, asdict
 from btcopilot.personal.prompts import (
     ROLE_COACH_NOT_THERAPIST,
     BOWEN_THEORY_COACHING_IN_A_NUTSHELL,

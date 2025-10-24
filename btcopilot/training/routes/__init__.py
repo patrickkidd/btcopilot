@@ -14,7 +14,7 @@ from flask import (
 )
 from flask_wtf.csrf import CSRFError
 
-import vedana
+import btcopilot
 from btcopilot import auth as btcopilot_auth
 from btcopilot.extensions import db
 from btcopilot.pro.models import User, Session
@@ -84,12 +84,12 @@ def _():
 
 @bp.context_processor
 def inject_globals():
-    """Make vedana and git_sha available in all templates"""
+    """Make btcopilot and git_sha available in all templates"""
     from btcopilot import git_sha
     from flask_wtf.csrf import generate_csrf
 
     return {
-        "vedana": vedana,
+        "btcopilot": btcopilot,
         "git_sha": git_sha(),
         "csrf_token": generate_csrf,
     }
@@ -131,9 +131,9 @@ def training_root():
     if not user:
         return redirect(url_for("training.auth.login"))
 
-    if user.has_role(vedana.ROLE_ADMIN):
+    if user.has_role(btcopilot.ROLE_ADMIN):
         return redirect(url_for("training.admin.index"))
-    elif user.has_role(vedana.ROLE_AUDITOR):
+    elif user.has_role(btcopilot.ROLE_AUDITOR):
         return redirect(url_for("training.audit.index"))
     else:
         # Subscribers get their own landing page
@@ -148,7 +148,7 @@ def subscriber_landing():
         return redirect(url_for("training.auth.login"))
 
     # Only allow subscribers to access this page
-    if not user.has_role(vedana.ROLE_AUDITOR) or user.has_role(vedana.ROLE_ADMIN):
+    if not user.has_role(btcopilot.ROLE_AUDITOR) or user.has_role(btcopilot.ROLE_ADMIN):
         return redirect(url_for("training.training_root"))
 
     return render_template("subscriber_landing.html", current_user=user)

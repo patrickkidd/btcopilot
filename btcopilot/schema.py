@@ -1,5 +1,110 @@
 import enum
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict as dataclass_asdict, fields, MISSING
+from typing import get_origin, get_args
+
+__all__ = [
+    "asdict",
+    "from_dict",
+    "EventKind",
+    "RelationshipKind",
+    "VariableShift",
+    "Person",
+    "Event",
+    "PDPDeltas",
+    "PDP",
+    "DiagramData",
+]
+
+
+def asdict(obj):
+    """Convert dataclass to dict with enums as their string values."""
+    return dataclass_asdict(
+        obj,
+        dict_factory=lambda items: {
+            k: v.value if isinstance(v, enum.Enum) else v for k, v in items
+        },
+    )
+
+
+def from_dict(cls, data):
+    """
+    Reconstruct a dataclass from a dict, converting string values back to enums.
+
+    Usage:
+        event = from_dict(Event, {"kind": "shift", "anxiety": "up", ...})
+    """
+    if data is None:
+        return None
+
+    if not hasattr(cls, "__dataclass_fields__"):
+        # Not a dataclass, return as-is
+        return data
+
+    kwargs = {}
+    for field_info in fields(cls):
+        field_name = field_info.name
+        field_type = field_info.type
+
+        if field_name not in data:
+            # Use default if available
+            if field_info.default is not MISSING:
+                kwargs[field_name] = field_info.default
+            elif field_info.default_factory is not MISSING:
+                kwargs[field_name] = field_info.default_factory()
+            continue
+
+        value = data[field_name]
+
+        # Handle None values
+        if value is None:
+            kwargs[field_name] = None
+            continue
+
+        # Get origin type for generics like list[int]
+        origin = get_origin(field_type)
+
+        # Handle list types
+        if origin is list:
+            args = get_args(field_type)
+            if args:
+                item_type = args[0]
+                if hasattr(item_type, "__dataclass_fields__"):
+                    # List of dataclasses
+                    kwargs[field_name] = [from_dict(item_type, item) for item in value]
+                else:
+                    kwargs[field_name] = value
+            else:
+                kwargs[field_name] = value
+        # Handle enum types
+        elif isinstance(field_type, type) and issubclass(field_type, enum.Enum):
+            kwargs[field_name] = field_type(value)
+        # Handle nested dataclasses
+        elif hasattr(field_type, "__dataclass_fields__"):
+            kwargs[field_name] = from_dict(field_type, value)
+        # Handle union types (e.g., int | None)
+        elif origin is type(int | None):  # UnionType in Python 3.10+
+            # Try each type in the union
+            args = get_args(field_type)
+            converted = False
+            for arg_type in args:
+                if arg_type is type(None) and value is None:
+                    kwargs[field_name] = None
+                    converted = True
+                    break
+                elif isinstance(arg_type, type) and issubclass(arg_type, enum.Enum):
+                    try:
+                        kwargs[field_name] = arg_type(value)
+                        converted = True
+                        break
+                    except (ValueError, KeyError):
+                        continue
+            if not converted:
+                kwargs[field_name] = value
+        else:
+            # Primitive type, use as-is
+            kwargs[field_name] = value
+
+    return cls(**kwargs)
 
 
 class EventKind(enum.Enum):
@@ -29,6 +134,20 @@ class EventKind(enum.Enum):
     def isOffspring(self) -> bool:
         return self in (self.Birth, self.Adopted)
 
+    def menuLabel(self) -> str:
+        labels = {
+            self.Bonded: "Bonded",
+            self.Married: "Married",
+            self.Separated: "Separated",
+            self.Divorced: "Divorced",
+            self.Moved: "Moved",
+            self.Birth: "Birth",
+            self.Adopted: "Adopted",
+            self.Death: "Death",
+            self.Shift: "Shift",
+        }
+        return labels[self]
+
 
 class RelationshipKind(enum.Enum):
     Fusion = "fusion"
@@ -44,6 +163,23 @@ class RelationshipKind(enum.Enum):
     Inside = "inside"
     Outside = "outside"
     Cutoff = "cutoff"
+
+    def menuLabel(self) -> str:
+        labels = {
+            # self.Fusion: "Fusion",
+            self.Conflict: "Conflict",
+            self.Distance: "Distance",
+            self.Overfunctioning: "Overfunctioning",
+            self.Underfunctioning: "Underfunctioning",
+            self.Projection: "Projection",
+            self.DefinedSelf: "Defined Self",
+            self.Toward: "Toward",
+            self.Away: "Away",
+            self.Inside: "Triangle to inside",
+            self.Outside: "Triangle to outside",
+            self.Cutoff: "Cutoff",
+        }
+        return labels[self]
 
 
 @dataclass

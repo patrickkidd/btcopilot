@@ -4,7 +4,7 @@ from urllib.parse import quote
 
 import pytest
 
-import vedana
+import btcopilot
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram
 
@@ -36,7 +36,7 @@ def test_diagrams_index_as_anonymous(flask_app):
 
 def test_diagrams_index(flask_app, test_user, test_user_2):
     """Only show diagrams that the user has access to."""
-    test_user.free_diagram.grant_access(test_user_2, vedana.ACCESS_READ_ONLY)
+    test_user.free_diagram.grant_access(test_user_2, btcopilot.ACCESS_READ_ONLY)
 
     # Add own diagram that is not shared
     first_diagram = Diagram(
@@ -52,7 +52,7 @@ def test_diagrams_index(flask_app, test_user, test_user_2):
         user_id=test_user.id,
     )
     db.session.add(second_diagram)
-    second_diagram.grant_access(test_user_2, vedana.ACCESS_READ_ONLY)
+    second_diagram.grant_access(test_user_2, btcopilot.ACCESS_READ_ONLY)
 
     # Add a diagram that is NOT shared
     third_diagram = Diagram(
@@ -101,7 +101,7 @@ def test_diagrams_get_own_diagram(flask_app, test_user):
 
 
 def test_diagrams_get_others_diagram(flask_app, test_user, test_user_2):
-    test_user.free_diagram.grant_access(test_user_2, vedana.ACCESS_READ_ONLY)
+    test_user.free_diagram.grant_access(test_user_2, btcopilot.ACCESS_READ_ONLY)
     with flask_app.test_client(user=test_user_2) as client:
         response = client.get(f"/v1/diagrams/{test_user.free_diagram_id}")
     assert response.status_code == 200
@@ -140,7 +140,7 @@ def test_diagrams_patch_others_diagram_no_access(flask_app, test_user, test_user
 
 
 def test_diagrams_patch_others_diagram_read_access(flask_app, test_user, test_user_2):
-    test_user.free_diagram.grant_access(test_user_2, vedana.ACCESS_READ_ONLY)
+    test_user.free_diagram.grant_access(test_user_2, btcopilot.ACCESS_READ_ONLY)
     with flask_app.test_client(user=test_user_2) as client:
         response = client.patch(
             f"/v1/diagrams/{test_user.free_diagram_id}", data=pickle.dumps({})
@@ -149,7 +149,7 @@ def test_diagrams_patch_others_diagram_read_access(flask_app, test_user, test_us
 
 
 def test_diagrams_patch_others_diagram(flask_app, test_user, test_user_2):
-    test_user.free_diagram.grant_access(test_user_2, vedana.ACCESS_READ_WRITE)
+    test_user.free_diagram.grant_access(test_user_2, btcopilot.ACCESS_READ_WRITE)
     with flask_app.test_client(user=test_user_2) as client:
         response = client.patch(
             f"/v1/diagrams/{test_user.free_diagram_id}",
@@ -175,7 +175,7 @@ def test_diagrams_delete_others_diagram_no_access(flask_app, test_user, test_use
 
 
 def test_diagrams_delete_others_diagram_read_access(flask_app, test_user, test_user_2):
-    test_user.free_diagram.grant_access(test_user_2, vedana.ACCESS_READ_ONLY)
+    test_user.free_diagram.grant_access(test_user_2, btcopilot.ACCESS_READ_ONLY)
     with flask_app.test_client(user=test_user_2) as client:
         response = client.delete(f"/v1/diagrams/{test_user.free_diagram_id}")
     assert response.status_code == 401
@@ -184,7 +184,7 @@ def test_diagrams_delete_others_diagram_read_access(flask_app, test_user, test_u
 
 def test_diagrams_delete_others_diagram(flask_app, test_user, test_user_2):
     db.session.commit()
-    test_user.free_diagram.grant_access(test_user_2, vedana.ACCESS_READ_WRITE)
+    test_user.free_diagram.grant_access(test_user_2, btcopilot.ACCESS_READ_WRITE)
     db.session.commit()
     with flask_app.test_client(user=test_user) as client:
         response = client.delete(f"/v1/diagrams/{test_user.free_diagram_id}")

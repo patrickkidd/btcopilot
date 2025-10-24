@@ -7,7 +7,7 @@ import pytest
 import flask_mail
 
 
-import vedana
+import btcopilot
 from btcopilot import params
 from btcopilot.extensions import db, mail, create_stripe_Subscription, sync_with_stripe
 from btcopilot.pro import validate_uuid4
@@ -66,12 +66,12 @@ def test_user_reset_password_code_is_null():
 @pytest.mark.parametrize(
     "roles, requested, expected",
     [
-        [(vedana.ROLE_SUBSCRIBER,), vedana.ROLE_AUDITOR, False],
-        [(vedana.ROLE_SUBSCRIBER,), vedana.ROLE_ADMIN, False],
-        [(vedana.ROLE_AUDITOR,), vedana.ROLE_SUBSCRIBER, True],
-        [(vedana.ROLE_AUDITOR,), vedana.ROLE_ADMIN, False],
-        [(vedana.ROLE_ADMIN,), vedana.ROLE_SUBSCRIBER, True],
-        [(vedana.ROLE_ADMIN,), vedana.ROLE_AUDITOR, True],
+        [(btcopilot.ROLE_SUBSCRIBER,), btcopilot.ROLE_AUDITOR, False],
+        [(btcopilot.ROLE_SUBSCRIBER,), btcopilot.ROLE_ADMIN, False],
+        [(btcopilot.ROLE_AUDITOR,), btcopilot.ROLE_SUBSCRIBER, True],
+        [(btcopilot.ROLE_AUDITOR,), btcopilot.ROLE_ADMIN, False],
+        [(btcopilot.ROLE_ADMIN,), btcopilot.ROLE_SUBSCRIBER, True],
+        [(btcopilot.ROLE_ADMIN,), btcopilot.ROLE_AUDITOR, True],
     ],
 )
 def test_roles(roles, requested, expected):

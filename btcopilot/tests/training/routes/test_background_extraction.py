@@ -1,5 +1,6 @@
 import pytest
-from unittest.mock import patch, AsyncMock
+from mock import patch
+
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.training.routes.discussions import extract_next_statement
@@ -10,6 +11,7 @@ from btcopilot.schema import (
     Person,
     VariableShift,
     RelationshipKind,
+    EventKind,
 )
 
 
@@ -49,14 +51,12 @@ def test_extract_next_statement(mock_pdp_update, mock_celery, flask_app, discuss
         events=[
             Event(
                 id=1,
+                kind=EventKind.Shift,
+                person=1,
                 description="Work anxiety and family conflict",
-                anxiety=Anxiety(shift=Shift.Down),
-                relationship=Conflict(
-                    kind=RelationshipKind.Conflict,
-                    shift=Shift.Up,
-                    movers=[1],
-                    recipients=[2],
-                ),
+                anxiety=VariableShift.Down,
+                relationship=RelationshipKind.Conflict,
+                relationshipTargets=[2],
             )
         ],
         people=[Person(id=1, name="User"), Person(id=2, name="Mom")],

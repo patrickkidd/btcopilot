@@ -513,7 +513,7 @@
         
         <div id="navbarMenu" class="navbar-menu">
             <div class="navbar-start">
-                {% if current_user and current_user.has_role(vedana.ROLE_AUDITOR) %}
+                {% if current_user and current_user.has_role(btcopilot.ROLE_AUDITOR) %}
                 <a class="navbar-item" href="{{ url_for('training.audit.index') }}">
                     <span class="icon">
                         <i class="fas fa-user-check"></i>
@@ -527,7 +527,7 @@
                     <span>Lab</span>
                 </a>
                 {% endif %}
-                {% if current_user and current_user.has_role(vedana.ROLE_ADMIN) %}
+                {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) %}
                 <a class="navbar-item" href="{{ url_for('training.admin.index') }}">
                     <span class="icon">
                         <i class="fas fa-shield-alt"></i>

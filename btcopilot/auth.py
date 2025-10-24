@@ -5,7 +5,7 @@ from typing import Union
 
 from flask import g, request, abort, session, redirect, url_for
 
-import vedana
+import btcopilot
 from btcopilot.pro.models import User
 
 
@@ -117,7 +117,7 @@ def get_required_role() -> str:
     # Get the current endpoint
     endpoint = request.endpoint
     if not endpoint:
-        return vedana.ROLE_SUBSCRIBER
+        return btcopilot.ROLE_SUBSCRIBER
 
     # Get the view function
     view_func = current_app.view_functions.get(endpoint)
@@ -142,7 +142,7 @@ def get_required_role() -> str:
             if blueprint and hasattr(blueprint, "_minimum_role"):
                 return blueprint._minimum_role
 
-    return vedana.ROLE_SUBSCRIBER
+    return btcopilot.ROLE_SUBSCRIBER
 
 
 def minimum_role(role):
@@ -187,9 +187,9 @@ def _authenticate_pro_personal_apps() -> User | None:
         return abort(401)
 
     authParts = auth_header.split(":")
-    if authParts[1] == vedana.ANON_USER:
+    if authParts[1] == btcopilot.ANON_USER:
         user = AnonUser()
-        secret = vedana.ANON_SECRET
+        secret = btcopilot.ANON_SECRET
     else:
         username = authParts[1]
         user = User.query.filter_by(username=username).first()
@@ -207,7 +207,7 @@ def _authenticate_pro_personal_apps() -> User | None:
             resource = request.path + "?" + request.query_string.decode("utf-8")
         else:
             resource = request.path
-        ourSignature = vedana.sign(
+        ourSignature = btcopilot.sign(
             secret, request.method, content_md5, content_type, date, resource
         )
         if ourSignature != theirSignature:

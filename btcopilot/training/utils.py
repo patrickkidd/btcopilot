@@ -2,7 +2,7 @@
 
 from flask import url_for
 from btcopilot import auth
-import vedana
+import btcopilot
 
 
 def get_breadcrumbs(current_page=None):
@@ -33,7 +33,7 @@ def get_breadcrumbs(current_page=None):
 def check_admin_access():
     """Check if current user has admin access"""
     user = auth.current_user()
-    return user and user.has_role(vedana.ROLE_ADMIN)
+    return user and user.has_role(btcopilot.ROLE_ADMIN)
 
 
 def get_auditor_id(request, session):

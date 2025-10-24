@@ -3,7 +3,7 @@ import os, os.path, sys, logging
 from flask import Flask, render_template, redirect, request, url_for
 from werkzeug.exceptions import Unauthorized, HTTPException
 
-import vedana
+import btcopilot
 from btcopilot.pro.copilot.engine import Engine
 from btcopilot import auth, extensions, pro, personal, training
 
@@ -105,7 +105,7 @@ def create_app(app_class=Flask, config: dict = None, instance_path: str = None):
         #     return redirect(url_for("training.auth.login", next=request.url))
         # else:
         return (
-            render_template("errors/404.html", current_user=user, vedana=vedana),
+            render_template("errors/404.html", current_user=user, btcopilot=btcopilot),
             404,
         )
 

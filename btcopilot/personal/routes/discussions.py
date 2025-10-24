@@ -1,13 +1,12 @@
 import logging
 import pickle
-from dataclasses import asdict
 
 from flask import Blueprint, jsonify, request, abort
 from sqlalchemy.orm import subqueryload
 
 from btcopilot import auth
 from btcopilot.extensions import db
-from btcopilot.schema import DiagramData, Person
+from btcopilot.schema import DiagramData, Person, asdict
 from btcopilot.pro.models import Diagram
 from btcopilot.personal import Response, ask
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
@@ -47,7 +46,7 @@ def _create_discussion(data: dict) -> Discussion:
         diagram = Diagram(
             user_id=user.id,
             name=f"{user.username} Personal Case File",
-            data=pickle.dumps({"database": asdict(initial_database)}),
+            data=pickle.dumps({"diagram_data": asdict(initial_database)}),
         )
 
         db.session.add(diagram)

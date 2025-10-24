@@ -2,7 +2,7 @@ import logging
 import pytest
 from mock import patch
 
-import vedana
+import btcopilot
 from btcopilot.extensions import db
 from btcopilot.pro.models import User
 

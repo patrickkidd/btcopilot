@@ -7,7 +7,7 @@ from sqlalchemy import Column, Boolean, String, Integer, ForeignKey, inspect, JS
 from sqlalchemy.orm import relationship
 import flask_bcrypt
 
-import vedana
+import btcopilot
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
 
@@ -32,7 +32,7 @@ class User(db.Model, ModelMixin):
     # like an api secret returned when logging in and then used for authenticating requests.
     secret = Column(String(64), default=randomString)
 
-    roles = Column(String(255), default=vedana.ROLE_SUBSCRIBER)
+    roles = Column(String(255), default=btcopilot.ROLE_SUBSCRIBER)
 
     first_name = Column(String(100), nullable=False, server_default="")
     last_name = Column(String(100), nullable=False, server_default="")
@@ -127,12 +127,12 @@ class User(db.Model, ModelMixin):
         self.roles = role
 
     def has_role(self, role: str):
-        if role == vedana.ROLE_SUBSCRIBER:
+        if role == btcopilot.ot.ROLE_SUBSCRIBER:
             # Everyone is at least a subscriber"""
             return True
 
         my_roles = self.roles.split(",")
-        if vedana.ROLE_ADMIN in my_roles:
+        if btcopilot.ot.ROLE_ADMIN in my_roles:
             return True
         elif role in my_roles:
             return True

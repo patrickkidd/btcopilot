@@ -4,7 +4,7 @@ import pytest
 from mock import patch, AsyncMock
 import flask.json
 
-import vedana
+import btcopilot
 from btcopilot.extensions import db
 from btcopilot.schema import PDPDeltas
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
@@ -21,7 +21,7 @@ def pytest_configure(config):
 
 @pytest.fixture
 def logged_in(flask_app, test_user):
-    test_user.roles = vedana.ROLE_SUBSCRIBER
+    test_user.roles = btcopilot.ROLE_SUBSCRIBER
     db.session.merge(test_user)
     db.session.commit()
     # flask_app.test_client_class = FlaskClient
@@ -34,7 +34,7 @@ def logged_in(flask_app, test_user):
 
 @pytest.fixture
 def subscriber(flask_app, test_user):
-    test_user.roles = vedana.ROLE_SUBSCRIBER
+    test_user.roles = btcopilot.ROLE_SUBSCRIBER
     db.session.merge(test_user)
     db.session.commit()
     with flask_app.test_client(use_cookies=True) as client:
@@ -46,7 +46,7 @@ def subscriber(flask_app, test_user):
 
 @pytest.fixture
 def auditor(flask_app, test_user):
-    test_user.roles = vedana.ROLE_AUDITOR
+    test_user.roles = btcopilot.ROLE_AUDITOR
     db.session.merge(test_user)
     db.session.commit()
     # flask_app.test_client_class = FlaskClient
@@ -59,7 +59,7 @@ def auditor(flask_app, test_user):
 
 @pytest.fixture
 def admin(flask_app, test_user):
-    test_user.roles = vedana.ROLE_ADMIN
+    test_user.roles = btcopilot.ROLE_ADMIN
     db.session.merge(test_user)
     db.session.commit()
     # flask_app.test_client_class = FlaskClient

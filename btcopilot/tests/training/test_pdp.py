@@ -60,11 +60,11 @@ TEST_ADD_PERSON_AND_CONFLICT = {
     ),
     "deltas": PDPDeltas(
         people=[
-            Person(id=-3, name="Mother"),
+            Person(id=-4, name="Mother"),
         ],
         events=[
             Event(
-                id=-4,
+                id=-5,
                 kind=EventKind.Shift,
                 person=-1,
                 description="Felt anxious after being yelled at by mother",
@@ -72,7 +72,7 @@ TEST_ADD_PERSON_AND_CONFLICT = {
                 anxiety=VariableShift.Up,
             ),
             Event(
-                id=-5,
+                id=-6,
                 kind=EventKind.Shift,
                 person=-1,
                 description="I fought with my husband yesterday",
@@ -85,26 +85,30 @@ TEST_ADD_PERSON_AND_CONFLICT = {
     "expected_pdp": PDP(
         people=[
             Person(id=-1, name="Alice"),
+            Person(id=-2, name="Bob"),
+            Person(id=-4, name="Mother"),
         ],
         events=[
             Event(
-                id=-2,
+                id=-3,
+                person=-1,
                 kind=EventKind.Shift,
                 description="Conversation between Alice and Bob",
                 dateTime="2023-08-01T12:00:00Z",
             ),
             Event(
-                id=-3,
+                id=-5,
+                person=-1,
                 kind=EventKind.Shift,
                 description="Felt anxious after being yelled at by mother",
                 dateTime="the other day",
                 anxiety=VariableShift.Up,
             ),
             Event(
-                id=-4,
+                id=-6,
                 kind=EventKind.Shift,
-                person=[-1],
-                description="I fought with my wife yesterday",
+                person=-1,
+                description="I fought with my husband yesterday",
                 dateTime="today",
                 relationship=RelationshipKind.Conflict,
                 relationshipTargets=[-2],

@@ -1,5 +1,4 @@
 import json
-from dataclasses import asdict
 
 import pytest
 
@@ -12,6 +11,7 @@ from btcopilot.schema import (
     VariableShift,
     EventKind,
     RelationshipKind,
+    asdict,
 )
 
 
@@ -70,6 +70,7 @@ def create_complex_pdp_discussion_fixture():
         events=[
             Event(
                 id=1,
+                kind=EventKind.Shift,
                 description="Work anxiety discussion",
                 anxiety=VariableShift.Up,
                 functioning=VariableShift.Down,
@@ -82,6 +83,7 @@ def create_complex_pdp_discussion_fixture():
         events=[
             Event(
                 id=2,
+                kind=EventKind.Shift,
                 person=1,
                 description="Boss relationship strain",
                 relationship=RelationshipKind.Conflict,
@@ -169,11 +171,19 @@ def create_complex_pdp_fixture():
         events=[
             Event(
                 id=2,
+                kind=EventKind.Shift,
+                person=1,
                 description="Tell me more",
-                relationship=Triangle(inside_a=[1], inside_b=[2], outside=[]),
+                relationship=RelationshipKind.Inside,
+                relationshipTargets=[2],
+                relationshipTriangles=[3],
             )
         ],
-        people=[Person(id=1, name="User"), Person(id=2, name="Mom")],
+        people=[
+            Person(id=1, name="User"),
+            Person(id=2, name="Mom"),
+            Person(id=3, name="Dad"),
+        ],
     )
 
     discussion = Discussion(id=1, summary="Complex PDP test")
@@ -376,7 +386,7 @@ def test_import_discussion_complex_pdp_deltas(auditor):
 
     assert expert_stmt.pdp_deltas is not None
     assert len(expert_stmt.pdp_deltas["events"]) == 1
-    assert len(expert_stmt.pdp_deltas["people"]) == 2
+    assert len(expert_stmt.pdp_deltas["people"]) == 3
     assert expert_stmt.pdp_deltas["events"][0]["description"] == "Tell me more"
 
 
@@ -495,9 +505,9 @@ def test_import_discussion_preserves_pdp_deltas(auditor):
     event1 = first_subject.pdp_deltas["events"][0]
     assert event1["description"] == "Work anxiety discussion"
     assert "anxiety" in event1
-    assert event1["anxiety"]["shift"] == Shift.Up
+    assert event1["anxiety"] == VariableShift.Up
     assert "functioning" in event1
-    assert event1["functioning"]["shift"] == Shift.Down
+    assert event1["functioning"] == VariableShift.Down
 
     # Second subject statement
     second_subject = next(s for s in subject_statements if s.order == 2)
@@ -511,7 +521,7 @@ def test_import_discussion_preserves_pdp_deltas(auditor):
     event2 = second_subject.pdp_deltas["events"][0]
     assert event2["description"] == "Boss relationship strain"
     assert "relationship" in event2
-    assert event2["relationship"]["kind"] == RelationshipKind.Conflict
+    assert event2["relationship"] == RelationshipKind.Conflict.value
 
 
 def test_import_discussion_handles_null_pdp_deltas(auditor):

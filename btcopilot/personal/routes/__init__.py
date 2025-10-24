@@ -1,7 +1,7 @@
-from dataclasses import asdict
 from flask import Blueprint, jsonify
 
 from btcopilot import auth
+from btcopilot.schema import asdict
 from .discussions import bp as discussions_bp
 from .diagrams import diagrams_bp
 

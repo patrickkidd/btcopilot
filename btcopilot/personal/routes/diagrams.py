@@ -1,15 +1,15 @@
 import logging
-from dataclasses import asdict
 from flask import Blueprint, request, jsonify, abort
 from sqlalchemy.orm import subqueryload
 
-import vedana
+import btcopilot
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram, AccessRight
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.models.speaker import Speaker
+from btcopilot.schema import asdict
 
 _log = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def get(diagram_id):
     if not diagram:
         abort(404)
 
-    if diagram.user_id != user.id and not user.has_role(vedana.ROLE_ADMIN):
+    if diagram.user_id != user.id and not user.has_role(btcopilot.ROLE_ADMIN):
         abort(403)
 
     ret = diagram.as_dict(
@@ -34,7 +34,7 @@ def get(diagram_id):
         },
         exclude="data",
     )
-    ret["database"] = asdict(diagram.get_diagram_data())
+    ret["diagram_data"] = asdict(diagram.get_diagram_data())
 
     return jsonify(ret)
 

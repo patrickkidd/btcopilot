@@ -1,7 +1,6 @@
 import pytest
-from dataclasses import asdict
 
-from btcopilot.schema import PDP
+from btcopilot.schema import PDP, asdict
 
 
 @pytest.mark.chat_flow

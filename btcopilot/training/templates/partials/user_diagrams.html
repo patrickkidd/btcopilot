@@ -104,7 +104,7 @@
                         </div>
                     </div>
                     <div class="media-right">
-                        {% if current_user.has_role(vedana.ROLE_ADMIN) %}
+                        {% if current_user.has_role(btcopilot.ROLE_ADMIN) %}
                             <button class="button is-small is-danger" 
                                     onclick="deleteDiagram({{ diagram.id }}, '{{ diagram.name or 'Diagram ' + diagram.id|string }}')">
                                 <span class="icon is-small">

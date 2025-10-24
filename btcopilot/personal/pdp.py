@@ -1,6 +1,5 @@
 import copy
 import logging
-from dataclasses import asdict
 
 from rich.pretty import pretty_repr
 
@@ -12,6 +11,7 @@ from btcopilot.schema import (
     PDPDeltas,
     Person,
     Event,
+    asdict,
 )
 from btcopilot.personal.prompts import PDP_ROLE_AND_INSTRUCTIONS, PDP_EXAMPLES
 from datetime import datetime

@@ -1,5 +1,4 @@
 import logging
-from dataclasses import asdict
 
 import pytest
 
@@ -11,6 +10,7 @@ from btcopilot.schema import (
     RelationshipKind,
     EventKind,
     VariableShift,
+    asdict,
 )
 
 _log = logging.getLogger(__name__)
@@ -44,13 +44,19 @@ def test_PDEvent_as_dict():
         )
     ) == {
         "id": -2,
+        "kind": "shift",
+        "person": -1,
+        "spouse": None,
+        "child": None,
         "description": "Brother-in-law stopped talking during spring break due to stress.",
         "dateTime": "2025-03-01",
-        "person": -1,
-        "symptom": VariableShift.Up.value,
-        "anxiety": VariableShift.Down.value,
-        "relationship": RelationshipKind.Distance.value,
-        "functioning": VariableShift.Same,
+        "endDateTime": None,
+        "symptom": "down",
+        "anxiety": "up",
+        "relationship": "distance",
+        "relationshipTargets": [],
+        "relationshipTriangles": [],
+        "functioning": "same",
         "confidence": 0.7,
     }
 
@@ -172,4 +178,36 @@ def test_Database_asdict(database, as_dict):
 
 
 def test_from_dict(database, as_dict):
-    assert DiagramData(**as_dict) == database
+    from btcopilot.schema import from_dict
+
+    reconstructed = from_dict(DiagramData, as_dict)
+    assert reconstructed == database
+
+
+def test_bidirectional_conversion():
+    """Test that asdict() and from_dict() work together"""
+    from btcopilot.schema import from_dict
+
+    # Create an event with enums
+    original = Event(
+        id=1,
+        kind=EventKind.Shift,
+        person=10,
+        description="Test event",
+        anxiety=VariableShift.Up,
+        relationship=RelationshipKind.Distance,
+        relationshipTargets=[1, 2],
+    )
+
+    # Convert to dict (enums become strings)
+    dict_form = asdict(original)
+    assert dict_form["kind"] == "shift"
+    assert dict_form["anxiety"] == "up"
+    assert dict_form["relationship"] == "distance"
+
+    # Convert back to dataclass (strings become enums)
+    reconstructed = from_dict(Event, dict_form)
+    assert reconstructed == original
+    assert isinstance(reconstructed.kind, EventKind)
+    assert isinstance(reconstructed.anxiety, VariableShift)
+    assert isinstance(reconstructed.relationship, RelationshipKind)

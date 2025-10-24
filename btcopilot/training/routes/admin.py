@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, jsonify
 from sqlalchemy.orm import subqueryload
 from sqlalchemy import func, case
 
-import vedana
+import btcopilot
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
@@ -22,7 +22,7 @@ bp = Blueprint(
     url_prefix="/admin",
     template_folder="../templates",
 )
-bp = minimum_role(vedana.ROLE_ADMIN)(bp)
+bp = minimum_role(btcopilot.ROLE_ADMIN)(bp)
 
 
 # Simple in-memory cache for feedback statistics
@@ -268,7 +268,7 @@ def index():
         feedback_stats=feedback_stats,
         breadcrumbs=breadcrumbs,
         current_user=current_user,
-        vedana=vedana,
+        btcopilot=btcopilot,
     )
 
 
@@ -323,8 +323,11 @@ def user_details(user_id):
     current_user = auth.current_user()
 
     # Access control: admins can see any user, auditors can only see themselves
-    if not current_user.has_role(vedana.ROLE_ADMIN):
-        if not current_user.has_role(vedana.ROLE_AUDITOR) or current_user.id != user_id:
+    if not current_user.has_role(btcopilot.ROLE_ADMIN):
+        if (
+            not current_user.has_role(btcopilot.ROLE_AUDITOR)
+            or current_user.id != user_id
+        ):
             return jsonify({"error": "Access denied"}), 403
 
     user = User.query.options(
@@ -357,8 +360,11 @@ def user_detail_html(user_id):
     current_user = auth.current_user()
 
     # Access control: admins can see any user, auditors can only see themselves
-    if not current_user.has_role(vedana.ROLE_ADMIN):
-        if not current_user.has_role(vedana.ROLE_AUDITOR) or current_user.id != user_id:
+    if not current_user.has_role(btcopilot.ROLE_ADMIN):
+        if (
+            not current_user.has_role(btcopilot.ROLE_AUDITOR)
+            or current_user.id != user_id
+        ):
             return "<div class='notification is-danger'>Access denied</div>", 403
 
     user = User.query.options(
@@ -387,7 +393,7 @@ def user_detail_html(user_id):
         user_summary=user_summary,
         user_discussions=user_discussions,
         current_user=current_user,
-        vedana=vedana,
+        btcopilot=btcopilot,
         is_modal=True,
     )
 
@@ -451,9 +457,9 @@ def user_update(user_id):
 
         # Map frontend role names to vedana constants
         role_mapping = {
-            "subscriber": vedana.ROLE_SUBSCRIBER,
-            "admin": vedana.ROLE_ADMIN,
-            "auditor": vedana.ROLE_AUDITOR,
+            "subscriber": btcopilot.ROLE_SUBSCRIBER,
+            "admin": btcopilot.ROLE_ADMIN,
+            "auditor": btcopilot.ROLE_AUDITOR,
         }
 
         # Convert to vedana role constants
@@ -462,7 +468,7 @@ def user_update(user_id):
         # Store old roles for logging
         old_roles = target_user.roles.split(",") if target_user.roles else []
         new_roles_str = (
-            ",".join(vedana_roles) if vedana_roles else vedana.ROLE_SUBSCRIBER
+            ",".join(vedana_roles) if vedana_roles else btcopilot.ROLE_SUBSCRIBER
         )
 
         if target_user.roles != new_roles_str:
@@ -883,7 +889,7 @@ def quick_approve():
 
 
 @bp.route("/unapprove-feedback", methods=["POST"])
-@minimum_role(vedana.ROLE_ADMIN)
+@minimum_role(btcopilot.ROLE_ADMIN)
 def unapprove_feedback():
     data = request.get_json()
     feedback_id = data.get("feedback_id")
@@ -916,7 +922,7 @@ def unapprove_feedback():
 
 
 @bp.route("/unapprove-statement", methods=["POST"])
-@minimum_role(vedana.ROLE_ADMIN)
+@minimum_role(btcopilot.ROLE_ADMIN)
 def unapprove_statement():
     data = request.get_json()
     statement_id = data.get("statement_id")

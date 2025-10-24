@@ -3,7 +3,7 @@ import pickle
 from sqlalchemy import Column, Boolean, String, Integer, LargeBinary, ForeignKey
 from sqlalchemy.orm import relationship
 
-import vedana
+import btcopilot
 from btcopilot.schema import DiagramData
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
@@ -37,13 +37,13 @@ class Diagram(db.Model, ModelMixin):
 
     def get_diagram_data(self) -> DiagramData:
         import PyQt5.sip
-        from btcopilot.schema import DiagramData
+        from btcopilot.schema import DiagramData, PDP
 
         data = pickle.loads(self.data) if self.data else {}
         return DiagramData(
             people=data.get("people", []),
             events=data.get("events", []),
-            pdp=data.get("pdp", {}),
+            pdp=data.get("pdp", PDP()),
             last_id=data.get("last_id", 0),
         )
 
@@ -74,7 +74,7 @@ class Diagram(db.Model, ModelMixin):
         for access_right in AccessRight.query.filter_by(
             diagram_id=self.id, user_id=user.id
         ):
-            if access_right.right == vedana.ACCESS_READ_WRITE:
+            if access_right.right == btcopilot.ACCESS_READ_WRITE:
                 return True
         return False
 
@@ -87,8 +87,8 @@ class Diagram(db.Model, ModelMixin):
             diagram_id=self.id, user_id=user.id
         ):
             if access_right.right in (
-                vedana.ACCESS_READ_ONLY,
-                vedana.ACCESS_READ_WRITE,
+                btcopilot.ot.ACCESS_READ_ONLY,
+                btcopilot.ot.ACCESS_READ_WRITE,
             ):
                 return True
         return False

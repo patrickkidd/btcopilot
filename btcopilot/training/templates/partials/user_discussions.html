@@ -48,7 +48,7 @@
                                         <span class="icon is-small"><i class="fas fa-eye"></i></span>
                                         <span>View</span>
                                     </a>
-                                    {% if current_user.has_role(vedana.ROLE_ADMIN) %}
+                                    {% if current_user.has_role(btcopilot.ROLE_ADMIN) %}
                                         <a href="#" class="dropdown-item" onclick="deleteDiscussion({{ discussion.id }}, '{{ user.username }}', {{ discussion.statements|length }})">
                                             <span class="icon is-small has-text-danger"><i class="fas fa-trash"></i></span>
                                             <span class="has-text-danger">Delete</span>

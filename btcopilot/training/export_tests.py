@@ -3,14 +3,13 @@ Test case export system for approved data extraction ground truth
 """
 
 import json
-from dataclasses import asdict
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any
 
 from btcopilot.extensions import db
 from btcopilot.personal.models import Statement, SpeakerType
-from btcopilot.schema import DiagramData
+from btcopilot.schema import DiagramData, asdict
 from btcopilot.personal.pdp import cumulative
 from btcopilot.training.models import Feedback
 

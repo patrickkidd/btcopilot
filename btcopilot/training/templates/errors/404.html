@@ -24,7 +24,7 @@
                         
                         <div class="buttons is-centered mt-5">
                             {% if current_user %}
-                                {% if current_user.has_role(vedana.ROLE_ADMIN) %}
+                                {% if current_user.has_role(btcopilot.ROLE_ADMIN) %}
                                 <a href="{{ url_for('training.admin.index') }}" class="button is-primary">
                                     <span class="icon">
                                         <i class="fas fa-shield-alt"></i>
@@ -33,7 +33,7 @@
                                 </a>
                                 {% endif %}
                                 
-                                {% if current_user.has_role(vedana.ROLE_AUDITOR) %}
+                                {% if current_user.has_role(btcopilot.ROLE_AUDITOR) %}
                                 <a href="{{ url_for('training.audit.index') }}" class="button is-info">
                                     <span class="icon">
                                         <i class="fas fa-user-check"></i>

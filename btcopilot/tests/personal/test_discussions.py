@@ -1,12 +1,11 @@
 import pickle
-from dataclasses import asdict
 
 import pytest
 
 from btcopilot.extensions import db
 from btcopilot.pro.models import User, Diagram
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
-from btcopilot.schema import PDPDeltas, Person, Event, EventKind
+from btcopilot.schema import PDPDeltas, Person, Event, EventKind, asdict
 
 from btcopilot.tests.training.conftest import flask_json
 
