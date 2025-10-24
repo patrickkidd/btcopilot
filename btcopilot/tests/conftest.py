@@ -24,7 +24,7 @@ from flask_mail import Mail
 
 
 import vedana
-from btcopilot import create_app
+from btcopilot.app import create_app
 from btcopilot.extensions import db
 from btcopilot.params import truthy
 from btcopilot.pro.models import (

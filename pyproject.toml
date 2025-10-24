@@ -10,7 +10,10 @@ license = { file = "LICENSE" }
 authors = [
     { name="Patrick Stinson", email="patrick@alaskafamilysystems.com" }
 ]
-dependencies = [
+# dependencies = []
+
+[project.optional-dependencies]
+app = [
     "bcrypt",
     "celery==5.5.3",
     "chromadb",
@@ -65,8 +68,6 @@ dependencies = [
     "pydantic_ai",
     "pypdf",
 ]
-
-[project.optional-dependencies]
 test = [
     "black",
     "build",

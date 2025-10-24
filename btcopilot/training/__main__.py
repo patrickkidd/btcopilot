@@ -7,7 +7,7 @@ import logging
 
 from sqlalchemy import select, desc
 
-from btcopilot import create_app
+from btcopilot.app import create_app
 from btcopilot.extensions import db, ai_log
 from btcopilot.pro.models import User
 from btcopilot.personal import ask

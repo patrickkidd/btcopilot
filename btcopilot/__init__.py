@@ -1,18 +1,3 @@
-EMBEDDINGS_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-
-# # Best so far
-# LLM_MODEL = "mistral"
-
-LLM_MODEL = "gpt-4o-mini"
-
-# LLM_MODEL = "mistral:7b-text-q8_0"
-
-# LLM_MODEL = "tinyllama" # Had dirty answers
-
-# LLM_MODEL = "deepseek-r1:14b"
-# LLM_MODEL = "deepseek-r1:1.5b"
-
-
 ## https://www.redmadrobot.com/fyi/designing-mobile-app-architecture
 
 import os, logging
@@ -24,10 +9,6 @@ import os, logging
 
 
 _log = logging.getLogger(__name__)
-
-
-from .app import create_app
-from .auth import current_user, minimum_role, AnonUser
 
 
 ## Add Git SHA and Cache Headers

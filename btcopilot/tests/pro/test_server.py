@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from btcopilot.extensions import db
-from btcopilot import create_app, pro
+from btcopilot.app import create_app, pro
 from btcopilot.pro.models import Session
 from btcopilot.pro import tasks, SESSION_EXPIRATION_DAYS
 

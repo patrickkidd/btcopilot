@@ -70,7 +70,7 @@ jobs:
     - name: Install wheels
       run: |
         pip install --upgrade pip
-        pip install --extra-index-url=$TWINE_REPOSITORY_URL `ls dist/*.whl`[pro,personal,training,test]
+        pip install --extra-index-url=$TWINE_REPOSITORY_URL `ls dist/*.whl`[app,test]
 
         # latest_release=$(curl -s https://api.github.com/repos/patrickkidd/vedana/releases/latest)
         # vedana_asset_url=$(echo "$latest_release" | jq -r '.assets[0].browser_download_url')

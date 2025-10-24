@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 from flask.cli import FlaskGroup
-import btcopilot
+from btcopilot.app import create_app
 
 # flask still reads the deprecated FLASK_ENV and loads that config file.
 # So just override it from our FLASK_CONFIG
@@ -10,7 +10,7 @@ if os.getenv("FLASK_CONFIG"):
     os.environ["FLASK_ENV"] = os.getenv("FLASK_CONFIG")
 
 
-app = btcopilot.create_app()
+app = create_app()
 
 
 if __name__ == "__main__":
