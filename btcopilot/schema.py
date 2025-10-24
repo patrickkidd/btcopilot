@@ -68,7 +68,9 @@ class VariableShift(enum.StrEnum):
 class Event:
     id: int
     kind: EventKind
-    person: list[int] | None = None
+    person: int | None = None
+    spouse: int | None = None
+    child: int | None = None
     description: str | None = None
     dateTime: str | None = None
     endDateTime: str | None = None
