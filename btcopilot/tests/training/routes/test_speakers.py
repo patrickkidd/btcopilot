@@ -168,7 +168,7 @@ def test_map_speaker_create_new_person(auditor, test_speaker, test_user):
     assert test_speaker.person_id is not None
 
     # Verify the person was added to the diagram's database
-    database = diagram.get_database()
+    database = diagram.get_diagram_data()
     assert len(database.people) == 1
     assert database.people[0].name == "New Person"
 

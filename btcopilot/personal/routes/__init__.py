@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from flask import Blueprint, jsonify
 
 from btcopilot import auth
@@ -22,7 +23,7 @@ def pdp():
     # }
     if user.free_diagram:
         diagram_data = user.free_diagram.get_diagram_data()
-        return jsonify(diagram_data.pdp.model_dump())
+        return jsonify(asdict(diagram_data.pdp))
     else:
         return jsonify({})
 

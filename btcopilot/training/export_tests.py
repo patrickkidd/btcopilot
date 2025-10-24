@@ -3,6 +3,7 @@ Test case export system for approved data extraction ground truth
 """
 
 import json
+from dataclasses import asdict
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any
@@ -138,12 +139,12 @@ def create_statement_test_case(statement: Statement) -> Dict[str, Any]:
     # Get diagram database
     database = {}
     if discussion.diagram:
-        database = discussion.diagram.get_database().model_dump()
+        database = asdict(discussion.diagram.get_diagram_data())
     else:
-        database = DiagramData().model_dump()
+        database = asdict(DiagramData())
 
     # Calculate cumulative PDP up to this statement (not including it)
-    cumulative_pdp = cumulative(discussion, statement).model_dump()
+    cumulative_pdp = asdict(cumulative(discussion, statement))
 
     return {
         "test_id": f"stmt_{statement.id}",
@@ -193,12 +194,12 @@ def create_feedback_test_case(feedback: Feedback) -> Dict[str, Any]:
     # Get diagram database
     database = {}
     if discussion.diagram:
-        database = discussion.diagram.get_database().model_dump()
+        database = asdict(discussion.diagram.get_diagram_data())
     else:
-        database = DiagramData().model_dump()
+        database = asdict(DiagramData())
 
     # Calculate cumulative PDP up to this statement (not including it)
-    cumulative_pdp = cumulative(discussion, statement).model_dump()
+    cumulative_pdp = asdict(cumulative(discussion, statement))
 
     return {
         "test_id": f"feedback_{feedback.id}",

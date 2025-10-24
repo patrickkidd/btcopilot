@@ -49,7 +49,7 @@ def update(speaker_id):
                 )
 
             diagram = speaker.discussion.diagram
-            database = diagram.get_database()
+            database = diagram.get_diagram_data()
 
             person = Person(
                 name=data["name"],
@@ -60,7 +60,7 @@ def update(speaker_id):
                 confidence=1.0,
             )
             database.add_person(person)
-            diagram.set_database(database)
+            diagram.set_diagram_data(database)
             db.session.add(diagram)
             speaker.person_id = person.id
             created_person = person

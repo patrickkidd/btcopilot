@@ -4,6 +4,7 @@ Test fixtures and configuration for data extraction model tests
 
 import pytest
 import json
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -69,9 +70,9 @@ def assert_deltas_equal(actual: PDPDeltas, expected: PDPDeltas, test_id: str):
         test_id: Test case identifier for error messages
     """
     # Convert to dicts for easier comparison
-    actual_dict = actual.model_dump() if hasattr(actual, "model_dump") else actual
+    actual_dict = asdict(actual) if hasattr(actual, "__dataclass_fields__") else actual
     expected_dict = (
-        expected.model_dump() if hasattr(expected, "model_dump") else expected
+        asdict(expected) if hasattr(expected, "__dataclass_fields__") else expected
     )
 
     # Compare people

@@ -84,7 +84,7 @@ def test_delete_diagram_unauthorized(logged_in, test_user_2):
 
     # Initialize with empty database
     empty_database = DiagramData()
-    diagram.set_database(empty_database)
+    diagram.set_diagram_data(empty_database)
 
     db.session.add(diagram)
     db.session.commit()
@@ -119,7 +119,7 @@ def test_delete_diagram_cascade_order(admin):
 
     # Initialize with empty database
     empty_database = DiagramData()
-    diagram.set_database(empty_database)
+    diagram.set_diagram_data(empty_database)
 
     db.session.add(diagram)
     db.session.commit()

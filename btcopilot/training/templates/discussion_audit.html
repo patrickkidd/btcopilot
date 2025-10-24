@@ -5,7 +5,7 @@
 // Make diagram people data available to JavaScript
 window.diagramPeople = [
 {% if discussion.diagram %}
-    {% set database = discussion.diagram.get_database() %}
+    {% set database = discussion.diagram.get_diagram_data() %}
     {% for person in database.people %}
     {
         id: {{ person.id }},
@@ -262,7 +262,7 @@ window.diagramPeople = [
                                             
                                             {# Show other people from database (excluding defaults to avoid duplicates) #}
                                             {% if discussion.diagram %}
-                                                {% set database = discussion.diagram.get_database() %}
+                                                {% set database = discussion.diagram.get_diagram_data() %}
                                                 {% for person in database.people %}
                                                     {% if person.id != 1 and person.id != 2 %}
                                                     <option value="{{ person.id }}" 

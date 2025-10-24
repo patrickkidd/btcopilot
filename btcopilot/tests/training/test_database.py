@@ -16,36 +16,14 @@ from btcopilot.schema import (
 _log = logging.getLogger(__name__)
 
 
-def test_distance_model_dump():
-    d = Distance(movers=[-1], recipients=[])
-    assert d.model_dump() == {
-        "kind": RelationshipKind.Distance,
-        "movers": [-1],
-        "recipients": [],
-        "rationale": None,
-        "shift": None,
-    }
-
-
-def test_triangle_model_dump():
-    d = Triangle(inside_a=[-1], inside_b=[-2], outside=[-3])
-    assert d.model_dump() == {
-        "kind": RelationshipKind.Triangle,
-        "inside_a": [-1],
-        "inside_b": [-2],
-        "outside": [-3],
-        "rationale": None,
-        "shift": None,
-    }
-
-
 def test_PDPerson_as_dict():
-    assert Person(id=1, name="Alice", confidence=0.9).model_dump() == {
+    assert asdict(Person(id=1, name="Alice", confidence=0.9)) == {
         "id": 1,
         "name": "Alice",
-        "offspring": [],
+        "last_name": None,
         "spouses": [],
-        "parents": [],
+        "parent_a": None,
+        "parent_b": None,
         "confidence": 0.9,
     }
 
@@ -87,16 +65,14 @@ def database():
         events=[
             Event(
                 id=3,
+                kind=EventKind.Shift,
                 description="Alice and Bob had a conversation",
                 dateTime="2023-10-01T12:00:00Z",
-                symptom=Symptom(shift=Shift.Down),
-                anxiety=Anxiety(shift=Shift.Up),
-                functioning=Functioning(shift=Shift.Same),
-                relationship=Triangle(
-                    inside_a=[1],
-                    inside_b=[2],
-                    outside=[],
-                ),
+                symptom=VariableShift.Down,
+                anxiety=VariableShift.Up,
+                functioning=VariableShift.Same,
+                relationship=RelationshipKind.Distance,
+                relationshipTargets=[1, 2],
             )
         ],
         pdp=PDP(
@@ -104,6 +80,7 @@ def database():
             events=[
                 Event(
                     id=-2,
+                    kind=EventKind.Shift,
                     description="Conversation between Alice and Bob",
                     dateTime="2023-08-01T12:00:00Z",
                 )
@@ -119,17 +96,19 @@ def as_dict():
             {
                 "id": 1,
                 "name": "Alice",
+                "last_name": None,
                 "spouses": [],
-                "offspring": [],
-                "parents": [],
+                "parent_a": None,
+                "parent_b": None,
                 "confidence": None,
             },
             {
                 "id": 2,
                 "name": "Bob",
+                "last_name": None,
                 "spouses": [],
-                "offspring": [],
-                "parents": [],
+                "parent_a": None,
+                "parent_b": None,
                 "confidence": None,
             },
         ],
@@ -137,29 +116,19 @@ def as_dict():
         "events": [
             {
                 "id": 3,
+                "kind": "shift",
+                "person": None,
+                "spouse": None,
+                "child": None,
                 "description": "Alice and Bob had a conversation",
                 "dateTime": "2023-10-01T12:00:00Z",
-                "people": [],
-                "symptom": {
-                    "shift": Shift.Down,
-                    "rationale": None,
-                },
-                "anxiety": {
-                    "shift": Shift.Up,
-                    "rationale": None,
-                },
-                "functioning": {
-                    "shift": Shift.Same,
-                    "rationale": None,
-                },
-                "relationship": {
-                    "kind": RelationshipKind.Triangle,
-                    "inside_a": [1],
-                    "inside_b": [2],
-                    "outside": [],
-                    "rationale": None,
-                    "shift": None,
-                },
+                "endDateTime": None,
+                "symptom": "down",
+                "anxiety": "up",
+                "relationship": "distance",
+                "relationshipTargets": [1, 2],
+                "relationshipTriangles": [],
+                "functioning": "same",
                 "confidence": None,
             }
         ],
@@ -168,21 +137,28 @@ def as_dict():
                 {
                     "id": -1,
                     "name": "Alice",
+                    "last_name": None,
                     "spouses": [],
-                    "offspring": [],
-                    "parents": [],
+                    "parent_a": None,
+                    "parent_b": None,
                     "confidence": None,
                 }
             ],
             "events": [
                 {
                     "id": -2,
+                    "kind": "shift",
+                    "person": None,
+                    "spouse": None,
+                    "child": None,
                     "description": "Conversation between Alice and Bob",
                     "dateTime": "2023-08-01T12:00:00Z",
-                    "people": [],
+                    "endDateTime": None,
                     "symptom": None,
                     "anxiety": None,
                     "relationship": None,
+                    "relationshipTargets": [],
+                    "relationshipTriangles": [],
                     "functioning": None,
                     "confidence": None,
                 }
@@ -191,8 +167,8 @@ def as_dict():
     }
 
 
-def test_Database_model_dump(database, as_dict):
-    assert database.model_dump() == as_dict
+def test_Database_asdict(database, as_dict):
+    assert asdict(database) == as_dict
 
 
 def test_from_dict(database, as_dict):

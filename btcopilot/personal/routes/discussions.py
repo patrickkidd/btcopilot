@@ -1,5 +1,6 @@
 import logging
 import pickle
+from dataclasses import asdict
 
 from flask import Blueprint, jsonify, request, abort
 from sqlalchemy.orm import subqueryload
@@ -46,7 +47,7 @@ def _create_discussion(data: dict) -> Discussion:
         diagram = Diagram(
             user_id=user.id,
             name=f"{user.username} Personal Case File",
-            data=pickle.dumps({"database": initial_database.model_dump()}),
+            data=pickle.dumps({"database": asdict(initial_database)}),
         )
 
         db.session.add(diagram)
@@ -86,7 +87,7 @@ def create():
 
     ret = discussion.as_dict(include=["speakers", "statements"])
     if "statement" in data:
-        ret["pdp"] = response.pdp.model_dump()
+        ret["pdp"] = asdict(response.pdp)
         ret["statement"] = response.statement
 
     return jsonify(ret)
@@ -201,7 +202,7 @@ def chat(discussion_id: int):
 
     db.session.commit()
 
-    return jsonify({"statement": response.statement, "pdp": response.pdp.model_dump()})
+    return jsonify({"statement": response.statement, "pdp": asdict(response.pdp)})
 
 
 # @bp.route("/<int:discussion_id>/statements", methods=["GET"])

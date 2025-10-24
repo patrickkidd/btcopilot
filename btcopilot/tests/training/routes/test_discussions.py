@@ -1,4 +1,5 @@
 import pickle
+from dataclasses import asdict
 
 import pytest
 
@@ -69,7 +70,7 @@ def test_audit_shows_pdp_deltas_for_subject_statements_only(auditor):
         speaker_id=subject_speaker.id,
         text="I feel anxious",
         order=0,
-        pdp_deltas=test_deltas.model_dump(),
+        pdp_deltas=asdict(test_deltas),
     )
 
     # Expert statement WITHOUT PDP deltas (this is correct)
@@ -223,17 +224,25 @@ def test_clear_extracted_data_success(auditor, discussion):
         discussion_id=discussion.id,
         speaker_id=subject_speaker.id,
         text="First statement",
-        pdp_deltas=PDPDeltas(
-            people=[Person(id=-1, name="John")], events=[]
-        ).model_dump(),
+        pdp_deltas=asdict(PDPDeltas(people=[Person(id=-1, name="John")], events=[])),
     )
     stmt2 = Statement(
         discussion_id=discussion.id,
         speaker_id=subject_speaker.id,
         text="Second statement",
-        pdp_deltas=PDPDeltas(
-            people=[], events=[Event(id=-2, description="Event occurred", person=-1)]
-        ).model_dump(),
+        pdp_deltas=asdict(
+            PDPDeltas(
+                people=[],
+                events=[
+                    Event(
+                        id=-2,
+                        kind=EventKind.Shift,
+                        description="Event occurred",
+                        person=-1,
+                    )
+                ],
+            )
+        ),
     )
     db.session.add_all([stmt1, stmt2])
 
@@ -488,9 +497,9 @@ def test_progress_endpoint_after_clear(admin):
             speaker_id=speaker.id,
             text=f"Statement {i}",
             order=i,
-            pdp_deltas=PDPDeltas(
-                people=[Person(id=-i, name=f"Person {i}")], events=[]
-            ).model_dump(),
+            pdp_deltas=asdict(
+                PDPDeltas(people=[Person(id=-i, name=f"Person {i}")], events=[])
+            ),
         )
         statements.append(stmt)
         db.session.add(stmt)

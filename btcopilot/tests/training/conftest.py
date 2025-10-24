@@ -129,7 +129,7 @@ def diagram_with_full_data(test_user):
 
     # Initialize with empty database
     empty_database = DiagramData()
-    diagram.set_database(empty_database)
+    diagram.set_diagram_data(empty_database)
 
     db.session.add(diagram)
     db.session.commit()
@@ -216,7 +216,7 @@ def simple_diagram(test_user):
 
     # Initialize with empty database
     empty_database = DiagramData()
-    diagram.set_database(empty_database)
+    diagram.set_diagram_data(empty_database)
 
     db.session.add(diagram)
     db.session.commit()

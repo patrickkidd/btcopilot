@@ -4,6 +4,7 @@ import json
 import asyncio
 import nest_asyncio
 import pickle
+from dataclasses import asdict
 from datetime import datetime
 
 from flask import (
@@ -101,7 +102,7 @@ def extract_next_statement(*args, **kwargs):
 
         # Get or create diagram database
         if discussion.diagram:
-            database = discussion.diagram.get_database()
+            database = discussion.diagram.get_diagram_data()
         else:
             database = DiagramData()
 
@@ -117,9 +118,9 @@ def extract_next_statement(*args, **kwargs):
             # Update database and statement
             database.pdp = new_pdp
             if discussion.diagram:
-                discussion.diagram.set_database(database)
+                discussion.diagram.set_diagram_data(database)
             if pdp_deltas:
-                statement.pdp_deltas = pdp_deltas.model_dump()
+                statement.pdp_deltas = asdict(pdp_deltas)
                 _log.info(
                     f"Stored PDP deltas on statement {statement.id}: {len(pdp_deltas.events)} events, {len(pdp_deltas.people)} people"
                 )
@@ -229,7 +230,7 @@ def _create_assembly_ai_transcript(data: dict):
             diagram = Diagram(
                 user_id=target_user.id,
                 name=f"{target_user.username} Personal Case File",
-                data=pickle.dumps({"database": initial_database.model_dump()}),
+                data=pickle.dumps({"database": asdict(initial_database)}),
             )
             db.session.add(diagram)
             db.session.flush()
@@ -365,7 +366,7 @@ def _create_import(data: dict):
             diagram = Diagram(
                 user_id=target_user.id,
                 name=f"{target_user.username} Personal Case File",
-                data=pickle.dumps({"database": initial_database.model_dump()}),
+                data=pickle.dumps({"database": asdict(initial_database)}),
             )
             db.session.add(diagram)
             db.session.flush()
@@ -594,7 +595,7 @@ def audit(discussion_id):
         # Get person name if speaker is mapped to a person
         person_name = None
         if stmt.speaker and stmt.speaker.person_id and discussion.diagram:
-            database = discussion.diagram.get_database()
+            database = discussion.diagram.get_diagram_data()
             if database.people:
                 for person in database.people:
                     if person.id == stmt.speaker.person_id:
@@ -611,7 +612,7 @@ def audit(discussion_id):
 
         # Create cumulative PDP snapshot for this statement
         cumulative_pdp = (
-            cumulative_pdp_state.model_dump()
+            asdict(cumulative_pdp_state)
             if cumulative_pdp_state.people or cumulative_pdp_state.events
             else None
         )
@@ -927,7 +928,7 @@ def clear_extracted_data(discussion_id):
 
     # Clear PDP data from the diagram if it exists
     if discussion.diagram:
-        database = discussion.diagram.get_database()
+        database = discussion.diagram.get_diagram_data()
         database.pdp.people = []
         database.pdp.events = []
 
@@ -946,7 +947,7 @@ def clear_extracted_data(discussion_id):
         # Ensure last_id accounts for default people
         database.last_id = max(database.last_id, 2)
 
-        discussion.diagram.set_database(database)
+        discussion.diagram.set_diagram_data(database)
 
     db.session.commit()
 

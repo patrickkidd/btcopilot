@@ -1,4 +1,5 @@
 import logging
+from dataclasses import asdict
 from flask import Blueprint, request, jsonify, abort
 from sqlalchemy.orm import subqueryload
 
@@ -33,7 +34,7 @@ def get(diagram_id):
         },
         exclude="data",
     )
-    ret["database"] = diagram.get_database().model_dump()
+    ret["database"] = asdict(diagram.get_diagram_data())
 
     return jsonify(ret)
 
@@ -75,11 +76,11 @@ def pdp_accept(diagram_id: int, pdp_id: int):
     if diagram.user_id != auth.current_user().id:
         return jsonify(success=False, message="Unauthorized"), 401
 
-    database = diagram.get_database()
+    database = diagram.get_diagram_data()
     pdp_id = -pdp_id  # Convert to negative ID for PDP items
 
     def done():
-        diagram.set_database(database)
+        diagram.set_diagram_data(database)
         db.session.commit()
         return jsonify(success=True)
 
@@ -113,11 +114,11 @@ def pdp_reject(diagram_id: int, pdp_id: int):
     if diagram.user_id != auth.current_user().id:
         return jsonify(success=False, message="Unauthorized"), 401
 
-    database = diagram.get_database()
+    database = diagram.get_diagram_data()
     pdp_id = -pdp_id  # Convert to negative ID for PDP items
 
     def done():
-        diagram.set_database(database)
+        diagram.set_diagram_data(database)
         db.session.commit()
         return jsonify(success=True)
 

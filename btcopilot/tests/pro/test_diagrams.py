@@ -266,9 +266,9 @@ def _test_set_diagram_shown(flask_app, admin_client):
     assert data["shown"] == shown
 
 
-# def test_set_database_doesnt_overwrite_scene(test_user):
+# def test_set_diagram_data_doesnt_overwrite_scene(test_user):
 #     from btcopilot.schema import DiagramData
 
 #     diagram = Diagram(data=SIP_DIAGRAM, user=test_user)
-#     diagram.set_database(DiagramData())
+#     diagram.set_diagram_data(DiagramData())
 #     assert b"version\x94\x8c\x051.5.0" in diagram.data

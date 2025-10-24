@@ -1,5 +1,6 @@
 import logging
 import json
+from dataclasses import asdict
 from flask import Blueprint, request, jsonify, render_template, g
 from sqlalchemy.orm import subqueryload
 
@@ -85,7 +86,7 @@ def test():
             {
                 "success": True,
                 "message": response.statement,
-                "pdp": response.pdp.model_dump(),
+                "pdp": asdict(response.pdp),
                 "prompts_used": list(custom_prompts.keys()),
             }
         )
@@ -243,7 +244,7 @@ def test_extraction():
             )
 
             # Compare results
-            extracted = result_deltas.model_dump()
+            extracted = asdict(result_deltas)
             expected = artifact["corrected"]
 
             # Simple comparison - could be enhanced

@@ -29,7 +29,7 @@ def test_get(subscriber):
             ],
         )
     )
-    subscriber.user.free_diagram.set_database(database)
+    subscriber.user.free_diagram.set_diagram_data(database)
     db.session.commit()
 
     response = subscriber.get("/personal/pdp")
@@ -64,7 +64,7 @@ def test_accept(subscriber, id, pdp):
     db.session.add(discussion)
     db.session.commit()
 
-    subscriber.user.free_diagram.set_database(DiagramData(pdp=pdp))
+    subscriber.user.free_diagram.set_diagram_data(DiagramData(pdp=pdp))
     db.session.commit()
 
     response = subscriber.post(
@@ -74,7 +74,7 @@ def test_accept(subscriber, id, pdp):
     assert response.json["success"] is True
 
     user = User.query.get(subscriber.user.id)
-    returned = user.free_diagram.get_database()
+    returned = user.free_diagram.get_diagram_data()
     expected = DiagramData()
     if pdp.people:
         expected.add_person(pdp.people[0])
@@ -110,7 +110,7 @@ def test_reject(subscriber, id, pdp):
     db.session.add(discussion)
     db.session.commit()
 
-    subscriber.user.free_diagram.set_database(DiagramData(pdp=pdp))
+    subscriber.user.free_diagram.set_diagram_data(DiagramData(pdp=pdp))
     db.session.commit()
 
     response = subscriber.post(
@@ -120,6 +120,6 @@ def test_reject(subscriber, id, pdp):
     assert response.json["success"] is True
 
     user = User.query.get(subscriber.user.id)
-    returned = user.free_diagram.get_database()
+    returned = user.free_diagram.get_diagram_data()
     expected = DiagramData()
     assert returned == expected

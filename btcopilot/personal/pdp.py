@@ -1,5 +1,6 @@
 import copy
 import logging
+from dataclasses import asdict
 
 from rich.pretty import pretty_repr
 
@@ -78,7 +79,7 @@ async def update(
     
     **Existing Diagram State (DO NOT RE-EXTRACT THIS DATA):**
 
-    {diagram_data.model_dump()}
+    {asdict(diagram_data)}
 
     **Conversation History (for context only):**
 

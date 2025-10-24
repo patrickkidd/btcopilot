@@ -1,4 +1,5 @@
 import logging
+from dataclasses import asdict
 import pytest
 from mock import patch
 
@@ -120,7 +121,7 @@ def test_test_prompts_endpoint(admin, discussion):
     """Test the prompt testing endpoint"""
     with patch("btcopilot.training.routes.prompts.ask") as ask:
         # Mock the therapist response
-        mock_pdp = type("PDP", (), {"model_dump": lambda self: {"test": "data"}})()
+        mock_pdp = type("PDP", (), {})()
 
         mock_response = type(
             "Response", (), {"statement": "Test response", "pdp": mock_pdp}

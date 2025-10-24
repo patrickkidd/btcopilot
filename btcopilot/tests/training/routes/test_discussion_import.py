@@ -1,4 +1,5 @@
 import json
+from dataclasses import asdict
 
 import pytest
 
@@ -48,7 +49,7 @@ def create_sample_discussion_fixture():
         speaker_id=2,
         text="Can you tell me more about that?",
         order=1,
-        pdp_deltas=PDPDeltas(events=[], people=[]).model_dump(),
+        pdp_deltas=asdict(PDPDeltas(events=[], people=[])),
     )
 
     # Build the complete fixture by exporting to dict format
@@ -105,7 +106,9 @@ def create_complex_pdp_discussion_fixture():
             speaker_id=1,
             text="I'm feeling very anxious about my job",
             order=0,
-            pdp_deltas=work_anxiety_deltas.model_dump(),  # Subject statement with extracted data
+            pdp_deltas=asdict(
+                work_anxiety_deltas
+            ),  # Subject statement with extracted data
         ),
         Statement(
             id=2,
@@ -119,7 +122,9 @@ def create_complex_pdp_discussion_fixture():
             speaker_id=1,
             text="Yes, my relationship with my boss is also strained",
             order=2,
-            pdp_deltas=relationship_deltas.model_dump(),  # Subject statement with extracted data
+            pdp_deltas=asdict(
+                relationship_deltas
+            ),  # Subject statement with extracted data
         ),
         Statement(
             id=4,
@@ -191,7 +196,7 @@ def create_complex_pdp_fixture():
             speaker_id=2,
             text="Tell me more",
             order=1,
-            pdp_deltas=complex_deltas.model_dump(),
+            pdp_deltas=asdict(complex_deltas),
         ),
     ]
 

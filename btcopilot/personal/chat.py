@@ -2,7 +2,7 @@ import enum
 import textwrap
 import logging
 
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from flask import g
 
 from btcopilot.extensions import db, ai_log, llm, LLMFunction
@@ -80,7 +80,7 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
         text=user_statement,
         speaker=discussion.chat_user_speaker,
         order=discussion.next_order(),
-        pdp_deltas=pdp_deltas.model_dump() if pdp_deltas else None,
+        pdp_deltas=asdict(pdp_deltas) if pdp_deltas else None,
     )
     db.session.add(statement)
 

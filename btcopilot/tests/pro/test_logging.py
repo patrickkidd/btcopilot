@@ -18,7 +18,7 @@ def _loggers():
     logging.getLogger("btcopilot").handlers.clear()
 
 
-@pytest.mark.init_datadog
+# @pytest.mark.init_datadog
 def test_datadog_logs(flask_app, test_user, test_activation, _loggers):
     extensions.init_datadog(flask_app)
     with mock.patch.object(logging.getLogger("btcopilot"), "level", logging.DEBUG):
