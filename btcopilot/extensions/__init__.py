@@ -144,10 +144,11 @@ def init_datadog(app):
     #         "- %(message)s"
     #     )
 
+    os.makedirs(os.path.join(app.instance_path, "logs"), exist_ok=True)
     if os.getenv("FD_IS_CELERY"):
-        fpath = os.path.join(app.instance_path, "celery.json")
+        fpath = os.path.join(app.instance_path, "logs", "celery.json")
     else:
-        fpath = os.path.join(app.instance_path, "datadog.json")
+        fpath = os.path.join(app.instance_path, "logs", "flask.json")
     print(f"Outputting datadog log: {fpath}")
     datadogHandler = MyFileHandler(fpath, mode="a+")
     datadogHandler.setLevel(logging.DEBUG)

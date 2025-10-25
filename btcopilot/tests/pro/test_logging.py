@@ -18,7 +18,7 @@ def _loggers(request):
     # Note: This runs after flask_app is created but before test body
     if "flask_app" in request.fixturenames:
         flask_app = request.getfixturevalue("flask_app")
-        log_path = os.path.join(flask_app.instance_path, "datadog.json")
+        log_path = os.path.join(flask_app.instance_path, "logs", "flask.json")
         try:
             os.remove(log_path)
         except FileNotFoundError:
@@ -46,7 +46,7 @@ def test_datadog_logs(flask_app, test_user, test_activation, _loggers):
             assert response.status_code == 200
             diagram_id = pickle.loads(response.data)["id"]
             assert client.get(f"/v1/diagrams/{diagram_id}").status_code == 200
-    with open(os.path.join(flask_app.instance_path, "datadog.json"), "r") as f:
+    with open(os.path.join(flask_app.instance_path, "logs", "flask.json"), "r") as f:
         sdata = f.read()
         logs = [json.loads(line) for line in sdata.split("\n") if line]
 
