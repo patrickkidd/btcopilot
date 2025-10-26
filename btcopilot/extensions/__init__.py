@@ -105,7 +105,7 @@ class DatadogJSONFormatter(logging.Formatter):
             "host": os.getenv("DD_HOSTNAME", ""),
             "service": service,
             "date": time_2_iso8601(record.created),
-            "status": record.levelname,
+            "level": record.levelname,
             "message": record.getMessage(),
             "btcopilot": {
                 "version": version.VERSION,
