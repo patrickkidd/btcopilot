@@ -25,7 +25,7 @@ An AI assistant for the Family Diagram app. BT
 Copilot lets you ask questions about the current case file based on the academic
 and scientific literature for Bowen theory.
 
-## SARF web auditing system
+## BT Copilot Training System (Web app)
 
 The SARF model scans a text conversation between any number of people and
 compiles a database of people, and events containing shifts in four variables -
@@ -66,7 +66,7 @@ This body of corrections becomes "ground truth" for coding the SARF model in Bow
 
 Source Code: [btcopilot/training](btcopilot/training)
 
-## SARF Personal/Mobile App Server
+## Personal/Mobile App Server
 
 The personal mobile app contains the core logic and data extraction for the SARF
 training system. This app is currently in development here:
@@ -74,7 +74,7 @@ training system. This app is currently in development here:
 
 Source Code: [btcopilot/personal](btcopilot/personal)
 
-## Family Diagram App Copilot Server
+## Pro/Desktop App (Family Diagram) Server
 
 In a nuthsell, BT Copilot evaluates a family diagram based on the academic
 literature. It is currenly launched inthe [Family Diagram](https://familydiagram.com) app, which will become the "Pro" version while the personal/mobile version is coming soon.
@@ -95,6 +95,40 @@ and writing human language. BT Copilot uses AI to build a model from the
 literature so that it can analyze the family's role in an individual's symptom.
 
 Source Code: [btcopilot/pro](btcopilot/pro)
+
+## Architecture
+
+__Data model + flow__
+
+Overview: [doc/DATA_MODEL_FLOW.md](doc/DATA_MODEL_FLOW.md)
+
+```
+familydiagram (Pro App)
+    ↓
+    └─→ Server: POST/PATCH /diagrams/{id}
+        └─→ btcopilot.pro.routes.diagrams()
+            └─→ Diagram.set_diagram_data(diagram_data)
+                └─→ pickle.dumps() → LargeBinary column
+
+User Chat Flow (Personal App):
+    ↓
+    └─→ Personal API: POST /personal/discussions/{id}/ask
+        └─→ btcopilot.personal.chat.ask()
+            ├─→ Load: diagram.get_diagram_data()
+            ├─→ Extract: pdp.update() → LLM returns PDPDeltas
+            ├─→ Apply: pdp.apply_deltas() → new_pdp
+            ├─→ Store: diagram.set_diagram_data(updated)
+            └─→ Save: statement.pdp_deltas = asdict(PDPDeltas)
+
+PDP Workflow (Personal App):
+    ↓
+    User sees PDP items in UI
+    ├─→ Accept: POST /diagrams/{id}/pdp/{pdp_id}/accept
+    │   └─→ Move from PDP to main database (negative → positive ID)
+    │
+    └─→ Reject: POST /diagrams/{id}/pdp/{pdp_id}/reject
+        └─→ Remove from PDP
+```
 
 ## Practical Overview
 
