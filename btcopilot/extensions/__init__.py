@@ -91,13 +91,19 @@ class DatadogJSONFormatter(logging.Formatter):
     """
 
     def format(self, record):
-        global IS_FLASK, IS_CELERY
+
+        if os.getenv("DD_SERVICE"):
+            service = os.getenv("DD_SERVICE")
+        elif os.getenv("FD_IS_CELERY"):
+            service = "celery"
+        else:
+            service = "btcopilot"
 
         dd_log = {
             "ddsource": "celery" if os.getenv("FD_IS_CELERY") else "flask",
             "ddtags": "desktop",
-            "host": "",
-            "service": "celery" if os.getenv("FD_IS_CELERY") else "btcopilot",
+            "host": os.getenv("DD_HOSTNAME", ""),
+            "service": service,
             "date": time_2_iso8601(record.created),
             "status": record.levelname,
             "message": record.getMessage(),
