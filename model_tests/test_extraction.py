@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from btcopilot.personal import pdp
+from btcopilot import pdp
 from btcopilot.schema import DiagramData, PDPDeltas
 from .conftest import make_discussion, assert_deltas_equal
 

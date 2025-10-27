@@ -33,9 +33,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
+btcopilot has these primary functions:
+- Backend for person/pro apps.
+- AI machine learning system interface for SARF research design
+- AI model that outputs a "Pending Data Pool" of deltas for a given diagram file
+  (i.e. single family case), to be accepted/committed later by the pro/personal
+  apps.
+
 ### Core Application Structure
 - **Flask Application Factory**: `btcopilot/app.py:create_app()` - main app initialization with extensions, error handlers, and module registration
 - **Main Package**: `btcopilot/__init__.py` - imports and exposes core components
+  - `btcopilot/pro` - Pro / desktop app backend server functionality
+  - `btcopilot/personal` - Personal / mobile app backend server functionality
+  - `btcopilot/training` - AI Training app backend server functionality
 - **API Endpoints**:
   - `btcopilot/pro/routes.py` - REST API using pickle protocol over HTTPS
   - `btcopilot/personal/routes.py` - REST API for personal mobile app using JSON
@@ -44,6 +54,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   `btcopilot/commands.py` - click commands management interface.
 
 ### Key Modules
+- **Pro** (`btcopilot/pro/schema.py`): Core data model, shared with Pro / Personal app repos
 - **Pro** (`btcopilot/pro/models/`): Pro desktop app, including SQLAlchemy models User, Diagram, License, Session, Statement/Discussion
 - **Personal** (`btcopilot/personal/`): Personal mobile app API with AI-powered data extraction from discussions for four variables; symptom, anxiety, relationship, functioning.
   - *JSON-BASED data schema*: `btcopilot/personal/database.py`

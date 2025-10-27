@@ -65,20 +65,22 @@ def test_PDEvent_as_dict():
 def database():
     return DiagramData(
         people=[
-            Person(id=1, name="Alice"),
-            Person(id=2, name="Bob"),
+            asdict(Person(id=1, name="Alice")),
+            asdict(Person(id=2, name="Bob")),
         ],
         events=[
-            Event(
-                id=3,
-                kind=EventKind.Shift,
-                description="Alice and Bob had a conversation",
-                dateTime="2023-10-01T12:00:00Z",
-                symptom=VariableShift.Down,
-                anxiety=VariableShift.Up,
-                functioning=VariableShift.Same,
-                relationship=RelationshipKind.Distance,
-                relationshipTargets=[1, 2],
+            asdict(
+                Event(
+                    id=3,
+                    kind=EventKind.Shift,
+                    description="Alice and Bob had a conversation",
+                    dateTime="2023-10-01T12:00:00Z",
+                    symptom=VariableShift.Down,
+                    anxiety=VariableShift.Up,
+                    functioning=VariableShift.Same,
+                    relationship=RelationshipKind.Distance,
+                    relationshipTargets=[1, 2],
+                )
             )
         ],
         pdp=PDP(

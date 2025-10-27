@@ -6,7 +6,7 @@ import flask.json
 
 import btcopilot
 from btcopilot.extensions import db
-from btcopilot.schema import PDPDeltas
+from btcopilot.schema import PDPDeltas, PDP
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 
 from btcopilot.tests.personal.conftest import discussion, discussions
@@ -93,14 +93,14 @@ def extraction_flow(request):
                 try:
                     result = next(extraction_iter)
                     # If result is a tuple, return as-is (PDP, PDPDeltas)
-                    # If it's just PDPDeltas, return (None, result)
+                    # If it's just PDPDeltas, return (PDP(), result)
                     if isinstance(result, tuple):
                         return result
                     else:
-                        return (None, result if result else PDPDeltas())
+                        return (PDP(), result if result else PDPDeltas())
                 except StopIteration:
                     # If we run out of extractions, return empty deltas
-                    return (None, PDPDeltas())
+                    return (PDP(), PDPDeltas())
 
             stack.enter_context(
                 patch(

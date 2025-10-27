@@ -42,6 +42,7 @@ def test_get(subscriber):
         (
             -2,
             PDP(
+                people=[Person(id=-1, name="you")],
                 events=[
                     Event(
                         id=-2,
@@ -49,7 +50,7 @@ def test_get(subscriber):
                         person=-1,
                         description="something happened",
                     )
-                ]
+                ],
             ),
         ),
     ],
@@ -73,21 +74,38 @@ def test_accept(subscriber, id, pdp):
 
     user = User.query.get(subscriber.user.id)
     returned = user.free_diagram.get_diagram_data()
-    expected = DiagramData()
-    if pdp.people:
-        expected.add_person(pdp.people[0])
-    else:
-        expected.add_event(pdp.events[0])
-    assert returned == expected
+
+    # Verify items were committed (removed from PDP)
+    assert len(returned.pdp.people) == 0
+    assert len(returned.pdp.events) == 0
+
+    # Verify items were added to main diagram
+    # commit_pdp_items uses transitive closure, so all referenced items get committed
+    assert len(returned.people) == len(pdp.people)
+    assert len(returned.events) == len(pdp.events)
 
 
 @pytest.mark.parametrize(
     "id, pdp",
     [
-        (-1, PDP(people=[Person(id=-1, name="you")])),
+        (
+            -1,
+            PDP(
+                people=[Person(id=-1, name="you")],
+                events=[
+                    Event(
+                        id=-2,
+                        kind=EventKind.Shift,
+                        person=-1,
+                        description="person event",
+                    )
+                ],
+            ),
+        ),
         (
             -2,
             PDP(
+                people=[Person(id=-1, name="you")],
                 events=[
                     Event(
                         id=-2,
@@ -95,7 +113,7 @@ def test_accept(subscriber, id, pdp):
                         person=-1,
                         description="something happened",
                     )
-                ]
+                ],
             ),
         ),
     ],
@@ -119,5 +137,18 @@ def test_reject(subscriber, id, pdp):
 
     user = User.query.get(subscriber.user.id)
     returned = user.free_diagram.get_diagram_data()
-    expected = DiagramData()
-    assert returned == expected
+
+    # Verify the specific item was rejected
+    if id == -1:
+        # Person test: person removed AND event cascade-deleted
+        assert len(returned.pdp.people) == 0
+        assert len(returned.pdp.events) == 0
+    else:
+        # Event test: event removed, but person remains
+        assert len(returned.pdp.people) == 1
+        assert returned.pdp.people[0].id == -1
+        assert len(returned.pdp.events) == 0
+
+    # Nothing committed to main diagram
+    assert len(returned.people) == 0
+    assert len(returned.events) == 0

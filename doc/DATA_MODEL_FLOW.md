@@ -320,7 +320,7 @@
 
    ---
 
-   ### 3.2 Delta Extraction (btcopilot.personal.pdp)
+   ### 3.2 Delta Extraction (btcopilot.pdp)
 
    **async def update()**:
    ```python
