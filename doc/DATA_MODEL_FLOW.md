@@ -669,3 +669,127 @@
    6. **Two Stages**: AI extracts deltas → user reviews → accepts/rejects to confirm
    7. **JSON-Storable**: PDPDeltas convert to JSON via asdict() for Statement.pdp_deltas column
    8. **Enumeration**: EventKind, VariableShift, RelationshipKind provide structured event types
+
+   ---
+
+   ## 9. Implementation File Reference
+
+   ### btcopilot - Core Schema
+   - [btcopilot/schema.py](../btcopilot/schema.py) - All dataclasses (DiagramData, Person, Event, PDP, PDPDeltas) plus enums and helper functions
+
+   ### btcopilot - Models & Persistence
+   - [btcopilot/pro/models/diagram.py](../btcopilot/pro/models/diagram.py) - Diagram SQLAlchemy model with get/set_diagram_data()
+   - [btcopilot/personal/models/statement.py](../btcopilot/personal/models/statement.py) - Statement model with pdp_deltas JSON column
+
+   ### btcopilot - Processing Logic
+   - [btcopilot/personal/pdp.py](../btcopilot/personal/pdp.py) - update(), apply_deltas(), cumulative()
+   - [btcopilot/personal/chat.py](../btcopilot/personal/chat.py) - ask() integrates extraction + storage + response
+   - [btcopilot/personal/prompts.py](../btcopilot/personal/prompts.py) - PDP_ROLE_AND_INSTRUCTIONS and other LLM prompts
+
+   ### btcopilot - API Routes
+   - [btcopilot/personal/routes/diagrams.py](../btcopilot/personal/routes/diagrams.py) - PDP accept/reject endpoints
+   - [btcopilot/pro/routes.py](../btcopilot/pro/routes.py) - Diagram CRUD endpoints
+
+   ### familydiagram - Client Integration
+   - [familydiagram/pkdiagram/server_types.py](../../familydiagram/pkdiagram/server_types.py) - Client-side Diagram, Discussion, Statement types
+   - [familydiagram/pkdiagram/models/serverfilemanagermodel.py](../../familydiagram/pkdiagram/models/serverfilemanagermodel.py) - Local caching and sync
+
+   ### Test Files
+   - [btcopilot/tests/personal/test_pdp.py](../btcopilot/tests/personal/test_pdp.py) - PDPDeltas usage and apply_deltas() tests
+   - [btcopilot/tests/training/test_pdp.py](../btcopilot/tests/training/test_pdp.py) - Comprehensive extraction examples
+   - [btcopilot/tests/pro/test_diagrams.py](../btcopilot/tests/pro/test_diagrams.py) - Pickle serialization patterns
+   - [familydiagram/tests/personal/](../../familydiagram/tests/personal/) - Client integration tests
+
+   ---
+
+   ## 10. Common Code Patterns
+
+   ### Loading Diagram Data
+   ```python
+   diagram = Diagram.query.get(diagram_id)
+   diagram_data = diagram.get_diagram_data()
+   # Returns: DiagramData(people=[...], events=[...], pdp=PDP(...), last_id=123)
+   ```
+
+   ### Saving Diagram Data
+   ```python
+   diagram_data.pdp = new_pdp
+   if discussion.diagram:
+       discussion.diagram.set_diagram_data(diagram_data)
+   db.session.commit()
+   ```
+
+   ### Extracting Deltas
+   ```python
+   pdp_deltas = await llm.submit(
+       LLMFunction.JSON,
+       prompt=SYSTEM_PROMPT,
+       response_format=PDPDeltas,
+   )
+   new_pdp = apply_deltas(diagram_data.pdp, pdp_deltas)
+   ```
+
+   ### Converting to/from JSON
+   ```python
+   from btcopilot.schema import asdict, from_dict
+
+   # Serialize to JSON
+   pdp_dict = asdict(pdp_deltas)
+   statement.pdp_deltas = pdp_dict
+
+   # Deserialize from JSON
+   pdp_deltas = from_dict(PDPDeltas, statement.pdp_deltas)
+   ```
+
+   ### Accepting PDP Item
+   ```python
+   database = diagram.get_diagram_data()
+   for person in database.pdp.people:
+       if person.id == pdp_id:
+           database.pdp.people.remove(person)
+           database.add_person(person)  # Assigns new positive ID
+           diagram.set_diagram_data(database)
+           db.session.commit()
+   ```
+
+   ---
+
+   ## 11. Storage Flow Details
+
+   ### Pickle vs JSON
+   - **Pickle**: Used for entire DiagramData in Diagram.data column (preserves Qt scene objects)
+   - **JSON**: Used for PDPDeltas in Statement.pdp_deltas column
+
+   ### Complete Storage Pipeline
+   ```
+   LLM → PDPDeltas (Python object)
+       ↓
+       asdict(PDPDeltas)
+       ↓
+       JSON (Statement.pdp_deltas column)
+       ↓
+       from_dict(PDPDeltas, json_data)
+       ↓
+       apply_deltas(pdp, pdp_deltas)
+       ↓
+       Updated PDP object
+       ↓
+       pickle.dumps(diagram_data)
+       ↓
+       Diagram.data (LargeBinary)
+   ```
+
+   ### Pickled Diagram Data Structure
+   ```python
+   # What's in Diagram.data column:
+   {
+       "people": [Person(id=1, name="User", confidence=1.0), ...],
+       "events": [Event(id=1, kind=EventKind.Shift, ...), ...],
+       "pdp": PDP(
+           people=[Person(id=-1, name="Mom", confidence=0.8)],
+           events=[Event(id=-2, ...), ...]
+       ),
+       "last_id": 2,
+       ... other scene data preserved
+   }
+   ```
