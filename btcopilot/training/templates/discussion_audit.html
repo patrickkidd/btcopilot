@@ -792,11 +792,12 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             if (!this.extractedData.people) this.extractedData.people = [];
             this.extractedData.people.push({
                 id: -Date.now(), // Negative ID for new items
-                name: 'New Person',
+                name: '',
+                last_name: '',
                 spouses: [],
-                offspring: [],
-                parents: [],
-                confidence: 0.5
+                parent_a: null,
+                parent_b: null,
+                confidence: null
             });
             this.autoSave();
         },
@@ -1298,29 +1299,36 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             const context = window.relationshipPersonContext || {};
             const isPersonField = context.isPersonField || false;
             const isEventPeople = (fieldName === 'people' && !isPersonField);
-            
+
             if (isPersonField) {
-                // Handle Person list fields (spouses, offspring, parents)
+                // Handle Person list fields (spouses only) and nullable parent fields
                 const personIndex = eventIndexOrPersonIndex; // This is actually personIndex for Person fields
                 const listIndex = personIndexOrListIndex;    // This is listIndex for Person fields
                 const person = this.extractedData.people[personIndex];
-                
+
                 console.log(`Handling Person field: ${fieldName} for person at index ${personIndex}`);
-                
-                if (isEdit) {
-                    console.log('EDIT mode - updating person list field at index', listIndex);
-                    console.log('Before update:', person[fieldName]);
-                    person[fieldName][listIndex] = personId;
-                    console.log('After update:', person[fieldName]);
-                } else {
-                    console.log('ADD mode - adding person to', fieldName);
-                    if (!person[fieldName]) {
-                        console.log('Creating new array for', fieldName);
-                        person[fieldName] = [];
+
+                if (fieldName === 'spouses') {
+                    // Keep array logic for spouses
+                    if (isEdit) {
+                        console.log('EDIT mode - updating person list field at index', listIndex);
+                        console.log('Before update:', person[fieldName]);
+                        person[fieldName][listIndex] = personId;
+                        console.log('After update:', person[fieldName]);
+                    } else {
+                        console.log('ADD mode - adding person to', fieldName);
+                        if (!person[fieldName]) {
+                            console.log('Creating new array for', fieldName);
+                            person[fieldName] = [];
+                        }
+                        console.log('Before push:', person[fieldName]);
+                        person[fieldName].push(personId);
+                        console.log('After push:', person[fieldName]);
                     }
-                    console.log('Before push:', person[fieldName]);
-                    person[fieldName].push(personId);
-                    console.log('After push:', person[fieldName]);
+                } else if (fieldName === 'parent_a' || fieldName === 'parent_b') {
+                    // Direct assignment for single parent fields
+                    console.log(`Setting ${fieldName} to ${personId}`);
+                    person[fieldName] = personId;
                 }
             } else if (isEventPeople) {
                 // Handle event.people array
@@ -1455,11 +1463,18 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         },
 
         removePersonListItem(personIndex, fieldName, listIndex) {
-            const fieldDisplayName = fieldName === 'spouses' ? 'spouses' : 
-                                   fieldName === 'offspring' ? 'offspring' : 'parents';
-            if (confirm(`Remove this person from ${fieldDisplayName}?`)) {
-                this.extractedData.people[personIndex][fieldName].splice(listIndex, 1);
-                this.autoSave();
+            if (fieldName === 'spouses') {
+                // Array field - use splice
+                if (confirm('Remove this person from spouses?')) {
+                    this.extractedData.people[personIndex][fieldName].splice(listIndex, 1);
+                    this.autoSave();
+                }
+            } else if (fieldName === 'parent_a' || fieldName === 'parent_b') {
+                // Single value field - set to null
+                if (confirm(`Remove ${fieldName}?`)) {
+                    this.extractedData.people[personIndex][fieldName] = null;
+                    this.autoSave();
+                }
             }
         },
 
@@ -2398,26 +2413,34 @@ function renderPeopleEditor() {
                         </div>
                         
                         <div class="field">
+                            <label class="label is-small">Last Name</label>
+                            <div class="control">
+                                <input class="input is-small" type="text" value="${person.last_name || ''}"
+                                       onchange="updatePersonField(${index}, 'last_name', this.value)">
+                            </div>
+                        </div>
+
+                        <div class="field">
                             <label class="label is-small">Spouses (IDs, comma-separated)</label>
                             <div class="control">
-                                <input class="input is-small" type="text" value="${(person.spouses || []).join(',')}" 
+                                <input class="input is-small" type="text" value="${(person.spouses || []).join(',')}"
                                        onchange="updatePersonField(${index}, 'spouses', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
                             </div>
                         </div>
-                        
+
                         <div class="field">
-                            <label class="label is-small">Offspring (IDs, comma-separated)</label>
+                            <label class="label is-small">Parent A (ID)</label>
                             <div class="control">
-                                <input class="input is-small" type="text" value="${(person.offspring || []).join(',')}" 
-                                       onchange="updatePersonField(${index}, 'offspring', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                                <input class="input is-small" type="number" value="${person.parent_a || ''}"
+                                       onchange="updatePersonField(${index}, 'parent_a', this.value ? parseInt(this.value) : null)">
                             </div>
                         </div>
-                        
+
                         <div class="field">
-                            <label class="label is-small">Parents (IDs, comma-separated)</label>
+                            <label class="label is-small">Parent B (ID)</label>
                             <div class="control">
-                                <input class="input is-small" type="text" value="${(person.parents || []).join(',')}" 
-                                       onchange="updatePersonField(${index}, 'parents', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                                <input class="input is-small" type="number" value="${person.parent_b || ''}"
+                                       onchange="updatePersonField(${index}, 'parent_b', this.value ? parseInt(this.value) : null)">
                             </div>
                         </div>
                     </div>
@@ -2700,9 +2723,10 @@ function addPerson() {
     currentEditingData.people.push({
         id: null,
         name: '',
+        last_name: '',
         spouses: [],
-        offspring: [],
-        parents: [],
+        parent_a: null,
+        parent_b: null,
         confidence: null
     });
     renderDataEditor();

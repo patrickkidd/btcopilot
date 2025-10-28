@@ -25,6 +25,92 @@ bp = Blueprint(
 bp = minimum_role(btcopilot.ROLE_AUDITOR)(bp)
 
 
+def normalize_pdp_deltas_to_new_schema(data):
+    """Convert old schema to new schema format for backward compatibility."""
+    if not data:
+        return data
+
+    normalized = {"people": [], "events": [], "delete": data.get("delete", [])}
+
+    # Normalize people
+    for person in data.get("people", []):
+        normalized_person = {
+            "id": person.get("id"),
+            "name": person.get("name"),
+            "last_name": person.get("last_name"),  # May be None in old data
+            "spouses": person.get("spouses", []),
+            "confidence": person.get("confidence"),
+        }
+
+        # Convert old parents list to parent_a/parent_b
+        old_parents = person.get("parents", [])
+        normalized_person["parent_a"] = old_parents[0] if len(old_parents) > 0 else None
+        normalized_person["parent_b"] = old_parents[1] if len(old_parents) > 1 else None
+
+        # offspring is dropped - it's computed from parent relationships
+
+        normalized["people"].append(normalized_person)
+
+    # Normalize events
+    for event in data.get("events", []):
+        normalized_event = {
+            "id": event.get("id"),
+            "kind": event.get("kind"),
+            "person": event.get("person"),
+            "spouse": event.get("spouse"),
+            "child": event.get("child"),
+            "description": event.get("description"),
+            "dateTime": event.get("dateTime"),
+            "endDateTime": event.get("endDateTime"),
+            "confidence": event.get("confidence"),
+        }
+
+        # Normalize variable shifts (dict → direct value)
+        for var in ["symptom", "anxiety", "functioning"]:
+            old_value = event.get(var)
+            if isinstance(old_value, dict):
+                normalized_event[var] = old_value.get("shift")
+            else:
+                normalized_event[var] = old_value
+
+        # Normalize relationship (nested dict → flat structure)
+        old_rel = event.get("relationship")
+        if old_rel:
+            if isinstance(old_rel, dict):
+                # Old format: nested dict with kind
+                normalized_event["relationship"] = old_rel.get("kind")
+
+                # Convert movers/recipients to relationshipTargets
+                movers = old_rel.get("movers", [])
+                recipients = old_rel.get("recipients", [])
+                normalized_event["relationshipTargets"] = movers + recipients
+
+                # Convert triangle structure
+                inside_a = old_rel.get("inside_a", [])
+                inside_b = old_rel.get("inside_b", [])
+                # Create tuples pairing inside_a with inside_b
+                triangles = []
+                for i in range(max(len(inside_a), len(inside_b))):
+                    a = inside_a[i] if i < len(inside_a) else None
+                    b = inside_b[i] if i < len(inside_b) else None
+                    if a is not None and b is not None:
+                        triangles.append([a, b])
+                normalized_event["relationshipTriangles"] = triangles
+            else:
+                # Already new format
+                normalized_event["relationship"] = old_rel
+                normalized_event["relationshipTargets"] = event.get(
+                    "relationshipTargets", []
+                )
+                normalized_event["relationshipTriangles"] = event.get(
+                    "relationshipTriangles", []
+                )
+
+        normalized["events"].append(normalized_event)
+
+    return normalized
+
+
 def compile_feedback_datapoints():
     """Compile all feedback into individual datapoints for analysis"""
     feedbacks = (
@@ -87,17 +173,35 @@ def compile_feedback_datapoints():
         }
 
         if feedback.feedback_type == "extraction" and feedback.statement.pdp_deltas:
-            deltas = feedback.statement.pdp_deltas
+            # Normalize to new schema
+            deltas = normalize_pdp_deltas_to_new_schema(feedback.statement.pdp_deltas)
 
             # Process people
             if deltas.get("people"):
-                for person in deltas["people"]:
+                all_people = deltas.get("people", [])
+                for person in all_people:
                     datapoint = base_info.copy()
                     datapoint["data_type"] = "person"
                     datapoint["person_name"] = person.get("name", "Unknown")
-                    datapoint["has_offspring"] = bool(person.get("offspring"))
+
+                    # Compute offspring from ALL people with this person as parent
+                    offspring_ids = [
+                        p.get("id")
+                        for p in all_people
+                        if person.get("id") in [p.get("parent_a"), p.get("parent_b")]
+                    ]
+                    datapoint["has_offspring"] = len(offspring_ids) > 0
+
                     datapoint["has_spouses"] = bool(person.get("spouses"))
-                    datapoint["has_parents"] = bool(person.get("parents"))
+
+                    # Convert parent_a/parent_b to list for compatibility
+                    parents = [
+                        p
+                        for p in [person.get("parent_a"), person.get("parent_b")]
+                        if p is not None
+                    ]
+                    datapoint["has_parents"] = len(parents) > 0
+
                     datapoint["person_confidence"] = person.get("confidence", 0.0)
                     datapoints.append(datapoint)
 
@@ -108,7 +212,7 @@ def compile_feedback_datapoints():
                     if event.get("symptom"):
                         datapoint = base_info.copy()
                         datapoint["data_type"] = "symptom"
-                        datapoint["shift"] = event["symptom"].get("shift", "none")
+                        datapoint["shift"] = event["symptom"]  # Direct enum value
                         datapoint["event_description"] = event.get("description", "")
                         datapoint["event_datetime"] = event.get("dateTime", "")
                         datapoints.append(datapoint)
@@ -117,7 +221,7 @@ def compile_feedback_datapoints():
                     if event.get("anxiety"):
                         datapoint = base_info.copy()
                         datapoint["data_type"] = "anxiety"
-                        datapoint["shift"] = event["anxiety"].get("shift", "none")
+                        datapoint["shift"] = event["anxiety"]  # Direct enum value
                         datapoint["event_description"] = event.get("description", "")
                         datapoint["event_datetime"] = event.get("dateTime", "")
                         datapoints.append(datapoint)
@@ -126,7 +230,7 @@ def compile_feedback_datapoints():
                     if event.get("functioning"):
                         datapoint = base_info.copy()
                         datapoint["data_type"] = "functioning"
-                        datapoint["shift"] = event["functioning"].get("shift", "none")
+                        datapoint["shift"] = event["functioning"]  # Direct enum value
                         datapoint["event_description"] = event.get("description", "")
                         datapoint["event_datetime"] = event.get("dateTime", "")
                         datapoints.append(datapoint)
@@ -134,21 +238,21 @@ def compile_feedback_datapoints():
                     # Add relationship datapoint
                     if event.get("relationship"):
                         datapoint = base_info.copy()
-                        rel = event["relationship"]
                         datapoint["data_type"] = "relationship"
-                        datapoint["relationship_type"] = rel.get("kind", "unknown")
+                        datapoint["relationship_type"] = event[
+                            "relationship"
+                        ]  # Direct enum value
                         datapoint["event_description"] = event.get("description", "")
                         datapoint["event_datetime"] = event.get("dateTime", "")
-                        # Add relationship details
-                        if rel.get("kind") == "triangle":
-                            datapoint["triangle_inside_a"] = rel.get("inside_a", [])
-                            datapoint["triangle_inside_b"] = rel.get("inside_b", [])
-                            datapoint["triangle_outside"] = rel.get("outside", [])
-                        else:
-                            datapoint["mechanism_movers"] = rel.get("movers", [])
-                            datapoint["mechanism_recipients"] = rel.get(
-                                "recipients", []
-                            )
+
+                        # Get targets and triangles from new fields
+                        datapoint["relationship_targets"] = event.get(
+                            "relationshipTargets", []
+                        )
+                        datapoint["relationship_triangles"] = event.get(
+                            "relationshipTriangles", []
+                        )
+
                         datapoints.append(datapoint)
 
             # Process deletions
