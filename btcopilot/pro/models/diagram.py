@@ -36,25 +36,44 @@ class Diagram(db.Model, ModelMixin):
     discussions = relationship("Discussion", back_populates="diagram")
 
     def get_diagram_data(self) -> DiagramData:
-        import PyQt5.sip
-        from btcopilot.schema import DiagramData, PDP
+        import PyQt5.sip  # Required for unpickling QtCore objects
+        from btcopilot.schema import DiagramData, PDP, from_dict
 
         data = pickle.loads(self.data) if self.data else {}
+
+        # Return outer people/events as raw dicts (READ-ONLY, may contain QtCore objects)
+        people = data.get("people", [])
+        events = data.get("events", [])
+
+        # Convert PDP dict to dataclass
+        pdp_dict = data.get("pdp", {})
+        pdp = from_dict(PDP, pdp_dict) if pdp_dict else PDP()
+
         return DiagramData(
-            people=data.get("people", []),
-            events=data.get("events", []),
-            pdp=data.get("pdp", PDP()),
+            people=people,
+            events=events,
+            pdp=pdp,
             last_id=data.get("last_id", 0),
         )
 
     def set_diagram_data(self, diagram_data: DiagramData):
-        import PyQt5.sip
+        import PyQt5.sip  # Required for pickling QtCore objects
+        from btcopilot.schema import asdict
 
         data = pickle.loads(self.data) if self.data else {}
-        data["people"] = diagram_data.people
-        data["events"] = diagram_data.events
-        data["pdp"] = diagram_data.pdp
+
+        # Convert PDP dataclass to dict before pickling (JSON-compatible)
+        data["pdp"] = asdict(diagram_data.pdp)
         data["last_id"] = diagram_data.last_id
+
+        # Write outer people/events as raw dicts (if provided)
+        # Pro app: btcopilot never modifies these (FD manages them)
+        # Personal app: btcopilot may write to these after commits
+        if diagram_data.people:
+            data["people"] = diagram_data.people
+        if diagram_data.events:
+            data["events"] = diagram_data.events
+
         self.data = pickle.dumps(data)
 
     def grant_access(self, user, right, _commit=False):

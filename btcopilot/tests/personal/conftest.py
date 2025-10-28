@@ -33,7 +33,7 @@ def chat_flow(request):
 
             stack.enter_context(
                 patch(
-                    "btcopilot.personal.pdp.update",
+                    "btcopilot.pdp.update",
                     AsyncMock(return_value=pdp),
                 )
             )

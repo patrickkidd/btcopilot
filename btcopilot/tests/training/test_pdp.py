@@ -4,8 +4,8 @@ import asyncio
 import pytest
 from mock import patch
 
-from btcopilot.personal import pdp
-from btcopilot.personal.pdp import PDP, PDPDeltas
+from btcopilot import pdp
+from btcopilot.schema import PDP, PDPDeltas
 from btcopilot.schema import (
     DiagramData,
     VariableShift,
@@ -35,7 +35,7 @@ def test_update(test_user):
 
     with patch("btcopilot.extensions.llm.submit", return_value={}):
         with patch(
-            "btcopilot.personal.pdp.apply_deltas", return_value={"dummy": "data"}
+            "btcopilot.pdp.apply_deltas", return_value={"dummy": "data"}
         ):
             returned = asyncio.run(pdp.update(discussion, DiagramData(), "blah blah"))
     assert returned == ({"dummy": "data"}, {})

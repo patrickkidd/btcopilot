@@ -2,18 +2,15 @@ import enum
 from dataclasses import dataclass, field, asdict as dataclass_asdict, fields, MISSING
 from typing import get_origin, get_args
 
-__all__ = [
-    "asdict",
-    "from_dict",
-    "EventKind",
-    "RelationshipKind",
-    "VariableShift",
-    "Person",
-    "Event",
-    "PDPDeltas",
-    "PDP",
-    "DiagramData",
-]
+
+class PDPValidationError(ValueError):
+    """Raised when PDP deltas fail validation."""
+
+    def __init__(self, errors: list[str]):
+        self.errors = errors
+        super().__init__(
+            f"PDP validation failed with {len(errors)} error(s): {'; '.join(errors)}"
+        )
 
 
 def asdict(obj):
@@ -236,22 +233,153 @@ class PDP:
 
 @dataclass
 class DiagramData:
-    people: list[Person] = field(default_factory=list)
-    events: list[Event] = field(default_factory=list)
+    people: list[dict] = field(
+        default_factory=list
+    )  # Raw dicts from pickle (READ-ONLY, may contain QtCore objects)
+    events: list[dict] = field(
+        default_factory=list
+    )  # Raw dicts from pickle (READ-ONLY, may contain QtCore objects)
     pdp: PDP = field(default_factory=PDP)
     last_id: int = field(default=0)
-
-    def add_person(self, person: Person) -> None:
-        person.id = self._next_id()
-        self.people.append(person)
-
-    def add_event(self, event: Event) -> None:
-        event.id = self._next_id()
-        self.events.append(event)
 
     def _next_id(self) -> int:
         self.last_id += 1
         return self.last_id
+
+    def add_person(self, person: Person) -> None:
+        person.id = self._next_id()
+        self.people.append(asdict(person))
+
+    def add_event(self, event: Event) -> None:
+        event.id = self._next_id()
+        self.events.append(asdict(event))
+
+    def commit_pdp_items(self, item_ids: list[int]) -> dict[int, int]:
+        """
+        Returns mapping from old PDP IDs (negative) to new diagram IDs
+        (positive)
+        """
+        for item_id in item_ids:
+            if item_id >= 0:
+                raise ValueError(f"Item ID {item_id} must be negative (PDP item)")
+
+        all_item_ids = self._get_transitive_pdp_references(item_ids)
+
+        id_mapping = {}
+        for old_id in sorted(all_item_ids):
+            id_mapping[old_id] = self._next_id()
+
+        pdp_people_map = {p.id: p for p in self.pdp.people if p.id is not None}
+        pdp_events_map = {e.id: e for e in self.pdp.events}
+
+        for old_id in all_item_ids:
+            if old_id in pdp_people_map:
+                person = pdp_people_map[old_id]
+                new_person = self._remap_person_ids(person, id_mapping)
+                self.people.append(asdict(new_person))
+
+        for old_id in all_item_ids:
+            if old_id in pdp_events_map:
+                event = pdp_events_map[old_id]
+                new_event = self._remap_event_ids(event, id_mapping)
+                self.events.append(asdict(new_event))
+
+        self.pdp.people = [p for p in self.pdp.people if p.id not in all_item_ids]
+        self.pdp.events = [e for e in self.pdp.events if e.id not in all_item_ids]
+
+        return id_mapping
+
+    def _get_transitive_pdp_references(self, item_ids: list[int]) -> set[int]:
+        """Get transitive closure of all PDP items referenced by the given item_ids."""
+        from btcopilot.pdp import get_all_pdp_item_ids
+
+        pdp_item_ids = get_all_pdp_item_ids(self.pdp)
+        pdp_people_map = {p.id: p for p in self.pdp.people if p.id is not None}
+        pdp_events_map = {e.id: e for e in self.pdp.events}
+
+        visited = set()
+        to_visit = list(item_ids)
+
+        while to_visit:
+            item_id = to_visit.pop()
+
+            if item_id in visited:
+                continue
+
+            if item_id not in pdp_item_ids:
+                if item_id < 0:
+                    raise ValueError(f"PDP item {item_id} not found in PDP")
+                continue
+
+            visited.add(item_id)
+
+            if item_id in pdp_people_map:
+                person = pdp_people_map[item_id]
+                if person.parent_a and person.parent_a < 0:
+                    to_visit.append(person.parent_a)
+                if person.parent_b and person.parent_b < 0:
+                    to_visit.append(person.parent_b)
+                for spouse in person.spouses:
+                    if spouse < 0:
+                        to_visit.append(spouse)
+
+            if item_id in pdp_events_map:
+                event = pdp_events_map[item_id]
+                if event.person and event.person < 0:
+                    to_visit.append(event.person)
+                if event.spouse and event.spouse < 0:
+                    to_visit.append(event.spouse)
+                if event.child and event.child < 0:
+                    to_visit.append(event.child)
+                for target in event.relationshipTargets:
+                    if target < 0:
+                        to_visit.append(target)
+                for p1, p2 in event.relationshipTriangles:
+                    if p1 < 0:
+                        to_visit.append(p1)
+                    if p2 < 0:
+                        to_visit.append(p2)
+
+        return visited
+
+    def _remap_person_ids(self, person: Person, id_mapping: dict[int, int]) -> Person:
+        """Clone person with remapped IDs."""
+        from dataclasses import replace
+
+        return replace(
+            person,
+            id=id_mapping[person.id],
+            parent_a=(
+                id_mapping.get(person.parent_a, person.parent_a)
+                if person.parent_a
+                else None
+            ),
+            parent_b=(
+                id_mapping.get(person.parent_b, person.parent_b)
+                if person.parent_b
+                else None
+            ),
+            spouses=[id_mapping.get(s, s) for s in person.spouses],
+        )
+
+    def _remap_event_ids(self, event: Event, id_mapping: dict[int, int]) -> Event:
+        """Clone event with remapped IDs."""
+        from dataclasses import replace
+
+        return replace(
+            event,
+            id=id_mapping[event.id],
+            person=id_mapping.get(event.person, event.person) if event.person else None,
+            spouse=id_mapping.get(event.spouse, event.spouse) if event.spouse else None,
+            child=id_mapping.get(event.child, event.child) if event.child else None,
+            relationshipTargets=[
+                id_mapping.get(t, t) for t in event.relationshipTargets
+            ],
+            relationshipTriangles=[
+                (id_mapping.get(p1, p1), id_mapping.get(p2, p2))
+                for p1, p2 in event.relationshipTriangles
+            ],
+        )
 
     @staticmethod
     def create_with_defaults() -> "Diagram":

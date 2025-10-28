@@ -24,7 +24,8 @@ from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram, User
-from btcopilot.personal import pdp, Response, ask
+from btcopilot import pdp
+from btcopilot.personal import Response, ask
 from btcopilot.schema import DiagramData, PDP, PDPDeltas, Person, Event, asdict
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.training.models import Feedback

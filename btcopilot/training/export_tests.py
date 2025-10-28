@@ -10,7 +10,7 @@ from typing import Dict, Any
 from btcopilot.extensions import db
 from btcopilot.personal.models import Statement, SpeakerType
 from btcopilot.schema import DiagramData, asdict
-from btcopilot.personal.pdp import cumulative
+from btcopilot.pdp import cumulative
 from btcopilot.training.models import Feedback
 
 import logging

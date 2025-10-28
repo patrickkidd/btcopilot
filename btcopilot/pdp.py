@@ -9,6 +9,7 @@ from btcopilot.schema import (
     DiagramData,
     PDP,
     PDPDeltas,
+    PDPValidationError,
     Person,
     Event,
     asdict,
@@ -18,6 +19,120 @@ from datetime import datetime
 
 
 _log = logging.getLogger(__name__)
+
+
+def get_all_pdp_item_ids(pdp: PDP) -> set[int]:
+    """Get all item IDs from PDP (both people and events share ID space)."""
+    ids = {p.id for p in pdp.people if p.id is not None}
+    ids.update(e.id for e in pdp.events)
+    return ids
+
+
+def validate_pdp_deltas(pdp: PDP, deltas: PDPDeltas) -> None:
+    """
+    Validate that deltas can be safely applied to PDP.
+    Raises PDPValidationError if validation fails.
+
+    Note: btcopilot only manages PDP. All PDP items must have negative IDs.
+    References to positive IDs (FD committed items) are assumed valid.
+    """
+    errors = []
+
+    existing_pdp_ids = get_all_pdp_item_ids(pdp)
+    new_item_ids = {p.id for p in deltas.people if p.id is not None}
+    new_item_ids.update(e.id for e in deltas.events)
+
+    person_ids_in_delta = {p.id for p in deltas.people if p.id is not None}
+    event_ids_in_delta = {e.id for e in deltas.events}
+    collision = person_ids_in_delta & event_ids_in_delta
+    if collision:
+        errors.append(f"Person and Event in delta share same ID(s): {collision}")
+
+    all_pdp_item_ids = existing_pdp_ids | new_item_ids
+
+    existing_pdp_person_ids = {p.id for p in pdp.people if p.id is not None}
+    new_person_ids = {p.id for p in deltas.people if p.id is not None}
+    all_pdp_person_ids = existing_pdp_person_ids | new_person_ids
+
+    for person in deltas.people:
+        if person.id is not None and person.id >= 0:
+            errors.append(f"PDP person must have negative ID, got {person.id}")
+
+    for event in deltas.events:
+        if event.id >= 0:
+            errors.append(f"PDP event must have negative ID, got {event.id}")
+
+    for event in deltas.events:
+        if (
+            event.person is not None
+            and event.person < 0
+            and event.person not in all_pdp_person_ids
+        ):
+            errors.append(
+                f"Event {event.id} references non-existent PDP person {event.person}"
+            )
+
+        if (
+            event.spouse is not None
+            and event.spouse < 0
+            and event.spouse not in all_pdp_person_ids
+        ):
+            errors.append(
+                f"Event {event.id} references non-existent PDP spouse {event.spouse}"
+            )
+
+        if (
+            event.child is not None
+            and event.child < 0
+            and event.child not in all_pdp_person_ids
+        ):
+            errors.append(
+                f"Event {event.id} references non-existent PDP child {event.child}"
+            )
+
+        for target in event.relationshipTargets:
+            if target < 0 and target not in all_pdp_person_ids:
+                errors.append(
+                    f"Event {event.id} references non-existent PDP relationship target {target}"
+                )
+
+        for p1, p2 in event.relationshipTriangles:
+            if p1 < 0 and p1 not in all_pdp_person_ids:
+                errors.append(
+                    f"Event {event.id} references non-existent PDP person {p1} in triangle"
+                )
+            if p2 < 0 and p2 not in all_pdp_person_ids:
+                errors.append(
+                    f"Event {event.id} references non-existent PDP person {p2} in triangle"
+                )
+
+    for person in deltas.people:
+        if (
+            person.parent_a is not None
+            and person.parent_a < 0
+            and person.parent_a not in all_pdp_person_ids
+        ):
+            errors.append(
+                f"Person {person.id} references non-existent PDP parent_a {person.parent_a}"
+            )
+
+        if (
+            person.parent_b is not None
+            and person.parent_b < 0
+            and person.parent_b not in all_pdp_person_ids
+        ):
+            errors.append(
+                f"Person {person.id} references non-existent PDP parent_b {person.parent_b}"
+            )
+
+        for spouse in person.spouses:
+            if spouse < 0 and spouse not in all_pdp_person_ids:
+                errors.append(
+                    f"Person {person.id} references non-existent PDP spouse {spouse}"
+                )
+
+    if errors:
+        raise PDPValidationError(errors)
 
 
 def cumulative(discussion: Discussion, up_to_statement: Statement) -> PDP:

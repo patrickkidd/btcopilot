@@ -7,7 +7,7 @@ from flask import g
 
 from btcopilot.extensions import db, ai_log, llm, LLMFunction
 from btcopilot.async_utils import gather
-from btcopilot.personal import pdp
+from btcopilot import pdp
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.schema import DiagramData, PDP, asdict
 from btcopilot.personal.prompts import (

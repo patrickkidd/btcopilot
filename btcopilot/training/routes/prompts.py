@@ -10,7 +10,7 @@ from btcopilot.extensions import db, llm, LLMFunction
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal import prompts, ask, Response
 from btcopilot.schema import DiagramData, asdict
-from btcopilot.personal.pdp import update
+from btcopilot.pdp import update
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_breadcrumbs
 from btcopilot.training.export_tests import (

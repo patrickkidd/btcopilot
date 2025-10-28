@@ -5,24 +5,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Environment Setup
-- **Virtual environment**: `.venv/bin/activate` (uses pyproject.toml for dependencies)
+- **Virtual environment**: Managed by uv workspace (run from repository root)
 - **Start PostgreSQL**: `docker-compose up fd-server` (requires `docker volume create familydiagram_postgres` first)
 
 ### Running the Application
 - **Development server**: Use VSCode debugger with Flask configuration (port 8888)
-- **Manual run**: `python manage.py run -h 0.0.0.0 -p 8888`
+- **Manual run**: `uv run python manage.py run -h 0.0.0.0 -p 8888`
 - **Production**: `docker-compose -d production.yml up fd-server`
 
 ### Background Tasks (Celery)
 - **Start Redis**: `redis-server` (required for Celery broker/backend)
-- **Start Celery worker**: `celery -A btcopilot.celery:celery worker --loglevel=info`
-- **Start Celery beat scheduler**: `celery -A btcopilot.celery:celery beat --loglevel=info`
-- **Monitor tasks**: `celery -A btcopilot.celery:celery flower` (web UI at http://localhost:5555)
+- **Start Celery worker**: `uv run celery -A btcopilot.celery:celery worker --loglevel=info`
+- **Start Celery beat scheduler**: `uv run celery -A btcopilot.celery:celery beat --loglevel=info`
+- **Monitor tasks**: `uv run celery -A btcopilot.celery:celery flower` (web UI at http://localhost:5555)
 - **Debug Celery worker**: Use VSCode "Celery Worker (Debug)" configuration (single-threaded with breakpoints)
 - **Debug Celery beat**: Use VSCode "Celery Beat" configuration
 
 ### Testing
-- **Run all tests**: `pytest -vv tests`
+- **Run all tests**: `uv run pytest -vv tests`
 - **Test with async support**: Tests use `--asyncio-mode=auto` (configured in btcopilot/tests/pytest.ini)
 - **Specific test directories**: `tests/` (main), `tests/training/` (training module)
 - Whenever I paste a stack trace that means a test did not catch it, so add a test to reproduce that error if one did not already exist.
@@ -33,9 +33,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
+btcopilot has these primary functions:
+- Backend for person/pro apps.
+- AI machine learning system interface for SARF research design
+- AI model that outputs a "Pending Data Pool" of deltas for a given diagram file
+  (i.e. single family case), to be accepted/committed later by the pro/personal
+  apps.
+
 ### Core Application Structure
 - **Flask Application Factory**: `btcopilot/app.py:create_app()` - main app initialization with extensions, error handlers, and module registration
 - **Main Package**: `btcopilot/__init__.py` - imports and exposes core components
+  - `btcopilot/pro` - Pro / desktop app backend server functionality
+  - `btcopilot/personal` - Personal / mobile app backend server functionality
+  - `btcopilot/training` - AI Training app backend server functionality
 - **API Endpoints**:
   - `btcopilot/pro/routes.py` - REST API using pickle protocol over HTTPS
   - `btcopilot/personal/routes.py` - REST API for personal mobile app using JSON
@@ -44,6 +54,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   `btcopilot/commands.py` - click commands management interface.
 
 ### Key Modules
+- **Pro** (`btcopilot/pro/schema.py`): Core data model, shared with Pro / Personal app repos
 - **Pro** (`btcopilot/pro/models/`): Pro desktop app, including SQLAlchemy models User, Diagram, License, Session, Statement/Discussion
 - **Personal** (`btcopilot/personal/`): Personal mobile app API with AI-powered data extraction from discussions for four variables; symptom, anxiety, relationship, functioning.
   - *JSON-BASED data schema*: `btcopilot/personal/database.py`

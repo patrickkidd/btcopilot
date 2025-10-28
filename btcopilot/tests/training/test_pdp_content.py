@@ -9,7 +9,7 @@ from btcopilot.schema import (
 )
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.async_utils import one_result
-from btcopilot.personal import pdp
+from btcopilot import pdp
 
 
 @pytest.fixture(autouse=True)

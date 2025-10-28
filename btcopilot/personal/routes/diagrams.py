@@ -9,9 +9,27 @@ from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram, AccessRight
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.models.speaker import Speaker
-from btcopilot.schema import asdict
+from btcopilot.schema import asdict, PDP, Event
 
 _log = logging.getLogger(__name__)
+
+
+def _find_events_referencing_person(pdp: PDP, person_id: int) -> list[Event]:
+    """Find all events in PDP that reference the given person ID."""
+    events = []
+    for event in pdp.events:
+        if event.person == person_id:
+            events.append(event)
+        elif event.spouse == person_id:
+            events.append(event)
+        elif event.child == person_id:
+            events.append(event)
+        elif person_id in event.relationshipTargets:
+            events.append(event)
+        elif any(person_id in triangle for triangle in event.relationshipTriangles):
+            events.append(event)
+    return events
+
 
 diagrams_bp = Blueprint("diagrams", __name__, url_prefix="/diagrams")
 
@@ -77,28 +95,16 @@ def pdp_accept(diagram_id: int, pdp_id: int):
         return jsonify(success=False, message="Unauthorized"), 401
 
     database = diagram.get_diagram_data()
-    pdp_id = -pdp_id  # Convert to negative ID for PDP items
+    pdp_id = -pdp_id
 
-    def done():
+    try:
+        _log.info(f"Accepting PDP item with id: {pdp_id}")
+        database.commit_pdp_items([pdp_id])
         diagram.set_diagram_data(database)
         db.session.commit()
         return jsonify(success=True)
-
-    for person in database.pdp.people:
-        if person.id == pdp_id:
-            _log.info(f"Accepting PDP person with id: {pdp_id}")
-            database.pdp.people.remove(person)
-            database.add_person(person)
-            return done()
-
-    for event in database.pdp.events:
-        if event.id == pdp_id:
-            _log.info(f"Accepting PDP event with id: {pdp_id}")
-            database.pdp.events.remove(event)
-            database.add_event(event)
-            return done()
-
-    return jsonify(success=False, message="PDP item not found"), 404
+    except ValueError as e:
+        return jsonify(success=False, message=str(e)), 404
 
 
 @diagrams_bp.route("/<int:diagram_id>/pdp/<int:pdp_id>/reject", methods=["POST"])
@@ -125,6 +131,13 @@ def pdp_reject(diagram_id: int, pdp_id: int):
     for person in database.pdp.people:
         if person.id == pdp_id:
             _log.info(f"Rejecting PDP person with id: {pdp_id}")
+            # Cascade delete events referencing this person
+            events_to_remove = _find_events_referencing_person(database.pdp, pdp_id)
+            for event in events_to_remove:
+                _log.info(
+                    f"Cascade deleting event {event.id} that references person {pdp_id}"
+                )
+                database.pdp.events.remove(event)
             database.pdp.people.remove(person)
             return done()
 
