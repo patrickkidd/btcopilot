@@ -664,11 +664,50 @@ function toggleExtractedData(componentId) {
     }
 }
 
+// Helper function to normalize extracted data format
+function normalizeExtractedData(data) {
+    if (!data) return data;
+
+    // Normalize events - convert string values to objects
+    if (data.events) {
+        data.events = data.events.map(event => {
+            const normalized = { ...event };
+
+            // Convert string symptom/anxiety/functioning to objects
+            ['symptom', 'anxiety', 'functioning'].forEach(field => {
+                if (normalized[field] && typeof normalized[field] === 'string') {
+                    normalized[field] = {
+                        shift: normalized[field],
+                        rationale: null,
+                        confidence: 0.5
+                    };
+                }
+            });
+
+            // Convert string relationship to object
+            if (normalized.relationship && typeof normalized.relationship === 'string') {
+                normalized.relationship = {
+                    kind: normalized.relationship,
+                    rationale: null,
+                    confidence: 0.5
+                };
+            }
+
+            return normalized;
+        });
+    }
+
+    return data;
+}
+
 // Helper function for component extracted data display
 function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submitted, componentId, editableMode = false, messageId = null, editedExtraction = null, feedbackId = null) {
     // Use edited extraction if available, otherwise use original data
-    const displayData = editedExtraction || extractedData;
-    
+    let displayData = editedExtraction || extractedData;
+
+    // Normalize data format to handle legacy string values
+    displayData = normalizeExtractedData(displayData ? JSON.parse(JSON.stringify(displayData)) : null);
+
     return {
         extractedData: displayData,
         originalExtractedData: extractedData,
@@ -825,7 +864,21 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         },
         
         addVariable(eventIndex, varType) {
-            // Variables are now added directly via the dropdowns - this method is deprecated
+            const event = this.extractedData.events[eventIndex];
+            if (varType === 'symptom' || varType === 'anxiety' || varType === 'functioning') {
+                event[varType] = {
+                    shift: 'same',
+                    rationale: null,
+                    confidence: 0.5
+                };
+            } else if (varType === 'relationship') {
+                event.relationship = {
+                    kind: 'distance',
+                    rationale: null,
+                    confidence: 0.5
+                };
+            }
+            this.autoSave();
         },
         
         removePerson(personIndex) {
