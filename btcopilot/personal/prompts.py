@@ -146,16 +146,13 @@ Output: {
     "events": [
         {
             "id": -2,
+            "kind": "shift",
+            "person": -1,
             "description": "Didn't talk when he got home from work",
             "dateTime": "2025-08-11",
-            "people": [-1],
-            "relationship": {
-                "kind": "distance", 
-                "movers": [-1],
-                "recipients": [1],
-                "rationale": "Not talking or not engaging is distance"
-            },
-            "confidence": 0.7,
+            "relationship": "distance",
+            "relationshipTargets": [1],
+            "confidence": 0.7
         }
     ],
     "delete": []
@@ -226,31 +223,25 @@ Output:
     "events": [
         {
             "id": -2,
+            "kind": "shift",
+            "person": 1,
             "dateTime": "2025-06-19",
-            "people": [1, 2, -1],
             "description": "Got upset at birthday party and told brother about mom's meddling.",
-            "relationship": {
-                "kind": "triangle",
-                "inside_a": [1],
-                "inside_b": [-2],
-                "outside": [-1],
-                "rationale": "Telling someone about a problem in another person creates a triangle"
-            },
+            "relationship": "inside",
+            "relationshipTargets": [-2],
+            "relationshipTriangles": [-1],
             "confidence": 0.85
         },
         {
             "id": -3,
+            "kind": "shift",
+            "person": 1,
             "dateTime": "2025-06-19",
-            "people": [1, 2],
             "description": "Got in a fight with brother.",
-            "relationship": {
-                "kind": "conflict",
-                "movers": [1],
-                "recipients": [2],
-                "rationale": "Fighting is conflict"
-            },
+            "relationship": "conflict",
+            "relationshipTargets": [2],
             "confidence": 0.85
-        },
+        }
     ],
     "delete": []
 }
@@ -304,18 +295,14 @@ Output:
     "events": [
         {
             "id": -123,
+            "kind": "shift",
+            "person": 1,
             "dateTime": "2025-06-23",
-            "people": [1, -234],
-            "anxiety": {
-                "shift": "up",
-                "rationale": "Feeling overwhelmed at work"
-            },
-            "functioning": {
-                "shift": "down",
-                "rationale": "Crashed his car suggests he was not in control of himself"
-            },
+            "description": "Overloaded at work and crashed car helping wife",
+            "anxiety": "up",
+            "functioning": "down",
             "confidence": 0.4
-        },
+        }
     ],
     "delete": [4]
 }

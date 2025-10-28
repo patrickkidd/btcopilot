@@ -127,7 +127,7 @@ def test_commit_event_with_pdp_triangles():
                     kind=EventKind.Shift,
                     person=-1,
                     relationship=RelationshipKind.Inside,
-                    relationshipTriangles=[(-2, -3)],
+                    relationshipTriangles=[-2, -3],
                 )
             ],
         )
@@ -138,7 +138,7 @@ def test_commit_event_with_pdp_triangles():
     event = data.events[0]
     p2 = [p for p in data.people if p["name"] == "P2"][0]
     p3 = [p for p in data.people if p["name"] == "P3"][0]
-    assert event["relationshipTriangles"] == [(p2["id"], p3["id"])]
+    assert event["relationshipTriangles"] == [p2["id"], p3["id"]]
 
 
 def test_commit_preserves_committed_references():

@@ -211,7 +211,7 @@ class Event:
     anxiety: VariableShift | None = None
     relationship: RelationshipKind | None = None
     relationshipTargets: list[int] = field(default_factory=list)
-    relationshipTriangles: list[tuple[int, int]] = field(default_factory=list)
+    relationshipTriangles: list[int] = field(default_factory=list)
     functioning: VariableShift | None = None
 
     # meta
@@ -334,11 +334,9 @@ class DiagramData:
                 for target in event.relationshipTargets:
                     if target < 0:
                         to_visit.append(target)
-                for p1, p2 in event.relationshipTriangles:
-                    if p1 < 0:
-                        to_visit.append(p1)
-                    if p2 < 0:
-                        to_visit.append(p2)
+                for person_id in event.relationshipTriangles:
+                    if person_id < 0:
+                        to_visit.append(person_id)
 
         return visited
 
@@ -376,8 +374,8 @@ class DiagramData:
                 id_mapping.get(t, t) for t in event.relationshipTargets
             ],
             relationshipTriangles=[
-                (id_mapping.get(p1, p1), id_mapping.get(p2, p2))
-                for p1, p2 in event.relationshipTriangles
+                id_mapping.get(person_id, person_id)
+                for person_id in event.relationshipTriangles
             ],
         )
 
