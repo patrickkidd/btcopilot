@@ -5,24 +5,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Environment Setup
-- **Virtual environment**: `.venv/bin/activate` (uses pyproject.toml for dependencies)
+- **Virtual environment**: Managed by uv workspace (run from repository root)
 - **Start PostgreSQL**: `docker-compose up fd-server` (requires `docker volume create familydiagram_postgres` first)
 
 ### Running the Application
 - **Development server**: Use VSCode debugger with Flask configuration (port 8888)
-- **Manual run**: `python manage.py run -h 0.0.0.0 -p 8888`
+- **Manual run**: `uv run python manage.py run -h 0.0.0.0 -p 8888`
 - **Production**: `docker-compose -d production.yml up fd-server`
 
 ### Background Tasks (Celery)
 - **Start Redis**: `redis-server` (required for Celery broker/backend)
-- **Start Celery worker**: `celery -A btcopilot.celery:celery worker --loglevel=info`
-- **Start Celery beat scheduler**: `celery -A btcopilot.celery:celery beat --loglevel=info`
-- **Monitor tasks**: `celery -A btcopilot.celery:celery flower` (web UI at http://localhost:5555)
+- **Start Celery worker**: `uv run celery -A btcopilot.celery:celery worker --loglevel=info`
+- **Start Celery beat scheduler**: `uv run celery -A btcopilot.celery:celery beat --loglevel=info`
+- **Monitor tasks**: `uv run celery -A btcopilot.celery:celery flower` (web UI at http://localhost:5555)
 - **Debug Celery worker**: Use VSCode "Celery Worker (Debug)" configuration (single-threaded with breakpoints)
 - **Debug Celery beat**: Use VSCode "Celery Beat" configuration
 
 ### Testing
-- **Run all tests**: `pytest -vv tests`
+- **Run all tests**: `uv run pytest -vv tests`
 - **Test with async support**: Tests use `--asyncio-mode=auto` (configured in btcopilot/tests/pytest.ini)
 - **Specific test directories**: `tests/` (main), `tests/training/` (training module)
 - Whenever I paste a stack trace that means a test did not catch it, so add a test to reproduce that error if one did not already exist.
