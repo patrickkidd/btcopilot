@@ -664,11 +664,50 @@ function toggleExtractedData(componentId) {
     }
 }
 
+// Helper function to normalize extracted data format
+function normalizeExtractedData(data) {
+    if (!data) return data;
+
+    // Normalize events - convert string values to objects
+    if (data.events) {
+        data.events = data.events.map(event => {
+            const normalized = { ...event };
+
+            // Convert string symptom/anxiety/functioning to objects
+            ['symptom', 'anxiety', 'functioning'].forEach(field => {
+                if (normalized[field] && typeof normalized[field] === 'string') {
+                    normalized[field] = {
+                        shift: normalized[field],
+                        rationale: null,
+                        confidence: 0.5
+                    };
+                }
+            });
+
+            // Convert string relationship to object
+            if (normalized.relationship && typeof normalized.relationship === 'string') {
+                normalized.relationship = {
+                    kind: normalized.relationship,
+                    rationale: null,
+                    confidence: 0.5
+                };
+            }
+
+            return normalized;
+        });
+    }
+
+    return data;
+}
+
 // Helper function for component extracted data display
 function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submitted, componentId, editableMode = false, messageId = null, editedExtraction = null, feedbackId = null) {
     // Use edited extraction if available, otherwise use original data
-    const displayData = editedExtraction || extractedData;
-    
+    let displayData = editedExtraction || extractedData;
+
+    // Normalize data format to handle legacy string values
+    displayData = normalizeExtractedData(displayData ? JSON.parse(JSON.stringify(displayData)) : null);
+
     return {
         extractedData: displayData,
         originalExtractedData: extractedData,
@@ -793,9 +832,10 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             this.extractedData.people.push({
                 id: -Date.now(), // Negative ID for new items
                 name: 'New Person',
+                last_name: null,
                 spouses: [],
-                offspring: [],
-                parents: [],
+                parent_a: null,
+                parent_b: null,
                 confidence: 0.5
             });
             this.autoSave();
@@ -805,27 +845,38 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             if (!this.extractedData.events) this.extractedData.events = [];
             this.extractedData.events.push({
                 id: -Date.now(),
+                kind: 'shift',
+                person: null,
+                spouse: null,
+                child: null,
                 description: 'New Event',
                 dateTime: new Date().toISOString().split('T')[0],
-                people: [],
+                endDateTime: null,
+                symptom: null,
+                anxiety: null,
+                relationship: null,
+                relationshipTargets: [],
+                relationshipTriangles: [],
+                functioning: null,
                 confidence: 0.5
             });
             this.autoSave();
         },
         
         addVariable(eventIndex, varType) {
-            if (!this.extractedData.events[eventIndex]) return;
-            if (varType === 'relationship') {
-                this.extractedData.events[eventIndex].relationship = {
-                    kind: 'distance',
-                    movers: [],
-                    recipients: [],
-                    inside_a: [],
-                    inside_b: [],
-                    outside: []
+            const event = this.extractedData.events[eventIndex];
+            if (varType === 'symptom' || varType === 'anxiety' || varType === 'functioning') {
+                event[varType] = {
+                    shift: 'same',
+                    rationale: null,
+                    confidence: 0.5
                 };
-            } else {
-                this.extractedData.events[eventIndex][varType] = { shift: 'same' };
+            } else if (varType === 'relationship') {
+                event.relationship = {
+                    kind: 'distance',
+                    rationale: null,
+                    confidence: 0.5
+                };
             }
             this.autoSave();
         },
@@ -1300,7 +1351,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             const isEventPeople = (fieldName === 'people' && !isPersonField);
             
             if (isPersonField) {
-                // Handle Person list fields (spouses, offspring, parents)
+                // Handle Person list fields (spouses)
                 const personIndex = eventIndexOrPersonIndex; // This is actually personIndex for Person fields
                 const listIndex = personIndexOrListIndex;    // This is listIndex for Person fields
                 const person = this.extractedData.people[personIndex];
@@ -1323,26 +1374,13 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                     console.log('After push:', person[fieldName]);
                 }
             } else if (isEventPeople) {
-                // Handle event.people array
+                // Handle event.person (single person ID)
                 const eventIndex = eventIndexOrPersonIndex;
-                const personIndex = personIndexOrListIndex;
                 const event = this.extractedData.events[eventIndex];
-                
-                if (isEdit) {
-                    console.log('EDIT mode - updating event.people at index', personIndex);
-                    console.log('Before update:', event.people);
-                    event.people[personIndex] = personId;
-                    console.log('After update:', event.people);
-                } else {
-                    console.log('ADD mode - adding person to event.people');
-                    if (!event.people) {
-                        console.log('Creating new people array for event');
-                        event.people = [];
-                    }
-                    console.log('Before push:', event.people);
-                    event.people.push(personId);
-                    console.log('After push:', event.people);
-                }
+
+                console.log('Setting event.person to:', personId);
+                event.person = personId;
+                console.log('After update:', event.person);
             } else {
                 // Handle relationship data
                 const eventIndex = eventIndexOrPersonIndex;
@@ -1371,47 +1409,28 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             console.log('=== handlePersonSelection completed ===');
         },
 
-        // Event People Management Functions
-        addEventPerson(eventIndex) {
-            console.log('=== addEventPerson called ===');
+        // Event Person Management Functions
+        editEventPerson(eventIndex, currentId) {
+            console.log('=== editEventPerson called ===');
             console.log('Event index:', eventIndex);
             console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
-            
-            // Store context for modal callback including reference to this component
-            window.relationshipPersonContext = {
-                eventIndex,
-                fieldName: 'people', // Special field name for event people
-                personIndex: null,
-                isEdit: false,
-                component: this, // Store reference to the Alpine component
-                isEventPeople: true // Flag to indicate this is for event.people, not relationship
-            };
-            
-            showRelationshipPersonModal();
-        },
 
-        editEventPerson(eventIndex, personIndex, currentId) {
-            console.log('=== editEventPerson called ===');
-            console.log('Event index:', eventIndex, 'Person index:', personIndex);
-            console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
-            
             // Store context for modal callback including reference to this component
             window.relationshipPersonContext = {
                 eventIndex,
-                fieldName: 'people', // Special field name for event people
-                personIndex,
+                fieldName: 'person', // event.person is a single ID
                 isEdit: true,
                 currentPersonId: currentId,
                 component: this, // Store reference to the Alpine component
-                isEventPeople: true // Flag to indicate this is for event.people, not relationship
+                isEventPeople: true // Flag to indicate this is for event.person, not relationship
             };
-            
+
             showRelationshipPersonModal();
         },
 
-        removeEventPerson(eventIndex, personIndex) {
-            if (confirm('Remove this person from event?')) {
-                this.extractedData.events[eventIndex].people.splice(personIndex, 1);
+        clearEventPerson(eventIndex) {
+            if (confirm('Clear the person for this event?')) {
+                this.extractedData.events[eventIndex].person = null;
                 this.autoSave();
             }
         },
@@ -1455,8 +1474,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         },
 
         removePersonListItem(personIndex, fieldName, listIndex) {
-            const fieldDisplayName = fieldName === 'spouses' ? 'spouses' : 
-                                   fieldName === 'offspring' ? 'offspring' : 'parents';
+            const fieldDisplayName = fieldName === 'spouses' ? 'spouses' : fieldName;
             if (confirm(`Remove this person from ${fieldDisplayName}?`)) {
                 this.extractedData.people[personIndex][fieldName].splice(listIndex, 1);
                 this.autoSave();
@@ -2381,43 +2399,51 @@ function renderPeopleEditor() {
                         <div class="field">
                             <label class="label is-small">Name</label>
                             <div class="control">
-                                <input class="input is-small" type="text" value="${person.name || ''}" 
+                                <input class="input is-small" type="text" value="${person.name || ''}"
                                        onchange="updatePersonField(${index}, 'name', this.value)">
                             </div>
                         </div>
+
+                        <div class="field">
+                            <label class="label is-small">Last Name</label>
+                            <div class="control">
+                                <input class="input is-small" type="text" value="${person.last_name || ''}"
+                                       onchange="updatePersonField(${index}, 'last_name', this.value)">
+                            </div>
+                        </div>
                     </div>
-                    
+
                     <div class="column">
                         <div class="field">
                             <label class="label is-small">Confidence</label>
                             <div class="control">
-                                <input class="input is-small" type="number" min="0" max="1" step="0.01" 
-                                       value="${person.confidence || ''}" 
+                                <input class="input is-small" type="number" min="0" max="1" step="0.01"
+                                       value="${person.confidence || ''}"
                                        onchange="updatePersonField(${index}, 'confidence', parseFloat(this.value) || null)">
                             </div>
                         </div>
-                        
+
                         <div class="field">
                             <label class="label is-small">Spouses (IDs, comma-separated)</label>
                             <div class="control">
-                                <input class="input is-small" type="text" value="${(person.spouses || []).join(',')}" 
+                                <input class="input is-small" type="text" value="${(person.spouses || []).join(',')}"
                                        onchange="updatePersonField(${index}, 'spouses', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
                             </div>
                         </div>
-                        
+
                         <div class="field">
-                            <label class="label is-small">Offspring (IDs, comma-separated)</label>
+                            <label class="label is-small">Parent A (ID)</label>
                             <div class="control">
-                                <input class="input is-small" type="text" value="${(person.offspring || []).join(',')}" 
-                                       onchange="updatePersonField(${index}, 'offspring', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                                <input class="input is-small" type="number" value="${person.parent_a || ''}"
+                                       onchange="updatePersonField(${index}, 'parent_a', parseInt(this.value) || null)">
                             </div>
                         </div>
-                        
+
                         <div class="field">
-                            <label class="label is-small">Parents (IDs, comma-separated)</label>
+                            <label class="label is-small">Parent B (ID)</label>
                             <div class="control">
-                                <input class="input is-small" type="text" value="${(person.parents || []).join(',')}" 
-                                       onchange="updatePersonField(${index}, 'parents', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                                <input class="input is-small" type="number" value="${person.parent_b || ''}"
+                                       onchange="updatePersonField(${index}, 'parent_b', parseInt(this.value) || null)">
                             </div>
                         </div>
                     </div>
@@ -2459,32 +2485,75 @@ function renderEventsEditor() {
                         <div class="field">
                             <label class="label is-small">ID</label>
                             <div class="control">
-                                <input class="input is-small" type="number" value="${event.id || ''}" 
+                                <input class="input is-small" type="number" value="${event.id || ''}"
                                        onchange="updateEventField(${index}, 'id', parseInt(this.value) || null)">
                             </div>
                         </div>
-                        
+
+                        <div class="field">
+                            <label class="label is-small">Kind</label>
+                            <div class="control">
+                                <div class="select is-small is-fullwidth">
+                                    <select onchange="updateEventField(${index}, 'kind', this.value)">
+                                        <option value="shift" ${event.kind === 'shift' ? 'selected' : ''}>Shift</option>
+                                        <option value="bonded" ${event.kind === 'bonded' ? 'selected' : ''}>Bonded</option>
+                                        <option value="married" ${event.kind === 'married' ? 'selected' : ''}>Married</option>
+                                        <option value="birth" ${event.kind === 'birth' ? 'selected' : ''}>Birth</option>
+                                        <option value="adopted" ${event.kind === 'adopted' ? 'selected' : ''}>Adopted</option>
+                                        <option value="moved" ${event.kind === 'moved' ? 'selected' : ''}>Moved</option>
+                                        <option value="separated" ${event.kind === 'separated' ? 'selected' : ''}>Separated</option>
+                                        <option value="divorced" ${event.kind === 'divorced' ? 'selected' : ''}>Divorced</option>
+                                        <option value="death" ${event.kind === 'death' ? 'selected' : ''}>Death</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label is-small">Person (ID)</label>
+                            <div class="control">
+                                <input class="input is-small" type="number" value="${event.person || ''}"
+                                       onchange="updateEventField(${index}, 'person', parseInt(this.value) || null)">
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label is-small">Spouse (ID)</label>
+                            <div class="control">
+                                <input class="input is-small" type="number" value="${event.spouse || ''}"
+                                       onchange="updateEventField(${index}, 'spouse', parseInt(this.value) || null)">
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label is-small">Child (ID)</label>
+                            <div class="control">
+                                <input class="input is-small" type="number" value="${event.child || ''}"
+                                       onchange="updateEventField(${index}, 'child', parseInt(this.value) || null)">
+                            </div>
+                        </div>
+
                         <div class="field">
                             <label class="label is-small">Description</label>
                             <div class="control">
-                                <textarea class="textarea is-small" rows="2" 
+                                <textarea class="textarea is-small" rows="2"
                                           onchange="updateEventField(${index}, 'description', this.value)">${event.description || ''}</textarea>
                             </div>
                         </div>
-                        
+
                         <div class="field">
                             <label class="label is-small">Date/Time</label>
                             <div class="control">
-                                <input class="input is-small" type="datetime-local" value="${event.dateTime || ''}" 
+                                <input class="input is-small" type="datetime-local" value="${event.dateTime || ''}"
                                        onchange="updateEventField(${index}, 'dateTime', this.value)">
                             </div>
                         </div>
-                        
+
                         <div class="field">
-                            <label class="label is-small">People (IDs, comma-separated)</label>
+                            <label class="label is-small">End Date/Time</label>
                             <div class="control">
-                                <input class="input is-small" type="text" value="${(event.people || []).join(',')}" 
-                                       onchange="updateEventField(${index}, 'people', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                                <input class="input is-small" type="datetime-local" value="${event.endDateTime || ''}"
+                                       onchange="updateEventField(${index}, 'endDateTime', this.value)">
                             </div>
                         </div>
                         
@@ -2501,72 +2570,92 @@ function renderEventsEditor() {
                     <div class="column">
                         <!-- Variables Section -->
                         <h6 class="subtitle is-6">Variables</h6>
-                        
+
                         <!-- Symptom -->
                         <div class="field">
-                            <label class="label is-small">Symptom Shift</label>
+                            <label class="label is-small">Symptom</label>
                             <div class="control">
                                 <div class="select is-small is-fullwidth">
-                                    <select onchange="updateEventVariable(${index}, 'symptom', this.value)">
+                                    <select onchange="updateEventField(${index}, 'symptom', this.value || null)">
                                         <option value="">None</option>
-                                        <option value="up" ${event.symptom?.shift === 'up' ? 'selected' : ''}>Up</option>
-                                        <option value="down" ${event.symptom?.shift === 'down' ? 'selected' : ''}>Down</option>
-                                        <option value="same" ${event.symptom?.shift === 'same' ? 'selected' : ''}>Same</option>
+                                        <option value="up" ${event.symptom === 'up' ? 'selected' : ''}>Up</option>
+                                        <option value="down" ${event.symptom === 'down' ? 'selected' : ''}>Down</option>
+                                        <option value="same" ${event.symptom === 'same' ? 'selected' : ''}>Same</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Anxiety -->
                         <div class="field">
-                            <label class="label is-small">Anxiety Shift</label>
+                            <label class="label is-small">Anxiety</label>
                             <div class="control">
                                 <div class="select is-small is-fullwidth">
-                                    <select onchange="updateEventVariable(${index}, 'anxiety', this.value)">
+                                    <select onchange="updateEventField(${index}, 'anxiety', this.value || null)">
                                         <option value="">None</option>
-                                        <option value="up" ${event.anxiety?.shift === 'up' ? 'selected' : ''}>Up</option>
-                                        <option value="down" ${event.anxiety?.shift === 'down' ? 'selected' : ''}>Down</option>
-                                        <option value="same" ${event.anxiety?.shift === 'same' ? 'selected' : ''}>Same</option>
+                                        <option value="up" ${event.anxiety === 'up' ? 'selected' : ''}>Up</option>
+                                        <option value="down" ${event.anxiety === 'down' ? 'selected' : ''}>Down</option>
+                                        <option value="same" ${event.anxiety === 'same' ? 'selected' : ''}>Same</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Functioning -->
                         <div class="field">
-                            <label class="label is-small">Functioning Shift</label>
+                            <label class="label is-small">Functioning</label>
                             <div class="control">
                                 <div class="select is-small is-fullwidth">
-                                    <select onchange="updateEventVariable(${index}, 'functioning', this.value)">
+                                    <select onchange="updateEventField(${index}, 'functioning', this.value || null)">
                                         <option value="">None</option>
-                                        <option value="up" ${event.functioning?.shift === 'up' ? 'selected' : ''}>Up</option>
-                                        <option value="down" ${event.functioning?.shift === 'down' ? 'selected' : ''}>Down</option>
-                                        <option value="same" ${event.functioning?.shift === 'same' ? 'selected' : ''}>Same</option>
+                                        <option value="up" ${event.functioning === 'up' ? 'selected' : ''}>Up</option>
+                                        <option value="down" ${event.functioning === 'down' ? 'selected' : ''}>Down</option>
+                                        <option value="same" ${event.functioning === 'same' ? 'selected' : ''}>Same</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Relationship -->
                         <div class="field">
-                            <label class="label is-small">Relationship Type</label>
+                            <label class="label is-small">Relationship</label>
                             <div class="control">
                                 <div class="select is-small is-fullwidth">
-                                    <select onchange="updateEventRelationship(${index}, this.value)">
+                                    <select onchange="updateEventField(${index}, 'relationship', this.value || null)">
                                         <option value="">None</option>
-                                        <option value="triangle" ${event.relationship?.kind === 'triangle' ? 'selected' : ''}>Triangle</option>
-                                        <option value="conflict" ${event.relationship?.kind === 'conflict' ? 'selected' : ''}>Conflict</option>
-                                        <option value="distance" ${event.relationship?.kind === 'distance' ? 'selected' : ''}>Distance</option>
-                                        <option value="reciprocity" ${event.relationship?.kind === 'reciprocity' ? 'selected' : ''}>Reciprocity</option>
-                                        <option value="child-focus" ${event.relationship?.kind === 'child-focus' ? 'selected' : ''}>Child Focus</option>
+                                        <option value="fusion" ${event.relationship === 'fusion' ? 'selected' : ''}>Fusion</option>
+                                        <option value="conflict" ${event.relationship === 'conflict' ? 'selected' : ''}>Conflict</option>
+                                        <option value="distance" ${event.relationship === 'distance' ? 'selected' : ''}>Distance</option>
+                                        <option value="overfunctioning" ${event.relationship === 'overfunctioning' ? 'selected' : ''}>Overfunctioning</option>
+                                        <option value="underfunctioning" ${event.relationship === 'underfunctioning' ? 'selected' : ''}>Underfunctioning</option>
+                                        <option value="projection" ${event.relationship === 'projection' ? 'selected' : ''}>Projection</option>
+                                        <option value="defined-self" ${event.relationship === 'defined-self' ? 'selected' : ''}>Defined Self</option>
+                                        <option value="toward" ${event.relationship === 'toward' ? 'selected' : ''}>Toward</option>
+                                        <option value="away" ${event.relationship === 'away' ? 'selected' : ''}>Away</option>
+                                        <option value="inside" ${event.relationship === 'inside' ? 'selected' : ''}>Inside (Triangle)</option>
+                                        <option value="outside" ${event.relationship === 'outside' ? 'selected' : ''}>Outside (Triangle)</option>
+                                        <option value="cutoff" ${event.relationship === 'cutoff' ? 'selected' : ''}>Cutoff</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Relationship-specific fields -->
-                        <div id="relationship-fields-${index}">
-                            ${renderRelationshipFields(event, index)}
+
+                        <!-- Relationship Targets -->
+                        <div class="field">
+                            <label class="label is-small">Relationship Targets (IDs, comma-separated)</label>
+                            <div class="control">
+                                <input class="input is-small" type="text" value="${(event.relationshipTargets || []).join(',')}"
+                                       onchange="updateEventField(${index}, 'relationshipTargets', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                            </div>
+                        </div>
+
+                        <!-- Relationship Triangles -->
+                        <div class="field">
+                            <label class="label is-small">Relationship Triangles (IDs, comma-separated)</label>
+                            <div class="control">
+                                <input class="input is-small" type="text" value="${(event.relationshipTriangles || []).join(',')}"
+                                       onchange="updateEventField(${index}, 'relationshipTriangles', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2655,39 +2744,19 @@ function updateEventField(index, field, value) {
     currentEditingData.events[index][field] = value;
 }
 
-function updateEventVariable(index, variable, shift) {
-    if (!currentEditingData.events[index]) return;
-    if (shift) {
-        currentEditingData.events[index][variable] = { shift: shift };
-    } else {
-        delete currentEditingData.events[index][variable];
-    }
+function updateEventVariable(index, variable, value) {
+    // Deprecated - variables are now updated via updateEventField directly
+    updateEventField(index, variable, value || null);
 }
 
-function updateEventRelationship(index, kind) {
-    if (!currentEditingData.events[index]) return;
-    if (kind) {
-        const baseRelationship = { kind: kind };
-        if (kind === 'triangle') {
-            baseRelationship.inside_a = [];
-            baseRelationship.inside_b = [];
-            baseRelationship.outside = [];
-        } else {
-            baseRelationship.movers = [];
-            baseRelationship.recipients = [];
-        }
-        currentEditingData.events[index].relationship = baseRelationship;
-    } else {
-        delete currentEditingData.events[index].relationship;
-    }
-    
-    // Re-render relationship fields
-    document.getElementById('relationship-fields-' + index).innerHTML = renderRelationshipFields(currentEditingData.events[index], index);
+function updateEventRelationship(index, value) {
+    // Deprecated - relationship is now updated via updateEventField directly
+    updateEventField(index, 'relationship', value || null);
 }
 
 function updateRelationshipField(eventIndex, field, value) {
-    if (!currentEditingData.events[eventIndex] || !currentEditingData.events[eventIndex].relationship) return;
-    currentEditingData.events[eventIndex].relationship[field] = value;
+    // Deprecated - relationship fields are now part of the event directly
+    updateEventField(eventIndex, field, value);
 }
 
 function updateDeletes(deleteIds) {
@@ -2700,9 +2769,10 @@ function addPerson() {
     currentEditingData.people.push({
         id: null,
         name: '',
+        last_name: null,
         spouses: [],
-        offspring: [],
-        parents: [],
+        parent_a: null,
+        parent_b: null,
         confidence: null
     });
     renderDataEditor();
@@ -2722,9 +2792,19 @@ function addEvent() {
     if (!currentEditingData.events) currentEditingData.events = [];
     currentEditingData.events.push({
         id: null,
+        kind: 'shift',
+        person: null,
+        spouse: null,
+        child: null,
         description: '',
         dateTime: new Date().toISOString().split('T')[0],
-        people: [],
+        endDateTime: null,
+        symptom: null,
+        anxiety: null,
+        relationship: null,
+        relationshipTargets: [],
+        relationshipTriangles: [],
+        functioning: null,
         confidence: null
     });
     renderDataEditor();

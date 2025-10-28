@@ -96,14 +96,10 @@ def validate_pdp_deltas(pdp: PDP, deltas: PDPDeltas) -> None:
                     f"Event {event.id} references non-existent PDP relationship target {target}"
                 )
 
-        for p1, p2 in event.relationshipTriangles:
-            if p1 < 0 and p1 not in all_pdp_person_ids:
+        for person_id in event.relationshipTriangles:
+            if person_id < 0 and person_id not in all_pdp_person_ids:
                 errors.append(
-                    f"Event {event.id} references non-existent PDP person {p1} in triangle"
-                )
-            if p2 < 0 and p2 not in all_pdp_person_ids:
-                errors.append(
-                    f"Event {event.id} references non-existent PDP person {p2} in triangle"
+                    f"Event {event.id} references non-existent PDP person {person_id} in triangle"
                 )
 
     for person in deltas.people:

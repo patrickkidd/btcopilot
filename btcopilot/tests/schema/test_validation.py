@@ -175,7 +175,7 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_triangle_person():
                 kind=EventKind.Shift,
                 person=1,
                 relationship=RelationshipKind.Inside,
-                relationshipTriangles=[(1, -999)],
+                relationshipTriangles=[1, -999],
             )
         ]
     )

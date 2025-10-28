@@ -16,6 +16,7 @@ authors = [
 app = [
     "bcrypt",
     "celery==5.5.3",
+    "redis",
     "chromadb",
     "click",
     "ddtrace",

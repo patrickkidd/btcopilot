@@ -176,7 +176,7 @@ def create_complex_pdp_fixture():
                 description="Tell me more",
                 relationship=RelationshipKind.Inside,
                 relationshipTargets=[2],
-                relationshipTriangles=[3],
+                relationshipTriangles=[1, 3],
             )
         ],
         people=[
