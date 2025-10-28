@@ -492,33 +492,33 @@ Parameters:
                                         </div>
                                     </div>
                                     
-                                    <!-- Event People Section -->
-                                    <template x-if="(event.people && event.people.length > 0) || {{ 'true' if editable_mode else 'false' }}">
-                                        <div class="event-people-section" style="margin-top: 8px;">
+                                    <!-- Event Person Section -->
+                                    <template x-if="event.person || {{ 'true' if editable_mode else 'false' }}">
+                                        <div class="event-person-section" style="margin-top: 8px;">
                                             <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
                                                 <tr>
                                                     <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                        People:
-                                                        {% if editable_mode %}
-                                                        <span class="add-element" 
-                                                              @click.stop="addEventPerson(index)"
-                                                              title="Add person"
-                                                              style="margin-left: 4px;">
-                                                            <i class="fas fa-plus-circle"></i>
-                                                        </span>
-                                                        {% endif %}
+                                                        Person:
                                                     </td>
                                                     <td style="padding: 0;">
-                                                        <template x-for="(personId, idx) in (event.people || [])" :key="personId + '-' + idx">
-                                                            <span class="person-tag" 
+                                                        <template x-if="event.person">
+                                                            <span class="person-tag"
                                                                   style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
                                                                   :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                  @click="{{ 'editEventPerson(index, idx, personId)' if editable_mode else '' }}">
-                                                                <span x-text="getPersonName(personId, personDataVersion)"></span>
+                                                                  @click="{{ 'editEventPerson(index, event.person)' if editable_mode else '' }}">
+                                                                <span x-text="getPersonName(event.person, personDataVersion)"></span>
                                                                 {% if editable_mode %}
-                                                                <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;" 
-                                                                      @click.stop="removeEventPerson(index, idx)">×</span>
+                                                                <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                      @click.stop="clearEventPerson(index)">×</span>
                                                                 {% endif %}
+                                                            </span>
+                                                        </template>
+                                                        <template x-if="!event.person && {{ 'true' if editable_mode else 'false' }}">
+                                                            <span class="add-element"
+                                                                  @click.stop="editEventPerson(index, null)"
+                                                                  title="Add person"
+                                                                  style="cursor: pointer; color: #3273dc;">
+                                                                <i class="fas fa-plus-circle"></i> Add person
                                                             </span>
                                                         </template>
                                                     </td>
@@ -1308,33 +1308,33 @@ Parameters:
                                         </div>
                                     </div>
                                     
-                                    <!-- Event People Section -->
-                                    <template x-if="(event.people && event.people.length > 0) || {{ 'true' if editable_mode else 'false' }}">
-                                        <div class="event-people-section" style="margin-top: 8px;">
+                                    <!-- Event Person Section -->
+                                    <template x-if="event.person || {{ 'true' if editable_mode else 'false' }}">
+                                        <div class="event-person-section" style="margin-top: 8px;">
                                             <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
                                                 <tr>
                                                     <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                        People:
-                                                        {% if editable_mode %}
-                                                        <span class="add-element" 
-                                                              @click.stop="addEventPerson(index)"
-                                                              title="Add person"
-                                                              style="margin-left: 4px;">
-                                                            <i class="fas fa-plus-circle"></i>
-                                                        </span>
-                                                        {% endif %}
+                                                        Person:
                                                     </td>
                                                     <td style="padding: 0;">
-                                                        <template x-for="(personId, idx) in (event.people || [])" :key="personId + '-' + idx">
-                                                            <span class="person-tag" 
+                                                        <template x-if="event.person">
+                                                            <span class="person-tag"
                                                                   style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
                                                                   :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                  @click="{{ 'editEventPerson(index, idx, personId)' if editable_mode else '' }}">
-                                                                <span x-text="getPersonName(personId, personDataVersion)"></span>
+                                                                  @click="{{ 'editEventPerson(index, event.person)' if editable_mode else '' }}">
+                                                                <span x-text="getPersonName(event.person, personDataVersion)"></span>
                                                                 {% if editable_mode %}
-                                                                <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;" 
-                                                                      @click.stop="removeEventPerson(index, idx)">×</span>
+                                                                <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                      @click.stop="clearEventPerson(index)">×</span>
                                                                 {% endif %}
+                                                            </span>
+                                                        </template>
+                                                        <template x-if="!event.person && {{ 'true' if editable_mode else 'false' }}">
+                                                            <span class="add-element"
+                                                                  @click.stop="editEventPerson(index, null)"
+                                                                  title="Add person"
+                                                                  style="cursor: pointer; color: #3273dc;">
+                                                                <i class="fas fa-plus-circle"></i> Add person
                                                             </span>
                                                         </template>
                                                     </td>

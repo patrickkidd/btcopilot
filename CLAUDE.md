@@ -109,7 +109,7 @@ btcopilot has these primary functions:
   not capitalize all letters.
 - Create a re-usable component or template whenever markup or logic is
   duplicated.
-- Always use `black` to format all source files after changes.
+- Always use `black` to format all python source files after changes.
 
 
 ## Code architecture and rules
