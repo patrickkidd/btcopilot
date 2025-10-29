@@ -57,7 +57,7 @@ from btcopilot.pro import (
 S_FAIL_TO_SERV_LT_v150 = "Received request from app version %s, and this server can only support 1.5.0 and above."
 
 _log = logging.getLogger(__name__)
-_log.level = logging.INFO
+_log.setLevel(logging.INFO)
 
 
 bp = Blueprint("v1", __name__, url_prefix="/v1", template_folder="templates")

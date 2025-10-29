@@ -23,7 +23,7 @@ import os.path
 import json
 import logging
 
-from flask import Flask, g, current_app, has_app_context, request
+from flask import Flask, g, current_app, has_app_context, has_request_context, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
 from flask_wtf.csrf import CSRFProtect
@@ -115,7 +115,7 @@ class DatadogJSONFormatter(logging.Formatter):
             ),
         }
 
-        if has_app_context():
+        if has_request_context():
             dd_log["btcopilot"]["remote_addr"] = request.remote_addr
             dd_log["btcopilot"]["method"] = request.method
             dd_log["btcopilot"]["path"] = request.path
@@ -142,26 +142,51 @@ class MyFileHandler(logging.FileHandler):
 
 
 def init_datadog(app):
-    #     FORMAT = (
-    #         "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] "
-    #         "[dd.service=%(dd.service)s dd.env=%(dd.env)s "
-    #         "dd.version=%(dd.version)s "
-    #         "dd.trace_id=%(dd.trace_id)s dd.span_id=%(dd.span_id)s] "
-    #         "- %(message)s"
-    #     )
+    """Configure unified logging for btcopilot application code
+
+    All btcopilot.* loggers will:
+    - Write to console in Flask format: [timestamp] LEVEL in module: message
+    - Write to JSON file for Datadog agent
+    - Not propagate to root (prevents duplicate logs)
+    """
 
     os.makedirs(os.path.join(app.instance_path, "logs"), exist_ok=True)
-    if os.getenv("FD_IS_CELERY"):
+    is_celery = os.getenv("FD_IS_CELERY")
+    if is_celery:
         fpath = os.path.join(app.instance_path, "logs", "celery.json")
     else:
         fpath = os.path.join(app.instance_path, "logs", "flask.json")
     print(f"Outputting datadog log: {fpath}")
-    datadogHandler = MyFileHandler(fpath, mode="a+")
-    datadogHandler.setLevel(logging.DEBUG)
-    datadogHandler.setFormatter(DatadogJSONFormatter())
-    datadogHandler.addFilter(UserDataFilter())
+
     logger = logging.getLogger("btcopilot")
-    logger.addHandler(datadogHandler)
+
+    # Check if already initialized (idempotent)
+    has_console = any(
+        isinstance(h, logging.StreamHandler) and h.stream == sys.stdout
+        for h in logger.handlers
+    )
+    has_datadog = any(isinstance(h, MyFileHandler) for h in logger.handlers)
+
+    if has_console and has_datadog:
+        return
+
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+
+    if not has_datadog:
+        datadogHandler = MyFileHandler(fpath, mode="a+")
+        datadogHandler.setLevel(logging.DEBUG)
+        datadogHandler.setFormatter(DatadogJSONFormatter())
+        datadogHandler.addFilter(UserDataFilter())
+        logger.addHandler(datadogHandler)
+
+    if not has_console:
+        console = logging.StreamHandler(sys.stdout)
+        console.setLevel(logging.INFO)
+        console.setFormatter(
+            logging.Formatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s")
+        )
+        logger.addHandler(console)
 
 
 def _bugsnag_before_notify(event):
@@ -262,8 +287,6 @@ def init_logging(app: Flask):
     """
     global ai_log
 
-    logging.basicConfig(level=logging.INFO)
-
     ai_handler = logging.FileHandler("ai_log.txt")
     formatter = logging.Formatter("%(asctime)s - %(message)s")
     ai_handler.setFormatter(formatter)
@@ -314,6 +337,8 @@ def init_celery(app):
         result_serializer="json",
         timezone="UTC",
         enable_utc=True,
+        worker_hijack_root_logger=False,
+        worker_redirect_stdouts=False,
         beat_schedule={
             "sync-with-stripe-daily": {
                 "task": "sync_with_stripe",

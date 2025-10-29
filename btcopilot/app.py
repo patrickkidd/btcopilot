@@ -40,7 +40,6 @@ def create_app(app_class=Flask, config: dict = None, instance_path: str = None):
 
     if app.config["CONFIG"] == "development":
         app.config["SECRET_KEY"] = "dev-secret-key-for-sessions-change-in-production"
-        app.logger.setLevel(logging.DEBUG)  # Set debug level for development
     else:
         if not "SECRET_KEY" in app.config:
             raise ValueError("SECRET_KEY must be set in production! ")

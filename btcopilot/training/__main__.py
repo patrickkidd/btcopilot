@@ -16,7 +16,6 @@ from btcopilot.personal.prompts import BOWEN_THEORY_COACHING_IN_A_NUTSHELL
 
 _log = logging.getLogger(__name__)
 
-logging.basicConfig(level=logging.INFO, filename="debug_log.txt")
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 app = create_app()

@@ -39,8 +39,6 @@ def ingest(sources_dir, data_dir):
         MarkdownTextSplitter,
     )
 
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-
     if data_dir is None:
         data_dir = os.path.join(os.getcwd(), "vector_db")
     engine = Engine(data_dir)
