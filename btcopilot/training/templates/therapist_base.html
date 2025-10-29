@@ -805,16 +805,22 @@
         const originalFetch = window.fetch;
         window.fetch = function(url, options = {}) {
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            
+
             if (!options.headers) {
                 options.headers = {};
             }
-            
-            // Add CSRF token to POST, PUT, PATCH, DELETE requests
+
+            // Check if this is an external URL
+            const isExternal = url.startsWith('http://') || url.startsWith('https://');
+            const isSameOrigin = isExternal ? new URL(url).origin === window.location.origin : true;
+
+            // Only add CSRF token to same-origin POST, PUT, PATCH, DELETE requests
             if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method.toUpperCase())) {
-                options.headers['X-CSRFToken'] = csrfToken;
+                if (!isExternal || isSameOrigin) {
+                    options.headers['X-CSRFToken'] = csrfToken;
+                }
             }
-            
+
             return originalFetch(url, options);
         };
     </script>

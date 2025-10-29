@@ -432,6 +432,23 @@ def _create_import(data: dict):
                 statement.custom_prompts = custom_prompts
 
             db.session.add(statement)
+            db.session.flush()
+
+            # Import feedback if present
+            feedbacks_data = stmt_data.get("feedbacks")
+            if feedbacks_data:
+                for feedback_data in feedbacks_data:
+                    feedback = Feedback(
+                        statement_id=statement.id,
+                        auditor_id=feedback_data.get(
+                            "auditor_id", current_user.username
+                        ),
+                        feedback_type=feedback_data.get("feedback_type", "extraction"),
+                        thumbs_down=feedback_data.get("thumbs_down", False),
+                        comment=feedback_data.get("comment"),
+                        edited_extraction=feedback_data.get("edited_extraction"),
+                    )
+                    db.session.add(feedback)
 
     db.session.commit()
 
@@ -862,8 +879,17 @@ def progress(discussion_id: int):
 @bp.route("/<int:discussion_id>/export", methods=["GET"])
 @minimum_role(btcopilot.ROLE_AUDITOR)
 def export(discussion_id: int):
-    """Export a discussion as JSON file"""
+    """Export a discussion as JSON file
+
+    Query parameters:
+    - mode: 'statements' or 'full' (default: 'full')
+        - statements: Export only discussion metadata and statements (no extracted data)
+        - full: Export everything including AI extractions and user corrections
+    """
+    from flask import request
+
     current_user = auth.current_user()
+    mode = request.args.get("mode", "full")
 
     discussion = Discussion.query.get(discussion_id)
     if not discussion:
@@ -875,8 +901,34 @@ def export(discussion_id: int):
     ):
         return abort(403)
 
-    # Get discussion data with statements and speakers
+    # Get discussion data with statements, speakers, and feedbacks
     discussion_data = discussion.as_dict(include=["statements", "speakers"])
+
+    # Include feedbacks for each statement in full mode
+    if mode == "full":
+        if "statements" in discussion_data:
+            for statement_dict in discussion_data["statements"]:
+                statement_id = statement_dict.get("id")
+                if statement_id:
+                    statement_obj = Statement.query.get(statement_id)
+                    if statement_obj and statement_obj.feedbacks:
+                        statement_dict["feedbacks"] = [
+                            fb.as_dict() for fb in statement_obj.feedbacks
+                        ]
+    elif mode == "statements":
+        # Remove pdp_deltas and other extracted data from all statements
+        if "statements" in discussion_data:
+            for statement in discussion_data["statements"]:
+                if "pdp_deltas" in statement:
+                    del statement["pdp_deltas"]
+                if "approved" in statement:
+                    del statement["approved"]
+                if "approved_by" in statement:
+                    del statement["approved_by"]
+                if "approved_at" in statement:
+                    del statement["approved_at"]
+                if "exported_at" in statement:
+                    del statement["exported_at"]
 
     # Create JSON response with custom encoder for datetime objects
     class DateTimeEncoder(json.JSONEncoder):
@@ -890,8 +942,11 @@ def export(discussion_id: int):
     )
     response = make_response(json_data)
     response.headers["Content-Type"] = "application/json"
+
+    # Update filename based on mode
+    filename_suffix = "_statements" if mode == "statements" else "_full"
     response.headers["Content-Disposition"] = (
-        f"attachment; filename=discussion_{discussion_id}.json"
+        f"attachment; filename=discussion_{discussion_id}{filename_suffix}.json"
     )
 
     return response

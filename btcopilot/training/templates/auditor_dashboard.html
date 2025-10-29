@@ -321,6 +321,62 @@ async function handleJsonDropInline(event, diagramId) {
     }
 }
 
+function deleteDiscussion(discussionId, username, statementCount) {
+    if (statementCount > 0) {
+        const message = `⚠️ WARNING: This discussion contains valuable data!
+
+Discussion #${discussionId} has ${statementCount} statement${statementCount !== 1 ? 's' : ''}.
+
+Deleting will permanently remove:
+- All ${statementCount} statements
+- All user feedback and corrections
+- All extracted PDP deltas and training data
+
+⚠️ This valuable training data cannot be recovered once deleted.
+
+Are you SURE you want to delete this discussion?`;
+
+        if (!confirm(message)) {
+            return;
+        }
+
+        // Double confirmation for discussions with statements
+        const doubleCheck = prompt(`To confirm deletion, type the number of statements (${statementCount}):`);
+        if (doubleCheck !== statementCount.toString()) {
+            alert('Deletion cancelled - confirmation did not match.');
+            return;
+        }
+    } else {
+        const message = `Delete Discussion #${discussionId}?
+
+This discussion has no statements.
+
+Are you sure you want to delete it?`;
+
+        if (!confirm(message)) {
+            return;
+        }
+    }
+
+    fetch(`/training/discussions/${discussionId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error deleting discussion: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error deleting discussion: ' + error);
+    });
+}
+
 // Initialize drag and drop when page loads
 document.addEventListener('DOMContentLoaded', function() {
     setupDragAndDrop();

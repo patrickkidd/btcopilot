@@ -38,7 +38,7 @@ def add_security_headers(response):
         "https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
         "font-src 'self' https://cdnjs.cloudflare.com; "
         "img-src 'self' data: https:; "
-        "connect-src 'self'; "
+        "connect-src 'self' https://api.assemblyai.com; "
         "frame-src 'none'"
     )
     response.headers["Content-Security-Policy"] = csp_policy

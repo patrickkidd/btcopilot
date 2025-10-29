@@ -626,6 +626,5 @@ window.saveUserRoles = saveUserRoles;
 window.filterUsers = filterUsers;
 window.clearFilters = clearFilters;
 window.createNewDiagram = createNewDiagram;
-window.clearUserDatabase = clearUserDatabase;
 window.hideUserData = hideUserData;
 window.deleteDiagram = deleteDiagram;

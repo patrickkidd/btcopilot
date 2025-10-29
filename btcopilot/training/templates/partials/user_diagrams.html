@@ -52,15 +52,35 @@
                                 <div class="mt-2">
                                     {% for discussion in diagram.discussions %}
                                         <div class="mb-2">
-                                            <a href="/training/discussions/{{ discussion.id }}" class="button is-info is-fullwidth">
-                                                <span class="icon">
-                                                    <i class="fas fa-comments"></i>
-                                                </span>
-                                                <span>Discussion {{ discussion.id }}</span>
-                                                {% if discussion.summary %}
-                                                    <span class="is-size-7 ml-2">- {{ discussion.summary[:50] }}{% if discussion.summary|length > 50 %}...{% endif %}</span>
+                                            <div class="field has-addons">
+                                                <p class="control is-expanded">
+                                                    <a href="/training/discussions/{{ discussion.id }}" class="button is-info is-fullwidth">
+                                                        <span class="icon">
+                                                            <i class="fas fa-comments"></i>
+                                                        </span>
+                                                        <span>Discussion {{ discussion.id }}</span>
+                                                        {% if discussion.summary %}
+                                                            <span class="is-size-7 ml-2">- {{ discussion.summary[:30] }}{% if discussion.summary|length > 30 %}...{% endif %}</span>
+                                                        {% endif %}
+                                                        {% set stmt_count = discussion.statements|length if discussion.statements else 0 %}
+                                                        {% set feedback_count = discussion.statements|map(attribute='feedbacks')|map('length')|sum if discussion.statements else 0 %}
+                                                        <span class="is-size-7 has-text-weight-normal ml-2">
+                                                            ({{ stmt_count }} stmt{% if stmt_count != 1 %}s{% endif %}{% if feedback_count > 0 %}, {{ feedback_count }} fb{% endif %})
+                                                        </span>
+                                                    </a>
+                                                </p>
+                                                {% if current_user.has_role(btcopilot.ROLE_ADMIN) %}
+                                                <p class="control">
+                                                    <button class="button is-danger"
+                                                            onclick="deleteDiscussion({{ discussion.id }}, '{{ user.username }}', {{ discussion.statements|length }})"
+                                                            title="Delete this discussion">
+                                                        <span class="icon">
+                                                            <i class="fas fa-trash"></i>
+                                                        </span>
+                                                    </button>
+                                                </p>
                                                 {% endif %}
-                                            </a>
+                                            </div>
                                         </div>
                                     {% endfor %}
                                 </div>

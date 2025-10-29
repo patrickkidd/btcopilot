@@ -190,12 +190,31 @@ window.diagramPeople = [
             </div>
         </div>
         <div class="level-item">
-            <a href="{{ url_for('training.discussions.export', discussion_id=discussion.id) }}" 
-               class="button is-small is-outlined is-primary"
-               title="Export discussion as JSON file">
-                <span class="icon"><i class="fas fa-download"></i></span>
-                <span>Export JSON</span>
-            </a>
+            <div class="dropdown is-hoverable is-right">
+                <div class="dropdown-trigger">
+                    <button class="button is-small is-outlined is-primary" aria-haspopup="true" aria-controls="export-dropdown">
+                        <span class="icon"><i class="fas fa-download"></i></span>
+                        <span>Export</span>
+                        <span class="icon is-small"><i class="fas fa-angle-down"></i></span>
+                    </button>
+                </div>
+                <div class="dropdown-menu" id="export-dropdown" role="menu">
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('training.discussions.export', discussion_id=discussion.id, mode='statements') }}"
+                           class="dropdown-item"
+                           title="Export statements only (no extracted data)">
+                            <span class="icon"><i class="fas fa-comments"></i></span>
+                            <span>Statements Only</span>
+                        </a>
+                        <a href="{{ url_for('training.discussions.export', discussion_id=discussion.id, mode='full') }}"
+                           class="dropdown-item"
+                           title="Export with AI extractions and user corrections">
+                            <span class="icon"><i class="fas fa-database"></i></span>
+                            <span>With Extractions</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -3249,10 +3268,10 @@ Continue?`;
 
 function clearExtractedData(discussionId) {
     const message = `Are you sure you want to clear all extracted data from this discussion?
-    
+
 This will:
 - Remove all PDP deltas from every statement
-- Clear the cumulative extracted data  
+- Clear the cumulative extracted data
 - Stop any extraction in progress
 - Cancel any scheduled extraction jobs
 - Cannot be undone
