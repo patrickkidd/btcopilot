@@ -664,49 +664,10 @@ function toggleExtractedData(componentId) {
     }
 }
 
-// Helper function to normalize extracted data format
-function normalizeExtractedData(data) {
-    if (!data) return data;
-
-    // Normalize events - convert string values to objects
-    if (data.events) {
-        data.events = data.events.map(event => {
-            const normalized = { ...event };
-
-            // Convert string symptom/anxiety/functioning to objects
-            ['symptom', 'anxiety', 'functioning'].forEach(field => {
-                if (normalized[field] && typeof normalized[field] === 'string') {
-                    normalized[field] = {
-                        shift: normalized[field],
-                        rationale: null,
-                        confidence: 0.5
-                    };
-                }
-            });
-
-            // Convert string relationship to object
-            if (normalized.relationship && typeof normalized.relationship === 'string') {
-                normalized.relationship = {
-                    kind: normalized.relationship,
-                    rationale: null,
-                    confidence: 0.5
-                };
-            }
-
-            return normalized;
-        });
-    }
-
-    return data;
-}
-
 // Helper function for component extracted data display
 function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submitted, componentId, editableMode = false, messageId = null, editedExtraction = null, feedbackId = null) {
     // Use edited extraction if available, otherwise use original data
-    let displayData = editedExtraction || extractedData;
-
-    // Normalize data format to handle legacy string values
-    displayData = normalizeExtractedData(displayData ? JSON.parse(JSON.stringify(displayData)) : null);
+    const displayData = editedExtraction || extractedData;
 
     return {
         extractedData: displayData,
@@ -789,12 +750,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             if (newValue === 'none' || !newValue) {
                 delete this.extractedData.events[eventIndex][varType];
             } else {
-                // Preserve existing rationale when updating shift
-                const existingVar = this.extractedData.events[eventIndex][varType] || {};
-                this.extractedData.events[eventIndex][varType] = { 
-                    shift: newValue,
-                    ...(existingVar.rationale && { rationale: existingVar.rationale })
-                };
+                this.extractedData.events[eventIndex][varType] = newValue;
             }
             this.autoSave();
         },
@@ -802,27 +758,15 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         saveRelationshipKind(eventIndex, newKind) {
             if (!this.extractedData.events[eventIndex]) return;
             const event = this.extractedData.events[eventIndex];
-            
-            // Preserve existing people arrays and rationale if possible
-            const oldRel = event.relationship || {};
-            event.relationship = { kind: newKind };
-            
-            // Preserve rationale
-            if (oldRel.rationale) {
-                event.relationship.rationale = oldRel.rationale;
+
+            // Update the relationship string
+            event.relationship = newKind;
+
+            // Clear relationshipTriangles unless new kind is inside/outside
+            if (!['inside', 'outside'].includes(newKind)) {
+                event.relationshipTriangles = [];
             }
-            
-            if (newKind === 'triangle') {
-                // Convert from mechanism to triangle
-                event.relationship.inside_a = oldRel.movers || [];
-                event.relationship.inside_b = oldRel.recipients || [];
-                event.relationship.outside = [];
-            } else {
-                // Convert from triangle to mechanism
-                event.relationship.movers = oldRel.inside_a || oldRel.movers || [];
-                event.relationship.recipients = oldRel.inside_b || oldRel.recipients || [];
-            }
-            
+
             this.autoSave();
         },
         
@@ -838,6 +782,8 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 parent_b: null,
                 confidence: 0.5
             });
+            // Increment version to force reactivity updates for all person name references
+            this.personDataVersion++;
             this.autoSave();
         },
         
@@ -866,17 +812,9 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         addVariable(eventIndex, varType) {
             const event = this.extractedData.events[eventIndex];
             if (varType === 'symptom' || varType === 'anxiety' || varType === 'functioning') {
-                event[varType] = {
-                    shift: 'same',
-                    rationale: null,
-                    confidence: 0.5
-                };
+                event[varType] = 'same';
             } else if (varType === 'relationship') {
-                event.relationship = {
-                    kind: 'distance',
-                    rationale: null,
-                    confidence: 0.5
-                };
+                event.relationship = 'distance';
             }
             this.autoSave();
         },
@@ -889,6 +827,8 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             }
             if (confirm('Remove this person?')) {
                 this.extractedData.people.splice(personIndex, 1);
+                // Increment version to force reactivity updates for all person name references
+                this.personDataVersion++;
                 this.autoSave();
             }
         },
@@ -902,7 +842,16 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         
         removeVariable(eventIndex, varType) {
             if (!this.extractedData.events[eventIndex]) return;
-            delete this.extractedData.events[eventIndex][varType];
+            const event = this.extractedData.events[eventIndex];
+
+            delete event[varType];
+
+            // If removing relationship, also clear its associated fields
+            if (varType === 'relationship') {
+                event.relationshipTargets = [];
+                event.relationshipTriangles = [];
+            }
+
             this.autoSave();
         },
         
@@ -1141,13 +1090,14 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         
         saveExtractedData() {
             if (!this.messageId) return;
-            
+
             // Submit as feedback - ensure messageId is an integer
             const msgId = parseInt(this.messageId);
             if (isNaN(msgId)) {
                 console.error('Invalid message ID:', this.messageId);
                 return;
             }
+
             submitExtractionFeedback(msgId, false, this.extractedData);
             this.hasChanges = false;
             // Update the edited extraction to show this is now the corrected version
@@ -1321,7 +1271,9 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
 
         removeRelationshipPerson(eventIndex, fieldName, personIndex) {
             if (confirm('Remove this person from ' + fieldName + '?')) {
-                this.extractedData.events[eventIndex].relationship[fieldName].splice(personIndex, 1);
+                const event = this.extractedData.events[eventIndex];
+                const arrayFieldName = fieldName === 'targets' ? 'relationshipTargets' : 'relationshipTriangles';
+                event[arrayFieldName].splice(personIndex, 1);
                 this.autoSave();
             }
         },
@@ -1335,11 +1287,13 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             if (newPersonData) {
                 console.log('Adding new person to extractedData.people:', newPersonData);
                 if (!this.extractedData.people) this.extractedData.people = [];
-                
+
                 // Check if person already exists to avoid duplicates
                 const existingPerson = this.extractedData.people.find(p => p.name === newPersonData.name);
                 if (!existingPerson) {
                     this.extractedData.people.push(newPersonData);
+                    // Increment version to force reactivity updates for all person name references
+                    this.personDataVersion++;
                 } else {
                     personId = existingPerson.id;
                 }
@@ -1348,7 +1302,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             // Determine the context based on field names and window context
             const context = window.relationshipPersonContext || {};
             const isPersonField = context.isPersonField || false;
-            const isEventPeople = (fieldName === 'people' && !isPersonField);
+            const isEventPeople = context.isEventPeople || false;
             
             if (isPersonField) {
                 // Handle Person list fields (spouses)
@@ -1386,21 +1340,24 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 const eventIndex = eventIndexOrPersonIndex;
                 const personIndex = personIndexOrListIndex;
                 const event = this.extractedData.events[eventIndex];
-                
+
+                // Map fieldName to actual schema field
+                const arrayFieldName = fieldName === 'targets' ? 'relationshipTargets' : 'relationshipTriangles';
+
                 if (isEdit) {
                     console.log('EDIT mode - updating person at index', personIndex);
-                    console.log('Before update:', event.relationship[fieldName]);
-                    event.relationship[fieldName][personIndex] = personId;
-                    console.log('After update:', event.relationship[fieldName]);
+                    console.log('Before update:', event[arrayFieldName]);
+                    event[arrayFieldName][personIndex] = personId;
+                    console.log('After update:', event[arrayFieldName]);
                 } else {
-                    console.log('ADD mode - adding person to', fieldName);
-                    if (!event.relationship[fieldName]) {
-                        console.log('Creating new array for', fieldName);
-                        event.relationship[fieldName] = [];
+                    console.log('ADD mode - adding person to', arrayFieldName);
+                    if (!event[arrayFieldName]) {
+                        console.log('Creating new array for', arrayFieldName);
+                        event[arrayFieldName] = [];
                     }
-                    console.log('Before push:', event.relationship[fieldName]);
-                    event.relationship[fieldName].push(personId);
-                    console.log('After push:', event.relationship[fieldName]);
+                    console.log('Before push:', event[arrayFieldName]);
+                    event[arrayFieldName].push(personId);
+                    console.log('After push:', event[arrayFieldName]);
                 }
             }
             
