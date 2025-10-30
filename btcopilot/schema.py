@@ -389,11 +389,11 @@ class DiagramData:
 
         # Add default User person (ID 1) - matches default chat_user_speaker
         user_person = Person(id=1, name="User")
-        diagramData.people.append(user_person)
+        diagramData.people.append(asdict(user_person))
 
         # Add default Assistant person (ID 2) - matches default chat_ai_speaker
         assistant_person = Person(id=2, name="Assistant")
-        diagramData.people.append(assistant_person)
+        diagramData.people.append(asdict(assistant_person))
 
         # Ensure last_id accounts for the default people
         diagramData.last_id = max(diagramData.last_id, 2)

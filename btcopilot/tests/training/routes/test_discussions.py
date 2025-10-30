@@ -6,7 +6,9 @@ from btcopilot.extensions import db
 from btcopilot.pro.models import User, Diagram
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.schema import (
+    PDP,
     PDPDeltas,
+    DiagramData,
     Event,
     Person,
     VariableShift,
@@ -571,3 +573,71 @@ def test_celery_task_chaining_mock(mock_celery, flask_app):
             mock_celery.send_task.assert_called_once_with(
                 "extract_next_statement", countdown=1
             )
+
+
+def test_audit_with_person_mapping(auditor, test_user):
+    """Test that audit endpoint handles speaker-to-person mapping correctly"""
+
+    # Create diagram with people data as dicts (simulating real diagram structure)
+    diagram = Diagram(user_id=test_user.id, name="Test Diagram")
+    diagram_data = DiagramData(
+        people=[
+            {"id": 1, "name": "John Doe", "age": 30},
+            {"id": 2, "name": "Jane Smith", "age": 25},
+        ],
+        events=[],
+        pdp=PDP(),
+        last_id=2,
+    )
+    diagram.set_diagram_data(diagram_data)
+    db.session.add(diagram)
+    db.session.flush()
+
+    # Create discussion linked to diagram
+    discussion = Discussion(
+        user_id=test_user.id, diagram_id=diagram.id, summary="Test discussion"
+    )
+    db.session.add(discussion)
+    db.session.flush()
+
+    # Create speaker mapped to person
+    subject = Speaker(
+        discussion_id=discussion.id,
+        name="User",
+        type=SpeakerType.Subject,
+        person_id=1,
+    )
+    db.session.add(subject)
+    db.session.flush()
+
+    # Create statement with PDP deltas
+    stmt = Statement(
+        discussion_id=discussion.id,
+        speaker_id=subject.id,
+        text="I feel anxious",
+        order=0,
+        pdp_deltas=asdict(
+            PDPDeltas(
+                people=[Person(id=1, name="John Doe")],
+                events=[
+                    Event(
+                        id=-1,
+                        kind=EventKind.Shift,
+                        person=1,
+                        description="Feels anxious",
+                        anxiety=VariableShift.Up,
+                    )
+                ],
+            )
+        ),
+    )
+    db.session.add(stmt)
+    db.session.commit()
+
+    # Test audit endpoint
+    response = auditor.get(f"/training/discussions/{discussion.id}")
+    assert response.status_code == 200
+
+    # Verify the response includes person name mapping
+    html_content = response.data.decode("utf-8")
+    assert "John Doe" in html_content

@@ -730,8 +730,8 @@ def audit(discussion_id):
             database = discussion.diagram.get_diagram_data()
             if database.people:
                 for person in database.people:
-                    if person.id == stmt.speaker.person_id:
-                        person_name = person.name
+                    if person["id"] == stmt.speaker.person_id:
+                        person_name = person["name"]
                         break
 
         # Apply this statement's deltas to the cumulative state using pdp.apply_deltas
@@ -1103,16 +1103,16 @@ def clear_extracted_data(discussion_id):
         database.pdp.events = []
 
         # Ensure default User and Assistant people always exist for speaker mapping
-        user_exists = any(person.id == 1 for person in database.people)
-        assistant_exists = any(person.id == 2 for person in database.people)
+        user_exists = any(person["id"] == 1 for person in database.people)
+        assistant_exists = any(person["id"] == 2 for person in database.people)
 
         if not user_exists:
             user_person = Person(id=1, name="User")
-            database.people.append(user_person)
+            database.people.append(asdict(user_person))
 
         if not assistant_exists:
             assistant_person = Person(id=2, name="Assistant")
-            database.people.append(assistant_person)
+            database.people.append(asdict(assistant_person))
 
         # Ensure last_id accounts for default people
         database.last_id = max(database.last_id, 2)
