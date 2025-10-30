@@ -71,7 +71,7 @@ def create_app(app_class=Flask, config: dict = None, instance_path: str = None):
 
     @app.errorhandler(Exception)
     def _(e):
-        app.logger.exception(e.__repr__())
+        app.logger.exception(f"Unhandled exception: {type(e).__name__}")
         # Don't handle HTTP exceptions - let Flask handle them naturally
         from werkzeug.exceptions import HTTPException
 
