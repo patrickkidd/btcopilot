@@ -178,7 +178,6 @@ def extract_next_statement(*args, **kwargs):
                 f"Error processing statement {statement.id if statement else None}: {e}",
                 exc_info=True,
             )
-            # Roll back this statement's transaction
             db.session.rollback()
             return False
 
@@ -326,7 +325,7 @@ def _create_assembly_ai_transcript(data: dict):
             "discussion_id": discussion.id,  # For backwards compatibility
             "user_id": target_user_id,
             "message": "Discussion created successfully",
-            **discussion.as_dict(),
+            **discussion.as_dict(include=["statements", "speakers"]),
         }
     )
 
@@ -380,7 +379,27 @@ def _create_import(data: dict):
         diagram_id=target_diagram_id,
         summary=json_data.get("summary", "Imported discussion"),
         last_topic=json_data.get("last_topic"),
+        extracting=json_data.get("extracting", False),
     )
+
+    if json_data.get("created_at"):
+        created_at_str = json_data.get("created_at")
+        if isinstance(created_at_str, str):
+            discussion.created_at = datetime.fromisoformat(
+                created_at_str.replace("Z", "+00:00")
+            )
+        else:
+            discussion.created_at = created_at_str
+
+    if json_data.get("updated_at"):
+        updated_at_str = json_data.get("updated_at")
+        if isinstance(updated_at_str, str):
+            discussion.updated_at = datetime.fromisoformat(
+                updated_at_str.replace("Z", "+00:00")
+            )
+        else:
+            discussion.updated_at = updated_at_str
+
     db.session.add(discussion)
     db.session.flush()
 
@@ -392,11 +411,28 @@ def _create_import(data: dict):
             speaker = Speaker(
                 discussion_id=discussion.id,
                 name=speaker_data.get("name", "Unknown"),
-                type=SpeakerType(speaker_data.get("type", "Subject")),
-                person_id=speaker_data.get(
-                    "person_id"
-                ),  # Preserve person mapping if exists
+                type=SpeakerType(speaker_data.get("type", "subject")),
+                person_id=speaker_data.get("person_id"),
             )
+
+            if speaker_data.get("created_at"):
+                created_at_str = speaker_data.get("created_at")
+                if isinstance(created_at_str, str):
+                    speaker.created_at = datetime.fromisoformat(
+                        created_at_str.replace("Z", "+00:00")
+                    )
+                else:
+                    speaker.created_at = created_at_str
+
+            if speaker_data.get("updated_at"):
+                updated_at_str = speaker_data.get("updated_at")
+                if isinstance(updated_at_str, str):
+                    speaker.updated_at = datetime.fromisoformat(
+                        updated_at_str.replace("Z", "+00:00")
+                    )
+                else:
+                    speaker.updated_at = updated_at_str
+
             db.session.add(speaker)
             db.session.flush()
 
@@ -420,7 +456,45 @@ def _create_import(data: dict):
                 speaker_id=new_speaker_id,
                 text=stmt_data.get("text", ""),
                 order=stmt_data.get("order", idx),
+                approved=stmt_data.get("approved", False),
+                approved_by=stmt_data.get("approved_by"),
             )
+
+            if stmt_data.get("approved_at"):
+                approved_at_str = stmt_data.get("approved_at")
+                if isinstance(approved_at_str, str):
+                    statement.approved_at = datetime.fromisoformat(
+                        approved_at_str.replace("Z", "+00:00")
+                    )
+                else:
+                    statement.approved_at = approved_at_str
+
+            if stmt_data.get("exported_at"):
+                exported_at_str = stmt_data.get("exported_at")
+                if isinstance(exported_at_str, str):
+                    statement.exported_at = datetime.fromisoformat(
+                        exported_at_str.replace("Z", "+00:00")
+                    )
+                else:
+                    statement.exported_at = exported_at_str
+
+            if stmt_data.get("created_at"):
+                created_at_str = stmt_data.get("created_at")
+                if isinstance(created_at_str, str):
+                    statement.created_at = datetime.fromisoformat(
+                        created_at_str.replace("Z", "+00:00")
+                    )
+                else:
+                    statement.created_at = created_at_str
+
+            if stmt_data.get("updated_at"):
+                updated_at_str = stmt_data.get("updated_at")
+                if isinstance(updated_at_str, str):
+                    statement.updated_at = datetime.fromisoformat(
+                        updated_at_str.replace("Z", "+00:00")
+                    )
+                else:
+                    statement.updated_at = updated_at_str
 
             # Only set JSON fields if they have actual values (not None/null)
             pdp_deltas = stmt_data.get("pdp_deltas")
@@ -447,7 +521,47 @@ def _create_import(data: dict):
                         thumbs_down=feedback_data.get("thumbs_down", False),
                         comment=feedback_data.get("comment"),
                         edited_extraction=feedback_data.get("edited_extraction"),
+                        approved=feedback_data.get("approved", False),
+                        approved_by=feedback_data.get("approved_by"),
+                        rejection_reason=feedback_data.get("rejection_reason"),
                     )
+
+                    if feedback_data.get("approved_at"):
+                        approved_at_str = feedback_data.get("approved_at")
+                        if isinstance(approved_at_str, str):
+                            feedback.approved_at = datetime.fromisoformat(
+                                approved_at_str.replace("Z", "+00:00")
+                            )
+                        else:
+                            feedback.approved_at = approved_at_str
+
+                    if feedback_data.get("exported_at"):
+                        exported_at_str = feedback_data.get("exported_at")
+                        if isinstance(exported_at_str, str):
+                            feedback.exported_at = datetime.fromisoformat(
+                                exported_at_str.replace("Z", "+00:00")
+                            )
+                        else:
+                            feedback.exported_at = exported_at_str
+
+                    if feedback_data.get("created_at"):
+                        created_at_str = feedback_data.get("created_at")
+                        if isinstance(created_at_str, str):
+                            feedback.created_at = datetime.fromisoformat(
+                                created_at_str.replace("Z", "+00:00")
+                            )
+                        else:
+                            feedback.created_at = created_at_str
+
+                    if feedback_data.get("updated_at"):
+                        updated_at_str = feedback_data.get("updated_at")
+                        if isinstance(updated_at_str, str):
+                            feedback.updated_at = datetime.fromisoformat(
+                                updated_at_str.replace("Z", "+00:00")
+                            )
+                        else:
+                            feedback.updated_at = updated_at_str
+
                     db.session.add(feedback)
 
     db.session.commit()
@@ -484,8 +598,8 @@ def _create_import(data: dict):
             "id": discussion.id,
             "discussion_id": discussion.id,
             "user_id": target_user_id,
-            "message": "Discussion imported successfully",  # This message should be on the frontend, not the backend.
-            **discussion.as_dict(),
+            "message": "Discussion imported successfully",
+            **discussion.as_dict(include=["statements", "speakers"]),
         }
     )
 
@@ -493,10 +607,11 @@ def _create_import(data: dict):
 @bp.route("/import", methods=["POST"])
 @minimum_role(btcopilot.ROLE_AUDITOR)
 def import_discussion():
-    diagram_id = request.args.get("diagram_id", type=int)
-    json_data = request.get_json()
+    request_data = request.get_json()
+    discussion_data = request_data["discussion"]
+    diagram_id = request_data.get("diagram_id")
 
-    return _create_import({"diagram_id": diagram_id, "json_data": json_data})
+    return _create_import({"diagram_id": diagram_id, "json_data": discussion_data})
 
 
 @bp.route("/transcript", methods=["POST"])
@@ -604,7 +719,7 @@ def audit(discussion_id):
                     ],
                     delete=pdp_deltas.get("deletes", []),
                 )
-            except Exception as e:
+            except (ValueError, KeyError, TypeError) as e:
                 _log.warning(
                     f"Error parsing stored deltas for statement {stmt.id}: {e}"
                 )

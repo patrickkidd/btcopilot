@@ -11,10 +11,12 @@ def test_export_success(auditor, discussion):
     response = auditor.get(f"/training/discussions/{discussion.id}/export")
     assert response.status_code == 200
 
-    # Check headers
     assert response.headers["Content-Type"] == "application/json"
     assert "attachment" in response.headers["Content-Disposition"]
-    assert f"discussion_{discussion.id}.json" in response.headers["Content-Disposition"]
+    assert (
+        f"discussion_{discussion.id}_full.json"
+        in response.headers["Content-Disposition"]
+    )
 
     # Check content
     data = json.loads(response.data)
@@ -154,7 +156,7 @@ def test_export_filename_format(auditor, discussion):
     assert response.status_code == 200
 
     content_disposition = response.headers["Content-Disposition"]
-    expected_filename = f"discussion_{discussion.id}.json"
+    expected_filename = f"discussion_{discussion.id}_full.json"
     assert expected_filename in content_disposition
     assert "attachment" in content_disposition
 

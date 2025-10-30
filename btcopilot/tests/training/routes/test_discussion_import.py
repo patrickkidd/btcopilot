@@ -223,8 +223,8 @@ def test_import_discussion_from_json_success(auditor):
     export_data = create_sample_discussion_fixture()
 
     response = auditor.post(
-        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
-        json=export_data,
+        "/training/discussions/import",
+        json={"discussion": export_data, "diagram_id": auditor.user.free_diagram_id},
     )
 
     assert response.status_code == 200
@@ -270,13 +270,199 @@ def test_import_discussion_from_json_success(auditor):
     assert stmt2.pdp_deltas is not None
 
 
+def test_import_discussion_response_includes_statements_and_speakers(auditor):
+    """Test that API response includes statements and speakers, not just discussion data"""
+    export_data = create_sample_discussion_fixture()
+
+    response = auditor.post(
+        "/training/discussions/import",
+        json={"discussion": export_data, "diagram_id": auditor.user.free_diagram_id},
+    )
+
+    assert response.status_code == 200
+    data = response.json
+
+    assert "statements" in data
+    assert "speakers" in data
+    assert len(data["statements"]) == 2
+    assert len(data["speakers"]) == 2
+
+    statement_texts = [s["text"] for s in data["statements"]]
+    assert statement_texts == [
+        "I'm feeling anxious about the test",
+        "Can you tell me more about that?",
+    ]
+
+    speaker_names = [s["name"] for s in data["speakers"]]
+    assert speaker_names == ["John", "AI Assistant"]
+
+
+def test_import_discussion_with_feedback_and_approval_fields(auditor):
+    """Test that feedback and approval fields are correctly imported"""
+    export_data = {
+        "id": 999,
+        "summary": "Test discussion with feedback",
+        "last_topic": "Testing",
+        "chat_user_speaker_id": 1,
+        "chat_ai_speaker_id": 2,
+        "speakers": [
+            {"id": 1, "name": "User", "type": "subject", "person_id": None},
+            {"id": 2, "name": "AI", "type": "expert", "person_id": None},
+        ],
+        "statements": [
+            {
+                "id": 100,
+                "speaker_id": 1,
+                "text": "Test statement with feedback",
+                "order": 0,
+                "pdp_deltas": {"people": [], "events": [], "delete": []},
+                "custom_prompts": None,
+                "approved": True,
+                "approved_by": "admin",
+                "approved_at": "2025-10-29T19:10:38.687167",
+                "exported_at": None,
+                "feedbacks": [
+                    {
+                        "statement_id": 100,
+                        "auditor_id": "1",
+                        "feedback_type": "extraction",
+                        "thumbs_down": False,
+                        "comment": "Test comment",
+                        "edited_extraction": {
+                            "people": [
+                                {"id": -1, "name": "Test Person", "confidence": 0.9}
+                            ],
+                            "events": [],
+                            "deletes": [],
+                        },
+                        "approved": True,
+                        "approved_by": "admin",
+                        "approved_at": "2025-10-29T19:11:38.019394",
+                        "exported_at": None,
+                        "rejection_reason": None,
+                    }
+                ],
+            }
+        ],
+    }
+
+    response = auditor.post(
+        "/training/discussions/import",
+        json={"discussion": export_data, "diagram_id": auditor.user.free_diagram_id},
+    )
+
+    assert response.status_code == 200
+
+    discussion = Discussion.query.get(response.json["discussion_id"])
+    statement = discussion.statements[0]
+
+    expected_statement_fields = {
+        "approved": True,
+        "approved_by": "admin",
+        "exported_at": None,
+    }
+    assert statement.approved == expected_statement_fields["approved"]
+    assert statement.approved_by == expected_statement_fields["approved_by"]
+    assert statement.approved_at is not None
+    assert statement.exported_at == expected_statement_fields["exported_at"]
+
+    assert len(statement.feedbacks) == 1
+    feedback = statement.feedbacks[0]
+
+    expected_feedback_fields = {
+        "auditor_id": "1",
+        "comment": "Test comment",
+        "approved": True,
+        "approved_by": "admin",
+        "exported_at": None,
+        "rejection_reason": None,
+    }
+    assert feedback.auditor_id == expected_feedback_fields["auditor_id"]
+    assert feedback.comment == expected_feedback_fields["comment"]
+    assert feedback.edited_extraction is not None
+    assert feedback.approved == expected_feedback_fields["approved"]
+    assert feedback.approved_by == expected_feedback_fields["approved_by"]
+    assert feedback.approved_at is not None
+    assert feedback.exported_at == expected_feedback_fields["exported_at"]
+    assert feedback.rejection_reason == expected_feedback_fields["rejection_reason"]
+
+
+def test_import_discussion_preserves_timestamps_and_extracting(auditor):
+    """Test that created_at, updated_at, and extracting flag are preserved"""
+    export_data = {
+        "id": 999,
+        "summary": "Test with timestamps",
+        "last_topic": "Testing",
+        "extracting": True,
+        "chat_user_speaker_id": 1,
+        "chat_ai_speaker_id": 2,
+        "created_at": "2025-10-29T06:08:54.873706",
+        "updated_at": "2025-10-29T07:00:00.000000",
+        "speakers": [
+            {
+                "id": 1,
+                "name": "User",
+                "type": "subject",
+                "person_id": None,
+                "created_at": "2025-10-29T06:08:54.880759",
+                "updated_at": None,
+            },
+        ],
+        "statements": [
+            {
+                "id": 100,
+                "speaker_id": 1,
+                "text": "Test",
+                "order": 0,
+                "pdp_deltas": None,
+                "created_at": "2025-10-29T06:08:54.891898",
+                "updated_at": "2025-10-29T06:10:00.000000",
+                "approved": False,
+                "feedbacks": [
+                    {
+                        "auditor_id": "1",
+                        "feedback_type": "extraction",
+                        "created_at": "2025-10-29T19:10:38.687167",
+                        "updated_at": "2025-10-29T19:11:38.019394",
+                    }
+                ],
+            }
+        ],
+    }
+
+    response = auditor.post(
+        "/training/discussions/import",
+        json={"discussion": export_data, "diagram_id": auditor.user.free_diagram_id},
+    )
+
+    assert response.status_code == 200
+
+    discussion = Discussion.query.get(response.json["discussion_id"])
+
+    assert discussion.extracting is True
+    assert discussion.created_at.isoformat().startswith("2025-10-29T06:08:54")
+    assert discussion.updated_at.isoformat().startswith("2025-10-29T07:00:00")
+
+    speaker = discussion.speakers[0]
+    assert speaker.created_at.isoformat().startswith("2025-10-29T06:08:54")
+    assert speaker.updated_at is None
+
+    statement = discussion.statements[0]
+    assert statement.created_at.isoformat().startswith("2025-10-29T06:08:54")
+    assert statement.updated_at.isoformat().startswith("2025-10-29T06:10:00")
+
+    feedback = statement.feedbacks[0]
+    assert feedback.created_at.isoformat().startswith("2025-10-29T19:10:38")
+    assert feedback.updated_at.isoformat().startswith("2025-10-29T19:11:38")
+
+
 def test_import_discussion_preserves_person_mapping(auditor):
     """Test that person_id mapping is preserved during import"""
     export_data = create_person_mapping_fixture()
 
     response = auditor.post(
-        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
-        json=export_data,
+        "/training/discussions/import",
+        json={"discussion": export_data, "diagram_id": auditor.user.free_diagram_id},
     )
 
     assert response.status_code == 200
@@ -291,8 +477,8 @@ def test_import_discussion_requires_auditor_role(logged_in):
     export_data = {"id": 1, "summary": "Test", "statements": []}
 
     response = logged_in.post(
-        f"/training/discussions/import?diagram_id={logged_in.user.free_diagram_id}",
-        json=export_data,
+        "/training/discussions/import",
+        json={"discussion": export_data, "diagram_id": logged_in.user.free_diagram_id},
     )
 
     # POST requests with JSON are API requests, expect 403
@@ -305,7 +491,7 @@ def test_import_discussion_to_current_user_free_diagram(auditor):
 
     response = auditor.post(
         "/training/discussions/import",
-        json=export_data,
+        json={"discussion": export_data},
     )
 
     assert response.status_code == 200
@@ -319,8 +505,8 @@ def test_import_discussion_validates_diagram_exists(auditor):
     export_data = {"id": 1, "summary": "Test", "statements": []}
 
     response = auditor.post(
-        "/training/discussions/import?diagram_id=99999",
-        json=export_data,  # Non-existent diagram
+        "/training/discussions/import",
+        json={"discussion": export_data, "diagram_id": 99999},
     )
 
     assert response.status_code == 404
@@ -333,8 +519,8 @@ def test_import_discussion_handles_malformed_json(auditor):
     export_data = {"not_a_discussion": "invalid"}
 
     response = auditor.post(
-        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
-        json=export_data,
+        "/training/discussions/import",
+        json={"discussion": export_data, "diagram_id": auditor.user.free_diagram_id},
     )
 
     # Should succeed but create a minimal discussion
@@ -358,8 +544,8 @@ def test_import_discussion_without_speakers(auditor):
     }
 
     response = auditor.post(
-        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
-        json=export_data,
+        "/training/discussions/import",
+        json={"discussion": export_data, "diagram_id": auditor.user.free_diagram_id},
     )
 
     assert response.status_code == 200
@@ -375,8 +561,8 @@ def test_import_discussion_complex_pdp_deltas(auditor):
     export_data = create_complex_pdp_fixture()
 
     response = auditor.post(
-        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
-        json=export_data,
+        "/training/discussions/import",
+        json={"discussion": export_data, "diagram_id": auditor.user.free_diagram_id},
     )
 
     assert response.status_code == 200
@@ -408,8 +594,8 @@ def test_import_discussion_handles_duplicate_speaker_ids(auditor):
     }
 
     response = auditor.post(
-        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
-        json=export_data,
+        "/training/discussions/import",
+        json={"discussion": export_data, "diagram_id": auditor.user.free_diagram_id},
     )
 
     assert response.status_code == 200
@@ -446,8 +632,8 @@ def test_import_discussion_order_fallback(auditor):
     }
 
     response = auditor.post(
-        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
-        json=export_data,
+        "/training/discussions/import",
+        json={"discussion": export_data, "diagram_id": auditor.user.free_diagram_id},
     )
 
     assert response.status_code == 200
@@ -469,8 +655,8 @@ def test_import_discussion_preserves_pdp_deltas(auditor):
     export_data = create_complex_pdp_discussion_fixture()
 
     response = auditor.post(
-        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
-        json=export_data,
+        "/training/discussions/import",
+        json={"discussion": export_data, "diagram_id": auditor.user.free_diagram_id},
     )
 
     assert response.status_code == 200
@@ -554,8 +740,8 @@ def test_import_discussion_handles_null_pdp_deltas(auditor):
     }
 
     response = auditor.post(
-        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
-        json=json_data,
+        "/training/discussions/import",
+        json={"discussion": json_data, "diagram_id": auditor.user.free_diagram_id},
     )
 
     assert response.status_code == 200
@@ -605,8 +791,8 @@ def test_import_discussion_no_extracting_when_no_processing_needed(auditor):
     }
 
     response = auditor.post(
-        f"/training/discussions/import?diagram_id={auditor.user.free_diagram_id}",
-        json=json_data,
+        "/training/discussions/import",
+        json={"discussion": json_data, "diagram_id": auditor.user.free_diagram_id},
     )
 
     assert response.status_code == 200
@@ -615,3 +801,162 @@ def test_import_discussion_no_extracting_when_no_processing_needed(auditor):
     discussion = Discussion.query.get(response.json["discussion_id"])
     assert discussion is not None
     assert discussion.extracting is False  # Should not be set when no processing needed
+
+
+def export_import_roundtrip(auditor, discussion_id, mode="full"):
+    """Helper for export-import roundtrip testing"""
+    export_response = auditor.get(
+        f"/training/discussions/{discussion_id}/export?mode={mode}"
+    )
+    assert export_response.status_code == 200
+
+    import_response = auditor.post(
+        "/training/discussions/import",
+        json={
+            "discussion": export_response.json,
+            "diagram_id": auditor.user.free_diagram_id,
+        },
+    )
+    assert import_response.status_code == 200
+
+    return Discussion.query.get(import_response.json["discussion_id"])
+
+
+def test_export_import_roundtrip_statements_only(auditor):
+    """Test export then import for discussion with statements only (no extractions)"""
+    discussion = Discussion(
+        user_id=auditor.user.id,
+        diagram_id=auditor.user.free_diagram_id,
+        summary="Test discussion for roundtrip",
+        last_topic="Testing",
+        extracting=False,
+    )
+    db.session.add(discussion)
+    db.session.flush()
+
+    speaker1 = Speaker(
+        discussion_id=discussion.id, name="Person A", type=SpeakerType.Subject
+    )
+    speaker2 = Speaker(
+        discussion_id=discussion.id, name="Person B", type=SpeakerType.Expert
+    )
+    db.session.add_all([speaker1, speaker2])
+    db.session.flush()
+
+    discussion.chat_user_speaker_id = speaker1.id
+    discussion.chat_ai_speaker_id = speaker2.id
+
+    stmt1 = Statement(
+        discussion_id=discussion.id,
+        speaker_id=speaker1.id,
+        text="Statement 1",
+        order=0,
+        pdp_deltas=None,
+    )
+    stmt2 = Statement(
+        discussion_id=discussion.id,
+        speaker_id=speaker2.id,
+        text="Statement 2",
+        order=1,
+        pdp_deltas=None,
+    )
+    db.session.add_all([stmt1, stmt2])
+    db.session.commit()
+
+    imported = export_import_roundtrip(auditor, discussion.id, mode="statements")
+
+    assert imported.summary == discussion.summary
+    assert len(imported.statements) == 2
+    assert imported.statements[0].text == "Statement 1"
+    assert imported.statements[1].text == "Statement 2"
+    assert imported.statements[0].pdp_deltas is None
+    assert imported.statements[1].pdp_deltas is None
+
+
+def test_export_import_roundtrip_with_extractions(auditor):
+    """Test export then import for discussion with AI extractions"""
+    discussion = Discussion(
+        user_id=auditor.user.id,
+        diagram_id=auditor.user.free_diagram_id,
+        summary="Test with extractions",
+        extracting=False,
+    )
+    db.session.add(discussion)
+    db.session.flush()
+
+    speaker = Speaker(
+        discussion_id=discussion.id, name="User", type=SpeakerType.Subject
+    )
+    db.session.add(speaker)
+    db.session.flush()
+
+    stmt = Statement(
+        discussion_id=discussion.id,
+        speaker_id=speaker.id,
+        text="Test statement",
+        order=0,
+        pdp_deltas={"people": [], "events": [], "delete": []},
+    )
+    db.session.add(stmt)
+    db.session.commit()
+
+    imported = export_import_roundtrip(auditor, discussion.id, mode="full")
+
+    assert len(imported.statements) == 1
+    assert imported.statements[0].pdp_deltas is not None
+    assert "people" in imported.statements[0].pdp_deltas
+
+
+def test_export_import_roundtrip_with_feedback(auditor):
+    """Test export then import for discussion with domain expert feedback"""
+    from btcopilot.training.models import Feedback
+
+    discussion = Discussion(
+        user_id=auditor.user.id,
+        diagram_id=auditor.user.free_diagram_id,
+        summary="Test with feedback",
+        extracting=False,
+    )
+    db.session.add(discussion)
+    db.session.flush()
+
+    speaker = Speaker(
+        discussion_id=discussion.id, name="User", type=SpeakerType.Subject
+    )
+    db.session.add(speaker)
+    db.session.flush()
+
+    stmt = Statement(
+        discussion_id=discussion.id,
+        speaker_id=speaker.id,
+        text="Test statement",
+        order=0,
+        pdp_deltas={"people": [], "events": [], "delete": []},
+    )
+    db.session.add(stmt)
+    db.session.flush()
+
+    feedback = Feedback(
+        statement_id=stmt.id,
+        auditor_id="test_auditor",
+        feedback_type="extraction",
+        thumbs_down=False,
+        comment="Test feedback",
+        edited_extraction={"people": [{"id": -1, "name": "Test"}], "events": []},
+        approved=True,
+        approved_by="admin",
+    )
+    db.session.add(feedback)
+    db.session.commit()
+
+    imported = export_import_roundtrip(auditor, discussion.id, mode="full")
+
+    assert len(imported.statements) == 1
+    assert len(imported.statements[0].feedbacks) == 1
+
+    imported_feedback = imported.statements[0].feedbacks[0]
+    assert imported_feedback.auditor_id == "test_auditor"
+    assert imported_feedback.comment == "Test feedback"
+    assert imported_feedback.edited_extraction is not None
+    assert imported_feedback.approved is True
+    assert imported_feedback.approved_by == "admin"
