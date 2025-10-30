@@ -165,14 +165,6 @@ class AudioUploadClient {
         const userId = typeof context === 'object' ? context.user_id : context;
         const diagramId = typeof context === 'object' ? context.diagram_id : null;
         
-        const confirmMessage = diagramId 
-            ? `Upload "${file.name}" to this diagram for transcription and analysis?`
-            : `Upload "${file.name}" for this user?`;
-        
-        if (!confirm(confirmMessage)) {
-            return;
-        }
-        
         this.uploadInProgress = true;
         const element = this.showProgress(userId || `diagram-${diagramId}`, file.name);
         const originalContent = element.innerHTML;
