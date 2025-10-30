@@ -836,7 +836,10 @@ def audit(discussion_id):
     current_user = auth.current_user()
 
     # Create speaker mappings for CSS class assignment
-    unique_speakers = list({stmt.speaker for stmt in sorted_statements if stmt.speaker})
+    # Sort speakers by ID to maintain consistent ordering regardless of type changes
+    unique_speakers = sorted(
+        {stmt.speaker for stmt in sorted_statements if stmt.speaker}, key=lambda s: s.id
+    )
     subject_speakers = [s for s in unique_speakers if s.type == SpeakerType.Subject]
     expert_speakers = [s for s in unique_speakers if s.type == SpeakerType.Expert]
 
