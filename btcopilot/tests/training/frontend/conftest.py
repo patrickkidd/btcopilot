@@ -157,6 +157,7 @@ def authenticated_auditor_context(browser: Browser, flask_app) -> BrowserContext
         speaker=subject_speaker,
         text="Hello, I need help with my family diagram",
         order=1,
+        pdp_deltas={"people": [{"name": "AI Person"}], "events": []},
     )
     stmt2 = Statement(
         discussion=discussion,
@@ -274,6 +275,7 @@ def therapist_test_data(therapist_flask_app):
         speaker=subject_speaker,
         text="Hello, I need help with my family diagram",
         order=1,
+        pdp_deltas={"people": [{"name": "AI Person"}], "events": []},
     )
     stmt2 = Statement(
         discussion=discussion,

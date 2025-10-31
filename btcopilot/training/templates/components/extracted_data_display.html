@@ -218,7 +218,7 @@ Parameters:
                                     
                                     <!-- Delete button (Editable mode only, for non-AI auditor codes) -->
                                     {% if editable_mode and current_auditor %}
-                                    <template x-if="editedExtraction && !submitted && (typeof selectedIndex === 'undefined' || selectedIndex === -1 || (selectedFeedback && selectedFeedback.auditor_id === '{{ current_auditor }}'))">
+                                    <template x-if="editedExtraction && (editedExtraction.people?.length > 0 || editedExtraction.events?.length > 0) && !submitted && (typeof selectedIndex === 'undefined' || selectedIndex === -1 || (selectedFeedback && selectedFeedback.auditor_id === '{{ current_auditor }}'))">
                                         <button class="button is-danger is-small" style="padding: 2px 6px; height: 20px;" @click.stop="clearCorrections()" title="Delete my codes for this statement">
                                             <i class="fas fa-times" style="font-size: 10px;"></i>
                                         </button>
@@ -1068,7 +1068,7 @@ Parameters:
                                     
                                     <!-- Delete button (Editable mode only, for non-AI auditor codes) -->
                                     {% if editable_mode and current_auditor %}
-                                    <template x-if="editedExtraction && !submitted && (typeof selectedIndex === 'undefined' || selectedIndex === -1 || (selectedFeedback && selectedFeedback.auditor_id === '{{ current_auditor }}'))">
+                                    <template x-if="editedExtraction && (editedExtraction.people?.length > 0 || editedExtraction.events?.length > 0) && !submitted && (typeof selectedIndex === 'undefined' || selectedIndex === -1 || (selectedFeedback && selectedFeedback.auditor_id === '{{ current_auditor }}'))">
                                         <button class="button is-danger is-small" style="padding: 2px 6px; height: 20px;" @click.stop="clearCorrections()" title="Delete my codes for this statement">
                                             <i class="fas fa-times" style="font-size: 10px;"></i>
                                         </button>
