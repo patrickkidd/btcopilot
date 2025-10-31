@@ -80,6 +80,15 @@ btcopilot has these primary functions:
 - **Error Handling**: Centralized exception handling with logging
 - **Testing Framework**: pytest with snapshot testing and async support
 
+## Terminology & Component Reference
+
+### SARF Editor
+The interactive, re-usable component for reviewing and editing extracted clinical data (SARF = Symptom, Anxiety, Relationship, Functioning variables). Located in:
+- **File**: `btcopilot/training/templates/components/extracted_data_display.html`
+- **Purpose**: Displays and allows editing of extracted people, events, and clinical variable coding
+- **Features**: Collapsed/expanded views, in-place editing, feedback controls, cumulative data display
+- **Used in**: Training module for domain-expert review and fine-tuning of AI extraction model
+
 ## Code Style & Conventions
 
 - Keep all names, e.g. variables, functions, classes, methods, modules, etc, as
@@ -113,9 +122,10 @@ btcopilot has these primary functions:
 
 
 ## Code architecture and rules
-- This app is not in production yet and additional db migrations are not
-  required yet, so all db changes should just go in
-  @alembic/versions/b30fb43b8f92_add_therapist_tables.py
+- Use the mcp server `chrome-devtools-mcp` to show me the effects of your
+  frontend changes for btcopilot/training and ask/check with me to make sure I
+  like them before considering the task done.
+- This app is in production, so new db changes ned to go in new db migrations.
 - Always make `.card` markup elements with a `.card-header` containing a dynamic
   list always collapsable by clicking its `.card-header`.
 - Never pop a confirm message or dialog just to show something that will be

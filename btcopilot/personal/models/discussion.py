@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Text, Integer, Boolean
+from sqlalchemy import Column, Text, Integer, Boolean, Date
 from sqlalchemy.orm import relationship
 
 from btcopilot.extensions import db, llm, LLMFunction
@@ -12,6 +12,11 @@ class Discussion(db.Model, ModelMixin):
     user_id = Column(Integer, db.ForeignKey("users.id"))
     diagram_id = Column(Integer, db.ForeignKey("diagrams.id"))
     summary = Column(Text)
+    discussion_date = Column(
+        Date,
+        nullable=True,
+        comment="Date of the actual discussion/session (for accurate relative date extraction)",
+    )
     last_topic = Column(
         Text,
         comment="A the topic that the model should follow the user on, e.g. presenting problem, new issue",

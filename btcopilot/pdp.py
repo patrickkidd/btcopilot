@@ -170,9 +170,13 @@ async def update(
     Compiles prompts, runs llm, and returns both updated PDP and the deltas that were applied.
     """
 
+    reference_date = (
+        thread.discussion_date if thread.discussion_date else datetime.now().date()
+    )
+
     SYSTEM_PROMPT = f"""
 
-    Current Date & Time: {datetime.now().isoformat()}
+    Current Date: {reference_date.isoformat()}
 
     {PDP_ROLE_AND_INSTRUCTIONS}
 
