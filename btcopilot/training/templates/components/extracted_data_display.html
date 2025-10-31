@@ -41,7 +41,7 @@ Parameters:
 {% endif %}
 
 <div class="extracted-data-component" id="extracted-data-{{ component_id }}">
-    {% if data %}
+    {% if data or editable_mode %}
     <!-- Collapsed Data View -->
     <div class="collapsed-data-section is-clickable" id="{{ id_prefix }}-collapsed-{{ component_id }}" onclick="{{ onclick_function }}('{{ component_id }}')" style="display: {% if collapsed %}block{% else %}none{% endif %}">
         {% if show_feedback and feedback_data %}
@@ -51,18 +51,22 @@ Parameters:
         {% endif %}
         
         <div class="data-summary">
+            {% if editable_mode and not data %}
+            <small class="has-text-grey">Click to start coding</small>
+            {% else %}
             <div class="tags are-small mt-1">
-                {% if data.people %}
+                {% if data and data.people %}
                 <span class="tag {{ 'is-warning' if is_cumulative else 'is-success' }} is-light">
                     {{ data.people|length }} People
                 </span>
                 {% endif %}
-                {% if data.events %}
+                {% if data and data.events %}
                 <span class="tag {{ 'is-link' if is_cumulative else 'is-info' }} is-light">
                     {{ data.events|length }} Events
                 </span>
                 {% endif %}
             </div>
+            {% endif %}
             
             {% if is_cumulative %}
             <div class="has-text-centered mt-2">
@@ -71,7 +75,7 @@ Parameters:
             {% endif %}
             
             <!-- Quick Variable Summary -->
-            {% if not is_cumulative %}
+            {% if not is_cumulative and data and data.events %}
             {% for event in data.events[:2] %}
             <div class="variable-summary is-size-7 mt-1">
                 <div class="event-header mb-1">
@@ -92,11 +96,12 @@ Parameters:
         </div>
         
     </div>
-    
-    <!-- Admin Tabbed Interface (replaces expanded data section when admin has corrections) -->
-    {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) and all_ext_feedback and not is_cumulative %}
+
+    <!-- Expanded Data Interface (with tabs for admins, simple view for regular auditors) -->
+    {% if editable_mode and not is_cumulative %}
     <div class="admin-tabbed-data" id="{{ id_prefix }}-expanded-{{ component_id }}" style="display: {% if collapsed %}none{% else %}block{% endif %}" x-data='componentExtractedDataWithReview({{ data|tojson }}, {{ cumulative_pdp|tojson if cumulative_pdp else "null" }}, {{ "true" if feedback_data and feedback_data.thumbs_down else "false" }}, false, "{{ component_id }}", {{ "true" if editable_mode else "false" }}, {{ message_id|tojson if message_id else "null" }}, {{ feedback_data.edited_extraction|tojson if feedback_data and feedback_data.edited_extraction else "null" }}, {{ feedback_data.id|tojson if feedback_data and feedback_data.id else "null" }}, {{ all_ext_feedback_dict|tojson if all_ext_feedback_dict else "[]" }}, {{ approved|tojson if approved else "false" }}, {{ approved_by|tojson if approved_by else "null" }}, {{ approved_at|tojson if approved_at else "null" }}, {{ admin_ext_feedback.id|tojson if admin_ext_feedback and admin_ext_feedback.id else "null" }})'>
-        <!-- Navigation Tabs -->
+        <!-- Navigation Tabs (admin only, hidden when single auditor selected) -->
+        {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) and all_ext_feedback_dict|length > 1 %}
         <div class="tabs is-small is-boxed mb-0">
             <ul>
                 <li :class="{ 'is-active': selectedIndex === -1 }">
@@ -119,6 +124,7 @@ Parameters:
                 {% endfor %}
             </ul>
         </div>
+        {% endif %}
 
         <!-- Tab Content Area -->
         <div class="tab-content-area">
@@ -210,17 +216,24 @@ Parameters:
                                     </template>
                                     {% endif %}
                                     
-                                    <!-- Reset button (Editable mode only, when current user has made edits on AI Original only) -->
+                                    <!-- Delete button (Editable mode only, for non-AI auditor codes) -->
                                     {% if editable_mode and current_auditor %}
-                                    <template x-if="((selectedIndex === -1 || typeof selectedIndex === 'undefined') || (selectedFeedback && selectedFeedback.auditor_id === '{{ current_auditor }}')) && editedExtraction && !submitted">
-                                        <button class="button is-light is-small" style="padding: 2px 6px; height: 20px;" @click.stop="clearCorrections()" title="Reset my changes">
-                                            <i class="fas fa-undo" style="font-size: 10px;"></i>
+                                    <template x-if="editedExtraction && !submitted && (typeof selectedIndex === 'undefined' || selectedIndex === -1 || (selectedFeedback && selectedFeedback.auditor_id === '{{ current_auditor }}'))">
+                                        <button class="button is-danger is-small" style="padding: 2px 6px; height: 20px;" @click.stop="clearCorrections()" title="Delete my codes for this statement">
+                                            <i class="fas fa-times" style="font-size: 10px;"></i>
                                         </button>
                                     </template>
                                     {% endif %}
                                 </div>
                                 
                             </div>
+                            {% if editable_mode %}
+                            <!-- <template x-if="!extractedData.people || extractedData.people.length === 0">
+                                <div class="has-text-centered has-text-grey-light py-3">
+                                    <p class="is-size-7">No people yet.</p>
+                                </div>
+                            </template> -->
+                            {% endif %}
                             <template x-if="extractedData.people && extractedData.people.length > 0">
                                 <template x-for="(person, index) in extractedData.people" :key="index">
                                 <div class="person-item mb-1 p-2" 
@@ -455,6 +468,13 @@ Parameters:
                                 </span>
                                 {% endif %}
                             </div>
+                            {% if editable_mode %}
+                            <!-- <template x-if="!extractedData.events || extractedData.events.length === 0">
+                                <div class="has-text-centered has-text-grey-light py-3">
+                                    <p class="is-size-7">No events yet. Click <i class="fas fa-plus-circle"></i> above to add.</p>
+                                </div>
+                            </template> -->
+                            {% endif %}
                                 <template x-for="(event, index) in (extractedData.events || [])" :key="index">
                                 <div class="event-item mb-2 p-2 {{ 'has-background-link-light' if is_cumulative else 'has-background-light' }}" style="position: relative;">
                                     {% if editable_mode %}
@@ -1046,17 +1066,24 @@ Parameters:
                                     </template>
                                     {% endif %}
                                     
-                                    <!-- Reset button (Editable mode only, when current user has made edits on AI Original only) -->
+                                    <!-- Delete button (Editable mode only, for non-AI auditor codes) -->
                                     {% if editable_mode and current_auditor %}
-                                    <template x-if="((selectedIndex === -1 || typeof selectedIndex === 'undefined') || (selectedFeedback && selectedFeedback.auditor_id === '{{ current_auditor }}')) && editedExtraction && !submitted">
-                                        <button class="button is-light is-small" style="padding: 2px 6px; height: 20px;" @click.stop="clearCorrections()" title="Reset my changes">
-                                            <i class="fas fa-undo" style="font-size: 10px;"></i>
+                                    <template x-if="editedExtraction && !submitted && (typeof selectedIndex === 'undefined' || selectedIndex === -1 || (selectedFeedback && selectedFeedback.auditor_id === '{{ current_auditor }}'))">
+                                        <button class="button is-danger is-small" style="padding: 2px 6px; height: 20px;" @click.stop="clearCorrections()" title="Delete my codes for this statement">
+                                            <i class="fas fa-times" style="font-size: 10px;"></i>
                                         </button>
                                     </template>
                                     {% endif %}
                                 </div>
                                 
                             </div>
+                            {% if editable_mode %}
+                            <!-- <template x-if="!extractedData.people || extractedData.people.length === 0">
+                                <div class="has-text-centered has-text-grey-light py-3">
+                                    <p class="is-size-7">No people yet. </p>
+                                </div>
+                            </template> -->
+                            {% endif %}
                             <template x-if="extractedData.people && extractedData.people.length > 0">
                                 <template x-for="(person, index) in extractedData.people" :key="index">
                                 <div class="person-item mb-1 p-2" 
@@ -1185,6 +1212,13 @@ Parameters:
                                 </span>
                                 {% endif %}
                             </div>
+                            {% if editable_mode %}
+                            <!-- <template x-if="!extractedData.events || extractedData.events.length === 0">
+                                <div class="has-text-centered has-text-grey-light py-3">
+                                    <p class="is-size-7">No events yet. Click <i class="fas fa-plus-circle"></i> above to add.</p>
+                                </div>
+                            </template> -->
+                            {% endif %}
                                 <template x-for="(event, index) in (extractedData.events || [])" :key="index">
                                 <div class="event-item mb-2 p-2 {{ 'has-background-link-light' if is_cumulative else 'has-background-light' }}" style="position: relative;">
                                     {% if editable_mode %}

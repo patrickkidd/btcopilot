@@ -650,6 +650,8 @@ def audit(discussion_id):
     discussion = Discussion.query.get_or_404(discussion_id)
     auditor_id = get_auditor_id(request, session)
 
+    selected_auditor = request.args.get("selected_auditor")
+
     statements_with_feedback = []
     # Sort statements by order for proper display
     sorted_statements = sorted(
@@ -661,24 +663,42 @@ def audit(discussion_id):
     cumulative_pdp_state = PDP(people=[], events=[])
 
     for stmt in sorted_statements:
-        # For admin users, get ALL feedback; for auditors, get only their own
+        # For admin users, get ALL feedback or filter by selected_auditor; for auditors, get only their own
         if current_user.has_role(btcopilot.ROLE_ADMIN):
-            # Admin sees all feedback
-            conv_feedback = (
-                Feedback.query.filter_by(
-                    statement_id=stmt.id, feedback_type="conversation"
-                )
-                .order_by(Feedback.auditor_id.asc(), Feedback.created_at.asc())
-                .all()
-            )
+            if selected_auditor and selected_auditor != "AI":
+                # Admin filtering to specific auditor
+                conv_feedback = Feedback.query.filter_by(
+                    statement_id=stmt.id,
+                    auditor_id=selected_auditor,
+                    feedback_type="conversation",
+                ).first()
 
-            ext_feedback = (
-                Feedback.query.filter_by(
-                    statement_id=stmt.id, feedback_type="extraction"
+                ext_feedback = Feedback.query.filter_by(
+                    statement_id=stmt.id,
+                    auditor_id=selected_auditor,
+                    feedback_type="extraction",
+                ).first()
+            elif selected_auditor == "AI":
+                # AI selected - don't show any feedback, only AI extraction
+                conv_feedback = []
+                ext_feedback = []
+            else:
+                # Admin sees all feedback (no auditor selected)
+                conv_feedback = (
+                    Feedback.query.filter_by(
+                        statement_id=stmt.id, feedback_type="conversation"
+                    )
+                    .order_by(Feedback.auditor_id.asc(), Feedback.created_at.asc())
+                    .all()
                 )
-                .order_by(Feedback.auditor_id.asc(), Feedback.created_at.asc())
-                .all()
-            )
+
+                ext_feedback = (
+                    Feedback.query.filter_by(
+                        statement_id=stmt.id, feedback_type="extraction"
+                    )
+                    .order_by(Feedback.auditor_id.asc(), Feedback.created_at.asc())
+                    .all()
+                )
         else:
             # Auditor sees only their own feedback
             conv_feedback = Feedback.query.filter_by(
@@ -694,35 +714,44 @@ def audit(discussion_id):
         # Get stored PDP deltas - ONLY show for Subject statements (where extraction data is stored)
         pdp_deltas = None
         pdp_deltas_model = None
-        if (
-            stmt.speaker
-            and stmt.speaker.type == SpeakerType.Subject
-            and stmt.pdp_deltas
-        ):
-            try:
-                # Use the stored deltas from when the statement was originally processed
-                pdp_deltas = {
-                    "people": stmt.pdp_deltas.get("people", []),
-                    "events": stmt.pdp_deltas.get("events", []),
-                    "deletes": stmt.pdp_deltas.get("delete", []),
-                }
+        deltas_source = None
 
-                # Convert to PDPDeltas model for use with apply_deltas
-                pdp_deltas_model = PDPDeltas(
-                    people=[
-                        Person(**person_data)
-                        for person_data in pdp_deltas.get("people", [])
-                    ],
-                    events=[
-                        Event(**event_data)
-                        for event_data in pdp_deltas.get("events", [])
-                    ],
-                    delete=pdp_deltas.get("deletes", []),
-                )
-            except (ValueError, KeyError, TypeError) as e:
-                _log.warning(
-                    f"Error parsing stored deltas for statement {stmt.id}: {e}"
-                )
+        if stmt.speaker and stmt.speaker.type == SpeakerType.Subject:
+            # Determine which deltas to use: AI or selected auditor's
+            if selected_auditor and selected_auditor != "AI":
+                # Use selected human auditor's corrections
+                if (
+                    ext_feedback
+                    and hasattr(ext_feedback, "edited_extraction")
+                    and ext_feedback.edited_extraction
+                ):
+                    deltas_source = ext_feedback.edited_extraction
+            elif stmt.pdp_deltas:
+                # Use AI deltas (default)
+                deltas_source = stmt.pdp_deltas
+
+            if deltas_source:
+                try:
+                    pdp_deltas = {
+                        "people": deltas_source.get("people", []),
+                        "events": deltas_source.get("events", []),
+                        "deletes": deltas_source.get("delete", []),
+                    }
+
+                    # Convert to PDPDeltas model for use with apply_deltas
+                    pdp_deltas_model = PDPDeltas(
+                        people=[
+                            Person(**person_data)
+                            for person_data in pdp_deltas.get("people", [])
+                        ],
+                        events=[
+                            Event(**event_data)
+                            for event_data in pdp_deltas.get("events", [])
+                        ],
+                        delete=pdp_deltas.get("deletes", []),
+                    )
+                except (ValueError, KeyError, TypeError) as e:
+                    _log.warning(f"Error parsing deltas for statement {stmt.id}: {e}")
 
         # Get person name if speaker is mapped to a person
         person_name = None
@@ -751,39 +780,47 @@ def audit(discussion_id):
 
         # Handle different feedback data structures for admin vs auditor
         if current_user.has_role(btcopilot.ROLE_ADMIN):
+            # When specific auditor selected, feedback is single object; otherwise it's a list
+            if selected_auditor and selected_auditor != "AI":
+                # Single auditor selected - feedback is single object
+                all_conv_feedback = [conv_feedback] if conv_feedback else []
+                all_ext_feedback = [ext_feedback] if ext_feedback else []
+            else:
+                # All auditors or AI - feedback is already a list
+                all_conv_feedback = conv_feedback if conv_feedback else []
+                all_ext_feedback = ext_feedback if ext_feedback else []
+
             # Convert feedback objects to dictionaries using as_dict() method
             all_conv_feedback_dict = [
                 feedback.as_dict(exclude=["statement", "updated_at"])
-                for feedback in conv_feedback
+                for feedback in all_conv_feedback
             ]
 
             all_ext_feedback_dict = [
                 feedback.as_dict(exclude=["statement", "updated_at"])
-                for feedback in ext_feedback
+                for feedback in all_ext_feedback
             ]
 
             # Find admin's own feedback for reset button logic
             admin_ext_feedback = next(
-                (f for f in ext_feedback if f.auditor_id == auditor_id), None
+                (f for f in all_ext_feedback if f.auditor_id == auditor_id), None
             )
 
             # Admin gets arrays of all feedback
             statements_with_feedback.append(
                 {
                     "statement": stmt,
-                    "has_conv_feedback": len(conv_feedback) > 0,
-                    "has_ext_feedback": len(ext_feedback) > 0,
+                    "has_conv_feedback": len(all_conv_feedback) > 0,
+                    "has_ext_feedback": len(all_ext_feedback) > 0,
                     "conv_feedback": (
-                        conv_feedback[0] if conv_feedback else None
-                    ),  # First one for legacy compatibility
-                    "ext_feedback": (
-                        ext_feedback[0] if ext_feedback else None
-                    ),  # First one for legacy compatibility
-                    "all_conv_feedback": conv_feedback,  # All feedback model objects for template logic
-                    "all_ext_feedback": ext_feedback,  # All feedback model objects for template logic
-                    "all_conv_feedback_dict": all_conv_feedback_dict,  # JSON-serializable version
-                    "all_ext_feedback_dict": all_ext_feedback_dict,  # JSON-serializable version
-                    "admin_ext_feedback": admin_ext_feedback,  # Admin's own feedback for reset button logic
+                        all_conv_feedback[0] if all_conv_feedback else None
+                    ),
+                    "ext_feedback": (all_ext_feedback[0] if all_ext_feedback else None),
+                    "all_conv_feedback": all_conv_feedback,
+                    "all_ext_feedback": all_ext_feedback,
+                    "all_conv_feedback_dict": all_conv_feedback_dict,
+                    "all_ext_feedback_dict": all_ext_feedback_dict,
+                    "admin_ext_feedback": admin_ext_feedback,
                     "pdp_deltas": pdp_deltas,
                     "person_name": person_name,
                     "cumulative_pdp": cumulative_pdp,
@@ -851,14 +888,21 @@ def audit(discussion_id):
         speaker.id: idx + 1 for idx, speaker in enumerate(expert_speakers)
     }
 
-    # Create user mapping for admin display
+    # Create user mapping for admin display and auditor dropdown
     auditor_user_map = {}
+    auditor_options = []
+
     if current_user.has_role(btcopilot.ROLE_ADMIN):
-        # Collect all unique auditor IDs from all feedback
-        all_auditor_ids = set()
-        for item in statements_with_feedback:
-            if item.get("all_ext_feedback"):
-                all_auditor_ids.update(f.auditor_id for f in item["all_ext_feedback"])
+        # Query ALL extraction feedback for this discussion to get complete auditor list
+        all_discussion_feedback = (
+            Feedback.query.filter_by(feedback_type="extraction")
+            .join(Statement)
+            .filter(Statement.discussion_id == discussion_id)
+            .all()
+        )
+
+        # Collect all unique auditor IDs
+        all_auditor_ids = set(f.auditor_id for f in all_discussion_feedback)
 
         # Fetch user info for each auditor ID
         for auditor_id_str in all_auditor_ids:
@@ -881,6 +925,13 @@ def audit(discussion_id):
                 # Handle non-integer auditor IDs (test cases)
                 auditor_user_map[auditor_id_str] = auditor_id_str
 
+        # Build dropdown options: AI + all human auditors
+        auditor_options.append({"id": "AI", "name": "AI"})
+        for auditor_id_str in sorted(auditor_user_map.keys()):
+            auditor_options.append(
+                {"id": auditor_id_str, "name": auditor_user_map[auditor_id_str]}
+            )
+
     return render_template(
         "discussion_audit.html",
         discussion=discussion,
@@ -893,6 +944,8 @@ def audit(discussion_id):
         subject_speaker_map=subject_speaker_map,
         expert_speaker_map=expert_speaker_map,
         auditor_user_map=auditor_user_map,
+        auditor_options=auditor_options,
+        selected_auditor=selected_auditor,
     )
 
 

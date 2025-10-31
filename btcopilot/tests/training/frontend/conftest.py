@@ -13,17 +13,42 @@ import btcopilot
 from btcopilot.tests.conftest import flask_app
 
 
-def pytest_ignore_collect(path, config):
-    """
-    Skip all tests in this directory.
-    """
-    if Path(__file__).parent == path.dirpath():
-        return True
+def pytest_configure(config):
+    config.addinivalue_line("markers", "audit_ui: Tests for the audit user interface")
+    config.addinivalue_line(
+        "markers", "feedback_system: Tests for the feedback submission system"
+    )
+    config.addinivalue_line(
+        "markers", "data_display: Tests for data display and formatting"
+    )
+    config.addinivalue_line("markers", "navigation: Tests for navigation functionality")
+    config.addinivalue_line("markers", "performance: Tests for performance aspects")
+    config.addinivalue_line(
+        "markers", "accessibility: Tests for accessibility features"
+    )
+    config.addinivalue_line(
+        "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+    )
+    config.addinivalue_line("markers", "fast: marks tests as fast")
+
+    config.option.browser = ["chromium"]
+    config.option.headed = False
+    config.option.video = "retain-on-failure"
+    config.option.screenshot = "only-on-failure"
+    config.option.tracing = "retain-on-failure"
 
 
-@pytest.fixture(autouse=True)
-def _no_frontend_yet():
-    pytest.skip("Frontend tests are not implemented yet")
+# def pytest_ignore_collect(path, config):
+#     """
+#     Skip all tests in this directory.
+#     """
+#     if Path(__file__).parent == path.dirpath():
+#         return True
+
+
+# @pytest.fixture(autouse=True)
+# def _no_frontend_yet():
+#     pytest.skip("Frontend tests are not implemented yet")
 
 
 def is_server_running(host="127.0.0.1", port=80):
@@ -166,7 +191,7 @@ def authenticated_auditor_context(browser: Browser, flask_app) -> BrowserContext
 @pytest.fixture(scope="function")
 def audit_page(authenticated_auditor_context: BrowserContext) -> Page:
     page = authenticated_auditor_context.new_page()
-    page.goto("http://testserver/therapist/audit/")
+    page.goto("http://testserver/training/audit/")
     return page
 
 
@@ -174,7 +199,7 @@ def audit_page(authenticated_auditor_context: BrowserContext) -> Page:
 def discussion_audit_page(authenticated_auditor_context: BrowserContext) -> Page:
     page = authenticated_auditor_context.new_page()
     discussion_id = authenticated_auditor_context.discussion_id
-    page.goto(f"http://testserver/therapist/discussions/{discussion_id}")
+    page.goto(f"http://testserver/training/discussions/{discussion_id}")
     return page
 
 
@@ -311,14 +336,14 @@ def class_auditor_context(
 def class_discussion_page(class_auditor_context: BrowserContext) -> Page:
     page = class_auditor_context.new_page()
     discussion_id = class_auditor_context.discussion_id
-    page.goto(f"http://testserver/therapist/discussions/{discussion_id}")
+    page.goto(f"http://testserver/training/discussions/{discussion_id}")
     return page
 
 
 @pytest.fixture(scope="function")
 def class_audit_page(class_auditor_context: BrowserContext) -> Page:
     page = class_auditor_context.new_page()
-    page.goto("http://testserver/therapist/audit/")
+    page.goto("http://testserver/training/audit/")
     return page
 
 

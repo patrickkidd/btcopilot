@@ -179,6 +179,20 @@ window.diagramPeople = [
                         <span>Clear Extracted</span>
                     </button>
                 </p>
+                {% if current_user.has_role(btcopilot.ROLE_ADMIN) and auditor_options and (auditor_options|length > 1 or statements|selectattr('pdp_deltas')|list|length > 0) %}
+                <p class="control">
+                    <div class="select is-small">
+                        <select id="auditor-filter" onchange="handleAuditorChange(this.value)">
+                            <option value="">View Auditor...</option>
+                            {% for option in auditor_options %}
+                            <option value="{{ option.id }}" {% if selected_auditor == option.id %}selected{% endif %}>
+                                {{ option.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </p>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -451,27 +465,21 @@ window.diagramPeople = [
                 
                 <!-- Data cell for Subject statements (where extracted data is stored) -->
                 <td class="data-cell">
-                    {% if item.pdp_deltas %}
-                        {% set data = item.pdp_deltas %}
-                        {% set cumulative_pdp = item.cumulative_pdp %}
-                        {% set collapsed = true %}
-                        {% set show_feedback = true %}
-                        {% set message_id = item.statement.id %}
-                        {% set feedback_data = item.ext_feedback %}
-                        {% set component_id = item.statement.id %}
-                        {% set editable_mode = true %}
-                        {% set all_ext_feedback = item.all_ext_feedback or [] %}
-                        {% set all_ext_feedback_dict = item.all_ext_feedback_dict or [] %}
-                        {% set admin_ext_feedback = item.admin_ext_feedback %}
-                        {% set approved = item.approved %}
-                        {% set approved_by = item.approved_by %}
-                        {% set approved_at = item.approved_at %}
-                        {% include "components/extracted_data_display.html" %}
-                    {% else %}
-                        <div class="user-data-placeholder">
-                            <small class="has-text-grey">No data extracted</small>
-                        </div>
-                    {% endif %}
+                    {% set data = item.pdp_deltas %}
+                    {% set cumulative_pdp = item.cumulative_pdp %}
+                    {% set collapsed = false %}
+                    {% set show_feedback = true %}
+                    {% set message_id = item.statement.id %}
+                    {% set feedback_data = item.ext_feedback %}
+                    {% set component_id = item.statement.id %}
+                    {% set editable_mode = true %}
+                    {% set all_ext_feedback = item.all_ext_feedback or [] %}
+                    {% set all_ext_feedback_dict = item.all_ext_feedback_dict or [] %}
+                    {% set admin_ext_feedback = item.admin_ext_feedback %}
+                    {% set approved = item.approved %}
+                    {% set approved_by = item.approved_by %}
+                    {% set approved_at = item.approved_at %}
+                    {% include "components/extracted_data_display.html" %}
                 </td>
                 
                 <!-- Cumulative Notes column for Subject statements -->
@@ -686,11 +694,11 @@ function toggleExtractedData(componentId) {
 // Helper function for component extracted data display
 function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submitted, componentId, editableMode = false, messageId = null, editedExtraction = null, feedbackId = null) {
     // Use edited extraction if available, otherwise use original data
-    const displayData = editedExtraction || extractedData;
+    const displayData = editedExtraction || extractedData || {people: [], events: [], delete: []};
 
     return {
         extractedData: displayData,
-        originalExtractedData: extractedData,
+        originalExtractedData: extractedData || {people: [], events: [], delete: []},
         editedExtraction: editedExtraction,
         cumulativePdp: cumulativePdp,
         thumbsDown: thumbsDown,
@@ -1511,8 +1519,8 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
         reviewMode: false,
         selectedIndex: -1, // -1 = original, 0+ = feedback index
         selectedFeedback: null,
-        // Initialize extractedData to show AI original by default
-        extractedData: baseComponent.originalExtractedData,
+        // Initialize extractedData - use edited version if available, otherwise AI original
+        extractedData: baseComponent.extractedData,
         // Statement approval data
         approved: approved,
         approvedBy: approvedBy,
@@ -1730,6 +1738,15 @@ function toggleAIMessage(messageId) {
             dataExpanded.style.display = 'block';
         }
     }
+}
+
+function handleAuditorChange(auditorId) {
+    if (!auditorId) {
+        return;
+    }
+    const url = new URL(window.location);
+    url.searchParams.set('selected_auditor', auditorId);
+    window.location.href = url.toString();
 }
 
 function expandAllMessages() {

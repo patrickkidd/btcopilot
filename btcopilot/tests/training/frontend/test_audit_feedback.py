@@ -2,6 +2,7 @@ import pytest
 from playwright.sync_api import Page, expect
 
 
+@pytest.mark.skip(reason="Manually skipped for cherry-picking re-enablement")
 class TestFeedbackSubmission:
     """Test feedback submission workflows using shared class fixtures for performance"""
 
@@ -89,6 +90,7 @@ class TestFeedbackSubmission:
         expect(error_msg.or_(class_discussion_page.locator("body"))).to_be_visible()
 
 
+@pytest.mark.skip(reason="Manually skipped for cherry-picking re-enablement")
 class TestFeedbackModeration:
     """Test feedback moderation and approval workflows"""
 
@@ -121,6 +123,7 @@ class TestFeedbackModeration:
                     expect(pending_feedback).not_to_be_visible()
 
 
+@pytest.mark.skip(reason="Manually skipped for cherry-picking re-enablement")
 class TestSecurityValidation:
     """Test security features including XSS and injection prevention"""
 
@@ -137,6 +140,7 @@ class TestSecurityValidation:
                 expect(class_discussion_page.locator("script")).to_have_count(0)
 
 
+@pytest.mark.skip(reason="Manually skipped for cherry-picking re-enablement")
 class TestDataDisplay:
     """Test data display and rendering functionality"""
 
@@ -158,6 +162,7 @@ class TestDataDisplay:
         expect(subject_indicators.or_(expert_indicators)).to_have_count_greater_than(0)
 
 
+@pytest.mark.skip(reason="Manually skipped for cherry-picking re-enablement")
 class TestNavigation:
     """Test navigation features including breadcrumbs and jumping"""
 
@@ -179,6 +184,7 @@ class TestNavigation:
 
 
 @pytest.mark.slow
+@pytest.mark.skip(reason="Manually skipped for cherry-picking re-enablement")
 class TestPerformance:
     """Test performance characteristics - marked as slow to allow selective execution"""
 

@@ -2,6 +2,7 @@ import pytest
 from playwright.sync_api import Page, expect
 
 
+@pytest.mark.skip(reason="Manually skipped for cherry-picking re-enablement")
 class TestAuditIndexPage:
     """Test the main audit index page functionality using optimized fixtures"""
 
@@ -31,7 +32,9 @@ class TestAuditIndexPage:
     def test_expand_collapse_buttons(self, class_audit_page: Page):
         """Test expand all and collapse all functionality"""
         expand_btn = class_audit_page.locator("button").filter(has_text="Expand All")
-        collapse_btn = class_audit_page.locator("button").filter(has_text="Collapse All")
+        collapse_btn = class_audit_page.locator("button").filter(
+            has_text="Collapse All"
+        )
 
         expect(expand_btn).to_be_visible()
         expect(collapse_btn).to_be_visible()
@@ -46,11 +49,14 @@ class TestAuditIndexPage:
 
     def test_new_diagram_button(self, class_audit_page: Page):
         """Test that new diagram button is present"""
-        new_diagram_btn = class_audit_page.locator("button").filter(has_text="New Diagram")
+        new_diagram_btn = class_audit_page.locator("button").filter(
+            has_text="New Diagram"
+        )
         if new_diagram_btn.count() > 0:
             expect(new_diagram_btn).to_be_visible()
 
 
+@pytest.mark.skip(reason="Manually skipped for cherry-picking re-enablement")
 class TestDiscussionAuditPage:
     """Test discussion audit page functionality using optimized fixtures"""
 
@@ -97,13 +103,16 @@ class TestDiscussionAuditPage:
             expect(reject_btn).to_be_visible()
 
 
+@pytest.mark.skip(reason="Manually skipped for cherry-picking re-enablement")
 class TestUserInteraction:
     """Test user interaction workflows"""
 
     def test_feedback_submission(self, class_discussion_page: Page):
         """Test feedback submission workflow"""
         # Click thumbs down on first AI message if available
-        thumbs_down = class_discussion_page.locator("button").filter(has_text="👎").first
+        thumbs_down = (
+            class_discussion_page.locator("button").filter(has_text="👎").first
+        )
         expect(thumbs_down).to_be_visible()
         thumbs_down.click()
 
@@ -144,6 +153,7 @@ class TestUserInteraction:
         expect(expanded_content).to_be_visible()
 
 
+@pytest.mark.skip(reason="Manually skipped for cherry-picking re-enablement")
 class TestDataIntegrity:
     """Test data integrity and display"""
 
@@ -154,13 +164,15 @@ class TestDataIntegrity:
             # Check that statements have sequential ordering
             first_statement = statements.nth(0)
             second_statement = statements.nth(1)
-            
+
             expect(first_statement).to_be_visible()
             expect(second_statement).to_be_visible()
 
     def test_speaker_identification(self, class_discussion_page: Page):
         """Test that speakers are properly identified"""
-        speaker_indicators = class_discussion_page.locator(".speaker-name, .message-author")
+        speaker_indicators = class_discussion_page.locator(
+            ".speaker-name, .message-author"
+        )
         if speaker_indicators.count() > 0:
             expect(speaker_indicators.first).to_be_visible()
 
@@ -172,6 +184,7 @@ class TestDataIntegrity:
             expect(timestamps.first).to_be_visible()
 
 
+@pytest.mark.skip(reason="Manually skipped for cherry-picking re-enablement")
 class TestAccessibility:
     """Test accessibility features"""
 
