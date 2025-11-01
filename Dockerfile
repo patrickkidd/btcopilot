@@ -12,48 +12,9 @@ FROM base AS dependencies
 WORKDIR /tmp/deps
 RUN pip install --upgrade pip
 
-# Install cpu-only version of torch
+# Install cpu-only version of torch (required before other dependencies)
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install torch torchvision torchaudio --index-url="https://download.pytorch.org/whl/cpu"
-# btcopilot dependencies
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install \
-    gunicorn \
-    redis \
-    celery[redis] \
-    flask \
-    flask-login \
-    flask-session \
-    flask-cors \
-    flask-sqlalchemy \
-    flask-migrate \
-    flask-mail \
-    openai \
-    pygments \
-    python-dateutil \
-    stripe \
-    alembic \
-    cachetools \
-    rich \
-    "sip==6.8.6" \
-    "pyqt5==5.15.11" \
-    "pyqt5-sip==12.15.0" \
-    "pyqt5-qt5==5.15.2" \
-    sentence_transformers \
-    spacy \
-    mistralai \
-    pymupdf4llm \
-    pydantic_ai \
-    assemblyai \
-    chromadb \
-    langchain \
-    langchain-chroma \
-    langchain-community \
-    langchain-huggingface \
-    langchain-openai \
-    langchain-text-splitters \
-    nest_asyncio \
-    pypdf
 
 # Application layer - install from wheel
 FROM dependencies AS application
@@ -62,7 +23,7 @@ RUN mkdir -p ./instance/logs
 
 ARG WHEEL_FILE
 COPY ${WHEEL_FILE} /tmp/
-RUN pip install /tmp/*.whl && rm /tmp/*.whl
+RUN pip install /tmp/*.whl[app] && rm /tmp/*.whl
 EXPOSE 8888
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:8888/v1/health || exit 1
