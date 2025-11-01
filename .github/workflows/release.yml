@@ -89,7 +89,7 @@ jobs:
   
     - name: Test with pytest
       run: |
-        pytest -svv --disable-warnings --pyargs btcopilot.tests --ignore=btcopilot.tests.frontend
+        pytest -svv --disable-warnings --pyargs btcopilot.tests --ignore-glob='**/frontend/**'
 
   release:
     runs-on: ubuntu-24.04
