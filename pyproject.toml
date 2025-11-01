@@ -87,4 +87,5 @@ test = [
 repository = "https://github.com/patrickkidd/btcopilot"
 
 [tool.setuptools]
-packages = ["btcopilot"]
+packages = {find = {}}
+package-dir = {"" = "."}

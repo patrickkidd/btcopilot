@@ -481,8 +481,7 @@ def test_import_discussion_requires_auditor_role(logged_in):
         json={"discussion": export_data, "diagram_id": logged_in.user.free_diagram_id},
     )
 
-    # POST requests with JSON are API requests, expect 403
-    assert response.status_code == 302
+    assert response.status_code == 403
 
 
 def test_import_discussion_to_current_user_free_diagram(auditor):

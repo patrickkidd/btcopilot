@@ -161,12 +161,7 @@ def app_auth():
         f"Successful app-based authentication for user: {user.username} from {ip_address}"
     )
 
-    if user.has_role(btcopilot.ROLE_ADMIN):
-        return redirect(url_for("training.admin.index"))
-    elif user.has_role(btcopilot.ROLE_AUDITOR):
-        return redirect(url_for("training.audit.index"))
-    else:
-        return redirect(url_for("training.training_root"))
+    return redirect(btcopilot.auth.get_landing_page_for_user(user))
 
 
 @bp.route("/login", methods=["GET", "POST"])

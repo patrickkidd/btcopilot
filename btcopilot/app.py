@@ -4,14 +4,14 @@ from flask import Flask, render_template, redirect, request, url_for
 from werkzeug.exceptions import Unauthorized, HTTPException
 
 import btcopilot
-from btcopilot.pro.copilot.engine import Engine
-from btcopilot import auth, extensions, pro, personal, training
 
 
 _log = logging.getLogger(__name__)
 
 
 def create_app(config: dict = None):
+    from btcopilot.pro.copilot.engine import Engine
+    from btcopilot import auth, extensions, pro, personal, training
     app = Flask(
         "btcopilot", instance_relative_config=True
     )

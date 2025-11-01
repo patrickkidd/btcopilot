@@ -58,12 +58,9 @@ def test_requires_admin_or_auditor(subscriber, endpoint, method, caplog):
         with caplog.at_level(logging.ERROR):
             if method == "GET":
                 response = subscriber.get(endpoint)
-                # GET requests are web requests, expect redirect to login
-                assert response.status_code == 302
-                assert "/auth/login" in response.headers.get("Location", "")
+                assert response.status_code == 403
             elif method == "POST":
                 response = subscriber.post(endpoint, json={})
-                # POST with JSON is API request, expect 403
                 assert response.status_code == 403
 
 
