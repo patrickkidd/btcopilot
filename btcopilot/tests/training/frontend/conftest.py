@@ -38,17 +38,20 @@ def pytest_configure(config):
     config.option.tracing = "retain-on-failure"
 
 
-# def pytest_ignore_collect(path, config):
-#     """
-#     Skip all tests in this directory.
-#     """
-#     if Path(__file__).parent == path.dirpath():
-#         return True
+def pytest_addoption(parser):
+    parser.addoption(
+        "--frontend",
+        action="store_true",
+        default=False,
+        help="Enable frontend tests",
+    )
 
 
-@pytest.fixture(autouse=True)
-def _no_frontend_yet():
-    pytest.skip("Frontend tests are not implemented yet")
+def pytest_collection_modifyitems(config, items):
+    if not config.getoption("--frontend"):
+        skip_frontend = pytest.mark.skip(reason="need --frontend option to run")
+        for item in items:
+            item.add_marker(skip_frontend)
 
 
 def is_server_running(host="127.0.0.1", port=80):
