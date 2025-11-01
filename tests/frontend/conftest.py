@@ -38,22 +38,6 @@ def pytest_configure(config):
     config.option.tracing = "retain-on-failure"
 
 
-def pytest_addoption(parser):
-    parser.addoption(
-        "--frontend",
-        action="store_true",
-        default=False,
-        help="Enable frontend tests",
-    )
-
-
-def pytest_collection_modifyitems(config, items):
-    if not config.getoption("--frontend"):
-        skip_frontend = pytest.mark.skip(reason="need --frontend option to run")
-        for item in items:
-            item.add_marker(skip_frontend)
-
-
 def is_server_running(host="127.0.0.1", port=80):
     try:
         requests.get(f"http://{host}:{port}", timeout=1)
