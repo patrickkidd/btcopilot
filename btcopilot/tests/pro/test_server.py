@@ -48,7 +48,7 @@ def test_404(flask_app):
 def test_deactivated_versions(flask_app):
     with flask_app.test_client() as client:
         response = client.get("/v1/deactivated_versions")
-    assert response.data.decode("utf-8") == "\n".join(pro.DEACTIVATED_VERSIONS)
+    assert response.data.decode("utf-8") == "\n".join(DEACTIVATED_VERSIONS)
 
 
 def test_expire_stale_sessions(flask_app, test_session):
