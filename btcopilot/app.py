@@ -11,9 +11,9 @@ from btcopilot import auth, extensions, pro, personal, training
 _log = logging.getLogger(__name__)
 
 
-def create_app(app_class=Flask, config: dict = None, instance_path: str = None):
-    app = app_class(
-        "btcopilot", instance_path=instance_path, instance_relative_config=True
+def create_app(config: dict = None):
+    app = Flask(
+        "btcopilot", instance_relative_config=True
     )
 
     # 1. Default config

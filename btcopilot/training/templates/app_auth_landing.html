@@ -1,0 +1,61 @@
+{% extends "therapist_base.html" %}
+
+{% block head %}
+<style>
+.hero-body {
+    padding: 4rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+.content-box {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+}
+.auth-button {
+    margin-top: 2rem;
+    font-size: 1.25rem;
+    padding: 1.5rem 3rem;
+}
+.info-text {
+    margin-top: 2rem;
+    color: #4a4a4a;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero is-fullheight">
+    <div class="hero-body">
+        <div class="container">
+            <div class="content-box">
+                <div class="box has-background-white">
+                    <h1 class="title is-2">
+                        <span class="icon is-large has-text-primary">
+                            <i class="fas fa-key"></i>
+                        </span>
+                        <br>
+                        Authenticate with Family Diagram
+                    </h1>
+                    <h2 class="subtitle is-4 has-text-grey-dark">
+                        Click below to authenticate using your Family Diagram app
+                    </h2>
+
+                    <a href="familydiagram://authenticate" class="button is-primary is-large auth-button">
+                        <span class="icon">
+                            <i class="fas fa-unlock-alt"></i>
+                        </span>
+                        <span>Open Family Diagram App</span>
+                    </a>
+
+                    <div class="content info-text">
+                        <p class="has-text-grey">
+                            <i class="fas fa-info-circle"></i>
+                            You must have Family Diagram Pro or Personal installed and be logged in
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

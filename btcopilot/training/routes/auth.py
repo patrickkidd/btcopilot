@@ -4,12 +4,22 @@ import logging
 import time
 import random
 from datetime import datetime, timedelta, timezone
-from flask import Blueprint, request, render_template, redirect, url_for, flash, session
+from flask import (
+    Blueprint,
+    request,
+    render_template,
+    redirect,
+    url_for,
+    flash,
+    session,
+    current_app,
+)
 
 import btcopilot
 from btcopilot.pro.models import User
 from btcopilot.extensions import db
 from btcopilot.training.security import add_security_headers
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 
 _log = logging.getLogger(__name__)
 
@@ -104,20 +114,73 @@ def clear_failed_attempts(ip_address):
         del failed_attempts[ip_address]
 
 
+@bp.route("/app", methods=["GET"])
+def app_auth():
+    """Authenticate using token from desktop app"""
+    token = request.args.get("token")
+    if not token:
+        flash("Invalid authentication link", "error")
+        return redirect(url_for("training.auth.login"))
+
+    serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+
+    try:
+        token_data = serializer.loads(token, salt="web-auth", max_age=300)
+    except SignatureExpired:
+        _log.warning("Expired web auth token used")
+        flash("Authentication link has expired. Please try again.", "error")
+        return redirect(url_for("training.auth.login"))
+    except BadSignature:
+        _log.warning("Invalid web auth token signature")
+        flash("Invalid authentication link", "error")
+        return redirect(url_for("training.auth.login"))
+
+    if token_data.get("purpose") != "web_auth":
+        _log.warning("Invalid web auth token purpose")
+        flash("Invalid authentication link", "error")
+        return redirect(url_for("training.auth.login"))
+
+    user_id = token_data.get("user_id")
+    if not user_id:
+        _log.warning("Web auth token missing user_id")
+        flash("Invalid authentication link", "error")
+        return redirect(url_for("training.auth.login"))
+
+    user = User.query.get(user_id)
+    if not user or not user.active:
+        _log.warning(f"Web auth token for inactive/nonexistent user: {user_id}")
+        flash("Account not found or inactive", "error")
+        return redirect(url_for("training.auth.login"))
+
+    session["user_id"] = user.id
+    session["logged_in_at"] = datetime.now(timezone.utc).isoformat()
+    session.permanent = True
+
+    ip_address = get_remote_address()
+    _log.info(
+        f"Successful app-based authentication for user: {user.username} from {ip_address}"
+    )
+
+    if user.has_role(btcopilot.ROLE_ADMIN):
+        return redirect(url_for("training.admin.index"))
+    elif user.has_role(btcopilot.ROLE_AUDITOR):
+        return redirect(url_for("training.audit.index"))
+    else:
+        return redirect(url_for("training.training_root"))
+
+
 @bp.route("/login", methods=["GET", "POST"])
 def login():
-    """Login page with password authentication"""
-    ip_address = get_remote_address()
-
+    """Login page - now shows app auth landing"""
     if request.method == "GET":
-        # Generate CAPTCHA if needed
-        captcha_data = None
-        if needs_captcha(ip_address):
-            question, answer = generate_math_captcha()
-            session["captcha_answer"] = answer
-            captcha_data = {"question": question}
+        return render_template("app_auth_landing.html")
 
-        return render_template("auth/login.html", captcha=captcha_data)
+    # Old password login form - commented out for app-only auth
+    # Keeping code for easy restoration if needed
+    return ("Method not allowed", 405)
+    """
+    # Commented out password login POST handler
+    ip_address = get_remote_address()
 
     # Check if IP is locked out
     if is_ip_locked_out(ip_address):
@@ -232,6 +295,7 @@ def login():
     else:
         # Default to training root which handles role-based redirects
         return redirect(url_for("training.training_root"))
+    """
 
 
 @bp.route("/logout", methods=["POST"])
