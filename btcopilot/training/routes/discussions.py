@@ -1195,6 +1195,54 @@ def clear_extracted_data(discussion_id):
     )
 
 
+@bp.route("/<int:discussion_id>", methods=["PATCH"])
+@minimum_role(btcopilot.ROLE_AUDITOR)
+def update_discussion(discussion_id):
+    """Update discussion attributes"""
+    from datetime import date
+
+    current_user = auth.current_user()
+    data = request.json
+
+    discussion = Discussion.query.get_or_404(discussion_id)
+
+    updatable_fields = {
+        "discussion_date": lambda v: date.fromisoformat(v) if v else None,
+        "summary": lambda v: v,
+        "last_topic": lambda v: v,
+        "extracting": lambda v: bool(v) if v is not None else None,
+    }
+
+    updated_fields = []
+    errors = []
+
+    for field, value in data.items():
+        if field not in updatable_fields:
+            errors.append(f"Field '{field}' is not updatable")
+            continue
+
+        try:
+            converted_value = updatable_fields[field](value)
+            setattr(discussion, field, converted_value)
+            updated_fields.append(field)
+        except (ValueError, TypeError) as e:
+            errors.append(f"Invalid value for '{field}': {str(e)}")
+
+    if errors:
+        return jsonify({"success": False, "errors": errors}), 400
+
+    if not updated_fields:
+        return jsonify({"success": False, "error": "No valid fields to update"}), 400
+
+    db.session.commit()
+
+    _log.info(
+        f"User {current_user.username} updated discussion {discussion_id}: {', '.join(updated_fields)}"
+    )
+
+    return jsonify({"success": True, "updated_fields": updated_fields})
+
+
 @bp.route("/<int:discussion_id>", methods=["DELETE"])
 def delete(discussion_id):
     """Delete a specific discussion and all its messages"""

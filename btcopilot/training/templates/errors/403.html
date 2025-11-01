@@ -1,0 +1,62 @@
+{% extends "therapist_base.html" %}
+
+{% block content %}
+<div class="hero is-medium">
+    <div class="hero-body">
+        <div class="container has-text-centered">
+            <div class="columns is-centered">
+                <div class="column is-half">
+                    <div class="box">
+                        <figure class="image is-128x128 is-inline-block mb-4">
+                            <span class="icon is-large has-text-danger-light" style="font-size: 6rem;">
+                                <i class="fas fa-lock"></i>
+                            </span>
+                        </figure>
+
+                        <h1 class="title is-1 has-text-grey">403</h1>
+                        <h2 class="subtitle is-3 has-text-grey">Access Denied</h2>
+
+                        <div class="content">
+                            <p class="is-size-5 has-text-grey">
+                                You don't have permission to access this page.
+                            </p>
+                            {% if current_user %}
+                            <p class="is-size-6 has-text-grey-light">
+                                Logged in as <strong>{{ current_user.username }}</strong>
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <div class="buttons is-centered mt-5">
+                            {% if current_user %}
+                                <form method="POST" action="{{ url_for('training.auth.logout') }}" style="display: inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="button is-light">
+                                        <span class="icon">
+                                            <i class="fas fa-sign-out-alt"></i>
+                                        </span>
+                                        <span>Logout</span>
+                                    </button>
+                                </form>
+                            {% else %}
+                                <a href="{{ url_for('training.auth.login') }}" class="button is-primary">
+                                    <span class="icon">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                    </span>
+                                    <span>Login</span>
+                                </a>
+                            {% endif %}
+                        </div>
+
+                        <div class="content mt-4">
+                            <small class="has-text-grey">
+                                If you believe this is an error, please contact your system administrator.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

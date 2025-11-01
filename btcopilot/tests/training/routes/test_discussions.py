@@ -30,9 +30,7 @@ def test_audit(auditor, discussion):
 def test_audit_403(subscriber, discussion):
     discussion_id = discussion.id
     response = subscriber.get(f"/training/discussions/{discussion_id}")
-    # GET requests are web requests, expect redirect to login
-    assert response.status_code == 302
-    assert "/auth/login" in response.headers.get("Location", "")
+    assert response.status_code == 403
 
 
 def test_audit_shows_pdp_deltas_for_subject_statements_only(auditor):
@@ -101,7 +99,7 @@ def test_create_discussion_from_transcript_requires_auditor(subscriber):
         "/training/discussions/transcript",
         json={"text": "Test transcript"},
     )
-    assert response.status_code == 302
+    assert response.status_code == 403
 
 
 def test_create_discussion_from_transcript_to_current_user(auditor):
@@ -149,9 +147,7 @@ def test_delete_not_found(admin):
 def test_extract_requires_admin(logged_in, discussion):
     """Test that triggering extraction requires admin role"""
     response = logged_in.post(f"/training/discussions/{discussion.id}/extract")
-    # POST requests are web requests, expect redirect to login
-    assert response.status_code == 302
-    assert "/auth/login" in response.headers.get("Location", "")
+    assert response.status_code == 403
 
 
 def test_extract_success(mock_celery, admin, discussion):
@@ -207,9 +203,7 @@ def test_extracting_flag_reset_on_completion(admin, discussion):
 def test_clear_extracted_data_requires_auditor(subscriber, discussion):
     """Test that clearing extracted data requires auditor role"""
     response = subscriber.post(f"/training/discussions/{discussion.id}/clear-extracted")
-    # POST requests are web requests, expect redirect to login
-    assert response.status_code == 302
-    assert "/auth/login" in response.headers.get("Location", "")
+    assert response.status_code == 403
 
 
 def test_clear_extracted_data_success(auditor, discussion):

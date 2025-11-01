@@ -113,9 +113,7 @@ def test_progress_permission_denied(flask_app, discussion, test_user_2):
         with client.session_transaction() as sess:
             sess["user_id"] = test_user_2.id
         response = client.get(f"/training/discussions/{discussion.id}/progress")
-        # GET requests are web requests, expect redirect to login
-        assert response.status_code == 302
-        assert "/auth/login" in response.headers.get("Location", "")
+        assert response.status_code == 403
 
 
 def test_progress_auditor_access(auditor, discussion):

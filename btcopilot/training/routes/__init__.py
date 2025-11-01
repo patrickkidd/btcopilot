@@ -131,13 +131,7 @@ def training_root():
     if not user:
         return redirect(url_for("training.auth.login"))
 
-    if user.has_role(btcopilot.ROLE_ADMIN):
-        return redirect(url_for("training.admin.index"))
-    elif user.has_role(btcopilot.ROLE_AUDITOR):
-        return redirect(url_for("training.audit.index"))
-    else:
-        # Subscribers get their own landing page
-        return redirect(url_for("training.subscriber_landing"))
+    return redirect(btcopilot_auth.get_landing_page_for_user(user))
 
 
 @bp.route("/subscriber")
@@ -148,7 +142,7 @@ def subscriber_landing():
         return redirect(url_for("training.auth.login"))
 
     # Only allow subscribers to access this page
-    if not user.has_role(btcopilot.ROLE_AUDITOR) or user.has_role(btcopilot.ROLE_ADMIN):
+    if user.has_role(btcopilot.ROLE_ADMIN) or user.has_role(btcopilot.ROLE_AUDITOR):
         return redirect(url_for("training.training_root"))
 
     return render_template("subscriber_landing.html", current_user=user)

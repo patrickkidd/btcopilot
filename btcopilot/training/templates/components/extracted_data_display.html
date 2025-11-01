@@ -562,15 +562,15 @@ Parameters:
                                                               @mouseleave="hoveredField = null"
                                                               @click.stop="startEdit('event-' + index + '-dateTime', event.dateTime || '')">
                                                             <span x-show="!isEditing('event-' + index + '-dateTime')" x-text="event.dateTime || 'Not set'"></span>
-                                                            <input x-show="isEditing('event-' + index + '-dateTime')" 
+                                                            <input x-show="isEditing('event-' + index + '-dateTime')"
                                                                    :value="editingValue"
                                                                    @input="editingValue = $event.target.value"
                                                                    @blur="saveEventDateTime(index, $event.target.value)"
                                                                    @keydown.enter="saveEventDateTime(index, $event.target.value); $event.target.blur()"
                                                                    @keydown.escape="cancelEdit(); $event.target.blur()"
                                                                    class="inline-edit-input"
-                                                                   type="text"
-                                                                   placeholder="e.g. '2023-06-15' or 'Last Tuesday evening'">
+                                                                   type="date"
+                                                                   style="width: 150px;">
                                                         </span>
                                                         {% else %}
                                                         <span x-text="event.dateTime || 'Not specified'"></span>
@@ -1306,15 +1306,15 @@ Parameters:
                                                               @mouseleave="hoveredField = null"
                                                               @click.stop="startEdit('event-' + index + '-dateTime', event.dateTime || '')">
                                                             <span x-show="!isEditing('event-' + index + '-dateTime')" x-text="event.dateTime || 'Not set'"></span>
-                                                            <input x-show="isEditing('event-' + index + '-dateTime')" 
+                                                            <input x-show="isEditing('event-' + index + '-dateTime')"
                                                                    :value="editingValue"
                                                                    @input="editingValue = $event.target.value"
                                                                    @blur="saveEventDateTime(index, $event.target.value)"
                                                                    @keydown.enter="saveEventDateTime(index, $event.target.value); $event.target.blur()"
                                                                    @keydown.escape="cancelEdit(); $event.target.blur()"
                                                                    class="inline-edit-input"
-                                                                   type="text"
-                                                                   placeholder="e.g. '2023-06-15' or 'Last Tuesday evening'">
+                                                                   type="date"
+                                                                   style="width: 150px;">
                                                         </span>
                                                         {% else %}
                                                         <span x-text="event.dateTime || 'Not specified'"></span>

@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 
 from btcopilot.extensions import db
-from btcopilot.app import create_app, pro
+from btcopilot.app import create_app
 from btcopilot.pro.models import Session
-from btcopilot.pro import tasks, SESSION_EXPIRATION_DAYS
+from btcopilot.pro import tasks, SESSION_EXPIRATION_DAYS, DEACTIVATED_VERSIONS
 
 
 # @pytest.fixture(autouse=True, scope="module", params=["1.4.4", None])

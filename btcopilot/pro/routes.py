@@ -23,8 +23,10 @@ from flask import (
     Response,
     make_response,
     render_template,
+    url_for,
 )
 from flask_mail import Message
+from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import inspect
 from sqlalchemy.orm import defer
 
@@ -509,6 +511,23 @@ def sessions_session(token):
         db.session.commit()
         _log.info("Logged out user: %s" % g.user)
         return ("Success", 200)
+
+
+@bp.route("/sessions/web-auth-token", methods=("GET",))
+@encrypted
+def web_auth_token():
+    if g.user.IS_ANONYMOUS:
+        return ("Unauthorized", 401)
+
+    serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+    token_data = {"user_id": g.user.id, "purpose": "web_auth"}
+    token = serializer.dumps(token_data, salt="web-auth")
+
+    auth_url = url_for("training.auth.app_auth", token=token, _external=True)
+
+    data = {"token": token, "url": auth_url}
+    _log.info(f"Generated web auth token for user: {g.user}")
+    return pickle.dumps(data)
 
 
 ## Policies

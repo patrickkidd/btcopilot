@@ -149,25 +149,45 @@ window.diagramPeople = [
     border: none !important;
 }
 
+/* Compact date input styling */
+input[type="date"].input.is-small {
+    padding-right: 0.5rem !important;
+}
+
+input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
+    margin-left: 0 !important;
+    padding: 0 !important;
+}
+
 </style>
 <div class="level">
     <div class="level-left">
         <div class="level-item">
-            <div>
-                <p class="subtitle is-6">
-                    {{ discussion.created_at.strftime('%Y-%m-%d %H:%M') }}
+            <div class="field has-addons mb-0">
+                <p class="control">
+                    <a class="button is-small is-static">
+                        Discussion Date
+                    </a>
+                </p>
+                <p class="control">
+                    <input type="date"
+                           class="input is-small"
+                           id="discussion-date-input"
+                           value="{{ discussion.discussion_date.isoformat() if discussion.discussion_date else '' }}"
+                           onchange="saveDiscussionDate({{ discussion.id }}, this.value)"
+                           style="width: 150px;">
                 </p>
             </div>
         </div>
         <div class="level-item">
             <div class="field is-grouped">
-                <p class="control">
+                <p class="control" id="expand-all-control">
                     <button class="button is-small is-outlined" onclick="expandAllMessages()">
                         <span class="icon"><i class="fas fa-expand"></i></span>
                         <span>Expand All</span>
                     </button>
                 </p>
-                <p class="control">
+                <p class="control" id="collapse-all-control" style="display: none;">
                     <button class="button is-small is-outlined" onclick="collapseAllMessages()">
                         <span class="icon"><i class="fas fa-compress"></i></span>
                         <span>Collapse All</span>
@@ -1776,12 +1796,34 @@ function expandAllMessages() {
     document.querySelectorAll('[id^="cumulative-collapsed-"]').forEach(cumulativeCollapsed => {
         const messageId = cumulativeCollapsed.id.replace('cumulative-collapsed-', '');
         const cumulativeExpanded = document.getElementById('cumulative-expanded-' + messageId);
-        
+
         if (cumulativeExpanded) {
             cumulativeCollapsed.style.display = 'none';
             cumulativeExpanded.style.display = 'block';
         }
     });
+
+    updateExpandCollapseButtons();
+}
+
+function updateExpandCollapseButtons() {
+    const expandControl = document.getElementById('expand-all-control');
+    const collapseControl = document.getElementById('collapse-all-control');
+
+    if (!expandControl || !collapseControl) return;
+
+    // Check if any data sections are expanded
+    const hasExpandedData = Array.from(document.querySelectorAll('[id^="data-expanded-"]')).some(el => {
+        return el.style.display !== 'none';
+    });
+
+    if (hasExpandedData) {
+        expandControl.style.display = 'none';
+        collapseControl.style.display = 'block';
+    } else {
+        expandControl.style.display = 'block';
+        collapseControl.style.display = 'none';
+    }
 }
 
 function collapseAllMessages() {
@@ -1789,13 +1831,13 @@ function collapseAllMessages() {
     document.querySelectorAll('[id^="chat-expanded-"]').forEach(chatExpanded => {
         const messageId = chatExpanded.id.replace('chat-expanded-', '');
         const chatCollapsed = document.getElementById('chat-collapsed-' + messageId);
-        
+
         if (chatCollapsed) {
             chatCollapsed.style.display = 'block';
             chatExpanded.style.display = 'none';
         }
     });
-    
+
     // Collapse data sections for Subject statements
     document.querySelectorAll('[id^="data-expanded-"]').forEach(dataExpanded => {
         const messageId = dataExpanded.id.replace('data-expanded-', '');
@@ -1817,6 +1859,8 @@ function collapseAllMessages() {
             cumulativeExpanded.style.display = 'none';
         }
     });
+
+    updateExpandCollapseButtons();
 }
 
 
@@ -3318,6 +3362,28 @@ Continue?`;
     }
 }
 
+function saveDiscussionDate(discussionId, dateValue) {
+    fetch(`/training/discussions/${discussionId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ discussion_date: dateValue })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Discussion updated successfully');
+        } else {
+            alert('Failed to update discussion date');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating discussion:', error);
+        alert('Error updating discussion');
+    });
+}
+
 let progressInterval;
 
 function startProgressPolling(discussionId) {
@@ -3409,7 +3475,8 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         updateExtractionButtonState();
         updateExportButtonState();
-        
+        updateExpandCollapseButtons();
+
         // Only start progress updates if discussion.extracting is true on page load
         {% if discussion.extracting %}
         const extractionBtn = document.getElementById('trigger-extraction-btn');

@@ -1,7 +1,6 @@
 def test_audit_403(subscriber):
     response = subscriber.get("/training/audit/")
-    assert response.status_code == 302
-    assert "/auth/login" in response.headers.get("Location", "")
+    assert response.status_code == 403
 
 
 def test_audit_index(auditor, discussion):

@@ -37,25 +37,16 @@ def test_requires_auditor_or_admin(subscriber, endpoint, method, caplog):
     """Test that speaker endpoints require auditor or admin roles"""
     with patch("btcopilot.training.utils.get_auditor_id", return_value="test_auditor"):
         with caplog.at_level(logging.ERROR):
-            try:
-                if method == "GET":
-                    response = subscriber.get(endpoint)
-                elif method == "POST":
-                    response = subscriber.post(endpoint, json={})
-                elif method == "PUT":
-                    response = subscriber.put(endpoint, json={})
-                elif method == "DELETE":
-                    response = subscriber.delete(endpoint)
+            if method == "GET":
+                response = subscriber.get(endpoint)
+            elif method == "POST":
+                response = subscriber.post(endpoint, json={})
+            elif method == "PUT":
+                response = subscriber.put(endpoint, json={})
+            elif method == "DELETE":
+                response = subscriber.delete(endpoint)
 
-                # If we get here, the request didn't fail as expected
-                # The test should fail because access should be denied
-                assert response.status_code == 302
-            except Exception:
-                # Authorization failure is expected - check that 403 Forbidden error was logged
-                assert any(
-                    "403" in record.message or "Forbidden" in record.message
-                    for record in caplog.records
-                )
+            assert response.status_code == 403
 
 
 def test_update_success(auditor, test_speaker):

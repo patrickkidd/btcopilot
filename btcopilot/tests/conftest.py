@@ -172,7 +172,8 @@ def flask_app(request, tmp_path):
     #     def test_client(self, **kwargs):
     #         return super().test_client(app=self, **kwargs)
 
-    app = create_app(app_class=flask.Flask, instance_path=tmp_path, config=kwargs)
+    app = create_app(config=kwargs)
+    app.instance_path = str(tmp_path)
 
     # db.session = app.db.create_scoped_session()
     # A default. Just override to have something else.

@@ -70,16 +70,34 @@ def current_user() -> Union[User, None]:
     return None
 
 
+def get_landing_page_for_user(user: User) -> str:
+    """Get the appropriate landing page URL for a user based on their role."""
+    if user.has_role(btcopilot.ROLE_ADMIN):
+        return url_for("training.admin.index")
+    elif user.has_role(btcopilot.ROLE_AUDITOR):
+        return url_for("training.audit.index")
+    else:
+        return url_for("training.subscriber_landing")
+
+
 def _handle_unauthorized(status_code):
     """Handle unauthorized access based on request type."""
+    from werkzeug.exceptions import HTTPException
+    from flask import render_template, make_response
+
     if is_personal_app_request():
         abort(status_code)
+    elif status_code == 403:
+        # Authenticated but wrong role - show 403 page with logout
+        response = make_response(
+            render_template("errors/403.html", current_user=current_user()), 403
+        )
+        exception = HTTPException()
+        exception.response = response
+        raise exception
     else:
-        # For web requests, redirect to login
-        from werkzeug.exceptions import HTTPException
-
+        # Not authenticated - redirect to login
         redirect_response = redirect(url_for("training.auth.login", next=request.url))
-        # Create a proper HTTP exception with the redirect response
         exception = HTTPException()
         exception.response = redirect_response
         raise exception
