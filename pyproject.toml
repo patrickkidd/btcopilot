@@ -89,3 +89,7 @@ repository = "https://github.com/patrickkidd/btcopilot"
 [tool.setuptools]
 packages = {find = {}}
 package-dir = {"" = "."}
+
+[tool.setuptools.package-data]
+"btcopilot.training" = ["templates/**/*", "static/**/*"]
+"btcopilot.pro" = ["templates/**/*"]

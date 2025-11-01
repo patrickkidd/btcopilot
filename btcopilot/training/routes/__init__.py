@@ -35,7 +35,13 @@ from .auth import bp as auth_bp
 
 _log = logging.getLogger(__name__)
 
-bp = Blueprint("training", __name__, url_prefix="/training")
+bp = Blueprint(
+    "training",
+    __name__,
+    url_prefix="/training",
+    template_folder="../templates",
+    static_folder="../static",
+)
 
 
 # Set up CSRF protection for the blueprint
