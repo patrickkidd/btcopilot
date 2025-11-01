@@ -27,4 +27,61 @@ class Policy(db.Model, ModelMixin):
 
     licenses = relationship("License", back_populates="policy")
 
-    POLICIES = []
+    POLICIES = [
+        {
+            "code": btcopilot.LICENSE_FREE,
+            "product": btcopilot.LICENSE_FREE,
+            "name": "Free",
+            "amount": 0.0,
+            "active": True,
+            "public": False,
+            "description": "Editing a single digram without export ability. Makes it possible to research your own family.",
+        },
+        {
+            "code": btcopilot.LICENSE_BETA,
+            "product": btcopilot.LICENSE_BETA,
+            "name": "Beta",
+            "amount": 0.0,
+            "active": True,
+            "public": False,
+            "description": "Full functionality for beta releases only. Requires entering a license key provided by Vedanā Media",
+        },
+        {
+            "code": btcopilot.LICENSE_ALPHA,
+            "product": btcopilot.LICENSE_ALPHA,
+            "name": "Alpha",
+            "amount": 0.0,
+            "active": True,
+            "public": False,
+            "description": "Full functionality for alpha releases only. Requires entering a license key provided by Vedanā Media",
+        },
+        {
+            "code": btcopilot.LICENSE_CLIENT_ONCE,
+            "product": btcopilot.LICENSE_CLIENT,
+            "name": "Client",
+            "amount": 19.99,
+            "active": True,
+            "public": True,
+            "description": "Free license plus sharing the free diagram with other one account, e.g. a coach.",
+        },
+        {
+            "code": btcopilot.LICENSE_PROFESSIONAL_MONTHLY,
+            "product": btcopilot.LICENSE_PROFESSIONAL,
+            "name": "Professional Monthly",
+            "amount": 19.99,
+            "interval": "month",
+            "active": True,
+            "public": True,
+            "description": "Unlimited family diagrams with full functonality.",
+        },
+        {
+            "code": btcopilot.LICENSE_PROFESSIONAL_ANNUAL,
+            "product": btcopilot.LICENSE_PROFESSIONAL,
+            "name": "Professional Annual",
+            "amount": 199.99,
+            "interval": "year",
+            "active": True,
+            "public": True,
+            "description": "Unlimited family diagrams with full functionality.",
+        },
+    ]

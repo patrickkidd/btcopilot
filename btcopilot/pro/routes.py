@@ -515,7 +515,8 @@ def sessions_session(token):
 
 @bp.route("/sessions/web-auth-token", methods=("GET",))
 @encrypted
-def web_auth_token():
+def sessions_web_auth_token():
+    _log.debug(f"g.user.IS_ANONYMOUS: {g.user.IS_ANONYMOUS}")
     if g.user.IS_ANONYMOUS:
         return ("Unauthorized", 401)
 

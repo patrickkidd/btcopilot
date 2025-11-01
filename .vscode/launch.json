@@ -5,6 +5,99 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Flask",
+            "type": "python",
+            "request": "launch",
+            "module": "flask",
+            "env": {
+                "FLASK_APP": "btcopilot",
+                "FLASK_CONFIG": "development",
+                "FLASK_DEBUG": "1",
+            },
+            "args": [
+                "run",
+                "-p", "8888"
+            ],
+            "justMyCode": false,
+            "jinja": true
+        },
+        {
+            "name": "Gunicorn flask",
+            "type": "python",
+            "request": "launch",
+            "module": "gunicorn",
+            "env": {
+                "FLASK_APP": "btcopilot",
+                "FLASK_CONFIG": "development",
+                "CELERY_BROKER_URL": "redis://localhost:6379/0",
+                "CELERY_RESULT_BACKEND": "redis://localhost:6379/0"
+            },
+            "args": [
+                "--bind", "0.0.0.0:8888",
+                "--worker-class", "sync",
+                "--workers", "2",
+                "--threads", "2",
+                "--timeout", "45",
+                "--keep-alive", "2",
+                "--max-requests", "1000",
+                "--max-requests-jitter", "50",
+                "btcopilot.app:create_app()"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Celery Worker (Debug)",
+            "type": "python",
+            "request": "launch",
+            "module": "celery",
+            "env": {
+                "FLASK_CONFIG": "development",
+            },
+            "args": [
+                "-A", "btcopilot.celery:celery",
+                "worker",
+                "--pool=solo",
+                "--loglevel=debug"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Celery Worker (Multi-worker)",
+            "type": "python",
+            "request": "launch",
+            "module": "celery",
+            "env": {
+                "FLASK_CONFIG": "development"
+            },
+            "args": [
+                "-A", "btcopilot.celery:celery",
+                "worker",
+                "--pool=threads",
+                "--concurrency=4",
+                "--loglevel=info"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Celery Beat",
+            "type": "python",
+            "request": "launch",
+            "module": "celery",
+            "env": {
+                "FLASK_CONFIG": "development"
+            },
+            "args": [
+                "-A", "btcopilot.celery:celery",
+                "beat",
+                "--loglevel=info"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        },
+        {
             "name": "ingest",
             "type": "debugpy",
             "request": "launch",

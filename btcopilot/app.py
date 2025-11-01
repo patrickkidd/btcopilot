@@ -12,9 +12,8 @@ _log = logging.getLogger(__name__)
 def create_app(config: dict = None):
     from btcopilot.pro.copilot.engine import Engine
     from btcopilot import auth, extensions, pro, personal, training
-    app = Flask(
-        "btcopilot", instance_relative_config=True
-    )
+
+    app = Flask("btcopilot", instance_relative_config=True)
 
     # 1. Default config
     app.config.from_mapping(
