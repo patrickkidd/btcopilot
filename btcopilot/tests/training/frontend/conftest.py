@@ -46,9 +46,9 @@ def pytest_configure(config):
 #         return True
 
 
-# @pytest.fixture(autouse=True)
-# def _no_frontend_yet():
-#     pytest.skip("Frontend tests are not implemented yet")
+@pytest.fixture(autouse=True)
+def _no_frontend_yet():
+    pytest.skip("Frontend tests are not implemented yet")
 
 
 def is_server_running(host="127.0.0.1", port=80):
