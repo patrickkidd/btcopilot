@@ -124,5 +124,9 @@ def create_app(config: dict = None):
     personal.init_app(app)
     training.init_app(app)
 
+    @app.route("/")
+    def root():
+        return redirect(url_for("training.auth.login"))
+
     _log.debug("Patrick says flask app is ready to go.")
     return app

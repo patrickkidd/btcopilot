@@ -70,3 +70,10 @@ def test_subscriber_sees_403_for_audit_page(subscriber):
     assert response.status_code == 403
     assert b"403" in response.data
     assert b"Access Denied" in response.data
+
+
+def test_root_url_redirects_to_login(anonymous):
+    """Root URL should redirect to login page"""
+    response = anonymous.get("/", follow_redirects=False)
+    assert response.status_code == 302
+    assert response.location.endswith("/training/auth/login")
