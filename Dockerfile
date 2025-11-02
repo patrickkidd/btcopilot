@@ -23,7 +23,7 @@ RUN mkdir -p ./instance/logs
 
 ARG WHEEL_FILE
 COPY ${WHEEL_FILE} /tmp/
-RUN pip install /tmp/*.whl[app] && rm /tmp/*.whl
+RUN pip install "/tmp/$(ls /tmp/*.whl | xargs basename)[app]" && rm /tmp/*.whl
 EXPOSE 8888
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:8888/v1/health || exit 1
