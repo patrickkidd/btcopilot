@@ -92,4 +92,4 @@ package-dir = {"" = "."}
 
 [tool.setuptools.package-data]
 "btcopilot.training" = ["templates/**/*", "static/**/*"]
-"btcopilot.pro" = ["templates/**/*"]
+"btcopilot.pro" = ["templates/**/*", "static/**/*"]

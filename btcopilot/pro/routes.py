@@ -24,6 +24,7 @@ from flask import (
     make_response,
     render_template,
     url_for,
+    send_from_directory,
 )
 from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer
@@ -137,6 +138,13 @@ def deprecated(func):
 @bp.route("/health")
 def hello():
     return "Hello, World!"
+
+
+@bp.route("/static/email-assets/<path:filename>")
+def email_assets(filename):
+    import os
+    static_dir = os.path.join(os.path.dirname(__file__), "static", "email-assets")
+    return send_from_directory(static_dir, filename)
 
 
 @bp.route("/deactivated_versions")
