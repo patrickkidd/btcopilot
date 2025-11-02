@@ -18,7 +18,7 @@ def create_app(config: dict = None):
     # 1. Default config
     app.config.from_mapping(
         FD_DIR=app.instance_path,
-        STRIPE_ENABLED=True,
+        STRIPE_ENABLED=False,
         CONFIG="development",
         SQLALCHEMY_DATABASE_URI="postgresql://familydiagram:pks@localhost:5432/familydiagram",
         SQLALCHEMY_TRACK_MODIFICATIONS=False,

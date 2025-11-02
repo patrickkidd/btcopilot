@@ -10,7 +10,7 @@
 
 
 import sys
-import re, pickle, ast, datetime, uuid, logging
+import re, pickle, ast, datetime, uuid, logging, random
 import pickle
 import logging
 from functools import wraps
@@ -320,7 +320,7 @@ def users_email_code(user_id):
     g.user = user
     if not user:
         return ("User doesn't exist", 404)
-    code = str(uuid.uuid4())
+    code = str(random.randint(100000, 999999))
     user.set_reset_password_code(code)
 
     msg = Message(

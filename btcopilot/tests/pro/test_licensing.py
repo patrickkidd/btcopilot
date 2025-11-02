@@ -38,7 +38,7 @@ def test_user_password_fail():
 
 
 def test_user_reset_password_code():
-    code = str(uuid.uuid4())
+    code = "123456"
     user = User(
         username="patrickkidd@gmail.com", password="something", reset_password_code=code
     )
@@ -47,15 +47,15 @@ def test_user_reset_password_code():
 
 
 def test_user_reset_password_code_fail():
-    code = str(uuid.uuid4())
+    code = "123456"
     user = User(
         username="patrickkidd@gmail.com", password="something", reset_password_code=code
     )
-    assert user.check_reset_password_code(code + "xx") == False
+    assert user.check_reset_password_code("999999") == False
 
 
 def test_user_reset_password_code_is_null():
-    code = str(uuid.uuid4())
+    code = "123456"
     user = User(
         username="patrickkidd@gmail.com", password="something", reset_password_code=code
     )
@@ -139,7 +139,7 @@ def test_users_create_conflict(flask_app, test_user):
 
 
 def test_users_confirm_code(flask_app, test_user):
-    code = str(uuid.uuid4())
+    code = "123456"
     test_user.set_reset_password_code(code)
     db.session.commit()
     args = {"username": test_user.username, "reset_password_code": code}
@@ -151,10 +151,10 @@ def test_users_confirm_code(flask_app, test_user):
 
 
 def test_users_confirm_code_fail(flask_app, test_user):
-    code = str(uuid.uuid4())
+    code = "123456"
     test_user.set_reset_password_code(code)
     db.session.commit()
-    args = {"username": test_user.username, "reset_password_code": "asdasdasd"}
+    args = {"username": test_user.username, "reset_password_code": "999999"}
     with flask_app.test_client() as client:
         response = client.post(
             "/v1/users/%i/confirm" % test_user.id, data=pickle.dumps(args)
@@ -163,7 +163,7 @@ def test_users_confirm_code_fail(flask_app, test_user):
 
 
 def test_users_update(flask_app, test_user):
-    code = str(uuid.uuid4())
+    code = "123456"
     test_user.set_reset_password_code(code)
     db.session.commit()
     was_first_name = test_user.first_name
@@ -187,7 +187,7 @@ def test_users_update(flask_app, test_user):
 
 def test_users_update_no_password(flask_app, test_user):
     test_user.set_password("something")
-    code = str(uuid.uuid4())
+    code = "123456"
     test_user.set_reset_password_code(code)
     db.session.commit()
     args = {
@@ -202,20 +202,20 @@ def test_users_update_no_password(flask_app, test_user):
     assert response.status_code == 200
     data = pickle.loads(response.data)
     user = User.query.filter_by(username=args["username"]).first()
-    assert user.check_password("something") == True  # did not change
+    assert user.check_password("something") == True
     assert user.first_name == args["first_name"]
     assert user.last_name == args["last_name"]
 
 
 def test_users_update_invalid_code(flask_app, test_user):
     test_user.set_password("old password")
-    code = str(uuid.uuid4())
+    code = "123456"
     test_user.set_reset_password_code(code)
     db.session.commit()
     args = {
         "username": test_user.username,
         "password": "new password",
-        "reset_password_code": "bad code",
+        "reset_password_code": "999999",
     }
     bdata = pickle.dumps(args)
     with flask_app.test_client() as client:
@@ -227,11 +227,7 @@ def test_users_update_invalid_code(flask_app, test_user):
 
 def test_users_email_code(snapshot, flask_app, test_user, monkeypatch):
     with contextlib.ExitStack() as stack:
-        stack.enter_context(
-            mock.patch(
-                "uuid.uuid4", return_value="a568655e-072e-459c-b352-871a559426e6"
-            )
-        )
+        stack.enter_context(mock.patch("random.randint", return_value=123456))
         send = stack.enter_context(
             mock.patch.object(flask_mail.Mail, "send", wraps=mail.send)
         )
