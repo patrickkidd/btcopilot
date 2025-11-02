@@ -223,7 +223,7 @@ jobs:
   trigger-downstream-deploy:
     runs-on: ubuntu-latest
     needs: [release-wheel, release-docker]
-    if: ${{ secrets.DOWNSTREAM_REPO != '' }}
+    if: vars.DOWNSTREAM_REPO != ''
     steps:
       - name: Trigger downstream deployment
         run: |
