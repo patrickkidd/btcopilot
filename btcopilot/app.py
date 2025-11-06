@@ -121,7 +121,9 @@ def create_app(config: dict = None):
                     "url": request.url,
                     "path": request.path,
                     "referrer": request.referrer,
-                    "user_agent": request.user_agent.string if request.user_agent else None,
+                    "user_agent": (
+                        request.user_agent.string if request.user_agent else None
+                    ),
                 }
             },
         )
@@ -144,5 +146,5 @@ def create_app(config: dict = None):
     def root():
         return redirect(url_for("training.auth.login"))
 
-    _log.debug("Patrick says flask app is ready to go.")
+    _log.info("Patrick says flask app is ready to go.")
     return app
