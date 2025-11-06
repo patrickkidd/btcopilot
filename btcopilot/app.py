@@ -113,6 +113,18 @@ def create_app(config: dict = None):
 
     @app.before_request
     def _():
+        _log.info(
+            f"{request.method} {request.path}",
+            extra={
+                "http": {
+                    "method": request.method,
+                    "url": request.url,
+                    "path": request.path,
+                    "referrer": request.referrer,
+                    "user_agent": request.user_agent.string if request.user_agent else None,
+                }
+            },
+        )
         if "ddtrace" in sys.modules:
             from ddtrace import tracer
             from btcopilot import git_sha

@@ -133,13 +133,16 @@ class DatadogJSONFormatter(logging.Formatter):
                 ),
             }
 
-        # ADD THIS: Include exception traceback if present
         if record.exc_info:
             dd_log["error"] = {
                 "kind": record.exc_info[0].__name__,
                 "message": str(record.exc_info[1]),
                 "stack": self.formatException(record.exc_info),
             }
+
+        if hasattr(record, "http"):
+            dd_log["http"] = record.http
+
         return json.dumps(dd_log)
 
 

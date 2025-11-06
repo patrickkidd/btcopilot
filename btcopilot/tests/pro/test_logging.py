@@ -50,12 +50,46 @@ def test_datadog_logs(flask_app, test_user, test_activation, _loggers):
         sdata = f.read()
         logs = [json.loads(line) for line in sdata.split("\n") if line]
 
-    assert len(logs) == 2
-    assert logs[0]["status"] == "INFO"
-    assert logs[0]["message"] == "Created new diagram"
-    assert logs[0]["user"]["username"] == test_user.username
-    assert logs[0]["user"]["name"] == f"{test_user.first_name} {test_user.last_name}"
-    assert logs[1]["status"] == "INFO"
-    assert logs[1]["message"] == "Fetched diagram 2"
-    assert logs[1]["user"]["username"] == test_user.username
-    assert logs[1]["user"]["name"] == f"{test_user.first_name} {test_user.last_name}"
+    expected_logs = [
+        {
+            "status": "INFO",
+            "message": "POST /v1/diagrams",
+            "http": {
+                "method": "POST",
+                "path": "/v1/diagrams",
+            }
+        },
+        {
+            "status": "INFO",
+            "message": "Created new diagram",
+            "user": {
+                "username": test_user.username,
+                "name": f"{test_user.first_name} {test_user.last_name}",
+            }
+        },
+        {
+            "status": "INFO",
+            "message": "GET /v1/diagrams/2",
+            "http": {
+                "method": "GET",
+                "path": "/v1/diagrams/2",
+            }
+        },
+        {
+            "status": "INFO",
+            "message": "Fetched diagram 2",
+            "user": {
+                "username": test_user.username,
+                "name": f"{test_user.first_name} {test_user.last_name}",
+            }
+        },
+    ]
+
+    assert len(logs) == len(expected_logs)
+    for actual, expected in zip(logs, expected_logs):
+        for key, value in expected.items():
+            if isinstance(value, dict):
+                for subkey, subvalue in value.items():
+                    assert actual[key][subkey] == subvalue
+            else:
+                assert actual[key] == value
