@@ -89,16 +89,20 @@ def extract_next_statement(*args, **kwargs):
             _log.debug("No pending statements found")
             return False
 
-        _log.info(
-            f"Processing statement {statement.id} (speaker: {statement.speaker.type}, text: '{statement.text[:50]}...') from discussion {statement.discussion_id}"
-        )
-
         discussion = statement.discussion
         if not discussion or not discussion.user:
             _log.warning(
                 f"Skipping statement {statement.id} - missing discussion or user"
             )
             return False
+
+        _log.info(
+            f"Data extraction started - "
+            f"statement_id: {statement.id}, "
+            f"discussion_id: {statement.discussion_id}, "
+            f"speaker_type: {statement.speaker.type}, "
+            f"text_length: {len(statement.text)}"
+        )
 
         # Get or create diagram database
         if discussion.diagram:
@@ -121,12 +125,24 @@ def extract_next_statement(*args, **kwargs):
                 discussion.diagram.set_diagram_data(database)
             if pdp_deltas:
                 statement.pdp_deltas = asdict(pdp_deltas)
+                event_count = len(pdp_deltas.events)
+                people_count = len(pdp_deltas.people)
                 _log.info(
-                    f"Stored PDP deltas on statement {statement.id}: {len(pdp_deltas.events)} events, {len(pdp_deltas.people)} people"
+                    f"Data extraction completed - "
+                    f"statement_id: {statement.id}, "
+                    f"discussion_id: {discussion.id}, "
+                    f"events_extracted: {event_count}, "
+                    f"people_extracted: {people_count}"
                 )
             else:
                 statement.pdp_deltas = None
-                _log.info(f"No PDP deltas generated for statement {statement.id}")
+                _log.info(
+                    f"Data extraction completed - "
+                    f"statement_id: {statement.id}, "
+                    f"discussion_id: {discussion.id}, "
+                    f"events_extracted: 0, "
+                    f"people_extracted: 0"
+                )
 
             # Check if there are any more unprocessed statements in this discussion
             # We need to check manually because JSON column filters are unreliable
@@ -152,25 +168,27 @@ def extract_next_statement(*args, **kwargs):
             # If no more statements to process in this discussion, set extracting to False
             if remaining_statements == 0:
                 discussion.extracting = False
+                total_statements = Statement.query.filter_by(
+                    discussion_id=discussion.id
+                ).count()
                 _log.info(
-                    f"Extraction complete for discussion {discussion.id}, setting extracting=False"
+                    f"Discussion extraction complete - "
+                    f"discussion_id: {discussion.id}, "
+                    f"total_statements: {total_statements}"
                 )
             else:
-                _log.info(f"Scheduling next extraction for discussion {discussion.id}")
+                _log.info(
+                    f"Discussion extraction continuing - "
+                    f"discussion_id: {discussion.id}, "
+                    f"remaining_statements: {remaining_statements}"
+                )
                 # There are more statements in this discussion, schedule another task
                 from btcopilot.extensions import celery
 
                 celery.send_task("extract_next_statement", countdown=1)
-                _log.info(
-                    f"Successfully scheduled next extraction task for discussion {discussion.id}"
-                )
 
             # Commit this statement's updates
             db.session.commit()
-
-            _log.info(
-                f"Extracted data from statement {statement.id} for discussion {discussion.id}"
-            )
             return True
 
         except Exception as e:
@@ -206,6 +224,16 @@ def _create_assembly_ai_transcript(data: dict):
     transcript_data = data["transcript_data"]
     title = data.get("title", "")
     diagram_id = data.get("diagram_id")
+
+    utterance_count = len(transcript_data.get("utterances", []))
+    transcript_length = len(transcript_data.get("text", ""))
+    _log.info(
+        f"Audio transcript upload - "
+        f"title: '{title}', "
+        f"diagram_id: {diagram_id}, "
+        f"utterances: {utterance_count}, "
+        f"transcript_length: {transcript_length}"
+    )
 
     if diagram_id:
         # Create in specific diagram
@@ -295,26 +323,15 @@ def _create_assembly_ai_transcript(data: dict):
 
     db.session.commit()
 
-    # Note: Extraction is not automatically started for transcript discussions
-    # Users must manually trigger extraction via the audit interface
-    _log.info(
-        f"Discussion {discussion.id} created from transcript - extraction can be triggered manually via audit interface"
-    )
-
-    # # Notify via SSE
-    # sse_manager.publish(
-    #     json.dumps(
-    #         {
-    #             "type": "new_discussion",
-    #             "discussion_id": discussion.id,
-    #             "user_id": target_user_id,
-    #             "title": discussion.summary,
-    #         }
-    #     )
-    # )
+    speaker_count = len(speakers_map) if speakers_map else 1
+    statement_count = len(transcript_data.get("utterances", [])) or 1
 
     _log.info(
-        f"Created discussion {discussion.id} from transcript for user {target_user_id}"
+        f"Audio transcript discussion created - "
+        f"discussion_id: {discussion.id}, "
+        f"diagram_id: {target_diagram_id}, "
+        f"speakers: {speaker_count}, "
+        f"statements: {statement_count}"
     )
 
     # Return format compatible with both use cases
@@ -953,12 +970,13 @@ def audit(discussion_id):
 @minimum_role(btcopilot.ROLE_ADMIN)
 def extract(discussion_id: int):
     """Trigger background extraction for a specific discussion"""
-    current_user = auth.current_user()
 
     # Get the discussion
     discussion = Discussion.query.get(discussion_id)
     if not discussion:
         return jsonify({"error": "Discussion not found"}), 404
+
+    statement_count = Statement.query.filter_by(discussion_id=discussion_id).count()
 
     # Set extracting to True
     discussion.extracting = True
@@ -969,7 +987,9 @@ def extract(discussion_id: int):
     celery.send_task("extract_discussion_statements", args=[discussion_id])
 
     _log.info(
-        f"Admin {current_user.username} triggered extraction for discussion {discussion_id}"
+        f"Extraction triggered - "
+        f"discussion_id: {discussion_id}, "
+        f"total_statements: {statement_count}"
     )
 
     return jsonify({"success": True, "message": "Extraction triggered successfully"})

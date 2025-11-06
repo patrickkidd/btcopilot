@@ -14,8 +14,6 @@ import logging
 import time
 from dataclasses import dataclass
 
-from langchain_core.messages import AIMessage
-
 from btcopilot.extensions import EMBEDDINGS_MODEL, LLM_MODEL
 
 _log = logging.getLogger(__name__)
@@ -133,6 +131,8 @@ class Engine:
         """
         Translate from various return types to a simple string.
         """
+        from langchain_core.messages import AIMessage
+
         ai_message = self.llm().invoke(question)
         if isinstance(ai_message, AIMessage):
             response_text = ai_message.content

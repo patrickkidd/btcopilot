@@ -110,6 +110,8 @@ def require_role(minimum: str) -> User:
     Returns the authenticated user if they have the required role.
     Redirects to login or aborts with 403 if not authorized.
     """
+    from flask import g
+
     user = current_user()
 
     if not user:
@@ -118,6 +120,7 @@ def require_role(minimum: str) -> User:
     if not user.has_role(minimum):
         return _handle_unauthorized(403)
 
+    g.user = user
     return user
 
 

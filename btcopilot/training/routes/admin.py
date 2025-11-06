@@ -803,8 +803,14 @@ def approve_statement():
 
     db.session.commit()
 
+    event_count = len(statement.pdp_deltas.get("events", []))
+    people_count = len(statement.pdp_deltas.get("people", []))
     _log.info(
-        f"Admin {current_user.username} approved AI extraction for statement {statement_id}"
+        f"AI extraction approved - "
+        f"statement_id: {statement_id}, "
+        f"discussion_id: {statement.discussion_id}, "
+        f"events: {event_count}, "
+        f"people: {people_count}"
     )
 
     return jsonify(
@@ -876,7 +882,16 @@ def quick_approve():
 
     db.session.commit()
 
-    _log.info(f"Admin {current_user.username} quick-approved feedback {feedback_id}")
+    event_count = len(feedback.edited_extraction.get("events", []))
+    people_count = len(feedback.edited_extraction.get("people", []))
+    _log.info(
+        f"SARF feedback approved - "
+        f"feedback_id: {feedback_id}, "
+        f"statement_id: {feedback.statement_id}, "
+        f"auditor: {feedback.auditor_id}, "
+        f"events: {event_count}, "
+        f"people: {people_count}"
+    )
 
     return jsonify(
         {
@@ -910,7 +925,11 @@ def unapprove_feedback():
     db.session.commit()
 
     current_user = auth.current_user()
-    _log.info(f"Admin {current_user.username} unapproved feedback {feedback_id}")
+    _log.info(
+        f"SARF feedback unapproved - "
+        f"feedback_id: {feedback_id}, "
+        f"statement_id: {feedback.statement_id}"
+    )
 
     return jsonify(
         {

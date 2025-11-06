@@ -225,10 +225,26 @@ def create():
         # Update existing feedback
         existing.thumbs_down = data.get("thumbs_down", False)
         existing.comment = data.get("comment")
-        existing.edited_extraction = data.get("edited_extraction")
+        edited_extraction = data.get("edited_extraction")
+        existing.edited_extraction = edited_extraction
         existing.updated_at = func.now()
 
         db.session.commit()
+
+        if data["feedback_type"] == "extraction" and edited_extraction:
+            statement = Statement.query.get(data["message_id"])
+            event_count = len(edited_extraction.get("events", []))
+            people_count = len(edited_extraction.get("people", []))
+            _log.info(
+                f"SARF feedback updated - "
+                f"feedback_id: {existing.id}, "
+                f"statement_id: {data['message_id']}, "
+                f"discussion_id: {statement.discussion_id if statement else None}, "
+                f"auditor: {auditor_id}, "
+                f"events: {event_count}, "
+                f"people: {people_count}"
+            )
+
         return jsonify({"success": True, "updated": True, "feedback_id": existing.id})
 
     # Validate statement exists and is AI-generated
@@ -248,31 +264,42 @@ def create():
             400,
         )
 
+    edited_extraction = data.get("edited_extraction")
     feedback = Feedback(
         statement_id=data["message_id"],
         auditor_id=auditor_id,
         feedback_type=data["feedback_type"],
         thumbs_down=data.get("thumbs_down", False),
         comment=data.get("comment"),
-        edited_extraction=data.get("edited_extraction"),
+        edited_extraction=edited_extraction,
     )
 
     db.session.add(feedback)
     db.session.commit()
 
-    # # Notify subscribers
-    # sse_manager.publish(
-    #     json.dumps(
-    #         {
-    #             "type": "new_feedback",
-    #             "message_id": data["message_id"],
-    #             "auditor_id": auditor_id,
-    #             "feedback_type": data["feedback_type"],
-    #         }
-    #     )
-    # )
+    if data["feedback_type"] == "extraction" and edited_extraction:
+        event_count = len(edited_extraction.get("events", []))
+        people_count = len(edited_extraction.get("people", []))
+        _log.info(
+            f"SARF feedback created - "
+            f"feedback_id: {feedback.id}, "
+            f"statement_id: {data['message_id']}, "
+            f"discussion_id: {statement.discussion_id}, "
+            f"auditor: {auditor_id}, "
+            f"events: {event_count}, "
+            f"people: {people_count}, "
+            f"thumbs_down: {data.get('thumbs_down', False)}"
+        )
+    elif data["feedback_type"] == "conversation":
+        _log.info(
+            f"Conversation feedback created - "
+            f"feedback_id: {feedback.id}, "
+            f"statement_id: {data['message_id']}, "
+            f"discussion_id: {statement.discussion_id}, "
+            f"auditor: {auditor_id}, "
+            f"thumbs_down: {data.get('thumbs_down', False)}"
+        )
 
-    _log.info(f"Feedback submitted: {feedback}")
     return jsonify({"success": True, "created": True, "feedback_id": feedback.id})
 
 

@@ -63,7 +63,7 @@ def extract_discussion_statements(discussion_id: int):
 
         celery.send_task("extract_next_statement")
 
-        _log.info(f"Started extraction for discussion {discussion_id}")
+        _log.info(f"Celery extraction task started - discussion_id: {discussion_id}")
         return True
 
     except Exception as e:
