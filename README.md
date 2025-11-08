@@ -1,8 +1,10 @@
-# BT Copilot
+# BT Copilot: Novel Clinical Model and Machine Learning Infrastructure for Clinical Psychology
 
-AI-driven intelligence for Bowen theory - Research and tools to evaluate the
-impact of the family system on individual clinical symptoms. The AI engine for
-the [Family Diagram](https://familydiagram.com)
+- AI-driven behavioral health clinical assessment.
+- Research and tools to evaluate the impact of the family system on individual clinical symptoms.
+- Novel SARF clinical model for the first behavioral health charting and evaluation system.
+- Machine Learning infra and workflow to capture domain-expert training data.
+- The AI engine for the [Family Diagram](https://familydiagram.com)
 
 Scroll down for development journal.
 
