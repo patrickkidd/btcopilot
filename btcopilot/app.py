@@ -113,6 +113,9 @@ def create_app(config: dict = None):
 
     @app.before_request
     def _():
+        if request.path == "/v1/health":
+            return
+
         _log.info(
             f"{request.method} {request.path}",
             extra={
@@ -146,5 +149,5 @@ def create_app(config: dict = None):
     def root():
         return redirect(url_for("training.auth.login"))
 
-    _log.info("Patrick says flask app is ready to go.")
+    _log.debug("btcopilot.create_app() complete")
     return app
