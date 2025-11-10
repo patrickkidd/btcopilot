@@ -793,3 +793,99 @@
        ... other scene data preserved
    }
    ```
+
+---
+
+## 12. Training App & SARF Ground Truth Coding
+
+### Overview
+
+The btcopilot training app extends the data model with a ground truth coding workflow for model training and evaluation. While the personal app uses AI to extract SARF (Symptom, Anxiety, Relationship, Functioning) data from conversations, the training app allows domain experts to review, correct, and approve these extractions as ground truth.
+
+**Key Distinction**:
+- **Personal App**: Uses `Statement.pdp_deltas` for AI-generated extractions that update the diagram PDP
+- **Training App**: Adds `Feedback.edited_extraction` for expert corrections and approval workflows
+
+### Data Models Comparison
+
+| Model | Column | Purpose | Format | Workflow |
+|-------|--------|---------|--------|----------|
+| Statement | pdp_deltas | AI extraction | JSON (PDPDeltas) | Personal app: Extract → Apply to PDP<br>Training app: Extract → Expert review |
+| Feedback | edited_extraction | Expert correction | JSON (PDPDeltas) | Expert edits → Admin approves → Export as test case |
+
+### Approval Workflow
+
+**Mutual Exclusivity Rule**: For any statement, EITHER the AI extraction OR one expert correction can be approved as ground truth, never both.
+
+```
+User Statement
+     ↓
+AI Extracts → Statement.pdp_deltas
+     ↓
+Expert Reviews in SARF Editor
+     ├─→ AI Correct → Admin approves Statement → Export AI version
+     └─→ AI Wrong → Expert corrects → Feedback.edited_extraction
+                                    ↓
+                          Admin approves Feedback → Export corrected version
+```
+
+**Enforcement** ([btcopilot/training/routes/admin.py](../btcopilot/training/routes/admin.py)):
+- Approving Statement unapproves all Feedback for that statement
+- Approving Feedback unapproves Statement and all other Feedback
+
+### Export to Test Cases
+
+Approved ground truth is exported to `./model_tests/data/uncategorized/` as JSON files:
+
+**File Format**:
+```json
+{
+  "test_id": "stmt_123",
+  "source": "statement" | "feedback",
+  "inputs": {
+    "conversation_history": [...],
+    "database": {...},
+    "current_pdp": {...},
+    "user_statement": "..."
+  },
+  "expected_output": <PDPDeltas>,
+  "original_output": <PDPDeltas>  // Only in feedback exports
+}
+```
+
+**Usage**: Test cases feed model training pipeline for fine-tuning SARF extraction accuracy.
+
+### SARF Editor UI Component
+
+**Main Component**: [btcopilot/training/templates/components/extracted_data_display.html](../btcopilot/training/templates/components/extracted_data_display.html)
+
+**Features**:
+- Inline editing of person names, event descriptions, SARF variables
+- Tabs to switch between AI extraction and multiple expert corrections (admin only)
+- Approval buttons with mutual exclusivity enforcement
+- Collapsible summary view showing shift indicators
+
+**Alpine.js State Management**: Tracks editing state, tab selection, approval status, and person data version for reactive updates.
+
+### Critical Differences from Personal App Data Flow
+
+| Aspect | Personal App | Training App |
+|--------|-------------|--------------|
+| **Purpose** | Real-time diagram updates | Ground truth collection |
+| **Storage** | Diagram.data (pickle) | Statement/Feedback (JSON) |
+| **Approval** | Automatic (AI accepted) | Manual (admin approves) |
+| **Deltas** | Applied via apply_deltas() | Displayed via cumulative() |
+| **Export** | None | Test case JSON files |
+
+**Important**: `cumulative()` in training app is for display context only (shows "what AI knew so far"). It does NOT process deletes like `apply_deltas()` does in personal app. See [SARF_GROUND_TRUTH_TECHNICAL.md](./SARF_GROUND_TRUTH_TECHNICAL.md) section 5.3 for details.
+
+### For Complete Technical Details
+
+See **[SARF_GROUND_TRUTH_TECHNICAL.md](./SARF_GROUND_TRUTH_TECHNICAL.md)** for comprehensive documentation including:
+- Approval state machine implementation
+- SARF variable schema (VariableShift, RelationshipKind enums)
+- UI component architecture and Alpine.js patterns
+- API endpoints for feedback submission and approval
+- Export pipeline and test case format
+- Design patterns and gotchas (negative IDs, cumulative vs apply_deltas, etc.)
+- Testing considerations and migration path for schema changes

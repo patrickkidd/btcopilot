@@ -137,6 +137,65 @@ The interactive, re-usable component for reviewing and editing extracted clinica
 - For DOM/css changes always validate the changes worked against the validated
   html and css, pulling down the page URL if necessary
 
+## Documentation Maintenance
+
+### SARF Ground Truth Technical Reference
+
+**CRITICAL**: When making changes to SARF-related code in btcopilot, you MUST automatically check and update [doc/SARF_GROUND_TRUTH_TECHNICAL.md](doc/SARF_GROUND_TRUTH_TECHNICAL.md).
+
+**Trigger Files** (changes to any of these require doc review):
+- `training/routes/*.py` - API endpoints, approval logic
+- `training/models.py` - Feedback model
+- `training/templates/discussion_audit.html` - Discussion audit page layout, cumulative refresh logic
+- `training/templates/components/extracted_data_display.html` - SARF editor component
+- `training/export_tests.py` - Test case export logic
+- `schema.py` - Event, PDPDeltas, or SARF enums (VariableShift, RelationshipKind)
+- `pdp.py` - cumulative() or apply_deltas() functions
+- `personal/models/statement.py` - Statement model with pdp_deltas
+
+**Automated Process** (follow these steps IMMEDIATELY after code changes):
+
+1. **Detect Impact**: After completing code changes, scan which sections of SARF_GROUND_TRUTH_TECHNICAL.md are affected
+2. **Compare**: Read the relevant sections and compare to your code changes
+3. **Identify Discrepancies**:
+   - New/removed/renamed fields in dataclasses
+   - Changed function signatures or behavior
+   - New/removed/modified API endpoints
+   - Updated business logic or validation rules
+   - New UI patterns or Alpine.js state changes
+   - Moved code (update line number references)
+4. **Update Documentation**: Make precise edits to keep doc in sync with code
+5. **Add Todo Reminder**: Use TodoWrite to add "Verify SARF_GROUND_TRUTH_TECHNICAL.md accuracy" task
+6. **Commit Together**: Include doc updates in the same commit as code changes
+
+**Example Commit Message**:
+```
+Add SARF confidence threshold validation
+
+- Added min/max validation in pdp.py:validate_pdp_deltas()
+- Updated SARF_GROUND_TRUTH_TECHNICAL.md section 2.4 (Confidence Scoring)
+- Updated section 9 (Testing Considerations) with new validation test
+```
+
+**What to Update**:
+- Code examples and snippets
+- Function signatures and parameters
+- File path references and line numbers
+- Business logic descriptions
+- API endpoint routes and payloads
+- Data structure schemas
+- Design patterns and gotchas
+- Testing scenarios
+
+**When NOT to Update**:
+- Trivial changes (typo fixes, comment updates)
+- Changes to non-SARF code in same files
+- Purely cosmetic UI changes that don't affect technical architecture
+
+**Verification**: After updating, use the `/update-sarf-docs` slash command (if available) or manually review the entire doc for consistency.
+
+---
+
 ## Debugging and validation rules
 - You may start a flask server on port 4999 with FLASK_CONFIG=development to
   debug templates and endpoints
