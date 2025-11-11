@@ -9,9 +9,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Start PostgreSQL**: `docker-compose up fd-server` (requires `docker volume create familydiagram_postgres` first)
 
 ### Running the Application
-- **Development server**: Use VSCode debugger with Flask configuration (port 8888)
-- **Manual run**: `uv run python manage.py run -h 0.0.0.0 -p 8888`
+- **Manual run**: `uv run python manage.py run -h 0.0.0.0 -p 5555`
 - **Production**: `docker-compose -d production.yml up fd-server`
+
+## Flask Server Management
+
+- **Always use `bash btcopilot/bin/manage_flask.sh` to manage the Flask server**
+  - Start server: `bash btcopilot/bin/manage_flask.sh start`
+  - Stop server: `bash btcopilot/bin/manage_flask.sh stop`
+  - Restart server: `bash btcopilot/bin/manage_flask.sh restart`
+  - Check status: `bash btcopilot/bin/manage_flask.sh status`
+- **Never use manual `FLASK_APP=... uv run flask run` commands** - always use the script instead
+- This script automatically includes auto-auth configuration for MCP server testing
+
+## Testing Flask Changes with chrome-devtools-mcp
+
+When making changes to the training app (btcopilot/training), **always test using chrome-devtools-mcp**:
+
+1. Start Flask server: `bash btcopilot/bin/manage_flask.sh start`
+2. Navigate to relevant page using `mcp__chrome-devtools-mcp__navigate_page` or `new_page`
+3. Take snapshot with `mcp__chrome-devtools-mcp__take_snapshot` to verify UI state
+4. Test interactions using `click`, `fill`, `fill_form`, etc.
+5. Verify functionality before declaring completion
+6. Stop server when done: `bash btcopilot/bin/manage_flask.sh stop`
+
+**This is mandatory for all HTML, CSS, JavaScript, and Flask route changes.**
 
 ### Background Tasks (Celery)
 - **Start Redis**: `redis-server` (required for Celery broker/backend)
@@ -88,6 +110,11 @@ The interactive, re-usable component for reviewing and editing extracted clinica
 - **Purpose**: Displays and allows editing of extracted people, events, and clinical variable coding
 - **Features**: Collapsed/expanded views, in-place editing, feedback controls, cumulative data display
 - **Used in**: Training module for domain-expert review and fine-tuning of AI extraction model
+
+## Development rules
+
+- At this stage we are not concerned with legacy data, we woudl rather delete
+  and re-create broken data than add complicated code for backward compatiblity.  
 
 ## Code Style & Conventions
 

@@ -11,6 +11,8 @@ from flask import (
     jsonify,
     g,
     render_template,
+    current_app,
+    session,
 )
 from flask_wtf.csrf import CSRFError
 
@@ -74,6 +76,20 @@ bp.register_blueprint(auth_bp)
 
 @bp.before_request
 def _():
+    # Auto-authenticate for development/MCP testing
+    if current_app.config.get("CONFIG") == "development":
+        auto_auth_user = current_app.config.get("AUTO_AUTH_USER")
+        if auto_auth_user and "user_id" not in session:
+            from btcopilot.pro.models import User
+            user = User.query.filter_by(username=auto_auth_user).first()
+            if user:
+                session["user_id"] = user.id
+                session.permanent = True
+                if not user.roles:
+                    user.roles = btcopilot.ROLE_SUBSCRIBER
+                    db.session.merge(user)
+                    db.session.commit()
+
     # Skip authentication for auth routes and login endpoint (handled separately)
     if request.endpoint and (
         request.endpoint.startswith("training.auth.")
