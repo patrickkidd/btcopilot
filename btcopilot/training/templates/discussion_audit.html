@@ -514,6 +514,13 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                         {% set editable_mode = false %}
                         {% set onclick_function = 'toggleCumulativeSection' %}
                         {% set id_prefix = 'cumulative' %}
+                        {% set feedback_data = none %}
+                        {% set all_ext_feedback = [] %}
+                        {% set all_ext_feedback_dict = [] %}
+                        {% set admin_ext_feedback = none %}
+                        {% set approved = false %}
+                        {% set approved_by = none %}
+                        {% set approved_at = none %}
                         {% include "components/extracted_data_display.html" %}
                     {% else %}
                         <div class="user-data-placeholder">
@@ -676,6 +683,10 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
 
 <script>
 // Component extracted data functions
+function reloadPreservingParams() {
+    reloadPreservingParams();
+}
+
 function toggleExtractedData(componentId) {
     // Data section elements  
     const dataCollapsed = document.getElementById('data-collapsed-' + componentId);
@@ -818,10 +829,35 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         },
         
         // Add/Remove methods
+        nextNegativeId() {
+            let lowestId = 0;
+            if (this.extractedData.people) {
+                this.extractedData.people.forEach(p => {
+                    if (p.id && p.id < lowestId) lowestId = p.id;
+                });
+            }
+            if (this.extractedData.events) {
+                this.extractedData.events.forEach(e => {
+                    if (e.id < lowestId) lowestId = e.id;
+                });
+            }
+            if (this.cumulativePdp && this.cumulativePdp.people) {
+                this.cumulativePdp.people.forEach(p => {
+                    if (p.id && p.id < lowestId) lowestId = p.id;
+                });
+            }
+            if (this.cumulativePdp && this.cumulativePdp.events) {
+                this.cumulativePdp.events.forEach(e => {
+                    if (e.id < lowestId) lowestId = e.id;
+                });
+            }
+            return lowestId - 1;
+        },
+
         addPerson() {
             if (!this.extractedData.people) this.extractedData.people = [];
             this.extractedData.people.push({
-                id: -Date.now(), // Negative ID for new items
+                id: this.nextNegativeId(),
                 name: 'New Person',
                 last_name: null,
                 spouses: [],
@@ -829,15 +865,14 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 parent_b: null,
                 confidence: 0.5
             });
-            // Increment version to force reactivity updates for all person name references
             this.personDataVersion++;
             this.autoSave();
         },
-        
+
         addEvent() {
             if (!this.extractedData.events) this.extractedData.events = [];
             this.extractedData.events.push({
-                id: -Date.now(),
+                id: this.nextNegativeId(),
                 kind: 'shift',
                 person: null,
                 spouse: null,
@@ -1119,7 +1154,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 }
             }
             
-            return `ID ${numericId} (not found)`;
+            return `(not found)`;
         },
         
         // Auto-save functionality
@@ -1571,7 +1606,7 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload(); // Reload to show updated approval status
+                    reloadPreservingParams(); // Reload to show updated approval status
                 } else {
                     alert('Error: ' + (data.error || 'Unknown error'));
                 }
@@ -1596,7 +1631,7 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload(); // Reload to show updated approval status and mutual exclusivity
+                    reloadPreservingParams(); // Reload to show updated approval status and mutual exclusivity
                 } else {
                     alert('Error: ' + (data.error || 'Unknown error'));
                 }
@@ -1621,7 +1656,7 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload(); // Reload to show updated approval status
+                    reloadPreservingParams(); // Reload to show updated approval status
                 } else {
                     alert('Error: ' + (data.error || 'Unknown error'));
                 }
@@ -1646,7 +1681,7 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload(); // Reload to show updated approval status
+                    reloadPreservingParams(); // Reload to show updated approval status
                 } else {
                     alert('Error: ' + (data.error || 'Unknown error'));
                 }
@@ -1917,7 +1952,7 @@ function submitFeedback(messageId, type, thumbsDown, comment) {
     .then(data => {
         if (data.success) {
             showNotification('Feedback submitted successfully!', 'is-success');
-            setTimeout(() => location.reload(), 1000);
+            setTimeout(() => { reloadPreservingParams(); }, 1000);
         } else {
             showNotification('Error: ' + (data.error || 'Unknown error'), 'is-danger');
         }
@@ -1995,7 +2030,7 @@ function submitExtractionFeedback(messageId, thumbsDown, editedData) {
     .then(data => {
         if (data.success) {
             showNotification('Data review submitted successfully!', 'is-success');
-            setTimeout(() => location.reload(), 1000);
+            setTimeout(() => { reloadPreservingParams(); }, 1000);
         } else {
             showNotification('Error: ' + (data.error || 'Unknown error'), 'is-danger');
         }
@@ -2021,7 +2056,7 @@ function deleteFeedback(feedbackId, feedbackType, messageId) {
     .then(data => {
         if (data.success) {
             showNotification('Feedback deleted successfully! You can now re-submit.', 'is-success');
-            setTimeout(() => location.reload(), 1000);
+            setTimeout(() => { reloadPreservingParams(); }, 1000);
         } else {
             showNotification('Error: ' + (data.error || 'Unknown error'), 'is-danger');
         }
@@ -2038,7 +2073,7 @@ document.body.addEventListener('sse:message', function(event) {
         const data = JSON.parse(event.detail.data);
         if (data.type === 'new_message' && data.discussion_id === {{ discussion.id }}) {
             showNotification('New message in this discussion - refreshing...', 'is-info');
-            setTimeout(() => location.reload(), 2000);
+            setTimeout(() => { reloadPreservingParams(); }, 2000);
         }
     } catch (e) {
         // Ignore ping messages
@@ -2332,7 +2367,7 @@ function saveCustomPrompts() {
             showNotification('Custom prompts saved successfully!', 'is-success');
             closePromptEditor();
             // Refresh the page to show the indicator
-            setTimeout(() => location.reload(), 1000);
+            setTimeout(() => { reloadPreservingParams(); }, 1000);
         } else {
             showNotification('Error: ' + (data.error || 'Unknown error'), 'is-danger');
         }
@@ -2909,16 +2944,16 @@ function updateSpeakerType(speakerId) {
         if (data.success) {
             showNotification(`Speaker type updated to ${speakerType}`, 'is-success');
             // Reload the page to reflect the changes in message display
-            setTimeout(() => location.reload(), 1000);
+            setTimeout(() => { reloadPreservingParams(); }, 1000);
         } else {
             showNotification('Error updating speaker type: ' + (data.error || 'Unknown error'), 'is-danger');
             // Revert the select to the original value
-            location.reload();
+            reloadPreservingParams();
         }
     })
     .catch(error => {
         showNotification('Network error: ' + error.message, 'is-danger');
-        location.reload();
+        reloadPreservingParams();
     });
 }
 
@@ -3010,7 +3045,7 @@ function createNewPerson() {
             // Update extraction button state
             updateExtractionButtonState();
             // Reload the page to update the person list
-            setTimeout(() => location.reload(), 1000);
+            setTimeout(() => { reloadPreservingParams(); }, 1000);
         } else {
             alert('Error creating person: ' + (data.error || 'Unknown error'));
         }
@@ -3350,7 +3385,7 @@ Continue?`;
         .then(data => {
             if (data.success) {
                 alert(`Success: ${data.message}`);
-                location.reload(); // Refresh to show cleared data
+                reloadPreservingParams(); // Refresh to show cleared data
             } else {
                 alert(`Error: ${data.message || 'Failed to clear extracted data'}`);
             }
@@ -3450,7 +3485,7 @@ function showExtractionComplete() {
     
     // Refresh page to show extracted data
     setTimeout(() => {
-        window.location.reload();
+        reloadPreservingParams();
     }, 2000);
 }
 

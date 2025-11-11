@@ -331,6 +331,39 @@ for statement in approved_statements:
 
 ## 2. SARF-Specific Schema
 
+### 2.0 Person Object Structure
+
+**Location**: [btcopilot/schema.py:183-190](../btcopilot/schema.py)
+
+```python
+@dataclass
+class Person:
+    id: int | None = None
+    name: str | None = None
+    last_name: str | None = None
+    spouses: list[int] = field(default_factory=list)
+    parent_a: int | None = None
+    parent_b: int | None = None
+    confidence: float | None = None
+```
+
+#### **Relationship Schema**
+
+**Parent relationships**:
+- `parent_a`, `parent_b` - Single parent IDs (biological mother/father)
+- Both validated by pdp.py (must be negative IDs if present)
+
+**Spouse relationships**:
+- `spouses[]` - List of spouse IDs
+- Validated by pdp.py (must be negative IDs)
+
+**Child relationships**:
+- Not stored directly - inferred from other People's `parent_a`/`parent_b` references
+
+**AI Training**: Prompt examples in personal/prompts.py use `parent_a`/`parent_b` fields to train the LLM on correct schema.
+
+---
+
 ### 2.1 Event Object Structure
 
 **Location**: [btcopilot/schema.py:200](../btcopilot/schema.py)
@@ -705,14 +738,21 @@ for stmt in sorted_statements:
 
 #### Refresh Mechanism
 
-**Current Behavior**: **Full Page Reload Only**
+**Current Behavior**: Full page reload with URL parameter preservation
 
-There is NO automatic client-side refresh of cumulative data. Cumulative updates only happen via:
+Cumulative updates happen via:
 
 1. **Manual page reload** (browser refresh button)
-2. **Feedback submission** → `location.reload()` after 1 second ([line 1920, 1998](../btcopilot/training/templates/discussion_audit.html))
-3. **Approval/unapproval** → `location.reload()` immediately ([lines 1574, 1599, 1624, 1649](../btcopilot/training/templates/discussion_audit.html))
-4. **SSE new message event** → `location.reload()` after 2 seconds ([line 2041](../btcopilot/training/templates/discussion_audit.html))
+2. **Feedback submission** → `reloadPreservingParams()` after 1 second
+3. **Approval/unapproval** → `reloadPreservingParams()` immediately
+4. **SSE new message event** → `reloadPreservingParams()` after 2 seconds
+
+**Helper Function** ([discussion_audit.html:688-690](../btcopilot/training/templates/discussion_audit.html)):
+```javascript
+function reloadPreservingParams() {
+    window.location.href = window.location.href;  // Preserves query params including ?selected_auditor=<id>
+}
+```
 
 **Auto-Save Does NOT Reload**:
 ```javascript
@@ -730,7 +770,7 @@ function submitExtractionFeedback(messageId, thumbsDown, editedData) {
     fetch('/training/feedback/', ...)
         .then(data => {
             if (data.success) {
-                setTimeout(() => location.reload(), 1000);  // Reload after 1 second
+                setTimeout(() => reloadPreservingParams(), 1000);
             }
         });
 }
@@ -770,6 +810,28 @@ function toggleSection(componentId) {
 
 **No Event Dispatching**: Columns don't fire Alpine.js custom events to each other.
 
+#### CRITICAL: Jinja2 Variable Scope Isolation
+
+**Issue**: Jinja2 `{% set %}` variables persist across `<td>` boundaries within the same row. Without explicit resets, Column 3 (Cumulative) inherits variables from Column 2 (Changes).
+
+**Manifestation**: Cumulative column would display auditor's edited extraction instead of full cumulative state when `feedback_data` leaked from Column 2.
+
+**Fix** ([discussion_audit.html:517-523](../btcopilot/training/templates/discussion_audit.html)):
+```jinja2
+<!-- Column 3 must explicitly reset all Column 2 variables -->
+{% set feedback_data = none %}
+{% set all_ext_feedback = [] %}
+{% set all_ext_feedback_dict = [] %}
+{% set admin_ext_feedback = none %}
+{% set approved = false %}
+{% set approved_by = none %}
+{% set approved_at = none %}
+```
+
+**Why this matters**: Without these resets, the component's initialization logic uses leaked `feedback_data.edited_extraction` instead of `item.cumulative_pdp`, causing cumulative to show only the current statement's deltas instead of the accumulated state.
+
+**Rule**: When including the same component multiple times in a row, **always explicitly reset all variables** that shouldn't carry over.
+
 #### Cumulative Data Source Logic
 
 **Which extraction is included in cumulative?**
@@ -797,19 +859,77 @@ else:
 
 **Important**: Cumulative includes **approved-only OR all extractions** depending on filter context. Review code for exact logic.
 
+#### Performance Implementation
+
+**Current approach** ([discussions.py:669-822](../btcopilot/training/routes/discussions.py)):
+
+1. **SQLAlchemy Eager Loading** (lines 669-675):
+```python
+discussion = (
+    Discussion.query
+    .options(
+        subqueryload(Discussion.statements).joinedload(Statement.speaker)
+    )
+    .get_or_404(discussion_id)
+)
+```
+Eliminates N speaker lazy loads.
+
+2. **Preload All Feedback** (lines 686-696):
+```python
+all_feedback = (
+    Feedback.query
+    .join(Statement)
+    .filter(Statement.discussion_id == discussion_id)
+    .all()
+)
+feedback_by_statement = defaultdict(lambda: {"conversation": [], "extraction": []})
+for fb in all_feedback:
+    feedback_by_statement[fb.statement_id][fb.feedback_type].append(fb)
+```
+Avoids N+1 queries by loading all feedback upfront.
+
+3. **Incremental Cumulative Calculation** (lines 697-822):
+```python
+# Build dictionaries for O(1) upserts instead of O(N) deep copies
+cumulative_people_by_id = {}
+cumulative_events_by_id = {}
+
+for stmt in sorted_statements:
+    if pdp_deltas_model:
+        # Upsert people/events by ID (same semantics as apply_deltas)
+        for person in pdp_deltas_model.people:
+            cumulative_people_by_id[person.id] = person
+        for event in pdp_deltas_model.events:
+            cumulative_events_by_id[event.id] = event
+        # Process deletes
+        for delete_id in pdp_deltas_model.delete:
+            cumulative_people_by_id.pop(delete_id, None)
+            cumulative_events_by_id.pop(delete_id, None)
+
+    # Create snapshot
+    cumulative_pdp = {
+        "people": [asdict(p) for p in cumulative_people_by_id.values()],
+        "events": [asdict(e) for e in cumulative_events_by_id.values()],
+    }
+```
+Builds cumulative state incrementally using dictionaries (O(N) time complexity) instead of calling `pdp.apply_deltas()` N times (O(N²) with deep copy overhead). Maintains identical upsert/delete semantics.
+
 #### GOTCHA: Cumulative Does NOT Auto-Update
 
 **Current limitation**: After editing SARF codes in column 2:
 - ✅ Auto-save persists changes to backend
 - ✅ Column 2 updates immediately (Alpine.js reactivity)
 - ❌ Column 3 does NOT update (server-rendered, no AJAX refresh)
-- ✅ Manual submit triggers page reload → cumulative refreshes
+- ✅ Manual page reload triggers cumulative recalculation with preserved auditor filter
 
-**To make cumulative auto-update**, you would need to:
-1. Create API endpoint to fetch updated cumulative for a statement
-2. Call endpoint after feedback submission succeeds
-3. Update Alpine.js state in column 3 component
-4. OR: Trigger partial page reload of column 3 only
+**Workflow**: Domain experts should reload page (Cmd+R / Ctrl+R) after completing edits to a statement to see cumulative update before coding the next statement.
+
+**Why not async refresh?**:
+- Would require new API endpoint
+- Complex Alpine.js component communication (columns are separate instances)
+- Cascade problem: editing statement N affects cumulative for N+1, N+2, etc.
+- Server-side calculation ensures consistency as single source of truth
 
 **Implications**:
 - Users must manually submit (not just auto-save) to see cumulative changes

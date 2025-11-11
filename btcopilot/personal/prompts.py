@@ -258,12 +258,14 @@ Output:
         },
         {
             "id": 1,
-            "offspring": [1, 2],
+            "name": "User",
+            "parent_a": -1,
             "confidence": 0.99
         },
         {
             "id": 2,
             "name": "Allen",
+            "parent_a": -1,
             "confidence": 0.99
         },
     },

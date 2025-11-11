@@ -662,9 +662,17 @@ def upload_token():
 @minimum_role(btcopilot.ROLE_AUDITOR)
 def audit(discussion_id):
     """View a specific discussion for audit (from audit system)"""
+    from sqlalchemy.orm import joinedload, subqueryload
+
     current_user = auth.current_user()
 
-    discussion = Discussion.query.get_or_404(discussion_id)
+    discussion = (
+        Discussion.query
+        .options(
+            subqueryload(Discussion.statements).joinedload(Statement.speaker)
+        )
+        .get_or_404(discussion_id)
+    )
     auditor_id = get_auditor_id(request, session)
 
     selected_auditor = request.args.get("selected_auditor")
@@ -675,58 +683,58 @@ def audit(discussion_id):
         discussion.statements, key=lambda s: (s.order or 0, s.id)
     )
 
-    # Initialize cumulative PDP state - start with empty PDP
-    # Using the same apply_deltas logic as the actual extraction process ensures consistency
-    cumulative_pdp_state = PDP(people=[], events=[])
+    from collections import defaultdict
+    all_feedback = (
+        Feedback.query
+        .join(Statement)
+        .filter(Statement.discussion_id == discussion_id)
+        .all()
+    )
+    feedback_by_statement = defaultdict(lambda: {"conversation": [], "extraction": []})
+    for fb in all_feedback:
+        feedback_by_statement[fb.statement_id][fb.feedback_type].append(fb)
+
+    cumulative_people_by_id = {}
+    cumulative_events_by_id = {}
 
     for stmt in sorted_statements:
-        # For admin users, get ALL feedback or filter by selected_auditor; for auditors, get only their own
+        stmt_feedback = feedback_by_statement[stmt.id]
+
         if current_user.has_role(btcopilot.ROLE_ADMIN):
             if selected_auditor and selected_auditor != "AI":
                 # Admin filtering to specific auditor
-                conv_feedback = Feedback.query.filter_by(
-                    statement_id=stmt.id,
-                    auditor_id=selected_auditor,
-                    feedback_type="conversation",
-                ).first()
-
-                ext_feedback = Feedback.query.filter_by(
-                    statement_id=stmt.id,
-                    auditor_id=selected_auditor,
-                    feedback_type="extraction",
-                ).first()
+                conv_feedback = next(
+                    (fb for fb in stmt_feedback["conversation"] if fb.auditor_id == selected_auditor),
+                    None
+                )
+                ext_feedback = next(
+                    (fb for fb in stmt_feedback["extraction"] if fb.auditor_id == selected_auditor),
+                    None
+                )
             elif selected_auditor == "AI":
                 # AI selected - don't show any feedback, only AI extraction
                 conv_feedback = []
                 ext_feedback = []
             else:
                 # Admin sees all feedback (no auditor selected)
-                conv_feedback = (
-                    Feedback.query.filter_by(
-                        statement_id=stmt.id, feedback_type="conversation"
-                    )
-                    .order_by(Feedback.auditor_id.asc(), Feedback.created_at.asc())
-                    .all()
+                conv_feedback = sorted(
+                    stmt_feedback["conversation"],
+                    key=lambda fb: (fb.auditor_id or "", fb.created_at)
                 )
-
-                ext_feedback = (
-                    Feedback.query.filter_by(
-                        statement_id=stmt.id, feedback_type="extraction"
-                    )
-                    .order_by(Feedback.auditor_id.asc(), Feedback.created_at.asc())
-                    .all()
+                ext_feedback = sorted(
+                    stmt_feedback["extraction"],
+                    key=lambda fb: (fb.auditor_id or "", fb.created_at)
                 )
         else:
             # Auditor sees only their own feedback
-            conv_feedback = Feedback.query.filter_by(
-                statement_id=stmt.id,
-                auditor_id=auditor_id,
-                feedback_type="conversation",
-            ).first()
-
-            ext_feedback = Feedback.query.filter_by(
-                statement_id=stmt.id, auditor_id=auditor_id, feedback_type="extraction"
-            ).first()
+            conv_feedback = next(
+                (fb for fb in stmt_feedback["conversation"] if fb.auditor_id == auditor_id),
+                None
+            )
+            ext_feedback = next(
+                (fb for fb in stmt_feedback["extraction"] if fb.auditor_id == auditor_id),
+                None
+            )
 
         # Get stored PDP deltas - ONLY show for Subject statements (where extraction data is stored)
         pdp_deltas = None
@@ -743,6 +751,9 @@ def audit(discussion_id):
                     and ext_feedback.edited_extraction
                 ):
                     deltas_source = ext_feedback.edited_extraction
+                elif stmt.pdp_deltas:
+                    # Fallback to AI deltas if auditor has no edited_extraction yet
+                    deltas_source = stmt.pdp_deltas
             elif stmt.pdp_deltas:
                 # Use AI deltas (default)
                 deltas_source = stmt.pdp_deltas
@@ -755,14 +766,23 @@ def audit(discussion_id):
                         "deletes": deltas_source.get("delete", []),
                     }
 
-                    # Convert to PDPDeltas model for use with apply_deltas
+                    def filter_person_fields(person_data):
+                        valid_fields = {'id', 'name', 'last_name', 'spouses', 'parent_a', 'parent_b', 'confidence'}
+                        return {k: v for k, v in person_data.items() if k in valid_fields}
+
+                    def filter_event_fields(event_data):
+                        valid_fields = {'id', 'kind', 'person', 'spouse', 'child', 'description',
+                                       'dateTime', 'endDateTime', 'symptom', 'anxiety', 'relationship',
+                                       'relationshipTargets', 'relationshipTriangles', 'confidence'}
+                        return {k: v for k, v in event_data.items() if k in valid_fields}
+
                     pdp_deltas_model = PDPDeltas(
                         people=[
-                            Person(**person_data)
+                            Person(**filter_person_fields(person_data))
                             for person_data in pdp_deltas.get("people", [])
                         ],
                         events=[
-                            Event(**event_data)
+                            Event(**filter_event_fields(event_data))
                             for event_data in pdp_deltas.get("events", [])
                         ],
                         delete=pdp_deltas.get("deletes", []),
@@ -780,20 +800,29 @@ def audit(discussion_id):
                         person_name = person["name"]
                         break
 
-        # Apply this statement's deltas to the cumulative state using pdp.apply_deltas
-        # This ensures each statement's cumulative state is calculated exactly as it would be
-        # in the production extraction process, making it perfect for test case generation
         if pdp_deltas_model:
-            cumulative_pdp_state = pdp.apply_deltas(
-                cumulative_pdp_state, pdp_deltas_model
-            )
+            for person in pdp_deltas_model.people:
+                cumulative_people_by_id[person.id] = person
 
-        # Create cumulative PDP snapshot for this statement
-        cumulative_pdp = (
-            asdict(cumulative_pdp_state)
-            if cumulative_pdp_state.people or cumulative_pdp_state.events
-            else None
-        )
+            for event in pdp_deltas_model.events:
+                cumulative_events_by_id[event.id] = event
+
+            for delete_id in pdp_deltas_model.delete:
+                cumulative_people_by_id.pop(delete_id, None)
+                cumulative_events_by_id.pop(delete_id, None)
+
+        cumulative_pdp = {
+            "people": [asdict(p) for p in cumulative_people_by_id.values()],
+            "events": [asdict(e) for e in cumulative_events_by_id.values()],
+        } if cumulative_people_by_id or cumulative_events_by_id else None
+
+        if 633 <= stmt.id <= 637:
+            _log.debug(f"Stmt {stmt.id}: speaker_type={stmt.speaker.type if stmt.speaker else None}, "
+                      f"has_pdp_deltas_model={pdp_deltas_model is not None}, "
+                      f"deltas={pdp_deltas if pdp_deltas_model else None}, "
+                      f"cumulative_people={len(cumulative_people_by_id)}, "
+                      f"cumulative_events={len(cumulative_events_by_id)}, "
+                      f"cumulative_pdp={'set' if cumulative_pdp else 'None'}")
 
         # Handle different feedback data structures for admin vs auditor
         if current_user.has_role(btcopilot.ROLE_ADMIN):
