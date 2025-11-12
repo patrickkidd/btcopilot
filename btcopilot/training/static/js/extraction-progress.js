@@ -140,12 +140,17 @@ class ExtractionProgress {
 // Create global instance
 window.extractionProgress = new ExtractionProgress();
 
-// Auto-initialize if discussion ID is available in the page
+// Auto-initialize if discussion ID is available AND extraction is occurring
 document.addEventListener('DOMContentLoaded', () => {
     // Look for discussion ID in page data
     const discussionEl = document.querySelector('[data-discussion-id]');
     if (discussionEl) {
         const discussionId = discussionEl.dataset.discussionId;
-        window.extractionProgress.init(discussionId);
+        const isExtracting = discussionEl.dataset.extracting === 'true';
+
+        // Only initialize polling if extraction is actually occurring
+        if (isExtracting) {
+            window.extractionProgress.init(discussionId);
+        }
     }
 });

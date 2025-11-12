@@ -33,6 +33,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Flask Server Management
 
+**IMPORTANT**: This project uses Flask 3.x's native CLI. The obsolete `flask-cli` package is incompatible with Flask 3.x application factory pattern and has been removed from dependencies in `btcopilot/pyproject.toml`.
+
 **Start server:**
 ```bash
 bash btcopilot/bin/flask_start.sh
@@ -54,15 +56,21 @@ lsof -ti:5555 && echo "Server running" || echo "Server not running"
 **Troubleshooting:**
 
 If Flask server fails to start or shows errors about function signatures:
-1. **Clear Python bytecode cache**: `find . -name "*.pyc" -delete 2>/dev/null`
-2. **Clear venv cache**: `find .venv -name "*.pyc" -delete 2>/dev/null`
-3. **Stop all Flask processes**: `bash btcopilot/bin/flask_stop.sh`
+1. **Stop Flask**: `bash btcopilot/bin/flask_stop.sh`
+2. **Remove __pycache__ directories**: `rm -rf btcopilot/btcopilot/__pycache__`
+3. **Clear remaining bytecode**: `find btcopilot .venv -name "*.pyc" -delete 2>/dev/null`
 4. **Restart Flask**: `bash btcopilot/bin/flask_start.sh`
 
+**One-line fix** (use this if you encounter bytecode cache errors):
+```bash
+bash btcopilot/bin/flask_stop.sh && rm -rf btcopilot/btcopilot/__pycache__ && find btcopilot .venv -name "*.pyc" -delete 2>/dev/null && bash btcopilot/bin/flask_start.sh
+```
+
 Common issues:
-- **"create_app() takes from 0 to 1 positional arguments but 2 were given"** - Stale bytecode cache. Clear cache and restart.
+- **"create_app() takes from 0 to 1 positional arguments but 2 were given"** - Either stale bytecode OR `flask-cli` package is installed. First check `uv pip show flask-cli`. If installed, remove it from `btcopilot/pyproject.toml` dependencies and run `uv sync`. Then use the one-line fix above to clear bytecode. This error occurs when the obsolete `flask-cli` package overrides Flask 3's native CLI, which doesn't support application factory functions with `**kwargs`.
 - **Port already in use** - Another Flask instance is running. Use `bash btcopilot/bin/flask_stop.sh` to kill it.
 - **Import errors** - Check that you're in the project root directory.
+- **Server starts but immediately fails on first request** - Bytecode cache issue. The Flask dev server caches imported modules and __pycache__ directories must be removed, not just individual .pyc files.
 
 ## Testing Flask Changes with chrome-devtools-mcp
 

@@ -638,7 +638,75 @@ savePersonName(index, newName) {
 
 ---
 
-### 3.3 Discussion Audit Page Architecture
+### 3.3 Conditional Field Visibility
+
+**EventKind-Based Conditionals** ([extracted_data_display.html:488-512, 625](../btcopilot/training/templates/components/extracted_data_display.html)):
+
+The SARF editor conditionally shows/hides event fields based on `EventKind`:
+
+**Description Field** (shift events only):
+```html
+<div class="event-description" x-show="!event.kind || event.kind === 'shift'">
+    {% if editable_mode %}
+    <strong class="editable-field event-description"...>
+        <span x-show="!isEditing(...)" x-text="event.description || 'No description'"></span>
+        ...
+    </strong>
+    {% else %}
+    <span x-text="event.description || 'No description'"></span>
+    {% endif %}
+</div>
+```
+
+**SARF Variables** (shift events only):
+```html
+<div class="variables-compact" x-show="!event.kind || event.kind === 'shift'">
+    <!-- Symptom, Anxiety, Relationship, Functioning -->
+</div>
+```
+
+**EventKind Selector** ([extracted_data_display.html:550-587](../btcopilot/training/templates/components/extracted_data_display.html)):
+```html
+<span class="event-kind-indicator editable-field"
+      @click.stop="startEditEventKind('event-' + index + '-kind', event.kind)">
+    <span x-show="!isEditing('event-' + index + '-kind')" x-text="event.kind || 'shift'"></span>
+    <select x-show="isEditing('event-' + index + '-kind')" ...>
+        <option value="shift">shift</option>
+        <option value="birth">birth</option>
+        <option value="adopted">adopted</option>
+        <option value="bonded">bonded</option>
+        <option value="married">married</option>
+        <option value="separated">separated</option>
+        <option value="divorced">divorced</option>
+        <option value="moved">moved</option>
+        <option value="death">death</option>
+    </select>
+</span>
+```
+
+**Visibility Rules**:
+- **Description**: Only shown for `shift` events (or when `kind` is `null`/missing, defaults to shift)
+- **SARF Variables (S/A/R/F)**: Only shown for `shift` events
+- **Person/DateTime**: Always shown for all event kinds
+- **Default Kind**: If `event.kind` is missing/null, UI defaults to `'shift'` behavior
+
+**Styling**: EventKind indicator styled to match relationship indicators (`.shift-indicator` pattern):
+- `padding: 2px 8px`
+- `border-radius: 3px`
+- `min-width: 50px`
+- `font-size: 0.75rem`
+- Neutral gray background (no color judgments for kind values)
+
+**Field Order** (matches EventForm.qml from desktop app):
+1. Person
+2. Event Kind
+3. Description (conditional)
+4. Date/Time
+5. Variables (conditional)
+
+---
+
+### 3.4 Discussion Audit Page Architecture
 
 **File**: [btcopilot/training/templates/discussion_audit.html](../btcopilot/training/templates/discussion_audit.html)
 
@@ -938,7 +1006,7 @@ Builds cumulative state incrementally using dictionaries (O(N) time complexity) 
 
 ---
 
-### 3.4 Tab System (Admin Only)
+### 3.5 Tab System (Admin Only)
 
 **Condition** (lines 104-127):
 ```html
@@ -998,7 +1066,7 @@ selectFeedback(index, feedback) {
 
 ---
 
-### 3.5 Approval Button Logic
+### 3.6 Approval Button Logic
 
 **Location** (lines 160-217)
 

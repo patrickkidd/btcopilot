@@ -485,19 +485,19 @@ Parameters:
                                     <!-- Event ID for debugging - floating in lower-right -->
                                     <span class="event-id-debug" x-show="event.id" x-text="event.id"></span>
                                     <div class="event-header">
-                                        <div class="event-description is-size-7 mb-1">
-                                            <div class="event-metadata is-size-7 has-text-grey mt-1">
-                                                <span x-show="event.confidence">
-                                                    Confidence: <span x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
-                                                </span>
-                                            </div>
+                                        <div class="event-metadata is-size-7 has-text-grey mt-1 mb-1">
+                                            <span x-show="event.confidence">
+                                                Confidence: <span x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
+                                            </span>
+                                        </div>
+                                        <div class="event-description is-size-7 mb-1" x-show="!event.kind || event.kind === 'shift'">
                                             {% if editable_mode %}
                                             <strong class="editable-field event-description"
                                                     @mouseenter="hoveredField = 'event-' + index + '-description'"
                                                     @mouseleave="hoveredField = null"
                                                     @click.stop="startEdit('event-' + index + '-description', event.description || ('Event #' + event.id))">
                                                 <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || ('Event #' + event.id)"></span>
-                                                <input x-show="isEditing('event-' + index + '-description')" 
+                                                <input x-show="isEditing('event-' + index + '-description')"
                                                        :value="editingValue"
                                                        @input="editingValue = $event.target.value"
                                                        @blur="saveEventDescription(index, $event.target.value)"
@@ -546,7 +546,116 @@ Parameters:
                                             </table>
                                         </div>
                                     </template>
-                                    
+
+                                    <!-- Event Spouse Section (conditionally visible) -->
+                                    <template x-if="(['bonded', 'married', 'separated', 'divorced', 'moved', 'birth', 'adopted'].includes(event.kind) && (event.spouse || {{ 'true' if editable_mode else 'false' }})) || (event.spouse && {{ 'true' if editable_mode else 'false' }})">
+                                        <div class="event-spouse-section" style="margin-top: 8px;">
+                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
+                                                <tr>
+                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
+                                                        Spouse:
+                                                    </td>
+                                                    <td style="padding: 0;">
+                                                        <template x-if="event.spouse">
+                                                            <span class="person-tag"
+                                                                  style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
+                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
+                                                                  @click="{{ 'editEventSpouse(index, event.spouse)' if editable_mode else '' }}">
+                                                                <span x-text="getPersonName(event.spouse, personDataVersion)"></span>
+                                                                {% if editable_mode %}
+                                                                <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                      @click.stop="clearEventSpouse(index)">×</span>
+                                                                {% endif %}
+                                                            </span>
+                                                        </template>
+                                                        <template x-if="!event.spouse && {{ 'true' if editable_mode else 'false' }}">
+                                                            <span class="add-element"
+                                                                  @click.stop="editEventSpouse(index, null)"
+                                                                  title="Add spouse"
+                                                                  style="cursor: pointer; color: #3273dc;">
+                                                                <i class="fas fa-plus-circle"></i> Add spouse
+                                                            </span>
+                                                        </template>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </template>
+
+                                    <!-- Event Child Section (conditionally visible) -->
+                                    <template x-if="(['birth', 'adopted'].includes(event.kind) && (event.child || {{ 'true' if editable_mode else 'false' }})) || (event.child && {{ 'true' if editable_mode else 'false' }})">
+                                        <div class="event-child-section" style="margin-top: 8px;">
+                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
+                                                <tr>
+                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
+                                                        Child:
+                                                    </td>
+                                                    <td style="padding: 0;">
+                                                        <template x-if="event.child">
+                                                            <span class="person-tag"
+                                                                  style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
+                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
+                                                                  @click="{{ 'editEventChild(index, event.child)' if editable_mode else '' }}">
+                                                                <span x-text="getPersonName(event.child, personDataVersion)"></span>
+                                                                {% if editable_mode %}
+                                                                <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                      @click.stop="clearEventChild(index)">×</span>
+                                                                {% endif %}
+                                                            </span>
+                                                        </template>
+                                                        <template x-if="!event.child && {{ 'true' if editable_mode else 'false' }}">
+                                                            <span class="add-element"
+                                                                  @click.stop="editEventChild(index, null)"
+                                                                  title="Add child"
+                                                                  style="cursor: pointer; color: #3273dc;">
+                                                                <i class="fas fa-plus-circle"></i> Add child
+                                                            </span>
+                                                        </template>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </template>
+
+                                    <!-- Event Kind Section -->
+                                    <div class="event-kind-section" style="margin-top: 8px;">
+                                        <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
+                                            <tr>
+                                                <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
+                                                    Event Kind:
+                                                </td>
+                                                <td style="padding: 0;">
+                                                    {% if editable_mode %}
+                                                    <span class="event-kind-indicator editable-field"
+                                                          @mouseenter="hoveredField = 'event-' + index + '-kind'"
+                                                          @mouseleave="hoveredField = null"
+                                                          @click.stop="startEditEventKind('event-' + index + '-kind', event.kind)">
+                                                        <span x-show="!isEditing('event-' + index + '-kind')" x-text="event.kind || 'shift'"></span>
+                                                        <select x-show="isEditing('event-' + index + '-kind')"
+                                                                x-model="editingValue"
+                                                                @change="saveEventKind(index, $event.target.value); cancelEdit()"
+                                                                @blur="cancelEdit()"
+                                                                @keydown.escape="cancelEdit()"
+                                                                class="inline-edit-select">
+                                                            <option value="shift">shift</option>
+                                                            <option value="birth">birth</option>
+                                                            <option value="adopted">adopted</option>
+                                                            <option value="bonded">bonded</option>
+                                                            <option value="married">married</option>
+                                                            <option value="separated">separated</option>
+                                                            <option value="divorced">divorced</option>
+                                                            <option value="moved">moved</option>
+                                                            <option value="death">death</option>
+                                                        </select>
+                                                    </span>
+                                                    {% else %}
+                                                    <span class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+
                                     <!-- Event DateTime Section -->
                                     <template x-if="(event.dateTime && event.dateTime.trim() !== '') || {{ 'true' if editable_mode else 'false' }}">
                                         <div class="event-datetime-section" style="margin-top: 8px;">
@@ -580,9 +689,10 @@ Parameters:
                                             </table>
                                         </div>
                                     </template>
-                                    
-                                    <!-- Variable Changes Grid -->
-                                    <div class="variables-compact data-section" 
+
+                                    <!-- Variable Changes Grid (only shown for 'shift' events) -->
+                                    <div class="variables-compact data-section"
+                                         x-show="!event.kind || event.kind === 'shift'"
                                          {% if editable_mode %}@click.stop{% endif %}>
                                         <!-- Symptom Variable - Fixed Position #1 -->
                                         <div class="variable-item" :class="{ 'add-variable': !event.symptom }">
@@ -1229,19 +1339,19 @@ Parameters:
                                     <!-- Event ID for debugging - floating in lower-right -->
                                     <span class="event-id-debug" x-show="event.id" x-text="event.id"></span>
                                     <div class="event-header">
-                                        <div class="event-description is-size-7 mb-1">
-                                            <div class="event-metadata is-size-7 has-text-grey mt-1">
-                                                <span x-show="event.confidence">
-                                                    Confidence: <span x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
-                                                </span>
-                                            </div>
+                                        <div class="event-metadata is-size-7 has-text-grey mt-1 mb-1">
+                                            <span x-show="event.confidence">
+                                                Confidence: <span x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
+                                            </span>
+                                        </div>
+                                        <div class="event-description is-size-7 mb-1" x-show="!event.kind || event.kind === 'shift'">
                                             {% if editable_mode %}
                                             <strong class="editable-field event-description"
                                                     @mouseenter="hoveredField = 'event-' + index + '-description'"
                                                     @mouseleave="hoveredField = null"
                                                     @click.stop="startEdit('event-' + index + '-description', event.description || ('Event #' + event.id))">
                                                 <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || ('Event #' + event.id)"></span>
-                                                <input x-show="isEditing('event-' + index + '-description')" 
+                                                <input x-show="isEditing('event-' + index + '-description')"
                                                        :value="editingValue"
                                                        @input="editingValue = $event.target.value"
                                                        @blur="saveEventDescription(index, $event.target.value)"
@@ -1290,7 +1400,116 @@ Parameters:
                                             </table>
                                         </div>
                                     </template>
-                                    
+
+                                    <!-- Event Spouse Section (conditionally visible) -->
+                                    <template x-if="(['bonded', 'married', 'separated', 'divorced', 'moved', 'birth', 'adopted'].includes(event.kind) && (event.spouse || {{ 'true' if editable_mode else 'false' }})) || (event.spouse && {{ 'true' if editable_mode else 'false' }})">
+                                        <div class="event-spouse-section" style="margin-top: 8px;">
+                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
+                                                <tr>
+                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
+                                                        Spouse:
+                                                    </td>
+                                                    <td style="padding: 0;">
+                                                        <template x-if="event.spouse">
+                                                            <span class="person-tag"
+                                                                  style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
+                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
+                                                                  @click="{{ 'editEventSpouse(index, event.spouse)' if editable_mode else '' }}">
+                                                                <span x-text="getPersonName(event.spouse, personDataVersion)"></span>
+                                                                {% if editable_mode %}
+                                                                <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                      @click.stop="clearEventSpouse(index)">×</span>
+                                                                {% endif %}
+                                                            </span>
+                                                        </template>
+                                                        <template x-if="!event.spouse && {{ 'true' if editable_mode else 'false' }}">
+                                                            <span class="add-element"
+                                                                  @click.stop="editEventSpouse(index, null)"
+                                                                  title="Add spouse"
+                                                                  style="cursor: pointer; color: #3273dc;">
+                                                                <i class="fas fa-plus-circle"></i> Add spouse
+                                                            </span>
+                                                        </template>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </template>
+
+                                    <!-- Event Child Section (conditionally visible) -->
+                                    <template x-if="(['birth', 'adopted'].includes(event.kind) && (event.child || {{ 'true' if editable_mode else 'false' }})) || (event.child && {{ 'true' if editable_mode else 'false' }})">
+                                        <div class="event-child-section" style="margin-top: 8px;">
+                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
+                                                <tr>
+                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
+                                                        Child:
+                                                    </td>
+                                                    <td style="padding: 0;">
+                                                        <template x-if="event.child">
+                                                            <span class="person-tag"
+                                                                  style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
+                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
+                                                                  @click="{{ 'editEventChild(index, event.child)' if editable_mode else '' }}">
+                                                                <span x-text="getPersonName(event.child, personDataVersion)"></span>
+                                                                {% if editable_mode %}
+                                                                <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                      @click.stop="clearEventChild(index)">×</span>
+                                                                {% endif %}
+                                                            </span>
+                                                        </template>
+                                                        <template x-if="!event.child && {{ 'true' if editable_mode else 'false' }}">
+                                                            <span class="add-element"
+                                                                  @click.stop="editEventChild(index, null)"
+                                                                  title="Add child"
+                                                                  style="cursor: pointer; color: #3273dc;">
+                                                                <i class="fas fa-plus-circle"></i> Add child
+                                                            </span>
+                                                        </template>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </template>
+
+                                    <!-- Event Kind Section -->
+                                    <div class="event-kind-section" style="margin-top: 8px;">
+                                        <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
+                                            <tr>
+                                                <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
+                                                    Event Kind:
+                                                </td>
+                                                <td style="padding: 0;">
+                                                    {% if editable_mode %}
+                                                    <span class="event-kind-indicator editable-field"
+                                                          @mouseenter="hoveredField = 'event-' + index + '-kind'"
+                                                          @mouseleave="hoveredField = null"
+                                                          @click.stop="startEditEventKind('event-' + index + '-kind', event.kind)">
+                                                        <span x-show="!isEditing('event-' + index + '-kind')" x-text="event.kind || 'shift'"></span>
+                                                        <select x-show="isEditing('event-' + index + '-kind')"
+                                                                x-model="editingValue"
+                                                                @change="saveEventKind(index, $event.target.value); cancelEdit()"
+                                                                @blur="cancelEdit()"
+                                                                @keydown.escape="cancelEdit()"
+                                                                class="inline-edit-select">
+                                                            <option value="shift">shift</option>
+                                                            <option value="birth">birth</option>
+                                                            <option value="adopted">adopted</option>
+                                                            <option value="bonded">bonded</option>
+                                                            <option value="married">married</option>
+                                                            <option value="separated">separated</option>
+                                                            <option value="divorced">divorced</option>
+                                                            <option value="moved">moved</option>
+                                                            <option value="death">death</option>
+                                                        </select>
+                                                    </span>
+                                                    {% else %}
+                                                    <span class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+
                                     <!-- Event DateTime Section -->
                                     <template x-if="(event.dateTime && event.dateTime.trim() !== '') || {{ 'true' if editable_mode else 'false' }}">
                                         <div class="event-datetime-section" style="margin-top: 8px;">
@@ -1324,9 +1543,10 @@ Parameters:
                                             </table>
                                         </div>
                                     </template>
-                                    
-                                    <!-- Variable Changes Grid -->
-                                    <div class="variables-compact data-section" 
+
+                                    <!-- Variable Changes Grid (only shown for 'shift' events) -->
+                                    <div class="variables-compact data-section"
+                                         x-show="!event.kind || event.kind === 'shift'"
                                          {% if editable_mode %}@click.stop{% endif %}>
                                         <!-- Symptom Variable - Fixed Position #1 -->
                                         <div class="variable-item" :class="{ 'add-variable': !event.symptom }">
@@ -1752,6 +1972,31 @@ Parameters:
 .editable-field:hover {
     background: rgba(0, 123, 255, 0.05);
     cursor: text;
+}
+
+.event-kind-indicator {
+    display: inline-block;
+    min-width: 50px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: #e9ecef;
+    color: #495057;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: center;
+    text-transform: lowercase;
+    transition: all 0.2s ease;
+    border: 1px solid #ced4da;
+}
+
+.event-kind-indicator.editable-field {
+    cursor: pointer;
+}
+
+.event-kind-indicator.editable-field:hover {
+    background: #d3d9df;
+    border-color: #adb5bd;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
 }
 
 .editable-shift {

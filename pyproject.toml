@@ -23,7 +23,6 @@ app = [
     "gunicorn",
     "flask",
     "flask-bcrypt",
-    "flask-cli",
     "flask-graphql",
     "flask-mail",
     "flask-sqlalchemy",

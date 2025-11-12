@@ -260,7 +260,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
 {% endif %} -->
 
 <!-- Extraction Progress Bar -->
-<div id="progress-container" data-discussion-id="{{ discussion.id }}"></div>
+<div id="progress-container" data-discussion-id="{{ discussion.id }}" data-extracting="{{ 'true' if discussion.extracting else 'false' }}"></div>
 
 <!-- Speaker mappings are now computed in Python and passed to template -->
 {% if unique_speakers %}
@@ -802,7 +802,19 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             this.cancelEdit();
             this.autoSave();
         },
-        
+
+        saveEventKind(eventIndex, newValue) {
+            if (!this.extractedData.events[eventIndex]) return;
+            this.extractedData.events[eventIndex].kind = newValue;
+            this.cancelEdit();
+            this.autoSave();
+        },
+
+        startEditEventKind(fieldName, currentValue) {
+            this.editingField = fieldName;
+            this.editingValue = currentValue || 'shift';
+        },
+
         saveShift(eventIndex, varType, newValue) {
             if (!this.extractedData.events[eventIndex]) return;
             if (newValue === 'none' || !newValue) {
@@ -1410,13 +1422,13 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                     console.log('After push:', person[fieldName]);
                 }
             } else if (isEventPeople) {
-                // Handle event.person (single person ID)
+                // Handle event.person, event.spouse, event.child (single person IDs)
                 const eventIndex = eventIndexOrPersonIndex;
                 const event = this.extractedData.events[eventIndex];
 
-                console.log('Setting event.person to:', personId);
-                event.person = personId;
-                console.log('After update:', event.person);
+                console.log(`Setting event.${fieldName} to:`, personId);
+                event[fieldName] = personId;
+                console.log('After update:', event[fieldName]);
             } else {
                 // Handle relationship data
                 const eventIndex = eventIndexOrPersonIndex;
@@ -1470,6 +1482,54 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         clearEventPerson(eventIndex) {
             if (confirm('Clear the person for this event?')) {
                 this.extractedData.events[eventIndex].person = null;
+                this.autoSave();
+            }
+        },
+
+        editEventSpouse(eventIndex, currentId) {
+            console.log('=== editEventSpouse called ===');
+            console.log('Event index:', eventIndex);
+            console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
+
+            window.relationshipPersonContext = {
+                eventIndex,
+                fieldName: 'spouse',
+                isEdit: true,
+                currentPersonId: currentId,
+                component: this,
+                isEventPeople: true
+            };
+
+            showRelationshipPersonModal();
+        },
+
+        clearEventSpouse(eventIndex) {
+            if (confirm('Clear the spouse for this event?')) {
+                this.extractedData.events[eventIndex].spouse = null;
+                this.autoSave();
+            }
+        },
+
+        editEventChild(eventIndex, currentId) {
+            console.log('=== editEventChild called ===');
+            console.log('Event index:', eventIndex);
+            console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
+
+            window.relationshipPersonContext = {
+                eventIndex,
+                fieldName: 'child',
+                isEdit: true,
+                currentPersonId: currentId,
+                component: this,
+                isEventPeople: true
+            };
+
+            showRelationshipPersonModal();
+        },
+
+        clearEventChild(eventIndex) {
+            if (confirm('Clear the child for this event?')) {
+                this.extractedData.events[eventIndex].child = null;
                 this.autoSave();
             }
         },
@@ -3512,15 +3572,16 @@ document.addEventListener('DOMContentLoaded', function() {
         updateExportButtonState();
         updateExpandCollapseButtons();
 
-        // Only start progress updates if discussion.extracting is true on page load
-        {% if discussion.extracting %}
-        const extractionBtn = document.getElementById('trigger-extraction-btn');
-        if (extractionBtn) {
-            extractionBtn.style.display = 'none';
-            document.getElementById('extraction-progress').style.display = 'block';
-            startProgressPolling({{ discussion.id }});
+        // Only start progress updates if discussion.extracting is explicitly true
+        const isExtracting = {{ 'true' if discussion.extracting else 'false' }};
+        if (isExtracting === true) {
+            const extractionBtn = document.getElementById('trigger-extraction-btn');
+            if (extractionBtn) {
+                extractionBtn.style.display = 'none';
+                document.getElementById('extraction-progress').style.display = 'block';
+                startProgressPolling({{ discussion.id }});
+            }
         }
-        {% endif %}
     }, 100);
 });
 

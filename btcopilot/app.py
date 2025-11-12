@@ -9,9 +9,12 @@ import btcopilot
 _log = logging.getLogger(__name__)
 
 
-def create_app(config: dict = None):
+def create_app(config: dict = None, **kwargs):
     from btcopilot.pro.copilot.engine import Engine
     from btcopilot import auth, extensions, pro, personal, training
+
+    # Flask CLI may pass script_info as a kwarg, we ignore it
+    kwargs.pop('script_info', None)
 
     instancePath = os.getenv("BTCOPILOT_INSTANCE_PATH")
     if instancePath:
