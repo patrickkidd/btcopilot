@@ -12,26 +12,68 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Manual run**: `uv run python manage.py run -h 0.0.0.0 -p 5555`
 - **Production**: `docker-compose -d production.yml up fd-server`
 
+## Critical Data Serialization Rules
+
+**NEVER violate these rules - they are critical for Pro app backward compatibility:**
+
+1. **Diagram.data MUST use pickle format** - The Pro desktop app requires pickle format for `diagrams.data` column
+2. **NEVER pickle btcopilot or fdserver class instances** - Only store built-in Python types (str, int, float, bool, list, dict, None) and QtCore types in pickled diagram data
+3. **ALWAYS maintain backward compatibility with Pro app** - Any changes to diagram data serialization must work with existing Pro app installations
+4. **User will manually delete broken discussions** - If discussions throw `ModuleNotFoundError` for fdserver/btcopilot modules, the user will manually delete those discussions. Do not add complex error handling code.
+
+**Allowed in pickle data:**
+- Built-in types: str, int, float, bool, list, dict, None
+- QtCore types from PyQt5 (e.g., QDate, QDateTime)
+
+**NEVER allowed in pickle data:**
+- Classes from `btcopilot.*` modules
+- Classes from `fdserver.*` modules
+- Custom dataclasses or Pydantic models
+- Any third-party library classes (except QtCore)
+
 ## Flask Server Management
 
-- **Always use `bash btcopilot/bin/manage_flask.sh` to manage the Flask server**
-  - Start server: `bash btcopilot/bin/manage_flask.sh start`
-  - Stop server: `bash btcopilot/bin/manage_flask.sh stop`
-  - Restart server: `bash btcopilot/bin/manage_flask.sh restart`
-  - Check status: `bash btcopilot/bin/manage_flask.sh status`
-- **Never use manual `FLASK_APP=... uv run flask run` commands** - always use the script instead
-- This script automatically includes auto-auth configuration for MCP server testing
+**Start server:**
+```bash
+bash btcopilot/bin/flask_start.sh
+```
+- Runs on port 5555 in foreground (use `run_in_background: true` in Bash tool)
+- Auto-authenticates as test user (patrickkidd+unittest@gmail.com) for MCP server testing
+- Test user must exist first (run any test to create it)
+
+**Stop server:**
+```bash
+bash btcopilot/bin/flask_stop.sh
+```
+
+**Check status:**
+```bash
+lsof -ti:5555 && echo "Server running" || echo "Server not running"
+```
+
+**Troubleshooting:**
+
+If Flask server fails to start or shows errors about function signatures:
+1. **Clear Python bytecode cache**: `find . -name "*.pyc" -delete 2>/dev/null`
+2. **Clear venv cache**: `find .venv -name "*.pyc" -delete 2>/dev/null`
+3. **Stop all Flask processes**: `bash btcopilot/bin/flask_stop.sh`
+4. **Restart Flask**: `bash btcopilot/bin/flask_start.sh`
+
+Common issues:
+- **"create_app() takes from 0 to 1 positional arguments but 2 were given"** - Stale bytecode cache. Clear cache and restart.
+- **Port already in use** - Another Flask instance is running. Use `bash btcopilot/bin/flask_stop.sh` to kill it.
+- **Import errors** - Check that you're in the project root directory.
 
 ## Testing Flask Changes with chrome-devtools-mcp
 
 When making changes to the training app (btcopilot/training), **always test using chrome-devtools-mcp**:
 
-1. Start Flask server: `bash btcopilot/bin/manage_flask.sh start`
+1. Start Flask server: `bash btcopilot/bin/flask_start.sh` (use `run_in_background: true`)
 2. Navigate to relevant page using `mcp__chrome-devtools-mcp__navigate_page` or `new_page`
 3. Take snapshot with `mcp__chrome-devtools-mcp__take_snapshot` to verify UI state
 4. Test interactions using `click`, `fill`, `fill_form`, etc.
 5. Verify functionality before declaring completion
-6. Stop server when done: `bash btcopilot/bin/manage_flask.sh stop`
+6. Stop server when done: `bash btcopilot/bin/flask_stop.sh`
 
 **This is mandatory for all HTML, CSS, JavaScript, and Flask route changes.**
 
