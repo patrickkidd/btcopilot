@@ -1,4 +1,5 @@
 import pytest
+import btcopilot
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.training.models import Feedback
@@ -551,16 +552,8 @@ def test_auditor_selector_changes_cumulative(
 
 
 @pytest.mark.audit_ui
-def test_no_auditor_selector_for_non_admin(admin, auditor):
-    """
-    Test that non-admin auditors don't see auditor selector.
-
-    Verifies:
-    - Regular auditors see only their own feedback
-    - No auditor selector dropdown for non-admins
-    """
-    # Create a simple discussion for auditor to view
-    discussion = Discussion(user_id=auditor.user.id, summary="Auditor test")
+def test_no_auditor_selector_for_non_admin(flask_app, test_user):
+    discussion = Discussion(user_id=test_user.id, summary="Auditor test")
     db.session.add(discussion)
     db.session.flush()
 
@@ -585,15 +578,26 @@ def test_no_auditor_selector_for_non_admin(admin, auditor):
     db.session.add(stmt)
     db.session.commit()
 
-    # Non-admin auditor should not see selector
-    response = auditor.get(f"/training/discussions/{discussion.id}")
-    assert response.status_code == 200
-    html = response.data.decode("utf-8")
-    assert "auditor-filter" not in html
+    test_user.roles = btcopilot.ROLE_AUDITOR
+    db.session.merge(test_user)
+    db.session.commit()
 
-    # Admin should see selector if there's feedback
-    response_admin = admin.get(f"/training/discussions/{discussion.id}")
-    assert response_admin.status_code == 200
-    html_admin = response_admin.data.decode("utf-8")
-    # Admin won't see selector without multiple auditors having feedback
-    # This is expected - selector only shows when there are multiple auditors
+    with flask_app.test_client(use_cookies=True) as auditor_client:
+        with auditor_client.session_transaction() as sess:
+            sess["user_id"] = test_user.id
+
+        response = auditor_client.get(f"/training/discussions/{discussion.id}")
+        assert response.status_code == 200
+        html = response.data.decode("utf-8")
+        assert "auditor-filter" not in html
+
+    test_user.roles = btcopilot.ROLE_ADMIN
+    db.session.merge(test_user)
+    db.session.commit()
+
+    with flask_app.test_client(use_cookies=True) as admin_client:
+        with admin_client.session_transaction() as sess:
+            sess["user_id"] = test_user.id
+
+        response = admin_client.get(f"/training/discussions/{discussion.id}")
+        assert response.status_code == 200
