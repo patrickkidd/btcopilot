@@ -75,12 +75,6 @@ def toBool(x):
     return bool(y)
 
 
-def _client_version_lte(ver_string):
-    if g.fd_client_version and version.lessThanOrEqual(g.fd_client_version, ver_string):
-        return True
-    return False
-
-
 # decorator
 def encrypted(func):
     """
@@ -97,13 +91,6 @@ def encrypted(func):
         # Client Version determines if payloads are encrypted
         g.fd_client_version = request.headers.get("FD-Client-Version")
 
-        if _client_version_lte("1.4.5"):
-            # _log.error(S_FAIL_TO_SERV_LT_v150, exc_info=True)
-            # return ("App version not supported", 406)
-            _log.debug(
-                f"Detected client version {g.fd_client_version} which expects encrypted response payloads."
-            )
-
         ## Run view
 
         response = make_response(func(*args, **kwargs))
@@ -119,7 +106,7 @@ def encrypted(func):
             # y = x.encode("utf-8")
             response.headers["FD-User-Message"] = x
 
-        response.headers["FD-Server-Version"] = bytes(version.VERSION, "utf-8")
+        response.headers["FD-Server-Version"] = bytes(version(), "utf-8")
 
         return response
 
@@ -143,6 +130,7 @@ def hello():
 @bp.route("/static/email-assets/<path:filename>")
 def email_assets(filename):
     import os
+
     static_dir = os.path.join(os.path.dirname(__file__), "static", "email-assets")
     return send_from_directory(static_dir, filename)
 
@@ -204,13 +192,7 @@ def diagrams(id=None):
             # _log.debug(f"INDEX:")
             # for diagram in data:
             #     _log.debug(f"    Diagram[{diagram['id']}].updated_at: {diagram['updated_at']}")
-            if _client_version_lte("1.4.5"):
-                # Versions up to 1.4.5 expect a dict for server index. It's zero
-                # customer impact so no big deal, but avoids spamming the app log
-                # with exceptions.
-                return pickle.dumps({x["id"]: x for x in data})
-            else:
-                return pickle.dumps(data)
+            return pickle.dumps(data)
         elif request.method == "POST":  # create
             args = pickle.loads(request.data)
             diagram = Diagram(

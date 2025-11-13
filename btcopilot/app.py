@@ -14,7 +14,7 @@ def create_app(config: dict = None, **kwargs):
     from btcopilot import auth, extensions, pro, personal, training
 
     # Flask CLI may pass script_info as a kwarg, we ignore it
-    kwargs.pop('script_info', None)
+    kwargs.pop("script_info", None)
 
     instancePath = os.getenv("BTCOPILOT_INSTANCE_PATH")
     if instancePath:
@@ -135,11 +135,11 @@ def create_app(config: dict = None, **kwargs):
         )
         if "ddtrace" in sys.modules:
             from ddtrace import tracer
-            from btcopilot import git_sha
+            from btcopilot import version
 
             span = tracer.current_span()
             if span:
-                span.set_tag("git.sha", git_sha())
+                span.set_tag("version", version())
 
     ## Initialize Modules
 

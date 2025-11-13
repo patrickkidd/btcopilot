@@ -106,13 +106,13 @@ def _():
 
 @bp.context_processor
 def inject_globals():
-    """Make btcopilot and git_sha available in all templates"""
-    from btcopilot import git_sha
+    """Make btcopilot and version available in all templates"""
+    from btcopilot import version
     from flask_wtf.csrf import generate_csrf
 
     return {
         "btcopilot": btcopilot,
-        "git_sha": git_sha(),
+        "version": version(),
         "csrf_token": generate_csrf,
     }
 

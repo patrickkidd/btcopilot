@@ -3,7 +3,7 @@
 <head>
     <title>AI Chatbot Audit System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="git-sha" content="{{ git_sha }}">
+    <meta name="version" content="{{ version }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -789,7 +789,7 @@
     <footer class="footer mt-6" style="padding: 1rem 1.5rem;">
         <div class="content has-text-centered">
             <p class="has-text-grey-light">
-                <small>Version: {{ git_sha }}</small>
+                <small>Version: {{ version }}</small>
             </p>
         </div>
     </footer>

@@ -108,7 +108,7 @@ class DatadogJSONFormatter(logging.Formatter):
             "status": record.levelname,
             "message": record.getMessage(),
             "btcopilot": {
-                "version": version.VERSION,
+                "version": version(),
             },
             "version": (
                 getattr(g, "fd_client_version", None) if has_app_context() else None

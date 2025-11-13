@@ -52,7 +52,7 @@ class FDEncryptionTestClient(flask.testing.FlaskClient):
         auth_headers = Headers(
             {
                 "FD-Authentication": auth_header,
-                "FD-Client-Version": version.VERSION,
+                "FD-Client-Version": "1.2.3.4",
                 "Date": date,  # .encode('utf-8'),
                 "Content-MD5": content_md5,  # .encode('utf-8'),
                 "Content-Type": content_type,
