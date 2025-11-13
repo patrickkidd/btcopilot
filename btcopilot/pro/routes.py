@@ -39,6 +39,8 @@ from btcopilot.extensions import (
     mail,
     create_stripe_Subscription,
     ensure_stripe_Customer,
+    llm,
+    LLMFunction,
 )
 from btcopilot.pro.models import (
     Activation,
@@ -874,3 +876,65 @@ def copilot_chat(conversation_id: int = None):
             "sources": response.sources,
         }
     )
+
+
+@bp.route("/arrange", methods=["POST"])
+@encrypted
+def arrange():
+    import json, asyncio
+    from btcopilot.arrange import Diagram
+    from dataclasses import asdict
+
+    diagram = json.loads(request.data)
+
+    PROMPT = f"""
+You are an expert in diagramming and layout optimization for family trees. Your
+task is to suggest improved center positions for selected people in a family
+diagram, while keeping fixed (unselected) people exactly at their current
+center_x, center_y, and bounding_rect. The diagram represents a family tree with
+reproductive structures: people as nodes of varying sizes, marriages as U-shaped
+lines connecting partners (from the marriages list), and offspring connected via
+vertical lines from the marriage midpoint.
+
+Key rules:
+
+- Only move selected people (is_selected: true). Fixed people (is_fixed: true)
+  MUST remain at their current center_x and center_y.
+- Respect connections: Partners in a marriage should be placed adjacent
+  horizontally on the same level (y-coordinate similar), with space for their
+  sizes plus at least 20-50 units padding.
+- Offspring should be placed below (higher y) their marriage's midpoint (average
+  center_x of partners), centered if multiple siblings. Siblings should be
+  ordered left-to-right, ideally by ID or logically.
+- Avoid overlaps: Use the provided bounding_rect for each person (absolute
+  min_x, min_y, max_x, max_y based on center and size) to check overlaps. Ensure
+  no overlaps between any people, with at least 20 units padding between
+  bounding rectangles.
+- Aesthetics: Aim for balance, symmetry, minimal line crossings, and a
+  horizontal timeline flow (left-to-right progression by generations). Cluster
+  related subtrees. Make it look "artful" – iterate mentally like a human would,
+  adjusting for crowding.
+- Generations: Infer levels from parents/offspring/marriages; place deeper
+  generations to the right or below.
+- Constraints: The canvas is unlimited in size.
+- Iteration: Think step-by-step:
+    1) Analyze current layout and issues (overlaps, misalignments using
+       bounding_rects).
+  2) Group into subtrees based on
+    selections and marriages.
+  3) Propose initial centers based on anchors (fixed
+    parents/partners).
+  4) Refine for aesthetics and no overlaps (update bounding_rects mentally for
+     moved people).
+  5) Output only new centers for selected people; the app will recompute their
+     bounding_rects.
+
+{diagram}
+
+Do not output anything else.
+
+    """
+    result = asyncio.run(
+        llm.submit(LLMFunction.Arrange, prompt=PROMPT, response_format=Diagram)
+    )
+    return asdict(result)
