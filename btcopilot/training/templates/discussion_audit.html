@@ -199,6 +199,12 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                         <span>Clear Extracted</span>
                     </button>
                 </p>
+                <p class="control">
+                    <button class="button is-small is-outlined is-info" onclick="jumpToLastCode()">
+                        <span class="icon"><i class="fas fa-arrow-down"></i></span>
+                        <span>Jump to Last Code</span>
+                    </button>
+                </p>
                 {% if current_user.has_role(btcopilot.ROLE_ADMIN) and auditor_options and (auditor_options|length > 1 or statements|selectattr('pdp_deltas')|list|length > 0) %}
                 <p class="control">
                     <div class="select is-small">
@@ -2061,6 +2067,21 @@ function collapseAllMessages() {
     updateExpandCollapseButtons();
 }
 
+function jumpToLastCode() {
+    const allRows = Array.from(document.querySelectorAll('.message-row'));
+    const rowsWithData = allRows.filter(row => {
+        const messageId = row.getAttribute('data-message-id');
+        return document.getElementById('data-collapsed-' + messageId) ||
+               document.getElementById('data-expanded-' + messageId);
+    });
+
+    if (rowsWithData.length === 0) {
+        return;
+    }
+
+    const lastRow = rowsWithData[rowsWithData.length - 1];
+    lastRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 
 function toggleCumulativeSection(messageId) {
     // Cumulative section elements
