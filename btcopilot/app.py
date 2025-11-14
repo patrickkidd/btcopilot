@@ -1,4 +1,3 @@
-from http.client import HTTPException
 import os, os.path, sys, logging
 from flask import Flask, render_template, redirect, request, url_for
 from werkzeug.exceptions import Unauthorized, HTTPException
@@ -77,13 +76,9 @@ def create_app(config: dict = None, **kwargs):
 
     @app.errorhandler(Exception)
     def _(e):
-        app.logger.exception(f"Unhandled exception: {type(e).__name__}")
-        # Don't handle HTTP exceptions - let Flask handle them naturally
-        from werkzeug.exceptions import HTTPException
-
         if isinstance(e, HTTPException):
             raise e
-        # For non-HTTP exceptions, return a 500 error
+        app.logger.exception(f"Unhandled exception: {type(e).__name__}")
         return "Internal Server Error", 500
 
     @app.errorhandler(Unauthorized)
