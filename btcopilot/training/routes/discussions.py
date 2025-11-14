@@ -666,16 +666,15 @@ def audit(discussion_id):
 
     current_user = auth.current_user()
 
-    discussion = (
-        Discussion.query
-        .options(
-            subqueryload(Discussion.statements).joinedload(Statement.speaker)
-        )
-        .get_or_404(discussion_id)
-    )
+    discussion = Discussion.query.options(
+        subqueryload(Discussion.statements).joinedload(Statement.speaker)
+    ).get_or_404(discussion_id)
     auditor_id = get_auditor_id(request, session)
 
     selected_auditor = request.args.get("selected_auditor")
+    # Default to current auditor if not specified
+    if selected_auditor is None:
+        selected_auditor = auditor_id
 
     statements_with_feedback = []
     # Sort statements by order for proper display
@@ -684,9 +683,9 @@ def audit(discussion_id):
     )
 
     from collections import defaultdict
+
     all_feedback = (
-        Feedback.query
-        .join(Statement)
+        Feedback.query.join(Statement)
         .filter(Statement.discussion_id == discussion_id)
         .all()
     )
@@ -704,12 +703,20 @@ def audit(discussion_id):
             if selected_auditor and selected_auditor != "AI":
                 # Admin filtering to specific auditor
                 conv_feedback = next(
-                    (fb for fb in stmt_feedback["conversation"] if fb.auditor_id == selected_auditor),
-                    None
+                    (
+                        fb
+                        for fb in stmt_feedback["conversation"]
+                        if fb.auditor_id == selected_auditor
+                    ),
+                    None,
                 )
                 ext_feedback = next(
-                    (fb for fb in stmt_feedback["extraction"] if fb.auditor_id == selected_auditor),
-                    None
+                    (
+                        fb
+                        for fb in stmt_feedback["extraction"]
+                        if fb.auditor_id == selected_auditor
+                    ),
+                    None,
                 )
             elif selected_auditor == "AI":
                 # AI selected - don't show any feedback, only AI extraction
@@ -719,21 +726,29 @@ def audit(discussion_id):
                 # Admin sees all feedback (no auditor selected)
                 conv_feedback = sorted(
                     stmt_feedback["conversation"],
-                    key=lambda fb: (fb.auditor_id or "", fb.created_at)
+                    key=lambda fb: (fb.auditor_id or "", fb.created_at),
                 )
                 ext_feedback = sorted(
                     stmt_feedback["extraction"],
-                    key=lambda fb: (fb.auditor_id or "", fb.created_at)
+                    key=lambda fb: (fb.auditor_id or "", fb.created_at),
                 )
         else:
             # Auditor sees only their own feedback
             conv_feedback = next(
-                (fb for fb in stmt_feedback["conversation"] if fb.auditor_id == auditor_id),
-                None
+                (
+                    fb
+                    for fb in stmt_feedback["conversation"]
+                    if fb.auditor_id == auditor_id
+                ),
+                None,
             )
             ext_feedback = next(
-                (fb for fb in stmt_feedback["extraction"] if fb.auditor_id == auditor_id),
-                None
+                (
+                    fb
+                    for fb in stmt_feedback["extraction"]
+                    if fb.auditor_id == auditor_id
+                ),
+                None,
             )
 
         # Get stored PDP deltas - ONLY show for Subject statements (where extraction data is stored)
@@ -767,14 +782,39 @@ def audit(discussion_id):
                     }
 
                     def filter_person_fields(person_data):
-                        valid_fields = {'id', 'name', 'last_name', 'spouses', 'parent_a', 'parent_b', 'confidence'}
-                        return {k: v for k, v in person_data.items() if k in valid_fields}
+                        valid_fields = {
+                            "id",
+                            "name",
+                            "last_name",
+                            "spouses",
+                            "parent_a",
+                            "parent_b",
+                            "confidence",
+                        }
+                        return {
+                            k: v for k, v in person_data.items() if k in valid_fields
+                        }
 
                     def filter_event_fields(event_data):
-                        valid_fields = {'id', 'kind', 'person', 'spouse', 'child', 'description',
-                                       'dateTime', 'endDateTime', 'symptom', 'anxiety', 'relationship',
-                                       'relationshipTargets', 'relationshipTriangles', 'confidence'}
-                        return {k: v for k, v in event_data.items() if k in valid_fields}
+                        valid_fields = {
+                            "id",
+                            "kind",
+                            "person",
+                            "spouse",
+                            "child",
+                            "description",
+                            "dateTime",
+                            "endDateTime",
+                            "symptom",
+                            "anxiety",
+                            "relationship",
+                            "relationshipTargets",
+                            "relationshipTriangles",
+                            "confidence",
+                        }
+                        return {
+                            k: v for k, v in event_data.items() if k in valid_fields
+                        }
 
                     pdp_deltas_model = PDPDeltas(
                         people=[
@@ -811,18 +851,24 @@ def audit(discussion_id):
                 cumulative_people_by_id.pop(delete_id, None)
                 cumulative_events_by_id.pop(delete_id, None)
 
-        cumulative_pdp = {
-            "people": [asdict(p) for p in cumulative_people_by_id.values()],
-            "events": [asdict(e) for e in cumulative_events_by_id.values()],
-        } if cumulative_people_by_id or cumulative_events_by_id else None
+        cumulative_pdp = (
+            {
+                "people": [asdict(p) for p in cumulative_people_by_id.values()],
+                "events": [asdict(e) for e in cumulative_events_by_id.values()],
+            }
+            if cumulative_people_by_id or cumulative_events_by_id
+            else None
+        )
 
         if 633 <= stmt.id <= 637:
-            _log.debug(f"Stmt {stmt.id}: speaker_type={stmt.speaker.type if stmt.speaker else None}, "
-                      f"has_pdp_deltas_model={pdp_deltas_model is not None}, "
-                      f"deltas={pdp_deltas if pdp_deltas_model else None}, "
-                      f"cumulative_people={len(cumulative_people_by_id)}, "
-                      f"cumulative_events={len(cumulative_events_by_id)}, "
-                      f"cumulative_pdp={'set' if cumulative_pdp else 'None'}")
+            _log.debug(
+                f"Stmt {stmt.id}: speaker_type={stmt.speaker.type if stmt.speaker else None}, "
+                f"has_pdp_deltas_model={pdp_deltas_model is not None}, "
+                f"deltas={pdp_deltas if pdp_deltas_model else None}, "
+                f"cumulative_people={len(cumulative_people_by_id)}, "
+                f"cumulative_events={len(cumulative_events_by_id)}, "
+                f"cumulative_pdp={'set' if cumulative_pdp else 'None'}"
+            )
 
         # Handle different feedback data structures for admin vs auditor
         if current_user.has_role(btcopilot.ROLE_ADMIN):

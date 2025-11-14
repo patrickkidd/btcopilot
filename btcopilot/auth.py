@@ -242,8 +242,18 @@ def _authenticate_pro_personal_apps() -> User | None:
 
 def _authenticate_training_app() -> User | None:
     """Authenticate user for personal app (/training/*) - supports both session and signature auth."""
+    import os
 
-    # First, try session-based authentication (for web users)
+    # First, check for auto-auth environment variable (for testing/development)
+    auto_auth_email = os.environ.get("FLASK_AUTO_AUTH_USER")
+    if auto_auth_email:
+        user = User.query.filter_by(username=auto_auth_email).first()
+        if user:
+            g.current_user = user
+            _set_tracing_tags(user)
+            return user
+
+    # Next, try session-based authentication (for web users)
     user_id = session.get("user_id")
     if user_id:
         user = User.query.get(user_id)
