@@ -249,7 +249,7 @@ def test_cumulative_notes_auditor_a_progression(
     # 3. Statement 3 cumulative: Person -2 only (Person -1 deleted), Events -1,-2
 
     # This test requires browser automation which would be done via:
-    # - mcp__chrome-devtools-mcp__new_page or navigate_page to load URL
+    # - mcp__chrome-devtools__new_page or navigate_page to load URL
     # - take_snapshot to get page structure
     # - click to expand cumulative sections
     # - verify badge counts and expanded content

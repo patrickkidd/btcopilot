@@ -84,9 +84,9 @@ Common issues:
 
 When making changes to the training app (btcopilot/training), **always test using chrome-devtools-mcp**:
 
-1. Start Flask server: `bash bin/flask_start.sh` (use `run_in_background: true`)
-2. Navigate to relevant page using `mcp__chrome-devtools-mcp__navigate_page` or `new_page`
-3. Take snapshot with `mcp__chrome-devtools-mcp__take_snapshot` to verify UI state
+1. Start Flask server: `bash btcopilot/bin/flask_start.sh` (use `run_in_background: true`)
+2. Navigate to relevant page using `mcp__chrome-devtools__navigate_page` or `new_page`
+3. Take snapshot with `mcp__chrome-devtools__take_snapshot` to verify UI state
 4. Test interactions using `click`, `fill`, `fill_form`, etc.
 5. Verify functionality before declaring completion
 6. Stop server when done: `bash bin/flask_stop.sh`
