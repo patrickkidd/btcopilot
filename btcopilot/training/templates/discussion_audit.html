@@ -203,7 +203,6 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                 <p class="control">
                     <div class="select is-small">
                         <select id="auditor-filter" onchange="handleAuditorChange(this.value)">
-                            <option value="">View Auditor...</option>
                             {% for option in auditor_options %}
                             <option value="{{ option.id }}" {% if selected_auditor == option.id %}selected{% endif %}>
                                 {{ option.name }}
@@ -443,6 +442,82 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
         <footer class="modal-card-foot">
             <button class="button is-success" onclick="confirmRelationshipPersonSelection()">Select</button>
             <button class="button" onclick="closeRelationshipPersonModal()">Cancel</button>
+        </footer>
+    </div>
+</div>
+
+<!-- Add Person Delta Modal -->
+<div class="modal" id="add-person-delta-modal">
+    <div class="modal-background" onclick="closeAddPersonDeltaModal()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Add Person Delta</p>
+            <button class="delete" onclick="closeAddPersonDeltaModal()"></button>
+        </header>
+        <section class="modal-card-body">
+            <div class="field">
+                <label class="label">Action</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select id="person-delta-action-select" onchange="togglePersonDeltaAction()">
+                            <option value="new">Create New Person</option>
+                            <option value="update">Update Existing Person</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="field" id="person-delta-select-field" style="display: none;">
+                <label class="label">Select Person to Update</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select id="person-delta-id-select">
+                            <!-- Options dynamically populated -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-success" onclick="confirmAddPersonDelta()">Add</button>
+            <button class="button" onclick="closeAddPersonDeltaModal()">Cancel</button>
+        </footer>
+    </div>
+</div>
+
+<!-- Add Event Delta Modal -->
+<div class="modal" id="add-event-delta-modal">
+    <div class="modal-background" onclick="closeAddEventDeltaModal()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Add Event Delta</p>
+            <button class="delete" onclick="closeAddEventDeltaModal()"></button>
+        </header>
+        <section class="modal-card-body">
+            <div class="field">
+                <label class="label">Action</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select id="event-delta-action-select" onchange="toggleEventDeltaAction()">
+                            <option value="new">Create New Event</option>
+                            <option value="update">Update Existing Event</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="field" id="event-delta-select-field" style="display: none;">
+                <label class="label">Select Event to Update</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select id="event-delta-id-select">
+                            <!-- Options dynamically populated -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-success" onclick="confirmAddEventDelta()">Add</button>
+            <button class="button" onclick="closeAddEventDeltaModal()">Cancel</button>
         </footer>
     </div>
 </div>
@@ -873,40 +948,61 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         },
 
         addPerson() {
-            if (!this.extractedData.people) this.extractedData.people = [];
-            this.extractedData.people.push({
-                id: this.nextNegativeId(),
-                name: 'New Person',
-                last_name: null,
-                spouses: [],
-                parent_a: null,
-                parent_b: null,
-                confidence: 1.0
-            });
-            this.personDataVersion++;
-            this.autoSave();
+            window.currentAddPersonComponent = this;
+
+            const modal = document.getElementById('add-person-delta-modal');
+            const actionSelect = document.getElementById('person-delta-action-select');
+            const idSelect = document.getElementById('person-delta-id-select');
+            const selectField = document.getElementById('person-delta-select-field');
+
+            actionSelect.value = 'new';
+            selectField.style.display = 'none';
+
+            idSelect.innerHTML = '';
+
+            if (this.cumulativePdp && this.cumulativePdp.people && this.cumulativePdp.people.length > 0) {
+                this.cumulativePdp.people.forEach(person => {
+                    if (person.id && person.id < 0) {
+                        const option = document.createElement('option');
+                        option.value = person.id;
+                        option.textContent = `${person.name || 'Unnamed'} (ID: ${person.id})`;
+                        idSelect.appendChild(option);
+                    }
+                });
+            }
+
+            modal.classList.add('is-active');
         },
 
         addEvent() {
-            if (!this.extractedData.events) this.extractedData.events = [];
-            this.extractedData.events.push({
-                id: this.nextNegativeId(),
-                kind: 'shift',
-                person: null,
-                spouse: null,
-                child: null,
-                description: 'New Event',
-                dateTime: new Date().toISOString().split('T')[0],
-                endDateTime: null,
-                symptom: null,
-                anxiety: null,
-                relationship: null,
-                relationshipTargets: [],
-                relationshipTriangles: [],
-                functioning: null,
-                confidence: 1.0
-            });
-            this.autoSave();
+            window.currentAddEventComponent = this;
+
+            const modal = document.getElementById('add-event-delta-modal');
+            const actionSelect = document.getElementById('event-delta-action-select');
+            const idSelect = document.getElementById('event-delta-id-select');
+            const selectField = document.getElementById('event-delta-select-field');
+
+            actionSelect.value = 'new';
+            selectField.style.display = 'none';
+
+            idSelect.innerHTML = '';
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = '-- Select Event --';
+            idSelect.appendChild(defaultOption);
+
+            if (this.cumulativePdp && this.cumulativePdp.events && this.cumulativePdp.events.length > 0) {
+                this.cumulativePdp.events.forEach(event => {
+                    if (event.id < 0) {
+                        const option = document.createElement('option');
+                        option.value = event.id;
+                        option.textContent = `${event.id}: ${event.description || 'Event'}`;
+                        idSelect.appendChild(option);
+                    }
+                });
+            }
+
+            modal.classList.add('is-active');
         },
         
         addVariable(eventIndex, varType) {
@@ -3347,6 +3443,136 @@ function confirmRelationshipPersonSelection() {
     );
     
     closeRelationshipPersonModal();
+}
+
+function togglePersonDeltaAction() {
+    const actionSelect = document.getElementById('person-delta-action-select');
+    const selectField = document.getElementById('person-delta-select-field');
+
+    if (actionSelect.value === 'update') {
+        selectField.style.display = 'block';
+    } else {
+        selectField.style.display = 'none';
+    }
+}
+
+function closeAddPersonDeltaModal() {
+    document.getElementById('add-person-delta-modal').classList.remove('is-active');
+    window.currentAddPersonComponent = null;
+}
+
+function confirmAddPersonDelta() {
+    const component = window.currentAddPersonComponent;
+    if (!component) {
+        console.error('No Alpine component reference found');
+        return;
+    }
+
+    const actionSelect = document.getElementById('person-delta-action-select');
+    const idSelect = document.getElementById('person-delta-id-select');
+
+    let personId;
+    let personDelta;
+
+    if (actionSelect.value === 'update') {
+        personId = parseInt(idSelect.value);
+        if (!personId) {
+            alert('Please select a person to update');
+            return;
+        }
+        personDelta = {
+            id: personId,
+            confidence: 1.0
+        };
+    } else {
+        personId = component.nextNegativeId();
+        personDelta = {
+            id: personId,
+            name: 'New Person',
+            last_name: null,
+            spouses: [],
+            parent_a: null,
+            parent_b: null,
+            confidence: 1.0
+        };
+    }
+
+    if (!component.extractedData.people) component.extractedData.people = [];
+    component.extractedData.people.push(personDelta);
+    component.personDataVersion++;
+    component.autoSave();
+
+    closeAddPersonDeltaModal();
+}
+
+function toggleEventDeltaAction() {
+    const actionSelect = document.getElementById('event-delta-action-select');
+    const selectField = document.getElementById('event-delta-select-field');
+
+    if (actionSelect.value === 'update') {
+        selectField.style.display = 'block';
+    } else {
+        selectField.style.display = 'none';
+    }
+}
+
+function closeAddEventDeltaModal() {
+    document.getElementById('add-event-delta-modal').classList.remove('is-active');
+    window.currentAddEventComponent = null;
+}
+
+function confirmAddEventDelta() {
+    const component = window.currentAddEventComponent;
+    if (!component) {
+        console.error('No Alpine component reference found');
+        return;
+    }
+
+    const actionSelect = document.getElementById('event-delta-action-select');
+    const idSelect = document.getElementById('event-delta-id-select');
+
+    let eventDelta;
+
+    if (actionSelect.value === 'update') {
+        const eventId = parseInt(idSelect.value);
+        if (!eventId) {
+            alert('Please select an event to update');
+            return;
+        }
+
+        const sourceEvent = component.cumulativePdp?.events?.find(e => e.id === eventId);
+        if (!sourceEvent) {
+            alert('Event not found in cumulative data');
+            return;
+        }
+
+        eventDelta = JSON.parse(JSON.stringify(sourceEvent));
+    } else {
+        const eventId = component.nextNegativeId();
+        eventDelta = {
+            id: eventId,
+            kind: 'shift',
+            person: null,
+            spouse: null,
+            child: null,
+            description: 'New Event',
+            dateTime: new Date().toISOString().split('T')[0],
+            endDateTime: null,
+            symptom: null,
+            anxiety: null,
+            relationship: null,
+            relationshipTargets: [],
+            relationshipTriangles: [],
+            functioning: null,
+            confidence: 1.0
+        };
+    }
+
+    if (!component.extractedData.events) component.extractedData.events = [];
+    component.extractedData.events.push(eventDelta);
+    component.autoSave();
+
+    closeAddEventDeltaModal();
 }
 
 // Extraction button functions
