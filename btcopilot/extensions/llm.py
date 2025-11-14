@@ -33,6 +33,8 @@ class LLMFunction(enum.StrEnum):
 
     PDP = "pdp"  # Pending Data Pool, used to detect data points in chat messages
 
+    Arrange = "arrange"
+
 
 def _markdown_json_2_json(markdown_json: str) -> str:
     return markdown_json.replace("```json", "").replace("```", "")

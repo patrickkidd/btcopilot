@@ -315,32 +315,9 @@ Parameters:
                                     
                                     <!-- Confidence Row -->
                                     <div class="mb-2">
-                                        {% if editable_mode %}
-                                        <small class="is-size-7">
-                                            Confidence: 
-                                            <span class="editable-field"
-                                                  @mouseenter="hoveredField = 'person-' + index + '-confidence'"
-                                                  @mouseleave="hoveredField = null"
-                                                  @click.stop="startEdit('person-' + index + '-confidence', person.confidence || 0.5)">
-                                                <span x-show="!isEditing('person-' + index + '-confidence')" x-text="((person.confidence || 0.5) * 100).toFixed(0) + '%'"></span>
-                                                <input x-show="isEditing('person-' + index + '-confidence')" 
-                                                       :value="editingValue"
-                                                       @input="editingValue = $event.target.value"
-                                                       @blur="savePersonConfidence(index, parseFloat($event.target.value) / 100)"
-                                                       @keydown.enter="savePersonConfidence(index, parseFloat($event.target.value) / 100); $event.target.blur()"
-                                                       @keydown.escape="cancelEdit(); $event.target.blur()"
-                                                       class="inline-edit-input"
-                                                       type="number"
-                                                       min="0"
-                                                       max="100"
-                                                       step="5">
-                                            </span>
-                                        </small>
-                                        {% else %}
-                                        <small class="is-size-7" x-show="person.confidence">
+                                        <small class="is-size-7" x-show="person.confidence && person.confidence < 0.999">
                                             Confidence: <span x-text="(person.confidence * 100).toFixed(0) + '%'"></span>
                                         </small>
-                                        {% endif %}
                                     </div>
                                     
                                     <!-- Person List Fields -->
@@ -379,42 +356,7 @@ Parameters:
                                                 </table>
                                             </div>
                                         </template>
-                                        
-                                        <!-- Offspring -->
-                                        <template x-if="(person.offspring && person.offspring.length > 0) || {{ 'true' if editable_mode else 'false' }}">
-                                            <div class="person-list-field mb-1">
-                                                <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; table-layout: fixed;">
-                                                    <tr>
-                                                        <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                            Offspring:
-                                                            {% if editable_mode %}
-                                                            <span class="add-element" 
-                                                                  @click.stop="addPersonListItem(index, 'offspring')"
-                                                                  title="Add offspring"
-                                                                  style="margin-left: 4px;">
-                                                                <i class="fas fa-plus-circle"></i>
-                                                            </span>
-                                                            {% endif %}
-                                                        </td>
-                                                        <td style="padding: 0;">
-                                                            <template x-for="(personId, idx) in (person.offspring || [])" :key="personId + '-offspring-' + idx">
-                                                                <span class="person-tag" 
-                                                                      style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
-                                                                      :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                      @click="{{ 'editPersonListItem(index, \'offspring\', idx, personId)' if editable_mode else '' }}">
-                                                                    <span x-text="getPersonName(personId, personDataVersion)"></span>
-                                                                    {% if editable_mode %}
-                                                                    <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;" 
-                                                                          @click.stop="removePersonListItem(index, 'offspring', idx)">×</span>
-                                                                    {% endif %}
-                                                                </span>
-                                                            </template>
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                            </div>
-                                        </template>
-                                        
+
                                         <!-- Parents -->
                                         <template x-if="(person.parents && person.parents.length > 0) || {{ 'true' if editable_mode else 'false' }}">
                                             <div class="person-list-field mb-1">
@@ -486,7 +428,7 @@ Parameters:
                                     <span class="event-id-debug" x-show="event.id" x-text="event.id"></span>
                                     <div class="event-header">
                                         <div class="event-metadata is-size-7 has-text-grey mt-1 mb-1">
-                                            <span x-show="event.confidence">
+                                            <span x-show="event.confidence && event.confidence < 0.999">
                                                 Confidence: <span x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
                                             </span>
                                         </div>
@@ -1275,32 +1217,9 @@ Parameters:
                                     
                                     <!-- Confidence Row -->
                                     <div class="mb-2">
-                                        {% if editable_mode %}
-                                        <small class="is-size-7">
-                                            Confidence: 
-                                            <span class="editable-field"
-                                                  @mouseenter="hoveredField = 'person-' + index + '-confidence'"
-                                                  @mouseleave="hoveredField = null"
-                                                  @click.stop="startEdit('person-' + index + '-confidence', person.confidence || 0.5)">
-                                                <span x-show="!isEditing('person-' + index + '-confidence')" x-text="((person.confidence || 0.5) * 100).toFixed(0) + '%'"></span>
-                                                <input x-show="isEditing('person-' + index + '-confidence')" 
-                                                       :value="editingValue"
-                                                       @input="editingValue = $event.target.value"
-                                                       @blur="savePersonConfidence(index, parseFloat($event.target.value) / 100)"
-                                                       @keydown.enter="savePersonConfidence(index, parseFloat($event.target.value) / 100); $event.target.blur()"
-                                                       @keydown.escape="cancelEdit(); $event.target.blur()"
-                                                       class="inline-edit-input"
-                                                       type="number"
-                                                       min="0"
-                                                       max="100"
-                                                       step="5">
-                                            </span>
-                                        </small>
-                                        {% else %}
-                                        <small class="is-size-7" x-show="person.confidence">
+                                        <small class="is-size-7" x-show="person.confidence && person.confidence < 0.999">
                                             Confidence: <span x-text="(person.confidence * 100).toFixed(0) + '%'"></span>
                                         </small>
-                                        {% endif %}
                                     </div>
                                     
                                     <!-- Person relationships would continue here... -->
@@ -1340,7 +1259,7 @@ Parameters:
                                     <span class="event-id-debug" x-show="event.id" x-text="event.id"></span>
                                     <div class="event-header">
                                         <div class="event-metadata is-size-7 has-text-grey mt-1 mb-1">
-                                            <span x-show="event.confidence">
+                                            <span x-show="event.confidence && event.confidence < 0.999">
                                                 Confidence: <span x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
                                             </span>
                                         </div>

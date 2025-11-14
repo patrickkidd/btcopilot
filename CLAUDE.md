@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Environment Setup
 - **Virtual environment**: Managed by uv workspace (run from repository root)
+- **Install dependencies**: `uv sync --extra app --extra test` (run after cloning or in new worktrees)
+- **Platform compatibility**: PyTorch is pinned to `torch>=2.0.0,<2.1.0` with platform markers to support macOS x86_64. Newer torch versions don't have wheels for Intel Macs.
 - **Start PostgreSQL**: `docker-compose up fd-server` (requires `docker volume create familydiagram_postgres` first)
 
 ### Running the Application
@@ -35,53 +37,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **IMPORTANT**: This project uses Flask 3.x's native CLI. The obsolete `flask-cli` package is incompatible with Flask 3.x application factory pattern and has been removed from dependencies in `btcopilot/pyproject.toml`.
 
+**CRITICAL FOR TESTING**: When testing UI changes with chrome-devtools-mcp, you MUST use these scripts (not manual flask run or checking with lsof). The start script enables auto-authentication which is required for MCP server testing. Always use these scripts even if a server is already running.
+
 **Start server:**
 ```bash
-bash btcopilot/bin/flask_start.sh
+bash bin/flask_start.sh
 ```
-- Runs on port 5555 in foreground (use `run_in_background: true` in Bash tool)
+- Auto-selects first available port from 5555-5565 (supports parallel Claude Code sessions)
+- Prints selected port to console
+- Runs in foreground (use `run_in_background: true` in Bash tool)
 - Auto-authenticates as test user (patrickkidd+unittest@gmail.com) for MCP server testing
 - Test user must exist first (run any test to create it)
 
 **Stop server:**
 ```bash
-bash btcopilot/bin/flask_stop.sh
+bash bin/flask_stop.sh        # Stops all Flask servers in range 5555-5565
+bash bin/flask_stop.sh 5556   # Stops server on specific port
 ```
 
 **Check status:**
 ```bash
-lsof -ti:5555 && echo "Server running" || echo "Server not running"
+for port in {5555..5565}; do lsof -ti:$port >/dev/null 2>&1 && echo "Server running on port $port"; done
 ```
 
 **Troubleshooting:**
 
 If Flask server fails to start or shows errors about function signatures:
-1. **Stop Flask**: `bash btcopilot/bin/flask_stop.sh`
+1. **Stop Flask**: `bash bin/flask_stop.sh`
 2. **Remove __pycache__ directories**: `rm -rf btcopilot/btcopilot/__pycache__`
 3. **Clear remaining bytecode**: `find btcopilot .venv -name "*.pyc" -delete 2>/dev/null`
-4. **Restart Flask**: `bash btcopilot/bin/flask_start.sh`
+4. **Restart Flask**: `bash bin/flask_start.sh`
 
 **One-line fix** (use this if you encounter bytecode cache errors):
 ```bash
-bash btcopilot/bin/flask_stop.sh && rm -rf btcopilot/btcopilot/__pycache__ && find btcopilot .venv -name "*.pyc" -delete 2>/dev/null && bash btcopilot/bin/flask_start.sh
+bash bin/flask_stop.sh && rm -rf btcopilot/btcopilot/__pycache__ && find btcopilot .venv -name "*.pyc" -delete 2>/dev/null && bash bin/flask_start.sh
 ```
 
 Common issues:
 - **"create_app() takes from 0 to 1 positional arguments but 2 were given"** - Either stale bytecode OR `flask-cli` package is installed. First check `uv pip show flask-cli`. If installed, remove it from `btcopilot/pyproject.toml` dependencies and run `uv sync`. Then use the one-line fix above to clear bytecode. This error occurs when the obsolete `flask-cli` package overrides Flask 3's native CLI, which doesn't support application factory functions with `**kwargs`.
-- **Port already in use** - Another Flask instance is running. Use `bash btcopilot/bin/flask_stop.sh` to kill it.
+- **Port already in use** - Another Flask instance is running. Use `bash bin/flask_stop.sh` to kill it.
 - **Import errors** - Check that you're in the project root directory.
 - **Server starts but immediately fails on first request** - Bytecode cache issue. The Flask dev server caches imported modules and __pycache__ directories must be removed, not just individual .pyc files.
+- **Torch dependency errors on macOS x86_64** - The project pins torch to 2.0.x because newer versions don't have wheels for Intel Macs. If you see "can't be installed because it doesn't have a source distribution or wheel", remove `uv.lock` and run `uv sync --extra app --extra test` to re-resolve dependencies.
 
 ## Testing Flask Changes with chrome-devtools-mcp
 
 When making changes to the training app (btcopilot/training), **always test using chrome-devtools-mcp**:
 
-1. Start Flask server: `bash btcopilot/bin/flask_start.sh` (use `run_in_background: true`)
+1. Start Flask server: `bash bin/flask_start.sh` (use `run_in_background: true`)
 2. Navigate to relevant page using `mcp__chrome-devtools-mcp__navigate_page` or `new_page`
 3. Take snapshot with `mcp__chrome-devtools-mcp__take_snapshot` to verify UI state
 4. Test interactions using `click`, `fill`, `fill_form`, etc.
 5. Verify functionality before declaring completion
-6. Stop server when done: `bash btcopilot/bin/flask_stop.sh`
+6. Stop server when done: `bash bin/flask_stop.sh`
 
 **This is mandatory for all HTML, CSS, JavaScript, and Flask route changes.**
 
@@ -195,7 +203,7 @@ The interactive, re-usable component for reviewing and editing extracted clinica
   not capitalize all letters.
 - Create a re-usable component or template whenever markup or logic is
   duplicated.
-- Always use `black` to format all python source files after changes.
+- Always use `black` to format Python source files (`.py` files only) after changes. Never run black on HTML, JavaScript, CSS, shell scripts, or other non-Python files.
 
 
 ## Code architecture and rules

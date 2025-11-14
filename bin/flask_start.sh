@@ -4,9 +4,23 @@
 rm -rf btcopilot/btcopilot/__pycache__
 find btcopilot .venv -name "*.pyc" -delete 2>/dev/null
 
+# Find an available port starting from 5555
+PORT=5555
+while lsof -ti:$PORT >/dev/null 2>&1; do
+    echo "Port $PORT is already in use, trying next port..."
+    PORT=$((PORT + 1))
+    if [ $PORT -gt 5565 ]; then
+        echo "Error: No available ports found between 5555-5565"
+        exit 1
+    fi
+done
+
+echo "Starting Flask server on port $PORT with auto-auth enabled..."
+echo $PORT > /tmp/flask_port_$$.txt
+
 PYTHONDONTWRITEBYTECODE=1 \
 FLASK_APP=btcopilot.app:create_app \
 FLASK_CONFIG=development \
 FLASK_DEBUG=1 \
-FLASK_AUTO_AUTH_USER=patrickkiod+unittest@gmail.com \
-uv run python -m flask run -p 5555 --no-reload
+FLASK_AUTO_AUTH_USER=patrick@alaskafamilysystems.com \
+uv run python -m flask run -p $PORT --no-reload
