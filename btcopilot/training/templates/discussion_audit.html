@@ -781,17 +781,19 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         savePersonName(personIndex, newValue) {
             if (!this.extractedData.people[personIndex]) return;
             this.extractedData.people[personIndex].name = newValue;
+            this.extractedData.people[personIndex].confidence = 1.0;
             this.cancelEdit();
-            
+
             // Increment version to force reactivity updates for all person name references
             this.personDataVersion++;
-            
+
             this.autoSave();
         },
         
         saveEventDescription(eventIndex, newValue) {
             if (!this.extractedData.events[eventIndex]) return;
             this.extractedData.events[eventIndex].description = newValue;
+            this.extractedData.events[eventIndex].confidence = 1.0;
             this.cancelEdit();
             this.autoSave();
         },
@@ -799,6 +801,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         saveEventDateTime(eventIndex, newValue) {
             if (!this.extractedData.events[eventIndex]) return;
             this.extractedData.events[eventIndex].dateTime = newValue;
+            this.extractedData.events[eventIndex].confidence = 1.0;
             this.cancelEdit();
             this.autoSave();
         },
@@ -806,6 +809,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         saveEventKind(eventIndex, newValue) {
             if (!this.extractedData.events[eventIndex]) return;
             this.extractedData.events[eventIndex].kind = newValue;
+            this.extractedData.events[eventIndex].confidence = 1.0;
             this.cancelEdit();
             this.autoSave();
         },
@@ -822,6 +826,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             } else {
                 this.extractedData.events[eventIndex][varType] = newValue;
             }
+            this.extractedData.events[eventIndex].confidence = 1.0;
             this.autoSave();
         },
         
@@ -837,6 +842,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 event.relationshipTriangles = [];
             }
 
+            event.confidence = 1.0;
             this.autoSave();
         },
         
@@ -875,7 +881,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 spouses: [],
                 parent_a: null,
                 parent_b: null,
-                confidence: 0.5
+                confidence: 1.0
             });
             this.personDataVersion++;
             this.autoSave();
@@ -898,7 +904,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 relationshipTargets: [],
                 relationshipTriangles: [],
                 functioning: null,
-                confidence: 0.5
+                confidence: 1.0
             });
             this.autoSave();
         },
@@ -910,6 +916,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             } else if (varType === 'relationship') {
                 event.relationship = 'distance';
             }
+            event.confidence = 1.0;
             this.autoSave();
         },
         
@@ -2690,10 +2697,11 @@ function renderEventsEditor() {
                         </div>
                         
                         <div class="field">
-                            <label class="label is-small">Confidence</label>
+                            <label class="label is-small">Confidence ${event.confidence >= 0.999 ? '<span class="tag is-success is-light is-small ml-1"><i class="fas fa-lock"></i> Locked</span>' : ''}</label>
                             <div class="control">
-                                <input class="input is-small" type="number" min="0" max="1" step="0.01" 
-                                       value="${event.confidence || ''}" 
+                                <input class="input is-small" type="number" min="0" max="1" step="0.01"
+                                       value="${event.confidence || ''}"
+                                       ${event.confidence >= 0.999 ? 'readonly' : ''}
                                        onchange="updateEventField(${index}, 'confidence', parseFloat(this.value) || null)">
                             </div>
                         </div>

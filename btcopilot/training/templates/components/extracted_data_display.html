@@ -315,32 +315,9 @@ Parameters:
                                     
                                     <!-- Confidence Row -->
                                     <div class="mb-2">
-                                        {% if editable_mode %}
-                                        <small class="is-size-7">
-                                            Confidence: 
-                                            <span class="editable-field"
-                                                  @mouseenter="hoveredField = 'person-' + index + '-confidence'"
-                                                  @mouseleave="hoveredField = null"
-                                                  @click.stop="startEdit('person-' + index + '-confidence', person.confidence || 0.5)">
-                                                <span x-show="!isEditing('person-' + index + '-confidence')" x-text="((person.confidence || 0.5) * 100).toFixed(0) + '%'"></span>
-                                                <input x-show="isEditing('person-' + index + '-confidence')" 
-                                                       :value="editingValue"
-                                                       @input="editingValue = $event.target.value"
-                                                       @blur="savePersonConfidence(index, parseFloat($event.target.value) / 100)"
-                                                       @keydown.enter="savePersonConfidence(index, parseFloat($event.target.value) / 100); $event.target.blur()"
-                                                       @keydown.escape="cancelEdit(); $event.target.blur()"
-                                                       class="inline-edit-input"
-                                                       type="number"
-                                                       min="0"
-                                                       max="100"
-                                                       step="5">
-                                            </span>
-                                        </small>
-                                        {% else %}
-                                        <small class="is-size-7" x-show="person.confidence">
+                                        <small class="is-size-7" x-show="person.confidence && person.confidence < 0.999">
                                             Confidence: <span x-text="(person.confidence * 100).toFixed(0) + '%'"></span>
                                         </small>
-                                        {% endif %}
                                     </div>
                                     
                                     <!-- Person List Fields -->
@@ -486,7 +463,7 @@ Parameters:
                                     <span class="event-id-debug" x-show="event.id" x-text="event.id"></span>
                                     <div class="event-header">
                                         <div class="event-metadata is-size-7 has-text-grey mt-1 mb-1">
-                                            <span x-show="event.confidence">
+                                            <span x-show="event.confidence && event.confidence < 0.999">
                                                 Confidence: <span x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
                                             </span>
                                         </div>
@@ -1275,32 +1252,9 @@ Parameters:
                                     
                                     <!-- Confidence Row -->
                                     <div class="mb-2">
-                                        {% if editable_mode %}
-                                        <small class="is-size-7">
-                                            Confidence: 
-                                            <span class="editable-field"
-                                                  @mouseenter="hoveredField = 'person-' + index + '-confidence'"
-                                                  @mouseleave="hoveredField = null"
-                                                  @click.stop="startEdit('person-' + index + '-confidence', person.confidence || 0.5)">
-                                                <span x-show="!isEditing('person-' + index + '-confidence')" x-text="((person.confidence || 0.5) * 100).toFixed(0) + '%'"></span>
-                                                <input x-show="isEditing('person-' + index + '-confidence')" 
-                                                       :value="editingValue"
-                                                       @input="editingValue = $event.target.value"
-                                                       @blur="savePersonConfidence(index, parseFloat($event.target.value) / 100)"
-                                                       @keydown.enter="savePersonConfidence(index, parseFloat($event.target.value) / 100); $event.target.blur()"
-                                                       @keydown.escape="cancelEdit(); $event.target.blur()"
-                                                       class="inline-edit-input"
-                                                       type="number"
-                                                       min="0"
-                                                       max="100"
-                                                       step="5">
-                                            </span>
-                                        </small>
-                                        {% else %}
-                                        <small class="is-size-7" x-show="person.confidence">
+                                        <small class="is-size-7" x-show="person.confidence && person.confidence < 0.999">
                                             Confidence: <span x-text="(person.confidence * 100).toFixed(0) + '%'"></span>
                                         </small>
-                                        {% endif %}
                                     </div>
                                     
                                     <!-- Person relationships would continue here... -->
@@ -1340,7 +1294,7 @@ Parameters:
                                     <span class="event-id-debug" x-show="event.id" x-text="event.id"></span>
                                     <div class="event-header">
                                         <div class="event-metadata is-size-7 has-text-grey mt-1 mb-1">
-                                            <span x-show="event.confidence">
+                                            <span x-show="event.confidence && event.confidence < 0.999">
                                                 Confidence: <span x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
                                             </span>
                                         </div>

@@ -6,6 +6,7 @@ btcopilot-sources/
 ai_log.txt
 debug_log.txt
 node_modules
+uv.lock
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
