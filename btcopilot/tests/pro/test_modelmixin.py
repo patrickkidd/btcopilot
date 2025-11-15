@@ -15,7 +15,7 @@ FIXED_TIME = datetime.datetime.fromisoformat("2025-01-15T12:00:00")
 
 @pytest.fixture
 def user(flask_app):
-    with freeze_time(FIXED_TIME):
+    with freeze_time(FIXED_TIME, ignore=["transformers"]):
         user = User(
             username="something",
             secret="some_secret",

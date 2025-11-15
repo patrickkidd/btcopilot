@@ -495,6 +495,7 @@ def sessions_session(token):
     g.user = session.user
     if request.method == "GET":
         session.updated_at = datetime.datetime.utcnow()  # set when accessing
+        db.session.commit()
         bdata = pickle.dumps(session.account_editor_dict())
         _log.info("Re-logged in user: %s" % session.user)
         return bdata

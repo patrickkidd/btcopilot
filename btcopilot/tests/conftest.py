@@ -327,14 +327,6 @@ def test_client_activation(test_client_license, test_machine):
 
 
 @pytest.fixture
-def test_session(test_user):
-    session = Session(user=test_user)
-    db.session.add(session)
-    db.session.commit()
-    return session
-
-
-@pytest.fixture
 def mock_celery():
     from btcopilot import extensions
     from unittest.mock import Mock
