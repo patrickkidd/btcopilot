@@ -2,6 +2,120 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+
+
+## Architecture Overview
+
+btcopilot has these primary functions:
+- Backend for person/pro apps.
+- AI machine learning system interface for SARF research design
+- AI model that outputs a "Pending Data Pool" of deltas for a given diagram file
+  (i.e. single family case), to be accepted/committed later by the pro/personal
+  apps.
+
+### Core Application Structure
+- **Flask Application Factory**: `btcopilot/app.py:create_app()` - main app initialization with extensions, error handlers, and module registration
+- **Main Package**: `btcopilot/__init__.py` - imports and exposes core components
+  - `btcopilot/pro` - Pro / desktop app backend server functionality
+  - `btcopilot/personal` - Personal / mobile app backend server functionality
+  - `btcopilot/training` - AI Training app backend server functionality
+- **API Endpoints**:
+  - `btcopilot/pro/routes.py` - REST API using pickle protocol over HTTPS
+  - `btcopilot/personal/routes.py` - REST API for personal mobile app using JSON
+- **Management CLI**:
+  `manage.py` - Flask CLI commands and utilities
+  `btcopilot/commands.py` - click commands management interface.
+
+### Key Modules
+- **Schema** (`btcopilot/pro/schema.py`): Core data model, shared with Pro / Personal app repos
+- **Pro** (`btcopilot/pro/models/`): Pro desktop app, including SQLAlchemy models User, Diagram, License, Session, Statement/Discussion
+- **Personal** (`btcopilot/personal/`): Personal mobile app API with AI-powered data extraction from discussions for four variables; symptom, anxiety, relationship, functioning.
+  - *JSON-BASED data schema*: `btcopilot/personal/database.py`
+- **Training** (`btcopilot/training`): Domain-expert human feedback system for fine-tuning AI model for the personal app.
+- **Extensions** (`btcopilot/extensions/`): Flask extensions setup (database, LLM, chroma vector store)
+- **Authentication**: `btcopilot/auth.py` - user authentication with current_user
+
+### External Services Integration
+- **AI/ML Stack**: OpenAI API (GPT-4o-mini), Hugging Face embeddings, ChromaDB vector store, LangChain
+- **Payment Processing**: Stripe integration for licensing
+- **Database**: PostgreSQL with SQLAlchemy ORM
+
+### Data Architecture
+- **Vector Database**: ChromaDB for embeddings stored in instance/vector_db/
+- **Session Management**: Custom session handling via models/session.py
+- **Licensing System**: Professional/annual licenses via Stripe integration
+- **Chat System**: Message threading with Statement/Discussion models
+
+### Development Notes
+- **Configuration**: Environment-based config (FLASK_CONFIG=development/production)
+- **Instance Directory**: App data stored in instance/ (logs, vector DB, etc.)
+- **Docker Setup**: Multi-service with Flask app + PostgreSQL
+- **Error Handling**: Centralized exception handling with logging
+- **Testing Framework**: pytest with snapshot testing and async support
+
+## Terminology & Component Reference
+
+### SARF Editor
+The interactive, re-usable component for reviewing and editing extracted clinical data (SARF = Symptom, Anxiety, Relationship, Functioning variables). Located in:
+- **File**: `btcopilot/training/templates/components/extracted_data_display.html`
+- **Purpose**: Displays and allows editing of extracted people, events, and clinical variable coding
+- **Features**: Collapsed/expanded views, in-place editing, feedback controls, cumulative data display
+- **Used in**: Training module for domain-expert review and fine-tuning of AI extraction model
+
+## Development rules
+
+- At this stage we are not concerned with legacy data, we woudl rather delete
+  and re-create broken data than add complicated code for backward compatiblity.  
+
+## Code Style & Conventions
+
+- Keep all names, e.g. variables, functions, classes, methods, modules, etc, as
+  short, accurate, and precise as possible.
+- Use consistent naming and code organization conventions.
+- Use the minimum amount of code as possible.
+- Never use "process" in a callable name.
+- Keep code self-documenting.
+- Strictly adhere to D.R.Y.
+- Don't put code in inline strings, especially in HTML. Put them in their native
+  language in an appropriate place like a javascript file or a python file.
+- Never simply catch `Exception` unless explicitly adding an exception router or filter.
+- Don't return errors back to the frontend via jsonify() unless there is a
+  specific place that the frontend reads and displays the error in a usable
+  manner. Otherwise just let the backend blow up with an exception so that it is
+  obvious during testing.- Assume that exceptions are already handled in the blueprint and jsonfiy() is
+  called with an error string and 5xx code.
+- Only add comments for complex business logic, non-obvious algorithms, or when
+  explaining WHY something is done (not WHAT is being done)
+- Never add docstrings for simple functions where the name and parameters make
+  the purpose clear
+- Avoid comments that simply restate what the code obviously does
+- Don't use the class-based pytest pattern and instead use only module-level functions.
+- Keep flask endpoints oriented around updating entries in database tables, not
+  just adding a new endpoint for every application verb.
+- For python enum items, keep only the first letter of each word capitalized. Do
+  not capitalize all letters.
+- Create a re-usable component or template whenever markup or logic is
+  duplicated.
+- Always use `black` to format Python source files (`.py` files only) after changes. Never run black on HTML, JavaScript, CSS, shell scripts, or other non-Python files.
+
+
+## Code architecture and rules
+- Use the mcp server `chrome-devtools-mcp` to show me the effects of your
+  frontend changes for btcopilot/training and ask/check with me to make sure I
+  like them before considering the task done.
+- This app is in production, so new db changes ned to go in new db migrations.
+- Always make `.card` markup elements with a `.card-header` containing a dynamic
+  list always collapsable by clicking its `.card-header`.
+- Never pop a confirm message or dialog just to show something that will be
+  reflected in the UI very soon
+- Never use exclamation points, users are not as excited as the developers are
+  about mundane application events.
+- Prefer importing packages at the module level instead of inside functions
+  unless required for the feature. This does not apply to tests.
+- For DOM/css changes always validate the changes worked against the validated
+  html and css, pulling down the page URL if necessary
+
+
 ## Development Commands
 
 ### Environment Setup
@@ -111,116 +225,6 @@ When making changes to the training app (btcopilot/training), **always test usin
 - **Migrations**: Uses Alembic (configured in alembic.ini, migrations in alembic/versions/)
 - **Database URI**: `postgresql://familydiagram:pks@localhost:5432/familydiagram` (development)
 
-## Architecture Overview
-
-btcopilot has these primary functions:
-- Backend for person/pro apps.
-- AI machine learning system interface for SARF research design
-- AI model that outputs a "Pending Data Pool" of deltas for a given diagram file
-  (i.e. single family case), to be accepted/committed later by the pro/personal
-  apps.
-
-### Core Application Structure
-- **Flask Application Factory**: `btcopilot/app.py:create_app()` - main app initialization with extensions, error handlers, and module registration
-- **Main Package**: `btcopilot/__init__.py` - imports and exposes core components
-  - `btcopilot/pro` - Pro / desktop app backend server functionality
-  - `btcopilot/personal` - Personal / mobile app backend server functionality
-  - `btcopilot/training` - AI Training app backend server functionality
-- **API Endpoints**:
-  - `btcopilot/pro/routes.py` - REST API using pickle protocol over HTTPS
-  - `btcopilot/personal/routes.py` - REST API for personal mobile app using JSON
-- **Management CLI**:
-  `manage.py` - Flask CLI commands and utilities
-  `btcopilot/commands.py` - click commands management interface.
-
-### Key Modules
-- **Pro** (`btcopilot/pro/schema.py`): Core data model, shared with Pro / Personal app repos
-- **Pro** (`btcopilot/pro/models/`): Pro desktop app, including SQLAlchemy models User, Diagram, License, Session, Statement/Discussion
-- **Personal** (`btcopilot/personal/`): Personal mobile app API with AI-powered data extraction from discussions for four variables; symptom, anxiety, relationship, functioning.
-  - *JSON-BASED data schema*: `btcopilot/personal/database.py`
-- **Training** (`btcopilot/training`): Domain-expert human feedback system for fine-tuning AI model for the personal app.
-- **Extensions** (`btcopilot/extensions/`): Flask extensions setup (database, LLM, chroma vector store)
-- **Authentication**: `btcopilot/auth.py` - user authentication with current_user
-
-### External Services Integration
-- **AI/ML Stack**: OpenAI API (GPT-4o-mini), Hugging Face embeddings, ChromaDB vector store, LangChain
-- **Payment Processing**: Stripe integration for licensing
-- **Database**: PostgreSQL with SQLAlchemy ORM
-
-### Data Architecture
-- **Vector Database**: ChromaDB for embeddings stored in instance/vector_db/
-- **Session Management**: Custom session handling via models/session.py
-- **Licensing System**: Professional/annual licenses via Stripe integration
-- **Chat System**: Message threading with Statement/Discussion models
-
-### Development Notes
-- **Configuration**: Environment-based config (FLASK_CONFIG=development/production)
-- **Instance Directory**: App data stored in instance/ (logs, vector DB, etc.)
-- **Docker Setup**: Multi-service with Flask app + PostgreSQL
-- **Error Handling**: Centralized exception handling with logging
-- **Testing Framework**: pytest with snapshot testing and async support
-
-## Terminology & Component Reference
-
-### SARF Editor
-The interactive, re-usable component for reviewing and editing extracted clinical data (SARF = Symptom, Anxiety, Relationship, Functioning variables). Located in:
-- **File**: `btcopilot/training/templates/components/extracted_data_display.html`
-- **Purpose**: Displays and allows editing of extracted people, events, and clinical variable coding
-- **Features**: Collapsed/expanded views, in-place editing, feedback controls, cumulative data display
-- **Used in**: Training module for domain-expert review and fine-tuning of AI extraction model
-
-## Development rules
-
-- At this stage we are not concerned with legacy data, we woudl rather delete
-  and re-create broken data than add complicated code for backward compatiblity.  
-
-## Code Style & Conventions
-
-- Keep all names, e.g. variables, functions, classes, methods, modules, etc, as
-  short, accurate, and precise as possible.
-- Use consistent naming and code organization conventions.
-- Use the minimum amount of code as possible.
-- Never use "process" in a callable name.
-- Keep code self-documenting.
-- Strictly adhere to D.R.Y.
-- Don't put code in inline strings, especially in HTML. Put them in their native
-  language in an appropriate place like a javascript file or a python file.
-- Never simply catch `Exception` unless explicitly adding an exception router or filter.
-- Don't return errors back to the frontend via jsonify() unless there is a
-  specific place that the frontend reads and displays the error in a usable
-  manner. Otherwise just let the backend blow up with an exception so that it is
-  obvious during testing.- Assume that exceptions are already handled in the blueprint and jsonfiy() is
-  called with an error string and 5xx code.
-- Only add comments for complex business logic, non-obvious algorithms, or when
-  explaining WHY something is done (not WHAT is being done)
-- Never add docstrings for simple functions where the name and parameters make
-  the purpose clear
-- Avoid comments that simply restate what the code obviously does
-- Don't use the class-based pytest pattern and instead use only module-level functions.
-- Keep flask endpoints oriented around updating entries in database tables, not
-  just adding a new endpoint for every application verb.
-- For python enum items, keep only the first letter of each word capitalized. Do
-  not capitalize all letters.
-- Create a re-usable component or template whenever markup or logic is
-  duplicated.
-- Always use `black` to format Python source files (`.py` files only) after changes. Never run black on HTML, JavaScript, CSS, shell scripts, or other non-Python files.
-
-
-## Code architecture and rules
-- Use the mcp server `chrome-devtools-mcp` to show me the effects of your
-  frontend changes for btcopilot/training and ask/check with me to make sure I
-  like them before considering the task done.
-- This app is in production, so new db changes ned to go in new db migrations.
-- Always make `.card` markup elements with a `.card-header` containing a dynamic
-  list always collapsable by clicking its `.card-header`.
-- Never pop a confirm message or dialog just to show something that will be
-  reflected in the UI very soon
-- Never use exclamation points, users are not as excited as the developers are
-  about mundane application events.
-- Prefer importing packages at the module level instead of inside functions
-  unless required for the feature. This does not apply to tests.
-- For DOM/css changes always validate the changes worked against the validated
-  html and css, pulling down the page URL if necessary
 
 ## Documentation Maintenance
 

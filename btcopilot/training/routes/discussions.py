@@ -32,9 +32,6 @@ from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_breadcrumbs, get_auditor_id
 
 
-# from btcopilot.training.sse import sse_manager
-import btcopilot
-
 _log = logging.getLogger(__name__)
 
 
@@ -77,7 +74,7 @@ def extract_next_statement(*args, **kwargs):
 
         try:
             db.session.get_bind()
-        except:
+        except Exception:
             engine = create_engine(current_app.config["SQLALCHEMY_DATABASE_URI"])
             db.session.bind = engine
 
@@ -215,8 +212,31 @@ bp = Blueprint(
 bp = minimum_role(btcopilot.ROLE_SUBSCRIBER)(bp)
 
 
+def _get_or_create_diagram(diagram_id, current_user):
+    """Get diagram by ID or create/use current user's free diagram"""
+    if diagram_id:
+        diagram = Diagram.query.filter_by(id=diagram_id).first()
+        if not diagram:
+            return None, None, None
+        return diagram.user, diagram_id, diagram.user_id
+
+    # Use current user's free diagram
+    target_user = current_user
+    if not target_user.free_diagram:
+        initial_database = _create_initial_database()
+        diagram = Diagram(
+            user_id=target_user.id,
+            name=f"{target_user.username} Personal Case File",
+        )
+        diagram.set_diagram_data(initial_database)
+        db.session.add(diagram)
+        db.session.flush()
+        target_user.free_diagram_id = diagram.id
+
+    return target_user, target_user.free_diagram_id, target_user.id
+
+
 def _create_assembly_ai_transcript(data: dict):
-    # Require auditor role for transcript creation
     current_user = auth.current_user()
     if not current_user.has_role(btcopilot.ROLE_AUDITOR):
         return jsonify({"error": "Unauthorized"}), 403
@@ -235,35 +255,11 @@ def _create_assembly_ai_transcript(data: dict):
         f"transcript_length: {transcript_length}"
     )
 
-    if diagram_id:
-        # Create in specific diagram
-        diagram = Diagram.query.filter_by(id=diagram_id).first()
-        if not diagram:
-            return jsonify({"error": "Diagram not found"}), 404
-
-        target_user = diagram.user
-        target_diagram_id = diagram_id
-        target_user_id = diagram.user_id
-
-    else:
-        # Create in current user's free diagram
-        target_user = current_user
-
-        # Ensure user has a free_diagram
-        if not target_user.free_diagram:
-            # Create initial database with User and Assistant people
-            initial_database = _create_initial_database()
-
-            diagram = Diagram(
-                user_id=target_user.id,
-                name=f"{target_user.username} Personal Case File",
-            )
-            diagram.set_diagram_data(initial_database)
-            db.session.add(diagram)
-            db.session.flush()
-            target_user.free_diagram_id = diagram.id
-        target_diagram_id = target_user.free_diagram_id
-        target_user_id = target_user.id
+    target_user, target_diagram_id, target_user_id = _get_or_create_diagram(
+        diagram_id, current_user
+    )
+    if target_user is None:
+        return jsonify({"error": "Diagram not found"}), 404
 
     discussion = Discussion(
         user_id=target_user_id,
@@ -348,47 +344,18 @@ def _create_assembly_ai_transcript(data: dict):
 
 
 def _create_import(data: dict):
-    user = auth.current_user()
-
-    # Require auditor role for JSON import
-    if not user.has_role(btcopilot.ROLE_AUDITOR):
+    current_user = auth.current_user()
+    if not current_user.has_role(btcopilot.ROLE_AUDITOR):
         return jsonify({"error": "Unauthorized"}), 403
 
     json_data = data["json_data"]
-
-    # Get current user (auditor)
-    current_user = auth.current_user()
     diagram_id = data.get("diagram_id")
 
-    if diagram_id:
-        # Import to specific diagram
-        diagram = Diagram.query.filter_by(id=diagram_id).first()
-        if not diagram:
-            return jsonify({"error": "Diagram not found"}), 404
-
-        target_user = diagram.user
-        target_diagram_id = diagram_id
-        target_user_id = diagram.user_id
-
-    else:
-        # Import to current user's free diagram
-        target_user = current_user
-
-        # Ensure user has a free_diagram
-        if not target_user.free_diagram:
-            # Create initial database with User and Assistant people
-            initial_database = _create_initial_database()
-
-            diagram = Diagram(
-                user_id=target_user.id,
-                name=f"{target_user.username} Personal Case File",
-            )
-            diagram.set_diagram_data(initial_database)
-            db.session.add(diagram)
-            db.session.flush()
-            target_user.free_diagram_id = diagram.id
-        target_diagram_id = target_user.free_diagram_id
-        target_user_id = target_user.id
+    target_user, target_diagram_id, target_user_id = _get_or_create_diagram(
+        diagram_id, current_user
+    )
+    if target_user is None:
+        return jsonify({"error": "Diagram not found"}), 404
 
     # Create new discussion from imported data
     discussion = Discussion(
@@ -662,13 +629,24 @@ def upload_token():
 @minimum_role(btcopilot.ROLE_AUDITOR)
 def audit(discussion_id):
     """View a specific discussion for audit (from audit system)"""
-    from sqlalchemy.orm import joinedload, subqueryload
+    from sqlalchemy.orm import joinedload, subqueryload, selectinload
 
     current_user = auth.current_user()
 
     discussion = Discussion.query.options(
-        subqueryload(Discussion.statements).joinedload(Statement.speaker)
+        subqueryload(Discussion.statements).joinedload(Statement.speaker),
+        selectinload(Discussion.diagram).selectinload(Diagram.access_rights),
     ).get_or_404(discussion_id)
+
+    # Check access rights - admins bypass, others need diagram access
+    if not current_user.has_role(btcopilot.ROLE_ADMIN):
+        if discussion.diagram:
+            if not discussion.diagram.check_read_access(current_user):
+                return abort(403)
+        elif discussion.user_id != current_user.id:
+            # No diagram means personal discussion - only owner or admin can access
+            return abort(403)
+
     auditor_id = get_auditor_id(request, session)
 
     selected_auditor = request.args.get("selected_auditor")
@@ -859,16 +837,6 @@ def audit(discussion_id):
             if cumulative_people_by_id or cumulative_events_by_id
             else None
         )
-
-        if 633 <= stmt.id <= 637:
-            _log.debug(
-                f"Stmt {stmt.id}: speaker_type={stmt.speaker.type if stmt.speaker else None}, "
-                f"has_pdp_deltas_model={pdp_deltas_model is not None}, "
-                f"deltas={pdp_deltas if pdp_deltas_model else None}, "
-                f"cumulative_people={len(cumulative_people_by_id)}, "
-                f"cumulative_events={len(cumulative_events_by_id)}, "
-                f"cumulative_pdp={'set' if cumulative_pdp else 'None'}"
-            )
 
         # Handle different feedback data structures for admin vs auditor
         if current_user.has_role(btcopilot.ROLE_ADMIN):
@@ -1080,11 +1048,14 @@ def progress(discussion_id: int):
     if not discussion:
         return abort(404)
 
-    # Check permissions - user can only see their own discussions or auditors can see any
-    if discussion.user_id != current_user.id and not current_user.has_role(
-        btcopilot.ROLE_AUDITOR
-    ):
-        return abort(403)
+    # Check access rights - admins bypass, others need diagram access
+    if not current_user.has_role(btcopilot.ROLE_ADMIN):
+        if discussion.diagram:
+            if not discussion.diagram.check_read_access(current_user):
+                return abort(403)
+        elif discussion.user_id != current_user.id:
+            # No diagram means personal discussion - only owner or admin can access
+            return abort(403)
 
     # Count Subject statements that need processing
     total_subject_statements = (
@@ -1161,11 +1132,16 @@ def export(discussion_id: int):
     if not discussion:
         return abort(404)
 
-    # Check permissions - user can only export their own discussions or auditors can export any
-    if discussion.user_id != current_user.id and not current_user.has_role(
-        btcopilot.ROLE_AUDITOR
-    ):
-        return abort(403)
+    assert discussion is not None  # Type narrowing for static analysis
+
+    # Check access rights - admins bypass, others need diagram access
+    if not current_user.has_role(btcopilot.ROLE_ADMIN):
+        if discussion.diagram:
+            if not discussion.diagram.check_read_access(current_user):
+                return abort(403)
+        elif discussion.user_id != current_user.id:
+            # No diagram means personal discussion - only owner or admin can access
+            return abort(403)
 
     # Get discussion data with statements, speakers, and feedbacks
     discussion_data = discussion.as_dict(include=["statements", "speakers"])
@@ -1178,9 +1154,19 @@ def export(discussion_id: int):
                 if statement_id:
                     statement_obj = Statement.query.get(statement_id)
                     if statement_obj and statement_obj.feedbacks:
-                        statement_dict["feedbacks"] = [
-                            fb.as_dict() for fb in statement_obj.feedbacks
-                        ]
+                        # Only admins see all feedback (enforces blind reviews for auditors)
+                        # Auditors only see their own feedback, even on discussions they created
+                        if current_user.has_role(btcopilot.ROLE_ADMIN):
+                            statement_dict["feedbacks"] = [
+                                fb.as_dict() for fb in statement_obj.feedbacks
+                            ]
+                        else:
+                            auditor_id = str(current_user.id)
+                            statement_dict["feedbacks"] = [
+                                fb.as_dict()
+                                for fb in statement_obj.feedbacks
+                                if fb.auditor_id == auditor_id
+                            ]
     elif mode == "statements":
         # Remove pdp_deltas and other extracted data from all statements
         if "statements" in discussion_data:
