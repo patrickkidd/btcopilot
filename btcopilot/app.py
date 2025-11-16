@@ -74,6 +74,14 @@ def create_app(config: dict = None, **kwargs):
 
     ## Exception Notifs
 
+    @app.errorhandler(405)
+    def _(e):
+        """
+        Added to prevent 405's from attacks being reported as 500's. Specific
+        handlers override the generic one below.
+        """
+        return e
+
     @app.errorhandler(Exception)
     def _(e):
         if isinstance(e, HTTPException):
