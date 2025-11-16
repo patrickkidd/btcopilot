@@ -77,7 +77,8 @@ def create_app(config: dict = None, **kwargs):
     @app.errorhandler(Exception)
     def _(e):
         if isinstance(e, HTTPException):
-            raise e
+            return e
+
         app.logger.exception(f"Unhandled exception: {type(e).__name__}")
         return "Internal Server Error", 500
 
