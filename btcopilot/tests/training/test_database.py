@@ -22,8 +22,7 @@ def test_PDPerson_as_dict():
         "name": "Alice",
         "last_name": None,
         "spouses": [],
-        "parent_a": None,
-        "parent_b": None,
+        "parents": None,
         "confidence": 0.9,
     }
 
@@ -106,8 +105,7 @@ def as_dict():
                 "name": "Alice",
                 "last_name": None,
                 "spouses": [],
-                "parent_a": None,
-                "parent_b": None,
+                "parents": None,
                 "confidence": None,
             },
             {
@@ -115,12 +113,12 @@ def as_dict():
                 "name": "Bob",
                 "last_name": None,
                 "spouses": [],
-                "parent_a": None,
-                "parent_b": None,
+                "parents": None,
                 "confidence": None,
             },
         ],
         "last_id": 0,
+        "pair_bonds": [],
         "events": [
             {
                 "id": 3,
@@ -147,11 +145,11 @@ def as_dict():
                     "name": "Alice",
                     "last_name": None,
                     "spouses": [],
-                    "parent_a": None,
-                    "parent_b": None,
+                    "parents": None,
                     "confidence": None,
                 }
             ],
+            "pair_bonds": [],
             "events": [
                 {
                     "id": -2,

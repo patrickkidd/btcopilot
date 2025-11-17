@@ -113,6 +113,9 @@ window.diagramPeople = [
     font-size: 0.85rem !important;
     white-space: nowrap !important;
     margin: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
 .person-tag.editable {
@@ -448,6 +451,61 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
         <footer class="modal-card-foot">
             <button class="button is-success" onclick="confirmRelationshipPersonSelection()">Select</button>
             <button class="button" onclick="closeRelationshipPersonModal()">Cancel</button>
+        </footer>
+    </div>
+</div>
+
+<!-- Pair Bond Selector Modal -->
+<div class="modal" id="pair-bond-modal">
+    <div class="modal-background" onclick="closePairBondModal()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Select Parents (Pair Bond)</p>
+            <button class="delete" onclick="closePairBondModal()"></button>
+        </header>
+        <section class="modal-card-body">
+            <div class="field">
+                <label class="label">Existing Pair Bond</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select id="pair-bond-select" onchange="togglePairBondMode()">
+                            <option value="">-- Select existing pair bond --</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="or-divider" style="text-align: center; margin: 1rem 0; color: #999;">
+                OR
+            </div>
+            <div id="new-pair-bond-fields">
+                <div class="field">
+                    <label class="label">Create New Pair Bond</label>
+                </div>
+                <div class="field">
+                    <label class="label">Parent A</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select id="pair-bond-person-a-select">
+                                <option value="">-- Select person --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Parent B</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select id="pair-bond-person-b-select">
+                                <option value="">-- Select person --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-success" onclick="confirmPairBondSelection()">Select</button>
+            <button class="button" onclick="closePairBondModal()">Cancel</button>
         </footer>
     </div>
 </div>
@@ -1416,6 +1474,84 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             // Generic fallback for extracted people (negative IDs)
             if (numericId < 0) return `Person ${Math.abs(numericId)}`;
             return `Person ${numericId}`;
+        },
+
+        getPairBondName(pairBondId, version = null) {
+            const numericId = typeof pairBondId === 'string' ? parseInt(pairBondId) : pairBondId;
+
+            const allPairBonds = [];
+            const dataToCheck = this.extractedData || this.cumulativePdp;
+            if (dataToCheck && dataToCheck.pair_bonds) {
+                allPairBonds.push(...dataToCheck.pair_bonds);
+            }
+            if (this.cumulativePdp && this.cumulativePdp !== dataToCheck && this.cumulativePdp.pair_bonds) {
+                allPairBonds.push(...this.cumulativePdp.pair_bonds);
+            }
+
+            const pairBond = allPairBonds.find(pb => pb.id === numericId);
+            if (pairBond) {
+                const personAName = this.getPersonName(pairBond.person_a, version);
+                const personBName = this.getPersonName(pairBond.person_b, version);
+                if (personAName && personBName) {
+                    return `${personAName} & ${personBName}`;
+                }
+            }
+
+            return `Pair Bond ${Math.abs(numericId)}`;
+        },
+
+        getPersonSpouses(personId, version = null) {
+            const numericId = typeof personId === 'string' ? parseInt(personId) : personId;
+            const spouses = new Set();
+
+            const pairBondEventKinds = ['bonded', 'married', 'birth', 'adopted', 'moved', 'separated', 'divorced'];
+
+            const dataToCheck = this.extractedData || this.cumulativePdp;
+            const allEvents = [];
+            if (dataToCheck && dataToCheck.events) {
+                allEvents.push(...dataToCheck.events);
+            }
+            if (this.cumulativePdp && this.cumulativePdp !== dataToCheck && this.cumulativePdp.events) {
+                allEvents.push(...this.cumulativePdp.events);
+            }
+
+            for (const event of allEvents) {
+                if (event.kind && pairBondEventKinds.includes(event.kind)) {
+                    if (event.person === numericId && event.spouse) {
+                        spouses.add(event.spouse);
+                    } else if (event.spouse === numericId && event.person) {
+                        spouses.add(event.person);
+                    }
+                }
+            }
+
+            return Array.from(spouses);
+        },
+
+        selectPairBond(personIndex) {
+            window.pairBondContext = {
+                personIndex,
+                component: this,
+                isEdit: false
+            };
+            showPairBondModal();
+        },
+
+        editPairBond(personIndex) {
+            window.pairBondContext = {
+                personIndex,
+                component: this,
+                isEdit: true,
+                currentPairBondId: this.extractedData.people[personIndex].parents
+            };
+            showPairBondModal();
+        },
+
+        removePairBond(personIndex) {
+            if (confirm('Remove parents?')) {
+                this.extractedData.people[personIndex].parents = null;
+                this.autoSave();
+            }
         },
 
         // Relationship person editing
@@ -2680,26 +2816,10 @@ function renderPeopleEditor() {
                         </div>
 
                         <div class="field">
-                            <label class="label is-small">Spouses (IDs, comma-separated)</label>
+                            <label class="label is-small">Parents (PairBond ID)</label>
                             <div class="control">
-                                <input class="input is-small" type="text" value="${(person.spouses || []).join(',')}"
-                                       onchange="updatePersonField(${index}, 'spouses', this.value.split(',').filter(x => x).map(x => parseInt(x.trim())).filter(x => !isNaN(x)))">
-                            </div>
-                        </div>
-
-                        <div class="field">
-                            <label class="label is-small">Parent A (ID)</label>
-                            <div class="control">
-                                <input class="input is-small" type="number" value="${person.parent_a || ''}"
-                                       onchange="updatePersonField(${index}, 'parent_a', parseInt(this.value) || null)">
-                            </div>
-                        </div>
-
-                        <div class="field">
-                            <label class="label is-small">Parent B (ID)</label>
-                            <div class="control">
-                                <input class="input is-small" type="number" value="${person.parent_b || ''}"
-                                       onchange="updatePersonField(${index}, 'parent_b', parseInt(this.value) || null)">
+                                <input class="input is-small" type="number" value="${person.parents || ''}"
+                                       onchange="updatePersonField(${index}, 'parents', parseInt(this.value) || null)">
                             </div>
                         </div>
                     </div>
@@ -3464,6 +3584,168 @@ function confirmRelationshipPersonSelection() {
     );
     
     closeRelationshipPersonModal();
+}
+
+function showPairBondModal() {
+    document.getElementById('pair-bond-modal').classList.add('is-active');
+
+    const context = window.pairBondContext;
+    if (!context || !context.component) {
+        console.error('No pair bond context found');
+        return;
+    }
+
+    const alpineData = context.component;
+    const pairBondSelect = document.getElementById('pair-bond-select');
+    const personASelect = document.getElementById('pair-bond-person-a-select');
+    const personBSelect = document.getElementById('pair-bond-person-b-select');
+
+    pairBondSelect.innerHTML = '<option value="">-- Select existing pair bond --</option>';
+    const allPairBonds = [];
+    if (alpineData.extractedData && alpineData.extractedData.pair_bonds) {
+        allPairBonds.push(...alpineData.extractedData.pair_bonds);
+    }
+    if (alpineData.cumulativePdp && alpineData.cumulativePdp.pair_bonds) {
+        allPairBonds.push(...alpineData.cumulativePdp.pair_bonds);
+    }
+
+    allPairBonds.forEach(pb => {
+        const option = document.createElement('option');
+        option.value = pb.id;
+        const personAName = alpineData.getPersonName(pb.person_a);
+        const personBName = alpineData.getPersonName(pb.person_b);
+        option.textContent = `${personAName} & ${personBName}`;
+        pairBondSelect.appendChild(option);
+    });
+
+    const allPeople = [];
+    const seenIds = new Set();
+    allPeople.push({id: 1, name: "User"});
+    seenIds.add(1);
+    allPeople.push({id: 2, name: "Assistant"});
+    seenIds.add(2);
+
+    const diagramPeople = window.diagramPeople || [];
+    diagramPeople.forEach(person => {
+        if (person.id && !seenIds.has(person.id)) {
+            allPeople.push({id: person.id, name: person.name || `Person ${person.id}`});
+            seenIds.add(person.id);
+        }
+    });
+
+    if (alpineData.cumulativePdp && alpineData.cumulativePdp.people) {
+        alpineData.cumulativePdp.people.forEach(person => {
+            if (person.id && !seenIds.has(person.id)) {
+                allPeople.push({id: person.id, name: person.name || `Person ${Math.abs(person.id)}`});
+                seenIds.add(person.id);
+            }
+        });
+    }
+
+    if (alpineData.extractedData && alpineData.extractedData.people) {
+        alpineData.extractedData.people.forEach(person => {
+            if (person.id && !seenIds.has(person.id)) {
+                allPeople.push({id: person.id, name: person.name || `Person ${Math.abs(person.id)}`});
+                seenIds.add(person.id);
+            }
+        });
+    }
+
+    personASelect.innerHTML = '<option value="">-- Select person --</option>';
+    personBSelect.innerHTML = '<option value="">-- Select person --</option>';
+
+    allPeople.forEach(person => {
+        const optionA = document.createElement('option');
+        optionA.value = person.id;
+        optionA.textContent = person.name;
+        personASelect.appendChild(optionA);
+
+        const optionB = document.createElement('option');
+        optionB.value = person.id;
+        optionB.textContent = person.name;
+        personBSelect.appendChild(optionB);
+    });
+
+    if (context.isEdit && context.currentPairBondId) {
+        pairBondSelect.value = context.currentPairBondId;
+    }
+}
+
+function closePairBondModal() {
+    document.getElementById('pair-bond-modal').classList.remove('is-active');
+    window.pairBondContext = null;
+}
+
+function togglePairBondMode() {
+    const pairBondSelect = document.getElementById('pair-bond-select');
+    const newFields = document.getElementById('new-pair-bond-fields');
+    if (pairBondSelect.value) {
+        newFields.style.opacity = '0.5';
+        newFields.style.pointerEvents = 'none';
+    } else {
+        newFields.style.opacity = '1';
+        newFields.style.pointerEvents = 'auto';
+    }
+}
+
+function confirmPairBondSelection() {
+    const context = window.pairBondContext;
+    if (!context || !context.component) {
+        console.error('No pair bond context found');
+        return;
+    }
+
+    const pairBondSelect = document.getElementById('pair-bond-select');
+    const personASelect = document.getElementById('pair-bond-person-a-select');
+    const personBSelect = document.getElementById('pair-bond-person-b-select');
+
+    const alpineData = context.component;
+    let pairBondId;
+
+    if (pairBondSelect.value) {
+        pairBondId = parseInt(pairBondSelect.value);
+    } else {
+        const personAId = parseInt(personASelect.value);
+        const personBId = parseInt(personBSelect.value);
+
+        if (!personAId || !personBId) {
+            alert('Please select both parents or choose an existing pair bond');
+            return;
+        }
+
+        if (personAId === personBId) {
+            alert('Parent A and Parent B cannot be the same person');
+            return;
+        }
+
+        if (!alpineData.extractedData.pair_bonds) {
+            alpineData.extractedData.pair_bonds = [];
+        }
+
+        const [sortedA, sortedB] = [personAId, personBId].sort((a, b) => a - b);
+        const existingPairBond = alpineData.extractedData.pair_bonds.find(pb => {
+            const [pbA, pbB] = [pb.person_a, pb.person_b].sort((a, b) => a - b);
+            return pbA === sortedA && pbB === sortedB;
+        });
+
+        if (existingPairBond) {
+            pairBondId = existingPairBond.id;
+        } else {
+            pairBondId = -Date.now() - Math.floor(Math.random() * 1000);
+            const newPairBond = {
+                id: pairBondId,
+                person_a: personAId,
+                person_b: personBId,
+                confidence: 0.8
+            };
+            alpineData.extractedData.pair_bonds.push(newPairBond);
+        }
+    }
+
+    alpineData.extractedData.people[context.personIndex].parents = pairBondId;
+    alpineData.autoSave();
+
+    closePairBondModal();
 }
 
 function togglePersonDeltaAction() {

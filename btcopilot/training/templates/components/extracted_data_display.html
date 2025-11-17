@@ -322,33 +322,18 @@ Parameters:
                                     
                                     <!-- Person List Fields -->
                                     <div class="person-lists">
-                                        <!-- Spouses -->
-                                        <template x-if="(person.spouses && person.spouses.length > 0) || {{ 'true' if editable_mode else 'false' }}">
+                                        <!-- Spouses (computed from Events) -->
+                                        <template x-if="getPersonSpouses(person.id, personDataVersion).length > 0">
                                             <div class="person-list-field mb-1">
                                                 <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; table-layout: fixed;">
                                                     <tr>
                                                         <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
                                                             Spouses:
-                                                            {% if editable_mode %}
-                                                            <span class="add-element" 
-                                                                  @click.stop="addPersonListItem(index, 'spouses')"
-                                                                  title="Add spouse"
-                                                                  style="margin-left: 4px;">
-                                                                <i class="fas fa-plus-circle"></i>
-                                                            </span>
-                                                            {% endif %}
                                                         </td>
                                                         <td style="padding: 0;">
-                                                            <template x-for="(personId, idx) in (person.spouses || [])" :key="personId + '-spouse-' + idx">
-                                                                <span class="person-tag" 
-                                                                      style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
-                                                                      :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                      @click="{{ 'editPersonListItem(index, \'spouses\', idx, personId)' if editable_mode else '' }}">
+                                                            <template x-for="(personId, idx) in getPersonSpouses(person.id, personDataVersion)" :key="personId + '-spouse-' + idx">
+                                                                <span class="person-tag">
                                                                     <span x-text="getPersonName(personId, personDataVersion)"></span>
-                                                                    {% if editable_mode %}
-                                                                    <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;" 
-                                                                          @click.stop="removePersonListItem(index, 'spouses', idx)">×</span>
-                                                                    {% endif %}
                                                                 </span>
                                                             </template>
                                                         </td>
@@ -357,38 +342,36 @@ Parameters:
                                             </div>
                                         </template>
 
-                                        <!-- Parents -->
-                                        <template x-if="(person.parents && person.parents.length > 0) || {{ 'true' if editable_mode else 'false' }}">
+                                        <!-- Parents (Pair-Bond) -->
+                                        <template x-if="person.parents || {{ 'true' if editable_mode else 'false' }}">
                                             <div class="person-list-field mb-1">
-                                                <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; table-layout: fixed;">
-                                                    <tr>
-                                                        <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                            Parents:
-                                                            {% if editable_mode %}
-                                                            <span class="add-element" 
-                                                                  @click.stop="addPersonListItem(index, 'parents')"
-                                                                  title="Add parent"
+                                                <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem;">
+                                                    <div style="color: #666; white-space: nowrap;">
+                                                        Parents:
+                                                        {% if editable_mode %}
+                                                        <template x-if="!person.parents">
+                                                            <span class="add-element"
+                                                                  @click.stop="selectPairBond(index)"
+                                                                  title="Add parents"
                                                                   style="margin-left: 4px;">
                                                                 <i class="fas fa-plus-circle"></i>
                                                             </span>
+                                                        </template>
+                                                        {% endif %}
+                                                    </div>
+                                                    <template x-if="person.parents">
+                                                        <span class="person-tag"
+                                                              style="cursor: {{ 'pointer' if editable_mode else 'default' }}; flex-shrink: 1; min-width: 0; white-space: normal !important; word-break: break-word;"
+                                                              :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
+                                                              @click="{{ 'editPairBond(index)' if editable_mode else '' }}">
+                                                            <span x-text="getPairBondName(person.parents, personDataVersion)" style="display: inline;"></span>
+                                                            {% if editable_mode %}
+                                                            <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold; flex-shrink: 0;"
+                                                                  @click.stop="removePairBond(index)">×</span>
                                                             {% endif %}
-                                                        </td>
-                                                        <td style="padding: 0;">
-                                                            <template x-for="(personId, idx) in (person.parents || [])" :key="personId + '-parent-' + idx">
-                                                                <span class="person-tag" 
-                                                                      style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
-                                                                      :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                      @click="{{ 'editPersonListItem(index, \'parents\', idx, personId)' if editable_mode else '' }}">
-                                                                    <span x-text="getPersonName(personId, personDataVersion)"></span>
-                                                                    {% if editable_mode %}
-                                                                    <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;" 
-                                                                          @click.stop="removePersonListItem(index, 'parents', idx)">×</span>
-                                                                    {% endif %}
-                                                                </span>
-                                                            </template>
-                                                        </td>
-                                                    </tr>
-                                                </table>
+                                                        </span>
+                                                    </template>
+                                                </div>
                                             </div>
                                         </template>
                                     </div>
@@ -2255,6 +2238,9 @@ Parameters:
     margin: 1px 2px 1px 0 !important;
     font-size: 0.75rem !important;
     line-height: 1.5;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
     color: #1565c0;
     white-space: nowrap;
     min-width: 50px;
