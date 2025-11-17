@@ -26,7 +26,15 @@ from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram, User
 from btcopilot import pdp
 from btcopilot.personal import Response, ask
-from btcopilot.schema import DiagramData, PDP, PDPDeltas, Person, Event, asdict
+from btcopilot.schema import (
+    DiagramData,
+    PDP,
+    PDPDeltas,
+    Person,
+    Event,
+    PairBond,
+    asdict,
+)
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_breadcrumbs, get_auditor_id
@@ -695,6 +703,7 @@ def audit(discussion_id):
 
     cumulative_people_by_id = {}
     cumulative_events_by_id = {}
+    cumulative_pair_bonds_by_id = {}
 
     for stmt in sorted_statements:
         stmt_feedback = feedback_by_statement[stmt.id]
@@ -787,8 +796,7 @@ def audit(discussion_id):
                             "name",
                             "last_name",
                             "spouses",
-                            "parent_a",
-                            "parent_b",
+                            "parents",
                             "confidence",
                         }
                         return {
@@ -825,6 +833,10 @@ def audit(discussion_id):
                             Event(**filter_event_fields(event_data))
                             for event_data in pdp_deltas.get("events", [])
                         ],
+                        pair_bonds=[
+                            PairBond(**pair_bond_data)
+                            for pair_bond_data in pdp_deltas.get("pair_bonds", [])
+                        ],
                         delete=pdp_deltas.get("deletes", []),
                     )
                 except (ValueError, KeyError, TypeError) as e:
@@ -847,16 +859,25 @@ def audit(discussion_id):
             for event in pdp_deltas_model.events:
                 cumulative_events_by_id[event.id] = event
 
+            for pair_bond in pdp_deltas_model.pair_bonds:
+                cumulative_pair_bonds_by_id[pair_bond.id] = pair_bond
+
             for delete_id in pdp_deltas_model.delete:
                 cumulative_people_by_id.pop(delete_id, None)
                 cumulative_events_by_id.pop(delete_id, None)
+                cumulative_pair_bonds_by_id.pop(delete_id, None)
 
         cumulative_pdp = (
             {
                 "people": [asdict(p) for p in cumulative_people_by_id.values()],
                 "events": [asdict(e) for e in cumulative_events_by_id.values()],
+                "pair_bonds": [
+                    asdict(pb) for pb in cumulative_pair_bonds_by_id.values()
+                ],
             }
-            if cumulative_people_by_id or cumulative_events_by_id
+            if cumulative_people_by_id
+            or cumulative_events_by_id
+            or cumulative_pair_bonds_by_id
             else None
         )
 

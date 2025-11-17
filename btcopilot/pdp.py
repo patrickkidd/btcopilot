@@ -22,9 +22,10 @@ _log = logging.getLogger(__name__)
 
 
 def get_all_pdp_item_ids(pdp: PDP) -> set[int]:
-    """Get all item IDs from PDP (both people and events share ID space)."""
+    """Get all item IDs from PDP (people, events, and pair_bonds share ID space)."""
     ids = {p.id for p in pdp.people if p.id is not None}
     ids.update(e.id for e in pdp.events)
+    ids.update(pb.id for pb in pdp.pair_bonds if pb.id is not None)
     return ids
 
 
@@ -41,18 +42,29 @@ def validate_pdp_deltas(pdp: PDP, deltas: PDPDeltas) -> None:
     existing_pdp_ids = get_all_pdp_item_ids(pdp)
     new_item_ids = {p.id for p in deltas.people if p.id is not None}
     new_item_ids.update(e.id for e in deltas.events)
+    new_item_ids.update(pb.id for pb in deltas.pair_bonds if pb.id is not None)
 
     person_ids_in_delta = {p.id for p in deltas.people if p.id is not None}
     event_ids_in_delta = {e.id for e in deltas.events}
+    pair_bond_ids_in_delta = {pb.id for pb in deltas.pair_bonds if pb.id is not None}
+
     collision = person_ids_in_delta & event_ids_in_delta
+    collision |= person_ids_in_delta & pair_bond_ids_in_delta
+    collision |= event_ids_in_delta & pair_bond_ids_in_delta
     if collision:
-        errors.append(f"Person and Event in delta share same ID(s): {collision}")
+        errors.append(
+            f"Person, Event, and PairBond in delta share same ID(s): {collision}"
+        )
 
     all_pdp_item_ids = existing_pdp_ids | new_item_ids
 
     existing_pdp_person_ids = {p.id for p in pdp.people if p.id is not None}
     new_person_ids = {p.id for p in deltas.people if p.id is not None}
     all_pdp_person_ids = existing_pdp_person_ids | new_person_ids
+
+    existing_pdp_pair_bond_ids = {pb.id for pb in pdp.pair_bonds if pb.id is not None}
+    new_pair_bond_ids = {pb.id for pb in deltas.pair_bonds if pb.id is not None}
+    all_pdp_pair_bond_ids = existing_pdp_pair_bond_ids | new_pair_bond_ids
 
     for person in deltas.people:
         if person.id is not None and person.id >= 0:
@@ -61,6 +73,10 @@ def validate_pdp_deltas(pdp: PDP, deltas: PDPDeltas) -> None:
     for event in deltas.events:
         if event.id >= 0:
             errors.append(f"PDP event must have negative ID, got {event.id}")
+
+    for pair_bond in deltas.pair_bonds:
+        if pair_bond.id is not None and pair_bond.id >= 0:
+            errors.append(f"PDP pair_bond must have negative ID, got {pair_bond.id}")
 
     for event in deltas.events:
         if (
@@ -104,28 +120,32 @@ def validate_pdp_deltas(pdp: PDP, deltas: PDPDeltas) -> None:
 
     for person in deltas.people:
         if (
-            person.parent_a is not None
-            and person.parent_a < 0
-            and person.parent_a not in all_pdp_person_ids
+            person.parents is not None
+            and person.parents < 0
+            and person.parents not in all_pdp_pair_bond_ids
         ):
             errors.append(
-                f"Person {person.id} references non-existent PDP parent_a {person.parent_a}"
+                f"Person {person.id} references non-existent PDP pair_bond {person.parents}"
+            )
+
+    for pair_bond in deltas.pair_bonds:
+        if (
+            pair_bond.person_a is not None
+            and pair_bond.person_a < 0
+            and pair_bond.person_a not in all_pdp_person_ids
+        ):
+            errors.append(
+                f"PairBond {pair_bond.id} references non-existent PDP person_a {pair_bond.person_a}"
             )
 
         if (
-            person.parent_b is not None
-            and person.parent_b < 0
-            and person.parent_b not in all_pdp_person_ids
+            pair_bond.person_b is not None
+            and pair_bond.person_b < 0
+            and pair_bond.person_b not in all_pdp_person_ids
         ):
             errors.append(
-                f"Person {person.id} references non-existent PDP parent_b {person.parent_b}"
+                f"PairBond {pair_bond.id} references non-existent PDP person_b {pair_bond.person_b}"
             )
-
-        for spouse in person.spouses:
-            if spouse < 0 and spouse not in all_pdp_person_ids:
-                errors.append(
-                    f"Person {person.id} references non-existent PDP spouse {spouse}"
-                )
 
     if errors:
         raise PDPValidationError(errors)
@@ -234,10 +254,11 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
     pdp = copy.deepcopy(pdp)
 
     # Handle upserts
-    # Keep people and events separate to avoid ID collisions between different types
+    # Keep people, events, and pair_bonds separate to avoid ID collisions between different types
 
     people_by_id = {item.id: item for item in pdp.people}
     events_by_id = {item.id: item for item in pdp.events}
+    pair_bonds_by_id = {item.id: item for item in pdp.pair_bonds}
 
     # Process people deltas
     people_to_update = [
@@ -255,10 +276,21 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
     ]
     events_to_add = [item for item in deltas.events if item.id not in events_by_id]
 
+    # Process pair_bond deltas
+    pair_bonds_to_update = [
+        (item, pair_bonds_by_id[item.id])
+        for item in deltas.pair_bonds
+        if item.id in pair_bonds_by_id
+    ]
+    pair_bonds_to_add = [
+        item for item in deltas.pair_bonds if item.id not in pair_bonds_by_id
+    ]
+
     # Combine updates for processing
-    to_update_all = people_to_update + events_to_update
+    to_update_all = people_to_update + events_to_update + pair_bonds_to_update
     to_add_people = people_to_add
     to_add_events = events_to_add
+    to_add_pair_bonds = pair_bonds_to_add
     upserts_applied = []
 
     for item, existing in to_update_all:
@@ -268,7 +300,12 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
             if hasattr(existing, field):
                 setattr(existing, field, value)
             else:
-                type_name = "Person" if item.id in people_by_id else "Event"
+                if item.id in people_by_id:
+                    type_name = "Person"
+                elif item.id in events_by_id:
+                    type_name = "Event"
+                else:
+                    type_name = "PairBond"
                 _log.warning(
                     f"    {type_name} {item.id} has unknown attribute {field}, skipping update."
                 )
@@ -284,7 +321,12 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         pdp.events.append(item)
         upserts_applied.append(item)
 
-    combined_upserts = deltas.people + deltas.events
+    for item in to_add_pair_bonds:
+        _log.debug(f"Adding new pair_bond to PDP: {item}")
+        pdp.pair_bonds.append(item)
+        upserts_applied.append(item)
+
+    combined_upserts = deltas.people + deltas.events + deltas.pair_bonds
     assert len(upserts_applied) == len(
         combined_upserts
     ), f"Failed to apply all upserts ({len(upserts_applied)} applied, {len(combined_upserts)} expected)"
@@ -300,6 +342,10 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
     for idx in reversed(range(len(pdp.events))):
         if pdp.events[idx].id in to_delete_ids:
             del pdp.events[idx]
+
+    for idx in reversed(range(len(pdp.pair_bonds))):
+        if pdp.pair_bonds[idx].id in to_delete_ids:
+            del pdp.pair_bonds[idx]
 
     _log.debug(f"Post-PDP:\n\n{pretty_repr(pdp)}")
     return pdp

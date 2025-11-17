@@ -152,10 +152,11 @@ Entries in the PDP have confidence < 1.0 and negative integer IDs assigned by yo
 **Constraints:**
 
 - One biological mother/father per user
-- One event per variable shift (merge by timestamp, people, variables)  
+- One event per variable shift (merge by timestamp, people, variables)
 - Triangles require two inside, one outside; prioritize blood relations
 - The `rationale` attribute must be filled out for every variable shift
 - Avoid pop culture tropes or psychological jargon
+- For parent relationships, use PairBond entities and set Person.parents to the PairBond ID
 
 **Output Instructions:**
 
@@ -248,55 +249,63 @@ Database: (has one committed entry and no PDP entries yet)
     }
 }
 
-Output: 
+Output:
 
 {
     "people": [
         {
             "id": -1,
-            "name": "Mom"
+            "name": "Mom",
+            "confidence": 0.8
+        },
+        {
+            "id": -3,
+            "name": "Allen",
+            "parents": -4,
+            "confidence": 0.8
         },
         {
             "id": 1,
-            "name": "User",
-            "parent_a": -1,
+            "parents": -4,
             "confidence": 0.99
-        },
+        }
+    ],
+    "pair_bonds": [
         {
-            "id": 2,
-            "name": "Allen",
-            "parent_a": -1,
-            "confidence": 0.99
-        },
-    },
+            "id": -4,
+            "person_a": -1,
+            "person_b": null,
+            "confidence": 0.7
+        }
+    ],
     "events": [
         {
             "id": -2,
             "dateTime": "2025-06-19",
-            "people": [1, 2, -1],
+            "people": [1, -3, -1],
             "description": "Got upset at birthday party and told brother about mom's meddling.",
             "relationship": {
                 "kind": "triangle",
                 "inside_a": [1],
-                "inside_b": [-2],
+                "inside_b": [-3],
                 "outside": [-1],
                 "rationale": "Telling someone about a problem in another person creates a triangle"
             },
             "confidence": 0.85
         },
         {
-            "id": -3,
+            "id": -5,
             "dateTime": "2025-06-19",
-            "people": [1, 2],
+            "people": [1, -3],
             "description": "Got in a fight with brother.",
             "relationship": {
                 "kind": "conflict",
                 "movers": [1],
-                "recipients": [2],
+                "recipients": [-3],
                 "rationale": "Fighting is conflict"
             },
             "confidence": 0.85
-        },
+        }
     ],
     "delete": []
 }
@@ -336,20 +345,21 @@ Output:
     "people": [
         {
             "id": -234,
-            "name": "wife",
-            "spouses": [1],
+            "name": "Wife",
             "confidence": 0.8
-        },
-        {
-            "id": 1,
-            "name": "wife",
-            "spouses": [-234],
-            "confidence": 1.0
         }
-    }
+    ],
     "events": [
         {
             "id": -123,
+            "kind": "married",
+            "person": 1,
+            "spouse": -234,
+            "description": "Jim married Wife",
+            "confidence": 0.8
+        },
+        {
+            "id": -124,
             "dateTime": "2025-06-23",
             "people": [1, -234],
             "anxiety": {
@@ -361,7 +371,7 @@ Output:
                 "rationale": "Crashed his car suggests he was not in control of himself"
             },
             "confidence": 0.4
-        },
+        }
     ],
     "delete": [4]
 }
@@ -372,51 +382,62 @@ Input: "AI: How did you feel about being the only girl with your three brothers?
 
 DATABASE:
 
-[
-    "people": {
+{
+    "people": [
         {
             "id": 123,
             "name": "Mary",
-            "siblings": [456, 567, 678]
+            "parents": 999,
             "confidence": 0.9
         },
         {
             "id": 456,
             "name": "Bob",
-            "siblings": [123, 567, 678]
+            "parents": 999,
             "confidence": 0.9
         },
         {
             "id": 567,
             "name": "James",
-            "siblings": [123, 456, 678]
+            "parents": 999,
             "confidence": 0.9
         },
         {
             "id": 678,
             "name": "Charles",
-            "siblings": [123, 456, 567]
+            "parents": 999,
             "confidence": 0.9
-        },
-    },
+        }
+    ],
+    "pair_bonds": [
+        {
+            "id": 999,
+            "person_a": 1000,
+            "person_b": 1001,
+            "confidence": 1.0
+        }
+    ],
     "events": [],
     "pdp": {
         "people": [
             {
                 "id": -978,
                 "name": "Mariah",
-                "siblings": [123, 456, 567, 678],
+                "parents": 999,
                 "confidence": 0.9
             }
-        ,
+        ],
+        "pair_bonds": [],
         "events": []
-    ]
+    }
 }
 
-Output: (Mariah is deleted from the PDP because as she is not in the complete list of siblings provided in the user message.)
+Output: (Mariah is deleted from the PDP because she is not in the complete list of siblings provided in the user message.)
 
 {
-    "people": {},
-    "delete": [-987]
+    "people": [],
+    "pair_bonds": [],
+    "events": [],
+    "delete": [-978]
 }
 """

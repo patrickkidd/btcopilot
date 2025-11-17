@@ -41,9 +41,10 @@ class Diagram(db.Model, ModelMixin):
 
         data = pickle.loads(self.data) if self.data else {}
 
-        # Return outer people/events as raw dicts (READ-ONLY, may contain QtCore objects)
+        # Return outer people/events/pair_bonds as raw dicts (READ-ONLY, may contain QtCore objects)
         people = data.get("people", [])
         events = data.get("events", [])
+        pair_bonds = data.get("pair_bonds", [])
 
         # Convert PDP dict to dataclass
         pdp_dict = data.get("pdp", {})
@@ -52,6 +53,7 @@ class Diagram(db.Model, ModelMixin):
         return DiagramData(
             people=people,
             events=events,
+            pair_bonds=pair_bonds,
             pdp=pdp,
             last_id=data.get("last_id", 0),
         )
@@ -66,13 +68,15 @@ class Diagram(db.Model, ModelMixin):
         data["pdp"] = asdict(diagram_data.pdp)
         data["last_id"] = diagram_data.last_id
 
-        # Write outer people/events as raw dicts (if provided)
+        # Write outer people/events/pair_bonds as raw dicts (if provided)
         # Pro app: btcopilot never modifies these (FD manages them)
         # Personal app: btcopilot may write to these after commits
         if diagram_data.people:
             data["people"] = diagram_data.people
         if diagram_data.events:
             data["events"] = diagram_data.events
+        if diagram_data.pair_bonds:
+            data["pair_bonds"] = diagram_data.pair_bonds
 
         self.data = pickle.dumps(data)
 
