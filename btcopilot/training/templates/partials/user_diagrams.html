@@ -1,3 +1,5 @@
+{% from "components/diagram_card.html" import diagram_card %}
+
 <!-- User Diagrams Section -->
 <div class="box">
     <div class="level">
@@ -5,7 +7,7 @@
             <div class="level-item">
                 <h4 class="title is-5">
                     <span class="icon"><i class="fas fa-project-diagram"></i></span>
-                    Diagrams
+                    Your Diagrams
                 </h4>
             </div>
         </div>
@@ -20,121 +22,10 @@
             </div>
         </div>
     </div>
-    
+
     {% if user.diagrams %}
         {% for diagram in user.diagrams %}
-            <div class="box mb-3">
-                <div class="media">
-                    <div class="media-left">
-                        <span class="icon is-large has-text-primary">
-                            <i class="fas fa-project-diagram fa-2x"></i>
-                        </span>
-                    </div>
-                    <div class="media-content">
-                        <span class="has-text-grey is-size-7">
-                            ID: {{ diagram.id|string }} {% if diagram.id == user.free_diagram_id %} (Free Diagram) {% endif %}
-                        </span>
-                        <p class="title is-6">
-                            {{ diagram.name or '' }}
-                        </p>
-                        {% if diagram.description %}
-                            <p class="subtitle is-7 mb-2">{{ diagram.description }}</p>
-                        {% endif %}
-                        <div class="tags">
-                            {% if diagram.created_at %}
-                                <span class="tag is-light">{{ diagram.created_at.strftime('%Y-%m-%d') }}</span>
-                            {% endif %}
-                        </div>
-                        
-                        {% if diagram.discussions %}
-                            <div class="mt-3">
-                                <strong class="is-size-7">Discussions ({{ diagram.discussions|length }}):</strong>
-                                <div class="mt-2">
-                                    {% for discussion in diagram.discussions %}
-                                        <div class="mb-2">
-                                            <div class="field has-addons">
-                                                <p class="control is-expanded">
-                                                    <a href="/training/discussions/{{ discussion.id }}" class="button is-info is-fullwidth">
-                                                        <span class="icon">
-                                                            <i class="fas fa-comments"></i>
-                                                        </span>
-                                                        <span>Discussion {{ discussion.id }}</span>
-                                                        {% if discussion.summary %}
-                                                            <span class="is-size-7 ml-2">- {{ discussion.summary[:30] }}{% if discussion.summary|length > 30 %}...{% endif %}</span>
-                                                        {% endif %}
-                                                        {% set stmt_count = discussion.statements|length if discussion.statements else 0 %}
-                                                        {% set feedback_count = discussion.statements|map(attribute='feedbacks')|map('length')|sum if discussion.statements else 0 %}
-                                                        <span class="is-size-7 has-text-weight-normal ml-2">
-                                                            ({{ stmt_count }} stmt{% if stmt_count != 1 %}s{% endif %}{% if feedback_count > 0 %}, {{ feedback_count }} fb{% endif %})
-                                                        </span>
-                                                    </a>
-                                                </p>
-                                                {% if current_user.has_role(btcopilot.ROLE_ADMIN) %}
-                                                <p class="control">
-                                                    <button class="button is-danger"
-                                                            onclick="deleteDiscussion({{ discussion.id }}, '{{ user.username }}', {{ discussion.statements|length }})"
-                                                            title="Delete this discussion">
-                                                        <span class="icon">
-                                                            <i class="fas fa-trash"></i>
-                                                        </span>
-                                                    </button>
-                                                </p>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        {% else %}
-                            <div class="mt-3">
-                                <span class="has-text-grey is-size-7">No discussions</span>
-                            </div>
-                        {% endif %}
-                        
-                        <!-- Import Audio/JSON for this diagram -->
-                        <div class="columns is-variable is-1 mt-3">
-                            <div class="column">
-                                <div class="box has-text-centered" 
-                                     id="audio-drop-zone-diagram-{{ diagram.id }}"
-                                     style="border: 1px dashed #dbdbdb; padding: 1rem; transition: all 0.2s ease; cursor: pointer;"
-                                     onclick="document.getElementById('audio-file-diagram-{{ diagram.id }}').click()">
-                                    <input type="file" id="audio-file-diagram-{{ diagram.id }}" style="display: none;" 
-                                           accept=".mp3,.wav,.m4a,.mp4,.flac,.ogg,.webm,.aac" 
-                                           onchange="handleAudioFileSelect(event, {{ user.id }}, {{ diagram.id }})">
-                                    <p class="is-size-7 has-text-grey">
-                                        <span class="icon is-small"><i class="fas fa-microphone"></i></span>
-                                        Drop audio file
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="column">
-                                <div class="box has-text-centered" 
-                                     id="json-drop-zone-diagram-{{ diagram.id }}"
-                                     style="border: 1px dashed #3273dc; padding: 1rem; background: #f8fbff; transition: all 0.2s ease; cursor: pointer;"
-                                     onclick="document.getElementById('json-file-diagram-{{ diagram.id }}').click()">
-                                    <input type="file" id="json-file-diagram-{{ diagram.id }}" style="display: none;" 
-                                           accept=".json" 
-                                           onchange="handleJsonFileSelect(event, {{ user.id }}, {{ diagram.id }})">
-                                    <p class="is-size-7 has-text-primary">
-                                        <span class="icon is-small"><i class="fas fa-file-code"></i></span>
-                                        Drop JSON file
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="media-right">
-                        {% if current_user.has_role(btcopilot.ROLE_ADMIN) %}
-                            <button class="button is-small is-danger" 
-                                    onclick="deleteDiagram({{ diagram.id }}, '{{ diagram.name or 'Diagram ' + diagram.id|string }}')">
-                                <span class="icon is-small">
-                                    <i class="fas fa-trash"></i>
-                                </span>
-                            </button>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+            {{ diagram_card(diagram, user, current_user, btcopilot) }}
         {% endfor %}
     {% else %}
         <div class="notification is-light">
@@ -142,3 +33,23 @@
         </div>
     {% endif %}
 </div>
+
+<!-- Shared Diagrams Section -->
+{% if shared_diagrams_with_rights %}
+<div class="box mt-4">
+    <div class="level">
+        <div class="level-left">
+            <div class="level-item">
+                <h4 class="title is-5">
+                    <span class="icon"><i class="fas fa-share-alt"></i></span>
+                    Diagrams Shared with You
+                </h4>
+            </div>
+        </div>
+    </div>
+
+    {% for diagram, access_right in shared_diagrams_with_rights %}
+        {{ diagram_card(diagram, user, current_user, btcopilot, is_shared=True, access_right=access_right) }}
+    {% endfor %}
+</div>
+{% endif %}

@@ -225,8 +225,8 @@ def _get_or_create_diagram(diagram_id, current_user):
     if diagram_id:
         diagram = Diagram.query.filter_by(id=diagram_id).first()
         if not diagram:
-            return None, None, None
-        return diagram.user, diagram_id, diagram.user_id
+            return None, None, None, None
+        return diagram, diagram.user, diagram_id, diagram.user_id
 
     # Use current user's free diagram
     target_user = current_user
@@ -240,8 +240,14 @@ def _get_or_create_diagram(diagram_id, current_user):
         db.session.add(diagram)
         db.session.flush()
         target_user.free_diagram_id = diagram.id
+        return diagram, target_user, diagram.id, target_user.id
 
-    return target_user, target_user.free_diagram_id, target_user.id
+    return (
+        target_user.free_diagram,
+        target_user,
+        target_user.free_diagram_id,
+        target_user.id,
+    )
 
 
 def _create_assembly_ai_transcript(data: dict):
@@ -263,11 +269,18 @@ def _create_assembly_ai_transcript(data: dict):
         f"transcript_length: {transcript_length}"
     )
 
-    target_user, target_diagram_id, target_user_id = _get_or_create_diagram(
+    diagram, target_user, target_diagram_id, target_user_id = _get_or_create_diagram(
         diagram_id, current_user
     )
     if target_user is None:
         return jsonify({"error": "Diagram not found"}), 404
+
+    # Check write access if diagram_id was provided
+    if diagram_id:
+        if not current_user.has_role(
+            btcopilot.ROLE_ADMIN
+        ) and not diagram.check_write_access(current_user):
+            return jsonify({"error": "Write access denied"}), 403
 
     discussion = Discussion(
         user_id=target_user_id,
@@ -359,11 +372,18 @@ def _create_import(data: dict):
     json_data = data["json_data"]
     diagram_id = data.get("diagram_id")
 
-    target_user, target_diagram_id, target_user_id = _get_or_create_diagram(
+    diagram, target_user, target_diagram_id, target_user_id = _get_or_create_diagram(
         diagram_id, current_user
     )
     if target_user is None:
         return jsonify({"error": "Diagram not found"}), 404
+
+    # Check write access if diagram_id was provided
+    if diagram_id:
+        if not current_user.has_role(
+            btcopilot.ROLE_ADMIN
+        ) and not diagram.check_write_access(current_user):
+            return jsonify({"error": "Write access denied"}), 403
 
     # Create new discussion from imported data
     discussion = Discussion(

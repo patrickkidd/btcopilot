@@ -225,6 +225,38 @@ When making changes to the training app (btcopilot/training), **always test usin
 - **Migrations**: Uses Alembic (configured in alembic.ini, migrations in alembic/versions/)
 - **Database URI**: `postgresql://familydiagram:pks@localhost:5432/familydiagram` (development)
 
+#### Accessing PostgreSQL Database
+
+**Prerequisites**: PostgreSQL must be running via Docker:
+```bash
+docker-compose up fd-server  # Start PostgreSQL (requires `docker volume create familydiagram_postgres` first)
+docker ps | grep postgres     # Verify container is running
+```
+
+**Query Database**:
+```bash
+# Execute SQL query
+docker exec fd-postgres psql -U familydiagram -d familydiagram -c "SELECT * FROM users LIMIT 5;"
+
+# Interactive psql shell
+docker exec -it fd-postgres psql -U familydiagram -d familydiagram
+
+# Show table structure
+docker exec fd-postgres psql -U familydiagram -d familydiagram -c "\d table_name"
+```
+
+**Common Queries**:
+```bash
+# Check access rights for a diagram
+docker exec fd-postgres psql -U familydiagram -d familydiagram -c "SELECT ar.id, ar.diagram_id, ar.user_id, ar.right, u.username FROM access_rights ar JOIN users u ON ar.user_id = u.id WHERE ar.diagram_id = <diagram_id>;"
+
+# Check user by ID or username
+docker exec fd-postgres psql -U familydiagram -d familydiagram -c "SELECT id, username, roles FROM users WHERE id = <user_id>;"
+
+# Check diagram ownership
+docker exec fd-postgres psql -U familydiagram -d familydiagram -c "SELECT id, name, user_id FROM diagrams WHERE id = <diagram_id>;"
+```
+
 
 ## Documentation Maintenance
 

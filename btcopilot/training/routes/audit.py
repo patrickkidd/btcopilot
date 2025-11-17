@@ -5,9 +5,10 @@ import btcopilot
 from btcopilot import auth
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
-from btcopilot.pro.models import User, Diagram, License
+from btcopilot.pro.models import User, Diagram, License, AccessRight
 from btcopilot.personal.models import Discussion
 from btcopilot.training.utils import get_breadcrumbs, get_auditor_id
+from btcopilot.training.routes.admin import build_user_summary
 
 
 _log = logging.getLogger(__name__)
@@ -37,17 +38,28 @@ def index():
     ).get(user.id)
 
     # Build user summary data
-    from btcopilot.training.routes.admin import build_user_summary
-
     user_summary = build_user_summary(auditor, include_discussion_count=True)
 
-    # Get all discussions from auditor's diagrams
+    # Get diagrams with granted access
+    shared_diagrams_query = (
+        db.session.query(Diagram, AccessRight)
+        .join(AccessRight, AccessRight.diagram_id == Diagram.id)
+        .filter(AccessRight.user_id == auditor.id)
+        .options(
+            db.subqueryload(Diagram.discussions).subqueryload(Discussion.statements)
+        )
+    )
+    shared_diagrams_with_rights = shared_diagrams_query.all()
+
+    # Get all discussions from owned and shared diagrams
     user_discussions = []
     for diagram in auditor.diagrams:
         for discussion in diagram.discussions:
             user_discussions.append(discussion)
+    for diagram, access_right in shared_diagrams_with_rights:
+        for discussion in diagram.discussions:
+            user_discussions.append(discussion)
 
-    # Sort discussions by most recent first
     user_discussions.sort(key=lambda d: d.created_at, reverse=True)
 
     breadcrumbs = get_breadcrumbs("audit")
@@ -57,6 +69,7 @@ def index():
         user=auditor,
         user_summary=user_summary,
         user_discussions=user_discussions,
+        shared_diagrams_with_rights=shared_diagrams_with_rights,
         current_user=user,
         btcopilot=btcopilot,
         breadcrumbs=breadcrumbs,
