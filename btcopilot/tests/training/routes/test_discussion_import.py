@@ -802,7 +802,7 @@ def test_import_discussion_no_extracting_when_no_processing_needed(auditor):
     assert discussion.extracting is False  # Should not be set when no processing needed
 
 
-def export_import_roundtrip(auditor, discussion_id, mode="full"):
+def _export_import_roundtrip(auditor, discussion_id, mode="full"):
     """Helper for export-import roundtrip testing"""
     export_response = auditor.get(
         f"/training/discussions/{discussion_id}/export?mode={mode}"
@@ -862,7 +862,7 @@ def test_export_import_roundtrip_statements_only(auditor):
     db.session.add_all([stmt1, stmt2])
     db.session.commit()
 
-    imported = export_import_roundtrip(auditor, discussion.id, mode="statements")
+    imported = _export_import_roundtrip(auditor, discussion.id, mode="statements")
 
     assert imported.summary == discussion.summary
     assert len(imported.statements) == 2
@@ -899,20 +899,23 @@ def test_export_import_roundtrip_with_extractions(auditor):
     db.session.add(stmt)
     db.session.commit()
 
-    imported = export_import_roundtrip(auditor, discussion.id, mode="full")
+    imported = _export_import_roundtrip(auditor, discussion.id, mode="full")
 
     assert len(imported.statements) == 1
     assert imported.statements[0].pdp_deltas is not None
     assert "people" in imported.statements[0].pdp_deltas
 
 
-def test_export_import_roundtrip_with_feedback(auditor):
-    """Test export then import for discussion with domain expert feedback"""
+def test_export_import_roundtrip_with_feedback(admin):
+    """Test export then import for discussion with domain expert feedback
+
+    Uses admin user to test full export including all feedback (blind review enforcement)
+    """
     from btcopilot.training.models import Feedback
 
     discussion = Discussion(
-        user_id=auditor.user.id,
-        diagram_id=auditor.user.free_diagram_id,
+        user_id=admin.user.id,
+        diagram_id=admin.user.free_diagram_id,
         summary="Test with feedback",
         extracting=False,
     )
@@ -948,7 +951,7 @@ def test_export_import_roundtrip_with_feedback(auditor):
     db.session.add(feedback)
     db.session.commit()
 
-    imported = export_import_roundtrip(auditor, discussion.id, mode="full")
+    imported = _export_import_roundtrip(admin, discussion.id, mode="full")
 
     assert len(imported.statements) == 1
     assert len(imported.statements[0].feedbacks) == 1
@@ -959,3 +962,57 @@ def test_export_import_roundtrip_with_feedback(auditor):
     assert imported_feedback.edited_extraction is not None
     assert imported_feedback.approved is True
     assert imported_feedback.approved_by == "admin"
+
+
+def test_export_blind_review_auditor_only_sees_own_feedback(auditor, test_user_2):
+    """Test that auditors only see their own feedback when exporting (blind review)"""
+    from btcopilot.training.models import Feedback
+
+    discussion = Discussion(
+        user_id=auditor.user.id,
+        diagram_id=auditor.user.free_diagram_id,
+        summary="Test blind review",
+        extracting=False,
+    )
+    db.session.add(discussion)
+    db.session.flush()
+
+    speaker = Speaker(
+        discussion_id=discussion.id, name="User", type=SpeakerType.Subject
+    )
+    db.session.add(speaker)
+    db.session.flush()
+
+    stmt = Statement(
+        discussion_id=discussion.id,
+        speaker_id=speaker.id,
+        text="Test statement",
+        order=0,
+    )
+    db.session.add(stmt)
+    db.session.flush()
+
+    feedback_own = Feedback(
+        statement_id=stmt.id,
+        auditor_id=str(auditor.user.id),
+        feedback_type="extraction",
+        comment="My feedback",
+    )
+    db.session.add(feedback_own)
+
+    feedback_other = Feedback(
+        statement_id=stmt.id,
+        auditor_id=str(test_user_2.id),
+        feedback_type="extraction",
+        comment="Other auditor feedback",
+    )
+    db.session.add(feedback_other)
+    db.session.commit()
+
+    imported = _export_import_roundtrip(auditor, discussion.id, mode="full")
+
+    assert len(imported.statements) == 1
+    assert len(imported.statements[0].feedbacks) == 1
+    imported_feedback = imported.statements[0].feedbacks[0]
+    assert imported_feedback.auditor_id == str(auditor.user.id)
+    assert imported_feedback.comment == "My feedback"

@@ -77,9 +77,10 @@ For discussion creation workflows, see [DATA_MODEL_FLOW.md](./DATA_MODEL_FLOW.md
 **Schema**: Stores `PDPDeltas` structure from [btcopilot/schema.py](../btcopilot/schema.py)
 ```python
 pdp_deltas = {
-    "people": [Person, ...],     # List of Person objects
-    "events": [Event, ...],       # List of Event objects with SARF variables
-    "delete": [int, ...]          # IDs to delete from PDP
+    "people": [Person, ...],       # List of Person objects
+    "events": [Event, ...],         # List of Event objects with SARF variables
+    "pair_bonds": [PairBond, ...],  # List of PairBond objects (parent pairs)
+    "delete": [int, ...]            # IDs to delete from PDP
 }
 ```
 
@@ -103,6 +104,7 @@ pdp_deltas = {
 edited_extraction = {
     "people": [...],
     "events": [...],
+    "pair_bonds": [...],
     "delete": [...]
 }
 ```
@@ -219,6 +221,10 @@ def cumulative(discussion: Discussion, up_to_statement: Statement) -> PDP:
             for event_data in stmt.pdp_deltas["events"]:
                 cumulative_pdp.events.append(Event(**event_data))
 
+            # Add pair_bonds from this statement
+            for pair_bond_data in stmt.pdp_deltas.get("pair_bonds", []):
+                cumulative_pdp.pair_bonds.append(PairBond(**pair_bond_data))
+
     return cumulative_pdp
 ```
 
@@ -226,8 +232,9 @@ def cumulative(discussion: Discussion, up_to_statement: Statement) -> PDP:
 - Only includes statements with `id < up_to_statement.id`
 - Sorts by `order` column then `id` for reliable chronological ordering
 - **Does NOT apply deletes** - only accumulates additions
-- **Does NOT deduplicate** - may contain duplicate person IDs if re-extracted
+- **Does NOT deduplicate** - may contain duplicate IDs if re-extracted
 - Returns `PDP` object (not `PDPDeltas`)
+- Handles missing `pair_bonds` key for backward compatibility with older extractions
 
 **Usage**: Displayed in UI as "Cumulative Notes" column, shows "what the AI knew" at that point in the conversation
 
@@ -333,7 +340,7 @@ for statement in approved_statements:
 
 ### 2.0 Person Object Structure
 
-**Location**: [btcopilot/schema.py:183-190](../btcopilot/schema.py)
+**Location**: [btcopilot/schema.py:190-197](../btcopilot/schema.py)
 
 ```python
 @dataclass
@@ -342,25 +349,56 @@ class Person:
     name: str | None = None
     last_name: str | None = None
     spouses: list[int] = field(default_factory=list)
-    parent_a: int | None = None
-    parent_b: int | None = None
+    pair_bond_id: int | None = None  # Reference to PairBond object
     confidence: float | None = None
 ```
 
 #### **Relationship Schema**
 
-**Parent relationships**:
-- `parent_a`, `parent_b` - Single parent IDs (biological mother/father)
-- Both validated by pdp.py (must be negative IDs if present)
+**Parent relationships** (via PairBond):
+- `pair_bond_id` - References a `PairBond` object that contains both parent IDs
+- Validated by pdp.py (must be negative ID if present, or positive for committed pairs)
+- See PairBond Object Structure below for details
 
 **Spouse relationships**:
 - `spouses[]` - List of spouse IDs
-- Validated by pdp.py (must be negative IDs)
+- Validated by pdp.py (must be negative IDs for PDP items)
 
 **Child relationships**:
-- Not stored directly - inferred from other People's `parent_a`/`parent_b` references
+- Not stored directly - inferred from other People's `pair_bond_id` references
 
-**AI Training**: Prompt examples in personal/prompts.py use `parent_a`/`parent_b` fields to train the LLM on correct schema.
+**AI Training**: Prompt examples in personal/prompts.py train the LLM to create PairBond objects for parent pairs.
+
+### 2.0.1 PairBond Object Structure
+
+**Location**: [btcopilot/schema.py:182-187](../btcopilot/schema.py)
+
+```python
+@dataclass
+class PairBond:
+    id: int | None = None
+    person_a_id: int | None = None  # First parent
+    person_b_id: int | None = None  # Second parent
+    confidence: float | None = None
+```
+
+**Purpose**: Represents an actual or potential human reproductive pair in
+biology (biological mother/father) as a single reusable entity.
+
+**Key Points**:
+- `person_a_id` and `person_b_id` reference Person objects (either PDP or committed)
+- Multiple children can reference the same PairBond via `Person.pair_bond_id`
+- Validated by pdp.py to ensure both parent references exist
+- Uses negative IDs for PDP items (uncommitted), positive for committed pairs
+
+**Usage Pattern**:
+```python
+# Create a pair bond for parents
+pair_bond = PairBond(id=-1, person_a_id=-2, person_b_id=-3, confidence=0.95)
+
+# Child references the pair bond
+child = Person(id=-4, name="Alice", pair_bond_id=-1, confidence=0.9)
+```
 
 ---
 
@@ -1368,15 +1406,17 @@ def cumulative(discussion, up_to_statement):
     for stmt in prior_statements:
         cumulative_pdp.people.extend(stmt.pdp_deltas["people"])
         cumulative_pdp.events.extend(stmt.pdp_deltas["events"])
+        cumulative_pdp.pair_bonds.extend(stmt.pdp_deltas.get("pair_bonds", []))
         # Ignores "delete" array
     return cumulative_pdp
 ```
 
 **Characteristics**:
 - Only adds, never removes
-- May contain duplicates if person re-extracted
+- May contain duplicates if IDs re-extracted
 - May contain deleted items (doesn't process `delete` array)
 - Not suitable for actual PDP state management
+- Handles missing `pair_bonds` key for backward compatibility
 
 #### apply_deltas() - State Management
 
@@ -1387,11 +1427,12 @@ def cumulative(discussion, up_to_statement):
 def apply_deltas(pdp, deltas):
     pdp = copy.deepcopy(pdp)
 
-    # Build ID maps
+    # Build ID maps (people, events, pair_bonds share ID namespace)
     people_by_id = {item.id: item for item in pdp.people}
     events_by_id = {item.id: item for item in pdp.events}
+    pair_bonds_by_id = {item.id: item for item in pdp.pair_bonds}
 
-    # Separate adds and updates
+    # Separate adds and updates for people
     for item in deltas.people:
         if item.id in people_by_id:
             # Update existing (only changed fields)
@@ -1401,10 +1442,13 @@ def apply_deltas(pdp, deltas):
             # Add new
             pdp.people.append(item)
 
-    # Process deletes
+    # Same logic for events and pair_bonds...
+
+    # Process deletes (removes from all three lists)
     to_delete = set(deltas.delete)
     pdp.people = [p for p in pdp.people if p.id not in to_delete]
     pdp.events = [e for e in pdp.events if e.id not in to_delete]
+    pdp.pair_bonds = [pb for pb in pdp.pair_bonds if pb.id not in to_delete]
 
     return pdp
 ```
@@ -1412,9 +1456,10 @@ def apply_deltas(pdp, deltas):
 **Characteristics**:
 - Updates existing items (by ID match)
 - Adds new items
-- Removes deleted items
+- Removes deleted items (from all collections)
 - Deduplicates by ID
 - Suitable for actual state management
+- Handles people, events, and pair_bonds separately (they share ID namespace)
 
 **When to Use Which**:
 - **cumulative()**: Displaying conversation context in UI
@@ -1448,7 +1493,7 @@ def apply_deltas(pdp, deltas):
                 {"id": 2, "name": "Assistant", "confidence": 1.0}
             ],
             "events": [],
-            "pdp": {"people": [], "events": []},
+            "pdp": {"people": [], "events": [], "pair_bonds": []},
             "last_id": 2
         },
 

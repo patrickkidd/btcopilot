@@ -23,6 +23,24 @@ def asdict(obj):
     )
 
 
+def compute_spouses_for_person(person_id: int, events: list) -> list[int]:
+    """
+    Compute spouse list from Events (Bonded, Married, Birth, Adopted, etc.)
+    Returns unique list of spouse IDs for this person.
+    """
+    spouses = set()
+
+    for event in events:
+        event_obj = event if hasattr(event, "kind") else from_dict(Event, event)
+        if event_obj.kind and event_obj.kind.isPairBond():
+            if event_obj.person == person_id and event_obj.spouse:
+                spouses.add(event_obj.spouse)
+            elif event_obj.spouse == person_id and event_obj.person:
+                spouses.add(event_obj.person)
+
+    return list(spouses)
+
+
 def from_dict(cls, data):
     """
     Reconstruct a dataclass from a dict, converting string values back to enums.
@@ -180,14 +198,19 @@ class RelationshipKind(enum.Enum):
 
 
 @dataclass
+class PairBond:
+    id: int | None = None
+    person_a: int | None = None
+    person_b: int | None = None
+    confidence: float | None = None
+
+
+@dataclass
 class Person:
     id: int | None = None
     name: str | None = None
     last_name: str | None = None
-    spouses: list[int] = field(default_factory=list)
-    # Pair-Bonds are inferred from parent_a, parent_b
-    parent_a: int | None = None
-    parent_b: int | None = None
+    parents: int | None = None
     confidence: float | None = None  # PDP
 
 
@@ -222,6 +245,7 @@ class Event:
 class PDPDeltas:
     people: list[Person] = field(default_factory=list)
     events: list[Event] = field(default_factory=list)
+    pair_bonds: list[PairBond] = field(default_factory=list)
     delete: list[int] = field(default_factory=list)
 
 
@@ -229,6 +253,7 @@ class PDPDeltas:
 class PDP:
     people: list[Person] = field(default_factory=list)
     events: list[Event] = field(default_factory=list)
+    pair_bonds: list[PairBond] = field(default_factory=list)
 
 
 @dataclass
@@ -237,6 +262,9 @@ class DiagramData:
         default_factory=list
     )  # Raw dicts from pickle (READ-ONLY, may contain QtCore objects)
     events: list[dict] = field(
+        default_factory=list
+    )  # Raw dicts from pickle (READ-ONLY, may contain QtCore objects)
+    pair_bonds: list[dict] = field(
         default_factory=list
     )  # Raw dicts from pickle (READ-ONLY, may contain QtCore objects)
     pdp: PDP = field(default_factory=PDP)
@@ -253,6 +281,10 @@ class DiagramData:
     def add_event(self, event: Event) -> None:
         event.id = self._next_id()
         self.events.append(asdict(event))
+
+    def add_pair_bond(self, pair_bond: PairBond) -> None:
+        pair_bond.id = self._next_id()
+        self.pair_bonds.append(asdict(pair_bond))
 
     def commit_pdp_items(self, item_ids: list[int]) -> dict[int, int]:
         """
@@ -271,6 +303,15 @@ class DiagramData:
 
         pdp_people_map = {p.id: p for p in self.pdp.people if p.id is not None}
         pdp_events_map = {e.id: e for e in self.pdp.events}
+        pdp_pair_bonds_map = {
+            pb.id: pb for pb in self.pdp.pair_bonds if pb.id is not None
+        }
+
+        for old_id in all_item_ids:
+            if old_id in pdp_pair_bonds_map:
+                pair_bond = pdp_pair_bonds_map[old_id]
+                new_pair_bond = self._remap_pair_bond_ids(pair_bond, id_mapping)
+                self.pair_bonds.append(asdict(new_pair_bond))
 
         for old_id in all_item_ids:
             if old_id in pdp_people_map:
@@ -286,16 +327,21 @@ class DiagramData:
 
         self.pdp.people = [p for p in self.pdp.people if p.id not in all_item_ids]
         self.pdp.events = [e for e in self.pdp.events if e.id not in all_item_ids]
+        self.pdp.pair_bonds = [
+            pb for pb in self.pdp.pair_bonds if pb.id not in all_item_ids
+        ]
 
         return id_mapping
 
     def _get_transitive_pdp_references(self, item_ids: list[int]) -> set[int]:
-        """Get transitive closure of all PDP items referenced by the given item_ids."""
         from btcopilot.pdp import get_all_pdp_item_ids
 
         pdp_item_ids = get_all_pdp_item_ids(self.pdp)
         pdp_people_map = {p.id: p for p in self.pdp.people if p.id is not None}
         pdp_events_map = {e.id: e for e in self.pdp.events}
+        pdp_pair_bonds_map = {
+            pb.id: pb for pb in self.pdp.pair_bonds if pb.id is not None
+        }
 
         visited = set()
         to_visit = list(item_ids)
@@ -315,13 +361,15 @@ class DiagramData:
 
             if item_id in pdp_people_map:
                 person = pdp_people_map[item_id]
-                if person.parent_a and person.parent_a < 0:
-                    to_visit.append(person.parent_a)
-                if person.parent_b and person.parent_b < 0:
-                    to_visit.append(person.parent_b)
-                for spouse in person.spouses:
-                    if spouse < 0:
-                        to_visit.append(spouse)
+                if person.parents and person.parents < 0:
+                    to_visit.append(person.parents)
+
+            if item_id in pdp_pair_bonds_map:
+                pair_bond = pdp_pair_bonds_map[item_id]
+                if pair_bond.person_a and pair_bond.person_a < 0:
+                    to_visit.append(pair_bond.person_a)
+                if pair_bond.person_b and pair_bond.person_b < 0:
+                    to_visit.append(pair_bond.person_b)
 
             if item_id in pdp_events_map:
                 event = pdp_events_map[item_id]
@@ -341,27 +389,19 @@ class DiagramData:
         return visited
 
     def _remap_person_ids(self, person: Person, id_mapping: dict[int, int]) -> Person:
-        """Clone person with remapped IDs."""
         from dataclasses import replace
 
         return replace(
             person,
             id=id_mapping[person.id],
-            parent_a=(
-                id_mapping.get(person.parent_a, person.parent_a)
-                if person.parent_a
+            parents=(
+                id_mapping.get(person.parents, person.parents)
+                if person.parents
                 else None
             ),
-            parent_b=(
-                id_mapping.get(person.parent_b, person.parent_b)
-                if person.parent_b
-                else None
-            ),
-            spouses=[id_mapping.get(s, s) for s in person.spouses],
         )
 
     def _remap_event_ids(self, event: Event, id_mapping: dict[int, int]) -> Event:
-        """Clone event with remapped IDs."""
         from dataclasses import replace
 
         return replace(
@@ -379,12 +419,28 @@ class DiagramData:
             ],
         )
 
+    def _remap_pair_bond_ids(
+        self, pair_bond: PairBond, id_mapping: dict[int, int]
+    ) -> PairBond:
+        from dataclasses import replace
+
+        return replace(
+            pair_bond,
+            id=id_mapping[pair_bond.id],
+            person_a=(
+                id_mapping.get(pair_bond.person_a, pair_bond.person_a)
+                if pair_bond.person_a
+                else None
+            ),
+            person_b=(
+                id_mapping.get(pair_bond.person_b, pair_bond.person_b)
+                if pair_bond.person_b
+                else None
+            ),
+        )
+
     @staticmethod
     def create_with_defaults() -> "Diagram":
-        """
-        Create a new Diagram instance with default User and Assistant people.
-        This ensures speaker mapping always works even after clearing extracted data.
-        """
         diagramData = DiagramData()
 
         # Add default User person (ID 1) - matches default chat_user_speaker
