@@ -24,7 +24,6 @@ def logged_in(flask_app, test_user):
     test_user.roles = btcopilot.ROLE_SUBSCRIBER
     db.session.merge(test_user)
     db.session.commit()
-    # flask_app.test_client_class = FlaskClient
     with flask_app.test_client(use_cookies=True) as client:
         client.user = test_user
         with client.session_transaction() as sess:
@@ -49,7 +48,6 @@ def auditor(flask_app, test_user):
     test_user.roles = btcopilot.ROLE_AUDITOR
     db.session.merge(test_user)
     db.session.commit()
-    # flask_app.test_client_class = FlaskClient
     with flask_app.test_client(use_cookies=True) as client:
         client.user = test_user
         with client.session_transaction() as sess:
@@ -62,7 +60,6 @@ def admin(flask_app, test_user):
     test_user.roles = btcopilot.ROLE_ADMIN
     db.session.merge(test_user)
     db.session.commit()
-    # flask_app.test_client_class = FlaskClient
     with flask_app.test_client(use_cookies=True) as client:
         client.user = test_user
         with client.session_transaction() as sess:
@@ -72,34 +69,25 @@ def admin(flask_app, test_user):
 
 @pytest.fixture(autouse=True)
 def extraction_flow(request):
-    """Mock PDP extraction for testing extraction lifecycle"""
-
-    extraction_flow = request.node.get_closest_marker("extraction_flow")
+    marker = request.node.get_closest_marker("extraction_flow")
 
     with contextlib.ExitStack() as stack:
-        if extraction_flow is not None:
-            # Get extraction results from marker kwargs or use defaults
-            extractions = extraction_flow.kwargs.get("extractions", [])
+        if marker is not None:
+            extractions = marker.kwargs.get("extractions", [])
 
-            # If extractions is a list, cycle through them for multiple calls
-            # If it's a single value, wrap it in a list
             if not isinstance(extractions, list):
                 extractions = [extractions]
 
-            # Create an iterator that will return each extraction in sequence
             extraction_iter = iter(extractions)
 
             def mock_update(*args, **kwargs):
                 try:
                     result = next(extraction_iter)
-                    # If result is a tuple, return as-is (PDP, PDPDeltas)
-                    # If it's just PDPDeltas, return (PDP(), result)
                     if isinstance(result, tuple):
                         return result
                     else:
                         return (PDP(), result if result else PDPDeltas())
                 except StopIteration:
-                    # If we run out of extractions, return empty deltas
                     return (PDP(), PDPDeltas())
 
             stack.enter_context(
@@ -120,21 +108,18 @@ def diagram_with_full_data(test_user):
     from btcopilot.schema import DiagramData
     from btcopilot.training.models import Feedback
 
-    # Create diagram
     diagram = Diagram(
         user_id=test_user.id,
         name="Test Diagram",
         data=b"",
     )
 
-    # Initialize with empty database
     empty_database = DiagramData()
     diagram.set_diagram_data(empty_database)
 
     db.session.add(diagram)
     db.session.commit()
 
-    # Create discussion
     discussion = Discussion(
         user_id=test_user.id,
         diagram_id=diagram.id,
@@ -143,7 +128,6 @@ def diagram_with_full_data(test_user):
     db.session.add(discussion)
     db.session.commit()
 
-    # Create speakers
     subject_speaker = Speaker(
         discussion_id=discussion.id,
         name="User",
@@ -157,7 +141,6 @@ def diagram_with_full_data(test_user):
     db.session.add_all([subject_speaker, expert_speaker])
     db.session.commit()
 
-    # Create statements
     statement1 = Statement(
         discussion_id=discussion.id,
         speaker_id=subject_speaker.id,
@@ -173,7 +156,6 @@ def diagram_with_full_data(test_user):
     db.session.add_all([statement1, statement2])
     db.session.commit()
 
-    # Create feedback
     feedback = Feedback(
         statement_id=statement1.id,
         auditor_id=test_user.username,
@@ -183,7 +165,6 @@ def diagram_with_full_data(test_user):
     )
     db.session.add(feedback)
 
-    # Create access rights
     access_right = AccessRight(
         diagram_id=diagram.id,
         user_id=test_user.id,
@@ -214,7 +195,6 @@ def simple_diagram(test_user):
         data=b"",
     )
 
-    # Initialize with empty database
     empty_database = DiagramData()
     diagram.set_diagram_data(empty_database)
 

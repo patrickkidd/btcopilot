@@ -5,7 +5,7 @@ from mock import patch, AsyncMock
 
 from btcopilot.extensions import db
 from btcopilot.personal import ResponseDirection
-from btcopilot.schema import PDP, PDPDeltas
+from btcopilot.schema import PDP, PDPDeltas, from_dict
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.tests.pro.conftest import pro_client, subscriber, admin
 
@@ -20,14 +20,16 @@ def pytest_configure(config):
 @pytest.fixture(autouse=True)
 def chat_flow(request):
 
-    chat_flow = request.node.get_closest_marker("chat_flow")
+    marker = request.node.get_closest_marker("chat_flow")
 
     with contextlib.ExitStack() as stack:
-        if chat_flow is not None:
+        if marker is not None:
 
-            response = chat_flow.kwargs.get("response", "some response")
-            pdp = (chat_flow.kwargs.get("pdp", PDP()), PDPDeltas())
-            response_direction = chat_flow.kwargs.get(
+            response = marker.kwargs.get("response", "some response")
+            pdp_dict = marker.kwargs.get("pdp", {})
+            pdp_obj = from_dict(PDP, pdp_dict) if pdp_dict else PDP()
+            pdp = (pdp_obj, PDPDeltas())
+            response_direction = marker.kwargs.get(
                 "response_direction", ResponseDirection.Follow
             )
 

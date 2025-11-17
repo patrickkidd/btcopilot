@@ -39,17 +39,11 @@ def test_shift_topic():
                 Person(
                     id=-1,
                     name="Mother",
-                    spouses=[],
-                    offspring=[],
-                    birthDate=None,
                     confidence=0.9,
                 ),
                 Person(
                     id=-2,
                     name="Mother",
-                    spouses=[],
-                    offspring=[],
-                    birthDate=None,
                     confidence=0.99,
                 ),
             ],

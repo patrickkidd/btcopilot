@@ -348,24 +348,23 @@ class Person:
     id: int | None = None
     name: str | None = None
     last_name: str | None = None
-    spouses: list[int] = field(default_factory=list)
-    pair_bond_id: int | None = None  # Reference to PairBond object
+    parents: int | None = None  # Reference to PairBond object (parents)
     confidence: float | None = None
 ```
 
 #### **Relationship Schema**
 
 **Parent relationships** (via PairBond):
-- `pair_bond_id` - References a `PairBond` object that contains both parent IDs
+- `parents` - References a `PairBond` object that contains both parent IDs
 - Validated by pdp.py (must be negative ID if present, or positive for committed pairs)
 - See PairBond Object Structure below for details
 
 **Spouse relationships**:
-- `spouses[]` - List of spouse IDs
-- Validated by pdp.py (must be negative IDs for PDP items)
+- Inferred from PairBond entries and Events
+- No direct spouse list stored on Person
 
 **Child relationships**:
-- Not stored directly - inferred from other People's `pair_bond_id` references
+- Not stored directly - inferred from other People's `parents` references
 
 **AI Training**: Prompt examples in personal/prompts.py train the LLM to create PairBond objects for parent pairs.
 

@@ -183,7 +183,6 @@ TEST_ADD_PERSON_AND_CONFLICT_2 = {
             Person(
                 id=-2,
                 name="Mother",
-                spouses=[],
                 confidence=0.99,
             )
         ],
@@ -209,7 +208,6 @@ TEST_ADD_PERSON_AND_CONFLICT_2 = {
             Person(
                 id=-2,
                 name="Mother",
-                spouses=[],
                 confidence=0.99,
             ),
         ],

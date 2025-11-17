@@ -55,6 +55,10 @@ def from_dict(cls, data):
         # Not a dataclass, return as-is
         return data
 
+    if hasattr(data, "__dataclass_fields__"):
+        # Already a dataclass instance, return as-is
+        return data
+
     kwargs = {}
     for field_info in fields(cls):
         field_name = field_info.name

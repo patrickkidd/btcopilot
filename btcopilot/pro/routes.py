@@ -983,7 +983,7 @@ Return a DiagramDelta with a people list of PersonDelta objects. Each PersonDelt
 Include ONLY movable people (isMovable=true) with updated positions. Do not include:
 - Fixed people (isMovable=false)
 - People whose positions didn't change
-- Any other fields (boundingRect, isMovable, spouses, parents) - only id and center
+- Any other fields (boundingRect, isMovable, parents) - only id and center
     """
     result = asyncio.run(
         llm.submit(LLMFunction.Arrange, prompt=PROMPT, response_format=DiagramDelta)

@@ -47,9 +47,7 @@
        id: int | None = None
        name: str | None = None
        last_name: str | None = None
-       spouses: list[int] = field(default_factory=list)
-       parent_a: int | None = None
-       parent_b: int | None = None
+       parents: int | None = None  # PairBond ID
        confidence: float | None = None  # PDP-specific
    ```
 
@@ -59,8 +57,8 @@
    - Default IDs: 1 = "User", 2 = "Assistant"
 
    **Relationships**:
-   - `spouses`: List of person IDs representing couple bonds
-   - `parent_a`, `parent_b`: Parent person IDs (ensures single mother/father constraint)
+   - `parents`: PairBond ID representing the person's parents
+   - Spouses/partners are inferred from PairBond entries and Events
 
    **Confidence**:
    - 1.0 = Confirmed in main database
@@ -494,7 +492,7 @@
    ```python
    PDPDeltas(
        people=[
-           Person(id=-1, name="Mother", spouses=[2], confidence=0.95)
+           Person(id=-1, name="Mother", confidence=0.95)
        ],
        events=[],
        delete=[3, 4]  # Remove incorrectly extracted entries
@@ -569,9 +567,8 @@
    ```
 
    ### 6.2 Person Constraints
-   - One biological mother per person (`parent_a`)
-   - One biological father per person (`parent_b`)
-   - Any number of spouses
+   - Each person has at most one parents PairBond
+   - Spouses/partners are represented via PairBond entries
    - Deduplication by name when extracting
 
    ### 6.3 Event Constraints

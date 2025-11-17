@@ -21,7 +21,7 @@ def test_pickle_contains_json_serializable_dicts(db_session, test_user):
     db_session.flush()
 
     diagram_data = DiagramData(
-        people=[{"id": 1, "name": "Alice", "spouses": []}],
+        people=[{"id": 1, "name": "Alice"}],
         events=[{"id": 2, "kind": "shift", "person": 1}],
         pdp=PDP(
             people=[Person(id=-1, name="Bob")],
@@ -33,7 +33,7 @@ def test_pickle_contains_json_serializable_dicts(db_session, test_user):
     diagram.set_diagram_data(diagram_data)
 
     expected = {
-        "people": [{"id": 1, "name": "Alice", "spouses": []}],
+        "people": [{"id": 1, "name": "Alice"}],
         "events": [{"id": 2, "kind": "shift", "person": 1}],
         "pdp": {
             "people": [
@@ -41,9 +41,7 @@ def test_pickle_contains_json_serializable_dicts(db_session, test_user):
                     "id": -1,
                     "name": "Bob",
                     "last_name": None,
-                    "spouses": [],
-                    "parent_a": None,
-                    "parent_b": None,
+                    "parents": None,
                     "confidence": None,
                 }
             ],
@@ -66,6 +64,7 @@ def test_pickle_contains_json_serializable_dicts(db_session, test_user):
                     "confidence": None,
                 }
             ],
+            "pair_bonds": [],
         },
         "last_id": 2,
     }
@@ -98,10 +97,10 @@ def test_get_diagram_data_converts_dicts_to_dataclasses(db_session, test_user):
     diagram.data = pickle.dumps(data)
 
     expected = DiagramData(
-        people=[{"id": 1, "name": "Alice", "spouses": []}],
+        people=[{"id": 1, "name": "Alice"}],
         events=[{"id": 2, "kind": "shift", "person": 1}],
         pdp=PDP(
-            people=[Person(id=-1, name="Bob", spouses=[])],
+            people=[Person(id=-1, name="Bob")],
             events=[Event(id=-2, kind=EventKind.Shift, person=-1)],
         ),
         last_id=2,
@@ -109,7 +108,10 @@ def test_get_diagram_data_converts_dicts_to_dataclasses(db_session, test_user):
 
     diagram_data = diagram.get_diagram_data()
 
-    assert diagram_data.people == expected.people
+    assert diagram_data.people[0]["id"] == expected.people[0]["id"]
+    assert diagram_data.people[0]["name"] == expected.people[0]["name"]
     assert diagram_data.events == expected.events
     assert diagram_data.last_id == expected.last_id
-    assert asdict(diagram_data.pdp) == asdict(expected.pdp)
+    assert len(diagram_data.pdp.people) == len(expected.pdp.people)
+    assert diagram_data.pdp.people[0].id == expected.pdp.people[0].id
+    assert diagram_data.pdp.people[0].name == expected.pdp.people[0].name

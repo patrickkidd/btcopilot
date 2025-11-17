@@ -21,15 +21,11 @@ def _create_initial_database() -> DiagramData:
     initial_database = DiagramData()
 
     # Add User person (ID will be 1)
-    user_person = Person(
-        name="User", spouses=[], offspring=[], parents=[], confidence=1.0
-    )
+    user_person = Person(name="User", confidence=1.0)
     initial_database.add_person(user_person)
 
     # Add Assistant person (ID will be 2)
-    assistant_person = Person(
-        name="Assistant", spouses=[], offspring=[], parents=[], confidence=1.0
-    )
+    assistant_person = Person(name="Assistant", confidence=1.0)
     initial_database.add_person(assistant_person)
 
     return initial_database

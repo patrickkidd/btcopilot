@@ -185,37 +185,19 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_triangle_person():
     assert "non-existent PDP person -999 in triangle" in exc_info.value.errors[0]
 
 
-def test_validate_deltas_rejects_person_with_nonexistent_pdp_parent_a():
+def test_validate_deltas_rejects_person_with_nonexistent_pdp_parents():
     pdp = PDP()
-    deltas = PDPDeltas(people=[Person(id=-1, name="Child", parent_a=-999)])
+    deltas = PDPDeltas(people=[Person(id=-1, name="Child", parents=-999)])
     with pytest.raises(PDPValidationError) as exc_info:
         validate_pdp_deltas(pdp, deltas)
     assert len(exc_info.value.errors) == 1
-    assert "non-existent PDP parent_a -999" in exc_info.value.errors[0]
-
-
-def test_validate_deltas_rejects_person_with_nonexistent_pdp_parent_b():
-    pdp = PDP()
-    deltas = PDPDeltas(people=[Person(id=-1, name="Child", parent_b=-999)])
-    with pytest.raises(PDPValidationError) as exc_info:
-        validate_pdp_deltas(pdp, deltas)
-    assert len(exc_info.value.errors) == 1
-    assert "non-existent PDP parent_b -999" in exc_info.value.errors[0]
-
-
-def test_validate_deltas_rejects_person_with_nonexistent_pdp_spouse():
-    pdp = PDP()
-    deltas = PDPDeltas(people=[Person(id=-1, name="Alice", spouses=[-999])])
-    with pytest.raises(PDPValidationError) as exc_info:
-        validate_pdp_deltas(pdp, deltas)
-    assert len(exc_info.value.errors) == 1
-    assert "non-existent PDP spouse -999" in exc_info.value.errors[0]
+    assert "non-existent PDP pair_bond -999" in exc_info.value.errors[0]
 
 
 def test_validate_deltas_multiple_errors():
     pdp = PDP()
     deltas = PDPDeltas(
-        people=[Person(id=-1, name="Alice", spouses=[-999])],
+        people=[Person(id=-1, name="Alice", parents=-999)],
         events=[
             Event(
                 id=-2,
