@@ -821,6 +821,15 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
 </div>
 
 <script>
+// Expert speaker person IDs (to exclude from person selection dialogs)
+const expertSpeakerPersonIds = new Set([
+    {% for speaker in unique_speakers %}
+    {% if speaker.type == 'expert' and speaker.person_id %}
+    {{ speaker.person_id }},
+    {% endif %}
+    {% endfor %}
+]);
+
 // Component extracted data functions
 function reloadPreservingParams() {
     reloadPreservingParams();
@@ -1026,7 +1035,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
 
             if (this.cumulativePdp && this.cumulativePdp.people && this.cumulativePdp.people.length > 0) {
                 this.cumulativePdp.people.forEach(person => {
-                    if (person.id && person.id < 0) {
+                    if (person.id && !expertSpeakerPersonIds.has(person.id)) {
                         const option = document.createElement('option');
                         option.value = person.id;
                         option.textContent = `${person.name || 'Unnamed'} (ID: ${person.id})`;
@@ -1161,7 +1170,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             // Collect all people IDs from diagram (database people) with positive IDs
             const diagramPeople = window.diagramPeople || [];
             diagramPeople.forEach(person => {
-                if (person.id > 0) {
+                if (person.id > 0 && !expertSpeakerPersonIds.has(person.id)) {
                     availableIds.push({
                         id: person.id,
                         label: `Person ${person.id}: ${person.name || 'Unnamed'}`,
@@ -1186,7 +1195,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             if (this.cumulativePdp) {
                 if (this.cumulativePdp.people) {
                     this.cumulativePdp.people.forEach(person => {
-                        if (person.id) {
+                        if (person.id && !expertSpeakerPersonIds.has(person.id)) {
                             availableIds.push({
                                 id: person.id,
                                 label: `Person ${person.id}: ${person.name || 'Unnamed'} (PDP)`,
@@ -2205,17 +2214,20 @@ function collapseAllMessages() {
 
 function jumpToLastCode() {
     const allRows = Array.from(document.querySelectorAll('.message-row'));
-    const rowsWithData = allRows.filter(row => {
+    const rowsWithFeedback = allRows.filter(row => {
         const messageId = row.getAttribute('data-message-id');
-        return document.getElementById('data-collapsed-' + messageId) ||
-               document.getElementById('data-expanded-' + messageId);
+        const dataCollapsed = document.getElementById('data-collapsed-' + messageId);
+        if (!dataCollapsed) return false;
+
+        const reviewedTag = dataCollapsed.querySelector('.data-header .tag');
+        return reviewedTag && reviewedTag.textContent.includes('✓');
     });
 
-    if (rowsWithData.length === 0) {
+    if (rowsWithFeedback.length === 0) {
         return;
     }
 
-    const lastRow = rowsWithData[rowsWithData.length - 1];
+    const lastRow = rowsWithFeedback[rowsWithFeedback.length - 1];
     lastRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -3396,24 +3408,29 @@ function showRelationshipPersonModal() {
     const seenIds = new Set();
     
     // Always add default User and Assistant (same as speaker mapping section)
-    allPeople.push({
-        id: 1,
-        name: "User",
-        source: "System"
-    });
-    seenIds.add(1);
-    
-    allPeople.push({
-        id: 2,
-        name: "Assistant",
-        source: "System"
-    });
-    seenIds.add(2);
+    // But exclude expert speakers
+    if (!expertSpeakerPersonIds.has(1)) {
+        allPeople.push({
+            id: 1,
+            name: "User",
+            source: "System"
+        });
+        seenIds.add(1);
+    }
+
+    if (!expertSpeakerPersonIds.has(2)) {
+        allPeople.push({
+            id: 2,
+            name: "Assistant",
+            source: "System"
+        });
+        seenIds.add(2);
+    }
     
     // Add Diagram people (from database) - positive IDs, excluding User and Assistant to avoid duplicates
     const diagramPeople = window.diagramPeople || [];
     diagramPeople.forEach(person => {
-        if (person.id && !seenIds.has(person.id)) {
+        if (person.id && !seenIds.has(person.id) && !expertSpeakerPersonIds.has(person.id)) {
             allPeople.push({
                 id: person.id,
                 name: person.name || `Person ${person.id}`,
@@ -3426,7 +3443,7 @@ function showRelationshipPersonModal() {
     // Add Cumulative PDP people (from previous statements)
     if (alpineData.cumulativePdp && alpineData.cumulativePdp.people) {
         alpineData.cumulativePdp.people.forEach(person => {
-            if (person.id && !seenIds.has(person.id)) {
+            if (person.id && !seenIds.has(person.id) && !expertSpeakerPersonIds.has(person.id)) {
                 allPeople.push({
                     id: person.id,
                     name: person.name || `Person ${Math.abs(person.id)}`,
@@ -3436,11 +3453,11 @@ function showRelationshipPersonModal() {
             }
         });
     }
-    
+
     // Add Current Delta people (from current statement's extraction)
     if (alpineData.extractedData && alpineData.extractedData.people) {
         alpineData.extractedData.people.forEach(person => {
-            if (person.id && !seenIds.has(person.id)) {
+            if (person.id && !seenIds.has(person.id) && !expertSpeakerPersonIds.has(person.id)) {
                 allPeople.push({
                     id: person.id,
                     name: person.name || `Person ${Math.abs(person.id)}`,
@@ -3620,14 +3637,19 @@ function showPairBondModal() {
 
     const allPeople = [];
     const seenIds = new Set();
-    allPeople.push({id: 1, name: "User"});
-    seenIds.add(1);
-    allPeople.push({id: 2, name: "Assistant"});
-    seenIds.add(2);
+
+    if (!expertSpeakerPersonIds.has(1)) {
+        allPeople.push({id: 1, name: "User"});
+        seenIds.add(1);
+    }
+    if (!expertSpeakerPersonIds.has(2)) {
+        allPeople.push({id: 2, name: "Assistant"});
+        seenIds.add(2);
+    }
 
     const diagramPeople = window.diagramPeople || [];
     diagramPeople.forEach(person => {
-        if (person.id && !seenIds.has(person.id)) {
+        if (person.id && !seenIds.has(person.id) && !expertSpeakerPersonIds.has(person.id)) {
             allPeople.push({id: person.id, name: person.name || `Person ${person.id}`});
             seenIds.add(person.id);
         }
@@ -3635,7 +3657,7 @@ function showPairBondModal() {
 
     if (alpineData.cumulativePdp && alpineData.cumulativePdp.people) {
         alpineData.cumulativePdp.people.forEach(person => {
-            if (person.id && !seenIds.has(person.id)) {
+            if (person.id && !seenIds.has(person.id) && !expertSpeakerPersonIds.has(person.id)) {
                 allPeople.push({id: person.id, name: person.name || `Person ${Math.abs(person.id)}`});
                 seenIds.add(person.id);
             }
@@ -3644,7 +3666,7 @@ function showPairBondModal() {
 
     if (alpineData.extractedData && alpineData.extractedData.people) {
         alpineData.extractedData.people.forEach(person => {
-            if (person.id && !seenIds.has(person.id)) {
+            if (person.id && !seenIds.has(person.id) && !expertSpeakerPersonIds.has(person.id)) {
                 allPeople.push({id: person.id, name: person.name || `Person ${Math.abs(person.id)}`});
                 seenIds.add(person.id);
             }

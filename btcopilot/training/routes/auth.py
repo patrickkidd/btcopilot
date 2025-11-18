@@ -166,8 +166,14 @@ def app_auth():
 
 @bp.route("/login", methods=["GET", "POST"])
 def login():
-    """Login page - now shows app auth landing"""
     if request.method == "GET":
+        # If user is already logged in, redirect to their landing page
+        user_id = session.get("user_id")
+        if user_id:
+            user = User.query.get(user_id)
+            if user and user.active:
+                return redirect(btcopilot.auth.get_landing_page_for_user(user))
+
         return render_template("app_auth_landing.html")
 
     # Old password login form - commented out for app-only auth
