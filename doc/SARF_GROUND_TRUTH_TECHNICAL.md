@@ -211,19 +211,20 @@ def cumulative(discussion: Discussion, up_to_statement: Statement) -> PDP:
     )
 
     # Accumulate all prior statements
+    # NOTE: stmt.pdp_deltas is a JSON column, so it's always dicts (never dataclass instances)
     for stmt in sorted_statements:
         if stmt.id < up_to_statement.id and stmt.pdp_deltas:
-            # Add people from this statement
-            for person_data in stmt.pdp_deltas["people"]:
-                cumulative_pdp.people.append(Person(**person_data))
+            if "people" in stmt.pdp_deltas:
+                for person_data in stmt.pdp_deltas["people"]:
+                    cumulative_pdp.people.append(Person(**person_data))
 
-            # Add events from this statement
-            for event_data in stmt.pdp_deltas["events"]:
-                cumulative_pdp.events.append(Event(**event_data))
+            if "events" in stmt.pdp_deltas:
+                for event_data in stmt.pdp_deltas["events"]:
+                    cumulative_pdp.events.append(Event(**event_data))
 
-            # Add pair_bonds from this statement
-            for pair_bond_data in stmt.pdp_deltas.get("pair_bonds", []):
-                cumulative_pdp.pair_bonds.append(PairBond(**pair_bond_data))
+            if "pair_bonds" in stmt.pdp_deltas:
+                for pair_bond_data in stmt.pdp_deltas["pair_bonds"]:
+                    cumulative_pdp.pair_bonds.append(PairBond(**pair_bond_data))
 
     return cumulative_pdp
 ```
@@ -234,7 +235,8 @@ def cumulative(discussion: Discussion, up_to_statement: Statement) -> PDP:
 - **Does NOT apply deletes** - only accumulates additions
 - **Does NOT deduplicate** - may contain duplicate IDs if re-extracted
 - Returns `PDP` object (not `PDPDeltas`)
-- Handles missing `pair_bonds` key for backward compatibility with older extractions
+- Handles missing keys (`people`, `events`, `pair_bonds`) for backward compatibility
+- Uses defensive type checking with `isinstance()` to handle both dict and object forms
 
 **Usage**: Displayed in UI as "Cumulative Notes" column, shows "what the AI knew" at that point in the conversation
 
@@ -1402,10 +1404,19 @@ for idx in reversed(range(len(pdp.events))):
 ```python
 def cumulative(discussion, up_to_statement):
     cumulative_pdp = PDP()
+    # NOTE: stmt.pdp_deltas is a JSON column, so it's always dicts (never dataclass instances)
     for stmt in prior_statements:
-        cumulative_pdp.people.extend(stmt.pdp_deltas["people"])
-        cumulative_pdp.events.extend(stmt.pdp_deltas["events"])
-        cumulative_pdp.pair_bonds.extend(stmt.pdp_deltas.get("pair_bonds", []))
+        if "people" in stmt.pdp_deltas:
+            for person_data in stmt.pdp_deltas["people"]:
+                cumulative_pdp.people.append(Person(**person_data))
+
+        if "events" in stmt.pdp_deltas:
+            for event_data in stmt.pdp_deltas["events"]:
+                cumulative_pdp.events.append(Event(**event_data))
+
+        if "pair_bonds" in stmt.pdp_deltas:
+            for pair_bond_data in stmt.pdp_deltas["pair_bonds"]:
+                cumulative_pdp.pair_bonds.append(PairBond(**pair_bond_data))
         # Ignores "delete" array
     return cumulative_pdp
 ```
@@ -1415,7 +1426,8 @@ def cumulative(discussion, up_to_statement):
 - May contain duplicates if IDs re-extracted
 - May contain deleted items (doesn't process `delete` array)
 - Not suitable for actual PDP state management
-- Handles missing `pair_bonds` key for backward compatibility
+- Handles missing keys (`people`, `events`, `pair_bonds`) for backward compatibility
+- **Data Contract**: `stmt.pdp_deltas` is always dicts (stored as JSON in database). If wrong type, function will fail fast with TypeError.
 
 #### apply_deltas() - State Management
 

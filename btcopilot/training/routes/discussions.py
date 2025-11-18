@@ -785,6 +785,7 @@ def audit(discussion_id):
                     pdp_deltas = {
                         "people": deltas_source.get("people", []),
                         "events": deltas_source.get("events", []),
+                        "pair_bonds": deltas_source.get("pair_bonds", []),
                         "deletes": deltas_source.get("delete", []),
                     }
 

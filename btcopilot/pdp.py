@@ -12,6 +12,7 @@ from btcopilot.schema import (
     PDPValidationError,
     Person,
     Event,
+    PairBond,
     asdict,
 )
 from btcopilot.personal.prompts import PDP_ROLE_AND_INSTRUCTIONS, PDP_EXAMPLES
@@ -160,25 +161,17 @@ def cumulative(discussion: Discussion, up_to_statement: Statement) -> PDP:
 
     for stmt in sorted_statements:
         if stmt.id < up_to_statement.id and stmt.pdp_deltas:
-            # Add people from this statement's deltas
             if "people" in stmt.pdp_deltas:
                 for person_data in stmt.pdp_deltas["people"]:
-                    person = (
-                        Person(**person_data)
-                        if isinstance(person_data, dict)
-                        else person_data
-                    )
-                    cumulative_pdp.people.append(person)
+                    cumulative_pdp.people.append(Person(**person_data))
 
-            # Add events from this statement's deltas
             if "events" in stmt.pdp_deltas:
                 for event_data in stmt.pdp_deltas["events"]:
-                    event = (
-                        Event(**event_data)
-                        if isinstance(event_data, dict)
-                        else event_data
-                    )
-                    cumulative_pdp.events.append(event)
+                    cumulative_pdp.events.append(Event(**event_data))
+
+            if "pair_bonds" in stmt.pdp_deltas:
+                for pair_bond_data in stmt.pdp_deltas["pair_bonds"]:
+                    cumulative_pdp.pair_bonds.append(PairBond(**pair_bond_data))
 
     return cumulative_pdp
 

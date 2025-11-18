@@ -67,38 +67,6 @@ The interactive, re-usable component for reviewing and editing extracted clinica
 - At this stage we are not concerned with legacy data, we woudl rather delete
   and re-create broken data than add complicated code for backward compatiblity.  
 
-## Code Style & Conventions
-
-- Keep all names, e.g. variables, functions, classes, methods, modules, etc, as
-  short, accurate, and precise as possible.
-- Use consistent naming and code organization conventions.
-- Use the minimum amount of code as possible.
-- Never use "process" in a callable name.
-- Keep code self-documenting.
-- Strictly adhere to D.R.Y.
-- Don't put code in inline strings, especially in HTML. Put them in their native
-  language in an appropriate place like a javascript file or a python file.
-- Never simply catch `Exception` unless explicitly adding an exception router or filter.
-- Don't return errors back to the frontend via jsonify() unless there is a
-  specific place that the frontend reads and displays the error in a usable
-  manner. Otherwise just let the backend blow up with an exception so that it is
-  obvious during testing.- Assume that exceptions are already handled in the blueprint and jsonfiy() is
-  called with an error string and 5xx code.
-- Only add comments for complex business logic, non-obvious algorithms, or when
-  explaining WHY something is done (not WHAT is being done)
-- Never add docstrings for simple functions where the name and parameters make
-  the purpose clear
-- Avoid comments that simply restate what the code obviously does
-- Don't use the class-based pytest pattern and instead use only module-level functions.
-- Keep flask endpoints oriented around updating entries in database tables, not
-  just adding a new endpoint for every application verb.
-- For python enum items, keep only the first letter of each word capitalized. Do
-  not capitalize all letters.
-- Create a re-usable component or template whenever markup or logic is
-  duplicated.
-- Always use `black` to format Python source files (`.py` files only) after changes. Never run black on HTML, JavaScript, CSS, shell scripts, or other non-Python files.
-
-
 ## Code architecture and rules
 - Use the mcp server `chrome-devtools-mcp` to show me the effects of your
   frontend changes for btcopilot/training and ask/check with me to make sure I

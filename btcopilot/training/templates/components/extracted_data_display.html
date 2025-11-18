@@ -1198,14 +1198,31 @@ Parameters:
                                         {% endif %}
                                     </div>
                                     
-                                    <!-- Confidence Row -->
+                                    <!-- Confidence Row (only show for AI extractions, not cumulative/human-reviewed data) -->
+                                    {% if not is_cumulative %}
                                     <div class="mb-2">
                                         <small class="is-size-7" x-show="person.confidence && person.confidence < 0.999">
                                             Confidence: <span x-text="(person.confidence * 100).toFixed(0) + '%'"></span>
                                         </small>
                                     </div>
-                                    
-                                    <!-- Person relationships would continue here... -->
+                                    {% endif %}
+
+                                    <!-- Person List Fields -->
+                                    <div class="person-lists">
+                                        <!-- Parents (Pair-Bond) -->
+                                        <template x-if="person.parents">
+                                            <div class="person-list-field mb-1">
+                                                <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem;">
+                                                    <div style="color: #666; white-space: nowrap;">
+                                                        Parents:
+                                                    </div>
+                                                    <span class="person-tag" style="flex-shrink: 1; min-width: 0; white-space: normal !important; word-break: break-word;">
+                                                        <span x-text="getPairBondName(person.parents, personDataVersion)" style="display: inline;"></span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </div>
                                 </template>
                             </template>
