@@ -14,6 +14,19 @@ window.diagramPeople = [
     {% endfor %}
 {% endif %}
 ];
+
+// Make diagram events data available to JavaScript
+window.diagramEvents = [
+{% if discussion.diagram %}
+    {% set database = discussion.diagram.get_diagram_data() %}
+    {% for event in database.events %}
+    {
+        id: {{ event.id }},
+        description: {{ event.description | tojson }}
+    }{{ "," if not loop.last else "" }}
+    {% endfor %}
+{% endif %}
+];
 </script>
 
 <style>
@@ -1033,6 +1046,16 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
 
             idSelect.innerHTML = '';
 
+            const diagramPeople = window.diagramPeople || [];
+            diagramPeople.forEach(person => {
+                if (person.id && !expertSpeakerPersonIds.has(person.id)) {
+                    const option = document.createElement('option');
+                    option.value = person.id;
+                    option.textContent = `${person.name || 'Unnamed'} (ID: ${person.id})`;
+                    idSelect.appendChild(option);
+                }
+            });
+
             if (this.cumulativePdp && this.cumulativePdp.people && this.cumulativePdp.people.length > 0) {
                 this.cumulativePdp.people.forEach(person => {
                     if (person.id && !expertSpeakerPersonIds.has(person.id)) {
@@ -1045,6 +1068,27 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             }
 
             modal.classList.add('is-active');
+        },
+
+        formatEventTitle(event) {
+            const kind = event.kind;
+            const kindLabel = kind.charAt(0).toUpperCase() + kind.slice(1);
+
+            if (kind === 'birth') {
+                const childName = event.child ? this.getPersonName(event.child) : 'Unknown';
+                const personName = event.person ? this.getPersonName(event.person) : 'Unknown';
+                const spouseName = event.spouse ? this.getPersonName(event.spouse) : 'Unknown';
+                return `${kindLabel}: (Child: ${childName}, Parents: ${personName} and ${spouseName})`;
+            } else if (kind === 'death') {
+                const personName = event.person ? this.getPersonName(event.person) : 'Unknown';
+                return `${kindLabel}: ${personName}`;
+            } else if (['bonded', 'married', 'adopted', 'moved', 'separated', 'divorced'].includes(kind)) {
+                const personName = event.person ? this.getPersonName(event.person) : 'Unknown';
+                const spouseName = event.spouse ? this.getPersonName(event.spouse) : 'Unknown';
+                return `${kindLabel}: ${personName} & ${spouseName}`;
+            } else {
+                return event.description || 'Event';
+            }
         },
 
         addEvent() {
@@ -1064,12 +1108,24 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             defaultOption.textContent = '-- Select Event --';
             idSelect.appendChild(defaultOption);
 
+            const diagramEvents = window.diagramEvents || [];
+            diagramEvents.forEach(event => {
+                if (event.id) {
+                    const option = document.createElement('option');
+                    option.value = event.id;
+                    const title = this.formatEventTitle(event);
+                    option.textContent = `${event.id}: ${title}`;
+                    idSelect.appendChild(option);
+                }
+            });
+
             if (this.cumulativePdp && this.cumulativePdp.events && this.cumulativePdp.events.length > 0) {
                 this.cumulativePdp.events.forEach(event => {
-                    if (event.id < 0) {
+                    if (event.id) {
                         const option = document.createElement('option');
                         option.value = event.id;
-                        option.textContent = `${event.id}: ${event.description || 'Event'}`;
+                        const title = this.formatEventTitle(event);
+                        option.textContent = `${event.id}: ${title}`;
                         idSelect.appendChild(option);
                     }
                 });
@@ -1183,9 +1239,10 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             const diagramEvents = window.diagramEvents || [];
             diagramEvents.forEach(event => {
                 if (event.id > 0) {
+                    const title = this.formatEventTitle(event);
                     availableIds.push({
                         id: event.id,
-                        label: `Event ${event.id}: ${event.description || 'No description'}`,
+                        label: `Event ${event.id}: ${title}`,
                         type: 'event'
                     });
                 }
@@ -1207,9 +1264,10 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 if (this.cumulativePdp.events) {
                     this.cumulativePdp.events.forEach(event => {
                         if (event.id) {
+                            const title = this.formatEventTitle(event);
                             availableIds.push({
                                 id: event.id,
-                                label: `Event ${event.id}: ${event.description || 'No description'} (PDP)`,
+                                label: `Event ${event.id}: ${title} (PDP)`,
                                 type: 'event'
                             });
                         }
@@ -1301,47 +1359,50 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         getItemDescription(itemId) {
             // Convert to number for comparison
             const numericId = typeof itemId === 'string' ? parseInt(itemId) : itemId;
-            
+
             // Check diagram people
             const diagramPeople = window.diagramPeople || [];
             const person = diagramPeople.find(p => p.id === numericId);
             if (person) {
                 return `Person: ${person.name || 'Unnamed'}`;
             }
-            
+
             // Check diagram events
             const diagramEvents = window.diagramEvents || [];
             const event = diagramEvents.find(e => e.id === numericId);
             if (event) {
-                return `Event: ${event.description || 'No description'}`;
+                const title = this.formatEventTitle(event);
+                return `Event: ${title}`;
             }
-            
+
             // Check extracted data
             if (this.extractedData) {
                 const extractedPerson = (this.extractedData.people || []).find(p => p.id === numericId);
                 if (extractedPerson) {
                     return `Person: ${extractedPerson.name || 'Unnamed'} (from extraction)`;
                 }
-                
+
                 const extractedEvent = (this.extractedData.events || []).find(e => e.id === numericId);
                 if (extractedEvent) {
-                    return `Event: ${extractedEvent.description || 'No description'} (from extraction)`;
+                    const title = this.formatEventTitle(extractedEvent);
+                    return `Event: ${title} (from extraction)`;
                 }
             }
-            
+
             // Check cumulative PDP
             if (this.cumulativePdp) {
                 const pdpPerson = (this.cumulativePdp.people || []).find(p => p.id === numericId);
                 if (pdpPerson) {
                     return `Person: ${pdpPerson.name || 'Unnamed'} (PDP)`;
                 }
-                
+
                 const pdpEvent = (this.cumulativePdp.events || []).find(e => e.id === numericId);
                 if (pdpEvent) {
-                    return `Event: ${pdpEvent.description || 'No description'} (PDP)`;
+                    const title = this.formatEventTitle(pdpEvent);
+                    return `Event: ${title} (PDP)`;
                 }
             }
-            
+
             return `(not found)`;
         },
         

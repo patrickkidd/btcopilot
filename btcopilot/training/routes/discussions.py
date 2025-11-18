@@ -793,7 +793,6 @@ def audit(discussion_id):
                             "id",
                             "name",
                             "last_name",
-                            "spouses",
                             "parents",
                             "confidence",
                         }
