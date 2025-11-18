@@ -77,3 +77,42 @@ def test_sessions_expire(flask_app, test_session):
     with flask_app.test_client() as client:
         response = client.get("/v1/sessions/%s" % test_session.token)
     assert response.status_code == 404
+
+
+def test_sessions_init_updates_timestamp(flask_app, test_session, test_license):
+    old_updated_at = datetime.datetime.utcnow() - datetime.timedelta(days=5)
+    test_session.updated_at = old_updated_at
+    db.session.commit()
+
+    args = pickle.dumps(
+        {
+            "licenses": [test_license.as_dict()],
+            "token": test_session.token,
+        }
+    )
+
+    with flask_app.test_client() as client:
+        response = client.get("/v1/init", data=args)
+    assert response.status_code == 200
+
+    db.session.refresh(test_session)
+    assert test_session.updated_at > old_updated_at
+
+
+def test_sessions_init_expires_old_session(flask_app, test_session, test_license):
+    test_session.updated_at = datetime.datetime.utcnow() - datetime.timedelta(
+        days=SESSION_EXPIRATION_DAYS
+    )
+    db.session.commit()
+
+    args = pickle.dumps(
+        {
+            "licenses": [test_license.as_dict()],
+            "token": test_session.token,
+        }
+    )
+
+    with flask_app.test_client() as client:
+        response = client.get("/v1/init", data=args)
+
+    assert response.status_code == 404

@@ -438,6 +438,7 @@ def sessions_init():
             return ("Not Found", 404)
         data = session.account_editor_dict()
         session.updated_at = datetime.datetime.utcnow()  # set when accessing
+        db.session.commit()
     else:
         session = Session()
         data = session.account_editor_dict()
