@@ -717,56 +717,7 @@ Parameters:
                                             {% endif %}
                                         </div>
                                         
-                                        <!-- Functioning Variable - Fixed Position #3 -->
-                                        <div class="variable-item" :class="{ 'add-variable': !event.functioning }">
-                                            <span class="is-size-7">Functioning:</span>
-                                            <template x-if="event.functioning">
-                                                {% if editable_mode %}
-                                                <span class="shift-indicator is-small editable-shift" 
-                                                      :class="'shift-functioning-' + event.functioning"
-                                                      @mouseenter="hoveredField = 'event-' + index + '-functioning-shift'"
-                                                      @mouseleave="hoveredField = null"
-                                                      @click.stop="startEditShift('event-' + index + '-functioning-shift', event.functioning)">
-                                                    <span x-show="!isEditing('event-' + index + '-functioning-shift')" x-text="event.functioning"></span>
-                                                    <select x-show="isEditing('event-' + index + '-functioning-shift')" 
-                                                            x-model="editingValue"
-                                                            @change="saveShift(index, 'functioning', $event.target.value); cancelEdit()"
-                                                            @blur="cancelEdit()"
-                                                            @keydown.escape="cancelEdit()"
-                                                            class="inline-edit-select functioning-select">
-                                                        <option value="up">up</option>
-                                                        <option value="down">down</option>
-                                                        <option value="same">same</option>
-                                                    </select>
-                                                </span>
-                                                {% else %}
-                                                <span class="shift-indicator is-small" 
-                                                      :class="'shift-functioning-' + event.functioning" 
-                                                      x-text="event.functioning"></span>
-                                                {% endif %}
-                                            </template>
-                                            <!-- Rationale display for Functioning -->
-                                            <template x-if="event.functioning && event.functioning.rationale">
-                                                <div class="variable-rationale">
-                                                    <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.functioning.rationale"></span>
-                                                </div>
-                                            </template>
-                                            <template x-if="!event.functioning && {{ 'true' if editable_mode else 'false' }}">
-                                                <span class="add-element" @click.stop="addVariable(index, 'functioning')" title="Add functioning variable">
-                                                    <i class="fas fa-plus-circle"></i>
-                                                </span>
-                                            </template>
-                                            {% if editable_mode %}
-                                            <span class="delete-variable" 
-                                                  x-show="event.functioning && !isEditing('event-' + index + '-functioning-shift')"
-                                                  @click.stop="removeVariable(index, 'functioning')" 
-                                                  title="Remove functioning">
-                                                <i class="fas fa-times"></i>
-                                            </span>
-                                            {% endif %}
-                                        </div>
-                                        
-                                        <!-- Relationship Variable - Fixed Position #4 -->
+                                        <!-- Relationship Variable - Fixed Position #3 -->
                                         <div class="variable-item" :class="{ 'add-variable': !event.relationship }">
                                             <span class="is-size-7">Relationship:</span>
                                             <template x-if="event.relationship">
@@ -891,12 +842,64 @@ Parameters:
                                                 </table>
                                             </div>
                                         </template>
+
+                                        <!-- Subtle divider before Functioning -->
+                                        <div class="variable-divider"></div>
+
+                                        <!-- Functioning Variable - Fixed Position #4 -->
+                                        <div class="variable-item" :class="{ 'add-variable': !event.functioning }">
+                                            <span class="is-size-7">Functioning:</span>
+                                            <template x-if="event.functioning">
+                                                {% if editable_mode %}
+                                                <span class="shift-indicator is-small editable-shift"
+                                                      :class="'shift-functioning-' + event.functioning"
+                                                      @mouseenter="hoveredField = 'event-' + index + '-functioning-shift'"
+                                                      @mouseleave="hoveredField = null"
+                                                      @click.stop="startEditShift('event-' + index + '-functioning-shift', event.functioning)">
+                                                    <span x-show="!isEditing('event-' + index + '-functioning-shift')" x-text="event.functioning"></span>
+                                                    <select x-show="isEditing('event-' + index + '-functioning-shift')"
+                                                            x-model="editingValue"
+                                                            @change="saveShift(index, 'functioning', $event.target.value); cancelEdit()"
+                                                            @blur="cancelEdit()"
+                                                            @keydown.escape="cancelEdit()"
+                                                            class="inline-edit-select functioning-select">
+                                                        <option value="up">up</option>
+                                                        <option value="down">down</option>
+                                                        <option value="same">same</option>
+                                                    </select>
+                                                </span>
+                                                {% else %}
+                                                <span class="shift-indicator is-small"
+                                                      :class="'shift-functioning-' + event.functioning"
+                                                      x-text="event.functioning"></span>
+                                                {% endif %}
+                                            </template>
+                                            <!-- Rationale display for Functioning -->
+                                            <template x-if="event.functioning && event.functioning.rationale">
+                                                <div class="variable-rationale">
+                                                    <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.functioning.rationale"></span>
+                                                </div>
+                                            </template>
+                                            <template x-if="!event.functioning && {{ 'true' if editable_mode else 'false' }}">
+                                                <span class="add-element" @click.stop="addVariable(index, 'functioning')" title="Add functioning variable">
+                                                    <i class="fas fa-plus-circle"></i>
+                                                </span>
+                                            </template>
+                                            {% if editable_mode %}
+                                            <span class="delete-variable"
+                                                  x-show="event.functioning && !isEditing('event-' + index + '-functioning-shift')"
+                                                  @click.stop="removeVariable(index, 'functioning')"
+                                                  title="Remove functioning">
+                                                <i class="fas fa-times"></i>
+                                            </span>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                                 </template>
                         </div>
                     </template>
-                    
+
                     <!-- Deletes Section -->
                     <template x-if="extractedData && ((extractedData.delete && extractedData.delete.length > 0) || {{ 'true' if editable_mode else 'false' }})">
                         <div class="deletes-section mb-2">
@@ -1565,56 +1568,7 @@ Parameters:
                                             {% endif %}
                                         </div>
                                         
-                                        <!-- Functioning Variable - Fixed Position #3 -->
-                                        <div class="variable-item" :class="{ 'add-variable': !event.functioning }">
-                                            <span class="is-size-7">Functioning:</span>
-                                            <template x-if="event.functioning">
-                                                {% if editable_mode %}
-                                                <span class="shift-indicator is-small editable-shift" 
-                                                      :class="'shift-functioning-' + event.functioning"
-                                                      @mouseenter="hoveredField = 'event-' + index + '-functioning-shift'"
-                                                      @mouseleave="hoveredField = null"
-                                                      @click.stop="startEditShift('event-' + index + '-functioning-shift', event.functioning)">
-                                                    <span x-show="!isEditing('event-' + index + '-functioning-shift')" x-text="event.functioning"></span>
-                                                    <select x-show="isEditing('event-' + index + '-functioning-shift')" 
-                                                            x-model="editingValue"
-                                                            @change="saveShift(index, 'functioning', $event.target.value); cancelEdit()"
-                                                            @blur="cancelEdit()"
-                                                            @keydown.escape="cancelEdit()"
-                                                            class="inline-edit-select functioning-select">
-                                                        <option value="up">up</option>
-                                                        <option value="down">down</option>
-                                                        <option value="same">same</option>
-                                                    </select>
-                                                </span>
-                                                {% else %}
-                                                <span class="shift-indicator is-small" 
-                                                      :class="'shift-functioning-' + event.functioning" 
-                                                      x-text="event.functioning"></span>
-                                                {% endif %}
-                                            </template>
-                                            <!-- Rationale display for Functioning -->
-                                            <template x-if="event.functioning && event.functioning.rationale">
-                                                <div class="variable-rationale">
-                                                    <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.functioning.rationale"></span>
-                                                </div>
-                                            </template>
-                                            <template x-if="!event.functioning && {{ 'true' if editable_mode else 'false' }}">
-                                                <span class="add-element" @click.stop="addVariable(index, 'functioning')" title="Add functioning variable">
-                                                    <i class="fas fa-plus-circle"></i>
-                                                </span>
-                                            </template>
-                                            {% if editable_mode %}
-                                            <span class="delete-variable" 
-                                                  x-show="event.functioning && !isEditing('event-' + index + '-functioning-shift')"
-                                                  @click.stop="removeVariable(index, 'functioning')" 
-                                                  title="Remove functioning">
-                                                <i class="fas fa-times"></i>
-                                            </span>
-                                            {% endif %}
-                                        </div>
-                                        
-                                        <!-- Relationship Variable - Fixed Position #4 -->
+                                        <!-- Relationship Variable - Fixed Position #3 -->
                                         <div class="variable-item" :class="{ 'add-variable': !event.relationship }">
                                             <span class="is-size-7">Relationship:</span>
                                             <template x-if="event.relationship">
@@ -1739,12 +1693,64 @@ Parameters:
                                                 </table>
                                             </div>
                                         </template>
+
+                                        <!-- Subtle divider before Functioning -->
+                                        <div class="variable-divider"></div>
+
+                                        <!-- Functioning Variable - Fixed Position #4 -->
+                                        <div class="variable-item" :class="{ 'add-variable': !event.functioning }">
+                                            <span class="is-size-7">Functioning:</span>
+                                            <template x-if="event.functioning">
+                                                {% if editable_mode %}
+                                                <span class="shift-indicator is-small editable-shift"
+                                                      :class="'shift-functioning-' + event.functioning"
+                                                      @mouseenter="hoveredField = 'event-' + index + '-functioning-shift'"
+                                                      @mouseleave="hoveredField = null"
+                                                      @click.stop="startEditShift('event-' + index + '-functioning-shift', event.functioning)">
+                                                    <span x-show="!isEditing('event-' + index + '-functioning-shift')" x-text="event.functioning"></span>
+                                                    <select x-show="isEditing('event-' + index + '-functioning-shift')"
+                                                            x-model="editingValue"
+                                                            @change="saveShift(index, 'functioning', $event.target.value); cancelEdit()"
+                                                            @blur="cancelEdit()"
+                                                            @keydown.escape="cancelEdit()"
+                                                            class="inline-edit-select functioning-select">
+                                                        <option value="up">up</option>
+                                                        <option value="down">down</option>
+                                                        <option value="same">same</option>
+                                                    </select>
+                                                </span>
+                                                {% else %}
+                                                <span class="shift-indicator is-small"
+                                                      :class="'shift-functioning-' + event.functioning"
+                                                      x-text="event.functioning"></span>
+                                                {% endif %}
+                                            </template>
+                                            <!-- Rationale display for Functioning -->
+                                            <template x-if="event.functioning && event.functioning.rationale">
+                                                <div class="variable-rationale">
+                                                    <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.functioning.rationale"></span>
+                                                </div>
+                                            </template>
+                                            <template x-if="!event.functioning && {{ 'true' if editable_mode else 'false' }}">
+                                                <span class="add-element" @click.stop="addVariable(index, 'functioning')" title="Add functioning variable">
+                                                    <i class="fas fa-plus-circle"></i>
+                                                </span>
+                                            </template>
+                                            {% if editable_mode %}
+                                            <span class="delete-variable"
+                                                  x-show="event.functioning && !isEditing('event-' + index + '-functioning-shift')"
+                                                  @click.stop="removeVariable(index, 'functioning')"
+                                                  title="Remove functioning">
+                                                <i class="fas fa-times"></i>
+                                            </span>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                                 </template>
                         </div>
                     </template>
-                    
+
                     <!-- Deletes Section -->
                     <template x-if="extractedData && ((extractedData.delete && extractedData.delete.length > 0) || {{ 'true' if editable_mode else 'false' }})">
                         <div class="deletes-section mb-2">
@@ -2074,6 +2080,14 @@ Parameters:
     align-items: center;
     gap: 8px;
     min-height: 24px;
+}
+
+/* Subtle divider between variables */
+.variable-divider {
+    height: 1px;
+    background-color: #e0e0e0;
+    margin: 0;
+    opacity: 0.5;
 }
 
 /* Variable labels */
