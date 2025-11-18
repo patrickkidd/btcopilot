@@ -175,7 +175,43 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     padding: 0 !important;
 }
 
+/* Refresh Warning Badge */
+.refresh-warning-badge {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background-color: hsl(44, 100%, 77%);
+    color: rgba(0, 0, 0, 0.7);
+    padding: 12px 20px;
+    border-radius: 6px;
+    box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1), 0 0 0 1px rgba(10, 10, 10, 0.1);
+    z-index: 1000;
+    cursor: pointer;
+    display: none;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    border: 1px solid hsl(44, 100%, 70%);
+}
+
+.refresh-warning-badge:hover {
+    background-color: hsl(44, 100%, 72%);
+    box-shadow: 0 4px 6px rgba(10, 10, 10, 0.15), 0 0 0 1px rgba(10, 10, 10, 0.1);
+    transform: translateY(-1px);
+}
+
+.refresh-warning-badge .icon {
+    margin-right: 8px;
+}
+
 </style>
+
+<!-- Refresh Warning Badge -->
+<div id="refresh-warning-badge" class="refresh-warning-badge" onclick="refreshPagePreservingScroll()">
+    <span class="icon"><i class="fas fa-sync-alt"></i></span>
+    <span>Pending changes requiring refresh - Click to refresh</span>
+</div>
+
 <div class="level">
     <div class="level-left">
         <div class="level-item">
@@ -845,7 +881,7 @@ const expertSpeakerPersonIds = new Set([
 
 // Component extracted data functions
 function reloadPreservingParams() {
-    reloadPreservingParams();
+    window.location.reload();
 }
 
 function toggleExtractedData(componentId) {
@@ -1420,7 +1456,11 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         },
         
         saveExtractedData() {
-            if (!this.messageId) return;
+            console.log('saveExtractedData called');
+            if (!this.messageId) {
+                console.log('No messageId, returning');
+                return;
+            }
 
             // Submit as feedback - ensure messageId is an integer
             const msgId = parseInt(this.messageId);
@@ -1429,6 +1469,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 return;
             }
 
+            console.log('About to call submitExtractionFeedback with:', msgId, false, this.extractedData);
             submitExtractionFeedback(msgId, false, this.extractedData);
             this.hasChanges = false;
             // Update the edited extraction to show this is now the corrected version
@@ -2402,6 +2443,7 @@ function autoSaveExtractionFeedback(messageId, editedData) {
     .then(data => {
         if (data.success) {
             console.log('Auto-save successful:', data.updated ? 'updated' : 'created');
+            showRefreshWarningBadge();
             return data;
         } else {
             console.error('Auto-save error:', data.error);
@@ -2414,18 +2456,20 @@ function autoSaveExtractionFeedback(messageId, editedData) {
     });
 }
 
-// Manual feedback function - shows notifications and reloads page
-function submitExtractionFeedback(messageId, thumbsDown, editedData) {
+// Manual feedback function - shows notifications and warning badge (for auto-save)
+function submitExtractionFeedback(messageId, thumbsDown, editedData, isAutoSave = true) {
     // Ensure messageId is an integer
     messageId = parseInt(messageId);
     if (isNaN(messageId)) {
         console.error('Invalid message ID for feedback submission:', messageId);
         return;
     }
-    
+
+    console.log('submitExtractionFeedback called:', { messageId, thumbsDown, isAutoSave });
+
     const commentEl = document.getElementById('extraction-comment-' + messageId);
     const comment = commentEl ? commentEl.value : null;
-    
+
     fetch('/training/feedback', {
         method: 'POST',
         headers: {
@@ -2442,14 +2486,24 @@ function submitExtractionFeedback(messageId, thumbsDown, editedData) {
     })
     .then(response => response.json())
     .then(data => {
+        console.log('Feedback response:', data);
         if (data.success) {
-            showNotification('Data review submitted successfully!', 'is-success');
-            setTimeout(() => { reloadPreservingParams(); }, 1000);
+            if (isAutoSave) {
+                // For auto-save, show the refresh warning badge instead of reloading
+                console.log('Auto-save successful, showing badge');
+                showRefreshWarningBadge();
+            } else {
+                // For manual submission, show notification and reload
+                console.log('Manual save successful, reloading page');
+                showNotification('Data review submitted successfully!', 'is-success');
+                setTimeout(() => { reloadPreservingParams(); }, 1000);
+            }
         } else {
             showNotification('Error: ' + (data.error || 'Unknown error'), 'is-danger');
         }
     })
     .catch(error => {
+        console.error('Feedback submission error:', error);
         showNotification('Network error: ' + error.message, 'is-danger');
     });
 }
@@ -4379,6 +4433,47 @@ function exportTestCases() {
         updateExportButtonState();
     });
 }
+
+// Cumulative notes refresh warning badge functions
+function showRefreshWarningBadge() {
+    console.log('showRefreshWarningBadge called');
+    const badge = document.getElementById('refresh-warning-badge');
+    console.log('Badge element:', badge);
+    if (badge) {
+        console.log('Setting badge display to block');
+        badge.style.display = 'block';
+    } else {
+        console.error('Badge element not found!');
+    }
+}
+
+function hideRefreshWarningBadge() {
+    const badge = document.getElementById('refresh-warning-badge');
+    if (badge) {
+        badge.style.display = 'none';
+    }
+}
+
+function refreshPagePreservingScroll() {
+    // Store current scroll position
+    const scrollY = window.scrollY || window.pageYOffset;
+    sessionStorage.setItem('scrollPosition', scrollY.toString());
+
+    // Reload page with preserved parameters
+    reloadPreservingParams();
+}
+
+// Restore scroll position after page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedScrollPosition = sessionStorage.getItem('scrollPosition');
+    if (savedScrollPosition !== null) {
+        // Small delay to ensure page is fully rendered
+        setTimeout(() => {
+            window.scrollTo(0, parseInt(savedScrollPosition));
+            sessionStorage.removeItem('scrollPosition');
+        }, 100);
+    }
+});
 
 </script>
 
