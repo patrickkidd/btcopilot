@@ -1925,16 +1925,37 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
 
         getAllPeople() {
             const allPeople = [];
-            
+
             if (this.extractedData && this.extractedData.people) {
                 allPeople.push(...this.extractedData.people);
             }
-            
+
             if (this.cumulativePdp && this.cumulativePdp.people) {
                 allPeople.push(...this.cumulativePdp.people);
             }
-            
+
             return allPeople;
+        },
+
+        formatEventTitle(event) {
+            const kind = event.kind;
+            const kindLabel = kind.charAt(0).toUpperCase() + kind.slice(1);
+
+            if (kind === 'birth') {
+                const childName = event.child ? this.getPersonName(event.child) : 'Unknown';
+                const personName = event.person ? this.getPersonName(event.person) : 'Unknown';
+                const spouseName = event.spouse ? this.getPersonName(event.spouse) : 'Unknown';
+                return `${kindLabel}: (Child: ${childName}, Parents: ${personName} and ${spouseName})`;
+            } else if (kind === 'death') {
+                const personName = event.person ? this.getPersonName(event.person) : 'Unknown';
+                return `${kindLabel}: ${personName}`;
+            } else if (['bonded', 'married', 'adopted', 'moved', 'separated', 'divorced'].includes(kind)) {
+                const personName = event.person ? this.getPersonName(event.person) : 'Unknown';
+                const spouseName = event.spouse ? this.getPersonName(event.spouse) : 'Unknown';
+                return `${kindLabel}: ${personName} & ${spouseName}`;
+            } else {
+                return event.description || 'Event';
+            }
         }
     };
 }

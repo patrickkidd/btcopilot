@@ -415,7 +415,7 @@ Parameters:
                                                 Confidence: <span x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
                                             </span>
                                         </div>
-                                        <div class="event-description is-size-7 mb-1" x-show="!event.kind || event.kind === 'shift'">
+                                        <div class="event-description is-size-7 mb-1">
                                             {% if editable_mode %}
                                             <strong class="editable-field event-description"
                                                     @mouseenter="hoveredField = 'event-' + index + '-description'"
@@ -432,7 +432,7 @@ Parameters:
                                                        type="text">
                                             </strong>
                                             {% else %}
-                                            <strong x-text="event.description || ('Event #' + event.id)"></strong>
+                                            <strong x-text="formatEventTitle(event)"></strong>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -1246,7 +1246,7 @@ Parameters:
                                                 Confidence: <span x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
                                             </span>
                                         </div>
-                                        <div class="event-description is-size-7 mb-1" x-show="!event.kind || event.kind === 'shift'">
+                                        <div class="event-description is-size-7 mb-1">
                                             {% if editable_mode %}
                                             <strong class="editable-field event-description"
                                                     @mouseenter="hoveredField = 'event-' + index + '-description'"
@@ -1263,7 +1263,7 @@ Parameters:
                                                        type="text">
                                             </strong>
                                             {% else %}
-                                            <strong x-text="event.description || ('Event #' + event.id)"></strong>
+                                            <strong x-text="formatEventTitle(event)"></strong>
                                             {% endif %}
                                         </div>
                                     </div>
