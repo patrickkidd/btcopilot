@@ -209,7 +209,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
 <!-- Refresh Warning Badge -->
 <div id="refresh-warning-badge" class="refresh-warning-badge" onclick="refreshPagePreservingScroll()">
     <span class="icon"><i class="fas fa-sync-alt"></i></span>
-    <span>Pending changes requiring refresh - Click to refresh</span>
+    <span>Pending changes requiring refresh</span>
 </div>
 
 <div class="level">
@@ -959,7 +959,12 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             this.editingField = field;
             this.editingValue = value || 'distance';
         },
-        
+
+        // Date formatting helper for templates
+        formatDate(isoDate) {
+            return formatDateDisplay(isoDate);
+        },
+
         cancelEdit() {
             this.editingField = null;
             this.editingValue = '';
@@ -4132,6 +4137,29 @@ Continue?`;
             alert('Error: Failed to clear extracted data');
         });
     }
+}
+
+// Date formatting helper functions
+function formatDateDisplay(isoDate) {
+    // Convert yyyy-mm-dd to mm/dd/yyyy for display
+    if (!isoDate || isoDate.trim() === '') return '';
+    const parts = isoDate.split('-');
+    if (parts.length === 3) {
+        const [year, month, day] = parts;
+        return `${month.padStart(2, '0')}/${day.padStart(2, '0')}/${year}`;
+    }
+    return isoDate; // Return as-is if not in expected format
+}
+
+function parseDateInput(displayDate) {
+    // Convert mm/dd/yyyy to yyyy-mm-dd for storage
+    if (!displayDate || displayDate.trim() === '') return '';
+    const parts = displayDate.split('/');
+    if (parts.length === 3) {
+        const [month, day, year] = parts;
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    return displayDate; // Return as-is if not in expected format
 }
 
 function saveDiscussionDate(discussionId, dateValue) {

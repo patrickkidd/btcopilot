@@ -89,10 +89,10 @@
                             <p class="title is-6">{{ diagram.name }}</p>
                             <p class="subtitle is-7 mb-2">
                                 {% if diagram.created_at %}
-                                Created: {{ diagram.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                {{ diagram.created_at|format_date_us }}
                                 {% endif %}
                                 {% if diagram.updated_at and diagram.updated_at != diagram.created_at %}
-                                | Updated: {{ diagram.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                                | Updated: {{ diagram.updated_at|format_date_us }}
                                 {% endif %}
                             </p>
                             <div class="tags">

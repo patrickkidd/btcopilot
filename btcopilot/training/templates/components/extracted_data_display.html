@@ -595,7 +595,7 @@ Parameters:
                                                               @mouseenter="hoveredField = 'event-' + index + '-dateTime'"
                                                               @mouseleave="hoveredField = null"
                                                               @click.stop="startEdit('event-' + index + '-dateTime', event.dateTime || '')">
-                                                            <span x-show="!isEditing('event-' + index + '-dateTime')" x-text="event.dateTime || 'Not set'"></span>
+                                                            <span x-show="!isEditing('event-' + index + '-dateTime')" x-text="formatDate(event.dateTime) || 'Not set'"></span>
                                                             <input x-show="isEditing('event-' + index + '-dateTime')"
                                                                    :value="editingValue"
                                                                    @input="editingValue = $event.target.value"
@@ -607,7 +607,7 @@ Parameters:
                                                                    style="width: 150px;">
                                                         </span>
                                                         {% else %}
-                                                        <span x-text="event.dateTime || 'Not specified'"></span>
+                                                        <span x-text="formatDate(event.dateTime) || 'Not specified'"></span>
                                                         {% endif %}
                                                     </td>
                                                 </tr>
@@ -1446,7 +1446,7 @@ Parameters:
                                                               @mouseenter="hoveredField = 'event-' + index + '-dateTime'"
                                                               @mouseleave="hoveredField = null"
                                                               @click.stop="startEdit('event-' + index + '-dateTime', event.dateTime || '')">
-                                                            <span x-show="!isEditing('event-' + index + '-dateTime')" x-text="event.dateTime || 'Not set'"></span>
+                                                            <span x-show="!isEditing('event-' + index + '-dateTime')" x-text="formatDate(event.dateTime) || 'Not set'"></span>
                                                             <input x-show="isEditing('event-' + index + '-dateTime')"
                                                                    :value="editingValue"
                                                                    @input="editingValue = $event.target.value"
@@ -1458,7 +1458,7 @@ Parameters:
                                                                    style="width: 150px;">
                                                         </span>
                                                         {% else %}
-                                                        <span x-text="event.dateTime || 'Not specified'"></span>
+                                                        <span x-text="formatDate(event.dateTime) || 'Not specified'"></span>
                                                         {% endif %}
                                                     </td>
                                                 </tr>

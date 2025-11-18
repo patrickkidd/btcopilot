@@ -206,7 +206,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <small>{{ discussion.created_at.strftime('%Y-%m-%d %H:%M') if discussion.created_at else 'N/A' }}</small>
+                                    <small>{{ discussion.created_at|format_date_us if discussion.created_at else 'N/A' }}</small>
                                 </td>
                                 <td>
                                     <div class="field has-addons">

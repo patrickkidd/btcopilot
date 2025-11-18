@@ -28,7 +28,7 @@
             {% endif %}
             <div class="tags">
                 {% if diagram.created_at %}
-                    <span class="tag is-light">{{ diagram.created_at.strftime('%Y-%m-%d') }}</span>
+                    <span class="tag is-light">{{ diagram.created_at|format_date_us }}</span>
                 {% endif %}
                 {% if is_shared %}
                     <span class="tag is-light">Owner: {{ diagram.user.username if diagram.user else 'Unknown' }}</span>
