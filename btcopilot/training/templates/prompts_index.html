@@ -641,16 +641,16 @@
                             <div class="variables-compact mt-1">`;
                     
                     if (event.symptom) {
-                        html += `<span class="shift-indicator shift-${event.symptom.shift} is-small">S:${event.symptom.shift}</span>`;
+                        html += `<span class="shift-indicator shift-${event.symptom} is-small">S:${event.symptom}</span>`;
                     }
                     if (event.anxiety) {
-                        html += `<span class="shift-indicator shift-${event.anxiety.shift} is-small ml-1">A:${event.anxiety.shift}</span>`;
+                        html += `<span class="shift-indicator shift-${event.anxiety} is-small ml-1">A:${event.anxiety}</span>`;
                     }
                     if (event.functioning) {
-                        html += `<span class="shift-indicator shift-${event.functioning.shift} is-small ml-1">F:${event.functioning.shift}</span>`;
+                        html += `<span class="shift-indicator shift-${event.functioning} is-small ml-1">F:${event.functioning}</span>`;
                     }
                     if (event.relationship) {
-                        html += `<span class="shift-indicator shift-relationship is-small ml-1">R:${event.relationship.kind}</span>`;
+                        html += `<span class="shift-indicator shift-relationship is-small ml-1">R:${event.relationship}</span>`;
                     }
                     
                     html += `

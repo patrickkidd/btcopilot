@@ -69,43 +69,52 @@ DATA_MODEL_DEFINITIONS = f"""
   least three generations. A person only has two biological parents and can have
   any number of siblings. Deduplicate by name, ensuring one mother/father per
   user.
-  
+
 *Event*: Indicates a shift in any one of four *Variables* and always pertain
-  to one or more people.
-  
+  to one or more people. Each event must have: - `kind`: The type of event
+  (EventKind enum: "shift", "married", "bonded", "birth", "adopted", "moved",
+  "separated", "divorced", "death") - For relationship shifts, use `kind:
+  "shift"` and set the `relationship` field - For life events (married, birth,
+  etc.), use the appropriate EventKind
+
 *Variables* are hidden/latent constructs defined by the following
   characteristics. At least one characteristic must match as an OR condition,
-  not all as an AND condition. An explanation for why each variable kind and
-  attributes were chosen for that statement must be provided in the `rationale`
-  attribute.
+  not all as an AND condition.
 
-  - Symptom: Physical/mental health changes (up/down/same, e.g., "headache" →
-    up), or challenges meeting goals.
-  - Anxiety: Any automatic response to real or imagined threat (up/down/same,
-    e.g., "nervous" → up, "relieved" → down).
-  - Functioning: Ability to balance emotion and intellect (up/down/same, e.g.,
-    "overwhelmed" → down, "disorganized" → down, "determined" → up,
-    "thoughtful". → up).
-  - Relationship: Any action/behavior performed in relation to another person to
-    decrease discomfort in the short term. One of two categories, each with it's
-    own special attributes:
+  - Symptom: Physical/mental health changes (use Event.symptom field:
+    "up"/"down"/"same", e.g., "headache" → "up"), or challenges meeting goals.
+  - Anxiety: Any automatic response to real or imagined threat (use
+    Event.anxiety field: "up"/"down"/"same", e.g., "nervous" → "up", "relieved"
+    → "down").
+  - Functioning: Ability to balance emotion and intellect to productively move
+    toward what matters for the person (use Event.functioning field:
+    "up"/"down"/"same", e.g., "overwhelmed" → "down", "disorganized" → "down",
+    "determined" → "up", "thoughtful" → "up").
+  - Relationship: Any emotive/automatic action/behavior performed by one person in
+    relation to one or more other persons. Serves to decrease discomfort in the
+    short term. Use Event.relationship field with RelationshipKind enum values.
+    One of two categories:
 
-    A) Mechanism (one or more mover people, and one or more receiver people)
-      - Distance: Avoiding open communication about important topics up to
+    A) Anxiety binding mechanisms, allow people to remain in relationship
+       despite misalignment/tension (specify people involved using
+       Event.relationshipTargets - list of person IDs)
+      - "distance": Avoiding open communication about important topics up to
         cutoff in the extreme
-      - Conflict: Overt arguments up to violence in the extreme
-      - Reciprocity: One person functions lower because another overfunctions
-        for them
-      - Child-Focus: Attention to a real or perceived problem in a child (one
-        single child)
-    B) Triangle: At least one person (inside a) aligns or attempts to align with
-       another (inside b) against a third (outside) to reduce discomfort (one or
-       more aligned are inside, one or more others are on outside)
-      a) Alignment: Two people share sentiment (positive/negative) about a third
-         (e.g., Person A seeks Person B's agreement that Person C is good/bad).
-      b) Inside/Outside: Two inside members are comfortable; the outside person
-         is anxious. Can involve a person vs. a group (e.g., siblings, political
-         group).
+      - "conflict": Overt arguments up to violence in the extreme
+      - "overfunctioning"/"underfunctioning": One person functions lower because
+        another overfunctions for them (reciprocity)
+      - "projection": Attention to a real or perceived problem in a child (one
+        single child - use Event.child field)
+    B) Triangle moves: At least one person aligns or attempts to align with
+       another against a third to reduce discomfort (use
+       Event.relationshipTriangles - list of person IDs)
+      a) "inside: One person has positive sentiment toward a second with
+         negative about a third (e.g., Person A seeks Person B's agreement that
+         Person C is good/bad). So this is a move to the "inside" with another
+         while and a third is "outside".
+      b) "outside": One person puts themselves on the outside in relation to
+         another that they put together on the "inside". So this is a move to
+         the "outside" position.
     """
 
 # https://community.openai.com/t/prompts-when-using-structured-output/1297278/5
@@ -191,16 +200,13 @@ Output: {
     "events": [
         {
             "id": -2,
+            "kind": "shift",
+            "person": -1,
             "description": "Didn't talk when he got home from work",
             "dateTime": "2025-08-11",
-            "people": [-1],
-            "relationship": {
-                "kind": "distance",
-                "movers": [-1],
-                "recipients": [1],
-                "rationale": "Not talking or not engaging is distance"
-            },
-            "confidence": 0.7,
+            "relationship": "distance",
+            "relationshipTargets": [1],
+            "confidence": 0.7
         }
     ],
     "delete": []
@@ -281,29 +287,23 @@ Output:
     "events": [
         {
             "id": -2,
+            "kind": "shift",
+            "person": 1,
             "dateTime": "2025-06-19",
-            "people": [1, -3, -1],
             "description": "Got upset at birthday party and told brother about mom's meddling.",
-            "relationship": {
-                "kind": "triangle",
-                "inside_a": [1],
-                "inside_b": [-3],
-                "outside": [-1],
-                "rationale": "Telling someone about a problem in another person creates a triangle"
-            },
+            "relationship": "inside",
+            "relationshipTargets": [-3],
+            "relationshipTriangles": [-1],
             "confidence": 0.85
         },
         {
             "id": -5,
+            "kind": "shift",
+            "person": 1,
             "dateTime": "2025-06-19",
-            "people": [1, -3],
             "description": "Got in a fight with brother.",
-            "relationship": {
-                "kind": "conflict",
-                "movers": [1],
-                "recipients": [-3],
-                "rationale": "Fighting is conflict"
-            },
+            "relationship": "conflict",
+            "relationshipTargets": [-3],
             "confidence": 0.85
         }
     ],
@@ -360,16 +360,12 @@ Output:
         },
         {
             "id": -124,
+            "kind": "shift",
+            "person": 1,
             "dateTime": "2025-06-23",
-            "people": [1, -234],
-            "anxiety": {
-                "shift": "up",
-                "rationale": "Feeling overwhelmed at work"
-            },
-            "functioning": {
-                "shift": "down",
-                "rationale": "Crashed his car suggests he was not in control of himself"
-            },
+            "description": "Overloaded at work and crashed car",
+            "anxiety": "up",
+            "functioning": "down",
             "confidence": 0.4
         }
     ],
