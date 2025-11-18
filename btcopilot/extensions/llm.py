@@ -46,13 +46,6 @@ class LLM:
     """
 
     @lru_cache(maxsize=1)  # Thread-safe due to lru_cache
-    def _minilm(self):
-        from sentence_transformers import SentenceTransformer
-
-        model_name = os.getenv("MINILM_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-        return SentenceTransformer(model_name)
-
-    @lru_cache(maxsize=1)  # Thread-safe due to lru_cache
     def _openai(self):
         import openai
 

@@ -45,10 +45,8 @@ app = [
     "pyqt5==5.15.11",
     "pyqt5-sip==12.15.0",
     "pyqt5-qt5==5.15.2",
-    "torch>=2.0.0,<2.1.0; sys_platform != 'darwin' or platform_machine == 'arm64'",
-    "sentence_transformers",
-    "spacy",
     "mistralai",
+    "nltk",
     "pymupdf4llm",
 
     # personal
@@ -57,11 +55,8 @@ app = [
     # training
     "assemblyai",
     "chromadb",
-    "langchain",
     "langchain-chroma",
-    "langchain-community",
     "langchain-core",
-    "langchain-huggingface",
     "langchain-openai",
     "langchain-text-splitters",
     "nest_asyncio",

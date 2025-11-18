@@ -14,7 +14,7 @@ import logging
 import time
 from dataclasses import dataclass
 
-from btcopilot.extensions import EMBEDDINGS_MODEL, LLM_MODEL
+from btcopilot.extensions import LLM_MODEL
 
 _log = logging.getLogger(__name__)
 
@@ -143,10 +143,13 @@ class Engine:
     def vector_db(self):
         if not self._vector_db:
             _log.info(f"Loading vector db from {self.data_dir()}...")
-            from langchain_huggingface import HuggingFaceEmbeddings
+            from langchain_openai import OpenAIEmbeddings
             from langchain_chroma import Chroma
 
-            embeddings = HuggingFaceEmbeddings(model_name=EMBEDDINGS_MODEL)
+            embeddings = OpenAIEmbeddings(
+                model="text-embedding-3-small",
+                openai_api_key=os.getenv("OPENAI_API_KEY")
+            )
             self._vector_db = Chroma(
                 collection_name="btcopilot",
                 persist_directory=self.data_dir(),

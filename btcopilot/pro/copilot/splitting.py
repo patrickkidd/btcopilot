@@ -5,7 +5,20 @@ import logging
 _log = logging.getLogger(__name__)
 
 
-nlp = None
+_nltk_initialized = False
+
+
+def _ensure_nltk():
+    global _nltk_initialized
+    if not _nltk_initialized:
+        import nltk
+        try:
+            nltk.data.find('tokenizers/punkt')
+        except LookupError:
+            _log.info("Downloading NLTK punkt tokenizer")
+            nltk.download('punkt', quiet=True)
+            nltk.download('punkt_tab', quiet=True)
+        _nltk_initialized = True
 
 
 def split_markdown_semantically(
@@ -16,36 +29,24 @@ def split_markdown_semantically(
     spacy_model="en_core_web_sm",
 ):
     """
-    Split markdown text or a markdown file into semantic chunks using spaCy and headings.
+    Split markdown text or a markdown file into semantic chunks using NLTK and headings.
 
     Args:
         markdown_text (str, optional): Markdown content to split. Use this or file_path.
         file_path (str or Path, optional): Path to markdown file. Use this or markdown_text.
         min_chunk_size (int): Minimum length (in characters) for a chunk.
         max_chunk_size (int): Maximum length (in characters) before splitting.
-        spacy_model (str): spaCy model for sentence splitting.
+        spacy_model (str): Deprecated, kept for compatibility.
 
     Returns:
         list[str]: List of semantically meaningful string chunks.
 
     Raises:
         ValueError: If neither markdown_text nor file_path is provided.
-        FileNotFoundError: If file_path doesn’t exist.
+        FileNotFoundError: If file_path doesn't exist.
     """
-    global nlp
-
-    import spacy
-
-    # Load spaCy model
-    if not nlp:
-        _log.info(f"Loading spaCy model '{spacy_model}'")
-        try:
-            nlp = spacy.load(spacy_model)
-        except OSError:
-            raise OSError(
-                f"Can't find spaCy model '{spacy_model}'. Run 'python -m spacy download {spacy_model}' to install it."
-            )
-        _log.info(f"Loaded spaCy model '{spacy_model}'")
+    _ensure_nltk()
+    import nltk
 
     # Handle input source
     if markdown_text is None and file_path is None:
@@ -67,47 +68,40 @@ def split_markdown_semantically(
     current_chunk = ""
     buffer = ""
 
-    # Process with spaCy
-    doc = nlp(markdown_text)
+    def split_sentences(text):
+        return nltk.sent_tokenize(text)
 
     for line in markdown_text.splitlines():
         line = line.strip()
         heading_match = re.match(heading_pattern, line)
         if heading_match:
-            # Save current chunk if it’s big enough
             if current_chunk and len(current_chunk) >= min_chunk_size:
                 chunks.append(current_chunk.strip())
-            # Start new chunk with heading
             current_chunk = line + "\n"
             buffer = ""
         else:
             buffer += line + "\n"
-            # Split buffer when it exceeds max size or ends
             if len(current_chunk) + len(buffer) > max_chunk_size or not buffer.strip():
                 if buffer.strip():
-                    buffer_doc = nlp(buffer)
-                    for sent in buffer_doc.sents:
+                    for sent in split_sentences(buffer):
                         if (
-                            len(current_chunk) + len(sent.text) > max_chunk_size
+                            len(current_chunk) + len(sent) > max_chunk_size
                             and current_chunk
                         ):
                             chunks.append(current_chunk.strip())
-                            current_chunk = sent.text + "\n"
+                            current_chunk = sent + "\n"
                         else:
-                            current_chunk += sent.text + "\n"
+                            current_chunk += sent + "\n"
                 buffer = ""
 
-    # Process remaining buffer
     if buffer.strip():
-        buffer_doc = nlp(buffer)
-        for sent in buffer_doc.sents:
-            if len(current_chunk) + len(sent.text) > max_chunk_size and current_chunk:
+        for sent in split_sentences(buffer):
+            if len(current_chunk) + len(sent) > max_chunk_size and current_chunk:
                 chunks.append(current_chunk.strip())
-                current_chunk = sent.text + "\n"
+                current_chunk = sent + "\n"
             else:
-                current_chunk += sent.text + "\n"
+                current_chunk += sent + "\n"
 
-    # Append final chunk if it meets size
     if current_chunk.strip() and len(current_chunk) >= min_chunk_size:
         chunks.append(current_chunk.strip())
 

@@ -7,17 +7,11 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Cache heavy dependencies
-FROM base AS dependencies
 WORKDIR /tmp/deps
 RUN pip install --upgrade pip
 
-# Install cpu-only version of torch (required before other dependencies)
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install torch torchvision torchaudio --index-url="https://download.pytorch.org/whl/cpu"
-
 # Application layer - install from wheel
-FROM dependencies AS application
+FROM base AS application
 WORKDIR /app
 RUN mkdir -p ./instance/logs
 
