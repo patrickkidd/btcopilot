@@ -29,11 +29,28 @@
         background-color: #f9f9f9;
         resize: vertical;
     }
-    
+
     .prompt-editor textarea:focus {
         outline: none;
         border-color: #3273dc;
         background-color: white;
+    }
+
+    /* Dark mode overrides */
+    [data-theme="dark"] .prompt-editor h3 {
+        color: var(--color-fg-default);
+    }
+
+    [data-theme="dark"] .prompt-editor textarea {
+        background-color: var(--color-canvas-subtle);
+        border-color: var(--color-border-default);
+        color: var(--color-fg-default);
+    }
+
+    [data-theme="dark"] .prompt-editor textarea:focus {
+        background-color: var(--color-card-bg);
+        border-color: var(--color-accent-emphasis);
+        color: var(--color-fg-default);
     }
     
     .test-section {
