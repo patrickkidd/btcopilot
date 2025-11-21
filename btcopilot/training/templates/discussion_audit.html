@@ -27,6 +27,11 @@ window.diagramEvents = [
     {% endfor %}
 {% endif %}
 ];
+
+// User and auditor info for access control
+window.isAdmin = {{ 'true' if current_user.has_role(btcopilot.ROLE_ADMIN) else 'false' }};
+window.selectedAuditor = {{ selected_auditor | tojson }};
+window.currentUsername = {{ current_user.username | tojson }};
 </script>
 
 <style>
@@ -4105,14 +4110,41 @@ Continue?`;
 }
 
 function clearExtractedData(discussionId) {
-    const message = `Are you sure you want to clear all extracted data from this discussion?
+    // Determine whose data to clear
+    let targetAuditor;
+    let auditorLabel;
+
+    if (window.isAdmin) {
+        // Admin: use selected auditor from dropdown, or current user if no dropdown
+        targetAuditor = window.selectedAuditor || window.currentUsername;
+        if (targetAuditor === 'AI') {
+            auditorLabel = "AI's extracted data";
+        } else {
+            // Find auditor name from dropdown if available
+            {% if current_user.has_role(btcopilot.ROLE_ADMIN) %}
+            const auditorSelect = document.getElementById('auditor-filter');
+            if (auditorSelect) {
+                const selectedOption = auditorSelect.options[auditorSelect.selectedIndex];
+                auditorLabel = selectedOption ? `${selectedOption.text}'s extracted data` : "selected auditor's data";
+            } else {
+                auditorLabel = "your extracted data";
+            }
+            {% else %}
+            auditorLabel = "your extracted data";
+            {% endif %}
+        }
+    } else {
+        // Non-admin: always clear own data
+        targetAuditor = window.currentUsername;
+        auditorLabel = "your extracted data";
+    }
+
+    const message = `Are you sure you want to clear ${auditorLabel}?
 
 This will:
-- Remove all PDP deltas from every statement
-- Clear the cumulative extracted data
-- Stop any extraction in progress
-- Cancel any scheduled extraction jobs
+- Remove all extracted data for this ${targetAuditor === 'AI' ? 'AI extraction' : 'auditor'}
 - Cannot be undone
+- Other users' data will NOT be affected
 
 Continue?`;
 
@@ -4121,7 +4153,10 @@ Continue?`;
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-            }
+            },
+            body: JSON.stringify({
+                auditor_id: targetAuditor
+            })
         })
         .then(response => response.json())
         .then(data => {

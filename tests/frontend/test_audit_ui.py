@@ -8,7 +8,7 @@ class TestAuditIndexPage:
 
     def test_audit_page_loads(self, class_audit_page: Page):
         """Test that the audit index page loads successfully"""
-        expect(class_audit_page).to_have_title("AI Chatbot Audit System")
+        expect(class_audit_page).to_have_title("BTCopilot Training App")
         expect(class_audit_page.locator("h1.title")).to_contain_text(
             "Therapist Chat Audit System"
         )
@@ -62,7 +62,7 @@ class TestDiscussionAuditPage:
 
     def test_discussion_audit_page_loads(self, class_discussion_page: Page):
         """Test that discussion audit page loads successfully"""
-        expect(class_discussion_page).to_have_title("AI Chatbot Audit System")
+        expect(class_discussion_page).to_have_title("BTCopilot Training App")
         # Discussion audit uses breadcrumbs instead of main title
         expect(class_discussion_page.locator(".breadcrumb")).to_be_visible()
 
@@ -139,7 +139,7 @@ class TestUserInteraction:
         back_link = class_discussion_page.locator("a").filter(has_text="Back to Audit")
         if back_link.count() > 0:
             back_link.click()
-            expect(class_discussion_page).to_have_title("AI Chatbot Audit System")
+            expect(class_discussion_page).to_have_title("BTCopilot Training App")
 
     def test_statement_expansion(self, class_discussion_page: Page):
         """Test statement expansion functionality"""

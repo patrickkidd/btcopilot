@@ -37,15 +37,16 @@ def check_admin_access():
 
 
 def get_auditor_id(request, session):
-    """Get auditor ID from request headers or use current user's ID"""
+    """Get auditor ID from request headers or use current user's username"""
     # First check for explicit header (for testing)
     if request.headers.get("X-Auditor-Id"):
         return request.headers.get("X-Auditor-Id")
 
-    # Use current user's ID as auditor ID
+    # Use current user's username as auditor ID (not numeric ID)
+    # The Feedback model stores auditor_id as username/email string
     user = auth.current_user()
-    if user and user.id:
-        return str(user.id)  # Convert to string for consistency
+    if user and user.username:
+        return user.username
 
     # This shouldn't happen in practice since routes require login
     return "anonymous"

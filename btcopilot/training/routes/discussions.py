@@ -766,18 +766,16 @@ def audit(discussion_id):
         if stmt.speaker and stmt.speaker.type == SpeakerType.Subject:
             # Determine which deltas to use: AI or selected auditor's
             if selected_auditor and selected_auditor != "AI":
-                # Use selected human auditor's corrections
+                # Use selected human auditor's corrections ONLY - don't fallback to AI
                 if (
                     ext_feedback
                     and hasattr(ext_feedback, "edited_extraction")
                     and ext_feedback.edited_extraction
                 ):
                     deltas_source = ext_feedback.edited_extraction
-                elif stmt.pdp_deltas:
-                    # Fallback to AI deltas if auditor has no edited_extraction yet
-                    deltas_source = stmt.pdp_deltas
+                # If auditor has no edited_extraction, deltas_source stays None (show nothing)
             elif stmt.pdp_deltas:
-                # Use AI deltas (default)
+                # Use AI deltas (default when no specific auditor selected, or when "AI" selected)
                 deltas_source = stmt.pdp_deltas
 
             if deltas_source:
@@ -1248,71 +1246,104 @@ def export(discussion_id: int):
 @bp.route("/<int:discussion_id>/clear-extracted", methods=["POST"])
 @minimum_role(btcopilot.ROLE_AUDITOR)
 def clear_extracted_data(discussion_id):
-    """Clear all extracted PDP data from a discussion"""
+    """Clear extracted PDP data for a specific auditor or AI from a discussion
+
+    For auditors: Clears their own feedback (edited_extraction)
+    For admin users: Clears data for selected auditor or AI based on 'auditor_id' parameter
+    - If auditor_id='AI': Clears Statement.pdp_deltas (AI extractions)
+    - If auditor_id=user_id: Clears that user's Feedback.edited_extraction
+    """
     current_user = auth.current_user()
+    data = request.json or {}
 
     discussion = Discussion.query.get_or_404(discussion_id)
     discussion_owner = discussion.user.username if discussion.user else "Unknown"
 
-    # Count statements with extracted data before clearing
-    statements_with_data = (
-        Statement.query.filter_by(discussion_id=discussion_id)
-        .filter(Statement.pdp_deltas.isnot(None))
-        .count()
-    )
+    # Determine which auditor's data to clear
+    requested_auditor = data.get("auditor_id")
 
-    # Clear PDP deltas from all statements in the discussion
-    # Use synchronize_session='fetch' to ensure SQLAlchemy updates its cache
-    Statement.query.filter_by(discussion_id=discussion_id).update(
-        {"pdp_deltas": None}, synchronize_session=False
-    )
+    # Check permissions
+    if requested_auditor == "AI":
+        # Only admins can clear AI extractions
+        if not current_user.has_role(btcopilot.ROLE_ADMIN):
+            return jsonify({"success": False, "message": "Only admins can clear AI extractions"}), 403
+        target_auditor = "AI"
+    elif current_user.has_role(btcopilot.ROLE_ADMIN):
+        # Admin can specify which auditor's data to clear
+        if not requested_auditor:
+            return jsonify({"success": False, "message": "auditor_id required for admin"}), 400
+        target_auditor = requested_auditor
+    else:
+        # Non-admin users can only clear their own data
+        target_auditor = current_user.username
 
-    # Reset extraction progress by setting extracting to False
-    # This ensures UI doesn't show extraction in progress
-    discussion.extracting = False
+    cleared_count = 0
 
-    # Note: Celery tasks are automatically managed and don't need manual cancellation
-    _log.info(f"Cleared extraction state for discussion {discussion_id}")
+    if target_auditor == "AI":
+        # Clear AI extractions (Statement.pdp_deltas)
 
-    # Clear PDP data from the diagram if it exists
-    if discussion.diagram:
-        database = discussion.diagram.get_diagram_data()
-        database.pdp.people = []
-        database.pdp.events = []
+        # Count statements with AI extracted data before clearing
+        cleared_count = (
+            Statement.query.filter_by(discussion_id=discussion_id)
+            .filter(Statement.pdp_deltas.isnot(None))
+            .count()
+        )
 
-        # Ensure default User and Assistant people always exist for speaker mapping
-        user_exists = any(person["id"] == 1 for person in database.people)
-        assistant_exists = any(person["id"] == 2 for person in database.people)
+        # Clear PDP deltas from all statements in the discussion
+        Statement.query.filter_by(discussion_id=discussion_id).update(
+            {"pdp_deltas": None}, synchronize_session=False
+        )
 
-        if not user_exists:
-            user_person = Person(id=1, name="User")
-            database.people.append(asdict(user_person))
+        # Reset extraction progress
+        discussion.extracting = False
 
-        if not assistant_exists:
-            assistant_person = Person(id=2, name="Assistant")
-            database.people.append(asdict(assistant_person))
+        _log.info(
+            f"Admin {current_user.username} cleared AI extracted data from discussion {discussion_id} "
+            f"owned by {discussion_owner} - {cleared_count} statements had AI data"
+        )
+        message = f"Cleared AI extracted data from {cleared_count} statements"
 
-        # Ensure last_id accounts for default people
-        database.last_id = max(database.last_id, 2)
+    else:
+        # Clear specific auditor's feedback (Feedback.edited_extraction)
+        # Use raw SQL UPDATE to bypass any ORM caching issues
+        from sqlalchemy import text
 
-        discussion.diagram.set_diagram_data(database)
+        result = db.session.execute(
+            text("""
+                UPDATE feedbacks
+                SET edited_extraction = NULL
+                WHERE id IN (
+                    SELECT f.id
+                    FROM feedbacks f
+                    JOIN statements s ON f.statement_id = s.id
+                    WHERE s.discussion_id = :discussion_id
+                    AND f.auditor_id = :auditor_id
+                    AND f.feedback_type = 'extraction'
+                    AND f.edited_extraction IS NOT NULL
+                )
+            """),
+            {"discussion_id": discussion_id, "auditor_id": target_auditor}
+        )
 
+        cleared_count = result.rowcount
+
+        _log.info(
+            f"User {current_user.username} cleared feedback from auditor {target_auditor} "
+            f"in discussion {discussion_id} owned by {discussion_owner} - {cleared_count} feedbacks cleared"
+        )
+
+        auditor_label = "your" if target_auditor == current_user.username else f"{target_auditor}'s"
+        message = f"Cleared {auditor_label} extracted data from {cleared_count} statements"
+
+    # IMPORTANT: Commit the transaction
     db.session.commit()
-
-    # Expire all statements to force fresh load from DB on next access
-    # This ensures cached JSON column values are refreshed
-    for stmt in discussion.statements:
-        db.session.expire(stmt)
-
-    _log.info(
-        f"Admin {current_user.username} cleared extracted data from discussion {discussion_id} owned by {discussion_owner} "
-        f"- {statements_with_data} statements had extracted data"
-    )
+    _log.info(f"Transaction committed successfully")
 
     return jsonify(
         {
             "success": True,
-            "message": f"Cleared extracted data from {statements_with_data} statements",
+            "message": message,
+            "cleared_count": cleared_count,
         }
     )
 

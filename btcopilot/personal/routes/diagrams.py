@@ -57,6 +57,26 @@ def get(diagram_id):
     return jsonify(ret)
 
 
+@diagrams_bp.route("/<int:diagram_id>", methods=["PUT"])
+def update(diagram_id):
+    user = auth.current_user()
+
+    diagram = Diagram.query.get(diagram_id)
+    if not diagram:
+        abort(404)
+
+    if not diagram.check_write_access(user):
+        abort(403)
+
+    data = request.json.get("diagram_data")
+    if data is not None:
+        diagram.set_diagram_data(data)
+
+    db.session.commit()
+
+    return jsonify(success=True)
+
+
 @diagrams_bp.route("/<int:diagram_id>/discussions")
 def discussions(diagram_id):
     user = auth.current_user()

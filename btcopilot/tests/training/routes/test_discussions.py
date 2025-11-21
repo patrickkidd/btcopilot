@@ -5,6 +5,7 @@ import pytest
 from btcopilot.extensions import db
 from btcopilot.pro.models import User, Diagram
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
+from btcopilot.training.models import Feedback
 from btcopilot.schema import (
     PDP,
     PDPDeltas,
@@ -200,16 +201,64 @@ def test_extracting_flag_reset_on_completion(admin, discussion):
     assert discussion.extracting is False
 
 
-def test_clear_extracted_data_requires_auditor(subscriber, discussion):
-    """Test that clearing extracted data requires auditor role"""
-    response = subscriber.post(f"/training/discussions/{discussion.id}/clear-extracted")
+def test_clear_extracted_data_subscriber_cannot_access(subscriber, discussion):
+    """Test that subscribers cannot access the clear endpoint"""
+    # Subscribers don't have access to the SARF editor, so they shouldn't be able to clear
+    response = subscriber.post(
+        f"/training/discussions/{discussion.id}/clear-extracted",
+        json={"auditor_id": subscriber.user.username}
+    )
     assert response.status_code == 403
 
 
-def test_clear_extracted_data_success(auditor, discussion):
-    """Test successful clearing of extracted data"""
+def test_clear_extracted_data_auditor_can_clear_own_feedback(auditor, discussion):
+    """Test that auditors can clear their own feedback"""
+    # Add some extracted feedback for the auditor
+    subject_speaker = Speaker(
+        discussion_id=discussion.id, name="User", type=SpeakerType.Subject
+    )
+    db.session.add(subject_speaker)
+    db.session.flush()
 
-    # Add some extracted data to statements
+    stmt = Statement(
+        discussion_id=discussion.id,
+        speaker_id=subject_speaker.id,
+        text="Test statement",
+    )
+    db.session.add(stmt)
+    db.session.flush()
+
+    feedback = Feedback(
+        statement_id=stmt.id,
+        auditor_id=auditor.user.username,
+        feedback_type="extraction",
+        edited_extraction=asdict(PDPDeltas(people=[Person(id=-1, name="John")], events=[])),
+    )
+    db.session.add(feedback)
+    db.session.commit()
+
+    # Auditor should be able to clear their own feedback
+    response = auditor.post(
+        f"/training/discussions/{discussion.id}/clear-extracted",
+        json={"auditor_id": auditor.user.username}
+    )
+    assert response.status_code == 200
+    assert response.json["success"] is True
+    assert "your extracted data" in response.json["message"]
+
+    # Verify feedback was cleared
+    db.session.refresh(feedback)
+    assert feedback.edited_extraction is None
+
+
+def test_clear_extracted_data_admin_clears_ai_extractions(admin):
+    """Test that admin can clear AI extractions (Statement.pdp_deltas)"""
+    # Create a fresh discussion
+    discussion = Discussion(user_id=admin.user.id, summary="Test AI extraction clear")
+    db.session.add(discussion)
+    db.session.flush()
+
+    # Add AI extracted data to statements
     subject_speaker = Speaker(
         discussion_id=discussion.id, name="User", type=SpeakerType.Subject
     )
@@ -241,19 +290,20 @@ def test_clear_extracted_data_success(auditor, discussion):
         ),
     )
     db.session.add_all([stmt1, stmt2])
-
-    # Set extracting flag
     discussion.extracting = True
     db.session.commit()
 
-    # Clear extracted data
-    response = auditor.post(f"/training/discussions/{discussion.id}/clear-extracted")
+    # Admin clears AI extractions
+    response = admin.post(
+        f"/training/discussions/{discussion.id}/clear-extracted",
+        json={"auditor_id": "AI"}
+    )
     assert response.status_code == 200
     assert response.json["success"] is True
-    # Should report clearing at least the 2 we just added
-    assert "statements" in response.json["message"]
+    assert "AI extracted data" in response.json["message"]
+    assert response.json["cleared_count"] == 2
 
-    # Verify data was cleared
+    # Verify AI data was cleared
     db.session.refresh(discussion)
     db.session.refresh(stmt1)
     db.session.refresh(stmt2)
@@ -261,6 +311,153 @@ def test_clear_extracted_data_success(auditor, discussion):
     assert discussion.extracting is False
     assert stmt1.pdp_deltas is None
     assert stmt2.pdp_deltas is None
+
+
+def test_clear_extracted_data_admin_clears_specific_auditor(admin):
+    """Test that admin can clear a specific auditor's feedback"""
+    # Create a fresh discussion
+    discussion = Discussion(user_id=admin.user.id, summary="Test auditor-specific clear")
+    db.session.add(discussion)
+    db.session.flush()
+
+    # Add feedback from multiple auditors
+    subject_speaker = Speaker(
+        discussion_id=discussion.id, name="User", type=SpeakerType.Subject
+    )
+    db.session.add(subject_speaker)
+    db.session.flush()
+
+    stmt1 = Statement(
+        discussion_id=discussion.id,
+        speaker_id=subject_speaker.id,
+        text="Statement 1",
+    )
+    stmt2 = Statement(
+        discussion_id=discussion.id,
+        speaker_id=subject_speaker.id,
+        text="Statement 2",
+    )
+    db.session.add_all([stmt1, stmt2])
+    db.session.flush()
+
+    # Add feedback from auditor1
+    auditor1_username = "auditor1@example.com"
+    feedback1 = Feedback(
+        statement_id=stmt1.id,
+        auditor_id=auditor1_username,
+        feedback_type="extraction",
+        edited_extraction=asdict(PDPDeltas(people=[Person(id=-1, name="Auditor1 Person")], events=[])),
+    )
+    feedback2 = Feedback(
+        statement_id=stmt2.id,
+        auditor_id=auditor1_username,
+        feedback_type="extraction",
+        edited_extraction=asdict(PDPDeltas(people=[Person(id=-2, name="Auditor1 Person2")], events=[])),
+    )
+
+    # Add feedback from auditor2 (different user)
+    auditor2_username = "auditor2@example.com"
+    feedback3 = Feedback(
+        statement_id=stmt1.id,
+        auditor_id=auditor2_username,
+        feedback_type="extraction",
+        edited_extraction=asdict(PDPDeltas(people=[Person(id=-3, name="Auditor2 Person")], events=[])),
+    )
+
+    db.session.add_all([feedback1, feedback2, feedback3])
+    db.session.commit()
+
+    # Admin clears only auditor1's feedback
+    response = admin.post(
+        f"/training/discussions/{discussion.id}/clear-extracted",
+        json={"auditor_id": auditor1_username}
+    )
+    assert response.status_code == 200
+    assert response.json["success"] is True
+    assert response.json["cleared_count"] == 2
+
+    # Verify only auditor1's feedback was cleared
+    db.session.refresh(feedback1)
+    db.session.refresh(feedback2)
+    db.session.refresh(feedback3)
+
+    assert feedback1.edited_extraction is None  # Cleared
+    assert feedback2.edited_extraction is None  # Cleared
+    assert feedback3.edited_extraction is not None  # NOT cleared (different auditor)
+
+
+def test_clear_extracted_data_non_admin_cannot_clear_ai(auditor, discussion):
+    """Test that non-admin users cannot clear AI extractions"""
+    response = auditor.post(
+        f"/training/discussions/{discussion.id}/clear-extracted",
+        json={"auditor_id": "AI"}
+    )
+    assert response.status_code == 403
+    assert "Only admins can clear AI extractions" in response.json["message"]
+
+
+def test_clear_extracted_data_admin_requires_auditor_id(admin, discussion):
+    """Test that admin requests must include auditor_id parameter"""
+    response = admin.post(
+        f"/training/discussions/{discussion.id}/clear-extracted",
+        json={}
+    )
+    assert response.status_code == 400
+    assert "auditor_id required" in response.json["message"]
+
+
+def test_clear_extracted_data_auditor_uses_own_username(auditor):
+    """Test that non-admin auditors always clear their own data, ignoring auditor_id param"""
+    # Create a fresh discussion
+    discussion = Discussion(user_id=auditor.user.id, summary="Test non-admin clear")
+    db.session.add(discussion)
+    db.session.flush()
+
+    # Create feedback for auditor and another user
+    subject_speaker = Speaker(
+        discussion_id=discussion.id, name="User", type=SpeakerType.Subject
+    )
+    db.session.add(subject_speaker)
+    db.session.flush()
+
+    stmt = Statement(
+        discussion_id=discussion.id,
+        speaker_id=subject_speaker.id,
+        text="Test statement",
+    )
+    db.session.add(stmt)
+    db.session.flush()
+
+    auditor_feedback = Feedback(
+        statement_id=stmt.id,
+        auditor_id=auditor.user.username,
+        feedback_type="extraction",
+        edited_extraction=asdict(PDPDeltas(people=[Person(id=-1, name="Auditor Person")], events=[])),
+    )
+    other_auditor_username = "other_auditor@example.com"
+    other_feedback = Feedback(
+        statement_id=stmt.id,
+        auditor_id=other_auditor_username,
+        feedback_type="extraction",
+        edited_extraction=asdict(PDPDeltas(people=[Person(id=-2, name="Other Auditor Person")], events=[])),
+    )
+    db.session.add_all([auditor_feedback, other_feedback])
+    db.session.commit()
+
+    # Auditor tries to clear (should only clear their own, not other auditor's)
+    response = auditor.post(
+        f"/training/discussions/{discussion.id}/clear-extracted",
+        json={"auditor_id": other_auditor_username}  # This should be ignored
+    )
+    assert response.status_code == 200
+    assert response.json["cleared_count"] == 1
+
+    # Verify only auditor's own feedback was cleared
+    db.session.refresh(auditor_feedback)
+    db.session.refresh(other_feedback)
+
+    assert auditor_feedback.edited_extraction is None  # Cleared
+    assert other_feedback.edited_extraction is not None  # NOT cleared
 
 
 # Helper fixtures to reduce duplication
@@ -317,8 +514,11 @@ def run_extraction(admin):
 
 
 def clear_extraction(admin, discussion_id):
-    """Helper to clear extracted data"""
-    response = admin.post(f"/training/discussions/{discussion_id}/clear-extracted")
+    """Helper to clear AI extracted data"""
+    response = admin.post(
+        f"/training/discussions/{discussion_id}/clear-extracted",
+        json={"auditor_id": "AI"}
+    )
     assert response.status_code == 200
     return response
 
@@ -426,7 +626,10 @@ def test_clear_during_extraction(mock_celery, admin):
     assert discussion.extracting is True
 
     # Clear while extraction is "in progress"
-    response = admin.post(f"/training/discussions/{discussion.id}/clear-extracted")
+    response = admin.post(
+        f"/training/discussions/{discussion.id}/clear-extracted",
+        json={"auditor_id": "AI"}
+    )
     assert response.status_code == 200
 
     # Verify extraction was stopped
@@ -513,11 +716,14 @@ def test_progress_endpoint_after_clear(admin):
     assert data["extracting"] is False
 
     # Clear extracted data
-    response = admin.post(f"/training/discussions/{discussion.id}/clear-extracted")
+    response = admin.post(
+        f"/training/discussions/{discussion.id}/clear-extracted",
+        json={"auditor_id": "AI"}
+    )
     assert response.status_code == 200
 
-    # Force a new database session to avoid cache issues
-    db.session.close()
+    # Force database to reload objects to avoid cache issues
+    db.session.expire_all()
 
     # Check progress after clearing
     response = admin.get(f"/training/discussions/{discussion.id}/progress")

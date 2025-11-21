@@ -18,9 +18,14 @@ done
 echo "Starting Flask server on port $PORT with auto-auth enabled..."
 echo $PORT > /tmp/flask_port_$$.txt
 
+# Default to patrick@alaskafamilysystems.com if FLASK_AUTO_AUTH_USER not set
+if [ -z "$FLASK_AUTO_AUTH_USER" ]; then
+    FLASK_AUTO_AUTH_USER=patrick@alaskafamilysystems.com
+fi
+
 PYTHONDONTWRITEBYTECODE=1 \
 FLASK_APP=btcopilot.app:create_app \
 FLASK_CONFIG=development \
 FLASK_DEBUG=1 \
-FLASK_AUTO_AUTH_USER=patrick@alaskafamilysystems.com \
+FLASK_AUTO_AUTH_USER=$FLASK_AUTO_AUTH_USER \
 uv run python -m flask run -p $PORT --no-reload
