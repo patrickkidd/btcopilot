@@ -2496,5 +2496,86 @@ Parameters:
     border-color: #dbdbdb;
     border-bottom-color: white;
 }
+
+/* Dark mode styling - Family Diagram style */
+[data-theme="dark"] .person-tag {
+    background-color: rgba(232, 244, 255, 0.15) !important;
+    border-color: rgba(179, 217, 255, 0.3) !important;
+    color: var(--color-accent-fg) !important;
+}
+
+[data-theme="dark"] .person-tag.editable:hover {
+    background-color: rgba(232, 244, 255, 0.25) !important;
+    border-color: rgba(179, 217, 255, 0.5) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+[data-theme="dark"] .person-tag .delete-person {
+    color: rgba(255, 107, 107, 0.9);
+}
+
+[data-theme="dark"] .person-tag .delete-person:hover {
+    color: rgb(255, 107, 107);
+}
+
+[data-theme="dark"] .relationship-details .field-label {
+    color: var(--color-fg-muted);
+}
+
+[data-theme="dark"] .relationship-details .person-tag,
+[data-theme="dark"] .person-tag-inline {
+    background-color: rgba(232, 244, 255, 0.15);
+    border-color: rgba(179, 217, 255, 0.3);
+    color: var(--color-accent-fg);
+}
+
+[data-theme="dark"] .delete-item {
+    border-color: rgba(255, 193, 7, 0.5);
+}
+
+[data-theme="dark"] .deletes-section .section-header {
+    color: rgba(255, 193, 7, 0.9) !important;
+}
+
+[data-theme="dark"] .delete-item:hover {
+    background-color: rgba(255, 193, 7, 0.15) !important;
+}
+
+[data-theme="dark"] .variable-rationale span {
+    color: var(--color-fg-muted) !important;
+}
+
+[data-theme="dark"] .admin-tabbed-data {
+    border-color: var(--color-border-default);
+    background: var(--color-card-bg);
+}
+
+[data-theme="dark"] .admin-tabbed-data .tabs ul {
+    border-bottom-color: var(--color-border-default);
+}
+
+[data-theme="dark"] .tab-content-area {
+    background: var(--color-card-bg);
+}
+
+[data-theme="dark"] .admin-controls {
+    background: var(--color-canvas-subtle);
+    border-bottom-color: var(--color-border-default);
+}
+
+[data-theme="dark"] .admin-tabbed-data .data-content {
+    background: var(--color-card-bg);
+}
+
+[data-theme="dark"] .expanded-data-section {
+    border-color: var(--color-border-default);
+    background: var(--color-card-bg);
+}
+
+[data-theme="dark"] .tabs.is-boxed li.is-active a {
+    background: var(--color-card-bg);
+    border-color: var(--color-border-default);
+    border-bottom-color: var(--color-card-bg);
+}
 </style>
 

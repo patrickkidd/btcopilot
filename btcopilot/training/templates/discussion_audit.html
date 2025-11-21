@@ -209,6 +209,70 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     margin-right: 8px;
 }
 
+/* Dark mode styling - Family Diagram style */
+[data-theme="dark"] .field-label {
+    color: var(--color-fg-muted) !important;
+}
+
+[data-theme="dark"] .data-cell,
+[data-theme="dark"] .chat-cell {
+    border-color: var(--color-border-default);
+    background-color: var(--color-card-bg);
+}
+
+[data-theme="dark"] .audit-messages-table td {
+    border-color: var(--color-border-default);
+}
+
+/* Softer button colors for dark mode */
+[data-theme="dark"] .button.is-outlined.is-danger {
+    border-color: rgba(255, 107, 107, 0.5);
+    color: rgba(255, 107, 107, 0.9);
+}
+
+[data-theme="dark"] .button.is-outlined.is-danger:hover {
+    background-color: rgba(255, 107, 107, 0.1);
+    border-color: rgba(255, 107, 107, 0.7);
+}
+
+[data-theme="dark"] .button.is-outlined.is-info {
+    border-color: rgba(76, 175, 237, 0.5);
+    color: rgba(76, 175, 237, 0.9);
+}
+
+[data-theme="dark"] .button.is-outlined.is-info:hover {
+    background-color: rgba(76, 175, 237, 0.1);
+    border-color: rgba(76, 175, 237, 0.7);
+}
+
+[data-theme="dark"] .button.is-outlined.is-primary {
+    border-color: rgba(252, 245, 201, 0.5);
+    color: var(--color-accent-fg);
+}
+
+[data-theme="dark"] .button.is-outlined.is-primary:hover {
+    background-color: rgba(252, 245, 201, 0.1);
+    border-color: rgba(252, 245, 201, 0.7);
+}
+
+/* Softer tag colors for dark mode */
+[data-theme="dark"] .tag.is-success {
+    background-color: rgba(144, 238, 144, 0.25);
+    color: rgb(144, 238, 144);
+}
+
+/* Person tags for dark mode */
+[data-theme="dark"] .person-tag {
+    background: rgba(232, 244, 255, 0.15) !important;
+    border-color: rgba(179, 217, 255, 0.3) !important;
+    color: var(--color-accent-fg) !important;
+}
+
+[data-theme="dark"] .person-tag.editable:hover {
+    background: rgba(209, 233, 255, 0.25) !important;
+    border-color: rgba(128, 191, 255, 0.5) !important;
+}
+
 </style>
 
 <!-- Refresh Warning Badge -->
@@ -253,7 +317,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                 <p class="control">
                     <button class="button is-small is-outlined is-danger" onclick="clearExtractedData({{ discussion.id }})">
                         <span class="icon"><i class="fas fa-trash-alt"></i></span>
-                        <span>Clear Extracted</span>
+                        <span>Clear SARF Codes</span>
                     </button>
                 </p>
                 <p class="control">
