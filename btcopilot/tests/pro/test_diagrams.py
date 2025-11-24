@@ -131,6 +131,82 @@ def test_diagrams_patch_own_diagram(flask_app, test_user):
     assert data["some"] == "fake"
 
 
+def test_diagrams_optimistic_locking_success(flask_app, test_user):
+    diagram = test_user.free_diagram
+    initial_version = diagram.version
+
+    with flask_app.test_client(user=test_user) as client:
+        response = client.patch(
+            f"/v1/diagrams/{diagram.id}",
+            data=pickle.dumps(
+                {
+                    "updated_at": datetime.utcnow(),
+                    "data": pickle.dumps({"version": "test"}),
+                    "expected_version": initial_version,
+                }
+            ),
+        )
+    assert response.status_code == 200
+    result = pickle.loads(response.data)
+    assert result["version"] == initial_version + 1
+
+    diagram = Diagram.query.get(diagram.id)
+    assert diagram.version == initial_version + 1
+
+
+def test_diagrams_optimistic_locking_conflict(flask_app, test_user):
+    diagram = test_user.free_diagram
+    initial_version = diagram.version
+
+    with flask_app.test_client(user=test_user) as client:
+        response = client.patch(
+            f"/v1/diagrams/{diagram.id}",
+            data=pickle.dumps(
+                {
+                    "updated_at": datetime.utcnow(),
+                    "data": pickle.dumps({"version": "wrong"}),
+                    "expected_version": initial_version + 999,
+                }
+            ),
+        )
+    assert response.status_code == 409
+
+    diagram = Diagram.query.get(diagram.id)
+    assert diagram.version == initial_version
+
+
+def test_update_with_version_check_atomicity(test_user):
+    from btcopilot.extensions import db
+
+    diagram = test_user.free_diagram
+    initial_version = diagram.version
+    new_data = pickle.dumps({"test": "atomic"})
+
+    success, new_version = diagram.update_with_version_check(
+        expected_version=initial_version, new_data=new_data
+    )
+    assert success is True
+    assert new_version == initial_version + 1
+
+    db.session.flush()
+    db.session.refresh(diagram)
+    assert diagram.version == initial_version + 1
+    assert pickle.loads(diagram.data)["test"] == "atomic"
+
+
+def test_update_with_version_check_conflict(test_user):
+    diagram = test_user.free_diagram
+    initial_version = diagram.version
+    new_data = pickle.dumps({"test": "conflict"})
+
+    success, new_version = diagram.update_with_version_check(
+        expected_version=initial_version + 999, new_data=new_data
+    )
+    assert success is False
+    assert new_version is None
+    assert diagram.version == initial_version
+
+
 def test_diagrams_patch_others_diagram_no_access(flask_app, test_user, test_user_2):
     with flask_app.test_client(user=test_user_2) as client:
         response = client.patch(

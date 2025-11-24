@@ -10,9 +10,13 @@
 
 
 import sys
-import re, pickle, ast, datetime, uuid, logging, random
+import re
 import pickle
+import ast
+import datetime
+import uuid
 import logging
+import random
 from functools import wraps
 
 from flask import (
@@ -30,6 +34,7 @@ from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import inspect
 from sqlalchemy.orm import defer
+from sqlalchemy.exc import NoResultFound
 
 import btcopilot
 
@@ -99,7 +104,9 @@ def encrypted(func):
 
         ## Encrypt response
 
-        if response.status_code != 200 and isinstance(response.data, (str, bytes)):
+        if response.status_code not in (200, 409) and isinstance(
+            response.data, (str, bytes)
+        ):
             if isinstance(response.data, bytes):
                 x = response.data.decode("utf-8")
             else:
@@ -229,11 +236,23 @@ def diagrams(id=None):
             if not diagram.check_write_access(g.user):
                 return ("Access Denied", 401)
             data = pickle.loads(request.data)
+            expected_version = data.get("expected_version")
+
             # Support either sending a pickled dict of db model attributes or the pickled scene data.
             # To sync with the client's `updated_at` so that it doesn't think
             # someone else wrote to the server every time it itself writes to the server.
             diagram.updated_at = data["updated_at"]
-            diagram.data = data["data"]
+
+            success, new_version = diagram.update_with_version_check(
+                expected_version, new_data=data["data"]
+            )
+
+            if not success:
+                response_data = pickle.dumps(
+                    {"version": diagram.version, "data": diagram.data}
+                )
+                return response_data, 409
+
             session = inspect(diagram).session
             session.add(diagram)
             # persons = [item for item in data.get('items', []) if item['kind'] == 'Person']
@@ -241,9 +260,11 @@ def diagrams(id=None):
             # _log.debug(f"    Diagram.updated_at: {diagram.updated_at}")
             session.commit()
             _log.info(
-                f"Updated diagram {diagram.id} for user: {g.user}, bytes: {len(diagram.data)} updated_at: {diagram.updated_at}"
+                f"Updated diagram {diagram.id} for user: {g.user}, "
+                f"bytes: {len(diagram.data)} updated_at: {diagram.updated_at} "
+                f"version: {new_version}"
             )
-            return ("Success", 200)
+            return pickle.dumps({"version": new_version})
         elif request.method == "DELETE":  # delete
             if not diagram.check_write_access(g.user):
                 return ("Access Denied", 401)
