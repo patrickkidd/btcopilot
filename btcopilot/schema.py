@@ -272,13 +272,11 @@ class PDP:
 
 @dataclass
 class DiagramData:
+    id: int | None = None
     # Scene-facing collections (dict chunks compatible with Scene.read/write)
     people: list[dict] = field(default_factory=list)
     events: list[dict] = field(default_factory=list)
-    pair_bonds: list[dict] = field(default_factory=list)  # legacy PDP storage
-    marriages: list[dict] = field(
-        default_factory=list
-    )  # scene key (mirrors pair_bonds)
+    pair_bonds: list[dict] = field(default_factory=list)
     emotions: list[dict] = field(default_factory=list)
     multipleBirths: list[dict] = field(default_factory=list)
     layers: list[dict] = field(default_factory=list)
@@ -287,17 +285,41 @@ class DiagramData:
     pruned: list[dict] = field(default_factory=list)
     uuid: str | None = None
     name: str | None = None
+    tags: list[str] = field(default_factory=list)
+    loggedDateTime: list[str] = field(default_factory=list)
+    masterKey: str | None = None
+    alias: str | None = None
     version: str | None = None
     versionCompat: str | None = None
     # PDP (negative-id staging)
     pdp: PDP = field(default_factory=PDP)
     lastItemId: int = field(default=0)
+    # Scene UI/display properties (for canonical diagram mutation support)
+    readOnly: bool = False
+    contributeToResearch: bool = False
+    useRealNames: bool = False
+    password: str | None = None
+    requirePasswordForRealNames: bool = False
+    showAliases: bool = False
+    hideNames: bool = False
+    hideToolBars: bool = False
+    hideEmotionalProcess: bool = False
+    hideEmotionColors: bool = False
+    hideDateSlider: bool = False
+    hideVariablesOnDiagram: bool = False
+    hideVariableSteadyStates: bool = False
+    exclusiveLayerSelection: bool = True
+    storePositionsInLayers: bool = False
+    currentDateTime: object = None  # Serialized QDateTime
+    scaleFactor: float | None = None
+    pencilColor: object = None  # Serialized color
+    eventProperties: list = field(default_factory=list)
+    legendData: dict | None = None
 
     def clear(self) -> None:
         self.people = []
         self.events = []
         self.pair_bonds = []
-        self.marriages = []
         self.emotions = []
         self.multipleBirths = []
         self.layers = []
@@ -310,6 +332,26 @@ class DiagramData:
         self.versionCompat = None
         self.pdp = PDP()
         self.lastItemId = 0
+        self.readOnly = False
+        self.contributeToResearch = False
+        self.useRealNames = False
+        self.password = None
+        self.requirePasswordForRealNames = False
+        self.showAliases = False
+        self.hideNames = False
+        self.hideToolBars = False
+        self.hideEmotionalProcess = False
+        self.hideEmotionColors = False
+        self.hideDateSlider = False
+        self.hideVariablesOnDiagram = False
+        self.hideVariableSteadyStates = False
+        self.exclusiveLayerSelection = True
+        self.storePositionsInLayers = False
+        self.currentDateTime = None
+        self.scaleFactor = None
+        self.pencilColor = None
+        self.eventProperties = []
+        self.legendData = None
 
     def _next_id(self) -> int:
         self.lastItemId += 1
@@ -328,9 +370,7 @@ class DiagramData:
     def add_pair_bond(self, pair_bond: PairBond) -> None:
         pair_bond.id = self._next_id()
         chunk = asdict(pair_bond)
-        # Keep both PDP-oriented pair_bonds and scene-facing marriages in sync
         self.pair_bonds.append(chunk)
-        self.marriages.append(chunk)
         _log.info(f"Added pair bond with new ID {pair_bond.id}")
 
     def commit_pdp_items(self, item_ids: list[int]) -> dict[int, int]:
@@ -363,7 +403,6 @@ class DiagramData:
                     f"Committed pair bond with new ID {new_pair_bond.id}: {new_pair_bond}"
                 )
                 self.pair_bonds.append(chunk)
-                self.marriages.append(chunk)
 
         for old_id in all_item_ids:
             if old_id in pdp_people_map:
