@@ -21,7 +21,7 @@ def test_commit_single_person():
     assert data.people[0]["name"] == "Bob"
     assert data.people[0]["id"] == 1
     assert id_mapping == {-1: 1}
-    assert data.last_id == 1
+    assert data.lastItemId == 1
     assert len(data.pdp.people) == 0
 
 
@@ -131,7 +131,7 @@ def test_commit_event_with_pdp_triangles():
 def test_commit_preserves_committed_references():
     data = DiagramData(
         people=[{"id": 1, "name": "Committed Person"}],
-        last_id=1,
+        lastItemId=1,
         pdp=PDP(
             events=[
                 Event(id=-1, kind=EventKind.Shift, person=1, anxiety=VariableShift.Up)

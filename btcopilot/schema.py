@@ -1,6 +1,17 @@
 import enum
-from dataclasses import dataclass, field, asdict as dataclass_asdict, fields, MISSING
+import logging
+from dataclasses import (
+    dataclass,
+    field,
+    asdict as dataclass_asdict,
+    fields,
+    MISSING,
+    replace,
+)
 from typing import get_origin, get_args
+
+
+_log = logging.getLogger(__name__)
 
 
 class PDPValidationError(ValueError):
@@ -14,7 +25,6 @@ class PDPValidationError(ValueError):
 
 
 def asdict(obj):
-    """Convert dataclass to dict with enums as their string values."""
     return dataclass_asdict(
         obj,
         dict_factory=lambda items: {
@@ -262,33 +272,66 @@ class PDP:
 
 @dataclass
 class DiagramData:
-    people: list[dict] = field(
+    # Scene-facing collections (dict chunks compatible with Scene.read/write)
+    people: list[dict] = field(default_factory=list)
+    events: list[dict] = field(default_factory=list)
+    pair_bonds: list[dict] = field(default_factory=list)  # legacy PDP storage
+    marriages: list[dict] = field(
         default_factory=list
-    )  # Raw dicts from pickle (READ-ONLY, may contain QtCore objects)
-    events: list[dict] = field(
-        default_factory=list
-    )  # Raw dicts from pickle (READ-ONLY, may contain QtCore objects)
-    pair_bonds: list[dict] = field(
-        default_factory=list
-    )  # Raw dicts from pickle (READ-ONLY, may contain QtCore objects)
+    )  # scene key (mirrors pair_bonds)
+    emotions: list[dict] = field(default_factory=list)
+    multipleBirths: list[dict] = field(default_factory=list)
+    layers: list[dict] = field(default_factory=list)
+    layerItems: list[dict] = field(default_factory=list)
+    items: list[dict] = field(default_factory=list)
+    pruned: list[dict] = field(default_factory=list)
+    uuid: str | None = None
+    name: str | None = None
+    version: str | None = None
+    versionCompat: str | None = None
+    # PDP (negative-id staging)
     pdp: PDP = field(default_factory=PDP)
-    last_id: int = field(default=0)
+    lastItemId: int = field(default=0)
+
+    def clear(self) -> None:
+        self.people = []
+        self.events = []
+        self.pair_bonds = []
+        self.marriages = []
+        self.emotions = []
+        self.multipleBirths = []
+        self.layers = []
+        self.layerItems = []
+        self.items = []
+        self.pruned = []
+        self.uuid = None
+        self.name = None
+        self.version = None
+        self.versionCompat = None
+        self.pdp = PDP()
+        self.lastItemId = 0
 
     def _next_id(self) -> int:
-        self.last_id += 1
-        return self.last_id
+        self.lastItemId += 1
+        return self.lastItemId
 
     def add_person(self, person: Person) -> None:
         person.id = self._next_id()
         self.people.append(asdict(person))
+        _log.info(f"Added person with new ID {person.id}")
 
     def add_event(self, event: Event) -> None:
         event.id = self._next_id()
         self.events.append(asdict(event))
+        _log.info(f"Added event with new ID {event.id}")
 
     def add_pair_bond(self, pair_bond: PairBond) -> None:
         pair_bond.id = self._next_id()
-        self.pair_bonds.append(asdict(pair_bond))
+        chunk = asdict(pair_bond)
+        # Keep both PDP-oriented pair_bonds and scene-facing marriages in sync
+        self.pair_bonds.append(chunk)
+        self.marriages.append(chunk)
+        _log.info(f"Added pair bond with new ID {pair_bond.id}")
 
     def commit_pdp_items(self, item_ids: list[int]) -> dict[int, int]:
         """
@@ -315,19 +358,34 @@ class DiagramData:
             if old_id in pdp_pair_bonds_map:
                 pair_bond = pdp_pair_bonds_map[old_id]
                 new_pair_bond = self._remap_pair_bond_ids(pair_bond, id_mapping)
-                self.pair_bonds.append(asdict(new_pair_bond))
+                chunk = asdict(new_pair_bond)
+                _log.info(
+                    f"Committed pair bond with new ID {new_pair_bond.id}: {new_pair_bond}"
+                )
+                self.pair_bonds.append(chunk)
+                self.marriages.append(chunk)
 
         for old_id in all_item_ids:
             if old_id in pdp_people_map:
                 person = pdp_people_map[old_id]
                 new_person = self._remap_person_ids(person, id_mapping)
+                _log.info(f"Committed person with new ID {new_person.id}: {new_person}")
                 self.people.append(asdict(new_person))
 
         for old_id in all_item_ids:
             if old_id in pdp_events_map:
                 event = pdp_events_map[old_id]
                 new_event = self._remap_event_ids(event, id_mapping)
-                self.events.append(asdict(new_event))
+                _log.info(f"Committed event with new ID {new_event.id}: {new_event}")
+                event_dict = asdict(new_event)
+                # Convert string dateTime values to QDateTime for Scene compatibility
+                from pkdiagram import util
+
+                for key in ("dateTime", "endDateTime"):
+                    value = event_dict.get(key)
+                    if value and isinstance(value, str):
+                        event_dict[key] = util.validatedDateTimeText(value)
+                self.events.append(event_dict)
 
         self.pdp.people = [p for p in self.pdp.people if p.id not in all_item_ids]
         self.pdp.events = [e for e in self.pdp.events if e.id not in all_item_ids]
@@ -353,6 +411,7 @@ class DiagramData:
         if item_id >= 0:
             raise ValueError(f"Item ID {item_id} must be negative (PDP item)")
 
+        _log.info(f"Rejecting PDP item {item_id} and cascading deletes")
         ids_to_remove = {item_id}
 
         for event in self.pdp.events:
@@ -363,14 +422,23 @@ class DiagramData:
                 or item_id in event.relationshipTargets
                 or item_id in event.relationshipTriangles
             ):
+                _log.info(
+                    f"Also removing PDP event {event.id} referencing rejected item {item_id}"
+                )
                 ids_to_remove.add(event.id)
 
         for pair_bond in self.pdp.pair_bonds:
             if pair_bond.person_a == item_id or pair_bond.person_b == item_id:
+                _log.info(
+                    f"Also removing PDP pair bond {pair_bond.id} referencing rejected item {item_id}"
+                )
                 ids_to_remove.add(pair_bond.id)
 
         for person in self.pdp.people:
             if person.parents == item_id:
+                _log.info(
+                    f"Also removing PDP person {person.id} whose parents reference rejected item {item_id}"
+                )
                 ids_to_remove.add(person.id)
 
         self.pdp.people = [p for p in self.pdp.people if p.id not in ids_to_remove]
@@ -435,8 +503,6 @@ class DiagramData:
         return visited
 
     def _remap_person_ids(self, person: Person, id_mapping: dict[int, int]) -> Person:
-        from dataclasses import replace
-
         return replace(
             person,
             id=id_mapping.get(person.id, person.id),
@@ -448,8 +514,6 @@ class DiagramData:
         )
 
     def _remap_event_ids(self, event: Event, id_mapping: dict[int, int]) -> Event:
-        from dataclasses import replace
-
         return replace(
             event,
             id=id_mapping.get(event.id, event.id),
@@ -468,8 +532,6 @@ class DiagramData:
     def _remap_pair_bond_ids(
         self, pair_bond: PairBond, id_mapping: dict[int, int]
     ) -> PairBond:
-        from dataclasses import replace
-
         return replace(
             pair_bond,
             id=id_mapping.get(pair_bond.id, pair_bond.id),
@@ -497,7 +559,11 @@ class DiagramData:
         assistant_person = Person(id=2, name="Assistant")
         diagram_data.people.append(asdict(assistant_person))
 
-        # Ensure last_id accounts for the default people
-        diagram_data.last_id = max(diagram_data.last_id, 2)
+        # Ensure lastItemId accounts for the default people
+        diagram_data.lastItemId = max(diagram_data.lastItemId, 2)
+        from pkdiagram import version as pk_version
+
+        diagram_data.version = pk_version.VERSION
+        diagram_data.versionCompat = pk_version.VERSION_COMPAT
 
         return diagram_data

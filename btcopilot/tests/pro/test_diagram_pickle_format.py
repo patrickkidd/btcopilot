@@ -27,7 +27,7 @@ def test_pickle_contains_json_serializable_dicts(db_session, test_user):
             people=[Person(id=-1, name="Bob")],
             events=[Event(id=-2, kind=EventKind.Shift, person=-1)],
         ),
-        last_id=2,
+        lastItemId=2,
     )
 
     diagram.set_diagram_data(diagram_data)
@@ -66,7 +66,7 @@ def test_pickle_contains_json_serializable_dicts(db_session, test_user):
             ],
             "pair_bonds": [],
         },
-        "last_id": 2,
+        "lastItemId": 2,
     }
 
     pickled_data = pickle.loads(diagram.data)
@@ -92,7 +92,7 @@ def test_get_diagram_data_converts_dicts_to_dataclasses(db_session, test_user):
             "people": [{"id": -1, "name": "Bob", "spouses": []}],
             "events": [{"id": -2, "kind": "shift", "person": -1}],
         },
-        "last_id": 2,
+        "lastItemId": 2,
     }
     diagram.data = pickle.dumps(data)
 
@@ -103,7 +103,7 @@ def test_get_diagram_data_converts_dicts_to_dataclasses(db_session, test_user):
             people=[Person(id=-1, name="Bob")],
             events=[Event(id=-2, kind=EventKind.Shift, person=-1)],
         ),
-        last_id=2,
+        lastItemId=2,
     )
 
     diagram_data = diagram.get_diagram_data()
@@ -111,7 +111,7 @@ def test_get_diagram_data_converts_dicts_to_dataclasses(db_session, test_user):
     assert diagram_data.people[0]["id"] == expected.people[0]["id"]
     assert diagram_data.people[0]["name"] == expected.people[0]["name"]
     assert diagram_data.events == expected.events
-    assert diagram_data.last_id == expected.last_id
+    assert diagram_data.lastItemId == expected.lastItemId
     assert len(diagram_data.pdp.people) == len(expected.pdp.people)
     assert diagram_data.pdp.people[0].id == expected.pdp.people[0].id
     assert diagram_data.pdp.people[0].name == expected.pdp.people[0].name

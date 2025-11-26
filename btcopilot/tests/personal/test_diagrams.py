@@ -23,7 +23,7 @@ def test_diagrams_update(subscriber):
     initial_version = diagram.version
 
     diagram_data = diagram.get_diagram_data()
-    diagram_data.last_id = 999
+    diagram_data.lastItemId = 999
 
     response = subscriber.put(
         f"/personal/diagrams/{diagram.id}",
@@ -38,7 +38,7 @@ def test_diagrams_update(subscriber):
 
     diagram = Diagram.query.get(diagram.id)
     assert diagram.version == initial_version + 1
-    assert diagram.get_diagram_data().last_id == 999
+    assert diagram.get_diagram_data().lastItemId == 999
 
 
 def test_diagrams_optimistic_locking_success(subscriber):
@@ -46,7 +46,7 @@ def test_diagrams_optimistic_locking_success(subscriber):
     initial_version = diagram.version
 
     diagram_data = diagram.get_diagram_data()
-    diagram_data.last_id = 123
+    diagram_data.lastItemId = 123
 
     response = subscriber.put(
         f"/personal/diagrams/{diagram.id}",
@@ -92,7 +92,7 @@ def test_update_with_version_check_using_diagram_data(subscriber):
     initial_version = diagram.version
 
     diagram_data = diagram.get_diagram_data()
-    diagram_data.last_id = 456
+    diagram_data.lastItemId = 456
 
     success, new_version = diagram.update_with_version_check(
         expected_version=initial_version, diagram_data=diagram_data
@@ -103,4 +103,4 @@ def test_update_with_version_check_using_diagram_data(subscriber):
     db.session.flush()
     db.session.refresh(diagram)
     assert diagram.version == initial_version + 1
-    assert diagram.get_diagram_data().last_id == 456
+    assert diagram.get_diagram_data().lastItemId == 456

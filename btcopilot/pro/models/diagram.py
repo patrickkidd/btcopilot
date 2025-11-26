@@ -55,7 +55,7 @@ class Diagram(db.Model, ModelMixin):
             events=events,
             pair_bonds=pair_bonds,
             pdp=pdp,
-            last_id=data.get("last_id", 0),
+            lastItemId=data.get("lastItemId", 0),
         )
 
     def set_diagram_data(self, diagram_data: DiagramData):
@@ -66,7 +66,7 @@ class Diagram(db.Model, ModelMixin):
 
         # Convert PDP dataclass to dict before pickling (JSON-compatible)
         data["pdp"] = asdict(diagram_data.pdp)
-        data["last_id"] = diagram_data.last_id
+        data["lastItemId"] = diagram_data.lastItemId
 
         # Write outer people/events/pair_bonds as raw dicts (if provided)
         # Pro app: btcopilot never modifies these (FD manages them)
@@ -142,7 +142,7 @@ class Diagram(db.Model, ModelMixin):
 
             data = pickle.loads(self.data) if self.data else {}
             data["pdp"] = asdict(diagram_data.pdp)
-            data["last_id"] = diagram_data.last_id
+            data["lastItemId"] = diagram_data.lastItemId
             if diagram_data.people:
                 data["people"] = diagram_data.people
             if diagram_data.events:
