@@ -1,5 +1,8 @@
+import pickle
+import base64
+
 from btcopilot.pro.models import Diagram
-from btcopilot.schema import DiagramData, PDP, Person, Event, EventKind
+from btcopilot.schema import DiagramData, PDP, Person, Event, EventKind, asdict
 from btcopilot.extensions import db
 
 
@@ -11,7 +14,8 @@ def test_diagrams_get(subscriber):
     data = response.get_json()
     assert data["id"] == diagram.id
     assert data["version"] == diagram.version
-    assert "diagram_data" in data
+    assert "data" in data
+    assert isinstance(data["data"], str)
 
 
 def test_diagrams_update(subscriber):
@@ -23,7 +27,9 @@ def test_diagrams_update(subscriber):
 
     response = subscriber.put(
         f"/personal/diagrams/{diagram.id}",
-        json={"diagram_data": diagram_data.__dict__},
+        json={
+            "data": base64.b64encode(pickle.dumps(asdict(diagram_data))).decode("utf-8")
+        },
     )
     assert response.status_code == 200
     data = response.get_json()
@@ -45,7 +51,9 @@ def test_diagrams_optimistic_locking_success(subscriber):
     response = subscriber.put(
         f"/personal/diagrams/{diagram.id}",
         json={
-            "diagram_data": diagram_data.__dict__,
+            "data": base64.b64encode(pickle.dumps(asdict(diagram_data))).decode(
+                "utf-8"
+            ),
             "expected_version": initial_version,
         },
     )

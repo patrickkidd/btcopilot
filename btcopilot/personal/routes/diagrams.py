@@ -1,4 +1,5 @@
 import logging
+import base64
 from flask import Blueprint, request, jsonify, abort
 from sqlalchemy.orm import subqueryload
 from sqlalchemy.exc import NoResultFound
@@ -36,7 +37,7 @@ def get(diagram_id):
         },
         exclude="data",
     )
-    ret["diagram_data"] = asdict(diagram.get_diagram_data())
+    ret["data"] = base64.b64encode(diagram.data).decode("utf-8")
 
     return jsonify(ret)
 
@@ -56,22 +57,30 @@ def update(diagram_id):
     if not diagram.check_write_access(user):
         abort(403)
 
-    expected_version = request.json.get("expected_version")
-    data = request.json.get("diagram_data")
+    if request.json is None:
+        _log.error(
+            f"request.json is None. Content-Type: {request.content_type}, "
+            f"Content-Length: {request.content_length}, Data: {request.data[:100] if request.data else 'None'}"
+        )
+        return jsonify(error="Invalid JSON or missing Content-Type header"), 400
 
-    if data is not None:
-        diagram_data = from_dict(DiagramData, data)
+    expected_version = request.json.get("expected_version")
+    data_b64 = request.json.get("data")
+
+    if data_b64 is not None:
+        new_data = base64.b64decode(data_b64)
     else:
-        diagram_data = None
+        new_data = None
 
     success, new_version = diagram.update_with_version_check(
-        expected_version, diagram_data=diagram_data
+        expected_version, new_data=new_data
     )
 
     if not success:
         return (
             jsonify(
-                version=diagram.version, diagram_data=asdict(diagram.get_diagram_data())
+                version=diagram.version,
+                data=base64.b64encode(diagram.data).decode("utf-8"),
             ),
             409,
         )

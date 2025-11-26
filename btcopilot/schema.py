@@ -335,7 +335,49 @@ class DiagramData:
             pb for pb in self.pdp.pair_bonds if pb.id not in all_item_ids
         ]
 
+        # Update references in remaining PDP items to point to committed IDs
+        self.pdp.people = [
+            self._remap_person_ids(p, id_mapping) for p in self.pdp.people
+        ]
+        self.pdp.events = [
+            self._remap_event_ids(e, id_mapping) for e in self.pdp.events
+        ]
+        self.pdp.pair_bonds = [
+            self._remap_pair_bond_ids(pb, id_mapping) for pb in self.pdp.pair_bonds
+        ]
+
         return id_mapping
+
+    def reject_pdp_item(self, item_id: int) -> None:
+        """Remove a PDP item and cascade-delete any items that reference it."""
+        if item_id >= 0:
+            raise ValueError(f"Item ID {item_id} must be negative (PDP item)")
+
+        ids_to_remove = {item_id}
+
+        for event in self.pdp.events:
+            if (
+                event.person == item_id
+                or event.spouse == item_id
+                or event.child == item_id
+                or item_id in event.relationshipTargets
+                or item_id in event.relationshipTriangles
+            ):
+                ids_to_remove.add(event.id)
+
+        for pair_bond in self.pdp.pair_bonds:
+            if pair_bond.person_a == item_id or pair_bond.person_b == item_id:
+                ids_to_remove.add(pair_bond.id)
+
+        for person in self.pdp.people:
+            if person.parents == item_id:
+                ids_to_remove.add(person.id)
+
+        self.pdp.people = [p for p in self.pdp.people if p.id not in ids_to_remove]
+        self.pdp.events = [e for e in self.pdp.events if e.id not in ids_to_remove]
+        self.pdp.pair_bonds = [
+            pb for pb in self.pdp.pair_bonds if pb.id not in ids_to_remove
+        ]
 
     def _get_transitive_pdp_references(self, item_ids: list[int]) -> set[int]:
         from btcopilot.pdp import get_all_pdp_item_ids
@@ -397,7 +439,7 @@ class DiagramData:
 
         return replace(
             person,
-            id=id_mapping[person.id],
+            id=id_mapping.get(person.id, person.id),
             parents=(
                 id_mapping.get(person.parents, person.parents)
                 if person.parents
@@ -410,7 +452,7 @@ class DiagramData:
 
         return replace(
             event,
-            id=id_mapping[event.id],
+            id=id_mapping.get(event.id, event.id),
             person=id_mapping.get(event.person, event.person) if event.person else None,
             spouse=id_mapping.get(event.spouse, event.spouse) if event.spouse else None,
             child=id_mapping.get(event.child, event.child) if event.child else None,
@@ -430,7 +472,7 @@ class DiagramData:
 
         return replace(
             pair_bond,
-            id=id_mapping[pair_bond.id],
+            id=id_mapping.get(pair_bond.id, pair_bond.id),
             person_a=(
                 id_mapping.get(pair_bond.person_a, pair_bond.person_a)
                 if pair_bond.person_a
@@ -444,18 +486,18 @@ class DiagramData:
         )
 
     @staticmethod
-    def create_with_defaults() -> "Diagram":
-        diagramData = DiagramData()
+    def create_with_defaults() -> "DiagramData":
+        diagram_data = DiagramData()
 
         # Add default User person (ID 1) - matches default chat_user_speaker
         user_person = Person(id=1, name="User")
-        diagramData.people.append(asdict(user_person))
+        diagram_data.people.append(asdict(user_person))
 
         # Add default Assistant person (ID 2) - matches default chat_ai_speaker
         assistant_person = Person(id=2, name="Assistant")
-        diagramData.people.append(asdict(assistant_person))
+        diagram_data.people.append(asdict(assistant_person))
 
         # Ensure last_id accounts for the default people
-        diagramData.last_id = max(diagramData.last_id, 2)
+        diagram_data.last_id = max(diagram_data.last_id, 2)
 
-        return diagramData
+        return diagram_data
