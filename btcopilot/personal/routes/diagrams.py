@@ -72,11 +72,6 @@ def update(diagram_id):
     else:
         new_data = None
 
-    # import pickle
-    # import PyQt5.sip
-
-    # pickle_data = pickle.loads(new_data)
-
     success, new_version = diagram.update_with_version_check(
         expected_version, new_data=new_data
     )

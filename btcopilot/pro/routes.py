@@ -34,7 +34,6 @@ from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import inspect
 from sqlalchemy.orm import defer
-from sqlalchemy.exc import NoResultFound
 
 import btcopilot
 
@@ -248,6 +247,9 @@ def diagrams(id=None):
             )
 
             if not success:
+                _log.info(
+                    f"Conflict updating diagram {diagram.id} for user: {g.user}, expected_version: {expected_version}, current_version: {diagram.version}"
+                )
                 response_data = pickle.dumps(
                     {"version": diagram.version, "data": diagram.data}
                 )
