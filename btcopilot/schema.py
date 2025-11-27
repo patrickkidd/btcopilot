@@ -33,24 +33,6 @@ def asdict(obj):
     )
 
 
-def compute_spouses_for_person(person_id: int, events: list) -> list[int]:
-    """
-    Compute spouse list from Events (Bonded, Married, Birth, Adopted, etc.)
-    Returns unique list of spouse IDs for this person.
-    """
-    spouses = set()
-
-    for event in events:
-        event_obj = event if hasattr(event, "kind") else from_dict(Event, event)
-        if event_obj.kind and event_obj.kind.isPairBond():
-            if event_obj.person == person_id and event_obj.spouse:
-                spouses.add(event_obj.spouse)
-            elif event_obj.spouse == person_id and event_obj.person:
-                spouses.add(event_obj.person)
-
-    return list(spouses)
-
-
 def from_dict(cls, data):
     """
     Reconstruct a dataclass from a dict, converting string values back to enums.

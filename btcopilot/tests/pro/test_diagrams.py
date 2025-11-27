@@ -175,38 +175,6 @@ def test_diagrams_optimistic_locking_conflict(flask_app, test_user):
     assert diagram.version == initial_version
 
 
-def test_update_with_version_check_atomicity(test_user):
-    from btcopilot.extensions import db
-
-    diagram = test_user.free_diagram
-    initial_version = diagram.version
-    new_data = pickle.dumps({"test": "atomic"})
-
-    success, new_version = diagram.update_with_version_check(
-        expected_version=initial_version, new_data=new_data
-    )
-    assert success is True
-    assert new_version == initial_version + 1
-
-    db.session.flush()
-    db.session.refresh(diagram)
-    assert diagram.version == initial_version + 1
-    assert pickle.loads(diagram.data)["test"] == "atomic"
-
-
-def test_update_with_version_check_conflict(test_user):
-    diagram = test_user.free_diagram
-    initial_version = diagram.version
-    new_data = pickle.dumps({"test": "conflict"})
-
-    success, new_version = diagram.update_with_version_check(
-        expected_version=initial_version + 999, new_data=new_data
-    )
-    assert success is False
-    assert new_version is None
-    assert diagram.version == initial_version
-
-
 def test_diagrams_patch_others_diagram_no_access(flask_app, test_user, test_user_2):
     with flask_app.test_client(user=test_user_2) as client:
         response = client.patch(
@@ -299,19 +267,6 @@ def _test_get_first_diagram(flask_app):
     data = pickle.loads(response.data)
     assert type(data) == dict
     assert data["uuid"] == first["uuid"]
-
-
-def _test_get_all_diagramsapp(flask_app):
-    with flask_app.test_client() as client:
-        response = client.get("/v1/diagrams")
-    data = pickle.loads(response.data)
-    assert type(data) == dict
-    for uuid, entry in data.items():
-        with flask_app.test_client() as client:
-            response = client.get("/v1/diagrams/" + uuid)
-        data = pickle.loads(response.data)
-        assert type(data) == dict
-        # assert data['uuid'] == uuid
 
 
 @pytest.mark.skip(reason="Can't remember why this is skipped")

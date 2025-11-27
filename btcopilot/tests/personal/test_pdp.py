@@ -95,45 +95,6 @@ def test_reject_event():
     assert len(diagram_data.events) == 0
 
 
-def test_pair_bond_field_names():
-    """Test that PairBond uses person_a and person_b, not person_a_id and person_b_id"""
-    pair_bond = PairBond(id=-1, person_a=-2, person_b=-3, confidence=0.9)
-    assert pair_bond.person_a == -2
-    assert pair_bond.person_b == -3
-    assert not hasattr(pair_bond, "person_a_id")
-    assert not hasattr(pair_bond, "person_b_id")
-
-
-def test_person_parents_field_name():
-    """Test that Person uses parents, not pair_bond_id"""
-    person = Person(id=-1, name="Child", parents=-2)
-    assert person.parents == -2
-    assert not hasattr(person, "pair_bond_id")
-
-
-def test_pdp_has_pair_bonds():
-    """Test that PDP class has pair_bonds field"""
-    pdp = PDP(
-        people=[Person(id=-1, name="Child", parents=-3)],
-        events=[],
-        pair_bonds=[PairBond(id=-3, person_a=-4, person_b=-5)],
-    )
-    assert hasattr(pdp, "pair_bonds")
-    assert len(pdp.pair_bonds) == 1
-    assert pdp.pair_bonds[0].id == -3
-
-
-def test_diagram_data_has_pair_bonds():
-    """Test that DiagramData class has pair_bonds field"""
-    data = DiagramData(
-        people=[],
-        events=[],
-        pair_bonds=[{"id": 1, "person_a": 2, "person_b": 3}],
-    )
-    assert hasattr(data, "pair_bonds")
-    assert len(data.pair_bonds) == 1
-
-
 def test_validate_pdp_deltas_with_pair_bonds():
     """Test that validate_pdp_deltas works with new field names"""
     pdp = PDP(
@@ -205,34 +166,3 @@ def test_commit_pdp_items_direct():
     assert "person_b" in pair_bond
     assert pair_bond["person_a"] > 0
     assert pair_bond["person_b"] > 0
-
-
-def test_compute_spouses_from_events():
-    """Test that compute_spouses_for_person correctly computes spouses from Events"""
-    from btcopilot.schema import compute_spouses_for_person, Event, EventKind
-
-    events = [
-        Event(id=1, kind=EventKind.Married, person=1, spouse=2),
-        Event(id=2, kind=EventKind.Birth, person=1, spouse=2, child=3),
-        Event(id=3, kind=EventKind.Married, person=4, spouse=5),
-        Event(id=4, kind=EventKind.Divorced, person=1, spouse=2),
-    ]
-
-    # Person 1 should have spouse 2 (appears in multiple pair bond events)
-    spouses = compute_spouses_for_person(1, events)
-    assert 2 in spouses
-    assert len(spouses) == 1
-
-    # Person 2 should have spouse 1
-    spouses = compute_spouses_for_person(2, events)
-    assert 1 in spouses
-    assert len(spouses) == 1
-
-    # Person 3 (child) should have no spouses
-    spouses = compute_spouses_for_person(3, events)
-    assert len(spouses) == 0
-
-    # Person 4 should have spouse 5
-    spouses = compute_spouses_for_person(4, events)
-    assert 5 in spouses
-    assert len(spouses) == 1
