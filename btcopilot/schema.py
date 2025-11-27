@@ -364,6 +364,9 @@ class DiagramData:
             if item_id >= 0:
                 raise ValueError(f"Item ID {item_id} must be negative (PDP item)")
 
+        # Create inferred items for Birth/Adopted events before gathering transitive refs
+        self._create_inferred_birth_items(item_ids)
+
         all_item_ids = self._get_transitive_pdp_references(item_ids)
 
         id_mapping = {}
@@ -467,6 +470,113 @@ class DiagramData:
         self.pdp.pair_bonds = [
             pb for pb in self.pdp.pair_bonds if pb.id not in ids_to_remove
         ]
+
+    def _next_pdp_id(self) -> int:
+        """Generate next available negative PDP ID."""
+        all_ids = (
+            [p.id for p in self.pdp.people if p.id is not None]
+            + [e.id for e in self.pdp.events]
+            + [pb.id for pb in self.pdp.pair_bonds if pb.id is not None]
+        )
+        return min(all_ids, default=0) - 1
+
+    def _create_inferred_birth_items(self, item_ids: list[int]) -> None:
+        """Create inferred parents/children for Birth/Adopted events being committed."""
+        pdp_people_map = {p.id: p for p in self.pdp.people if p.id is not None}
+        pdp_events_map = {e.id: e for e in self.pdp.events}
+
+        for event_id in item_ids:
+            if event_id not in pdp_events_map:
+                continue
+            event = pdp_events_map[event_id]
+            if event.kind not in (EventKind.Birth, EventKind.Adopted):
+                continue
+
+            child_name = None
+            person_name = None
+            if event.child and event.child in pdp_people_map:
+                child_name = pdp_people_map[event.child].name or "Child"
+            if event.person and event.person in pdp_people_map:
+                person_name = pdp_people_map[event.person].name or "Person"
+
+            # Case 1: Birth with only child set - create inferred parents
+            if event.child and not event.person and not event.spouse:
+                # Create mother first, then father, then pair bond
+                # Each call to _next_pdp_id() reads current PDP state
+                mother = Person(id=self._next_pdp_id(), name=f"{child_name}'s mother")
+                self.pdp.people.append(mother)
+
+                father = Person(id=self._next_pdp_id(), name=f"{child_name}'s father")
+                self.pdp.people.append(father)
+
+                pair_bond = PairBond(
+                    id=self._next_pdp_id(), person_a=mother.id, person_b=father.id
+                )
+                self.pdp.pair_bonds.append(pair_bond)
+
+                # Update event references
+                event_idx = next(
+                    i for i, e in enumerate(self.pdp.events) if e.id == event_id
+                )
+                self.pdp.events[event_idx] = replace(
+                    event, person=mother.id, spouse=father.id
+                )
+
+                # Update child's parents
+                if event.child in pdp_people_map:
+                    child_idx = next(
+                        i for i, p in enumerate(self.pdp.people) if p.id == event.child
+                    )
+                    self.pdp.people[child_idx] = replace(
+                        self.pdp.people[child_idx], parents=pair_bond.id
+                    )
+
+                _log.info(
+                    f"Created inferred parents for {child_name}: mother={mother.id}, father={father.id}, pair_bond={pair_bond.id}"
+                )
+
+            # Case 2: Birth with person but no spouse - find or create spouse
+            elif event.person and not event.spouse:
+                # Check if there's an existing pair bond with this person
+                existing_spouse_id = None
+                for pb in self.pdp.pair_bonds:
+                    if pb.person_a == event.person:
+                        existing_spouse_id = pb.person_b
+                        break
+                    elif pb.person_b == event.person:
+                        existing_spouse_id = pb.person_a
+                        break
+
+                if existing_spouse_id:
+                    spouse_id = existing_spouse_id
+                    _log.info(
+                        f"Found existing spouse for {person_name} in pair bond: spouse={spouse_id}"
+                    )
+                else:
+                    spouse_id = self._next_pdp_id()
+                    spouse = Person(id=spouse_id, name=f"{person_name}'s spouse")
+                    self.pdp.people.append(spouse)
+                    _log.info(
+                        f"Created inferred spouse for {person_name}: spouse={spouse_id}"
+                    )
+
+                event_idx = next(
+                    i for i, e in enumerate(self.pdp.events) if e.id == event_id
+                )
+                self.pdp.events[event_idx] = replace(event, spouse=spouse_id)
+
+            # Case 3: Birth with person/spouse but no child - create inferred child
+            elif event.person and event.spouse and not event.child:
+                child_id = self._next_pdp_id()
+                child = Person(id=child_id, name=f"{person_name}'s child")
+                self.pdp.people.append(child)
+
+                event_idx = next(
+                    i for i, e in enumerate(self.pdp.events) if e.id == event_id
+                )
+                self.pdp.events[event_idx] = replace(event, child=child_id)
+
+                _log.info(f"Created inferred child for {person_name}: child={child_id}")
 
     def _get_transitive_pdp_references(self, item_ids: list[int]) -> set[int]:
         from btcopilot.pdp import get_all_pdp_item_ids
