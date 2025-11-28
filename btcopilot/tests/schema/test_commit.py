@@ -239,6 +239,7 @@ def test_commit_birth_event_creates_inferred_parents():
             ],
         )
     )
+    data.commit_pdp_items([-2])
 
     # Should have created: Baby, Mother, Father + PairBond
     assert len(data.people) == 3
@@ -278,6 +279,7 @@ def test_commit_birth_event_creates_inferred_spouse():
             ],
         )
     )
+    data.commit_pdp_items([-3])
 
     # Should have created: Alice, Baby, inferred spouse
     assert len(data.people) == 3

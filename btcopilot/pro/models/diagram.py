@@ -166,16 +166,6 @@ class Diagram(db.Model, ModelMixin):
     def update_with_version_check(
         self, expected_version, new_data=None, diagram_data=None
     ):
-        """Update diagram with optimistic locking using atomic database operation.
-
-        Args:
-            expected_version: The version the client thinks is current
-            new_data: Raw pickled data (for Pro app)
-            diagram_data: DiagramData object (for Personal app)
-
-        Returns:
-            (True, new_version) on success, (False, None) on version conflict
-        """
         if new_data is not None:
             data_to_save = new_data
         elif diagram_data is not None:
@@ -220,9 +210,10 @@ class Diagram(db.Model, ModelMixin):
             update = {}
         if exclude is None:
             exclude = []
-
-        # Backward compatibility: exclude fields unsupported by client
-        exclude = list(exclude)
+        elif isinstance(exclude, str):
+            exclude = [exclude]
+        else:
+            exclude = list(exclude)
         for field in FIELD_MIN_VERSIONS:
             if not clientSupportsField(field):
                 exclude.append(field)
