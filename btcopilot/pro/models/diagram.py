@@ -1,5 +1,7 @@
 import pickle
+import re
 
+from flask import g
 from sqlalchemy import Column, Boolean, String, Integer, LargeBinary, ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -7,6 +9,44 @@ import btcopilot
 from btcopilot.schema import DiagramData
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
+
+
+# TODO: Remove once pro version adoption gets past 2.1.11
+# Minimum client versions that support specific fields.
+# Fields not in this dict are always included.
+# Fields with version None are always excluded (obsolete fields).
+FIELD_MIN_VERSIONS = {
+    "version": "2.1.11",
+    "database": None,  # obsolete, remove from all responses
+}
+
+
+def parseVersion(text: str) -> tuple[int, int, int]:
+    """Parse version string like '2.1.10b1' into (major, minor, micro)."""
+    if not text:
+        return (0, 0, 0)
+    match = re.match(r"(\d+)\.(\d+)\.(\d+)", text)
+    if not match:
+        return (0, 0, 0)
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+
+
+def clientSupportsField(field: str) -> bool:
+    """Check if current client version supports a given field."""
+    if field not in FIELD_MIN_VERSIONS:
+        return True  # Field not version-gated, always include
+
+    minVersion = FIELD_MIN_VERSIONS[field]
+    if minVersion is None:
+        return False  # None means always exclude (obsolete field)
+
+    clientVersion = getattr(g, "fd_client_version", None)
+    if not clientVersion:
+        return False
+
+    clientParsed = parseVersion(clientVersion)
+    minParsed = parseVersion(minVersion)
+    return clientParsed >= minParsed
 
 
 class Diagram(db.Model, ModelMixin):
@@ -178,4 +218,11 @@ class Diagram(db.Model, ModelMixin):
             update = {}
         if exclude is None:
             exclude = []
+
+        # Backward compatibility: exclude fields unsupported by client
+        exclude = list(exclude)
+        for field in FIELD_MIN_VERSIONS:
+            if not clientSupportsField(field):
+                exclude.append(field)
+
         return super().as_dict(update=update, include=include, exclude=exclude)

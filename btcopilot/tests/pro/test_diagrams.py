@@ -303,3 +303,36 @@ def _test_set_diagram_shown(flask_app, admin_client):
 #     diagram = Diagram(data=SIP_DIAGRAM, user=test_user)
 #     diagram.set_diagram_data(DiagramData())
 #     assert b"version\x94\x8c\x051.5.0" in diagram.data
+
+
+def test_diagram_as_dict_excludes_version_for_old_client(flask_app, test_user):
+    """Old clients (< 2.1.11) should not receive 'version' field."""
+    with flask_app.test_client(user=test_user) as client:
+        response = client.get(
+            f"/v1/diagrams/{test_user.free_diagram_id}",
+            headers={"FD-Client-Version": "2.1.10"},
+        )
+    assert response.status_code == 200
+    data = pickle.loads(response.data)
+    assert "version" not in data
+
+
+def test_diagram_as_dict_includes_version_for_new_client(flask_app, test_user):
+    """New clients (>= 2.1.11) should receive 'version' field."""
+    with flask_app.test_client(user=test_user) as client:
+        response = client.get(
+            f"/v1/diagrams/{test_user.free_diagram_id}",
+            headers={"FD-Client-Version": "2.1.11"},
+        )
+    assert response.status_code == 200
+    data = pickle.loads(response.data)
+    assert "version" in data
+
+
+def test_diagram_as_dict_excludes_version_for_no_header(flask_app, test_user):
+    """Clients without version header should not receive 'version' field."""
+    with flask_app.test_client(user=test_user) as client:
+        response = client.get(f"/v1/diagrams/{test_user.free_diagram_id}")
+    assert response.status_code == 200
+    data = pickle.loads(response.data)
+    assert "version" not in data
