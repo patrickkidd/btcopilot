@@ -11,7 +11,6 @@ from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram, AccessRight
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.models.speaker import Speaker
-from btcopilot.schema import asdict, PDP, Event, DiagramData, from_dict
 
 _log = logging.getLogger(__name__)
 
