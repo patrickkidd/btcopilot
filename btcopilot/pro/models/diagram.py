@@ -22,7 +22,6 @@ FIELD_MIN_VERSIONS = {
 
 
 def parseVersion(text: str) -> tuple[int, int, int]:
-    """Parse version string like '2.1.10b1' into (major, minor, micro)."""
     if not text:
         return (0, 0, 0)
     match = re.match(r"(\d+)\.(\d+)\.(\d+)", text)
@@ -32,13 +31,16 @@ def parseVersion(text: str) -> tuple[int, int, int]:
 
 
 def clientSupportsField(field: str) -> bool:
-    """Check if current client version supports a given field."""
     if field not in FIELD_MIN_VERSIONS:
         return True  # Field not version-gated, always include
 
     minVersion = FIELD_MIN_VERSIONS[field]
     if minVersion is None:
         return False  # None means always exclude (obsolete field)
+
+    # Personal app sets this flag - always include versioned fields
+    if getattr(g, "fd_include_all_fields", False):
+        return True
 
     clientVersion = getattr(g, "fd_client_version", None)
     if not clientVersion:
