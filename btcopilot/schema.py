@@ -10,8 +10,59 @@ from dataclasses import (
 )
 from typing import get_origin, get_args
 
+from btcopilot import 
+
 
 _log = logging.getLogger(__name__)
+
+
+def validatedDateTimeText(dateText, timeText=None):
+    """mm/dd/yyyy. useTime is a QDateTime to take the time from."""
+    import dateutil.parser
+
+    ret = None
+    if len(dateText) == 8 and "/" in dateText:  # 05111980
+        try:
+            x = int(dateText)
+        except ValueError:
+            x = None
+        if x is not None:
+            mm = int(dateText[:2])
+            dd = int(dateText[2:4])
+            yyyy = int(dateText[4:8])
+            ret = QDateTime(QDate(yyyy, mm, dd))
+    if ret is None and dateText not in (None, "", BLANK_DATE_TEXT):
+        # normal route
+        try:
+            dt = dateutil.parser.parse(dateText)
+        except ValueError:
+            ret = QDateTime()
+        if ret is None:
+            ret = Date(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+    if timeText not in (None, "", BLANK_TIME_TEXT):
+        try:
+            dt2 = dateutil.parser.parse(timeText)
+        except ValueError:
+            dt2 = None
+        if dt2:
+            if not ret:
+                ret = QDateTime.currentDateTime()
+            ret.setTime(
+                QTime(dt2.hour, dt2.minute, dt2.second, int(dt2.microsecond / 1000))
+            )
+    return ret
+
+
+def pyDateTimeString(dateTime: datetime) -> str:
+    if isinstance(dateTime, str):
+        import dateutil.parser
+
+        dateTime = dateutil.parser.parse(dateTime)
+    # .strftime("%a %B %d, %I:%M%p")
+    # .replace("AM", "am")
+    # .replace("PM", "pm")
+
+    return dateTime.strftime("%m/%d/%Y %I:%M %p")
 
 
 class PDPValidationError(ValueError):
@@ -403,12 +454,11 @@ class DiagramData:
                 _log.info(f"Committed event with new ID {new_event.id}: {new_event}")
                 event_dict = asdict(new_event)
                 # Convert string dateTime values to QDateTime for Scene compatibility
-                from pkdiagram import util
 
                 for key in ("dateTime", "endDateTime"):
                     value = event_dict.get(key)
                     if value and isinstance(value, str):
-                        event_dict[key] = util.validatedDateTimeText(value)
+                        event_dict[key] = validatedDateTimeText(value)
                 self.events.append(event_dict)
 
         self.pdp.people = [p for p in self.pdp.people if p.id not in all_item_ids]
@@ -692,9 +742,5 @@ class DiagramData:
 
         # Ensure lastItemId accounts for the default people
         diagram_data.lastItemId = max(diagram_data.lastItemId, 2)
-        from pkdiagram import version as pk_version
-
-        diagram_data.version = pk_version.VERSION
-        diagram_data.versionCompat = pk_version.VERSION_COMPAT
 
         return diagram_data
