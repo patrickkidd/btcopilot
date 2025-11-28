@@ -74,6 +74,7 @@ class PDPValidationError(ValueError):
 
 
 def asdict(obj):
+    """Convert dataclass to dict with enums as their string values."""
     return dataclass_asdict(
         obj,
         dict_factory=lambda items: {
@@ -383,6 +384,11 @@ class DiagramData:
         self.pencilColor = None
         self.eventProperties = []
         self.legendData = None
+        self.id = None
+        self.tags = []
+        self.loggedDateTime = None
+        self.masterKey = None
+        self.alias = None
 
     def _next_id(self) -> int:
         self.lastItemId += 1

@@ -3,7 +3,9 @@ import re
 
 from flask import g
 from sqlalchemy import Column, Boolean, String, Integer, LargeBinary, ForeignKey
+from sqlalchemy import update as sql_update
 from sqlalchemy.orm import relationship
+
 
 import btcopilot
 from btcopilot.schema import DiagramData
@@ -174,8 +176,6 @@ class Diagram(db.Model, ModelMixin):
         Returns:
             (True, new_version) on success, (False, None) on version conflict
         """
-        from sqlalchemy import update as sql_update
-
         if new_data is not None:
             data_to_save = new_data
         elif diagram_data is not None:

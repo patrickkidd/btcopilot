@@ -75,7 +75,9 @@ def test_diagrams_optimistic_locking_conflict(subscriber):
     response = subscriber.put(
         f"/personal/diagrams/{diagram.id}",
         json={
-            "diagram_data": diagram_data.__dict__,
+            "data": base64.b64encode(pickle.dumps(asdict(diagram_data))).decode(
+                "utf-8"
+            ),
             "expected_version": initial_version + 999,
         },
     )

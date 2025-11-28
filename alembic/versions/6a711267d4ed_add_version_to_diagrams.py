@@ -22,7 +22,6 @@ def upgrade():
         "diagrams",
         sa.Column("version", sa.Integer(), nullable=False, server_default="1"),
     )
-    op.execute("UPDATE diagrams SET version = 1 WHERE version IS NULL")
 
 
 def downgrade():
