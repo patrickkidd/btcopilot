@@ -11,6 +11,7 @@ from btcopilot.schema import (
     EventKind,
     VariableShift,
     asdict,
+    from_dict,
 )
 
 _log = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ def test_PDEvent_as_dict():
 
 
 @pytest.fixture
-def database():
+def diagram_data():
     return DiagramData(
         people=[
             asdict(Person(id=1, name="Alice")),
@@ -114,8 +115,6 @@ def as_dict():
                 "confidence": None,
             },
         ],
-        "last_id": 0,
-        "pair_bonds": [],
         "events": [
             {
                 "id": 3,
@@ -135,6 +134,17 @@ def as_dict():
                 "confidence": None,
             }
         ],
+        "pair_bonds": [],
+        "emotions": [],
+        "multipleBirths": [],
+        "layers": [],
+        "layerItems": [],
+        "items": [],
+        "pruned": [],
+        "uuid": None,
+        "name": None,
+        "version": None,
+        "versionCompat": None,
         "pdp": {
             "people": [
                 {
@@ -145,7 +155,6 @@ def as_dict():
                     "confidence": None,
                 }
             ],
-            "pair_bonds": [],
             "events": [
                 {
                     "id": -2,
@@ -165,24 +174,48 @@ def as_dict():
                     "confidence": None,
                 }
             ],
+            "pair_bonds": [],
         },
+        "lastItemId": 0,
+        "id": None,
+        "tags": [],
+        "loggedDateTime": [],
+        "masterKey": None,
+        "alias": None,
+        "readOnly": False,
+        "contributeToResearch": False,
+        "useRealNames": False,
+        "password": None,
+        "requirePasswordForRealNames": False,
+        "showAliases": False,
+        "hideNames": False,
+        "hideToolBars": False,
+        "hideEmotionalProcess": False,
+        "hideEmotionColors": False,
+        "hideDateSlider": False,
+        "hideVariablesOnDiagram": False,
+        "hideVariableSteadyStates": False,
+        "exclusiveLayerSelection": True,
+        "storePositionsInLayers": False,
+        "currentDateTime": None,
+        "scaleFactor": None,
+        "pencilColor": None,
+        "eventProperties": [],
+        "legendData": None,
     }
 
 
-def test_Database_asdict(database, as_dict):
-    assert asdict(database) == as_dict
+def test_DiagramData_asdict(diagram_data, as_dict):
+    assert asdict(diagram_data) == as_dict
 
 
-def test_from_dict(database, as_dict):
-    from btcopilot.schema import from_dict
-
+def test_from_dict(diagram_data, as_dict):
     reconstructed = from_dict(DiagramData, as_dict)
-    assert reconstructed == database
+    assert reconstructed == diagram_data
 
 
 def test_bidirectional_conversion():
     """Test that asdict() and from_dict() work together"""
-    from btcopilot.schema import from_dict
 
     # Create an event with enums
     original = Event(

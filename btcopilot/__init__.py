@@ -107,6 +107,7 @@ def version():
     if not _version:
         try:
             from importlib.metadata import version as get_version
+
             _version = get_version("btcopilot")
         except Exception as e:
             _log.debug(f"Could not get package version: {e}")

@@ -271,7 +271,7 @@ def cumulative(discussion: Discussion, up_to_statement: Statement) -> PDP:
       "people": [...],
       "events": [...],
       "pdp": {"people": [], "events": []},
-      "last_id": 2
+      "lastItemId": 2
     },
     "current_pdp": {
       "people": [...],
@@ -1505,7 +1505,7 @@ def apply_deltas(pdp, deltas):
             ],
             "events": [],
             "pdp": {"people": [], "events": [], "pair_bonds": []},
-            "last_id": 2
+            "lastItemId": 2
         },
 
         "current_pdp": {

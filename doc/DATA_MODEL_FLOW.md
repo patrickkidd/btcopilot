@@ -15,7 +15,7 @@
        people: list[Person] = field(default_factory=list)
        events: list[Event] = field(default_factory=list)
        pdp: PDP = field(default_factory=PDP)
-       last_id: int = field(default=0)
+       lastItemId: int = field(default=0)
 
        def add_person(self, person: Person) -> None:
            person.id = self._next_id()
@@ -26,8 +26,8 @@
            self.events.append(event)
 
        def _next_id(self) -> int:
-           self.last_id += 1
-           return self.last_id
+           self.lastItemId += 1
+           return self.lastItemId
    ```
 
    **Purpose**: Represents the complete diagram state with both committed data (people/events) and pending data (pdp).
@@ -36,7 +36,7 @@
    - `people`: Confirmed/committed Person objects
    - `events`: Confirmed/committed Event objects
    - `pdp`: Pending Data Pool containing unconfirmed extractions
-   - `last_id`: Counter for generating unique IDs
+   - `lastItemId`: Counter for generating unique IDs
 
    ---
 
@@ -201,7 +201,7 @@
            people=data.get("people", []),
            events=data.get("events", []),
            pdp=data.get("pdp", PDP()),
-           last_id=data.get("last_id", 0),
+           lastItemId=data.get("lastItemId", 0),
        )
 
    def set_diagram_data(self, diagram_data: DiagramData):
@@ -210,7 +210,7 @@
        data["people"] = diagram_data.people
        data["events"] = diagram_data.events
        data["pdp"] = diagram_data.pdp
-       data["last_id"] = diagram_data.last_id
+       data["lastItemId"] = diagram_data.lastItemId
        self.data = pickle.dumps(data)
    ```
 
@@ -224,7 +224,7 @@
        "people": [Person objects],
        "events": [Event objects],
        "pdp": PDP object,
-       "last_id": int,
+       "lastItemId": int,
        ... other scene data preserved
      }
      ```
@@ -705,7 +705,7 @@
    ```python
    diagram = Diagram.query.get(diagram_id)
    diagram_data = diagram.get_diagram_data()
-   # Returns: DiagramData(people=[...], events=[...], pdp=PDP(...), last_id=123)
+   # Returns: DiagramData(people=[...], events=[...], pdp=PDP(...), lastItemId=123)
    ```
 
    ### Saving Diagram Data
@@ -786,7 +786,7 @@
            people=[Person(id=-1, name="Mom", confidence=0.8)],
            events=[Event(id=-2, ...), ...]
        ),
-       "last_id": 2,
+       "lastItemId": 2,
        ... other scene data preserved
    }
    ```

@@ -1,6 +1,66 @@
 import enum
-from dataclasses import dataclass, field, asdict as dataclass_asdict, fields, MISSING
+import logging
+import datetime
+from dataclasses import (
+    dataclass,
+    field,
+    asdict as dataclass_asdict,
+    fields,
+    MISSING,
+    replace,
+)
 from typing import get_origin, get_args
+from PyQt5.QtCore import QDate, QDateTime, QTime
+
+_log = logging.getLogger(__name__)
+
+BLANK_DATE_TEXT = "--/--/----"
+BLANK_TIME_TEXT = "--:-- pm"
+
+
+def validatedDateTimeText(dateText, timeText=None):
+    """mm/dd/yyyy. useTime is a QDateTime to take the time from."""
+    import dateutil.parser
+
+    ret = None
+    if len(dateText) == 8 and "/" in dateText:  # 05111980
+        try:
+            x = int(dateText)
+        except ValueError:
+            x = None
+        if x is not None:
+            mm = int(dateText[:2])
+            dd = int(dateText[2:4])
+            yyyy = int(dateText[4:8])
+            ret = QDateTime(QDate(yyyy, mm, dd))
+    if ret is None and dateText not in (None, "", BLANK_DATE_TEXT):
+        # normal route
+        try:
+            dt = dateutil.parser.parse(dateText)
+        except ValueError:
+            ret = QDateTime()
+        if ret is None:
+            ret = QDateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+    if timeText not in (None, "", BLANK_TIME_TEXT):
+        try:
+            dt2 = dateutil.parser.parse(timeText)
+        except ValueError:
+            dt2 = None
+        if dt2:
+            if not ret:
+                ret = QDateTime.currentDateTime()
+            ret.setTime(
+                QTime(dt2.hour, dt2.minute, dt2.second, int(dt2.microsecond / 1000))
+            )
+    return ret
+
+
+def pyDateTimeString(dateTime: datetime.datetime) -> str:
+    if isinstance(dateTime, str):
+        import dateutil.parser
+
+        dateTime = dateutil.parser.parse(dateTime)
+    return dateTime.strftime("%m/%d/%Y %I:%M %p")
 
 
 class PDPValidationError(ValueError):
@@ -21,24 +81,6 @@ def asdict(obj):
             k: v.value if isinstance(v, enum.Enum) else v for k, v in items
         },
     )
-
-
-def compute_spouses_for_person(person_id: int, events: list) -> list[int]:
-    """
-    Compute spouse list from Events (Bonded, Married, Birth, Adopted, etc.)
-    Returns unique list of spouse IDs for this person.
-    """
-    spouses = set()
-
-    for event in events:
-        event_obj = event if hasattr(event, "kind") else from_dict(Event, event)
-        if event_obj.kind and event_obj.kind.isPairBond():
-            if event_obj.person == person_id and event_obj.spouse:
-                spouses.add(event_obj.spouse)
-            elif event_obj.spouse == person_id and event_obj.person:
-                spouses.add(event_obj.person)
-
-    return list(spouses)
 
 
 def from_dict(cls, data):
@@ -262,33 +304,111 @@ class PDP:
 
 @dataclass
 class DiagramData:
-    people: list[dict] = field(
-        default_factory=list
-    )  # Raw dicts from pickle (READ-ONLY, may contain QtCore objects)
-    events: list[dict] = field(
-        default_factory=list
-    )  # Raw dicts from pickle (READ-ONLY, may contain QtCore objects)
-    pair_bonds: list[dict] = field(
-        default_factory=list
-    )  # Raw dicts from pickle (READ-ONLY, may contain QtCore objects)
+    id: int | None = None
+    # Scene-facing collections (dict chunks compatible with Scene.read/write)
+    people: list[dict] = field(default_factory=list)
+    events: list[dict] = field(default_factory=list)
+    pair_bonds: list[dict] = field(default_factory=list)
+    emotions: list[dict] = field(default_factory=list)
+    multipleBirths: list[dict] = field(default_factory=list)
+    layers: list[dict] = field(default_factory=list)
+    layerItems: list[dict] = field(default_factory=list)
+    items: list[dict] = field(default_factory=list)
+    pruned: list[dict] = field(default_factory=list)
+    uuid: str | None = None
+    name: str | None = None
+    tags: list[str] = field(default_factory=list)
+    loggedDateTime: list[str] = field(default_factory=list)
+    masterKey: str | None = None
+    alias: str | None = None
+    version: str | None = None
+    versionCompat: str | None = None
+    # PDP (negative-id staging)
     pdp: PDP = field(default_factory=PDP)
-    last_id: int = field(default=0)
+    lastItemId: int = field(default=0)
+    # Scene UI/display properties (for canonical diagram mutation support)
+    readOnly: bool = False
+    contributeToResearch: bool = False
+    useRealNames: bool = False
+    password: str | None = None
+    requirePasswordForRealNames: bool = False
+    showAliases: bool = False
+    hideNames: bool = False
+    hideToolBars: bool = False
+    hideEmotionalProcess: bool = False
+    hideEmotionColors: bool = False
+    hideDateSlider: bool = False
+    hideVariablesOnDiagram: bool = False
+    hideVariableSteadyStates: bool = False
+    exclusiveLayerSelection: bool = True
+    storePositionsInLayers: bool = False
+    currentDateTime: object = None  # Serialized QDateTime
+    scaleFactor: float | None = None
+    pencilColor: object = None  # Serialized color
+    eventProperties: list = field(default_factory=list)
+    legendData: dict | None = None
+
+    def clear(self) -> None:
+        self.people = []
+        self.events = []
+        self.pair_bonds = []
+        self.emotions = []
+        self.multipleBirths = []
+        self.layers = []
+        self.layerItems = []
+        self.items = []
+        self.pruned = []
+        self.uuid = None
+        self.name = None
+        self.version = None
+        self.versionCompat = None
+        self.pdp = PDP()
+        self.lastItemId = 0
+        self.readOnly = False
+        self.contributeToResearch = False
+        self.useRealNames = False
+        self.password = None
+        self.requirePasswordForRealNames = False
+        self.showAliases = False
+        self.hideNames = False
+        self.hideToolBars = False
+        self.hideEmotionalProcess = False
+        self.hideEmotionColors = False
+        self.hideDateSlider = False
+        self.hideVariablesOnDiagram = False
+        self.hideVariableSteadyStates = False
+        self.exclusiveLayerSelection = True
+        self.storePositionsInLayers = False
+        self.currentDateTime = None
+        self.scaleFactor = None
+        self.pencilColor = None
+        self.eventProperties = []
+        self.legendData = None
+        self.id = None
+        self.tags = []
+        self.loggedDateTime = None
+        self.masterKey = None
+        self.alias = None
 
     def _next_id(self) -> int:
-        self.last_id += 1
-        return self.last_id
+        self.lastItemId += 1
+        return self.lastItemId
 
     def add_person(self, person: Person) -> None:
         person.id = self._next_id()
         self.people.append(asdict(person))
+        _log.info(f"Added person with new ID {person.id}")
 
     def add_event(self, event: Event) -> None:
         event.id = self._next_id()
         self.events.append(asdict(event))
+        _log.info(f"Added event with new ID {event.id}")
 
     def add_pair_bond(self, pair_bond: PairBond) -> None:
         pair_bond.id = self._next_id()
-        self.pair_bonds.append(asdict(pair_bond))
+        chunk = asdict(pair_bond)
+        self.pair_bonds.append(chunk)
+        _log.info(f"Added pair bond with new ID {pair_bond.id}")
 
     def commit_pdp_items(self, item_ids: list[int]) -> dict[int, int]:
         """
@@ -298,6 +418,9 @@ class DiagramData:
         for item_id in item_ids:
             if item_id >= 0:
                 raise ValueError(f"Item ID {item_id} must be negative (PDP item)")
+
+        # Create inferred items for Birth/Adopted events before gathering transitive refs
+        self._create_inferred_birth_items(item_ids)
 
         all_item_ids = self._get_transitive_pdp_references(item_ids)
 
@@ -315,19 +438,32 @@ class DiagramData:
             if old_id in pdp_pair_bonds_map:
                 pair_bond = pdp_pair_bonds_map[old_id]
                 new_pair_bond = self._remap_pair_bond_ids(pair_bond, id_mapping)
-                self.pair_bonds.append(asdict(new_pair_bond))
+                chunk = asdict(new_pair_bond)
+                _log.info(
+                    f"Committed pair bond with new ID {new_pair_bond.id}: {new_pair_bond}"
+                )
+                self.pair_bonds.append(chunk)
 
         for old_id in all_item_ids:
             if old_id in pdp_people_map:
                 person = pdp_people_map[old_id]
                 new_person = self._remap_person_ids(person, id_mapping)
+                _log.info(f"Committed person with new ID {new_person.id}: {new_person}")
                 self.people.append(asdict(new_person))
 
         for old_id in all_item_ids:
             if old_id in pdp_events_map:
                 event = pdp_events_map[old_id]
                 new_event = self._remap_event_ids(event, id_mapping)
-                self.events.append(asdict(new_event))
+                _log.info(f"Committed event with new ID {new_event.id}: {new_event}")
+                event_dict = asdict(new_event)
+                # Convert string dateTime values to QDateTime for Scene compatibility
+
+                for key in ("dateTime", "endDateTime"):
+                    value = event_dict.get(key)
+                    if value and isinstance(value, str):
+                        event_dict[key] = validatedDateTimeText(value)
+                self.events.append(event_dict)
 
         self.pdp.people = [p for p in self.pdp.people if p.id not in all_item_ids]
         self.pdp.events = [e for e in self.pdp.events if e.id not in all_item_ids]
@@ -335,7 +471,166 @@ class DiagramData:
             pb for pb in self.pdp.pair_bonds if pb.id not in all_item_ids
         ]
 
+        # Update references in remaining PDP items to point to committed IDs
+        self.pdp.people = [
+            self._remap_person_ids(p, id_mapping) for p in self.pdp.people
+        ]
+        self.pdp.events = [
+            self._remap_event_ids(e, id_mapping) for e in self.pdp.events
+        ]
+        self.pdp.pair_bonds = [
+            self._remap_pair_bond_ids(pb, id_mapping) for pb in self.pdp.pair_bonds
+        ]
+
         return id_mapping
+
+    def reject_pdp_item(self, item_id: int) -> None:
+        """Remove a PDP item and cascade-delete any items that reference it."""
+        if item_id >= 0:
+            raise ValueError(f"Item ID {item_id} must be negative (PDP item)")
+
+        _log.info(f"Rejecting PDP item {item_id} and cascading deletes")
+        ids_to_remove = {item_id}
+
+        for event in self.pdp.events:
+            if (
+                event.person == item_id
+                or event.spouse == item_id
+                or event.child == item_id
+                or item_id in event.relationshipTargets
+                or item_id in event.relationshipTriangles
+            ):
+                _log.info(
+                    f"Also removing PDP event {event.id} referencing rejected item {item_id}"
+                )
+                ids_to_remove.add(event.id)
+
+        for pair_bond in self.pdp.pair_bonds:
+            if pair_bond.person_a == item_id or pair_bond.person_b == item_id:
+                _log.info(
+                    f"Also removing PDP pair bond {pair_bond.id} referencing rejected item {item_id}"
+                )
+                ids_to_remove.add(pair_bond.id)
+
+        for person in self.pdp.people:
+            if person.parents == item_id:
+                _log.info(
+                    f"Also removing PDP person {person.id} whose parents reference rejected item {item_id}"
+                )
+                ids_to_remove.add(person.id)
+
+        self.pdp.people = [p for p in self.pdp.people if p.id not in ids_to_remove]
+        self.pdp.events = [e for e in self.pdp.events if e.id not in ids_to_remove]
+        self.pdp.pair_bonds = [
+            pb for pb in self.pdp.pair_bonds if pb.id not in ids_to_remove
+        ]
+
+    def _next_pdp_id(self) -> int:
+        """Generate next available negative PDP ID."""
+        all_ids = (
+            [p.id for p in self.pdp.people if p.id is not None]
+            + [e.id for e in self.pdp.events]
+            + [pb.id for pb in self.pdp.pair_bonds if pb.id is not None]
+        )
+        return min(all_ids, default=0) - 1
+
+    def _create_inferred_birth_items(self, item_ids: list[int]) -> None:
+        """Create inferred parents/children for Birth/Adopted events being committed."""
+        pdp_people_map = {p.id: p for p in self.pdp.people if p.id is not None}
+        pdp_events_map = {e.id: e for e in self.pdp.events}
+
+        for event_id in item_ids:
+            if event_id not in pdp_events_map:
+                continue
+            event = pdp_events_map[event_id]
+            if event.kind not in (EventKind.Birth, EventKind.Adopted):
+                continue
+
+            child_name = None
+            person_name = None
+            if event.child and event.child in pdp_people_map:
+                child_name = pdp_people_map[event.child].name or "Child"
+            if event.person and event.person in pdp_people_map:
+                person_name = pdp_people_map[event.person].name or "Person"
+
+            # Case 1: Birth with only child set - create inferred parents
+            if event.child and not event.person and not event.spouse:
+                # Create mother first, then father, then pair bond
+                # Each call to _next_pdp_id() reads current PDP state
+                mother = Person(id=self._next_pdp_id(), name=f"{child_name}'s mother")
+                self.pdp.people.append(mother)
+
+                father = Person(id=self._next_pdp_id(), name=f"{child_name}'s father")
+                self.pdp.people.append(father)
+
+                pair_bond = PairBond(
+                    id=self._next_pdp_id(), person_a=mother.id, person_b=father.id
+                )
+                self.pdp.pair_bonds.append(pair_bond)
+
+                # Update event references
+                event_idx = next(
+                    i for i, e in enumerate(self.pdp.events) if e.id == event_id
+                )
+                self.pdp.events[event_idx] = replace(
+                    event, person=mother.id, spouse=father.id
+                )
+
+                # Update child's parents
+                if event.child in pdp_people_map:
+                    child_idx = next(
+                        i for i, p in enumerate(self.pdp.people) if p.id == event.child
+                    )
+                    self.pdp.people[child_idx] = replace(
+                        self.pdp.people[child_idx], parents=pair_bond.id
+                    )
+
+                _log.info(
+                    f"Created inferred parents for {child_name}: mother={mother.id}, father={father.id}, pair_bond={pair_bond.id}"
+                )
+
+            # Case 2: Birth with person but no spouse - find or create spouse
+            elif event.person and not event.spouse:
+                # Check if there's an existing pair bond with this person
+                existing_spouse_id = None
+                for pb in self.pdp.pair_bonds:
+                    if pb.person_a == event.person:
+                        existing_spouse_id = pb.person_b
+                        break
+                    elif pb.person_b == event.person:
+                        existing_spouse_id = pb.person_a
+                        break
+
+                if existing_spouse_id:
+                    spouse_id = existing_spouse_id
+                    _log.info(
+                        f"Found existing spouse for {person_name} in pair bond: spouse={spouse_id}"
+                    )
+                else:
+                    spouse_id = self._next_pdp_id()
+                    spouse = Person(id=spouse_id, name=f"{person_name}'s spouse")
+                    self.pdp.people.append(spouse)
+                    _log.info(
+                        f"Created inferred spouse for {person_name}: spouse={spouse_id}"
+                    )
+
+                event_idx = next(
+                    i for i, e in enumerate(self.pdp.events) if e.id == event_id
+                )
+                self.pdp.events[event_idx] = replace(event, spouse=spouse_id)
+
+            # Case 3: Birth with person/spouse but no child - create inferred child
+            elif event.person and event.spouse and not event.child:
+                child_id = self._next_pdp_id()
+                child = Person(id=child_id, name=f"{person_name}'s child")
+                self.pdp.people.append(child)
+
+                event_idx = next(
+                    i for i, e in enumerate(self.pdp.events) if e.id == event_id
+                )
+                self.pdp.events[event_idx] = replace(event, child=child_id)
+
+                _log.info(f"Created inferred child for {person_name}: child={child_id}")
 
     def _get_transitive_pdp_references(self, item_ids: list[int]) -> set[int]:
         from btcopilot.pdp import get_all_pdp_item_ids
@@ -393,11 +688,9 @@ class DiagramData:
         return visited
 
     def _remap_person_ids(self, person: Person, id_mapping: dict[int, int]) -> Person:
-        from dataclasses import replace
-
         return replace(
             person,
-            id=id_mapping[person.id],
+            id=id_mapping.get(person.id, person.id),
             parents=(
                 id_mapping.get(person.parents, person.parents)
                 if person.parents
@@ -406,11 +699,9 @@ class DiagramData:
         )
 
     def _remap_event_ids(self, event: Event, id_mapping: dict[int, int]) -> Event:
-        from dataclasses import replace
-
         return replace(
             event,
-            id=id_mapping[event.id],
+            id=id_mapping.get(event.id, event.id),
             person=id_mapping.get(event.person, event.person) if event.person else None,
             spouse=id_mapping.get(event.spouse, event.spouse) if event.spouse else None,
             child=id_mapping.get(event.child, event.child) if event.child else None,
@@ -426,11 +717,9 @@ class DiagramData:
     def _remap_pair_bond_ids(
         self, pair_bond: PairBond, id_mapping: dict[int, int]
     ) -> PairBond:
-        from dataclasses import replace
-
         return replace(
             pair_bond,
-            id=id_mapping[pair_bond.id],
+            id=id_mapping.get(pair_bond.id, pair_bond.id),
             person_a=(
                 id_mapping.get(pair_bond.person_a, pair_bond.person_a)
                 if pair_bond.person_a
@@ -444,18 +733,18 @@ class DiagramData:
         )
 
     @staticmethod
-    def create_with_defaults() -> "Diagram":
-        diagramData = DiagramData()
+    def create_with_defaults() -> "DiagramData":
+        diagram_data = DiagramData()
 
         # Add default User person (ID 1) - matches default chat_user_speaker
         user_person = Person(id=1, name="User")
-        diagramData.people.append(asdict(user_person))
+        diagram_data.people.append(asdict(user_person))
 
         # Add default Assistant person (ID 2) - matches default chat_ai_speaker
         assistant_person = Person(id=2, name="Assistant")
-        diagramData.people.append(asdict(assistant_person))
+        diagram_data.people.append(asdict(assistant_person))
 
-        # Ensure last_id accounts for the default people
-        diagramData.last_id = max(diagramData.last_id, 2)
+        # Ensure lastItemId accounts for the default people
+        diagram_data.lastItemId = max(diagram_data.lastItemId, 2)
 
-        return diagramData
+        return diagram_data

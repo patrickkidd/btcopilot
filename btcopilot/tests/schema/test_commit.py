@@ -21,7 +21,7 @@ def test_commit_single_person():
     assert data.people[0]["name"] == "Bob"
     assert data.people[0]["id"] == 1
     assert id_mapping == {-1: 1}
-    assert data.last_id == 1
+    assert data.lastItemId == 1
     assert len(data.pdp.people) == 0
 
 
@@ -131,7 +131,7 @@ def test_commit_event_with_pdp_triangles():
 def test_commit_preserves_committed_references():
     data = DiagramData(
         people=[{"id": 1, "name": "Committed Person"}],
-        last_id=1,
+        lastItemId=1,
         pdp=PDP(
             events=[
                 Event(id=-1, kind=EventKind.Shift, person=1, anxiety=VariableShift.Up)
@@ -227,3 +227,98 @@ def test_commit_complex_transitive_closure():
         child_parents_bond["person_a"] == father["id"]
         or child_parents_bond["person_b"] == father["id"]
     )
+
+
+def test_commit_birth_event_creates_inferred_parents():
+    """When committing a Birth event with only child set, create inferred parents."""
+    data = DiagramData(
+        pdp=PDP(
+            people=[Person(id=-1, name="Baby")],
+            events=[
+                Event(id=-2, kind=EventKind.Birth, child=-1, dateTime="2020-01-01")
+            ],
+        )
+    )
+
+    # Should have created: Baby, Mother, Father + PairBond
+    assert len(data.people) == 3
+    assert len(data.pair_bonds) == 1
+
+    baby = [p for p in data.people if p["name"] == "Baby"][0]
+    mother = [p for p in data.people if "mother" in p["name"]][0]
+    father = [p for p in data.people if "father" in p["name"]][0]
+
+    assert mother["name"] == "Baby's mother"
+    assert father["name"] == "Baby's father"
+
+    # Birth event should have person, spouse, child all set
+    event = data.events[0]
+    assert event["child"] == baby["id"]
+    assert event["person"] == mother["id"]
+    assert event["spouse"] == father["id"]
+
+    # Child's parents should point to the pair bond
+    pair_bond = data.pair_bonds[0]
+    assert baby["parents"] == pair_bond["id"]
+
+
+def test_commit_birth_event_creates_inferred_spouse():
+    """When committing a Birth event with person but no spouse, create inferred spouse."""
+    data = DiagramData(
+        pdp=PDP(
+            people=[Person(id=-1, name="Alice"), Person(id=-2, name="Baby")],
+            events=[
+                Event(
+                    id=-3,
+                    kind=EventKind.Birth,
+                    person=-1,
+                    child=-2,
+                    dateTime="2020-01-01",
+                )
+            ],
+        )
+    )
+
+    # Should have created: Alice, Baby, inferred spouse
+    assert len(data.people) == 3
+
+    alice = [p for p in data.people if p["name"] == "Alice"][0]
+    spouse = [p for p in data.people if "spouse" in p["name"]][0]
+
+    assert spouse["name"] == "Alice's spouse"
+
+    event = data.events[0]
+    assert event["person"] == alice["id"]
+    assert event["spouse"] == spouse["id"]
+
+
+def test_commit_birth_event_creates_inferred_child():
+    """When committing a Birth event with person/spouse but no child, create inferred child."""
+    data = DiagramData(
+        pdp=PDP(
+            people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
+            events=[
+                Event(
+                    id=-3,
+                    kind=EventKind.Birth,
+                    person=-1,
+                    spouse=-2,
+                    dateTime="2020-01-01",
+                )
+            ],
+        )
+    )
+
+    id_mapping = data.commit_pdp_items([-1, -2, -3])
+
+    # Should have created: Alice, Bob, inferred child
+    assert len(data.people) == 3
+
+    alice = [p for p in data.people if p["name"] == "Alice"][0]
+    child = [p for p in data.people if "child" in p["name"]][0]
+
+    assert child["name"] == "Alice's child"
+
+    event = data.events[0]
+    assert event["person"] == alice["id"]
+    assert event["child"] == child["id"]

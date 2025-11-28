@@ -131,6 +131,50 @@ def test_diagrams_patch_own_diagram(flask_app, test_user):
     assert data["some"] == "fake"
 
 
+def test_diagrams_optimistic_locking_success(flask_app, test_user):
+    diagram = test_user.free_diagram
+    initial_version = diagram.version
+
+    with flask_app.test_client(user=test_user) as client:
+        response = client.patch(
+            f"/v1/diagrams/{diagram.id}",
+            data=pickle.dumps(
+                {
+                    "updated_at": datetime.utcnow(),
+                    "data": pickle.dumps({"version": "test"}),
+                    "expected_version": initial_version,
+                }
+            ),
+        )
+    assert response.status_code == 200
+    result = pickle.loads(response.data)
+    assert result["version"] == initial_version + 1
+
+    diagram = Diagram.query.get(diagram.id)
+    assert diagram.version == initial_version + 1
+
+
+def test_diagrams_optimistic_locking_conflict(flask_app, test_user):
+    diagram = test_user.free_diagram
+    initial_version = diagram.version
+
+    with flask_app.test_client(user=test_user) as client:
+        response = client.patch(
+            f"/v1/diagrams/{diagram.id}",
+            data=pickle.dumps(
+                {
+                    "updated_at": datetime.utcnow(),
+                    "data": pickle.dumps({"version": "wrong"}),
+                    "expected_version": initial_version + 999,
+                }
+            ),
+        )
+    assert response.status_code == 409
+
+    diagram = Diagram.query.get(diagram.id)
+    assert diagram.version == initial_version
+
+
 def test_diagrams_patch_others_diagram_no_access(flask_app, test_user, test_user_2):
     with flask_app.test_client(user=test_user_2) as client:
         response = client.patch(
@@ -225,19 +269,6 @@ def _test_get_first_diagram(flask_app):
     assert data["uuid"] == first["uuid"]
 
 
-def _test_get_all_diagramsapp(flask_app):
-    with flask_app.test_client() as client:
-        response = client.get("/v1/diagrams")
-    data = pickle.loads(response.data)
-    assert type(data) == dict
-    for uuid, entry in data.items():
-        with flask_app.test_client() as client:
-            response = client.get("/v1/diagrams/" + uuid)
-        data = pickle.loads(response.data)
-        assert type(data) == dict
-        # assert data['uuid'] == uuid
-
-
 @pytest.mark.skip(reason="Can't remember why this is skipped")
 def _test_set_diagram_shown(flask_app, admin_client):
     # index
@@ -272,3 +303,36 @@ def _test_set_diagram_shown(flask_app, admin_client):
 #     diagram = Diagram(data=SIP_DIAGRAM, user=test_user)
 #     diagram.set_diagram_data(DiagramData())
 #     assert b"version\x94\x8c\x051.5.0" in diagram.data
+
+
+def test_diagram_as_dict_excludes_version_for_old_client(flask_app, test_user):
+    """Old clients (< 2.1.11) should not receive 'version' field."""
+    with flask_app.test_client(user=test_user) as client:
+        response = client.get(
+            f"/v1/diagrams/{test_user.free_diagram_id}",
+            headers={"FD-Client-Version": "2.1.10"},
+        )
+    assert response.status_code == 200
+    data = pickle.loads(response.data)
+    assert "version" not in data
+
+
+def test_diagram_as_dict_includes_version_for_new_client(flask_app, test_user):
+    """New clients (>= 2.1.11) should receive 'version' field."""
+    with flask_app.test_client(user=test_user) as client:
+        response = client.get(
+            f"/v1/diagrams/{test_user.free_diagram_id}",
+            headers={"FD-Client-Version": "2.1.11"},
+        )
+    assert response.status_code == 200
+    data = pickle.loads(response.data)
+    assert "version" in data
+
+
+def test_diagram_as_dict_excludes_version_for_no_header(flask_app, test_user):
+    """Clients without version header should not receive 'version' field."""
+    with flask_app.test_client(user=test_user) as client:
+        response = client.get(f"/v1/diagrams/{test_user.free_diagram_id}")
+    assert response.status_code == 200
+    data = pickle.loads(response.data)
+    assert "version" not in data
