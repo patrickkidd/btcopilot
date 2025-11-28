@@ -1,5 +1,6 @@
 import enum
 import logging
+import datetime
 from dataclasses import (
     dataclass,
     field,
@@ -9,11 +10,12 @@ from dataclasses import (
     replace,
 )
 from typing import get_origin, get_args
-
-from btcopilot import 
-
+from PyQt5.QtCore import QDate, QDateTime, QTime
 
 _log = logging.getLogger(__name__)
+
+BLANK_DATE_TEXT = "--/--/----"
+BLANK_TIME_TEXT = "--:-- pm"
 
 
 def validatedDateTimeText(dateText, timeText=None):
@@ -38,7 +40,7 @@ def validatedDateTimeText(dateText, timeText=None):
         except ValueError:
             ret = QDateTime()
         if ret is None:
-            ret = Date(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+            ret = QDateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
     if timeText not in (None, "", BLANK_TIME_TEXT):
         try:
             dt2 = dateutil.parser.parse(timeText)
@@ -53,15 +55,11 @@ def validatedDateTimeText(dateText, timeText=None):
     return ret
 
 
-def pyDateTimeString(dateTime: datetime) -> str:
+def pyDateTimeString(dateTime: datetime.datetime) -> str:
     if isinstance(dateTime, str):
         import dateutil.parser
 
         dateTime = dateutil.parser.parse(dateTime)
-    # .strftime("%a %B %d, %I:%M%p")
-    # .replace("AM", "am")
-    # .replace("PM", "pm")
-
     return dateTime.strftime("%m/%d/%Y %I:%M %p")
 
 
