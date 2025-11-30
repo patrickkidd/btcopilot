@@ -57,15 +57,15 @@ def test_datadog_logs(flask_app, test_user, test_activation, _loggers):
             "http": {
                 "method": "POST",
                 "path": "/v1/diagrams",
-            }
+            },
         },
         {
             "status": "INFO",
-            "message": "Created new diagram",
+            "message": "Created new diagram, id: 2",
             "user": {
                 "username": test_user.username,
                 "name": f"{test_user.first_name} {test_user.last_name}",
-            }
+            },
         },
         {
             "status": "INFO",
@@ -73,15 +73,15 @@ def test_datadog_logs(flask_app, test_user, test_activation, _loggers):
             "http": {
                 "method": "GET",
                 "path": "/v1/diagrams/2",
-            }
+            },
         },
         {
             "status": "INFO",
-            "message": "Fetched diagram 2",
+            "message": "Fetched diagram 2, version: 1",
             "user": {
                 "username": test_user.username,
                 "name": f"{test_user.first_name} {test_user.last_name}",
-            }
+            },
         },
     ]
 
