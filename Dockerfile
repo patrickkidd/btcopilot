@@ -5,6 +5,8 @@ RUN apt-get update && apt-get install -y \
     g++ \
     curl \
     git \
+    # PyQt5.QtCore runtime dependency
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /tmp/deps

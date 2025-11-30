@@ -141,7 +141,7 @@ jobs:
         run: |
           docker pull ghcr.io/${{ github.repository }}:ci-${{ github.sha }}
           docker run --rm ghcr.io/${{ github.repository }}:ci-${{ github.sha }} python -c "import btcopilot; print('✓ btcopilot imported successfully')"
-          timeout 10s docker run --rm ghcr.io/${{ github.repository }}:ci-${{ github.sha }} gunicorn --check-config "btcopilot.app:create_app()" || true
+          docker run --rm ghcr.io/${{ github.repository }}:ci-${{ github.sha }} gunicorn --check-config "btcopilot.app:create_app()"
 
   release-wheel:
     runs-on: ubuntu-24.04
