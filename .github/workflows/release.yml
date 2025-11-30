@@ -12,11 +12,6 @@ on:
         type: boolean
         default: false
 
-  push:
-    branches-ignore:
-      - master
-      - release
-
 jobs:
   build:
 
