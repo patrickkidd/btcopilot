@@ -210,7 +210,7 @@ def diagrams(id=None):
             )
             db.session.add(diagram)
             db.session.commit()
-            _log.info("Created new diagram")
+            _log.info(f"Created new diagram, id: {diagram.id}")
             return pickle.dumps(diagram.as_dict())
     else:
         diagram = Diagram.query.get(id)
@@ -227,7 +227,7 @@ def diagrams(id=None):
             #     persons = [item for item in data.get('items', []) if item['kind'] == 'Person']
             #     _log.debug(f"    Scene contains persons: {len(persons)}")
             #     _log.debug(f"    Diagram.updated_at: {diagram.updated_at}")
-            _log.info(f"Fetched diagram {id}")
+            _log.info(f"Fetched diagram {id}, version: {diagram.version}")
             return pickle.dumps(diagram.as_dict())
         elif request.method == "HEAD":  # verify
             return ("Success", 200)

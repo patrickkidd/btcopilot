@@ -38,6 +38,7 @@ def get(diagram_id):
     )
     ret["data"] = base64.b64encode(diagram.data).decode("utf-8")
 
+    _log.info(f"Fetched diagram {diagram.id}, version: {diagram.version}")
     return jsonify(ret)
 
 
@@ -83,6 +84,8 @@ def update(diagram_id):
             ),
             409,
         )
+    else:
+        _log.info(f"Updated diagram {diagram.id} new_version: {new_version}")
 
     db.session.commit()
 
