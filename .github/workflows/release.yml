@@ -3,6 +3,10 @@
 
 name: Release
 
+permissions:
+  contents: write
+  packages: write
+
 on:
   push:
     branches:
@@ -162,25 +166,11 @@ jobs:
         echo "WHEEL_FILENAME=`ls *.whl`" >> $GITHUB_ENV
 
     - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{needs.build.outputs.version}}
-        release_name: ${{needs.build.outputs.version}}
-        draft: false
-        prerelease: false
-
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ env.WHEEL_FILENAME }}
-        asset_name: ${{ env.WHEEL_FILENAME }}
-        asset_content_type: application/zip
+        name: ${{needs.build.outputs.version}}
+        files: ${{ env.WHEEL_FILENAME }}
 
     - name: Push to pypi repo
       run: |
