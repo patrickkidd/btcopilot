@@ -1,5 +1,3 @@
-import pytest
-
 from btcopilot.schema import (
     DiagramData,
     PDP,
@@ -8,7 +6,6 @@ from btcopilot.schema import (
     Event,
     EventKind,
     PairBond,
-    asdict,
 )
 from btcopilot.pdp import validate_pdp_deltas, apply_deltas
 

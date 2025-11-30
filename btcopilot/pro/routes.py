@@ -248,7 +248,7 @@ def diagrams(id=None):
 
             if not success:
                 _log.info(
-                    f"Conflict updating diagram {diagram.id} for user: {g.user}, expected_version: {expected_version}, current_version: {diagram.version}"
+                    f"Conflict updating diagram {diagram.id} for user: {g.user.username}, expected_version: {expected_version}, current_version: {diagram.version}"
                 )
                 response_data = pickle.dumps(
                     {"version": diagram.version, "data": diagram.data}

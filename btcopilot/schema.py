@@ -685,6 +685,13 @@ class DiagramData:
                     if person_id < 0:
                         to_visit.append(person_id)
 
+                # Include pair_bond connecting person and spouse (for marriage display)
+                if event.person and event.spouse:
+                    for pb in self.pdp.pair_bonds:
+                        if {pb.person_a, pb.person_b} == {event.person, event.spouse}:
+                            if pb.id and pb.id < 0:
+                                to_visit.append(pb.id)
+
         return visited
 
     def _remap_person_ids(self, person: Person, id_mapping: dict[int, int]) -> Person:
