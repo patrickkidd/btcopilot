@@ -2,20 +2,37 @@ import logging
 import base64
 from flask import Blueprint, request, jsonify, abort
 from sqlalchemy.orm import subqueryload
-from sqlalchemy.exc import NoResultFound
 
 import btcopilot
 from btcopilot import auth
-from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram, AccessRight
 from btcopilot.personal.models import Discussion, Statement
-from btcopilot.personal.models.speaker import Speaker
 
 _log = logging.getLogger(__name__)
 
 
 diagrams_bp = Blueprint("diagrams", __name__, url_prefix="/diagrams")
+
+
+@diagrams_bp.route("/", strict_slashes=False)
+def list():
+    user = auth.current_user()
+
+    owned = Diagram.query.filter_by(user_id=user.id).all()
+    shared = (
+        Diagram.query.join(AccessRight)
+        .filter(
+            AccessRight.user_id == user.id,
+            AccessRight.right == btcopilot.ACCESS_READ_WRITE,
+        )
+        .all()
+    )
+    diagrams = sorted(set(owned + shared), key=lambda d: d.id)
+
+    return jsonify(
+        diagrams=[{"id": d.id, "name": d.name, "version": d.version} for d in diagrams]
+    )
 
 
 @diagrams_bp.route("/<int:diagram_id>")
@@ -44,10 +61,6 @@ def get(diagram_id):
 
 @diagrams_bp.route("/<int:diagram_id>", methods=["PUT"])
 def update(diagram_id):
-    """
-    Sibling to /v1/diagrams/<diagram_id> PUT endpoint, but with personal
-    edition, i.e. JSON.body.
-    """
     user = auth.current_user()
 
     diagram = Diagram.query.get(diagram_id)
