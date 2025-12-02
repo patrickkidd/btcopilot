@@ -1,10 +1,8 @@
 import copy
 import logging
+import os
+from datetime import datetime
 
-from rich.pretty import pretty_repr
-
-from btcopilot.extensions import llm, LLMFunction, ai_log
-from btcopilot.personal.models import Discussion, Statement
 from btcopilot.schema import (
     DiagramData,
     PDP,
@@ -15,11 +13,17 @@ from btcopilot.schema import (
     PairBond,
     asdict,
 )
-from btcopilot.personal.prompts import PDP_ROLE_AND_INSTRUCTIONS, PDP_EXAMPLES
-from datetime import datetime
-
 
 _log = logging.getLogger(__name__)
+
+
+def _pretty_repr(obj):
+    try:
+        from rich.pretty import pretty_repr
+
+        return pretty_repr(obj)
+    except ImportError:
+        return repr(obj)
 
 
 def get_all_pdp_item_ids(pdp: PDP) -> set[int]:
@@ -152,7 +156,7 @@ def validate_pdp_deltas(pdp: PDP, deltas: PDPDeltas) -> None:
         raise PDPValidationError(errors)
 
 
-def cumulative(discussion: Discussion, up_to_statement: Statement) -> PDP:
+def cumulative(discussion, up_to_statement) -> PDP:
     cumulative_pdp = PDP()
 
     sorted_statements = sorted(
@@ -177,14 +181,17 @@ def cumulative(discussion: Discussion, up_to_statement: Statement) -> PDP:
 
 
 async def update(
-    thread: Discussion, diagram_data: DiagramData, user_message: str
+    discussion, diagram_data: DiagramData, user_message: str
 ) -> tuple[PDP, PDPDeltas]:
     """
     Compiles prompts, runs llm, and returns both updated PDP and the deltas that were applied.
     """
+    from btcopilot.personal.prompts import PDP_ROLE_AND_INSTRUCTIONS, PDP_EXAMPLES
 
     reference_date = (
-        thread.discussion_date if thread.discussion_date else datetime.now().date()
+        discussion.discussion_date
+        if discussion.discussion_date
+        else datetime.now().date()
     )
 
     SYSTEM_PROMPT = f"""
@@ -211,7 +218,7 @@ async def update(
 
     **Conversation History (for context only):**
 
-    {thread.conversation_history()}
+    {discussion.conversation_history()}
 
     **NEW USER STATEMENT TO ANALYZE FOR DELTAS:**
 
@@ -221,6 +228,7 @@ async def update(
     entries. Do not include existing data that hasn't changed.
 
     """
+    from btcopilot.extensions import llm, LLMFunction, ai_log
 
     pdp_deltas = await llm.submit(
         LLMFunction.JSON,
@@ -228,10 +236,12 @@ async def update(
         response_format=PDPDeltas,
     )
 
-    ai_log.info(f"DELTAS:\n\n{pretty_repr(pdp_deltas)}")
+    if os.getenv("FLASK_CONFIG") == "development":
+        ai_log.info(f"DELTAS:\n\n{_pretty_repr(pdp_deltas)}")
 
     new_pdp = apply_deltas(diagram_data.pdp, pdp_deltas)
-    ai_log.info(f"New PDP: {pretty_repr(new_pdp)}")
+    if os.getenv("FLASK_CONFIG") == "development":
+        ai_log.info(f"New PDP: {_pretty_repr(new_pdp)}")
     return new_pdp, pdp_deltas
 
 
@@ -240,9 +250,11 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
     Return a copy of the pdp with the deltas applied.
     """
 
-    _log.debug(f"Pre-PDP:\n\n{pretty_repr(pdp)}")
+    if os.getenv("FLASK_CONFIG") == "development":
+        _log.debug(f"Pre-PDP:\n\n{_pretty_repr(pdp)}")
 
-    _log.debug(f"Applying deltas:\n\n{pretty_repr(deltas)}")
+    if os.getenv("FLASK_CONFIG") == "development":
+        _log.debug(f"Applying deltas:\n\n{_pretty_repr(deltas)}")
 
     pdp = copy.deepcopy(pdp)
 
@@ -340,5 +352,6 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if pdp.pair_bonds[idx].id in to_delete_ids:
             del pdp.pair_bonds[idx]
 
-    _log.debug(f"Post-PDP:\n\n{pretty_repr(pdp)}")
+    if os.getenv("FLASK_CONFIG") == "development":
+        _log.debug(f"Post-PDP:\n\n{_pretty_repr(pdp)}")
     return pdp
