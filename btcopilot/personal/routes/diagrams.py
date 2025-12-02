@@ -6,6 +6,7 @@ from sqlalchemy.orm import subqueryload
 import btcopilot
 from btcopilot import auth
 from btcopilot.extensions import db
+from btcopilot.schema import DiagramData
 from btcopilot.pro.models import Diagram, AccessRight
 from btcopilot.personal.models import Discussion, Statement
 
@@ -15,8 +16,36 @@ _log = logging.getLogger(__name__)
 diagrams_bp = Blueprint("diagrams", __name__, url_prefix="/diagrams")
 
 
+@diagrams_bp.route("/", methods=["POST"], strict_slashes=False)
+def create():
+    user = auth.current_user()
+
+    data = request.get_json()
+    if not data:
+        return jsonify(error="Request body is required"), 400
+
+    name = data.get("name", "").strip()
+    if not name:
+        return jsonify(error="Diagram name is required"), 400
+
+    diagram = Diagram(user_id=user.id, name=name, data=b"")
+
+    database_with_defaults = DiagramData.create_with_defaults()
+    diagram.set_diagram_data(database_with_defaults)
+
+    db.session.add(diagram)
+    db.session.commit()
+
+    _log.info(f"User {user.username} created diagram '{name}' (ID: {diagram.id})")
+
+    return jsonify(
+        success=True,
+        diagram={"id": diagram.id, "name": diagram.name, "version": diagram.version},
+    )
+
+
 @diagrams_bp.route("/", strict_slashes=False)
-def list():
+def list_diagrams():
     user = auth.current_user()
 
     owned = Diagram.query.filter_by(user_id=user.id).all()
@@ -97,8 +126,8 @@ def update(diagram_id):
             ),
             409,
         )
-    else:
-        _log.info(f"Updated diagram {diagram.id} new_version: {new_version}")
+
+    _log.info(f"Updated diagram {diagram.id} new_version: {new_version}")
 
     db.session.commit()
 
