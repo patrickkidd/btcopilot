@@ -1,4 +1,3 @@
-import enum
 import textwrap
 import logging
 
@@ -6,7 +5,7 @@ from dataclasses import dataclass
 from flask import g
 
 from btcopilot.extensions import db, ai_log, llm, LLMFunction
-from btcopilot.async_utils import gather
+from btcopilot.async_utils import one_result
 from btcopilot import pdp
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.schema import DiagramData, PDP, asdict
@@ -26,35 +25,6 @@ class Response:
     pdp: PDP | None = None
 
 
-class ResponseDirection(enum.StrEnum):
-    Lead = "lead"
-    Follow = "follow"
-
-
-async def detect_response_direction(
-    user_statement: str, discussion: Discussion
-) -> ResponseDirection:
-    s_statement = [x.text for x in discussion.statements]
-    # Leaving "therapist" in there since this just has binary output.
-    direction_prompt = textwrap.dedent(
-        f"""
-        You are an AI therapist chatbot. Determine whether the person who wrote the
-        following chat prompt is implying that they want you to follow the topic they
-        are laying down, or not. If they did not indicate either way, assume you should lead.
-        Return only a single string of either "follow" or "lead".
-
-        USER_MESSAGE: {user_statement}
-
-        THREAD MESSAGES: {s_statement}
-        """
-    )
-    direction = await llm.submit(LLMFunction.Direction, direction_prompt)
-    if direction == "follow":
-        return ResponseDirection.Follow
-    else:
-        return ResponseDirection.Lead
-
-
 def ask(discussion: Discussion, user_statement: str) -> Response:
 
     ai_log.info(f"User statement: {user_statement}")
@@ -62,13 +32,10 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
         diagram_data = discussion.diagram.get_diagram_data()
     else:
         diagram_data = DiagramData()
-    results = gather(
-        pdp.update(discussion, diagram_data, user_statement),
-        detect_response_direction(user_statement, discussion),
-    )
 
-    (new_pdp, pdp_deltas), response_direction = results
-    ai_log.info(f"Response direction: {response_direction}")
+    new_pdp, pdp_deltas = one_result(
+        pdp.update(discussion, diagram_data, user_statement)
+    )
 
     # Write to disk
     diagram_data.pdp = new_pdp
@@ -102,75 +69,62 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
             "DATA_MODEL_DEFINITIONS", data_model_prompt
         )
 
-    ORIENTATION_FRAGMENT = textwrap.dedent(
+    meta_prompt = textwrap.dedent(
         f"""
         {role_prompt}
-        
+
         **Data Model Definitions**
 
         {data_model_prompt}
+
+        **Instructions**
+
+        Your goal is to systematically build a complete three-generation family
+        diagram by collecting concrete structural data.
+
+        {bowen_prompt}
+
+        **Where are you in data collection?** Review the conversation history
+        and check what structural data you have:
+
+        **Required Data (check what's missing):**
+        - Parents: Both names? Both ages? Alive/deceased? Together/separated?
+        - Siblings: How many? All names? All ages?
+        - Maternal grandparents: Both names? Ages or death dates?
+        - Paternal grandparents: Both names? Ages or death dates?
+        - Problem timeline: When did their issue start (at least year)?
+
+        **Your next response (2-3 sentences):**
+        1. Brief acknowledgment of what they just said (show you're listening)
+        2. Ask for the next concrete data point you need from the checklist above
+        3. Keep it conversational but factual: "Got it. What's your mom's name
+           and how old is she?"
+
+        **NEVER use these phrases**:
+        - "It sounds like..." / "That sounds..."
+        - "It makes sense that you're feeling..."
+        - "That must be hard/frustrating/difficult"
+        - "How does that make you feel?"
+        - "Tell me more" (too vague - ask for specific facts)
+        - "How do you think..." (interpretive - just get facts)
+
+        **Response style**:
+        - Direct factual questions: "What's your dad's name?" not "Tell me
+          about your dad"
+        - Always ask for concrete information: names, ages, dates, relationships
+        - Sound like a friendly intake coordinator, not a therapist
+        - Move systematically through the family structure
+        - Don't get stuck exploring feelings or incidents - get the facts
+
+        **Conversation History**
+
+        {discussion.conversation_history()}
+
+        **Last User Statement**
+
+        {user_statement}
         """
     )
-
-    if response_direction == ResponseDirection.Lead:
-
-        meta_prompt = textwrap.dedent(
-            f"""
-            {ORIENTATION_FRAGMENT}
-
-            **Instructions**
-            
-            Generate a curious and engaging response to the following chat
-            conversation history and last user statement. Work backward from the
-            stated symptom or problem in a way that can illuminate the following
-            stack of basic information, more or less in the following order:
-
-            {bowen_prompt}
-
-            Once a reasonable amount of information is gathered from the above,
-            there may be some fluidity about what area in the stack to focus on.
-
-            **Conversation History**
-
-            {discussion.conversation_history()}
-
-            **Last User Statement**
-
-            {user_statement}
-            """
-        )
-
-    elif response_direction == ResponseDirection.Follow:
-
-        meta_prompt = textwrap.dedent(
-            f"""
-            {ORIENTATION_FRAGMENT}
-            
-            **Instructions**
-            
-            Consider the following statement history and generate your next
-            response being curious about what they just said in their last user
-            statement. This is less about data collection now and more about
-            following the discussion they are providing. Stay away from the usual
-            canned "Can you tell me more?" or other typical therapist-ish
-            responses. Remember, you are not a therapist, but an expert at
-            correlating the four main variables to understand how the person's
-            threat response (anxiety variable) in relation to positive and
-            negative shifts relationships (relationship variable) gets in
-            peoples' way toward their goals (problem or symptom variable).
-
-            **Conversation History**
-
-            {discussion.conversation_history()}
-
-            **Last User Statement**
-
-            {user_statement}
-            """
-        )
-
-    else:
-        raise ValueError(f"Unknown response direction: {response_direction}")
 
     ai_response = _generate_response(discussion, diagram_data, meta_prompt)
     ai_log.info(f"AI response: {ai_response}")

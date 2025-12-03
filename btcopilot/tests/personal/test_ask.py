@@ -5,12 +5,11 @@ import pytest
 
 from btcopilot.schema import Person, Event, EventKind, RelationshipKind, PairBond, PDP
 from btcopilot.extensions import db
-from btcopilot.personal import ResponseDirection, ask
+from btcopilot.personal import ask
 from btcopilot.personal.models import Discussion
 
 
 @pytest.mark.chat_flow(
-    response_direction=ResponseDirection.Follow,
     pdp={
         "people": [
             Person(id=-1, name="Bob"),

@@ -4,7 +4,6 @@ import pytest
 from mock import patch, AsyncMock
 
 from btcopilot.extensions import db
-from btcopilot.personal import ResponseDirection
 from btcopilot.schema import PDP, PDPDeltas, from_dict
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.tests.pro.conftest import pro_client, subscriber, admin
@@ -29,20 +28,11 @@ def chat_flow(request):
             pdp_dict = marker.kwargs.get("pdp", {})
             pdp_obj = from_dict(PDP, pdp_dict) if pdp_dict else PDP()
             pdp = (pdp_obj, PDPDeltas())
-            response_direction = marker.kwargs.get(
-                "response_direction", ResponseDirection.Follow
-            )
 
             stack.enter_context(
                 patch(
                     "btcopilot.pdp.update",
                     AsyncMock(return_value=pdp),
-                )
-            )
-            stack.enter_context(
-                patch(
-                    "btcopilot.personal.chat.detect_response_direction",
-                    AsyncMock(return_value=response_direction),
                 )
             )
             stack.enter_context(
@@ -54,7 +44,6 @@ def chat_flow(request):
             ret = {
                 "response": response,
                 "pdp": pdp,
-                "response_direction": response_direction,
             }
         else:
             ret = None

@@ -1,5 +1,5 @@
 from . import chat
-from .chat import ask, Response, ResponseDirection
+from .chat import ask, Response
 from . import routes
 
 

@@ -62,6 +62,13 @@ The interactive, re-usable component for reviewing and editing extracted clinica
 - **Features**: Collapsed/expanded views, in-place editing, feedback controls, cumulative data display
 - **Used in**: Training module for domain-expert review and fine-tuning of AI extraction model
 
+### Personal App Chat Flow
+The AI-powered conversation system that extracts family relationship data from user messages. For detailed architecture and prompt engineering guidance:
+- **File**: [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md)
+- **Purpose**: Documents chat flow architecture starting from `btcopilot.personal.ask`
+- **Includes**: System prompts, test fixtures, data extraction flow, LLM integration
+- **Use When**: Improving system prompts for better LLM alignment based on developer requests for certain behaviors
+
 ## Development rules
 
 - At this stage we are not concerned with legacy data, we woudl rather delete
