@@ -1924,6 +1924,19 @@ Parameters:
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
 }
 
+/* Dark mode styles for event-kind-indicator */
+[data-theme="dark"] .event-kind-indicator {
+    background: #3a3837;
+    color: #e0e0e0;
+    border-color: #5a5a5a;
+}
+
+[data-theme="dark"] .event-kind-indicator.editable-field:hover {
+    background: #4a4847;
+    border-color: #6a6a6a;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.3);
+}
+
 .editable-shift {
     position: relative;
     transition: all 0.2s ease;
@@ -2016,6 +2029,12 @@ Parameters:
     opacity: 0.7;
     pointer-events: auto;
     user-select: text;
+}
+
+[data-theme="dark"] .event-id-debug,
+[data-theme="dark"] .person-id-debug {
+    background: #3a3837;
+    color: #e0e0e0;
 }
 
 .add-element {
@@ -2204,6 +2223,27 @@ Parameters:
 
 .shift-relationship .inline-edit-select {
     color: #333 !important;
+}
+
+/* Dark mode styles for select elements */
+[data-theme="dark"] .inline-edit-select {
+    background: #2d2b2a;
+    color: #ffffff;
+    border-color: #4a4a4a;
+}
+
+[data-theme="dark"] .inline-edit-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.3);
+}
+
+[data-theme="dark"] .inline-edit-select option {
+    color: #ffffff !important;
+    background: #2d2b2a !important;
+}
+
+[data-theme="dark"] .shift-relationship .inline-edit-select {
+    color: #ffffff !important;
 }
 
 /* Relationship hierarchy styles */

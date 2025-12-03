@@ -1173,6 +1173,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
 
         formatEventTitle(event) {
             const kind = event.kind;
+            if (!kind) return event.description || 'Event';
             const kindLabel = kind.charAt(0).toUpperCase() + kind.slice(1);
 
             if (kind === 'birth') {
@@ -2045,6 +2046,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
 
         formatEventTitle(event) {
             const kind = event.kind;
+            if (!kind) return event.description || 'Event';
             const kindLabel = kind.charAt(0).toUpperCase() + kind.slice(1);
 
             if (kind === 'birth') {
