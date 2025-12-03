@@ -415,28 +415,30 @@ Parameters:
                                                 Confidence: <span x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
                                             </span>
                                         </div>
-                                        <div class="event-description is-size-7 mb-1">
-                                            {% if editable_mode %}
-                                            <strong class="editable-field event-description"
-                                                    @mouseenter="hoveredField = 'event-' + index + '-description'"
-                                                    @mouseleave="hoveredField = null"
-                                                    @click.stop="startEdit('event-' + index + '-description', event.description || ('Event #' + event.id))">
-                                                <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || ('Event #' + event.id)"></span>
-                                                <input x-show="isEditing('event-' + index + '-description')"
-                                                       :value="editingValue"
-                                                       @input="editingValue = $event.target.value"
-                                                       @blur="saveEventDescription(index, $event.target.value)"
-                                                       @keydown.enter="saveEventDescription(index, $event.target.value); $event.target.blur()"
-                                                       @keydown.escape="cancelEdit(); $event.target.blur()"
-                                                       class="inline-edit-input"
-                                                       type="text">
-                                            </strong>
-                                            {% else %}
-                                            <strong x-text="formatEventTitle(event)"></strong>
-                                            {% endif %}
-                                        </div>
+                                        <template x-if="!event.kind || event.kind === 'shift'">
+                                            <div class="event-description is-size-7 mb-1">
+                                                {% if editable_mode %}
+                                                <strong class="editable-field event-description"
+                                                        @mouseenter="hoveredField = 'event-' + index + '-description'"
+                                                        @mouseleave="hoveredField = null"
+                                                        @click.stop="startEdit('event-' + index + '-description', event.description || ('Event #' + event.id))">
+                                                    <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || ('Event #' + event.id)"></span>
+                                                    <input x-show="isEditing('event-' + index + '-description')"
+                                                           :value="editingValue"
+                                                           @input="editingValue = $event.target.value"
+                                                           @blur="saveEventDescription(index, $event.target.value)"
+                                                           @keydown.enter="saveEventDescription(index, $event.target.value); $event.target.blur()"
+                                                           @keydown.escape="cancelEdit(); $event.target.blur()"
+                                                           class="inline-edit-input"
+                                                           type="text">
+                                                </strong>
+                                                {% else %}
+                                                <strong x-text="formatEventTitle(event)"></strong>
+                                                {% endif %}
+                                            </div>
+                                        </template>
                                     </div>
-                                    
+
                                     <!-- Event Person Section -->
                                     <template x-if="event.person || {{ 'true' if editable_mode else 'false' }}">
                                         <div class="event-person-section" style="margin-top: 8px;">
@@ -1266,28 +1268,30 @@ Parameters:
                                                 Confidence: <span x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
                                             </span>
                                         </div>
-                                        <div class="event-description is-size-7 mb-1">
-                                            {% if editable_mode %}
-                                            <strong class="editable-field event-description"
-                                                    @mouseenter="hoveredField = 'event-' + index + '-description'"
-                                                    @mouseleave="hoveredField = null"
-                                                    @click.stop="startEdit('event-' + index + '-description', event.description || ('Event #' + event.id))">
-                                                <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || ('Event #' + event.id)"></span>
-                                                <input x-show="isEditing('event-' + index + '-description')"
-                                                       :value="editingValue"
-                                                       @input="editingValue = $event.target.value"
-                                                       @blur="saveEventDescription(index, $event.target.value)"
-                                                       @keydown.enter="saveEventDescription(index, $event.target.value); $event.target.blur()"
-                                                       @keydown.escape="cancelEdit(); $event.target.blur()"
-                                                       class="inline-edit-input"
-                                                       type="text">
-                                            </strong>
-                                            {% else %}
-                                            <strong x-text="formatEventTitle(event)"></strong>
-                                            {% endif %}
-                                        </div>
+                                        <template x-if="!event.kind || event.kind === 'shift'">
+                                            <div class="event-description is-size-7 mb-1">
+                                                {% if editable_mode %}
+                                                <strong class="editable-field event-description"
+                                                        @mouseenter="hoveredField = 'event-' + index + '-description'"
+                                                        @mouseleave="hoveredField = null"
+                                                        @click.stop="startEdit('event-' + index + '-description', event.description || ('Event #' + event.id))">
+                                                    <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || ('Event #' + event.id)"></span>
+                                                    <input x-show="isEditing('event-' + index + '-description')"
+                                                           :value="editingValue"
+                                                           @input="editingValue = $event.target.value"
+                                                           @blur="saveEventDescription(index, $event.target.value)"
+                                                           @keydown.enter="saveEventDescription(index, $event.target.value); $event.target.blur()"
+                                                           @keydown.escape="cancelEdit(); $event.target.blur()"
+                                                           class="inline-edit-input"
+                                                           type="text">
+                                                </strong>
+                                                {% else %}
+                                                <strong x-text="formatEventTitle(event)"></strong>
+                                                {% endif %}
+                                            </div>
+                                        </template>
                                     </div>
-                                    
+
                                     <!-- Event Person Section -->
                                     <template x-if="event.person || {{ 'true' if editable_mode else 'false' }}">
                                         <div class="event-person-section" style="margin-top: 8px;">
