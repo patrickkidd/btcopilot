@@ -281,56 +281,62 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     <span>Pending changes requiring refresh</span>
 </div>
 
-<div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;">
-    <div class="level mb-0">
-        <div class="level-left">
-            <div class="level-item">
-                <div class="field has-addons mb-0">
-                    <p class="control">
-                        <a class="button is-small is-static">
-                            Discussion Date
-                        </a>
-                    </p>
-                    <p class="control">
-                        <input type="date"
-                               class="input is-small"
-                               id="discussion-date-input"
-                               value="{{ discussion.discussion_date.isoformat() if discussion.discussion_date else '' }}"
-                               onchange="saveDiscussionDate({{ discussion.id }}, this.value)"
-                               style="width: 150px;">
-                    </p>
-                </div>
+<div style="margin-bottom: 1rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div class="field has-addons mb-0">
+                <p class="control">
+                    <a class="button is-small is-static">
+                        Discussion Date
+                    </a>
+                </p>
+                <p class="control">
+                    <input type="date"
+                           class="input is-small"
+                           id="discussion-date-input"
+                           value="{{ discussion.discussion_date.isoformat() if discussion.discussion_date else '' }}"
+                           onchange="saveDiscussionDate({{ discussion.id }}, this.value)"
+                           style="width: 150px;">
+                </p>
             </div>
-            <div class="level-item">
-                <div class="tags mb-0">
-                    {% set ai_messages = statements|selectattr('statement.speaker.type', 'equalto', 'expert')|list %}
-                    <span class="tag is-success">{{ ai_messages|length }} AI responses</span>
-                </div>
+            <div class="tags mb-0">
+                {% set ai_messages = statements|selectattr('statement.speaker.type', 'equalto', 'expert')|list %}
+                <span class="tag is-success">{{ ai_messages|length }} AI responses</span>
             </div>
         </div>
-        <div class="level-right">
-            <div class="level-item">
-                <div class="dropdown is-hoverable is-right">
-                    <div class="dropdown-trigger">
-                        <button class="button is-small is-outlined is-primary" aria-haspopup="true" aria-controls="export-dropdown">
-                            <span class="icon"><i class="fas fa-download"></i></span>
-                            <span>Export</span>
-                            <span class="icon is-small"><i class="fas fa-angle-down"></i></span>
-                        </button>
-                    </div>
-                    <div class="dropdown-menu" id="export-dropdown" role="menu">
-                        <div class="dropdown-content">
-                            <a href="{{ url_for('training.discussions.export', discussion_id=discussion.id, mode='statements') }}"
-                               class="dropdown-item"
-                               title="Export statements only (no extracted data)">
-                                <span class="icon"><i class="fas fa-comments"></i></span>
-                                <span>Statements Only</span>
-                            </a>
-                            <a href="{{ url_for('training.discussions.export', discussion_id=discussion.id, mode='full') }}"
-                               class="dropdown-item"
-                               title="Export with AI extractions and user corrections">
-                            <span class="icon"><i class="fas fa-database"></i></span>
-                            <span>With Extractions</span>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            {% if current_user.has_role(btcopilot.ROLE_ADMIN) and auditor_options %}
+            <div class="select is-small">
+                <select id="auditor-filter" onchange="handleAuditorChange(this.value)">
+                    {% for option in auditor_options %}
+                    <option value="{{ option.id }}" {% if selected_auditor == option.id %}selected{% endif %}>
+                        {{ option.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <div class="dropdown is-hoverable is-right">
+                <div class="dropdown-trigger">
+                    <button class="button is-small is-outlined is-primary" aria-haspopup="true" aria-controls="export-dropdown">
+                        <span class="icon"><i class="fas fa-download"></i></span>
+                        <span>Export</span>
+                        <span class="icon is-small"><i class="fas fa-angle-down"></i></span>
+                    </button>
+                </div>
+                <div class="dropdown-menu" id="export-dropdown" role="menu">
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('training.discussions.export', discussion_id=discussion.id, mode='statements') }}"
+                           class="dropdown-item"
+                           title="Export statements only (no extracted data)">
+                            <span class="icon"><i class="fas fa-comments"></i></span>
+                            <span>Statements Only</span>
+                        </a>
+                        <a href="{{ url_for('training.discussions.export', discussion_id=discussion.id, mode='full') }}"
+                           class="dropdown-item"
+                           title="Export with AI extractions and user corrections">
+                        <span class="icon"><i class="fas fa-database"></i></span>
+                        <span>With Extractions</span>
                         </a>
                     </div>
                 </div>
@@ -338,62 +344,39 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
         </div>
     </div>
 
-    <div class="level mb-0">
-        <div class="level-left">
-            <div class="level-item">
-                <div class="field is-grouped">
-                    <p class="control" id="expand-all-control">
-                        <button class="button is-small is-outlined" onclick="expandAllMessages()">
-                            <span class="icon"><i class="fas fa-expand"></i></span>
-                            <span>Expand All</span>
-                        </button>
-                    </p>
-                    <p class="control" id="collapse-all-control" style="display: none;">
-                        <button class="button is-small is-outlined" onclick="collapseAllMessages()">
-                            <span class="icon"><i class="fas fa-compress"></i></span>
-                            <span>Collapse All</span>
-                        </button>
-                    </p>
-                    <p class="control">
-                        <button class="button is-small is-outlined is-danger" onclick="clearExtractedData({{ discussion.id }})">
-                            <span class="icon"><i class="fas fa-trash-alt"></i></span>
-                            <span>Clear SARF Codes</span>
-                        </button>
-                    </p>
-                    <p class="control">
-                        <button class="button is-small is-outlined is-info" onclick="jumpToLastCode()">
-                            <span class="icon"><i class="fas fa-arrow-down"></i></span>
-                            <span>Jump to Last Code</span>
-                        </button>
-                    </p>
-                </div>
-            </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <div class="field is-grouped mb-0">
+            <p class="control" id="expand-all-control">
+                <button class="button is-small is-outlined" onclick="expandAllMessages()">
+                    <span class="icon"><i class="fas fa-expand"></i></span>
+                    <span>Expand All</span>
+                </button>
+            </p>
+            <p class="control" id="collapse-all-control" style="display: none;">
+                <button class="button is-small is-outlined" onclick="collapseAllMessages()">
+                    <span class="icon"><i class="fas fa-compress"></i></span>
+                    <span>Collapse All</span>
+                </button>
+            </p>
+            <p class="control">
+                <button class="button is-small is-outlined is-danger" onclick="clearExtractedData({{ discussion.id }})">
+                    <span class="icon"><i class="fas fa-trash-alt"></i></span>
+                    <span>Clear SARF Codes</span>
+                </button>
+            </p>
+            <p class="control">
+                <button class="button is-small is-outlined is-info" onclick="jumpToLastCode()">
+                    <span class="icon"><i class="fas fa-arrow-down"></i></span>
+                    <span>Jump to Last Code</span>
+                </button>
+            </p>
         </div>
-        <div class="level-right">
-            {% if current_user.has_role(btcopilot.ROLE_ADMIN) and auditor_options and (auditor_options|length > 1 or statements|selectattr('pdp_deltas')|list|length > 0) %}
-            <div class="level-item">
-                <div class="field is-grouped">
-                    <p class="control">
-                        <div class="select is-small">
-                            <select id="auditor-filter" onchange="handleAuditorChange(this.value)">
-                                {% for option in auditor_options %}
-                                <option value="{{ option.id }}" {% if selected_auditor == option.id %}selected{% endif %}>
-                                    {{ option.name }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </p>
-                    {% if selected_auditor and selected_auditor != "AI" %}
-                    <p class="control">
-                        <button class="button is-small is-success" onclick="bulkApproveDiscussion()">
-                            <span class="icon"><i class="fas fa-check-double"></i></span>
-                            <span>Approve All {{ selected_auditor }} Codes</span>
-                        </button>
-                    </p>
-                    {% endif %}
-                </div>
-            </div>
+        <div>
+            {% if current_user.has_role(btcopilot.ROLE_ADMIN) and auditor_options and selected_auditor and selected_auditor != "AI" %}
+            <button class="button is-small is-success" onclick="bulkApproveDiscussion()">
+                <span class="icon"><i class="fas fa-check-double"></i></span>
+                <span>Approve All {{ selected_auditor }} Codes</span>
+            </button>
             {% endif %}
         </div>
     </div>

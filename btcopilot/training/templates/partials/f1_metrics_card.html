@@ -65,24 +65,41 @@
                     <div class="notification is-warning is-light has-text-centered">
                         <p class="heading">Symptom</p>
                         <p class="title is-4">{{ "%.3f"|format(f1_metrics.symptom_macro_f1) }}</p>
+                        <div class="content is-small" style="margin-top: 0.5rem;">
+                            <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.symptom_hierarchical.detection_f1) }}</p>
+                            <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.symptom_hierarchical.value_match_f1) }}</p>
+                        </div>
                     </div>
                 </div>
                 <div class="column is-3">
                     <div class="notification is-warning is-light has-text-centered">
                         <p class="heading">Anxiety</p>
                         <p class="title is-4">{{ "%.3f"|format(f1_metrics.anxiety_macro_f1) }}</p>
+                        <div class="content is-small" style="margin-top: 0.5rem;">
+                            <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.anxiety_hierarchical.detection_f1) }}</p>
+                            <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.anxiety_hierarchical.value_match_f1) }}</p>
+                        </div>
                     </div>
                 </div>
                 <div class="column is-3">
                     <div class="notification is-warning is-light has-text-centered">
                         <p class="heading">Relationship</p>
                         <p class="title is-4">{{ "%.3f"|format(f1_metrics.relationship_macro_f1) }}</p>
+                        <div class="content is-small" style="margin-top: 0.5rem;">
+                            <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.relationship_hierarchical.detection_f1) }}</p>
+                            <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.relationship_hierarchical.value_match_f1) }}</p>
+                            <p class="mb-1"><strong>People Match:</strong> {{ "%.3f"|format(f1_metrics.relationship_hierarchical.people_match_f1) }}</p>
+                        </div>
                     </div>
                 </div>
                 <div class="column is-3">
                     <div class="notification is-warning is-light has-text-centered">
                         <p class="heading">Functioning</p>
                         <p class="title is-4">{{ "%.3f"|format(f1_metrics.functioning_macro_f1) }}</p>
+                        <div class="content is-small" style="margin-top: 0.5rem;">
+                            <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.functioning_hierarchical.detection_f1) }}</p>
+                            <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.functioning_hierarchical.value_match_f1) }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -94,7 +111,23 @@
                 <p class="help mt-3">
                     <strong>Matching Logic:</strong> People matched by name similarity &gt;0.8 + parent links.
                     Events matched by kind (exact) + description similarity &gt;0.5 (80% weight) + dateTime proximity (20% weight, None matches any) + link resolution.
-                    SARF variables calculated via macro-F1 across matched events.
+                </p>
+                <p class="help mt-2">
+                    <strong>SARF Macro-F1 (large number):</strong> Sklearn macro-averaged F1 across all value classes (Up/Down/Same, RelationshipKind) for matched events only.
+                    Low scores indicate events matched but SARF values don't align.
+                </p>
+                <p class="help mt-2">
+                    <strong>Hierarchical Metrics (sub-scores):</strong>
+                </p>
+                <ul class="help">
+                    <li><strong>Detection:</strong> F1 for detecting any (person, variable) pair - did AI find that this person had this variable shift?</li>
+                    <li><strong>Value Match:</strong> For detected (person, variable) pairs, F1 for exact value matching (Up/Down/Same for S/A/F, RelationshipKind for R)</li>
+                    <li><strong>People Match (R only):</strong> For relationship events with matching values, F1 for correct relationshipTargets and relationshipTriangles</li>
+                </ul>
+                <p class="help mt-2">
+                    <strong>Why do Macro-F1 and Detection differ?</strong> Macro-F1 requires events to match first (by description, date, links), then checks SARF values.
+                    Detection checks if AI found any event with that (person, variable) pair regardless of event matching. High Detection with low Macro-F1 means
+                    AI detected the right people/variables but events didn't match well or values were wrong.
                 </p>
             </div>
         </details>

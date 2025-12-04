@@ -10,7 +10,9 @@ from btcopilot.training.f1_metrics import (
     calculate_system_f1,
     invalidate_f1_cache,
     normalize_pdp_for_comparison,
+    calculate_hierarchical_sarf_f1,
     F1Metrics,
+    SARFVariableF1,
 )
 from btcopilot.schema import (
     Person,
@@ -557,3 +559,249 @@ def test_calculate_statement_f1_with_pair_bonds():
 
     assert metrics.pair_bonds_f1 == 1.0
     assert metrics.aggregate_micro_f1 == 1.0
+
+
+def test_hierarchical_sarf_f1_perfect_detection_and_value():
+    ai_events = [
+        Event(
+            id=-1,
+            kind=EventKind.Shift,
+            description="Therapy",
+            dateTime=datetime(2024, 1, 1),
+            person=-1,
+            symptom=VariableShift.Up,
+            anxiety=VariableShift.Down,
+        )
+    ]
+    gt_events = [
+        Event(
+            id=-2,
+            kind=EventKind.Shift,
+            description="Therapy",
+            dateTime=datetime(2024, 1, 1),
+            person=-10,
+            symptom=VariableShift.Up,
+            anxiety=VariableShift.Down,
+        )
+    ]
+    id_map = {-1: -10}
+
+    hierarchical = calculate_hierarchical_sarf_f1(ai_events, gt_events, id_map)
+
+    assert hierarchical["symptom"].detection_f1 == 1.0
+    assert hierarchical["symptom"].value_match_f1 == 1.0
+    assert hierarchical["anxiety"].detection_f1 == 1.0
+    assert hierarchical["anxiety"].value_match_f1 == 1.0
+
+
+def test_hierarchical_sarf_f1_detection_without_value_match():
+    ai_events = [
+        Event(
+            id=-1,
+            kind=EventKind.Shift,
+            description="Test",
+            dateTime=datetime(2024, 1, 1),
+            person=-1,
+            symptom=VariableShift.Up,
+        )
+    ]
+    gt_events = [
+        Event(
+            id=-2,
+            kind=EventKind.Shift,
+            description="Test",
+            dateTime=datetime(2024, 1, 1),
+            person=-10,
+            symptom=VariableShift.Down,
+        )
+    ]
+    id_map = {-1: -10}
+
+    hierarchical = calculate_hierarchical_sarf_f1(ai_events, gt_events, id_map)
+
+    assert hierarchical["symptom"].detection_f1 == 1.0
+    assert hierarchical["symptom"].value_match_f1 == 0.0
+
+
+def test_hierarchical_sarf_f1_missed_detection():
+    ai_events = []
+    gt_events = [
+        Event(
+            id=-2,
+            kind=EventKind.Shift,
+            description="Test",
+            dateTime=datetime(2024, 1, 1),
+            person=-10,
+            symptom=VariableShift.Up,
+        )
+    ]
+    id_map = {}
+
+    hierarchical = calculate_hierarchical_sarf_f1(ai_events, gt_events, id_map)
+
+    assert hierarchical["symptom"].detection_f1 == 0.0
+    assert hierarchical["symptom"].value_match_f1 == 1.0
+
+
+def test_hierarchical_sarf_f1_false_positive_detection():
+    ai_events = [
+        Event(
+            id=-1,
+            kind=EventKind.Shift,
+            description="Test",
+            dateTime=datetime(2024, 1, 1),
+            person=-1,
+            symptom=VariableShift.Up,
+        )
+    ]
+    gt_events = []
+    id_map = {-1: -10}
+
+    hierarchical = calculate_hierarchical_sarf_f1(ai_events, gt_events, id_map)
+
+    assert hierarchical["symptom"].detection_f1 == 0.0
+    assert hierarchical["symptom"].value_match_f1 == 1.0
+
+
+def test_hierarchical_sarf_f1_relationship_people_match():
+    from btcopilot.schema import RelationshipKind
+
+    ai_events = [
+        Event(
+            id=-1,
+            kind=EventKind.Shift,
+            description="Test",
+            dateTime=datetime(2024, 1, 1),
+            person=-1,
+            relationship=RelationshipKind.Conflict,
+            relationshipTargets=[-2, -3],
+            relationshipTriangles=[-4],
+        )
+    ]
+    gt_events = [
+        Event(
+            id=-2,
+            kind=EventKind.Shift,
+            description="Test",
+            dateTime=datetime(2024, 1, 1),
+            person=-10,
+            relationship=RelationshipKind.Conflict,
+            relationshipTargets=[-20, -30],
+            relationshipTriangles=[-40],
+        )
+    ]
+    id_map = {-1: -10, -2: -20, -3: -30, -4: -40}
+
+    hierarchical = calculate_hierarchical_sarf_f1(ai_events, gt_events, id_map)
+
+    assert hierarchical["relationship"].detection_f1 == 1.0
+    assert hierarchical["relationship"].value_match_f1 == 1.0
+    assert hierarchical["relationship"].people_match_f1 == 1.0
+
+
+def test_hierarchical_sarf_f1_relationship_wrong_people():
+    from btcopilot.schema import RelationshipKind
+
+    ai_events = [
+        Event(
+            id=-1,
+            kind=EventKind.Shift,
+            description="Test",
+            dateTime=datetime(2024, 1, 1),
+            person=-1,
+            relationship=RelationshipKind.Conflict,
+            relationshipTargets=[-2],
+            relationshipTriangles=[],
+        )
+    ]
+    gt_events = [
+        Event(
+            id=-2,
+            kind=EventKind.Shift,
+            description="Test",
+            dateTime=datetime(2024, 1, 1),
+            person=-10,
+            relationship=RelationshipKind.Conflict,
+            relationshipTargets=[-20, -30],
+            relationshipTriangles=[-40],
+        )
+    ]
+    id_map = {-1: -10, -2: -20, -3: -30, -4: -40}
+
+    hierarchical = calculate_hierarchical_sarf_f1(ai_events, gt_events, id_map)
+
+    assert hierarchical["relationship"].detection_f1 == 1.0
+    assert hierarchical["relationship"].value_match_f1 == 1.0
+    assert hierarchical["relationship"].people_match_f1 == 0.0
+
+
+def test_hierarchical_sarf_f1_multiple_events_same_person_variable():
+    ai_events = [
+        Event(
+            id=-1,
+            kind=EventKind.Shift,
+            description="Event 1",
+            dateTime=datetime(2024, 1, 1),
+            person=-1,
+            symptom=VariableShift.Up,
+        ),
+        Event(
+            id=-2,
+            kind=EventKind.Shift,
+            description="Event 2",
+            dateTime=datetime(2024, 1, 2),
+            person=-1,
+            symptom=VariableShift.Down,
+        ),
+    ]
+    gt_events = [
+        Event(
+            id=-10,
+            kind=EventKind.Shift,
+            description="Event 1",
+            dateTime=datetime(2024, 1, 1),
+            person=-10,
+            symptom=VariableShift.Up,
+        )
+    ]
+    id_map = {-1: -10}
+
+    hierarchical = calculate_hierarchical_sarf_f1(ai_events, gt_events, id_map)
+
+    assert hierarchical["symptom"].detection_f1 == 1.0
+    assert hierarchical["symptom"].value_match_f1 == 1.0
+
+
+def test_calculate_statement_f1_includes_hierarchical_metrics():
+    ai_deltas = PDPDeltas(
+        people=[Person(id=-1, name="John")],
+        events=[
+            Event(
+                id=-2,
+                kind=EventKind.Shift,
+                description="Therapy",
+                dateTime=datetime(2024, 1, 1),
+                person=-1,
+                symptom=VariableShift.Up,
+            )
+        ],
+    )
+    gt_deltas = PDPDeltas(
+        people=[Person(id=-10, name="John")],
+        events=[
+            Event(
+                id=-20,
+                kind=EventKind.Shift,
+                description="Therapy",
+                dateTime=datetime(2024, 1, 1),
+                person=-10,
+                symptom=VariableShift.Up,
+            )
+        ],
+    )
+
+    metrics = calculate_statement_f1(ai_deltas, gt_deltas)
+
+    assert isinstance(metrics.symptom_hierarchical, SARFVariableF1)
+    assert metrics.symptom_hierarchical.detection_f1 == 1.0
+    assert metrics.symptom_hierarchical.value_match_f1 == 1.0

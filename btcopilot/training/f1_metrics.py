@@ -60,6 +60,13 @@ class F1Metrics:
 
 
 @dataclass
+class SARFVariableF1:
+    detection_f1: float = 0.0
+    value_match_f1: float = 0.0
+    people_match_f1: float = 0.0
+
+
+@dataclass
 class StatementF1Metrics:
     statement_id: int
     aggregate_micro_f1: float = 0.0
@@ -70,6 +77,10 @@ class StatementF1Metrics:
     anxiety_macro_f1: float = 0.0
     relationship_macro_f1: float = 0.0
     functioning_macro_f1: float = 0.0
+    symptom_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
+    anxiety_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
+    relationship_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
+    functioning_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
     exact_match: bool = False
     aggregate_tp: int = 0
     aggregate_fp: int = 0
@@ -89,6 +100,10 @@ class SystemF1Metrics:
     anxiety_macro_f1: float = 0.0
     relationship_macro_f1: float = 0.0
     functioning_macro_f1: float = 0.0
+    symptom_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
+    anxiety_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
+    relationship_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
+    functioning_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
     exact_match_rate: float = 0.0
     total_statements: int = 0
     total_discussions: int = 0
@@ -399,6 +414,131 @@ def calculate_sarf_macro_f1(
     return f1_scores
 
 
+def calculate_hierarchical_sarf_f1(
+    ai_events: list[Event], gt_events: list[Event], id_map: dict[int, int]
+) -> dict[str, SARFVariableF1]:
+    """
+    Calculate hierarchical F1 metrics for SARF variables.
+
+    For each variable, calculates:
+    A) Detection F1: Was any event detected for (person, variable)?
+    B) Value Match F1: For detected events, was the exact value correct?
+    C) People Match F1 (R only): For relationship events, were the right people detected?
+
+    Args:
+        ai_events: AI-detected events
+        gt_events: Ground truth events
+        id_map: Person ID mapping from AI to GT
+
+    Returns:
+        dict mapping variable names to SARFVariableF1 metrics
+    """
+    sarf_vars = ["symptom", "anxiety", "relationship", "functioning"]
+    hierarchical_metrics = {}
+
+    for var_name in sarf_vars:
+        ai_person_var_pairs = set()
+        gt_person_var_pairs = set()
+        ai_person_var_values = {}
+        gt_person_var_values = {}
+        ai_person_var_people = {}
+        gt_person_var_people = {}
+
+        for ai_event in ai_events:
+            var_value = getattr(ai_event, var_name)
+            if var_value is None:
+                continue
+
+            person_id = resolve_person_id(ai_event.person, id_map)
+            if person_id is None:
+                continue
+
+            pair = (person_id, var_name)
+            ai_person_var_pairs.add(pair)
+
+            if pair not in ai_person_var_values:
+                ai_person_var_values[pair] = set()
+            ai_person_var_values[pair].add(str(var_value))
+
+            if var_name == "relationship":
+                targets = resolve_person_list(
+                    ai_event.relationshipTargets or [], id_map
+                )
+                triangles = resolve_person_list(
+                    ai_event.relationshipTriangles or [], id_map
+                )
+                if pair not in ai_person_var_people:
+                    ai_person_var_people[pair] = set()
+                ai_person_var_people[pair].add(
+                    (frozenset(targets), frozenset(triangles))
+                )
+
+        for gt_event in gt_events:
+            var_value = getattr(gt_event, var_name)
+            if var_value is None:
+                continue
+
+            person_id = gt_event.person
+            if person_id is None:
+                continue
+
+            pair = (person_id, var_name)
+            gt_person_var_pairs.add(pair)
+
+            if pair not in gt_person_var_values:
+                gt_person_var_values[pair] = set()
+            gt_person_var_values[pair].add(str(var_value))
+
+            if var_name == "relationship":
+                targets = set(gt_event.relationshipTargets or [])
+                triangles = set(gt_event.relationshipTriangles or [])
+                if pair not in gt_person_var_people:
+                    gt_person_var_people[pair] = set()
+                gt_person_var_people[pair].add(
+                    (frozenset(targets), frozenset(triangles))
+                )
+
+        detection_tp = len(ai_person_var_pairs & gt_person_var_pairs)
+        detection_fp = len(ai_person_var_pairs - gt_person_var_pairs)
+        detection_fn = len(gt_person_var_pairs - ai_person_var_pairs)
+
+        detection_metrics = calculate_f1_from_counts(
+            detection_tp, detection_fp, detection_fn
+        )
+
+        detected_pairs = ai_person_var_pairs & gt_person_var_pairs
+        value_tp = sum(
+            1
+            for pair in detected_pairs
+            if ai_person_var_values.get(pair, set())
+            & gt_person_var_values.get(pair, set())
+        )
+        value_fp = len(detected_pairs) - value_tp
+        value_fn = 0
+
+        value_metrics = calculate_f1_from_counts(value_tp, value_fp, value_fn)
+
+        people_metrics = F1Metrics(precision=1.0, recall=1.0, f1=1.0)
+        if var_name == "relationship" and detected_pairs:
+            people_tp = sum(
+                1
+                for pair in detected_pairs
+                if ai_person_var_people.get(pair, set())
+                & gt_person_var_people.get(pair, set())
+            )
+            people_fp = len(detected_pairs) - people_tp
+            people_fn = 0
+            people_metrics = calculate_f1_from_counts(people_tp, people_fp, people_fn)
+
+        hierarchical_metrics[var_name] = SARFVariableF1(
+            detection_f1=detection_metrics.f1,
+            value_match_f1=value_metrics.f1,
+            people_match_f1=people_metrics.f1,
+        )
+
+    return hierarchical_metrics
+
+
 def normalize_pdp_for_comparison(pdp_dict: dict | PDPDeltas) -> dict:
     """
     Normalize PDP dict for exact match comparison.
@@ -605,6 +745,18 @@ def calculate_statement_f1(
         metrics.relationship_macro_f1 = sarf_f1s.get("relationship", 0.0)
         metrics.functioning_macro_f1 = sarf_f1s.get("functioning", 0.0)
 
+    hierarchical_f1s = calculate_hierarchical_sarf_f1(
+        ai_pdp.events, gt_pdp.events, id_map
+    )
+    metrics.symptom_hierarchical = hierarchical_f1s.get("symptom", SARFVariableF1())
+    metrics.anxiety_hierarchical = hierarchical_f1s.get("anxiety", SARFVariableF1())
+    metrics.relationship_hierarchical = hierarchical_f1s.get(
+        "relationship", SARFVariableF1()
+    )
+    metrics.functioning_hierarchical = hierarchical_f1s.get(
+        "functioning", SARFVariableF1()
+    )
+
     ai_normalized = normalize_pdp_for_comparison(ai_deltas)
     gt_normalized = normalize_pdp_for_comparison(gt_deltas)
     metrics.exact_match = json.dumps(ai_normalized, sort_keys=True) == json.dumps(
@@ -687,6 +839,63 @@ def calculate_system_f1() -> SystemF1Metrics:
     metrics.functioning_macro_f1 = sum(
         m.functioning_macro_f1 for m in statement_metrics_list
     ) / len(statement_metrics_list)
+
+    metrics.symptom_hierarchical = SARFVariableF1(
+        detection_f1=sum(
+            m.symptom_hierarchical.detection_f1 for m in statement_metrics_list
+        )
+        / len(statement_metrics_list),
+        value_match_f1=sum(
+            m.symptom_hierarchical.value_match_f1 for m in statement_metrics_list
+        )
+        / len(statement_metrics_list),
+        people_match_f1=sum(
+            m.symptom_hierarchical.people_match_f1 for m in statement_metrics_list
+        )
+        / len(statement_metrics_list),
+    )
+    metrics.anxiety_hierarchical = SARFVariableF1(
+        detection_f1=sum(
+            m.anxiety_hierarchical.detection_f1 for m in statement_metrics_list
+        )
+        / len(statement_metrics_list),
+        value_match_f1=sum(
+            m.anxiety_hierarchical.value_match_f1 for m in statement_metrics_list
+        )
+        / len(statement_metrics_list),
+        people_match_f1=sum(
+            m.anxiety_hierarchical.people_match_f1 for m in statement_metrics_list
+        )
+        / len(statement_metrics_list),
+    )
+    metrics.relationship_hierarchical = SARFVariableF1(
+        detection_f1=sum(
+            m.relationship_hierarchical.detection_f1 for m in statement_metrics_list
+        )
+        / len(statement_metrics_list),
+        value_match_f1=sum(
+            m.relationship_hierarchical.value_match_f1 for m in statement_metrics_list
+        )
+        / len(statement_metrics_list),
+        people_match_f1=sum(
+            m.relationship_hierarchical.people_match_f1 for m in statement_metrics_list
+        )
+        / len(statement_metrics_list),
+    )
+    metrics.functioning_hierarchical = SARFVariableF1(
+        detection_f1=sum(
+            m.functioning_hierarchical.detection_f1 for m in statement_metrics_list
+        )
+        / len(statement_metrics_list),
+        value_match_f1=sum(
+            m.functioning_hierarchical.value_match_f1 for m in statement_metrics_list
+        )
+        / len(statement_metrics_list),
+        people_match_f1=sum(
+            m.functioning_hierarchical.people_match_f1 for m in statement_metrics_list
+        )
+        / len(statement_metrics_list),
+    )
 
     metrics.exact_match_rate = sum(m.exact_match for m in statement_metrics_list) / len(
         statement_metrics_list

@@ -49,7 +49,7 @@ systematically collecting concrete structural data.
 
 **Data Collection Sequence**:
 
-**Step 1: Gather Problem Facts, Then Pivot (up to 7 exchanges)**
+**Step 1: Gather facts about the presenting proble, Then Pivot (up to 12 AI statements)**
 
 User arrives with a problem. Collect concrete facts about it:
 - What is the problem? (specific symptom, situation, challenge)
