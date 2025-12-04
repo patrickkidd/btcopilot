@@ -322,26 +322,6 @@ Parameters:
                                     
                                     <!-- Person List Fields -->
                                     <div class="person-lists">
-                                        <!-- Spouses (computed from Events) -->
-                                        <template x-if="getPersonSpouses(person.id, personDataVersion).length > 0">
-                                            <div class="person-list-field mb-1">
-                                                <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; table-layout: fixed;">
-                                                    <tr>
-                                                        <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                            Spouses:
-                                                        </td>
-                                                        <td style="padding: 0;">
-                                                            <template x-for="(personId, idx) in getPersonSpouses(person.id, personDataVersion)" :key="personId + '-spouse-' + idx">
-                                                                <span class="person-tag">
-                                                                    <span x-text="getPersonName(personId, personDataVersion)"></span>
-                                                                </span>
-                                                            </template>
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                            </div>
-                                        </template>
-
                                         <!-- Parents (Pair-Bond) -->
                                         <template x-if="person.parents || {{ 'true' if editable_mode else 'false' }}">
                                             <div class="person-list-field mb-1">

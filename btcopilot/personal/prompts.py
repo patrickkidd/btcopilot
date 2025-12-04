@@ -251,10 +251,19 @@ The database contains people and events indicating shifts in certain variables. 
 
 Entries in the PDP have confidence < 1.0 and negative integer IDs assigned by you. Committed entries have confidence = 1.0 and positive integer IDs (already in database).
 
+**CRITICAL ID ASSIGNMENT RULES:**
+
+- **NEW PDP entries MUST use unique negative IDs that don't conflict with existing PDP entries**
+- Check the existing diagram_data.pdp for already-used negative IDs
+- Generate new negative IDs by counting down from the lowest existing PDP ID
+- Example: If PDP has IDs -1, -2, -3, your new entries must start at -4, -5, -6
+- **NEVER reuse -1 for every new person** - this causes ID collisions
+- For updates to existing PDP entries, use their existing negative ID
+
 **DELTA EXTRACTION RULES:**
 
 1. **SPARSE OUTPUT**: Most of the time you will likely return very few items, often empty arrays
-2. **NEW ONLY**: If a person is already in the database with the same name/role, don't include them unless you have NEW information about them  
+2. **NEW ONLY**: If a person is already in the database with the same name/role, don't include them unless you have NEW information about them
 3. **SINGLE EVENTS**: Each user statement typically generates 0-1 new events, not multiple events for the same information
 4. **UPDATE ONLY CHANGED FIELDS**: When updating existing items, include only the fields that are changing
 

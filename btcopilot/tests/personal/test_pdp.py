@@ -163,3 +163,33 @@ def test_commit_pdp_items_direct():
     assert "person_b" in pair_bond
     assert pair_bond["person_a"] > 0
     assert pair_bond["person_b"] > 0
+
+
+def test_cumulative_pdp_with_unique_negative_ids():
+    """Test that cumulative PDP correctly accumulates entries with unique negative IDs."""
+    pdp = PDP()
+
+    delta1 = PDPDeltas(
+        people=[Person(id=-1, name="First Person", confidence=0.8)],
+        events=[
+            Event(id=-2, kind=EventKind.Shift, person=-1, description="First event")
+        ],
+    )
+    pdp = apply_deltas(pdp, delta1)
+
+    delta2 = PDPDeltas(
+        people=[Person(id=-3, name="Second Person", confidence=0.9)],
+        events=[
+            Event(id=-4, kind=EventKind.Shift, person=-3, description="Second event")
+        ],
+    )
+    pdp = apply_deltas(pdp, delta2)
+
+    assert len(pdp.people) == 2
+    assert pdp.people[0].id == -1
+    assert pdp.people[0].name == "First Person"
+    assert pdp.people[1].id == -3
+    assert pdp.people[1].name == "Second Person"
+    assert len(pdp.events) == 2
+    assert pdp.events[0].id == -2
+    assert pdp.events[1].id == -4

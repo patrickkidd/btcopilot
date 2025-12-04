@@ -58,6 +58,11 @@
 
    **Relationships**:
    - `parents`: PairBond ID representing the person's parents
+     - **IMPORTANT**: A person has exactly ONE pairbond of parents (two people), not multiple pairbonds
+     - Biology: Every person has exactly two biological parents
+     - Backend schema (schema.py): single integer referencing a PairBond object's ID
+     - PDP/Frontend: May represent as `[parent1_id, parent2_id]` (list of two person IDs) for pending data before PairBond creation
+     - When committing PDP data, frontend must create a PairBond object first, then reference its ID
    - Spouses/partners are inferred from PairBond entries and Events
 
    **Confidence**:

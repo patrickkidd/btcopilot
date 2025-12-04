@@ -39,6 +39,8 @@ btcopilot has these primary functions:
 - **AI/ML Stack**: OpenAI API (GPT-4o-mini), Hugging Face embeddings, ChromaDB vector store, LangChain
 - **Payment Processing**: Stripe integration for licensing
 - **Database**: PostgreSQL with SQLAlchemy ORM
+  - Connection: `postgresql://familydiagram:pks@localhost:5432/familydiagram`
+  - Access via Flask app context: `uv run python -c "from btcopilot.app import create_app; from btcopilot.extensions import db; app=create_app(); app.app_context().push(); ..."`
 
 ### Data Architecture
 - **Vector Database**: ChromaDB for embeddings stored in instance/vector_db/

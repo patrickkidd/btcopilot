@@ -160,11 +160,11 @@ def cumulative(discussion, up_to_statement) -> PDP:
     cumulative_pdp = PDP()
 
     sorted_statements = sorted(
-        discussion.statements, key=lambda s: (s.order or 0, s.id)
+        discussion.statements, key=lambda s: (s.order or 0, s.id or 0)
     )
 
     for stmt in sorted_statements:
-        if stmt.id < up_to_statement.id and stmt.pdp_deltas:
+        if up_to_statement.id and stmt.id < up_to_statement.id and stmt.pdp_deltas:
             if "people" in stmt.pdp_deltas:
                 for person_data in stmt.pdp_deltas["people"]:
                     cumulative_pdp.people.append(Person(**person_data))

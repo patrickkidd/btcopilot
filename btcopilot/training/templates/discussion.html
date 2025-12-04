@@ -1134,6 +1134,23 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                     if (e.id < lowestId) lowestId = e.id;
                 });
             }
+
+            document.querySelectorAll('[x-data]').forEach(el => {
+                const otherComponent = el.__x?.$data;
+                if (otherComponent && otherComponent !== this && otherComponent.extractedData) {
+                    if (otherComponent.extractedData.people) {
+                        otherComponent.extractedData.people.forEach(p => {
+                            if (p.id && p.id < lowestId) lowestId = p.id;
+                        });
+                    }
+                    if (otherComponent.extractedData.events) {
+                        otherComponent.extractedData.events.forEach(e => {
+                            if (e.id < lowestId) lowestId = e.id;
+                        });
+                    }
+                }
+            });
+
             return lowestId - 1;
         },
 
@@ -1680,33 +1697,6 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             return `Pair Bond ${Math.abs(numericId)}`;
         },
 
-        getPersonSpouses(personId, version = null) {
-            const numericId = typeof personId === 'string' ? parseInt(personId) : personId;
-            const spouses = new Set();
-
-            const pairBondEventKinds = ['bonded', 'married', 'birth', 'adopted', 'moved', 'separated', 'divorced'];
-
-            const dataToCheck = this.extractedData || this.cumulativePdp;
-            const allEvents = [];
-            if (dataToCheck && dataToCheck.events) {
-                allEvents.push(...dataToCheck.events);
-            }
-            if (this.cumulativePdp && this.cumulativePdp !== dataToCheck && this.cumulativePdp.events) {
-                allEvents.push(...this.cumulativePdp.events);
-            }
-
-            for (const event of allEvents) {
-                if (event.kind && pairBondEventKinds.includes(event.kind)) {
-                    if (event.person === numericId && event.spouse) {
-                        spouses.add(event.spouse);
-                    } else if (event.spouse === numericId && event.person) {
-                        spouses.add(event.person);
-                    }
-                }
-            }
-
-            return Array.from(spouses);
-        },
 
         selectPairBond(personIndex) {
             window.pairBondContext = {
@@ -4008,6 +3998,23 @@ function confirmPairBondSelection() {
     closePairBondModal();
 }
 
+function getUsedIds(component, dataType) {
+    const seen = new Set();
+    if (component.extractedData?.[dataType]) {
+        component.extractedData[dataType].forEach(item => seen.add(item.id));
+    }
+    if (component.cumulativePdp?.[dataType]) {
+        component.cumulativePdp[dataType].forEach(item => seen.add(item.id));
+    }
+    document.querySelectorAll('[x-data]').forEach(el => {
+        const other = el.__x?.$data;
+        if (other && other !== component && other.extractedData?.[dataType]) {
+            other.extractedData[dataType].forEach(item => seen.add(item.id));
+        }
+    });
+    return seen;
+}
+
 function togglePersonDeltaAction() {
     const actionSelect = document.getElementById('person-delta-action-select');
     const selectField = document.getElementById('person-delta-select-field');
@@ -4058,6 +4065,13 @@ function confirmAddPersonDelta() {
             parent_b: null,
             confidence: 1.0
         };
+    }
+
+    if (actionSelect.value !== 'update') {
+        const seen = getUsedIds(component, 'people');
+        if (seen.has(personId)) {
+            alert(`Warning: ID ${personId} is already in use. This will cause a collision in the cumulative PDP. The ID should have been ${component.nextNegativeId()}.`);
+        }
     }
 
     if (!component.extractedData.people) component.extractedData.people = [];
@@ -4129,6 +4143,11 @@ function confirmAddEventDelta() {
             functioning: null,
             confidence: 1.0
         };
+
+        const seen = getUsedIds(component, 'events');
+        if (seen.has(eventId)) {
+            alert(`Warning: ID ${eventId} is already in use. This will cause a collision in the cumulative PDP. The ID should have been ${component.nextNegativeId()}.`);
+        }
     }
 
     if (!component.extractedData.events) component.extractedData.events = [];
