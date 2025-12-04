@@ -766,14 +766,13 @@ def audit(discussion_id):
         if stmt.speaker and stmt.speaker.type == SpeakerType.Subject:
             # Determine which deltas to use: AI or selected auditor's
             if selected_auditor and selected_auditor != "AI":
-                # Use selected human auditor's corrections ONLY - don't fallback to AI
+                # Show selected human auditor's corrections
                 if (
                     ext_feedback
                     and hasattr(ext_feedback, "edited_extraction")
                     and ext_feedback.edited_extraction
                 ):
                     deltas_source = ext_feedback.edited_extraction
-                # If auditor has no edited_extraction, deltas_source stays None (show nothing)
             elif stmt.pdp_deltas:
                 # Use AI deltas (default when no specific auditor selected, or when "AI" selected)
                 deltas_source = stmt.pdp_deltas
@@ -1032,7 +1031,7 @@ def audit(discussion_id):
             )
 
     return render_template(
-        "discussion_audit.html",
+        "discussion.html",
         discussion=discussion,
         statements=statements_with_feedback,
         current_auditor=auditor_id,
@@ -1266,12 +1265,23 @@ def clear_extracted_data(discussion_id):
     if requested_auditor == "AI":
         # Only admins can clear AI extractions
         if not current_user.has_role(btcopilot.ROLE_ADMIN):
-            return jsonify({"success": False, "message": "Only admins can clear AI extractions"}), 403
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": "Only admins can clear AI extractions",
+                    }
+                ),
+                403,
+            )
         target_auditor = "AI"
     elif current_user.has_role(btcopilot.ROLE_ADMIN):
         # Admin can specify which auditor's data to clear
         if not requested_auditor:
-            return jsonify({"success": False, "message": "auditor_id required for admin"}), 400
+            return (
+                jsonify({"success": False, "message": "auditor_id required for admin"}),
+                400,
+            )
         target_auditor = requested_auditor
     else:
         # Non-admin users can only clear their own data
@@ -1309,7 +1319,8 @@ def clear_extracted_data(discussion_id):
         from sqlalchemy import text
 
         result = db.session.execute(
-            text("""
+            text(
+                """
                 UPDATE feedbacks
                 SET edited_extraction = NULL
                 WHERE id IN (
@@ -1321,8 +1332,9 @@ def clear_extracted_data(discussion_id):
                     AND f.feedback_type = 'extraction'
                     AND f.edited_extraction IS NOT NULL
                 )
-            """),
-            {"discussion_id": discussion_id, "auditor_id": target_auditor}
+            """
+            ),
+            {"discussion_id": discussion_id, "auditor_id": target_auditor},
         )
 
         cleared_count = result.rowcount
@@ -1332,8 +1344,12 @@ def clear_extracted_data(discussion_id):
             f"in discussion {discussion_id} owned by {discussion_owner} - {cleared_count} feedbacks cleared"
         )
 
-        auditor_label = "your" if target_auditor == current_user.username else f"{target_auditor}'s"
-        message = f"Cleared {auditor_label} extracted data from {cleared_count} statements"
+        auditor_label = (
+            "your" if target_auditor == current_user.username else f"{target_auditor}'s"
+        )
+        message = (
+            f"Cleared {auditor_label} extracted data from {cleared_count} statements"
+        )
 
     # IMPORTANT: Commit the transaction
     db.session.commit()

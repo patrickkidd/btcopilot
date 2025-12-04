@@ -15,13 +15,6 @@ def get_breadcrumbs(current_page=None):
         breadcrumbs.append({"title": "Audit", "url": None})
     elif current_page == "admin":
         breadcrumbs.append({"title": "Admin", "url": None})
-    elif current_page == "admin_feedback":
-        breadcrumbs.extend(
-            [
-                {"title": "Admin", "url": url_for("training.admin.index")},
-                {"title": "Feedback", "url": None},
-            ]
-        )
     elif current_page == "thread":
         breadcrumbs.append({"title": "Audit", "url": url_for("training.audit.index")})
     elif current_page == "prompts":

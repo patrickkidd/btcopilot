@@ -96,7 +96,7 @@ The components expect extracted data in this format:
 
 ## CSS Classes
 
-The components use these CSS classes (defined in `therapist_base.html`):
+The components use these CSS classes (defined in `base.html`):
 
 - `.shift-indicator` - Base styling for variable indicators
 - `.shift-up` - Yellow background for "up" shifts

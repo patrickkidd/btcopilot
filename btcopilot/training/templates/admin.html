@@ -1,4 +1,4 @@
-{% extends "therapist_base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
 <style>
@@ -59,92 +59,8 @@
             
         </div>
 
-        <!-- Feedback Statistics Section -->
-        <div class="admin-section">
-            <div class="box">
-                <div class="level">
-                    <div class="level-left">
-                        <div class="level-item">
-                            <div>
-                                <h2 class="title is-4">
-                                    <span class="icon"><i class="fas fa-chart-line"></i></span>
-                                    Audit Feedback Statistics
-                                </h2>
-                                <p class="subtitle is-6">Auditors contributed: {{ feedback_stats.auditors }}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="level-right">
-                        <div class="level-item">
-                            <div class="buttons">
-                                <a href="{{ url_for('training.feedback.index') }}" class="button is-primary">
-                                    <span class="icon"><i class="fas fa-list-alt"></i></span>
-                                    <span>View Detailed Feedback</span>
-                                </a>
-                                <a href="{{ url_for('training.prompts.index') }}" class="button is-info">
-                                    <span class="icon"><i class="fas fa-flask"></i></span>
-                                    <span>Prompt Playground</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="columns is-multiline">
-                    <div class="column is-3">
-                        <div class="notification is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
-                            <p class="heading">Total Feedback</p>
-                            <p class="title is-3">{{ feedback_stats.total }}</p>
-                            <p class="subtitle is-6">&nbsp;</p>
-                        </div>
-                    </div>
-                    <div class="column is-3">
-                        <div class="notification is-info is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
-                            <p class="heading">Conversation Reviews</p>
-                            <p class="title is-3">{{ feedback_stats.conversations }}</p>
-                            <p class="subtitle is-6">&nbsp;</p>
-                        </div>
-                    </div>
-                    <div class="column is-3">
-                        <div class="notification is-warning is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
-                            <p class="heading">Extraction Reviews</p>
-                            <p class="title is-3">{{ feedback_stats.extractions }}</p>
-                            <p class="subtitle is-6">&nbsp;</p>
-                        </div>
-                    </div>
-                    <div class="column is-3">
-                        <div class="notification is-danger is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
-                            <p class="heading">Issues Flagged</p>
-                            <p class="title is-3">{{ feedback_stats.issues }}</p>
-                            <p class="subtitle is-6">{{ feedback_stats.issue_rate }}% of total</p>
-                        </div>
-                    </div>
-                </div>
-                
-                {% if feedback_stats.total > 0 %}
-                <div class="content">
-                    <div class="level">
-                        <div class="level-left">
-                            <div class="level-item">
-                                <div>
-                                    <p class="heading">Quality Score</p>
-                                    <progress class="progress is-primary is-medium" value="{{ 100 - feedback_stats.issue_rate }}" max="100">
-                                        {{ 100 - feedback_stats.issue_rate }}%
-                                    </progress>
-                                    <p class="help">{{ 100 - feedback_stats.issue_rate }}% of reviews passed without issues</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% else %}
-                <div class="notification is-warning is-light">
-                    <strong>No feedback submitted yet.</strong><br>
-                    Auditors need to review AI responses before statistics will appear here.
-                </div>
-                {% endif %}
-            </div>
-        </div>
+        <!-- F1 Ground Truth Metrics Section -->
+        {% include "partials/f1_metrics_card.html" with context %}
 
         <!-- Discussions Section -->
         <div class="admin-section">

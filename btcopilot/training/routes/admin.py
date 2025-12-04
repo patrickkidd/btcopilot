@@ -1,6 +1,8 @@
+import json
 import logging
 from datetime import datetime
-from flask import Blueprint, render_template, request, jsonify
+
+from flask import Blueprint, render_template, request, jsonify, current_app
 from sqlalchemy.orm import subqueryload
 from sqlalchemy import func, case
 
@@ -31,7 +33,6 @@ _feedback_stats_cache_time = None
 
 
 def get_feedback_statistics():
-    """Get feedback statistics with 5-minute caching"""
     import time
 
     # Declare global variables first
@@ -87,14 +88,12 @@ def get_feedback_statistics():
 
 
 def invalidate_feedback_stats_cache():
-    """Invalidate the feedback statistics cache"""
     global _feedback_stats_cache, _feedback_stats_cache_time
     _feedback_stats_cache = {}
     _feedback_stats_cache_time = None
 
 
 def build_user_summary(user, include_discussion_count=True):
-    """Build summary data for a user"""
     if include_discussion_count:
         # For users with loaded diagrams/discussions
         if hasattr(user, "diagrams") and user.diagrams:
@@ -135,8 +134,6 @@ def build_user_summary(user, include_discussion_count=True):
 
 
 def get_users_for_admin(search=None, role_filter=None, for_index=False):
-    """Get users for admin interface with optional filtering"""
-
     if for_index:
         # For index page: prioritize admin users + users with discussions + recent users (limited set)
 
@@ -256,16 +253,22 @@ def index():
     # Get cached feedback statistics
     feedback_stats = get_feedback_statistics()
 
+    # Calculate F1 metrics for approved ground truth
+    from btcopilot.training.f1_metrics import calculate_system_f1
+
+    f1_metrics = calculate_system_f1()
+
     breadcrumbs = get_breadcrumbs("admin")
 
     return render_template(
-        "therapist_admin.html",
+        "admin.html",
         discussions=discussions,
         users=user_data["users"],
         users_summary=user_data["users_data"],
         total_user_count=user_data["total_count"],
         showing_user_count=len(user_data["users"]),
         feedback_stats=feedback_stats,
+        f1_metrics=f1_metrics,
         breadcrumbs=breadcrumbs,
         current_user=current_user,
         btcopilot=btcopilot,
@@ -274,7 +277,6 @@ def index():
 
 @bp.route("/users", methods=["GET"])
 def users_list():
-    """Get all users for admin interface - no filtering, client-side only"""
     current_user = auth.current_user()
 
     # Get ALL users without any filters - client will handle filtering
@@ -295,7 +297,6 @@ def users_list():
 
 @bp.route("/users/search", methods=["GET"])
 def users_search():
-    """Search users for admin interface (no pagination, default to auditor role)"""
     current_user = auth.current_user()
 
     # Get query parameters
@@ -319,7 +320,6 @@ def users_search():
 
 @bp.route("/users/<int:user_id>/details", methods=["GET"])
 def user_details(user_id):
-    """Get detailed user information including discussions and licenses"""
     current_user = auth.current_user()
 
     # Access control: admins can see any user, auditors can only see themselves
@@ -356,7 +356,6 @@ def user_details(user_id):
 
 @bp.route("/users/<int:user_id>/detail-html", methods=["GET"])
 def user_detail_html(user_id):
-    """Get detailed user information as HTML for modal"""
     current_user = auth.current_user()
 
     # Access control: admins can see any user, auditors can only see themselves
@@ -400,7 +399,6 @@ def user_detail_html(user_id):
 
 @bp.route("/users/<int:user_id>/clear-database", methods=["DELETE"])
 def user_clear_db(user_id):
-    """Clear a user's database JSON column"""
     admin_user = auth.current_user()
     target_user = User.query.get_or_404(user_id)
 
@@ -524,7 +522,6 @@ def user_update(user_id):
 
 @bp.route("/approve", methods=["POST"])
 def approve():
-    """Approve a statement extraction or feedback as ground truth for testing"""
     current_user = auth.current_user()
 
     data = request.get_json()
@@ -662,6 +659,11 @@ def approve():
             if other_approved_feedback:
                 message += f" (unapproved {len(other_approved_feedback)} other feedback for this statement)"
 
+        # Invalidate F1 cache for this statement
+        from btcopilot.training.f1_metrics import invalidate_f1_cache
+
+        invalidate_f1_cache(feedback.statement_id)
+
         db.session.commit()
 
         _log.info(
@@ -681,9 +683,246 @@ def approve():
         )
 
 
+@bp.route("/approve-discussion/<int:discussion_id>/<auditor_id>", methods=["POST"])
+def bulk_approve_discussion(discussion_id, auditor_id):
+    current_user = auth.current_user()
+
+    if not current_user.has_role(btcopilot.ROLE_ADMIN):
+        return jsonify({"error": "Admin role required"}), 403
+
+    from btcopilot.personal.models import Discussion, Statement
+    from btcopilot.training.models import Feedback
+    from btcopilot.training.f1_metrics import invalidate_f1_cache
+
+    discussion = Discussion.query.get_or_404(discussion_id)
+
+    feedbacks_to_approve = (
+        Feedback.query.join(Statement)
+        .filter(Statement.discussion_id == discussion_id)
+        .filter(Feedback.auditor_id == auditor_id)
+        .filter(Feedback.feedback_type == "extraction")
+        .filter(Feedback.edited_extraction.isnot(None))
+        .all()
+    )
+
+    if not feedbacks_to_approve:
+        return jsonify({"error": "No feedbacks found to approve"}), 404
+
+    now = datetime.utcnow()
+    approved_count = 0
+    unapproved_count = 0
+
+    for feedback in feedbacks_to_approve:
+        if feedback.approved:
+            continue
+
+        other_approved_feedback = (
+            Feedback.query.filter(Feedback.statement_id == feedback.statement_id)
+            .filter(Feedback.feedback_type == "extraction")
+            .filter(Feedback.approved == True)
+            .filter(Feedback.id != feedback.id)
+            .all()
+        )
+
+        for other_feedback in other_approved_feedback:
+            other_feedback.approved = False
+            other_feedback.approved_by = None
+            other_feedback.approved_at = None
+            other_feedback.exported_at = None
+            unapproved_count += 1
+            _log.info(
+                f"Bulk approval: Admin {current_user.username} auto-unapproved feedback {other_feedback.id} "
+                f"for statement {feedback.statement_id}"
+            )
+
+        statement = Statement.query.get(feedback.statement_id)
+        if statement and statement.approved:
+            _log.warning(
+                f"MUTUAL EXCLUSIVITY: Admin {current_user.username} bulk approving discussion {discussion_id}, "
+                f"auto-unapproving AI statement {statement.id} (was approved by {statement.approved_by})"
+            )
+            statement.approved = False
+            statement.approved_by = None
+            statement.approved_at = None
+            statement.exported_at = None
+
+        feedback.approved = True
+        feedback.approved_by = current_user.username
+        feedback.approved_at = now
+        feedback.rejection_reason = None
+        approved_count += 1
+
+        invalidate_f1_cache(feedback.statement_id)
+
+    db.session.commit()
+
+    message = f"Bulk approved {approved_count} feedbacks for discussion {discussion_id}"
+    if unapproved_count > 0:
+        message += f" (unapproved {unapproved_count} conflicting feedbacks)"
+
+    _log.info(f"Admin {current_user.username} {message}")
+
+    return jsonify(
+        {
+            "success": True,
+            "message": message,
+            "approved_count": approved_count,
+            "unapproved_count": unapproved_count,
+        }
+    )
+
+
+@bp.route("/export-ground-truth", methods=["GET"])
+def export_ground_truth():
+    current_user = auth.current_user()
+
+    if not current_user.has_role(btcopilot.ROLE_ADMIN):
+        return jsonify({"error": "Admin role required"}), 403
+
+    from btcopilot.personal.models import Discussion, Statement, Speaker
+    from btcopilot.training.models import Feedback
+
+    discussion_ids_param = request.args.get("discussion_ids")
+    export_all = request.args.get("all", "").lower() == "true"
+
+    if not discussion_ids_param and not export_all:
+        return jsonify({"error": "Provide either discussion_ids or all=true"}), 400
+
+    if export_all:
+        discussions_with_approved = (
+            db.session.query(Discussion.id)
+            .join(Statement, Discussion.id == Statement.discussion_id)
+            .join(Feedback, Statement.id == Feedback.statement_id)
+            .filter(Feedback.approved == True)
+            .filter(Feedback.feedback_type == "extraction")
+            .distinct()
+            .all()
+        )
+        discussion_ids = [d.id for d in discussions_with_approved]
+    else:
+        try:
+            discussion_ids = [int(d.strip()) for d in discussion_ids_param.split(",")]
+        except ValueError:
+            return jsonify({"error": "Invalid discussion_ids format"}), 400
+
+    if not discussion_ids:
+        return jsonify({"error": "No discussions found"}), 404
+
+    discussions = Discussion.query.filter(Discussion.id.in_(discussion_ids)).all()
+
+    if not discussions:
+        return jsonify({"error": "No discussions found with provided IDs"}), 404
+
+    result = []
+
+    for discussion in discussions:
+        statements = (
+            Statement.query.filter(Statement.discussion_id == discussion.id)
+            .order_by(Statement.order)
+            .all()
+        )
+
+        speakers = Speaker.query.filter(Speaker.discussion_id == discussion.id).all()
+
+        statements_data = []
+        has_approved_feedback = False
+
+        for stmt in statements:
+            approved_feedback = (
+                Feedback.query.filter(Feedback.statement_id == stmt.id)
+                .filter(Feedback.feedback_type == "extraction")
+                .filter(Feedback.approved == True)
+                .first()
+            )
+
+            if approved_feedback:
+                has_approved_feedback = True
+
+            stmt_data = {
+                "text": stmt.text,
+                "discussion_id": stmt.discussion_id,
+                "speaker_id": stmt.speaker_id,
+                "pdp_deltas": stmt.pdp_deltas,
+                "custom_prompts": stmt.custom_prompts,
+                "order": stmt.order,
+                "approved": stmt.approved,
+                "approved_by": stmt.approved_by,
+                "approved_at": (
+                    stmt.approved_at.isoformat() if stmt.approved_at else None
+                ),
+                "exported_at": (
+                    stmt.exported_at.isoformat() if stmt.exported_at else None
+                ),
+                "id": stmt.id,
+                "created_at": stmt.created_at.isoformat(),
+                "updated_at": (
+                    stmt.updated_at.isoformat() if stmt.updated_at else None
+                ),
+            }
+
+            if approved_feedback:
+                stmt_data["ground_truth"] = approved_feedback.edited_extraction
+
+            statements_data.append(stmt_data)
+
+        if not has_approved_feedback:
+            continue
+
+        speakers_data = [
+            {
+                "discussion_id": speaker.discussion_id,
+                "person_id": speaker.person_id,
+                "name": speaker.name,
+                "type": speaker.type.value if speaker.type else None,
+                "id": speaker.id,
+                "created_at": speaker.created_at.isoformat(),
+                "updated_at": (
+                    speaker.updated_at.isoformat() if speaker.updated_at else None
+                ),
+            }
+            for speaker in speakers
+        ]
+
+        result.append(
+            {
+                "user_id": discussion.user_id,
+                "diagram_id": discussion.diagram_id,
+                "summary": discussion.summary,
+                "discussion_date": (
+                    discussion.discussion_date.isoformat()
+                    if discussion.discussion_date
+                    else None
+                ),
+                "last_topic": discussion.last_topic,
+                "extracting": discussion.extracting,
+                "chat_user_speaker_id": discussion.chat_user_speaker_id,
+                "chat_ai_speaker_id": discussion.chat_ai_speaker_id,
+                "id": discussion.id,
+                "created_at": discussion.created_at.isoformat(),
+                "updated_at": (
+                    discussion.updated_at.isoformat() if discussion.updated_at else None
+                ),
+                "statements": statements_data,
+                "speakers": speakers_data,
+            }
+        )
+
+    response_data = {"discussions": result}
+
+    response = current_app.response_class(
+        response=json.dumps(response_data, indent=2),
+        status=200,
+        mimetype="application/json",
+    )
+    response.headers["Content-Disposition"] = (
+        f"attachment; filename=ground_truth_discussions_{'-'.join(map(str, discussion_ids))}.json"
+    )
+
+    return response
+
+
 @bp.route("/export-test-cases", methods=["POST"])
 def export_test_cases():
-    """Export approved test cases that haven't been exported yet"""
     current_user = auth.current_user()
 
     # Import here to avoid circular imports
@@ -709,7 +948,6 @@ def export_test_cases():
 
 @bp.route("/reject-feedback", methods=["POST"])
 def reject_feedback():
-    """Reject feedback with a reason"""
     current_user = auth.current_user()
 
     data = request.get_json()
@@ -755,7 +993,6 @@ def reject_feedback():
 
 @bp.route("/approve-statement", methods=["POST"])
 def approve_statement():
-    """Approve the AI-generated extraction as correct (positive training example)"""
     current_user = auth.current_user()
 
     data = request.get_json()
@@ -824,7 +1061,6 @@ def approve_statement():
 
 @bp.route("/quick-approve", methods=["POST"])
 def quick_approve():
-    """Quick approve feedback for inline review - same logic as main approve but returns minimal response"""
     current_user = auth.current_user()
 
     data = request.get_json()

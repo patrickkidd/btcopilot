@@ -8,7 +8,6 @@ from btcopilot.extensions import db
 from btcopilot.pro.models import User, Diagram, License, AccessRight
 from btcopilot.personal.models import Discussion
 from btcopilot.training.utils import get_breadcrumbs, get_auditor_id
-from btcopilot.training.routes.admin import build_user_summary
 
 
 _log = logging.getLogger(__name__)
@@ -37,9 +36,6 @@ def index():
         db.subqueryload(User.licenses).subqueryload(License.activations),
     ).get(user.id)
 
-    # Build user summary data
-    user_summary = build_user_summary(auditor, include_discussion_count=True)
-
     # Get diagrams with granted access
     shared_diagrams_query = (
         db.session.query(Diagram, AccessRight)
@@ -62,15 +58,20 @@ def index():
 
     user_discussions.sort(key=lambda d: d.created_at, reverse=True)
 
+    # Calculate F1 metrics for approved ground truth
+    from btcopilot.training.f1_metrics import calculate_system_f1
+
+    f1_metrics = calculate_system_f1()
+
     breadcrumbs = get_breadcrumbs("audit")
 
     return render_template(
         "auditor_dashboard.html",
         user=auditor,
-        user_summary=user_summary,
         user_discussions=user_discussions,
         shared_diagrams_with_rights=shared_diagrams_with_rights,
         current_user=user,
         btcopilot=btcopilot,
         breadcrumbs=breadcrumbs,
+        f1_metrics=f1_metrics,
     )

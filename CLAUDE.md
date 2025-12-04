@@ -69,6 +69,13 @@ The AI-powered conversation system that extracts family relationship data from u
 - **Includes**: System prompts, test fixtures, data extraction flow, LLM integration
 - **Use When**: Improving system prompts for better LLM alignment based on developer requests for certain behaviors
 
+### F1 Metrics for AI Extraction Evaluation
+Documentation for the F1 metrics system that evaluates AI extraction quality against human ground truth:
+- **File**: [doc/F1_METRICS.md](doc/F1_METRICS.md)
+- **Purpose**: Comprehensive reference for F1 score calculation, entity matching logic, and ground truth workflow
+- **Includes**: Matching criteria (people, events, SARF variables), F1 types (aggregate, per-type, macro-F1), cache strategy, configuration constants
+- **Use When**: Understanding or modifying F1 calculation logic, tuning matching thresholds, analyzing AI extraction quality, or implementing prompt improvements based on F1 scores
+
 ## Development rules
 
 - At this stage we are not concerned with legacy data, we woudl rather delete
@@ -242,7 +249,7 @@ docker exec fd-postgres psql -U familydiagram -d familydiagram -c "SELECT id, na
 **Trigger Files** (changes to any of these require doc review):
 - `training/routes/*.py` - API endpoints, approval logic
 - `training/models.py` - Feedback model
-- `training/templates/discussion_audit.html` - Discussion audit page layout, cumulative refresh logic
+- `training/templates/discussion.html` - Discussion audit page layout, cumulative refresh logic
 - `training/templates/components/extracted_data_display.html` - SARF editor component
 - `training/export_tests.py` - Test case export logic
 - `schema.py` - Event, PDPDeltas, or SARF enums (VariableShift, RelationshipKind)

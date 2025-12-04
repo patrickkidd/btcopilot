@@ -1,4 +1,4 @@
-{% extends "therapist_base.html" %}
+{% extends "base.html" %}
 
 {% block head %}
 <style>
@@ -41,17 +41,9 @@
 <div>
     <h1 class="title">Domain-Expert SARF Dashboard</h1>
     <p class="subtitle">Manage your diagrams, discussions, and SARF codes</p>
-    
-    <div class="notification is-info is-light">
-        <strong>Your SARF Tools:</strong>
-        <ul>
-            <li>Review and manage your own diagrams and discussions</li>
-            <li>Provide feedback on AI responses and data extraction quality</li>
-            <li><strong>Drag and drop audio files</strong> onto diagram cards to automatically transcribe and create discussions (MP3, WAV, M4A, MP4, FLAC, OGG, WEBM, AAC)</li>
-            <li><strong>Drag and drop JSON files</strong> to import previously exported discussions</li>
-            <li>Your feedback is anonymous and won't be seen by other auditors</li>
-        </ul>
-    </div>
+
+    <!-- F1 Ground Truth Metrics Section -->
+    {% include "partials/f1_metrics_card.html" with context %}
 
     <!-- Main Content: User Detail View -->
     <div class="content">

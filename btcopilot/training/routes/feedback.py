@@ -1,6 +1,6 @@
 import logging
 import json
-from flask import Blueprint, request, jsonify, session, abort, render_template
+from flask import Blueprint, request, jsonify, session, abort
 
 import btcopilot
 from btcopilot import auth
@@ -10,7 +10,7 @@ from sqlalchemy import func
 from btcopilot.pro.models import User
 from btcopilot.personal.models import Statement, SpeakerType, Discussion
 from btcopilot.training.models import Feedback
-from btcopilot.training.utils import get_auditor_id, get_breadcrumbs
+from btcopilot.training.utils import get_auditor_id
 
 # from btcopilot.training.sse import sse_manager
 
@@ -166,42 +166,6 @@ def compile_feedback_datapoints():
             datapoints.append(datapoint)
 
     return datapoints
-
-
-@bp.route("")
-@bp.route("/")
-@minimum_role(btcopilot.ROLE_ADMIN)
-def index():
-    """Admin view of all feedback"""
-    user = auth.current_user()
-
-    # Get compiled datapoints
-    datapoints = compile_feedback_datapoints()
-
-    # Convert back to objects for template compatibility
-    for dp in datapoints:
-        if "created_at" in dp and dp["created_at"]:
-            from datetime import datetime
-
-            dp["created_at"] = datetime.fromisoformat(dp["created_at"])
-
-        # Create user object for template
-        dp["user"] = type(
-            "User", (), {"id": dp["user_id"], "username": dp["username"]}
-        )()
-
-        # Create feedback object for template
-        dp["feedback"] = type("Feedback", (), {"id": dp["feedback_id"]})()
-
-    breadcrumbs = get_breadcrumbs("admin_feedback")
-
-    return render_template(
-        "feedback_index.html",
-        datapoints=datapoints,
-        breadcrumbs=breadcrumbs,
-        current_user=user,
-        btcopilot=btcopilot,
-    )
 
 
 @bp.route("", methods=["POST"])

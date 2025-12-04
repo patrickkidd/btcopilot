@@ -468,7 +468,7 @@ class VariableShift(enum.StrEnum):
 
 **Usage**: Codes directional change in symptom/anxiety/functioning
 
-**UI Representation**: Color-coded in [therapist_base.html](../btcopilot/training/templates/therapist_base.html)
+**UI Representation**: Color-coded in [base.html](../btcopilot/training/templates/base.html)
 ```css
 .shift-up { background-color: #ffeb3b; }     /* Yellow */
 .shift-down { background-color: #f44336; }   /* Red */
@@ -580,7 +580,7 @@ for person_id in event.relationshipTriangles:
 
 **Size**: 1000+ lines of Alpine.js + Jinja2
 
-**Component Function**: `componentExtractedDataWithReview()` (defined in [discussion_audit.html:1533](../btcopilot/training/templates/discussion_audit.html))
+**Component Function**: `componentExtractedDataWithReview()` (defined in [discussion.html:1533](../btcopilot/training/templates/discussion.html))
 
 **Key State Variables**:
 ```javascript
@@ -747,7 +747,7 @@ The SARF editor conditionally shows/hides event fields based on `EventKind`:
 
 ### 3.4 Discussion Audit Page Architecture
 
-**File**: [btcopilot/training/templates/discussion_audit.html](../btcopilot/training/templates/discussion_audit.html)
+**File**: [btcopilot/training/templates/discussion.html](../btcopilot/training/templates/discussion.html)
 
 **Route**: `GET /training/discussions/<discussion_id>` ([discussions.py:661](../btcopilot/training/routes/discussions.py))
 
@@ -854,7 +854,7 @@ Cumulative updates happen via:
 3. **Approval/unapproval** → `reloadPreservingParams()` immediately
 4. **SSE new message event** → `reloadPreservingParams()` after 2 seconds
 
-**Helper Function** ([discussion_audit.html:688-690](../btcopilot/training/templates/discussion_audit.html)):
+**Helper Function** ([discussion.html:688-690](../btcopilot/training/templates/discussion.html)):
 ```javascript
 function reloadPreservingParams() {
     window.location.href = window.location.href;  // Preserves query params including ?selected_auditor=<id>
@@ -923,7 +923,7 @@ function toggleSection(componentId) {
 
 **Manifestation**: Cumulative column would display auditor's edited extraction instead of full cumulative state when `feedback_data` leaked from Column 2.
 
-**Fix** ([discussion_audit.html:517-523](../btcopilot/training/templates/discussion_audit.html)):
+**Fix** ([discussion.html:517-523](../btcopilot/training/templates/discussion.html)):
 ```jinja2
 <!-- Column 3 must explicitly reset all Column 2 variables -->
 {% set feedback_data = none %}
@@ -1610,10 +1610,9 @@ def apply_deltas(pdp, deltas):
 
 **Main Views** (all in `btcopilot/training/templates/`):
 - [auditor_dashboard.html](../btcopilot/training/templates/auditor_dashboard.html) - Auditor's own discussions list
-- [discussion_audit.html](../btcopilot/training/templates/discussion_audit.html) - Single discussion audit view with all statements
-- [therapist_admin.html](../btcopilot/training/templates/therapist_admin.html) - Admin view of all users/discussions
-- [feedback_index.html](../btcopilot/training/templates/feedback_index.html) - Admin feedback review page
-- [therapist_base.html](../btcopilot/training/templates/therapist_base.html) - Base template with CSS for SARF variables
+- [discussion.html](../btcopilot/training/templates/discussion.html) - Single discussion audit view with all statements
+- [admin.html](../btcopilot/training/templates/admin.html) - Admin view of all users/discussions
+- [base.html](../btcopilot/training/templates/base.html) - Base template with CSS for SARF variables
 
 **Components** (all in `btcopilot/training/templates/components/`):
 - [extracted_data_display.html](../btcopilot/training/templates/components/extracted_data_display.html) - **THE MAIN SARF EDITOR COMPONENT** (1000+ lines)
@@ -1764,7 +1763,7 @@ def approve_X():
 
 **Base**: `componentExtractedData()` (not shown, presumed simpler version)
 
-**Extended**: `componentExtractedDataWithReview()` in [discussion_audit.html:1533](../btcopilot/training/templates/discussion_audit.html)
+**Extended**: `componentExtractedDataWithReview()` in [discussion.html:1533](../btcopilot/training/templates/discussion.html)
 
 **Benefits**:
 - Reuse editing logic across contexts

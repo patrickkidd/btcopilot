@@ -22,11 +22,6 @@ def feedback(discussion):
     return feedback
 
 
-def test_admin_feedback(admin):
-    response = admin.get("/training/feedback")
-    assert response.status_code == 200
-
-
 def test_create(auditor, discussion):
     statement = discussion.statements[0]
     with patch("btcopilot.training.sse.sse_manager.publish"):
