@@ -96,7 +96,6 @@ def compile_feedback_datapoints():
                     datapoint["data_type"] = "person"
                     datapoint["person_name"] = person.get("name", "Unknown")
                     datapoint["has_offspring"] = bool(person.get("offspring"))
-                    datapoint["has_spouses"] = bool(person.get("spouses"))
                     datapoint["has_parents"] = bool(person.get("parents"))
                     datapoint["person_confidence"] = person.get("confidence", 0.0)
                     datapoints.append(datapoint)
@@ -304,8 +303,6 @@ def download():
                 if filters.get("has_offspring") == "true" and not dp.get(
                     "has_offspring"
                 ):
-                    include = False
-                if filters.get("has_spouses") == "true" and not dp.get("has_spouses"):
                     include = False
                 if filters.get("has_parents") == "true" and not dp.get("has_parents"):
                     include = False
