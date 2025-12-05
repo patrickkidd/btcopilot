@@ -149,8 +149,13 @@ Parameters:
                                 {% if not is_cumulative %}<span class="icon is-small"><i class="fas fa-users"></i></span>{% endif %}
                                 People
                                 {% if editable_mode %}
-                                <span class="add-element" style="opacity: 1; margin-left: 8px;" @click.stop="addPerson()" title="Add Person">
-                                    <i class="fas fa-plus-circle"></i>
+                                <span style="display: inline-flex; gap: 4px; position: relative;">
+                                    <span class="add-element" style="opacity: 1;" @click.stop="createPerson()" title="Create New Person">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </span>
+                                    <span class="add-element edit-person-button" style="opacity: 1;" @click.stop="editPerson($event)" title="Edit Existing Person">
+                                        <i class="fas fa-edit"></i>
+                                    </span>
                                 </span>
                                 {% endif %}
                                 
@@ -236,25 +241,20 @@ Parameters:
                             {% endif %}
                             <template x-if="extractedData.people && extractedData.people.length > 0">
                                 <template x-for="(person, index) in extractedData.people" :key="index">
-                                <div class="person-item mb-1 p-2" 
+                                <div class="person-item mb-1 p-2"
                                      :class="{
                                          'has-background-warning-light': {{ 'true' if is_cumulative else 'false' }},
-                                         'has-background-light': {{ 'true' if not is_cumulative else 'false' }} && ![1, 2].includes(person.id),
-                                         'has-background-primary-light': person.id === 1,
-                                         'has-background-success-light': person.id === 2
-                                     }" 
+                                         'has-background-light': {{ 'true' if not is_cumulative else 'false' }}
+                                     }"
                                      style="position: relative;">
                                     <!-- Person ID for debugging - floating in lower-right -->
                                     <span class="person-id-debug" x-show="person.id" x-text="person.id"></span>
-                                    
+
                                     <!-- System Person Badge -->
-                                    <template x-if="person.id === 1">
-                                        <span class="system-person-badge is-primary">👤 User</span>
-                                    </template>
                                     <template x-if="person.id === 2">
                                         <span class="system-person-badge is-success">🤖 Assistant</span>
                                     </template>
-                                    
+
                                     <!-- Person Name Row -->
                                     <div class="is-flex is-align-items-center mb-2">
                                         {% if editable_mode %}
@@ -368,8 +368,13 @@ Parameters:
                                 {% if not is_cumulative %}<span class="icon is-small"><i class="fas fa-calendar-alt"></i></span>{% endif %}
                                 Events
                                 {% if editable_mode %}
-                                <span class="add-element" style="opacity: 1; margin-left: 8px;" @click.stop="addEvent()" title="Add Event">
-                                    <i class="fas fa-plus-circle"></i>
+                                <span style="display: inline-flex; gap: 4px; position: relative;">
+                                    <span class="add-element" style="opacity: 1;" @click.stop="createEvent()" title="Create New Event">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </span>
+                                    <span class="add-element edit-event-button" style="opacity: 1;" @click.stop="editEvent($event)" title="Edit Existing Event">
+                                        <i class="fas fa-edit"></i>
+                                    </span>
                                 </span>
                                 {% endif %}
                             </div>
@@ -441,11 +446,13 @@ Parameters:
                                                             </span>
                                                         </template>
                                                         <template x-if="!event.person && {{ 'true' if editable_mode else 'false' }}">
-                                                            <span class="add-element"
-                                                                  @click.stop="editEventPerson(index, null)"
-                                                                  title="Add person"
-                                                                  style="cursor: pointer; color: #3273dc;">
-                                                                <i class="fas fa-plus-circle"></i> Add person
+                                                            <span style="display: inline-flex; gap: 4px; position: relative;">
+                                                                <span class="add-element" style="opacity: 1;" @click.stop="createEventPerson(index)" title="Create New Person for Event">
+                                                                    <i class="fas fa-plus-circle"></i>
+                                                                </span>
+                                                                <span class="add-element edit-event-person-button" style="opacity: 1;" @click.stop="editEventPerson($event, index)" title="Select Existing Person for Event">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </span>
                                                             </span>
                                                         </template>
                                                     </td>
@@ -476,11 +483,13 @@ Parameters:
                                                             </span>
                                                         </template>
                                                         <template x-if="!event.spouse && {{ 'true' if editable_mode else 'false' }}">
-                                                            <span class="add-element"
-                                                                  @click.stop="editEventSpouse(index, null)"
-                                                                  title="Add spouse"
-                                                                  style="cursor: pointer; color: #3273dc;">
-                                                                <i class="fas fa-plus-circle"></i> Add spouse
+                                                            <span style="display: inline-flex; gap: 4px; position: relative;">
+                                                                <span class="add-element" style="opacity: 1;" @click.stop="createEventSpouse(index)" title="Create New Spouse for Event">
+                                                                    <i class="fas fa-plus-circle"></i>
+                                                                </span>
+                                                                <span class="add-element edit-event-spouse-button" style="opacity: 1;" @click.stop="editEventSpouse($event, index)" title="Select Existing Spouse for Event">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </span>
                                                             </span>
                                                         </template>
                                                     </td>
@@ -511,11 +520,13 @@ Parameters:
                                                             </span>
                                                         </template>
                                                         <template x-if="!event.child && {{ 'true' if editable_mode else 'false' }}">
-                                                            <span class="add-element"
-                                                                  @click.stop="editEventChild(index, null)"
-                                                                  title="Add child"
-                                                                  style="cursor: pointer; color: #3273dc;">
-                                                                <i class="fas fa-plus-circle"></i> Add child
+                                                            <span style="display: inline-flex; gap: 4px; position: relative;">
+                                                                <span class="add-element" style="opacity: 1;" @click.stop="createEventChild(index)" title="Create New Child for Event">
+                                                                    <i class="fas fa-plus-circle"></i>
+                                                                </span>
+                                                                <span class="add-element edit-event-child-button" style="opacity: 1;" @click.stop="editEventChild($event, index)" title="Select Existing Child for Event">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </span>
                                                             </span>
                                                         </template>
                                                     </td>
@@ -1019,8 +1030,13 @@ Parameters:
                                 {% if not is_cumulative %}<span class="icon is-small"><i class="fas fa-users"></i></span>{% endif %}
                                 People
                                 {% if editable_mode %}
-                                <span class="add-element" style="opacity: 1; margin-left: 8px;" @click.stop="addPerson()" title="Add Person">
-                                    <i class="fas fa-plus-circle"></i>
+                                <span style="display: inline-flex; gap: 4px; position: relative;">
+                                    <span class="add-element" style="opacity: 1;" @click.stop="createPerson()" title="Create New Person">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </span>
+                                    <span class="add-element edit-person-button" style="opacity: 1;" @click.stop="editPerson($event)" title="Edit Existing Person">
+                                        <i class="fas fa-edit"></i>
+                                    </span>
                                 </span>
                                 {% endif %}
                                 
@@ -1106,25 +1122,20 @@ Parameters:
                             {% endif %}
                             <template x-if="extractedData.people && extractedData.people.length > 0">
                                 <template x-for="(person, index) in extractedData.people" :key="index">
-                                <div class="person-item mb-1 p-2" 
+                                <div class="person-item mb-1 p-2"
                                      :class="{
                                          'has-background-warning-light': {{ 'true' if is_cumulative else 'false' }},
-                                         'has-background-light': {{ 'true' if not is_cumulative else 'false' }} && ![1, 2].includes(person.id),
-                                         'has-background-primary-light': person.id === 1,
-                                         'has-background-success-light': person.id === 2
-                                     }" 
+                                         'has-background-light': {{ 'true' if not is_cumulative else 'false' }}
+                                     }"
                                      style="position: relative;">
                                     <!-- Person ID for debugging - floating in lower-right -->
                                     <span class="person-id-debug" x-show="person.id" x-text="person.id"></span>
-                                    
+
                                     <!-- System Person Badge -->
-                                    <template x-if="person.id === 1">
-                                        <span class="system-person-badge is-primary">👤 User</span>
-                                    </template>
                                     <template x-if="person.id === 2">
                                         <span class="system-person-badge is-success">🤖 Assistant</span>
                                     </template>
-                                    
+
                                     <!-- Person Name Row -->
                                     <div class="is-flex is-align-items-center mb-2">
                                         {% if editable_mode %}
@@ -1221,8 +1232,13 @@ Parameters:
                                 {% if not is_cumulative %}<span class="icon is-small"><i class="fas fa-calendar-alt"></i></span>{% endif %}
                                 Events
                                 {% if editable_mode %}
-                                <span class="add-element" style="opacity: 1; margin-left: 8px;" @click.stop="addEvent()" title="Add Event">
-                                    <i class="fas fa-plus-circle"></i>
+                                <span style="display: inline-flex; gap: 4px; position: relative;">
+                                    <span class="add-element" style="opacity: 1;" @click.stop="createEvent()" title="Create New Event">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </span>
+                                    <span class="add-element edit-event-button" style="opacity: 1;" @click.stop="editEvent($event)" title="Edit Existing Event">
+                                        <i class="fas fa-edit"></i>
+                                    </span>
                                 </span>
                                 {% endif %}
                             </div>
@@ -1294,11 +1310,13 @@ Parameters:
                                                             </span>
                                                         </template>
                                                         <template x-if="!event.person && {{ 'true' if editable_mode else 'false' }}">
-                                                            <span class="add-element"
-                                                                  @click.stop="editEventPerson(index, null)"
-                                                                  title="Add person"
-                                                                  style="cursor: pointer; color: #3273dc;">
-                                                                <i class="fas fa-plus-circle"></i> Add person
+                                                            <span style="display: inline-flex; gap: 4px; position: relative;">
+                                                                <span class="add-element" style="opacity: 1;" @click.stop="createEventPerson(index)" title="Create New Person for Event">
+                                                                    <i class="fas fa-plus-circle"></i>
+                                                                </span>
+                                                                <span class="add-element edit-event-person-button" style="opacity: 1;" @click.stop="editEventPerson($event, index)" title="Select Existing Person for Event">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </span>
                                                             </span>
                                                         </template>
                                                     </td>
@@ -1329,11 +1347,13 @@ Parameters:
                                                             </span>
                                                         </template>
                                                         <template x-if="!event.spouse && {{ 'true' if editable_mode else 'false' }}">
-                                                            <span class="add-element"
-                                                                  @click.stop="editEventSpouse(index, null)"
-                                                                  title="Add spouse"
-                                                                  style="cursor: pointer; color: #3273dc;">
-                                                                <i class="fas fa-plus-circle"></i> Add spouse
+                                                            <span style="display: inline-flex; gap: 4px; position: relative;">
+                                                                <span class="add-element" style="opacity: 1;" @click.stop="createEventSpouse(index)" title="Create New Spouse for Event">
+                                                                    <i class="fas fa-plus-circle"></i>
+                                                                </span>
+                                                                <span class="add-element edit-event-spouse-button" style="opacity: 1;" @click.stop="editEventSpouse($event, index)" title="Select Existing Spouse for Event">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </span>
                                                             </span>
                                                         </template>
                                                     </td>
@@ -1364,11 +1384,13 @@ Parameters:
                                                             </span>
                                                         </template>
                                                         <template x-if="!event.child && {{ 'true' if editable_mode else 'false' }}">
-                                                            <span class="add-element"
-                                                                  @click.stop="editEventChild(index, null)"
-                                                                  title="Add child"
-                                                                  style="cursor: pointer; color: #3273dc;">
-                                                                <i class="fas fa-plus-circle"></i> Add child
+                                                            <span style="display: inline-flex; gap: 4px; position: relative;">
+                                                                <span class="add-element" style="opacity: 1;" @click.stop="createEventChild(index)" title="Create New Child for Event">
+                                                                    <i class="fas fa-plus-circle"></i>
+                                                                </span>
+                                                                <span class="add-element edit-event-child-button" style="opacity: 1;" @click.stop="editEventChild($event, index)" title="Select Existing Child for Event">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </span>
                                                             </span>
                                                         </template>
                                                     </td>

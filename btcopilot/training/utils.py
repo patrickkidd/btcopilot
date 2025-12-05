@@ -6,10 +6,8 @@ import btcopilot
 
 
 def get_breadcrumbs(current_page=None):
-    """Generate breadcrumbs for therapist pages"""
-    breadcrumbs = [
-        {"title": "Therapist", "url": url_for("training.training_root")},
-    ]
+    """Generate breadcrumbs for training pages"""
+    breadcrumbs = []
 
     if current_page == "audit":
         breadcrumbs.append({"title": "Audit", "url": None})

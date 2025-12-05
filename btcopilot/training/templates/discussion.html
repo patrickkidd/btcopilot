@@ -6,12 +6,25 @@
 window.diagramPeople = [
 {% if discussion.diagram %}
     {% set database = discussion.diagram.get_diagram_data() %}
+    {% set seen_ids = [] %}
     {% for person in database.people %}
     {
         id: {{ person.id }},
         name: {{ person.name | tojson }}
-    }{{ "," if not loop.last else "" }}
+    },
+    {% set _ = seen_ids.append(person.id) %}
     {% endfor %}
+    {% if database.pdp and database.pdp.people %}
+        {% for person in database.pdp.people %}
+            {% if person.id not in seen_ids %}
+    {
+        id: {{ person.id }},
+        name: {{ person.name | tojson }}
+    }{{ "," if not loop.last else "" }}
+            {% set _ = seen_ids.append(person.id) %}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
 {% endif %}
 ];
 
@@ -632,80 +645,6 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
 </div>
 
 <!-- Add Person Delta Modal -->
-<div class="modal" id="add-person-delta-modal">
-    <div class="modal-background" onclick="closeAddPersonDeltaModal()"></div>
-    <div class="modal-card">
-        <header class="modal-card-head">
-            <p class="modal-card-title">Add Person Delta</p>
-            <button class="delete" onclick="closeAddPersonDeltaModal()"></button>
-        </header>
-        <section class="modal-card-body">
-            <div class="field">
-                <label class="label">Action</label>
-                <div class="control">
-                    <div class="select is-fullwidth">
-                        <select id="person-delta-action-select" onchange="togglePersonDeltaAction()">
-                            <option value="new">Create New Person</option>
-                            <option value="update">Update Existing Person</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="field" id="person-delta-select-field" style="display: none;">
-                <label class="label">Select Person to Update</label>
-                <div class="control">
-                    <div class="select is-fullwidth">
-                        <select id="person-delta-id-select">
-                            <!-- Options dynamically populated -->
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <footer class="modal-card-foot">
-            <button class="button is-success" onclick="confirmAddPersonDelta()">Add</button>
-            <button class="button" onclick="closeAddPersonDeltaModal()">Cancel</button>
-        </footer>
-    </div>
-</div>
-
-<!-- Add Event Delta Modal -->
-<div class="modal" id="add-event-delta-modal">
-    <div class="modal-background" onclick="closeAddEventDeltaModal()"></div>
-    <div class="modal-card">
-        <header class="modal-card-head">
-            <p class="modal-card-title">Add Event Delta</p>
-            <button class="delete" onclick="closeAddEventDeltaModal()"></button>
-        </header>
-        <section class="modal-card-body">
-            <div class="field">
-                <label class="label">Action</label>
-                <div class="control">
-                    <div class="select is-fullwidth">
-                        <select id="event-delta-action-select" onchange="toggleEventDeltaAction()">
-                            <option value="new">Create New Event</option>
-                            <option value="update">Update Existing Event</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="field" id="event-delta-select-field" style="display: none;">
-                <label class="label">Select Event to Update</label>
-                <div class="control">
-                    <div class="select is-fullwidth">
-                        <select id="event-delta-id-select">
-                            <!-- Options dynamically populated -->
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <footer class="modal-card-foot">
-            <button class="button is-success" onclick="confirmAddEventDelta()">Add</button>
-            <button class="button" onclick="closeAddEventDeltaModal()">Cancel</button>
-        </footer>
-    </div>
-</div>
 
 <!-- Audit Table Layout -->
 <div class="audit-table-container">
@@ -1154,41 +1093,116 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             return lowestId - 1;
         },
 
-        addPerson() {
-            window.currentAddPersonComponent = this;
+        createPerson() {
+            const personId = this.nextNegativeId();
+            const personDelta = {
+                id: personId,
+                name: 'New Person',
+                last_name: null,
+                spouses: [],
+                parent_a: null,
+                parent_b: null,
+                confidence: 1.0
+            };
 
-            const modal = document.getElementById('add-person-delta-modal');
-            const actionSelect = document.getElementById('person-delta-action-select');
-            const idSelect = document.getElementById('person-delta-id-select');
-            const selectField = document.getElementById('person-delta-select-field');
+            const seen = getUsedIds(this, 'people');
+            if (seen.has(personId)) {
+                alert(`Warning: ID ${personId} is already in use. This will cause a collision in the cumulative PDP. The ID should have been ${this.nextNegativeId()}.`);
+            }
 
-            actionSelect.value = 'new';
-            selectField.style.display = 'none';
+            if (!this.extractedData.people) this.extractedData.people = [];
+            this.extractedData.people.push(personDelta);
+            this.personDataVersion++;
+            this.autoSave();
+        },
 
-            idSelect.innerHTML = '';
+        editPerson(event) {
+            const button = event.target.closest('.edit-person-button');
+            if (!button) return;
 
-            const diagramPeople = window.diagramPeople || [];
-            diagramPeople.forEach(person => {
-                if (person.id) {
-                    const option = document.createElement('option');
-                    option.value = person.id;
-                    option.textContent = `${person.name || 'Unnamed'} (ID: ${person.id})`;
-                    idSelect.appendChild(option);
-                }
-            });
+            document.querySelectorAll('.person-edit-dropdown, .event-edit-dropdown').forEach(d => d.style.display = 'none');
 
-            if (this.cumulativePdp && this.cumulativePdp.people && this.cumulativePdp.people.length > 0) {
-                this.cumulativePdp.people.forEach(person => {
+            let dropdown = button.nextElementSibling;
+            if (!dropdown || !dropdown.classList.contains('person-edit-dropdown')) {
+                dropdown = document.createElement('div');
+                dropdown.className = 'person-edit-dropdown dropdown-menu';
+                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: auto; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
+                button.parentNode.appendChild(dropdown);
+
+                dropdown.innerHTML = '';
+
+                const allPeople = new Map();
+
+                const diagramPeople = window.diagramPeople || [];
+                diagramPeople.forEach(person => {
                     if (person.id) {
-                        const option = document.createElement('option');
-                        option.value = person.id;
-                        option.textContent = `${person.name || 'Unnamed'} (ID: ${person.id})`;
-                        idSelect.appendChild(option);
+                        allPeople.set(person.id, person);
                     }
+                });
+
+                if (this.cumulativePdp && this.cumulativePdp.people && this.cumulativePdp.people.length > 0) {
+                    this.cumulativePdp.people.forEach(person => {
+                        if (person.id) {
+                            allPeople.set(person.id, person);
+                        }
+                    });
+                }
+
+                if (Array.isArray(this.extractedData.people)) {
+                    this.extractedData.people.forEach(person => {
+                        if (person.id) {
+                            allPeople.set(person.id, person);
+                        }
+                    });
+                }
+
+                const peopleArray = Array.from(allPeople.values());
+                peopleArray.forEach(person => {
+                    const item = document.createElement('a');
+                    item.className = 'dropdown-item';
+                    item.style.cssText = 'display: block; padding: 0.375rem 1rem; cursor: pointer; color: var(--bulma-dropdown-content-background-color, white);';
+                    item.textContent = `${person.name || 'Unnamed'} (ID: ${person.id})`;
+                    item.addEventListener('mouseover', () => {
+                        item.style.backgroundColor = 'var(--bulma-dropdown-content-background-color, white)';
+                        item.style.color = 'var(--bulma-text, #4a4a4a)';
+                    });
+                    item.addEventListener('mouseout', () => {
+                        item.style.backgroundColor = '';
+                        item.style.color = 'var(--bulma-dropdown-content-background-color, white)';
+                    });
+                    item.addEventListener('click', () => {
+                        this.addPersonUpdate(person.id);
+                        dropdown.style.display = 'none';
+                    });
+                    dropdown.appendChild(item);
                 });
             }
 
-            modal.classList.add('is-active');
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+
+            if (dropdown.style.display === 'block') {
+                const closeDropdown = (e) => {
+                    if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeDropdown), 0);
+            }
+        },
+
+        addPersonUpdate(personId) {
+            if (!personId) return;
+
+            const personDelta = {
+                id: personId,
+                confidence: 1.0
+            };
+
+            if (!this.extractedData.people) this.extractedData.people = [];
+            this.extractedData.people.push(personDelta);
+            this.personDataVersion++;
+            this.autoSave();
         },
 
         formatEventTitle(event) {
@@ -1213,47 +1227,128 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             }
         },
 
-        addEvent() {
-            window.currentAddEventComponent = this;
+        createEvent() {
+            const eventId = this.nextNegativeId();
+            const eventDelta = {
+                id: eventId,
+                kind: 'shift',
+                person: null,
+                spouse: null,
+                child: null,
+                description: 'New Event',
+                dateTime: new Date().toISOString().split('T')[0],
+                endDateTime: null,
+                symptom: null,
+                anxiety: null,
+                relationship: null,
+                relationshipTargets: [],
+                relationshipTriangles: [],
+                functioning: null,
+                confidence: 1.0
+            };
 
-            const modal = document.getElementById('add-event-delta-modal');
-            const actionSelect = document.getElementById('event-delta-action-select');
-            const idSelect = document.getElementById('event-delta-id-select');
-            const selectField = document.getElementById('event-delta-select-field');
-
-            actionSelect.value = 'new';
-            selectField.style.display = 'none';
-
-            idSelect.innerHTML = '';
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = '-- Select Event --';
-            idSelect.appendChild(defaultOption);
-
-            const diagramEvents = window.diagramEvents || [];
-            diagramEvents.forEach(event => {
-                if (event.id) {
-                    const option = document.createElement('option');
-                    option.value = event.id;
-                    const title = this.formatEventTitle(event);
-                    option.textContent = `${event.id}: ${title}`;
-                    idSelect.appendChild(option);
-                }
-            });
-
-            if (this.cumulativePdp && this.cumulativePdp.events && this.cumulativePdp.events.length > 0) {
-                this.cumulativePdp.events.forEach(event => {
-                    if (event.id) {
-                        const option = document.createElement('option');
-                        option.value = event.id;
-                        const title = this.formatEventTitle(event);
-                        option.textContent = `${event.id}: ${title}`;
-                        idSelect.appendChild(option);
-                    }
-                });
+            const seen = getUsedIds(this, 'events');
+            if (seen.has(eventId)) {
+                alert(`Warning: ID ${eventId} is already in use. This will cause a collision in the cumulative PDP. The ID should have been ${this.nextNegativeId()}.`);
             }
 
-            modal.classList.add('is-active');
+            if (!this.extractedData.events) this.extractedData.events = [];
+            this.extractedData.events.push(eventDelta);
+            this.autoSave();
+        },
+
+        editEvent(event) {
+            const button = event.target.closest('.edit-event-button');
+            if (!button) return;
+
+            document.querySelectorAll('.person-edit-dropdown, .event-edit-dropdown').forEach(d => d.style.display = 'none');
+
+            let dropdown = button.nextElementSibling;
+            if (!dropdown || !dropdown.classList.contains('event-edit-dropdown')) {
+                dropdown = document.createElement('div');
+                dropdown.className = 'event-edit-dropdown dropdown-menu';
+                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: auto; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
+                button.parentNode.appendChild(dropdown);
+
+                dropdown.innerHTML = '';
+
+                const diagramEvents = window.diagramEvents || [];
+                diagramEvents.forEach(evt => {
+                    if (evt.id) {
+                        const item = document.createElement('a');
+                        item.className = 'dropdown-item';
+                        item.style.cssText = 'display: block; padding: 0.375rem 1rem; cursor: pointer; color: var(--bulma-dropdown-content-background-color, white);';
+                        const title = this.formatEventTitle(evt);
+                        item.textContent = `${evt.id}: ${title}`;
+                        item.addEventListener('mouseover', () => {
+                            item.style.backgroundColor = 'var(--bulma-dropdown-content-background-color, white)';
+                            item.style.color = 'var(--bulma-text, #4a4a4a)';
+                        });
+                        item.addEventListener('mouseout', () => {
+                            item.style.backgroundColor = '';
+                            item.style.color = 'var(--bulma-dropdown-content-background-color, white)';
+                        });
+                        item.addEventListener('click', () => {
+                            this.addEventUpdate(evt.id);
+                            dropdown.style.display = 'none';
+                        });
+                        dropdown.appendChild(item);
+                    }
+                });
+
+                if (this.cumulativePdp && this.cumulativePdp.events && this.cumulativePdp.events.length > 0) {
+                    this.cumulativePdp.events.forEach(evt => {
+                        if (evt.id) {
+                            const item = document.createElement('a');
+                            item.className = 'dropdown-item';
+                            item.style.cssText = 'display: block; padding: 0.375rem 1rem; cursor: pointer; color: var(--bulma-dropdown-content-background-color, white);';
+                            const title = this.formatEventTitle(evt);
+                            item.textContent = `${evt.id}: ${title}`;
+                            item.addEventListener('mouseover', () => {
+                                item.style.backgroundColor = 'var(--bulma-dropdown-content-background-color, white)';
+                                item.style.color = 'var(--bulma-text, #4a4a4a)';
+                            });
+                            item.addEventListener('mouseout', () => {
+                                item.style.backgroundColor = '';
+                                item.style.color = 'var(--bulma-dropdown-content-background-color, white)';
+                            });
+                            item.addEventListener('click', () => {
+                                this.addEventUpdate(evt.id);
+                                dropdown.style.display = 'none';
+                            });
+                            dropdown.appendChild(item);
+                        }
+                    });
+                }
+            }
+
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+
+            if (dropdown.style.display === 'block') {
+                const closeDropdown = (e) => {
+                    if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeDropdown), 0);
+            }
+        },
+
+        addEventUpdate(eventId) {
+            if (!eventId) return;
+
+            const sourceEvent = this.cumulativePdp?.events?.find(e => e.id === eventId);
+            if (!sourceEvent) {
+                alert('Event not found in cumulative data');
+                return;
+            }
+
+            const eventDelta = JSON.parse(JSON.stringify(sourceEvent));
+
+            if (!this.extractedData.events) this.extractedData.events = [];
+            this.extractedData.events.push(eventDelta);
+            this.autoSave();
         },
         
         addVariable(eventIndex, varType) {
@@ -1273,19 +1368,14 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 alert('System people (User and Assistant) cannot be deleted.');
                 return;
             }
-            if (confirm('Remove this person?')) {
-                this.extractedData.people.splice(personIndex, 1);
-                // Increment version to force reactivity updates for all person name references
-                this.personDataVersion++;
-                this.autoSave();
-            }
+            this.extractedData.people.splice(personIndex, 1);
+            this.personDataVersion++;
+            this.autoSave();
         },
         
         removeEvent(eventIndex) {
-            if (confirm('Remove this event?')) {
-                this.extractedData.events.splice(eventIndex, 1);
-                this.autoSave();
-            }
+            this.extractedData.events.splice(eventIndex, 1);
+            this.autoSave();
         },
         
         removeVariable(eventIndex, varType) {
@@ -1320,10 +1410,8 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         },
         
         removeDelete(deleteIndex) {
-            if (confirm('Remove this delete entry?')) {
-                this.extractedData.delete.splice(deleteIndex, 1);
-                this.autoSave();
-            }
+            this.extractedData.delete.splice(deleteIndex, 1);
+            this.autoSave();
         },
         
         startEditDelete(deleteIndex, currentId) {
@@ -1718,10 +1806,8 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         },
 
         removePairBond(personIndex) {
-            if (confirm('Remove parents?')) {
-                this.extractedData.people[personIndex].parents = null;
-                this.autoSave();
-            }
+            this.extractedData.people[personIndex].parents = null;
+            this.autoSave();
         },
 
         // Relationship person editing
@@ -1779,12 +1865,10 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         },
 
         removeRelationshipPerson(eventIndex, fieldName, personIndex) {
-            if (confirm('Remove this person from ' + fieldName + '?')) {
-                const event = this.extractedData.events[eventIndex];
-                const arrayFieldName = fieldName === 'targets' ? 'relationshipTargets' : 'relationshipTriangles';
-                event[arrayFieldName].splice(personIndex, 1);
-                this.autoSave();
-            }
+            const event = this.extractedData.events[eventIndex];
+            const arrayFieldName = fieldName === 'targets' ? 'relationshipTargets' : 'relationshipTriangles';
+            event[arrayFieldName].splice(personIndex, 1);
+            this.autoSave();
         },
 
         // Internal callback for handling person selection from modal
@@ -1876,77 +1960,322 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         },
 
         // Event Person Management Functions
-        editEventPerson(eventIndex, currentId) {
-            console.log('=== editEventPerson called ===');
-            console.log('Event index:', eventIndex);
-            console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
-
-            // Store context for modal callback including reference to this component
-            window.relationshipPersonContext = {
-                eventIndex,
-                fieldName: 'person', // event.person is a single ID
-                isEdit: true,
-                currentPersonId: currentId,
-                component: this, // Store reference to the Alpine component
-                isEventPeople: true // Flag to indicate this is for event.person, not relationship
+        createEventPerson(eventIndex) {
+            const personId = this.nextNegativeId();
+            const personDelta = {
+                id: personId,
+                name: 'New Person',
+                last_name: null,
+                spouses: [],
+                parent_a: null,
+                parent_b: null,
+                confidence: 1.0
             };
 
-            showRelationshipPersonModal();
+            if (!Array.isArray(this.extractedData.people)) {
+                this.extractedData.people = [];
+            }
+
+            this.extractedData.people.push(personDelta);
+            this.extractedData.events[eventIndex].person = personId;
+            this.personDataVersion++;
+            this.autoSave();
+        },
+
+        editEventPerson(event, eventIndex) {
+            const button = event.target.closest('.edit-event-person-button');
+            if (!button) return;
+
+            document.querySelectorAll('.person-edit-dropdown, .event-edit-dropdown, .event-person-dropdown, .event-spouse-dropdown, .event-child-dropdown').forEach(d => d.style.display = 'none');
+
+            let dropdown = button.nextElementSibling;
+            if (!dropdown || !dropdown.classList.contains('event-person-dropdown')) {
+                dropdown = document.createElement('div');
+                dropdown.className = 'event-person-dropdown';
+                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: auto; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
+                button.parentNode.appendChild(dropdown);
+            }
+
+            dropdown.innerHTML = '';
+
+            const allPeople = new Map();
+
+            const diagramPeople = window.diagramPeople || [];
+            diagramPeople.forEach(person => {
+                if (person.id) {
+                    allPeople.set(person.id, person);
+                }
+            });
+
+            if (this.cumulativePdp && this.cumulativePdp.people && this.cumulativePdp.people.length > 0) {
+                this.cumulativePdp.people.forEach(person => {
+                    if (person.id) {
+                        allPeople.set(person.id, person);
+                    }
+                });
+            }
+
+            if (Array.isArray(this.extractedData.people)) {
+                this.extractedData.people.forEach(person => {
+                    if (person.id) {
+                        allPeople.set(person.id, person);
+                    }
+                });
+            }
+
+            const peopleArray = Array.from(allPeople.values());
+            peopleArray.forEach(person => {
+                const item = document.createElement('div');
+                item.style.cssText = 'padding: 8px 12px; cursor: pointer; color: var(--bulma-dropdown-content-background-color, white);';
+                item.textContent = `${person.name || 'Unnamed'} (ID: ${person.id})`;
+                item.addEventListener('mouseenter', () => {
+                    item.style.background = 'var(--bulma-dropdown-content-background-color, white)';
+                    item.style.color = 'var(--bulma-text, #4a4a4a)';
+                });
+                item.addEventListener('mouseleave', () => {
+                    item.style.background = '';
+                    item.style.color = 'var(--bulma-dropdown-content-background-color, white)';
+                });
+                item.addEventListener('click', () => {
+                    this.setEventPerson(eventIndex, person.id);
+                    dropdown.style.display = 'none';
+                });
+                dropdown.appendChild(item);
+            });
+
+            dropdown.style.display = 'block';
+
+            if (dropdown.style.display === 'block') {
+                const closeDropdown = (e) => {
+                    if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeDropdown), 0);
+            }
+        },
+
+        setEventPerson(eventIndex, personId) {
+            this.extractedData.events[eventIndex].person = personId;
+            this.autoSave();
         },
 
         clearEventPerson(eventIndex) {
-            if (confirm('Clear the person for this event?')) {
-                this.extractedData.events[eventIndex].person = null;
-                this.autoSave();
+            this.extractedData.events[eventIndex].person = null;
+            this.autoSave();
+        },
+
+        createEventSpouse(eventIndex) {
+            const personId = this.nextNegativeId();
+            const personDelta = {
+                id: personId,
+                name: 'New Spouse',
+                last_name: null,
+                spouses: [],
+                parent_a: null,
+                parent_b: null,
+                confidence: 1.0
+            };
+
+            if (!Array.isArray(this.extractedData.people)) {
+                this.extractedData.people = [];
+            }
+
+            this.extractedData.people.push(personDelta);
+            this.extractedData.events[eventIndex].spouse = personId;
+            this.personDataVersion++;
+            this.autoSave();
+        },
+
+        editEventSpouse(event, eventIndex) {
+            const button = event.target.closest('.edit-event-spouse-button');
+            if (!button) return;
+
+            document.querySelectorAll('.person-edit-dropdown, .event-edit-dropdown, .event-person-dropdown, .event-spouse-dropdown, .event-child-dropdown').forEach(d => d.style.display = 'none');
+
+            let dropdown = button.nextElementSibling;
+            if (!dropdown || !dropdown.classList.contains('event-spouse-dropdown')) {
+                dropdown = document.createElement('div');
+                dropdown.className = 'event-spouse-dropdown';
+                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: auto; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
+                button.parentNode.appendChild(dropdown);
+            }
+
+            dropdown.innerHTML = '';
+
+            const allPeople = new Map();
+
+            const diagramPeople = window.diagramPeople || [];
+            diagramPeople.forEach(person => {
+                if (person.id) {
+                    allPeople.set(person.id, person);
+                }
+            });
+
+            if (this.cumulativePdp && this.cumulativePdp.people && this.cumulativePdp.people.length > 0) {
+                this.cumulativePdp.people.forEach(person => {
+                    if (person.id) {
+                        allPeople.set(person.id, person);
+                    }
+                });
+            }
+
+            if (Array.isArray(this.extractedData.people)) {
+                this.extractedData.people.forEach(person => {
+                    if (person.id) {
+                        allPeople.set(person.id, person);
+                    }
+                });
+            }
+
+            const peopleArray = Array.from(allPeople.values());
+            peopleArray.forEach(person => {
+                const item = document.createElement('div');
+                item.style.cssText = 'padding: 8px 12px; cursor: pointer; color: var(--bulma-dropdown-content-background-color, white);';
+                item.textContent = `${person.name || 'Unnamed'} (ID: ${person.id})`;
+                item.addEventListener('mouseenter', () => {
+                    item.style.background = 'var(--bulma-dropdown-content-background-color, white)';
+                    item.style.color = 'var(--bulma-text, #4a4a4a)';
+                });
+                item.addEventListener('mouseleave', () => {
+                    item.style.background = '';
+                    item.style.color = 'var(--bulma-dropdown-content-background-color, white)';
+                });
+                item.addEventListener('click', () => {
+                    this.setEventSpouse(eventIndex, person.id);
+                    dropdown.style.display = 'none';
+                });
+                dropdown.appendChild(item);
+            });
+
+            dropdown.style.display = 'block';
+
+            if (dropdown.style.display === 'block') {
+                const closeDropdown = (e) => {
+                    if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeDropdown), 0);
             }
         },
 
-        editEventSpouse(eventIndex, currentId) {
-            console.log('=== editEventSpouse called ===');
-            console.log('Event index:', eventIndex);
-            console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
-
-            window.relationshipPersonContext = {
-                eventIndex,
-                fieldName: 'spouse',
-                isEdit: true,
-                currentPersonId: currentId,
-                component: this,
-                isEventPeople: true
-            };
-
-            showRelationshipPersonModal();
+        setEventSpouse(eventIndex, personId) {
+            this.extractedData.events[eventIndex].spouse = personId;
+            this.autoSave();
         },
 
         clearEventSpouse(eventIndex) {
-            if (confirm('Clear the spouse for this event?')) {
-                this.extractedData.events[eventIndex].spouse = null;
-                this.autoSave();
+            this.extractedData.events[eventIndex].spouse = null;
+            this.autoSave();
+        },
+
+        createEventChild(eventIndex) {
+            const personId = this.nextNegativeId();
+            const personDelta = {
+                id: personId,
+                name: 'New Child',
+                last_name: null,
+                spouses: [],
+                parent_a: null,
+                parent_b: null,
+                confidence: 1.0
+            };
+
+            if (!Array.isArray(this.extractedData.people)) {
+                this.extractedData.people = [];
+            }
+
+            this.extractedData.people.push(personDelta);
+            this.extractedData.events[eventIndex].child = personId;
+            this.personDataVersion++;
+            this.autoSave();
+        },
+
+        editEventChild(event, eventIndex) {
+            const button = event.target.closest('.edit-event-child-button');
+            if (!button) return;
+
+            document.querySelectorAll('.person-edit-dropdown, .event-edit-dropdown, .event-person-dropdown, .event-spouse-dropdown, .event-child-dropdown').forEach(d => d.style.display = 'none');
+
+            let dropdown = button.nextElementSibling;
+            if (!dropdown || !dropdown.classList.contains('event-child-dropdown')) {
+                dropdown = document.createElement('div');
+                dropdown.className = 'event-child-dropdown';
+                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: auto; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
+                button.parentNode.appendChild(dropdown);
+            }
+
+            dropdown.innerHTML = '';
+
+            const allPeople = new Map();
+
+            const diagramPeople = window.diagramPeople || [];
+            diagramPeople.forEach(person => {
+                if (person.id) {
+                    allPeople.set(person.id, person);
+                }
+            });
+
+            if (this.cumulativePdp && this.cumulativePdp.people && this.cumulativePdp.people.length > 0) {
+                this.cumulativePdp.people.forEach(person => {
+                    if (person.id) {
+                        allPeople.set(person.id, person);
+                    }
+                });
+            }
+
+            if (Array.isArray(this.extractedData.people)) {
+                this.extractedData.people.forEach(person => {
+                    if (person.id) {
+                        allPeople.set(person.id, person);
+                    }
+                });
+            }
+
+            const peopleArray = Array.from(allPeople.values());
+            peopleArray.forEach(person => {
+                const item = document.createElement('div');
+                item.style.cssText = 'padding: 8px 12px; cursor: pointer; color: var(--bulma-dropdown-content-background-color, white);';
+                item.textContent = `${person.name || 'Unnamed'} (ID: ${person.id})`;
+                item.addEventListener('mouseenter', () => {
+                    item.style.background = 'var(--bulma-dropdown-content-background-color, white)';
+                    item.style.color = 'var(--bulma-text, #4a4a4a)';
+                });
+                item.addEventListener('mouseleave', () => {
+                    item.style.background = '';
+                    item.style.color = 'var(--bulma-dropdown-content-background-color, white)';
+                });
+                item.addEventListener('click', () => {
+                    this.setEventChild(eventIndex, person.id);
+                    dropdown.style.display = 'none';
+                });
+                dropdown.appendChild(item);
+            });
+
+            dropdown.style.display = 'block';
+
+            if (dropdown.style.display === 'block') {
+                const closeDropdown = (e) => {
+                    if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeDropdown), 0);
             }
         },
 
-        editEventChild(eventIndex, currentId) {
-            console.log('=== editEventChild called ===');
-            console.log('Event index:', eventIndex);
-            console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
-
-            window.relationshipPersonContext = {
-                eventIndex,
-                fieldName: 'child',
-                isEdit: true,
-                currentPersonId: currentId,
-                component: this,
-                isEventPeople: true
-            };
-
-            showRelationshipPersonModal();
+        setEventChild(eventIndex, personId) {
+            this.extractedData.events[eventIndex].child = personId;
+            this.autoSave();
         },
 
         clearEventChild(eventIndex) {
-            if (confirm('Clear the child for this event?')) {
-                this.extractedData.events[eventIndex].child = null;
-                this.autoSave();
-            }
+            this.extractedData.events[eventIndex].child = null;
+            this.autoSave();
         },
 
         // Person List Field Management Functions
@@ -1988,11 +2317,8 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         },
 
         removePersonListItem(personIndex, fieldName, listIndex) {
-            const fieldDisplayName = fieldName === 'spouses' ? 'spouses' : fieldName;
-            if (confirm(`Remove this person from ${fieldDisplayName}?`)) {
-                this.extractedData.people[personIndex][fieldName].splice(listIndex, 1);
-                this.autoSave();
-            }
+            this.extractedData.people[personIndex][fieldName].splice(listIndex, 1);
+            this.autoSave();
         },
 
         savePersonConfidence(personIndex, newValue) {
@@ -4015,147 +4341,6 @@ function getUsedIds(component, dataType) {
     return seen;
 }
 
-function togglePersonDeltaAction() {
-    const actionSelect = document.getElementById('person-delta-action-select');
-    const selectField = document.getElementById('person-delta-select-field');
-
-    if (actionSelect.value === 'update') {
-        selectField.style.display = 'block';
-    } else {
-        selectField.style.display = 'none';
-    }
-}
-
-function closeAddPersonDeltaModal() {
-    document.getElementById('add-person-delta-modal').classList.remove('is-active');
-    window.currentAddPersonComponent = null;
-}
-
-function confirmAddPersonDelta() {
-    const component = window.currentAddPersonComponent;
-    if (!component) {
-        console.error('No Alpine component reference found');
-        return;
-    }
-
-    const actionSelect = document.getElementById('person-delta-action-select');
-    const idSelect = document.getElementById('person-delta-id-select');
-
-    let personId;
-    let personDelta;
-
-    if (actionSelect.value === 'update') {
-        personId = parseInt(idSelect.value);
-        if (!personId) {
-            alert('Please select a person to update');
-            return;
-        }
-        personDelta = {
-            id: personId,
-            confidence: 1.0
-        };
-    } else {
-        personId = component.nextNegativeId();
-        personDelta = {
-            id: personId,
-            name: 'New Person',
-            last_name: null,
-            spouses: [],
-            parent_a: null,
-            parent_b: null,
-            confidence: 1.0
-        };
-    }
-
-    if (actionSelect.value !== 'update') {
-        const seen = getUsedIds(component, 'people');
-        if (seen.has(personId)) {
-            alert(`Warning: ID ${personId} is already in use. This will cause a collision in the cumulative PDP. The ID should have been ${component.nextNegativeId()}.`);
-        }
-    }
-
-    if (!component.extractedData.people) component.extractedData.people = [];
-    component.extractedData.people.push(personDelta);
-    component.personDataVersion++;
-    component.autoSave();
-
-    closeAddPersonDeltaModal();
-}
-
-function toggleEventDeltaAction() {
-    const actionSelect = document.getElementById('event-delta-action-select');
-    const selectField = document.getElementById('event-delta-select-field');
-
-    if (actionSelect.value === 'update') {
-        selectField.style.display = 'block';
-    } else {
-        selectField.style.display = 'none';
-    }
-}
-
-function closeAddEventDeltaModal() {
-    document.getElementById('add-event-delta-modal').classList.remove('is-active');
-    window.currentAddEventComponent = null;
-}
-
-function confirmAddEventDelta() {
-    const component = window.currentAddEventComponent;
-    if (!component) {
-        console.error('No Alpine component reference found');
-        return;
-    }
-
-    const actionSelect = document.getElementById('event-delta-action-select');
-    const idSelect = document.getElementById('event-delta-id-select');
-
-    let eventDelta;
-
-    if (actionSelect.value === 'update') {
-        const eventId = parseInt(idSelect.value);
-        if (!eventId) {
-            alert('Please select an event to update');
-            return;
-        }
-
-        const sourceEvent = component.cumulativePdp?.events?.find(e => e.id === eventId);
-        if (!sourceEvent) {
-            alert('Event not found in cumulative data');
-            return;
-        }
-
-        eventDelta = JSON.parse(JSON.stringify(sourceEvent));
-    } else {
-        const eventId = component.nextNegativeId();
-        eventDelta = {
-            id: eventId,
-            kind: 'shift',
-            person: null,
-            spouse: null,
-            child: null,
-            description: 'New Event',
-            dateTime: new Date().toISOString().split('T')[0],
-            endDateTime: null,
-            symptom: null,
-            anxiety: null,
-            relationship: null,
-            relationshipTargets: [],
-            relationshipTriangles: [],
-            functioning: null,
-            confidence: 1.0
-        };
-
-        const seen = getUsedIds(component, 'events');
-        if (seen.has(eventId)) {
-            alert(`Warning: ID ${eventId} is already in use. This will cause a collision in the cumulative PDP. The ID should have been ${component.nextNegativeId()}.`);
-        }
-    }
-
-    if (!component.extractedData.events) component.extractedData.events = [];
-    component.extractedData.events.push(eventDelta);
-    component.autoSave();
-
-    closeAddEventDeltaModal();
-}
 
 // Extraction button functions
 function updateExtractionButtonState() {

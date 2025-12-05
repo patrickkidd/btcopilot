@@ -27,7 +27,6 @@ def _pretty_repr(obj):
 
 
 def get_all_pdp_item_ids(pdp: PDP) -> set[int]:
-    """Get all item IDs from PDP (people, events, and pair_bonds share ID space)."""
     ids = {p.id for p in pdp.people if p.id is not None}
     ids.update(e.id for e in pdp.events)
     ids.update(pb.id for pb in pdp.pair_bonds if pb.id is not None)
@@ -157,25 +156,40 @@ def validate_pdp_deltas(pdp: PDP, deltas: PDPDeltas) -> None:
 
 
 def cumulative(discussion, up_to_statement) -> PDP:
+    """Build cumulative PDP from discussion statements up to a given statement."""
     cumulative_pdp = PDP()
 
     sorted_statements = sorted(
         discussion.statements, key=lambda s: (s.order or 0, s.id or 0)
     )
 
+    people_by_id = {}
+    events_by_id = {}
+    pair_bonds_by_id = {}
+
     for stmt in sorted_statements:
         if up_to_statement.id and stmt.id < up_to_statement.id and stmt.pdp_deltas:
             if "people" in stmt.pdp_deltas:
                 for person_data in stmt.pdp_deltas["people"]:
-                    cumulative_pdp.people.append(Person(**person_data))
+                    person = Person(**person_data)
+                    if person.id:
+                        people_by_id[person.id] = person
 
             if "events" in stmt.pdp_deltas:
                 for event_data in stmt.pdp_deltas["events"]:
-                    cumulative_pdp.events.append(Event(**event_data))
+                    event = Event(**event_data)
+                    if event.id:
+                        events_by_id[event.id] = event
 
             if "pair_bonds" in stmt.pdp_deltas:
                 for pair_bond_data in stmt.pdp_deltas["pair_bonds"]:
-                    cumulative_pdp.pair_bonds.append(PairBond(**pair_bond_data))
+                    pair_bond = PairBond(**pair_bond_data)
+                    if pair_bond.id:
+                        pair_bonds_by_id[pair_bond.id] = pair_bond
+
+    cumulative_pdp.people = list(people_by_id.values())
+    cumulative_pdp.events = list(events_by_id.values())
+    cumulative_pdp.pair_bonds = list(pair_bonds_by_id.values())
 
     return cumulative_pdp
 
@@ -183,9 +197,6 @@ def cumulative(discussion, up_to_statement) -> PDP:
 async def update(
     discussion, diagram_data: DiagramData, user_message: str
 ) -> tuple[PDP, PDPDeltas]:
-    """
-    Compiles prompts, runs llm, and returns both updated PDP and the deltas that were applied.
-    """
     from btcopilot.personal.prompts import PDP_ROLE_AND_INSTRUCTIONS, PDP_EXAMPLES
 
     reference_date = (
@@ -246,10 +257,6 @@ async def update(
 
 
 def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
-    """
-    Return a copy of the pdp with the deltas applied.
-    """
-
     if os.getenv("FLASK_CONFIG") == "development":
         _log.debug(f"Pre-PDP:\n\n{_pretty_repr(pdp)}")
 
@@ -257,9 +264,6 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         _log.debug(f"Applying deltas:\n\n{_pretty_repr(deltas)}")
 
     pdp = copy.deepcopy(pdp)
-
-    # Handle upserts
-    # Keep people, events, and pair_bonds separate to avoid ID collisions between different types
 
     people_by_id = {item.id: item for item in pdp.people}
     events_by_id = {item.id: item for item in pdp.events}
@@ -336,10 +340,7 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         combined_upserts
     ), f"Failed to apply all upserts ({len(upserts_applied)} applied, {len(combined_upserts)} expected)"
 
-    # Handle deletes
-
     to_delete_ids = deltas.delete
-    # Edit pdp in place to remove items with ids in to_delete_ids
     for idx in reversed(range(len(pdp.people))):
         if pdp.people[idx].id in to_delete_ids:
             del pdp.people[idx]

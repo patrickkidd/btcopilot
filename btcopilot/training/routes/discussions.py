@@ -231,7 +231,7 @@ def _get_or_create_diagram(diagram_id, current_user):
     # Use current user's free diagram
     target_user = current_user
     if not target_user.free_diagram:
-        initial_database = _create_initial_database()
+        initial_database = DiagramData.create_with_defaults()
         diagram = Diagram(
             user_id=target_user.id,
             name=f"{target_user.username} Personal Case File",

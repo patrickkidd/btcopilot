@@ -52,9 +52,15 @@
    ```
 
    **ID Convention**:
-   - Positive integers (1, 2, 3, ...): Committed/confirmed people
-   - Negative integers (-1, -2, -3, ...): PDP pending entries
+   - Positive integers (1, 2, 3, ...): Committed/confirmed people in diagram.people
+   - Negative integers (-1, -2, -3, ...): Uncommitted PDP entries in diagram.pdp.people
    - Default IDs: 1 = "User", 2 = "Assistant"
+
+   **CRITICAL: PDPDeltas can reference BOTH positive and negative IDs**:
+   - Negative IDs: Create new uncommitted items in PDP
+   - Positive IDs: Update existing committed items in the diagram
+   - This allows PDP to correct/update any person or event already in the diagram
+   - Example: PDPDeltas with {"id": 1, "name": "Patrick"} updates the existing User person
 
    **Relationships**:
    - `parents`: PairBond ID representing the person's parents
@@ -880,6 +886,37 @@ Approved ground truth is exported to `./model_tests/data/uncategorized/` as JSON
 | **Export** | None | Test case JSON files |
 
 **Important**: `cumulative()` in training app is for display context only (shows "what AI knew so far"). It does NOT process deletes like `apply_deltas()` does in personal app. See [SARF_GROUND_TRUTH_TECHNICAL.md](./SARF_GROUND_TRUTH_TECHNICAL.md) section 5.3 for details.
+
+### Training UI: Dropdown Data Sources
+
+**Problem**: Dropdowns for selecting people/events need to show ALL available items from multiple sources.
+
+**Data Sources** (in btcopilot/training/templates/discussion.html):
+1. `window.diagramPeople` - Committed people from diagram.people + diagram.pdp.people
+2. `this.cumulativePdp.people` - Accumulated extractions from previous statements
+3. `this.extractedData.people` - Current statement's extraction
+
+**Critical Rule**: When combining sources, **positive IDs from cumulative PDP override diagram data**.
+- If cumulative has {"id": 1, "name": "Patrick"}, use "Patrick" not "User" from diagram
+- This shows the UPDATED state after applying all extractions up to this point
+- Negative IDs should deduplicate (same ID = same uncommitted person)
+
+**Implementation Pattern** (JavaScript):
+```javascript
+const allPeople = new Map();
+
+// 1. Add diagram people
+window.diagramPeople.forEach(p => allPeople.set(p.id, p));
+
+// 2. Override/add cumulative people (updates take precedence)
+this.cumulativePdp.people?.forEach(p => allPeople.set(p.id, p));
+
+// 3. Override/add current extraction people
+this.extractedData.people?.forEach(p => allPeople.set(p.id, p));
+
+// Map ensures latest update wins for each ID
+return Array.from(allPeople.values());
+```
 
 ### For Complete Technical Details
 
