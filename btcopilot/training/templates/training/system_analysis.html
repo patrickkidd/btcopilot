@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}System-wide Analysis - {{ metric_display }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container is-fluid">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <div>
+                        <h1 class="title">System-wide Analysis</h1>
+                        <p class="subtitle">{{ metric_display }}</p>
+                        <p class="help">{{ total_statements }} statements across {{ discussions_map|length }} discussions</p>
+                    </div>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a href="{{ url_for('training.audit.index') }}" class="button">
+                        <span class="icon"><i class="fas fa-arrow-left"></i></span>
+                        <span>Back to Dashboard</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% if discussions_map %}
+            {% for discussion_id, statements in discussions_map.items() %}
+                <div class="box">
+                    <div class="level">
+                        <div class="level-left">
+                            <div class="level-item">
+                                <div>
+                                    <h2 class="title is-5">Discussion {{ discussion_id }}</h2>
+                                    <p class="subtitle is-6">{{ statements|length }} matching statements</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="level-right">
+                            <div class="level-item">
+                                <a href="{{ url_for('training.analysis.discussion_analysis', discussion_id=discussion_id) }}" class="button is-small is-info">
+                                    <span class="icon"><i class="fas fa-chart-line"></i></span>
+                                    <span>View Full Analysis</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% set subject_speaker_map = speaker_maps[discussion_id]['subject'] %}
+                    {% set expert_speaker_map = speaker_maps[discussion_id]['expert'] %}
+                    {% for item in statements %}
+                        {% include 'training/components/statement_analysis_row.html' %}
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="box">
+                <div class="notification is-warning">
+                    <p><strong>No matching statements found.</strong></p>
+                    <p>There are no approved ground truth statements with errors for this metric.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+{% include 'partials/speaker_bubble_styles.html' %}
+
+<style>
+/* Fix details/summary arrow icons */
+details summary {
+    list-style: none;
+}
+details summary::-webkit-details-marker {
+    display: none;
+}
+details summary::before {
+    content: '▼ ';
+}
+details[open] summary::before {
+    content: '▲ ';
+}
+</style>
+
+{% endblock %}

@@ -1042,6 +1042,18 @@ def audit(discussion_id):
                 {"id": auditor_id_str, "name": auditor_user_map[auditor_id_str]}
             )
 
+    has_approved_gt = (
+        db.session.query(Feedback.id)
+        .join(Statement)
+        .filter(
+            Statement.discussion_id == discussion_id,
+            Feedback.feedback_type == "extraction",
+            Feedback.approved == True,
+        )
+        .first()
+        is not None
+    )
+
     return render_template(
         "discussion.html",
         discussion=discussion,
@@ -1056,6 +1068,7 @@ def audit(discussion_id):
         auditor_user_map=auditor_user_map,
         auditor_options=auditor_options,
         selected_auditor=selected_auditor,
+        has_approved_gt=has_approved_gt,
     )
 
 

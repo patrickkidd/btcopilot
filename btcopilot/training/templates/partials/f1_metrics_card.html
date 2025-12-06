@@ -29,32 +29,40 @@
         {% if f1_metrics.total_statements > 0 %}
         <div class="columns is-multiline">
             <div class="column is-3">
-                <div class="notification is-primary has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
-                    <p class="heading">Overall F1</p>
-                    <p class="title is-2">{{ "%.3f"|format(f1_metrics.aggregate_micro_f1) }}</p>
-                    <p class="subtitle is-6">Aggregate Micro-F1</p>
-                </div>
+                <a href="{{ url_for('training.analysis.system_analysis', metric='aggregate_micro_f1') }}" class="metric-link">
+                    <div class="notification is-primary has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
+                        <p class="heading">Overall F1</p>
+                        <p class="title is-2">{{ "%.3f"|format(f1_metrics.aggregate_micro_f1) }}</p>
+                        <p class="subtitle is-6">Aggregate Micro-F1</p>
+                    </div>
+                </a>
             </div>
             <div class="column is-3">
-                <div class="notification is-info is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
-                    <p class="heading">People</p>
-                    <p class="title is-3">{{ "%.3f"|format(f1_metrics.people_f1) }}</p>
-                    <p class="subtitle is-6">Detection F1</p>
-                </div>
+                <a href="{{ url_for('training.analysis.system_analysis', metric='people_f1') }}" class="metric-link">
+                    <div class="notification is-info is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
+                        <p class="heading">People</p>
+                        <p class="title is-3">{{ "%.3f"|format(f1_metrics.people_f1) }}</p>
+                        <p class="subtitle is-6">Detection F1</p>
+                    </div>
+                </a>
             </div>
             <div class="column is-3">
-                <div class="notification is-info is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
-                    <p class="heading">Events</p>
-                    <p class="title is-3">{{ "%.3f"|format(f1_metrics.events_f1) }}</p>
-                    <p class="subtitle is-6">Detection F1</p>
-                </div>
+                <a href="{{ url_for('training.analysis.system_analysis', metric='events_f1') }}" class="metric-link">
+                    <div class="notification is-info is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
+                        <p class="heading">Events</p>
+                        <p class="title is-3">{{ "%.3f"|format(f1_metrics.events_f1) }}</p>
+                        <p class="subtitle is-6">Detection F1</p>
+                    </div>
+                </a>
             </div>
             <div class="column is-3">
-                <div class="notification is-success is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
-                    <p class="heading">Exact Match</p>
-                    <p class="title is-3">{{ "%.1f"|format(f1_metrics.exact_match_rate * 100) }}%</p>
-                    <p class="subtitle is-6">Perfect PDPs</p>
-                </div>
+                <a href="{{ url_for('training.analysis.system_analysis', metric='perfect_matches') }}" class="metric-link">
+                    <div class="notification is-success is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
+                        <p class="heading">Exact Match</p>
+                        <p class="title is-3">{{ "%.1f"|format(f1_metrics.exact_match_rate * 100) }}%</p>
+                        <p class="subtitle is-6">Perfect PDPs</p>
+                    </div>
+                </a>
             </div>
         </div>
 
@@ -62,45 +70,53 @@
             <h4 class="title is-5">SARF Variable Coding (Macro-F1)</h4>
             <div class="columns is-multiline">
                 <div class="column is-3">
-                    <div class="notification is-warning is-light has-text-centered">
-                        <p class="heading">Symptom</p>
-                        <p class="title is-4">{{ "%.3f"|format(f1_metrics.symptom_macro_f1) }}</p>
-                        <div class="content is-small" style="margin-top: 0.5rem;">
-                            <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.symptom_hierarchical.detection_f1) }}</p>
-                            <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.symptom_hierarchical.value_match_f1) }}</p>
+                    <a href="{{ url_for('training.analysis.system_analysis', metric='symptom_detection') }}" class="metric-link">
+                        <div class="notification is-warning is-light has-text-centered">
+                            <p class="heading">Symptom</p>
+                            <p class="title is-4">{{ "%.3f"|format(f1_metrics.symptom_macro_f1) }}</p>
+                            <div class="content is-small" style="margin-top: 0.5rem;">
+                                <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.symptom_hierarchical.detection_f1) }}</p>
+                                <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.symptom_hierarchical.value_match_f1) }}</p>
+                            </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
                 <div class="column is-3">
-                    <div class="notification is-warning is-light has-text-centered">
-                        <p class="heading">Anxiety</p>
-                        <p class="title is-4">{{ "%.3f"|format(f1_metrics.anxiety_macro_f1) }}</p>
-                        <div class="content is-small" style="margin-top: 0.5rem;">
-                            <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.anxiety_hierarchical.detection_f1) }}</p>
-                            <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.anxiety_hierarchical.value_match_f1) }}</p>
+                    <a href="{{ url_for('training.analysis.system_analysis', metric='anxiety_detection') }}" class="metric-link">
+                        <div class="notification is-warning is-light has-text-centered">
+                            <p class="heading">Anxiety</p>
+                            <p class="title is-4">{{ "%.3f"|format(f1_metrics.anxiety_macro_f1) }}</p>
+                            <div class="content is-small" style="margin-top: 0.5rem;">
+                                <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.anxiety_hierarchical.detection_f1) }}</p>
+                                <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.anxiety_hierarchical.value_match_f1) }}</p>
+                            </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
                 <div class="column is-3">
-                    <div class="notification is-warning is-light has-text-centered">
-                        <p class="heading">Relationship</p>
-                        <p class="title is-4">{{ "%.3f"|format(f1_metrics.relationship_macro_f1) }}</p>
-                        <div class="content is-small" style="margin-top: 0.5rem;">
-                            <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.relationship_hierarchical.detection_f1) }}</p>
-                            <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.relationship_hierarchical.value_match_f1) }}</p>
-                            <p class="mb-1"><strong>People Match:</strong> {{ "%.3f"|format(f1_metrics.relationship_hierarchical.people_match_f1) }}</p>
+                    <a href="{{ url_for('training.analysis.system_analysis', metric='relationship_detection') }}" class="metric-link">
+                        <div class="notification is-warning is-light has-text-centered">
+                            <p class="heading">Relationship</p>
+                            <p class="title is-4">{{ "%.3f"|format(f1_metrics.relationship_macro_f1) }}</p>
+                            <div class="content is-small" style="margin-top: 0.5rem;">
+                                <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.relationship_hierarchical.detection_f1) }}</p>
+                                <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.relationship_hierarchical.value_match_f1) }}</p>
+                                <p class="mb-1"><strong>People Match:</strong> {{ "%.3f"|format(f1_metrics.relationship_hierarchical.people_match_f1) }}</p>
+                            </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
                 <div class="column is-3">
-                    <div class="notification is-warning is-light has-text-centered">
-                        <p class="heading">Functioning</p>
-                        <p class="title is-4">{{ "%.3f"|format(f1_metrics.functioning_macro_f1) }}</p>
-                        <div class="content is-small" style="margin-top: 0.5rem;">
-                            <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.functioning_hierarchical.detection_f1) }}</p>
-                            <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.functioning_hierarchical.value_match_f1) }}</p>
+                    <a href="{{ url_for('training.analysis.system_analysis', metric='functioning_detection') }}" class="metric-link">
+                        <div class="notification is-warning is-light has-text-centered">
+                            <p class="heading">Functioning</p>
+                            <p class="title is-4">{{ "%.3f"|format(f1_metrics.functioning_macro_f1) }}</p>
+                            <div class="content is-small" style="margin-top: 0.5rem;">
+                                <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.functioning_hierarchical.detection_f1) }}</p>
+                                <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.functioning_hierarchical.value_match_f1) }}</p>
+                            </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
             </div>
         </div>
@@ -140,3 +156,19 @@
         {% endif %}
     </div>
 </div>
+
+<style>
+.metric-link {
+    color: inherit;
+    text-decoration: none;
+    display: block;
+    transition: all 0.2s ease;
+}
+.metric-link:hover {
+    transform: scale(1.02);
+    opacity: 0.95;
+}
+.metric-link:hover .notification {
+    box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.2), 0 0px 0 1px rgba(10, 10, 10, 0.05);
+}
+</style>

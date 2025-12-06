@@ -33,6 +33,7 @@ from .discussions import bp as discussions_bp
 from .feedback import bp as feedback_bp
 from .diagrams import bp as diagrams_bp
 from .auth import bp as auth_bp
+from .analysis import bp as analysis_bp
 
 
 _log = logging.getLogger(__name__)
@@ -72,6 +73,7 @@ bp.register_blueprint(discussions_bp)
 bp.register_blueprint(feedback_bp)
 bp.register_blueprint(diagrams_bp)
 bp.register_blueprint(auth_bp)
+bp.register_blueprint(analysis_bp)
 
 
 @bp.before_request
@@ -81,6 +83,7 @@ def _():
         auto_auth_user = current_app.config.get("AUTO_AUTH_USER")
         if auto_auth_user and "user_id" not in session:
             from btcopilot.pro.models import User
+
             user = User.query.filter_by(username=auto_auth_user).first()
             if user:
                 session["user_id"] = user.id

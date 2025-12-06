@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Ground Truth Analysis - Discussion {{ discussion.id }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container is-fluid">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <div>
+                        <h1 class="title">Discussion {{ discussion.id }}</h1>
+                        <p class="subtitle">Ground Truth Analysis - {{ statement_breakdowns|length }} statements</p>
+                    </div>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a href="{{ url_for('training.discussions.audit', discussion_id=discussion.id) }}" class="button">
+                        <span class="icon"><i class="fas fa-arrow-left"></i></span>
+                        <span>Back to Discussion</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="message is-info">
+            <div class="message-header" style="cursor: pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';">
+                <p><span class="icon"><i class="fas fa-question-circle"></i></span> How to Read This Page</p>
+                <span class="icon"><i class="fas fa-angle-down"></i></span>
+            </div>
+            <div class="message-body" style="display: none; background-color: rgba(255,255,255,0.03); color: var(--color-fg-default);">
+                <div class="content">
+                    <h3 class="title is-6">What This Page Shows</h3>
+                    <p>This page compares AI-extracted clinical data against expert-coded ground truth for each statement in the discussion. Each row shows:</p>
+                    <ul>
+                        <li><strong>Statement Text</strong> - The original statement from the discussion (colored by speaker)</li>
+                        <li><strong>Expert Ground Truth</strong> - What a domain expert coded for this statement</li>
+                        <li><strong>AI Extraction</strong> - What the AI model extracted from the same statement</li>
+                        <li><strong>Match Breakdown</strong> - How well the AI matched the expert's coding</li>
+                    </ul>
+
+                    <h3 class="title is-6 mt-4">SARF Variables</h3>
+                    <p>SARF represents the four clinical variables tracked in Bowen family systems theory:</p>
+                    <ul>
+                        <li><strong>S - Symptom:</strong> Physical or emotional symptoms (Up/Down/Same)</li>
+                        <li><strong>A - Anxiety:</strong> Level of anxiety (Up/Down/Same)</li>
+                        <li><strong>R - Relationship:</strong> Relationship patterns (Conflict, Distance, Cutoff, Inside/Outside triangles, etc.)</li>
+                        <li><strong>F - Functioning:</strong> Level of functioning (Up/Down/Same)</li>
+                    </ul>
+
+                    <h3 class="title is-6 mt-4">F1 Scores</h3>
+                    <p>F1 scores measure AI extraction accuracy (0.00 to 1.00):</p>
+                    <ul>
+                        <li><strong>1.00</strong> - Perfect match between AI and expert coding</li>
+                        <li><strong>0.50</strong> - Moderate accuracy with some errors</li>
+                        <li><strong>0.00</strong> - Complete mismatch or no detection</li>
+                    </ul>
+
+                    <h3 class="title is-6 mt-4">Match Types</h3>
+                    <ul>
+                        <li><strong class="has-text-success">TP (True Positive)</strong> - AI correctly identified something the expert coded</li>
+                        <li><strong class="has-text-warning">FP (False Positive)</strong> - AI hallucinated something not in ground truth</li>
+                        <li><strong class="has-text-danger">FN (False Negative)</strong> - AI missed something the expert coded</li>
+                    </ul>
+
+                    <h3 class="title is-6 mt-4">Color Coding</h3>
+                    <ul>
+                        <li><strong class="has-text-success">Green</strong> - Correct match (TP)</li>
+                        <li><strong class="has-text-warning">Yellow/Orange</strong> - AI error (FP or value mismatch)</li>
+                        <li><strong class="has-text-danger">Red ❌</strong> - AI missed this (FN)</li>
+                    </ul>
+
+                    <h3 class="title is-6 mt-4">Using Filters</h3>
+                    <p>Use the filters below to focus on specific types of errors or variables. This helps identify patterns in AI performance and areas needing prompt improvement.</p>
+                </div>
+            </div>
+        </div>
+
+        {% if discussion_f1 %}
+        <div class="box">
+            <h2 class="title is-5">Discussion-Level F1 Metrics</h2>
+            <div class="columns is-multiline">
+                <div class="column is-3">
+                    <div class="notification is-primary has-text-centered">
+                        <p class="heading">Overall F1</p>
+                        <p class="title is-3">{{ "%.3f"|format(discussion_f1.aggregate_micro_f1) }}</p>
+                    </div>
+                </div>
+                <div class="column is-3">
+                    <div class="notification is-info is-light has-text-centered">
+                        <p class="heading">People</p>
+                        <p class="title is-4">{{ "%.3f"|format(discussion_f1.people_f1) }}</p>
+                    </div>
+                </div>
+                <div class="column is-3">
+                    <div class="notification is-info is-light has-text-centered">
+                        <p class="heading">Events</p>
+                        <p class="title is-4">{{ "%.3f"|format(discussion_f1.events_f1) }}</p>
+                    </div>
+                </div>
+                <div class="column is-3">
+                    <div class="notification is-warning is-light has-text-centered">
+                        <p class="heading">SARF Avg</p>
+                        <p class="title is-4">{{ "%.3f"|format((discussion_f1.symptom_macro_f1 + discussion_f1.anxiety_macro_f1 + discussion_f1.relationship_macro_f1 + discussion_f1.functioning_macro_f1) / 4) }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="box">
+            <h2 class="title is-5">Filter Statements</h2>
+            <div class="columns">
+                <div class="column is-3">
+                    <div class="field">
+                        <label class="label">Entity Type</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select id="entity-type-filter">
+                                    <option value="all">All</option>
+                                    <option value="people">People</option>
+                                    <option value="events">Events</option>
+                                    <option value="pair_bonds">Pair Bonds</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-3">
+                    <div class="field">
+                        <label class="label">Match Types</label>
+                        <div class="control">
+                            <label class="checkbox">
+                                <input type="checkbox" class="match-type-checkbox" value="TP" checked> TP
+                            </label>
+                            <label class="checkbox">
+                                <input type="checkbox" class="match-type-checkbox" value="FP" checked> FP
+                            </label>
+                            <label class="checkbox">
+                                <input type="checkbox" class="match-type-checkbox" value="FN" checked> FN
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-3">
+                    <div class="field">
+                        <label class="label">SARF Variable</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select id="sarf-variable-filter">
+                                    <option value="all">All</option>
+                                    <option value="symptom">Symptom</option>
+                                    <option value="anxiety">Anxiety</option>
+                                    <option value="relationship">Relationship</option>
+                                    <option value="functioning">Functioning</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-3">
+                    <div class="field">
+                        <label class="label">SARF Level</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select id="sarf-level-filter" disabled>
+                                    <option value="all">All</option>
+                                    <option value="detection">Detection</option>
+                                    <option value="value_match">Value Match</option>
+                                    <option value="people_match">People Match</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="field">
+                <div class="control">
+                    <button id="clear-filters" class="button">Clear Filters</button>
+                    <span id="filter-count" class="tag is-info ml-3" style="display: none;"></span>
+                </div>
+            </div>
+        </div>
+
+        <div id="statements-container">
+            {% for item in statement_breakdowns %}
+                {% include 'training/components/statement_analysis_row.html' %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const entityTypeFilter = document.getElementById('entity-type-filter');
+    const matchTypeCheckboxes = document.querySelectorAll('.match-type-checkbox');
+    const sarfVariableFilter = document.getElementById('sarf-variable-filter');
+    const sarfLevelFilter = document.getElementById('sarf-level-filter');
+    const clearButton = document.getElementById('clear-filters');
+    const filterCount = document.getElementById('filter-count');
+
+    function applyFilters() {
+        const matchTypes = Array.from(matchTypeCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        const filters = {
+            entity_type: entityTypeFilter.value,
+            match_types: matchTypes,
+            sarf_variable: sarfVariableFilter.value,
+            sarf_level: sarfLevelFilter.value
+        };
+
+        fetch('{{ url_for("training.analysis.filter_discussion_analysis", discussion_id=discussion.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(filters)
+        })
+        .then(response => response.json())
+        .then(data => {
+            const statementRows = document.querySelectorAll('.statement-analysis-row');
+            statementRows.forEach(row => {
+                const stmtId = parseInt(row.dataset.statementId);
+                if (data.statement_ids.includes(stmtId)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            filterCount.textContent = `${data.count} statements match`;
+            filterCount.style.display = '';
+        });
+    }
+
+    sarfVariableFilter.addEventListener('change', function() {
+        sarfLevelFilter.disabled = this.value === 'all';
+        if (this.value === 'all') {
+            sarfLevelFilter.value = 'all';
+        }
+        applyFilters();
+    });
+
+    entityTypeFilter.addEventListener('change', applyFilters);
+    sarfLevelFilter.addEventListener('change', applyFilters);
+    matchTypeCheckboxes.forEach(cb => cb.addEventListener('change', applyFilters));
+
+    clearButton.addEventListener('click', function() {
+        entityTypeFilter.value = 'all';
+        matchTypeCheckboxes.forEach(cb => cb.checked = true);
+        sarfVariableFilter.value = 'all';
+        sarfLevelFilter.value = 'all';
+        sarfLevelFilter.disabled = true;
+
+        const statementRows = document.querySelectorAll('.statement-analysis-row');
+        statementRows.forEach(row => row.style.display = '');
+
+        filterCount.style.display = 'none';
+    });
+});
+</script>
+
+{% include 'partials/speaker_bubble_styles.html' %}
+
+<style>
+/* Fix details/summary arrow icons */
+details summary {
+    list-style: none;
+}
+details summary::-webkit-details-marker {
+    display: none;
+}
+details summary::before {
+    content: '▼ ';
+}
+details[open] summary::before {
+    content: '▲ ';
+}
+</style>
+
+{% endblock %}
