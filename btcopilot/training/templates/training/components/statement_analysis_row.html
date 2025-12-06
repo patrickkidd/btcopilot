@@ -2,7 +2,7 @@
     <div class="columns is-mobile mb-0">
         <!-- Column 1: Statement Text (25%) -->
         <div class="column is-3 py-2">
-            <p class="heading is-size-7 mb-1">STATEMENT {{ item.statement.order or item.statement.id }}</p>
+            <p class="heading is-size-7 mb-1">STATEMENT {{ item.statement.id }}</p>
             <a href="{{ url_for('training.discussions.audit', discussion_id=item.statement.discussion_id) }}#statement-{{ item.statement.id }}" class="statement-link" style="text-decoration: none;">
                 <div class="statement-preview {% if item.statement.speaker.type.value == 'subject' %}user-message-bubble speaker-{{ subject_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in subject_speaker_map else 1 }}{% else %}ai-message-bubble speaker-{{ expert_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in expert_speaker_map else 1 }}{% endif %}" style="border-radius: 18px; padding: 8px 12px; font-size: 0.75rem; margin-bottom: 0.5rem; line-height: 1.4; cursor: pointer; transition: all 0.2s ease;">
                     {{ item.statement.text[:120] }}{% if item.statement.text|length > 120 %}...{% endif %}

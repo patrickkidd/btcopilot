@@ -24,12 +24,11 @@
             </div>
         </div>
 
-        <div class="message is-info">
-            <div class="message-header" style="cursor: pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';">
+        <div class="box" style="background: rgba(255,255,255,0.03); padding: 0;">
+            <div style="cursor: pointer; padding: 0.75rem 1rem; background: #3273dc; color: white; border-radius: 4px 4px 0 0;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';">
                 <p><span class="icon"><i class="fas fa-question-circle"></i></span> How to Read This Page</p>
-                <span class="icon"><i class="fas fa-angle-down"></i></span>
             </div>
-            <div class="message-body" style="display: none; background-color: rgba(255,255,255,0.03); color: var(--color-fg-default);">
+            <div style="display: none; padding: 1.25rem;">
                 <div class="content">
                     <h3 class="title is-6">What This Page Shows</h3>
                     <p>This page compares AI-extracted clinical data against expert-coded ground truth for each statement in the discussion. Each row shows:</p>

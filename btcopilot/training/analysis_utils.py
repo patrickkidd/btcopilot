@@ -235,38 +235,64 @@ def calculate_statement_match_breakdown(
     Calculate detailed match breakdown for single statement.
 
     Returns None if:
-    - Statement has no approved feedback (no ground truth)
+    - Statement has no feedback with edited_extraction (no ground truth)
     - Statement.pdp_deltas is None
 
     Implementation:
-    1. Query statement and approved feedback
-    2. Call existing calculate_statement_f1() for metrics
-    3. Re-run match_people/match_events/match_pair_bonds to extract EntityMatchResult
-    4. Convert EntityMatchResult to list[EntityMatchDetail] with TP/FP/FN labels
-    5. Extract SARF-level matches from matched event pairs
-    6. Return complete breakdown
+    1. Query statement and feedback
+    2. Get cumulative PDPDeltas for name resolution
+    3. Call existing calculate_statement_f1() for metrics
+    4. Re-run match_people/match_events/match_pair_bonds to extract EntityMatchResult
+    5. Convert EntityMatchResult to list[EntityMatchDetail] with TP/FP/FN labels
+    6. Extract SARF-level matches from matched event pairs using cumulative people
+    7. Return complete breakdown
     """
     from btcopilot.training.models import Feedback
-    from btcopilot.personal.models import Statement
+    from btcopilot.personal.models import Statement, Discussion
+    from btcopilot.pdp import cumulative
 
     statement = Statement.query.get(statement_id)
     if not statement or not statement.pdp_deltas:
         return None
 
-    approved_feedback = Feedback.query.filter(
+    feedback = Feedback.query.filter(
         Feedback.statement_id == statement_id,
-        Feedback.approved == True,
         Feedback.feedback_type == "extraction",
     ).first()
 
-    if not approved_feedback or not approved_feedback.edited_extraction:
+    if not feedback or not feedback.edited_extraction:
         return None
 
     ai_pdp = from_dict(PDPDeltas, statement.pdp_deltas)
-    gt_pdp = from_dict(PDPDeltas, approved_feedback.edited_extraction)
+    gt_pdp = from_dict(PDPDeltas, feedback.edited_extraction)
+
+    # Get FINAL cumulative PDPDeltas for AI name resolution
+    discussion = Discussion.query.get(statement.discussion_id)
+    final_statement = Statement.query.filter_by(discussion_id=statement.discussion_id).order_by(Statement.order.desc()).first()
+    cumulative_pdp = cumulative(discussion, final_statement) if final_statement else cumulative(discussion, statement)
+
+    # Build cumulative GT people list from all feedback entries in order
+    gt_cumulative_people = []
+    all_statements = Statement.query.filter_by(discussion_id=statement.discussion_id).order_by(Statement.order).all()
+    for stmt in all_statements:
+        stmt_feedback = Feedback.query.filter(
+            Feedback.statement_id == stmt.id,
+            Feedback.feedback_type == "extraction",
+        ).first()
+        if stmt_feedback and stmt_feedback.edited_extraction:
+            stmt_gt_pdp = from_dict(PDPDeltas, stmt_feedback.edited_extraction)
+            for person in stmt_gt_pdp.people:
+                # Check if person ID already exists (e.g., name correction)
+                existing_person = next((p for p in gt_cumulative_people if p.id == person.id), None)
+                if existing_person:
+                    # Update existing person (handle name corrections like "Elizabeht" -> "Elizabeth")
+                    gt_cumulative_people[gt_cumulative_people.index(existing_person)] = person
+                else:
+                    # Add new person
+                    gt_cumulative_people.append(person)
 
     f1_metrics = calculate_statement_f1(
-        statement.pdp_deltas, approved_feedback.edited_extraction
+        statement.pdp_deltas, feedback.edited_extraction
     )
     f1_metrics.statement_id = statement_id
 
@@ -386,10 +412,10 @@ def calculate_statement_match_breakdown(
         )
 
     sarf_matches = _extract_sarf_matches(
-        ai_pdp.events, gt_pdp.events, id_map, ai_pdp.people, gt_pdp.people
+        ai_pdp.events, gt_pdp.events, id_map, ai_pdp.people, gt_cumulative_people
     )
 
-    return StatementMatchBreakdown(
+    breakdown = StatementMatchBreakdown(
         statement_id=statement_id,
         people_matches=people_matches,
         event_matches=event_matches,
@@ -397,3 +423,10 @@ def calculate_statement_match_breakdown(
         sarf_matches=sarf_matches,
         f1_metrics=f1_metrics,
     )
+
+    # Store people lists for display preprocessing
+    # AI side uses cumulative AI people, GT side uses cumulative GT people from feedback
+    breakdown.ai_people = cumulative_pdp.people
+    breakdown.gt_people = gt_cumulative_people
+
+    return breakdown

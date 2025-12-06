@@ -22,7 +22,7 @@ from btcopilot.training.f1_metrics import calculate_statement_f1
 
 _log = logging.getLogger(__name__)
 
-bp = Blueprint("analysis", __name__, url_prefix="/training/analysis")
+bp = Blueprint("analysis", __name__, url_prefix="/analysis")
 
 
 def _calculate_discussion_f1(statement_breakdowns):
@@ -69,6 +69,27 @@ def _calculate_discussion_f1(statement_breakdowns):
     return result
 
 
+def _get_person_name_from_people(person_id, people_lists):
+    """
+    Get person name by ID, trying multiple people lists in order.
+
+    Args:
+        person_id: Person ID to resolve
+        people_lists: List of people arrays to search in order (e.g., [gt_people, ai_people])
+
+    Returns:
+        Person name or "Person {id}" if not found
+    """
+    for people in people_lists:
+        for person in people:
+            if person.id == person_id:
+                name = person.name or ""
+                if person.last_name:
+                    name += f" {person.last_name}"
+                return name.strip() or f"Person {person_id}"
+    return f"Person {person_id}"
+
+
 def _preprocess_breakdown_for_display(breakdown):
     """
     Preprocess breakdown data to create deduplicated person-centric display structure.
@@ -96,6 +117,8 @@ def _preprocess_breakdown_for_display(breakdown):
         ]
     }
     """
+    ai_people = getattr(breakdown, 'ai_people', [])
+    gt_people = getattr(breakdown, 'gt_people', [])
     person_blocks = {}
 
     # First, add all people from people_matches
@@ -108,19 +131,12 @@ def _preprocess_breakdown_for_display(breakdown):
         if not person_id:
             continue
 
-        person_name = None
-        if person_match.gt_entity:
-            name = person_match.gt_entity.get("name", "")
-            last = person_match.gt_entity.get("last_name", "")
-            person_name = f"{name} {last}".strip() if last else name
-        elif person_match.ai_entity:
-            name = person_match.ai_entity.get("name", "")
-            last = person_match.ai_entity.get("last_name", "")
-            person_name = f"{name} {last}".strip() if last else name
+        # Try GT people first, fall back to cumulative (AI) people
+        person_name = _get_person_name_from_people(person_id, [gt_people, ai_people])
 
         person_blocks[person_id] = {
             "person_id": person_id,
-            "person_name": person_name or f"Person {person_id}",
+            "person_name": person_name,
             "gt_person": person_match.gt_entity is not None,
             "ai_person": person_match.ai_entity is not None,
             "person_match_type": person_match.match_type,
@@ -141,15 +157,12 @@ def _preprocess_breakdown_for_display(breakdown):
             continue
 
         if person_id not in person_blocks:
-            person_name = None
-            for sarf in breakdown.sarf_matches:
-                if sarf.person_id == person_id:
-                    person_name = sarf.person_name
-                    break
+            # Try GT people first, fall back to cumulative (AI) people
+            person_name = _get_person_name_from_people(person_id, [gt_people, ai_people])
 
             person_blocks[person_id] = {
                 "person_id": person_id,
-                "person_name": person_name or f"Person {person_id}",
+                "person_name": person_name,
                 "gt_person": event_match.gt_entity is not None,
                 "ai_person": event_match.ai_entity is not None,
                 "person_match_type": None,
