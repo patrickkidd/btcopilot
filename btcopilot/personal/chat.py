@@ -77,13 +77,12 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
         {bowen_prompt}
 
         **Your next response (2-3 sentences):**
-        1. Brief acknowledgment (a word or two, not restating what they said)
-        2. Ask for the next missing data point from the current phase
-        3. If pivoting from problem to family: "OK, I have a good picture of
-           what's going on. Now let me get some family background. What's your
-           mom's name and how old is she?"
-
-        **Do NOT parrot back what the user just said.** Move the conversation forward.
+        - Ask for the next missing data point from the current phase
+        - If pivoting from problem to family: "OK, I have a good picture of
+          what's going on. Now let me get some family background. What's your
+          mom's name and how old is she?"
+        - Vary your responses naturally - don't start every reply the same way
+        - Do NOT parrot back what the user just said - move the conversation forward
 
         **Conversation History**
 
