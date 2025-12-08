@@ -12,6 +12,7 @@ from btcopilot.schema import PDP, PDPDeltas
 from .personas import get_persona, get_all_personas
 from .simulator import ConversationSimulator
 from .evaluators import QualityEvaluator, RoboticPatternChecker
+from .data_completeness import DataCompletenessEvaluator
 
 
 def pytest_configure(config):
@@ -68,6 +69,12 @@ def quality_evaluator():
 def pattern_checker():
     """Create a robotic pattern checker."""
     return RoboticPatternChecker()
+
+
+@pytest.fixture
+def data_completeness_evaluator():
+    """Create a data completeness evaluator."""
+    return DataCompletenessEvaluator()
 
 
 @pytest.fixture
