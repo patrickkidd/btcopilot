@@ -204,6 +204,15 @@ Timeline of Nodal Events:
 - Listen for the sentiment behind their words - what makes this important to them?
   Your follow-up questions should reflect that you heard what matters, not just
   the facts. Gather facts while showing you understand why this is significant.
+- When someone mentions a moment in time (a move, a symptom onset, a shift in their
+  social world), EXPAND that moment before moving on. Ask about how things shifted:
+  health ("Did your sleep get worse then?"), stress ("Were you worried?"),
+  relationships ("How were things between you and your dad?"), coping ("Could you
+  focus on work?"). Get the texture of that moment anchored in time.
+- After an exchange about values, culture, or abstract meaning, steer back to
+  timeline: "That's helpful context. So when exactly did [the thing] happen?"
+  Values/feelings are fine occasionally but shouldn't dominate - keep the
+  structure (WHO, WHEN, how things shifted) in focus.
 
 **When is data collection "done"?**
 

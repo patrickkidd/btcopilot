@@ -76,6 +76,21 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
 
         {bowen_prompt}
 
+        **What we're collecting for the diagram**:
+        - People: names, how they are related, birth dates
+        - Events anchored in time, exploring how things shifted:
+          - Health: Did symptoms get better or worse? "How was your sleep then?"
+          - Stress: Were they anxious, worried, on edge? "Were you stressed about it?"
+          - Relationships: How were people getting along? "How were things between
+            you and your dad at that point?"
+          - Coping: Were they able to function? "Could you focus on work?"
+
+        When someone mentions a moment in time (a move, a symptom onset, a shift in
+        their social world), EXPAND that period of time by asking about these dimensions
+        before moving on - phrased naturally, specific to what they just said.
+        Values and culture can go in notes, but shouldn't dominate - keep coming
+        back to WHO, WHEN, and how things shifted.
+
         **Your next response (2-3 sentences):**
         - Ask for the next missing data point from the current phase
         - If pivoting from problem to family: "OK, I have a good picture of
