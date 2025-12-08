@@ -4903,4 +4903,38 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.hash) {
+        const statementId = window.location.hash.substring(1);
+        const element = document.getElementById(statementId);
+        if (element) {
+            setTimeout(() => {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Get only immediate td children of the row
+                const cells = Array.from(element.children).filter(child => child.tagName === 'TD');
+
+                // Set yellow background on all cells first without transition
+                for (let i = 0; i < cells.length; i++) {
+                    cells[i].style.setProperty('background-color', '#fff9c4', 'important');
+                    cells[i].style.setProperty('transition', 'none', 'important');
+                }
+
+                // Force reflow to ensure yellow is applied
+                element.offsetHeight;
+
+                // Now enable transition and fade to transparent on all cells
+                setTimeout(() => {
+                    for (let i = 0; i < cells.length; i++) {
+                        cells[i].style.setProperty('transition', 'background-color 3s ease', 'important');
+                        cells[i].style.setProperty('background-color', 'transparent', 'important');
+                    }
+                }, 50);
+            }, 300);
+        }
+    }
+});
+</script>
+
 {% endblock %}
