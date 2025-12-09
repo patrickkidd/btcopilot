@@ -34,6 +34,7 @@ from .feedback import bp as feedback_bp
 from .diagrams import bp as diagrams_bp
 from .auth import bp as auth_bp
 from .analysis import bp as analysis_bp
+from .synthetic import bp as synthetic_bp
 
 
 _log = logging.getLogger(__name__)
@@ -74,6 +75,7 @@ bp.register_blueprint(feedback_bp)
 bp.register_blueprint(diagrams_bp)
 bp.register_blueprint(auth_bp)
 bp.register_blueprint(analysis_bp)
+bp.register_blueprint(synthetic_bp)
 
 
 @bp.before_request

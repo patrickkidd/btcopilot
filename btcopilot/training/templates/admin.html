@@ -75,7 +75,20 @@
                     </h2>
                     <p class="subtitle is-6 mt-2">Total discussions: {{ discussions|length }}</p>
                 </div>
-                
+
+                <!-- Synthetic filter -->
+                <div class="field is-grouped mb-3">
+                    <div class="control">
+                        <div class="select is-small">
+                            <select id="discussion-filter" onchange="filterDiscussions(this.value)">
+                                <option value="all">All Discussions</option>
+                                <option value="real">Real Users Only</option>
+                                <option value="synthetic">Synthetic Only</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 {% if discussions %}
                 <div class="table-container" id="discussions-content" style="display: block;">
                     <table class="table is-fullwidth is-striped is-hoverable">
@@ -92,7 +105,7 @@
                         </thead>
                         <tbody>
                             {% for discussion in discussions %}
-                            <tr>
+                            <tr class="discussion-row" data-synthetic="{{ 'true' if discussion.synthetic else 'false' }}">
                                 <td>
                                     <a href="/training/discussions/{{ discussion.id }}" class="has-text-weight-bold" title="View in audit system">
                                         {{ discussion.id }}
@@ -100,6 +113,11 @@
                                             <i class="fas fa-external-link-alt"></i>
                                         </span>
                                     </a>
+                                    {% if discussion.synthetic %}
+                                    <span class="tag is-warning is-light ml-2" title="Persona: {{ discussion.synthetic_persona.name if discussion.synthetic_persona else 'Unknown' }}">
+                                        <span class="icon is-small"><i class="fas fa-robot"></i></span>
+                                    </span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     <span class="tag is-info">
@@ -270,7 +288,7 @@
         function toggleDiscussions() {
             const content = document.getElementById('discussions-content');
             const icon = document.getElementById('discussions-toggle-icon');
-            
+
             if (content.style.display === 'none') {
                 content.style.display = 'block';
                 icon.classList.remove('fa-chevron-right');
@@ -280,6 +298,20 @@
                 icon.classList.remove('fa-chevron-down');
                 icon.classList.add('fa-chevron-right');
             }
+        }
+
+        function filterDiscussions(filter) {
+            const rows = document.querySelectorAll('.discussion-row');
+            rows.forEach(row => {
+                const isSynthetic = row.getAttribute('data-synthetic') === 'true';
+                if (filter === 'all') {
+                    row.style.display = '';
+                } else if (filter === 'synthetic') {
+                    row.style.display = isSynthetic ? '' : 'none';
+                } else if (filter === 'real') {
+                    row.style.display = isSynthetic ? 'none' : '';
+                }
+            });
         }
 
         function deleteDiscussion(threadId, username, messageCount) {

@@ -253,10 +253,11 @@ def index():
     # Get cached feedback statistics
     feedback_stats = get_feedback_statistics()
 
-    # Calculate F1 metrics for approved ground truth
+    # Calculate F1 metrics for approved ground truth (both with and without synthetic)
     from btcopilot.training.f1_metrics import calculate_system_f1
 
-    f1_metrics = calculate_system_f1()
+    f1_metrics_all = calculate_system_f1(include_synthetic=True)
+    f1_metrics_real = calculate_system_f1(include_synthetic=False)
 
     breadcrumbs = get_breadcrumbs("admin")
 
@@ -268,7 +269,9 @@ def index():
         total_user_count=user_data["total_count"],
         showing_user_count=len(user_data["users"]),
         feedback_stats=feedback_stats,
-        f1_metrics=f1_metrics,
+        f1_metrics=f1_metrics_all,
+        f1_metrics_all=f1_metrics_all,
+        f1_metrics_real=f1_metrics_real,
         breadcrumbs=breadcrumbs,
         current_user=current_user,
         btcopilot=btcopilot,

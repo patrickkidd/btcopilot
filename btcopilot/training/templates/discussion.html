@@ -313,6 +313,12 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                 </p>
             </div>
             <div class="tags mb-0">
+                {% if discussion.synthetic %}
+                <span class="tag is-warning" title="Persona: {{ discussion.synthetic_persona.name if discussion.synthetic_persona else 'Unknown' }}">
+                    <span class="icon is-small"><i class="fas fa-robot"></i></span>
+                    <span>Synthetic</span>
+                </span>
+                {% endif %}
                 {% set ai_messages = statements|selectattr('statement.speaker.type', 'equalto', 'expert')|list %}
                 <span class="tag is-success">{{ ai_messages|length }} AI responses</span>
             </div>

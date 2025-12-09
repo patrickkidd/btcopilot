@@ -8,7 +8,7 @@
                             <span class="icon"><i class="fas fa-chart-bar"></i></span>
                             AI Ground Truth F1 Scores
                         </h2>
-                        <p class="subtitle is-6">Comparing AI extractions to {{ f1_metrics.total_statements }} approved statements across {{ f1_metrics.total_discussions }} discussions</p>
+                        <p class="subtitle is-6" id="f1-subtitle">Comparing AI extractions to {{ f1_metrics.total_statements }} approved statements across {{ f1_metrics.total_discussions }} discussions</p>
                     </div>
                 </div>
             </div>
@@ -26,13 +26,33 @@
             {% endif %}
         </div>
 
+        <!-- Data source toggle -->
+        {% if f1_metrics_all and f1_metrics_real %}
+        <div class="tabs is-toggle is-small mb-4">
+            <ul>
+                <li class="is-active" id="tab-all">
+                    <a onclick="showF1Metrics('all')">
+                        <span class="icon is-small"><i class="fas fa-database"></i></span>
+                        <span>All Data ({{ f1_metrics_all.total_statements }} statements)</span>
+                    </a>
+                </li>
+                <li id="tab-real">
+                    <a onclick="showF1Metrics('real')">
+                        <span class="icon is-small"><i class="fas fa-user"></i></span>
+                        <span>Real Users Only ({{ f1_metrics_real.total_statements }} statements)</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+
         {% if f1_metrics.total_statements > 0 %}
         <div class="columns is-multiline">
             <div class="column is-3">
                 <a href="{{ url_for('training.analysis.system_analysis', metric='aggregate_micro_f1') }}" class="metric-link">
                     <div class="notification is-primary has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
                         <p class="heading">Overall F1</p>
-                        <p class="title is-2">{{ "%.3f"|format(f1_metrics.aggregate_micro_f1) }}</p>
+                        <p class="title is-2" id="f1-overall">{{ "%.3f"|format(f1_metrics.aggregate_micro_f1) }}</p>
                         <p class="subtitle is-6">Aggregate Micro-F1</p>
                     </div>
                 </a>
@@ -41,7 +61,7 @@
                 <a href="{{ url_for('training.analysis.system_analysis', metric='people_f1') }}" class="metric-link">
                     <div class="notification is-info is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
                         <p class="heading">People</p>
-                        <p class="title is-3">{{ "%.3f"|format(f1_metrics.people_f1) }}</p>
+                        <p class="title is-3" id="f1-people">{{ "%.3f"|format(f1_metrics.people_f1) }}</p>
                         <p class="subtitle is-6">Detection F1</p>
                     </div>
                 </a>
@@ -50,7 +70,7 @@
                 <a href="{{ url_for('training.analysis.system_analysis', metric='events_f1') }}" class="metric-link">
                     <div class="notification is-info is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
                         <p class="heading">Events</p>
-                        <p class="title is-3">{{ "%.3f"|format(f1_metrics.events_f1) }}</p>
+                        <p class="title is-3" id="f1-events">{{ "%.3f"|format(f1_metrics.events_f1) }}</p>
                         <p class="subtitle is-6">Detection F1</p>
                     </div>
                 </a>
@@ -59,7 +79,7 @@
                 <a href="{{ url_for('training.analysis.system_analysis', metric='perfect_matches') }}" class="metric-link">
                     <div class="notification is-success is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
                         <p class="heading">Exact Match</p>
-                        <p class="title is-3">{{ "%.1f"|format(f1_metrics.exact_match_rate * 100) }}%</p>
+                        <p class="title is-3" id="f1-exact-match">{{ "%.1f"|format(f1_metrics.exact_match_rate * 100) }}%</p>
                         <p class="subtitle is-6">Perfect PDPs</p>
                     </div>
                 </a>
@@ -73,10 +93,10 @@
                     <a href="{{ url_for('training.analysis.system_analysis', metric='symptom_detection') }}" class="metric-link">
                         <div class="notification is-warning is-light has-text-centered">
                             <p class="heading">Symptom</p>
-                            <p class="title is-4">{{ "%.3f"|format(f1_metrics.symptom_macro_f1) }}</p>
+                            <p class="title is-4" id="f1-symptom">{{ "%.3f"|format(f1_metrics.symptom_macro_f1) }}</p>
                             <div class="content is-small" style="margin-top: 0.5rem;">
-                                <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.symptom_hierarchical.detection_f1) }}</p>
-                                <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.symptom_hierarchical.value_match_f1) }}</p>
+                                <p class="mb-1"><strong>Detection:</strong> <span id="f1-symptom-detection">{{ "%.3f"|format(f1_metrics.symptom_hierarchical.detection_f1) }}</span></p>
+                                <p class="mb-1"><strong>Value Match:</strong> <span id="f1-symptom-value">{{ "%.3f"|format(f1_metrics.symptom_hierarchical.value_match_f1) }}</span></p>
                             </div>
                         </div>
                     </a>
@@ -85,10 +105,10 @@
                     <a href="{{ url_for('training.analysis.system_analysis', metric='anxiety_detection') }}" class="metric-link">
                         <div class="notification is-warning is-light has-text-centered">
                             <p class="heading">Anxiety</p>
-                            <p class="title is-4">{{ "%.3f"|format(f1_metrics.anxiety_macro_f1) }}</p>
+                            <p class="title is-4" id="f1-anxiety">{{ "%.3f"|format(f1_metrics.anxiety_macro_f1) }}</p>
                             <div class="content is-small" style="margin-top: 0.5rem;">
-                                <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.anxiety_hierarchical.detection_f1) }}</p>
-                                <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.anxiety_hierarchical.value_match_f1) }}</p>
+                                <p class="mb-1"><strong>Detection:</strong> <span id="f1-anxiety-detection">{{ "%.3f"|format(f1_metrics.anxiety_hierarchical.detection_f1) }}</span></p>
+                                <p class="mb-1"><strong>Value Match:</strong> <span id="f1-anxiety-value">{{ "%.3f"|format(f1_metrics.anxiety_hierarchical.value_match_f1) }}</span></p>
                             </div>
                         </div>
                     </a>
@@ -97,11 +117,11 @@
                     <a href="{{ url_for('training.analysis.system_analysis', metric='relationship_detection') }}" class="metric-link">
                         <div class="notification is-warning is-light has-text-centered">
                             <p class="heading">Relationship</p>
-                            <p class="title is-4">{{ "%.3f"|format(f1_metrics.relationship_macro_f1) }}</p>
+                            <p class="title is-4" id="f1-relationship">{{ "%.3f"|format(f1_metrics.relationship_macro_f1) }}</p>
                             <div class="content is-small" style="margin-top: 0.5rem;">
-                                <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.relationship_hierarchical.detection_f1) }}</p>
-                                <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.relationship_hierarchical.value_match_f1) }}</p>
-                                <p class="mb-1"><strong>People Match:</strong> {{ "%.3f"|format(f1_metrics.relationship_hierarchical.people_match_f1) }}</p>
+                                <p class="mb-1"><strong>Detection:</strong> <span id="f1-relationship-detection">{{ "%.3f"|format(f1_metrics.relationship_hierarchical.detection_f1) }}</span></p>
+                                <p class="mb-1"><strong>Value Match:</strong> <span id="f1-relationship-value">{{ "%.3f"|format(f1_metrics.relationship_hierarchical.value_match_f1) }}</span></p>
+                                <p class="mb-1"><strong>People Match:</strong> <span id="f1-relationship-people">{{ "%.3f"|format(f1_metrics.relationship_hierarchical.people_match_f1) }}</span></p>
                             </div>
                         </div>
                     </a>
@@ -110,10 +130,10 @@
                     <a href="{{ url_for('training.analysis.system_analysis', metric='functioning_detection') }}" class="metric-link">
                         <div class="notification is-warning is-light has-text-centered">
                             <p class="heading">Functioning</p>
-                            <p class="title is-4">{{ "%.3f"|format(f1_metrics.functioning_macro_f1) }}</p>
+                            <p class="title is-4" id="f1-functioning">{{ "%.3f"|format(f1_metrics.functioning_macro_f1) }}</p>
                             <div class="content is-small" style="margin-top: 0.5rem;">
-                                <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(f1_metrics.functioning_hierarchical.detection_f1) }}</p>
-                                <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(f1_metrics.functioning_hierarchical.value_match_f1) }}</p>
+                                <p class="mb-1"><strong>Detection:</strong> <span id="f1-functioning-detection">{{ "%.3f"|format(f1_metrics.functioning_hierarchical.detection_f1) }}</span></p>
+                                <p class="mb-1"><strong>Value Match:</strong> <span id="f1-functioning-value">{{ "%.3f"|format(f1_metrics.functioning_hierarchical.value_match_f1) }}</span></p>
                             </div>
                         </div>
                     </a>
@@ -172,3 +192,104 @@
     box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.2), 0 0px 0 1px rgba(10, 10, 10, 0.05);
 }
 </style>
+
+{% if f1_metrics_all and f1_metrics_real %}
+<script>
+const f1MetricsAll = {
+    total_statements: {{ f1_metrics_all.total_statements }},
+    total_discussions: {{ f1_metrics_all.total_discussions }},
+    aggregate_micro_f1: {{ f1_metrics_all.aggregate_micro_f1 }},
+    people_f1: {{ f1_metrics_all.people_f1 }},
+    events_f1: {{ f1_metrics_all.events_f1 }},
+    exact_match_rate: {{ f1_metrics_all.exact_match_rate }},
+    symptom_macro_f1: {{ f1_metrics_all.symptom_macro_f1 }},
+    anxiety_macro_f1: {{ f1_metrics_all.anxiety_macro_f1 }},
+    relationship_macro_f1: {{ f1_metrics_all.relationship_macro_f1 }},
+    functioning_macro_f1: {{ f1_metrics_all.functioning_macro_f1 }},
+    symptom_hierarchical: {
+        detection_f1: {{ f1_metrics_all.symptom_hierarchical.detection_f1 }},
+        value_match_f1: {{ f1_metrics_all.symptom_hierarchical.value_match_f1 }}
+    },
+    anxiety_hierarchical: {
+        detection_f1: {{ f1_metrics_all.anxiety_hierarchical.detection_f1 }},
+        value_match_f1: {{ f1_metrics_all.anxiety_hierarchical.value_match_f1 }}
+    },
+    relationship_hierarchical: {
+        detection_f1: {{ f1_metrics_all.relationship_hierarchical.detection_f1 }},
+        value_match_f1: {{ f1_metrics_all.relationship_hierarchical.value_match_f1 }},
+        people_match_f1: {{ f1_metrics_all.relationship_hierarchical.people_match_f1 }}
+    },
+    functioning_hierarchical: {
+        detection_f1: {{ f1_metrics_all.functioning_hierarchical.detection_f1 }},
+        value_match_f1: {{ f1_metrics_all.functioning_hierarchical.value_match_f1 }}
+    }
+};
+
+const f1MetricsReal = {
+    total_statements: {{ f1_metrics_real.total_statements }},
+    total_discussions: {{ f1_metrics_real.total_discussions }},
+    aggregate_micro_f1: {{ f1_metrics_real.aggregate_micro_f1 }},
+    people_f1: {{ f1_metrics_real.people_f1 }},
+    events_f1: {{ f1_metrics_real.events_f1 }},
+    exact_match_rate: {{ f1_metrics_real.exact_match_rate }},
+    symptom_macro_f1: {{ f1_metrics_real.symptom_macro_f1 }},
+    anxiety_macro_f1: {{ f1_metrics_real.anxiety_macro_f1 }},
+    relationship_macro_f1: {{ f1_metrics_real.relationship_macro_f1 }},
+    functioning_macro_f1: {{ f1_metrics_real.functioning_macro_f1 }},
+    symptom_hierarchical: {
+        detection_f1: {{ f1_metrics_real.symptom_hierarchical.detection_f1 }},
+        value_match_f1: {{ f1_metrics_real.symptom_hierarchical.value_match_f1 }}
+    },
+    anxiety_hierarchical: {
+        detection_f1: {{ f1_metrics_real.anxiety_hierarchical.detection_f1 }},
+        value_match_f1: {{ f1_metrics_real.anxiety_hierarchical.value_match_f1 }}
+    },
+    relationship_hierarchical: {
+        detection_f1: {{ f1_metrics_real.relationship_hierarchical.detection_f1 }},
+        value_match_f1: {{ f1_metrics_real.relationship_hierarchical.value_match_f1 }},
+        people_match_f1: {{ f1_metrics_real.relationship_hierarchical.people_match_f1 }}
+    },
+    functioning_hierarchical: {
+        detection_f1: {{ f1_metrics_real.functioning_hierarchical.detection_f1 }},
+        value_match_f1: {{ f1_metrics_real.functioning_hierarchical.value_match_f1 }}
+    }
+};
+
+function showF1Metrics(source) {
+    const metrics = source === 'all' ? f1MetricsAll : f1MetricsReal;
+    const label = source === 'all' ? 'all' : 'real users only';
+
+    // Update tabs
+    document.getElementById('tab-all').classList.toggle('is-active', source === 'all');
+    document.getElementById('tab-real').classList.toggle('is-active', source === 'real');
+
+    // Update subtitle
+    document.getElementById('f1-subtitle').textContent =
+        `Comparing AI extractions to ${metrics.total_statements} approved statements across ${metrics.total_discussions} discussions (${label})`;
+
+    // Update metric values
+    document.getElementById('f1-overall').textContent = metrics.aggregate_micro_f1.toFixed(3);
+    document.getElementById('f1-people').textContent = metrics.people_f1.toFixed(3);
+    document.getElementById('f1-events').textContent = metrics.events_f1.toFixed(3);
+    document.getElementById('f1-exact-match').textContent = (metrics.exact_match_rate * 100).toFixed(1) + '%';
+
+    // SARF variables
+    document.getElementById('f1-symptom').textContent = metrics.symptom_macro_f1.toFixed(3);
+    document.getElementById('f1-symptom-detection').textContent = metrics.symptom_hierarchical.detection_f1.toFixed(3);
+    document.getElementById('f1-symptom-value').textContent = metrics.symptom_hierarchical.value_match_f1.toFixed(3);
+
+    document.getElementById('f1-anxiety').textContent = metrics.anxiety_macro_f1.toFixed(3);
+    document.getElementById('f1-anxiety-detection').textContent = metrics.anxiety_hierarchical.detection_f1.toFixed(3);
+    document.getElementById('f1-anxiety-value').textContent = metrics.anxiety_hierarchical.value_match_f1.toFixed(3);
+
+    document.getElementById('f1-relationship').textContent = metrics.relationship_macro_f1.toFixed(3);
+    document.getElementById('f1-relationship-detection').textContent = metrics.relationship_hierarchical.detection_f1.toFixed(3);
+    document.getElementById('f1-relationship-value').textContent = metrics.relationship_hierarchical.value_match_f1.toFixed(3);
+    document.getElementById('f1-relationship-people').textContent = metrics.relationship_hierarchical.people_match_f1.toFixed(3);
+
+    document.getElementById('f1-functioning').textContent = metrics.functioning_macro_f1.toFixed(3);
+    document.getElementById('f1-functioning-detection').textContent = metrics.functioning_hierarchical.detection_f1.toFixed(3);
+    document.getElementById('f1-functioning-value').textContent = metrics.functioning_hierarchical.value_match_f1.toFixed(3);
+}
+</script>
+{% endif %}
