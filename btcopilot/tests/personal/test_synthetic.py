@@ -195,12 +195,14 @@ def test_coverage_empty_datapoints():
     assert result.passed
 
 
-# @pytest.mark.e2e
+@pytest.mark.e2e
 def test_coverage_in_live_conversation(test_user):
     logging.getLogger("btcopilot").setLevel(logging.INFO)
 
     persona = PERSONAS[0]
-    simulator = ConversationSimulator(max_turns=2, persist=True, user_id=test_user.id)
+    simulator = ConversationSimulator(
+        max_turns=2, persist=True, username=test_user.username
+    )
     coverage_eval = CoverageEvaluator()
 
     result = simulator.run(persona, ask)
@@ -319,7 +321,9 @@ def test_persist_synthetic_conversation(test_user):
         presenting_problem="Test problem.",
     )
 
-    simulator = ConversationSimulator(max_turns=2, persist=True, user_id=test_user.id)
+    simulator = ConversationSimulator(
+        max_turns=2, persist=True, username=test_user.username
+    )
     result = simulator.run(persona, ask)
 
     assert result.discussionId is not None
