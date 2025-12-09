@@ -2,7 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Documentation
 
+**📋 [Decision Log](decisions/log.md)** - Major architectural decisions and innovations (PDP deltas, IRR study, synthetic data generation, hierarchical F1 metrics)
+
+**📖 [README.md](README.md)** - Project overview and development journal
+
+**📚 [CONTEXT.md](CONTEXT.md)** - Bowen theory domain model, SARF constructs, auditing workflow
+
+**🏗️ [ADRs](adrs/)** - Architecture Decision Records
 
 ## Architecture Overview
 

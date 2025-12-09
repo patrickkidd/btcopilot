@@ -30,6 +30,9 @@ def extract_next_statement():
             engine = create_engine(current_app.config["SQLALCHEMY_DATABASE_URI"])
             db.session.bind = engine
 
+        # Close any existing session to ensure fresh data
+        db.session.close()
+
         result = _extract_next_statement()
 
         # If there are more statements to process, schedule another task

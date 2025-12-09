@@ -414,9 +414,6 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
 </div>
 {% endif %} -->
 
-<!-- Extraction Progress Bar -->
-<div id="progress-container" data-discussion-id="{{ discussion.id }}" data-extracting="{{ 'true' if discussion.extracting else 'false' }}"></div>
-
 <!-- Speaker mappings are now computed in Python and passed to template -->
 {% if unique_speakers %}
 <div class="card mb-4">
@@ -545,6 +542,9 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     </div>
 </div>
 {% endif %}
+
+<!-- Extraction Progress Bar -->
+<div id="progress-container" data-discussion-id="{{ discussion.id }}" data-extracting="{{ 'true' if discussion.extracting else 'false' }}"></div>
 
 <!-- New Person Modal -->
 <div class="modal" id="new-person-modal">
@@ -4442,24 +4442,25 @@ function clearExtractedData(discussionId) {
     let auditorLabel;
 
     if (window.isAdmin) {
-        // Admin: use selected auditor from dropdown, or current user if no dropdown
-        targetAuditor = window.selectedAuditor || window.currentUsername;
-        if (targetAuditor === 'AI') {
-            auditorLabel = "AI's extracted data";
-        } else {
-            // Find auditor name from dropdown if available
-            {% if current_user.has_role(btcopilot.ROLE_ADMIN) %}
-            const auditorSelect = document.getElementById('auditor-filter');
-            if (auditorSelect) {
-                const selectedOption = auditorSelect.options[auditorSelect.selectedIndex];
-                auditorLabel = selectedOption ? `${selectedOption.text}'s extracted data` : "selected auditor's data";
+        // Admin: read current value from dropdown
+        {% if current_user.has_role(btcopilot.ROLE_ADMIN) %}
+        const auditorSelect = document.getElementById('auditor-filter');
+        if (auditorSelect) {
+            targetAuditor = auditorSelect.value;
+            const selectedOption = auditorSelect.options[auditorSelect.selectedIndex];
+            if (targetAuditor === 'AI') {
+                auditorLabel = "AI's extracted data";
             } else {
-                auditorLabel = "your extracted data";
+                auditorLabel = selectedOption ? `${selectedOption.text}'s extracted data` : "selected auditor's data";
             }
-            {% else %}
+        } else {
+            targetAuditor = window.currentUsername;
             auditorLabel = "your extracted data";
-            {% endif %}
         }
+        {% else %}
+        targetAuditor = window.currentUsername;
+        auditorLabel = "your extracted data";
+        {% endif %}
     } else {
         // Non-admin: always clear own data
         targetAuditor = window.currentUsername;
@@ -4476,6 +4477,11 @@ This will:
 Continue?`;
 
     if (confirm(message)) {
+        // Stop extraction progress polling immediately
+        if (window.extractionProgress) {
+            window.extractionProgress.stopPolling();
+        }
+
         fetch(`/training/discussions/${discussionId}/clear-extracted`, {
             method: 'POST',
             headers: {
@@ -4488,15 +4494,27 @@ Continue?`;
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                // Hide progress bar immediately if clearing AI data
+                if (targetAuditor === 'AI' && window.extractionProgress) {
+                    window.extractionProgress.destroy();
+                }
                 alert(`Success: ${data.message}`);
                 reloadPreservingParams(); // Refresh to show cleared data
             } else {
                 alert(`Error: ${data.message || 'Failed to clear extracted data'}`);
+                // Restart polling on error
+                if (window.extractionProgress && window.extractionProgress.discussionId) {
+                    window.extractionProgress.startPolling();
+                }
             }
         })
         .catch(error => {
             console.error('Error clearing extracted data:', error);
             alert('Error: Failed to clear extracted data');
+            // Restart polling on error
+            if (window.extractionProgress && window.extractionProgress.discussionId) {
+                window.extractionProgress.startPolling();
+            }
         });
     }
 }

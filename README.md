@@ -6,7 +6,11 @@
 - Machine Learning infra and workflow to capture domain-expert training data.
 - The AI engine for the [Family Diagram](https://familydiagram.com)
 
-Scroll down for development journal.
+**📋 [Decision Log](decisions/log.md)** - Major architectural decisions and innovations (PDP deltas, IRR study, synthetic data generation, hierarchical F1 metrics)
+
+**📖 [Development Journal](#development-journal)** - Technical implementation timeline
+
+**📚 [Domain Context](CONTEXT.md)** - Bowen theory constructs, SARF data model, auditing workflow
 
 ## Provides
 
