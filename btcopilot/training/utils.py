@@ -17,6 +17,8 @@ def get_breadcrumbs(current_page=None):
         breadcrumbs.append({"title": "Audit", "url": url_for("training.audit.index")})
     elif current_page == "prompts":
         breadcrumbs.append({"title": "Prompt Lab", "url": None})
+    elif current_page == "synthetic":
+        breadcrumbs.append({"title": "Synthetic", "url": None})
 
     return breadcrumbs
 

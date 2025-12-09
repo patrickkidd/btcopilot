@@ -14,8 +14,8 @@ import pickle
 from dataclasses import dataclass, field
 
 from btcopilot.extensions import db, llm, LLMFunction
-from btcopilot.personal.models import Discussion, Speaker, Statement, SpeakerType
-from btcopilot.pro.models import Diagram
+from btcopilot.personal.models import Discussion, Speaker, SpeakerType
+from btcopilot.pro.models import Diagram, User
 from btcopilot.schema import DiagramData, asdict
 
 
@@ -415,15 +415,24 @@ class ConversationSimulator:
         self,
         max_turns: int = 20,
         persist: bool = False,
-        user_id: int = 1,
+        username: str | None = None,
         skip_extraction: bool = True,
     ):
         self.max_turns = max_turns
         self.persist = persist
-        self.user_id = user_id
+        self.username = username
         self.skip_extraction = skip_extraction
 
-    def run(self, persona: Persona, ask_fn) -> ConversationResult:
+    def run(self, persona: Persona, ask_fn, on_progress=None, yield_progress=False):
+        """Run conversation simulation.
+
+        Args:
+            persona: The persona to simulate
+            ask_fn: The function to call for AI responses
+            on_progress: Optional callback(turn_num, max_turns, user_text, ai_text) -> str
+                        Returns SSE-formatted progress message
+            yield_progress: If True, yields progress strings then final ConversationResult
+        """
         logging.getLogger("httpx").setLevel(logging.WARNING)
 
         turns: list[Turn] = []
@@ -436,10 +445,20 @@ class ConversationSimulator:
             "presenting_problem": persona.presenting_problem,
         }
 
+        # Look up user by username when persisting
+        user_id = None
+        if self.persist:
+            if not self.username:
+                raise ValueError("username is required when persist=True")
+            user = User.query.filter_by(username=self.username).first()
+            if not user:
+                raise ValueError(f"User not found: {self.username}")
+            user_id = user.id
+
         diagram = None
         if self.persist:
             diagram = Diagram(
-                user_id=self.user_id,
+                user_id=user_id,
                 name=f"Synthetic: {persona.name}",
                 data=pickle.dumps(asdict(DiagramData())),
             )
@@ -447,7 +466,7 @@ class ConversationSimulator:
             db.session.flush()
 
         discussion = Discussion(
-            user_id=self.user_id,
+            user_id=user_id,
             diagram_id=diagram.id if diagram else None,
             synthetic=self.persist,
             synthetic_persona=persona_dict if self.persist else None,
@@ -476,61 +495,71 @@ class ConversationSimulator:
 
         db.session.commit()
 
-        try:
-            order = 0
+        def run_loop():
+            nonlocal user_text
+            turn_num = 0
             for _ in range(self.max_turns):
+                turn_num += 1
                 turns.append(Turn(speaker="user", text=user_text))
 
-                if self.persist and user_speaker:
-                    stmt = Statement(
-                        discussion_id=discussion.id,
-                        speaker_id=user_speaker.id,
-                        text=user_text,
-                        order=order,
-                    )
-                    db.session.add(stmt)
-                    order += 1
-
+                # ask_fn creates both user and AI statements internally
                 response = ask_fn(
                     discussion, user_text, skip_extraction=self.skip_extraction
                 )
                 ai_text = response.statement
                 turns.append(Turn(speaker="ai", text=ai_text))
 
-                _log.info(f"[{len(turns)//2}] USER: {user_text}")
-                _log.info(f"[{len(turns)//2}] AI: {ai_text}")
-
-                if self.persist and ai_speaker:
-                    stmt = Statement(
-                        discussion_id=discussion.id,
-                        speaker_id=ai_speaker.id,
-                        text=ai_text,
-                        order=order,
-                    )
-                    db.session.add(stmt)
-                    order += 1
+                _log.info(f"[{turn_num}] USER: {user_text}")
+                _log.info(f"[{turn_num}] AI: {ai_text}")
 
                 db.session.commit()
+
+                if on_progress and yield_progress:
+                    yield on_progress(turn_num, self.max_turns, user_text, ai_text)
 
                 if self._is_complete(turns):
                     break
 
                 user_text = simulate_user_response(persona, turns)
 
-        except Exception:
+        if yield_progress:
+
+            def generator():
+                try:
+                    yield from run_loop()
+                    if not self.persist:
+                        db.session.delete(discussion)
+                        db.session.commit()
+                        yield ConversationResult(turns=turns, persona=persona)
+                    else:
+                        yield ConversationResult(
+                            turns=turns, persona=persona, discussionId=discussion.id
+                        )
+                except Exception:
+                    if not self.persist:
+                        db.session.delete(discussion)
+                        db.session.commit()
+                    raise
+
+            return generator()
+        else:
+            try:
+                for _ in run_loop():
+                    pass
+            except Exception:
+                if not self.persist:
+                    db.session.delete(discussion)
+                    db.session.commit()
+                raise
+
             if not self.persist:
                 db.session.delete(discussion)
                 db.session.commit()
-            raise
+                return ConversationResult(turns=turns, persona=persona)
 
-        if not self.persist:
-            db.session.delete(discussion)
-            db.session.commit()
-            return ConversationResult(turns=turns, persona=persona)
-
-        return ConversationResult(
-            turns=turns, persona=persona, discussionId=discussion.id
-        )
+            return ConversationResult(
+                turns=turns, persona=persona, discussionId=discussion.id
+            )
 
     def _is_complete(self, turns: list[Turn]) -> bool:
         if len(turns) < 4:

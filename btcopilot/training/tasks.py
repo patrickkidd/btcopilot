@@ -12,21 +12,21 @@ from btcopilot.personal.models import Discussion
 from btcopilot.training.routes.discussions import (
     extract_next_statement as _extract_next_statement,
 )
+from btcopilot.tests.personal.synthetic import ConversationSimulator, PERSONAS
+from btcopilot.personal.chat import ask
 
 
 _log = logging.getLogger(__name__)
 
 
 def extract_next_statement():
-    """Background task to extract data from the oldest pending Subject statement"""
-
     _log.info(f"extract_next_statement() called")
 
     try:
         # Ensure we have a database connection
         try:
             db.session.get_bind()
-        except:
+        except RuntimeError:
             engine = create_engine(current_app.config["SQLALCHEMY_DATABASE_URI"])
             db.session.bind = engine
 
@@ -47,8 +47,6 @@ def extract_next_statement():
 
 
 def extract_discussion_statements(discussion_id: int):
-    """Trigger extraction for a specific discussion"""
-
     try:
         discussion = Discussion.query.get(discussion_id)
         if not discussion:
@@ -83,3 +81,44 @@ def extract_discussion_data():
         _log.info("Discussion data extracted, another triggered")
     else:
         _log.info("All discussions extracted.")
+
+
+def generate_synthetic_discussion(
+    persona_name: str, username: str, max_turns: int, skip_extraction: bool
+):
+    _log.info(
+        f"generate_synthetic_discussion() persona={persona_name}, user={username}, "
+        f"max_turns={max_turns}, skip_extraction={skip_extraction}"
+    )
+
+    try:
+        persona = next((p for p in PERSONAS if p.name == persona_name), None)
+        if not persona:
+            raise ValueError(f"Persona not found: {persona_name}")
+
+        simulator = ConversationSimulator(
+            max_turns=max_turns,
+            persist=True,
+            username=username,
+            skip_extraction=skip_extraction,
+        )
+
+        result = simulator.run(persona, ask)
+        db.session.commit()
+
+        _log.info(
+            f"Synthetic discussion {result.discussionId} generated "
+            f"({len(result.turns)} turns)"
+        )
+
+        return {
+            "success": True,
+            "discussion_id": result.discussionId,
+            "turn_count": len(result.turns),
+            "quality_score": result.quality.score if result.quality else None,
+            "coverage_rate": result.coverage.rate if result.coverage else None,
+        }
+
+    except Exception as e:
+        _log.error(f"Error generating synthetic discussion: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}

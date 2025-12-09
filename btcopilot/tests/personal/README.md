@@ -183,67 +183,94 @@ Score penalties:
 - **0.7+**: Passed (adequate coverage)
 - **< 0.7**: Failed (AI missed key family data areas)
 
-## Persistence
+## Two Purposes for Synthetic Conversations
 
-Synthetic conversations can be persisted to the database for ground truth coding:
+**1. Ephemeral Prompt Testing** (`persist=False`)
+- Run synthetic suite → evaluate quality/coverage → pass/fail
+- Regenerated each time you test
+- Used to validate prompt changes don't regress conversation quality
 
-```python
-simulator = ConversationSimulator(max_turns=20, persist=True)
-result = simulator.run(persona, ask)
+**2. Ground Truth Corpus** (`persist=True`)
+- Frozen conversation transcripts for extraction evaluation
+- Once persisted, prompt version is irrelevant - the conversation already happened
+- Code extractions in training app, approve as ground truth
+- Used to calculate F1 metrics for extraction accuracy
 
-# result.discussionId contains the persisted Discussion ID
-# Discussion.synthetic = True marks it as synthetic
-# Discussion.synthetic_persona contains persona metadata
-# A Diagram is created with name "Synthetic: {persona.name}"
-```
+## Ground Truth Generation Workflow
 
-## Viewing & Ground Truth Workflow
-
-### 1. Generate and Persist Conversations
-
-Run the e2e test to generate a synthetic conversation:
-
-```bash
-uv run pytest btcopilot/btcopilot/tests/personal/test_synthetic.py::test_coverage_in_live_conversation -v -m e2e --log-cli-level=INFO
-```
-
-The test output shows the discussion URL:
-```
-View at: http://127.0.0.1:5555/discussions/{id}
-```
-
-### 2. View in Training App
+### Option A: Web UI (Recommended)
 
 1. Start the training app: `bash btcopilot/bin/flask_start.sh`
-2. Navigate to `http://127.0.0.1:5555/diagrams` to see the "Synthetic: {persona}" diagrams
-3. Click a diagram to see its discussions
-4. Or navigate directly to `http://127.0.0.1:5555/discussions/{id}`
-5. View the conversation transcript with statement-by-statement display
+2. Navigate to `http://127.0.0.1:5555/training/synthetic/`
+3. Select a persona from the dropdown
+4. Set max turns (default 20)
+5. **Uncheck "Skip extraction"** - needed for ground truth coding
+6. Click "Generate Discussion"
+7. Wait for generation (may take 1-2 minutes)
+8. Click "View Discussion" to go to the audit page
 
-### 3. Code as Ground Truth
+### Option B: Programmatic
 
-The training app discussion view allows auditors to:
+```python
+from btcopilot.personal.chat import ask
+from btcopilot.tests.personal.synthetic import ConversationSimulator, PERSONAS
 
-1. **Review each statement** - See user statements and AI responses in order
-2. **Rate conversation quality** - Add feedback on AI response appropriateness
-3. **Edit extractions** - Correct AI-extracted data (people, events, relationships)
-4. **Approve as ground truth** - Mark reviewed extractions as approved
+simulator = ConversationSimulator(
+    max_turns=20,
+    persist=True,
+    username="patrick@alaskafamilysystems.com",  # Your username
+    skip_extraction=False,  # Needed for ground truth
+)
 
-Ground truth data is stored in the `Feedback` model:
-- `Feedback.edited_extraction` - Human-corrected extraction data
-- `Feedback.approved = True` - Marks the extraction as ground truth
+result = simulator.run(PERSONAS[0], ask)
+print(f"View at: http://127.0.0.1:5555/training/discussions/{result.discussionId}")
+```
 
-### 4. Query Ground Truth
+## Viewing Synthetic Discussions
+
+Synthetic discussions are marked with:
+- **Robot badge** in the discussion header
+- **`Discussion.synthetic = True`** in the database
+- **`Discussion.synthetic_persona`** JSON with persona metadata
+
+### In Admin Dashboard
+
+1. Navigate to `http://127.0.0.1:5555/training/admin/`
+2. Use the "Synthetic filter" dropdown to filter discussions
+3. Click a discussion ID to view
+
+### Visual Indicators
+
+- Discussions table: robot icon badge next to discussion ID
+- Discussion audit page: yellow "Synthetic" badge with persona name tooltip
+
+## Coding as Ground Truth
+
+1. Navigate to a synthetic discussion at `/training/discussions/{id}`
+2. Review each statement with AI extractions
+3. Edit incorrect extractions using the SARF Editor
+4. Click "Approve" on corrected extractions
+5. Extractions become ground truth for F1 calculations
+
+## F1 Metrics with Synthetic Data
+
+The admin dashboard shows **both** F1 metrics:
+- **All Data**: Includes synthetic ground truth
+- **Real Users Only**: Excludes synthetic discussions
+
+Use "Real Users Only" for honest MVP assessment while still benefiting from synthetic ground truth for coverage.
+
+## Query Ground Truth
 
 ```python
 from btcopilot.training.models import Feedback
-from btcopilot.personal.models import Discussion
+from btcopilot.personal.models import Discussion, Statement
 
 # Find synthetic discussions with approved ground truth
 approved = (
     Feedback.query
-    .join(Statement)
-    .join(Discussion)
+    .join(Statement, Feedback.statement_id == Statement.id)
+    .join(Discussion, Statement.discussion_id == Discussion.id)
     .filter(
         Discussion.synthetic == True,
         Feedback.approved == True,
@@ -252,11 +279,11 @@ approved = (
 )
 ```
 
-### ConversationSimulator Options
+## ConversationSimulator Options
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `max_turns` | 20 | Maximum conversation turns |
 | `persist` | False | Save to database |
-| `user_id` | 1 | User to associate discussion with |
-| `skip_extraction` | True | Skip PDP extraction (saves LLM costs) |
+| `username` | None | User to associate discussion with (required if persist=True) |
+| `skip_extraction` | True | Skip PDP extraction (set False for ground truth) |
