@@ -71,6 +71,15 @@ The AI-powered conversation system that extracts family relationship data from u
 - **Includes**: System prompts, test fixtures, data extraction flow, LLM integration
 - **Use When**: Improving system prompts for better LLM alignment based on developer requests for certain behaviors
 
+### Synthetic Conversation Testing
+Automated testing framework for evaluating conversational quality in the Personal app chat flow:
+- **File**: [btcopilot/tests/personal/README.md](btcopilot/tests/personal/README.md)
+- **Module**: `btcopilot.tests.personal.synthetic`
+- **Purpose**: Simulates conversations with synthetic user personas and detects robotic patterns
+- **Includes**: Persona generator, conversation simulator, quality evaluator with pattern detection
+- **Use When**: Testing prompt changes for conversational quality, regression testing for robotic behaviors
+- **Run**: `uv run pytest btcopilot/btcopilot/tests/personal/test_synthetic.py -v -m e2e`
+
 ### F1 Metrics for AI Extraction Evaluation
 Documentation for the F1 metrics system that evaluates AI extraction quality against human ground truth:
 - **File**: [doc/F1_METRICS.md](doc/F1_METRICS.md)

@@ -24,7 +24,9 @@ class Response:
     pdp: PDP | None = None
 
 
-def ask(discussion: Discussion, user_statement: str) -> Response:
+def ask(
+    discussion: Discussion, user_statement: str, skip_extraction: bool = False
+) -> Response:
 
     ai_log.info(f"User statement: {user_statement}")
     if discussion.diagram:
@@ -32,14 +34,15 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
     else:
         diagram_data = DiagramData()
 
-    new_pdp, pdp_deltas = one_result(
-        pdp.update(discussion, diagram_data, user_statement)
-    )
+    pdp_deltas = None
+    if not skip_extraction:
+        new_pdp, pdp_deltas = one_result(
+            pdp.update(discussion, diagram_data, user_statement)
+        )
 
-    # Write to disk
-    diagram_data.pdp = new_pdp
-    if discussion.diagram:
-        discussion.diagram.set_diagram_data(diagram_data)
+        diagram_data.pdp = new_pdp
+        if discussion.diagram:
+            discussion.diagram.set_diagram_data(diagram_data)
 
     statement = Statement(
         discussion_id=discussion.id,
