@@ -8,7 +8,7 @@ from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.models.speaker import Speaker
 
 import logging
-from flask import Blueprint, request, jsonify, abort
+from flask import Blueprint, request, jsonify
 
 
 _log = logging.getLogger(__name__)
@@ -163,7 +163,7 @@ def get_access_rights(diagram_id):
     is_admin = current_user.has_role(btcopilot.ROLE_ADMIN)
 
     if not (is_owner or is_admin):
-        return abort(403)
+        return jsonify({"error": "Access denied"}), 403
 
     access_rights = AccessRight.query.filter_by(diagram_id=diagram_id).all()
 
@@ -210,7 +210,7 @@ def grant_access_right(diagram_id):
     is_admin = current_user.has_role(btcopilot.ROLE_ADMIN)
 
     if not (is_owner or is_admin):
-        return abort(403)
+        return jsonify({"error": "Access denied"}), 403
 
     if target_user_id == diagram.user_id:
         return (
@@ -259,7 +259,9 @@ def grant_access_right(diagram_id):
                     "success": True,
                     "message": f"Granted {right} access",
                     "access_right": new_right.as_dict(
-                        include={"user": {"only": ["username", "first_name", "last_name"]}}
+                        include={
+                            "user": {"only": ["username", "first_name", "last_name"]}
+                        }
                     ),
                 }
             ),
@@ -278,7 +280,7 @@ def revoke_access_right(diagram_id, access_right_id):
     is_admin = current_user.has_role(btcopilot.ROLE_ADMIN)
 
     if not (is_owner or is_admin):
-        return abort(403)
+        return jsonify({"error": "Access denied"}), 403
 
     access_right = AccessRight.query.get_or_404(access_right_id)
 

@@ -63,18 +63,26 @@ def test_grant_access_right_owner_can_grant(auditor, test_user_2):
     assert access_right.right == btcopilot.ACCESS_READ_ONLY
 
 
-def test_grant_access_right_admin_can_grant_any(admin, test_user_2, auditor):
+def test_grant_access_right_admin_can_grant_any(admin, test_user_2):
     """Test that admins can grant access rights on any diagram"""
     owner = User.query.filter_by(username=test_user_2.username).first()
     diagram = Diagram(user_id=owner.id, name="Owner's Diagram")
     db.session.add(diagram)
     db.session.commit()
 
-    target_user = auditor.user
+    # Create a third user to grant access to (can't grant to owner or admin themselves)
+    third_user = User(
+        username="third_user@test.com",
+        roles=btcopilot.ROLE_AUDITOR,
+        first_name="Third",
+        last_name="User",
+    )
+    db.session.add(third_user)
+    db.session.commit()
 
     response = admin.post(
         f"/training/diagrams/{diagram.id}/access-rights",
-        json={"user_id": target_user.id, "right": btcopilot.ACCESS_READ_WRITE},
+        json={"user_id": third_user.id, "right": btcopilot.ACCESS_READ_WRITE},
     )
 
     assert response.status_code == 201
@@ -88,9 +96,19 @@ def test_grant_access_right_non_owner_denied(auditor, test_user_2):
     db.session.add(diagram)
     db.session.commit()
 
+    # Create a third user to attempt to grant access to
+    third_user = User(
+        username="third_user@test.com",
+        roles=btcopilot.ROLE_AUDITOR,
+        first_name="Third",
+        last_name="User",
+    )
+    db.session.add(third_user)
+    db.session.commit()
+
     response = auditor.post(
         f"/training/diagrams/{diagram.id}/access-rights",
-        json={"user_id": 999, "right": btcopilot.ACCESS_READ_ONLY},
+        json={"user_id": third_user.id, "right": btcopilot.ACCESS_READ_ONLY},
     )
 
     assert response.status_code == 403
@@ -170,18 +188,27 @@ def test_revoke_access_right_owner_can_revoke(auditor, test_user_2):
     assert access_right is None
 
 
-def test_revoke_access_right_admin_can_revoke_any(admin, test_user_2, auditor):
+def test_revoke_access_right_admin_can_revoke_any(admin, test_user_2):
     """Test that admins can revoke access rights on any diagram"""
     owner = User.query.filter_by(username=test_user_2.username).first()
     diagram = Diagram(user_id=owner.id, name="Owner's Diagram")
     db.session.add(diagram)
     db.session.commit()
 
-    target_user = auditor.user
-    diagram.grant_access(target_user, btcopilot.ACCESS_READ_ONLY, _commit=True)
+    # Create a third user to grant/revoke access to
+    third_user = User(
+        username="third_user@test.com",
+        roles=btcopilot.ROLE_AUDITOR,
+        first_name="Third",
+        last_name="User",
+    )
+    db.session.add(third_user)
+    db.session.commit()
+
+    diagram.grant_access(third_user, btcopilot.ACCESS_READ_ONLY, _commit=True)
 
     access_right = AccessRight.query.filter_by(
-        diagram_id=diagram.id, user_id=target_user.id
+        diagram_id=diagram.id, user_id=third_user.id
     ).first()
 
     response = admin.delete(
