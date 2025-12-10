@@ -52,3 +52,7 @@ class AccessRight(db.Model, ModelMixin):
         primaryjoin="AccessRight.diagram_id == Diagram.id",
         back_populates="access_rights",
     )
+    user = relationship(
+        "User",
+        primaryjoin="AccessRight.user_id == User.id",
+    )

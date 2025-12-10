@@ -282,20 +282,49 @@ def index():
 def users_list():
     current_user = auth.current_user()
 
-    # Get ALL users without any filters - client will handle filtering
-    users = User.query.order_by(User.id.desc()).all()
+    # Get role filter from query params - default to auditor+admin for performance
+    role_filter = request.args.get("role", "auditor,admin").strip()
 
-    # Build summary data for all users
-    users_data = [
-        build_user_summary(user, include_discussion_count=True) for user in users
-    ]
+    # Handle comma-separated roles (e.g., "auditor,admin")
+    if "," in role_filter:
+        role_parts = [r.strip() for r in role_filter.split(",")]
+        query = User.query
+        # Build OR filter for multiple roles
+        filters = [User.roles.like(f"%{role}%") for role in role_parts]
+        query = query.filter(db.or_(*filters))
+        users = query.order_by(User.id.desc()).all()
 
-    return jsonify(
-        {
-            "users": users_data,
-            "total_count": len(users),
-        }
-    )
+        users_data = [
+            build_user_summary(user, include_discussion_count=True) for user in users
+        ]
+
+        return jsonify(
+            {
+                "users": users_data,
+                "total_count": len(users),
+            }
+        )
+    elif role_filter == "all":
+        # Special case: get all users
+        users = User.query.order_by(User.id.desc()).all()
+        users_data = [
+            build_user_summary(user, include_discussion_count=True) for user in users
+        ]
+        return jsonify(
+            {
+                "users": users_data,
+                "total_count": len(users),
+            }
+        )
+    else:
+        # Single role filter
+        result = get_users_for_admin(role_filter=role_filter)
+        return jsonify(
+            {
+                "users": result["users_data"],
+                "total_count": result["total_count"],
+            }
+        )
 
 
 @bp.route("/users/search", methods=["GET"])
