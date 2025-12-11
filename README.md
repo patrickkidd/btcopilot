@@ -189,7 +189,7 @@ Source: [btcopilot/training/f1_metrics.py](btcopilot/training/f1_metrics.py)
 With ground truth dataset (Phase 8) and F1 metrics (Phase 9), automate prompt optimization: iterate extraction prompts against test cases, measure accuracy deltas, converge toward optimal performance. The infrastructure exists; automation is the remaining step.
 
 ### Phase 11: Inter-Rater Reliability Study
-*Planned*
+*Occuring now*
 
 Parallel expert coding (multiple auditors on same cases) to validate whether SARF model produces consistent results across practitioners. First formal IRR study for family systems constructs at scale.
 
