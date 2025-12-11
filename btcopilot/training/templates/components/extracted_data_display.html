@@ -299,17 +299,9 @@ Parameters:
                                         <strong class="is-size-7" x-text="person.name || 'Unnamed'"></strong>
                                         {% endif %}
                                         {% if editable_mode %}
-                                        <!-- Only allow deletion of non-system people -->
-                                        <template x-if="![1, 2].includes(person.id)">
-                                            <span class="delete-variable ml-auto" @click.stop="removePerson(index)" title="Remove person">
-                                                <i class="fas fa-times"></i>
-                                            </span>
-                                        </template>
-                                        <template x-if="[1, 2].includes(person.id)">
-                                            <span class="system-person-lock ml-auto" title="System person cannot be deleted">
-                                                <i class="fas fa-lock has-text-grey"></i>
-                                            </span>
-                                        </template>
+                                        <span class="delete-variable ml-auto" @click.stop="removePerson(index)" title="Remove delta">
+                                            <i class="fas fa-times"></i>
+                                        </span>
                                         {% endif %}
                                     </div>
                                     
@@ -1180,17 +1172,9 @@ Parameters:
                                         <strong class="is-size-7" x-text="person.name || 'Unnamed'"></strong>
                                         {% endif %}
                                         {% if editable_mode %}
-                                        <!-- Only allow deletion of non-system people -->
-                                        <template x-if="![1, 2].includes(person.id)">
-                                            <span class="delete-variable ml-auto" @click.stop="removePerson(index)" title="Remove person">
-                                                <i class="fas fa-times"></i>
-                                            </span>
-                                        </template>
-                                        <template x-if="[1, 2].includes(person.id)">
-                                            <span class="system-person-lock ml-auto" title="System person cannot be deleted">
-                                                <i class="fas fa-lock has-text-grey"></i>
-                                            </span>
-                                        </template>
+                                        <span class="delete-variable ml-auto" @click.stop="removePerson(index)" title="Remove delta">
+                                            <i class="fas fa-times"></i>
+                                        </span>
                                         {% endif %}
                                     </div>
                                     
