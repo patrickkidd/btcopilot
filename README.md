@@ -40,9 +40,10 @@ Infrastructure for training LLMs to extract structured clinical data from natura
 
 ## R&D Roadmap
 
-This describes the major issues confronted and methods used to overcome them.
-These are big issues. There is a lot of learning going on. I am only able to see
-the next issue before digging into it and learning what comes after that.
+This describes both the learning process and technical strategy to produce a
+mobile app that collects clinical data through a chatbot, then visualizes it for
+use by a professional. This is a real R&D effort, you have to finish one peice
+before you can experiment to figure out what the next peice is.
 
 Each phase enables the next. The end goal is automated prompt optimization against ground truth—then applying those evaluation methods to human clinician training.
 
