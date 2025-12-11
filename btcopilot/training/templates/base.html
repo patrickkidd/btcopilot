@@ -504,13 +504,13 @@
         .button.is-ghost {
             background: none;
             border: none;
-            color: #666;
+            color: var(--color-fg-muted);
             padding: 0.25rem;
         }
-        
+
         .button.is-ghost:hover {
-            background-color: #f5f5f5;
-            color: #333;
+            background-color: var(--color-btn-hover-bg);
+            color: var(--color-fg-default);
         }
 
         
@@ -554,6 +554,12 @@
         .navbar.is-primary .navbar-link:hover {
             background-color: rgba(255, 255, 255, 0.1);
             color: white;
+        }
+
+        .navbar.is-primary a.navbar-item.is-active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-weight: 600;
         }
 
         .navbar.is-primary .navbar-burger {
@@ -995,36 +1001,43 @@
         <div id="navbarMenu" class="navbar-menu">
             <div class="navbar-start">
                 {% if current_user and current_user.has_role(btcopilot.ROLE_AUDITOR) %}
-                <a class="navbar-item" href="{{ url_for('training.audit.index') }}">
+                <a class="navbar-item {% if request.endpoint == 'training.account' %}is-active{% endif %}" href="{{ url_for('training.account') }}">
                     <span class="icon">
-                        <i class="fas fa-user-check"></i>
+                        <i class="fas fa-user-circle"></i>
                     </span>
-                    <span>Audit</span>
+                    <span>Account</span>
+                </a>
+                <a class="navbar-item {% if request.endpoint and request.endpoint.startswith('training.audit') %}is-active{% endif %}" href="{{ url_for('training.audit.index') }}">
+                    <span class="icon">
+                        <i class="fas fa-tags"></i>
+                    </span>
+                    <span>Coding</span>
                 </a>
                 {% endif %}
                 {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) %}
-                <a class="navbar-item" href="{{ url_for('training.admin.index') }}">
-                    <span class="icon">
-                        <i class="fas fa-shield-alt"></i>
-                    </span>
-                    <span>Admin</span>
-                </a>
-                <a class="navbar-item" href="{{ url_for('training.synthetic.index') }}">
+                <a class="navbar-item {% if request.endpoint and request.endpoint.startswith('training.synthetic') %}is-active{% endif %}" href="{{ url_for('training.synthetic.index') }}">
                     <span class="icon">
                         <i class="fas fa-robot"></i>
                     </span>
                     <span>Synthetic</span>
                 </a>
-                <a class="navbar-item" href="{{ url_for('training.prompts.index') }}">
+                <a class="navbar-item {% if request.endpoint and request.endpoint.startswith('training.prompts') %}is-active{% endif %}" href="{{ url_for('training.prompts.index') }}">
                     <span class="icon">
                         <i class="fas fa-flask"></i>
                     </span>
                     <span>Lab</span>
                 </a>
+                <span class="navbar-item" style="border-left: 1px solid rgba(255,255,255,0.3); padding-left: 0; margin-left: 0.5rem;"></span>
+                <a class="navbar-item {% if request.endpoint and request.endpoint.startswith('training.admin') %}is-active{% endif %}" href="{{ url_for('training.admin.index') }}">
+                    <span class="icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </span>
+                    <span>Admin</span>
+                </a>
                 {% endif %}
             </div>
         </div>
-        
+
         <div class="navbar-end">
             {% if current_user %}
             <div class="navbar-item">
@@ -1056,7 +1069,7 @@
     
     <!-- Breadcrumb Navigation -->
     {% if breadcrumbs %}
-    <nav class="breadcrumb has-arrow-separator" aria-label="breadcrumbs" style="padding: 0.75rem 1.5rem; background-color: #fafafa; border-bottom: 1px solid #dbdbdb;">
+    <nav class="breadcrumb has-arrow-separator" aria-label="breadcrumbs" style="padding: 0.75rem 1.5rem; background-color: var(--color-canvas-subtle); border-bottom: 1px solid var(--color-border-default);">
         <div class="container">
             <ul>
                 {% for breadcrumb in breadcrumbs %}

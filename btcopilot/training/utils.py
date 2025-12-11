@@ -10,11 +10,13 @@ def get_breadcrumbs(current_page=None):
     breadcrumbs = []
 
     if current_page == "audit":
-        breadcrumbs.append({"title": "Audit", "url": None})
+        breadcrumbs.append({"title": "Coding", "url": None})
+    elif current_page == "account":
+        breadcrumbs.append({"title": "Account", "url": None})
     elif current_page == "admin":
         breadcrumbs.append({"title": "Admin", "url": None})
     elif current_page == "thread":
-        breadcrumbs.append({"title": "Audit", "url": url_for("training.audit.index")})
+        breadcrumbs.append({"title": "Coding", "url": url_for("training.audit.index")})
     elif current_page == "prompts":
         breadcrumbs.append({"title": "Prompt Lab", "url": None})
     elif current_page == "synthetic":

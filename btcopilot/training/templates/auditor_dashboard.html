@@ -6,14 +6,14 @@
     transition: background-color 0.2s ease;
 }
 .user-card.drag-over, .box.drag-over {
-    background-color: #e6fffa !important;
-    border: 2px dashed #00d1b2 !important;
+    background-color: rgba(0, 209, 178, 0.15) !important;
+    border: 2px dashed var(--color-success-emphasis) !important;
 }
 .user-card:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 .license-card {
-    border: 1px solid #dbdbdb;
+    border: 1px solid var(--color-border-default);
     border-radius: 6px;
     padding: 1rem;
     margin-bottom: 1rem;
@@ -31,7 +31,7 @@
     margin-top: 0.25rem;
 }
 .box.diagram-card {
-    border: 1px solid #dbdbdb;
+    border: 1px solid var(--color-border-default);
     border-radius: 6px;
 }
 </style>
@@ -39,15 +39,20 @@
 
 {% block content %}
 <div>
-    <h1 class="title">Domain-Expert SARF Dashboard</h1>
+    <h1 class="title">SARF Coding</h1>
     <p class="subtitle">Manage your diagrams, discussions, and SARF codes</p>
 
     <!-- F1 Ground Truth Metrics Section -->
     {% include "partials/f1_metrics_card.html" with context %}
 
-    <!-- Main Content: User Detail View -->
-    <div class="content">
-        {% include "partials/user_detail_content.html" with context %}
+    <!-- Two-column diagram layout -->
+    <div class="columns">
+        <div class="column is-6">
+            {% include "partials/user_diagrams_owned.html" with context %}
+        </div>
+        <div class="column is-6">
+            {% include "partials/user_diagrams_shared.html" with context %}
+        </div>
     </div>
 
 </div>

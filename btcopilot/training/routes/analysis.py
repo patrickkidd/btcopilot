@@ -29,7 +29,6 @@ def _calculate_discussion_f1(statement_breakdowns):
     if not statement_breakdowns:
         return None
 
-    metrics = statement_breakdowns[0]["breakdown"].f1_metrics
     result = {
         "aggregate_micro_f1": sum(
             sb["breakdown"].f1_metrics.aggregate_micro_f1 for sb in statement_breakdowns
@@ -65,6 +64,59 @@ def _calculate_discussion_f1(statement_breakdowns):
             for sb in statement_breakdowns
         )
         / len(statement_breakdowns),
+        "symptom_hierarchical": {
+            "detection_f1": sum(
+                sb["breakdown"].f1_metrics.symptom_hierarchical.detection_f1
+                for sb in statement_breakdowns
+            )
+            / len(statement_breakdowns),
+            "value_match_f1": sum(
+                sb["breakdown"].f1_metrics.symptom_hierarchical.value_match_f1
+                for sb in statement_breakdowns
+            )
+            / len(statement_breakdowns),
+        },
+        "anxiety_hierarchical": {
+            "detection_f1": sum(
+                sb["breakdown"].f1_metrics.anxiety_hierarchical.detection_f1
+                for sb in statement_breakdowns
+            )
+            / len(statement_breakdowns),
+            "value_match_f1": sum(
+                sb["breakdown"].f1_metrics.anxiety_hierarchical.value_match_f1
+                for sb in statement_breakdowns
+            )
+            / len(statement_breakdowns),
+        },
+        "relationship_hierarchical": {
+            "detection_f1": sum(
+                sb["breakdown"].f1_metrics.relationship_hierarchical.detection_f1
+                for sb in statement_breakdowns
+            )
+            / len(statement_breakdowns),
+            "value_match_f1": sum(
+                sb["breakdown"].f1_metrics.relationship_hierarchical.value_match_f1
+                for sb in statement_breakdowns
+            )
+            / len(statement_breakdowns),
+            "people_match_f1": sum(
+                sb["breakdown"].f1_metrics.relationship_hierarchical.people_match_f1
+                for sb in statement_breakdowns
+            )
+            / len(statement_breakdowns),
+        },
+        "functioning_hierarchical": {
+            "detection_f1": sum(
+                sb["breakdown"].f1_metrics.functioning_hierarchical.detection_f1
+                for sb in statement_breakdowns
+            )
+            / len(statement_breakdowns),
+            "value_match_f1": sum(
+                sb["breakdown"].f1_metrics.functioning_hierarchical.value_match_f1
+                for sb in statement_breakdowns
+            )
+            / len(statement_breakdowns),
+        },
     }
     return result
 
@@ -117,8 +169,8 @@ def _preprocess_breakdown_for_display(breakdown):
         ]
     }
     """
-    ai_people = getattr(breakdown, 'ai_people', [])
-    gt_people = getattr(breakdown, 'gt_people', [])
+    ai_people = getattr(breakdown, "ai_people", [])
+    gt_people = getattr(breakdown, "gt_people", [])
     person_blocks = {}
 
     # First, add all people from people_matches
@@ -158,7 +210,9 @@ def _preprocess_breakdown_for_display(breakdown):
 
         if person_id not in person_blocks:
             # Try GT people first, fall back to cumulative (AI) people
-            person_name = _get_person_name_from_people(person_id, [gt_people, ai_people])
+            person_name = _get_person_name_from_people(
+                person_id, [gt_people, ai_people]
+            )
 
             person_blocks[person_id] = {
                 "person_id": person_id,

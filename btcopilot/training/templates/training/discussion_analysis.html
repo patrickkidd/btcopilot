@@ -24,11 +24,11 @@
             </div>
         </div>
 
-        <div class="box" style="background: rgba(255,255,255,0.03); padding: 0;">
-            <div style="cursor: pointer; padding: 0.75rem 1rem; background: #3273dc; color: white; border-radius: 4px 4px 0 0;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';">
+        <div class="box" style="padding: 0;">
+            <div class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';">
                 <p><span class="icon"><i class="fas fa-question-circle"></i></span> How to Read This Page</p>
             </div>
-            <div style="display: none; padding: 1.25rem;">
+            <div class="help-content" style="display: none;">
                 <div class="content">
                     <h3 class="title is-6">What This Page Shows</h3>
                     <p>This page compares AI-extracted clinical data against expert-coded ground truth for each statement in the discussion. Each row shows:</p>
@@ -102,6 +102,53 @@
                     <div class="notification is-warning is-light has-text-centered">
                         <p class="heading">SARF Avg</p>
                         <p class="title is-4">{{ "%.3f"|format((discussion_f1.symptom_macro_f1 + discussion_f1.anxiety_macro_f1 + discussion_f1.relationship_macro_f1 + discussion_f1.functioning_macro_f1) / 4) }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content mt-4">
+                <h4 class="title is-5">SARF Variable Coding (Macro-F1)</h4>
+                <div class="columns is-multiline">
+                    <div class="column is-3">
+                        <div class="notification is-warning is-light has-text-centered">
+                            <p class="heading">Symptom</p>
+                            <p class="title is-4">{{ "%.3f"|format(discussion_f1.symptom_macro_f1) }}</p>
+                            <div class="content is-small mt-2">
+                                <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(discussion_f1.symptom_hierarchical.detection_f1) }}</p>
+                                <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(discussion_f1.symptom_hierarchical.value_match_f1) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <div class="notification is-warning is-light has-text-centered">
+                            <p class="heading">Anxiety</p>
+                            <p class="title is-4">{{ "%.3f"|format(discussion_f1.anxiety_macro_f1) }}</p>
+                            <div class="content is-small mt-2">
+                                <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(discussion_f1.anxiety_hierarchical.detection_f1) }}</p>
+                                <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(discussion_f1.anxiety_hierarchical.value_match_f1) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <div class="notification is-warning is-light has-text-centered">
+                            <p class="heading">Relationship</p>
+                            <p class="title is-4">{{ "%.3f"|format(discussion_f1.relationship_macro_f1) }}</p>
+                            <div class="content is-small mt-2">
+                                <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(discussion_f1.relationship_hierarchical.detection_f1) }}</p>
+                                <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(discussion_f1.relationship_hierarchical.value_match_f1) }}</p>
+                                <p class="mb-1"><strong>People Match:</strong> {{ "%.3f"|format(discussion_f1.relationship_hierarchical.people_match_f1) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <div class="notification is-warning is-light has-text-centered">
+                            <p class="heading">Functioning</p>
+                            <p class="title is-4">{{ "%.3f"|format(discussion_f1.functioning_macro_f1) }}</p>
+                            <div class="content is-small mt-2">
+                                <p class="mb-1"><strong>Detection:</strong> {{ "%.3f"|format(discussion_f1.functioning_hierarchical.detection_f1) }}</p>
+                                <p class="mb-1"><strong>Value Match:</strong> {{ "%.3f"|format(discussion_f1.functioning_hierarchical.value_match_f1) }}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -265,6 +312,28 @@ document.addEventListener('DOMContentLoaded', function() {
 {% include 'partials/speaker_bubble_styles.html' %}
 
 <style>
+/* Collapsible help header */
+.help-header {
+    cursor: pointer;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(to bottom, hsl(217, 71%, 53%), hsl(217, 71%, 48%));
+    color: white;
+    border-radius: 4px 4px 0 0;
+}
+
+html.theme-dark .help-header {
+    background: linear-gradient(to bottom, hsl(217, 30%, 35%), hsl(217, 30%, 30%));
+    color: white;
+}
+
+.help-header:hover {
+    filter: brightness(0.95);
+}
+
+.help-content {
+    padding: 1.25rem;
+}
+
 /* Fix details/summary arrow icons */
 details summary {
     list-style: none;

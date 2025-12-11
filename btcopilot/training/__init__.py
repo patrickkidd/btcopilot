@@ -12,9 +12,20 @@ def format_date_us(value):
     return value
 
 
+def sort_by_modified(diagrams):
+    """Sort diagrams by last modified date (updated_at or created_at), most recent first."""
+    from datetime import datetime
+
+    def get_sort_key(d):
+        return d.updated_at or d.created_at or datetime.min
+
+    return sorted(diagrams, key=get_sort_key, reverse=True)
+
+
 def init_app(app):
     app.register_blueprint(routes.bp)
     app.jinja_env.filters["format_date_us"] = format_date_us
+    app.jinja_env.filters["sort_by_modified"] = sort_by_modified
 
 
 def init_celery(celery):
