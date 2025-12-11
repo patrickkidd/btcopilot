@@ -1,37 +1,221 @@
-# BT Copilot: Novel Clinical Model and Machine Learning Infrastructure for Clinical Psychology
+# BT Copilot
 
-- AI-driven behavioral health clinical assessment.
-- Research and tools to evaluate the impact of the family system on individual clinical symptoms.
-- Novel SARF clinical model for the first behavioral health charting and evaluation system.
-- Machine Learning infra and workflow to capture domain-expert training data.
-- The AI engine for the [Family Diagram](https://familydiagram.com)
+Infrastructure for training LLMs to extract structured clinical data from natural conversation. Implements the SARF novel clinical data model (Symptom, Anxiety, Relationship, Functioning) for family systems clinical assessment. Powers the [Family Diagram](https://familydiagram.com) app.
 
-**📋 [Decision Log](decisions/log.md)** - Major architectural decisions and innovations (PDP deltas, IRR study, synthetic data generation, hierarchical F1 metrics)
+[SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing)
 
-**📖 [Development Journal](#development-journal)** - Technical implementation timeline
+**📋 [Decision Log](decisions/log.md)** | **📚 [Domain Context](CONTEXT.md)** | **📖 [Dev Journal](#development-journal)**
 
-**📚 [Domain Context](CONTEXT.md)** - Bowen theory constructs, SARF data model, auditing workflow
 
-## Provides
 
-__Web-based SARF ML Training System__
+---
 
-A web app where domain experts in Bowen theory correct clinical data extracted
-from clinical audio transcripts and patient chat threads. The audit feedback
-becomes ground-truth data for training an AI model to do this autonomously. Data
-is extracted using the SARF data model; Symptom, Anxiety, Relationship,
-Functioning. They are four qualitative variables that shift over a clinical
-timeline. The model extracts people, events, and variable shifts from
-conversations like clinical interviews and chat threads. This will provide the
-intelligence for a personal/mobile self-help app.
+## Table of Contents
 
-__Backend server for Family Diagram app__
+- [Discovery and Development Roadmap](#discovery-and-development-roadmap)
+  - [Phase 1: RAG System](#phase-1-rag-system-for-questions-on-the-clinical-literature-)
+  - [Phase 2: SARF Data Model & Schema](#phase-2-sarf-data-model--schema-)
+  - [Phase 3: Delta-Based Extraction (PDP)](#phase-3-delta-based-extraction-pdp-)
+  - [Phase 4: Automated Audio Transcription](#phase-4-automated-audio-transcription-)
+  - [Phase 5: Formalized Minimum Data](#phase-5-formalized-minimum-data-for-family-evaluation-)
+  - [Phase 6: Synthetic Personas](#phase-6-simulated-ai-personas--synthetic-data-generation-)
+  - [Phase 7: Conversational Flow Evaluation](#phase-7-conversational-flow-evaluation-)
+  - [Phase 8: Ground Truth Collection](#phase-8-ground-truth-collection-via-expert-auditing-)
+  - [Phase 9: Hierarchical F1 Metrics](#phase-9-hierarchical-f1-metrics-)
+  - [Phase 10: Prompt Induction](#phase-10-prompt-induction)
+  - [Phase 11: Inter-Rater Reliability Study](#phase-11-inter-rater-reliability-study)
+  - [Phase 13: ???]
+- [Future: Human Clinician Training](#phase-N-human-clinician-training-application)
+- [Clinical Research Compliance](#clinical-research-compliance)
+- [Components](#components)
+  - [Training System (Web app)](#bt-copilot-training-system-web-app)
+  - [Personal/Mobile App Server](#personalmobile-app-server)
+  - [Pro/Desktop App Server](#prodesktop-app-family-diagram-server)
+- [Architecture](#architecture)
+- [Practical Overview](#practical-overview)
+- [Literary Sources](#literary-sources)
+- [Development Journal](#development-journal)
 
-An AI assistant for the Family Diagram app. BT
-Copilot lets you ask questions about the current case file based on the academic
-and scientific literature for Bowen theory.
+---
 
-## BT Copilot Training System (Web app)
+## R&D Roadmap
+
+This describes the major issues confronted and methods used to overcome them.
+These are big issues. There is a lot of learning going on. I am only able to see
+the next issue before digging into it and learning what comes after that.
+
+Each phase enables the next. The end goal is automated prompt optimization against ground truth—then applying those evaluation methods to human clinician training.
+
+### Phase 1: RAG for Questions on the Clinical Literature ✓
+*Production*
+
+ChromaDB vector store indexes the clinical literature. LLM queries return relevant academic passages that constrain responses to established theory—prevents the model from inventing clinical concepts.
+
+- Clinical inferences: Can ask questions about the current case in the [Pro App](https://github.com/patrickkidd/familydiagram)
+- NLTK-based semantic chunking with sentence boundary detection
+- Metadata tracking (author, title, source file) for citation
+
+Source: [btcopilot/pro/copilot/](btcopilot/pro/copilot/)
+
+### Phase 2: SARF Data Model & Schema ✓
+*Production*
+
+The extraction target: a clinical coding scheme with Pydantic-validated JSON output.
+
+This one took a lot of thinking for a clean, normalized data model. It centers
+around People and Events. People simply have parents, Events have a number of
+fields. How the `Events.relationship` field breaks down is where all the novelty
+in SARF is.
+
+| Variable | What it captures |
+|----------|------------------|
+| **Symptom** | Physical/mental health changes, goal impediments |
+| **Anxiety** | Automatic responses to real or imagined threat |
+| **Relationship** | Emotive actions between people (distance, conflict, overfunctioning, projection, triangles) |
+| **Functioning** | Ability to balance emotion/intellect toward goals |
+
+Events are timestamped incidents with associated variable shifts and involved persons. Enum-constrained relationship types ensure consistent classification.
+
+Source: [btcopilot/schema.py](btcopilot/schema.py)
+
+### Phase 3: Delta-Based Extraction (PDP) ✓
+*Production*
+
+Solves a core LLM extraction problem: if the model regenerates the full dataset each turn, hallucinations corrupt previously-correct data. Instead, the model outputs only deltas—additions, updates, deletions—validated and applied incrementally. The smaller, isolated changes prevent the larger data set from breaking.
+
+- Provides event-driven architecture for clinical chart.
+- Allows for both domain-expert coding of ground truth and real-time updates to chart while chatting with AI expert.
+- User accept/reject actions generate labeled training data automatically
+- Confidence scores (0.0-0.9) track extraction certainty
+
+Source: [btcopilot/pdp.py](btcopilot/pdp.py), [btcopilot/personal/prompts.py](btcopilot/personal/prompts.py)
+
+![SARF Editor](doc/images/4--Discussion-SARF-Editor.png)
+
+
+
+### Phase 4: Automated Audio Transcription ✓
+*Production*
+
+The training app accepts audio recordings of real clinical interviews. AssemblyAI processes recordings with speaker diarization—automatically detecting and separating different speakers in the conversation.
+
+- Upload audio files (MP3, WAV, M4A) directly to discussion page
+- Speaker detection identifies clinician vs. client(s) automatically
+- Auditors map detected speakers to people in the case file
+- Multiple recordings contribute to a single case timeline
+- HIPAA-compliant processing via BAA with AssemblyAI
+
+Once transcribed, each statement runs through AI-based SARF extraction, generating deltas for expert review.
+
+Source: [btcopilot/training/routes/discussions.py](btcopilot/training/routes/discussions.py)
+
+### Phase 5: Formalized Minimum Data for Family Evaluation ✓
+*Production*
+
+Comprehensive literature review produced a formalized definition of minimum necessary data for a family systems clinical evaluation. This is operationalized as a conversation protocol with explicit data collection checklist.
+
+**Key insight**: A rules-based interview (fixed question sequence) cannot collect all necessary data. The clinician must actually converse because neither party knows which questions to ask until the story unfolds. The client's narrative contains the data—the clinician's job is to stay in the story while steering toward diagram-relevant facts.
+
+Required data checklist includes:
+- Presenting problem with timeline, involved parties, symptom onset
+- Three-generation family structure (parents, siblings, grandparents, aunts/uncles)
+- Nodal events (deaths, births, marriages, divorces, moves, illnesses)
+- Connections between family events and symptom timing
+
+Red flags for incomplete interviews: pivoting to family data before understanding presenting problem, collecting one side of family but not other, giving advice instead of gathering facts.
+
+Source: [btcopilot/personal/prompts.py](btcopilot/personal/prompts.py)
+
+### Phase 6: Simulated AI Personas & Synthetic Data Generation ✓
+*Complete*
+
+LLM-generated user personas with behavioral traits (evasive, tangential, defensive, terse) simulate clinical conversations. Each persona has a detailed three-generation family history and presenting problem.
+
+Five personas implemented with:
+- Full family backgrounds (parents, siblings, grandparents, aunts/uncles, nodal events)
+- Data point coverage tracking per category
+- Trait-driven response variation (confused_dates, emotional, oversharing)
+
+This enables systematic testing of extraction prompts without real clinical data.
+
+Source: [btcopilot/tests/personal/synthetic.py](btcopilot/tests/personal/synthetic.py)
+
+![Synthetic Data Generator](doc/images/6--Synthetic-Data.jpg)
+![Synthetic Discussion](doc/images/7--Synthetic-Discussion.jpg)
+     
+
+### Phase 7: Conversational Flow Evaluation ✓
+*Complete*
+
+Automated quality scoring measures clinical interview effectiveness:
+
+- **Robotic pattern detection**: therapist clichés ("It sounds like...", "How does that make you feel?"), repetitive sentence starters, verbatim echoing
+- **Data coverage**: which required categories (Phase 5 checklist) did the AI successfully elicit?
+- **Question density**: appropriate probing vs. interrogation
+
+These metrics apply equally to AI prompts and human trainee clinicians—same rubric, objective comparison.
+
+Source: QualityEvaluator in [btcopilot/tests/personal/synthetic.py](btcopilot/tests/personal/synthetic.py)
+
+### Phase 8: Ground Truth Collection via Expert Auditing ✓
+*In Progress*
+
+Web UI where domain expert clinicians review AI extractions from synthetic conversations (Phase 6). Corrections stored with provenance (who approved, when, original vs. edited). Approved feedback exports to test suites.
+
+Addresses the core bottleneck in clinical ML: domain expertise is scarce, so the training workflow must maximize signal from each expert interaction.
+
+Source: [btcopilot/training/](btcopilot/training/)
+
+### Phase 9: Hierarchical F1 Metrics ✓
+*Complete*
+
+Single-number accuracy metrics hide extraction failures. Multi-level evaluation:
+
+1. **Entity detection F1**: Was a person/event/relationship detected at all?
+2. **Value match F1**: For detected entities, were field values correct?
+3. **Relationship F1**: For relationship events, were the involved parties correct?
+
+Matching uses fuzzy name similarity (>0.8 threshold via rapidfuzz), date proximity (±7 days), and ID resolution across the positive/negative ID boundary. Depends on ground truth from Phase 8.
+
+Source: [btcopilot/training/f1_metrics.py](btcopilot/training/f1_metrics.py)
+
+![F1 Dashboard](doc/images/5--F1-Dashboard.png)
+
+
+
+### Phase 10: Prompt Induction
+*Planned*
+
+With ground truth dataset (Phase 8) and F1 metrics (Phase 9), automate prompt optimization: iterate extraction prompts against test cases, measure accuracy deltas, converge toward optimal performance. The infrastructure exists; automation is the remaining step.
+
+### Phase 11: Inter-Rater Reliability Study
+*Planned*
+
+Parallel expert coding (multiple auditors on same cases) to validate whether SARF model produces consistent results across practitioners. First formal IRR study for family systems constructs at scale.
+
+### Phase 12: ???
+
+## Future: Human Clinician Training Application
+*Future*
+
+Apply the same evaluation framework (Phase 7 conversational flow metrics, Phase 9 extraction accuracy) to human clinician training. Students practice with synthetic personas, receive objective scores on interview quality and data collection completeness. Direct comparison to AI baseline.
+
+---
+
+## Clinical Research Compliance
+
+This project involves clinical research with confidential patient data. All data processing is HIPAA-compliant:
+
+- **Business Associate Agreements (BAA)** in place with OpenAI and AssemblyAI for encrypted patient data processing
+- **Informed consent** required for all research participants: [Informed Consent Template](doc/Informed%20Consent%20Recording%20Sessions%20for%20Research%20TEMPLATE.docx)
+
+Professionals interested in participating in the research should contact the project maintainer.
+
+## Components
+
+btcopilot consists of the machine learning / training system, the personal / mobile app, and the pro app.
+
+### BT Copilot Training System (Web app)
 
 The SARF model scans a text conversation between any number of people and
 compiles a database of people, and events containing shifts in four variables -
@@ -72,7 +256,7 @@ This body of corrections becomes "ground truth" for coding the SARF model in Bow
 
 Source Code: [btcopilot/training](btcopilot/training)
 
-## Personal/Mobile App Server
+### Personal/Mobile App Server
 
 The personal mobile app contains the core logic and data extraction for the SARF
 training system. This app is currently in development here:
@@ -80,7 +264,7 @@ training system. This app is currently in development here:
 
 Source Code: [btcopilot/personal](btcopilot/personal)
 
-## Pro/Desktop App (Family Diagram) Server
+### Pro/Desktop App (Family Diagram) Server
 
 In a nuthsell, BT Copilot evaluates a family diagram based on the academic
 literature. It is currenly launched inthe [Family Diagram](https://familydiagram.com) app, which will become the "Pro" version while the personal/mobile version is coming soon.
