@@ -126,13 +126,21 @@ window.discussionConfig = {
     display: contents !important;
 }
 
-/* Admin-only statement ID styling - very subtle */
+/* Admin-only statement ID styling - matches PDP delta ID styling */
 .admin-statement-id {
-    opacity: 0.5;
-    font-size: 0.65em;
-    font-weight: 300;
+    background: #ddd;
+    color: #444444;
+    padding: 1px 4px;
+    font-size: 0.65rem;
+    border-radius: 2px;
+    font-family: monospace;
+    opacity: 0.7;
     margin-left: 4px;
-    color: #999 !important;
+}
+
+[data-theme="dark"] .admin-statement-id {
+    background: #282625;
+    color: #e0e0e0;
 }
 
 /* Override any Bulma div defaults that might cause stacking */
@@ -304,9 +312,10 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     <span>Pending changes requiring refresh</span>
 </div>
 
-<div style="margin-bottom: 1rem;">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
-        <div style="display: flex; align-items: center; gap: 1rem;">
+<div class="is-flex is-justify-content-space-between is-align-items-stretch is-flex-wrap-wrap mb-4" style="gap: 0.75rem;">
+    <!-- Left side: Date, tags, and action buttons -->
+    <div class="is-flex is-flex-direction-column is-justify-content-space-between" style="gap: 0.5rem;">
+        <div class="is-flex is-align-items-center is-flex-wrap-wrap" style="gap: 0.75rem;">
             <div class="field has-addons mb-0">
                 <p class="control">
                     <a class="button is-small is-static">
@@ -332,19 +341,6 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                 {% set ai_messages = statements|selectattr('statement.speaker.type', 'equalto', 'expert')|list %}
                 <span class="tag is-success">{{ ai_messages|length }} AI responses</span>
             </div>
-        </div>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-            {% if current_user.has_role(btcopilot.ROLE_ADMIN) and auditor_options %}
-            <div class="select is-small">
-                <select id="auditor-filter" onchange="handleAuditorChange(this.value)">
-                    {% for option in auditor_options %}
-                    <option value="{{ option.id }}" {% if selected_auditor == option.id %}selected{% endif %}>
-                        {{ option.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            {% endif %}
             {% if has_approved_gt %}
             <a href="{{ url_for('training.analysis.discussion_analysis', discussion_id=discussion.id) }}"
                class="button is-small is-outlined is-info">
@@ -352,9 +348,19 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                 <span>View Analysis</span>
             </a>
             {% endif %}
-            <div class="dropdown is-hoverable is-right">
+        </div>
+        <div class="buttons has-addons mb-0">
+            <button id="expand-all-btn" class="button is-small is-outlined" onclick="expandAllMessages()">
+                <span class="icon"><i class="fas fa-expand"></i></span>
+                <span>Expand All</span>
+            </button>
+            <button id="collapse-all-btn" class="button is-small is-outlined is-hidden" onclick="collapseAllMessages()">
+                <span class="icon"><i class="fas fa-compress"></i></span>
+                <span>Collapse All</span>
+            </button>
+            <div class="dropdown is-hoverable">
                 <div class="dropdown-trigger">
-                    <button class="button is-small is-outlined is-primary" aria-haspopup="true" aria-controls="export-dropdown">
+                    <button class="button is-small is-outlined is-info" aria-haspopup="true" aria-controls="export-dropdown">
                         <span class="icon"><i class="fas fa-download"></i></span>
                         <span>Export</span>
                         <span class="icon is-small"><i class="fas fa-angle-down"></i></span>
@@ -371,51 +377,40 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                         <a href="{{ url_for('training.discussions.export', discussion_id=discussion.id, mode='full') }}"
                            class="dropdown-item"
                            title="Export with AI extractions and user corrections">
-                        <span class="icon"><i class="fas fa-database"></i></span>
-                        <span>With Extractions</span>
+                            <span class="icon"><i class="fas fa-database"></i></span>
+                            <span>With Extractions</span>
                         </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-        <div class="field is-grouped mb-0">
-            <p class="control" id="expand-all-control">
-                <button class="button is-small is-outlined" onclick="expandAllMessages()">
-                    <span class="icon"><i class="fas fa-expand"></i></span>
-                    <span>Expand All</span>
-                </button>
-            </p>
-            <p class="control" id="collapse-all-control" style="display: none;">
-                <button class="button is-small is-outlined" onclick="collapseAllMessages()">
-                    <span class="icon"><i class="fas fa-compress"></i></span>
-                    <span>Collapse All</span>
-                </button>
-            </p>
-            <p class="control">
-                <button class="button is-small is-outlined is-danger" onclick="clearExtractedData({{ discussion.id }})">
-                    <span class="icon"><i class="fas fa-trash-alt"></i></span>
-                    <span>Clear SARF Codes</span>
-                </button>
-            </p>
-            <p class="control">
-                <button class="button is-small is-outlined is-info" onclick="jumpToLastCode()">
-                    <span class="icon"><i class="fas fa-arrow-down"></i></span>
-                    <span>Jump to Last Code</span>
-                </button>
-            </p>
+    <!-- Right side: Auditor controls -->
+    {% if current_user.has_role(btcopilot.ROLE_ADMIN) and auditor_options %}
+    <div class="auditor-controls box p-3 mb-0">
+        <div class="select is-fullwidth mb-2">
+            <select id="auditor-filter" class="is-small" onchange="handleAuditorChange(this.value)">
+                {% for option in auditor_options %}
+                <option value="{{ option.id }}" {% if selected_auditor == option.id %}selected{% endif %}>
+                    {{ option.name }}
+                </option>
+                {% endfor %}
+            </select>
         </div>
-        <div>
-            {% if current_user.has_role(btcopilot.ROLE_ADMIN) and auditor_options and selected_auditor and selected_auditor != "AI" %}
-            <button class="button is-small is-success" onclick="bulkApproveDiscussion()">
+        <div class="is-flex is-justify-content-space-between" style="gap: 0.5rem;">
+            <button class="button is-small is-outlined is-danger" onclick="clearExtractedData({{ discussion.id }})" style="flex: 1;">
+                <span class="icon"><i class="fas fa-trash-alt"></i></span>
+                <span>Clear</span>
+            </button>
+            {% if selected_auditor and selected_auditor != "AI" %}
+            <button class="button is-small is-success" onclick="bulkApproveDiscussion()" style="flex: 1;">
                 <span class="icon"><i class="fas fa-check-double"></i></span>
-                <span>Approve All {{ selected_auditor }} Codes</span>
+                <span>Approve</span>
             </button>
             {% endif %}
         </div>
     </div>
+    {% endif %}
 </div>
 
 <!-- {% if discussion.summary %}
@@ -695,7 +690,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                             <small class="has-text-grey is-size-7">
                                 {{ item.statement.created_at.strftime('%H:%M') if item.statement.created_at else '--:--' }}
                                 {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) %}
-                                <span class="admin-statement-id" title="Statement ID">·{{ item.statement.id }}</span>
+                                <span class="admin-statement-id" title="Statement ID">{{ item.statement.id }}</span>
                                 {% endif %}
                             </small>
                         </div>
@@ -787,7 +782,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                                     <small class="has-text-grey is-size-7">
                                         {{ item.statement.created_at.strftime('%H:%M') if item.statement.created_at else '--:--' }}
                                         {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) %}
-                                        <span class="admin-statement-id" title="Statement ID">·{{ item.statement.id }}</span>
+                                        <span class="admin-statement-id" title="Statement ID">{{ item.statement.id }}</span>
                                         {% endif %}
                                     </small>
                                 </div>
@@ -828,7 +823,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                                     <small class="has-text-grey is-size-7">
                                         {{ item.statement.created_at.strftime('%H:%M') if item.statement.created_at else '--:--' }}
                                         {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) %}
-                                        <span class="admin-statement-id" title="Statement ID">·{{ item.statement.id }}</span>
+                                        <span class="admin-statement-id" title="Statement ID">{{ item.statement.id }}</span>
                                         {% endif %}
                                     </small>
                                 </div>

@@ -248,7 +248,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             if (!dropdown || !dropdown.classList.contains('person-edit-dropdown')) {
                 dropdown = document.createElement('div');
                 dropdown.className = 'person-edit-dropdown dropdown-menu';
-                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: auto; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
+                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: scroll; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
                 button.parentNode.appendChild(dropdown);
 
                 dropdown.innerHTML = '';
@@ -414,7 +414,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             if (!dropdown || !dropdown.classList.contains('event-edit-dropdown')) {
                 dropdown = document.createElement('div');
                 dropdown.className = 'event-edit-dropdown dropdown-menu';
-                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: auto; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
+                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: scroll; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
                 button.parentNode.appendChild(dropdown);
 
                 dropdown.innerHTML = '';
@@ -1133,7 +1133,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             if (!dropdown || !dropdown.classList.contains('event-person-dropdown')) {
                 dropdown = document.createElement('div');
                 dropdown.className = 'event-person-dropdown';
-                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: auto; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
+                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: scroll; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
                 button.parentNode.appendChild(dropdown);
             }
 
@@ -1239,7 +1239,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             if (!dropdown || !dropdown.classList.contains('event-spouse-dropdown')) {
                 dropdown = document.createElement('div');
                 dropdown.className = 'event-spouse-dropdown';
-                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: auto; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
+                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: scroll; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
                 button.parentNode.appendChild(dropdown);
             }
 
@@ -1345,7 +1345,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             if (!dropdown || !dropdown.classList.contains('event-child-dropdown')) {
                 dropdown = document.createElement('div');
                 dropdown.className = 'event-child-dropdown';
-                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: auto; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
+                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: scroll; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
                 button.parentNode.appendChild(dropdown);
             }
 
@@ -1847,22 +1847,21 @@ function expandAllMessages() {
 }
 
 function updateExpandCollapseButtons() {
-    const expandControl = document.getElementById('expand-all-control');
-    const collapseControl = document.getElementById('collapse-all-control');
+    const expandBtn = document.getElementById('expand-all-btn');
+    const collapseBtn = document.getElementById('collapse-all-btn');
 
-    if (!expandControl || !collapseControl) return;
+    if (!expandBtn || !collapseBtn) return;
 
-    // Check if any data sections are expanded
     const hasExpandedData = Array.from(document.querySelectorAll('[id^="data-expanded-"]')).some(el => {
         return el.style.display !== 'none';
     });
 
     if (hasExpandedData) {
-        expandControl.style.display = 'none';
-        collapseControl.style.display = 'block';
+        expandBtn.classList.add('is-hidden');
+        collapseBtn.classList.remove('is-hidden');
     } else {
-        expandControl.style.display = 'block';
-        collapseControl.style.display = 'none';
+        expandBtn.classList.remove('is-hidden');
+        collapseBtn.classList.add('is-hidden');
     }
 }
 
@@ -1901,25 +1900,6 @@ function collapseAllMessages() {
     });
 
     updateExpandCollapseButtons();
-}
-
-function jumpToLastCode() {
-    const allRows = Array.from(document.querySelectorAll('.message-row'));
-    const rowsWithFeedback = allRows.filter(row => {
-        const messageId = row.getAttribute('data-message-id');
-        const dataCollapsed = document.getElementById('data-collapsed-' + messageId);
-        if (!dataCollapsed) return false;
-
-        const reviewedTag = dataCollapsed.querySelector('.data-header .tag');
-        return reviewedTag && reviewedTag.textContent.includes('✓');
-    });
-
-    if (rowsWithFeedback.length === 0) {
-        return;
-    }
-
-    const lastRow = rowsWithFeedback[rowsWithFeedback.length - 1];
-    lastRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function toggleCumulativeSection(messageId) {
