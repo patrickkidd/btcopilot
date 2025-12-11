@@ -30,6 +30,8 @@ class PersonaTrait(enum.StrEnum):
     Tangential = "tangential"
     Terse = "terse"
     Emotional = "emotional"
+    Mature = "mature"
+    HighFunctioning = "high_functioning"
 
 
 class DataCategory(enum.StrEnum):
@@ -61,17 +63,25 @@ class Persona:
     dataPoints: list[DataPoint] = field(default_factory=list)
 
     def system_prompt(self) -> str:
-        traits_desc = "\n".join(f"- {t.value}" for t in self.traits)
-        return f"""You are {self.name}, a person seeking help with a family issue.
+        is_high_functioning = (
+            PersonaTrait.Mature in self.traits
+            or PersonaTrait.HighFunctioning in self.traits
+        )
+        if is_high_functioning:
+            traits_section = f"""**Your conversational traits:**
+{chr(10).join(f"- {t.value}" for t in self.traits)}
 
-**Background:**
-{self.background}
-
-**Presenting Problem:**
-{self.presenting_problem}
-
-**Your conversational traits:**
-{traits_desc}
+**Instructions:**
+- Respond as this person would in a coaching conversation
+- Answer questions directly and clearly
+- Provide relevant details when asked without being evasive
+- Keep responses 1-3 sentences typically
+- You're cooperative and genuinely interested in exploring family patterns
+- You have good recall of dates and facts
+- You stay on topic but can elaborate when helpful"""
+        elif self.traits:
+            traits_section = f"""**Your conversational traits:**
+{chr(10).join(f"- {t.value}" for t in self.traits)}
 
 **Instructions:**
 - Respond as this person would in a coaching conversation
@@ -81,7 +91,22 @@ class Persona:
 - React naturally to the coach's questions
 - If you have the confused_dates trait, occasionally mix up years or be vague about timing
 - If defensive, push back on probing questions sometimes
-- If tangential, occasionally go off on related but different topics
+- If tangential, occasionally go off on related but different topics"""
+        else:
+            traits_section = """**Instructions:**
+- Respond as this person would in a coaching conversation
+- Keep responses 1-3 sentences typically
+- React naturally to the coach's questions"""
+
+        return f"""You are {self.name}, a person seeking help with a family issue.
+
+**Background:**
+{self.background}
+
+**Presenting Problem:**
+{self.presenting_problem}
+
+{traits_section}
 
 Respond only as {self.name}. Do not include meta-commentary."""
 
@@ -373,6 +398,119 @@ PERSONAS = [
             DataPoint(DataCategory.Children, ["sofia", "carlos", "maria", "david"]),
             DataPoint(
                 DataCategory.NodalEvents, ["heart attack", "died", "married", "moved"]
+            ),
+        ],
+    ),
+    Persona(
+        name="David",
+        background="""38-year-old man, works as architect at mid-size firm.
+
+**Own Family:**
+- Married to Rachel (36) for 8 years, met in grad school
+- Two children: Noah (6) and Lily (3)
+
+**Parents:**
+- Mother: Susan (66), retired librarian, lives 30 minutes away
+- Father: Robert (68), retired engineer
+- Parents happily married 42 years
+
+**Siblings:**
+- Younger sister: Amy (34), married to Tom, has twins (5)
+- Close relationship with sister, families do holidays together
+
+**Grandparents:**
+- Maternal grandmother: Eleanor, died 2020 (age 94, natural causes)
+- Maternal grandfather: Charles, died 2012 (heart disease)
+- Paternal grandmother: Frances (91), still active, lives independently
+- Paternal grandfather: William, died 2017 (complications from fall)
+
+**Aunts/Uncles:**
+- Mom has one brother, Uncle Jim
+- Dad has two sisters, Aunt Carol and Aunt Nancy
+
+**Nodal Events:**
+- Grandfather William's death (2017) - David was close to him
+- Birth of son Noah (2019) - very positive
+- Grandmother Eleanor's death (2020) - peaceful, expected
+- Promotion to senior architect (2023) - increased workload""",
+        traits=[PersonaTrait.Mature, PersonaTrait.HighFunctioning],
+        presenting_problem="Feeling some tension with his father about career choices. Dad wanted him to be an engineer. Generally handles things well but curious about family patterns.",
+        dataPoints=[
+            DataPoint(
+                DataCategory.PresentingProblem,
+                ["tension", "father", "career", "engineer"],
+            ),
+            DataPoint(DataCategory.Mother, ["susan", "mother", "mom", "librarian"]),
+            DataPoint(DataCategory.Father, ["robert", "father", "dad", "engineer"]),
+            DataPoint(DataCategory.ParentsStatus, ["married", "happily"]),
+            DataPoint(DataCategory.Siblings, ["amy", "sister", "tom", "twins"]),
+            DataPoint(
+                DataCategory.MaternalGrandparents, ["eleanor", "charles", "grandmother"]
+            ),
+            DataPoint(DataCategory.PaternalGrandparents, ["frances", "william"]),
+            DataPoint(
+                DataCategory.AuntsUncles, ["jim", "carol", "nancy", "aunt", "uncle"]
+            ),
+            DataPoint(DataCategory.Spouse, ["rachel", "wife"]),
+            DataPoint(DataCategory.Children, ["noah", "lily", "kids", "children"]),
+            DataPoint(
+                DataCategory.NodalEvents, ["2017", "2019", "2020", "died", "birth"]
+            ),
+        ],
+    ),
+    Persona(
+        name="Jennifer",
+        background="""44-year-old woman, works as pediatrician in private practice.
+
+**Own Family:**
+- Married to Michael (45) for 16 years, high school sweethearts
+- Three children: Ethan (14), Olivia (11), and Ben (8)
+
+**Parents:**
+- Mother: Barbara (72), retired teacher, very involved grandmother
+- Father: Richard (74), retired accountant
+- Parents married 48 years, healthy relationship
+
+**Siblings:**
+- Older brother: Steven (47), lives nearby, married to Lisa, two kids
+- Younger brother: Kevin (40), single, lives in another state
+
+**Grandparents:**
+- Maternal grandmother: Ruth (96), in assisted living, sharp mind
+- Maternal grandfather: Harold, died 2008 (stroke)
+- Paternal grandmother: Dorothy, died 2015 (cancer)
+- Paternal grandfather: George, died 2001 (heart attack)
+
+**Aunts/Uncles:**
+- Mom has two sisters, both still living
+- Dad had one brother who died in 2018
+
+**Nodal Events:**
+- Uncle's death (2018) - Dad took it hard
+- Son Ethan starting high school (this year) - transition
+- Practice expanded (2022) - more responsibility
+- Mother-in-law diagnosed with Parkinson's (1 year ago)""",
+        traits=[PersonaTrait.Mature, PersonaTrait.HighFunctioning],
+        presenting_problem="Noticing her son pulling away as he enters adolescence. Wonders if there are patterns from her own family that might help her understand mother-son dynamics.",
+        dataPoints=[
+            DataPoint(
+                DataCategory.PresentingProblem,
+                ["son", "pulling away", "adolescence", "patterns"],
+            ),
+            DataPoint(DataCategory.Mother, ["barbara", "mother", "mom", "teacher"]),
+            DataPoint(DataCategory.Father, ["richard", "father", "dad", "accountant"]),
+            DataPoint(DataCategory.ParentsStatus, ["married", "healthy"]),
+            DataPoint(DataCategory.Siblings, ["steven", "kevin", "brother", "lisa"]),
+            DataPoint(DataCategory.MaternalGrandparents, ["ruth", "harold"]),
+            DataPoint(DataCategory.PaternalGrandparents, ["dorothy", "george"]),
+            DataPoint(DataCategory.AuntsUncles, ["aunt", "uncle"]),
+            DataPoint(DataCategory.Spouse, ["michael", "husband"]),
+            DataPoint(
+                DataCategory.Children, ["ethan", "olivia", "ben", "kids", "children"]
+            ),
+            DataPoint(
+                DataCategory.NodalEvents,
+                ["2018", "2015", "2008", "died", "parkinson", "high school"],
             ),
         ],
     ),
