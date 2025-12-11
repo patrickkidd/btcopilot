@@ -467,7 +467,7 @@ Parameters:
                                             <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
                                                 <tr>
                                                     <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                        Spouse:
+                                                        Partner:
                                                     </td>
                                                     <td style="padding: 0;">
                                                         <template x-if="event.spouse">
@@ -484,7 +484,7 @@ Parameters:
                                                         </template>
                                                         <template x-if="!event.spouse && {{ 'true' if editable_mode else 'false' }}">
                                                             <span style="display: inline-flex; gap: 4px; position: relative;">
-                                                                <span class="add-element" style="opacity: 1;" @click.stop="createEventSpouse(index)" title="Create New Spouse for Event">
+                                                                <span class="add-element" style="opacity: 1;" @click.stop="createEventSpouse(index)" title="Create New Partner for Event">
                                                                     <i class="fas fa-plus-circle"></i>
                                                                 </span>
                                                                 <span class="add-element edit-event-spouse-button" style="opacity: 1;" @click.stop="editEventSpouse($event, index)" title="Select Existing Spouse for Event">
@@ -1331,7 +1331,7 @@ Parameters:
                                             <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
                                                 <tr>
                                                     <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                        Spouse:
+                                                        Partner:
                                                     </td>
                                                     <td style="padding: 0;">
                                                         <template x-if="event.spouse">
@@ -1348,7 +1348,7 @@ Parameters:
                                                         </template>
                                                         <template x-if="!event.spouse && {{ 'true' if editable_mode else 'false' }}">
                                                             <span style="display: inline-flex; gap: 4px; position: relative;">
-                                                                <span class="add-element" style="opacity: 1;" @click.stop="createEventSpouse(index)" title="Create New Spouse for Event">
+                                                                <span class="add-element" style="opacity: 1;" @click.stop="createEventSpouse(index)" title="Create New Partner for Event">
                                                                     <i class="fas fa-plus-circle"></i>
                                                                 </span>
                                                                 <span class="add-element edit-event-spouse-button" style="opacity: 1;" @click.stop="editEventSpouse($event, index)" title="Select Existing Spouse for Event">
