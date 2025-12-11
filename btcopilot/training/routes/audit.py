@@ -25,16 +25,27 @@ bp = minimum_role(btcopilot.ROLE_AUDITOR)(bp)
 
 @bp.route("/")
 def index():
-    user = auth.current_user()
+    current_user = auth.current_user()
 
-    # Load auditor's own data with all relationships
+    # Admins can view other users' audit dashboards via ?user_id=X
+    target_user_id = request.args.get("user_id", type=int)
+    if target_user_id and current_user.has_role(btcopilot.ROLE_ADMIN):
+        viewing_user_id = target_user_id
+    else:
+        viewing_user_id = current_user.id
+
+    # Load target user's data with all relationships
     auditor = User.query.options(
         db.subqueryload(User.diagrams)
         .subqueryload(Diagram.discussions)
         .subqueryload(Discussion.statements),
         db.subqueryload(User.licenses).subqueryload(License.policy),
         db.subqueryload(User.licenses).subqueryload(License.activations),
-    ).get(user.id)
+    ).get(viewing_user_id)
+
+    if not auditor:
+        from flask import abort
+        abort(404)
 
     # Get diagrams with granted access
     shared_diagrams_query = (
@@ -65,13 +76,19 @@ def index():
 
     breadcrumbs = get_breadcrumbs("audit")
 
+    # Add user info to breadcrumbs if viewing another user (admin only)
+    viewing_other_user = viewing_user_id != current_user.id
+    if viewing_other_user:
+        breadcrumbs.append({"title": auditor.username, "url": None})
+
     return render_template(
         "auditor_dashboard.html",
         user=auditor,
         user_discussions=user_discussions,
         shared_diagrams_with_rights=shared_diagrams_with_rights,
-        current_user=user,
+        current_user=current_user,
         btcopilot=btcopilot,
         breadcrumbs=breadcrumbs,
         f1_metrics=f1_metrics,
+        viewing_other_user=viewing_other_user,
     )

@@ -251,39 +251,6 @@
             </div>
         </div>
 
-    <!-- User Data Modal -->
-    <div class="modal" id="userDataModal">
-        <div class="modal-background" onclick="hideUserData()"></div>
-        <div class="modal-card">
-            <header class="modal-card-head">
-                <p class="modal-card-title">User Database Data</p>
-                <button class="delete" onclick="hideUserData()"></button>
-            </header>
-            <section class="modal-card-body">
-                <div id="userDataContent" class="json-viewer"></div>
-            </section>
-        </div>
-    </div>
-
-    <!-- User Detail Modal -->
-    <div class="modal" id="userDetailModal">
-        <div class="modal-background" onclick="hideUserDetailModal()"></div>
-        <div class="modal-card" style="width: 80%; max-width: 1000px;">
-            <header class="modal-card-head">
-                <p class="modal-card-title">
-                    <span class="icon"><i class="fas fa-user"></i></span>
-                    <span id="userDetailTitle">User Details</span>
-                </p>
-                <button class="delete" onclick="hideUserDetailModal()"></button>
-            </header>
-            <section class="modal-card-body">
-                <div id="userDetailContent">
-                    <!-- Content loaded dynamically via AJAX -->
-                </div>
-            </section>
-        </div>
-    </div>
-
     <script>
         function toggleDiscussions() {
             const content = document.getElementById('discussions-content');

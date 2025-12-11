@@ -264,6 +264,10 @@ function handleJsonFileSelect(event, userId, diagramId) {
 }
 
 async function handleJsonDropInline(event, diagramId) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget?.classList?.remove('drag-over');
+
     const files = event.dataTransfer.files;
     if (files.length === 0) return;
     
