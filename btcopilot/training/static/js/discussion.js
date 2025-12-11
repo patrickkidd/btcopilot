@@ -3528,8 +3528,6 @@ Continue?`;
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showNotification('Background extraction triggered successfully!', 'is-success');
-                
                 // Hide button and show progress bar
                 extractionBtn.style.display = 'none';
                 document.getElementById('extraction-progress').style.display = 'block';

@@ -8,7 +8,7 @@
                             <span class="icon"><i class="fas fa-chart-bar"></i></span>
                             AI Ground Truth F1 Scores
                         </h2>
-                        <p class="subtitle is-6" id="f1-subtitle">Comparing AI extractions to {{ f1_metrics.total_statements }} approved statements across {{ f1_metrics.total_discussions }} discussions</p>
+                        <p class="subtitle is-6" id="f1-subtitle">Comparing site-wide AI extractions to {{ f1_metrics.total_statements }} approved statements across {{ f1_metrics.total_discussions }} discussions</p>
                     </div>
                 </div>
             </div>
@@ -265,7 +265,7 @@ function showF1Metrics(source) {
 
     // Update subtitle
     document.getElementById('f1-subtitle').textContent =
-        `Comparing AI extractions to ${metrics.total_statements} approved statements across ${metrics.total_discussions} discussions (${label})`;
+        `Comparing site-wide AI extractions to ${metrics.total_statements} approved statements across ${metrics.total_discussions} discussions (${label})`;
 
     // Update metric values
     document.getElementById('f1-overall').textContent = metrics.aggregate_micro_f1.toFixed(3);

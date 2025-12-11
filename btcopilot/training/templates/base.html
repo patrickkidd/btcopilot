@@ -1001,12 +1001,6 @@
                     </span>
                     <span>Audit</span>
                 </a>
-                <a class="navbar-item" href="{{ url_for('training.prompts.index') }}">
-                    <span class="icon">
-                        <i class="fas fa-flask"></i>
-                    </span>
-                    <span>Lab</span>
-                </a>
                 {% endif %}
                 {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) %}
                 <a class="navbar-item" href="{{ url_for('training.admin.index') }}">
@@ -1020,6 +1014,12 @@
                         <i class="fas fa-robot"></i>
                     </span>
                     <span>Synthetic</span>
+                </a>
+                <a class="navbar-item" href="{{ url_for('training.prompts.index') }}">
+                    <span class="icon">
+                        <i class="fas fa-flask"></i>
+                    </span>
+                    <span>Lab</span>
                 </a>
                 {% endif %}
             </div>
