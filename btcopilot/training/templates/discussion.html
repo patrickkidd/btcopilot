@@ -3,28 +3,17 @@
 
 <script>
 // Make diagram people data available to JavaScript
+// NOTE: Only includes base diagram people, NOT cumulative PDP people
+// Cumulative PDP people come from cumulativePdp which is filtered by selected auditor
 window.diagramPeople = [
 {% if discussion.diagram %}
     {% set database = discussion.diagram.get_diagram_data() %}
-    {% set seen_ids = [] %}
     {% for person in database.people %}
     {
         id: {{ person.id }},
         name: {{ person.name | tojson }}
-    },
-    {% set _ = seen_ids.append(person.id) %}
-    {% endfor %}
-    {% if database.pdp and database.pdp.people %}
-        {% for person in database.pdp.people %}
-            {% if person.id not in seen_ids %}
-    {
-        id: {{ person.id }},
-        name: {{ person.name | tojson }}
     }{{ "," if not loop.last else "" }}
-            {% set _ = seen_ids.append(person.id) %}
-            {% endif %}
-        {% endfor %}
-    {% endif %}
+    {% endfor %}
 {% endif %}
 ];
 

@@ -1063,6 +1063,11 @@ def audit(discussion_id):
                 # Handle non-integer auditor IDs (test cases)
                 auditor_user_map[auditor_id_str] = auditor_id_str
 
+        # Ensure current user is always in the map (even if they haven't submitted feedback)
+        current_auditor_id = str(current_user.id)
+        if current_auditor_id not in auditor_user_map:
+            auditor_user_map[current_auditor_id] = current_user.username
+
         # Build dropdown options: AI + all human auditors
         auditor_options.append({"id": "AI", "name": "AI"})
         for auditor_id_str in sorted(auditor_user_map.keys()):
