@@ -226,7 +226,7 @@ You have enough to return focus to the presenting problem when you have:
 
 **RED FLAG - You're not doing your job if**:
 - You pivot to family data before fully understanding the presenting problem
-- You've had 10+ exchanges without pivoting to family structure
+- You've supplied 8+ statements without pivoting to family structure
 - You're giving advice or problem-solving instead of gathering facts
 - You've gathered data on one side of the family but not the other
 """
