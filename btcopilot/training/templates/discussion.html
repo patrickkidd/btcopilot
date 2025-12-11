@@ -1207,8 +1207,33 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         addPersonUpdate(personId) {
             if (!personId) return;
 
+            // Look up existing person's name from all sources
+            let existingName = null;
+            const numericId = typeof personId === 'string' ? parseInt(personId) : personId;
+
+            const diagramPeople = window.diagramPeople || [];
+            let existingPerson = diagramPeople.find(p => p.id === numericId);
+            if (existingPerson && existingPerson.name) {
+                existingName = existingPerson.name;
+            }
+
+            if (!existingName && this.cumulativePdp && this.cumulativePdp.people) {
+                existingPerson = this.cumulativePdp.people.find(p => p.id === numericId);
+                if (existingPerson && existingPerson.name) {
+                    existingName = existingPerson.name;
+                }
+            }
+
+            if (!existingName && this.extractedData && this.extractedData.people) {
+                existingPerson = this.extractedData.people.find(p => p.id === numericId);
+                if (existingPerson && existingPerson.name) {
+                    existingName = existingPerson.name;
+                }
+            }
+
             const personDelta = {
                 id: personId,
+                name: existingName,
                 confidence: 1.0
             };
 
@@ -1376,11 +1401,6 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         },
         
         removePerson(personIndex) {
-            const person = this.extractedData.people[personIndex];
-            if (person && [1, 2].includes(person.id)) {
-                alert('System people (User and Assistant) cannot be deleted.');
-                return;
-            }
             this.extractedData.people.splice(personIndex, 1);
             this.personDataVersion++;
             this.autoSave();
@@ -1723,24 +1743,23 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             // Convert to number for comparison since JSON may serialize as string
             const numericId = typeof personId === 'string' ? parseInt(personId) : personId;
             
-            // Collect all people from all sources
+            // Collect all people from all sources - deltas first, then database
             const allPeople = [];
-            
-            // Add from diagram (database people) - these have positive IDs
-            const diagramPeople = window.diagramPeople || [];
-            allPeople.push(...diagramPeople);
-            
-            // For cumulative display, we need to check the data that was passed in
-            // When displaying cumulative data, `this.extractedData` contains the cumulative PDP
+
+            // Add from extracted data first (highest priority - current statement deltas)
             const dataToCheck = this.extractedData || this.cumulativePdp;
             if (dataToCheck && dataToCheck.people) {
                 allPeople.push(...dataToCheck.people);
             }
-            
+
             // Also check cumulativePdp if it's different from extractedData
             if (this.cumulativePdp && this.cumulativePdp !== dataToCheck && this.cumulativePdp.people) {
                 allPeople.push(...this.cumulativePdp.people);
             }
+
+            // Add from diagram (database people) LAST - fallback only
+            const diagramPeople = window.diagramPeople || [];
+            allPeople.push(...diagramPeople);
             
             // Find person by ID - try exact match first
             let person = allPeople.find(p => p.id === numericId);
@@ -3474,22 +3493,31 @@ function renderEventsEditor() {
                         </div>
 
                         <div class="field">
-                            <label class="label is-small">Person (ID)</label>
+                            <label class="label is-small">${
+                                event.kind === 'birth' || event.kind === 'adopted' ? 'Parent 1' :
+                                event.kind === 'death' ? 'Person' :
+                                event.kind === 'bonded' || event.kind === 'married' || event.kind === 'separated' || event.kind === 'divorced' ? 'Partner 1' :
+                                'Person'
+                            } (ID)</label>
                             <div class="control">
                                 <input class="input is-small" type="number" value="${event.person || ''}"
                                        onchange="updateEventField(${index}, 'person', parseInt(this.value) || null)">
                             </div>
                         </div>
 
-                        <div class="field">
-                            <label class="label is-small">Spouse (ID)</label>
+                        <div class="field" style="display: ${['bonded', 'married', 'separated', 'divorced', 'moved', 'birth', 'adopted'].includes(event.kind) ? 'block' : 'none'}">
+                            <label class="label is-small">${
+                                event.kind === 'birth' || event.kind === 'adopted' ? 'Parent 2' :
+                                event.kind === 'moved' ? 'Partner' :
+                                'Partner 2'
+                            } (ID)</label>
                             <div class="control">
                                 <input class="input is-small" type="number" value="${event.spouse || ''}"
                                        onchange="updateEventField(${index}, 'spouse', parseInt(this.value) || null)">
                             </div>
                         </div>
 
-                        <div class="field">
+                        <div class="field" style="display: ${['birth', 'adopted'].includes(event.kind) ? 'block' : 'none'}">
                             <label class="label is-small">Child (ID)</label>
                             <div class="control">
                                 <input class="input is-small" type="number" value="${event.child || ''}"
@@ -3744,11 +3772,6 @@ function addPerson() {
 }
 
 function removePerson(index) {
-    const person = currentEditingData.people[index];
-    if (person && [1, 2].includes(person.id)) {
-        alert('System people (User and Assistant) cannot be deleted.');
-        return;
-    }
     currentEditingData.people.splice(index, 1);
     renderDataEditor();
 }
