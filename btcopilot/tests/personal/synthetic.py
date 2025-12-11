@@ -460,7 +460,7 @@ class ConversationSimulator:
             diagram = Diagram(
                 user_id=user_id,
                 name=f"Synthetic: {persona.name}",
-                data=pickle.dumps(asdict(DiagramData())),
+                data=pickle.dumps(asdict(DiagramData.create_with_defaults())),
             )
             db.session.add(diagram)
             db.session.flush()
