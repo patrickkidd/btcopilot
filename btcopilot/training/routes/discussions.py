@@ -1064,7 +1064,8 @@ def audit(discussion_id):
                 auditor_user_map[auditor_id_str] = auditor_id_str
 
         # Ensure current user is always in the map (even if they haven't submitted feedback)
-        current_auditor_id = str(current_user.id)
+        # Use username as key since Feedback.auditor_id stores username strings
+        current_auditor_id = current_user.username
         if current_auditor_id not in auditor_user_map:
             auditor_user_map[current_auditor_id] = current_user.username
 
