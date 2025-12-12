@@ -865,7 +865,7 @@ Approved ground truth is exported to `./model_tests/data/uncategorized/` as JSON
 
 ### SARF Editor UI Component
 
-**Main Component**: [btcopilot/training/templates/components/extracted_data_display.html](../btcopilot/training/templates/components/extracted_data_display.html)
+**Main Component**: [btcopilot/training/templates/components/sarf_editor.html](../btcopilot/training/templates/components/sarf_editor.html)
 
 **Features**:
 - Inline editing of person names, event descriptions, SARF variables

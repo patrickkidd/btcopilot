@@ -1,8 +1,8 @@
 {#
-Reusable Extracted Data Display Component
+SARF Editor Component
 
 Usage:
-{% include "components/extracted_data_display.html" %}
+{% include "components/sarf_editor.html" %}
 
 Parameters:
 - data: The extracted data object containing people, events, deletes
@@ -392,28 +392,6 @@ Parameters:
                                                 Confidence: <span x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
                                             </span>
                                         </div>
-                                        <template x-if="!event.kind || event.kind === 'shift'">
-                                            <div class="event-description is-size-7 mb-1">
-                                                {% if editable_mode %}
-                                                <strong class="editable-field event-description"
-                                                        @mouseenter="hoveredField = 'event-' + index + '-description'"
-                                                        @mouseleave="hoveredField = null"
-                                                        @click.stop="startEdit('event-' + index + '-description', event.description || ('Event #' + event.id))">
-                                                    <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || ('Event #' + event.id)"></span>
-                                                    <input x-show="isEditing('event-' + index + '-description')"
-                                                           :value="editingValue"
-                                                           @input="editingValue = $event.target.value"
-                                                           @blur="saveEventDescription(index, $event.target.value)"
-                                                           @keydown.enter="saveEventDescription(index, $event.target.value); $event.target.blur()"
-                                                           @keydown.escape="cancelEdit(); $event.target.blur()"
-                                                           class="inline-edit-input"
-                                                           type="text">
-                                                </strong>
-                                                {% else %}
-                                                <strong x-text="formatEventTitle(event)"></strong>
-                                                {% endif %}
-                                            </div>
-                                        </template>
                                     </div>
 
                                     <!-- Event Kind Section -->
@@ -551,6 +529,39 @@ Parameters:
                                                                 </span>
                                                             </span>
                                                         </template>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </template>
+
+                                    <!-- Event Description Section (only for shift events) -->
+                                    <template x-if="!event.kind || event.kind === 'shift'">
+                                        <div class="event-description-section" style="margin-top: 8px;">
+                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
+                                                <tr>
+                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
+                                                        Description:
+                                                    </td>
+                                                    <td style="padding: 0;">
+                                                        {% if editable_mode %}
+                                                        <span class="editable-field event-description"
+                                                              @mouseenter="hoveredField = 'event-' + index + '-description'"
+                                                              @mouseleave="hoveredField = null"
+                                                              @click.stop="startEdit('event-' + index + '-description', event.description || '')">
+                                                            <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || 'Not set'"></span>
+                                                            <input x-show="isEditing('event-' + index + '-description')"
+                                                                   :value="editingValue"
+                                                                   @input="editingValue = $event.target.value"
+                                                                   @blur="saveEventDescription(index, $event.target.value)"
+                                                                   @keydown.enter="saveEventDescription(index, $event.target.value); $event.target.blur()"
+                                                                   @keydown.escape="cancelEdit(); $event.target.blur()"
+                                                                   class="inline-edit-input"
+                                                                   type="text">
+                                                        </span>
+                                                        {% else %}
+                                                        <span x-text="event.description || 'Not specified'"></span>
+                                                        {% endif %}
                                                     </td>
                                                 </tr>
                                             </table>
@@ -1239,28 +1250,6 @@ Parameters:
                                                 Confidence: <span x-text="(event.confidence * 100).toFixed(0) + '%'"></span>
                                             </span>
                                         </div>
-                                        <template x-if="!event.kind || event.kind === 'shift'">
-                                            <div class="event-description is-size-7 mb-1">
-                                                {% if editable_mode %}
-                                                <strong class="editable-field event-description"
-                                                        @mouseenter="hoveredField = 'event-' + index + '-description'"
-                                                        @mouseleave="hoveredField = null"
-                                                        @click.stop="startEdit('event-' + index + '-description', event.description || ('Event #' + event.id))">
-                                                    <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || ('Event #' + event.id)"></span>
-                                                    <input x-show="isEditing('event-' + index + '-description')"
-                                                           :value="editingValue"
-                                                           @input="editingValue = $event.target.value"
-                                                           @blur="saveEventDescription(index, $event.target.value)"
-                                                           @keydown.enter="saveEventDescription(index, $event.target.value); $event.target.blur()"
-                                                           @keydown.escape="cancelEdit(); $event.target.blur()"
-                                                           class="inline-edit-input"
-                                                           type="text">
-                                                </strong>
-                                                {% else %}
-                                                <strong x-text="formatEventTitle(event)"></strong>
-                                                {% endif %}
-                                            </div>
-                                        </template>
                                     </div>
 
                                     <!-- Event Kind Section -->
@@ -1398,6 +1387,39 @@ Parameters:
                                                                 </span>
                                                             </span>
                                                         </template>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </template>
+
+                                    <!-- Event Description Section (only for shift events) -->
+                                    <template x-if="!event.kind || event.kind === 'shift'">
+                                        <div class="event-description-section" style="margin-top: 8px;">
+                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
+                                                <tr>
+                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
+                                                        Description:
+                                                    </td>
+                                                    <td style="padding: 0;">
+                                                        {% if editable_mode %}
+                                                        <span class="editable-field event-description"
+                                                              @mouseenter="hoveredField = 'event-' + index + '-description'"
+                                                              @mouseleave="hoveredField = null"
+                                                              @click.stop="startEdit('event-' + index + '-description', event.description || '')">
+                                                            <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || 'Not set'"></span>
+                                                            <input x-show="isEditing('event-' + index + '-description')"
+                                                                   :value="editingValue"
+                                                                   @input="editingValue = $event.target.value"
+                                                                   @blur="saveEventDescription(index, $event.target.value)"
+                                                                   @keydown.enter="saveEventDescription(index, $event.target.value); $event.target.blur()"
+                                                                   @keydown.escape="cancelEdit(); $event.target.blur()"
+                                                                   class="inline-edit-input"
+                                                                   type="text">
+                                                        </span>
+                                                        {% else %}
+                                                        <span x-text="event.description || 'Not specified'"></span>
+                                                        {% endif %}
                                                     </td>
                                                 </tr>
                                             </table>

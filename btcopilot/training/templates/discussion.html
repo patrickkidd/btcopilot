@@ -705,7 +705,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                     {% set approved = item.approved %}
                     {% set approved_by = item.approved_by %}
                     {% set approved_at = item.approved_at %}
-                    {% include "components/extracted_data_display.html" %}
+                    {% include "components/sarf_editor.html" %}
                 </td>
                 
                 <!-- Cumulative Notes column for Subject statements -->
@@ -727,7 +727,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                         {% set approved = false %}
                         {% set approved_by = none %}
                         {% set approved_at = none %}
-                        {% include "components/extracted_data_display.html" %}
+                        {% include "components/sarf_editor.html" %}
                     {% else %}
                         <div class="user-data-placeholder">
                             <small class="has-text-grey">No cumulative data yet</small>

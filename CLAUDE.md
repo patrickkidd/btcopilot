@@ -67,7 +67,7 @@ btcopilot has these primary functions:
 
 ### SARF Editor
 The interactive, re-usable component for reviewing and editing extracted clinical data (SARF = Symptom, Anxiety, Relationship, Functioning variables). Located in:
-- **File**: `btcopilot/training/templates/components/extracted_data_display.html`
+- **File**: `btcopilot/training/templates/components/sarf_editor.html`
 - **Purpose**: Displays and allows editing of extracted people, events, and clinical variable coding
 - **Features**: Collapsed/expanded views, in-place editing, feedback controls, cumulative data display
 - **Used in**: Training module for domain-expert review and fine-tuning of AI extraction model
@@ -269,7 +269,7 @@ docker exec fd-postgres psql -U familydiagram -d familydiagram -c "SELECT id, na
 - `training/routes/*.py` - API endpoints, approval logic
 - `training/models.py` - Feedback model
 - `training/templates/discussion.html` - Discussion audit page layout, cumulative refresh logic
-- `training/templates/components/extracted_data_display.html` - SARF editor component
+- `training/templates/components/sarf_editor.html` - SARF editor component
 - `training/export_tests.py` - Test case export logic
 - `schema.py` - Event, PDPDeltas, or SARF enums (VariableShift, RelationshipKind)
 - `pdp.py` - cumulative() or apply_deltas() functions

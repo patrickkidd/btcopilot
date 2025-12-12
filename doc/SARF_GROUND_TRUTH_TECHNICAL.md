@@ -21,7 +21,7 @@
    - [RelationshipKind Enum](#23-relationshipkind-enum)
    - [Confidence Scoring](#24-confidence-scoring)
 4. [UI Component Architecture](#3-ui-component-architecture)
-   - [Main Component: extracted_data_display.html](#31-main-component-extracted_data_displayhtml)
+   - [Main Component: sarf_editor.html](#31-main-component-sarf_editorhtml)
    - [Inline Editing Pattern](#32-inline-editing-pattern)
    - [Discussion Audit Page Architecture](#33-discussion-audit-page-architecture)
    - [Tab System (Admin Only)](#34-tab-system-admin-only)
@@ -560,7 +560,7 @@ for person_id in event.relationshipTriangles:
 - Auditors can edit confidence if present
 - Not used in model training (ground truth is assumed 1.0 confidence)
 
-**UI Display** ([extracted_data_display.html:323](../btcopilot/training/templates/components/extracted_data_display.html)):
+**UI Display** ([sarf_editor.html:323](../btcopilot/training/templates/components/sarf_editor.html)):
 ```html
 <small>
     Confidence:
@@ -574,9 +574,9 @@ for person_id in event.relationshipTriangles:
 
 ## 3. UI Component Architecture
 
-### 3.1 Main Component: extracted_data_display.html
+### 3.1 Main Component: sarf_editor.html
 
-**Location**: [btcopilot/training/templates/components/extracted_data_display.html](../btcopilot/training/templates/components/extracted_data_display.html)
+**Location**: [btcopilot/training/templates/components/sarf_editor.html](../btcopilot/training/templates/components/sarf_editor.html)
 
 **Size**: 1000+ lines of Alpine.js + Jinja2
 
@@ -679,7 +679,7 @@ savePersonName(index, newName) {
 
 ### 3.3 Conditional Field Visibility
 
-**EventKind-Based Conditionals** ([extracted_data_display.html:488-512, 625](../btcopilot/training/templates/components/extracted_data_display.html)):
+**EventKind-Based Conditionals** ([sarf_editor.html:488-512, 625](../btcopilot/training/templates/components/sarf_editor.html)):
 
 The SARF editor conditionally shows/hides event fields based on `EventKind`:
 
@@ -704,7 +704,7 @@ The SARF editor conditionally shows/hides event fields based on `EventKind`:
 </div>
 ```
 
-**EventKind Selector** ([extracted_data_display.html:550-587](../btcopilot/training/templates/components/extracted_data_display.html)):
+**EventKind Selector** ([sarf_editor.html:550-587](../btcopilot/training/templates/components/sarf_editor.html)):
 ```html
 <span class="event-kind-indicator editable-field"
       @click.stop="startEditEventKind('event-' + index + '-kind', event.kind)">
@@ -783,14 +783,14 @@ The SARF editor conditionally shows/hides event fields based on `EventKind`:
 - For Subject (user) messages: Links to columns 2 & 3
 
 **Column 2: Changes to Notes (SARF Editor)**
-- Embeds `extracted_data_display.html` component
+- Embeds `sarf_editor.html` component
 - Uses `item.pdp_deltas` as data source
 - Editable mode for auditors
 - Shows AI extraction or auditor corrections (tabs for admins)
 - **Variable**: `data = item.pdp_deltas`
 
 **Column 3: Cumulative Notes**
-- Embeds same `extracted_data_display.html` component
+- Embeds same `sarf_editor.html` component
 - Uses `item.cumulative_pdp` as data source
 - **Read-only mode** (`editable_mode = false`)
 - Collapsed by default (`collapsed = true`)
@@ -1615,7 +1615,7 @@ def apply_deltas(pdp, deltas):
 - [base.html](../btcopilot/training/templates/base.html) - Base template with CSS for SARF variables
 
 **Components** (all in `btcopilot/training/templates/components/`):
-- [extracted_data_display.html](../btcopilot/training/templates/components/extracted_data_display.html) - **THE MAIN SARF EDITOR COMPONENT** (1000+ lines)
+- [sarf_editor.html](../btcopilot/training/templates/components/sarf_editor.html) - **THE MAIN SARF EDITOR COMPONENT** (1000+ lines)
 - [extracted_data_simple.html](../btcopilot/training/templates/components/extracted_data_simple.html) - Read-only display variant
 - [extracted_data_corrected.html](../btcopilot/training/templates/components/extracted_data_corrected.html) - Another display variant
 - [README.md](../btcopilot/training/templates/components/README.md) - Component documentation
@@ -1816,7 +1816,7 @@ Event(
 
 **Problem**: Alpine.js doesn't reactively update person name lookups when person data changes
 
-**Solution**: `personDataVersion` counter ([extracted_data_display.html:47](../btcopilot/training/templates/components/extracted_data_display.html))
+**Solution**: `personDataVersion` counter ([sarf_editor.html:47](../btcopilot/training/templates/components/sarf_editor.html))
 
 ```javascript
 {
@@ -1935,7 +1935,7 @@ uv run python -m flask db upgrade
 **Note**: JSON columns don't have strict schema, but may need data migration script for existing records.
 
 ### Step 3: Update UI Component
-- Edit [extracted_data_display.html](../btcopilot/training/templates/components/extracted_data_display.html)
+- Edit [sarf_editor.html](../btcopilot/training/templates/components/sarf_editor.html)
 - Add/remove form fields
 - Update display logic
 - Update submit payload
@@ -2020,7 +2020,7 @@ def load_feedback_extraction(feedback):
 
 | Component | File |
 |-----------|------|
-| SARF editor UI | btcopilot/training/templates/components/extracted_data_display.html |
+| SARF editor UI | btcopilot/training/templates/components/sarf_editor.html |
 | Feedback model | btcopilot/training/models.py |
 | Approval logic | btcopilot/training/routes/admin.py |
 | Export logic | btcopilot/training/export_tests.py |
