@@ -1,10 +1,12 @@
 # Automated Prompt Induction System - Future Roadmap
 
-**Status**: NOT IMPLEMENTED - Future enhancement after manual MVP proves effective
+**Status**: NOT IMPLEMENTED - Future enhancement after CLI automation proves effective
 
-**Current Approach**: Manual iteration with Claude Code (see `export_gt.py`, `test_prompts.py`)
+**Alternatives**:
+- **[Manual](../doc/PROMPT_OPTIMIZATION_MANUAL.md)**: Copy-paste approach (current MVP)
+- **[CLI Automation](PROMPT_INDUCTION_CLI.md)**: Automated iteration using Claude Code CLI ($0 cost, **RECOMMENDED**)
 
-**When to build this**: After 5-10 manual prompt improvement cycles demonstrate consistent F1 gains
+**When to build this**: After CLI approach used 10+ times and need auto-trigger + web dashboard
 
 ---
 

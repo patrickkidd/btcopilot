@@ -2,7 +2,9 @@
 
 **Status**: CURRENT MVP APPROACH (as of 2025-12-07)
 
-**Future**: See [PROMPT_INDUCTION_AUTOMATED.md](PROMPT_INDUCTION_AUTOMATED.md) for 3-phase automated system
+**Alternatives**:
+- **[CLI Automation](PROMPT_INDUCTION_CLI.md)**: Automated iteration using Claude Code CLI ($0 cost, 10 min runtime)
+- **[API Automation](PROMPT_INDUCTION_AUTOMATED.md)**: Full auto-trigger system with web UI ($50-100/mo)
 
 ---
 
