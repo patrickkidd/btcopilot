@@ -70,9 +70,25 @@
                 </form>
 
                 <div id="progress-container" style="display: none;" class="mt-4">
-                    <div class="mb-3">
-                        <progress id="progress-bar" class="progress is-primary" max="100">Generating...</progress>
-                        <p class="has-text-centered" id="progress-text">Starting generation...</p>
+                    <div class="notification is-info is-light">
+                        <h5 class="subtitle is-6 mb-2">
+                            <span class="icon"><i class="fas fa-cog fa-spin"></i></span>
+                            <span id="progress-title">Generating discussion...</span>
+                        </h5>
+                        <progress id="progress-bar" class="progress is-info is-medium" value="0" max="100"></progress>
+                        <p class="help mt-1" id="progress-text">Starting generation...</p>
+                        <div id="progress-preview" class="mt-3" style="display: none;">
+                            <div class="columns is-mobile">
+                                <div class="column">
+                                    <p class="is-size-7 has-text-grey mb-1"><strong>User:</strong></p>
+                                    <p class="is-size-7" id="preview-user"></p>
+                                </div>
+                                <div class="column">
+                                    <p class="is-size-7 has-text-grey mb-1"><strong>AI:</strong></p>
+                                    <p class="is-size-7" id="preview-ai"></p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -99,14 +115,14 @@
             </div>
 
             <div class="column is-half">
-                <div class="box has-background-light">
+                <div class="box">
                     <h3 class="title is-5">Persona Details</h3>
                     <div id="persona-details">
                         <p class="has-text-grey">Select a persona to see details</p>
                     </div>
                 </div>
 
-                <div class="box has-background-info-light mt-4">
+                <div class="box mt-4">
                     <h3 class="title is-5">
                         <span class="icon"><i class="fas fa-database"></i></span>
                         Data Created
@@ -186,7 +202,9 @@ document.getElementById('generate-form').addEventListener('submit', async functi
     document.getElementById('result-container').style.display = 'none';
     document.getElementById('error-container').style.display = 'none';
     document.getElementById('progress-bar').removeAttribute('value');
-    document.getElementById('progress-text').textContent = 'Generating discussion (this may take a few minutes)...';
+    document.getElementById('progress-text').textContent = 'Starting generation...';
+    document.getElementById('progress-title').textContent = 'Generating discussion...';
+    document.getElementById('progress-preview').style.display = 'none';
 
     try {
         const response = await fetch('{{ url_for("training.synthetic.generate") }}', {
@@ -232,6 +250,7 @@ function showResult(data) {
 
 async function pollTaskStatus(taskId) {
     const pollInterval = 2000;
+    const maxTurns = parseInt(document.getElementById('max-turns').value);
 
     while (true) {
         try {
@@ -247,6 +266,17 @@ async function pollTaskStatus(taskId) {
                 document.getElementById('error-container').style.display = 'block';
                 document.getElementById('generate-btn').disabled = false;
                 return;
+            } else if (data.status === 'progress') {
+                const percent = data.total > 0 ? Math.round((data.current / data.total) * 100) : 0;
+                document.getElementById('progress-bar').value = percent;
+                document.getElementById('progress-text').textContent = `Turn ${data.current} of ${data.total}`;
+                document.getElementById('progress-title').textContent = `Generating turn ${data.current}...`;
+
+                if (data.user_text || data.ai_text) {
+                    document.getElementById('progress-preview').style.display = 'block';
+                    document.getElementById('preview-user').textContent = data.user_text ? data.user_text + '...' : '';
+                    document.getElementById('preview-ai').textContent = data.ai_text ? data.ai_text + '...' : '';
+                }
             }
 
             await new Promise(resolve => setTimeout(resolve, pollInterval));

@@ -36,8 +36,7 @@ def index():
 
     users = (
         User.query.filter(
-            User.roles.contains(btcopilot.ROLE_AUDITOR)
-            | User.roles.contains(btcopilot.ROLE_ADMIN)
+            User.roles.contains(btcopilot.ROLE_AUDITOR) | User.roles.contains(btcopilot.ROLE_ADMIN)
         )
         .order_by(User.username)
         .all()
@@ -118,5 +117,16 @@ def task_status(task_id):
             return jsonify({"status": "error", "error": task_result.get("error")})
     elif result.failed():
         return jsonify({"status": "error", "error": str(result.result)})
+    elif result.state == "PROGRESS":
+        meta = result.info or {}
+        return jsonify(
+            {
+                "status": "progress",
+                "current": meta.get("current", 0),
+                "total": meta.get("total", 0),
+                "user_text": meta.get("user_text", ""),
+                "ai_text": meta.get("ai_text", ""),
+            }
+        )
     else:
         return jsonify({"status": "pending"})
