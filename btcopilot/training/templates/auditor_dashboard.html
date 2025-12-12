@@ -6,14 +6,14 @@
     transition: background-color 0.2s ease;
 }
 .user-card.drag-over, .box.drag-over {
-    background-color: #e6fffa !important;
-    border: 2px dashed #00d1b2 !important;
+    background-color: rgba(0, 209, 178, 0.15) !important;
+    border: 2px dashed var(--color-success-emphasis) !important;
 }
 .user-card:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 .license-card {
-    border: 1px solid #dbdbdb;
+    border: 1px solid var(--color-border-default);
     border-radius: 6px;
     padding: 1rem;
     margin-bottom: 1rem;
@@ -31,7 +31,7 @@
     margin-top: 0.25rem;
 }
 .box.diagram-card {
-    border: 1px solid #dbdbdb;
+    border: 1px solid var(--color-border-default);
     border-radius: 6px;
 }
 </style>
@@ -39,15 +39,20 @@
 
 {% block content %}
 <div>
-    <h1 class="title">Domain-Expert SARF Dashboard</h1>
+    <h1 class="title">SARF Coding</h1>
     <p class="subtitle">Manage your diagrams, discussions, and SARF codes</p>
 
     <!-- F1 Ground Truth Metrics Section -->
     {% include "partials/f1_metrics_card.html" with context %}
 
-    <!-- Main Content: User Detail View -->
-    <div class="content">
-        {% include "partials/user_detail_content.html" with context %}
+    <!-- Two-column diagram layout -->
+    <div class="columns">
+        <div class="column is-6">
+            {% include "partials/user_diagrams_owned.html" with context %}
+        </div>
+        <div class="column is-6">
+            {% include "partials/user_diagrams_shared.html" with context %}
+        </div>
     </div>
 
 </div>
@@ -264,6 +269,10 @@ function handleJsonFileSelect(event, userId, diagramId) {
 }
 
 async function handleJsonDropInline(event, diagramId) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget?.classList?.remove('drag-over');
+
     const files = event.dataTransfer.files;
     if (files.length === 0) return;
     
@@ -439,6 +448,182 @@ async function handleAudioDrop(event, diagramId) {
     
     // Call the same handler as click selection
     await handleAudioFileSelect(fakeEvent, null, diagramId);
+}
+
+// Access Rights Management Functions
+let cachedUsers = null;
+
+async function loadUsers() {
+    if (cachedUsers) return cachedUsers;
+
+    try {
+        // Server now filters to auditor+admin roles by default for performance
+        const response = await fetch('/training/admin/users');
+        const data = await response.json();
+        cachedUsers = data.users || [];
+        return cachedUsers;
+    } catch (error) {
+        console.error('Error loading users:', error);
+        return [];
+    }
+}
+
+async function toggleAccessRights(diagramId) {
+    const panel = document.getElementById(`access-rights-${diagramId}`);
+    const isVisible = panel.style.display !== 'none';
+
+    if (isVisible) {
+        panel.style.display = 'none';
+    } else {
+        panel.style.display = 'block';
+
+        const users = await loadUsers();
+        const userSelect = document.getElementById(`user-select-${diagramId}`);
+
+        userSelect.innerHTML = '<option value="">Select user...</option>';
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.id;
+            option.textContent = `${user.username}${user.full_name ? ' - ' + user.full_name : ''}`;
+            userSelect.appendChild(option);
+        });
+
+        await refreshAccessRights(diagramId);
+    }
+}
+
+async function refreshAccessRights(diagramId) {
+    const container = document.getElementById(`current-access-rights-${diagramId}`);
+
+    try {
+        const response = await fetch(`/training/diagrams/${diagramId}/access-rights`);
+        const data = await response.json();
+
+        if (!data.success) {
+            container.innerHTML = '<p class="has-text-danger is-size-7">Error loading access rights</p>';
+            return;
+        }
+
+        if (data.access_rights.length === 0) {
+            container.innerHTML = '<p class="has-text-grey-light is-size-7">No users have access to this diagram</p>';
+            return;
+        }
+
+        let html = '<table class="table is-fullwidth is-size-7 is-narrow">';
+        html += '<thead><tr><th>User</th><th>Access</th><th>Actions</th></tr></thead><tbody>';
+
+        data.access_rights.forEach(ar => {
+            const accessLabel = ar.right === 'ro' ? 'Read-Only' : 'Read-Write';
+            const accessClass = ar.right === 'ro' ? 'is-info' : 'is-success';
+            const fullName = ar.user.first_name && ar.user.last_name
+                ? `${ar.user.first_name} ${ar.user.last_name}`
+                : '';
+
+            html += `<tr>
+                <td>${ar.user.username}${fullName ? ' - ' + fullName : ''}</td>
+                <td><span class="tag ${accessClass} is-light">${accessLabel}</span></td>
+                <td>
+                    <div class="buttons are-small">
+                        ${ar.right === 'ro' ?
+                            `<button class="button is-small is-success" onclick="updateAccessRight(${diagramId}, ${ar.user_id}, 'rw')" title="Upgrade to Read-Write">
+                                <span class="icon is-small"><i class="fas fa-arrow-up"></i></span>
+                            </button>` :
+                            `<button class="button is-small is-info" onclick="updateAccessRight(${diagramId}, ${ar.user_id}, 'ro')" title="Downgrade to Read-Only">
+                                <span class="icon is-small"><i class="fas fa-arrow-down"></i></span>
+                            </button>`
+                        }
+                        <button class="button is-small is-danger" onclick="revokeAccessRight(${diagramId}, ${ar.id})">
+                            <span class="icon is-small"><i class="fas fa-times"></i></span>
+                        </button>
+                    </div>
+                </td>
+            </tr>`;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading access rights:', error);
+        container.innerHTML = '<p class="has-text-danger is-size-7">Error loading access rights</p>';
+    }
+}
+
+async function grantAccess(diagramId) {
+    const userSelect = document.getElementById(`user-select-${diagramId}`);
+    const rightSelect = document.getElementById(`right-select-${diagramId}`);
+
+    const userId = parseInt(userSelect.value);
+    const right = rightSelect.value;
+
+    if (!userId) {
+        alert('Please select a user');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/training/diagrams/${diagramId}/access-rights`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, right })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            userSelect.value = '';
+            await refreshAccessRights(diagramId);
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error granting access:', error);
+        alert('Error granting access');
+    }
+}
+
+async function updateAccessRight(diagramId, userId, newRight) {
+    try {
+        const response = await fetch(`/training/diagrams/${diagramId}/access-rights`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, right: newRight })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            await refreshAccessRights(diagramId);
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error updating access:', error);
+        alert('Error updating access');
+    }
+}
+
+async function revokeAccessRight(diagramId, accessRightId) {
+    if (!confirm('Revoke access for this user?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/training/diagrams/${diagramId}/access-rights/${accessRightId}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            await refreshAccessRights(diagramId);
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error revoking access:', error);
+        alert('Error revoking access');
+    }
 }
 </script>
 

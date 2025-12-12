@@ -4,13 +4,13 @@ This directory contains reusable template components for displaying extracted PD
 
 ## Components
 
-### 1. `extracted_data_display.html` - Full Interactive Component
+### 1. `sarf_editor.html` - Full Interactive Component
 
 The main component with full functionality including feedback controls, collapsible sections, and Alpine.js integration.
 
 **Usage:**
 ```django
-{% include "components/extracted_data_display.html" with data=extracted_data collapsed=true show_feedback=true message_id=message.id feedback_data=existing_feedback %}
+{% include "components/sarf_editor.html" with data=extracted_data collapsed=true show_feedback=true message_id=message.id feedback_data=existing_feedback %}
 ```
 
 **Parameters:**
@@ -118,7 +118,7 @@ The components use these CSS classes (defined in `base.html`):
 ### In Audit Discussion Page
 ```django
 <!-- Replace existing extracted data display with: -->
-{% include "components/extracted_data_display.html" with data=item.extracted_data collapsed=item.has_conv_feedback|not show_feedback=true message_id=item.message.id feedback_data=item.ext_feedback component_id=item.message.id %}
+{% include "components/sarf_editor.html" with data=item.extracted_data collapsed=item.has_conv_feedback|not show_feedback=true message_id=item.message.id feedback_data=item.ext_feedback component_id=item.message.id %}
 ```
 
 ### In User Detail Modal

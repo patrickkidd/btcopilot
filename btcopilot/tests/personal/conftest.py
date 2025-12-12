@@ -14,6 +14,10 @@ def pytest_configure(config):
         "markers",
         "chat_flow: mock various parts of the intelligence flow",
     )
+    config.addinivalue_line(
+        "markers",
+        "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -52,12 +56,12 @@ def chat_flow(request):
 
 @pytest.fixture
 def discussions(test_user):
-    _discussions = [
+    items = [
         Discussion(user_id=test_user.id, summary=f"test thread {i}") for i in range(3)
     ]
-    db.session.add_all(_discussions)
+    db.session.add_all(items)
     db.session.commit()
-    return _discussions
+    return items
 
 
 @pytest.fixture

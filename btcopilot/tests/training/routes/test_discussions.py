@@ -1,4 +1,5 @@
 import pickle
+from unittest.mock import patch
 
 import pytest
 
@@ -35,8 +36,6 @@ def test_audit_403(subscriber, discussion):
 
 
 def test_audit_shows_pdp_deltas_for_subject_statements_only(auditor):
-    """Test that audit page shows PDP deltas only for Subject statements"""
-
     # Create discussion with both statement types
     discussion = Discussion(user_id=auditor.user.id, summary="PDP deltas test")
     db.session.add(discussion)
@@ -95,7 +94,6 @@ def test_audit_shows_pdp_deltas_for_subject_statements_only(auditor):
 
 
 def test_create_discussion_from_transcript_requires_auditor(subscriber):
-    """Test that transcript creation requires auditor role"""
     response = subscriber.post(
         "/training/discussions/transcript",
         json={"text": "Test transcript"},
@@ -104,7 +102,6 @@ def test_create_discussion_from_transcript_requires_auditor(subscriber):
 
 
 def test_create_discussion_from_transcript_to_current_user(auditor):
-    """Test creating transcript in current user's free diagram when no diagram_id provided"""
     response = auditor.post(
         "/training/discussions/transcript",
         json={"text": "Test transcript", "utterances": []},
@@ -132,7 +129,6 @@ def test_delete_failed_non_owner(logged_in, test_user_2):
 
 
 def test_delete_success(admin, discussion):
-    """Test successful discussion deletion"""
     discussion_id = discussion.id
     response = admin.delete(f"/training/discussions/{discussion_id}")
     assert response.status_code == 200
@@ -140,13 +136,11 @@ def test_delete_success(admin, discussion):
 
 
 def test_delete_not_found(admin):
-    """Test 404 for non-existent discussion"""
     response = admin.delete("/training/discussions/99999")
     assert response.status_code == 404
 
 
 def test_extract_requires_admin(logged_in, discussion):
-    """Test that triggering extraction requires admin role"""
     response = logged_in.post(f"/training/discussions/{discussion.id}/extract")
     assert response.status_code == 403
 
@@ -170,15 +164,12 @@ def test_extract_success(mock_celery, admin, discussion):
 
 
 def test_extract_not_found(admin):
-    """Test 404 for non-existent discussion"""
     response = admin.post("/training/discussions/99999/extract")
     assert response.status_code == 404
 
 
 @pytest.mark.extraction_flow(extractions=[PDPDeltas(events=[], people=[])])
 def test_extracting_flag_reset_on_completion(admin, discussion):
-    """Test that extracting flag is set to False when extraction is complete"""
-
     # Set up a single unprocessed statement
     for statement in discussion.statements:
         if statement.speaker.type == SpeakerType.Subject:
@@ -202,7 +193,6 @@ def test_extracting_flag_reset_on_completion(admin, discussion):
 
 
 def test_clear_extracted_data_subscriber_cannot_access(subscriber, discussion):
-    """Test that subscribers cannot access the clear endpoint"""
     # Subscribers don't have access to the SARF editor, so they shouldn't be able to clear
     response = subscriber.post(
         f"/training/discussions/{discussion.id}/clear-extracted",
@@ -212,7 +202,6 @@ def test_clear_extracted_data_subscriber_cannot_access(subscriber, discussion):
 
 
 def test_clear_extracted_data_auditor_can_clear_own_feedback(auditor, discussion):
-    """Test that auditors can clear their own feedback"""
     # Add some extracted feedback for the auditor
     subject_speaker = Speaker(
         discussion_id=discussion.id, name="User", type=SpeakerType.Subject
@@ -254,7 +243,6 @@ def test_clear_extracted_data_auditor_can_clear_own_feedback(auditor, discussion
 
 
 def test_clear_extracted_data_admin_clears_ai_extractions(admin):
-    """Test that admin can clear AI extractions (Statement.pdp_deltas)"""
     # Create a fresh discussion
     discussion = Discussion(user_id=admin.user.id, summary="Test AI extraction clear")
     db.session.add(discussion)
@@ -316,7 +304,6 @@ def test_clear_extracted_data_admin_clears_ai_extractions(admin):
 
 
 def test_clear_extracted_data_admin_clears_specific_auditor(admin):
-    """Test that admin can clear a specific auditor's feedback"""
     # Create a fresh discussion
     discussion = Discussion(
         user_id=admin.user.id, summary="Test auditor-specific clear"
@@ -397,7 +384,6 @@ def test_clear_extracted_data_admin_clears_specific_auditor(admin):
 
 
 def test_clear_extracted_data_non_admin_cannot_clear_ai(auditor, discussion):
-    """Test that non-admin users cannot clear AI extractions"""
     response = auditor.post(
         f"/training/discussions/{discussion.id}/clear-extracted",
         json={"auditor_id": "AI"},
@@ -407,7 +393,6 @@ def test_clear_extracted_data_non_admin_cannot_clear_ai(auditor, discussion):
 
 
 def test_clear_extracted_data_admin_requires_auditor_id(admin, discussion):
-    """Test that admin requests must include auditor_id parameter"""
     response = admin.post(
         f"/training/discussions/{discussion.id}/clear-extracted", json={}
     )
@@ -416,7 +401,6 @@ def test_clear_extracted_data_admin_requires_auditor_id(admin, discussion):
 
 
 def test_clear_extracted_data_auditor_uses_own_username(auditor):
-    """Test that non-admin auditors always clear their own data, ignoring auditor_id param"""
     # Create a fresh discussion
     discussion = Discussion(user_id=auditor.user.id, summary="Test non-admin clear")
     db.session.add(discussion)
@@ -579,7 +563,6 @@ def verify_extraction_state(
     ]
 )
 def test_extraction_lifecycle_full(mock_celery, admin, discussion_with_statements):
-    """Test complete extraction lifecycle: trigger, extract, clear, re-trigger"""
     discussion, stmts = discussion_with_statements
 
     # Trigger and run extraction
@@ -608,7 +591,6 @@ def test_extraction_lifecycle_full(mock_celery, admin, discussion_with_statement
 
 
 def test_clear_during_extraction(mock_celery, admin):
-    """Test clearing data while extraction is in progress"""
     # Create discussion with statements
     discussion = Discussion(user_id=admin.user.id, summary="Clear during test")
     db.session.add(discussion)
@@ -655,9 +637,113 @@ def test_clear_during_extraction(mock_celery, admin):
         assert stmt.pdp_deltas is None
 
 
+def test_extraction_task_respects_clear_flag(mock_celery, admin):
+    from btcopilot.training.routes.discussions import extract_next_statement
+
+    discussion = Discussion(user_id=admin.user.id, summary="Race test")
+    db.session.add(discussion)
+    db.session.flush()
+
+    speaker = Speaker(
+        discussion_id=discussion.id, name="User", type=SpeakerType.Subject
+    )
+    db.session.add(speaker)
+    db.session.flush()
+
+    statement = Statement(
+        discussion_id=discussion.id,
+        speaker_id=speaker.id,
+        text="Test statement",
+        order=0,
+    )
+    db.session.add(statement)
+    discussion.extracting = True
+    db.session.commit()
+
+    # Simulate race: clear the extracting flag mid-extraction
+    with patch("btcopilot.training.routes.discussions.pdp.update") as mock_update:
+        mock_update.return_value = (None, None)
+
+        # Call extract_next_statement - it will query the statement when extracting=True
+        # But we'll set extracting=False before it commits (simulating the race)
+        def side_effect(*args):
+            # Clear the flag mid-extraction (like the clear endpoint would)
+            discussion.extracting = False
+            db.session.commit()
+            return (None, None)
+
+        mock_update.side_effect = side_effect
+
+        result = extract_next_statement()
+
+    # Verify the task aborted and didn't save results
+    assert result is False
+    db.session.refresh(statement)
+    assert statement.pdp_deltas is None
+
+
+def test_clear_ai_extractions_resets_diagram_pdp(admin, discussion_with_statements):
+    from btcopilot.pro.models import Diagram
+
+    discussion, stmts = discussion_with_statements
+
+    # Create a diagram for this discussion
+    diagram = Diagram(user_id=admin.user.id, name="Test Diagram")
+    db.session.add(diagram)
+    db.session.flush()
+    discussion.diagram_id = diagram.id
+    db.session.commit()
+
+    # Add some fake extracted data to statements and diagram
+    stmts[0].pdp_deltas = {
+        "people": [{"id": -1, "name": "Carol"}],
+        "events": [],
+        "pair_bonds": [],
+        "delete": [],
+    }
+    db.session.commit()
+
+    # Simulate diagram having extracted people
+    from btcopilot.schema import PDP, Person
+
+    database = discussion.diagram.get_diagram_data()
+    database.pdp = PDP(
+        people=[
+            Person(id=1, name="User"),
+            Person(id=2, name="Assistant"),
+            Person(id=-1, name="Carol"),
+            Person(id=-2, name="Uncle Tom"),
+        ],
+        events=[],
+        pair_bonds=[],
+    )
+    discussion.diagram.set_diagram_data(database)
+    db.session.commit()
+
+    # Verify setup
+    database = discussion.diagram.get_diagram_data()
+    assert len(database.pdp.people) == 4
+
+    # Clear AI extractions
+    response = admin.post(
+        f"/training/discussions/{discussion.id}/clear-extracted",
+        json={"auditor_id": "AI"},
+    )
+    assert response.status_code == 200
+
+    # Verify diagram PDP was reset to only base people
+    db.session.refresh(discussion)
+    database = discussion.diagram.get_diagram_data()
+    assert len(database.pdp.people) == 2
+    assert database.pdp.people[0].id == 1
+    assert database.pdp.people[0].name == "User"
+    assert database.pdp.people[1].id == 2
+    assert database.pdp.people[1].name == "Assistant"
+    assert len(database.pdp.events) == 0
+
+
 @pytest.mark.e2e
 def test_extraction_lifecycle_full_e2e(admin, discussion_with_statements):
-    """E2E test: complete extraction lifecycle with real LLM calls"""
     discussion, stmts = discussion_with_statements
 
     # Override statement text with more realistic content for LLM
@@ -689,7 +775,6 @@ def test_extraction_lifecycle_full_e2e(admin, discussion_with_statements):
 
 
 def test_progress_endpoint_after_clear(admin):
-    """Test that progress endpoint returns correct values after clearing"""
     # Create discussion with extracted data
     discussion = Discussion(user_id=admin.user.id, summary="Progress test")
     db.session.add(discussion)
@@ -749,7 +834,6 @@ def test_progress_endpoint_after_clear(admin):
 
 
 def test_celery_task_queueing(mock_celery, admin, discussion):
-    """Test that Celery tasks are queued correctly"""
     # Test extraction task queueing
     response = admin.post(f"/training/discussions/{discussion.id}/extract")
     assert response.status_code == 200
@@ -771,7 +855,6 @@ def test_celery_task_queueing(mock_celery, admin, discussion):
 
 
 def test_celery_task_chaining_mock(mock_celery, flask_app):
-    """Test that Celery task chaining works in extract_next_statement"""
     from btcopilot.training.tasks import extract_next_statement
     from unittest.mock import patch
 
@@ -789,8 +872,6 @@ def test_celery_task_chaining_mock(mock_celery, flask_app):
 
 
 def test_audit_with_person_mapping(auditor, test_user):
-    """Test that audit endpoint handles speaker-to-person mapping correctly"""
-
     # Create diagram with people data as dicts (simulating real diagram structure)
     diagram = Diagram(user_id=test_user.id, name="Test Diagram")
     diagram_data = DiagramData(

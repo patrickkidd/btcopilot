@@ -44,6 +44,9 @@ _log = logging.getLogger(__name__)
 
 
 def _next_statement() -> Statement:
+    # Expire all objects in session to ensure fresh data from database
+    db.session.expire_all()
+
     # Get all subject statements from discussions marked for extraction
     candidates = (
         Statement.query.join(Speaker)
@@ -82,7 +85,8 @@ def extract_next_statement(*args, **kwargs):
 
         try:
             db.session.get_bind()
-        except Exception:
+        except Exception as e:
+            _log.debug(f"DB session bind not available, reconnecting: {e}")
             engine = create_engine(current_app.config["SQLALCHEMY_DATABASE_URI"])
             db.session.bind = engine
 
@@ -123,6 +127,20 @@ def extract_next_statement(*args, **kwargs):
             new_pdp, pdp_deltas = asyncio.run(
                 pdp.update(discussion, database, statement.text)
             )
+
+            # Refresh discussion to check if extraction was cancelled
+            db.session.refresh(discussion)
+
+            # If extraction was cancelled (cleared), abort and don't save results
+            if not discussion.extracting:
+                _log.info(
+                    f"Extraction was cancelled - "
+                    f"discussion_id: {discussion.id}, "
+                    f"statement_id: {statement.id}, "
+                    f"discarding results"
+                )
+                db.session.rollback()
+                return False
 
             # Update database and statement
             database.pdp = new_pdp
@@ -678,9 +696,12 @@ def audit(discussion_id):
     auditor_id = get_auditor_id(request, session)
 
     selected_auditor = request.args.get("selected_auditor")
-    # Default to current auditor if not specified
+    # Default to AI for admins (to show AI extractions), current auditor for non-admins
     if selected_auditor is None:
-        selected_auditor = auditor_id
+        if current_user and current_user.has_role(btcopilot.ROLE_ADMIN):
+            selected_auditor = "AI"
+        else:
+            selected_auditor = auditor_id
 
     statements_with_feedback = []
     # Sort statements by order for proper display
@@ -972,9 +993,16 @@ def audit(discussion_id):
         expert_statements[-1]["is_last_expert"] = True
 
     breadcrumbs = get_breadcrumbs("thread")
+    if discussion.diagram:
+        breadcrumbs.append(
+            {
+                "title": discussion.diagram.name or "Untitled Diagram",
+                "url": None,
+            }
+        )
     breadcrumbs.append(
         {
-            "title": f"{discussion.user.username if discussion.user else 'Unknown User'} - Discussion #{discussion.id}",
+            "title": f"{discussion.summary or 'Untitled Discussion'} (ID: {discussion.id})",
             "url": None,
         }
     )
@@ -1034,6 +1062,12 @@ def audit(discussion_id):
             except (ValueError, TypeError):
                 # Handle non-integer auditor IDs (test cases)
                 auditor_user_map[auditor_id_str] = auditor_id_str
+
+        # Ensure current user is always in the map (even if they haven't submitted feedback)
+        # Use username as key since Feedback.auditor_id stores username strings
+        current_auditor_id = current_user.username
+        if current_auditor_id not in auditor_user_map:
+            auditor_user_map[current_auditor_id] = current_user.username
 
         # Build dropdown options: AI + all human auditors
         auditor_options.append({"id": "AI", "name": "AI"})
@@ -1331,6 +1365,22 @@ def clear_extracted_data(discussion_id):
 
         # Reset extraction progress
         discussion.extracting = False
+
+        # Reset diagram PDP to initial state (only base people: User and Assistant)
+        if discussion.diagram:
+            from btcopilot.schema import PDP, Person
+
+            database = discussion.diagram.get_diagram_data()
+            # Reset PDP to just base people
+            database.pdp = PDP(
+                people=[
+                    Person(id=1, name="User"),
+                    Person(id=2, name="Assistant"),
+                ],
+                events=[],
+                pair_bonds=[],
+            )
+            discussion.diagram.set_diagram_data(database)
 
         _log.info(
             f"Admin {current_user.username} cleared AI extracted data from discussion {discussion_id} "

@@ -31,27 +31,27 @@ def test_delete_diagram_with_discussions_admin(admin, diagram_with_full_data):
     assert AccessRight.query.count() == 0
 
 
-def test_delete_diagram_owner_without_discussions(logged_in, simple_diagram):
+def test_delete_diagram_owner_without_discussions(auditor, simple_diagram):
     """Test that diagram owner can delete their own diagram without discussions"""
     diagram = simple_diagram
 
     # Verify diagram exists
     assert (
-        Diagram.query.filter_by(user_id=logged_in.user.id).count() == 2
+        Diagram.query.filter_by(user_id=auditor.user.id).count() == 2
     )  # free_diagram + our diagram
 
     # Delete the diagram
-    response = logged_in.delete(f"/training/diagrams/{diagram.id}")
+    response = auditor.delete(f"/training/diagrams/{diagram.id}")
     assert response.status_code == 200
     assert response.json["success"] is True
 
     # Verify diagram was deleted
     assert (
-        Diagram.query.filter_by(user_id=logged_in.user.id).count() == 1
+        Diagram.query.filter_by(user_id=auditor.user.id).count() == 1
     )  # Only free_diagram remains
 
 
-def test_delete_diagram_owner_with_discussions_denied(logged_in, discussion):
+def test_delete_diagram_owner_with_discussions_denied(auditor, discussion):
     """Test that non-admin owner cannot delete diagram with discussions"""
     # Use the existing discussion fixture which uses the user's free_diagram
     diagram_id = discussion.diagram_id
@@ -61,7 +61,7 @@ def test_delete_diagram_owner_with_discussions_denied(logged_in, discussion):
     assert Discussion.query.count() == 1
 
     # Try to delete the diagram
-    response = logged_in.delete(f"/training/diagrams/{diagram_id}")
+    response = auditor.delete(f"/training/diagrams/{diagram_id}")
     assert response.status_code == 400
     assert "Only admins can delete diagrams with discussions" in response.json["error"]
 
@@ -70,7 +70,7 @@ def test_delete_diagram_owner_with_discussions_denied(logged_in, discussion):
     assert Discussion.query.count() == 1
 
 
-def test_delete_diagram_unauthorized(logged_in, test_user_2):
+def test_delete_diagram_unauthorized(auditor, test_user_2):
     """Test that user cannot delete another user's diagram"""
     from btcopilot.pro.models import Diagram
     from btcopilot.schema import DiagramData
@@ -89,8 +89,8 @@ def test_delete_diagram_unauthorized(logged_in, test_user_2):
     db.session.add(diagram)
     db.session.commit()
 
-    # Try to delete as logged_in user
-    response = logged_in.delete(f"/training/diagrams/{diagram.id}")
+    # Try to delete as auditor user
+    response = auditor.delete(f"/training/diagrams/{diagram.id}")
     assert response.status_code == 403
     assert response.json["error"] == "Access denied"
 

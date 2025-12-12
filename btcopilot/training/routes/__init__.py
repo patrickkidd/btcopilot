@@ -34,6 +34,7 @@ from .feedback import bp as feedback_bp
 from .diagrams import bp as diagrams_bp
 from .auth import bp as auth_bp
 from .analysis import bp as analysis_bp
+from .synthetic import bp as synthetic_bp
 
 
 _log = logging.getLogger(__name__)
@@ -74,6 +75,7 @@ bp.register_blueprint(feedback_bp)
 bp.register_blueprint(diagrams_bp)
 bp.register_blueprint(auth_bp)
 bp.register_blueprint(analysis_bp)
+bp.register_blueprint(synthetic_bp)
 
 
 @bp.before_request
@@ -171,6 +173,33 @@ def subscriber_landing():
         return redirect(url_for("training.training_root"))
 
     return render_template("subscriber_landing.html", current_user=user)
+
+
+@bp.route("/account")
+@btcopilot_auth.minimum_role(btcopilot.ROLE_AUDITOR)
+def account():
+    """Account page with user info and licenses"""
+    from btcopilot.pro.models import License
+    from btcopilot.training.utils import get_breadcrumbs
+
+    current_user = btcopilot_auth.current_user()
+    if not current_user:
+        return redirect(url_for("training.auth.login"))
+
+    user = User.query.options(
+        db.subqueryload(User.licenses).subqueryload(License.policy),
+        db.subqueryload(User.licenses).subqueryload(License.activations),
+    ).get(current_user.id)
+
+    breadcrumbs = get_breadcrumbs("account")
+
+    return render_template(
+        "account.html",
+        user=user,
+        current_user=current_user,
+        btcopilot=btcopilot,
+        breadcrumbs=breadcrumbs,
+    )
 
 
 @bp.route("/login", methods=["POST"])

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+.license-card {
+    border: 1px solid var(--color-border-default);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div>
+    <h1 class="title">Account</h1>
+    <p class="subtitle">Your account information and licenses</p>
+
+    {% include "partials/user_basic_info.html" with context %}
+
+    {% include "partials/user_licenses.html" with context %}
+</div>
+{% endblock %}

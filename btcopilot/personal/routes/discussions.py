@@ -42,7 +42,7 @@ def _create_discussion(data: dict) -> Discussion:
         diagram = Diagram(
             user_id=user.id,
             name=f"{user.username} Personal Case File",
-            data=pickle.dumps({"diagram_data": asdict(initial_database)}),
+            data=pickle.dumps(asdict(initial_database)),
         )
 
         db.session.add(diagram)

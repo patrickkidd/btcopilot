@@ -2,7 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Documentation
 
+**📋 [Decision Log](decisions/log.md)** - Major architectural decisions and innovations (PDP deltas, IRR study, synthetic data generation, hierarchical F1 metrics)
+
+**📖 [README.md](README.md)** - Project overview and development journal
+
+**📚 [CONTEXT.md](CONTEXT.md)** - Bowen theory domain model, SARF constructs, auditing workflow
+
+**🏗️ [ADRs](adrs/)** - Architecture Decision Records
 
 ## Architecture Overview
 
@@ -59,7 +67,7 @@ btcopilot has these primary functions:
 
 ### SARF Editor
 The interactive, re-usable component for reviewing and editing extracted clinical data (SARF = Symptom, Anxiety, Relationship, Functioning variables). Located in:
-- **File**: `btcopilot/training/templates/components/extracted_data_display.html`
+- **File**: `btcopilot/training/templates/components/sarf_editor.html`
 - **Purpose**: Displays and allows editing of extracted people, events, and clinical variable coding
 - **Features**: Collapsed/expanded views, in-place editing, feedback controls, cumulative data display
 - **Used in**: Training module for domain-expert review and fine-tuning of AI extraction model
@@ -70,6 +78,15 @@ The AI-powered conversation system that extracts family relationship data from u
 - **Purpose**: Documents chat flow architecture starting from `btcopilot.personal.ask`
 - **Includes**: System prompts, test fixtures, data extraction flow, LLM integration
 - **Use When**: Improving system prompts for better LLM alignment based on developer requests for certain behaviors
+
+### Synthetic Conversation Testing
+Automated testing framework for evaluating conversational quality in the Personal app chat flow:
+- **File**: [btcopilot/tests/personal/README.md](btcopilot/tests/personal/README.md)
+- **Module**: `btcopilot.tests.personal.synthetic`
+- **Purpose**: Simulates conversations with synthetic user personas and detects robotic patterns
+- **Includes**: Persona generator, conversation simulator, quality evaluator with pattern detection
+- **Use When**: Testing prompt changes for conversational quality, regression testing for robotic behaviors
+- **Run**: `uv run pytest btcopilot/btcopilot/tests/personal/test_synthetic.py -v -m e2e`
 
 ### F1 Metrics for AI Extraction Evaluation
 Documentation for the F1 metrics system that evaluates AI extraction quality against human ground truth:
@@ -252,7 +269,7 @@ docker exec fd-postgres psql -U familydiagram -d familydiagram -c "SELECT id, na
 - `training/routes/*.py` - API endpoints, approval logic
 - `training/models.py` - Feedback model
 - `training/templates/discussion.html` - Discussion audit page layout, cumulative refresh logic
-- `training/templates/components/extracted_data_display.html` - SARF editor component
+- `training/templates/components/sarf_editor.html` - SARF editor component
 - `training/export_tests.py` - Test case export logic
 - `schema.py` - Event, PDPDeltas, or SARF enums (VariableShift, RelationshipKind)
 - `pdp.py` - cumulative() or apply_deltas() functions

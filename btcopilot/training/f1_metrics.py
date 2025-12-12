@@ -766,22 +766,33 @@ def calculate_statement_f1(
     return metrics
 
 
-def calculate_system_f1() -> SystemF1Metrics:
+def calculate_system_f1(include_synthetic: bool = True) -> SystemF1Metrics:
     """
     Calculate system-wide F1 metrics across all approved ground truth statements.
 
     Queries database for all approved feedbacks and calculates aggregate metrics.
+
+    Args:
+        include_synthetic: If True, include synthetic discussions in metrics.
+                          If False, exclude discussions where Discussion.synthetic=True.
     """
     from btcopilot.training.models import Feedback
-    from btcopilot.personal.models import Statement
+    from btcopilot.personal.models import Statement, Discussion
 
     metrics = SystemF1Metrics()
 
-    approved_feedbacks = (
-        Feedback.query.filter(Feedback.approved == True)
-        .filter(Feedback.feedback_type == "extraction")
-        .all()
+    query = Feedback.query.filter(Feedback.approved == True).filter(
+        Feedback.feedback_type == "extraction"
     )
+
+    if not include_synthetic:
+        query = (
+            query.join(Statement, Feedback.statement_id == Statement.id)
+            .join(Discussion, Statement.discussion_id == Discussion.id)
+            .filter(Discussion.synthetic == False)
+        )
+
+    approved_feedbacks = query.all()
 
     if not approved_feedbacks:
         return metrics

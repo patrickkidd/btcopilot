@@ -12,7 +12,6 @@ from btcopilot.schema import DiagramData, PDP, asdict
 from btcopilot.personal.prompts import (
     ROLE_COACH_NOT_THERAPIST,
     BOWEN_THEORY_COACHING_IN_A_NUTSHELL,
-    DATA_MODEL_DEFINITIONS,
 )
 
 
@@ -25,7 +24,9 @@ class Response:
     pdp: PDP | None = None
 
 
-def ask(discussion: Discussion, user_statement: str) -> Response:
+def ask(
+    discussion: Discussion, user_statement: str, skip_extraction: bool = False
+) -> Response:
 
     ai_log.info(f"User statement: {user_statement}")
     if discussion.diagram:
@@ -33,14 +34,15 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
     else:
         diagram_data = DiagramData()
 
-    new_pdp, pdp_deltas = one_result(
-        pdp.update(discussion, diagram_data, user_statement)
-    )
+    pdp_deltas = None
+    if not skip_extraction:
+        new_pdp, pdp_deltas = one_result(
+            pdp.update(discussion, diagram_data, user_statement)
+        )
 
-    # Write to disk
-    diagram_data.pdp = new_pdp
-    if discussion.diagram:
-        discussion.diagram.set_diagram_data(diagram_data)
+        diagram_data.pdp = new_pdp
+        if discussion.diagram:
+            discussion.diagram.set_diagram_data(diagram_data)
 
     statement = Statement(
         discussion_id=discussion.id,
@@ -58,63 +60,47 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
     # Check for custom prompts in g context (used for testing)
     role_prompt = ROLE_COACH_NOT_THERAPIST
     bowen_prompt = BOWEN_THEORY_COACHING_IN_A_NUTSHELL
-    data_model_prompt = DATA_MODEL_DEFINITIONS
 
     if hasattr(g, "custom_prompts"):
         role_prompt = g.custom_prompts.get("ROLE_COACH_NOT_THERAPIST", role_prompt)
         bowen_prompt = g.custom_prompts.get(
             "BOWEN_THEORY_COACHING_IN_A_NUTSHELL", bowen_prompt
         )
-        data_model_prompt = g.custom_prompts.get(
-            "DATA_MODEL_DEFINITIONS", data_model_prompt
-        )
 
     meta_prompt = textwrap.dedent(
         f"""
         {role_prompt}
 
-        **Data Model Definitions**
-
-        {data_model_prompt}
-
         **Instructions**
 
-        Your goal is to systematically build a complete three-generation family
-        diagram by collecting concrete structural data.
+        Your goal is to first thoroughly understand the presenting problem, then
+        pivot to systematically collecting family structure data for a
+        three-generation diagram.
 
         {bowen_prompt}
 
-        **Where are you in data collection?** Review the conversation history
-        and check what structural data you have:
+        **What we're collecting for the diagram**:
+        - People: names, how they are related, birth dates
+        - Events anchored in time, exploring how things shifted:
+          - Health: Did symptoms get better or worse? "How was your sleep then?"
+          - Stress: Were they anxious, worried, on edge? "Were you stressed about it?"
+          - Relationships: How were people getting along? "How were things between
+            you and your dad at that point?"
+          - Coping: Were they able to function? "Could you focus on work?"
 
-        **Required Data (check what's missing):**
-        - Parents: Both names? Both ages? Alive/deceased? Together/separated?
-        - Siblings: How many? All names? All ages?
-        - Maternal grandparents: Both names? Ages or death dates?
-        - Paternal grandparents: Both names? Ages or death dates?
-        - Problem timeline: When did their issue start (at least year)?
+        When someone mentions a moment in time (a move, a symptom onset, a shift in
+        their social world), EXPAND that period of time by asking about these dimensions
+        before moving on - phrased naturally, specific to what they just said.
+        Values and culture can go in notes, but shouldn't dominate - keep coming
+        back to WHO, WHEN, and how things shifted.
 
         **Your next response (2-3 sentences):**
-        1. Brief acknowledgment of what they just said (show you're listening)
-        2. Ask for the next concrete data point you need from the checklist above
-        3. Keep it conversational but factual: "Got it. What's your mom's name
-           and how old is she?"
-
-        **NEVER use these phrases**:
-        - "It sounds like..." / "That sounds..."
-        - "It makes sense that you're feeling..."
-        - "That must be hard/frustrating/difficult"
-        - "How does that make you feel?"
-        - "Tell me more" (too vague - ask for specific facts)
-        - "How do you think..." (interpretive - just get facts)
-
-        **Response style**:
-        - Direct factual questions: "What's your dad's name?" not "Tell me
-          about your dad"
-        - Always ask for concrete information: names, ages, dates, relationships
-        - Sound like a friendly intake coordinator, not a therapist
-        - Move systematically through the family structure
-        - Don't get stuck exploring feelings or incidents - get the facts
+        - Ask for the next missing data point from the current phase
+        - If pivoting from problem to family: "OK, I have a good picture of
+          what's going on. Now let me get some family background. What's your
+          mom's name and how old is she?"
+        - Vary your responses naturally - don't start every reply the same way
+        - Do NOT parrot back what the user just said - move the conversation forward
 
         **Conversation History**
 
@@ -146,9 +132,5 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
 def _generate_response(
     discussion: Discussion, diagram_data: DiagramData, meta_prompt: str
 ) -> str:
-    """
-    Generate a response from the AI based on the conversation history and the
-    meta prompt.
-    """
     ai_response = llm.submit_one(LLMFunction.Respond, meta_prompt, temperature=0.45)
     return ai_response.strip()

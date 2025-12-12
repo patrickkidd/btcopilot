@@ -296,7 +296,7 @@ function updateUserTable(users) {
         console.error('Could not find users table body');
         return;
     }
-    
+
     // Clear existing content
     tbody.innerHTML = '';
 
@@ -311,8 +311,8 @@ function updateUserTable(users) {
             row.setAttribute('data-roles', user.roles.join(','));
             row.setAttribute('data-status', user.status);
             row.setAttribute('data-created', user.created_at ? user.created_at.split('T')[0] : '');
-            row.setAttribute('onclick', `showUserDetailModal(${user.id})`);
-            row.setAttribute('title', 'Click to view detailed user information');
+            row.setAttribute('onclick', `window.location.href='/training/audit/?user_id=${user.id}'`);
+            row.setAttribute('title', 'Click to view user audit dashboard');
             row.style.cursor = 'pointer';
 
             row.innerHTML = `

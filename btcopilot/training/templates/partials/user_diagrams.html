@@ -24,7 +24,7 @@
     </div>
 
     {% if user.diagrams %}
-        {% for diagram in user.diagrams %}
+        {% for diagram in user.diagrams|sort_by_modified %}
             {{ diagram_card(diagram, user, current_user, btcopilot) }}
         {% endfor %}
     {% else %}

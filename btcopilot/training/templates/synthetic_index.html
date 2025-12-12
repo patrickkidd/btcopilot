@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div>
+    <h1 class="title">
+        <span class="icon mr-2"><i class="fas fa-robot"></i></span>
+        Generate Synthetic Discussion
+    </h1>
+    <p class="subtitle">Create synthetic conversations for ground truth training</p>
+
+    <div class="box">
+        <div class="columns">
+            <div class="column is-half">
+                <form id="generate-form">
+                    <div class="field">
+                        <label class="label">Persona</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select id="persona-select" name="persona" required>
+                                    <option value="">Select a persona...</option>
+                                    {% for persona in personas %}
+                                    <option value="{{ persona.name }}">{{ persona.name }} ({{ persona.traits | join(', ') }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">User</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select id="user-select" name="username">
+                                    <option value="">Current user ({{ current_user.username }})</option>
+                                    {% for user in users %}
+                                    <option value="{{ user.username }}"{% if user.username == current_user.username %} selected{% endif %}>{{ user.username }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <p class="help">User to associate the discussion and diagram with</p>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Max Turns</label>
+                        <div class="control">
+                            <input class="input" type="number" id="max-turns" name="max_turns" value="20" min="1" max="50">
+                        </div>
+                        <p class="help">Number of conversation turns (user + AI alternating)</p>
+                    </div>
+
+                    <div class="field">
+                        <div class="control">
+                            <label class="checkbox">
+                                <input type="checkbox" id="include-extraction" name="include_extraction">
+                                Include extraction (slower, creates pdp_deltas)
+                            </label>
+                        </div>
+                        <p class="help">Check to include AI extraction - needed for ground truth coding</p>
+                    </div>
+
+                    <div class="field">
+                        <div class="control">
+                            <button type="submit" class="button is-primary" id="generate-btn">
+                                <span class="icon"><i class="fas fa-play"></i></span>
+                                <span>Generate Discussion</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="progress-container" style="display: none;" class="mt-4">
+                    <div class="mb-3">
+                        <progress id="progress-bar" class="progress is-primary" max="100">Generating...</progress>
+                        <p class="has-text-centered" id="progress-text">Starting generation...</p>
+                    </div>
+                </div>
+
+                <div id="result-container" style="display: none;" class="mt-4">
+                    <div class="notification is-success">
+                        <p><strong>Discussion generated successfully!</strong></p>
+                        <p>Discussion ID: <a id="result-discussion-id" href="#" class="has-text-weight-bold"></a></p>
+                        <p>Turns: <span id="result-turn-count"></span></p>
+                        <p>Quality Score: <span id="result-quality"></span></p>
+                        <p>Coverage Rate: <span id="result-coverage"></span></p>
+                        <a id="result-link" class="button is-link mt-2" href="#">
+                            <span class="icon"><i class="fas fa-external-link-alt"></i></span>
+                            <span>View Discussion</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="error-container" style="display: none;" class="mt-4">
+                    <div class="notification is-danger">
+                        <p><strong>Error generating discussion:</strong></p>
+                        <p id="error-message"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column is-half">
+                <div class="box has-background-light">
+                    <h3 class="title is-5">Persona Details</h3>
+                    <div id="persona-details">
+                        <p class="has-text-grey">Select a persona to see details</p>
+                    </div>
+                </div>
+
+                <div class="box has-background-info-light mt-4">
+                    <h3 class="title is-5">
+                        <span class="icon"><i class="fas fa-database"></i></span>
+                        Data Created
+                    </h3>
+                    <div class="content">
+                        <p>Generating a synthetic discussion creates the following records:</p>
+                        <ul class="mt-2">
+                            <li><strong>1 Diagram</strong> - Family diagram owned by the selected user</li>
+                            <li><strong>1 Discussion</strong> - Conversation thread linked to the diagram</li>
+                            <li><strong>N Statements</strong> - One per conversation turn (user message + AI response)</li>
+                            <li><strong>N pdp_deltas</strong> - AI extractions per statement (if extraction enabled)</li>
+                        </ul>
+                        <p class="is-size-7 has-text-grey mt-3">
+                            <span class="icon is-small"><i class="fas fa-info-circle"></i></span>
+                            Discussions are marked <code>synthetic=True</code> and can be filtered in the Admin dashboard.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="box">
+        <h3 class="title is-5">About Synthetic Discussions</h3>
+        <div class="content">
+            <p>Synthetic discussions are generated using LLM-simulated personas that respond naturally based on their defined background, traits, and presenting problem.</p>
+            <p><strong>Two purposes:</strong></p>
+            <ul>
+                <li><strong>Ground Truth Corpus:</strong> Generate and persist conversations, then code the extractions as ground truth for F1 metrics.</li>
+                <li><strong>Prompt Testing:</strong> Test conversation quality and coverage metrics to validate prompt changes.</li>
+            </ul>
+            <p><strong>Workflow:</strong></p>
+            <ol>
+                <li>Generate a synthetic discussion (with extraction enabled)</li>
+                <li>Review the conversation in the audit UI</li>
+                <li>Edit and correct the AI extractions</li>
+                <li>Approve as ground truth</li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+<script>
+const personas = {{ personas | tojson }};
+
+document.getElementById('persona-select').addEventListener('change', function() {
+    const persona = personas.find(p => p.name === this.value);
+    const detailsDiv = document.getElementById('persona-details');
+
+    if (persona) {
+        detailsDiv.innerHTML = `
+            <p><strong>Name:</strong> ${persona.name}</p>
+            <p><strong>Traits:</strong> ${persona.traits.join(', ')}</p>
+            <p><strong>Background:</strong></p>
+            <p class="is-size-7">${persona.background}</p>
+        `;
+    } else {
+        detailsDiv.innerHTML = '<p class="has-text-grey">Select a persona to see details</p>';
+    }
+});
+
+document.getElementById('generate-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const persona = document.getElementById('persona-select').value;
+    const username = document.getElementById('user-select').value;
+    const maxTurns = document.getElementById('max-turns').value;
+    const includeExtraction = document.getElementById('include-extraction').checked;
+
+    if (!persona) {
+        alert('Please select a persona');
+        return;
+    }
+
+    document.getElementById('generate-btn').disabled = true;
+    document.getElementById('progress-container').style.display = 'block';
+    document.getElementById('result-container').style.display = 'none';
+    document.getElementById('error-container').style.display = 'none';
+    document.getElementById('progress-bar').removeAttribute('value');
+    document.getElementById('progress-text').textContent = 'Generating discussion (this may take a few minutes)...';
+
+    try {
+        const response = await fetch('{{ url_for("training.synthetic.generate") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                persona: persona,
+                username: username || null,
+                max_turns: parseInt(maxTurns),
+                skip_extraction: !includeExtraction,
+            }),
+        });
+
+        const data = await response.json();
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        await pollTaskStatus(data.task_id);
+
+    } catch (error) {
+        document.getElementById('progress-container').style.display = 'none';
+        document.getElementById('error-message').textContent = error.message;
+        document.getElementById('error-container').style.display = 'block';
+        document.getElementById('generate-btn').disabled = false;
+    }
+});
+
+function showResult(data) {
+    document.getElementById('progress-container').style.display = 'none';
+    const idLink = document.getElementById('result-discussion-id');
+    idLink.textContent = data.discussion_id;
+    idLink.href = data.redirect_url;
+    document.getElementById('result-turn-count').textContent = data.turn_count;
+    document.getElementById('result-quality').textContent = data.quality_score ? data.quality_score.toFixed(3) : 'N/A';
+    document.getElementById('result-coverage').textContent = data.coverage_rate ? (data.coverage_rate * 100).toFixed(1) + '%' : 'N/A';
+    document.getElementById('result-link').href = data.redirect_url;
+    document.getElementById('result-container').style.display = 'block';
+    document.getElementById('generate-btn').disabled = false;
+}
+
+async function pollTaskStatus(taskId) {
+    const pollInterval = 2000;
+
+    while (true) {
+        try {
+            const response = await fetch(`{{ url_for("training.synthetic.task_status", task_id="TASK_ID") }}`.replace('TASK_ID', taskId));
+            const data = await response.json();
+
+            if (data.status === 'complete') {
+                showResult(data);
+                return;
+            } else if (data.status === 'error') {
+                document.getElementById('progress-container').style.display = 'none';
+                document.getElementById('error-message').textContent = data.error;
+                document.getElementById('error-container').style.display = 'block';
+                document.getElementById('generate-btn').disabled = false;
+                return;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+        } catch (error) {
+            document.getElementById('progress-container').style.display = 'none';
+            document.getElementById('error-message').textContent = 'Error checking task status: ' + error.message;
+            document.getElementById('error-container').style.display = 'block';
+            document.getElementById('generate-btn').disabled = false;
+            return;
+        }
+    }
+}
+</script>
+{% endblock %}

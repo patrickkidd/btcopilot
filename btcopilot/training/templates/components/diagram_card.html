@@ -1,137 +1,160 @@
 {% macro diagram_card(diagram, user, current_user, btcopilot, is_shared=False, access_right=None) %}
-<div class="box mb-3 diagram-card">
-    <div class="media">
-        <div class="media-left">
-            <span class="icon is-large {% if is_shared %}has-text-info{% else %}has-text-primary{% endif %}">
-                <i class="fas {% if is_shared %}fa-share-alt{% else %}fa-project-diagram{% endif %} fa-2x"></i>
-            </span>
-        </div>
-        <div class="media-content">
-            <span class="has-text-grey is-size-7">
-                ID: {{ diagram.id|string }}
+<div class="box mb-2 diagram-card py-3 px-4">
+    <div class="level is-mobile mb-2" style="flex-wrap: nowrap;">
+        <div class="level-left" style="min-width: 0; flex-shrink: 1; overflow: hidden;">
+            <div class="level-item" style="min-width: 0; overflow: hidden;">
+                <span class="icon {% if is_shared %}has-text-info{% else %}has-text-primary{% endif %}" style="flex-shrink: 0;">
+                    <i class="fas {% if is_shared %}fa-share-alt{% else %}fa-project-diagram{% endif %}"></i>
+                </span>
+                <strong class="ml-2" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ diagram.name or 'Diagram ' + diagram.id|string }}</strong>
+                <span class="has-text-grey is-size-7 ml-2" style="flex-shrink: 0;">#{{ diagram.id }}</span>
                 {% if not is_shared and diagram.id == user.free_diagram_id %}
-                    (Free Diagram)
+                    <span class="tag is-light is-small ml-2" style="flex-shrink: 0;">Free</span>
                 {% endif %}
                 {% if is_shared and access_right %}
                     {% if access_right.right == btcopilot.ACCESS_READ_ONLY %}
-                        <span class="tag is-info is-light ml-2">Read-Only</span>
+                        <span class="tag is-info is-light is-small ml-2" style="flex-shrink: 0;">Read-Only</span>
                     {% elif access_right.right == btcopilot.ACCESS_READ_WRITE %}
-                        <span class="tag is-success is-light ml-2">Read-Write</span>
+                        <span class="tag is-success is-light is-small ml-2" style="flex-shrink: 0;">Read-Write</span>
                     {% endif %}
                 {% endif %}
-            </span>
-            <p class="title is-6">
-                {{ diagram.name or '' }}
-            </p>
-            {% if diagram.description %}
-                <p class="subtitle is-7 mb-2">{{ diagram.description }}</p>
-            {% endif %}
-            <div class="tags">
-                {% if diagram.created_at %}
-                    <span class="tag is-light">{{ diagram.created_at|format_date_us }}</span>
-                {% endif %}
-                {% if is_shared %}
-                    <span class="tag is-light">Owner: {{ diagram.user.username if diagram.user else 'Unknown' }}</span>
-                {% endif %}
             </div>
-
-            {% if diagram.discussions %}
-                <div class="mt-3">
-                    <strong class="is-size-7">Discussions ({{ diagram.discussions|length }}):</strong>
-                    <div class="mt-2">
-                        {% for discussion in diagram.discussions %}
-                            <div class="mb-2">
-                                <div class="field has-addons">
-                                    <p class="control is-expanded">
-                                        <a href="/training/discussions/{{ discussion.id }}" class="button is-info is-fullwidth">
-                                            <span class="icon">
-                                                <i class="fas fa-comments"></i>
-                                            </span>
-                                            <span>Discussion {{ discussion.id }}</span>
-                                            {% if discussion.summary %}
-                                                <span class="is-size-7 ml-2">- {{ discussion.summary[:30] }}{% if discussion.summary|length > 30 %}...{% endif %}</span>
-                                            {% endif %}
-                                            {% set stmt_count = discussion.statements|length if discussion.statements else 0 %}
-                                            {% set feedback_count = discussion.statements|map(attribute='feedbacks')|map('length')|sum if discussion.statements else 0 %}
-                                            <span class="is-size-7 has-text-weight-normal ml-2">
-                                                ({{ stmt_count }} stmt{% if stmt_count != 1 %}s{% endif %}{% if feedback_count > 0 %}, {{ feedback_count }} fb{% endif %})
-                                            </span>
-                                        </a>
-                                    </p>
-                                    {% if current_user.has_role(btcopilot.ROLE_ADMIN) %}
-                                    <p class="control">
-                                        <button class="button is-danger"
-                                                onclick="deleteDiscussion({{ discussion.id }}, '{{ user.username }}', {{ discussion.statements|length }})"
-                                                title="Delete this discussion">
-                                            <span class="icon">
-                                                <i class="fas fa-trash"></i>
-                                            </span>
-                                        </button>
-                                    </p>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% else %}
-                <div class="mt-3">
-                    <span class="has-text-grey is-size-7">No discussions</span>
-                </div>
-            {% endif %}
-
-            {% set can_upload = (not is_shared) or (access_right and access_right.right == btcopilot.ACCESS_READ_WRITE) %}
-            {% if can_upload %}
-            <!-- Import Audio/JSON for this diagram -->
-            <div class="columns is-variable is-1 mt-3">
-                <div class="column">
-                    <div class="box has-text-centered"
-                         id="audio-drop-zone-diagram-{{ diagram.id }}"
-                         style="border: 1px dashed #dbdbdb; padding: 1rem; transition: all 0.2s ease; cursor: pointer;"
-                         onclick="document.getElementById('audio-file-diagram-{{ diagram.id }}').click()">
-                        <input type="file" id="audio-file-diagram-{{ diagram.id }}" style="display: none;"
-                               accept=".mp3,.wav,.m4a,.mp4,.flac,.ogg,.webm,.aac"
-                               onchange="handleAudioFileSelect(event, {{ user.id }}, {{ diagram.id }})">
-                        <p class="is-size-7 has-text-grey">
-                            <span class="icon is-small"><i class="fas fa-microphone"></i></span>
-                            Drop audio file
-                        </p>
-                    </div>
-                </div>
-                <div class="column">
-                    <div class="box has-text-centered"
-                         id="json-drop-zone-diagram-{{ diagram.id }}"
-                         style="border: 1px dashed #3273dc; padding: 1rem; transition: all 0.2s ease; cursor: pointer;"
-                         onclick="document.getElementById('json-file-diagram-{{ diagram.id }}').click()">
-                        <input type="file" id="json-file-diagram-{{ diagram.id }}" style="display: none;"
-                               accept=".json"
-                               onchange="handleJsonFileSelect(event, {{ user.id }}, {{ diagram.id }})">
-                        <p class="is-size-7 has-text-primary">
-                            <span class="icon is-small"><i class="fas fa-file-code"></i></span>
-                            Drop JSON file
-                        </p>
-                    </div>
-                </div>
-            </div>
-            {% elif is_shared %}
-            <div class="notification is-light mt-3">
-                <p class="has-text-grey is-size-7">
-                    <span class="icon is-small"><i class="fas fa-info-circle"></i></span>
-                    Read-only access: Can add SARF codes, cannot create new discussions
-                </p>
-            </div>
-            {% endif %}
         </div>
-        <div class="media-right">
-            {% if not is_shared and current_user.has_role(btcopilot.ROLE_ADMIN) %}
-                <button class="button is-small is-danger"
-                        onclick="deleteDiagram({{ diagram.id }}, '{{ diagram.name or 'Diagram ' + diagram.id|string }}')">
-                    <span class="icon is-small">
-                        <i class="fas fa-trash"></i>
-                    </span>
-                </button>
-            {% endif %}
+        <div class="level-right" style="flex-shrink: 0;">
+            <div class="level-item">
+                <span class="has-text-grey is-size-7">
+                    {% if diagram.updated_at %}
+                        {{ diagram.updated_at|format_date_us }}
+                    {% elif diagram.created_at %}
+                        {{ diagram.created_at|format_date_us }}
+                    {% endif %}
+                </span>
+            </div>
+            <div class="level-item">
+                <div class="buttons are-small">
+                    {% if not is_shared %}
+                        <button class="button is-small is-info"
+                                onclick="toggleAccessRights({{ diagram.id }})"
+                                title="Manage access rights">
+                            <span class="icon is-small"><i class="fas fa-users-cog"></i></span>
+                        </button>
+                    {% endif %}
+                    {% if not is_shared and current_user.has_role(btcopilot.ROLE_ADMIN) %}
+                        <button class="button is-small is-danger"
+                                onclick="deleteDiagram({{ diagram.id }}, '{{ diagram.name or 'Diagram ' + diagram.id|string }}')">
+                            <span class="icon is-small"><i class="fas fa-trash"></i></span>
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
+
+    {% if is_shared %}
+        <p class="is-size-7 has-text-grey mb-2">Owner: {{ diagram.user.username if diagram.user else 'Unknown' }}</p>
+    {% endif %}
+
+    {% if diagram.discussions %}
+        <div class="is-size-7">
+            {% for discussion in diagram.discussions %}
+                <div class="field has-addons mb-1">
+                    <p class="control is-expanded">
+                        <a href="/training/discussions/{{ discussion.id }}" class="button is-small is-info is-fullwidth is-justify-content-flex-start">
+                            <span class="icon is-small"><i class="fas fa-comments"></i></span>
+                            <span>#{{ discussion.id }}</span>
+                            {% if discussion.summary %}
+                                <span class="ml-2 has-text-weight-normal">{{ discussion.summary[:40] }}{% if discussion.summary|length > 40 %}...{% endif %}</span>
+                            {% endif %}
+                            {% set stmt_count = discussion.statements|length if discussion.statements else 0 %}
+                            <span class="has-text-weight-normal ml-auto">({{ stmt_count }})</span>
+                        </a>
+                    </p>
+                    {% if current_user.has_role(btcopilot.ROLE_ADMIN) %}
+                    <p class="control">
+                        <button class="button is-small is-danger"
+                                onclick="deleteDiscussion({{ discussion.id }}, '{{ user.username }}', {{ discussion.statements|length }})"
+                                title="Delete">
+                            <span class="icon is-small"><i class="fas fa-trash"></i></span>
+                        </button>
+                    </p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="has-text-grey is-size-7 mb-2">No discussions</p>
+    {% endif %}
+
+    {% set can_upload = (not is_shared) or (access_right and access_right.right == btcopilot.ACCESS_READ_WRITE) %}
+    {% if can_upload %}
+    <div class="field is-grouped mt-2">
+        <p class="control">
+            <span class="file is-small">
+                <label class="file-label">
+                    <input class="file-input" type="file" id="audio-file-diagram-{{ diagram.id }}"
+                           accept=".mp3,.wav,.m4a,.mp4,.flac,.ogg,.webm,.aac"
+                           onchange="handleAudioFileSelect(event, {{ user.id }}, {{ diagram.id }})">
+                    <span class="file-cta" id="audio-drop-zone-diagram-{{ diagram.id }}" style="border-style: dashed; background: transparent; border-color: var(--color-border-default); color: var(--color-fg-muted);">
+                        <span class="file-icon"><i class="fas fa-microphone"></i></span>
+                        <span class="file-label">Upload Audio</span>
+                    </span>
+                </label>
+            </span>
+        </p>
+        <p class="control">
+            <span class="file is-small">
+                <label class="file-label">
+                    <input class="file-input" type="file" id="json-file-diagram-{{ diagram.id }}"
+                           accept=".json"
+                           onchange="handleJsonFileSelect(event, {{ user.id }}, {{ diagram.id }})">
+                    <span class="file-cta" id="json-drop-zone-diagram-{{ diagram.id }}" style="border-style: dashed; background: transparent; border-color: var(--color-border-default); color: var(--color-fg-muted);">
+                        <span class="file-icon"><i class="fas fa-file-code"></i></span>
+                        <span class="file-label">Upload JSON</span>
+                    </span>
+                </label>
+            </span>
+        </p>
+    </div>
+    {% elif is_shared %}
+    <p class="has-text-grey is-size-7 mt-2">
+        <span class="icon is-small"><i class="fas fa-info-circle"></i></span>
+        Read-only: Can add SARF codes, cannot create discussions
+    </p>
+    {% endif %}
+
+    <!-- Access Rights Management Section (Hidden by default) -->
+    {% if not is_shared %}
+    <div id="access-rights-{{ diagram.id }}" class="mt-3" style="display: none;">
+        <hr class="my-2">
+        <div class="is-size-7">
+            <strong><span class="icon is-small"><i class="fas fa-users-cog"></i></span> Access Rights</strong>
+            <div id="current-access-rights-{{ diagram.id }}" class="mt-2">
+                <p class="has-text-grey-light">Loading...</p>
+            </div>
+            <div class="field has-addons mt-2">
+                <div class="control is-expanded">
+                    <div class="select is-fullwidth is-small">
+                        <select id="user-select-{{ diagram.id }}">
+                            <option value="">Select user...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="control">
+                    <div class="select is-small">
+                        <select id="right-select-{{ diagram.id }}">
+                            <option value="ro">Read-Only</option>
+                            <option value="rw">Read-Write</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="control">
+                    <button class="button is-small is-primary" onclick="grantAccess({{ diagram.id }})">
+                        <span class="icon is-small"><i class="fas fa-plus"></i></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endmacro %}
