@@ -87,7 +87,11 @@ def extract_discussion_data():
 
 
 def generate_synthetic_discussion(
-    persona_name: str, username: str, max_turns: int, skip_extraction: bool
+    self,
+    persona_name: str,
+    username: str,
+    max_turns: int,
+    skip_extraction: bool,
 ):
     _log.info(
         f"generate_synthetic_discussion() persona={persona_name}, user={username}, "
@@ -106,7 +110,20 @@ def generate_synthetic_discussion(
             skip_extraction=skip_extraction,
         )
 
-        result = simulator.run(persona, ask)
+        def on_progress(turn_num, total, user_text, ai_text):
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "current": turn_num,
+                    "total": total,
+                    "user_text": user_text[:100] if user_text else "",
+                    "ai_text": ai_text[:100] if ai_text else "",
+                },
+            )
+
+        result = simulator.run(
+            persona, ask, on_progress=on_progress, yield_progress=False
+        )
         db.session.commit()
 
         _log.info(

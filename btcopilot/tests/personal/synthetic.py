@@ -652,8 +652,12 @@ class ConversationSimulator:
 
                 db.session.commit()
 
-                if on_progress and yield_progress:
-                    yield on_progress(turn_num, self.max_turns, user_text, ai_text)
+                if on_progress:
+                    progress_result = on_progress(
+                        turn_num, self.max_turns, user_text, ai_text
+                    )
+                    if yield_progress and progress_result:
+                        yield progress_result
 
                 if self._is_complete(turns):
                     break

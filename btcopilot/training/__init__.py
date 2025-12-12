@@ -2,18 +2,14 @@ from . import routes
 
 
 def format_date_us(value):
-    """Format date as mm/dd/yyyy instead of yyyy-mm-dd"""
     if value is None:
         return ""
     if hasattr(value, "strftime"):
-        # It's a datetime/date object
         return value.strftime("%m/%d/%Y")
-    # It's a string in ISO format
     return value
 
 
 def sort_by_modified(diagrams):
-    """Sort diagrams by last modified date (updated_at or created_at), most recent first."""
     from datetime import datetime
 
     def get_sort_key(d):
@@ -32,9 +28,9 @@ def init_celery(celery):
     from . import tasks
 
     celery.task(tasks.extract_next_statement, name="extract_next_statement")
+    celery.task(tasks.extract_discussion_statements, name="extract_discussion_statements")
     celery.task(
-        tasks.extract_discussion_statements, name="extract_discussion_statements"
-    )
-    celery.task(
-        tasks.generate_synthetic_discussion, name="generate_synthetic_discussion"
+        tasks.generate_synthetic_discussion,
+        name="generate_synthetic_discussion",
+        bind=True,
     )
