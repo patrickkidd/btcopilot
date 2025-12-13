@@ -58,7 +58,10 @@ echo -e "${YELLOW}Starting Claude Code...${NC}"
 echo ""
 
 # Run Claude Code with the meta-prompt
-claude --prompt-file btcopilot/btcopilot/training/prompts/induction_agent.md
+# Use env var to avoid shell quote interpretation issues with complex markdown
+# --dangerously-skip-permissions allows autonomous file edits without prompts
+PROMPT=$(cat btcopilot/btcopilot/training/prompts/induction_agent.md)
+claude -p --dangerously-skip-permissions "$PROMPT"
 
 # 4. Check results
 echo ""

@@ -357,25 +357,28 @@ SECTION 1: DATA MODEL (Semantic definitions - what things mean)
   - Relationship: Any emotive/automatic action/behavior performed by one person in
     relation to one or more other persons. Serves to decrease discomfort in the
     short term. Use Event.relationship field with RelationshipKind enum values.
+    **CRITICAL: relationshipTargets field is REQUIRED for ALL relationship events - it lists the person IDs of who the person is interacting with.**
     One of two categories:
 
     A) Anxiety binding mechanisms, allow people to remain in relationship
-       despite misalignment/tension (specify people involved using
-       Event.relationshipTargets - list of person IDs)
+       despite misalignment/tension (ALWAYS specify people involved using
+       Event.relationshipTargets - list of person IDs, NEVER leave empty)
       - "distance": Avoiding open communication about important topics up to
         cutoff in the extreme
-      - "conflict": Overt arguments up to violence in the extreme
+      - "conflict": Overt arguments up to violence in the extreme (but see
+        "inside" below - if user mentions conflict WITH someone to ABOUT a
+        third party, it's likely a triangle "inside" move, not pure conflict)
       - "overfunctioning"/"underfunctioning": One person functions lower because
         another overfunctions for them (reciprocity)
       - "projection": Attention to a real or perceived problem in a child (one
         single child - use Event.child field)
     B) Triangle moves: At least one person aligns or attempts to align with
        another against a third to reduce discomfort (use
-       Event.relationshipTriangles - list of person IDs)
+       Event.relationshipTriangles - list of person IDs for the "outside" person)
       a) "inside": One person has positive sentiment toward a second with
          negative about a third (e.g., Person A seeks Person B's agreement that
          Person C is good/bad). So this is a move to the "inside" with another
-         while a third is "outside".
+         while a third is "outside". **Use this for conflicts ABOUT a third party, not conflicts WITH that party directly.**
       b) "outside": One person puts themselves on the outside in relation to
          another that they put together on the "inside". So this is a move to
          the "outside" position.
@@ -404,6 +407,7 @@ SECTION 2: EXTRACTION RULES (Operational guidance)
    not multiple events for the same information
 4. **UPDATE ONLY CHANGED FIELDS**: When updating existing items, include only
    the fields that are changing
+5. **BIRTH EVENTS**: When user provides "Name, born MM/DD/YYYY" format, extract BOTH the person AND a birth event with kind="birth" and the provided date
 
 **Instructions:**
 
@@ -477,6 +481,52 @@ CORRECT Output:
     "events": [],  // No event - just a general feeling about a person
     "delete": []
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [UNDER_EXTRACTION_BIRTH_EVENT]
+# Error Pattern: AI extracts person but misses birth event when user provides "Name, born MM/DD/YYYY"
+# ─────────────────────────────────────────────────────────────────────────────
+
+Example: Birth dates MUST create birth events
+
+Input: "Elizabeth Smith, born 12/3/1954"
+
+DiagramData: {
+    "people": [
+        {"id": 1, "name": "User", "confidence": 1.0}
+    ],
+    "events": [],
+    "pdp": {"people": [], "events": []}
+}
+
+❌ WRONG OUTPUT (missing birth event):
+{
+    "people": [
+        {"id": -1, "name": "Elizabeth Smith", "confidence": 0.9}
+    ],
+    "events": [],  // WRONG - missing birth event
+    "delete": []
+}
+
+✅ CORRECT OUTPUT:
+{
+    "people": [
+        {"id": -1, "name": "Elizabeth Smith", "confidence": 0.9}
+    ],
+    "events": [
+        {
+            "id": -2,
+            "kind": "birth",
+            "person": -1,
+            "description": "Born",
+            "dateTime": "1954-12-03",
+            "confidence": 0.9
+        }
+    ],
+    "delete": []
+}
+
+WHY: When a user provides a birth date, they are giving you TWO pieces of information: the person AND the birth event. Always extract both.
 
 # ─────────────────────────────────────────────────────────────────────────────
 # [EVENT_TIMEFRAME_SPECIFIC_INCIDENT]

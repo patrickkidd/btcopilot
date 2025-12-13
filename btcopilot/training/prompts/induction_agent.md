@@ -29,8 +29,9 @@ b. **Read current prompts**: `btcopilot/btcopilot/personal/prompts.py`
 
 c. **Establish baseline**: Run test to get starting F1 scores
    ```bash
-   uv run python -m btcopilot.training.test_prompts
+   uv run python -m btcopilot.training.test_prompts_live
    ```
+   - This runs live extraction with current prompts (not cached results)
    - Parse and record all F1 scores (aggregate, people, events, symptom, anxiety, relationship, functioning)
    - This is your baseline to beat
 
@@ -125,9 +126,9 @@ Use the `Edit` tool to update `btcopilot/btcopilot/personal/prompts.py`:
 
 #### d. Test Changes
 
-Run the test harness:
+Run the live test harness (re-extracts with current prompts):
 ```bash
-uv run python -m btcopilot.training.test_prompts
+uv run python -m btcopilot.training.test_prompts_live
 ```
 
 **Parse F1 scores** from output:
@@ -253,7 +254,7 @@ git checkout btcopilot/btcopilot/personal/prompts.py
 ## Technical Notes
 
 - GT dataset hash: [First 8 chars of sha256 of gt_export.json]
-- Test command: `uv run python -m btcopilot.training.test_prompts`
+- Test command: `uv run python -m btcopilot.training.test_prompts_live`
 - Convergence criterion: F1 improvement <0.01 for 3 iterations
 - Max iterations: 10
 ```
@@ -291,7 +292,7 @@ Your induction run is successful if:
 
 **Read-only**:
 - `instance/gt_export.json` - Ground truth cases (AI extractions vs. human corrections)
-- `btcopilot/btcopilot/training/test_prompts.py` - Test harness (DO NOT MODIFY)
+- `btcopilot/btcopilot/training/test_prompts_live.py` - Live test harness (DO NOT MODIFY)
 
 **Read-write**:
 - `btcopilot/btcopilot/personal/prompts.py` - Target for improvements (three parts):
@@ -314,7 +315,7 @@ Each iteration takes ~1-2 minutes (analysis + edit + test).
 
 ## Troubleshooting
 
-**If test_prompts.py fails with error**:
+**If test_prompts_live.py fails with error**:
 - Check for syntax errors in prompts.py (likely introduced by your edit)
 - Use `Read` tool to verify the file structure
 - Revert last edit and try a more careful change
