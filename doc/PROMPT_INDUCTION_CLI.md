@@ -116,11 +116,11 @@ Improve prompts in `btcopilot/personal/prompts.py` to maximize F1 scores on grou
       - Use `Grep` to find similar patterns in codebase if needed
 
    b. **Propose ONE Targeted Change**
-      - Modify `DATA_EXTRACTION_PROMPT` (single consolidated prompt):
-        - SECTION 1: DATA MODEL (semantic definitions)
-        - SECTION 2: EXTRACTION RULES (operational guidance)
-        - SECTION 3: EXAMPLES (error patterns)
-        - Or combination of sections (if tightly coupled)
+      - Edit one of three prompt parts:
+        - `DATA_EXTRACTION_PROMPT` - SECTION 1 (data model) or SECTION 2 (rules)
+        - `DATA_EXTRACTION_EXAMPLES` - SECTION 3 (error pattern examples, literal JSON)
+        - `DATA_EXTRACTION_CONTEXT` - Context instructions (rarely needed)
+        - Or combination (if tightly coupled)
       - Focus on fixing top 1-2 error patterns
       - Keep changes minimal (avoid over-engineering)
       - Follow prompt tuning rules from ~/.claude/CLAUDE.md:
@@ -243,11 +243,10 @@ Improve prompts in `btcopilot/personal/prompts.py` to maximize F1 scores on grou
 - `btcopilot/training/test_prompts.py` - Test harness
 
 **Read-write**:
-- `btcopilot/personal/prompts.py` - Target for improvements
-  - `DATA_EXTRACTION_PROMPT` - Single consolidated extraction prompt
-    - SECTION 1: DATA MODEL (semantic definitions)
-    - SECTION 2: EXTRACTION RULES (operational guidance)
-    - SECTION 3: EXAMPLES (error patterns)
+- `btcopilot/personal/prompts.py` - Target for improvements (three parts):
+  - `DATA_EXTRACTION_PROMPT` - Header + SECTION 1 + SECTION 2
+  - `DATA_EXTRACTION_EXAMPLES` - SECTION 3 (error patterns, literal JSON)
+  - `DATA_EXTRACTION_CONTEXT` - Context with runtime variables
 
 **Write-only**:
 - `instance/induction_report.md` - Final report
@@ -565,7 +564,7 @@ Iteration 2/10: Analyzing remaining errors...
 - Relationship triangles: Missing 3rd person in triangle coding
 - Example: "Mom and Dad fight about me" only codes Mom↔Dad, misses child
 
-Adding triangle example to DATA_EXTRACTION_PROMPT SECTION 3...
+Adding triangle example to DATA_EXTRACTION_EXAMPLES...
 Testing... F1: 0.847 → 0.869 (+0.022) ✅
 
 Iteration 3/10: Analyzing remaining errors...

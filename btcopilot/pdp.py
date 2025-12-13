@@ -198,7 +198,11 @@ async def update(
     discussion, diagram_data: DiagramData, user_message: str
 ) -> tuple[PDP, PDPDeltas]:
 
-    from btcopilot.personal.prompts import DATA_EXTRACTION_PROMPT
+    from btcopilot.personal.prompts import (
+        DATA_EXTRACTION_PROMPT,
+        DATA_EXTRACTION_EXAMPLES,
+        DATA_EXTRACTION_CONTEXT,
+    )
     from btcopilot.extensions import llm, LLMFunction, ai_log
 
     reference_date = (
@@ -207,11 +211,15 @@ async def update(
         else datetime.now().date()
     )
 
-    data_extraction_prompt = DATA_EXTRACTION_PROMPT.format(
-        current_date=reference_date.isoformat(),
-        user_message=user_message,
-        conversation_history=discussion.conversation_history(),
-        diagram_data=asdict(diagram_data),
+    # Assemble full prompt: header+rules, examples, context with data
+    data_extraction_prompt = (
+        DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
+        + DATA_EXTRACTION_EXAMPLES
+        + DATA_EXTRACTION_CONTEXT.format(
+            diagram_data=asdict(diagram_data),
+            conversation_history=discussion.conversation_history(),
+            user_message=user_message,
+        )
     )
 
     pdp_deltas = await llm.submit(

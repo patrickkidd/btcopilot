@@ -17,12 +17,15 @@ a. **Read ground truth**: `instance/gt_export.json`
    - Each case has: statement text, AI extraction, GT extraction, expert feedback
 
 b. **Read current prompts**: `btcopilot/btcopilot/personal/prompts.py`
-   - Focus on `DATA_EXTRACTION_PROMPT` (single consolidated prompt)
-   - Contains 3 sections:
-     - SECTION 1: DATA MODEL (semantic definitions - fully editable)
-     - SECTION 2: EXTRACTION RULES (operational guidance - fully editable)
-     - SECTION 3: EXAMPLES (error patterns - fully editable)
-   - All sections are tunable - agent can modify semantics, rules, or examples
+   - Three-part structure (concatenated at runtime in pdp.py):
+     - `DATA_EXTRACTION_PROMPT` - Header + SECTION 1 + SECTION 2 (with {current_date} variable)
+     - `DATA_EXTRACTION_EXAMPLES` - SECTION 3 examples (no variables, literal JSON - edit freely)
+     - `DATA_EXTRACTION_CONTEXT` - Context (with {diagram_data}, {conversation_history}, {user_message})
+   - All parts are fully editable:
+     - SECTION 1: DATA MODEL (semantic definitions)
+     - SECTION 2: EXTRACTION RULES (operational guidance)
+     - SECTION 3: EXAMPLES (error patterns - in DATA_EXTRACTION_EXAMPLES)
+   - Split structure avoids brace-escaping in JSON examples
 
 c. **Establish baseline**: Run test to get starting F1 scores
    ```bash
@@ -66,9 +69,10 @@ Compare AI extractions vs. GT in `gt_export.json`. Identify the **top 2-3 error 
 - **Integrate new concerns alongside existing ones**
 
 **Choose ONE strategy**:
-- Modify `DATA_EXTRACTION_PROMPT` SECTION 3 (add/remove/refine example cases)
+- Modify `DATA_EXTRACTION_EXAMPLES` (add/remove/refine SECTION 3 example cases)
 - Refine `DATA_EXTRACTION_PROMPT` SECTION 2 (clarify extraction rules)
 - Refine `DATA_EXTRACTION_PROMPT` SECTION 1 (clarify semantic definitions)
+- Modify `DATA_EXTRACTION_CONTEXT` (adjust context instructions - rarely needed)
 - Combination (only if tightly coupled)
 
 **Focus**: Address the top 1-2 error patterns identified in step (a)
@@ -108,13 +112,16 @@ Format each example:
 #### c. Edit Prompts
 
 Use the `Edit` tool to update `btcopilot/btcopilot/personal/prompts.py`:
-- Modify `DATA_EXTRACTION_PROMPT` (single multi-line string)
-- Can edit any section (data model semantics, extraction rules, or examples)
+- Edit one of three constants:
+  - `DATA_EXTRACTION_PROMPT` - for SECTION 1 (data model) or SECTION 2 (rules)
+  - `DATA_EXTRACTION_EXAMPLES` - for SECTION 3 (error pattern examples)
+  - `DATA_EXTRACTION_CONTEXT` - for context instructions (rarely needed)
 - Use section markers (═══ headers) to identify which part you're changing
 - Make **precise, surgical changes**
 - Provide exact `old_string` and `new_string`
 - Preserve indentation, formatting, and visual separators
 - Don't rewrite everything
+- **Note**: Examples have literal JSON braces - no escaping needed
 
 #### d. Test Changes
 
@@ -287,11 +294,12 @@ Your induction run is successful if:
 - `btcopilot/btcopilot/training/test_prompts.py` - Test harness (DO NOT MODIFY)
 
 **Read-write**:
-- `btcopilot/btcopilot/personal/prompts.py` - Target for improvements
-  - `DATA_EXTRACTION_PROMPT` - Single consolidated extraction prompt
+- `btcopilot/btcopilot/personal/prompts.py` - Target for improvements (three parts):
+  - `DATA_EXTRACTION_PROMPT` - Header + SECTION 1 + SECTION 2
     - SECTION 1: DATA MODEL (semantic definitions)
     - SECTION 2: EXTRACTION RULES (operational guidance)
-    - SECTION 3: EXAMPLES (error patterns)
+  - `DATA_EXTRACTION_EXAMPLES` - SECTION 3 (error pattern examples, literal JSON)
+  - `DATA_EXTRACTION_CONTEXT` - Context with runtime variables (rarely edited)
 
 **Write-only**:
 - `instance/induction_report.md` - Final report (will be created)
@@ -347,7 +355,7 @@ Iteration 1:
 Iteration 2:
 - Analyzed remaining errors: Relationship triangles missing 3rd person (8/23 cases)
   - Example: "Mom and Dad fight about me" only codes Mom↔Dad, misses child
-- Change: Added triangle example to DATA_EXTRACTION_PROMPT SECTION 3
+- Change: Added triangle example to DATA_EXTRACTION_EXAMPLES
 - Test result: F1 0.847 → 0.869 (+0.022) ✅
 - Decision: KEEP
 

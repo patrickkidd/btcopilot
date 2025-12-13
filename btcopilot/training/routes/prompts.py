@@ -44,6 +44,8 @@ def index():
     # Get default prompts
     default_prompts = {
         "DATA_EXTRACTION_PROMPT": prompts.DATA_EXTRACTION_PROMPT,
+        "DATA_EXTRACTION_EXAMPLES": prompts.DATA_EXTRACTION_EXAMPLES,
+        "DATA_EXTRACTION_CONTEXT": prompts.DATA_EXTRACTION_CONTEXT,
         "CONVERSATION_FLOW_PROMPT": prompts.CONVERSATION_FLOW_PROMPT,
     }
 
@@ -99,6 +101,8 @@ def defaults():
     return jsonify(
         {
             "DATA_EXTRACTION_PROMPT": prompts.DATA_EXTRACTION_PROMPT,
+            "DATA_EXTRACTION_EXAMPLES": prompts.DATA_EXTRACTION_EXAMPLES,
+            "DATA_EXTRACTION_CONTEXT": prompts.DATA_EXTRACTION_CONTEXT,
             "CONVERSATION_FLOW_PROMPT": prompts.CONVERSATION_FLOW_PROMPT,
         }
     )
@@ -213,12 +217,25 @@ def test_extraction():
 
     try:
         # Temporarily override prompts for testing
-        original_prompt = prompts.DATA_EXTRACTION_PROMPT
+        original_prompts = {
+            "DATA_EXTRACTION_PROMPT": prompts.DATA_EXTRACTION_PROMPT,
+            "DATA_EXTRACTION_EXAMPLES": prompts.DATA_EXTRACTION_EXAMPLES,
+            "DATA_EXTRACTION_CONTEXT": prompts.DATA_EXTRACTION_CONTEXT,
+        }
 
         try:
+            # Apply custom prompts
             if "DATA_EXTRACTION_PROMPT" in custom_prompts:
                 prompts.DATA_EXTRACTION_PROMPT = custom_prompts[
                     "DATA_EXTRACTION_PROMPT"
+                ]
+            if "DATA_EXTRACTION_EXAMPLES" in custom_prompts:
+                prompts.DATA_EXTRACTION_EXAMPLES = custom_prompts[
+                    "DATA_EXTRACTION_EXAMPLES"
+                ]
+            if "DATA_EXTRACTION_CONTEXT" in custom_prompts:
+                prompts.DATA_EXTRACTION_CONTEXT = custom_prompts[
+                    "DATA_EXTRACTION_CONTEXT"
                 ]
 
             # Create discussion and database objects for testing
@@ -255,7 +272,15 @@ def test_extraction():
 
         finally:
             # Always restore original prompts
-            prompts.DATA_EXTRACTION_PROMPT = original_prompt
+            prompts.DATA_EXTRACTION_PROMPT = original_prompts[
+                "DATA_EXTRACTION_PROMPT"
+            ]
+            prompts.DATA_EXTRACTION_EXAMPLES = original_prompts[
+                "DATA_EXTRACTION_EXAMPLES"
+            ]
+            prompts.DATA_EXTRACTION_CONTEXT = original_prompts[
+                "DATA_EXTRACTION_CONTEXT"
+            ]
 
     except Exception as e:
         _log.error(f"Error testing extraction: {e}", exc_info=True)

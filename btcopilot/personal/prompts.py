@@ -265,9 +265,10 @@ back to WHO, WHEN, and how things shifted.
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# DATA EXTRACTION PROMPT (Single induction target - fully editable)
+# DATA EXTRACTION PROMPTS (Split to avoid brace escaping in examples)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# Part 1: Header + SECTION 1 + SECTION 2 (with {current_date} template variable)
 DATA_EXTRACTION_PROMPT = """
 Today's date is: {current_date}
 
@@ -429,6 +430,10 @@ SECTION 2: EXTRACTION RULES (Operational guidance)
   entries
 - Include confidence level between 0.0 - 0.9
 - Return empty lists if no NEW occurrences found
+"""
+
+# Part 2: SECTION 3 examples (no template variables - contains literal JSON)
+DATA_EXTRACTION_EXAMPLES = """
 
 ═══════════════════════════════════════════════════════════════════════════════
 SECTION 3: EXAMPLES (Error patterns - labeled for learning)
@@ -750,6 +755,10 @@ of siblings provided in the user message.)
     "events": [],
     "delete": [-978]
 }
+"""
+
+# Part 3: Context with template variables ({diagram_data}, {conversation_history}, {user_message})
+DATA_EXTRACTION_CONTEXT = """
 
 **IMPORTANT - CONTEXT FOR DELTA EXTRACTION:**
 
