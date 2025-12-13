@@ -66,18 +66,13 @@ def test_requires_admin_or_auditor(subscriber, endpoint, method, caplog):
 
 def test_default_prompts(auditor):
     """Test getting default system prompts"""
-    with patch("btcopilot.personal.prompts.ROLE_COACH_NOT_THERAPIST", "test_role"):
-        with patch(
-            "btcopilot.personal.prompts.BOWEN_THEORY_COACHING_IN_A_NUTSHELL",
-            "test_bowen",
-        ):
-            with patch(
-                "btcopilot.personal.prompts.DATA_MODEL_DEFINITIONS", "test_data_model"
-            ):
-                response = auditor.get("/training/prompts/defaults")
-                assert response.status_code == 200
-                assert response.json is not None
-                assert "ROLE_COACH_NOT_THERAPIST" in response.json
+    response = auditor.get("/training/prompts/defaults")
+    assert response.status_code == 200
+    assert response.json is not None
+    assert "DATA_EXTRACTION_PROMPT" in response.json
+    assert "DATA_EXTRACTION_EXAMPLES" in response.json
+    assert "DATA_EXTRACTION_CONTEXT" in response.json
+    assert "CONVERSATION_FLOW_PROMPT" in response.json
 
 
 def test_get_message_prompts(auditor, discussion):
