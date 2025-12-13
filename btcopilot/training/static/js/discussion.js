@@ -1531,13 +1531,24 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
 // Enhanced component with feedback review capabilities
 function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDown, submitted, componentId, editableMode = false, messageId = null, editedExtraction = null, feedbackId = null, allFeedback = [], approved = false, approvedBy = null, approvedAt = null, adminFeedbackId = null) {
     const baseComponent = componentExtractedData(extractedData, cumulativePdp, thumbsDown, submitted, componentId, editableMode, messageId, editedExtraction, feedbackId);
-    
+
+    // Compute initial selectedIndex based on window.selectedAuditor
+    // -1 = AI view, 0+ = human feedback index
+    let initialSelectedIndex = -1;
+    const selectedAuditor = window.selectedAuditor;
+    if (selectedAuditor && selectedAuditor !== 'AI') {
+        const feedbackIndex = allFeedback.findIndex(f => f.auditor_id === selectedAuditor);
+        if (feedbackIndex !== -1) {
+            initialSelectedIndex = feedbackIndex;
+        }
+    }
+
     return {
         ...baseComponent,
         allFeedback: allFeedback,
         reviewMode: false,
-        selectedIndex: -1, // -1 = original, 0+ = feedback index
-        selectedFeedback: null,
+        selectedIndex: initialSelectedIndex,
+        selectedFeedback: initialSelectedIndex >= 0 ? allFeedback[initialSelectedIndex] : null,
         // Initialize extractedData - use edited version if available, otherwise AI original
         extractedData: baseComponent.extractedData,
         // Statement approval data
@@ -1545,7 +1556,12 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
         approvedBy: approvedBy,
         approvedAt: approvedAt,
         adminFeedbackId: adminFeedbackId,
-        
+
+        // Editing is only allowed for human corrections, not AI extractions
+        get canEdit() {
+            return this.editableMode && this.selectedIndex !== -1;
+        },
+
         // Override extracted data based on selected feedback
         get currentDisplayData() {
             if (this.selectedIndex === -1) {

@@ -149,7 +149,7 @@ Parameters:
                                 {% if not is_cumulative %}<span class="icon is-small"><i class="fas fa-users"></i></span>{% endif %}
                                 People
                                 {% if editable_mode %}
-                                <span style="display: inline-flex; gap: 4px; position: relative;">
+                                <span x-show="canEdit" style="display: inline-flex; gap: 4px; position: relative;">
                                     <span class="add-element" style="opacity: 1;" @click.stop="createPerson()" title="Create New Person">
                                         <i class="fas fa-plus-circle"></i>
                                     </span>
@@ -158,7 +158,7 @@ Parameters:
                                     </span>
                                 </span>
                                 {% endif %}
-                                
+
                                 <!-- Meta Controls (positioned absolutely in header) -->
                                 <div class="meta-controls" style="position: absolute; right: 0; top: -2px; display: flex; align-items: center; gap: 4px;">
                                     <!-- Approval Controls (Admin only) -->
@@ -189,7 +189,7 @@ Parameters:
                                                 </div>
                                             </template>
                                             <template x-if="!approved">
-                                                <button class="button is-success is-small" style="padding: 2px 6px; height: 20px;" @click.stop="approveStatement({{ message_id }})" title="Approve AI extraction">
+                                                <button class="button is-success is-small" style="padding: 2px 6px; height: 20px;" @click.stop="approveStatement({{ message_id }})" title="Approve extraction">
                                                     <i class="fas fa-check" style="font-size: 10px;"></i>
                                                 </button>
                                             </template>
@@ -207,7 +207,7 @@ Parameters:
                                                             @click.stop="unapproveFeedback(selectedFeedback.id)"
                                                             @mouseenter="$el.style.backgroundColor = '#f14668'; $el.style.color = '#fff'; $el.querySelector('i').className = 'fas fa-times'"
                                                             @mouseleave="$el.style.backgroundColor = '#48c78e'; $el.style.color = '#fff'; $el.querySelector('i').className = 'fas fa-check'"
-                                                            title="Click to unapprove correction">
+                                                            title="Click to unapprove GT">
                                                         <i class="fas fa-check" style="font-size: 10px;"></i>
                                                     </button>
                                                 </div>
@@ -299,7 +299,7 @@ Parameters:
                                         <strong class="is-size-7" x-text="person.name || 'Unnamed'"></strong>
                                         {% endif %}
                                         {% if editable_mode %}
-                                        <span class="delete-variable ml-auto" @click.stop="removePerson(index)" title="Remove delta">
+                                        <span x-show="canEdit" class="delete-variable ml-auto" @click.stop="removePerson(index)" title="Remove delta">
                                             <i class="fas fa-times"></i>
                                         </span>
                                         {% endif %}
@@ -321,7 +321,7 @@ Parameters:
                                                     <div style="color: #666; white-space: nowrap;">
                                                         Parents:
                                                         {% if editable_mode %}
-                                                        <template x-if="!person.parents">
+                                                        <template x-if="!person.parents && canEdit">
                                                             <span class="add-element"
                                                                   @click.stop="selectPairBond(index)"
                                                                   title="Add parents"
@@ -333,12 +333,12 @@ Parameters:
                                                     </div>
                                                     <template x-if="person.parents">
                                                         <span class="person-tag"
-                                                              style="cursor: {{ 'pointer' if editable_mode else 'default' }}; flex-shrink: 1; min-width: 0; white-space: normal !important; word-break: break-word;"
-                                                              :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                              @click="{{ 'editPairBond(index)' if editable_mode else '' }}">
+                                                              :style="{ cursor: canEdit ? 'pointer' : 'default', flexShrink: 1, minWidth: 0, whiteSpace: 'normal', wordBreak: 'break-word' }"
+                                                              :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                              @click="{{ 'canEdit && editPairBond(index)' if editable_mode else '' }}">
                                                             <span x-text="getPairBondName(person.parents, personDataVersion)" style="display: inline;"></span>
                                                             {% if editable_mode %}
-                                                            <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold; flex-shrink: 0;"
+                                                            <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold; flex-shrink: 0;"
                                                                   @click.stop="removePairBond(index)">×</span>
                                                             {% endif %}
                                                         </span>
@@ -360,7 +360,7 @@ Parameters:
                                 {% if not is_cumulative %}<span class="icon is-small"><i class="fas fa-calendar-alt"></i></span>{% endif %}
                                 Events
                                 {% if editable_mode %}
-                                <span style="display: inline-flex; gap: 4px; position: relative;">
+                                <span x-show="canEdit" style="display: inline-flex; gap: 4px; position: relative;">
                                     <span class="add-element" style="opacity: 1;" @click.stop="createEvent()" title="Create New Event">
                                         <i class="fas fa-plus-circle"></i>
                                     </span>
@@ -380,7 +380,7 @@ Parameters:
                                 <template x-for="(event, index) in (extractedData.events || [])" :key="index">
                                 <div class="event-item mb-2 p-2 {{ 'has-background-link-light' if is_cumulative else 'has-background-light' }}" style="position: relative;">
                                     {% if editable_mode %}
-                                    <span class="delete-event" @click.stop="removeEvent(index)" title="Remove event">
+                                    <span x-show="canEdit" class="delete-event" @click.stop="removeEvent(index)" title="Remove event">
                                         <i class="fas fa-times"></i>
                                     </span>
                                     {% endif %}
@@ -403,10 +403,11 @@ Parameters:
                                                 </td>
                                                 <td style="padding: 0;">
                                                     {% if editable_mode %}
-                                                    <span class="event-kind-indicator editable-field"
-                                                          @mouseenter="hoveredField = 'event-' + index + '-kind'"
+                                                    <span class="event-kind-indicator"
+                                                          :class="{'editable-field': canEdit}"
+                                                          @mouseenter="canEdit && (hoveredField = 'event-' + index + '-kind')"
                                                           @mouseleave="hoveredField = null"
-                                                          @click.stop="startEditEventKind('event-' + index + '-kind', event.kind)">
+                                                          @click.stop="canEdit && startEditEventKind('event-' + index + '-kind', event.kind)">
                                                         <span x-show="!isEditing('event-' + index + '-kind')" x-text="event.kind || 'shift'"></span>
                                                         <select x-show="isEditing('event-' + index + '-kind')"
                                                                 x-model="editingValue"
@@ -444,17 +445,17 @@ Parameters:
                                                     <td style="padding: 0;">
                                                         <template x-if="event.person">
                                                             <span class="person-tag"
-                                                                  style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
-                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                  @click="{{ 'editEventPerson(index, event.person)' if editable_mode else '' }}">
+                                                                  :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                                  @click="{{ 'canEdit && editEventPerson(index, event.person)' if editable_mode else '' }}">
                                                                 <span x-text="getPersonName(event.person, personDataVersion)"></span>
                                                                 {% if editable_mode %}
-                                                                <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
                                                                       @click.stop="clearEventPerson(index)">×</span>
                                                                 {% endif %}
                                                             </span>
                                                         </template>
-                                                        <template x-if="!event.person && {{ 'true' if editable_mode else 'false' }}">
+                                                        <template x-if="!event.person && {{ 'true' if editable_mode else 'false' }} && canEdit">
                                                             <span style="display: inline-flex; gap: 4px; position: relative;">
                                                                 <span class="add-element edit-event-person-button" style="opacity: 1;" @click.stop="editEventPerson($event, index)" title="Select Existing Person for Event">
                                                                     <i class="fas fa-edit"></i>
@@ -478,17 +479,17 @@ Parameters:
                                                     <td style="padding: 0;">
                                                         <template x-if="event.spouse">
                                                             <span class="person-tag"
-                                                                  style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
-                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                  @click="{{ 'editEventSpouse(index, event.spouse)' if editable_mode else '' }}">
+                                                                  :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                                  @click="{{ 'canEdit && editEventSpouse(index, event.spouse)' if editable_mode else '' }}">
                                                                 <span x-text="getPersonName(event.spouse, personDataVersion)"></span>
                                                                 {% if editable_mode %}
-                                                                <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
                                                                       @click.stop="clearEventSpouse(index)">×</span>
                                                                 {% endif %}
                                                             </span>
                                                         </template>
-                                                        <template x-if="!event.spouse && {{ 'true' if editable_mode else 'false' }}">
+                                                        <template x-if="!event.spouse && {{ 'true' if editable_mode else 'false' }} && canEdit">
                                                             <span style="display: inline-flex; gap: 4px; position: relative;">
                                                                 <span class="add-element edit-event-spouse-button" style="opacity: 1;" @click.stop="editEventSpouse($event, index)" title="Select Existing Spouse for Event">
                                                                     <i class="fas fa-edit"></i>
@@ -512,17 +513,17 @@ Parameters:
                                                     <td style="padding: 0;">
                                                         <template x-if="event.child">
                                                             <span class="person-tag"
-                                                                  style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
-                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                  @click="{{ 'editEventChild(index, event.child)' if editable_mode else '' }}">
+                                                                  :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                                  @click="{{ 'canEdit && editEventChild(index, event.child)' if editable_mode else '' }}">
                                                                 <span x-text="getPersonName(event.child, personDataVersion)"></span>
                                                                 {% if editable_mode %}
-                                                                <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
                                                                       @click.stop="clearEventChild(index)">×</span>
                                                                 {% endif %}
                                                             </span>
                                                         </template>
-                                                        <template x-if="!event.child && {{ 'true' if editable_mode else 'false' }}">
+                                                        <template x-if="!event.child && {{ 'true' if editable_mode else 'false' }} && canEdit">
                                                             <span style="display: inline-flex; gap: 4px; position: relative;">
                                                                 <span class="add-element edit-event-child-button" style="opacity: 1;" @click.stop="editEventChild($event, index)" title="Select Existing Child for Event">
                                                                     <i class="fas fa-edit"></i>
@@ -545,10 +546,11 @@ Parameters:
                                                     </td>
                                                     <td style="padding: 0;">
                                                         {% if editable_mode %}
-                                                        <span class="editable-field event-description"
-                                                              @mouseenter="hoveredField = 'event-' + index + '-description'"
+                                                        <span class="event-description"
+                                                              :class="{'editable-field': canEdit}"
+                                                              @mouseenter="canEdit && (hoveredField = 'event-' + index + '-description')"
                                                               @mouseleave="hoveredField = null"
-                                                              @click.stop="startEdit('event-' + index + '-description', event.description || '')">
+                                                              @click.stop="canEdit && startEdit('event-' + index + '-description', event.description || '')">
                                                             <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || 'Not set'"></span>
                                                             <input x-show="isEditing('event-' + index + '-description')"
                                                                    :value="editingValue"
@@ -578,10 +580,11 @@ Parameters:
                                                     </td>
                                                     <td style="padding: 0;">
                                                         {% if editable_mode %}
-                                                        <span class="editable-field event-datetime"
-                                                              @mouseenter="hoveredField = 'event-' + index + '-dateTime'"
+                                                        <span class="event-datetime"
+                                                              :class="{'editable-field': canEdit}"
+                                                              @mouseenter="canEdit && (hoveredField = 'event-' + index + '-dateTime')"
                                                               @mouseleave="hoveredField = null"
-                                                              @click.stop="startEdit('event-' + index + '-dateTime', event.dateTime || '')">
+                                                              @click.stop="canEdit && startEdit('event-' + index + '-dateTime', event.dateTime || '')">
                                                             <span x-show="!isEditing('event-' + index + '-dateTime')" x-text="formatDate(event.dateTime) || 'Not set'"></span>
                                                             <input x-show="isEditing('event-' + index + '-dateTime')"
                                                                    :value="editingValue"
@@ -611,11 +614,11 @@ Parameters:
                                             <span class="is-size-7">Symptom:</span>
                                             <template x-if="event.symptom">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator is-small editable-shift" 
-                                                      :class="'shift-' + event.symptom"
-                                                      @mouseenter="hoveredField = 'event-' + index + '-symptom-shift'"
+                                                <span class="shift-indicator is-small"
+                                                      :class="['shift-' + event.symptom, {'editable-shift': canEdit}]"
+                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-symptom-shift')"
                                                       @mouseleave="hoveredField = null"
-                                                      @click.stop="startEditShift('event-' + index + '-symptom-shift', event.symptom)">
+                                                      @click.stop="canEdit && startEditShift('event-' + index + '-symptom-shift', event.symptom)">
                                                     <span x-show="!isEditing('event-' + index + '-symptom-shift')" x-text="event.symptom"></span>
                                                     <select x-show="isEditing('event-' + index + '-symptom-shift')" 
                                                             x-model="editingValue"
@@ -640,15 +643,15 @@ Parameters:
                                                     <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.symptom.rationale"></span>
                                                 </div>
                                             </template>
-                                            <template x-if="!event.symptom && {{ 'true' if editable_mode else 'false' }}">
+                                            <template x-if="!event.symptom && {{ 'true' if editable_mode else 'false' }} && canEdit">
                                                 <span class="add-element" @click.stop="addVariable(index, 'symptom')" title="Add symptom variable">
                                                     <i class="fas fa-plus-circle"></i>
                                                 </span>
                                             </template>
                                             {% if editable_mode %}
-                                            <span class="delete-variable" 
-                                                  x-show="event.symptom && !isEditing('event-' + index + '-symptom-shift')"
-                                                  @click.stop="removeVariable(index, 'symptom')" 
+                                            <span class="delete-variable"
+                                                  x-show="canEdit && event.symptom && !isEditing('event-' + index + '-symptom-shift')"
+                                                  @click.stop="removeVariable(index, 'symptom')"
                                                   title="Remove symptom">
                                                 <i class="fas fa-times"></i>
                                             </span>
@@ -660,11 +663,11 @@ Parameters:
                                             <span class="is-size-7">Anxiety:</span>
                                             <template x-if="event.anxiety">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator is-small editable-shift" 
-                                                      :class="'shift-' + event.anxiety"
-                                                      @mouseenter="hoveredField = 'event-' + index + '-anxiety-shift'"
+                                                <span class="shift-indicator is-small"
+                                                      :class="['shift-' + event.anxiety, {'editable-shift': canEdit}]"
+                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-anxiety-shift')"
                                                       @mouseleave="hoveredField = null"
-                                                      @click.stop="startEditShift('event-' + index + '-anxiety-shift', event.anxiety)">
+                                                      @click.stop="canEdit && startEditShift('event-' + index + '-anxiety-shift', event.anxiety)">
                                                     <span x-show="!isEditing('event-' + index + '-anxiety-shift')" x-text="event.anxiety"></span>
                                                     <select x-show="isEditing('event-' + index + '-anxiety-shift')" 
                                                             x-model="editingValue"
@@ -689,15 +692,15 @@ Parameters:
                                                     <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.anxiety.rationale"></span>
                                                 </div>
                                             </template>
-                                            <template x-if="!event.anxiety && {{ 'true' if editable_mode else 'false' }}">
+                                            <template x-if="!event.anxiety && {{ 'true' if editable_mode else 'false' }} && canEdit">
                                                 <span class="add-element" @click.stop="addVariable(index, 'anxiety')" title="Add anxiety variable">
                                                     <i class="fas fa-plus-circle"></i>
                                                 </span>
                                             </template>
                                             {% if editable_mode %}
-                                            <span class="delete-variable" 
-                                                  x-show="event.anxiety && !isEditing('event-' + index + '-anxiety-shift')"
-                                                  @click.stop="removeVariable(index, 'anxiety')" 
+                                            <span class="delete-variable"
+                                                  x-show="canEdit && event.anxiety && !isEditing('event-' + index + '-anxiety-shift')"
+                                                  @click.stop="removeVariable(index, 'anxiety')"
                                                   title="Remove anxiety">
                                                 <i class="fas fa-times"></i>
                                             </span>
@@ -709,10 +712,11 @@ Parameters:
                                             <span class="is-size-7">Relationship:</span>
                                             <template x-if="event.relationship">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator shift-relationship is-small editable-shift" 
-                                                      @mouseenter="hoveredField = 'event-' + index + '-relationship-kind'"
+                                                <span class="shift-indicator shift-relationship is-small"
+                                                      :class="{'editable-shift': canEdit}"
+                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-relationship-kind')"
                                                       @mouseleave="hoveredField = null"
-                                                      @click.stop="startEditRelationship('event-' + index + '-relationship-kind', event.relationship)">
+                                                      @click.stop="canEdit && startEditRelationship('event-' + index + '-relationship-kind', event.relationship)">
                                                     <span x-show="!isEditing('event-' + index + '-relationship-kind')" x-text="event.relationship"></span>
                                                     <select x-show="isEditing('event-' + index + '-relationship-kind')"
                                                             x-model="editingValue"
@@ -744,15 +748,15 @@ Parameters:
                                                     <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.relationship.rationale"></span>
                                                 </div>
                                             </template>
-                                            <template x-if="!event.relationship && {{ 'true' if editable_mode else 'false' }}">
+                                            <template x-if="!event.relationship && {{ 'true' if editable_mode else 'false' }} && canEdit">
                                                 <span class="add-element" @click.stop="addVariable(index, 'relationship')" title="Add relationship variable">
                                                     <i class="fas fa-plus-circle"></i>
                                                 </span>
                                             </template>
                                             {% if editable_mode %}
-                                            <span class="delete-variable" 
-                                                  x-show="event.relationship && !isEditing('event-' + index + '-relationship-kind')"
-                                                  @click.stop="removeVariable(index, 'relationship')" 
+                                            <span class="delete-variable"
+                                                  x-show="canEdit && event.relationship && !isEditing('event-' + index + '-relationship-kind')"
+                                                  @click.stop="removeVariable(index, 'relationship')"
                                                   title="Remove relationship">
                                                 <i class="fas fa-times"></i>
                                             </span>
@@ -769,7 +773,7 @@ Parameters:
                                                             <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
                                                                 ↳ Targets:
                                                                 {% if editable_mode %}
-                                                                <span class="add-element"
+                                                                <span x-show="canEdit" class="add-element"
                                                                       @click.stop="addRelationshipPerson(index, 'targets')"
                                                                       title="Add person"
                                                                       style="margin-left: 4px;">
@@ -780,12 +784,12 @@ Parameters:
                                                             <td style="padding: 0;">
                                                                 <template x-for="(personId, idx) in (event.relationshipTargets || [])" :key="personId + '-' + idx">
                                                                     <span class="person-tag"
-                                                                          style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
-                                                                          :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                          @click="{{ 'editRelationshipPerson(index, \'targets\', idx, personId)' if editable_mode else '' }}">
+                                                                          :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                                          :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                                          @click="{{ 'canEdit && editRelationshipPerson(index, \'targets\', idx, personId)' if editable_mode else '' }}">
                                                                         <span x-text="getPersonName(personId, personDataVersion)"></span>
                                                                         {% if editable_mode %}
-                                                                        <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                        <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
                                                                               @click.stop="removeRelationshipPerson(index, 'targets', idx)">×</span>
                                                                         {% endif %}
                                                                     </span>
@@ -801,7 +805,7 @@ Parameters:
                                                                 <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
                                                                     ↳ Outside:
                                                                     {% if editable_mode %}
-                                                                    <span class="add-element"
+                                                                    <span x-show="canEdit" class="add-element"
                                                                           @click.stop="addRelationshipPerson(index, 'triangles')"
                                                                           title="Add person"
                                                                           style="margin-left: 4px;">
@@ -813,11 +817,11 @@ Parameters:
                                                                     <template x-for="(personId, idx) in (event.relationshipTriangles || [])" :key="personId + '-' + idx">
                                                                         <span class="person-tag"
                                                                               style="display: inline-block; padding: 2px 8px; margin: 2px; background: #ffe8e8; border: 1px solid #ffb3b3; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; cursor: pointer;"
-                                                                              :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                              @click="{{ 'editRelationshipPerson(index, \'triangles\', idx, personId)' if editable_mode else '' }}">
+                                                                              :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                                              @click="{{ 'canEdit && editRelationshipPerson(index, \'triangles\', idx, personId)' if editable_mode else '' }}">
                                                                             <span x-text="getPersonName(personId, personDataVersion)"></span>
                                                                             {% if editable_mode %}
-                                                                            <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                            <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
                                                                                   @click.stop="removeRelationshipPerson(index, 'triangles', idx)">×</span>
                                                                             {% endif %}
                                                                         </span>
@@ -838,11 +842,11 @@ Parameters:
                                             <span class="is-size-7">Functioning:</span>
                                             <template x-if="event.functioning">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator is-small editable-shift"
-                                                      :class="'shift-functioning-' + event.functioning"
-                                                      @mouseenter="hoveredField = 'event-' + index + '-functioning-shift'"
+                                                <span class="shift-indicator is-small"
+                                                      :class="['shift-functioning-' + event.functioning, {'editable-shift': canEdit}]"
+                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-functioning-shift')"
                                                       @mouseleave="hoveredField = null"
-                                                      @click.stop="startEditShift('event-' + index + '-functioning-shift', event.functioning)">
+                                                      @click.stop="canEdit && startEditShift('event-' + index + '-functioning-shift', event.functioning)">
                                                     <span x-show="!isEditing('event-' + index + '-functioning-shift')" x-text="event.functioning"></span>
                                                     <select x-show="isEditing('event-' + index + '-functioning-shift')"
                                                             x-model="editingValue"
@@ -867,14 +871,14 @@ Parameters:
                                                     <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.functioning.rationale"></span>
                                                 </div>
                                             </template>
-                                            <template x-if="!event.functioning && {{ 'true' if editable_mode else 'false' }}">
+                                            <template x-if="!event.functioning && {{ 'true' if editable_mode else 'false' }} && canEdit">
                                                 <span class="add-element" @click.stop="addVariable(index, 'functioning')" title="Add functioning variable">
                                                     <i class="fas fa-plus-circle"></i>
                                                 </span>
                                             </template>
                                             {% if editable_mode %}
                                             <span class="delete-variable"
-                                                  x-show="event.functioning && !isEditing('event-' + index + '-functioning-shift')"
+                                                  x-show="canEdit && event.functioning && !isEditing('event-' + index + '-functioning-shift')"
                                                   @click.stop="removeVariable(index, 'functioning')"
                                                   title="Remove functioning">
                                                 <i class="fas fa-times"></i>
@@ -894,7 +898,7 @@ Parameters:
                                 <span class="icon is-small"><i class="fas fa-trash"></i></span>
                                 Deletes
                                 {% if editable_mode %}
-                                <span class="add-element" style="opacity: 1; margin-left: 8px;" @click.stop="addDelete()" title="Add Delete">
+                                <span x-show="canEdit" class="add-element" style="opacity: 1; margin-left: 8px;" @click.stop="addDelete()" title="Add Delete">
                                     <i class="fas fa-plus-circle"></i>
                                 </span>
                                 {% endif %}
@@ -922,7 +926,7 @@ Parameters:
                                                 </template>
                                             </select>
                                         </span>
-                                        <span class="delete-variable ml-auto" @click.stop="removeDelete(index)" title="Remove delete">
+                                        <span x-show="canEdit" class="delete-variable ml-auto" @click.stop="removeDelete(index)" title="Remove delete">
                                             <i class="fas fa-times"></i>
                                         </span>
                                         {% else %}
@@ -1024,7 +1028,7 @@ Parameters:
                                 {% if not is_cumulative %}<span class="icon is-small"><i class="fas fa-users"></i></span>{% endif %}
                                 People
                                 {% if editable_mode %}
-                                <span style="display: inline-flex; gap: 4px; position: relative;">
+                                <span x-show="canEdit" style="display: inline-flex; gap: 4px; position: relative;">
                                     <span class="add-element" style="opacity: 1;" @click.stop="createPerson()" title="Create New Person">
                                         <i class="fas fa-plus-circle"></i>
                                     </span>
@@ -1033,7 +1037,7 @@ Parameters:
                                     </span>
                                 </span>
                                 {% endif %}
-                                
+
                                 <!-- Meta Controls (positioned absolutely in header) -->
                                 <div class="meta-controls" style="position: absolute; right: 0; top: -2px; display: flex; align-items: center; gap: 4px;">
                                     <!-- Approval Controls (Admin only) -->
@@ -1064,7 +1068,7 @@ Parameters:
                                                 </div>
                                             </template>
                                             <template x-if="!approved">
-                                                <button class="button is-success is-small" style="padding: 2px 6px; height: 20px;" @click.stop="approveStatement({{ message_id }})" title="Approve AI extraction">
+                                                <button class="button is-success is-small" style="padding: 2px 6px; height: 20px;" @click.stop="approveStatement({{ message_id }})" title="Approve extraction">
                                                     <i class="fas fa-check" style="font-size: 10px;"></i>
                                                 </button>
                                             </template>
@@ -1082,7 +1086,7 @@ Parameters:
                                                             @click.stop="unapproveFeedback(selectedFeedback.id)"
                                                             @mouseenter="$el.style.backgroundColor = '#f14668'; $el.style.color = '#fff'; $el.querySelector('i').className = 'fas fa-times'"
                                                             @mouseleave="$el.style.backgroundColor = '#48c78e'; $el.style.color = '#fff'; $el.querySelector('i').className = 'fas fa-check'"
-                                                            title="Click to unapprove correction">
+                                                            title="Click to unapprove GT">
                                                         <i class="fas fa-check" style="font-size: 10px;"></i>
                                                     </button>
                                                 </div>
@@ -1174,7 +1178,7 @@ Parameters:
                                         <strong class="is-size-7" x-text="person.name || 'Unnamed'"></strong>
                                         {% endif %}
                                         {% if editable_mode %}
-                                        <span class="delete-variable ml-auto" @click.stop="removePerson(index)" title="Remove delta">
+                                        <span x-show="canEdit" class="delete-variable ml-auto" @click.stop="removePerson(index)" title="Remove delta">
                                             <i class="fas fa-times"></i>
                                         </span>
                                         {% endif %}
@@ -1218,7 +1222,7 @@ Parameters:
                                 {% if not is_cumulative %}<span class="icon is-small"><i class="fas fa-calendar-alt"></i></span>{% endif %}
                                 Events
                                 {% if editable_mode %}
-                                <span style="display: inline-flex; gap: 4px; position: relative;">
+                                <span x-show="canEdit" style="display: inline-flex; gap: 4px; position: relative;">
                                     <span class="add-element" style="opacity: 1;" @click.stop="createEvent()" title="Create New Event">
                                         <i class="fas fa-plus-circle"></i>
                                     </span>
@@ -1238,7 +1242,7 @@ Parameters:
                                 <template x-for="(event, index) in (extractedData.events || [])" :key="index">
                                 <div class="event-item mb-2 p-2 {{ 'has-background-link-light' if is_cumulative else 'has-background-light' }}" style="position: relative;">
                                     {% if editable_mode %}
-                                    <span class="delete-event" @click.stop="removeEvent(index)" title="Remove event">
+                                    <span x-show="canEdit" class="delete-event" @click.stop="removeEvent(index)" title="Remove event">
                                         <i class="fas fa-times"></i>
                                     </span>
                                     {% endif %}
@@ -1261,10 +1265,11 @@ Parameters:
                                                 </td>
                                                 <td style="padding: 0;">
                                                     {% if editable_mode %}
-                                                    <span class="event-kind-indicator editable-field"
-                                                          @mouseenter="hoveredField = 'event-' + index + '-kind'"
+                                                    <span class="event-kind-indicator"
+                                                          :class="{'editable-field': canEdit}"
+                                                          @mouseenter="canEdit && (hoveredField = 'event-' + index + '-kind')"
                                                           @mouseleave="hoveredField = null"
-                                                          @click.stop="startEditEventKind('event-' + index + '-kind', event.kind)">
+                                                          @click.stop="canEdit && startEditEventKind('event-' + index + '-kind', event.kind)">
                                                         <span x-show="!isEditing('event-' + index + '-kind')" x-text="event.kind || 'shift'"></span>
                                                         <select x-show="isEditing('event-' + index + '-kind')"
                                                                 x-model="editingValue"
@@ -1302,17 +1307,17 @@ Parameters:
                                                     <td style="padding: 0;">
                                                         <template x-if="event.person">
                                                             <span class="person-tag"
-                                                                  style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
-                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                  @click="{{ 'editEventPerson(index, event.person)' if editable_mode else '' }}">
+                                                                  :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                                  @click="{{ 'canEdit && editEventPerson(index, event.person)' if editable_mode else '' }}">
                                                                 <span x-text="getPersonName(event.person, personDataVersion)"></span>
                                                                 {% if editable_mode %}
-                                                                <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
                                                                       @click.stop="clearEventPerson(index)">×</span>
                                                                 {% endif %}
                                                             </span>
                                                         </template>
-                                                        <template x-if="!event.person && {{ 'true' if editable_mode else 'false' }}">
+                                                        <template x-if="!event.person && {{ 'true' if editable_mode else 'false' }} && canEdit">
                                                             <span style="display: inline-flex; gap: 4px; position: relative;">
                                                                 <span class="add-element edit-event-person-button" style="opacity: 1;" @click.stop="editEventPerson($event, index)" title="Select Existing Person for Event">
                                                                     <i class="fas fa-edit"></i>
@@ -1336,17 +1341,17 @@ Parameters:
                                                     <td style="padding: 0;">
                                                         <template x-if="event.spouse">
                                                             <span class="person-tag"
-                                                                  style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
-                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                  @click="{{ 'editEventSpouse(index, event.spouse)' if editable_mode else '' }}">
+                                                                  :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                                  @click="{{ 'canEdit && editEventSpouse(index, event.spouse)' if editable_mode else '' }}">
                                                                 <span x-text="getPersonName(event.spouse, personDataVersion)"></span>
                                                                 {% if editable_mode %}
-                                                                <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
                                                                       @click.stop="clearEventSpouse(index)">×</span>
                                                                 {% endif %}
                                                             </span>
                                                         </template>
-                                                        <template x-if="!event.spouse && {{ 'true' if editable_mode else 'false' }}">
+                                                        <template x-if="!event.spouse && {{ 'true' if editable_mode else 'false' }} && canEdit">
                                                             <span style="display: inline-flex; gap: 4px; position: relative;">
                                                                 <span class="add-element edit-event-spouse-button" style="opacity: 1;" @click.stop="editEventSpouse($event, index)" title="Select Existing Spouse for Event">
                                                                     <i class="fas fa-edit"></i>
@@ -1370,17 +1375,17 @@ Parameters:
                                                     <td style="padding: 0;">
                                                         <template x-if="event.child">
                                                             <span class="person-tag"
-                                                                  style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
-                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                  @click="{{ 'editEventChild(index, event.child)' if editable_mode else '' }}">
+                                                                  :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                                  @click="{{ 'canEdit && editEventChild(index, event.child)' if editable_mode else '' }}">
                                                                 <span x-text="getPersonName(event.child, personDataVersion)"></span>
                                                                 {% if editable_mode %}
-                                                                <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
                                                                       @click.stop="clearEventChild(index)">×</span>
                                                                 {% endif %}
                                                             </span>
                                                         </template>
-                                                        <template x-if="!event.child && {{ 'true' if editable_mode else 'false' }}">
+                                                        <template x-if="!event.child && {{ 'true' if editable_mode else 'false' }} && canEdit">
                                                             <span style="display: inline-flex; gap: 4px; position: relative;">
                                                                 <span class="add-element edit-event-child-button" style="opacity: 1;" @click.stop="editEventChild($event, index)" title="Select Existing Child for Event">
                                                                     <i class="fas fa-edit"></i>
@@ -1403,10 +1408,11 @@ Parameters:
                                                     </td>
                                                     <td style="padding: 0;">
                                                         {% if editable_mode %}
-                                                        <span class="editable-field event-description"
-                                                              @mouseenter="hoveredField = 'event-' + index + '-description'"
+                                                        <span class="event-description"
+                                                              :class="{'editable-field': canEdit}"
+                                                              @mouseenter="canEdit && (hoveredField = 'event-' + index + '-description')"
                                                               @mouseleave="hoveredField = null"
-                                                              @click.stop="startEdit('event-' + index + '-description', event.description || '')">
+                                                              @click.stop="canEdit && startEdit('event-' + index + '-description', event.description || '')">
                                                             <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || 'Not set'"></span>
                                                             <input x-show="isEditing('event-' + index + '-description')"
                                                                    :value="editingValue"
@@ -1436,10 +1442,11 @@ Parameters:
                                                     </td>
                                                     <td style="padding: 0;">
                                                         {% if editable_mode %}
-                                                        <span class="editable-field event-datetime"
-                                                              @mouseenter="hoveredField = 'event-' + index + '-dateTime'"
+                                                        <span class="event-datetime"
+                                                              :class="{'editable-field': canEdit}"
+                                                              @mouseenter="canEdit && (hoveredField = 'event-' + index + '-dateTime')"
                                                               @mouseleave="hoveredField = null"
-                                                              @click.stop="startEdit('event-' + index + '-dateTime', event.dateTime || '')">
+                                                              @click.stop="canEdit && startEdit('event-' + index + '-dateTime', event.dateTime || '')">
                                                             <span x-show="!isEditing('event-' + index + '-dateTime')" x-text="formatDate(event.dateTime) || 'Not set'"></span>
                                                             <input x-show="isEditing('event-' + index + '-dateTime')"
                                                                    :value="editingValue"
@@ -1469,11 +1476,11 @@ Parameters:
                                             <span class="is-size-7">Symptom:</span>
                                             <template x-if="event.symptom">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator is-small editable-shift" 
-                                                      :class="'shift-' + event.symptom"
-                                                      @mouseenter="hoveredField = 'event-' + index + '-symptom-shift'"
+                                                <span class="shift-indicator is-small"
+                                                      :class="['shift-' + event.symptom, {'editable-shift': canEdit}]"
+                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-symptom-shift')"
                                                       @mouseleave="hoveredField = null"
-                                                      @click.stop="startEditShift('event-' + index + '-symptom-shift', event.symptom)">
+                                                      @click.stop="canEdit && startEditShift('event-' + index + '-symptom-shift', event.symptom)">
                                                     <span x-show="!isEditing('event-' + index + '-symptom-shift')" x-text="event.symptom"></span>
                                                     <select x-show="isEditing('event-' + index + '-symptom-shift')" 
                                                             x-model="editingValue"
@@ -1498,15 +1505,15 @@ Parameters:
                                                     <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.symptom.rationale"></span>
                                                 </div>
                                             </template>
-                                            <template x-if="!event.symptom && {{ 'true' if editable_mode else 'false' }}">
+                                            <template x-if="!event.symptom && {{ 'true' if editable_mode else 'false' }} && canEdit">
                                                 <span class="add-element" @click.stop="addVariable(index, 'symptom')" title="Add symptom variable">
                                                     <i class="fas fa-plus-circle"></i>
                                                 </span>
                                             </template>
                                             {% if editable_mode %}
-                                            <span class="delete-variable" 
-                                                  x-show="event.symptom && !isEditing('event-' + index + '-symptom-shift')"
-                                                  @click.stop="removeVariable(index, 'symptom')" 
+                                            <span class="delete-variable"
+                                                  x-show="canEdit && event.symptom && !isEditing('event-' + index + '-symptom-shift')"
+                                                  @click.stop="removeVariable(index, 'symptom')"
                                                   title="Remove symptom">
                                                 <i class="fas fa-times"></i>
                                             </span>
@@ -1518,11 +1525,11 @@ Parameters:
                                             <span class="is-size-7">Anxiety:</span>
                                             <template x-if="event.anxiety">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator is-small editable-shift" 
-                                                      :class="'shift-' + event.anxiety"
-                                                      @mouseenter="hoveredField = 'event-' + index + '-anxiety-shift'"
+                                                <span class="shift-indicator is-small"
+                                                      :class="['shift-' + event.anxiety, {'editable-shift': canEdit}]"
+                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-anxiety-shift')"
                                                       @mouseleave="hoveredField = null"
-                                                      @click.stop="startEditShift('event-' + index + '-anxiety-shift', event.anxiety)">
+                                                      @click.stop="canEdit && startEditShift('event-' + index + '-anxiety-shift', event.anxiety)">
                                                     <span x-show="!isEditing('event-' + index + '-anxiety-shift')" x-text="event.anxiety"></span>
                                                     <select x-show="isEditing('event-' + index + '-anxiety-shift')" 
                                                             x-model="editingValue"
@@ -1547,15 +1554,15 @@ Parameters:
                                                     <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.anxiety.rationale"></span>
                                                 </div>
                                             </template>
-                                            <template x-if="!event.anxiety && {{ 'true' if editable_mode else 'false' }}">
+                                            <template x-if="!event.anxiety && {{ 'true' if editable_mode else 'false' }} && canEdit">
                                                 <span class="add-element" @click.stop="addVariable(index, 'anxiety')" title="Add anxiety variable">
                                                     <i class="fas fa-plus-circle"></i>
                                                 </span>
                                             </template>
                                             {% if editable_mode %}
-                                            <span class="delete-variable" 
-                                                  x-show="event.anxiety && !isEditing('event-' + index + '-anxiety-shift')"
-                                                  @click.stop="removeVariable(index, 'anxiety')" 
+                                            <span class="delete-variable"
+                                                  x-show="canEdit && event.anxiety && !isEditing('event-' + index + '-anxiety-shift')"
+                                                  @click.stop="removeVariable(index, 'anxiety')"
                                                   title="Remove anxiety">
                                                 <i class="fas fa-times"></i>
                                             </span>
@@ -1567,10 +1574,11 @@ Parameters:
                                             <span class="is-size-7">Relationship:</span>
                                             <template x-if="event.relationship">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator shift-relationship is-small editable-shift" 
-                                                      @mouseenter="hoveredField = 'event-' + index + '-relationship-kind'"
+                                                <span class="shift-indicator shift-relationship is-small"
+                                                      :class="{'editable-shift': canEdit}"
+                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-relationship-kind')"
                                                       @mouseleave="hoveredField = null"
-                                                      @click.stop="startEditRelationship('event-' + index + '-relationship-kind', event.relationship)">
+                                                      @click.stop="canEdit && startEditRelationship('event-' + index + '-relationship-kind', event.relationship)">
                                                     <span x-show="!isEditing('event-' + index + '-relationship-kind')" x-text="event.relationship"></span>
                                                     <select x-show="isEditing('event-' + index + '-relationship-kind')"
                                                             x-model="editingValue"
@@ -1602,15 +1610,15 @@ Parameters:
                                                     <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.relationship.rationale"></span>
                                                 </div>
                                             </template>
-                                            <template x-if="!event.relationship && {{ 'true' if editable_mode else 'false' }}">
+                                            <template x-if="!event.relationship && {{ 'true' if editable_mode else 'false' }} && canEdit">
                                                 <span class="add-element" @click.stop="addVariable(index, 'relationship')" title="Add relationship variable">
                                                     <i class="fas fa-plus-circle"></i>
                                                 </span>
                                             </template>
                                             {% if editable_mode %}
-                                            <span class="delete-variable" 
-                                                  x-show="event.relationship && !isEditing('event-' + index + '-relationship-kind')"
-                                                  @click.stop="removeVariable(index, 'relationship')" 
+                                            <span class="delete-variable"
+                                                  x-show="canEdit && event.relationship && !isEditing('event-' + index + '-relationship-kind')"
+                                                  @click.stop="removeVariable(index, 'relationship')"
                                                   title="Remove relationship">
                                                 <i class="fas fa-times"></i>
                                             </span>
@@ -1627,7 +1635,7 @@ Parameters:
                                                             <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
                                                                 ↳ Targets:
                                                                 {% if editable_mode %}
-                                                                <span class="add-element"
+                                                                <span x-show="canEdit" class="add-element"
                                                                       @click.stop="addRelationshipPerson(index, 'targets')"
                                                                       title="Add person"
                                                                       style="margin-left: 4px;">
@@ -1638,12 +1646,12 @@ Parameters:
                                                             <td style="padding: 0;">
                                                                 <template x-for="(personId, idx) in (event.relationshipTargets || [])" :key="personId + '-' + idx">
                                                                     <span class="person-tag"
-                                                                          style="cursor: {{ 'pointer' if editable_mode else 'default' }};"
-                                                                          :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                          @click="{{ 'editRelationshipPerson(index, \'targets\', idx, personId)' if editable_mode else '' }}">
+                                                                          :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                                          :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                                          @click="{{ 'canEdit && editRelationshipPerson(index, \'targets\', idx, personId)' if editable_mode else '' }}">
                                                                         <span x-text="getPersonName(personId, personDataVersion)"></span>
                                                                         {% if editable_mode %}
-                                                                        <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                        <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
                                                                               @click.stop="removeRelationshipPerson(index, 'targets', idx)">×</span>
                                                                         {% endif %}
                                                                     </span>
@@ -1659,7 +1667,7 @@ Parameters:
                                                                 <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
                                                                     ↳ Outside:
                                                                     {% if editable_mode %}
-                                                                    <span class="add-element"
+                                                                    <span x-show="canEdit" class="add-element"
                                                                           @click.stop="addRelationshipPerson(index, 'triangles')"
                                                                           title="Add person"
                                                                           style="margin-left: 4px;">
@@ -1671,11 +1679,11 @@ Parameters:
                                                                     <template x-for="(personId, idx) in (event.relationshipTriangles || [])" :key="personId + '-' + idx">
                                                                         <span class="person-tag"
                                                                               style="display: inline-block; padding: 2px 8px; margin: 2px; background: #ffe8e8; border: 1px solid #ffb3b3; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; cursor: pointer;"
-                                                                              :class="{'editable': {{ 'true' if editable_mode else 'false' }}}"
-                                                                              @click="{{ 'editRelationshipPerson(index, \'triangles\', idx, personId)' if editable_mode else '' }}">
+                                                                              :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                                              @click="{{ 'canEdit && editRelationshipPerson(index, \'triangles\', idx, personId)' if editable_mode else '' }}">
                                                                             <span x-text="getPersonName(personId, personDataVersion)"></span>
                                                                             {% if editable_mode %}
-                                                                            <span style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                            <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
                                                                                   @click.stop="removeRelationshipPerson(index, 'triangles', idx)">×</span>
                                                                             {% endif %}
                                                                         </span>
@@ -1696,11 +1704,11 @@ Parameters:
                                             <span class="is-size-7">Functioning:</span>
                                             <template x-if="event.functioning">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator is-small editable-shift"
-                                                      :class="'shift-functioning-' + event.functioning"
-                                                      @mouseenter="hoveredField = 'event-' + index + '-functioning-shift'"
+                                                <span class="shift-indicator is-small"
+                                                      :class="['shift-functioning-' + event.functioning, {'editable-shift': canEdit}]"
+                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-functioning-shift')"
                                                       @mouseleave="hoveredField = null"
-                                                      @click.stop="startEditShift('event-' + index + '-functioning-shift', event.functioning)">
+                                                      @click.stop="canEdit && startEditShift('event-' + index + '-functioning-shift', event.functioning)">
                                                     <span x-show="!isEditing('event-' + index + '-functioning-shift')" x-text="event.functioning"></span>
                                                     <select x-show="isEditing('event-' + index + '-functioning-shift')"
                                                             x-model="editingValue"
@@ -1725,14 +1733,14 @@ Parameters:
                                                     <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.functioning.rationale"></span>
                                                 </div>
                                             </template>
-                                            <template x-if="!event.functioning && {{ 'true' if editable_mode else 'false' }}">
+                                            <template x-if="!event.functioning && {{ 'true' if editable_mode else 'false' }} && canEdit">
                                                 <span class="add-element" @click.stop="addVariable(index, 'functioning')" title="Add functioning variable">
                                                     <i class="fas fa-plus-circle"></i>
                                                 </span>
                                             </template>
                                             {% if editable_mode %}
                                             <span class="delete-variable"
-                                                  x-show="event.functioning && !isEditing('event-' + index + '-functioning-shift')"
+                                                  x-show="canEdit && event.functioning && !isEditing('event-' + index + '-functioning-shift')"
                                                   @click.stop="removeVariable(index, 'functioning')"
                                                   title="Remove functioning">
                                                 <i class="fas fa-times"></i>
@@ -1752,7 +1760,7 @@ Parameters:
                                 <span class="icon is-small"><i class="fas fa-trash"></i></span>
                                 Deletes
                                 {% if editable_mode %}
-                                <span class="add-element" style="opacity: 1; margin-left: 8px;" @click.stop="addDelete()" title="Add Delete">
+                                <span x-show="canEdit" class="add-element" style="opacity: 1; margin-left: 8px;" @click.stop="addDelete()" title="Add Delete">
                                     <i class="fas fa-plus-circle"></i>
                                 </span>
                                 {% endif %}
@@ -1780,7 +1788,7 @@ Parameters:
                                                 </template>
                                             </select>
                                         </span>
-                                        <span class="delete-variable ml-auto" @click.stop="removeDelete(index)" title="Remove delete">
+                                        <span x-show="canEdit" class="delete-variable ml-auto" @click.stop="removeDelete(index)" title="Remove delete">
                                             <i class="fas fa-times"></i>
                                         </span>
                                         {% else %}
