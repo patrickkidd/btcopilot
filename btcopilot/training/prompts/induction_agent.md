@@ -176,7 +176,7 @@ Use `TodoWrite` to:
 
 ### 3. Generate Report
 
-After stopping, write a comprehensive report to `instance/induction_report.md`:
+After stopping, write a comprehensive report to `btcopilot/induction-reports/YYYY-MM-DD_HH-MM-SS.md` (using current timestamp):
 
 ```markdown
 # Prompt Induction Report
@@ -243,8 +243,8 @@ After stopping, write a comprehensive report to `instance/induction_report.md`:
 ## Next Steps
 
 ```bash
-# If improved, commit
-git add btcopilot/btcopilot/personal/prompts.py instance/induction_report.md
+# If improved, commit (report path will be printed by agent)
+git add btcopilot/btcopilot/personal/prompts.py btcopilot/induction-reports/
 git commit -m "Automated prompt induction (F1: X.XX → Y.YY)"
 
 # If not improved, revert
@@ -264,7 +264,7 @@ git checkout btcopilot/btcopilot/personal/prompts.py
 - Mark all todos complete using `TodoWrite`
 - Report final F1 scores in your message to the user
 - Indicate whether to commit or revert
-- Show path to full report: `instance/induction_report.md`
+- Show path to full report (the timestamped path you created)
 
 ## Critical Rules
 
@@ -303,7 +303,7 @@ Your induction run is successful if:
   - `DATA_EXTRACTION_CONTEXT` - Context with runtime variables (rarely edited)
 
 **Write-only**:
-- `instance/induction_report.md` - Final report (will be created)
+- `btcopilot/induction-reports/YYYY-MM-DD_HH-MM-SS.md` - Final report (timestamped, will be created)
 
 ## Expected Runtime
 

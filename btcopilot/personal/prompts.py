@@ -485,11 +485,10 @@ CORRECT Output:
 # ─────────────────────────────────────────────────────────────────────────────
 # [UNDER_EXTRACTION_BIRTH_EVENT]
 # Error Pattern: AI extracts person but misses birth event when user provides "Name, born MM/DD/YYYY"
+# CRITICAL: This is one of the most common errors. Birth dates ALWAYS mean birth events.
 # ─────────────────────────────────────────────────────────────────────────────
 
-Example: Birth dates MUST create birth events
-
-Input: "Elizabeth Smith, born 12/3/1954"
+**User statement**: "Elizabeth Smith, born 12/3/1954"
 
 DiagramData: {
     "people": [
@@ -499,14 +498,16 @@ DiagramData: {
     "pdp": {"people": [], "events": []}
 }
 
-❌ WRONG OUTPUT (missing birth event):
+❌ WRONG OUTPUT (missing birth event - DO NOT DO THIS):
 {
     "people": [
         {"id": -1, "name": "Elizabeth Smith", "confidence": 0.9}
     ],
-    "events": [],  // WRONG - missing birth event
+    "events": [],  // WRONG - you extracted the person but forgot the birth event!
     "delete": []
 }
+
+WHY WRONG: The user said "born 12/3/1954" - that's a birth EVENT with a date. You must create a birth event with kind="birth" whenever a birth date is mentioned, even if it seems like just "data collection". Birth dates are events.
 
 ✅ CORRECT OUTPUT:
 {
@@ -517,7 +518,7 @@ DiagramData: {
         {
             "id": -2,
             "kind": "birth",
-            "person": -1,
+            "child": -1,
             "description": "Born",
             "dateTime": "1954-12-03",
             "confidence": 0.9
@@ -526,7 +527,67 @@ DiagramData: {
     "delete": []
 }
 
-WHY: When a user provides a birth date, they are giving you TWO pieces of information: the person AND the birth event. Always extract both.
+**RULE**: When you see "Name, born MM/DD/YYYY" or "Name, dob MM/DD/YYYY", you MUST extract BOTH the person AND a birth event. This is not optional. If you extract the person without the birth event, you are making a mistake.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [RELATIONSHIP_TARGETS_REQUIRED]
+# Error Pattern: AI fails to set relationshipTargets field for relationship events
+# ─────────────────────────────────────────────────────────────────────────────
+
+Example: CRITICAL - relationshipTargets is REQUIRED for ALL relationship events
+
+Input: "I had a run-in with my brother-in-law last spring break"
+
+DiagramData: {
+    "people": [
+        {"id": 1, "name": "User", "confidence": 1.0},
+        {"id": 2, "name": "Assistant", "confidence": 1.0}
+    ],
+    "events": [],
+    "pdp": {"people": [], "events": []}
+}
+
+❌ WRONG OUTPUT (missing relationshipTargets):
+{
+    "people": [
+        {"id": -1, "name": "Brother-in-law", "confidence": 0.8}
+    ],
+    "events": [
+        {
+            "id": -2,
+            "kind": "shift",
+            "person": -1,
+            "description": "Had a run-in",
+            "dateTime": "2025-03-01",
+            "relationship": "conflict",
+            "relationshipTargets": [],  // WRONG - must list who person interacted with
+            "confidence": 0.7
+        }
+    ],
+    "delete": []
+}
+
+✅ CORRECT OUTPUT:
+{
+    "people": [
+        {"id": -1, "name": "Brother-in-law", "confidence": 0.8}
+    ],
+    "events": [
+        {
+            "id": -2,
+            "kind": "shift",
+            "person": -1,
+            "description": "Had a run-in",
+            "dateTime": "2025-03-01",
+            "relationship": "inside",
+            "relationshipTargets": [1],  // REQUIRED - user (ID 1) was the other person in the "run-in"
+            "confidence": 0.7
+        }
+    ],
+    "delete": []
+}
+
+WHY: Every relationship event MUST specify who the person interacted with via relationshipTargets. A "run-in" involves at least 2 people.
 
 # ─────────────────────────────────────────────────────────────────────────────
 # [EVENT_TIMEFRAME_SPECIFIC_INCIDENT]
@@ -557,7 +618,7 @@ CORRECT Output: {
             "description": "Didn't talk when he got home from work",
             "dateTime": "2025-08-11",
             "relationship": "distance",
-            "relationshipTargets": [1],
+            "relationshipTargets": [1],  // User was the target of the distancing
             "confidence": 0.7
         }
     ],

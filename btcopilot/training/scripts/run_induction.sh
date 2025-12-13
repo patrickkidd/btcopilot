@@ -67,7 +67,11 @@ claude -p --dangerously-skip-permissions "$PROMPT"
 echo ""
 echo -e "${BLUE}📋 Step 4/4: Checking results...${NC}"
 
-if [ ! -f "instance/induction_report.md" ]; then
+# Find the most recent report
+REPORT_DIR="btcopilot/induction-reports"
+LATEST_REPORT=$(ls -t "$REPORT_DIR"/*.md 2>/dev/null | head -1)
+
+if [ -z "$LATEST_REPORT" ]; then
     echo ""
     echo -e "${RED}❌ No report generated - something went wrong${NC}"
     echo ""
@@ -86,7 +90,7 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo -e "${BLUE}📊 Results Summary:${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-grep "| Aggregate F1" instance/induction_report.md | head -1 || echo "Results table not found in report"
+grep "| Aggregate F1" "$LATEST_REPORT" | head -1 || echo "Results table not found in report"
 echo ""
 
 # Check if there are uncommitted changes
@@ -101,7 +105,7 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo -e "${BLUE}📄 Generated Files:${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  • Full report: instance/induction_report.md"
+echo "  • Full report: $LATEST_REPORT"
 echo "  • Changes: git diff btcopilot/btcopilot/personal/prompts.py"
 echo ""
 
@@ -110,13 +114,13 @@ echo -e "${BLUE}🎯 Next Steps:${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "1. Review the report:"
-echo "   ${YELLOW}cat instance/induction_report.md${NC}"
+echo "   ${YELLOW}cat $LATEST_REPORT${NC}"
 echo ""
 echo "2. Review the changes:"
 echo "   ${YELLOW}git diff btcopilot/btcopilot/personal/prompts.py${NC}"
 echo ""
 echo "3a. If improved, commit:"
-echo "    ${GREEN}git add btcopilot/btcopilot/personal/prompts.py instance/induction_report.md${NC}"
+echo "    ${GREEN}git add btcopilot/btcopilot/personal/prompts.py btcopilot/induction-reports/${NC}"
 echo "    ${GREEN}git commit -m 'Automated prompt induction (F1: X.XX → Y.YY)'${NC}"
 echo ""
 echo "3b. If not improved, revert:"
