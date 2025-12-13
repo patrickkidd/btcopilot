@@ -14,7 +14,11 @@ from btcopilot.pro.models import User, License, Diagram
 from btcopilot.schema import DiagramData
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.training.models import Feedback
-from btcopilot.training.utils import get_breadcrumbs
+from btcopilot.training.utils import (
+    get_breadcrumbs,
+    get_discussion_gt_statuses,
+    GtStatus,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -247,6 +251,10 @@ def index():
     # Get all discussions with user info
     discussions = Discussion.query.options(subqueryload(Discussion.statements)).all()
 
+    # Compute GT statuses for all discussions
+    discussion_ids = [d.id for d in discussions]
+    gt_statuses = get_discussion_gt_statuses(discussion_ids)
+
     # Get users using shared function (default to auditor users for performance)
     user_data = get_users_for_admin(role_filter="auditor")
 
@@ -275,6 +283,8 @@ def index():
         breadcrumbs=breadcrumbs,
         current_user=current_user,
         btcopilot=btcopilot,
+        gt_statuses=gt_statuses,
+        GtStatus=GtStatus,
     )
 
 

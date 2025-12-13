@@ -7,7 +7,12 @@ from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.pro.models import User, Diagram, License, AccessRight
 from btcopilot.personal.models import Discussion
-from btcopilot.training.utils import get_breadcrumbs, get_auditor_id
+from btcopilot.training.utils import (
+    get_breadcrumbs,
+    get_auditor_id,
+    get_discussion_gt_statuses,
+    GtStatus,
+)
 
 
 _log = logging.getLogger(__name__)
@@ -45,6 +50,7 @@ def index():
 
     if not auditor:
         from flask import abort
+
         abort(404)
 
     # Get diagrams with granted access
@@ -59,15 +65,30 @@ def index():
     shared_diagrams_with_rights = shared_diagrams_query.all()
 
     # Get all discussions from owned and shared diagrams
-    user_discussions = []
+    all_discussions = []
     for diagram in auditor.diagrams:
         for discussion in diagram.discussions:
-            user_discussions.append(discussion)
+            all_discussions.append(discussion)
     for diagram, access_right in shared_diagrams_with_rights:
         for discussion in diagram.discussions:
-            user_discussions.append(discussion)
+            all_discussions.append(discussion)
 
-    user_discussions.sort(key=lambda d: d.created_at, reverse=True)
+    # Compute GT statuses for all discussions
+    discussion_ids = [d.id for d in all_discussions]
+    gt_statuses = get_discussion_gt_statuses(discussion_ids)
+
+    # Sort: Full GT first, then Partial, then None; within each group by created_at desc
+    gt_sort_order = {GtStatus.Full: 0, GtStatus.Partial: 1, GtStatus.None_: 2}
+
+    def sort_key(d):
+        gt = gt_statuses.get(d.id, {})
+        status = gt.get("status", GtStatus.None_)
+        return (
+            gt_sort_order.get(status, 2),
+            -(d.created_at.timestamp() if d.created_at else 0),
+        )
+
+    all_discussions.sort(key=sort_key)
 
     # Calculate F1 metrics for approved ground truth
     from btcopilot.training.f1_metrics import calculate_system_f1
@@ -84,11 +105,13 @@ def index():
     return render_template(
         "auditor_dashboard.html",
         user=auditor,
-        user_discussions=user_discussions,
+        user_discussions=all_discussions,
         shared_diagrams_with_rights=shared_diagrams_with_rights,
         current_user=current_user,
         btcopilot=btcopilot,
         breadcrumbs=breadcrumbs,
         f1_metrics=f1_metrics,
         viewing_other_user=viewing_other_user,
+        gt_statuses=gt_statuses,
+        GtStatus=GtStatus,
     )

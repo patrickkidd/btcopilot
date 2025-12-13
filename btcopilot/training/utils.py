@@ -1,8 +1,73 @@
 """Common utilities for therapist module"""
 
+from enum import Enum
+
 from flask import url_for
+from sqlalchemy import func
+
 from btcopilot import auth
 import btcopilot
+from btcopilot.extensions import db
+
+
+class GtStatus(Enum):
+    """Ground truth approval status for a discussion"""
+
+    None_ = "none"
+    Partial = "partial"
+    Full = "full"
+
+
+def get_discussion_gt_statuses(discussion_ids):
+    """
+    Return dict: discussion_id -> {'total': int, 'approved': int, 'status': GtStatus}
+    """
+    from btcopilot.training.models import Feedback
+    from btcopilot.personal.models import Statement
+
+    if not discussion_ids:
+        return {}
+
+    totals = (
+        db.session.query(Statement.discussion_id, func.count(Feedback.id))
+        .join(Feedback)
+        .filter(
+            Statement.discussion_id.in_(discussion_ids),
+            Feedback.feedback_type == "extraction",
+        )
+        .group_by(Statement.discussion_id)
+        .all()
+    )
+
+    approved = (
+        db.session.query(Statement.discussion_id, func.count(Feedback.id))
+        .join(Feedback)
+        .filter(
+            Statement.discussion_id.in_(discussion_ids),
+            Feedback.feedback_type == "extraction",
+            Feedback.approved == True,
+        )
+        .group_by(Statement.discussion_id)
+        .all()
+    )
+
+    totals_map = dict(totals)
+    approved_map = dict(approved)
+
+    result = {}
+    for did in discussion_ids:
+        total = totals_map.get(did, 0)
+        appr = approved_map.get(did, 0)
+        if total == 0:
+            status = GtStatus.None_
+        elif appr == total:
+            status = GtStatus.Full
+        elif appr > 0:
+            status = GtStatus.Partial
+        else:
+            status = GtStatus.None_
+        result[did] = {"total": total, "approved": appr, "status": status}
+    return result
 
 
 def get_breadcrumbs(current_page=None):
