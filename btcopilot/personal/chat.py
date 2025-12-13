@@ -1,4 +1,3 @@
-import textwrap
 import logging
 
 from dataclasses import dataclass
@@ -9,10 +8,7 @@ from btcopilot.async_utils import one_result
 from btcopilot import pdp
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.schema import DiagramData, PDP, asdict
-from btcopilot.personal.prompts import (
-    ROLE_COACH_NOT_THERAPIST,
-    BOWEN_THEORY_COACHING_IN_A_NUTSHELL,
-)
+from btcopilot.personal.prompts import CONVERSATION_FLOW_PROMPT
 
 
 _log = logging.getLogger(__name__)
@@ -58,58 +54,15 @@ def ask(
     # canned response for each mode
 
     # Check for custom prompts in g context (used for testing)
-    role_prompt = ROLE_COACH_NOT_THERAPIST
-    bowen_prompt = BOWEN_THEORY_COACHING_IN_A_NUTSHELL
-
+    conversation_prompt = CONVERSATION_FLOW_PROMPT
     if hasattr(g, "custom_prompts"):
-        role_prompt = g.custom_prompts.get("ROLE_COACH_NOT_THERAPIST", role_prompt)
-        bowen_prompt = g.custom_prompts.get(
-            "BOWEN_THEORY_COACHING_IN_A_NUTSHELL", bowen_prompt
+        conversation_prompt = g.custom_prompts.get(
+            "CONVERSATION_FLOW_PROMPT", conversation_prompt
         )
 
-    meta_prompt = textwrap.dedent(
-        f"""
-        {role_prompt}
-
-        **Instructions**
-
-        Your goal is to first thoroughly understand the presenting problem, then
-        pivot to systematically collecting family structure data for a
-        three-generation diagram.
-
-        {bowen_prompt}
-
-        **What we're collecting for the diagram**:
-        - People: names, how they are related, birth dates
-        - Events anchored in time, exploring how things shifted:
-          - Health: Did symptoms get better or worse? "How was your sleep then?"
-          - Stress: Were they anxious, worried, on edge? "Were you stressed about it?"
-          - Relationships: How were people getting along? "How were things between
-            you and your dad at that point?"
-          - Coping: Were they able to function? "Could you focus on work?"
-
-        When someone mentions a moment in time (a move, a symptom onset, a shift in
-        their social world), EXPAND that period of time by asking about these dimensions
-        before moving on - phrased naturally, specific to what they just said.
-        Values and culture can go in notes, but shouldn't dominate - keep coming
-        back to WHO, WHEN, and how things shifted.
-
-        **Your next response (2-3 sentences):**
-        - Ask for the next missing data point from the current phase
-        - If pivoting from problem to family: "OK, I have a good picture of
-          what's going on. Now let me get some family background. What's your
-          mom's name and how old is she?"
-        - Vary your responses naturally - don't start every reply the same way
-        - Do NOT parrot back what the user just said - move the conversation forward
-
-        **Conversation History**
-
-        {discussion.conversation_history()}
-
-        **Last User Statement**
-
-        {user_statement}
-        """
+    meta_prompt = conversation_prompt.format(
+        conversation_history=discussion.conversation_history(),
+        user_statement=user_statement,
     )
 
     ai_response = _generate_response(discussion, diagram_data, meta_prompt)

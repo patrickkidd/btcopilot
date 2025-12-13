@@ -197,7 +197,13 @@ def cumulative(discussion, up_to_statement) -> PDP:
 async def update(
     discussion, diagram_data: DiagramData, user_message: str
 ) -> tuple[PDP, PDPDeltas]:
-    from btcopilot.personal.prompts import PDP_ROLE_AND_INSTRUCTIONS, PDP_EXAMPLES
+
+    from btcopilot.personal.prompts import (
+        DATA_EXTRACTION_PROMPT,
+        DATA_EXTRACTION_EXAMPLES,
+        DATA_EXTRACTION_CONTEXT,
+    )
+    from btcopilot.extensions import llm, LLMFunction, ai_log
 
     reference_date = (
         discussion.discussion_date
@@ -205,45 +211,20 @@ async def update(
         else datetime.now().date()
     )
 
-    SYSTEM_PROMPT = f"""
-
-    Current Date: {reference_date.isoformat()}
-
-    {PDP_ROLE_AND_INSTRUCTIONS}
-
-    **Examples:**
-
-    {PDP_EXAMPLES}
-    
-    **IMPORTANT - CONTEXT FOR DELTA EXTRACTION:**
-    
-    You are analyzing ONLY the new user statement below for NEW information that
-    should be added to or updated in the existing diagram_data. The conversation
-    history is provided as context to help you understand references and
-    relationships mentioned in the new statement, but do NOT re-extract
-    information from previous messages that is already captured in the diagram_data.
-    
-    **Existing Diagram State (DO NOT RE-EXTRACT THIS DATA):**
-
-    {asdict(diagram_data)}
-
-    **Conversation History (for context only):**
-
-    {discussion.conversation_history()}
-
-    **NEW USER STATEMENT TO ANALYZE FOR DELTAS:**
-
-    {user_message}
-    
-    **REMINDER:** Return only NEW people, NEW events, or UPDATES to existing
-    entries. Do not include existing data that hasn't changed.
-
-    """
-    from btcopilot.extensions import llm, LLMFunction, ai_log
+    # Assemble full prompt: header+rules, examples, context with data
+    data_extraction_prompt = (
+        DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
+        + DATA_EXTRACTION_EXAMPLES
+        + DATA_EXTRACTION_CONTEXT.format(
+            diagram_data=asdict(diagram_data),
+            conversation_history=discussion.conversation_history(),
+            user_message=user_message,
+        )
+    )
 
     pdp_deltas = await llm.submit(
         LLMFunction.JSON,
-        prompt=SYSTEM_PROMPT,
+        prompt=data_extraction_prompt,
         response_format=PDPDeltas,
     )
 
