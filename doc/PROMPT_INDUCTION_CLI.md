@@ -116,10 +116,11 @@ Improve prompts in `btcopilot/personal/prompts.py` to maximize F1 scores on grou
       - Use `Grep` to find similar patterns in codebase if needed
 
    b. **Propose ONE Targeted Change**
-      - Modify either:
-        - `PDP_ROLE_AND_INSTRUCTIONS` (rules)
-        - `PDP_EXAMPLES` (examples)
-        - Both (if tightly coupled)
+      - Modify `DATA_EXTRACTION_PROMPT` (single consolidated prompt):
+        - SECTION 1: DATA MODEL (semantic definitions)
+        - SECTION 2: EXTRACTION RULES (operational guidance)
+        - SECTION 3: EXAMPLES (error patterns)
+        - Or combination of sections (if tightly coupled)
       - Focus on fixing top 1-2 error patterns
       - Keep changes minimal (avoid over-engineering)
       - Follow prompt tuning rules from ~/.claude/CLAUDE.md:
@@ -243,8 +244,10 @@ Improve prompts in `btcopilot/personal/prompts.py` to maximize F1 scores on grou
 
 **Read-write**:
 - `btcopilot/personal/prompts.py` - Target for improvements
-  - `PDP_ROLE_AND_INSTRUCTIONS` - Extraction rules
-  - `PDP_EXAMPLES` - Example cases
+  - `DATA_EXTRACTION_PROMPT` - Single consolidated extraction prompt
+    - SECTION 1: DATA MODEL (semantic definitions)
+    - SECTION 2: EXTRACTION RULES (operational guidance)
+    - SECTION 3: EXAMPLES (error patterns)
 
 **Write-only**:
 - `instance/induction_report.md` - Final report
@@ -562,7 +565,7 @@ Iteration 2/10: Analyzing remaining errors...
 - Relationship triangles: Missing 3rd person in triangle coding
 - Example: "Mom and Dad fight about me" only codes Mom↔Dad, misses child
 
-Adding triangle example to PDP_EXAMPLES...
+Adding triangle example to DATA_EXTRACTION_PROMPT SECTION 3...
 Testing... F1: 0.847 → 0.869 (+0.022) ✅
 
 Iteration 3/10: Analyzing remaining errors...

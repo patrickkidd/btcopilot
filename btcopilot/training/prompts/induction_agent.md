@@ -17,8 +17,12 @@ a. **Read ground truth**: `instance/gt_export.json`
    - Each case has: statement text, AI extraction, GT extraction, expert feedback
 
 b. **Read current prompts**: `btcopilot/btcopilot/personal/prompts.py`
-   - Focus on `PDP_ROLE_AND_INSTRUCTIONS` (rules)
-   - Focus on `PDP_EXAMPLES` (example cases)
+   - Focus on `DATA_EXTRACTION_PROMPT` (single consolidated prompt)
+   - Contains 3 sections:
+     - SECTION 1: DATA MODEL (semantic definitions - fully editable)
+     - SECTION 2: EXTRACTION RULES (operational guidance - fully editable)
+     - SECTION 3: EXAMPLES (error patterns - fully editable)
+   - All sections are tunable - agent can modify semantics, rules, or examples
 
 c. **Establish baseline**: Run test to get starting F1 scores
    ```bash
@@ -62,9 +66,10 @@ Compare AI extractions vs. GT in `gt_export.json`. Identify the **top 2-3 error 
 - **Integrate new concerns alongside existing ones**
 
 **Choose ONE strategy**:
-- Modify `PDP_EXAMPLES` (add/remove/refine example cases)
-- Refine `PDP_ROLE_AND_INSTRUCTIONS` (clarify rules)
-- Both (only if tightly coupled)
+- Modify `DATA_EXTRACTION_PROMPT` SECTION 3 (add/remove/refine example cases)
+- Refine `DATA_EXTRACTION_PROMPT` SECTION 2 (clarify extraction rules)
+- Refine `DATA_EXTRACTION_PROMPT` SECTION 1 (clarify semantic definitions)
+- Combination (only if tightly coupled)
 
 **Focus**: Address the top 1-2 error patterns identified in step (a)
 
@@ -74,12 +79,41 @@ Compare AI extractions vs. GT in `gt_export.json`. Identify the **top 2-3 error 
 - Refine existing example for clarity
 - Don't rewrite entire sections
 
+**Error Pattern Labels**:
+
+When adding new examples to SECTION 3, use these category tags:
+- `[OVER_EXTRACTION_*]` - AI creates too many entities
+- `[UNDER_EXTRACTION_*]` - AI misses entities
+- `[SARF_*]` - Clinical variable coding errors (symptom/anxiety/relationship/functioning)
+- `[TRIANGLE_*]` - Relationship triangle issues
+- `[EVENT_TIMEFRAME_*]` - Event dating/specificity issues
+- `[ID_COLLISION_*]` - Negative ID assignment problems
+
+Format each example:
+```
+# ─────────────────────────────────────────────────────────────────────────────
+# [ERROR_PATTERN_NAME]
+# Error Pattern: Brief description of what this prevents
+# ─────────────────────────────────────────────────────────────────────────────
+
+**User statement**: "..."
+
+❌ WRONG OUTPUT:
+{...}
+
+✅ CORRECT OUTPUT:
+{...}
+```
+
 #### c. Edit Prompts
 
 Use the `Edit` tool to update `btcopilot/btcopilot/personal/prompts.py`:
+- Modify `DATA_EXTRACTION_PROMPT` (single multi-line string)
+- Can edit any section (data model semantics, extraction rules, or examples)
+- Use section markers (═══ headers) to identify which part you're changing
 - Make **precise, surgical changes**
 - Provide exact `old_string` and `new_string`
-- Preserve indentation and formatting
+- Preserve indentation, formatting, and visual separators
 - Don't rewrite everything
 
 #### d. Test Changes
@@ -254,8 +288,10 @@ Your induction run is successful if:
 
 **Read-write**:
 - `btcopilot/btcopilot/personal/prompts.py` - Target for improvements
-  - `PDP_ROLE_AND_INSTRUCTIONS` - Extraction rules
-  - `PDP_EXAMPLES` - Example cases
+  - `DATA_EXTRACTION_PROMPT` - Single consolidated extraction prompt
+    - SECTION 1: DATA MODEL (semantic definitions)
+    - SECTION 2: EXTRACTION RULES (operational guidance)
+    - SECTION 3: EXAMPLES (error patterns)
 
 **Write-only**:
 - `instance/induction_report.md` - Final report (will be created)
@@ -302,7 +338,7 @@ Each iteration takes ~1-2 minutes (analysis + edit + test).
 Iteration 1:
 - Analyzed errors: Over-extraction in Events (12/23 cases)
   - Example: "always been close" extracted as event, should be relationship pattern
-- Change: Added clarification to PDP_ROLE_AND_INSTRUCTIONS about event vs. pattern
+- Change: Added clarification to DATA_EXTRACTION_PROMPT SECTION 2 about event vs. pattern
   - Old: "Extract specific events that occurred"
   - New: "Extract specific events that occurred. Do not extract general relationship patterns like 'always close' or 'never got along' as events."
 - Test result: F1 0.823 → 0.847 (+0.024) ✅
@@ -311,13 +347,13 @@ Iteration 1:
 Iteration 2:
 - Analyzed remaining errors: Relationship triangles missing 3rd person (8/23 cases)
   - Example: "Mom and Dad fight about me" only codes Mom↔Dad, misses child
-- Change: Added triangle example to PDP_EXAMPLES
+- Change: Added triangle example to DATA_EXTRACTION_PROMPT SECTION 3
 - Test result: F1 0.847 → 0.869 (+0.022) ✅
 - Decision: KEEP
 
 Iteration 3:
 - Analyzed remaining errors: Symptom over-confidence (5/23 cases)
-- Change: Refined confidence scoring rules in PDP_ROLE_AND_INSTRUCTIONS
+- Change: Refined confidence scoring rules in DATA_EXTRACTION_PROMPT SECTION 2
 - Test result: F1 0.869 → 0.873 (+0.004) ✅
 - Decision: KEEP (small improvement but positive)
 

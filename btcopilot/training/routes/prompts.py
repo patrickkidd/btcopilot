@@ -43,9 +43,8 @@ def index():
 
     # Get default prompts
     default_prompts = {
-        "ROLE_COACH_NOT_THERAPIST": prompts.ROLE_COACH_NOT_THERAPIST,
-        "BOWEN_THEORY_COACHING_IN_A_NUTSHELL": prompts.BOWEN_THEORY_COACHING_IN_A_NUTSHELL,
-        "DATA_MODEL_DEFINITIONS": prompts.DATA_MODEL_DEFINITIONS,
+        "DATA_EXTRACTION_PROMPT": prompts.DATA_EXTRACTION_PROMPT,
+        "CONVERSATION_FLOW_PROMPT": prompts.CONVERSATION_FLOW_PROMPT,
     }
 
     breadcrumbs = get_breadcrumbs("prompts")
@@ -99,9 +98,8 @@ def test():
 def defaults():
     return jsonify(
         {
-            "ROLE_COACH_NOT_THERAPIST": prompts.ROLE_COACH_NOT_THERAPIST,
-            "BOWEN_THEORY_COACHING_IN_A_NUTSHELL": prompts.BOWEN_THEORY_COACHING_IN_A_NUTSHELL,
-            "DATA_MODEL_DEFINITIONS": prompts.DATA_MODEL_DEFINITIONS,
+            "DATA_EXTRACTION_PROMPT": prompts.DATA_EXTRACTION_PROMPT,
+            "CONVERSATION_FLOW_PROMPT": prompts.CONVERSATION_FLOW_PROMPT,
         }
     )
 
@@ -182,8 +180,8 @@ def suggest_improvements():
     - Conversation history had {len(artifact['inputs']['conversation_history'])} messages
     - PDP before this statement had {len(artifact['inputs']['current_pdp']['people'])} people and {len(artifact['inputs']['current_pdp']['events'])} events
     
-    CURRENT PDP_ROLE_AND_INSTRUCTIONS PROMPT:
-    {current_prompts.get('PDP_ROLE_AND_INSTRUCTIONS', prompts.PDP_ROLE_AND_INSTRUCTIONS)[:1000]}...
+    CURRENT DATA_EXTRACTION_PROMPT:
+    {current_prompts.get('DATA_EXTRACTION_PROMPT', prompts.DATA_EXTRACTION_PROMPT)[:1000]}...
     
     Analyze why the AI missed this extraction and suggest specific improvements to the prompts:
     
@@ -215,17 +213,13 @@ def test_extraction():
 
     try:
         # Temporarily override prompts for testing
-        original_role = prompts.PDP_ROLE_AND_INSTRUCTIONS
-        original_examples = prompts.PDP_EXAMPLES
+        original_prompt = prompts.DATA_EXTRACTION_PROMPT
 
         try:
-            # Apply custom prompts
-            if "PDP_ROLE_AND_INSTRUCTIONS" in custom_prompts:
-                prompts.PDP_ROLE_AND_INSTRUCTIONS = custom_prompts[
-                    "PDP_ROLE_AND_INSTRUCTIONS"
+            if "DATA_EXTRACTION_PROMPT" in custom_prompts:
+                prompts.DATA_EXTRACTION_PROMPT = custom_prompts[
+                    "DATA_EXTRACTION_PROMPT"
                 ]
-            if "PDP_EXAMPLES" in custom_prompts:
-                prompts.PDP_EXAMPLES = custom_prompts["PDP_EXAMPLES"]
 
             # Create discussion and database objects for testing
             discussion = Discussion.query.get(artifact["discussion_id"])
@@ -261,8 +255,7 @@ def test_extraction():
 
         finally:
             # Always restore original prompts
-            prompts.PDP_ROLE_AND_INSTRUCTIONS = original_role
-            prompts.PDP_EXAMPLES = original_examples
+            prompts.DATA_EXTRACTION_PROMPT = original_prompt
 
     except Exception as e:
         _log.error(f"Error testing extraction: {e}", exc_info=True)
@@ -297,8 +290,7 @@ def coach_chat():
     Latest Test: {json.dumps(last_result.get('extracted', {}), indent=2) if last_result else 'No recent tests'}
 
     **CURRENT PROMPTS IN USE**:
-    PDP_ROLE_AND_INSTRUCTIONS: "{current_prompts.get('PDP_ROLE_AND_INSTRUCTIONS', 'Not provided')[:500]}..."
-    PDP_EXAMPLES: "{current_prompts.get('PDP_EXAMPLES', 'Not provided')[:300]}..."
+    DATA_EXTRACTION_PROMPT: "{current_prompts.get('DATA_EXTRACTION_PROMPT', prompts.DATA_EXTRACTION_PROMPT)[:500]}..."
 
     **USER QUESTION**: {message}
 
