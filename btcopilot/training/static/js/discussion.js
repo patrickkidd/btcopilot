@@ -999,58 +999,103 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             this.autoSave();
         },
 
-        // Relationship person editing
-        editRelationshipPerson(eventIndex, fieldName, personIndex, currentId) {
-            console.log('=== editRelationshipPerson called ===');
-            console.log('Event index:', eventIndex, 'Field name:', fieldName, 'Person index:', personIndex);
-            console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
-            
-            // Store context for modal callback including reference to this component
-            window.relationshipPersonContext = {
-                eventIndex,
-                fieldName,
-                personIndex,
-                isEdit: true,
-                component: this, // Store reference to the Alpine component
-                componentId: this.componentId, // Store component ID to identify correct component
-                messageId: this.messageId // Store message ID for debugging
-            };
-            
-            // Set modal title and pre-select current person
-            document.getElementById('relationship-person-modal-title').textContent = `Edit ${fieldName} Person`;
-            const select = document.getElementById('relationship-person-select');
-            select.value = currentId.toString();
-            
-            // Show modal
-            showRelationshipPersonModal();
+        // Relationship person editing - uses inline dropdown like editEventPerson
+        editRelationshipPerson(event, eventIndex, fieldName, personIndex) {
+            const button = event.target.closest('.person-tag');
+            if (!button) return;
+            this.showRelationshipPersonDropdown(button, eventIndex, fieldName, personIndex);
         },
 
-        addRelationshipPerson(eventIndex, fieldName) {
-            console.log('=== addRelationshipPerson called ===');
-            console.log('Event index:', eventIndex, 'Field name:', fieldName);
-            console.log('Component ID:', this.componentId, 'Message ID:', this.messageId);
-            
-            // Store context for modal callback including reference to this component
-            window.relationshipPersonContext = {
-                eventIndex,
-                fieldName,
-                personIndex: null,
-                isEdit: false,
-                component: this, // Store reference to the Alpine component
-                componentId: this.componentId, // Store component ID to identify correct component
-                messageId: this.messageId // Store message ID for debugging
-            };
-            
-            console.log('Set relationship context with component:', window.relationshipPersonContext);
-            
-            // Set modal title and reset selection
-            document.getElementById('relationship-person-modal-title').textContent = `Add ${fieldName} Person`;
-            document.getElementById('relationship-person-select').value = '';
-            document.getElementById('relationship-new-person-name').value = '';
-            document.getElementById('new-person-name-field').style.display = 'none';
-            
-            // Show modal
-            showRelationshipPersonModal();
+        addRelationshipPerson(event, eventIndex, fieldName) {
+            const button = event.target.closest('.add-relationship-person-button');
+            if (!button) return;
+            this.showRelationshipPersonDropdown(button, eventIndex, fieldName, null);
+        },
+
+        showRelationshipPersonDropdown(button, eventIndex, fieldName, personIndex) {
+            // Close any existing dropdowns
+            document.querySelectorAll('.person-edit-dropdown, .event-edit-dropdown, .event-person-dropdown, .event-spouse-dropdown, .event-child-dropdown, .relationship-person-dropdown').forEach(d => d.style.display = 'none');
+
+            let dropdown = button.parentNode.querySelector('.relationship-person-dropdown');
+            if (!dropdown) {
+                dropdown = document.createElement('div');
+                dropdown.className = 'relationship-person-dropdown';
+                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: scroll; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
+                button.parentNode.appendChild(dropdown);
+            }
+
+            dropdown.innerHTML = '';
+
+            // Collect all people from various sources
+            const allPeople = new Map();
+
+            const diagramPeople = window.diagramPeople || [];
+            diagramPeople.forEach(person => {
+                if (person.id) {
+                    allPeople.set(person.id, person);
+                }
+            });
+
+            if (this.cumulativePdp && this.cumulativePdp.people && this.cumulativePdp.people.length > 0) {
+                this.cumulativePdp.people.forEach(person => {
+                    if (person.id) {
+                        allPeople.set(person.id, person);
+                    }
+                });
+            }
+
+            if (Array.isArray(this.extractedData.people)) {
+                this.extractedData.people.forEach(person => {
+                    if (person.id) {
+                        allPeople.set(person.id, person);
+                    }
+                });
+            }
+
+            const peopleArray = Array.from(allPeople.values());
+            const arrayFieldName = fieldName === 'targets' ? 'relationshipTargets' : 'relationshipTriangles';
+
+            peopleArray.forEach(person => {
+                const item = document.createElement('div');
+                item.style.cssText = 'padding: 8px 12px; cursor: pointer; color: var(--bulma-dropdown-content-background-color, white);';
+                item.textContent = `${person.name || 'Unnamed'} (ID: ${person.id})`;
+                item.addEventListener('mouseenter', () => {
+                    item.style.background = 'var(--bulma-dropdown-content-background-color, white)';
+                    item.style.color = 'var(--bulma-text, #4a4a4a)';
+                });
+                item.addEventListener('mouseleave', () => {
+                    item.style.background = '';
+                    item.style.color = 'var(--bulma-dropdown-content-background-color, white)';
+                });
+                item.addEventListener('click', () => {
+                    const evt = this.extractedData.events[eventIndex];
+                    if (!evt[arrayFieldName]) {
+                        evt[arrayFieldName] = [];
+                    }
+                    if (personIndex !== null) {
+                        // Edit existing
+                        evt[arrayFieldName][personIndex] = person.id;
+                    } else {
+                        // Add new
+                        evt[arrayFieldName].push(person.id);
+                    }
+                    this.autoSave();
+                    dropdown.style.display = 'none';
+                });
+                dropdown.appendChild(item);
+            });
+
+            dropdown.style.display = 'block';
+
+            if (dropdown.style.display === 'block') {
+                const closeDropdown = (e) => {
+                    if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeDropdown), 0);
+            }
         },
 
         removeRelationshipPerson(eventIndex, fieldName, personIndex) {
