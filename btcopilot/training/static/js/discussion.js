@@ -1574,9 +1574,11 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
         approvedAt: approvedAt,
         adminFeedbackId: adminFeedbackId,
 
-        // Editing is only allowed for human corrections, not AI extractions
+        // Editing is allowed only when the current user's own auditor view is selected
         get canEdit() {
-            return this.editableMode && this.selectedIndex !== -1;
+            const auditor = window.selectedAuditor;
+            const currentUser = window.currentUsername;
+            return this.editableMode && auditor && auditor === currentUser;
         },
 
         // Override extracted data based on selected feedback
