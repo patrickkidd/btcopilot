@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html data-theme="{{ theme }}">
 <head>
     <title>BTCopilot Training App</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1342,7 +1342,7 @@
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
             html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
+            document.cookie = `theme=${newTheme};path=/;max-age=31536000;SameSite=Lax`;
 
             updateThemeIcon(newTheme);
         }
@@ -1358,11 +1358,10 @@
             }
         }
 
-        // Initialize theme on page load
+        // Initialize theme icon on page load (theme already set server-side on <html>)
         (function initTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            updateThemeIcon(savedTheme);
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            updateThemeIcon(currentTheme);
         })();
     </script>
 </body>

@@ -115,10 +115,13 @@ def inject_globals():
     from btcopilot import version
     from flask_wtf.csrf import generate_csrf
 
+    theme = request.cookies.get("theme", "light")
+
     return {
         "btcopilot": btcopilot,
         "version": version(),
         "csrf_token": generate_csrf,
+        "theme": theme,
     }
 
 
