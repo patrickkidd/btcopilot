@@ -1001,12 +1001,6 @@
         <div id="navbarMenu" class="navbar-menu">
             <div class="navbar-start">
                 {% if current_user and current_user.has_role(btcopilot.ROLE_AUDITOR) %}
-                <a class="navbar-item {% if request.endpoint == 'training.account' %}is-active{% endif %}" href="{{ url_for('training.account') }}">
-                    <span class="icon">
-                        <i class="fas fa-user-circle"></i>
-                    </span>
-                    <span>Account</span>
-                </a>
                 <a class="navbar-item {% if request.endpoint and request.endpoint.startswith('training.audit') %}is-active{% endif %}" href="{{ url_for('training.audit.index') }}">
                     <span class="icon">
                         <i class="fas fa-tags"></i>
@@ -1027,7 +1021,17 @@
                     </span>
                     <span>Lab</span>
                 </a>
+                {% endif %}
+                {% if current_user and current_user.has_role(btcopilot.ROLE_AUDITOR) %}
                 <span class="navbar-item" style="border-left: 1px solid rgba(255,255,255,0.3); padding-left: 0; margin-left: 0.5rem;"></span>
+                <a class="navbar-item {% if request.endpoint == 'training.account' %}is-active{% endif %}" href="{{ url_for('training.account') }}">
+                    <span class="icon">
+                        <i class="fas fa-user-circle"></i>
+                    </span>
+                    <span>Account</span>
+                </a>
+                {% endif %}
+                {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) %}
                 <a class="navbar-item {% if request.endpoint and request.endpoint.startswith('training.admin') %}is-active{% endif %}" href="{{ url_for('training.admin.index') }}">
                     <span class="icon">
                         <i class="fas fa-shield-alt"></i>
