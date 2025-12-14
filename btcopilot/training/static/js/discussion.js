@@ -919,6 +919,37 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             return `Person ${numericId}`;
         },
 
+        getTargetsLabel(relationship) {
+            switch (relationship) {
+                case 'overfunctioning': return '↳ Underfunctioner(s):';
+                case 'underfunctioning': return '↳ Overfunctioner(s):';
+                case 'inside': return '↳ Inside(s):';
+                case 'outside': return '↳ Inside(s) 1:';
+                case 'toward': return '↳ To:';
+                case 'away': return '↳ From:';
+                case 'defined-self': return '↳ In relation to:';
+                case 'projection': return '↳ Focused on:';
+                default: return '↳ Person 2:';
+            }
+        },
+
+        getTrianglesLabel(relationship) {
+            switch (relationship) {
+                case 'inside': return '↳ Outside(s):';
+                case 'outside': return '↳ Inside(s) 2:';
+                default: return '↳ Triangles:';
+            }
+        },
+
+        getPersonLabel(kind, relationship) {
+            if (kind === 'birth' || kind === 'adopted') return 'Parent 1:';
+            if (kind === 'death') return 'Person:';
+            if (['bonded', 'married', 'separated', 'divorced'].includes(kind)) return 'Partner 1:';
+            if (kind === 'shift' && relationship === 'overfunctioning') return 'Overfunctioner:';
+            if (kind === 'shift' && relationship === 'underfunctioning') return 'Underfunctioner:';
+            return 'Person:';
+        },
+
         getPairBondName(pairBondId, version = null) {
             const numericId = typeof pairBondId === 'string' ? parseInt(pairBondId) : pairBondId;
 

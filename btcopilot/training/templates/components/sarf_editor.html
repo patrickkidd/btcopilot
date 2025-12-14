@@ -440,7 +440,7 @@ Parameters:
                                             <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
                                                 <tr>
                                                     <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;"
-                                                        x-text="(event.kind === 'birth' || event.kind === 'adopted') ? 'Parent 1:' : (event.kind === 'death') ? 'Person:' : (['bonded', 'married', 'separated', 'divorced'].includes(event.kind)) ? 'Partner 1:' : 'Person:'">
+                                                        x-text="getPersonLabel(event.kind, event.relationship)">
                                                     </td>
                                                     <td style="padding: 0;">
                                                         <template x-if="event.person">
@@ -771,7 +771,7 @@ Parameters:
                                                     <template x-if="(event.relationshipTargets && event.relationshipTargets.length > 0) || {{ 'true' if editable_mode else 'false' }}">
                                                         <tr>
                                                             <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                                ↳ Targets:
+                                                                <span x-text="getTargetsLabel(event.relationship)"></span>
                                                                 {% if editable_mode %}
                                                                 <span x-show="canEdit" class="add-element"
                                                                       @click.stop="addRelationshipPerson(index, 'targets')"
@@ -803,7 +803,7 @@ Parameters:
                                                         <template x-if="(event.relationshipTriangles && event.relationshipTriangles.length > 0) || {{ 'true' if editable_mode else 'false' }}">
                                                             <tr>
                                                                 <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                                    ↳ Outside:
+                                                                    <span x-text="getTrianglesLabel(event.relationship)"></span>
                                                                     {% if editable_mode %}
                                                                     <span x-show="canEdit" class="add-element"
                                                                           @click.stop="addRelationshipPerson(index, 'triangles')"
@@ -1302,7 +1302,7 @@ Parameters:
                                             <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
                                                 <tr>
                                                     <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;"
-                                                        x-text="(event.kind === 'birth' || event.kind === 'adopted') ? 'Parent 1:' : (event.kind === 'death') ? 'Person:' : (['bonded', 'married', 'separated', 'divorced'].includes(event.kind)) ? 'Partner 1:' : 'Person:'">
+                                                        x-text="getPersonLabel(event.kind, event.relationship)">
                                                     </td>
                                                     <td style="padding: 0;">
                                                         <template x-if="event.person">
@@ -1633,7 +1633,7 @@ Parameters:
                                                     <template x-if="(event.relationshipTargets && event.relationshipTargets.length > 0) || {{ 'true' if editable_mode else 'false' }}">
                                                         <tr>
                                                             <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                                ↳ Targets:
+                                                                <span x-text="getTargetsLabel(event.relationship)"></span>
                                                                 {% if editable_mode %}
                                                                 <span x-show="canEdit" class="add-element"
                                                                       @click.stop="addRelationshipPerson(index, 'targets')"
@@ -1665,7 +1665,7 @@ Parameters:
                                                         <template x-if="(event.relationshipTriangles && event.relationshipTriangles.length > 0) || {{ 'true' if editable_mode else 'false' }}">
                                                             <tr>
                                                                 <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                                    ↳ Outside:
+                                                                    <span x-text="getTrianglesLabel(event.relationship)"></span>
                                                                     {% if editable_mode %}
                                                                     <span x-show="canEdit" class="add-element"
                                                                           @click.stop="addRelationshipPerson(index, 'triangles')"
