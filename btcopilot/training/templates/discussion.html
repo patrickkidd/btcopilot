@@ -327,15 +327,19 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                     <span>Synthetic</span>
                 </span>
                 {% endif %}
-                {% set ai_messages = statements|selectattr('statement.speaker.type', 'equalto', 'expert')|list %}
-                <span class="tag is-success">{{ ai_messages|length }} AI responses</span>
             </div>
-            {% if has_approved_gt %}
+            {% if has_ai_extractions and has_approved_gt %}
             <a href="{{ url_for('training.analysis.discussion_analysis', discussion_id=discussion.id) }}"
                class="button is-small is-outlined is-info">
                 <span class="icon"><i class="fas fa-chart-line"></i></span>
                 <span>View Analysis</span>
             </a>
+            {% else %}
+            <span class="button is-small is-outlined is-info" disabled
+                  title="{% if not has_ai_extractions and not has_approved_gt %}Requires both AI extractions and approved ground truth{% elif not has_ai_extractions %}No AI extractions available{% else %}No approved ground truth{% endif %}">
+                <span class="icon"><i class="fas fa-chart-line"></i></span>
+                <span>View Analysis</span>
+            </span>
             {% endif %}
         </div>
         <div class="buttons has-addons mb-0">

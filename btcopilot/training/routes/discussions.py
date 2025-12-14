@@ -1086,6 +1086,12 @@ def audit(discussion_id):
         is not None
     )
 
+    # Check for actual AI extractions (pdp_deltas with real content, not JSON null)
+    has_ai_extractions = Statement.query.filter(
+        Statement.discussion_id == discussion_id,
+    ).all()
+    has_ai_extractions = any(s.pdp_deltas for s in has_ai_extractions)
+
     return render_template(
         "discussion.html",
         discussion=discussion,
@@ -1101,6 +1107,7 @@ def audit(discussion_id):
         auditor_options=auditor_options,
         selected_auditor=selected_auditor,
         has_approved_gt=has_approved_gt,
+        has_ai_extractions=has_ai_extractions,
     )
 
 

@@ -258,6 +258,7 @@ def calculate_statement_match_breakdown(
     feedback = Feedback.query.filter(
         Feedback.statement_id == statement_id,
         Feedback.feedback_type == "extraction",
+        Feedback.approved == True,
     ).first()
 
     if not feedback or not feedback.edited_extraction:

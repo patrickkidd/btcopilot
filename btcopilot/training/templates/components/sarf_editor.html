@@ -172,14 +172,16 @@ Parameters:
                                         <i class="fas fa-flask" style="font-size: 10px;"></i>
                                     </button>
                                     
-                                    <!-- AI Original Approval -->
+                                    {# AI Original Approval - HIDDEN: No current use case for approving AI extractions directly.
+                                       May be re-enabled in future if we want to approve AI output without human edits. #}
+                                    {#
                                     <template x-if="selectedIndex === -1 || typeof selectedIndex === 'undefined'">
                                         <div style="display: flex; align-items: center; gap: 4px;">
                                             <template x-if="approved">
                                                 <div style="display: flex; align-items: center; gap: 4px;">
                                                     <span class="is-size-7 has-text-success" style="font-weight: 500;">Approved</span>
-                                                    <button class="tag is-success is-small approval-button" 
-                                                            style="padding: 2px 6px; height: 20px; border: none; cursor: pointer; transition: background-color 0.2s;" 
+                                                    <button class="tag is-success is-small approval-button"
+                                                            style="padding: 2px 6px; height: 20px; border: none; cursor: pointer; transition: background-color 0.2s;"
                                                             @click.stop="unapproveStatement({{ message_id }})"
                                                             @mouseenter="$el.style.backgroundColor = '#f14668'; $el.style.color = '#fff'; $el.querySelector('i').className = 'fas fa-times'"
                                                             @mouseleave="$el.style.backgroundColor = '#48c78e'; $el.style.color = '#fff'; $el.querySelector('i').className = 'fas fa-check'"
@@ -195,7 +197,8 @@ Parameters:
                                             </template>
                                         </div>
                                     </template>
-                                    
+                                    #}
+
                                     <!-- Corrected Data Approval -->
                                     <template x-if="selectedIndex >= 0 && selectedFeedback">
                                         <div style="display: flex; align-items: center; gap: 4px;">
@@ -1055,14 +1058,16 @@ Parameters:
                                         <i class="fas fa-flask" style="font-size: 10px;"></i>
                                     </button>
                                     
-                                    <!-- AI Original Approval -->
+                                    {# AI Original Approval - HIDDEN: No current use case for approving AI extractions directly.
+                                       May be re-enabled in future if we want to approve AI output without human edits. #}
+                                    {#
                                     <template x-if="selectedIndex === -1 || typeof selectedIndex === 'undefined'">
                                         <div style="display: flex; align-items: center; gap: 4px;">
                                             <template x-if="approved">
                                                 <div style="display: flex; align-items: center; gap: 4px;">
                                                     <span class="is-size-7 has-text-success" style="font-weight: 500;">Approved</span>
-                                                    <button class="tag is-success is-small approval-button" 
-                                                            style="padding: 2px 6px; height: 20px; border: none; cursor: pointer; transition: background-color 0.2s;" 
+                                                    <button class="tag is-success is-small approval-button"
+                                                            style="padding: 2px 6px; height: 20px; border: none; cursor: pointer; transition: background-color 0.2s;"
                                                             @click.stop="unapproveStatement({{ message_id }})"
                                                             @mouseenter="$el.style.backgroundColor = '#f14668'; $el.style.color = '#fff'; $el.querySelector('i').className = 'fas fa-times'"
                                                             @mouseleave="$el.style.backgroundColor = '#48c78e'; $el.style.color = '#fff'; $el.querySelector('i').className = 'fas fa-check'"
@@ -1078,7 +1083,8 @@ Parameters:
                                             </template>
                                         </div>
                                     </template>
-                                    
+                                    #}
+
                                     <!-- Corrected Data Approval -->
                                     <template x-if="selectedIndex >= 0 && selectedFeedback">
                                         <div style="display: flex; align-items: center; gap: 4px;">
