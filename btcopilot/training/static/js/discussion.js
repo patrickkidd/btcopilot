@@ -197,17 +197,34 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             }
 
             document.querySelectorAll('[x-data]').forEach(el => {
-                const otherComponent = el.__x?.$data;
-                if (otherComponent && otherComponent !== this && otherComponent.extractedData) {
-                    if (otherComponent.extractedData.people) {
-                        otherComponent.extractedData.people.forEach(p => {
-                            if (p.id && p.id < lowestId) lowestId = p.id;
-                        });
+                // Alpine 3.x uses _x_dataStack, Alpine 2.x uses __x
+                const otherComponent = el._x_dataStack?.[0] || el.__x?.$data;
+                if (otherComponent && otherComponent !== this) {
+                    // Check extractedData (deltas for this statement)
+                    if (otherComponent.extractedData) {
+                        if (otherComponent.extractedData.people) {
+                            otherComponent.extractedData.people.forEach(p => {
+                                if (p.id && p.id < lowestId) lowestId = p.id;
+                            });
+                        }
+                        if (otherComponent.extractedData.events) {
+                            otherComponent.extractedData.events.forEach(e => {
+                                if (e.id < lowestId) lowestId = e.id;
+                            });
+                        }
                     }
-                    if (otherComponent.extractedData.events) {
-                        otherComponent.extractedData.events.forEach(e => {
-                            if (e.id < lowestId) lowestId = e.id;
-                        });
+                    // Check cumulativePdp (IDs from later statements when editing earlier ones)
+                    if (otherComponent.cumulativePdp) {
+                        if (otherComponent.cumulativePdp.people) {
+                            otherComponent.cumulativePdp.people.forEach(p => {
+                                if (p.id && p.id < lowestId) lowestId = p.id;
+                            });
+                        }
+                        if (otherComponent.cumulativePdp.events) {
+                            otherComponent.cumulativePdp.events.forEach(e => {
+                                if (e.id < lowestId) lowestId = e.id;
+                            });
+                        }
                     }
                 }
             });
@@ -3474,9 +3491,15 @@ function getUsedIds(component, dataType) {
         component.cumulativePdp[dataType].forEach(item => seen.add(item.id));
     }
     document.querySelectorAll('[x-data]').forEach(el => {
-        const other = el.__x?.$data;
-        if (other && other !== component && other.extractedData?.[dataType]) {
-            other.extractedData[dataType].forEach(item => seen.add(item.id));
+        // Alpine 3.x uses _x_dataStack, Alpine 2.x uses __x
+        const other = el._x_dataStack?.[0] || el.__x?.$data;
+        if (other && other !== component) {
+            if (other.extractedData?.[dataType]) {
+                other.extractedData[dataType].forEach(item => seen.add(item.id));
+            }
+            if (other.cumulativePdp?.[dataType]) {
+                other.cumulativePdp[dataType].forEach(item => seen.add(item.id));
+            }
         }
     });
     return seen;

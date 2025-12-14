@@ -168,6 +168,20 @@ Event (id, description, dateTime, people[], variables)
 
 ## Auditing System Architecture
 
+### CRITICAL INVARIANT: Source Isolation
+
+**Each coding source (AI or human auditor) must be completely isolated from every other source.**
+
+When viewing a specific source's codes:
+- Show ONLY that source's deltas and cumulative PDP
+- Statements without data from that source show as empty
+- NEVER fall back to AI data when viewing an auditor
+- NEVER mix data between auditors
+
+This ensures the logical chain of PDP deltas remains coherent per source. Each source's
+cumulative notes column represents their independent interpretation of the conversation,
+not a hybrid view.
+
 ### AuditFeedback Data Model
 ```python
 class AuditFeedback(db.Model, ModelMixin):

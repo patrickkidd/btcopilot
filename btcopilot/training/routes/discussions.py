@@ -785,9 +785,8 @@ def audit(discussion_id):
         deltas_source = None
 
         if stmt.speaker and stmt.speaker.type == SpeakerType.Subject:
-            # Determine which deltas to use: AI or selected auditor's
             if selected_auditor and selected_auditor != "AI":
-                # Show selected human auditor's corrections
+                # Show ONLY this auditor's data - never mix sources
                 if (
                     ext_feedback
                     and hasattr(ext_feedback, "edited_extraction")
@@ -795,7 +794,6 @@ def audit(discussion_id):
                 ):
                     deltas_source = ext_feedback.edited_extraction
             elif stmt.pdp_deltas:
-                # Use AI deltas (default when no specific auditor selected, or when "AI" selected)
                 deltas_source = stmt.pdp_deltas
 
             if deltas_source:

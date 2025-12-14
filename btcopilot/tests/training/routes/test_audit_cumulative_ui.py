@@ -601,3 +601,91 @@ def test_no_auditor_selector_for_non_admin(flask_app, test_user):
 
         response = admin_client.get(f"/training/discussions/{discussion.id}")
         assert response.status_code == 200
+
+
+@pytest.mark.audit_ui
+def test_auditor_view_shows_only_auditor_data_no_ai_mixing(admin):
+    """
+    Test that each auditor's view is completely isolated - no mixing with AI data.
+
+    CRITICAL INVARIANT: Each source's codes (AI or human auditor) must be completely
+    isolated. When viewing auditor X's data, you see ONLY what auditor X has coded.
+    Statements without auditor feedback show as empty, not AI fallback.
+
+    This ensures the logical chain of PDP deltas remains coherent per source.
+    """
+    discussion = Discussion(user_id=admin.user.id, summary="Isolation test")
+    db.session.add(discussion)
+    db.session.flush()
+
+    subject = Speaker(
+        discussion_id=discussion.id, name="User", type=SpeakerType.Subject
+    )
+    db.session.add(subject)
+    db.session.flush()
+
+    # Statement 0: AI extraction exists, but auditor has NOT coded this
+    stmt0 = Statement(
+        discussion_id=discussion.id,
+        speaker_id=subject.id,
+        text="I have a brother named Mike",
+        order=0,
+        pdp_deltas=asdict(
+            PDPDeltas(
+                people=[Person(id=-1, name="Mike")],
+                events=[],
+            )
+        ),
+    )
+
+    # Statement 1: AI extraction exists, auditor HAS coded this
+    stmt1 = Statement(
+        discussion_id=discussion.id,
+        speaker_id=subject.id,
+        text="My sister Sarah is also involved",
+        order=1,
+        pdp_deltas=asdict(
+            PDPDeltas(
+                people=[Person(id=-2, name="Sarah")],
+                events=[],
+            )
+        ),
+    )
+
+    db.session.add_all([stmt0, stmt1])
+    db.session.flush()
+
+    # Auditor codes ONLY statement 1
+    fb_stmt1 = Feedback(
+        statement_id=stmt1.id,
+        auditor_id="test_auditor",
+        feedback_type="extraction",
+        edited_extraction=asdict(
+            PDPDeltas(
+                people=[Person(id=-2, name="Miguel")],
+                events=[],
+            )
+        ),
+    )
+    db.session.add(fb_stmt1)
+    db.session.commit()
+
+    # View with auditor selected - should see ONLY auditor's data
+    response = admin.get(
+        f"/training/discussions/{discussion.id}?selected_auditor=test_auditor"
+    )
+    assert response.status_code == 200
+    html = response.data.decode("utf-8")
+
+    # Auditor's coded data (Miguel) should appear
+    assert "Miguel" in html, "Auditor's coded data should appear"
+
+    # AI data (Mike) should NOT appear in Changes/Cumulative columns when viewing auditor
+    # Mike only appears in the statement text itself, not in extraction columns
+    # Count carefully: Mike appears in statement text "I have a brother named Mike"
+    mike_in_text = html.count("I have a brother named Mike")
+    mike_total = html.count("Mike")
+    mike_in_extraction = mike_total - mike_in_text
+    assert (
+        mike_in_extraction == 0
+    ), f"AI extraction (Mike) should NOT appear in auditor view (found {mike_in_extraction} times outside statement text)"
