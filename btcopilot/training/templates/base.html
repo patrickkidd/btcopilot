@@ -557,9 +557,10 @@
         }
 
         .navbar.is-primary a.navbar-item.is-active {
-            background-color: rgba(255, 255, 255, 0.2);
-            color: white;
-            font-weight: 600;
+            background-color: transparent !important;
+            color: #ffdd00 !important;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(255, 221, 0, 0.9), 0 0 20px rgba(255, 221, 0, 0.6), 0 0 30px rgba(255, 221, 0, 0.3);
         }
 
         .navbar.is-primary .navbar-burger {
@@ -1001,7 +1002,7 @@
         <div id="navbarMenu" class="navbar-menu">
             <div class="navbar-start">
                 {% if current_user and current_user.has_role(btcopilot.ROLE_AUDITOR) %}
-                <a class="navbar-item {% if request.endpoint and request.endpoint.startswith('training.audit') %}is-active{% endif %}" href="{{ url_for('training.audit.index') }}">
+                <a class="navbar-item {% if request.endpoint and (request.endpoint.startswith('training.audit') or request.endpoint.startswith('training.discussions')) %}is-active{% endif %}" href="{{ url_for('training.audit.index') }}">
                     <span class="icon">
                         <i class="fas fa-tags"></i>
                     </span>
