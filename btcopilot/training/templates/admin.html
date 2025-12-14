@@ -112,7 +112,7 @@
                         <tbody>
                             {% for discussion in discussions %}
                             {% set gt = gt_statuses.get(discussion.id, {}) %}
-                            <tr class="discussion-row" data-synthetic="{{ 'true' if discussion.synthetic else 'false' }}" data-gt="{{ gt.get('status', GtStatus.None_).value }}">
+                            <tr class="discussion-row" data-synthetic="{{ 'true' if discussion.synthetic else 'false' }}" data-gt="{{ gt.get('status', GTStatus.None_).value }}">
                                 <td>
                                     <a href="/training/discussions/{{ discussion.id }}" class="has-text-weight-bold" title="View in audit system">
                                         {{ discussion.id }}
@@ -127,9 +127,9 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if gt.get('status') == GtStatus.Full %}
+                                    {% if gt.get('status') == GTStatus.Full %}
                                     <span class="tag is-success" title="Ground Truth ({{ gt.approved }}/{{ gt.total }})" style="font-size: 0.65rem; height: 1.5em; padding: 0 0.5em;"><i class="fas fa-check"></i></span>
-                                    {% elif gt.get('status') == GtStatus.Partial %}
+                                    {% elif gt.get('status') == GTStatus.Partial %}
                                     <span class="tag is-warning" title="Partial GT - {{ gt.approved }}/{{ gt.total }} approved" style="font-size: 0.65rem; height: 1.5em; padding: 0 0.5em;"><i class="fas fa-exclamation-triangle"></i></span>
                                     {% endif %}
                                 </td>

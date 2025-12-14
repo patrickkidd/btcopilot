@@ -10,9 +10,7 @@ import btcopilot
 from btcopilot.extensions import db
 
 
-class GtStatus(Enum):
-    """Ground truth approval status for a discussion"""
-
+class GTStatus(Enum):
     None_ = "none"
     Partial = "partial"
     Full = "full"
@@ -20,7 +18,10 @@ class GtStatus(Enum):
 
 def get_discussion_gt_statuses(discussion_ids):
     """
-    Return dict: discussion_id -> {'total': int, 'approved': int, 'status': GtStatus}
+    Return dict: discussion_id -> {'total': int, 'approved': int, 'status': GTStatus}
+
+    Only one auditor's feedbacks are approved per discussion (via bulk approve).
+    Status is Full when all of that auditor's edited feedbacks are approved.
     """
     from btcopilot.training.models import Feedback
     from btcopilot.personal.models import Statement
@@ -28,50 +29,64 @@ def get_discussion_gt_statuses(discussion_ids):
     if not discussion_ids:
         return {}
 
-    totals = (
-        db.session.query(Statement.discussion_id, func.count(Feedback.id))
-        .join(Feedback)
-        .filter(
-            Statement.discussion_id.in_(discussion_ids),
-            Feedback.feedback_type == "extraction",
-        )
-        .group_by(Statement.discussion_id)
-        .all()
-    )
-
-    approved = (
-        db.session.query(Statement.discussion_id, func.count(Feedback.id))
-        .join(Feedback)
-        .filter(
-            Statement.discussion_id.in_(discussion_ids),
-            Feedback.feedback_type == "extraction",
-            Feedback.approved == True,
-        )
-        .group_by(Statement.discussion_id)
-        .all()
-    )
-
-    totals_map = dict(totals)
-    approved_map = dict(approved)
-
     result = {}
     for did in discussion_ids:
-        total = totals_map.get(did, 0)
-        appr = approved_map.get(did, 0)
+        # Find the approved auditor for this discussion (if any)
+        approved_auditor = (
+            db.session.query(Feedback.auditor_id)
+            .join(Statement)
+            .filter(
+                Statement.discussion_id == did,
+                Feedback.feedback_type == "extraction",
+                Feedback.approved == True,
+            )
+            .first()
+        )
+
+        if not approved_auditor:
+            result[did] = {"total": 0, "approved": 0, "status": GTStatus.None_}
+            continue
+
+        auditor_id = approved_auditor[0]
+
+        # Count that auditor's feedbacks with edited_extraction
+        total = (
+            Feedback.query.join(Statement)
+            .filter(
+                Statement.discussion_id == did,
+                Feedback.feedback_type == "extraction",
+                Feedback.auditor_id == auditor_id,
+                Feedback.edited_extraction.isnot(None),
+            )
+            .count()
+        )
+
+        # Count that auditor's approved feedbacks
+        approved = (
+            Feedback.query.join(Statement)
+            .filter(
+                Statement.discussion_id == did,
+                Feedback.feedback_type == "extraction",
+                Feedback.auditor_id == auditor_id,
+                Feedback.edited_extraction.isnot(None),
+                Feedback.approved == True,
+            )
+            .count()
+        )
+
         if total == 0:
-            status = GtStatus.None_
-        elif appr == total:
-            status = GtStatus.Full
-        elif appr > 0:
-            status = GtStatus.Partial
+            status = GTStatus.None_
+        elif approved == total:
+            status = GTStatus.Full
         else:
-            status = GtStatus.None_
-        result[did] = {"total": total, "approved": appr, "status": status}
+            status = GTStatus.Partial
+
+        result[did] = {"total": total, "approved": approved, "status": status}
+
     return result
 
 
 def get_breadcrumbs(current_page=None):
-    """Generate breadcrumbs for training pages"""
     breadcrumbs = []
 
     if current_page == "audit":
@@ -91,13 +106,11 @@ def get_breadcrumbs(current_page=None):
 
 
 def check_admin_access():
-    """Check if current user has admin access"""
     user = auth.current_user()
     return user and user.has_role(btcopilot.ROLE_ADMIN)
 
 
 def get_auditor_id(request, session):
-    """Get auditor ID from request headers or use current user's username"""
     # First check for explicit header (for testing)
     if request.headers.get("X-Auditor-Id"):
         return request.headers.get("X-Auditor-Id")

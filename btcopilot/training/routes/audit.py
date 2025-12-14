@@ -11,7 +11,7 @@ from btcopilot.training.utils import (
     get_breadcrumbs,
     get_auditor_id,
     get_discussion_gt_statuses,
-    GtStatus,
+    GTStatus,
 )
 
 
@@ -78,11 +78,11 @@ def index():
     gt_statuses = get_discussion_gt_statuses(discussion_ids)
 
     # Sort: Full GT first, then Partial, then None; within each group by created_at desc
-    gt_sort_order = {GtStatus.Full: 0, GtStatus.Partial: 1, GtStatus.None_: 2}
+    gt_sort_order = {GTStatus.Full: 0, GTStatus.Partial: 1, GTStatus.None_: 2}
 
     def sort_key(d):
         gt = gt_statuses.get(d.id, {})
-        status = gt.get("status", GtStatus.None_)
+        status = gt.get("status", GTStatus.None_)
         return (
             gt_sort_order.get(status, 2),
             -(d.created_at.timestamp() if d.created_at else 0),
@@ -113,5 +113,5 @@ def index():
         f1_metrics=f1_metrics,
         viewing_other_user=viewing_other_user,
         gt_statuses=gt_statuses,
-        GtStatus=GtStatus,
+        GTStatus=GTStatus,
     )

@@ -23,7 +23,7 @@
 
     {% if user.diagrams %}
         {% for diagram in user.diagrams|sort_by_modified %}
-            {{ diagram_card(diagram, user, current_user, btcopilot, gt_statuses=gt_statuses, GtStatus=GtStatus) }}
+            {{ diagram_card(diagram, user, current_user, btcopilot, gt_statuses=gt_statuses, GTStatus=GTStatus) }}
         {% endfor %}
     {% else %}
         <div class="notification is-light">

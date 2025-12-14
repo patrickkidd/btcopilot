@@ -5,7 +5,7 @@ import pytest
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.training.models import Feedback
-from btcopilot.training.utils import get_discussion_gt_statuses, GtStatus
+from btcopilot.training.utils import get_discussion_gt_statuses, GTStatus
 
 
 def test_gt_status_empty_list(flask_app):
@@ -21,7 +21,7 @@ def test_gt_status_no_feedbacks(flask_app):
     result = get_discussion_gt_statuses([discussion.id])
 
     assert discussion.id in result
-    assert result[discussion.id]["status"] == GtStatus.None_
+    assert result[discussion.id]["status"] == GTStatus.None_
     assert result[discussion.id]["total"] == 0
     assert result[discussion.id]["approved"] == 0
 
@@ -46,7 +46,7 @@ def test_gt_status_full_approval(flask_app):
 
     result = get_discussion_gt_statuses([discussion.id])
 
-    assert result[discussion.id]["status"] == GtStatus.Full
+    assert result[discussion.id]["status"] == GTStatus.Full
     assert result[discussion.id]["total"] == 1
     assert result[discussion.id]["approved"] == 1
 
@@ -78,7 +78,7 @@ def test_gt_status_partial_approval(flask_app):
 
     result = get_discussion_gt_statuses([discussion.id])
 
-    assert result[discussion.id]["status"] == GtStatus.Partial
+    assert result[discussion.id]["status"] == GTStatus.Partial
     assert result[discussion.id]["total"] == 2
     assert result[discussion.id]["approved"] == 1
 
@@ -103,7 +103,7 @@ def test_gt_status_no_approval(flask_app):
 
     result = get_discussion_gt_statuses([discussion.id])
 
-    assert result[discussion.id]["status"] == GtStatus.None_
+    assert result[discussion.id]["status"] == GTStatus.None_
     assert result[discussion.id]["total"] == 1
     assert result[discussion.id]["approved"] == 0
 
@@ -130,7 +130,7 @@ def test_gt_status_ignores_conversation_feedback(flask_app):
     result = get_discussion_gt_statuses([discussion.id])
 
     # Should have no extraction feedbacks, so None_ status
-    assert result[discussion.id]["status"] == GtStatus.None_
+    assert result[discussion.id]["status"] == GTStatus.None_
     assert result[discussion.id]["total"] == 0
 
 
@@ -162,5 +162,5 @@ def test_gt_status_multiple_discussions(flask_app):
 
     result = get_discussion_gt_statuses([discussion1.id, discussion2.id])
 
-    assert result[discussion1.id]["status"] == GtStatus.Full
-    assert result[discussion2.id]["status"] == GtStatus.None_
+    assert result[discussion1.id]["status"] == GTStatus.Full
+    assert result[discussion2.id]["status"] == GTStatus.None_

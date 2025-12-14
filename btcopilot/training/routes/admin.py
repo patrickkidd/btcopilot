@@ -17,7 +17,7 @@ from btcopilot.training.models import Feedback
 from btcopilot.training.utils import (
     get_breadcrumbs,
     get_discussion_gt_statuses,
-    GtStatus,
+    GTStatus,
 )
 
 _log = logging.getLogger(__name__)
@@ -284,7 +284,7 @@ def index():
         current_user=current_user,
         btcopilot=btcopilot,
         gt_statuses=gt_statuses,
-        GtStatus=GtStatus,
+        GTStatus=GTStatus,
     )
 
 

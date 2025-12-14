@@ -1,4 +1,4 @@
-{% macro diagram_card(diagram, user, current_user, btcopilot, is_shared=False, access_right=None, gt_statuses=None, GtStatus=None) %}
+{% macro diagram_card(diagram, user, current_user, btcopilot, is_shared=False, access_right=None, gt_statuses=None, GTStatus=None) %}
 <div class="box mb-2 diagram-card py-3 px-4">
     <div class="level is-mobile mb-2" style="flex-wrap: nowrap;">
         <div class="level-left" style="min-width: 0; flex-shrink: 1; overflow: hidden;">
@@ -67,11 +67,11 @@
                             {% endif %}
                             {% set stmt_count = discussion.statements|length if discussion.statements else 0 %}
                             <span class="has-text-weight-normal ml-auto">({{ stmt_count }})</span>
-                            {% if gt_statuses and GtStatus %}
+                            {% if gt_statuses and GTStatus %}
                                 {% set gt = gt_statuses.get(discussion.id, {}) %}
-                                {% if gt.get('status') == GtStatus.Full %}
+                                {% if gt.get('status') == GTStatus.Full %}
                             <span class="tag is-success ml-1" title="Ground Truth ({{ gt.approved }}/{{ gt.total }})" style="font-size: 0.6rem; height: 1.25em; padding: 0 0.4em;"><i class="fas fa-check"></i></span>
-                                {% elif gt.get('status') == GtStatus.Partial %}
+                                {% elif gt.get('status') == GTStatus.Partial %}
                             <span class="tag is-warning ml-1" title="Partial GT - {{ gt.approved }}/{{ gt.total }} approved" style="font-size: 0.6rem; height: 1.25em; padding: 0 0.4em;"><i class="fas fa-exclamation-triangle"></i></span>
                                 {% endif %}
                             {% endif %}
