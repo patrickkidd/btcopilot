@@ -536,13 +536,13 @@ Parameters:
                                         </div>
                                     </template>
 
-                                    <!-- Event Description Section (only for shift events) -->
-                                    <template x-if="!event.kind || event.kind === 'shift'">
+                                    <!-- Event Description Section (for shift and death events) -->
+                                    <template x-if="!event.kind || event.kind === 'shift' || event.kind === 'death'">
                                         <div class="event-description-section" style="margin-top: 8px;">
                                             <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
                                                 <tr>
-                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                        Description:
+                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;"
+                                                        x-text="event.kind === 'death' ? 'Cause:' : 'Description:'">
                                                     </td>
                                                     <td style="padding: 0;">
                                                         {% if editable_mode %}
@@ -1398,13 +1398,13 @@ Parameters:
                                         </div>
                                     </template>
 
-                                    <!-- Event Description Section (only for shift events) -->
-                                    <template x-if="!event.kind || event.kind === 'shift'">
+                                    <!-- Event Description Section (for shift and death events) -->
+                                    <template x-if="!event.kind || event.kind === 'shift' || event.kind === 'death'">
                                         <div class="event-description-section" style="margin-top: 8px;">
                                             <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
                                                 <tr>
-                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                        Description:
+                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;"
+                                                        x-text="event.kind === 'death' ? 'Cause:' : 'Description:'">
                                                     </td>
                                                     <td style="padding: 0;">
                                                         {% if editable_mode %}
