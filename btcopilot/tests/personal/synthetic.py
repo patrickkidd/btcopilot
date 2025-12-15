@@ -75,7 +75,7 @@ class Persona:
 - Respond as this person would in a coaching conversation
 - Answer questions directly and clearly
 - Provide relevant details when asked without being evasive
-- Keep responses 1-3 sentences typically
+- Vary response length: sometimes 1 sentence, sometimes 3-4 sentences
 - You're cooperative and genuinely interested in exploring family patterns
 - You have good recall of dates and facts
 - You stay on topic but can elaborate when helpful
@@ -88,7 +88,7 @@ class Persona:
 - Respond as this person would in a coaching conversation
 - Stay in character - your traits should influence HOW you respond
 - Don't volunteer information unless asked (unless oversharing trait)
-- Keep responses 1-3 sentences typically
+- Vary response length: sometimes 1 sentence, sometimes 3-4 sentences
 - React naturally to the coach's questions
 - If you have the confused_dates trait, occasionally mix up years or be vague about timing
 - If defensive, push back on probing questions sometimes
@@ -98,7 +98,7 @@ class Persona:
         else:
             traits_section = """**Instructions:**
 - Respond as this person would in a coaching conversation
-- Keep responses 1-3 sentences typically
+- Vary response length: sometimes 1 sentence, sometimes 3-4 sentences
 - React naturally to the coach's questions"""
 
         consistency_rules = """**Consistency & Improvisation Rules:**
@@ -106,10 +106,15 @@ class Persona:
 - If asked about something not in your background, improvise plausibly and consistently
 - NEVER contradict what you've already said in this conversation
 - NEVER contradict facts in your background
-- If you don't know something, say so naturally ("I'm not sure exactly when that was...")
 - When probed deeper on a topic, reveal more emotional detail and context
 - Your memories should feel real - add sensory details, specific moments, emotions
-- Review what you've said so far and stay consistent with those details"""
+- Review what you've said so far and stay consistent with those details
+
+**Response Variety (CRITICAL):**
+- NEVER start consecutive responses the same way
+- Vary how you express uncertainty - don't always say "I'm not sure" or "I guess"
+- Use specific deflections when you don't know: "Mom would know better", "That was before my time", "I'd have to think about that"
+- Mix up sentence starters: facts ("Carol is 68"), emotions ("It hurts to think about"), actions ("We stopped talking after that")"""
 
         return f"""You are {self.name}, a person seeking help with a family issue.
 
@@ -906,14 +911,30 @@ def simulate_user_response(persona: Persona, history: list[Turn]) -> str:
         f"{'Coach' if t.speaker == 'ai' else 'You'}: {t.text}" for t in history
     )
 
+    # Extract previous response openers to avoid repetition
+    user_turns = [t for t in history if t.speaker == "user"]
+    previous_openers = []
+    for t in user_turns[-5:]:  # Last 5 user responses
+        first_words = t.text.split()[:4]
+        if first_words:
+            previous_openers.append(" ".join(first_words))
+
+    opener_warning = ""
+    if previous_openers:
+        opener_warning = f"""
+**DO NOT start your response with any of these phrases you've already used:**
+{chr(10).join(f'- "{o}..."' for o in previous_openers)}
+Start differently - with a fact, a name, a date, an emotion, or a question."""
+
     prompt = f"""{persona.system_prompt()}
+{opener_warning}
 
 **Conversation so far:**
 {history_text}
 
 **Your response:**"""
 
-    response = llm.submit_one(LLMFunction.Respond, prompt, temperature=0.7)
+    response = llm.submit_one(LLMFunction.Respond, prompt, temperature=0.75)
     return response.strip()
 
 
