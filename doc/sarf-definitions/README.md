@@ -20,32 +20,32 @@ This is the first exhaustive literature review of its kind for Bowen Theory. Eve
 
 | # | Term | File | Category | Status |
 |---|------|------|----------|--------|
-| 1 | [Functioning](sarf-definitions/01-functioning.md) | Core Variable (F) | Awaiting calibration |
-| 2 | [Anxiety](sarf-definitions/02-anxiety.md) | Core Variable (A) | Awaiting calibration |
-| 3 | [Symptom](sarf-definitions/03-symptom.md) | Core Variable (S) | Awaiting calibration |
-| 4 | [Conflict](sarf-definitions/04-conflict.md) | Relationship Mechanism | Awaiting calibration |
-| 5 | [Distance](sarf-definitions/05-distance.md) | Relationship Mechanism | Awaiting calibration |
-| 6 | [Cutoff](sarf-definitions/06-cutoff.md) | Relationship Mechanism | Awaiting calibration |
-| 7 | [Overfunctioning](sarf-definitions/07-overfunctioning.md) | Relationship Mechanism | Awaiting calibration |
-| 8 | [Underfunctioning](sarf-definitions/08-underfunctioning.md) | Relationship Mechanism | Awaiting calibration |
-| 9 | [Projection](sarf-definitions/09-projection.md) | Relationship Mechanism | Awaiting calibration |
-| 10 | [Inside](sarf-definitions/10-inside.md) | Triangle Position | Awaiting calibration |
-| 11 | [Outside](sarf-definitions/11-outside.md) | Triangle Position | Awaiting calibration |
-| 12 | [DefinedSelf](sarf-definitions/12-definedself.md) | Mature Move | Awaiting calibration |
+| 1 | [Functioning](01-functioning.md) | Core Variable (F) | Awaiting calibration |
+| 2 | [Anxiety](02-anxiety.md) | Core Variable (A) | Awaiting calibration |
+| 3 | [Symptom](03-symptom.md) | Core Variable (S) | Awaiting calibration |
+| 4 | [Conflict](04-conflict.md) | Relationship Mechanism | Awaiting calibration |
+| 5 | [Distance](05-distance.md) | Relationship Mechanism | Awaiting calibration |
+| 6 | [Cutoff](06-cutoff.md) | Relationship Mechanism | Awaiting calibration |
+| 7 | [Overfunctioning](07-overfunctioning.md) | Relationship Mechanism | Awaiting calibration |
+| 8 | [Underfunctioning](08-underfunctioning.md) | Relationship Mechanism | Awaiting calibration |
+| 9 | [Projection](09-projection.md) | Relationship Mechanism | Awaiting calibration |
+| 10 | [Inside](10-inside.md) | Triangle Position | Awaiting calibration |
+| 11 | [Outside](11-outside.md) | Triangle Position | Awaiting calibration |
+| 12 | [DefinedSelf](12-definedself.md) | Mature Move | Awaiting calibration |
 
 ### Methodology & Process
 
 | Document | Purpose |
 |----------|---------|
-| [METHODOLOGY.md](sarf-definitions/METHODOLOGY.md) | Full extraction methodology |
-| [PROGRESS.md](sarf-definitions/PROGRESS.md) | Execution status and session log |
-| [log/](sarf-definitions/log/) | Reasoning logs for each term (full audit trail) |
+| [METHODOLOGY.md](METHODOLOGY.md) | Full extraction methodology |
+| [PROGRESS.md](PROGRESS.md) | Execution status and session log |
+| [log/](log/) | Reasoning logs for each term (full audit trail) |
 
 ---
 
 ## Methodology Summary
 
-Full details: [METHODOLOGY.md](sarf-definitions/METHODOLOGY.md)
+Full details: [METHODOLOGY.md](METHODOLOGY.md)
 
 ### Authorized Sources
 
@@ -83,7 +83,7 @@ Each definition file contains:
 
 ## Application to AI System Prompts
 
-These definitions directly populate the SARF VARIABLE DEFINITIONS section in [btcopilot/personal/prompts.py](../btcopilot/personal/prompts.py).
+These definitions directly populate the SARF VARIABLE DEFINITIONS section in [btcopilot/personal/prompts.py](../../btcopilot/personal/prompts.py).
 
 The AI data extraction system uses these definitions to:
 
