@@ -4132,6 +4132,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // Lazy Alpine.js component initialization for SARF editors
 // Improves page load performance by deferring component initialization until visible
 (function() {
+    let initializedCount = 0;
+    let totalLazyElements = 0;
+
     function initializeSarfEditor(el) {
         if (el.hasAttribute('data-alpine-initialized')) return;
 
@@ -4153,6 +4156,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Initialize Alpine on this element
             Alpine.initTree(el);
+
+            initializedCount++;
+            console.log(`[SARF Lazy] Initialized component ${initializedCount}/${totalLazyElements}: ${params.component_id}`);
         } catch (e) {
             console.error('Error initializing SARF editor:', e);
         }
@@ -4173,11 +4179,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Observe all lazy SARF editors after DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.sarf-editor-lazy').forEach(el => {
+        const lazyElements = document.querySelectorAll('.sarf-editor-lazy');
+        totalLazyElements = lazyElements.length;
+        let observedCount = 0;
+        lazyElements.forEach(el => {
             if (!el.hasAttribute('data-alpine-initialized')) {
                 observer.observe(el);
+                observedCount++;
             }
         });
+        console.log(`[SARF Lazy] Found ${totalLazyElements} lazy elements, observing ${observedCount}`);
     });
 
     // Also expose function for manual initialization (e.g., when expanding a section)
