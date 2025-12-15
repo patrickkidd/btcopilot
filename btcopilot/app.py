@@ -46,7 +46,7 @@ def create_app(config: dict = None, **kwargs):
     if app.config["CONFIG"] == "development":
         app.config["SECRET_KEY"] = "dev-secret-key-for-sessions-change-in-production"
     else:
-        if not "SECRET_KEY" in app.config:
+        if "SECRET_KEY" not in app.config:
             raise ValueError("SECRET_KEY must be set in production! ")
 
     # 3. - Overrides from passed kwargs

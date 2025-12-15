@@ -399,11 +399,11 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             }
         },
 
-        createEvent() {
+        createEvent(kind = 'shift') {
             const eventId = this.nextNegativeId();
             const eventDelta = {
                 id: eventId,
-                kind: 'shift',
+                kind: kind,
                 person: null,
                 spouse: null,
                 child: null,
@@ -427,6 +427,54 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             if (!this.extractedData.events) this.extractedData.events = [];
             this.extractedData.events.push(eventDelta);
             this.autoSave();
+        },
+
+        showCreateEventMenu(event) {
+            const button = event.target.closest('.create-event-button');
+            if (!button) return;
+
+            document.querySelectorAll('.person-edit-dropdown, .event-edit-dropdown, .create-event-dropdown').forEach(d => d.style.display = 'none');
+
+            let dropdown = button.nextElementSibling;
+            if (!dropdown || !dropdown.classList.contains('create-event-dropdown')) {
+                dropdown = document.createElement('div');
+                dropdown.className = 'create-event-dropdown dropdown-menu';
+                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: scroll; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
+                button.parentNode.appendChild(dropdown);
+
+                const eventKinds = ['shift', 'birth', 'adopted', 'bonded', 'married', 'separated', 'divorced', 'moved', 'death'];
+                eventKinds.forEach(kind => {
+                    const item = document.createElement('a');
+                    item.className = 'dropdown-item';
+                    item.style.cssText = 'display: block; padding: 0.375rem 1rem; cursor: pointer; color: var(--bulma-dropdown-content-background-color, white);';
+                    item.textContent = kind;
+                    item.addEventListener('mouseover', () => {
+                        item.style.backgroundColor = 'var(--bulma-dropdown-content-background-color, white)';
+                        item.style.color = 'var(--bulma-text, #4a4a4a)';
+                    });
+                    item.addEventListener('mouseout', () => {
+                        item.style.backgroundColor = '';
+                        item.style.color = 'var(--bulma-dropdown-content-background-color, white)';
+                    });
+                    item.addEventListener('click', () => {
+                        this.createEvent(kind);
+                        dropdown.style.display = 'none';
+                    });
+                    dropdown.appendChild(item);
+                });
+            }
+
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+
+            if (dropdown.style.display === 'block') {
+                const closeDropdown = (e) => {
+                    if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeDropdown), 0);
+            }
         },
 
         editEvent(event) {

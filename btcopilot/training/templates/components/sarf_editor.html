@@ -367,7 +367,7 @@ Parameters:
                                 Events
                                 {% if editable_mode %}
                                 <span x-show="canEdit" style="display: inline-flex; gap: 4px; position: relative;">
-                                    <span class="add-element" style="opacity: 1;" @click.stop="createEvent()" title="Create New Event">
+                                    <span class="add-element create-event-button" style="opacity: 1;" @click.stop="showCreateEventMenu($event)" title="Create New Event">
                                         <i class="fas fa-plus-circle"></i>
                                     </span>
                                     <span class="add-element edit-event-button" style="opacity: 1;" @click.stop="editEvent($event)" title="Edit Existing Event">
@@ -1217,7 +1217,7 @@ Parameters:
                                 Events
                                 {% if editable_mode %}
                                 <span x-show="canEdit" style="display: inline-flex; gap: 4px; position: relative;">
-                                    <span class="add-element" style="opacity: 1;" @click.stop="createEvent()" title="Create New Event">
+                                    <span class="add-element create-event-button" style="opacity: 1;" @click.stop="showCreateEventMenu($event)" title="Create New Event">
                                         <i class="fas fa-plus-circle"></i>
                                     </span>
                                     <span class="add-element edit-event-button" style="opacity: 1;" @click.stop="editEvent($event)" title="Edit Existing Event">
