@@ -40,6 +40,7 @@ def test_gt_status_full_approval(flask_app):
         auditor_id="test_auditor",
         feedback_type="extraction",
         approved=True,
+        edited_extraction={"test": "data"},
     )
     db.session.add(feedback)
     db.session.commit()
@@ -66,12 +67,14 @@ def test_gt_status_partial_approval(flask_app):
         auditor_id="test_auditor",
         feedback_type="extraction",
         approved=True,
+        edited_extraction={"test": "data1"},
     )
     feedback2 = Feedback(
         statement_id=statement2.id,
         auditor_id="test_auditor",
         feedback_type="extraction",
         approved=False,
+        edited_extraction={"test": "data2"},
     )
     db.session.add_all([feedback1, feedback2])
     db.session.commit()
@@ -97,14 +100,16 @@ def test_gt_status_no_approval(flask_app):
         auditor_id="test_auditor",
         feedback_type="extraction",
         approved=False,
+        edited_extraction={"test": "data"},
     )
     db.session.add(feedback)
     db.session.commit()
 
     result = get_discussion_gt_statuses([discussion.id])
 
+    # No approved auditor, so status is None_ but total reflects edited feedbacks
     assert result[discussion.id]["status"] == GTStatus.None_
-    assert result[discussion.id]["total"] == 1
+    assert result[discussion.id]["total"] == 0
     assert result[discussion.id]["approved"] == 0
 
 
@@ -150,12 +155,14 @@ def test_gt_status_multiple_discussions(flask_app):
         auditor_id="test_auditor",
         feedback_type="extraction",
         approved=True,
+        edited_extraction={"test": "data1"},
     )
     feedback2 = Feedback(
         statement_id=statement2.id,
         auditor_id="test_auditor",
         feedback_type="extraction",
         approved=False,
+        edited_extraction={"test": "data2"},
     )
     db.session.add_all([feedback1, feedback2])
     db.session.commit()
