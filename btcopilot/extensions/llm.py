@@ -85,49 +85,39 @@ class LLM:
                 _log.debug(cleaned_response)
                 return cleaned_response
 
-    async def openai(self, prompt: str = None, response_format=None, **kwargs) -> str:
+    async def openai(self, prompt: str = None, **kwargs) -> str:
         start_time = time.time()
-        # _log.debug(f"Starting OpenAI request")
-        if response_format:
-            from pydantic_ai import Agent
-            from pydantic_ai.models.openai import OpenAIModel
-            from pydantic_ai.providers.openai import OpenAIProvider
-
-            model = OpenAIModel(
-                "gpt-4o-mini",
-                provider=OpenAIProvider(api_key=os.environ["OPENAI_API_KEY"]),
-            )
-            agent = Agent(model, system_prompt=prompt, output_type=response_format)
-            response = await agent.run(prompt)
-            content = response.output
-        else:
-            if not "messages" in kwargs:
-                kwargs["messages"] = [{"role": "system", "content": prompt}]
-            response = await self._openai().chat.completions.create(
-                model="gpt-4o-mini",
-                stream=False,
-                response_format=response_format,
-                **kwargs,
-            )
-            content = response.choices[0].message.content
-        _log.debug(
-            f"Completed response w/ status code in {time.time() - start_time} seconds"
+        if "messages" not in kwargs:
+            kwargs["messages"] = [{"role": "system", "content": prompt}]
+        response = await self._openai().chat.completions.create(
+            model="gpt-4o-mini",
+            stream=False,
+            **kwargs,
         )
+        content = response.choices[0].message.content
+        _log.debug(f"Completed response in {time.time() - start_time} seconds")
         _log.debug(f"llm.openai(): --> \n\n{content}")
         return content
 
+    async def gemini(self, prompt: str = None, response_format=None) -> str:
+        """Gemini for structured data extraction (PDP)."""
+        start_time = time.time()
+        from pydantic_ai import Agent
+        from pydantic_ai.models.google import GoogleModel
+        from pydantic_ai.providers.google import GoogleProvider
+
+        provider = GoogleProvider(api_key=os.environ["GOOGLE_GEMINI_API_KEY"])
+        model = GoogleModel("gemini-2.0-flash", provider=provider)
+        agent = Agent(model, system_prompt=prompt, output_type=response_format)
+        response = await agent.run(prompt)
+        content = response.output
+        _log.debug(f"Completed response in {time.time() - start_time} seconds")
+        _log.debug(f"llm.gemini(): --> \n\n{content}")
+        return content
+
     async def submit(self, llm_type: LLMFunction, prompt: str = None, **kwargs):
-        if llm_type == LLMFunction.JSON:
-            # return await ollama_rest(prompt, **kwargs)
-            return await self.openai(prompt, **kwargs)
-        elif llm_type in (
-            LLMFunction.Direction,
-            LLMFunction.Respond,
-            LLMFunction.Summarize,
-            LLMFunction.PDP,
-        ):
-            # return await ollama_rest(prompt, **kwargs)
-            return await self.openai(prompt, **kwargs)
+        if llm_type in (LLMFunction.JSON, LLMFunction.PDP):
+            return await self.gemini(prompt, response_format=kwargs.get("response_format"))
         else:
             return await self.openai(prompt, **kwargs)
 

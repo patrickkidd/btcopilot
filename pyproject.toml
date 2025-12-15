@@ -51,6 +51,7 @@ app = [
 
     # personal
     "pydantic_ai",
+    "google-genai",
 
     # training
     "assemblyai",

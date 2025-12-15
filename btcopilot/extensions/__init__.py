@@ -159,6 +159,8 @@ def init_datadog(app):
     - Write to JSON file for Datadog agent
     - Not propagate to root (prevents duplicate logs)
     """
+    # Suppress noisy AFC (Automatic Function Calling) logs from google-genai SDK
+    logging.getLogger("google.genai.models").setLevel(logging.WARNING)
 
     os.makedirs(os.path.join(app.instance_path, "logs"), exist_ok=True)
     is_celery = os.getenv("FD_IS_CELERY")

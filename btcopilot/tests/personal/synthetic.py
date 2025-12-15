@@ -1028,9 +1028,6 @@ class ConversationSimulator:
                     if yield_progress and progress_result:
                         yield progress_result
 
-                if self._is_complete(turns):
-                    break
-
                 user_text = simulate_user_response(persona, turns)
 
         if yield_progress:
@@ -1071,18 +1068,6 @@ class ConversationSimulator:
             return ConversationResult(
                 turns=turns, persona=persona, discussionId=discussion.id
             )
-
-    def _is_complete(self, turns: list[Turn]) -> bool:
-        if len(turns) < 4:
-            return False
-
-        last_ai = turns[-1].text.lower()
-        completion_phrases = [
-            "i have a good picture",
-            "that gives me enough",
-            "let's look at what we've gathered",
-        ]
-        return any(phrase in last_ai for phrase in completion_phrases)
 
 
 # Robotic patterns to detect
@@ -1295,7 +1280,7 @@ def run_synthetic_tests(
             result.quality = evaluator.evaluate(result)
             results.append(result)
             _log.info(
-                f"Completed: {len(result.turns)} turns, score={result.quality.score:.2f}"
+                f"Completed: {len(result.turns) // 2} turns, score={result.quality.score:.2f}"
             )
 
     return results

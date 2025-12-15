@@ -128,13 +128,13 @@ def generate_synthetic_discussion(
 
         _log.info(
             f"Synthetic discussion {result.discussionId} generated "
-            f"({len(result.turns)} turns)"
+            f"({len(result.turns) // 2} turns)"
         )
 
         return {
             "success": True,
             "discussion_id": result.discussionId,
-            "turn_count": len(result.turns),
+            "turn_count": len(result.turns) // 2,
             "quality_score": result.quality.score if result.quality else None,
             "coverage_rate": result.coverage.rate if result.coverage else None,
         }
