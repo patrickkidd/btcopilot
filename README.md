@@ -498,3 +498,45 @@ INFO     test_model:test_model.py:58 Copilot total time: 38.17371924100007
   - Division between persistent database and PDP. Deltas are the core atomic component to validate.
 - Plan to build personal mobile app with web-based auditing system to scale model training with human feedback.
   - Potential to generate database for family research, complete with data model.
+
+## 2025-12-08
+
+- Added prompt induction framework:
+  [btcopilot/doc/PROMPT_INDUCTION_CLI.md](btcopilot/doc/PROMPT_INDUCTION_CLI.md)
+  Using Claude Code's command line API to run it from a script. Get baseline F1,
+  tweak system prompts, run AI extraction, compare baseline. Run 10 iterations
+  or until F1 improvement plateaus. Super cool! 
+
+## 2025-12-14
+
+Improved Synthetic AI client personalities with larger hard-coded historyies,
+  "levels of depth," improvisation.
+
+*Agentic semantic indexing for SARF definitions*
+
+I architected an agentic search of Bowen's book, Kerr's book, Havstad &
+   Sheffield's aricle to develop a comprehensive index of passages to produce
+  better operationalized definitions for SARF. This is a multi-layered approach:
+  [btcopilot/doc/sarf-definitions/METHODOLOGY.md](btcopilot/doc/sarf-definitions/METHODOLOGY.md)
+
+First, *manually* Copy and paste pdf's of the source material into plain text and then remove
+    all formatting like page numbers, blank lines, etc.
+
+Second, create a plan document for the AI agent to do the following for each term:
+- For each term in SARF:
+  - Full sequential read of all 5 sources, taking detailed notes
+  - Second pass: cross-reference, flag contradictions/tensions
+  - Catalog both positive definitions AND negative distinctions ("F is not X")
+  - Map synonyms and related terms that may discuss concept without naming it
+  - Explicit confidence ratings on each extracted concept
+  - Flag gaps where sources don't address observable speech/behavior markers
+  - Present draft to you for calibration BEFORE proceeding to other terms
+- After huaman feedback on the term:
+  - Adjust methodology based on what you caught that I missed
+  - Apply refined process to remaining 11 terms
+  - Check inter-term consistency after each new term
+- Final pass:
+  - Review all 12 definitions together for internal consistency
+  - Ensure mutual exclusivity where needed for classification
+  
+Progress tracked here: [btcopilot/doc/sarf-definitions/PROGRESS.md](btcopilot/doc/sarf-definitions/PROGRESS.md)
