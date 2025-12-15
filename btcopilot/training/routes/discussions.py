@@ -740,7 +740,10 @@ def audit(discussion_id):
         else []
     )
     diagram_events_list = (
-        [{"id": e["id"], "description": e.get("description", "")} for e in diagram_data_cache.events]
+        [
+            {"id": e["id"], "description": e.get("description", "")}
+            for e in diagram_data_cache.events
+        ]
         if diagram_data_cache and diagram_data_cache.events
         else []
     )
@@ -1058,26 +1061,28 @@ def audit(discussion_id):
         # Collect all unique auditor IDs
         all_auditor_ids = set(f.auditor_id for f in all_discussion_feedback)
 
-        # Fetch user info for each auditor ID
+        # Batch fetch user info to avoid N+1 queries
+        numeric_ids = []
         for auditor_id_str in all_auditor_ids:
-            try:
-                # Skip test auditor IDs that aren't user IDs
-                if (
-                    auditor_id_str.startswith("auditor")
-                    or auditor_id_str == "anonymous"
-                ):
+            # Skip test auditor IDs that aren't user IDs
+            if auditor_id_str.startswith("auditor") or auditor_id_str == "anonymous":
+                auditor_user_map[auditor_id_str] = auditor_id_str
+            else:
+                try:
+                    numeric_ids.append(int(auditor_id_str))
+                except (ValueError, TypeError):
                     auditor_user_map[auditor_id_str] = auditor_id_str
-                    continue
 
-                user_id = int(auditor_id_str)
-                user = User.query.get(user_id)
-                if user:
-                    auditor_user_map[auditor_id_str] = user.username
+        # Single batch query for all numeric user IDs
+        if numeric_ids:
+            users = User.query.filter(User.id.in_(numeric_ids)).all()
+            user_by_id = {u.id: u.username for u in users}
+            for user_id in numeric_ids:
+                auditor_id_str = str(user_id)
+                if user_id in user_by_id:
+                    auditor_user_map[auditor_id_str] = user_by_id[user_id]
                 else:
                     auditor_user_map[auditor_id_str] = f"User {auditor_id_str}"
-            except (ValueError, TypeError):
-                # Handle non-integer auditor IDs (test cases)
-                auditor_user_map[auditor_id_str] = auditor_id_str
 
         # Ensure current user is always in the map (even if they haven't submitted feedback)
         # Use username as key since Feedback.auditor_id stores username strings

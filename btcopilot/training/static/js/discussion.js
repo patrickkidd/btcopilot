@@ -9,17 +9,17 @@ function reloadPreservingParams() {
 // MARK: Section Name
 
 function toggleExtractedData(componentId) {
-    // Data section elements  
+    // Data section elements
     const dataCollapsed = document.getElementById('data-collapsed-' + componentId);
     const dataExpanded = document.getElementById('data-expanded-' + componentId);
-    
+
     // Cumulative section elements (synchronize with data section)
     const cumulativeCollapsed = document.getElementById('cumulative-collapsed-' + componentId);
     const cumulativeExpanded = document.getElementById('cumulative-expanded-' + componentId);
-    
+
     // Check current state using display style
     const isExpanded = dataExpanded && dataExpanded.style.display !== 'none';
-    
+
     if (isExpanded) {
         // Collapse both data and cumulative sections
         if (dataCollapsed && dataExpanded) {
@@ -35,10 +35,18 @@ function toggleExtractedData(componentId) {
         if (dataCollapsed && dataExpanded) {
             dataCollapsed.style.display = 'none';
             dataExpanded.style.display = 'block';
+            // Initialize lazy Alpine components when expanding
+            dataExpanded.querySelectorAll('.sarf-editor-lazy:not([data-alpine-initialized])').forEach(el => {
+                if (window.initializeSarfEditor) window.initializeSarfEditor(el);
+            });
         }
         if (cumulativeCollapsed && cumulativeExpanded) {
             cumulativeCollapsed.style.display = 'none';
             cumulativeExpanded.style.display = 'block';
+            // Initialize lazy Alpine components when expanding
+            cumulativeExpanded.querySelectorAll('.sarf-editor-lazy:not([data-alpine-initialized])').forEach(el => {
+                if (window.initializeSarfEditor) window.initializeSarfEditor(el);
+            });
         }
     }
 }
@@ -4120,3 +4128,66 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Lazy Alpine.js component initialization for SARF editors
+// Improves page load performance by deferring component initialization until visible
+(function() {
+    function initializeSarfEditor(el) {
+        if (el.hasAttribute('data-alpine-initialized')) return;
+
+        const paramsJson = el.getAttribute('data-alpine-params');
+        if (!paramsJson) return;
+
+        try {
+            const params = JSON.parse(paramsJson);
+
+            // Remove x-ignore so Alpine can process this element
+            el.removeAttribute('x-ignore');
+
+            // Set the x-data attribute with the component function call
+            const xDataValue = `componentExtractedDataWithReview(${JSON.stringify(params.data)}, ${JSON.stringify(params.cumulative_pdp)}, ${params.thumbs_down}, ${params.submitted}, "${params.component_id}", ${params.editable_mode}, ${JSON.stringify(params.message_id)}, ${JSON.stringify(params.edited_extraction)}, ${JSON.stringify(params.feedback_id)}, ${JSON.stringify(params.all_feedback)}, ${params.approved}, ${JSON.stringify(params.approved_by)}, ${JSON.stringify(params.approved_at)}, ${JSON.stringify(params.admin_feedback_id)})`;
+            el.setAttribute('x-data', xDataValue);
+
+            // Mark as initialized
+            el.setAttribute('data-alpine-initialized', 'true');
+
+            // Initialize Alpine on this element
+            Alpine.initTree(el);
+        } catch (e) {
+            console.error('Error initializing SARF editor:', e);
+        }
+    }
+
+    // Use IntersectionObserver for lazy loading
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                initializeSarfEditor(entry.target);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, {
+        rootMargin: '200px', // Start loading 200px before element is visible
+        threshold: 0
+    });
+
+    // Observe all lazy SARF editors after DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.sarf-editor-lazy').forEach(el => {
+            if (!el.hasAttribute('data-alpine-initialized')) {
+                observer.observe(el);
+            }
+        });
+    });
+
+    // Also expose function for manual initialization (e.g., when expanding a section)
+    window.initializeSarfEditor = initializeSarfEditor;
+    window.initializeAllVisibleSarfEditors = function() {
+        document.querySelectorAll('.sarf-editor-lazy:not([data-alpine-initialized])').forEach(el => {
+            const rect = el.getBoundingClientRect();
+            if (rect.top < window.innerHeight + 200 && rect.bottom > -200) {
+                initializeSarfEditor(el);
+            }
+        });
+    };
+})();

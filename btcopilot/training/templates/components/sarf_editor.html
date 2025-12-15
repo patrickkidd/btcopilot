@@ -15,6 +15,7 @@ Parameters:
 - onclick_function: String, JavaScript function to call on click (default: toggleExtractedData)
 - id_prefix: String, prefix for collapsed/expanded IDs (default: data)
 - editable_mode: Boolean, whether to enable in-place editing (default: false)
+- lazy_init: Boolean, whether to defer Alpine initialization until visible (default: true)
 #}
 
 
@@ -39,6 +40,27 @@ Parameters:
 {% if editable_mode is not defined %}
     {% set editable_mode = false %}
 {% endif %}
+{% if lazy_init is not defined %}
+    {% set lazy_init = true %}
+{% endif %}
+
+{# Pre-compute Alpine component parameters for lazy initialization #}
+{% set alpine_params = {
+    'data': data,
+    'cumulative_pdp': cumulative_pdp if cumulative_pdp else none,
+    'thumbs_down': (feedback_data and feedback_data.thumbs_down)|default(false),
+    'submitted': false,
+    'component_id': component_id,
+    'editable_mode': editable_mode,
+    'message_id': message_id if message_id else none,
+    'edited_extraction': (feedback_data.edited_extraction if feedback_data and feedback_data.edited_extraction else none),
+    'feedback_id': (feedback_data.id if feedback_data and feedback_data.id else none),
+    'all_feedback': all_ext_feedback_dict if all_ext_feedback_dict else [],
+    'approved': approved if approved else false,
+    'approved_by': approved_by if approved_by else none,
+    'approved_at': approved_at if approved_at else none,
+    'admin_feedback_id': (admin_ext_feedback.id if admin_ext_feedback and admin_ext_feedback.id else none)
+} %}
 
 <div class="extracted-data-component" id="extracted-data-{{ component_id }}">
     {% if data or editable_mode %}
@@ -99,7 +121,7 @@ Parameters:
 
     <!-- Expanded Data Interface (with tabs for admins, simple view for regular auditors) -->
     {% if editable_mode and not is_cumulative %}
-    <div class="admin-tabbed-data" id="{{ id_prefix }}-expanded-{{ component_id }}" style="display: {% if collapsed %}none{% else %}block{% endif %}" x-data='componentExtractedDataWithReview({{ data|tojson }}, {{ cumulative_pdp|tojson if cumulative_pdp else "null" }}, {{ "true" if feedback_data and feedback_data.thumbs_down else "false" }}, false, "{{ component_id }}", {{ "true" if editable_mode else "false" }}, {{ message_id|tojson if message_id else "null" }}, {{ feedback_data.edited_extraction|tojson if feedback_data and feedback_data.edited_extraction else "null" }}, {{ feedback_data.id|tojson if feedback_data and feedback_data.id else "null" }}, {{ all_ext_feedback_dict|tojson if all_ext_feedback_dict else "[]" }}, {{ approved|tojson if approved else "false" }}, {{ approved_by|tojson if approved_by else "null" }}, {{ approved_at|tojson if approved_at else "null" }}, {{ admin_ext_feedback.id|tojson if admin_ext_feedback and admin_ext_feedback.id else "null" }})'>
+    <div class="admin-tabbed-data{% if lazy_init %} sarf-editor-lazy{% endif %}" id="{{ id_prefix }}-expanded-{{ component_id }}" style="display: {% if collapsed %}none{% else %}block{% endif %}"{% if lazy_init %} x-ignore data-alpine-params='{{ alpine_params|tojson }}'{% else %} x-data='componentExtractedDataWithReview({{ data|tojson }}, {{ cumulative_pdp|tojson if cumulative_pdp else "null" }}, {{ "true" if feedback_data and feedback_data.thumbs_down else "false" }}, false, "{{ component_id }}", {{ "true" if editable_mode else "false" }}, {{ message_id|tojson if message_id else "null" }}, {{ feedback_data.edited_extraction|tojson if feedback_data and feedback_data.edited_extraction else "null" }}, {{ feedback_data.id|tojson if feedback_data and feedback_data.id else "null" }}, {{ all_ext_feedback_dict|tojson if all_ext_feedback_dict else "[]" }}, {{ approved|tojson if approved else "false" }}, {{ approved_by|tojson if approved_by else "null" }}, {{ approved_at|tojson if approved_at else "null" }}, {{ admin_ext_feedback.id|tojson if admin_ext_feedback and admin_ext_feedback.id else "null" }})'{% endif %}>
         <!-- Navigation Tabs (admin only, hidden when single auditor selected) -->
         {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) and all_ext_feedback_dict|length > 1 %}
         <div class="tabs is-small is-boxed mb-0">
@@ -1005,7 +1027,7 @@ Parameters:
     <!-- Regular Expanded Data View (non-admin or no corrections) -->
     <div class="expanded-data-section" id="{{ id_prefix }}-expanded-{{ component_id }}" style="display: {% if collapsed %}none{% else %}block{% endif %}">
         <div class="data-content" style="position: relative;">
-            <div x-data='componentExtractedDataWithReview({{ data|tojson }}, {{ cumulative_pdp|tojson if cumulative_pdp else "null" }}, {{ "true" if feedback_data and feedback_data.thumbs_down else "false" }}, false, "{{ component_id }}", {{ "true" if editable_mode else "false" }}, {{ message_id|tojson if message_id else "null" }}, {{ feedback_data.edited_extraction|tojson if feedback_data and feedback_data.edited_extraction else "null" }}, {{ feedback_data.id|tojson if feedback_data and feedback_data.id else "null" }}, {{ all_ext_feedback_dict|tojson if all_ext_feedback_dict else "[]" }}, {{ approved|tojson if approved else "false" }}, {{ approved_by|tojson if approved_by else "null" }}, {{ approved_at|tojson if approved_at else "null" }}, {{ admin_ext_feedback.id|tojson if admin_ext_feedback and admin_ext_feedback.id else "null" }})' @click.stop>
+            <div class="{% if lazy_init %}sarf-editor-lazy{% endif %}"{% if lazy_init %} x-ignore data-alpine-params='{{ alpine_params|tojson }}'{% else %} x-data='componentExtractedDataWithReview({{ data|tojson }}, {{ cumulative_pdp|tojson if cumulative_pdp else "null" }}, {{ "true" if feedback_data and feedback_data.thumbs_down else "false" }}, false, "{{ component_id }}", {{ "true" if editable_mode else "false" }}, {{ message_id|tojson if message_id else "null" }}, {{ feedback_data.edited_extraction|tojson if feedback_data and feedback_data.edited_extraction else "null" }}, {{ feedback_data.id|tojson if feedback_data and feedback_data.id else "null" }}, {{ all_ext_feedback_dict|tojson if all_ext_feedback_dict else "[]" }}, {{ approved|tojson if approved else "false" }}, {{ approved_by|tojson if approved_by else "null" }}, {{ approved_at|tojson if approved_at else "null" }}, {{ admin_ext_feedback.id|tojson if admin_ext_feedback and admin_ext_feedback.id else "null" }})'{% endif %} @click.stop>
 
                 <!-- Data Display -->
                 <div class="data-details">
