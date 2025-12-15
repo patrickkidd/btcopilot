@@ -141,3 +141,4 @@ Cost: ~$20 in agentic server time using Claude Code.
 - **Eight concepts of Bowen Theory** - Same methodology to be applied to differentiation of self, triangles, nuclear family emotional system, family projection process, multigenerational transmission process, sibling position, emotional cutoff, and societal emotional process
 - **Inter-term consistency checks** - Phase 6 validation pending
 - **Integration with training pipeline** - Automated F1 scoring against definitions
+
