@@ -509,34 +509,21 @@ INFO     test_model:test_model.py:58 Copilot total time: 38.17371924100007
 
 ## 2025-12-14
 
-Improved Synthetic AI client personalities with larger hard-coded historyies,
-  "levels of depth," improvisation.
+*I am modeling therapeutic conversation*. I don't know if this has ever been done before. Measuring therapist performance at collecting enough data for clinical evaluation. Requires measuring coach performance statement by statement.
 
-*Agentic semantic indexing for SARF definitions*
+- *The first comprehensive index of technical terms for Bowen theory* using Bowen and Kerr's books. *Every single* passage that might be related to a given term in the SARF model (Anxiety, Symptom, Functioning, conflict, projection, triangles, etc). It isn't the eight concepts but I could easily re-run this on those (and probabyl will) [btcopilot/doc/sarf-definitions/METHODOLOGY.md](btcopilot/doc/sarf-definitions/METHODOLOGY.md). In a nuthsell, this is many passes through the literature back and forth with human and AI. It required a combination of:
+  - Exhaustive knowledge of the source literature (from Stinson, 2020)
+  - Doctoral-level qualitative research methods
+  - AI Context Architect Expertise
+  - Software Architect Expertise
+  Progress tracked here: [btcopilot/doc/sarf-definitions/PROGRESS.md](btcopilot/doc/sarf-definitions/PROGRESS.md)
+- Switched to gemini flash API for cheaper and probably better data extraction. Seeking HIPAA BAA with Google.  
+- Improved Synthetic AI client personalities with:
+  - larger hard-coded histories
+  - "levels of depth" to force AI coach to probe deeper or fail to get necessary information.
+  - Improvisation of case content beyond the provided history, so long as it is not contradictory
+- Improved AI coach conversational flow with:
+  - Allow feeling content around the problem for ~8 statements before pivoting to filling out data model. Helps the person get some of the presenting problem out, get some emotional buy-in.
 
-I architected an agentic search of Bowen's book, Kerr's book, Havstad &
-   Sheffield's aricle to develop a comprehensive index of passages to produce
-  better operationalized definitions for SARF. This is a multi-layered approach:
-  [btcopilot/doc/sarf-definitions/METHODOLOGY.md](btcopilot/doc/sarf-definitions/METHODOLOGY.md)
-
-First, *manually* Copy and paste pdf's of the source material into plain text and then remove
-    all formatting like page numbers, blank lines, etc.
-
-Second, create a plan document for the AI agent to do the following for each term:
-- For each term in SARF:
-  - Full sequential read of all 5 sources, taking detailed notes
-  - Second pass: cross-reference, flag contradictions/tensions
-  - Catalog both positive definitions AND negative distinctions ("F is not X")
-  - Map synonyms and related terms that may discuss concept without naming it
-  - Explicit confidence ratings on each extracted concept
-  - Flag gaps where sources don't address observable speech/behavior markers
-  - Present draft to you for calibration BEFORE proceeding to other terms
-- After huaman feedback on the term:
-  - Adjust methodology based on what you caught that I missed
-  - Apply refined process to remaining 11 terms
-  - Check inter-term consistency after each new term
-- Final pass:
-  - Review all 12 definitions together for internal consistency
-  - Ensure mutual exclusivity where needed for classification
-  
-Progress tracked here: [btcopilot/doc/sarf-definitions/PROGRESS.md](btcopilot/doc/sarf-definitions/PROGRESS.md)
+*Dev notes*
+- Added mcp server for claude code to manage the web server proces.

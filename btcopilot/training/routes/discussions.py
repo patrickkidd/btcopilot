@@ -724,6 +724,27 @@ def audit(discussion_id):
     cumulative_events_by_id = {}
     cumulative_pair_bonds_by_id = {}
 
+    # Cache diagram data once for person name lookups (avoid repeated pickle deserialization)
+    diagram_data_cache = (
+        discussion.diagram.get_diagram_data() if discussion.diagram else None
+    )
+    diagram_people_by_id = (
+        {p["id"]: p["name"] for p in diagram_data_cache.people}
+        if diagram_data_cache and diagram_data_cache.people
+        else {}
+    )
+    # Pre-compute lists for template JS globals (avoids calling get_diagram_data() in Jinja)
+    diagram_people_list = (
+        [{"id": p["id"], "name": p["name"]} for p in diagram_data_cache.people]
+        if diagram_data_cache and diagram_data_cache.people
+        else []
+    )
+    diagram_events_list = (
+        [{"id": e["id"], "description": e.get("description", "")} for e in diagram_data_cache.events]
+        if diagram_data_cache and diagram_data_cache.events
+        else []
+    )
+
     for stmt in sorted_statements:
         stmt_feedback = feedback_by_statement[stmt.id]
 
@@ -856,15 +877,12 @@ def audit(discussion_id):
                 except (ValueError, KeyError, TypeError) as e:
                     _log.warning(f"Error parsing deltas for statement {stmt.id}: {e}")
 
-        # Get person name if speaker is mapped to a person
-        person_name = None
-        if stmt.speaker and stmt.speaker.person_id and discussion.diagram:
-            database = discussion.diagram.get_diagram_data()
-            if database.people:
-                for person in database.people:
-                    if person["id"] == stmt.speaker.person_id:
-                        person_name = person["name"]
-                        break
+        # Get person name if speaker is mapped to a person (using cached lookup)
+        person_name = (
+            diagram_people_by_id.get(stmt.speaker.person_id)
+            if stmt.speaker and stmt.speaker.person_id
+            else None
+        )
 
         if pdp_deltas_model:
             for person in pdp_deltas_model.people:
@@ -1108,6 +1126,8 @@ def audit(discussion_id):
         selected_auditor=selected_auditor,
         has_approved_gt=has_approved_gt,
         has_ai_extractions=has_ai_extractions,
+        diagram_people_list=diagram_people_list,
+        diagram_events_list=diagram_events_list,
     )
 
 

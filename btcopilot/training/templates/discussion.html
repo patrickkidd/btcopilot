@@ -5,30 +5,10 @@
 // Make diagram people data available to JavaScript
 // NOTE: Only includes base diagram people, NOT cumulative PDP people
 // Cumulative PDP people come from cumulativePdp which is filtered by selected auditor
-window.diagramPeople = [
-{% if discussion.diagram %}
-    {% set database = discussion.diagram.get_diagram_data() %}
-    {% for person in database.people %}
-    {
-        id: {{ person.id }},
-        name: {{ person.name | tojson }}
-    }{{ "," if not loop.last else "" }}
-    {% endfor %}
-{% endif %}
-];
+window.diagramPeople = {{ diagram_people_list | tojson }};
 
 // Make diagram events data available to JavaScript
-window.diagramEvents = [
-{% if discussion.diagram %}
-    {% set database = discussion.diagram.get_diagram_data() %}
-    {% for event in database.events %}
-    {
-        id: {{ event.id }},
-        description: {{ event.description | tojson }}
-    }{{ "," if not loop.last else "" }}
-    {% endfor %}
-{% endif %}
-];
+window.diagramEvents = {{ diagram_events_list | tojson }};
 
 // User and auditor info for access control
 window.isAdmin = {{ 'true' if current_user.has_role(btcopilot.ROLE_ADMIN) else 'false' }};
@@ -464,17 +444,14 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                                             <option value="2" {% if speaker.person_id == 2 %}selected{% endif %}>Assistant</option>
                                             
                                             {# Show other people from database (excluding defaults to avoid duplicates) #}
-                                            {% if discussion.diagram %}
-                                                {% set database = discussion.diagram.get_diagram_data() %}
-                                                {% for person in database.people %}
-                                                    {% if person.id != 1 and person.id != 2 %}
-                                                    <option value="{{ person.id }}" 
-                                                            {% if speaker.person_id == person.id %}selected{% endif %}>
-                                                        {{ person.name }}
-                                                    </option>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            {% endif %}
+                                            {% for person in diagram_people_list %}
+                                                {% if person.id != 1 and person.id != 2 %}
+                                                <option value="{{ person.id }}"
+                                                        {% if speaker.person_id == person.id %}selected{% endif %}>
+                                                    {{ person.name }}
+                                                </option>
+                                                {% endif %}
+                                            {% endfor %}
                                             <option value="new">+ Create new person</option>
                                         </select>
                                     </div>
