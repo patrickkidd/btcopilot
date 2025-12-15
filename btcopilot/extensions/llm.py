@@ -14,6 +14,7 @@ class LLMFunction(enum.StrEnum):
     """
     Indentify which models are best for which task, balancing
     accuracy/performance with cost.
+
     """
 
     General = "general"
@@ -117,7 +118,9 @@ class LLM:
 
     async def submit(self, llm_type: LLMFunction, prompt: str = None, **kwargs):
         if llm_type in (LLMFunction.JSON, LLMFunction.PDP):
-            return await self.gemini(prompt, response_format=kwargs.get("response_format"))
+            return await self.gemini(
+                prompt, response_format=kwargs.get("response_format")
+            )
         else:
             return await self.openai(prompt, **kwargs)
 
