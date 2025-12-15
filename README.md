@@ -6,6 +6,12 @@ Infrastructure for training LLMs to extract structured clinical data from natura
 
 **📋 [Decision Log](decisions/log.md)** | **📚 [Domain Context](CONTEXT.md)** | **📖 [Dev Journal](#development-journal)**
 
+## Novel Contributions to the Field
+
+- [SARF Literature Review](doc/sarf-definitions/) - First exhaustive, 100% traceable literature review for Bowen Theory technical terms
+- [SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing) - Novel clinical data model operationalizing Bowen theory constructs
+- [Conversational Flow Evaluation](#phase-7-conversational-flow-evaluation-) - Objective metrics for measuring clinical interview quality
+- [Inter-Rater Reliability Study](#phase-11-inter-rater-reliability-study) - First formal IRR study for family systems constructs at scale
 
 
 ---
@@ -353,6 +359,23 @@ provided academic literature.
 - Collective Behavior and Intelligence
     - Center for Collective Behavior, Max Planck Institute of Animal Behavior (https://www.ab.mpg.de/couzin)
 - More to come: Sapolski, All the psychologists, etc.
+
+### SARF Literature Review
+
+**[doc/sarf-definitions/](doc/sarf-definitions/)** - The first exhaustive, 100% traceable literature review for Bowen Theory technical terms.
+
+Every passage in Bowen's *Family Therapy in Clinical Practice*, Kerr's *Family Evaluation*, and Havstad's seminal SARF paper that could pertain to SARF model terms has been indexed, coded, and listed. 12 terms defined with ~400+ indexed passages across ~3,500+ lines of contextual reading.
+
+| Term | Category |
+|------|----------|
+| Functioning, Anxiety, Symptom | Core Variables |
+| Conflict, Distance, Cutoff, Overfunctioning, Underfunctioning, Projection | Relationship Mechanisms |
+| Inside, Outside | Triangle Positions |
+| DefinedSelf | Mature Moves |
+
+Each definition includes operational definitions, observable markers for AI classification, key discriminators, and traceable citations. No external sources or AI training data—exclusively derived from authorized texts.
+
+Methodology: [doc/sarf-definitions/METHODOLOGY.md](doc/sarf-definitions/METHODOLOGY.md)
 
 ## Academic Projects / Questions
 

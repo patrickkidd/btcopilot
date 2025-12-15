@@ -908,8 +908,8 @@ Parameters:
                                 <span class="icon is-small"><i class="fas fa-trash"></i></span>
                                 Deletes
                                 {% if editable_mode %}
-                                <span x-show="canEdit" class="add-element" style="opacity: 1; margin-left: 8px;" @click.stop="addDelete()" title="Add Delete">
-                                    <i class="fas fa-plus-circle"></i>
+                                <span x-show="canEdit" class="add-element add-delete-button" style="opacity: 1; margin-left: 8px; position: relative;" @click.stop="showDeleteDropdown($event)" title="Add Delete">
+                                    <i class="fas fa-edit"></i>
                                 </span>
                                 {% endif %}
                             </div>
@@ -1758,8 +1758,8 @@ Parameters:
                                 <span class="icon is-small"><i class="fas fa-trash"></i></span>
                                 Deletes
                                 {% if editable_mode %}
-                                <span x-show="canEdit" class="add-element" style="opacity: 1; margin-left: 8px;" @click.stop="addDelete()" title="Add Delete">
-                                    <i class="fas fa-plus-circle"></i>
+                                <span x-show="canEdit" class="add-element add-delete-button" style="opacity: 1; margin-left: 8px; position: relative;" @click.stop="showDeleteDropdown($event)" title="Add Delete">
+                                    <i class="fas fa-edit"></i>
                                 </span>
                                 {% endif %}
                             </div>

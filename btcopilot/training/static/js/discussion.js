@@ -608,20 +608,104 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             this.autoSave();
         },
         
-        // Delete management methods
-        addDelete() {
+        showDeleteDropdown(event) {
             if (!this.extractedData.delete) this.extractedData.delete = [];
-            
-            // Get available IDs from cumulative data only (not current delta)
-            const availableIds = this.getCumulativeOnlyIds();
-            
-            if (availableIds.length === 0) {
-                alert('No items available to delete from previous data.');
-                return;
+
+            const button = event.target.closest('.add-delete-button');
+            if (!button) return;
+
+            document.querySelectorAll('.person-edit-dropdown, .event-edit-dropdown, .create-event-dropdown, .delete-dropdown').forEach(d => d.style.display = 'none');
+
+            let dropdown = button.nextElementSibling;
+            if (!dropdown || !dropdown.classList.contains('delete-dropdown')) {
+                dropdown = document.createElement('div');
+                dropdown.className = 'delete-dropdown dropdown-menu';
+                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: scroll; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
+                button.parentNode.appendChild(dropdown);
             }
-            
-            // Show modal to select which ID to delete
-            this.showDeleteSelectionModal(availableIds);
+
+            dropdown.innerHTML = '';
+
+            const availableIds = this.getCumulativeOnlyIds();
+
+            if (availableIds.length === 0) {
+                const emptyItem = document.createElement('span');
+                emptyItem.className = 'dropdown-item';
+                emptyItem.style.cssText = 'display: block; padding: 0.375rem 1rem; color: var(--bulma-dropdown-content-background-color, white); font-style: italic;';
+                emptyItem.textContent = 'No items available to delete';
+                dropdown.appendChild(emptyItem);
+            } else {
+                const events = availableIds.filter(item => item.type === 'event').sort((a, b) => b.id - a.id);
+                const people = availableIds.filter(item => item.type === 'person').sort((a, b) => b.id - a.id);
+
+                if (events.length > 0) {
+                    const eventsHeader = document.createElement('div');
+                    eventsHeader.style.cssText = 'padding: 0.375rem 1rem; font-weight: bold; color: var(--bulma-dropdown-content-background-color, white); border-bottom: 1px solid var(--bulma-border, #dbdbdb);';
+                    eventsHeader.textContent = 'Events';
+                    dropdown.appendChild(eventsHeader);
+
+                    events.forEach(item => {
+                        const itemEl = document.createElement('a');
+                        itemEl.className = 'dropdown-item';
+                        itemEl.style.cssText = 'display: block; padding: 0.375rem 1rem; cursor: pointer; color: var(--bulma-dropdown-content-background-color, white);';
+                        itemEl.textContent = item.label;
+                        itemEl.addEventListener('mouseover', () => {
+                            itemEl.style.backgroundColor = 'var(--bulma-dropdown-content-background-color, white)';
+                            itemEl.style.color = 'var(--bulma-text, #4a4a4a)';
+                        });
+                        itemEl.addEventListener('mouseout', () => {
+                            itemEl.style.backgroundColor = '';
+                            itemEl.style.color = 'var(--bulma-dropdown-content-background-color, white)';
+                        });
+                        itemEl.addEventListener('click', () => {
+                            this.extractedData.delete.push(item.id);
+                            this.autoSave();
+                            dropdown.style.display = 'none';
+                        });
+                        dropdown.appendChild(itemEl);
+                    });
+                }
+
+                if (people.length > 0) {
+                    const peopleHeader = document.createElement('div');
+                    peopleHeader.style.cssText = 'padding: 0.375rem 1rem; font-weight: bold; color: var(--bulma-dropdown-content-background-color, white); border-bottom: 1px solid var(--bulma-border, #dbdbdb);' + (events.length > 0 ? ' border-top: 1px solid var(--bulma-border, #dbdbdb); margin-top: 0.5rem;' : '');
+                    peopleHeader.textContent = 'People';
+                    dropdown.appendChild(peopleHeader);
+
+                    people.forEach(item => {
+                        const itemEl = document.createElement('a');
+                        itemEl.className = 'dropdown-item';
+                        itemEl.style.cssText = 'display: block; padding: 0.375rem 1rem; cursor: pointer; color: var(--bulma-dropdown-content-background-color, white);';
+                        itemEl.textContent = item.label;
+                        itemEl.addEventListener('mouseover', () => {
+                            itemEl.style.backgroundColor = 'var(--bulma-dropdown-content-background-color, white)';
+                            itemEl.style.color = 'var(--bulma-text, #4a4a4a)';
+                        });
+                        itemEl.addEventListener('mouseout', () => {
+                            itemEl.style.backgroundColor = '';
+                            itemEl.style.color = 'var(--bulma-dropdown-content-background-color, white)';
+                        });
+                        itemEl.addEventListener('click', () => {
+                            this.extractedData.delete.push(item.id);
+                            this.autoSave();
+                            dropdown.style.display = 'none';
+                        });
+                        dropdown.appendChild(itemEl);
+                    });
+                }
+            }
+
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+
+            if (dropdown.style.display === 'block') {
+                const closeDropdown = (e) => {
+                    if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeDropdown), 0);
+            }
         },
         
         removeDelete(deleteIndex) {
@@ -711,74 +795,6 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         getAllAvailableIds() {
             // Keep this method for the edit dropdown to show all available IDs
             return this.getCumulativeOnlyIds();
-        },
-        
-        showDeleteSelectionModal(availableIds) {
-            // Store context globally so modal can access it
-            window.deleteSelectionContext = {
-                component: this,
-                availableIds: availableIds
-            };
-            
-            // Create and show a modal for selecting which ID to delete
-            const modalHtml = `
-                <div class="modal is-active" id="delete-selection-modal">
-                    <div class="modal-background" onclick="window.deleteSelectionContext.component.closeDeleteSelectionModal()"></div>
-                    <div class="modal-card">
-                        <header class="modal-card-head">
-                            <p class="modal-card-title">Select Item to Delete</p>
-                            <button class="delete" aria-label="close" onclick="window.deleteSelectionContext.component.closeDeleteSelectionModal()"></button>
-                        </header>
-                        <section class="modal-card-body">
-                            <div class="field">
-                                <label class="label">Choose an item from previous data to delete:</label>
-                                <div class="control">
-                                    <div class="select is-fullwidth">
-                                        <select id="delete-item-select">
-                                            ${availableIds.map(item => 
-                                                `<option value="${item.id}">${item.label}</option>`
-                                            ).join('')}
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-                        <footer class="modal-card-foot">
-                            <button class="button is-danger" onclick="window.deleteSelectionContext.component.confirmDeleteSelection()">Add Delete</button>
-                            <button class="button" onclick="window.deleteSelectionContext.component.closeDeleteSelectionModal()">Cancel</button>
-                        </footer>
-                    </div>
-                </div>
-            `;
-            
-            // Add modal to page
-            const modalContainer = document.createElement('div');
-            modalContainer.innerHTML = modalHtml;
-            document.body.appendChild(modalContainer);
-            
-            // Store reference for cleanup
-            this.deleteModalContainer = modalContainer;
-        },
-        
-        closeDeleteSelectionModal() {
-            if (this.deleteModalContainer) {
-                document.body.removeChild(this.deleteModalContainer);
-                this.deleteModalContainer = null;
-            }
-            // Clean up global context
-            if (window.deleteSelectionContext) {
-                delete window.deleteSelectionContext;
-            }
-        },
-        
-        confirmDeleteSelection() {
-            const selectElement = document.getElementById('delete-item-select');
-            if (selectElement) {
-                const selectedId = parseInt(selectElement.value);
-                this.extractedData.delete.push(selectedId);
-                this.autoSave();
-            }
-            this.closeDeleteSelectionModal();
         },
         
         getItemDescription(itemId) {
