@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+"""
+Automated prompt induction CLI.
+
+Runs Claude Code agent to optimize extraction prompts based on ground truth.
+Supports --focus to target specific schema fields for improvement.
+
+Usage (from btcopilot/):
+    uv run bin/induction                          # Optimize aggregate F1
+    uv run bin/induction --focus Person           # Focus on people detection
+    uv run bin/induction --focus Event.symptom    # Focus on symptom coding
+    uv run bin/induction --focus Event.relationship  # Focus on relationship coding
+    uv run bin/induction --list-focus             # Show all valid focus targets
+"""
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).parent.parent
+
+VALID_FOCUS_TARGETS = {
+    # Entity-level focus
+    "Person": {
+        "description": "People detection and matching",
+        "metric": "people_f1",
+        "guidance": "Focus on improving person name extraction, deduplication, and parent-child relationships.",
+    },
+    "Person.parents": {
+        "description": "Parent-child relationship detection",
+        "metric": "people_f1 (parents subset)",
+        "guidance": "Focus on correctly identifying and linking parents to children via pair bonds.",
+    },
+    "Event": {
+        "description": "Event detection and matching",
+        "metric": "events_f1",
+        "guidance": "Focus on event extraction: kind classification, description accuracy, person links.",
+    },
+    "Event.kind": {
+        "description": "Event type classification",
+        "metric": "events_f1 (kind matching)",
+        "guidance": "Focus on correctly classifying events as shift/birth/death/married/etc.",
+    },
+    "Event.description": {
+        "description": "Event description extraction",
+        "metric": "events_f1 (description similarity)",
+        "guidance": "Focus on extracting accurate, concise event descriptions from statements.",
+    },
+    "Event.symptom": {
+        "description": "Symptom variable coding (up/down/same)",
+        "metric": "symptom_macro_f1",
+        "guidance": "Focus on symptom detection and direction coding. Look for physical/emotional symptoms.",
+    },
+    "Event.anxiety": {
+        "description": "Anxiety variable coding (up/down/same)",
+        "metric": "anxiety_macro_f1",
+        "guidance": "Focus on anxiety level detection and direction coding.",
+    },
+    "Event.relationship": {
+        "description": "Relationship pattern coding",
+        "metric": "relationship_macro_f1",
+        "guidance": "Focus on relationship pattern detection (conflict, distance, fusion, etc.).",
+    },
+    "Event.relationshipTargets": {
+        "description": "Relationship target person detection",
+        "metric": "relationship_hierarchical.people_match_f1",
+        "guidance": "Focus on correctly identifying WHO the relationship pattern is with.",
+    },
+    "Event.relationshipTriangles": {
+        "description": "Triangle third-person detection",
+        "metric": "relationship_hierarchical.people_match_f1",
+        "guidance": "Focus on detecting triangular dynamics - the third person in relationship patterns.",
+    },
+    "Event.functioning": {
+        "description": "Functioning variable coding (up/down/same)",
+        "metric": "functioning_macro_f1",
+        "guidance": "Focus on functioning level detection (work, social, self-care capacity).",
+    },
+    "PairBond": {
+        "description": "Pair bond detection",
+        "metric": "pair_bonds_f1",
+        "guidance": "Focus on detecting romantic/marital pair bonds between people.",
+    },
+}
+
+
+def list_focus_targets():
+    """Print all valid focus targets with descriptions."""
+    print("Valid --focus targets:\n")
+    print(f"{'Target':<28} {'Metric':<40} Description")
+    print("-" * 100)
+    for target, info in sorted(VALID_FOCUS_TARGETS.items()):
+        print(f"{target:<28} {info['metric']:<40} {info['description']}")
+    print()
+    print("Examples:")
+    print("  uv run bin/induction --focus Person")
+    print("  uv run bin/induction --focus Event.symptom")
+    print("  uv run bin/induction --focus Event.relationshipTriangles")
+
+
+def validate_focus(focus: str) -> dict:
+    """Validate focus target against schema. Returns target info or exits with error."""
+    if focus not in VALID_FOCUS_TARGETS:
+        print(f"Error: Invalid focus target '{focus}'", file=sys.stderr)
+        print(f"\nValid targets:", file=sys.stderr)
+        for target in sorted(VALID_FOCUS_TARGETS.keys()):
+            print(f"  {target}", file=sys.stderr)
+        print(
+            f"\nRun 'uv run bin/induction --list-focus' for details.", file=sys.stderr
+        )
+        sys.exit(1)
+    return VALID_FOCUS_TARGETS[focus]
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Automated prompt induction for extraction prompts",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples (run from btcopilot/):
+  uv run bin/induction                        # Optimize aggregate F1
+  uv run bin/induction --focus Person         # Focus on people detection
+  uv run bin/induction --focus Event.symptom  # Focus on symptom coding
+  uv run bin/induction --list-focus           # Show all valid focus targets
+        """,
+    )
+    parser.add_argument(
+        "--focus",
+        type=str,
+        help="Schema field to focus optimization on (e.g., Person, Event.symptom)",
+    )
+    parser.add_argument(
+        "--list-focus",
+        action="store_true",
+        help="List all valid focus targets and exit",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be run without executing",
+    )
+
+    args = parser.parse_args()
+
+    if args.list_focus:
+        list_focus_targets()
+        sys.exit(0)
+
+    # Validate focus if provided
+    focus_info = None
+    if args.focus:
+        focus_info = validate_focus(args.focus)
+        print(f"Focus: {args.focus}")
+        print(f"  Metric: {focus_info['metric']}")
+        print(f"  Description: {focus_info['description']}")
+        print()
+
+    # Set environment variables for the shell script
+    env = os.environ.copy()
+    if args.focus:
+        env["INDUCTION_FOCUS"] = args.focus
+        env["INDUCTION_FOCUS_METRIC"] = focus_info["metric"]
+        env["INDUCTION_FOCUS_GUIDANCE"] = focus_info["guidance"]
+
+    # Path to the shell script
+    script_path = (
+        PROJECT_ROOT / "btcopilot" / "training" / "scripts" / "run_induction.sh"
+    )
+
+    if args.dry_run:
+        print("Dry run - would execute:")
+        print(f"  {script_path}")
+        if args.focus:
+            print(f"  INDUCTION_FOCUS={args.focus}")
+            print(f"  INDUCTION_FOCUS_METRIC={focus_info['metric']}")
+            print(f"  INDUCTION_FOCUS_GUIDANCE={focus_info['guidance']}")
+        sys.exit(0)
+
+    # Execute the shell script
+    try:
+        result = subprocess.run([str(script_path)], env=env, cwd=str(PROJECT_ROOT))
+        sys.exit(result.returncode)
+    except FileNotFoundError:
+        print(f"Error: Script not found: {script_path}", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nInterrupted by user")
+        sys.exit(130)
+
+
+if __name__ == "__main__":
+    main()

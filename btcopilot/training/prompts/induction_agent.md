@@ -1,10 +1,27 @@
 # Prompt Induction Agent
 
-You are an autonomous agent optimizing extraction prompts for a family relationship coding system.
+You are an autonomous agent optimizing extraction prompts for a novel,
+family-based, behavioral health clinical model coding system.
 
 ## Your Mission
 
 Improve prompts in `btcopilot/btcopilot/personal/prompts.py` to maximize F1 scores on ground truth cases.
+
+## Focus Area (if specified)
+
+Check environment variables for focus configuration:
+- `INDUCTION_FOCUS` - Schema field to prioritize (e.g., "Person", "Event.symptom")
+- `INDUCTION_FOCUS_METRIC` - The F1 metric to optimize (e.g., "symptom_macro_f1")
+- `INDUCTION_FOCUS_GUIDANCE` - Specific guidance for this focus area
+
+**If a focus is specified:**
+1. Prioritize errors related to that field/metric above all others
+2. Make 2-3 iterations targeting that specific area before considering other improvements
+3. Track the focused metric prominently in your logging
+4. Report the focused metric improvement in the summary
+5. Other metrics may decline slightly - that's acceptable if the focused metric improves
+
+**If no focus is specified:** Optimize aggregate F1 as usual.
 
 ## Workflow
 
@@ -12,11 +29,34 @@ Improve prompts in `btcopilot/btcopilot/personal/prompts.py` to maximize F1 scor
 
 Start by establishing your baseline:
 
-a. **Read ground truth**: `instance/gt_export.json`
+a. **Initialize run folder and log**: Create timestamped folder immediately
+   ```bash
+   # Generate timestamp for this run
+   TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
+
+   # Create folder name with optional focus suffix
+   # If INDUCTION_FOCUS is set: 2025-12-15_22-01-02--focus-People
+   # If no focus: 2025-12-15_22-01-02
+   if [ -n "$INDUCTION_FOCUS" ]; then
+       RUN_FOLDER="btcopilot/induction-reports/${TIMESTAMP}--focus-${INDUCTION_FOCUS}"
+   else
+       RUN_FOLDER="btcopilot/induction-reports/${TIMESTAMP}"
+   fi
+
+   mkdir -p "$RUN_FOLDER"
+   LOG_FILE="${RUN_FOLDER}/${TIMESTAMP}_log.jsonl"
+   REPORT_FILE="${RUN_FOLDER}/${TIMESTAMP}.md"
+   ```
+   - Use `Bash` tool to create the folder: `mkdir -p <folder_path>`
+   - Use `Write` tool to create the log file
+   - Every action from this point forward MUST be logged to this file
+   - Log format: JSON Lines (one JSON object per line)
+
+b. **Read ground truth**: `instance/gt_export.json`
    - Contains AI extractions vs. human-corrected ground truth
    - Each case has: statement text, AI extraction, GT extraction, expert feedback
 
-b. **Read current prompts**: `btcopilot/btcopilot/personal/prompts.py`
+c. **Read current prompts**: `btcopilot/btcopilot/personal/prompts.py`
    - Three-part structure (concatenated at runtime in pdp.py):
      - `DATA_EXTRACTION_PROMPT` - Header + SECTION 1 + SECTION 2 (with {current_date} variable)
      - `DATA_EXTRACTION_EXAMPLES` - SECTION 3 examples (no variables, literal JSON - edit freely)
@@ -27,15 +67,16 @@ b. **Read current prompts**: `btcopilot/btcopilot/personal/prompts.py`
      - SECTION 3: EXAMPLES (error patterns - in DATA_EXTRACTION_EXAMPLES)
    - Split structure avoids brace-escaping in JSON examples
 
-c. **Establish baseline**: Run test to get starting F1 scores
+d. **Establish baseline**: Run test to get starting F1 scores
    ```bash
    uv run python -m btcopilot.training.test_prompts_live
    ```
    - This runs live extraction with current prompts (not cached results)
    - Parse and record all F1 scores (aggregate, people, events, symptom, anxiety, relationship, functioning)
    - This is your baseline to beat
+   - **LOG THIS**: Write baseline entry to log file (see Logging section)
 
-d. **Create todo list**: Track up to 10 iterations using TodoWrite
+e. **Create todo list**: Track up to 10 iterations using TodoWrite
 
 ### 2. Iteration Loop
 
@@ -63,7 +104,15 @@ Compare AI extractions vs. GT in `gt_export.json`. Identify the **top 2-3 error 
 
 #### b. Propose ONE Targeted Change
 
-**CRITICAL RULES** (from ~/.claude/CLAUDE.md prompt tuning section):
+**CRITICAL RULES**:
+  When tuning LLM prompts (like btcopilot/personal/prompts.py), the behavior being
+  shaped is complex and sophisticated. Do NOT thrash between oversimplified ideas
+  by entirely replacing sections of the prompt. Instead:
+  - ADD nuance to what exists rather than replacing it, unless asked to replace or overhaul it
+  - Make incremental adjustments, not wholesale rewrites
+  - Each bullet point or instruction represents careful tuning - preserve it
+  - When adding a new concern, integrate it alongside existing concerns
+
 - **ADD nuance to what exists** - Do NOT replace entire sections
 - **Preserve carefully-tuned instructions** - Each bullet represents careful tuning
 - **Make incremental adjustments** - Not wholesale rewrites
@@ -110,6 +159,11 @@ Format each example:
 {...}
 ```
 
+**CONFIDENTIALITY**: GT contains real clinical data. When creating examples:
+- Use generic names (Mom, Dad, John, Sarah) not real names from GT
+- Paraphrase statements - don't copy verbatim
+- Preserve the error pattern, not the specific client details
+
 #### c. Edit Prompts
 
 Use the `Edit` tool to update `btcopilot/btcopilot/personal/prompts.py`:
@@ -144,18 +198,18 @@ uv run python -m btcopilot.training.test_prompts_live
 - Baseline (from step 1c)
 - Previous iteration
 
-#### e. Track Progress
+#### e. Track Progress and Log
 
 Use `TodoWrite` to:
 - Mark current iteration complete
 - Update status
 
-**Log in memory**:
-- Iteration number
-- Change description (1 sentence)
-- All F1 scores
-- Delta from baseline
-- Decision: Keep or Revert
+**MANDATORY: Append to log file** (`btcopilot/induction-reports/TIMESTAMP_log.jsonl`):
+```json
+{"type": "iteration", "iteration": N, "timestamp": "ISO8601", "change": "description", "target_section": "SECTION_N", "rationale": "why", "f1_scores": {"aggregate": 0.XXX, "people": 0.XXX, "events": 0.XXX, "symptom": 0.XXX, "anxiety": 0.XXX, "relationship": 0.XXX, "functioning": 0.XXX}, "delta_from_baseline": {"aggregate": +0.XXX, ...}, "delta_from_previous": {"aggregate": +0.XXX, ...}, "outcome": "kept|reverted"}
+```
+
+Use the `Bash` tool with `echo '...' >> LOG_FILE` to append each entry.
 
 #### f. Check Convergence
 
@@ -176,7 +230,7 @@ Use `TodoWrite` to:
 
 ### 3. Generate Report
 
-After stopping, write a comprehensive report to `btcopilot/induction-reports/YYYY-MM-DD_HH-MM-SS.md` (using current timestamp):
+After stopping, write a comprehensive report to `${RUN_FOLDER}/${TIMESTAMP}.md` (the REPORT_FILE path from setup):
 
 ```markdown
 # Prompt Induction Report
@@ -275,6 +329,11 @@ git checkout btcopilot/btcopilot/personal/prompts.py
 5. **Focus on top errors** - Don't try to fix everything at once, prioritize impact
 6. **Stop early** - If plateaued (3 iterations with <1% improvement), report and finish
 7. **Be transparent** - Document every decision and rationale in the report
+8. **CONFIDENTIALITY** - GT contains real clinical data. When adding examples to prompts:
+   - NEVER use real names from GT cases
+   - Use generic names (e.g., "Mom", "Dad", "John", "Sarah", "the client")
+   - Paraphrase statements, don't copy verbatim from GT
+   - Preserve the error pattern structure, not the specific content
 
 ## Success Criteria
 
@@ -302,8 +361,9 @@ Your induction run is successful if:
   - `DATA_EXTRACTION_EXAMPLES` - SECTION 3 (error pattern examples, literal JSON)
   - `DATA_EXTRACTION_CONTEXT` - Context with runtime variables (rarely edited)
 
-**Write-only**:
-- `btcopilot/induction-reports/YYYY-MM-DD_HH-MM-SS.md` - Final report (timestamped, will be created)
+**Write-only** (created in timestamped folder):
+- `${RUN_FOLDER}/${TIMESTAMP}.md` - Final report
+- `${RUN_FOLDER}/${TIMESTAMP}_log.jsonl` - Iteration log
 
 ## Expected Runtime
 
@@ -402,15 +462,91 @@ Generating report...
 
 ---
 
+## MANDATORY Logging Specification
+
+**Every induction run MUST create a comprehensive log file.** This is non-negotiable.
+
+### Log File Location
+
+`${RUN_FOLDER}/${TIMESTAMP}_log.jsonl`
+
+Examples:
+- With focus: `btcopilot/induction-reports/2025-12-15_22-01-02--focus-People/2025-12-15_22-01-02_log.jsonl`
+- Without focus: `btcopilot/induction-reports/2025-12-15_22-01-02/2025-12-15_22-01-02_log.jsonl`
+
+Create the folder and log file immediately at run start.
+
+### Required Log Entries
+
+Each entry is a single JSON line. Append entries using `echo '...' >> LOG_FILE`.
+
+#### 1. Run Start Entry (first entry)
+
+```json
+{"type": "run_start", "timestamp": "2024-01-15T14:30:00Z", "gt_cases": 23, "gt_hash": "a1b2c3d4", "focus": "Event.symptom|null", "focus_metric": "symptom_macro_f1|null", "focus_guidance": "...|null"}
+```
+
+#### 2. Baseline Entry (after first test run)
+
+```json
+{"type": "baseline", "timestamp": "2024-01-15T14:31:00Z", "f1_scores": {"aggregate": 0.823, "people": 0.891, "events": 0.776, "symptom": 0.682, "anxiety": 0.745, "relationship": 0.698, "functioning": 0.712}}
+```
+
+#### 3. Iteration Entry (after each iteration)
+
+```json
+{"type": "iteration", "iteration": 1, "timestamp": "2024-01-15T14:33:00Z", "error_pattern": "OVER_EXTRACTION_EVENTS", "error_count": 12, "change_description": "Added clarification to SECTION 2 about event vs pattern distinction", "target_section": "DATA_EXTRACTION_PROMPT", "target_subsection": "SECTION_2", "old_text_snippet": "Extract specific events...", "new_text_snippet": "Extract specific events. Do not extract general patterns...", "f1_scores": {"aggregate": 0.847, "people": 0.891, "events": 0.812, "symptom": 0.695, "anxiety": 0.745, "relationship": 0.698, "functioning": 0.712}, "delta_from_baseline": {"aggregate": 0.024, "people": 0.0, "events": 0.036, "symptom": 0.013, "anxiety": 0.0, "relationship": 0.0, "functioning": 0.0}, "outcome": "kept", "rationale": "F1 improved by 0.024"}
+```
+
+#### 4. Revert Entry (when reverting a change)
+
+```json
+{"type": "revert", "iteration": 4, "timestamp": "2024-01-15T14:40:00Z", "reason": "F1 dropped from 0.873 to 0.871", "reverted_change": "Added timeframe clarification to SECTION 2"}
+```
+
+#### 5. Convergence Entry (when stopping due to convergence)
+
+```json
+{"type": "convergence", "timestamp": "2024-01-15T14:45:00Z", "last_3_deltas": [0.003, 0.001, 0.0], "reason": "Improvements below 0.01 threshold for 3 consecutive iterations"}
+```
+
+#### 6. Run End Entry (final entry)
+
+```json
+{"type": "run_end", "timestamp": "2024-01-15T14:46:00Z", "total_iterations": 7, "kept_iterations": 5, "reverted_iterations": 2, "final_f1_scores": {"aggregate": 0.877, "people": 0.891, "events": 0.841, "symptom": 0.701, "anxiety": 0.756, "relationship": 0.723, "functioning": 0.718}, "total_improvement": {"aggregate": 0.054, "people": 0.0, "events": 0.065, "symptom": 0.019, "anxiety": 0.011, "relationship": 0.025, "functioning": 0.006}, "focus_metric_improvement": 0.019, "recommendation": "commit|review|revert", "run_folder": "btcopilot/induction-reports/2024-01-15_14-30-00--focus-People", "report_file": "2024-01-15_14-30-00.md"}
+```
+
+### Logging Rules
+
+1. **EVERY action must be logged** - no exceptions
+2. **Log BEFORE and AFTER** - capture state transitions
+3. **Include snippets** - show what changed (first 100 chars of old/new text)
+4. **Timestamp everything** - use ISO8601 format
+5. **Log failures too** - if test fails, log the error
+6. **Hash the GT file** - for reproducibility (first 8 chars of sha256)
+
+### Why Logging Matters
+
+- **Reproducibility**: Can replay exactly what happened
+- **Debugging**: If F1 drops in production, trace back to which change caused it
+- **Learning**: Build corpus of what changes work/don't work
+- **Auditing**: Verify the agent made sensible decisions
+
+---
+
 ## Now Begin
 
 Start your autonomous induction now.
 
-1. Use `TodoWrite` to create iteration tracking (Iterations 1-10)
-2. Read `instance/gt_export.json` and `btcopilot/btcopilot/personal/prompts.py`
-3. Run baseline test
-4. Begin iteration loop
-5. Generate report when done
-6. Report results to user
+1. **Create log file first** - `btcopilot/induction-reports/TIMESTAMP_log.jsonl`
+2. Log run_start entry (with focus info if provided via env vars)
+3. Use `TodoWrite` to create iteration tracking (Iterations 1-10)
+4. Read `instance/gt_export.json` and `btcopilot/btcopilot/personal/prompts.py`
+5. Run baseline test and log baseline entry
+6. Begin iteration loop (log each iteration)
+7. Log convergence/completion
+8. Generate report
+9. Log run_end entry
+10. Report results to user
 
 Remember: **ADD nuance, don't replace. Preserve existing careful tuning.**

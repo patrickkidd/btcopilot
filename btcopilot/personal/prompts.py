@@ -944,11 +944,24 @@ SECTION 2: EXTRACTION RULES (Operational guidance)
    often empty arrays
 2. **NEW ONLY**: If a person is already in the database with the same
    name/role, don't include them unless you have NEW information about them
-3. **SINGLE EVENTS**: Each user statement typically generates 0-1 new events,
+3. **EXTRACT NEW PEOPLE LIBERALLY** (CRITICAL - most common error is under-extraction):
+   When a person is mentioned by name or clear role designation for the first time
+   (even if mentioned indirectly in a narrative or embedded in a complex sentence),
+   extract them. This is the #1 source of errors - AI often misses people mentioned
+   in complex sentences. Examples:
+   - "Dr Brezel at St. Margaret's" → extract Dr Brezel
+   - "this one person, Helen Land, they were scrutinizing" → extract Helen Land
+   - "told Georgie that he was" → extract Georgie
+   - "my one sister's husband was going to come up" → extract Sister's husband
+   - "she said that you have to watch out for Helen Land" → extract Helen Land
+   - "there was a trial, and Jeff Christie from Child Welfare" → extract Jeff Christie
+   Don't be overly conservative - if someone is mentioned with ANY name, extract them.
+   If in doubt, EXTRACT. The system can deduplicate later.
+4. **SINGLE EVENTS**: Each user statement typically generates 0-1 new events,
    not multiple events for the same information
-4. **UPDATE ONLY CHANGED FIELDS**: When updating existing items, include only
+5. **UPDATE ONLY CHANGED FIELDS**: When updating existing items, include only
    the fields that are changing
-5. **BIRTH EVENTS**: When user provides "Name, born MM/DD/YYYY" format, extract BOTH the person AND a birth event with kind="birth" and the provided date
+6. **BIRTH EVENTS**: When user provides "Name, born MM/DD/YYYY" format, extract BOTH the person AND a birth event with kind="birth" and the provided date
 
 **Instructions:**
 
@@ -1022,6 +1035,46 @@ CORRECT Output:
     "events": [],  // No event - just a general feeling about a person
     "delete": []
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [UNDER_EXTRACTION_PEOPLE_INDIRECT_MENTION]
+# Error Pattern: AI fails to extract people mentioned indirectly in narratives
+# CRITICAL: Extract people even if mentioned embedded in complex sentences
+# ─────────────────────────────────────────────────────────────────────────────
+
+**User statement**: "We took the baby to Dr Brezel at St. Margaret's when we had the appointment."
+
+DiagramData: {
+    "people": [
+        {"id": 1, "name": "User", "confidence": 1.0}
+    ],
+    "events": [],
+    "pdp": {"people": [], "events": []}
+}
+
+❌ WRONG OUTPUT (missing Dr Brezel):
+{
+    "people": [],  // WRONG - Dr Brezel is a NEW person mentioned by name!
+    "events": [],
+    "delete": []
+}
+
+WHY WRONG: "Dr Brezel" is mentioned by name in the statement. Even though it's embedded in a complex narrative sentence, it's still a NEW person that needs to be extracted. Don't be overly conservative - if someone has a name or clear role, extract them.
+
+✅ CORRECT OUTPUT:
+{
+    "people": [
+        {"id": -1, "name": "Dr Brezel", "confidence": 0.9}
+    ],
+    "events": [],
+    "delete": []
+}
+
+**RULE**: Extract people liberally when they're mentioned by name, even if embedded in complex sentences or mentioned indirectly. Examples:
+- "Dr Brezel at St. Margaret's" → extract Dr Brezel
+- "this one person, Helen Land" → extract Helen Land
+- "told Georgie that he was going" → extract Georgie
+- "a woman on the bus said" → extract "Woman on bus" (with lower confidence)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # [UNDER_EXTRACTION_BIRTH_EVENT]

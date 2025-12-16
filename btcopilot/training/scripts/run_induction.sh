@@ -48,32 +48,85 @@ echo ""
 echo -e "${BLUE}🤖 Step 3/4: Running Claude Code induction agent...${NC}"
 echo -e "${YELLOW}This will take 5-15 minutes depending on dataset size${NC}"
 echo ""
+
+# Display focus info if set
+if [ -n "$INDUCTION_FOCUS" ]; then
+    echo -e "${GREEN}Focus: $INDUCTION_FOCUS${NC}"
+    echo -e "  Metric: $INDUCTION_FOCUS_METRIC"
+    echo ""
+fi
+
 echo "The agent will:"
 echo "  • Analyze error patterns in GT cases"
+if [ -n "$INDUCTION_FOCUS" ]; then
+    echo "  • Prioritize $INDUCTION_FOCUS improvements"
+fi
 echo "  • Propose targeted prompt improvements"
 echo "  • Test each change iteratively"
-echo "  • Generate detailed report"
+echo "  • Generate detailed report and log file"
 echo ""
 echo -e "${YELLOW}Starting Claude Code...${NC}"
 echo ""
 
+# Build the prompt with focus context if provided
+PROMPT=$(cat btcopilot/btcopilot/training/prompts/induction_agent.md)
+
+if [ -n "$INDUCTION_FOCUS" ]; then
+    FOCUS_CONTEXT="
+## Focus Configuration (from environment)
+
+- **INDUCTION_FOCUS**: $INDUCTION_FOCUS
+- **INDUCTION_FOCUS_METRIC**: $INDUCTION_FOCUS_METRIC
+- **INDUCTION_FOCUS_GUIDANCE**: $INDUCTION_FOCUS_GUIDANCE
+
+**IMPORTANT**: Prioritize improving $INDUCTION_FOCUS_METRIC above aggregate F1. Make at least 2-3 iterations targeting this specific area before considering other improvements.
+
+---
+
+"
+    PROMPT="${FOCUS_CONTEXT}${PROMPT}"
+fi
+
 # Run Claude Code with the meta-prompt
 # Use env var to avoid shell quote interpretation issues with complex markdown
 # --dangerously-skip-permissions allows autonomous file edits without prompts
-PROMPT=$(cat btcopilot/btcopilot/training/prompts/induction_agent.md)
-claude -p --dangerously-skip-permissions "$PROMPT"
+#
+# Output mode: use stream-json with formatter for real-time formatted output
+# The formatter (bin/cc-stream-formatter) provides rich terminal formatting
+# while still allowing the CLI to auto-exit after completion.
+#
+# Ctrl+C will cleanly terminate both the formatter and claude process.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+FORMATTER="$PROJECT_ROOT/bin/cc-stream-formatter"
+
+if [ -x "$FORMATTER" ]; then
+    # Use stream-json with formatter for rich real-time output
+    claude -p --dangerously-skip-permissions --output-format stream-json --verbose --include-partial-messages "$PROMPT" | "$FORMATTER"
+else
+    # Fallback to plain text mode
+    echo -e "${YELLOW}Note: bin/cc-stream-formatter not found, using plain text output${NC}"
+    claude -p --dangerously-skip-permissions "$PROMPT"
+fi
 
 # 4. Check results
 echo ""
 echo -e "${BLUE}📋 Step 4/4: Checking results...${NC}"
 
-# Find the most recent report
+# Find the most recent run folder (timestamped, optionally with --focus-* suffix)
 REPORT_DIR="btcopilot/induction-reports"
-LATEST_REPORT=$(ls -t "$REPORT_DIR"/*.md 2>/dev/null | head -1)
+LATEST_FOLDER=$(ls -dt "$REPORT_DIR"/20* 2>/dev/null | head -1)
+if [ -n "$LATEST_FOLDER" ]; then
+    LATEST_REPORT=$(ls -t "$LATEST_FOLDER"/*.md 2>/dev/null | head -1)
+    LATEST_LOG=$(ls -t "$LATEST_FOLDER"/*_log.jsonl 2>/dev/null | head -1)
+else
+    LATEST_REPORT=""
+    LATEST_LOG=""
+fi
 
-if [ -z "$LATEST_REPORT" ]; then
+if [ -z "$LATEST_REPORT" ] && [ -z "$LATEST_LOG" ]; then
     echo ""
-    echo -e "${RED}❌ No report generated - something went wrong${NC}"
+    echo -e "${RED}❌ No report or log generated - something went wrong${NC}"
     echo ""
     echo "Troubleshooting:"
     echo "  • Check if Claude Code completed successfully"
@@ -90,7 +143,16 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo -e "${BLUE}📊 Results Summary:${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-grep "| Aggregate F1" "$LATEST_REPORT" | head -1 || echo "Results table not found in report"
+if [ -n "$LATEST_REPORT" ]; then
+    grep "| Aggregate F1" "$LATEST_REPORT" | head -1 || echo "Results table not found in report"
+    if [ -n "$INDUCTION_FOCUS" ]; then
+        echo ""
+        echo -e "${GREEN}Focused metric ($INDUCTION_FOCUS_METRIC):${NC}"
+        grep "| ${INDUCTION_FOCUS_METRIC%_*}" "$LATEST_REPORT" | head -1 || echo "Focused metric not found"
+    fi
+else
+    echo "Report not found - check log file for details"
+fi
 echo ""
 
 # Check if there are uncommitted changes
@@ -105,7 +167,15 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo -e "${BLUE}📄 Generated Files:${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  • Full report: $LATEST_REPORT"
+if [ -n "$LATEST_FOLDER" ]; then
+    echo "  • Folder: $LATEST_FOLDER"
+fi
+if [ -n "$LATEST_REPORT" ]; then
+    echo "  • Report: $LATEST_REPORT"
+fi
+if [ -n "$LATEST_LOG" ]; then
+    echo "  • Log:    $LATEST_LOG"
+fi
 echo "  • Changes: git diff btcopilot/btcopilot/personal/prompts.py"
 echo ""
 

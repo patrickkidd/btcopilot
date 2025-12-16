@@ -1,6 +1,6 @@
 # CLI-Driven Automated Prompt Induction
 
-**Status**: PROPOSED - Third option between manual and API-automated approaches
+**Status**: IMPLEMENTED - Third option between manual and API-automated approaches
 
 **Bridges**: Manual approach (PROMPT_OPTIMIZATION_MANUAL.md) + API automation (PROMPT_INDUCTION_AUTOMATED.md)
 
@@ -58,6 +58,85 @@ git commit -m "Automated prompt induction (F1: 0.78 → 0.82)"
    - `Write` - Generate final report
 
 4. **Zero API costs** - Uses Claude Code subscription ($100/mo already paid), can use Opus 4.5 for best quality
+
+5. **Real-time formatted output** via `bin/cc-stream-formatter` - see progress as it happens
+
+---
+
+## Real-Time Output with Stream Formatter
+
+The wrapper script uses a custom stream formatter (`bin/cc-stream-formatter`) that parses Claude Code's JSON streaming output and renders it with rich terminal formatting.
+
+### Why Stream Formatting?
+
+Claude Code CLI has three output modes, each with trade-offs:
+
+| Mode | Auto-exit | Real-time | Formatting |
+|------|-----------|-----------|------------|
+| Interactive | ❌ (waits for input) | ✅ | ✅ Rich |
+| `-p` text | ✅ | ❌ (waits for completion) | ❌ Plain |
+| `-p` stream-json | ✅ | ✅ | ❌ Raw JSON |
+
+The stream formatter bridges this gap: **auto-exit + real-time + rich formatting**.
+
+### How It Works
+
+```bash
+claude -p --output-format stream-json --verbose --include-partial-messages "$PROMPT" | bin/cc-stream-formatter
+```
+
+The formatter:
+- Parses JSONL stream from Claude Code
+- Renders session header (model, cwd, session ID)
+- Streams assistant text in real-time
+- Shows tool use with context (▶ Bash, Read, Edit, etc.)
+- Displays tool results (✓ success / ✗ error)
+- Prints final stats (duration, turns, cost)
+
+### Example Output
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Claude Code Session
+  Model: claude-sonnet-4-5-20250929
+  CWD: /Users/patrick/theapp
+  Session: 3d378ba2...
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+I'll analyze the error patterns in the ground truth export...
+  ▶ Read /Users/patrick/theapp/instance/gt_export.json
+    ✓ (2847 lines, 142KB)
+
+Based on the GT cases, I see these top error patterns:
+1. Over-extraction of events from general statements
+2. Missing triangle relationships
+  ▶ Edit /Users/patrick/theapp/btcopilot/btcopilot/personal/prompts.py
+    ✓ (3 lines, 156 chars)
+  ▶ Bash - Run prompt tests
+    $ uv run python -m btcopilot.training.test_prompts
+    ✓ (47 lines, 2341 chars)
+
+F1 improved from 0.823 to 0.847 (+0.024)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✓ Completed
+  Duration: 312.4s | Turns: 15 | Cost: $2.3421
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Environment Variables
+
+| Variable | Effect |
+|----------|--------|
+| `CC_FORMATTER_MINIMAL=1` | Show only tools + final result |
+| `CC_FORMATTER_NO_COLOR=1` | Disable ANSI colors |
+| `NO_COLOR` | Standard no-color convention (any value) |
+
+### Clean Termination
+
+Ctrl+C cleanly terminates both the Claude process and the formatter. The formatter handles:
+- `SIGPIPE` - graceful exit when piped to `head`, etc.
+- `KeyboardInterrupt` - shows "Interrupted by user" message
+- `BrokenPipeError` - silent exit
 
 ---
 
@@ -280,66 +359,46 @@ Begin autonomous induction now. Use TodoWrite to track iterations.
 
 **Wrapper Script: `btcopilot/training/scripts/run_induction.sh`**
 
+The actual implementation uses stream-json with the formatter for real-time output:
+
 ```bash
 #!/usr/bin/env bash
 set -e
 
-cd "$(dirname "$0")/../../.."  # Project root
+# Change to project root
+cd "$(dirname "$0")/../../../.."
 
-echo "🚀 Starting automated prompt induction..."
-echo ""
+# ... (GT export, checkpoint creation) ...
 
-# 1. Export GT
-echo "📊 Exporting ground truth..."
-uv run python -m btcopilot.training.export_gt
-if [ ! -f "instance/gt_export.json" ]; then
-    echo "❌ GT export failed"
-    exit 1
+# Run Claude Code with stream formatter for real-time output
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+FORMATTER="$PROJECT_ROOT/bin/cc-stream-formatter"
+
+if [ -x "$FORMATTER" ]; then
+    # Use stream-json with formatter for rich real-time output
+    claude -p --dangerously-skip-permissions \
+        --output-format stream-json --verbose --include-partial-messages \
+        "$PROMPT" | "$FORMATTER"
+else
+    # Fallback to plain text mode
+    echo "Note: bin/cc-stream-formatter not found, using plain text output"
+    claude -p --dangerously-skip-permissions "$PROMPT"
 fi
 
-GT_COUNT=$(jq length instance/gt_export.json)
-echo "✅ Exported $GT_COUNT GT cases"
-echo ""
-
-# 2. Create checkpoint
-echo "💾 Creating checkpoint..."
-git add btcopilot/personal/prompts.py 2>/dev/null || true
-git stash push -m "Pre-induction checkpoint" btcopilot/personal/prompts.py 2>/dev/null || echo "No changes to stash"
-CHECKPOINT_SHA=$(git rev-parse HEAD)
-echo "✅ Checkpoint: $CHECKPOINT_SHA"
-echo ""
-
-# 3. Run Claude Code agent
-echo "🤖 Running Claude Code induction agent..."
-echo ""
-claude --prompt-file btcopilot/training/prompts/induction_agent.md
-
-# 4. Check results
-if [ ! -f "instance/induction_report.md" ]; then
-    echo ""
-    echo "❌ No report generated - something went wrong"
-    exit 1
-fi
-
-echo ""
-echo "✅ Induction complete!"
-echo ""
-echo "📊 Results:"
-grep "| Aggregate F1" instance/induction_report.md || true
-echo ""
-echo "📄 Full report: instance/induction_report.md"
-echo "📝 Changes: git diff btcopilot/personal/prompts.py"
-echo ""
-echo "Next steps:"
-echo "  - Review report and git diff"
-echo "  - If improved: git add btcopilot/personal/prompts.py instance/induction_report.md && git commit"
-echo "  - If not improved: git checkout btcopilot/personal/prompts.py"
+# ... (results checking) ...
 ```
 
-**Make executable**:
-```bash
-chmod +x btcopilot/training/scripts/run_induction.sh
-```
+Key flags:
+- `-p` / `--print` - Non-interactive mode, auto-exits when done
+- `--dangerously-skip-permissions` - Autonomous file edits without prompts
+- `--output-format stream-json` - Real-time JSON streaming
+- `--verbose` - Required for stream-json
+- `--include-partial-messages` - Include streaming text deltas
+
+**Files**:
+- Wrapper script: `btcopilot/btcopilot/training/scripts/run_induction.sh`
+- Stream formatter: `bin/cc-stream-formatter`
 
 ---
 
@@ -476,23 +535,35 @@ chmod +x btcopilot/training/scripts/run_induction.sh
 
 ## Files
 
-**New Files** (to create):
-- `btcopilot/training/prompts/induction_agent.md` - Meta-prompt for Claude Code
-- `btcopilot/training/scripts/run_induction.sh` - Wrapper script
-- `instance/induction_report.md` - Generated report (gitignored)
+**Implementation Files**:
+- `bin/cc-stream-formatter` - Python script for rich real-time output formatting
+- `btcopilot/btcopilot/training/scripts/run_induction.sh` - Wrapper script
+- `btcopilot/btcopilot/training/prompts/induction_agent.md` - Meta-prompt for Claude Code
 
-**Existing Files** (used):
-- `btcopilot/training/export_gt.py` - GT export (unchanged)
-- `btcopilot/training/test_prompts.py` - Test harness (unchanged)
-- `btcopilot/personal/prompts.py` - Target for edits
-- `instance/gt_export.json` - GT data (gitignored)
+**Generated Files** (stored in btcopilot-sources, symlinked):
+- `instance/gt_export.json` → `btcopilot-sources/training/gt-exports/gt_export.json`
+- `btcopilot/induction-reports/` → `btcopilot-sources/training/induction-reports/`
+  - `<timestamp>[--focus-<field>]/` - Run folder per induction
+    - `<timestamp>.md` - Report
+    - `<timestamp>_log.jsonl` - Iteration log
+
+Example folder names:
+- `btcopilot-sources/training/induction-reports/2025-12-15_22-01-02--focus-People/`
+- `btcopilot-sources/training/induction-reports/2025-12-15_22-01-02/` (no focus)
+
+**Clinical Data Storage**:
+GT exports and induction reports contain confidential clinical data and are stored in the private `btcopilot-sources` repository. Symlinks in `theapp` point to these locations for workflow compatibility. Both paths are in `.gitignore` to prevent accidental commits to the public repo.
+
+**Target Files** (modified by agent):
+- `btcopilot/btcopilot/personal/prompts.py` - Extraction prompts
+
+**Supporting Files** (unchanged):
+- `btcopilot/btcopilot/training/export_gt.py` - GT export module
+- `btcopilot/btcopilot/training/test_prompts.py` - Test harness
 
 **Optional** (Phase 2):
 - `btcopilot/training/scripts/parallel_induction.sh`
 - `btcopilot/training/prompts/induction_agent_interactive.md`
-- `btcopilot/training/prompts/stage1_reduce_overextraction.md`
-- `btcopilot/training/prompts/stage2_add_coverage.md`
-- `btcopilot/training/prompts/stage3_sarf_precision.md`
 
 ---
 
