@@ -199,8 +199,9 @@ def _extract_sarf_matches(
                 continue
 
             person_id = resolve_person_id(ai_event.person, id_map)
+            # Use sentinel 0 for events without person assignment
             if person_id is None:
-                continue
+                person_id = 0
 
             if person_id not in ai_person_var_data:
                 ai_person_var_data[person_id] = {"values": set(), "people": set()}
@@ -230,8 +231,9 @@ def _extract_sarf_matches(
                 continue
 
             person_id = gt_event.person
+            # Use sentinel 0 for events without person assignment
             if person_id is None:
-                continue
+                person_id = 0
 
             if person_id not in gt_person_var_data:
                 gt_person_var_data[person_id] = {"values": set(), "people": set()}
@@ -287,7 +289,10 @@ def _extract_sarf_matches(
                 else:
                     people_match = "mismatch"
 
-            person_name = _get_person_name_by_id(person_id, gt_people)
+            if person_id == 0:
+                person_name = "(Unassigned)"
+            else:
+                person_name = _get_person_name_by_id(person_id, gt_people)
             ai_value = (
                 ", ".join(sorted(ai_data["values"])) if ai_data["values"] else None
             )
@@ -361,18 +366,9 @@ def calculate_statement_match_breakdown(
     ai_pdp = from_dict(PDPDeltas, statement.pdp_deltas)
     gt_pdp = from_dict(PDPDeltas, feedback.edited_extraction)
 
-    # Get FINAL cumulative PDPDeltas for AI name resolution
+    # Get cumulative PDPDeltas up to THIS statement for AI name resolution
     discussion = Discussion.query.get(statement.discussion_id)
-    final_statement = (
-        Statement.query.filter_by(discussion_id=statement.discussion_id)
-        .order_by(Statement.order.desc())
-        .first()
-    )
-    cumulative_pdp = (
-        cumulative(discussion, final_statement)
-        if final_statement
-        else cumulative(discussion, statement)
-    )
+    cumulative_pdp = cumulative(discussion, statement)
 
     # Build cumulative GT people list from all feedback entries in order
     # Fetch all feedbacks for this discussion in one query (avoid N+1)
@@ -396,17 +392,18 @@ def calculate_statement_match_breakdown(
         if stmt_feedback and stmt_feedback.edited_extraction:
             stmt_gt_pdp = from_dict(PDPDeltas, stmt_feedback.edited_extraction)
             for person in stmt_gt_pdp.people:
-                # Check if person ID already exists (e.g., name correction)
                 existing_person = next(
                     (p for p in gt_cumulative_people if p.id == person.id), None
                 )
                 if existing_person:
-                    # Update existing person (handle name corrections)
                     gt_cumulative_people[
                         gt_cumulative_people.index(existing_person)
                     ] = person
                 else:
                     gt_cumulative_people.append(person)
+        # Stop after current statement to get names as-of this point
+        if stmt.id == statement_id:
+            break
 
     f1_metrics = calculate_statement_f1(
         statement.pdp_deltas, feedback.edited_extraction

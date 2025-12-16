@@ -206,14 +206,17 @@ def _preprocess_breakdown_for_display(breakdown):
             if event_match.gt_entity
             else event_match.ai_entity.get("person")
         )
+        # Use sentinel 0 for events without a person assignment
         if not person_id:
-            continue
+            person_id = 0
 
         if person_id not in person_blocks:
-            # Try GT people first, fall back to cumulative (AI) people
-            person_name = _get_person_name_from_people(
-                person_id, [gt_people, ai_people]
-            )
+            if person_id == 0:
+                person_name = "(Unassigned)"
+            else:
+                person_name = _get_person_name_from_people(
+                    person_id, [gt_people, ai_people]
+                )
 
             person_blocks[person_id] = {
                 "person_id": person_id,
