@@ -2,12 +2,120 @@ import os
 import time
 import enum
 import json
+from dataclasses import fields, MISSING
 from functools import lru_cache
+from typing import get_origin, get_args, Union
 import logging
 
-import pydantic_ai
+from google import genai
+from google.genai import types
 
 _log = logging.getLogger(__name__)
+
+
+def dataclass_to_json_schema(cls, descriptions: dict = None) -> dict:
+    """Convert a dataclass to JSON Schema for Gemini structured output.
+
+    Args:
+        cls: The dataclass type to convert
+        descriptions: Optional dict mapping "ClassName.field_name" to description strings
+    """
+    if not hasattr(cls, "__dataclass_fields__"):
+        raise TypeError(f"{cls} is not a dataclass")
+
+    descriptions = descriptions or {}
+    properties = {}
+    required = []
+    class_name = cls.__name__
+
+    for f in fields(cls):
+        field_name = f.name
+        field_type = f.type
+        prop = _type_to_schema(field_type, descriptions)
+
+        # Add description if provided
+        desc_key = f"{class_name}.{field_name}"
+        if desc_key in descriptions:
+            prop["description"] = descriptions[desc_key]
+
+        properties[field_name] = prop
+
+        # Field is required if it has no default and no default_factory
+        if f.default is MISSING and f.default_factory is MISSING:
+            required.append(field_name)
+
+    schema = {"type": "object", "properties": properties}
+    if required:
+        schema["required"] = required
+    return schema
+
+
+def _type_to_schema(field_type, descriptions: dict = None) -> dict:
+    """Convert a Python type annotation to JSON Schema."""
+    descriptions = descriptions or {}
+    origin = get_origin(field_type)
+
+    # Handle None type
+    if field_type is type(None):
+        return {"type": "null"}
+
+    # Handle list[T]
+    if origin is list:
+        args = get_args(field_type)
+        if args:
+            item_type = args[0]
+            if hasattr(item_type, "__dataclass_fields__"):
+                return {
+                    "type": "array",
+                    "items": dataclass_to_json_schema(item_type, descriptions),
+                }
+            else:
+                return {
+                    "type": "array",
+                    "items": _type_to_schema(item_type, descriptions),
+                }
+        return {"type": "array"}
+
+    # Handle Union types (e.g., int | None, Optional[str])
+    if origin is Union or (
+        hasattr(field_type, "__origin__") and str(origin) == "typing.Union"
+    ):
+        args = get_args(field_type)
+        non_none_args = [a for a in args if a is not type(None)]
+        if len(non_none_args) == 1:
+            return _type_to_schema(non_none_args[0], descriptions)
+        if non_none_args:
+            return _type_to_schema(non_none_args[0], descriptions)
+
+    # Handle X | None syntax (Python 3.10+)
+    if (
+        hasattr(field_type, "__class__")
+        and field_type.__class__.__name__ == "UnionType"
+    ):
+        args = get_args(field_type)
+        non_none_args = [a for a in args if a is not type(None)]
+        if len(non_none_args) == 1:
+            return _type_to_schema(non_none_args[0], descriptions)
+        if non_none_args:
+            return _type_to_schema(non_none_args[0], descriptions)
+
+    # Handle Enum types
+    if isinstance(field_type, type) and issubclass(field_type, enum.Enum):
+        enum_values = [e.value for e in field_type]
+        return {"type": "string", "enum": enum_values}
+
+    # Handle dataclasses (nested)
+    if hasattr(field_type, "__dataclass_fields__"):
+        return dataclass_to_json_schema(field_type, descriptions)
+
+    # Handle basic types
+    type_map = {
+        str: {"type": "string"},
+        int: {"type": "integer"},
+        float: {"type": "number"},
+        bool: {"type": "boolean"},
+    }
+    return type_map.get(field_type, {"type": "string"})
 
 
 class LLMFunction(enum.StrEnum):
@@ -35,6 +143,35 @@ class LLMFunction(enum.StrEnum):
     PDP = "pdp"  # Pending Data Pool, used to detect data points in chat messages
 
     Arrange = "arrange"
+
+
+# Schema descriptions for PDPDeltas - critical semantic hints for Gemini
+PDP_SCHEMA_DESCRIPTIONS = {
+    # PDPDeltas top-level
+    "PDPDeltas.people": "NEW people mentioned for the first time. Use NEGATIVE IDs (-1, -2, etc.)",
+    "PDPDeltas.events": "NEW events/incidents with specific timeframes. Use NEGATIVE IDs.",
+    "PDPDeltas.pair_bonds": "NEW pair bonds between people. Use NEGATIVE IDs.",
+    "PDPDeltas.delete": "IDs of items to delete from PDP.",
+    # Person fields
+    "Person.id": "MUST be negative integer for new entries (-1, -2, -3, etc.)",
+    "Person.name": "Person's name or role (e.g., 'Mom', 'Dr. Smith', 'Brother')",
+    "Person.parents": "ID of the PairBond representing this person's parents",
+    # Event fields
+    "Event.id": "MUST be negative integer for new entries (-1, -2, -3, etc.)",
+    "Event.kind": "Type of event: shift (SARF variable change), birth, death, married, etc.",
+    "Event.person": "ID of the main person this event is about",
+    "Event.description": "Brief description of the specific incident",
+    "Event.symptom": "Change in physical/mental health: up, down, or same",
+    "Event.anxiety": "Change in anxiety level: up (more anxious), down (relieved), same",
+    "Event.functioning": "Change in functioning: up (more productive), down (overwhelmed)",
+    "Event.relationship": "Type of relationship behavior (conflict, distance, etc.)",
+    "Event.relationshipTargets": "REQUIRED for relationship events: list of person IDs involved",
+    "Event.relationshipTriangles": "For triangle moves: list of person IDs on the 'outside'",
+    # PairBond fields
+    "PairBond.id": "MUST be negative integer for new entries",
+    "PairBond.person_a": "ID of first person in the bond",
+    "PairBond.person_b": "ID of second person in the bond",
+}
 
 
 def _markdown_json_2_json(markdown_json: str) -> str:
@@ -100,21 +237,37 @@ class LLM:
         _log.debug(f"llm.openai(): --> \n\n{content}")
         return content
 
-    async def gemini(self, prompt: str = None, response_format=None) -> str:
-        """Gemini for structured data extraction (PDP)."""
-        start_time = time.time()
-        from pydantic_ai import Agent
-        from pydantic_ai.models.google import GoogleModel
-        from pydantic_ai.providers.google import GoogleProvider
+    @lru_cache(maxsize=1)
+    def _gemini_client(self):
+        return genai.Client(api_key=os.environ["GOOGLE_GEMINI_API_KEY"])
 
-        provider = GoogleProvider(api_key=os.environ["GOOGLE_GEMINI_API_KEY"])
-        model = GoogleModel("gemini-2.0-flash", provider=provider)
-        agent = Agent(model, system_prompt=prompt, output_type=response_format)
-        response = await agent.run(prompt)
-        content = response.output
+    async def gemini(self, prompt: str = None, response_format=None):
+        """Gemini for structured data extraction (PDP) using native API."""
+        start_time = time.time()
+        from btcopilot.schema import from_dict
+
+        client = self._gemini_client()
+        response_schema = dataclass_to_json_schema(
+            response_format, PDP_SCHEMA_DESCRIPTIONS
+        )
+
+        response = await client.aio.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=response_schema,
+            ),
+        )
+
         _log.debug(f"Completed response in {time.time() - start_time} seconds")
-        _log.debug(f"llm.gemini(): --> \n\n{content}")
-        return content
+        _log.debug(f"llm.gemini() raw: {response.text}")
+
+        # Parse JSON and convert to dataclass instance
+        data = json.loads(response.text)
+        result = from_dict(response_format, data)
+        _log.debug(f"llm.gemini(): --> {result}")
+        return result
 
     async def submit(self, llm_type: LLMFunction, prompt: str = None, **kwargs):
         if llm_type in (LLMFunction.JSON, LLMFunction.PDP):

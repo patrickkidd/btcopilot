@@ -95,6 +95,14 @@ Documentation for the F1 metrics system that evaluates AI extraction quality aga
 - **Includes**: Matching criteria (people, events, SARF variables), F1 types (aggregate, per-type, macro-F1), cache strategy, configuration constants
 - **Use When**: Understanding or modifying F1 calculation logic, tuning matching thresholds, analyzing AI extraction quality, or implementing prompt improvements based on F1 scores
 
+### Prompt Engineering Context
+**CRITICAL FOR PROMPT INDUCTION**: Authoritative record of prompt engineering decisions, experiments, and lessons learned.
+- **File**: [doc/PROMPT_ENGINEERING_CONTEXT.md](doc/PROMPT_ENGINEERING_CONTEXT.md)
+- **Purpose**: Prevents regressions by documenting what works, what doesn't, and why
+- **Includes**: Model selection (Gemini 2.0 Flash), known issues, critical lessons (verbose definitions killed F1), prompt architecture, what NOT to include
+- **Use When**: Modifying extraction prompts, running prompt induction, or diagnosing F1 score issues
+- **Related**: [doc/TODO_GEMINI_SCHEMA.md](doc/TODO_GEMINI_SCHEMA.md) (deferred Gemini optimizations)
+
 ## Development rules
 
 - At this stage we are not concerned with legacy data, we woudl rather delete

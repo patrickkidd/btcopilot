@@ -24,24 +24,27 @@ from btcopilot.training.f1_metrics import calculate_statement_f1
 from btcopilot import pdp
 
 
-def test_prompts_live(detailed=False):
+def test_prompts_live(detailed=False, discussion_id=None):
     """
     Compute F1 metrics by re-extracting with current prompts.
 
     Args:
         detailed: If True, show per-statement breakdown
+        discussion_id: If set, only test statements from this discussion
 
     Returns:
         dict with overall and per-type F1 scores
     """
     nest_asyncio.apply()
 
-    feedbacks = (
-        Feedback.query.filter_by(approved=True, feedback_type="extraction")
-        .join(Feedback.statement)
-        .order_by(Feedback.id)
-        .all()
+    from btcopilot.personal.models import Statement
+
+    query = Feedback.query.filter_by(approved=True, feedback_type="extraction").join(
+        Feedback.statement
     )
+    if discussion_id:
+        query = query.filter(Statement.discussion_id == discussion_id)
+    feedbacks = query.order_by(Feedback.id).all()
 
     if not feedbacks:
         print("No approved GT cases found.")
@@ -155,11 +158,18 @@ def main():
         action="store_true",
         help="Show per-statement F1 breakdown",
     )
+    parser.add_argument(
+        "--discussion",
+        type=int,
+        help="Only test statements from this discussion ID",
+    )
     args = parser.parse_args()
 
     app = create_app()
     with app.app_context():
-        result = test_prompts_live(detailed=args.detailed)
+        result = test_prompts_live(
+            detailed=args.detailed, discussion_id=args.discussion
+        )
         sys.exit(0 if result and result["count"] > 0 else 1)
 
 

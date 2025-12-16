@@ -311,6 +311,28 @@ git checkout btcopilot/btcopilot/personal/prompts.py
 - Test command: `uv run python -m btcopilot.training.test_prompts_live`
 - Convergence criterion: F1 improvement <0.01 for 3 iterations
 - Max iterations: 10
+
+## Target Model: Gemini 2.0 Flash
+
+The prompts are tuned for **Gemini 2.0 Flash** with structured JSON output (via Pydantic).
+
+**Gemini-specific prompting guidance:**
+- Use explicit `description` fields in schema to guide the model
+- Mark ALL required fields as `required` in JSON schema - this significantly improves reliability
+- Gemini 2.0 may repeat values or omit fields with complex nested structures; keep schemas as flat as possible
+- Few-shot examples in prompts significantly improve extraction quality
+- Use specific types (integer, string, enum) rather than generic types
+- For optional fields that may be missing context, use `nullable: true` rather than omitting them
+
+**Known Gemini 2.0 Flash issues:**
+- Value repetition until token limit with complex nested arrays
+- Missing expected fields in output
+- Workaround: explicit `required` arrays and Pydantic `Field(...)` notation
+
+**Prompt structure for Gemini:**
+- Be explicit about extraction intent: "Extract the following information..."
+- Provide clear examples of correct vs incorrect output
+- Use strong typing in examples to match schema expectations
 ```
 
 ### 4. Completion

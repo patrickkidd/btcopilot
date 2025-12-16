@@ -33,12 +33,13 @@ def test_update(test_user):
         ],
     )
 
-    with patch("btcopilot.extensions.llm.submit", return_value={}):
+    deltas = PDPDeltas()
+    with patch("btcopilot.extensions.llm.submit", return_value=deltas):
         with patch(
             "btcopilot.pdp.apply_deltas", return_value={"dummy": "data"}
         ):
             returned = asyncio.run(pdp.update(discussion, DiagramData(), "blah blah"))
-    assert returned == ({"dummy": "data"}, {})
+    assert returned == ({"dummy": "data"}, deltas)
 
 
 # Test case 1: Update existing person and add events with anxiety and conflict
