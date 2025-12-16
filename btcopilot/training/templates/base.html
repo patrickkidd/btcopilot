@@ -1002,7 +1002,7 @@
         <div id="navbarMenu" class="navbar-menu">
             <div class="navbar-start">
                 {% if current_user and current_user.has_role(btcopilot.ROLE_AUDITOR) %}
-                <a class="navbar-item {% if request.endpoint and (request.endpoint.startswith('training.audit') or request.endpoint.startswith('training.discussions')) %}is-active{% endif %}" href="{{ url_for('training.audit.index') }}">
+                <a class="navbar-item {% if request.endpoint and (request.endpoint.startswith('training.audit') or request.endpoint.startswith('training.discussions') or request.endpoint.startswith('training.analysis')) %}is-active{% endif %}" href="{{ url_for('training.audit.index') }}">
                     <span class="icon">
                         <i class="fas fa-tags"></i>
                     </span>

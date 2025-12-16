@@ -12,6 +12,7 @@ from collections import defaultdict
 from flask import Blueprint, render_template, request, abort, jsonify, url_for
 
 import btcopilot
+from btcopilot import auth
 from btcopilot.extensions import db
 from btcopilot.training.utils import get_breadcrumbs
 from btcopilot.auth import minimum_role
@@ -317,9 +318,16 @@ def discussion_analysis(discussion_id):
     }
 
     breadcrumbs = get_breadcrumbs("thread")
+    if discussion.diagram:
+        breadcrumbs.append(
+            {
+                "title": discussion.diagram.name or "Untitled Diagram",
+                "url": None,
+            }
+        )
     breadcrumbs.append(
         {
-            "title": f"{discussion.user.username if discussion.user else 'Unknown User'} - Discussion #{discussion.id}",
+            "title": f"{discussion.summary or 'Untitled Discussion'} (ID: {discussion.id})",
             "url": url_for("training.discussions.audit", discussion_id=discussion.id),
         }
     )
@@ -333,6 +341,7 @@ def discussion_analysis(discussion_id):
         subject_speaker_map=subject_speaker_map,
         expert_speaker_map=expert_speaker_map,
         breadcrumbs=breadcrumbs,
+        current_user=auth.current_user(),
     )
 
 
@@ -461,6 +470,27 @@ def _get_metric_display_name(metric_name):
     return names.get(metric_name, metric_name.replace("_", " ").title())
 
 
+def _get_metric_breadcrumb_name(metric_name):
+    """Get short name for breadcrumb (e.g., 'events_f1' -> 'Events')"""
+    names = {
+        "perfect_matches": "Perfect Matches",
+        "aggregate_micro_f1": "Overall",
+        "people_f1": "People",
+        "events_f1": "Events",
+        "pair_bonds_f1": "Pair Bonds",
+        "symptom_detection": "Symptom Detection",
+        "symptom_value_match": "Symptom Value",
+        "anxiety_detection": "Anxiety Detection",
+        "anxiety_value_match": "Anxiety Value",
+        "relationship_detection": "Relationship Detection",
+        "relationship_value_match": "Relationship Value",
+        "relationship_people_match": "Relationship People",
+        "functioning_detection": "Functioning Detection",
+        "functioning_value_match": "Functioning Value",
+    }
+    return names.get(metric_name, metric_name.replace("_", " ").title())
+
+
 def _statement_matches_metric_filter(breakdown, filters):
     if filters.get("perfect_only"):
         return breakdown.f1_metrics.aggregate_micro_f1 == 1.0
@@ -570,7 +600,10 @@ def system_analysis():
         }
 
     breadcrumbs = get_breadcrumbs("audit")
-    breadcrumbs.append({"title": "System Analysis", "url": None})
+    breadcrumbs.append(
+        {"title": "System-Wide F1", "url": url_for("training.audit.index")}
+    )
+    breadcrumbs.append({"title": _get_metric_breadcrumb_name(metric_name), "url": None})
 
     return render_template(
         "training/system_analysis.html",
@@ -580,4 +613,5 @@ def system_analysis():
         total_statements=len(matching_statements),
         speaker_maps=speaker_maps,
         breadcrumbs=breadcrumbs,
+        current_user=auth.current_user(),
     )

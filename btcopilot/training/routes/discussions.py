@@ -15,6 +15,7 @@ from flask import (
     session,
     current_app,
     make_response,
+    url_for,
 )
 from sqlalchemy import create_engine
 
@@ -1022,9 +1023,10 @@ def audit(discussion_id):
     breadcrumbs.append(
         {
             "title": f"{discussion.summary or 'Untitled Discussion'} (ID: {discussion.id})",
-            "url": None,
+            "url": url_for("training.discussions.audit", discussion_id=discussion.id),
         }
     )
+    breadcrumbs.append({"title": "Codes", "url": None})
 
     # Get current user for navigation
     current_user = auth.current_user()

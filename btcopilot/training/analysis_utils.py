@@ -5,11 +5,106 @@ Extends f1_metrics.py to expose per-entity match details for UI rendering.
 Used by the ground truth analysis views to show statement-level match breakdowns.
 """
 
+import json
 import logging
+import pickle
 from dataclasses import dataclass, field, asdict
 from typing import Any
 
-from btcopilot.schema import Person, Event, PairBond, PDPDeltas, from_dict
+from flask import current_app, has_app_context
+
+from btcopilot.schema import Person, Event, PDPDeltas, from_dict
+
+# Cache configuration
+CACHE_ENABLED = False  # Set to True to enable Redis caching
+CACHE_TTL = 3600  # 1 hour TTL
+
+_redis_client = None
+_redis_checked = False
+
+
+def _get_redis():
+    """Lazy-load Redis client from Celery broker URL"""
+    global _redis_client, _redis_checked
+    if not _redis_checked:
+        _redis_checked = True
+        try:
+            import redis
+
+            broker_url = "redis://localhost:6379/0"
+            if has_app_context():
+                broker_url = current_app.config.get("CELERY_BROKER_URL", broker_url)
+            client = redis.from_url(broker_url)
+            client.ping()
+            _redis_client = client
+        except Exception as e:
+            _log.warning(f"Redis unavailable for caching: {e}")
+            _redis_client = None
+    return _redis_client
+
+
+def _cache_key(statement_id: int) -> str:
+    """Generate cache key for statement breakdown"""
+    return f"analysis:breakdown:v1:{statement_id}"
+
+
+def _get_cached_breakdown(statement_id: int):
+    """Get cached breakdown from Redis, returns None if not found or cache disabled"""
+    if not CACHE_ENABLED:
+        return None
+    client = _get_redis()
+    if not client:
+        return None
+    try:
+        data = client.get(_cache_key(statement_id))
+        if data:
+            return pickle.loads(data)
+    except Exception as e:
+        _log.warning(f"Cache read error for statement {statement_id}: {e}")
+    return None
+
+
+def _set_cached_breakdown(statement_id: int, breakdown):
+    """Store breakdown in Redis cache"""
+    if not CACHE_ENABLED:
+        return
+    client = _get_redis()
+    if not client:
+        return
+    try:
+        client.setex(_cache_key(statement_id), CACHE_TTL, pickle.dumps(breakdown))
+    except Exception as e:
+        _log.warning(f"Cache write error for statement {statement_id}: {e}")
+
+
+def invalidate_breakdown_cache(statement_id: int):
+    """Invalidate cached breakdown for a statement (call when feedback changes)"""
+    client = _get_redis()
+    if client:
+        try:
+            client.delete(_cache_key(statement_id))
+        except Exception as e:
+            _log.warning(f"Cache invalidate error for statement {statement_id}: {e}")
+
+
+def invalidate_discussion_cache(discussion_id: int):
+    """Invalidate all cached breakdowns for a discussion"""
+    from btcopilot.personal.models import Statement
+
+    client = _get_redis()
+    if not client:
+        return
+    try:
+        statement_ids = [
+            s.id for s in Statement.query.filter_by(discussion_id=discussion_id).all()
+        ]
+        keys = [_cache_key(sid) for sid in statement_ids]
+        if keys:
+            client.delete(*keys)
+    except Exception as e:
+        _log.warning(f"Cache invalidate error for discussion {discussion_id}: {e}")
+
+
 from btcopilot.training.f1_metrics import (
     match_people,
     match_events,
@@ -238,15 +333,14 @@ def calculate_statement_match_breakdown(
     - Statement has no feedback with edited_extraction (no ground truth)
     - Statement.pdp_deltas is None
 
-    Implementation:
-    1. Query statement and feedback
-    2. Get cumulative PDPDeltas for name resolution
-    3. Call existing calculate_statement_f1() for metrics
-    4. Re-run match_people/match_events/match_pair_bonds to extract EntityMatchResult
-    5. Convert EntityMatchResult to list[EntityMatchDetail] with TP/FP/FN labels
-    6. Extract SARF-level matches from matched event pairs using cumulative people
-    7. Return complete breakdown
+    Results are cached in Redis (if CACHE_ENABLED=True) to avoid recomputation.
+    Cache is invalidated when feedback changes via invalidate_breakdown_cache().
     """
+    # Check Redis cache first
+    cached = _get_cached_breakdown(statement_id)
+    if cached is not None:
+        return cached
+
     from btcopilot.training.models import Feedback
     from btcopilot.personal.models import Statement, Discussion
     from btcopilot.pdp import cumulative
@@ -269,27 +363,49 @@ def calculate_statement_match_breakdown(
 
     # Get FINAL cumulative PDPDeltas for AI name resolution
     discussion = Discussion.query.get(statement.discussion_id)
-    final_statement = Statement.query.filter_by(discussion_id=statement.discussion_id).order_by(Statement.order.desc()).first()
-    cumulative_pdp = cumulative(discussion, final_statement) if final_statement else cumulative(discussion, statement)
+    final_statement = (
+        Statement.query.filter_by(discussion_id=statement.discussion_id)
+        .order_by(Statement.order.desc())
+        .first()
+    )
+    cumulative_pdp = (
+        cumulative(discussion, final_statement)
+        if final_statement
+        else cumulative(discussion, statement)
+    )
 
     # Build cumulative GT people list from all feedback entries in order
-    gt_cumulative_people = []
-    all_statements = Statement.query.filter_by(discussion_id=statement.discussion_id).order_by(Statement.order).all()
-    for stmt in all_statements:
-        stmt_feedback = Feedback.query.filter(
-            Feedback.statement_id == stmt.id,
+    # Fetch all feedbacks for this discussion in one query (avoid N+1)
+    all_statements = (
+        Statement.query.filter_by(discussion_id=statement.discussion_id)
+        .order_by(Statement.order)
+        .all()
+    )
+    statement_ids = [s.id for s in all_statements]
+    feedbacks_by_stmt = {
+        f.statement_id: f
+        for f in Feedback.query.filter(
+            Feedback.statement_id.in_(statement_ids),
             Feedback.feedback_type == "extraction",
-        ).first()
+        ).all()
+    }
+
+    gt_cumulative_people = []
+    for stmt in all_statements:
+        stmt_feedback = feedbacks_by_stmt.get(stmt.id)
         if stmt_feedback and stmt_feedback.edited_extraction:
             stmt_gt_pdp = from_dict(PDPDeltas, stmt_feedback.edited_extraction)
             for person in stmt_gt_pdp.people:
                 # Check if person ID already exists (e.g., name correction)
-                existing_person = next((p for p in gt_cumulative_people if p.id == person.id), None)
+                existing_person = next(
+                    (p for p in gt_cumulative_people if p.id == person.id), None
+                )
                 if existing_person:
-                    # Update existing person (handle name corrections like "Elizabeht" -> "Elizabeth")
-                    gt_cumulative_people[gt_cumulative_people.index(existing_person)] = person
+                    # Update existing person (handle name corrections)
+                    gt_cumulative_people[
+                        gt_cumulative_people.index(existing_person)
+                    ] = person
                 else:
-                    # Add new person
                     gt_cumulative_people.append(person)
 
     f1_metrics = calculate_statement_f1(
@@ -429,5 +545,8 @@ def calculate_statement_match_breakdown(
     # AI side uses cumulative AI people, GT side uses cumulative GT people from feedback
     breakdown.ai_people = cumulative_pdp.people
     breakdown.gt_people = gt_cumulative_people
+
+    # Cache in Redis
+    _set_cached_breakdown(statement_id, breakdown)
 
     return breakdown
