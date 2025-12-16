@@ -545,6 +545,7 @@ INFO     test_model:test_model.py:58 Copilot total time: 38.17371924100007
   - larger hard-coded histories
   - "levels of depth" to force AI coach to probe deeper or fail to get necessary information.
   - Improvisation of case content beyond the provided history, so long as it is not contradictory
+  - They started sponateously pushing back when the conversation went on too long, about 60 minutes, wow.
 - Improved AI coach conversational flow with:
   - Allow feeling content around the problem for ~8 statements before pivoting to filling out data model. Helps the person get some of the presenting problem out, get some emotional buy-in.
 

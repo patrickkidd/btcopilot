@@ -186,7 +186,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     position: fixed;
     top: 80px;
     right: 20px;
-    background-color: hsl(44, 100%, 77%);
+    background-color: var(--warning-badge-bg);
     color: var(--color-fg-default);
     padding: 12px 20px;
     border-radius: 6px;
@@ -197,11 +197,11 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     font-weight: 500;
     font-size: 14px;
     transition: all 0.2s ease;
-    border: 1px solid hsl(44, 100%, 70%);
+    border: 1px solid var(--warning-badge-border);
 }
 
 .refresh-warning-badge:hover {
-    background-color: hsl(44, 100%, 72%);
+    background-color: var(--warning-badge-hover);
     box-shadow: 0 4px 6px rgba(10, 10, 10, 0.15), 0 0 0 1px rgba(10, 10, 10, 0.1);
     transform: translateY(-1px);
 }
@@ -272,6 +272,159 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
 [data-theme="dark"] .person-tag.editable:hover {
     background: rgba(209, 233, 255, 0.25) !important;
     border-color: rgba(128, 191, 255, 0.5) !important;
+}
+
+/* Minimap Styles - VSCode-like overview */
+:root {
+    --minimap-subject-color: #007AFF;
+    --minimap-expert-color: #E9E9EB;
+    --minimap-coded-color: #48c78e;
+    --minimap-symptom-color: #ff6b6b;
+    --minimap-relationship-color: #ffd43b;
+    --warning-badge-bg: hsl(44, 100%, 77%);
+    --warning-badge-border: hsl(44, 100%, 70%);
+    --warning-badge-hover: hsl(44, 100%, 72%);
+}
+
+[data-theme="dark"] {
+    --minimap-subject-color: #5c9dff;
+    --minimap-expert-color: #4a4a4a;
+    --minimap-coded-color: #3fb980;
+    --minimap-symptom-color: #ff9999;
+    --minimap-relationship-color: #ffdd66;
+    --warning-badge-bg: hsl(44, 100%, 42%);
+    --warning-badge-border: hsl(44, 100%, 35%);
+    --warning-badge-hover: hsl(44, 100%, 48%);
+}
+
+.discussion-minimap {
+    position: fixed;
+    right: 8px;
+    top: 120px;
+    bottom: 20px;
+    width: 80px;
+    background: var(--color-canvas-subtle);
+    border: 1px solid var(--color-border-default);
+    border-radius: 4px;
+    overflow: hidden;
+    z-index: 100;
+    opacity: 0.9;
+    transition: opacity 0.2s, width 0.2s;
+}
+
+.discussion-minimap:hover {
+    opacity: 1;
+    width: 100px;
+}
+
+.minimap-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.minimap-viewport {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background: transparent;
+    border: 2px solid rgba(128, 128, 128, 0.8);
+    border-radius: 2px;
+    pointer-events: none;
+    transition: top 0.1s ease-out, height 0.1s ease-out;
+    z-index: 10;
+}
+
+.minimap-item {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: transform 0.1s;
+}
+
+.minimap-item:hover {
+    transform: scaleX(1.1);
+}
+
+/* Statement type colors */
+.minimap-item.subject {
+    background: var(--minimap-subject-color);
+}
+
+.minimap-item.expert {
+    background: var(--minimap-expert-color);
+}
+
+/* Code indicator colors - gradient overlay for statements with codes */
+.minimap-item.has-codes {
+    background: linear-gradient(90deg,
+        var(--base-color) 0%,
+        var(--base-color) 60%,
+        var(--minimap-coded-color) 60%,
+        var(--minimap-coded-color) 100%
+    );
+}
+
+.minimap-item.subject.has-codes {
+    --base-color: var(--minimap-subject-color);
+}
+
+.minimap-item.expert.has-codes {
+    --base-color: var(--minimap-expert-color);
+}
+
+/* Variable indicator stripes */
+.minimap-item.has-symptom::before,
+.minimap-item.has-relationship::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 3px;
+    height: 100%;
+}
+
+.minimap-item.has-symptom::before {
+    left: 0;
+    background: var(--minimap-symptom-color);
+}
+
+.minimap-item.has-relationship::after {
+    right: 0;
+    background: var(--minimap-relationship-color);
+}
+
+/* Minimap legend */
+.minimap-legend {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    right: 4px;
+    font-size: 8px;
+    color: var(--color-fg-muted);
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.discussion-minimap:hover .minimap-legend {
+    opacity: 1;
+}
+
+/* Adjust main content to make room for minimap */
+.audit-table-container {
+    margin-right: 90px;
+}
+
+@media (max-width: 1200px) {
+    .discussion-minimap {
+        display: none;
+    }
+    .audit-table-container {
+        margin-right: 0;
+    }
 }
 
 </style>
@@ -642,6 +795,71 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
 
 <!-- Add Person Delta Modal -->
 
+<!-- Minimap Data for JavaScript -->
+<script>
+window.minimapData = [
+    {% for item in statements %}
+    {
+        id: {{ item.statement.id }},
+        type: "{{ item.statement.speaker.type if item.statement.speaker else 'unknown' }}",
+        hasCodes: {{ 'true' if item.pdp_deltas and (item.pdp_deltas.events or item.pdp_deltas.people) else 'false' }},
+        hasSymptom: {{ 'true' if item.pdp_deltas and item.pdp_deltas.events and item.pdp_deltas.events|selectattr('symptom', 'defined')|list else 'false' }},
+        hasAnxiety: {{ 'true' if item.pdp_deltas and item.pdp_deltas.events and item.pdp_deltas.events|selectattr('anxiety', 'defined')|list else 'false' }},
+        hasFunctioning: {{ 'true' if item.pdp_deltas and item.pdp_deltas.events and item.pdp_deltas.events|selectattr('functioning', 'defined')|list else 'false' }},
+        hasRelationship: {{ 'true' if item.pdp_deltas and item.pdp_deltas.events and item.pdp_deltas.events|selectattr('relationship', 'defined')|list else 'false' }},
+        eventCount: {{ (item.pdp_deltas.events|length) if item.pdp_deltas and item.pdp_deltas.events else 0 }},
+        peopleCount: {{ (item.pdp_deltas.people|length) if item.pdp_deltas and item.pdp_deltas.people else 0 }},
+        textLength: {{ item.statement.text|length if item.statement.text else 0 }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+// Calculate estimated timestamps based on text length
+// Assumes ~150 words per minute speaking rate, ~5 chars per word = ~750 chars/min = 12.5 chars/sec
+window.estimatedTimestamps = (function() {
+    const CHARS_PER_SECOND = 12.5;
+    const timestamps = {};
+    let cumulativeSeconds = 0;
+
+    window.minimapData.forEach(item => {
+        timestamps[item.id] = cumulativeSeconds;
+        const durationSeconds = item.textLength / CHARS_PER_SECOND;
+        cumulativeSeconds += durationSeconds;
+    });
+
+    return timestamps;
+})();
+
+// Format seconds as MM:SS
+function formatTimestamp(totalSeconds) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+    return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+}
+
+// Update timestamp displays on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.estimated-timestamp').forEach(el => {
+        const statementId = parseInt(el.dataset.statementId);
+        if (window.estimatedTimestamps[statementId] !== undefined) {
+            el.textContent = formatTimestamp(window.estimatedTimestamps[statementId]);
+        }
+    });
+});
+</script>
+
+<!-- Discussion Minimap -->
+<div class="discussion-minimap" id="discussion-minimap">
+    <div class="minimap-content" id="minimap-content">
+        <div class="minimap-viewport" id="minimap-viewport"></div>
+        <!-- Minimap items will be rendered by JavaScript -->
+    </div>
+    <div class="minimap-legend">
+        <span style="color: var(--minimap-subject-color);">●</span> Subject
+        <span style="color: var(--minimap-coded-color);">●</span> Coded
+    </div>
+</div>
+
 <!-- Audit Table Layout -->
 <div class="audit-table-container">
     <table class="table is-fullwidth audit-messages-table">
@@ -666,7 +884,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                     <div class="chat-message-container user-message-container">
                         <div class="timestamp-left">
                             <small class="has-text-grey is-size-7">
-                                {{ item.statement.created_at.strftime('%H:%M') if item.statement.created_at else '--:--' }}
+                                <span class="estimated-timestamp" data-statement-id="{{ item.statement.id }}">--:--</span>
                                 {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) %}
                                 <span class="admin-statement-id" title="Statement ID">{{ item.statement.id }}</span>
                                 {% endif %}
@@ -758,7 +976,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                                           style="cursor: pointer;">📝</span>
                                     {% endif %}
                                     <small class="is-size-7" style="color: var(--color-fg-muted);">
-                                        {{ item.statement.created_at.strftime('%H:%M') if item.statement.created_at else '--:--' }}
+                                        <span class="estimated-timestamp" data-statement-id="{{ item.statement.id }}">--:--</span>
                                         {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) %}
                                         <span class="admin-statement-id" title="Statement ID">{{ item.statement.id }}</span>
                                         {% endif %}
@@ -767,7 +985,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Expanded View -->
                     <div class="expanded-ai-message is-clickable" id="chat-expanded-{{ item.statement.id }}" {% if item.has_conv_feedback or item.has_ext_feedback %}style="display: block;"{% else %}style="display: none;"{% endif %} onclick="toggleAIMessage({{ item.statement.id }})">
                         <!-- Speaker name above message bubble -->
@@ -799,7 +1017,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                                           style="cursor: pointer;">📝</span>
                                     {% endif %}
                                     <small class="is-size-7" style="color: var(--color-fg-muted);">
-                                        {{ item.statement.created_at.strftime('%H:%M') if item.statement.created_at else '--:--' }}
+                                        <span class="estimated-timestamp" data-statement-id="{{ item.statement.id }}">--:--</span>
                                         {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) %}
                                         <span class="admin-statement-id" title="Statement ID">{{ item.statement.id }}</span>
                                         {% endif %}
@@ -807,7 +1025,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Conversation Feedback Controls (Outside bubble) -->
                         <div class="conversation-feedback mt-3 p-3 {% if item.has_conv_feedback %}feedback-submitted{% endif %}" onclick="event.stopPropagation()">
                                     <div x-data="{ 
@@ -878,6 +1096,221 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
 
 <!-- Discussion page JavaScript -->
 <script src="{{ url_for('training.audit.static', filename='js/discussion.js') }}"></script>
+
+<!-- Minimap JavaScript -->
+<script>
+(function() {
+    const minimap = document.getElementById('discussion-minimap');
+    const minimapContent = document.getElementById('minimap-content');
+    const viewport = document.getElementById('minimap-viewport');
+    const auditTable = document.querySelector('.audit-table-container');
+
+    if (!minimap || !minimapContent || !auditTable || !window.minimapData) return;
+
+    const data = window.minimapData;
+    if (data.length === 0) {
+        minimap.style.display = 'none';
+        return;
+    }
+
+    // Configuration
+    const MIN_ITEM_HEIGHT = 3;
+    const MAX_ITEM_HEIGHT = 12;
+    const ITEM_GAP = 1;
+
+    // Calculate item positions based on actual DOM elements
+    function calculatePositions() {
+        const rows = document.querySelectorAll('.message-row');
+        const positions = [];
+        let totalHeight = 0;
+
+        rows.forEach((row, index) => {
+            const rect = row.getBoundingClientRect();
+            const docTop = rect.top + window.scrollY;
+            positions.push({
+                element: row,
+                top: docTop,
+                height: rect.height,
+                data: data[index] || {}
+            });
+            totalHeight = Math.max(totalHeight, docTop + rect.height);
+        });
+
+        return { positions, totalHeight };
+    }
+
+    // Render minimap items
+    function renderMinimap() {
+        // Clear existing items (keep viewport)
+        const existingItems = minimapContent.querySelectorAll('.minimap-item');
+        existingItems.forEach(item => item.remove());
+
+        const { positions, totalHeight } = calculatePositions();
+        const minimapHeight = minimapContent.clientHeight - 20; // Leave room for legend
+
+        if (positions.length === 0 || totalHeight === 0) return;
+
+        // Calculate scale
+        const scale = minimapHeight / totalHeight;
+
+        positions.forEach((pos, index) => {
+            const item = document.createElement('div');
+            item.className = 'minimap-item';
+
+            // Add type class
+            if (pos.data.type === 'subject') {
+                item.classList.add('subject');
+            } else {
+                item.classList.add('expert');
+            }
+
+            // Add code indicator classes
+            if (pos.data.hasCodes) {
+                item.classList.add('has-codes');
+            }
+            if (pos.data.hasSymptom) {
+                item.classList.add('has-symptom');
+            }
+            if (pos.data.hasRelationship) {
+                item.classList.add('has-relationship');
+            }
+
+            // Calculate position and size
+            const itemTop = pos.top * scale;
+            let itemHeight = pos.height * scale;
+            itemHeight = Math.max(MIN_ITEM_HEIGHT, Math.min(MAX_ITEM_HEIGHT, itemHeight));
+
+            item.style.top = itemTop + 'px';
+            item.style.height = itemHeight + 'px';
+
+            // Store statement ID for click handling
+            item.dataset.statementId = pos.data.id;
+
+            // Add tooltip
+            let tooltip = pos.data.type === 'subject' ? 'Subject' : 'Expert';
+            if (pos.data.eventCount > 0 || pos.data.peopleCount > 0) {
+                tooltip += ` (${pos.data.peopleCount}P, ${pos.data.eventCount}E)`;
+            }
+            item.title = tooltip;
+
+            // Click to navigate
+            item.addEventListener('click', function() {
+                const statementId = this.dataset.statementId;
+                const targetRow = document.getElementById('statement-' + statementId);
+                if (targetRow) {
+                    targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Flash highlight
+                    targetRow.style.transition = 'background-color 0.3s';
+                    targetRow.style.backgroundColor = 'rgba(100, 149, 237, 0.3)';
+                    setTimeout(() => {
+                        targetRow.style.backgroundColor = '';
+                    }, 1000);
+                }
+            });
+
+            minimapContent.appendChild(item);
+        });
+
+        // Store for viewport calculations
+        minimap._totalHeight = totalHeight;
+        minimap._scale = scale;
+    }
+
+    // Update viewport indicator
+    function updateViewport() {
+        if (!minimap._totalHeight || !minimap._scale) return;
+
+        const scrollTop = window.scrollY;
+        const windowHeight = window.innerHeight;
+        const minimapHeight = minimapContent.clientHeight - 20;
+
+        const viewportTop = scrollTop * minimap._scale;
+        const viewportHeight = Math.min(
+            windowHeight * minimap._scale,
+            minimapHeight - viewportTop
+        );
+
+        viewport.style.top = Math.max(0, viewportTop) + 'px';
+        viewport.style.height = Math.max(10, viewportHeight) + 'px';
+    }
+
+    // Click on minimap background to jump
+    minimapContent.addEventListener('click', function(e) {
+        if (e.target === minimapContent || e.target === viewport) {
+            const rect = minimapContent.getBoundingClientRect();
+            const clickY = e.clientY - rect.top;
+            const minimapHeight = minimapContent.clientHeight - 20;
+
+            if (minimap._totalHeight && minimap._scale) {
+                const scrollTarget = clickY / minimap._scale;
+                window.scrollTo({
+                    top: scrollTarget - window.innerHeight / 2,
+                    behavior: 'smooth'
+                });
+            }
+        }
+    });
+
+    // Drag viewport to scroll
+    let isDragging = false;
+    let dragStartY = 0;
+    let scrollStartY = 0;
+
+    viewport.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        dragStartY = e.clientY;
+        scrollStartY = window.scrollY;
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging || !minimap._scale) return;
+        const deltaY = e.clientY - dragStartY;
+        const scrollDelta = deltaY / minimap._scale;
+        window.scrollTo(0, scrollStartY + scrollDelta);
+    });
+
+    document.addEventListener('mouseup', function() {
+        isDragging = false;
+    });
+
+    // Initialize
+    function init() {
+        renderMinimap();
+        updateViewport();
+    }
+
+    // Throttle scroll updates
+    let scrollTimeout;
+    window.addEventListener('scroll', function() {
+        if (scrollTimeout) return;
+        scrollTimeout = setTimeout(function() {
+            scrollTimeout = null;
+            updateViewport();
+        }, 16); // ~60fps
+    });
+
+    // Debounce resize updates
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            renderMinimap();
+            updateViewport();
+        }, 100);
+    });
+
+    // Wait for DOM to be ready and images loaded
+    if (document.readyState === 'complete') {
+        init();
+    } else {
+        window.addEventListener('load', init);
+    }
+
+    // Re-render after Alpine initializes (in case it changes DOM)
+    setTimeout(init, 500);
+})();
+</script>
 
 <!-- Data Editor Modal -->
 <!-- Prompt Editor Modal -->
