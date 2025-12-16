@@ -44,6 +44,32 @@ Parameters:
     {% set lazy_init = true %}
 {% endif %}
 
+{# Loading placeholder styles for lazy-loaded SARF editors #}
+<style>
+.sarf-editor-lazy[x-ignore] .sarf-loading-placeholder {
+    display: flex;
+}
+.sarf-editor-lazy:not([x-ignore]) .sarf-loading-placeholder {
+    display: none;
+}
+.sarf-editor-lazy[x-ignore] .sarf-editor-content {
+    display: none;
+}
+.sarf-loading-placeholder {
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    color: var(--bulma-text-weak);
+}
+.sarf-loading-placeholder .icon {
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
+
 {# Pre-compute Alpine component parameters for lazy initialization #}
 {% set alpine_params = {
     'data': data,
@@ -122,6 +148,13 @@ Parameters:
     <!-- Expanded Data Interface (with tabs for admins, simple view for regular auditors) -->
     {% if editable_mode and not is_cumulative %}
     <div class="admin-tabbed-data{% if lazy_init %} sarf-editor-lazy{% endif %}" id="{{ id_prefix }}-expanded-{{ component_id }}" style="display: {% if collapsed %}none{% else %}block{% endif %}"{% if lazy_init %} x-ignore data-alpine-params='{{ alpine_params|tojson }}'{% else %} x-data='componentExtractedDataWithReview({{ data|tojson }}, {{ cumulative_pdp|tojson if cumulative_pdp else "null" }}, {{ "true" if feedback_data and feedback_data.thumbs_down else "false" }}, false, "{{ component_id }}", {{ "true" if editable_mode else "false" }}, {{ message_id|tojson if message_id else "null" }}, {{ feedback_data.edited_extraction|tojson if feedback_data and feedback_data.edited_extraction else "null" }}, {{ feedback_data.id|tojson if feedback_data and feedback_data.id else "null" }}, {{ all_ext_feedback_dict|tojson if all_ext_feedback_dict else "[]" }}, {{ approved|tojson if approved else "false" }}, {{ approved_by|tojson if approved_by else "null" }}, {{ approved_at|tojson if approved_at else "null" }}, {{ admin_ext_feedback.id|tojson if admin_ext_feedback and admin_ext_feedback.id else "null" }})'{% endif %}>
+        {% if lazy_init %}
+        <div class="sarf-loading-placeholder">
+            <span class="icon"><i class="fas fa-spinner"></i></span>
+            <span class="ml-2">Loading...</span>
+        </div>
+        {% endif %}
+        <div class="sarf-editor-content">
         <!-- Navigation Tabs (admin only, hidden when single auditor selected) -->
         {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) and all_ext_feedback_dict|length > 1 %}
         <div class="tabs is-small is-boxed mb-0">
@@ -1023,12 +1056,19 @@ Parameters:
                 </div>
             </div>
         </div>
+        </div>{# close sarf-editor-content #}
     {% else %}
     <!-- Regular Expanded Data View (non-admin or no corrections) -->
     <div class="expanded-data-section" id="{{ id_prefix }}-expanded-{{ component_id }}" style="display: {% if collapsed %}none{% else %}block{% endif %}">
         <div class="data-content" style="position: relative;">
             <div class="{% if lazy_init %}sarf-editor-lazy{% endif %}"{% if lazy_init %} x-ignore data-alpine-params='{{ alpine_params|tojson }}'{% else %} x-data='componentExtractedDataWithReview({{ data|tojson }}, {{ cumulative_pdp|tojson if cumulative_pdp else "null" }}, {{ "true" if feedback_data and feedback_data.thumbs_down else "false" }}, false, "{{ component_id }}", {{ "true" if editable_mode else "false" }}, {{ message_id|tojson if message_id else "null" }}, {{ feedback_data.edited_extraction|tojson if feedback_data and feedback_data.edited_extraction else "null" }}, {{ feedback_data.id|tojson if feedback_data and feedback_data.id else "null" }}, {{ all_ext_feedback_dict|tojson if all_ext_feedback_dict else "[]" }}, {{ approved|tojson if approved else "false" }}, {{ approved_by|tojson if approved_by else "null" }}, {{ approved_at|tojson if approved_at else "null" }}, {{ admin_ext_feedback.id|tojson if admin_ext_feedback and admin_ext_feedback.id else "null" }})'{% endif %} @click.stop>
-
+                {% if lazy_init %}
+                <div class="sarf-loading-placeholder">
+                    <span class="icon"><i class="fas fa-spinner"></i></span>
+                    <span class="ml-2">Loading...</span>
+                </div>
+                {% endif %}
+                <div class="sarf-editor-content">
                 <!-- Data Display -->
                 <div class="data-details">
                     <!-- People Section -->
@@ -1868,12 +1908,13 @@ Parameters:
                     {% endif %}
                 </div>
                 {% endif %}
+                </div>{# close sarf-editor-content #}
             </div>
         </div>
-        
+
     </div>
     {% endif %}
-    
+
     {% else %}
     <!-- No Data View -->
     <div class="no-data-section">
