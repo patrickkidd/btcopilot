@@ -1196,24 +1196,11 @@ def extract(discussion_id: int):
     return jsonify({"success": True, "message": "Extraction triggered successfully"})
 
 
-@bp.route("/<int:discussion_id>/progress", methods=["GET"])
-@minimum_role(btcopilot.ROLE_AUDITOR)
-def progress(discussion_id: int):
-    """Get extraction progress for statements in a discussion"""
-    current_user = auth.current_user()
-
+def _get_discussion_progress(discussion_id: int) -> dict:
+    """Get extraction progress for a single discussion. Returns dict with progress data."""
     discussion = Discussion.query.get(discussion_id)
     if not discussion:
-        return abort(404)
-
-    # Check access rights - admins bypass, others need diagram access
-    if not current_user.has_role(btcopilot.ROLE_ADMIN):
-        if discussion.diagram:
-            if not discussion.diagram.check_read_access(current_user):
-                return abort(403)
-        elif discussion.user_id != current_user.id:
-            # No diagram means personal discussion - only owner or admin can access
-            return abort(403)
+        return None
 
     # Count Subject statements that need processing
     total_subject_statements = (
@@ -1228,8 +1215,6 @@ def progress(discussion_id: int):
     )
 
     # Count processed Subject statements (those with pdp_deltas)
-    # Note: We need to check for both not None AND not empty dict/list
-    # because SQLAlchemy's JSON column comparison can be unreliable
     all_subject_statements = (
         Statement.query.join(Speaker)
         .filter(
@@ -1248,25 +1233,142 @@ def progress(discussion_id: int):
         if stmt.pdp_deltas is not None and stmt.pdp_deltas != {}
     )
 
-    # Calculate pending statements
     pending_statements = total_subject_statements - processed_statements
 
-    # Check if there's a statement currently being processed
-    # (This is a simple check - in production you might want to track this more explicitly)
-    is_processing = pending_statements > 0
+    return {
+        "discussion_id": discussion_id,
+        "total": total_subject_statements,
+        "processed": processed_statements,
+        "pending": pending_statements,
+        "extracting": discussion.extracting,
+        "percent_complete": (
+            round((processed_statements / total_subject_statements) * 100, 1)
+            if total_subject_statements > 0
+            else 100
+        ),
+    }
+
+
+@bp.route("/<int:discussion_id>/progress", methods=["GET"])
+@minimum_role(btcopilot.ROLE_AUDITOR)
+def progress(discussion_id: int):
+    """Get extraction progress for statements in a discussion"""
+    current_user = auth.current_user()
+
+    discussion = Discussion.query.get(discussion_id)
+    if not discussion:
+        return abort(404)
+
+    # Check access rights - admins bypass, others need diagram access
+    if not current_user.has_role(btcopilot.ROLE_ADMIN):
+        if discussion.diagram:
+            if not discussion.diagram.check_read_access(current_user):
+                return abort(403)
+        elif discussion.user_id != current_user.id:
+            return abort(403)
+
+    progress_data = _get_discussion_progress(discussion_id)
+    if not progress_data:
+        return abort(404)
+
+    # Add legacy fields for backward compatibility
+    progress_data["is_processing"] = progress_data["pending"] > 0
+    return jsonify(progress_data)
+
+
+@bp.route("/progress/bulk", methods=["GET"])
+@minimum_role(btcopilot.ROLE_ADMIN)
+def progress_bulk():
+    """Get extraction progress for multiple discussions (admin only).
+
+    Query params:
+    - ids: comma-separated discussion IDs (optional, defaults to all discussions with extracting=True)
+    """
+    ids_param = request.args.get("ids")
+
+    if ids_param:
+        try:
+            discussion_ids = [int(d.strip()) for d in ids_param.split(",")]
+        except ValueError:
+            return jsonify({"error": "Invalid discussion_ids format"}), 400
+    else:
+        # Default: get all discussions that are currently extracting or have partial extractions
+        discussions = Discussion.query.all()
+        discussion_ids = [d.id for d in discussions]
+
+    results = {}
+    for discussion_id in discussion_ids:
+        progress_data = _get_discussion_progress(discussion_id)
+        if progress_data:
+            results[str(discussion_id)] = progress_data
+
+    return jsonify({"discussions": results})
+
+
+@bp.route("/extract-selected", methods=["POST"])
+@minimum_role(btcopilot.ROLE_ADMIN)
+def extract_selected():
+    """Clear AI extractions and trigger background extraction for selected discussions"""
+    current_user = auth.current_user()
+
+    data = request.get_json()
+    if not data or "discussion_ids" not in data:
+        return jsonify({"error": "discussion_ids required"}), 400
+
+    discussion_ids = data["discussion_ids"]
+    if not discussion_ids:
+        return jsonify({"error": "No discussions selected"}), 400
+
+    discussions = Discussion.query.filter(Discussion.id.in_(discussion_ids)).all()
+
+    cleared_count = 0
+    triggered_count = 0
+
+    for discussion in discussions:
+        # Clear existing AI extractions
+        stmt_count = (
+            Statement.query.filter_by(discussion_id=discussion.id)
+            .filter(Statement.pdp_deltas.isnot(None))
+            .count()
+        )
+
+        if stmt_count > 0:
+            Statement.query.filter_by(discussion_id=discussion.id).update(
+                {"pdp_deltas": None}, synchronize_session=False
+            )
+            cleared_count += stmt_count
+
+        # Clear PDP from diagram if present (with error handling for pickle issues)
+        if discussion.diagram:
+            try:
+                database = discussion.diagram.get_diagram_data()
+                database.pdp = PDP(people=[], events=[], pair_bonds=[])
+                discussion.diagram.set_diagram_data(database)
+            except (ModuleNotFoundError, ImportError) as e:
+                _log.warning(f"Could not clear PDP for discussion {discussion.id}: {e}")
+
+        # Set extracting flag
+        discussion.extracting = True
+        triggered_count += 1
+
+    db.session.commit()
+
+    # Trigger background extraction task
+    from btcopilot.extensions import celery
+
+    celery.send_task("extract_next_statement")
+
+    _log.info(
+        f"Admin {current_user.username} triggered extraction for {triggered_count} discussions - "
+        f"cleared {cleared_count} statements"
+    )
 
     return jsonify(
         {
-            "total": total_subject_statements,
-            "processed": processed_statements,
-            "pending": pending_statements,
-            "is_processing": is_processing,
-            "extracting": discussion.extracting,
-            "percent_complete": (
-                round((processed_statements / total_subject_statements) * 100, 1)
-                if total_subject_statements > 0
-                else 100
-            ),
+            "success": True,
+            "message": f"Cleared extractions from {cleared_count} statements, triggered extraction for {triggered_count} discussions",
+            "cleared_count": cleared_count,
+            "triggered_count": triggered_count,
         }
     )
 

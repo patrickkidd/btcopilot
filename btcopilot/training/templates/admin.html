@@ -60,15 +60,21 @@
         <!-- Discussions Section -->
         <div class="admin-section">
             <div class="box">
-                <div class="is-clickable" onclick="toggleDiscussions()" style="cursor: pointer;">
-                    <h2 class="title is-4 mb-0" style="display: inline-block;">
-                        <span class="icon"><i class="fas fa-comments"></i></span>
-                        Discussions
-                        <span class="icon is-small ml-2">
-                            <i id="discussions-toggle-icon" class="fas fa-chevron-down"></i>
-                        </span>
-                    </h2>
-                    <p class="subtitle is-6 mt-2">Total discussions: {{ discussions|length }}</p>
+                <div class="is-flex is-justify-content-space-between is-align-items-start">
+                    <div class="is-clickable" onclick="toggleDiscussions()" style="cursor: pointer;">
+                        <h2 class="title is-4 mb-0" style="display: inline-block;">
+                            <span class="icon"><i class="fas fa-comments"></i></span>
+                            Discussions
+                            <span class="icon is-small ml-2">
+                                <i id="discussions-toggle-icon" class="fas fa-chevron-down"></i>
+                            </span>
+                        </h2>
+                        <p class="subtitle is-6 mt-2">Total discussions: {{ discussions|length }}</p>
+                    </div>
+                    <button id="extract-selected-btn" class="button is-warning" onclick="extractSelectedDiscussions()" title="Clear and re-extract selected discussions" disabled>
+                        <span class="icon"><i class="fas fa-sync-alt"></i></span>
+                        <span>Clear & Re-extract Selected (0)</span>
+                    </button>
                 </div>
 
                 <!-- Synthetic and GT filters -->
@@ -99,8 +105,10 @@
                     <table class="table is-fullwidth is-striped is-hoverable">
                         <thead>
                             <tr>
+                                <th style="width: 30px;"><input type="checkbox" id="select-all-discussions" onchange="toggleAllDiscussions(this.checked)" title="Select/deselect all"></th>
                                 <th>ID</th>
                                 <th>GT</th>
+                                <th>Extraction</th>
                                 <th>User</th>
                                 <th>Statements</th>
                                 <th>Summary</th>
@@ -112,7 +120,10 @@
                         <tbody>
                             {% for discussion in discussions %}
                             {% set gt = gt_statuses.get(discussion.id, {}) %}
-                            <tr class="discussion-row" data-synthetic="{{ 'true' if discussion.synthetic else 'false' }}" data-gt="{{ gt.get('status', GTStatus.None_).value }}">
+                            <tr class="discussion-row" data-synthetic="{{ 'true' if discussion.synthetic else 'false' }}" data-gt="{{ gt.get('status', GTStatus.None_).value }}" data-discussion-id="{{ discussion.id }}">
+                                <td>
+                                    <input type="checkbox" class="discussion-checkbox" data-discussion-id="{{ discussion.id }}" onchange="updateSelectedCount()">
+                                </td>
                                 <td>
                                     <a href="/training/discussions/{{ discussion.id }}" class="has-text-weight-bold" title="View in audit system">
                                         {{ discussion.id }}
@@ -132,6 +143,14 @@
                                     {% elif gt.get('status') == GTStatus.Partial %}
                                     <span class="tag is-warning" title="Partial GT - {{ gt.approved }}/{{ gt.total }} approved" style="font-size: 0.65rem; height: 1.5em; padding: 0 0.5em;"><i class="fas fa-exclamation-triangle"></i></span>
                                     {% endif %}
+                                </td>
+                                <td>
+                                    <div class="extraction-status" data-discussion-id="{{ discussion.id }}" style="min-width: 50px;">
+                                        <!-- Will be populated by JS -->
+                                        <span class="icon is-small has-text-grey-light" title="Loading...">
+                                            <i class="fas fa-circle-notch fa-spin"></i>
+                                        </span>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="tag is-info">
@@ -265,7 +284,209 @@
             </div>
         </div>
 
+    <style>
+        /* Extraction progress bar styling */
+        .extraction-progress-mini {
+            width: 50px;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .extraction-progress-mini .progress {
+            height: 100%;
+            margin: 0;
+        }
+        .extraction-status-icon {
+            font-size: 0.75rem;
+        }
+    </style>
+
     <script>
+        // Extraction progress polling for admin dashboard
+        let extractionPollingInterval = null;
+
+        function startExtractionPolling() {
+            // Initial fetch
+            fetchExtractionProgress();
+            // Poll every 3 seconds
+            extractionPollingInterval = setInterval(fetchExtractionProgress, 3000);
+        }
+
+        function stopExtractionPolling() {
+            if (extractionPollingInterval) {
+                clearInterval(extractionPollingInterval);
+                extractionPollingInterval = null;
+            }
+        }
+
+        function fetchExtractionProgress() {
+            fetch('/training/discussions/progress/bulk')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.discussions) {
+                        updateExtractionStatuses(data.discussions);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching extraction progress:', error);
+                });
+        }
+
+        function updateExtractionStatuses(discussions) {
+            let anyExtracting = false;
+
+            document.querySelectorAll('.extraction-status').forEach(el => {
+                const discussionId = el.dataset.discussionId;
+                const progress = discussions[discussionId];
+
+                if (progress) {
+                    if (progress.extracting) {
+                        anyExtracting = true;
+                        // Show progress bar
+                        el.innerHTML = `
+                            <div class="extraction-progress-mini" title="${progress.processed}/${progress.total} statements (${progress.percent_complete}%)">
+                                <progress class="progress is-primary is-small" value="${progress.percent_complete}" max="100"></progress>
+                            </div>
+                        `;
+                    } else if (progress.percent_complete === 100 && progress.total > 0) {
+                        // Completed
+                        el.innerHTML = `
+                            <span class="extraction-status-icon has-text-success" title="Extraction complete (${progress.total} statements)">
+                                <i class="fas fa-check-circle"></i>
+                            </span>
+                        `;
+                    } else if (progress.total === 0) {
+                        // No statements to extract
+                        el.innerHTML = `
+                            <span class="extraction-status-icon has-text-grey-light" title="No statements">
+                                <i class="fas fa-minus"></i>
+                            </span>
+                        `;
+                    } else if (progress.percent_complete > 0) {
+                        // Partial extraction (not currently running)
+                        el.innerHTML = `
+                            <span class="extraction-status-icon has-text-warning" title="Partial: ${progress.processed}/${progress.total} statements (${progress.percent_complete}%)">
+                                <i class="fas fa-exclamation-circle"></i>
+                            </span>
+                        `;
+                    } else {
+                        // Not started
+                        el.innerHTML = `
+                            <span class="extraction-status-icon has-text-grey-light" title="Not extracted">
+                                <i class="fas fa-circle"></i>
+                            </span>
+                        `;
+                    }
+                }
+            });
+
+            // Update Extract All button state
+            const extractAllBtn = document.getElementById('extract-all-btn');
+            if (extractAllBtn) {
+                if (anyExtracting) {
+                    extractAllBtn.disabled = true;
+                    extractAllBtn.classList.add('is-loading');
+                } else {
+                    extractAllBtn.disabled = false;
+                    extractAllBtn.classList.remove('is-loading');
+                }
+            }
+        }
+
+        function getSelectedDiscussionIds() {
+            const checkboxes = document.querySelectorAll('.discussion-checkbox:checked');
+            return Array.from(checkboxes).map(cb => cb.dataset.discussionId);
+        }
+
+        function updateSelectedCount() {
+            const selectedIds = getSelectedDiscussionIds();
+            const btn = document.getElementById('extract-selected-btn');
+            const count = selectedIds.length;
+            btn.querySelector('span:last-child').textContent = `Clear & Re-extract Selected (${count})`;
+            btn.disabled = count === 0;
+
+            // Update "select all" checkbox state
+            const allCheckboxes = document.querySelectorAll('.discussion-checkbox');
+            const selectAllCheckbox = document.getElementById('select-all-discussions');
+            if (allCheckboxes.length > 0) {
+                selectAllCheckbox.checked = selectedIds.length === allCheckboxes.length;
+                selectAllCheckbox.indeterminate = selectedIds.length > 0 && selectedIds.length < allCheckboxes.length;
+            }
+        }
+
+        function toggleAllDiscussions(checked) {
+            document.querySelectorAll('.discussion-checkbox').forEach(cb => {
+                cb.checked = checked;
+            });
+            updateSelectedCount();
+        }
+
+        function extractSelectedDiscussions() {
+            const selectedIds = getSelectedDiscussionIds();
+            if (selectedIds.length === 0) {
+                alert('Please select at least one discussion.');
+                return;
+            }
+
+            if (!confirm(`This will clear AI extractions and re-extract ${selectedIds.length} selected discussion(s).\n\nThis may take a long time and will consume API resources.\n\nAre you sure?`)) {
+                return;
+            }
+
+            const btn = document.getElementById('extract-selected-btn');
+            btn.disabled = true;
+            btn.classList.add('is-loading');
+            btn.querySelector('span:last-child').textContent = 'Triggering...';
+
+            fetch('/training/discussions/extract-selected', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ discussion_ids: selectedIds.map(id => parseInt(id)) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    btn.querySelector('span:last-child').textContent = 'Extracting...';
+                    // Reset selected status icons to show loading
+                    selectedIds.forEach(id => {
+                        const el = document.querySelector(`.extraction-status[data-discussion-id="${id}"]`);
+                        if (el) {
+                            el.innerHTML = `
+                                <div class="extraction-progress-mini" title="Starting...">
+                                    <progress class="progress is-primary is-small" value="0" max="100"></progress>
+                                </div>
+                            `;
+                        }
+                    });
+                    // Ensure polling is active
+                    if (!extractionPollingInterval) {
+                        startExtractionPolling();
+                    }
+                    // Uncheck all and update count
+                    document.querySelectorAll('.discussion-checkbox').forEach(cb => cb.checked = false);
+                    document.getElementById('select-all-discussions').checked = false;
+                    updateSelectedCount();
+                    alert(data.message);
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                    btn.disabled = false;
+                    btn.classList.remove('is-loading');
+                    updateSelectedCount();
+                }
+            })
+            .catch(error => {
+                console.error('Error triggering extraction:', error);
+                alert('Error triggering extraction: ' + error.message);
+                btn.disabled = false;
+                btn.classList.remove('is-loading');
+                updateSelectedCount();
+            });
+        }
+
+        // Start polling on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            startExtractionPolling();
+        });
+
         function toggleDiscussions() {
             const content = document.getElementById('discussions-content');
             const icon = document.getElementById('discussions-toggle-icon');
