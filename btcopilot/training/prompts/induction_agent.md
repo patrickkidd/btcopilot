@@ -82,11 +82,40 @@ a. **Initialize run folder and log**: Create timestamped folder immediately
    - Every action from this point forward MUST be logged to this file
    - Log format: JSON Lines (one JSON object per line)
 
-b. **Read ground truth**: `instance/gt_export.json`
+b. **Read previous run history**: `btcopilot/induction-reports/*/`
+   - **CRITICAL**: Before proposing ANY change, check what previous runs tried
+   - Read the most recent 3-5 log files (`*_log.jsonl`) to see:
+     - What changes were attempted and their outcomes (kept/reverted)
+     - Which error patterns have already been addressed
+     - What F1 scores were achieved
+   - **DO NOT re-propose changes that were previously reverted** unless you have a substantially different approach
+   - If a change was tried and reverted in a recent run, note this and try something else
+   - This prevents oscillation between the same changes across runs
+
+c. **Read ground truth**: `instance/gt_export.json`
    - Contains AI extractions vs. human-corrected ground truth
    - Each case has: statement text, AI extraction, GT extraction, expert feedback
 
-c. **Read current prompts**: `btcopilot/btcopilot/personal/prompts.py`
+d. **Read data model documentation**: `btcopilot/doc/DATA_MODEL_FLOW.md`
+   - Explains how PDPDeltas, PDP, DiagramData, Person, Event all relate
+   - **Key concepts to understand**:
+     - Negative IDs (-1, -2, ...) = uncommitted PDP items; Positive IDs = committed
+     - PDPDeltas are SPARSE - most contain very few items, often empty arrays
+     - Each statement typically generates 0-1 new events
+     - `apply_deltas()` handles adds, updates, and deletes
+   - This context helps you write better examples showing correct delta structure
+
+e. **Read SARF operational definitions**: `btcopilot/doc/sarf-definitions/*.md`
+   - These are the authoritative clinical definitions for all SARF variables
+   - **CRITICAL**: All prompt edits MUST align with these definitions
+   - Key files to read based on focus area:
+     - Functioning: `01-functioning.md`
+     - Anxiety: `02-anxiety.md`
+     - Symptom: `03-symptom.md`
+     - Relationship patterns: `04-conflict.md`, `05-distance.md`, `06-cutoff.md`, `07-overfunctioning.md`, `08-underfunctioning.md`, `09-projection.md`, `10-inside.md`, `11-outside.md`, `12-definedself.md`
+   - When editing prompts, use these definitions as initial hypothesis to improve F1 scores
+
+f. **Read current prompts**: `btcopilot/btcopilot/personal/prompts.py`
    - Three-part structure (concatenated at runtime in pdp.py):
      - `DATA_EXTRACTION_PROMPT` - Header + SECTION 1 + SECTION 2 (with {current_date} variable)
      - `DATA_EXTRACTION_EXAMPLES` - SECTION 3 examples (no variables, literal JSON - edit freely)
@@ -97,7 +126,7 @@ c. **Read current prompts**: `btcopilot/btcopilot/personal/prompts.py`
      - SECTION 3: EXAMPLES (error patterns - in DATA_EXTRACTION_EXAMPLES)
    - Split structure avoids brace-escaping in JSON examples
 
-d. **Establish baseline**: Run test to get starting F1 scores
+g. **Establish baseline**: Run test to get starting F1 scores
 
    **IMPORTANT**: Check if `INDUCTION_DISCUSSION_ID` environment variable is set. If so, pass `--discussion <id>` to filter to that single discussion for faster iteration.
 
@@ -111,7 +140,16 @@ d. **Establish baseline**: Run test to get starting F1 scores
    - This is your baseline to beat
    - **LOG THIS**: Write baseline entry to log file (see Logging section)
 
-e. **Create todo list**: Track up to 10 iterations using TodoWrite
+h. **Identify holdout cases for overfitting detection**:
+   - From `gt_export.json`, mentally note 20% of cases (every 5th case) as "holdout"
+   - During iterations, focus error analysis on the non-holdout 80%
+   - At end of run, check if holdout cases improved similarly to training cases
+   - **If holdout F1 drops while training F1 improves** → OVERFITTING detected
+     - Revert changes that caused the divergence
+     - Log: `{"type": "overfit_warning", "training_f1": X, "holdout_f1": Y}`
+   - This prevents optimizing for specific GT cases at expense of generalization
+
+i. **Create todo list**: Track up to 10 iterations using TodoWrite
 
 ### 2. Iteration Loop
 
@@ -167,6 +205,24 @@ Compare AI extractions vs. GT in `gt_export.json`. Identify the **top 2-3 error 
 - Add 1 new example showing CORRECT vs. WRONG pattern
 - Refine existing example for clarity
 - Don't rewrite entire sections
+
+**Use SARF definitions as source of truth**:
+- For SARF coding errors, consult the relevant definition file in `btcopilot/doc/sarf-definitions/`
+- Ensure any prompt wording matches the operational definitions exactly
+- If GT disagrees with current prompt wording, defer to the SARF definitions
+
+**Example Budget (SECTION 3)**:
+
+⚠️ **CRITICAL: SECTION 3 has a MAXIMUM of 15 examples.**
+
+- Before adding a new example, COUNT existing examples in `DATA_EXTRACTION_EXAMPLES`
+- If at or near 15 examples:
+  - **Replace** the least effective example (one addressing an error pattern no longer occurring)
+  - **Merge** similar examples that address the same pattern
+  - **Remove** redundant examples before adding new ones
+- Each example must have a unique `[ERROR_PATTERN_*]` tag
+- If two examples have the same tag, keep only the clearer one
+- This prevents prompt bloat that degrades model performance
 
 **Error Pattern Labels**:
 
@@ -291,6 +347,32 @@ Use the `Bash` tool with `echo '...' >> LOG_FILE` to append each entry.
 - Log: "Max iterations reached"
 
 **Otherwise**: Continue to next iteration
+
+#### g. Pruning Pass (Every 5th Run)
+
+**Check if this is a pruning run**: Count folders in `btcopilot/induction-reports/`. If count % 5 == 0, perform a pruning audit:
+
+1. **Audit SECTION 3 examples**:
+   - For each example, check if its error pattern still appears in current GT errors
+   - If an example addresses an error that no longer occurs → **REMOVE IT**
+   - Log removed examples: `{"type": "prune", "removed": "[ERROR_PATTERN_NAME]", "reason": "no longer occurring"}`
+
+2. **Audit SECTION 2 rules**:
+   - Check for redundant or contradictory instructions
+   - Remove rules that duplicate what's in SARF definitions
+   - Simplify overly complex instructions
+
+3. **Check for cruft accumulation**:
+   - If prompt file has grown >20% since first induction run, aggressive pruning needed
+   - Prefer fewer, clearer instructions over many specific rules
+   - LLMs perform better with concise prompts than verbose ones
+
+4. **Log pruning results**:
+   ```json
+   {"type": "pruning_pass", "examples_before": N, "examples_after": M, "rules_simplified": K, "prompt_size_delta": "-X%"}
+   ```
+
+**Purpose**: Prevents cruft accumulation over many runs. The prompt should stay lean and effective.
 
 ### 3. Generate Report
 
@@ -438,6 +520,9 @@ Your induction run is successful if:
 **Read-only**:
 - `instance/gt_export.json` - Ground truth cases (AI extractions vs. human corrections)
 - `btcopilot/btcopilot/training/test_prompts_live.py` - Live test harness (DO NOT MODIFY)
+- `btcopilot/doc/DATA_MODEL_FLOW.md` - Data model documentation (PDPDeltas structure, ID conventions, sparse delta pattern)
+- `btcopilot/doc/sarf-definitions/*.md` - Authoritative SARF variable definitions (consult when editing prompts)
+- `btcopilot/induction-reports/*/_log.jsonl` - Previous run logs (check before proposing changes to avoid oscillation)
 
 **Read-write**:
 - `btcopilot/btcopilot/personal/prompts.py` - Target for improvements (three parts):

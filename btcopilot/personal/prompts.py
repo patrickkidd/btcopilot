@@ -320,8 +320,9 @@ SECTION 1: DATA MODEL (Semantic definitions - what things mean)
   - `dateTime`: When it happened (specific date/time or fuzzy like "last
     Tuesday", "summer 2020"). If no time frame mentioned, don't create the
     event.
-  - `description`: What specifically happened (concrete action/incident, not
-    vague feelings)
+  - `description`: Keep brief - capture ONE issue concisely. Good: "Trouble
+    sleeping", "Dementia diagnosis", "Drinking more". Bad: "Having trouble
+    sleeping and feeling really anxious lately" (too long, multiple issues).
   - `kind`: EventKind enum ("shift", "married", "bonded", "birth", "adopted",
     "moved", "separated", "divorced", "death")
 
@@ -346,7 +347,21 @@ SECTION 1: DATA MODEL (Semantic definitions - what things mean)
   not all as an AND condition:
 
   - Symptom: Physical/mental health changes (use Event.symptom field:
-    "up"/"down"/"same", e.g., "headache" → "up"), or challenges meeting goals.
+    "up"/"down"/"same"). Symptoms include:
+    - Physical: headaches, sleep problems (insomnia, trouble sleeping), fatigue,
+      pain, illness diagnoses (dementia, cancer, etc.)
+    - Behavioral: increased drinking, substance use changes, eating changes
+    - Emotional burden: "pressure to keep everything together", feeling
+      overwhelmed by caretaking role, constant worry about family member
+    **Direction coding**: "up" = symptom worsening/present/emerged, "down" =
+    ONLY when symptom is actually improving/resolving.
+    **ALMOST ALWAYS USE "up"**: New symptoms, new diagnoses, ongoing problems
+    all get `"symptom": "up"`. Use "down" ONLY if the text explicitly says the
+    symptom got better (e.g., "headaches went away", "sleeping better now").
+    Examples: "trouble sleeping" → up, "dementia diagnosis" → up, "drinking
+    more" → up, "can't concentrate" → up, "feeling anxious" → up.
+    **CRITICAL**: When creating shift events for health/behavioral changes,
+    ALWAYS set the symptom field to "up" unless improvement is stated.
   - Anxiety: Any automatic response to real or imagined threat (use
     Event.anxiety field: "up"/"down"/"same", e.g., "nervous" → "up", "relieved"
     → "down").
@@ -429,13 +444,17 @@ SECTION 2: EXTRACTION RULES (Operational guidance)
 
 1. **NEW ONLY**: If a person is already in the database with the same
    name/role, don't include them unless you have NEW information about them
-2. **SINGLE EVENTS**: Each user statement typically generates 0-1 new events,
-   not multiple events for the same information
+2. **SEPARATE EVENTS PER ISSUE**: Create separate events for each distinct
+   symptom/shift/change. If statement mentions "trouble sleeping AND drinking
+   more", create TWO events: one for sleep, one for drinking. Keep descriptions
+   concise and focused on one issue per event (e.g., "Trouble sleeping" not
+   "Having trouble sleeping and feeling anxious")
 3. **UPDATE ONLY CHANGED FIELDS**: When updating existing items, include only
    the fields that are changing
 4. **BIRTH EVENTS**: When user provides "Name, born MM/DD/YYYY" format, extract BOTH the person AND a birth event with kind="birth" and the provided date
-5. **SPARSE EVENTS, NOT PEOPLE**: Events should be sparse (0-1 per statement),
-   but people extraction should be thorough - extract every named person
+5. **THOROUGH PEOPLE, FOCUSED EVENTS**: Extract every named person mentioned.
+   For events, create one event per distinct issue/symptom (can be multiple
+   events per statement if multiple issues are mentioned)
 
 **EVENT.PERSON ASSIGNMENT (CRITICAL):**
 

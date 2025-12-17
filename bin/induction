@@ -14,6 +14,7 @@ Usage (from btcopilot/):
 """
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -21,8 +22,14 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent
 
+# ANSI colors
+RED = "\033[0;31m"
+GREEN = "\033[0;32m"
+YELLOW = "\033[1;33m"
+BLUE = "\033[0;34m"
+NC = "\033[0m"
+
 VALID_FOCUS_TARGETS = {
-    # Entity-level focus
     "Person": {
         "description": "People detection and matching",
         "metric": "people_f1",
@@ -119,6 +126,215 @@ def validate_focus(focus: str) -> dict:
     return VALID_FOCUS_TARGETS[focus]
 
 
+def run_cmd(
+    cmd: list[str], check: bool = True, capture: bool = False
+) -> subprocess.CompletedProcess:
+    """Run a command, optionally capturing output."""
+    return subprocess.run(
+        cmd,
+        cwd=PROJECT_ROOT,
+        check=check,
+        capture_output=capture,
+        text=True,
+    )
+
+
+def export_gt() -> int:
+    """Export ground truth, return count."""
+    run_cmd(["uv", "run", "python", "-m", "btcopilot.training.export_gt"])
+    gt_path = PROJECT_ROOT / "instance" / "gt_export.json"
+    if not gt_path.exists():
+        print(f"{RED}❌ GT export failed - instance/gt_export.json not found{NC}")
+        sys.exit(1)
+    with open(gt_path) as f:
+        return len(json.load(f))
+
+
+def create_checkpoint() -> str:
+    """Create git checkpoint, return SHA."""
+    prompts_file = "btcopilot/personal/prompts.py"
+    result = run_cmd(
+        ["git", "diff", "--quiet", "--", prompts_file],
+        check=False,
+    )
+    if result.returncode != 0:
+        print("Uncommitted changes detected - creating stash")
+        run_cmd(
+            [
+                "git",
+                "stash",
+                "push",
+                "-m",
+                "Pre-induction checkpoint",
+                "--",
+                prompts_file,
+            ],
+            check=False,
+        )
+    else:
+        print("No uncommitted changes in prompts.py")
+
+    result = run_cmd(["git", "rev-parse", "--short", "HEAD"], capture=True)
+    return result.stdout.strip()
+
+
+def build_prompt(
+    focus: str | None, focus_info: dict | None, discussion_id: int | None
+) -> str:
+    """Build the full prompt with focus context."""
+    prompt_path = (
+        PROJECT_ROOT / "btcopilot" / "training" / "prompts" / "induction_agent.md"
+    )
+    base_prompt = prompt_path.read_text()
+
+    context = ""
+    if focus and focus_info:
+        context += f"""
+## Focus Configuration
+
+- **INDUCTION_FOCUS**: {focus}
+- **INDUCTION_FOCUS_METRIC**: {focus_info['metric']}
+- **INDUCTION_FOCUS_GUIDANCE**: {focus_info['guidance']}
+
+**IMPORTANT**: Prioritize improving {focus_info['metric']} above aggregate F1. Make at least 2-3 iterations targeting this specific area before considering other improvements.
+
+"""
+
+    if discussion_id:
+        context += f"""
+## Discussion Filter
+
+**INDUCTION_DISCUSSION_ID**: {discussion_id}
+
+When running test_prompts_live, ALWAYS include: `--discussion {discussion_id}`
+
+Example: `uv run python -m btcopilot.training.test_prompts_live --discussion {discussion_id}`
+
+"""
+
+    if context:
+        return f"{context}---\n\n{base_prompt}"
+    return base_prompt
+
+
+def find_latest_report() -> tuple[Path | None, Path | None, Path | None]:
+    """Find most recent report folder, report file, and log file."""
+    report_dir = PROJECT_ROOT / "induction-reports"
+    if not report_dir.exists():
+        return None, None, None
+
+    folders = sorted(
+        [d for d in report_dir.iterdir() if d.is_dir() and d.name.startswith("20")],
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if not folders:
+        return None, None, None
+
+    latest_folder = folders[0]
+    reports = sorted(
+        latest_folder.glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True
+    )
+    logs = sorted(
+        latest_folder.glob("*_log.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True
+    )
+
+    return latest_folder, reports[0] if reports else None, logs[0] if logs else None
+
+
+def check_results(focus: str | None, focus_info: dict | None):
+    """Check and display results."""
+    latest_folder, latest_report, latest_log = find_latest_report()
+
+    if not latest_report and not latest_log:
+        print()
+        print(f"{RED}❌ No report or log generated - something went wrong{NC}")
+        print()
+        print("Troubleshooting:")
+        print("  • Check if Claude Code completed successfully")
+        print("  • Look for error messages above")
+        print("  • Verify instance/gt_export.json is valid")
+        print()
+        sys.exit(1)
+
+    print(f"{GREEN}✅ Induction complete!{NC}")
+    print()
+
+    # Results summary
+    print("━" * 50)
+    print(f"{BLUE}📊 Results Summary:{NC}")
+    print("━" * 50)
+    if latest_report:
+        try:
+            content = latest_report.read_text()
+            for line in content.splitlines():
+                if "| Aggregate F1" in line:
+                    print(line)
+                    break
+            else:
+                print("Results table not found in report")
+
+            if focus and focus_info:
+                print()
+                print(f"{GREEN}Focused metric ({focus_info['metric']}):{NC}")
+                metric_prefix = focus_info["metric"].split("_")[0]
+                for line in content.splitlines():
+                    if f"| {metric_prefix}" in line:
+                        print(line)
+                        break
+        except Exception:
+            print("Could not read report")
+    else:
+        print("Report not found - check log file for details")
+    print()
+
+    # Check for uncommitted changes
+    result = run_cmd(
+        ["git", "diff", "--quiet", "--", "btcopilot/personal/prompts.py"],
+        check=False,
+    )
+    if result.returncode == 0:
+        print(f"{YELLOW}⚠️  No changes made to prompts.py{NC}")
+        print("   The agent may have determined current prompts are optimal")
+    else:
+        print(f"{GREEN}✅ Changes made to prompts.py{NC}")
+
+    print()
+    print("━" * 50)
+    print(f"{BLUE}📄 Generated Files:{NC}")
+    print("━" * 50)
+    if latest_folder:
+        print(f"  • Folder: {latest_folder}")
+    if latest_report:
+        print(f"  • Report: {latest_report}")
+    if latest_log:
+        print(f"  • Log:    {latest_log}")
+    print("  • Changes: git diff btcopilot/personal/prompts.py")
+    print()
+
+    print("━" * 50)
+    print(f"{BLUE}🎯 Next Steps:{NC}")
+    print("━" * 50)
+    print()
+    print("1. Review the report:")
+    print(f"   {YELLOW}cat {latest_report}{NC}")
+    print()
+    print("2. Review the changes:")
+    print(f"   {YELLOW}git diff btcopilot/personal/prompts.py{NC}")
+    print()
+    print("3a. If improved, commit:")
+    print(f"    {GREEN}git add btcopilot/personal/prompts.py induction-reports/{NC}")
+    print(
+        f"    {GREEN}git commit -m 'Automated prompt induction (F1: X.XX → Y.YY)'{NC}"
+    )
+    print()
+    print("3b. If not improved, revert:")
+    print(f"    {RED}git checkout btcopilot/personal/prompts.py{NC}")
+    print()
+    print("━" * 50)
+    print()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Automated prompt induction for extraction prompts",
@@ -163,46 +379,79 @@ Examples (run from btcopilot/):
     focus_info = None
     if args.focus:
         focus_info = validate_focus(args.focus)
-        print(f"Focus: {args.focus}")
-        print(f"  Metric: {focus_info['metric']}")
-        print(f"  Description: {focus_info['description']}")
-        print()
-
-    # Set environment variables for the shell script
-    env = os.environ.copy()
-    if args.focus:
-        env["INDUCTION_FOCUS"] = args.focus
-        env["INDUCTION_FOCUS_METRIC"] = focus_info["metric"]
-        env["INDUCTION_FOCUS_GUIDANCE"] = focus_info["guidance"]
-    if args.discussion:
-        env["INDUCTION_DISCUSSION_ID"] = str(args.discussion)
-        print(f"Discussion filter: {args.discussion}")
-        print()
-
-    # Path to the shell script
-    script_path = (
-        PROJECT_ROOT / "btcopilot" / "training" / "scripts" / "run_induction.sh"
-    )
 
     if args.dry_run:
-        print("Dry run - would execute:")
-        print(f"  {script_path}")
+        print("Dry run - would execute induction with:")
         if args.focus:
-            print(f"  INDUCTION_FOCUS={args.focus}")
-            print(f"  INDUCTION_FOCUS_METRIC={focus_info['metric']}")
-            print(f"  INDUCTION_FOCUS_GUIDANCE={focus_info['guidance']}")
+            print(f"  Focus: {args.focus}")
+            print(f"  Metric: {focus_info['metric']}")
+            print(f"  Guidance: {focus_info['guidance']}")
+        if args.discussion:
+            print(f"  Discussion: {args.discussion}")
         sys.exit(0)
 
-    # Execute the shell script
+    # Start
+    print()
+    print(f"{BLUE}🚀 Starting Automated Prompt Induction{NC}")
+    print("━" * 50)
+    print()
+
+    # Step 1: Export GT
+    print(f"{BLUE}📊 Step 1/4: Exporting ground truth...{NC}")
+    gt_count = export_gt()
+    print(f"{GREEN}✅ Exported {gt_count} GT cases{NC}")
+    print()
+
+    # Step 2: Create checkpoint
+    print(f"{BLUE}💾 Step 2/4: Creating checkpoint...{NC}")
+    checkpoint_sha = create_checkpoint()
+    print(f"{GREEN}✅ Checkpoint: {checkpoint_sha}{NC}")
+    print()
+
+    # Step 3: Run Claude Code
+    print(f"{BLUE}🤖 Step 3/4: Running Claude Code induction agent...{NC}")
+    print(f"{YELLOW}This will take 5-15 minutes depending on dataset size{NC}")
+    print()
+
+    if args.focus:
+        print(f"{GREEN}Focus: {args.focus}{NC}")
+        print(f"  Metric: {focus_info['metric']}")
+        print()
+
+    print("The agent will:")
+    print("  • Analyze error patterns in GT cases")
+    if args.focus:
+        print(f"  • Prioritize {args.focus} improvements")
+    print("  • Propose targeted prompt improvements")
+    print("  • Test each change iteratively")
+    print("  • Generate detailed report and log file")
+    print()
+    print(f"{YELLOW}Interactive mode: You can type to steer the agent.{NC}")
+    print(
+        f"{YELLOW}Edit instance/steering.md to provide guidance for subsequent iterations.{NC}"
+    )
+    print()
+
+    prompt = build_prompt(args.focus, focus_info, args.discussion)
+
     try:
-        result = subprocess.run([str(script_path)], env=env, cwd=str(PROJECT_ROOT))
-        sys.exit(result.returncode)
+        result = subprocess.run(
+            ["claude", "--dangerously-skip-permissions", prompt],
+            cwd=PROJECT_ROOT,
+        )
+        if result.returncode != 0:
+            print(f"{RED}Claude Code exited with code {result.returncode}{NC}")
     except FileNotFoundError:
-        print(f"Error: Script not found: {script_path}", file=sys.stderr)
+        print(f"{RED}Error: 'claude' command not found. Is Claude Code installed?{NC}")
         sys.exit(1)
     except KeyboardInterrupt:
         print("\nInterrupted by user")
         sys.exit(130)
+
+    # Step 4: Check results
+    print()
+    print(f"{BLUE}📋 Step 4/4: Checking results...{NC}")
+    check_results(args.focus, focus_info)
 
 
 if __name__ == "__main__":

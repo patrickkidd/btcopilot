@@ -96,7 +96,7 @@ def normalize_name_for_matching(name: str | None) -> str:
     return " ".join(words)
 
 
-DESCRIPTION_SIMILARITY_THRESHOLD = 0.5
+DESCRIPTION_SIMILARITY_THRESHOLD = 0.4
 DATE_TOLERANCE_DAYS = 7
 DESCRIPTION_WEIGHT = 0.8
 DATE_WEIGHT = 0.2

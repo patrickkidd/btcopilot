@@ -2,6 +2,29 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
+## ⚠️ CONFIDENTIAL DATA STORAGE RULES ⚠️
+
+**CRITICAL**: Induction reports and GT exports contain confidential clinical data and MUST NEVER be stored in the btcopilot repository.
+
+| Data Type | WRONG Location | CORRECT Location |
+|-----------|----------------|------------------|
+| Induction reports | `btcopilot/btcopilot/induction-reports/` | `btcopilot-sources/training/induction-reports/` |
+| GT exports | `btcopilot/instance/gt_export.json` | `btcopilot-sources/training/gt-exports/` |
+
+**Symlinks exist** to allow workflow compatibility:
+- `btcopilot/btcopilot/induction-reports` → `btcopilot-sources/training/induction-reports/`
+- `theapp/instance/gt_export.json` → `btcopilot-sources/training/gt-exports/gt_export.json`
+
+**If you create new clinical data outputs**:
+1. Store in `btcopilot-sources/` (private repo)
+2. Create symlink for workflow compatibility
+3. Add path to `.gitignore` in both repos
+4. Update this section
+
+---
+
 ## Project Documentation
 
 **📋 [Decision Log](decisions/log.md)** - Major architectural decisions and innovations (PDP deltas, IRR study, synthetic data generation, hierarchical F1 metrics)
