@@ -71,9 +71,12 @@ echo ""
 # Build the prompt with focus context if provided
 PROMPT=$(cat btcopilot/btcopilot/training/prompts/induction_agent.md)
 
+# Build context to prepend to the prompt
+CONTEXT=""
+
 if [ -n "$INDUCTION_FOCUS" ]; then
-    FOCUS_CONTEXT="
-## Focus Configuration (from environment)
+    CONTEXT="${CONTEXT}
+## Focus Configuration
 
 - **INDUCTION_FOCUS**: $INDUCTION_FOCUS
 - **INDUCTION_FOCUS_METRIC**: $INDUCTION_FOCUS_METRIC
@@ -81,33 +84,42 @@ if [ -n "$INDUCTION_FOCUS" ]; then
 
 **IMPORTANT**: Prioritize improving $INDUCTION_FOCUS_METRIC above aggregate F1. Make at least 2-3 iterations targeting this specific area before considering other improvements.
 
----
+"
+fi
+
+if [ -n "$INDUCTION_DISCUSSION_ID" ]; then
+    CONTEXT="${CONTEXT}
+## Discussion Filter
+
+**INDUCTION_DISCUSSION_ID**: $INDUCTION_DISCUSSION_ID
+
+When running test_prompts_live, ALWAYS include: \`--discussion $INDUCTION_DISCUSSION_ID\`
+
+Example: \`uv run python -m btcopilot.training.test_prompts_live --discussion $INDUCTION_DISCUSSION_ID\`
 
 "
-    PROMPT="${FOCUS_CONTEXT}${PROMPT}"
+fi
+
+if [ -n "$CONTEXT" ]; then
+    PROMPT="${CONTEXT}---
+
+${PROMPT}"
 fi
 
 # Run Claude Code with the meta-prompt
-# Use env var to avoid shell quote interpretation issues with complex markdown
 # --dangerously-skip-permissions allows autonomous file edits without prompts
 #
-# Output mode: use stream-json with formatter for real-time formatted output
-# The formatter (bin/cc-stream-formatter) provides rich terminal formatting
-# while still allowing the CLI to auto-exit after completion.
+# Interactive mode: allows user to type steering input during the run.
+# The agent reads instance/steering.md at the start of each iteration.
 #
-# Ctrl+C will cleanly terminate both the formatter and claude process.
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
-FORMATTER="$PROJECT_ROOT/bin/cc-stream-formatter"
+# Ctrl+C will cleanly terminate Claude Code.
+echo -e "${YELLOW}Interactive mode: You can type to steer the agent.${NC}"
+echo -e "${YELLOW}Edit instance/steering.md to provide guidance for subsequent iterations.${NC}"
+echo ""
 
-if [ -x "$FORMATTER" ]; then
-    # Use stream-json with formatter for rich real-time output
-    claude -p --dangerously-skip-permissions --output-format stream-json --verbose --include-partial-messages "$PROMPT" | "$FORMATTER"
-else
-    # Fallback to plain text mode
-    echo -e "${YELLOW}Note: bin/cc-stream-formatter not found, using plain text output${NC}"
-    claude -p --dangerously-skip-permissions "$PROMPT"
-fi
+# Write prompt to temp file, then use --prompt-file for interactive mode
+# PROMPT_FILE=$(mktemp)
+claude --dangerously-skip-permissions "$PROMPT"
 
 # 4. Check results
 echo ""

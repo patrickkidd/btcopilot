@@ -38,6 +38,11 @@ VALID_FOCUS_TARGETS = {
         "metric": "events_f1",
         "guidance": "Focus on event extraction: kind classification, description accuracy, person links.",
     },
+    "Event.person": {
+        "description": "Event-to-person assignment",
+        "metric": "events_f1 (person matching)",
+        "guidance": "Focus on correctly assigning events to the right person. Ensure event.person references the correct person ID.",
+    },
     "Event.kind": {
         "description": "Event type classification",
         "metric": "events_f1 (kind matching)",
@@ -123,6 +128,7 @@ Examples (run from btcopilot/):
   uv run bin/induction                        # Optimize aggregate F1
   uv run bin/induction --focus Person         # Focus on people detection
   uv run bin/induction --focus Event.symptom  # Focus on symptom coding
+  uv run bin/induction --discussion 123       # Only test one discussion (faster)
   uv run bin/induction --list-focus           # Show all valid focus targets
         """,
     )
@@ -140,6 +146,11 @@ Examples (run from btcopilot/):
         "--dry-run",
         action="store_true",
         help="Show what would be run without executing",
+    )
+    parser.add_argument(
+        "--discussion",
+        type=int,
+        help="Only test statements from this discussion ID",
     )
 
     args = parser.parse_args()
@@ -163,6 +174,10 @@ Examples (run from btcopilot/):
         env["INDUCTION_FOCUS"] = args.focus
         env["INDUCTION_FOCUS_METRIC"] = focus_info["metric"]
         env["INDUCTION_FOCUS_GUIDANCE"] = focus_info["guidance"]
+    if args.discussion:
+        env["INDUCTION_DISCUSSION_ID"] = str(args.discussion)
+        print(f"Discussion filter: {args.discussion}")
+        print()
 
     # Path to the shell script
     script_path = (

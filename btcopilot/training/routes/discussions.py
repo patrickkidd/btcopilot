@@ -17,7 +17,7 @@ from flask import (
     make_response,
     url_for,
 )
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 
 import btcopilot
@@ -69,10 +69,25 @@ def _next_statement() -> Statement:
     # Find the first one that actually needs processing
     # Check for None or empty dict since SQLAlchemy JSON column filters are unreliable
     for stmt in candidates:
-        if stmt.pdp_deltas is None or stmt.pdp_deltas == {}:
+        if _needs_extraction(stmt.pdp_deltas):
             return stmt
 
     return None
+
+
+def _needs_extraction(pdp_deltas) -> bool:
+    """Check if a statement needs extraction.
+
+    Returns True only if pdp_deltas is None or empty dict {}.
+    Empty lists mean extraction ran but found nothing - that's a valid result.
+    """
+    if pdp_deltas is None:
+        return True
+    if pdp_deltas == {}:
+        return True
+    # If pdp_deltas has the expected structure (even with empty lists),
+    # extraction already ran - don't re-extract
+    return False
 
 
 def extract_next_statement(*args, **kwargs):
@@ -120,13 +135,27 @@ def extract_next_statement(*args, **kwargs):
         else:
             database = DiagramData()
 
+        # Build PDP from stored pdp_deltas of prior statements
+        # This ensures consistent state whether fresh extraction or re-extraction
+        database.pdp = pdp.cumulative(discussion, statement)
+
+        _log.info(
+            f"EXTRACT_NEXT_STATEMENT - Statement {statement.id}:\n"
+            f"  statement.order: {statement.order}\n"
+            f"  statement.text[:100]: {statement.text[:100] if statement.text else 'None'}\n"
+            f"  database.pdp.people: {[p.name for p in database.pdp.people]}\n"
+            f"  database.pdp.events count: {len(database.pdp.events)}\n"
+            f"  database.people count: {len(database.people)}\n"
+        )
+
         try:
             # Apply nest_asyncio to allow nested event loops in Celery workers
             nest_asyncio.apply()
 
             # Run pdp.update for this statement
+            # Pass statement order so conversation_history only includes up to this statement
             new_pdp, pdp_deltas = asyncio.run(
-                pdp.update(discussion, database, statement.text)
+                pdp.update(discussion, database, statement.text, statement.order)
             )
 
             # Refresh discussion to check if extraction was cancelled
@@ -1398,20 +1427,9 @@ def clear_extracted_data(discussion_id):
         # Reset extraction progress
         discussion.extracting = False
 
-        # Reset diagram PDP to initial state (only base people: User and Assistant)
         if discussion.diagram:
-            from btcopilot.schema import PDP, Person
-
             database = discussion.diagram.get_diagram_data()
-            # Reset PDP to just base people
-            database.pdp = PDP(
-                people=[
-                    Person(id=1, name="User"),
-                    Person(id=2, name="Assistant"),
-                ],
-                events=[],
-                pair_bonds=[],
-            )
+            database.pdp = PDP(people=[], events=[], pair_bonds=[])
             discussion.diagram.set_diagram_data(database)
 
         _log.info(
@@ -1422,9 +1440,6 @@ def clear_extracted_data(discussion_id):
 
     else:
         # Clear specific auditor's feedback (Feedback.edited_extraction)
-        # Use raw SQL UPDATE to bypass any ORM caching issues
-        from sqlalchemy import text
-
         result = db.session.execute(
             text(
                 """
@@ -1458,9 +1473,7 @@ def clear_extracted_data(discussion_id):
             f"Cleared {auditor_label} extracted data from {cleared_count} statements"
         )
 
-    # IMPORTANT: Commit the transaction
     db.session.commit()
-    _log.info(f"Transaction committed successfully")
 
     return jsonify(
         {

@@ -73,15 +73,27 @@ class Discussion(db.Model, ModelMixin):
         uselist=False,
     )
 
-    def conversation_history(self) -> str:
+    def conversation_history(self, up_to_order: int | None = None) -> str:
+        """
+        Build conversation history string from statements.
+
+        Args:
+            up_to_order: If provided, only include statements with order < this value.
+                        Used during extraction to avoid seeing the current statement
+                        (which is passed separately as user_message).
+        """
+        statements = self.statements
+        if up_to_order is not None:
+            statements = [s for s in statements if (s.order or 0) < up_to_order]
+
         return (
             "\n".join(
                 [
                     f"{s.speaker.name if s.speaker else 'Unknown'}: {s.text}"
-                    for s in self.statements
+                    for s in statements
                 ]
             )
-            if self.statements
+            if statements
             else "(No statements in this discussion yet)"
         )
 

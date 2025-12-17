@@ -3,6 +3,13 @@
 You are an autonomous agent optimizing extraction prompts for a novel,
 family-based, behavioral health clinical model coding system.
 
+## ⚠️ CRITICAL WARNING: OPEN SOURCE REPOSITORY ⚠️
+
+**prompts.py is in a PUBLIC open source repo. GT data is CONFIDENTIAL.**
+
+When adding examples to prompts.py, NEVER copy real names, quotes, or details from GT.
+Always invent generic fictional examples. See "CONFIDENTIALITY RULES" section below.
+
 ## Your Mission
 
 Improve prompts in `btcopilot/btcopilot/personal/prompts.py` to maximize F1 scores on ground truth cases.
@@ -10,9 +17,10 @@ Improve prompts in `btcopilot/btcopilot/personal/prompts.py` to maximize F1 scor
 ## Focus Area (if specified)
 
 Check environment variables for focus configuration:
-- `INDUCTION_FOCUS` - Schema field to prioritize (e.g., "Person", "Event.symptom")
+- `INDUCTION_FOCUS` - Schema field to prioritize (e.g., "Person", "Event.person", "Event.symptom")
 - `INDUCTION_FOCUS_METRIC` - The F1 metric to optimize (e.g., "symptom_macro_f1")
 - `INDUCTION_FOCUS_GUIDANCE` - Specific guidance for this focus area
+- `INDUCTION_DISCUSSION_ID` - If set, only test statements from this discussion (faster iteration)
 
 **If a focus is specified:**
 1. Prioritize errors related to that field/metric above all others
@@ -22,6 +30,28 @@ Check environment variables for focus configuration:
 5. Other metrics may decline slightly - that's acceptable if the focused metric improves
 
 **If no focus is specified:** Optimize aggregate F1 as usual.
+
+## User Steering (Interactive Mode)
+
+**At the start of EACH iteration**, read `instance/steering.md` if it exists. This file contains real-time guidance from the user watching your progress.
+
+```bash
+# Check for steering file
+if [ -f instance/steering.md ]; then
+    cat instance/steering.md
+fi
+```
+
+**How to use steering input:**
+- The user may edit this file while you work to redirect your efforts
+- Treat steering instructions as high priority - they override default behavior
+- If steering conflicts with focus configuration, steering wins (it's more recent)
+- Examples of steering:
+  - "Use fuzzy name matching - 'Aunt Carol' should match 'Carol'"
+  - "Stop trying to fix symptom extraction, focus on relationship triangles"
+  - "The F1 metric is misleading here because of X - try a different approach"
+
+**IMPORTANT**: Re-read `instance/steering.md` fresh at the start of each iteration. Do not cache it.
 
 ## Workflow
 
@@ -68,8 +98,13 @@ c. **Read current prompts**: `btcopilot/btcopilot/personal/prompts.py`
    - Split structure avoids brace-escaping in JSON examples
 
 d. **Establish baseline**: Run test to get starting F1 scores
+
+   **IMPORTANT**: Check if `INDUCTION_DISCUSSION_ID` environment variable is set. If so, pass `--discussion <id>` to filter to that single discussion for faster iteration.
+
    ```bash
-   uv run python -m btcopilot.training.test_prompts_live
+   # Check env var and build command accordingly
+   uv run python -m btcopilot.training.test_prompts_live --discussion <ID>  # if INDUCTION_DISCUSSION_ID is set
+   uv run python -m btcopilot.training.test_prompts_live                    # if no filter
    ```
    - This runs live extraction with current prompts (not cached results)
    - Parse and record all F1 scores (aggregate, people, events, symptom, anxiety, relationship, functioning)
@@ -159,10 +194,35 @@ Format each example:
 {...}
 ```
 
-**CONFIDENTIALITY**: GT contains real clinical data. When creating examples:
-- Use generic names (Mom, Dad, John, Sarah) not real names from GT
-- Paraphrase statements - don't copy verbatim
-- Preserve the error pattern, not the specific client details
+## ⚠️ CRITICAL: CONFIDENTIALITY RULES ⚠️
+
+**The prompts.py file is in an OPEN SOURCE repository. GT data is CONFIDENTIAL clinical information.**
+
+**NEVER copy ANY of the following from GT into prompts.py:**
+- Real names (people, places, employers, schools, etc.)
+- Actual statements or quotes from GT cases
+- Specific dates, ages, or identifying details
+- Any text that could identify a real person or family
+
+**ALWAYS do this instead:**
+- Invent completely generic examples: "Mom", "Dad", "John", "Sarah", "the client"
+- Create fictional statements that demonstrate the same error pattern
+- Use generic relationships: "my brother", "her mother", "his wife"
+- Use placeholder dates: "last year", "in 2020", "when I was young"
+
+**Example of what NOT to do:**
+```
+# BAD - copying from GT:
+**User statement**: "Aunt Carol has been struggling with her drinking since Uncle Mike died in 2019"
+```
+
+**Example of what TO do:**
+```
+# GOOD - invented generic example with same pattern:
+**User statement**: "My aunt has been struggling since my uncle passed away"
+```
+
+**If you violate this rule, you are leaking confidential clinical data to a public repository.**
 
 #### c. Edit Prompts
 
@@ -180,9 +240,13 @@ Use the `Edit` tool to update `btcopilot/btcopilot/personal/prompts.py`:
 
 #### d. Test Changes
 
-Run the live test harness (re-extracts with current prompts):
+Run the live test harness (re-extracts with current prompts).
+
+**IMPORTANT**: If `INDUCTION_DISCUSSION_ID` env var is set, include `--discussion <id>` flag.
+
 ```bash
-uv run python -m btcopilot.training.test_prompts_live
+uv run python -m btcopilot.training.test_prompts_live --discussion <ID>  # if INDUCTION_DISCUSSION_ID is set
+uv run python -m btcopilot.training.test_prompts_live                    # if no filter
 ```
 
 **Parse F1 scores** from output:

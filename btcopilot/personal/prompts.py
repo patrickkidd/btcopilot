@@ -397,17 +397,70 @@ SECTION 2: EXTRACTION RULES (Operational guidance)
 - **NEVER reuse -1 for every new person** - this causes ID collisions
 - For updates to existing PDP entries, use their existing negative ID
 
+**PERSON EXTRACTION RULES (CRITICAL FOR people_f1):**
+
+- **Extract ALL named individuals**: Any person mentioned by name (first name,
+  full name, or title+name like "Dr Smith", "Aunt Linda") should be extracted
+- **Title handling**: Either include or strip titles (both acceptable):
+  - "Aunt Linda" → "Aunt Linda" or "Linda" (both fine)
+  - "Dr Brezel" → "Dr Brezel" or "Brezel" (both fine)
+- **Extract role-based references as distinct people**: "The Baby", "The Court",
+  "Woman on bus", "my sister's husband" are valid person entries when they refer
+  to distinct individuals mentioned in the statement
+- **AVOID DUPLICATE EXTRACTIONS**: If a person is mentioned both generically
+  ("the doctor") and by name ("Dr Brezel"), extract ONLY the named version.
+  Do NOT extract both "Doctor" and "Dr Brezel" - just "Dr Brezel".
+- **Extract ALL people mentioned, even in passing**: If someone says "Carol Smith
+  was scrutinizing us", extract "Carol Smith" as a person even if they're not a
+  family member. Extract EVERY named person in the statement:
+  - "Watch out for Helen Land" → extract "Helen Land"
+  - "I talked to Greg Sashkin" → extract "Greg Sashkin"
+  - Even if the named person is mentioned by another speaker in the statement
+- **When multiple people are mentioned, extract ALL of them**: "My sister and
+  her husband came over" = extract both sister AND husband
+- **Use possessive patterns for unnamed relations**: When user mentions a
+  relative without a proper name, use the speaker's name + possessive:
+  - If speaker is "Sarah" and says "my mom" → "Sarah's Mom"
+  - If speaker is "Marcus" and says "my girlfriend" → "Marcus' Girlfriend"
+  - If speaker is "User" (unknown name) → "User's Mother"
+  This ensures distinct identification across multiple families
+
 **DELTA EXTRACTION RULES:**
 
-1. **SPARSE OUTPUT**: Most of the time you will likely return very few items,
-   often empty arrays
-2. **NEW ONLY**: If a person is already in the database with the same
+1. **NEW ONLY**: If a person is already in the database with the same
    name/role, don't include them unless you have NEW information about them
-3. **SINGLE EVENTS**: Each user statement typically generates 0-1 new events,
+2. **SINGLE EVENTS**: Each user statement typically generates 0-1 new events,
    not multiple events for the same information
-4. **UPDATE ONLY CHANGED FIELDS**: When updating existing items, include only
+3. **UPDATE ONLY CHANGED FIELDS**: When updating existing items, include only
    the fields that are changing
-5. **BIRTH EVENTS**: When user provides "Name, born MM/DD/YYYY" format, extract BOTH the person AND a birth event with kind="birth" and the provided date
+4. **BIRTH EVENTS**: When user provides "Name, born MM/DD/YYYY" format, extract BOTH the person AND a birth event with kind="birth" and the provided date
+5. **SPARSE EVENTS, NOT PEOPLE**: Events should be sparse (0-1 per statement),
+   but people extraction should be thorough - extract every named person
+
+**EVENT.PERSON ASSIGNMENT (CRITICAL):**
+
+Every Event MUST have the correct `person` field - the ID of the person this
+event is ABOUT or HAPPENED TO. This is the most important field for events.
+
+1. **Look up existing people first**: Before assigning person, check diagram_data
+   for existing people (positive IDs) and PDP entries (negative IDs). Use their
+   exact ID - don't create new entries for people who already exist.
+
+2. **Death events**: `person` = the person who died (NOT the speaker). For
+   "My father died in 1979", person should be father's ID.
+
+3. **Life events (married, bonded, birth)**: `person` = the primary person the
+   event is about. For "We got married", person = the speaker (User ID).
+
+4. **Shift events**: `person` = who is experiencing the shift. If speaker says
+   "He was anxious", person = the "he" being described, not the speaker.
+
+5. **When statement is about someone else**: If User says something about
+   another person (e.g., "My wife was stressed"), person = wife's ID, not User.
+
+6. **Use conversation context**: The user statement may use pronouns ("he",
+   "she", "they") - use conversation history to resolve who is being discussed
+   and look up their ID in the existing diagram_data.
 
 **Instructions:**
 
@@ -442,6 +495,117 @@ DATA_EXTRACTION_EXAMPLES = """
 ═══════════════════════════════════════════════════════════════════════════════
 SECTION 3: EXAMPLES (Error patterns - labeled for learning)
 ═══════════════════════════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [PERSON_NAME_PRESERVE_TITLES]
+# Error Pattern: AI strips honorifics/titles from names
+# CRITICAL: Preserve the EXACT name format including Aunt/Uncle/Dr/etc.
+# ─────────────────────────────────────────────────────────────────────────────
+
+**User statement**: "She has one sister, Aunt Linda, and two brothers, Uncle Tom and Uncle Bill."
+
+❌ WRONG OUTPUT (stripped titles):
+{
+    "people": [
+        {"id": -1, "name": "Linda", "confidence": 0.8},
+        {"id": -2, "name": "Tom", "confidence": 0.8},
+        {"id": -3, "name": "Bill", "confidence": 0.8}
+    ],
+    "events": [],
+    "delete": []
+}
+
+WHY WRONG: The user said "Aunt Linda", "Uncle Tom", "Uncle Bill" - these titles are part of the name as spoken. Stripping them loses important relationship context.
+
+✅ CORRECT OUTPUT:
+{
+    "people": [
+        {"id": -1, "name": "Aunt Linda", "confidence": 0.8},
+        {"id": -2, "name": "Uncle Tom", "confidence": 0.8},
+        {"id": -3, "name": "Uncle Bill", "confidence": 0.8}
+    ],
+    "events": [],
+    "delete": []
+}
+
+**RULE**: Use the EXACT name format the user provides, including ALL titles/honorifics.
+Copy the EXACT characters - same capitalization, no added/removed punctuation:
+- "Aunt Linda" → "Aunt Linda" (NOT "Linda")
+- "Uncle Tom" → "Uncle Tom" (NOT "Tom")
+- "Dr Brezel" → "Dr Brezel" (NOT "Brezel", NOT "Dr. Brezel" - don't add periods!)
+- "Grandma Rose" → "Grandma Rose" (NOT "Rose")
+- "The Baby" → "The Baby" (NOT "The baby" - preserve capitalization!)
+- "The Court" → "The Court" (NOT "the court")
+Stripping titles OR modifying capitalization/punctuation is a CRITICAL ERROR.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [PERSON_DEDUPLICATION_NAMED_VS_GENERIC]
+# Error Pattern: AI extracts both generic role ("Doctor") and specific name ("Dr Brezel")
+# CRITICAL: When both generic and named versions exist, extract ONLY the named one
+# ─────────────────────────────────────────────────────────────────────────────
+
+**User statement**: "The doctor there said to put compresses on. Dr Brezel at St. Margaret's examined her later."
+
+❌ WRONG OUTPUT (duplicate/generic extractions):
+{
+    "people": [
+        {"id": -1, "name": "Doctor", "confidence": 0.8},
+        {"id": -2, "name": "Dr. Brezel", "confidence": 0.8},
+        {"id": -3, "name": "The baby", "confidence": 0.8}
+    ],
+    "events": [],
+    "delete": []
+}
+
+WHY WRONG:
+1. "Doctor" is generic when "Dr Brezel" is named - don't extract both
+2. "Dr. Brezel" has period added - should be "Dr Brezel" exactly as said
+3. "The baby" wasn't the focus of this statement about the doctor
+
+✅ CORRECT OUTPUT:
+{
+    "people": [
+        {"id": -1, "name": "Dr Brezel", "confidence": 0.8}
+    ],
+    "events": [],
+    "delete": []
+}
+
+**RULE**: When both generic ("the doctor") and named ("Dr Brezel") references exist,
+extract ONLY the named version with EXACT spelling (no periods added to "Dr").
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [PERSON_POSSESSIVE_NAMING]
+# Error Pattern: AI uses "Mom" instead of "Speaker's Mom" for disambiguation
+# CRITICAL: Always use speaker's name as prefix for family relations
+# ─────────────────────────────────────────────────────────────────────────────
+
+**Speaker**: Sarah
+
+**User statement**: "My mom was diagnosed with dementia six months ago."
+
+❌ WRONG OUTPUT (missing speaker prefix):
+{
+    "people": [
+        {"id": -1, "name": "Mom", "confidence": 0.8}
+    ],
+    "events": [],
+    "delete": []
+}
+
+✅ CORRECT OUTPUT:
+{
+    "people": [
+        {"id": -1, "name": "Sarah's Mom", "confidence": 0.8}
+    ],
+    "events": [],
+    "delete": []
+}
+
+**RULE**: When extracting unnamed family relations, always prefix with speaker's name:
+- Sarah says "my mom" → "Sarah's Mom"
+- Marcus says "my father" → "Marcus' Father"
+- Unknown speaker → "User's Mother"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # [OVER_EXTRACTION_GENERAL_CHARACTERIZATION]
@@ -866,6 +1030,64 @@ of siblings provided in the user message.)
     "events": [],
     "delete": [-978]
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [EVENT_PERSON_DEATH_EVENT]
+# Error Pattern: AI assigns wrong person ID to death events
+# CRITICAL: The person field = who DIED, not who is speaking
+# ─────────────────────────────────────────────────────────────────────────────
+
+**User statement**: "Yeah, he's deceased right now. He died in January of 1979."
+
+DiagramData: {
+    "people": [
+        {"id": 1, "name": "User", "confidence": 1.0},
+        {"id": 2, "name": "Assistant", "confidence": 1.0}
+    ],
+    "events": [],
+    "pdp": {
+        "people": [
+            {"id": -5, "name": "Father", "confidence": 0.8}
+        ],
+        "events": []
+    }
+}
+
+Conversation context: User was just asked about their father.
+
+❌ WRONG OUTPUT (person is None or User):
+{
+    "people": [],
+    "events": [
+        {
+            "id": -6,
+            "kind": "death",
+            "person": 1,  // WRONG - User didn't die, their father did
+            "description": "Died",
+            "dateTime": "1979-01-01",
+            "confidence": 0.9
+        }
+    ],
+    "delete": []
+}
+
+✅ CORRECT OUTPUT:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -6,
+            "kind": "death",
+            "person": -5,  // CORRECT - Father (ID -5 from PDP) is who died
+            "description": "Died",
+            "dateTime": "1979-01-01",
+            "confidence": 0.9
+        }
+    ],
+    "delete": []
+}
+
+**RULE**: For death events, `person` = the person who died. Look up their ID in the existing diagram_data or PDP. Use pronouns ("he", "she") and conversation context to identify who is being discussed.
 """
 
 # Part 3: Context with template variables ({diagram_data}, {conversation_history}, {user_message})

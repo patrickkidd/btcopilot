@@ -5,7 +5,9 @@ This module calculates F1 scores comparing AI-generated codes (Statement.pdp_del
 to human ground truth codes (Feedback.edited_extraction).
 
 Matching Logic:
-- People: Name similarity > 0.8 (rapidfuzz ratio) AND parents match (ignore if null)
+- People: Fuzzy name matching (token_set_ratio >= 0.6) after stripping titles
+          (Aunt, Uncle, Dr., etc.) AND parents match (ignore if null).
+          "Aunt Carol" matches "Carol", "Dr. Smith" matches "Smith".
 - Events: kind exact + description similarity > 0.5 (80% weight) + date proximity (20% weight, None matches any) + links match
 - PairBonds: person_a/person_b match resolved IDs
 - SARF variables: Macro-F1 across matched events (exact enum match)
@@ -25,6 +27,8 @@ from datetime import datetime
 from typing import Any
 
 from dateutil import parser as date_parser
+import re
+
 from rapidfuzz import fuzz
 from sklearn.metrics import f1_score
 
@@ -35,7 +39,63 @@ _log = logging.getLogger(__name__)
 _f1_cache = {}
 _f1_cache_time = {}
 
-NAME_SIMILARITY_THRESHOLD = 0.8
+NAME_SIMILARITY_THRESHOLD = 0.60
+
+TITLE_PREFIXES = frozenset(
+    [
+        "aunt",
+        "uncle",
+        "dr",
+        "dr.",
+        "mr",
+        "mr.",
+        "mrs",
+        "mrs.",
+        "ms",
+        "ms.",
+        "miss",
+        "sir",
+        "madam",
+        "grandma",
+        "grandpa",
+        "grandmother",
+        "grandfather",
+        "granny",
+        "grammy",
+        "grandad",
+        "granddad",
+        "nana",
+        "papa",
+        "pop",
+        "mom",
+        "dad",
+        "mother",
+        "father",
+        "brother",
+        "sister",
+        "cousin",
+        "nephew",
+        "niece",
+    ]
+)
+
+
+def normalize_name_for_matching(name: str | None) -> str:
+    """
+    Normalize a person's name for fuzzy matching.
+
+    Strips titles like "Aunt", "Uncle", "Dr.", etc. and normalizes whitespace.
+    """
+    if not name:
+        return ""
+    name = name.lower().strip()
+    name = re.sub(r"[^\w\s]", " ", name)
+    words = name.split()
+    while words and words[0] in TITLE_PREFIXES:
+        words.pop(0)
+    return " ".join(words)
+
+
 DESCRIPTION_SIMILARITY_THRESHOLD = 0.5
 DATE_TOLERANCE_DAYS = 7
 DESCRIPTION_WEIGHT = 0.8
@@ -196,11 +256,11 @@ def match_people(
         best_score = 0.0
 
         for gt_person in gt_remaining:
+            ai_name_normalized = normalize_name_for_matching(ai_person.name)
+            gt_name_normalized = normalize_name_for_matching(gt_person.name)
+
             name_sim = (
-                fuzz.ratio(
-                    (ai_person.name or "").lower(), (gt_person.name or "").lower()
-                )
-                / 100.0
+                fuzz.token_set_ratio(ai_name_normalized, gt_name_normalized) / 100.0
             )
 
             if name_sim < NAME_SIMILARITY_THRESHOLD:

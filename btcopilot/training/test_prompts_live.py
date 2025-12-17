@@ -78,7 +78,7 @@ def test_prompts_live(detailed=False, discussion_id=None):
 
             # Re-extract with current prompts
             _, fresh_deltas = asyncio.run(
-                pdp.update(discussion, diagram_data, stmt.text)
+                pdp.update(discussion, diagram_data, stmt.text, stmt.order)
             )
 
             fresh_extraction = asdict(fresh_deltas) if fresh_deltas else {}

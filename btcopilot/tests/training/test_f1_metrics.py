@@ -11,6 +11,7 @@ from btcopilot.training.f1_metrics import (
     invalidate_f1_cache,
     normalize_pdp_for_comparison,
     calculate_hierarchical_sarf_f1,
+    normalize_name_for_matching,
     F1Metrics,
     SARFVariableF1,
 )
@@ -80,6 +81,69 @@ def test_match_people_below_threshold():
     assert len(result.ai_unmatched) == 1
     assert len(result.gt_unmatched) == 1
     assert id_map == {}
+
+
+def test_match_people_with_title_prefix():
+    """Aunt Carol should match Carol"""
+    ai_people = [Person(id=-1, name="Aunt Carol")]
+    gt_people = [Person(id=-2, name="Carol")]
+
+    result, id_map = match_people(ai_people, gt_people)
+
+    assert len(result.matched_pairs) == 1
+    assert id_map == {-1: -2}
+
+
+def test_match_people_with_dr_prefix():
+    """Dr. Smith should match Smith"""
+    ai_people = [Person(id=-1, name="Dr. Smith")]
+    gt_people = [Person(id=-2, name="Smith")]
+
+    result, id_map = match_people(ai_people, gt_people)
+
+    assert len(result.matched_pairs) == 1
+    assert id_map == {-1: -2}
+
+
+def test_match_people_with_uncle_prefix():
+    """Uncle Bob should match Bob"""
+    ai_people = [Person(id=-1, name="Uncle Bob")]
+    gt_people = [Person(id=-2, name="Bob")]
+
+    result, id_map = match_people(ai_people, gt_people)
+
+    assert len(result.matched_pairs) == 1
+    assert id_map == {-1: -2}
+
+
+def test_match_people_grandma_prefix():
+    """Grandma Jones should match Jones"""
+    ai_people = [Person(id=-1, name="Grandma Jones")]
+    gt_people = [Person(id=-2, name="Jones")]
+
+    result, id_map = match_people(ai_people, gt_people)
+
+    assert len(result.matched_pairs) == 1
+    assert id_map == {-1: -2}
+
+
+def test_normalize_name_strips_titles():
+    assert normalize_name_for_matching("Aunt Carol") == "carol"
+    assert normalize_name_for_matching("Dr. Smith") == "smith"
+    assert normalize_name_for_matching("Uncle Bob") == "bob"
+    assert normalize_name_for_matching("Grandma Jones") == "jones"
+    assert normalize_name_for_matching("Mr. John Doe") == "john doe"
+    assert normalize_name_for_matching("Mrs. Jane Smith") == "jane smith"
+
+
+def test_normalize_name_preserves_non_title_names():
+    assert normalize_name_for_matching("Carol") == "carol"
+    assert normalize_name_for_matching("John Doe") == "john doe"
+
+
+def test_normalize_name_handles_empty():
+    assert normalize_name_for_matching("") == ""
+    assert normalize_name_for_matching(None) == ""
 
 
 def test_match_people_extra_ai_detection():

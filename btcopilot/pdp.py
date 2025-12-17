@@ -167,8 +167,10 @@ def cumulative(discussion, up_to_statement) -> PDP:
     events_by_id = {}
     pair_bonds_by_id = {}
 
+    up_to_order = up_to_statement.order or 0
     for stmt in sorted_statements:
-        if up_to_statement.id and stmt.id < up_to_statement.id and stmt.pdp_deltas:
+        stmt_order = stmt.order or 0
+        if stmt_order < up_to_order and stmt.pdp_deltas:
             if "people" in stmt.pdp_deltas:
                 for person_data in stmt.pdp_deltas["people"]:
                     person = Person(**person_data)
@@ -195,9 +197,21 @@ def cumulative(discussion, up_to_statement) -> PDP:
 
 
 async def update(
-    discussion, diagram_data: DiagramData, user_message: str
+    discussion,
+    diagram_data: DiagramData,
+    user_message: str,
+    up_to_order: int | None = None,
 ) -> tuple[PDP, PDPDeltas]:
+    """
+    Extract PDP deltas from a user message.
 
+    Args:
+        discussion: The Discussion object
+        diagram_data: Current diagram data with PDP context
+        user_message: The statement text to extract from
+        up_to_order: If provided, only include conversation history up to this order.
+                    Used during batch extraction to avoid seeing future statements.
+    """
     from btcopilot.personal.prompts import (
         DATA_EXTRACTION_PROMPT,
         DATA_EXTRACTION_EXAMPLES,
@@ -212,12 +226,26 @@ async def update(
     )
 
     # Assemble full prompt: header+rules, examples, context with data
+    conversation_history = discussion.conversation_history(up_to_order)
+    diagram_data_dict = asdict(diagram_data)
+
+    # Debug logging for prompt inputs
+    _log.info(
+        f"PDP UPDATE INPUTS:\n"
+        f"  up_to_order: {up_to_order}\n"
+        f"  user_message length: {len(user_message)}\n"
+        f"  conversation_history length: {len(conversation_history)}\n"
+        f"  diagram_data.pdp.people: {[p.name for p in diagram_data.pdp.people]}\n"
+        f"  diagram_data.pdp.events count: {len(diagram_data.pdp.events)}\n"
+        f"  diagram_data.people count: {len(diagram_data.people)}\n"
+    )
+
     data_extraction_prompt = (
         DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
         + DATA_EXTRACTION_EXAMPLES
         + DATA_EXTRACTION_CONTEXT.format(
-            diagram_data=asdict(diagram_data),
-            conversation_history=discussion.conversation_history(),
+            diagram_data=diagram_data_dict,
+            conversation_history=conversation_history,
             user_message=user_message,
         )
     )
