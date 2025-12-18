@@ -120,6 +120,35 @@ GT has only 11 anxiety events across 74 cases - very sparse signal
 
 **Fix applied**: Changed rule from "0-1 events per statement" to "separate events per issue". Partially helped.
 
+### 6. Date Matching Failure (Critical - NEW as of 2025-12-18)
+
+**Problem**: F1 metric's 7-day date tolerance fails on relative dates.
+
+**Evidence from 2025-12-18 run**:
+```
+Statement 1838: "Trouble sleeping" at 100% description similarity
+- GT dateTime: 2025-06-01
+- AI dateTime: 2025-12-17
+- Date difference: 199 days → NO MATCH (requires ≤7 days)
+
+Statement 1856: "Fell apart when mother died" at 69% similarity
+- GT dateTime: 2025-12-15
+- AI dateTime: 2018-01-01 (correctly dated to when grandma died)
+- Date difference: 2905 days → NO MATCH
+```
+
+**Root causes**:
+1. AI interprets "six months ago" from current runtime date
+2. GT uses incorrect dates (2025-12-15 for events from 2018)
+3. DATE_TOLERANCE_DAYS = 7 is too strict for relative expressions
+
+**Impact**: Even 100% description matches fail due to date mismatch. This blocks ALL Events F1 improvement.
+
+**Required fixes (MUST be done before next induction run)**:
+- [ ] Increase DATE_TOLERANCE_DAYS from 7 to 30-90 days in f1_metrics.py
+- [ ] Review and correct GT event dates (especially discussion 36)
+- [ ] Consider semantic date matching for relative expressions
+
 ---
 
 ## Established Best Practices
@@ -149,6 +178,9 @@ GT has only 11 anxiety events across 74 cases - very sparse signal
 2. Adding percentage guidance ("only ~10-15% should have anxiety") - too constraining
 3. Shortening description instruction (broke other patterns)
 4. Verbose academic definitions (doubled prompt size, killed F1)
+5. Divorce event extraction example (2025-12-18) - no improvement, dates block matching
+6. Adding "away"/"toward" relationship kinds (2025-12-18) - no improvement, model already handles
+7. Verb phrase description style guidance (2025-12-18) - no improvement, dates block matching
 
 **Key insight**: The model is extremely sensitive to SARF-related prompt changes. Small modifications cause the model to stop coding SARF variables entirely.
 
