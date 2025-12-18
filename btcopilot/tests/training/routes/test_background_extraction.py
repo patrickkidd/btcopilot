@@ -17,7 +17,6 @@ from btcopilot.schema import (
 
 @patch("btcopilot.training.routes.discussions.pdp.update")
 def test_extract_next_statement(mock_pdp_update, mock_celery, flask_app, discussion):
-    """Test that background processing works for one unprocessed Subject statement at a time"""
 
     # Setup: Clear pdp_deltas to make Subject statements unprocessed and enable extracting
     for statement in discussion.statements:
@@ -91,11 +90,12 @@ def test_extract_next_statement(mock_pdp_update, mock_celery, flask_app, discuss
 
     # Verify the function was called with correct arguments for the first statement
     call_args = mock_pdp_update.call_args[0]
-    assert len(call_args) == 3
-    discussion, database, text = call_args
+    assert len(call_args) == 4
+    discussion, database, text, up_to_order = call_args
     assert isinstance(discussion, Discussion)
     assert isinstance(database, DiagramData)
     assert text == "I'm feeling anxious about work lately"
+    assert up_to_order == 0  # First statement has order=0
 
     db.session.refresh(subject_statements[0])
     db.session.refresh(subject_statements[1])
@@ -120,7 +120,6 @@ def test_extract_next_statement(mock_pdp_update, mock_celery, flask_app, discuss
 
 @patch("btcopilot.training.routes.discussions.pdp.update")
 def test_extract_next_statement_error_handling(mock_pdp_update, flask_app, discussion):
-    """Test that errors in processing individual statements return False and don't crash"""
 
     # Setup: Clear pdp_deltas to make Subject statements unprocessed and enable extracting
     for statement in discussion.statements:
@@ -175,7 +174,6 @@ def test_extract_next_statement_error_handling(mock_pdp_update, flask_app, discu
 
 @patch("btcopilot.training.routes.discussions.pdp.update")
 def test_extract_next_statement_idempotent(mock_pdp_update, flask_app, discussion):
-    """Test that once a statement is processed, it won't be processed again"""
 
     # Setup: Clear pdp_deltas to make Subject statements unprocessed and enable extracting
     for statement in discussion.statements:
@@ -204,7 +202,6 @@ def test_extract_next_statement_idempotent(mock_pdp_update, flask_app, discussio
 
 
 def test_extract_next_statement_no_statements(flask_app, test_user):
-    """Test that the job handles cases with no statements gracefully"""
 
     # Create a discussion with no statements
     discussion = Discussion(user_id=test_user.id, summary="Empty discussion")
@@ -221,7 +218,6 @@ def test_extract_next_statement_no_statements(flask_app, test_user):
 
 @patch("btcopilot.training.routes.discussions.pdp.update")
 def test_extract_next_statement_ordering(mock_pdp_update, flask_app, test_user):
-    """Test that statements are processed in correct order (by discussion_id then statement_id)"""
 
     # Create two discussions with statements in reverse creation order
     discussion2 = Discussion(
@@ -264,7 +260,7 @@ def test_extract_next_statement_ordering(mock_pdp_update, flask_app, test_user):
 
     processed_texts = []
 
-    async def mock_async_update(discussion, database, text):
+    async def mock_async_update(discussion, database, text, up_to_order):
         processed_texts.append(text)
         return (DiagramData().pdp, PDPDeltas(events=[], people=[]))
 

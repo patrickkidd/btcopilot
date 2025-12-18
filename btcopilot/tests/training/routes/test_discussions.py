@@ -23,15 +23,13 @@ from btcopilot.tests.training.conftest import flask_json
 
 
 def test_audit(auditor, discussion):
-    discussion_id = discussion.id
-    response = auditor.get(f"/training/discussions/{discussion_id}")
+    response = auditor.get(f"/training/discussions/{discussion.id}")
     assert response.status_code == 200
     assert response.data is not None
 
 
 def test_audit_403(subscriber, discussion):
-    discussion_id = discussion.id
-    response = subscriber.get(f"/training/discussions/{discussion_id}")
+    response = subscriber.get(f"/training/discussions/{discussion.id}")
     assert response.status_code == 403
 
 
@@ -129,8 +127,7 @@ def test_delete_failed_non_owner(logged_in, test_user_2):
 
 
 def test_delete_success(admin, discussion):
-    discussion_id = discussion.id
-    response = admin.delete(f"/training/discussions/{discussion_id}")
+    response = admin.delete(f"/training/discussions/{discussion.id}")
     assert response.status_code == 200
     assert response.json["success"] is True
 
@@ -731,15 +728,12 @@ def test_clear_ai_extractions_resets_diagram_pdp(admin, discussion_with_statemen
     )
     assert response.status_code == 200
 
-    # Verify diagram PDP was reset to only base people
+    # Verify diagram PDP was completely reset
     db.session.refresh(discussion)
     database = discussion.diagram.get_diagram_data()
-    assert len(database.pdp.people) == 2
-    assert database.pdp.people[0].id == 1
-    assert database.pdp.people[0].name == "User"
-    assert database.pdp.people[1].id == 2
-    assert database.pdp.people[1].name == "Assistant"
+    assert len(database.pdp.people) == 0
     assert len(database.pdp.events) == 0
+    assert len(database.pdp.pair_bonds) == 0
 
 
 @pytest.mark.e2e

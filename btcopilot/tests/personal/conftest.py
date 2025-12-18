@@ -97,7 +97,19 @@ def discussion(test_user):
         discussion_id=discussion.id,
         speaker_id=expert_speaker.id,
         text="Hi there",
-        pdp_deltas={"events": [{"symptom": {"shift": "better"}}]},
+        pdp_deltas={
+            "events": [
+                {
+                    "id": 1,
+                    "kind": "shift",
+                    "person": 1,
+                    "symptom": "up",
+                    "description": "Feeling better",
+                }
+            ],
+            "people": [],
+            "pair_bonds": [],
+        },
         order=1,
     )
     db.session.add_all([statement1, statement2])

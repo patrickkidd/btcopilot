@@ -12,6 +12,7 @@ from btcopilot.schema import (
     Event,
     PairBond,
     asdict,
+    from_dict,
 )
 
 _log = logging.getLogger(__name__)
@@ -173,19 +174,19 @@ def cumulative(discussion, up_to_statement) -> PDP:
         if stmt_order < up_to_order and stmt.pdp_deltas:
             if "people" in stmt.pdp_deltas:
                 for person_data in stmt.pdp_deltas["people"]:
-                    person = Person(**person_data)
+                    person = from_dict(Person, person_data)
                     if person.id:
                         people_by_id[person.id] = person
 
             if "events" in stmt.pdp_deltas:
                 for event_data in stmt.pdp_deltas["events"]:
-                    event = Event(**event_data)
+                    event = from_dict(Event, event_data)
                     if event.id:
                         events_by_id[event.id] = event
 
             if "pair_bonds" in stmt.pdp_deltas:
                 for pair_bond_data in stmt.pdp_deltas["pair_bonds"]:
-                    pair_bond = PairBond(**pair_bond_data)
+                    pair_bond = from_dict(PairBond, pair_bond_data)
                     if pair_bond.id:
                         pair_bonds_by_id[pair_bond.id] = pair_bond
 
