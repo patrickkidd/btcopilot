@@ -126,6 +126,14 @@ Documentation for the F1 metrics system that evaluates AI extraction quality aga
 - **Use When**: Modifying extraction prompts, running prompt induction, or diagnosing F1 score issues
 - **Related**: [doc/TODO_GEMINI_SCHEMA.md](doc/TODO_GEMINI_SCHEMA.md) (deferred Gemini optimizations)
 
+### Prompt Engineering Extraction Strategy
+**SYSTEMATIC IMPROVEMENT PROCESS**: Strategy and process for improving SARF extraction F1 scores when automated induction plateaus.
+- **File**: [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md)
+- **Purpose**: Documents known blockers, manual troubleshooting process, metrics-driven priorities, and recommended actions
+- **Includes**: Current F1 baseline, root cause analysis (event matching brittleness, model stochasticity, sparse GT), established best practices, manual investigation workflow
+- **Use When**: F1 scores are low, prompt induction stops improving, or planning next optimization steps
+- **Self-updating**: Document should be updated after each induction run or manual investigation
+
 ## Development rules
 
 - At this stage we are not concerned with legacy data, we woudl rather delete

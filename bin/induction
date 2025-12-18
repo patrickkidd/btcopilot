@@ -21,6 +21,7 @@ import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent
+THEAPP_ROOT = PROJECT_ROOT.parent
 
 # ANSI colors
 RED = "\033[0;31m"
@@ -434,9 +435,23 @@ Examples (run from btcopilot/):
 
     prompt = build_prompt(args.focus, focus_info, args.discussion)
 
+    # Sandbox settings to restrict writes to theapp directory
+    sandbox_settings = json.dumps({
+        "sandbox": {
+            "enabled": True,
+            "autoAllowBashIfSandboxed": True,
+            "allowedDirectories": [str(THEAPP_ROOT)],
+        }
+    })
+
     try:
         result = subprocess.run(
-            ["claude", "--dangerously-skip-permissions", prompt],
+            [
+                "claude",
+                "--dangerously-skip-permissions",
+                "--settings", sandbox_settings,
+                prompt,
+            ],
             cwd=PROJECT_ROOT,
         )
         if result.returncode != 0:

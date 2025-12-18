@@ -31,6 +31,77 @@ Check environment variables for focus configuration:
 
 **If no focus is specified:** Optimize aggregate F1 as usual.
 
+## Bootstrap Mode (for near-zero metrics)
+
+**After establishing baseline, check if any focused metric has F1 < 0.20.**
+
+When a metric is near-zero, incremental refinements won't help - the prompt instructions for that field are fundamentally broken. Bootstrap mode allows aggressive rewrites to establish a working baseline.
+
+### Triggering Bootstrap Mode
+
+Bootstrap mode activates automatically when:
+- A focused metric (`INDUCTION_FOCUS_METRIC`) has baseline F1 < 0.20, OR
+- Any individual metric has F1 < 0.10 (catastrophic failure)
+
+Log when entering bootstrap mode:
+```json
+{"type": "bootstrap_start", "timestamp": "ISO8601", "trigger_metric": "anxiety", "trigger_f1": 0.05, "reason": "F1 below 0.20 threshold"}
+```
+
+### Bootstrap Strategy (replaces normal iteration rules)
+
+**Phase 1: Diagnosis (1 iteration)**
+
+Before rewriting, understand WHY the metric is failing:
+1. **Schema mismatch?** - Is the field defined but never extracted?
+2. **Systematic errors?** - Are extractions always wrong in the same way?
+3. **Missing examples?** - Are there zero examples for this field in SECTION 3?
+4. **Conflicting rules?** - Do SECTION 2 rules contradict SARF definitions?
+
+Log diagnosis:
+```json
+{"type": "bootstrap_diagnosis", "metric": "anxiety", "failure_mode": "never_extracted|systematic_error|missing_examples|conflicting_rules", "details": "..."}
+```
+
+**Phase 2: Aggressive Rewrite (2-4 iterations)**
+
+In bootstrap mode, you MAY:
+- **Replace entire subsections** related to the broken metric
+- **Rewrite field definitions** in SECTION 1 from scratch using SARF definitions
+- **Add 2-3 examples at once** specifically for the broken field
+- **Remove conflicting instructions** that may be suppressing extraction
+
+Rules still apply:
+- Only rewrite sections DIRECTLY related to the broken metric
+- Preserve instructions for OTHER metrics that are working
+- Still test after each change and revert if aggregate F1 drops significantly (>0.05)
+- Still respect the 15-example budget (may need to remove unrelated examples)
+
+**Phase 3: Stabilization (exit bootstrap)**
+
+Exit bootstrap mode when the target metric reaches F1 ≥ 0.25:
+```json
+{"type": "bootstrap_end", "metric": "anxiety", "start_f1": 0.05, "end_f1": 0.31, "iterations_in_bootstrap": 3}
+```
+
+After exiting, return to normal incremental refinement rules.
+
+### Bootstrap Mode Limits
+
+- **Max 5 iterations in bootstrap** - if metric doesn't reach 0.25 F1, stop and report
+- **Don't sacrifice working metrics** - if aggregate F1 drops >0.10, abort bootstrap and revert
+- **One metric at a time** - if multiple metrics are broken, bootstrap the focused one first
+
+### When Bootstrap Fails
+
+If after 5 bootstrap iterations the metric is still < 0.20:
+1. Log failure: `{"type": "bootstrap_failed", "metric": "...", "final_f1": 0.12}`
+2. Revert all bootstrap changes
+3. Report in summary: "Bootstrap failed for [metric] - likely needs schema change or GT review"
+4. Continue with normal iterations for other metrics
+
+This prevents infinite thrashing on fundamentally broken configurations.
+
 ## User Steering (Interactive Mode)
 
 **At the start of EACH iteration**, read `instance/steering.md` if it exists. This file contains real-time guidance from the user watching your progress.
@@ -59,7 +130,18 @@ fi
 
 Start by establishing your baseline:
 
-a. **Initialize run folder and log**: Create timestamped folder immediately
+a. **Read strategy document FIRST**: `btcopilot/doc/PROMPT_ENG_EXTRACTION_STRATEGY.md`
+   - **CRITICAL**: This document contains cumulative lessons from ALL previous runs
+   - Read the entire document before making any decisions
+   - Pay special attention to:
+     - **Known Blockers** - understand what's fundamentally limiting F1
+     - **Things that worked/failed** - don't repeat failed experiments
+     - **Priority order** - focus on Events F1 first if it's below 0.3
+   - **NOTE**: The "F1 Baseline" in the strategy doc may be stale - your live test run (step h) will establish the actual current baseline
+   - If the document says a technique "failed", do NOT try it again unless you have a substantially different approach
+   - Log that you read the strategy doc: `{"type": "strategy_read", "timestamp": "...", "blockers_noted": ["event_matching_brittleness", "model_stochasticity", ...], "failed_techniques_noted": ["negative_examples_for_sarf", ...]}`
+
+b. **Initialize run folder and log**: Create timestamped folder immediately
    ```bash
    # Generate timestamp for this run
    TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
@@ -82,7 +164,7 @@ a. **Initialize run folder and log**: Create timestamped folder immediately
    - Every action from this point forward MUST be logged to this file
    - Log format: JSON Lines (one JSON object per line)
 
-b. **Read previous run history**: `btcopilot/induction-reports/*/`
+c. **Read previous run history**: `btcopilot/induction-reports/*/`
    - **CRITICAL**: Before proposing ANY change, check what previous runs tried
    - Read the most recent 3-5 log files (`*_log.jsonl`) to see:
      - What changes were attempted and their outcomes (kept/reverted)
@@ -92,11 +174,11 @@ b. **Read previous run history**: `btcopilot/induction-reports/*/`
    - If a change was tried and reverted in a recent run, note this and try something else
    - This prevents oscillation between the same changes across runs
 
-c. **Read ground truth**: `instance/gt_export.json`
+d. **Read ground truth**: `instance/gt_export.json`
    - Contains AI extractions vs. human-corrected ground truth
    - Each case has: statement text, AI extraction, GT extraction, expert feedback
 
-d. **Read data model documentation**: `btcopilot/doc/DATA_MODEL_FLOW.md`
+e. **Read data model documentation**: `btcopilot/doc/DATA_MODEL_FLOW.md`
    - Explains how PDPDeltas, PDP, DiagramData, Person, Event all relate
    - **Key concepts to understand**:
      - Negative IDs (-1, -2, ...) = uncommitted PDP items; Positive IDs = committed
@@ -105,7 +187,7 @@ d. **Read data model documentation**: `btcopilot/doc/DATA_MODEL_FLOW.md`
      - `apply_deltas()` handles adds, updates, and deletes
    - This context helps you write better examples showing correct delta structure
 
-e. **Read SARF operational definitions**: `btcopilot/doc/sarf-definitions/*.md`
+f. **Read SARF operational definitions**: `btcopilot/doc/sarf-definitions/*.md`
    - These are the authoritative clinical definitions for all SARF variables
    - **CRITICAL**: All prompt edits MUST align with these definitions
    - Key files to read based on focus area:
@@ -115,7 +197,7 @@ e. **Read SARF operational definitions**: `btcopilot/doc/sarf-definitions/*.md`
      - Relationship patterns: `04-conflict.md`, `05-distance.md`, `06-cutoff.md`, `07-overfunctioning.md`, `08-underfunctioning.md`, `09-projection.md`, `10-inside.md`, `11-outside.md`, `12-definedself.md`
    - When editing prompts, use these definitions as initial hypothesis to improve F1 scores
 
-f. **Read current prompts**: `btcopilot/btcopilot/personal/prompts.py`
+g. **Read current prompts**: `btcopilot/btcopilot/personal/prompts.py`
    - Three-part structure (concatenated at runtime in pdp.py):
      - `DATA_EXTRACTION_PROMPT` - Header + SECTION 1 + SECTION 2 (with {current_date} variable)
      - `DATA_EXTRACTION_EXAMPLES` - SECTION 3 examples (no variables, literal JSON - edit freely)
@@ -126,7 +208,7 @@ f. **Read current prompts**: `btcopilot/btcopilot/personal/prompts.py`
      - SECTION 3: EXAMPLES (error patterns - in DATA_EXTRACTION_EXAMPLES)
    - Split structure avoids brace-escaping in JSON examples
 
-g. **Establish baseline**: Run test to get starting F1 scores
+h. **Establish baseline**: Run test to get starting F1 scores
 
    **IMPORTANT**: Check if `INDUCTION_DISCUSSION_ID` environment variable is set. If so, pass `--discussion <id>` to filter to that single discussion for faster iteration.
 
@@ -139,8 +221,9 @@ g. **Establish baseline**: Run test to get starting F1 scores
    - Parse and record all F1 scores (aggregate, people, events, symptom, anxiety, relationship, functioning)
    - This is your baseline to beat
    - **LOG THIS**: Write baseline entry to log file (see Logging section)
+   - **CHECK FOR BOOTSTRAP**: If focused metric F1 < 0.20 or any metric F1 < 0.10, enter Bootstrap Mode (see above)
 
-h. **Identify holdout cases for overfitting detection**:
+i. **Identify holdout cases for overfitting detection**:
    - From `gt_export.json`, mentally note 20% of cases (every 5th case) as "holdout"
    - During iterations, focus error analysis on the non-holdout 80%
    - At end of run, check if holdout cases improved similarly to training cases
@@ -149,7 +232,7 @@ h. **Identify holdout cases for overfitting detection**:
      - Log: `{"type": "overfit_warning", "training_f1": X, "holdout_f1": Y}`
    - This prevents optimizing for specific GT cases at expense of generalization
 
-i. **Create todo list**: Track up to 10 iterations using TodoWrite
+j. **Create todo list**: Track up to 10 iterations using TodoWrite
 
 ### 2. Iteration Loop
 
@@ -492,7 +575,7 @@ The prompts are tuned for **Gemini 2.0 Flash** with structured JSON output (via 
 
 1. **One change at a time** - Don't batch multiple improvements in single iteration
 2. **Test after every edit** - Always validate with test_prompts.py before next iteration
-3. **Preserve what works** - Follow prompt tuning rules: ADD nuance, don't replace sections
+3. **Preserve what works** - Follow prompt tuning rules: ADD nuance, don't replace sections (exception: Bootstrap Mode allows aggressive rewrites for broken metrics)
 4. **Revert if worse** - If F1 drops, immediately undo that iteration's changes
 5. **Focus on top errors** - Don't try to fix everything at once, prioritize impact
 6. **Stop early** - If plateaued (3 iterations with <1% improvement), report and finish
@@ -523,6 +606,9 @@ Your induction run is successful if:
 - `btcopilot/doc/DATA_MODEL_FLOW.md` - Data model documentation (PDPDeltas structure, ID conventions, sparse delta pattern)
 - `btcopilot/doc/sarf-definitions/*.md` - Authoritative SARF variable definitions (consult when editing prompts)
 - `btcopilot/induction-reports/*/_log.jsonl` - Previous run logs (check before proposing changes to avoid oscillation)
+
+**Read at start, propose updates at end**:
+- `btcopilot/doc/PROMPT_ENG_EXTRACTION_STRATEGY.md` - **CRITICAL**: Cumulative strategy doc with lessons from ALL runs. Read FIRST before any iterations. Propose updates at end of run (see "Strategy Document Updates" section).
 
 **Read-write**:
 - `btcopilot/btcopilot/personal/prompts.py` - Target for improvements (three parts):
@@ -705,19 +791,89 @@ Each entry is a single JSON line. Append entries using `echo '...' >> LOG_FILE`.
 
 ---
 
+## Strategy Document Updates
+
+**At the end of EVERY run**, propose updates to `btcopilot/doc/PROMPT_ENG_EXTRACTION_STRATEGY.md`.
+
+### What to Update
+
+Based on your run results, identify updates for each relevant section:
+
+1. **F1 Baseline** (if sustained improvement achieved):
+   - Update the scores table with new baseline
+   - Note the date of update
+
+2. **Known Blockers** (if you discovered a new blocker):
+   - Add new blockers with evidence and potential fixes
+   - If you found a solution to an existing blocker, mark it resolved
+
+3. **Things that worked/failed** (ALWAYS update this):
+   - Add any technique you tried that improved F1 to "worked"
+   - Add any technique you tried that hurt F1 or was reverted to "failed"
+   - Be specific: "Adding EVENT EXTRACTION CHECKLIST to prompt → Events F1 +0.05"
+
+4. **Next Recommended Actions** (update priorities):
+   - Check off items you completed
+   - Add new recommended actions based on your findings
+   - Reprioritize if needed
+
+### How to Propose Updates
+
+Include a "Strategy Document Updates" section in your final report with:
+
+```markdown
+## Strategy Document Updates
+
+**Proposed edits to `btcopilot/doc/PROMPT_ENG_EXTRACTION_STRATEGY.md`:**
+
+### Section: "Things that worked"
+Add:
+- [New technique]: [Result with F1 delta]
+
+### Section: "Things that failed"
+Add:
+- [Technique that failed]: [Why it failed]
+
+### Section: "F1 Baseline"
+Update aggregate F1 from 0.XX to 0.YY (if sustained improvement)
+
+### Section: "Next Recommended Actions"
+- [ ] Mark completed: [action you did]
+- [ ] Add new: [new recommended action]
+```
+
+**Then make the actual edits** using the `Edit` tool to update the strategy doc directly. Log the update:
+
+```json
+{"type": "strategy_update", "timestamp": "...", "sections_updated": ["things_that_worked", "f1_baseline"], "summary": "Added EVENT EXTRACTION CHECKLIST to worked techniques, updated Events F1 baseline to 0.18"}
+```
+
+### Why This Matters
+
+The strategy document is the **cumulative memory** across all induction runs. Without updates:
+- Future runs will waste time re-trying failed techniques
+- Successful improvements won't be preserved as institutional knowledge
+- The document becomes stale and useless
+
+**This is NOT optional.** Every run MUST propose and apply updates.
+
+---
+
 ## Now Begin
 
 Start your autonomous induction now.
 
-1. **Create log file first** - `btcopilot/induction-reports/TIMESTAMP_log.jsonl`
-2. Log run_start entry (with focus info if provided via env vars)
-3. Use `TodoWrite` to create iteration tracking (Iterations 1-10)
-4. Read `instance/gt_export.json` and `btcopilot/btcopilot/personal/prompts.py`
-5. Run baseline test and log baseline entry
-6. Begin iteration loop (log each iteration)
-7. Log convergence/completion
-8. Generate report
-9. Log run_end entry
-10. Report results to user
+1. **Read strategy doc first** - `btcopilot/doc/PROMPT_ENG_EXTRACTION_STRATEGY.md`
+2. **Create log file** - `btcopilot/induction-reports/TIMESTAMP_log.jsonl`
+3. Log run_start and strategy_read entries
+4. Use `TodoWrite` to create iteration tracking (Iterations 1-10)
+5. Read `instance/gt_export.json` and `btcopilot/btcopilot/personal/prompts.py`
+6. Run baseline test and log baseline entry
+7. Begin iteration loop (log each iteration)
+8. Log convergence/completion
+9. Generate report (including Strategy Document Updates section)
+10. **Update strategy doc** - Apply proposed edits and log strategy_update
+11. Log run_end entry
+12. Report results to user
 
-Remember: **ADD nuance, don't replace. Preserve existing careful tuning.**
+Remember: **ADD nuance, don't replace. Preserve existing careful tuning.** (Exception: Bootstrap Mode for metrics with F1 < 0.20 allows aggressive rewrites.)

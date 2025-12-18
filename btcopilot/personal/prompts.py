@@ -295,6 +295,13 @@ The database contains people and events indicating shifts in certain variables. 
   with") - these are NOT events unless tied to a specific incident with a
   timeframe
 
+**EVENT EXTRACTION CHECKLIST** (all must be YES to create an event):
+1. Is there a SPECIFIC INCIDENT (not a general pattern)?
+2. Is there a TIME REFERENCE (even vague like "last week", "in 1979")?
+3. Can you identify WHO the event is about (existing person in diagram_data)?
+4. Is this event NOT already captured in diagram_data.pdp.events?
+If any answer is NO, do NOT create the event.
+
 Entries in the PDP have confidence < 1.0 and negative integer IDs assigned by you. Committed entries have confidence = 1.0 and positive integer IDs (already in database).
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -329,6 +336,17 @@ SECTION 1: DATA MODEL (Semantic definitions - what things mean)
   For relationship shifts (arguments, distancing, triangles), use `kind:
   "shift"` and set the `relationship` field. For life events (married, birth,
   death), use the appropriate EventKind.
+
+  **CRITICAL EventKind Selection:**
+  - `"bonded"`: Use for moving in together, cohabitation, living together,
+    or forming of strong romantic and emotional attachment.
+    (NOT "moved" - that's for geographic relocation to a new place)
+  - `"moved"`: Use ONLY for geographic relocation (moving to new city/house)
+  - `"married"`: Use for wedding/marriage events
+  - `"death"`: Use for when someone dies
+  - `"birth"`: Use for when someone is born (always include dateTime)
+  - `"shift"`: Use for all other changes in functioning, symptoms, anxiety,
+    or relationships
 
   **Do NOT create events for**:
   - General characterizations ("he's difficult", "we don't get along")
@@ -456,30 +474,33 @@ SECTION 2: EXTRACTION RULES (Operational guidance)
    For events, create one event per distinct issue/symptom (can be multiple
    events per statement if multiple issues are mentioned)
 
-**EVENT.PERSON ASSIGNMENT (CRITICAL):**
+**EVENT.PERSON ASSIGNMENT (CRITICAL FOR MATCHING):**
 
 Every Event MUST have the correct `person` field - the ID of the person this
-event is ABOUT or HAPPENED TO. This is the most important field for events.
+event is ABOUT or HAPPENED TO. **Events without correct person IDs will not
+match ground truth and lower F1 scores.**
 
-1. **Look up existing people first**: Before assigning person, check diagram_data
-   for existing people (positive IDs) and PDP entries (negative IDs). Use their
-   exact ID - don't create new entries for people who already exist.
+**MANDATORY STEPS:**
+1. **FIRST, scan diagram_data.people and diagram_data.pdp.people** for existing
+   people. Look for matching names (including partial matches like "Father" in
+   "User's Father").
+2. **Use the EXACT ID from the existing data** - never create a new person if
+   one already exists with a matching name/role.
+3. **For pronouns ("he", "she", "they")**, check conversation_history to
+   identify who is being discussed, then find their ID in diagram_data.
 
-2. **Death events**: `person` = the person who died (NOT the speaker). For
-   "My father died in 1979", person should be father's ID.
+**Person Assignment Rules:**
+- `"death"` events: `person` = the person who DIED (not the speaker)
+- `"birth"` events: `person` = the person who was BORN, `child` = same ID
+- `"married"` events: `person` = User or speaker, `spouse` = the other person
+- `"bonded"` events: `person` = one partner, `spouse` = the other partner
+- `"shift"` events: `person` = who is experiencing/displaying the shift
 
-3. **Life events (married, bonded, birth)**: `person` = the primary person the
-   event is about. For "We got married", person = the speaker (User ID).
-
-4. **Shift events**: `person` = who is experiencing the shift. If speaker says
-   "He was anxious", person = the "he" being described, not the speaker.
-
-5. **When statement is about someone else**: If User says something about
-   another person (e.g., "My wife was stressed"), person = wife's ID, not User.
-
-6. **Use conversation context**: The user statement may use pronouns ("he",
-   "she", "they") - use conversation history to resolve who is being discussed
-   and look up their ID in the existing diagram_data.
+**CRITICAL**: When the speaker says "he", "she", "my father", "his wife" etc.,
+you MUST resolve this to an actual person ID from the diagram_data. Look for:
+- Exact name matches ("Helen Smith" → find ID for "Helen Smith")
+- Role-based matches ("my father" → find person with parent relationship)
+- Recent conversation context (who was just discussed?)
 
 **Instructions:**
 
