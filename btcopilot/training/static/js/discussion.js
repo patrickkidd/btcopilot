@@ -4266,3 +4266,388 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 })();
+
+
+// =============================================================================
+// MARK: Prompt Debugging Functions
+// =============================================================================
+
+/**
+ * Copy text to clipboard - tries multiple methods for browser compatibility
+ * @param {string} text - Text to copy
+ * @returns {Promise<boolean>} - Whether copy succeeded
+ */
+async function copyToClipboard(text) {
+    // Method 1: Modern async clipboard API (works in Safari after user gesture)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch (e) {
+            console.log('navigator.clipboard failed, trying fallback:', e.message);
+        }
+    }
+
+    // Method 2: execCommand fallback
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    try {
+        const success = document.execCommand('copy');
+        if (!success) {
+            throw new Error('execCommand copy failed');
+        }
+        return true;
+    } finally {
+        document.body.removeChild(textarea);
+    }
+}
+
+/**
+ * Copy debug context for a statement - shows modal with selectable text
+ * @param {number} statementId - The statement ID to get debug context for
+ */
+async function copyDebugContext(statementId) {
+    const button = event.target.closest('button');
+    const originalContent = button.innerHTML;
+
+    try {
+        // Show loading state
+        button.innerHTML = '<span class="icon is-small"><i class="fas fa-spinner fa-spin"></i></span><span>Loading...</span>';
+        button.disabled = true;
+
+        const response = await fetch(`/training/discussions/debug-context/${statementId}`);
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+            throw new Error(data.error || 'Failed to get debug context');
+        }
+
+        // Build prompt with English preamble asking for help
+        const hasCorrected = data.corrected !== null;
+        let preamble;
+        if (hasCorrected) {
+            preamble = `The AI extraction below differs from the expected (corrected) output. Please analyze the discrepancy and suggest how to fix the extraction prompts in btcopilot/personal/prompts.py to handle this case correctly.
+
+`;
+        } else {
+            preamble = `Please review this AI extraction for the given statement and context. If you see any issues with the extraction, suggest how to fix the prompts in btcopilot/personal/prompts.py.
+
+`;
+        }
+        const jsonContent = preamble + JSON.stringify(data, null, 2);
+        showDebugContextModal(statementId, jsonContent);
+
+        // Restore button
+        button.innerHTML = originalContent;
+        button.disabled = false;
+
+    } catch (error) {
+        console.error('Error getting debug context:', error);
+        alert('Failed to get debug context: ' + error.message);
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    }
+}
+
+/**
+ * Show modal with debug context JSON for manual copying
+ * @param {number} statementId - Statement ID
+ * @param {string} jsonContent - The debug context as JSON string
+ */
+function showDebugContextModal(statementId, jsonContent) {
+    const modalId = 'debug-context-modal';
+    let modal = document.getElementById(modalId);
+
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-background" onclick="closeDebugContextModal()"></div>
+            <div class="modal-card" style="width: 90vw; max-width: 900px;">
+                <header class="modal-card-head">
+                    <p class="modal-card-title">Debug Context (Statement #<span id="debug-stmt-id"></span>)</p>
+                    <button class="delete" onclick="closeDebugContextModal()"></button>
+                </header>
+                <section class="modal-card-body" style="padding: 0;">
+                    <textarea id="debug-context-text" readonly
+                        style="width: 100%; height: 60vh; font-family: monospace; font-size: 12px; padding: 1rem; border: none; resize: none;"></textarea>
+                </section>
+                <footer class="modal-card-foot">
+                    <button class="button is-primary" onclick="selectAllDebugContext()">
+                        <span class="icon"><i class="fas fa-check-double"></i></span>
+                        <span>Select All</span>
+                    </button>
+                    <button id="debug-reextract-btn" class="button is-warning" onclick="reextractFromDebugModal()">
+                        <span class="icon"><i class="fas fa-sync-alt"></i></span>
+                        <span>Re-extract</span>
+                    </button>
+                    <button class="button" onclick="closeDebugContextModal()">Close</button>
+                </footer>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    modal.dataset.statementId = statementId;
+    document.getElementById('debug-stmt-id').textContent = statementId;
+    document.getElementById('debug-context-text').value = jsonContent;
+    modal.classList.add('is-active');
+}
+
+/**
+ * Select all text in the debug context textarea
+ */
+function selectAllDebugContext() {
+    const textarea = document.getElementById('debug-context-text');
+    if (textarea) {
+        textarea.focus();
+        textarea.select();
+    }
+}
+
+/**
+ * Close the debug context modal
+ */
+function closeDebugContextModal() {
+    const modal = document.getElementById('debug-context-modal');
+    if (modal) {
+        modal.classList.remove('is-active');
+    }
+}
+
+/**
+ * Core re-extraction API call
+ * @param {number} statementId - The statement ID to re-extract
+ * @returns {Promise<{pdp_deltas: object, original_deltas: object}>}
+ */
+async function doReextract(statementId) {
+    const response = await fetch(`/training/discussions/reextract/${statementId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Re-extraction failed');
+    }
+
+    return data;
+}
+
+/**
+ * Re-extract a single statement with current prompts (preview mode)
+ * Called from toolbar button - updates the delta display in place without saving to database
+ * @param {number} statementId - The statement ID to re-extract
+ */
+async function reextractStatement(statementId) {
+    const button = event.target.closest('button');
+    const originalContent = button.innerHTML;
+
+    // Find the data cell for this statement
+    const statementRow = document.getElementById(`statement-${statementId}`);
+    const dataCell = statementRow ? statementRow.querySelector('.data-cell') : null;
+
+    try {
+        // Show loading state on button
+        button.innerHTML = '<span class="icon is-small"><i class="fas fa-spinner fa-spin"></i></span><span>Extracting...</span>';
+        button.disabled = true;
+
+        // Add loading overlay to data cell if found
+        if (dataCell) {
+            dataCell.style.opacity = '0.5';
+            dataCell.style.pointerEvents = 'none';
+        }
+
+        const data = await doReextract(statementId);
+        showReextractionResult(statementId, data.pdp_deltas, data.original_deltas);
+
+        // Restore button
+        button.innerHTML = '<span class="icon is-small"><i class="fas fa-check"></i></span><span>Done</span>';
+        button.classList.remove('is-warning');
+        button.classList.add('is-success');
+
+        setTimeout(() => {
+            button.innerHTML = originalContent;
+            button.classList.remove('is-success');
+            button.classList.add('is-warning');
+            button.disabled = false;
+        }, 2000);
+
+    } catch (error) {
+        console.error('Error re-extracting statement:', error);
+        alert('Re-extraction failed: ' + error.message);
+
+        button.innerHTML = originalContent;
+        button.disabled = false;
+
+    } finally {
+        // Restore data cell
+        if (dataCell) {
+            dataCell.style.opacity = '1';
+            dataCell.style.pointerEvents = 'auto';
+        }
+    }
+}
+
+/**
+ * Re-extract from the debug context modal
+ * Gets statement ID from modal data attribute and triggers re-extraction
+ */
+async function reextractFromDebugModal() {
+    const modal = document.getElementById('debug-context-modal');
+    if (!modal) return;
+
+    const statementId = modal.dataset.statementId;
+    if (!statementId) {
+        alert('No statement ID found');
+        return;
+    }
+
+    const button = document.getElementById('debug-reextract-btn');
+    const originalContent = button.innerHTML;
+
+    try {
+        button.innerHTML = '<span class="icon"><i class="fas fa-spinner fa-spin"></i></span><span>Extracting...</span>';
+        button.disabled = true;
+
+        const data = await doReextract(statementId);
+        closeDebugContextModal();
+        showReextractionResult(statementId, data.pdp_deltas, data.original_deltas);
+
+    } catch (error) {
+        console.error('Error re-extracting statement:', error);
+        alert('Re-extraction failed: ' + error.message);
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    }
+}
+
+/**
+ * Show re-extraction result in a notification/modal
+ * @param {number} statementId - The statement ID
+ * @param {object} newDeltas - The new extraction result
+ * @param {object} originalDeltas - The original extraction
+ */
+function showReextractionResult(statementId, newDeltas, originalDeltas) {
+    // Check if results are different
+    const newJson = JSON.stringify(newDeltas, null, 2);
+    const originalJson = JSON.stringify(originalDeltas, null, 2);
+    const isDifferent = newJson !== originalJson;
+
+    // Create a simple modal to show results
+    const modalId = 'reextract-result-modal';
+    let modal = document.getElementById(modalId);
+
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-background" onclick="closeReextractionModal()"></div>
+            <div class="modal-card" style="width: 90vw; max-width: 1200px;">
+                <header class="modal-card-head">
+                    <p class="modal-card-title">Re-extraction Result (Statement #<span id="reextract-stmt-id"></span>)</p>
+                    <button class="delete" onclick="closeReextractionModal()"></button>
+                </header>
+                <section class="modal-card-body" style="max-height: 70vh; overflow-y: auto;">
+                    <div id="reextract-result-content"></div>
+                </section>
+                <footer class="modal-card-foot">
+                    <span id="reextract-status-badge" class="tag"></span>
+                    <button id="result-reextract-btn" class="button is-warning" onclick="reextractFromResultModal()">
+                        <span class="icon"><i class="fas fa-sync-alt"></i></span>
+                        <span>Re-extract</span>
+                    </button>
+                    <button class="button" onclick="closeReextractionModal()">Close</button>
+                </footer>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // Store statement ID on modal for re-extraction button
+    modal.dataset.statementId = statementId;
+
+    // Populate content
+    document.getElementById('reextract-stmt-id').textContent = statementId;
+
+    const statusBadge = document.getElementById('reextract-status-badge');
+    if (isDifferent) {
+        statusBadge.className = 'tag is-warning';
+        statusBadge.textContent = 'Results differ from original';
+    } else {
+        statusBadge.className = 'tag is-success';
+        statusBadge.textContent = 'Results match original';
+    }
+
+    const content = document.getElementById('reextract-result-content');
+    content.innerHTML = `
+        <div class="columns">
+            <div class="column">
+                <h4 class="title is-5">Original Extraction</h4>
+                <pre class="box" style="white-space: pre-wrap; font-size: 0.85rem;">${escapeHtml(originalJson)}</pre>
+            </div>
+            <div class="column">
+                <h4 class="title is-5">New Extraction</h4>
+                <pre class="box" style="white-space: pre-wrap; font-size: 0.85rem;">${escapeHtml(newJson)}</pre>
+            </div>
+        </div>
+    `;
+
+    // Show modal
+    modal.classList.add('is-active');
+}
+
+/**
+ * Close the re-extraction result modal
+ */
+function closeReextractionModal() {
+    const modal = document.getElementById('reextract-result-modal');
+    if (modal) {
+        modal.classList.remove('is-active');
+    }
+}
+
+/**
+ * Re-extract from the result modal
+ * Gets statement ID from modal data attribute and triggers re-extraction
+ */
+async function reextractFromResultModal() {
+    const modal = document.getElementById('reextract-result-modal');
+    if (!modal) return;
+
+    const statementId = modal.dataset.statementId;
+    if (!statementId) {
+        alert('No statement ID found');
+        return;
+    }
+
+    const button = document.getElementById('result-reextract-btn');
+    const originalContent = button.innerHTML;
+
+    try {
+        button.innerHTML = '<span class="icon"><i class="fas fa-spinner fa-spin"></i></span><span>Extracting...</span>';
+        button.disabled = true;
+
+        const data = await doReextract(statementId);
+        showReextractionResult(statementId, data.pdp_deltas, data.original_deltas);
+
+    } catch (error) {
+        console.error('Error re-extracting statement:', error);
+        alert('Re-extraction failed: ' + error.message);
+    } finally {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    }
+}

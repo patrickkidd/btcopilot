@@ -266,7 +266,7 @@ back to WHO, WHEN, and how things shifted.
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # DATA EXTRACTION PROMPTS (Split to avoid brace escaping in examples)
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════��═════════════════
 
 # Part 1: Header + SECTION 1 + SECTION 2 (with {current_date} template variable)
 DATA_EXTRACTION_PROMPT = """
@@ -314,219 +314,161 @@ SECTION 1: DATA MODEL (Semantic definitions - what things mean)
   any number of siblings. Deduplicate by name, ensuring one mother/father per
   user.
 
-*Event*: **CRITICAL**: An Event is a SPECIFIC INCIDENT that occurred at a
-  particular point in time, not a general characterization or ongoing pattern.
+*Event*: A SPECIFIC INCIDENT that occurred at a particular point in time, not a
+  general characterization or ongoing pattern. Events indicate shifts in the
+  four Variables and always pertain to one or more people.
 
-  **WRONG**: "Sometimes hard to deal with" (this is a general feeling, not an
-  event)
-  **RIGHT**: "Got into argument at birthday party on June 15th" (specific
-  incident)
+  Required fields:
+  - `dateTime`: When it happened (specific or fuzzy like "last Tuesday")
+  - `description`: Brief, one issue (e.g., "Trouble sleeping", not "Having
+    trouble sleeping and feeling really anxious lately")
+  - `kind`: EventKind enum value
 
-  Events indicate shifts in the four Variables and always pertain to one or
-  more people. Each event MUST have:
-  - `dateTime`: When it happened (specific date/time or fuzzy like "last
-    Tuesday", "summer 2020"). If no time frame mentioned, don't create the
-    event.
-  - `description`: Keep brief - capture ONE issue concisely. Good: "Trouble
-    sleeping", "Dementia diagnosis", "Drinking more". Bad: "Having trouble
-    sleeping and feeling really anxious lately" (too long, multiple issues).
-  - `kind`: EventKind enum ("shift", "married", "bonded", "birth", "adopted",
-    "moved", "separated", "divorced", "death")
+  EventKind values and meanings:
+  - `"shift"`: Changes in one of the "variables"; functioning, symptoms, anxiety, or relationships
+  - `"married"`: Wedding/legal marriage
+  - `"bonded"`: Moving in together, cohabitation, forming romantic attachment
+  - `"birth"`: Someone is born
+  - `"adopted"`: Adoption event
+  - `"moved"`: Geographic relocation (NOT cohabitation - use "bonded")
+  - `"separated"`: Couple separates
+  - `"divorced"`: Legal divorce
+  - `"death"`: Someone dies
 
-  For relationship shifts (arguments, distancing, triangles), use `kind:
-  "shift"` and set the `relationship` field. For life events (married, birth,
-  death), use the appropriate EventKind.
+*Variables*: Hidden/latent constructs. At least one characteristic must match
+  (OR condition):
 
-  **CRITICAL EventKind Selection:**
-  - `"bonded"`: Use for moving in together, cohabitation, living together,
-    or forming of strong romantic and emotional attachment.
-    (NOT "moved" - that's for geographic relocation to a new place)
-  - `"moved"`: Use ONLY for geographic relocation (moving to new city/house)
-  - `"married"`: Use for wedding/marriage events
-  - `"death"`: Use for when someone dies
-  - `"birth"`: Use for when someone is born (always include dateTime)
-  - `"shift"`: Use for all other changes in functioning, symptoms, anxiety,
-    or relationships
+  - **Symptom**: Physical/mental health changes. Use Event.symptom field:
+    "up" (worsening/present), "down" (improving), "same".
+    Includes: headaches, sleep problems, fatigue, pain, diagnoses (dementia,
+    cancer), drinking, substance use, eating changes, emotional burden.
 
-  **Do NOT create events for**:
-  - General characterizations ("he's difficult", "we don't get along")
-  - Ongoing patterns without specific incidents ("she always criticizes me")
-  - Vague feelings without concrete occurrences
+  - **Anxiety**: Automatic response to real or imagined threat. Use
+    Event.anxiety field: "up"/"down"/"same" (e.g., "nervous" → "up").
 
-  **DO create events for**:
-  - Specific arguments/conflicts with timeframe ("fought last night")
-  - Particular incidents of distancing ("he didn't talk to us when he got home
-    from work yesterday")
-  - Concrete relationship moves ("told brother about mom's meddling at the
-    party")
+  - **Functioning**: Ability to balance emotion and intellect productively. Use
+    Event.functioning field: "up"/"down"/"same" (e.g., "overwhelmed" → "down").
 
-*Variables* are hidden/latent constructs defined by the following
-  characteristics. At least one characteristic must match as an OR condition,
-  not all as an AND condition:
+  - **Relationship**: Emotive/automatic behavior by one person toward others,
+    serving to decrease short-term discomfort. Use Event.relationship field.
 
-  - Symptom: Physical/mental health changes (use Event.symptom field:
-    "up"/"down"/"same"). Symptoms include:
-    - Physical: headaches, sleep problems (insomnia, trouble sleeping), fatigue,
-      pain, illness diagnoses (dementia, cancer, etc.)
-    - Behavioral: increased drinking, substance use changes, eating changes
-    - Emotional burden: "pressure to keep everything together", feeling
-      overwhelmed by caretaking role, constant worry about family member
-    **Direction coding**: "up" = symptom worsening/present/emerged, "down" =
-    ONLY when symptom is actually improving/resolving.
-    **ALMOST ALWAYS USE "up"**: New symptoms, new diagnoses, ongoing problems
-    all get `"symptom": "up"`. Use "down" ONLY if the text explicitly says the
-    symptom got better (e.g., "headaches went away", "sleeping better now").
-    Examples: "trouble sleeping" → up, "dementia diagnosis" → up, "drinking
-    more" → up, "can't concentrate" → up, "feeling anxious" → up.
-    **CRITICAL**: When creating shift events for health/behavioral changes,
-    ALWAYS set the symptom field to "up" unless improvement is stated.
-  - Anxiety: Any automatic response to real or imagined threat (use
-    Event.anxiety field: "up"/"down"/"same", e.g., "nervous" → "up", "relieved"
-    → "down").
-  - Functioning: Ability to balance emotion and intellect to productively move
-    toward what matters for the person (use Event.functioning field:
-    "up"/"down"/"same", e.g., "overwhelmed" → "down", "disorganized" → "down",
-    "determined" → "up", "thoughtful" → "up").
-  - Relationship: Any emotive/automatic action/behavior performed by one person in
-    relation to one or more other persons. Serves to decrease discomfort in the
-    short term. Use Event.relationship field with RelationshipKind enum values.
-    **CRITICAL: relationshipTargets field is REQUIRED for ALL relationship events - it lists the person IDs of who the person is interacting with.**
-    One of two categories:
+    A) Anxiety binding mechanisms (specify targets in relationshipTargets):
+      - "distance": Avoiding communication, up to cutoff
+      - "conflict": Overt arguments, up to violence
+      - "overfunctioning"/"underfunctioning": Reciprocal imbalance
+      - "projection": Attention to perceived problem in a child (use child field)
 
-    A) Anxiety binding mechanisms, allow people to remain in relationship
-       despite misalignment/tension (ALWAYS specify people involved using
-       Event.relationshipTargets - list of person IDs, NEVER leave empty)
-      - "distance": Avoiding open communication about important topics up to
-        cutoff in the extreme
-      - "conflict": Overt arguments up to violence in the extreme (but see
-        "inside" below - if user mentions conflict WITH someone to ABOUT a
-        third party, it's likely a triangle "inside" move, not pure conflict)
-      - "overfunctioning"/"underfunctioning": One person functions lower because
-        another overfunctions for them (reciprocity)
-      - "projection": Attention to a real or perceived problem in a child (one
-        single child - use Event.child field)
-    B) Triangle moves: At least one person aligns or attempts to align with
-       another against a third to reduce discomfort (use
-       Event.relationshipTriangles - list of person IDs for the "outside" person)
-      a) "inside": One person has positive sentiment toward a second with
-         negative about a third (e.g., Person A seeks Person B's agreement that
-         Person C is good/bad). So this is a move to the "inside" with another
-         while a third is "outside". **Use this for conflicts ABOUT a third party, not conflicts WITH that party directly.**
-      b) "outside": One person puts themselves on the outside in relation to
-         another that they put together on the "inside". So this is a move to
-         the "outside" position.
+    B) Triangle moves (specify outside person in relationshipTriangles):
+      - "inside": Positive toward one person, negative about a third
+      - "outside": Putting self on outside of two others
 
-═══════════════════════════════════════════════════════════════════════════════
+═════════════════════════════════════════════��═════════════════════════════════
 SECTION 2: EXTRACTION RULES (Operational guidance)
 ═══════════════════════════════════════════════════════════════════════════════
 
+**EVENT EXTRACTION CHECKLIST** (all must be YES to create an event):
+1. Is there a SPECIFIC INCIDENT (not a general pattern)?
+2. Is there a TIME REFERENCE (even vague like "last week", "in 1979")?
+3. Can you identify WHO the event is about?
+4. Is this event NOT already captured in diagram_data.pdp.events?
+If any answer is NO, do NOT create the event.
+
+**CRITICAL: dateTime is REQUIRED - NEVER use null**. If you cannot determine a
+date, DO NOT CREATE THE EVENT. Example: "we got married" with no date mentioned
+→ do NOT create a married event. Wait until the user provides a date.
+
+**Do NOT create events for**:
+- General characterizations ("he's difficult", "we don't get along")
+- Ongoing patterns without specific incidents ("she always criticizes me")
+- Vague feelings without concrete occurrences
+
+**DO create events for**:
+- Specific arguments/conflicts with timeframe ("fought last night")
+- Particular incidents of distancing ("didn't talk to us when he got home")
+- Concrete relationship moves ("told brother about mom's meddling at the party")
+
+**EVENT.PERSON ASSIGNMENT (CRITICAL):**
+
+Every Event MUST have the correct `person` field.
+
+By EventKind:
+- `"death"`: person = who DIED (not the speaker)
+- `"birth"`: person = who was BORN, child = same ID
+- `"married"`: person = User or speaker, spouse = the other person
+- `"bonded"`: person = one partner, spouse = the other partner
+- `"shift"` with relationship field: person = who INITIATED the behavior,
+  relationshipTargets = who received it.
+  Example: "He didn't talk to us" → person = he, relationshipTargets = [us]
+- `"shift"` without relationship: person = who is experiencing the change
+
+**MANDATORY STEPS for person assignment:**
+1. Scan diagram_data.people and diagram_data.pdp.people for existing people
+2. Use the EXACT ID from existing data - never create duplicates
+3. For pronouns ("he", "she"), check conversation_history to identify who
+
+**EVENT DATE ASSIGNMENT (CRITICAL):**
+
+Use the most specific date available:
+1. If statement mentions a date, use it
+2. If statement references a previously-described timeframe in conversation
+   (e.g., "that same visit", "when that happened"), use the date from the
+   earlier event in the PDP
+3. Only use current_date as last resort when no other time context exists
+
+Example: If PDP has event dated "2025-03-01" for "spring break visit" and new
+statement says "when he got home from work" during that visit, use "2025-03-01"
+NOT the current date.
+
+**RELATIONSHIP EVENT RULES:**
+
+- relationshipTargets is REQUIRED for ALL relationship events - lists person IDs
+  of who the person interacted with. NEVER leave empty.
+- For triangles, use relationshipTriangles for the "outside" person
+- If conflict is ABOUT a third party (not WITH them), use "inside" not "conflict"
+
+**SYMPTOM DIRECTION CODING:**
+
+- "up" = symptom worsening/present/emerged (ALMOST ALWAYS USE THIS)
+- "down" = ONLY when symptom is explicitly improving ("headaches went away")
+- Examples: "trouble sleeping" → up, "dementia diagnosis" → up, "drinking more" → up
+
 **CRITICAL ID ASSIGNMENT RULES:**
 
-- **NEW PDP entries MUST use unique negative IDs that don't conflict with
-  existing PDP entries**
-- Check the existing diagram_data.pdp for already-used negative IDs
-- Generate new negative IDs by counting down from the lowest existing PDP ID
-- Example: If PDP has IDs -1, -2, -3, your new entries must start at -4, -5, -6
-- **NEVER reuse -1 for every new person** - this causes ID collisions
-- For updates to existing PDP entries, use their existing negative ID
+- NEW PDP entries MUST use unique negative IDs
+- Check diagram_data.pdp for already-used negative IDs
+- Generate new IDs by counting down from lowest existing PDP ID
+- Example: If PDP has -1, -2, -3, new entries start at -4, -5, -6
+- NEVER reuse -1 for every new person
 
-**PERSON EXTRACTION RULES (CRITICAL FOR people_f1):**
+**PERSON EXTRACTION RULES:**
 
-- **Extract ALL named individuals**: Any person mentioned by name (first name,
-  full name, or title+name like "Dr Smith", "Aunt Linda") should be extracted
-- **Title handling**: Either include or strip titles (both acceptable):
-  - "Aunt Linda" → "Aunt Linda" or "Linda" (both fine)
-  - "Dr Brezel" → "Dr Brezel" or "Brezel" (both fine)
-- **Extract role-based references as distinct people**: "The Baby", "The Court",
-  "Woman on bus", "my sister's husband" are valid person entries when they refer
-  to distinct individuals mentioned in the statement
-- **AVOID DUPLICATE EXTRACTIONS**: If a person is mentioned both generically
-  ("the doctor") and by name ("Dr Brezel"), extract ONLY the named version.
-  Do NOT extract both "Doctor" and "Dr Brezel" - just "Dr Brezel".
-- **Extract ALL people mentioned, even in passing**: If someone says "Carol Smith
-  was scrutinizing us", extract "Carol Smith" as a person even if they're not a
-  family member. Extract EVERY named person in the statement:
-  - "Watch out for Helen Land" → extract "Helen Land"
-  - "I talked to Greg Sashkin" → extract "Greg Sashkin"
-  - Even if the named person is mentioned by another speaker in the statement
-- **When multiple people are mentioned, extract ALL of them**: "My sister and
-  her husband came over" = extract both sister AND husband
-- **Use possessive patterns for unnamed relations**: When user mentions a
-  relative without a proper name, use the speaker's name + possessive:
-  - If speaker is "Sarah" and says "my mom" → "Sarah's Mom"
-  - If speaker is "Marcus" and says "my girlfriend" → "Marcus' Girlfriend"
-  - If speaker is "User" (unknown name) → "User's Mother"
-  This ensures distinct identification across multiple families
+- Extract ALL named individuals (first name, full name, title+name)
+- Extract role-based references as distinct people ("The Baby", "my sister's husband")
+- AVOID DUPLICATE EXTRACTIONS: If both generic ("the doctor") and named
+  ("Dr Brezel") exist, extract ONLY the named version
+- Use possessive patterns for unnamed relations:
+  - Sarah says "my mom" → "Sarah's Mom"
+  - Unknown speaker → "User's Mother"
 
 **DELTA EXTRACTION RULES:**
 
-1. **NEW ONLY**: If a person is already in the database with the same
-   name/role, don't include them unless you have NEW information about them
-2. **SEPARATE EVENTS PER ISSUE**: Create separate events for each distinct
-   symptom/shift/change. If statement mentions "trouble sleeping AND drinking
-   more", create TWO events: one for sleep, one for drinking. Keep descriptions
-   concise and focused on one issue per event (e.g., "Trouble sleeping" not
-   "Having trouble sleeping and feeling anxious")
-3. **UPDATE ONLY CHANGED FIELDS**: When updating existing items, include only
-   the fields that are changing
-4. **BIRTH EVENTS**: When user provides "Name, born MM/DD/YYYY" format, extract BOTH the person AND a birth event with kind="birth" and the provided date
-5. **THOROUGH PEOPLE, FOCUSED EVENTS**: Extract every named person mentioned.
-   For events, create one event per distinct issue/symptom (can be multiple
-   events per statement if multiple issues are mentioned)
-
-**EVENT.PERSON ASSIGNMENT (CRITICAL FOR MATCHING):**
-
-Every Event MUST have the correct `person` field - the ID of the person this
-event is ABOUT or HAPPENED TO. **Events without correct person IDs will not
-match ground truth and lower F1 scores.**
-
-**MANDATORY STEPS:**
-1. **FIRST, scan diagram_data.people and diagram_data.pdp.people** for existing
-   people. Look for matching names (including partial matches like "Father" in
-   "User's Father").
-2. **Use the EXACT ID from the existing data** - never create a new person if
-   one already exists with a matching name/role.
-3. **For pronouns ("he", "she", "they")**, check conversation_history to
-   identify who is being discussed, then find their ID in diagram_data.
-
-**Person Assignment Rules:**
-- `"death"` events: `person` = the person who DIED (not the speaker)
-- `"birth"` events: `person` = the person who was BORN, `child` = same ID
-- `"married"` events: `person` = User or speaker, `spouse` = the other person
-- `"bonded"` events: `person` = one partner, `spouse` = the other partner
-- `"shift"` events: `person` = who is experiencing/displaying the shift
-
-**CRITICAL**: When the speaker says "he", "she", "my father", "his wife" etc.,
-you MUST resolve this to an actual person ID from the diagram_data. Look for:
-- Exact name matches ("Helen Smith" → find ID for "Helen Smith")
-- Role-based matches ("my father" → find person with parent relationship)
-- Recent conversation context (who was just discussed?)
-
-**Instructions:**
-
-1. Analyze ONLY the new user statement for information NOT already in the
-   database
-2. Extract deltas to deduplicate and maintain single source of truth
-3. Assign confidence levels between 0.0 - 0.9 for PDP entries
+1. NEW ONLY: Don't include people/events already in database unless new info
+2. SEPARATE EVENTS PER ISSUE: "trouble sleeping AND drinking more" = TWO events
+3. UPDATE ONLY CHANGED FIELDS when updating existing items
+4. BIRTH EVENTS: "Name, born MM/DD/YYYY" = extract BOTH person AND birth event
 
 **Constraints:**
 
 - One biological mother/father per user
 - One event per variable shift (merge by timestamp, people, variables)
 - Triangles require two inside, one outside; prioritize blood relations
-- The `rationale` attribute must be filled out for every variable shift
-- Avoid pop culture tropes or psychological jargon
-- For parent relationships, use PairBond entities and set Person.parents to the
-  PairBond ID
+- For parent relationships, use PairBond entities and set Person.parents
 
-**Output Instructions:**
+**Output:**
 
 - Return SPARSE deltas - often empty arrays if nothing new
 - Use negative integers for new PDP entries
-- Use positive integers only when referencing existing committed database
-  entries
 - Include confidence level between 0.0 - 0.9
-- Return empty lists if no NEW occurrences found
 """
 
 # Part 2: SECTION 3 examples (no template variables - contains literal JSON)
@@ -973,19 +915,11 @@ Output:
     "people": [
         {
             "id": -234,
-            "name": "Wife",
+            "name": "Jim's Wife",
             "confidence": 0.8
         }
     ],
     "events": [
-        {
-            "id": -123,
-            "kind": "married",
-            "person": 1,
-            "spouse": -234,
-            "description": "Jim married Wife",
-            "confidence": 0.8
-        },
         {
             "id": -124,
             "kind": "shift",
@@ -999,6 +933,10 @@ Output:
     ],
     "delete": [4]
 }
+
+NOTE: No "married" event created because no wedding date was mentioned. The
+existence of a wife implies marriage, but without a date we only extract the
+person, not the event. Wait for user to provide the wedding date.
 
 # ─────────────────────────────────────────────────────────────────────────────
 # [ID_COLLISION_DELETE_CORRECTION]

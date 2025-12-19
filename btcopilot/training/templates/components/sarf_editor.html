@@ -219,7 +219,23 @@ Parameters:
                                     <!-- Approval Controls (Admin only) -->
                                     {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) and message_id and not is_cumulative %}
                                     
-                                    <!-- Test Prompts Button -->
+                                                                        <!-- Copy Debug Context Button -->
+                                    <button class="button is-link is-small"
+                                            style="padding: 2px 6px; height: 20px; margin-right: 4px;"
+                                            @click.stop="copyDebugContext({{ message_id }})"
+                                            title="Copy debug context for Claude Code">
+                                        <i class="fas fa-copy" style="font-size: 10px;"></i>
+                                    </button>
+
+                                    <!-- Re-extract Button -->
+                                    <button class="button is-warning is-small"
+                                            style="padding: 2px 6px; height: 20px; margin-right: 4px;"
+                                            @click.stop="reextractStatement({{ message_id }}, '{{ component_id }}')"
+                                            title="Re-extract with current prompts">
+                                        <i class="fas fa-sync" style="font-size: 10px;"></i>
+                                    </button>
+
+<!-- Test Prompts Button -->
                                     <button class="button is-info is-small" 
                                             style="padding: 2px 6px; height: 20px; margin-right: 4px;" 
                                             @click.stop="window.open('/training/prompts/?statement_id={{ message_id }}', '_blank')" 
@@ -1093,7 +1109,23 @@ Parameters:
                                     <!-- Approval Controls (Admin only) -->
                                     {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) and message_id and not is_cumulative %}
                                     
-                                    <!-- Test Prompts Button -->
+                                                                        <!-- Copy Debug Context Button -->
+                                    <button class="button is-link is-small"
+                                            style="padding: 2px 6px; height: 20px; margin-right: 4px;"
+                                            @click.stop="copyDebugContext({{ message_id }})"
+                                            title="Copy debug context for Claude Code">
+                                        <i class="fas fa-copy" style="font-size: 10px;"></i>
+                                    </button>
+
+                                    <!-- Re-extract Button -->
+                                    <button class="button is-warning is-small"
+                                            style="padding: 2px 6px; height: 20px; margin-right: 4px;"
+                                            @click.stop="reextractStatement({{ message_id }}, '{{ component_id }}')"
+                                            title="Re-extract with current prompts">
+                                        <i class="fas fa-sync" style="font-size: 10px;"></i>
+                                    </button>
+
+<!-- Test Prompts Button -->
                                     <button class="button is-info is-small" 
                                             style="padding: 2px 6px; height: 20px; margin-right: 4px;" 
                                             @click.stop="window.open('/training/prompts/?statement_id={{ message_id }}', '_blank')" 

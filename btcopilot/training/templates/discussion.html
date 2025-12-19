@@ -898,6 +898,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 <!-- Data cell for Subject statements (where extracted data is stored) -->
                 <td class="data-cell">
+                    {% if current_user.has_role(btcopilot.ROLE_ADMIN) %}
+                    <!-- Debug toolbar for prompt engineering -->
+                    <div class="debug-toolbar mb-2" style="display: flex; gap: 0.25rem; justify-content: flex-end;">
+                        <button class="button is-small is-outlined is-link"
+                                onclick="copyDebugContext({{ item.statement.id }})"
+                                title="Copy debug context to clipboard for Claude Code">
+                            <span class="icon is-small"><i class="fas fa-copy"></i></span>
+                            <span>Debug</span>
+                        </button>
+                        <button class="button is-small is-outlined is-warning"
+                                onclick="reextractStatement({{ item.statement.id }})"
+                                title="Re-run extraction with current prompts (preview only)">
+                            <span class="icon is-small"><i class="fas fa-sync-alt"></i></span>
+                            <span>Re-extract</span>
+                        </button>
+                    </div>
+                    {% endif %}
                     {% set data = item.pdp_deltas %}
                     {% set cumulative_pdp = item.cumulative_pdp %}
                     {% set collapsed = false %}

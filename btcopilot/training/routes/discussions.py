@@ -1691,3 +1691,102 @@ def delete(discussion_id):
             f"{speaker_count} speakers, and {feedback_count} feedback records removed",
         }
     )
+
+
+@bp.route("/reextract/<int:statement_id>", methods=["POST"])
+@minimum_role(btcopilot.ROLE_ADMIN)
+def reextract_statement(statement_id):
+    """Re-extract a single statement without saving (preview mode)
+
+    Runs pdp.update() with current prompts.py code and returns
+    the new pdp_deltas for comparison. Does NOT save to database.
+    """
+    import nest_asyncio
+
+    nest_asyncio.apply()
+
+    statement = Statement.query.get_or_404(statement_id)
+    discussion = statement.discussion
+
+    if not discussion:
+        return jsonify({"error": "Statement has no discussion"}), 400
+
+    # Build context same as extract_next_statement()
+    if discussion.diagram:
+        database = discussion.diagram.get_diagram_data()
+    else:
+        database = DiagramData()
+
+    # Build cumulative PDP from prior statements
+    database.pdp = pdp.cumulative(discussion, statement)
+
+    _log.info(
+        f"Re-extracting statement {statement_id} - "
+        f"discussion_id: {discussion.id}, "
+        f"text_length: {len(statement.text) if statement.text else 0}"
+    )
+
+    # Run extraction (preview only - don't save)
+    new_pdp, pdp_deltas = asyncio.run(
+        pdp.update(discussion, database, statement.text, statement.order)
+    )
+
+    return jsonify(
+        {
+            "success": True,
+            "statement_id": statement_id,
+            "pdp_deltas": asdict(pdp_deltas) if pdp_deltas else {},
+            "original_deltas": statement.pdp_deltas,
+        }
+    )
+
+
+@bp.route("/debug-context/<int:statement_id>", methods=["GET"])
+@minimum_role(btcopilot.ROLE_ADMIN)
+def get_debug_context(statement_id):
+    """Get debug context for a statement for use in Claude Code.
+
+    Returns JSON with ALL inputs that pdp.update() receives for extraction,
+    plus the AI's output and any correction from feedback.
+    """
+    statement = Statement.query.get_or_404(statement_id)
+    discussion = statement.discussion
+
+    if not discussion:
+        return jsonify({"error": "Statement has no discussion"}), 400
+
+    # Build diagram_data same as reextract_statement() / pdp.update()
+    if discussion.diagram:
+        diagram_data = discussion.diagram.get_diagram_data()
+    else:
+        diagram_data = DiagramData()
+    diagram_data.pdp = pdp.cumulative(discussion, statement)
+
+    # Get reference date (same as pdp.update)
+    reference_date = (
+        discussion.discussion_date
+        if discussion.discussion_date
+        else datetime.now().date()
+    )
+
+    # Get full conversation history (same format as pdp.update)
+    conversation_history = discussion.conversation_history(statement.order)
+
+    # Get corrected extraction from Feedback if exists
+    feedback = Feedback.query.filter_by(
+        statement_id=statement_id, feedback_type="extraction"
+    ).first()
+    corrected = feedback.edited_extraction if feedback else None
+
+    return jsonify(
+        {
+            "statement_id": statement_id,
+            "discussion_id": discussion.id,
+            "user_statement": statement.text,
+            "current_date": reference_date.isoformat(),
+            "diagram_data": asdict(diagram_data),
+            "conversation_history": conversation_history,
+            "ai_extracted": statement.pdp_deltas,
+            "corrected": corrected,
+        }
+    )
