@@ -373,9 +373,13 @@ SECTION 2: EXTRACTION RULES (Operational guidance)
 4. Is this event NOT already captured in diagram_data.pdp.events?
 If any answer is NO, do NOT create the event.
 
-**CRITICAL: dateTime is REQUIRED - NEVER use null**. If you cannot determine a
-date, DO NOT CREATE THE EVENT. Example: "we got married" with no date mentioned
-→ do NOT create a married event. Wait until the user provides a date.
+**CRITICAL: dateTime is REQUIRED - NEVER use null**. Always provide a date, even
+if vague or imprecise. Use context clues to estimate:
+- "we got married" before visiting brother-in-law → date before the visit
+- "when I was a kid" → estimate based on user's age
+- "before mom died" → date before death event
+- No context at all → use a reasonable estimate and low confidence
+A vague date is always better than null. Events can be reordered later.
 
 **Do NOT create events for**:
 - General characterizations ("he's difficult", "we don't get along")
@@ -934,9 +938,9 @@ Output:
     "delete": [4]
 }
 
-NOTE: No "married" event created because no wedding date was mentioned. The
-existence of a wife implies marriage, but without a date we only extract the
-person, not the event. Wait for user to provide the wedding date.
+NOTE: A "married" event could also be created here with an estimated date (before
+the car crash) and low confidence. Either approach is valid - the key is that
+dateTime must never be null if you do create the event.
 
 # ─────────────────────────────────────────────────────────────────────────────
 # [ID_COLLISION_DELETE_CORRECTION]

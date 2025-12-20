@@ -340,6 +340,7 @@ class DiagramData:
     hideDateSlider: bool = False
     hideVariablesOnDiagram: bool = False
     hideVariableSteadyStates: bool = False
+    hideSARFGraphics: bool = True
     exclusiveLayerSelection: bool = True
     storePositionsInLayers: bool = False
     currentDateTime: object = None  # Serialized QDateTime
