@@ -358,9 +358,16 @@ SECTION 1: DATA MODEL (Semantic definitions - what things mean)
       - "overfunctioning"/"underfunctioning": Reciprocal imbalance
       - "projection": Attention to perceived problem in a child (use child field)
 
-    B) Triangle moves (specify outside person in relationshipTriangles):
-      - "inside": Positive toward one person, negative about a third
-      - "outside": Putting self on outside of two others
+    B) Triangle moves (relationshipTriangles is REQUIRED for inside/outside):
+      - "inside": Event.person aligns WITH relationshipTargets (the "insiders"),
+        putting relationshipTriangles on the outside. Example: "I told my brother
+        about mom's meddling" → person=I, relationshipTargets=[brother],
+        relationshipTriangles=[mom].
+      - "outside": Event.person puts THEMSELVES on the outside, leaving
+        relationshipTargets and relationshipTriangles together on the inside.
+        Example: "You two figure it out, I'm done" → person=I,
+        relationshipTargets=[person A], relationshipTriangles=[person B].
+        Both targets and triangles are the "insiders" left together.
 
 ═════════════════════════════════════════════��═════════════════════════════════
 SECTION 2: EXTRACTION RULES (Operational guidance)
@@ -427,7 +434,7 @@ NOT the current date.
 
 - relationshipTargets is REQUIRED for ALL relationship events - lists person IDs
   of who the person interacted with. NEVER leave empty.
-- For triangles, use relationshipTriangles for the "outside" person
+- relationshipTriangles is REQUIRED when relationship is "inside" or "outside".
 - If conflict is ABOUT a third party (not WITH them), use "inside" not "conflict"
 
 **SYMPTOM DIRECTION CODING:**
