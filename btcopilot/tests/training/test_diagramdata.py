@@ -195,6 +195,7 @@ def as_dict():
         "hideDateSlider": False,
         "hideVariablesOnDiagram": False,
         "hideVariableSteadyStates": False,
+        "hideSARFGraphics": True,
         "exclusiveLayerSelection": True,
         "storePositionsInLayers": False,
         "currentDateTime": None,
