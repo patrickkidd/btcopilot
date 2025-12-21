@@ -309,15 +309,15 @@ Future versions of this specification may include:
 ### Nuclear Family
 
 ```
-      ┌───┐                ○
-      │   │                │
-      └───┘                │
-        │                  │
-        └───────┬┬┬────────┘
-                │││
-         ┌───┐ ┌───┐   ○
-         │   │ │   │   │
-         └───┘ └───┘
+      ┌───┐                  ○
+      │   │                  │
+      └───┘                  │
+        │                    │
+        └────┬────┬────┬─────┘
+             │    │    │
+           ┌───┐┌───┐  ○
+           │   ││   │  
+           └───┘└───┘
 ```
 
 A married couple (square = male, circle = female) with three children (two sons, one daughter). The U-shaped connector with right angles forms the pair bond: vertical lines descend from each person's bottom center to the horizontal bar. Each child connects via a single vertical line from their top center up to the parents' horizontal bar.
@@ -325,15 +325,15 @@ A married couple (square = male, circle = female) with three children (two sons,
 ### Divorced and Remarried
 
 ```
-          ○            ┌───┐                ○
-          │            │   │                │
-          │            └───┘                │
-          │              │                  │
-          └─────//───────┼───────┬┬─────────┘
-                                 ││
-                 ┌───┐           ○
-                 │   │           │
-                 └───┘
+        ○              ┌───┐                ○
+        │              │   │                │
+        │              └───┘                │
+        │                │                  │
+        └────//──────────┴───────┬─────┬────┘
+                                 │     │
+                               ┌───┐   ○
+                               │   │   
+                               └───┘
 ```
 
 A man (center) with two pair bonds: divorced from his first wife (left, indicated by double slashes on the horizontal bar) and married to his second wife (right). The U-shape connects all three, with the divorce indicator on the left segment. Each child connects via a single vertical line to the parents' horizontal bar.
