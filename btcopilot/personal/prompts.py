@@ -280,28 +280,6 @@ You are an expert data extraction assistant that provides ONLY NEW DELTAS (chang
 
 The database contains people and events indicating shifts in certain variables. You will be shown the current database state and a new user statement. Extract ONLY what's new or changed in that statement.
 
-**What to extract:**
-- NEW people mentioned for the first time
-- NEW events/incidents described (MUST be specific incidents at a point in
-  time, not general characterizations)
-- UPDATES to existing people (new relationships, corrected names, etc.)
-- DELETIONS when user corrects previous information
-
-**What NOT to extract:**
-- People already in the database (unless new info about them)
-- Events already captured
-- Information already correctly stored
-- **General characterizations as events** (e.g., "he's difficult to deal
-  with") - these are NOT events unless tied to a specific incident with a
-  timeframe
-
-**EVENT EXTRACTION CHECKLIST** (all must be YES to create an event):
-1. Is there a SPECIFIC INCIDENT (not a general pattern)?
-2. Is there a TIME REFERENCE (even vague like "last week", "in 1979")?
-3. Can you identify WHO the event is about (existing person in diagram_data)?
-4. Is this event NOT already captured in diagram_data.pdp.events?
-If any answer is NO, do NOT create the event.
-
 Entries in the PDP have confidence < 1.0 and negative integer IDs assigned by you. Committed entries have confidence = 1.0 and positive integer IDs (already in database).
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -378,6 +356,9 @@ SECTION 2: EXTRACTION RULES (Operational guidance)
 2. Is there a TIME REFERENCE (even vague like "last week", "in 1979")?
 3. Can you identify WHO the event is about?
 4. Is this event NOT already captured in diagram_data.pdp.events?
+5. Is this a NEW incident, not a continuation/elaboration of an event already
+   discussed in the conversation_history? (Check if previous messages describe
+   the same incident - if so, DON'T create a duplicate event)
 If any answer is NO, do NOT create the event.
 
 **CRITICAL: dateTime is REQUIRED - NEVER use null**. Always provide a date, even
@@ -467,6 +448,8 @@ NOT the current date.
 2. SEPARATE EVENTS PER ISSUE: "trouble sleeping AND drinking more" = TWO events
 3. UPDATE ONLY CHANGED FIELDS when updating existing items
 4. BIRTH EVENTS: "Name, born MM/DD/YYYY" = extract BOTH person AND birth event
+5. DELETIONS: When user corrects previous information (e.g., "actually I don't
+   have a sister"), add the incorrect item's ID to the delete array
 
 **Constraints:**
 
@@ -781,6 +764,84 @@ CORRECT Output: {
     ],
     "delete": []
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [CONVERSATION_CONTINUITY_DUPLICATE_EVENT]
+# Error Pattern: AI creates duplicate event when user continues describing same incident
+# CRITICAL: Check conversation_history - if a previous statement described the
+# same incident, do NOT create a new event for elaborations/details
+# ─────────────────────────────────────────────────────────────────────────────
+
+**Conversation History**:
+User: I had a run-in with my brother-in-law last spring break.
+Assistant: What happened during that run-in?
+
+**NEW USER STATEMENT TO ANALYZE**:
+"He didn't talk to us for 30 minutes after he got home."
+
+DiagramData: {
+    "people": [
+        {"id": 1, "name": "User", "confidence": 1.0},
+        {"id": 2, "name": "Assistant", "confidence": 1.0}
+    ],
+    "events": [],
+    "pdp": {
+        "people": [
+            {"id": -1, "name": "Brother-in-law", "confidence": 0.8}
+        ],
+        "events": [
+            {
+                "id": -2,
+                "kind": "shift",
+                "person": -1,
+                "description": "Had a run-in",
+                "dateTime": "2025-03-15",
+                "relationship": "conflict",
+                "relationshipTargets": [1],
+                "confidence": 0.7
+            }
+        ]
+    }
+}
+
+❌ WRONG OUTPUT (duplicate event for same incident):
+{
+    "people": [],
+    "events": [
+        {
+            "id": -3,
+            "kind": "shift",
+            "person": -1,
+            "description": "Didn't talk for 30 minutes",
+            "dateTime": "2025-03-15",
+            "relationship": "distance",
+            "relationshipTargets": [1],
+            "confidence": 0.7
+        }
+    ],
+    "delete": []
+}
+
+WHY WRONG: The user is providing MORE DETAIL about the SAME incident ("run-in
+last spring break") that was already extracted in the previous statement. "He
+didn't talk to us for 30 minutes" is describing what happened DURING that run-in,
+not a separate event. Creating a new event for this elaboration causes duplicates.
+
+✅ CORRECT OUTPUT:
+{
+    "people": [],
+    "events": [],  // No new event - this is elaboration of existing event -2
+    "delete": []
+}
+
+**RULE**: Before creating an event, check the conversation_history AND
+diagram_data.pdp.events. If the user's statement is CONTINUING to describe,
+elaborate on, or add detail to an incident that was already discussed and
+extracted, do NOT create a duplicate event. Signs of continuation include:
+- Pronouns referring back ("he", "she", "they") to the subject of previous event
+- Same timeframe or implicit "during that" reference
+- Details that logically belong to the same incident
+- Follow-up statements in direct response to questions about a previous event
 
 # ─────────────────────────────────────────────────────────────────────────────
 # [RELATIONSHIP_TRIANGLE_MISSING_THIRD_PERSON]
