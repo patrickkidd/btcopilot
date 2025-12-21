@@ -10,6 +10,7 @@ Infrastructure for training LLMs to extract structured clinical data from natura
 
 - [SARF Literature Review](doc/sarf-definitions/) - First exhaustive, 100% traceable literature review for Bowen Theory technical terms
 - [SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing) - Novel clinical data model operationalizing Bowen theory constructs
+- [Family Diagram Arrangement Specification](doc/FAMILY_DIAGRAM_ARRANGEMENT_SPEC.md) - Platform-independent specification for rendering Bowen family diagrams
 - [Conversational Flow Evaluation](#phase-7-conversational-flow-evaluation-) - Objective metrics for measuring clinical interview quality
 - [Inter-Rater Reliability Study](#phase-11-inter-rater-reliability-study) - First formal IRR study for family systems constructs at scale
 
