@@ -192,9 +192,13 @@ Source: [btcopilot/training/f1_metrics.py](btcopilot/training/f1_metrics.py)
 
 
 ### Phase 10: Prompt Induction
-*Planned*
+*Occuring now*
 
 With ground truth dataset (Phase 8) and F1 metrics (Phase 9), automate prompt optimization: iterate extraction prompts against test cases, measure accuracy deltas, converge toward optimal performance. The infrastructure exists; automation is the remaining step.
+
+Source: [bin/induction](bin/induction)
+
+![Prompt Induction Report](doc/images/9--Prompt-Induction-Report.jpg)
 
 ### Phase 11: Inter-Rater Reliability Study
 *Occuring now*
