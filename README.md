@@ -187,6 +187,7 @@ Matching uses fuzzy name similarity (>0.8 threshold via rapidfuzz), date proximi
 Source: [btcopilot/training/f1_metrics.py](btcopilot/training/f1_metrics.py)
 
 ![F1 Dashboard](doc/images/5--F1-Dashboard.jpg)
+![Per Statement F1](doc/images/8--Per-Statement-F1.jpg)
 
 
 
