@@ -17,15 +17,13 @@ import pydantic
 from mock import patch
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
-# prevent error "Instance <...> is not bound to a Session; attribute refresh operation cannot proceed"
-from sqlalchemy.orm import scoped_session
 from flask_mail import Mail
 
 
 import btcopilot
 from btcopilot.app import create_app
 from btcopilot.extensions import db
+import btcopilot.extensions as extensions
 from btcopilot.params import truthy
 from btcopilot.pro.models import (
     Session,
@@ -71,6 +69,9 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "init_datadog: Un-mock the init_datadog extension"
     )
+    config.addinivalue_line(
+        "markers", "real_passwords: Use real bcrypt hashing instead of mocks"
+    )
     warnings.filterwarnings(
         "ignore",
         category=pydantic.warnings.PydanticDeprecatedSince211,
@@ -90,6 +91,41 @@ def e2e(request):
     if request.node.get_closest_marker("e2e") is not None:
         if not request.config.getoption("--e2e"):
             pytest.skip("need --e2e option to run")
+
+
+@pytest.fixture(autouse=True)
+def fast_passwords(request):
+    """
+    Mock User password methods to skip bcrypt hashing for speed.
+    Use @pytest.mark.real_passwords to enable real hashing for password tests.
+    """
+    if request.node.get_closest_marker("real_passwords"):
+        yield
+        return
+
+    def _mock_set_password(self, plaintext):
+        self.password = f"mock_hash:{plaintext}"
+        self.reset_password_code = None
+
+    def _mock_check_password(self, plaintext):
+        return self.password == f"mock_hash:{plaintext}"
+
+    def _mock_set_reset_code(self, plaintext):
+        self.reset_password_code = f"mock_hash:{plaintext}"
+
+    def _mock_check_reset_code(self, plaintext):
+        return self.reset_password_code == f"mock_hash:{plaintext}"
+
+    with contextlib.ExitStack() as stack:
+        stack.enter_context(patch.object(User, "set_password", _mock_set_password))
+        stack.enter_context(patch.object(User, "check_password", _mock_check_password))
+        stack.enter_context(
+            patch.object(User, "set_reset_password_code", _mock_set_reset_code)
+        )
+        stack.enter_context(
+            patch.object(User, "check_reset_password_code", _mock_check_reset_code)
+        )
+        yield
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -168,17 +204,9 @@ def flask_app(request, tmp_path):
         "CELERY_RESULT_BACKEND": "cache+memory://",
     }
 
-    # class TestApp(flask.Flask):
-    #     def test_client(self, **kwargs):
-    #         return super().test_client(app=self, **kwargs)
-
     app = create_app(config=kwargs)
     app.instance_path = str(tmp_path)
 
-    # db.session = app.db.create_scoped_session()
-    # A default. Just override to have something else.
-
-    # Apparently, required for app.config['TESTING'] == True
     extensions.mail = Mail()
     extensions.mail.init_app(app)
 

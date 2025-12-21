@@ -26,17 +26,20 @@ from btcopilot.pro.models import (
 ## Users
 
 
+@pytest.mark.real_passwords
 def test_user_password():
     user = User(username="patrickkidd@gmail.com", password="something")
     assert user.password != "something"
     assert user.check_password("something") == True
 
 
+@pytest.mark.real_passwords
 def test_user_password_fail():
     user = User(username="patrickkidd@gmail.com", password="something")
     assert user.check_password("something 22") == False
 
 
+@pytest.mark.real_passwords
 def test_user_reset_password_code():
     code = "123456"
     user = User(
@@ -46,6 +49,7 @@ def test_user_reset_password_code():
     assert user.check_reset_password_code(code) == True
 
 
+@pytest.mark.real_passwords
 def test_user_reset_password_code_fail():
     code = "123456"
     user = User(
@@ -54,6 +58,7 @@ def test_user_reset_password_code_fail():
     assert user.check_reset_password_code("999999") == False
 
 
+@pytest.mark.real_passwords
 def test_user_reset_password_code_is_null():
     code = "123456"
     user = User(
