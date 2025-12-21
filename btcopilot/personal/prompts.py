@@ -298,6 +298,10 @@ SECTION 1: DATA MODEL (Semantic definitions - what things mean)
 
   Required fields:
   - `dateTime`: When it happened (specific or fuzzy like "last Tuesday")
+  - `dateCertainty`: How confident in the date (REQUIRED):
+    - "uncertain": date is completely unknown/guessed, no temporal info
+    - "approximate": date is within a year (e.g., "sometime in 1985", "in college")
+    - "certain": date is known precisely (e.g., "March 15, 2025", "last Tuesday")
   - `description`: Brief, one issue (e.g., "Trouble sleeping", not "Having
     trouble sleeping and feeling really anxious lately")
   - `kind`: EventKind enum value
@@ -368,6 +372,11 @@ if vague or imprecise. Use context clues to estimate:
 - "before mom died" → date before death event
 - No context at all → use a reasonable estimate and low confidence
 A vague date is always better than null. Events can be reordered later.
+
+**DATE CERTAINTY CODING (REQUIRED for every event):**
+- "certain" = Specific date mentioned ("March 15, 2025", "last Tuesday", "Christmas 2023")
+- "approximate" = Vague timeframe ("sometime last year", "in the 80s", "when I was in college", "around graduation")
+- "uncertain" = No date info at all, using pure estimate ("when I was young" with no age context)
 
 **Do NOT create events for**:
 - General characterizations ("he's difficult", "we don't get along")

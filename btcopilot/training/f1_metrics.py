@@ -32,7 +32,14 @@ import re
 from rapidfuzz import fuzz
 from sklearn.metrics import f1_score
 
-from btcopilot.schema import Person, Event, PairBond, PDPDeltas, from_dict
+from btcopilot.schema import (
+    Person,
+    Event,
+    PairBond,
+    PDPDeltas,
+    DateCertainty,
+    from_dict,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -98,6 +105,7 @@ def normalize_name_for_matching(name: str | None) -> str:
 
 DESCRIPTION_SIMILARITY_THRESHOLD = 0.4
 DATE_TOLERANCE_DAYS = 7
+APPROXIMATE_TOLERANCE_DAYS = 365
 DESCRIPTION_WEIGHT = 0.8
 DATE_WEIGHT = 0.2
 
@@ -182,55 +190,74 @@ def parse_date_flexible(date_str: str | None) -> datetime | None:
 def dates_within_tolerance(
     date1: str | datetime | None,
     date2: str | datetime | None,
-    tolerance_days: int = DATE_TOLERANCE_DAYS,
+    certainty1: DateCertainty | None = None,
+    certainty2: DateCertainty | None = None,
 ) -> bool:
     """
-    Check if two dates are within tolerance (±days).
-    None dates match any date (treated as unknown/unspecified).
-    """
-    if isinstance(date1, datetime):
-        dt1 = date1
-    else:
-        dt1 = parse_date_flexible(date1)
+    Check if two dates are within tolerance based on certainty levels.
 
-    if isinstance(date2, datetime):
-        dt2 = date2
-    else:
-        dt2 = parse_date_flexible(date2)
+    Tolerance is determined by the LEAST certain date:
+    - If either is Uncertain: always matches
+    - If either is Approximate: ±365 days
+    - Both Certain or None: ±7 days (current behavior)
+    """
+    c1 = certainty1 or DateCertainty.Certain
+    c2 = certainty2 or DateCertainty.Certain
+
+    if c1 == DateCertainty.Uncertain or c2 == DateCertainty.Uncertain:
+        return True
+
+    dt1 = date1 if isinstance(date1, datetime) else parse_date_flexible(date1)
+    dt2 = date2 if isinstance(date2, datetime) else parse_date_flexible(date2)
 
     if dt1 is None or dt2 is None:
         return True
 
+    if c1 == DateCertainty.Approximate or c2 == DateCertainty.Approximate:
+        tolerance = APPROXIMATE_TOLERANCE_DAYS
+    else:
+        tolerance = DATE_TOLERANCE_DAYS
+
     delta = abs((dt1 - dt2).days)
-    return delta <= tolerance_days
+    return delta <= tolerance
 
 
 def calculate_date_similarity(
-    date1: str | datetime | None, date2: str | datetime | None
+    date1: str | datetime | None,
+    date2: str | datetime | None,
+    certainty1: DateCertainty | None = None,
+    certainty2: DateCertainty | None = None,
 ) -> float:
     """
-    Calculate date similarity score (0.0 to 1.0).
-    Returns 1.0 if dates match exactly or if either is None.
-    Returns score based on days apart otherwise.
-    """
-    if isinstance(date1, datetime):
-        dt1 = date1
-    else:
-        dt1 = parse_date_flexible(date1)
+    Calculate date similarity score (0.0 to 1.0) considering certainty.
 
-    if isinstance(date2, datetime):
-        dt2 = date2
-    else:
-        dt2 = parse_date_flexible(date2)
+    Tolerance is determined by the LEAST certain date:
+    - If either is Uncertain: returns 1.0
+    - If either is Approximate: use 365-day tolerance
+    - Both Certain or None: use 7-day tolerance
+    """
+    c1 = certainty1 or DateCertainty.Certain
+    c2 = certainty2 or DateCertainty.Certain
+
+    if c1 == DateCertainty.Uncertain or c2 == DateCertainty.Uncertain:
+        return 1.0
+
+    dt1 = date1 if isinstance(date1, datetime) else parse_date_flexible(date1)
+    dt2 = date2 if isinstance(date2, datetime) else parse_date_flexible(date2)
 
     if dt1 is None or dt2 is None:
         return 1.0
 
+    if c1 == DateCertainty.Approximate or c2 == DateCertainty.Approximate:
+        tolerance = APPROXIMATE_TOLERANCE_DAYS
+    else:
+        tolerance = DATE_TOLERANCE_DAYS
+
     delta_days = abs((dt1 - dt2).days)
     if delta_days == 0:
         return 1.0
-    elif delta_days <= DATE_TOLERANCE_DAYS:
-        return 1.0 - (delta_days / (DATE_TOLERANCE_DAYS * 2))
+    elif delta_days <= tolerance:
+        return 1.0 - (delta_days / (tolerance * 2))
     else:
         return 0.0
 
@@ -338,7 +365,12 @@ def match_events(
             if desc_sim < DESCRIPTION_SIMILARITY_THRESHOLD:
                 continue
 
-            if not dates_within_tolerance(ai_event.dateTime, gt_event.dateTime):
+            if not dates_within_tolerance(
+                ai_event.dateTime,
+                gt_event.dateTime,
+                ai_event.dateCertainty,
+                gt_event.dateCertainty,
+            ):
                 continue
 
             ai_person = resolve_person_id(ai_event.person, id_map)
@@ -357,7 +389,10 @@ def match_events(
 
             if links_match:
                 date_sim = calculate_date_similarity(
-                    ai_event.dateTime, gt_event.dateTime
+                    ai_event.dateTime,
+                    gt_event.dateTime,
+                    ai_event.dateCertainty,
+                    gt_event.dateCertainty,
                 )
                 weighted_score = (DESCRIPTION_WEIGHT * desc_sim) + (
                     DATE_WEIGHT * date_sim

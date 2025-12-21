@@ -12,6 +12,8 @@ from btcopilot.training.f1_metrics import (
     normalize_pdp_for_comparison,
     calculate_hierarchical_sarf_f1,
     normalize_name_for_matching,
+    dates_within_tolerance,
+    calculate_date_similarity,
     F1Metrics,
     SARFVariableF1,
 )
@@ -22,6 +24,7 @@ from btcopilot.schema import (
     PDPDeltas,
     VariableShift,
     EventKind,
+    DateCertainty,
 )
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
@@ -346,6 +349,198 @@ def test_match_events_mismatched_links():
     assert len(result.matched_pairs) == 0
     assert len(result.ai_unmatched) == 1
     assert len(result.gt_unmatched) == 1
+
+
+def test_match_events_uncertain_always_matches():
+    """Uncertain dates always match regardless of actual date distance."""
+    ai_events = [
+        Event(
+            id=-1,
+            kind=EventKind.Shift,
+            description="Something happened",
+            dateTime=datetime(2020, 1, 1),
+            dateCertainty=DateCertainty.Uncertain,
+        )
+    ]
+    gt_events = [
+        Event(
+            id=-2,
+            kind=EventKind.Shift,
+            description="Something happened",
+            dateTime=datetime(2025, 12, 31),
+            dateCertainty=DateCertainty.Certain,
+        )
+    ]
+
+    result = match_events(ai_events, gt_events, {})
+
+    assert len(result.matched_pairs) == 1
+
+
+def test_match_events_approximate_within_year():
+    """Approximate dates match within ±365 days."""
+    ai_events = [
+        Event(
+            id=-1,
+            kind=EventKind.Shift,
+            description="Event in the 80s",
+            dateTime=datetime(2024, 6, 1),
+            dateCertainty=DateCertainty.Approximate,
+        )
+    ]
+    gt_events = [
+        Event(
+            id=-2,
+            kind=EventKind.Shift,
+            description="Event in the 80s",
+            dateTime=datetime(2025, 1, 1),
+            dateCertainty=DateCertainty.Certain,
+        )
+    ]
+
+    result = match_events(ai_events, gt_events, {})
+
+    assert len(result.matched_pairs) == 1
+
+
+def test_match_events_approximate_outside_year():
+    """Approximate dates do not match beyond ±365 days."""
+    ai_events = [
+        Event(
+            id=-1,
+            kind=EventKind.Shift,
+            description="Event years ago",
+            dateTime=datetime(2023, 1, 1),
+            dateCertainty=DateCertainty.Approximate,
+        )
+    ]
+    gt_events = [
+        Event(
+            id=-2,
+            kind=EventKind.Shift,
+            description="Event years ago",
+            dateTime=datetime(2025, 1, 1),
+            dateCertainty=DateCertainty.Certain,
+        )
+    ]
+
+    result = match_events(ai_events, gt_events, {})
+
+    assert len(result.matched_pairs) == 0
+
+
+def test_match_events_certainty_none_backward_compat():
+    """None certainty treated as Certain (backward compat)."""
+    ai_events = [
+        Event(
+            id=-1,
+            kind=EventKind.Shift,
+            description="Event",
+            dateTime=datetime(2025, 1, 1),
+        )
+    ]
+    gt_events = [
+        Event(
+            id=-2,
+            kind=EventKind.Shift,
+            description="Event",
+            dateTime=datetime(2025, 1, 5),
+        )
+    ]
+
+    result = match_events(ai_events, gt_events, {})
+    assert len(result.matched_pairs) == 1
+
+    gt_events[0].dateTime = datetime(2025, 1, 15)
+    result = match_events(ai_events, gt_events, {})
+    assert len(result.matched_pairs) == 0
+
+
+def test_dates_within_tolerance_uncertain():
+    """Uncertain dates always match regardless of actual date."""
+    assert dates_within_tolerance(
+        "2020-01-01",
+        "2025-12-31",
+        DateCertainty.Uncertain,
+        DateCertainty.Certain,
+    )
+    assert dates_within_tolerance(
+        "2020-01-01",
+        "2025-12-31",
+        DateCertainty.Certain,
+        DateCertainty.Uncertain,
+    )
+
+
+def test_dates_within_tolerance_approximate():
+    """Approximate dates use 365-day tolerance."""
+    assert dates_within_tolerance(
+        "2024-06-01",
+        "2025-01-01",
+        DateCertainty.Approximate,
+        DateCertainty.Certain,
+    )
+    assert not dates_within_tolerance(
+        "2023-01-01",
+        "2025-01-01",
+        DateCertainty.Approximate,
+        DateCertainty.Certain,
+    )
+
+
+def test_dates_within_tolerance_certain():
+    """Certain dates use 7-day tolerance."""
+    assert dates_within_tolerance(
+        "2025-01-01",
+        "2025-01-05",
+        DateCertainty.Certain,
+        DateCertainty.Certain,
+    )
+    assert not dates_within_tolerance(
+        "2025-01-01",
+        "2025-01-15",
+        DateCertainty.Certain,
+        DateCertainty.Certain,
+    )
+
+
+def test_dates_within_tolerance_none_is_certain():
+    """None certainty treated as Certain."""
+    assert dates_within_tolerance("2025-01-01", "2025-01-05", None, None)
+    assert not dates_within_tolerance("2025-01-01", "2025-01-15", None, None)
+
+
+def test_calculate_date_similarity_uncertain():
+    """Uncertain dates always return 1.0."""
+    assert (
+        calculate_date_similarity(
+            "2020-01-01",
+            "2025-12-31",
+            DateCertainty.Uncertain,
+            DateCertainty.Certain,
+        )
+        == 1.0
+    )
+
+
+def test_calculate_date_similarity_approximate():
+    """Approximate dates use 365-day tolerance for similarity."""
+    sim = calculate_date_similarity(
+        "2024-06-01",
+        "2025-01-01",
+        DateCertainty.Approximate,
+        DateCertainty.Certain,
+    )
+    assert sim > 0.0
+    assert sim < 1.0
+
+    sim_far = calculate_date_similarity(
+        "2023-01-01",
+        "2025-01-01",
+        DateCertainty.Approximate,
+        DateCertainty.Certain,
+    )
+    assert sim_far == 0.0
 
 
 def test_match_pair_bonds_exact():

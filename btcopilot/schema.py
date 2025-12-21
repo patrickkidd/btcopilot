@@ -266,6 +266,12 @@ class VariableShift(enum.StrEnum):
     Same = "same"
 
 
+class DateCertainty(enum.StrEnum):
+    Uncertain = "uncertain"  # any date matches
+    Approximate = "approximate"  # ±365 days
+    Certain = "certain"  # ±7 days
+
+
 @dataclass
 class Event:
     id: int
@@ -276,6 +282,7 @@ class Event:
     description: str | None = None
     dateTime: str | None = None
     endDateTime: str | None = None
+    dateCertainty: DateCertainty = DateCertainty.Certain
     symptom: VariableShift | None = None
     anxiety: VariableShift | None = None
     relationship: RelationshipKind | None = None

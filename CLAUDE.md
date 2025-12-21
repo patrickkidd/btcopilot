@@ -134,9 +134,9 @@ Documentation for the F1 metrics system that evaluates AI extraction quality aga
 - **Use When**: F1 scores are low, prompt induction stops improving, or planning next optimization steps
 - **Self-updating**: Document should be updated after each induction run or manual investigation
 
-### Family Diagram Arrangement Specification
+### Family Diagram Visual Specification
 **PLATFORM-INDEPENDENT LAYOUT SPEC**: Comprehensive specification for arranging and rendering family diagrams (Bowen theory family diagrams).
-- **File**: [doc/FAMILY_DIAGRAM_ARRANGEMENT_SPEC.md](doc/FAMILY_DIAGRAM_ARRANGEMENT_SPEC.md)
+- **File**: [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md)
 - **Purpose**: Human-readable and machine-readable specification for implementing family diagram layout algorithms in any language/platform
 - **Includes**: Person symbols (shapes, sizes, primary/deceased), PairBond geometry (U-shape, married/bonded/divorced), ChildOf connections (vertical/diagonal), MultipleBirth jig, generational layout rules, horizontal arrangement (birth order, multiple partners), label positioning
 - **Use When**: Implementing HTML5 diagram preview, improving auto-arrangement in Pro app, or building diagram renderers in other platforms
