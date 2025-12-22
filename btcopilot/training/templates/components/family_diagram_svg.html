@@ -10,7 +10,7 @@ Parameters:
 
 {% set PERSON_SIZE = 50 %}
 {% set PERSON_SPACING = 120 %}
-{% set GENERATION_GAP = 150 %}
+{% set GENERATION_GAP = 110 %}
 {% set PAIR_BOND_DROP = (PERSON_SIZE / 2.2)|int %}
 {% set NAME_OFFSET = (PERSON_SIZE * 0.2)|int %}
 
@@ -104,7 +104,7 @@ Parameters:
     // Visual constants from spec
     const PERSON_SIZE = 50;
     const PERSON_SPACING = 120;
-    const GENERATION_GAP = 150;
+    const GENERATION_GAP = 110;  // Reduced for tighter layout
     const PAIR_BOND_DROP = Math.floor(PERSON_SIZE / 2.2);
     const NAME_OFFSET = Math.floor(PERSON_SIZE * 0.2);
 
@@ -340,7 +340,7 @@ Parameters:
             // 3. Position family units: left-siblings, person1, person2, right-siblings
             // 4. People without parents or spouses go at the end
 
-            const positioned = new Set();
+            const positionedInGen = new Set();
 
             // Build spouse map for this generation
             const spouseOf = {}; // personId -> spouseId
@@ -374,12 +374,12 @@ Parameters:
             const processedSiblingGroups = new Set();
 
             for (const person of peopleInGen) {
-                if (positioned.has(person.id)) continue;
+                if (positionedInGen.has(person.id)) continue;
                 const spouseId = spouseOf[person.id];
                 if (!spouseId) continue;
 
                 const spouse = peopleById[spouseId];
-                if (!spouse || positioned.has(spouseId)) continue;
+                if (!spouse || positionedInGen.has(spouseId)) continue;
 
                 // Find the pair bond to check divorce status
                 const pbs = pairBondsByPerson[person.id] || [];
@@ -520,28 +520,7 @@ Parameters:
             }
         }
 
-        // Position unconnected people on the right perimeter at vertical middle
-        if (unconnectedPeople.length > 0) {
-            // Find the rightmost X position and vertical middle
-            let maxX = 100;
-            let minY = Infinity, maxY = -Infinity;
-            for (const pos of Object.values(layout.people)) {
-                maxX = Math.max(maxX, pos.x);
-                minY = Math.min(minY, pos.y);
-                maxY = Math.max(maxY, pos.y);
-            }
-
-            const middleY = (minY + maxY) / 2;
-            let unconnectedX = maxX + PERSON_SPACING * 1.5; // Extra gap for perimeter
-
-            for (const person of unconnectedPeople) {
-                if (!positioned.has(person.id)) {
-                    layout.people[person.id] = { x: unconnectedX, y: middleY, person: person };
-                    positioned.add(person.id);
-                    unconnectedX += PERSON_SPACING;
-                }
-            }
-        }
+        // Note: Unconnected people will be positioned AFTER compaction (see below)
 
         // Adjust parent positions to encompass children (canopy effect via positioning)
         // Per spec: parents move outward so children fall between them, creating wider U-shape
@@ -584,6 +563,145 @@ Parameters:
             }
         }
 
+        // Compaction pass: shift each generation leftward to minimize total width
+        // while respecting minimum spacing and parent-child alignment
+        const MIN_SPACING = PERSON_SIZE * 1.5;  // Minimum spacing between people
+
+        // Group by generation for compaction (exclude unconnected people - they stay on perimeter)
+        const byGen = {};
+        for (const [personId, pos] of Object.entries(layout.people)) {
+            if (unconnectedIds.has(Number(personId)) || unconnectedIds.has(personId)) continue;
+            const gen = generations[personId];
+            byGen[gen] = byGen[gen] || [];
+            byGen[gen].push({ id: personId, pos: pos });
+        }
+
+        // For each generation, try to compact leftward
+        for (const gen of Object.keys(byGen).map(Number).sort((a, b) => a - b)) {
+            const people = byGen[gen].sort((a, b) => a.pos.x - b.pos.x);
+            if (people.length === 0) continue;
+
+            // Determine the minimum X this generation can start at
+            // considering parent constraints
+            let minStartX = 100;
+
+            // Find where parents are positioned (from previous generation)
+            for (const { id: personId, pos } of people) {
+                const person = peopleById[personId];
+                if (person && person.parents) {
+                    const parentPb = data.pair_bonds.find(pb => pb.id === person.parents);
+                    if (parentPb) {
+                        const parentA = layout.people[parentPb.person_a];
+                        const parentB = layout.people[parentPb.person_b];
+                        if (parentA && parentB) {
+                            // Child should be within parent span
+                            const parentLeft = Math.min(parentA.x, parentB.x);
+                            const parentRight = Math.max(parentA.x, parentB.x);
+                            minStartX = Math.max(minStartX, parentLeft - CANOPY_PADDING);
+                        }
+                    }
+                }
+            }
+
+            // Shift the generation leftward
+            const currentMinX = Math.min(...people.map(p => p.pos.x));
+            const shift = currentMinX - minStartX;
+
+            if (shift > 0) {
+                // Can shift left - but maintain relative positions
+                for (const { pos } of people) {
+                    pos.x -= shift;
+                }
+            }
+
+            // Compact spacing within the generation
+            // Reduce gaps to minimum required spacing
+            for (let i = 1; i < people.length; i++) {
+                const prev = people[i - 1];
+                const curr = people[i];
+                const gap = curr.pos.x - prev.pos.x;
+
+                // Minimum gap depends on relationship
+                let minGap = PERSON_SPACING;
+
+                // Check if these two are a divorced couple - need extra space
+                const pb = data.pair_bonds.find(b =>
+                    (b.person_a == prev.id && b.person_b == curr.id) ||
+                    (b.person_b == prev.id && b.person_a == curr.id)
+                );
+                if (pb && (pb.divorced || pb.separated)) {
+                    minGap = PERSON_SPACING * 1.5;
+                }
+
+                // Compact if gap exceeds minimum
+                if (gap > minGap) {
+                    const reduction = gap - minGap;
+                    // Shift this person and all following leftward
+                    for (let j = i; j < people.length; j++) {
+                        people[j].pos.x -= reduction;
+                    }
+                }
+            }
+        }
+
+        // Re-run canopy adjustment after compaction
+        for (const pb of data.pair_bonds) {
+            const personA = layout.people[pb.person_a];
+            const personB = layout.people[pb.person_b];
+            if (!personA || !personB) continue;
+
+            const children = childrenByPairBond[pb.id] || [];
+            if (children.length === 0) continue;
+
+            let childMinX = Infinity, childMaxX = -Infinity;
+            for (const childId of children) {
+                const childPos = layout.people[childId];
+                if (childPos) {
+                    childMinX = Math.min(childMinX, childPos.x);
+                    childMaxX = Math.max(childMaxX, childPos.x);
+                }
+            }
+
+            if (childMinX === Infinity) continue;
+
+            const requiredLeft = childMinX - CANOPY_PADDING;
+            const requiredRight = childMaxX + CANOPY_PADDING;
+
+            const leftParent = personA.x < personB.x ? personA : personB;
+            const rightParent = personA.x < personB.x ? personB : personA;
+
+            if (leftParent.x > requiredLeft) {
+                leftParent.x = requiredLeft;
+            }
+            if (rightParent.x < requiredRight) {
+                rightParent.x = requiredRight;
+            }
+        }
+
+        // Position unconnected people on the right perimeter at vertical middle
+        // Done AFTER compaction so we get the correct final maxX
+        if (unconnectedPeople.length > 0) {
+            // Find the rightmost X position and vertical middle of connected people
+            let maxX = 100;
+            let minY = Infinity, maxY = -Infinity;
+            for (const [personId, pos] of Object.entries(layout.people)) {
+                if (!unconnectedIds.has(Number(personId)) && !unconnectedIds.has(personId)) {
+                    maxX = Math.max(maxX, pos.x);
+                    minY = Math.min(minY, pos.y);
+                    maxY = Math.max(maxY, pos.y);
+                }
+            }
+
+            const middleY = (minY + maxY) / 2;
+            let unconnectedX = maxX + PERSON_SPACING * 1.5; // Gap from family
+
+            for (const person of unconnectedPeople) {
+                layout.people[person.id] = { x: unconnectedX, y: middleY, person: person };
+                positioned.add(person.id);
+                unconnectedX += PERSON_SPACING;
+            }
+        }
+
         // Calculate pair bond positions (horizontal bar)
         // U-shape goes strictly from person A to person B (per spec Section 2)
         for (const pb of data.pair_bonds) {
@@ -616,23 +734,59 @@ Parameters:
 
         const halfSize = PERSON_SIZE / 2;
 
-        // Detect if we should place label on left instead of right
-        // Check for close neighbor on the right that would cause overlap
-        // Threshold should be >= PERSON_SPACING to move labels when people are at standard spacing
-        const COLLISION_THRESHOLD = PERSON_SPACING + halfSize;  // 120 + 25 = 145
-        let labelOnLeft = false;
+        // Smart label placement - choose position based on available space
+        // Options: 'right' (default), 'left', 'above-right', 'above-left'
+        // 'above' positions nestle in corner between person and child-of line
+        const COLLISION_THRESHOLD = PERSON_SPACING + halfSize;
+        let labelPosition = 'right';  // default
+
+        // Count neighbors and their distances on each side
+        let rightNeighborDist = Infinity;
+        let leftNeighborDist = Infinity;
 
         for (const otherId in layout.people) {
             if (otherId == person.id) continue;
             const otherPos = layout.people[otherId];
-            // Check if other person is on the same row (similar Y) and close to the right
-            if (Math.abs(otherPos.y - pos.y) < PERSON_SIZE &&
-                otherPos.x > pos.x &&
-                otherPos.x - pos.x < COLLISION_THRESHOLD) {
-                labelOnLeft = true;
-                break;
+            // Check if other person is on the same row (similar Y)
+            if (Math.abs(otherPos.y - pos.y) < PERSON_SIZE) {
+                const dist = otherPos.x - pos.x;
+                if (dist > 0 && dist < rightNeighborDist) {
+                    rightNeighborDist = dist;
+                } else if (dist < 0 && -dist < leftNeighborDist) {
+                    leftNeighborDist = -dist;
+                }
             }
         }
+
+        // Check if this person is at the rightmost position in their row
+        const isRightmost = rightNeighborDist === Infinity;
+        const isLeftmost = leftNeighborDist === Infinity;
+
+        // Check if person has parents (child-of line going up)
+        const hasParents = person.parents != null;
+
+        // Tight threshold for "above" placement - when sides are crowded on both sides
+        const TIGHT_THRESHOLD = PERSON_SPACING * 1.25;  // 125% of standard spacing
+
+        // Determine label position:
+        // 1. If both sides are tight AND person has parents -> use 'above' position
+        // 2. If right side is crowded -> use 'left'
+        // 3. If rightmost with left neighbor -> use 'left' for compactness
+        // 4. Otherwise -> use 'right' (default)
+
+        if (hasParents && rightNeighborDist < TIGHT_THRESHOLD && leftNeighborDist < TIGHT_THRESHOLD) {
+            // Both sides crowded, use above position
+            // Choose above-left or above-right based on child-of line position
+            // Default to above-right (nestled in top-right corner)
+            labelPosition = 'above-right';
+        } else if (rightNeighborDist < COLLISION_THRESHOLD) {
+            labelPosition = 'left';
+        } else if (isRightmost && leftNeighborDist > COLLISION_THRESHOLD && leftNeighborDist < COLLISION_THRESHOLD * 2) {
+            // Rightmost person with left neighbor that's not too close - put label on left for compactness
+            // Only if left neighbor is far enough to not collide with a left-positioned label
+            labelPosition = 'left';
+        }
+        // else: keep default 'right'
 
         // Determine shape based on gender
         // Since PDP doesn't track gender, default to unknown (rounded rect)
@@ -733,28 +887,47 @@ Parameters:
             g.appendChild(age);
         }
 
-        // Name label - placed on left if collision detected, otherwise right (per spec)
+        // Name label - positioned based on labelPosition
         const name = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        if (labelOnLeft) {
-            name.setAttribute('x', -(halfSize + NAME_OFFSET));
+        const idLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+
+        if (labelPosition === 'above-right') {
+            // Nestled in top-right corner, above the person
+            name.setAttribute('x', halfSize + 2);
+            name.setAttribute('y', -(halfSize + 8));
+            name.setAttribute('text-anchor', 'start');
+            idLabel.setAttribute('x', halfSize + 2);
+            idLabel.setAttribute('y', -(halfSize + 22));
+            idLabel.setAttribute('text-anchor', 'start');
+        } else if (labelPosition === 'above-left') {
+            // Nestled in top-left corner, above the person
+            name.setAttribute('x', -(halfSize + 2));
+            name.setAttribute('y', -(halfSize + 8));
             name.setAttribute('text-anchor', 'end');
+            idLabel.setAttribute('x', -(halfSize + 2));
+            idLabel.setAttribute('y', -(halfSize + 22));
+            idLabel.setAttribute('text-anchor', 'end');
+        } else if (labelPosition === 'left') {
+            // To the left of the person
+            name.setAttribute('x', -(halfSize + NAME_OFFSET));
+            name.setAttribute('y', -halfSize + 12);
+            name.setAttribute('text-anchor', 'end');
+            idLabel.setAttribute('x', -(halfSize + NAME_OFFSET));
+            idLabel.setAttribute('y', -halfSize + 26);
+            idLabel.setAttribute('text-anchor', 'end');
         } else {
+            // Default: to the right of the person
             name.setAttribute('x', halfSize + NAME_OFFSET);
+            name.setAttribute('y', -halfSize + 12);
+            idLabel.setAttribute('x', halfSize + NAME_OFFSET);
+            idLabel.setAttribute('y', -halfSize + 26);
         }
-        name.setAttribute('y', -halfSize + 12);
+
         name.setAttribute('class', 'fd-person-name');
         name.textContent = person.name || `Person ${person.id}`;
         g.appendChild(name);
 
         // ID label (for debugging/development)
-        const idLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        if (labelOnLeft) {
-            idLabel.setAttribute('x', -(halfSize + NAME_OFFSET));
-            idLabel.setAttribute('text-anchor', 'end');
-        } else {
-            idLabel.setAttribute('x', halfSize + NAME_OFFSET);
-        }
-        idLabel.setAttribute('y', -halfSize + 26);
         idLabel.setAttribute('class', 'fd-person-name');
         idLabel.setAttribute('style', 'font-size: 10px; fill: var(--color-fg-muted);');
         idLabel.textContent = `ID: ${person.id}`;

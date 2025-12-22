@@ -202,6 +202,18 @@ Labels typically include:
 - First line: Name
 - Second line: Birth date (prefixed with "b.")
 
+### Smart Label Placement (Collision Avoidance)
+
+Labels should be automatically positioned to avoid overlaps and minimize diagram footprint:
+
+1. **Collision threshold**: Define a threshold distance (e.g., PERSON_SPACING + half person width). If a neighbor exists within this threshold on the right, place the label on the left instead.
+
+2. **Footprint optimization**: For the rightmost person in a row (no neighbor on right), prefer placing the label on the left if there's a neighbor on the left that is far enough to not cause collision but close enough to benefit from compaction (between 1× and 2× the collision threshold). This reduces the diagram's total width without causing overlaps.
+
+3. **Above placement**: When a person has neighbors on both sides within tight spacing AND has parents, the label may be placed above the person—nestled in the corner between the person symbol and the child-of line. This leverages the empty space created by the line going up to parents.
+
+4. **Default**: Labels appear to the right of the person when none of the above conditions apply.
+
 ### Date Abbreviations
 
 | Abbreviation | Meaning |
@@ -400,8 +412,7 @@ The renderer uses CSS custom properties for theme adaptation:
    - Left siblings are from the spouse whose parents are further left
    - Right siblings are from the spouse whose parents are further right
    - Unmarried siblings without couple connections are positioned separately
-5. **Unconnected people on perimeter**: People with no family connections (no parents, no spouse, no children) are positioned on the right edge of the diagram at the vertical middle (average of min/max Y positions)
-6. **Position parents to encompass children** (canopy effect):
+5. **Position parents to encompass children** (canopy effect):
    - When a couple has children, the parents' X positions should be adjusted outward so that children fall between them
    - Add padding (e.g., half of PERSON_SPACING) beyond the outermost children's positions
    - This creates a "canopy" effect by expanding the couple's positions, NOT by extending lines
@@ -411,11 +422,18 @@ The renderer uses CSS custom properties for theme adaptation:
      - There isn't enough horizontal space (would cause overlap with adjacent elements)
      - There are too many children to reasonably fit under the parents
    - In exception cases, children may extend beyond the parents' positions
-7. Draw pair bond U-shape:
-   - The horizontal bar goes **strictly from person A's X to person B's X** (per Section 2)
+6. **Compaction pass** (footprint optimization):
+   - After initial positioning, compact each generation leftward to minimize diagram width
+   - Shift entire generations left while respecting parent-child alignment constraints
+   - Reduce all gaps to minimum required spacing (PERSON_SPACING)
+   - Respect divorced/separated couple extra spacing (1.5× standard)
+   - Re-run canopy adjustment after compaction to ensure parents still encompass children
+7. **Unconnected people on perimeter**: People with no family connections (no parents, no spouse, no children) are positioned AFTER compaction on the right edge of the diagram at the vertical middle. Position them with a small gap (1.5× PERSON_SPACING) from the rightmost connected person.
+8. **Draw pair bond U-shape**:
+   - The horizontal bar goes strictly from person A's X to person B's X (per Section 2)
    - Vertical lines descend from each partner's bottom center to the horizontal bar
    - NO extensions beyond the couple's positions - the canopy effect comes from positioning, not line extension
-8. Connect children to parent pair bonds:
+9. **Connect children to parent pair bonds**:
    - Children attach to the horizontal bar between the parents
    - Vertical line if child is within couple span, diagonal to nearest corner if outside
 
