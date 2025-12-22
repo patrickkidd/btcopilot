@@ -132,15 +132,33 @@ Parameters:
 
         // Update viewBox to fit content
         const padding = 50;
-        const minX = Math.min(...Object.values(layout.people).map(p => p.x)) - PERSON_SIZE - padding;
-        const maxX = Math.max(...Object.values(layout.people).map(p => p.x)) + PERSON_SIZE + padding + 100;
-        const minY = Math.min(...Object.values(layout.people).map(p => p.y)) - PERSON_SIZE - padding;
-        const maxY = Math.max(...Object.values(layout.people).map(p => p.y)) + PERSON_SIZE + padding + 50;
+        let contentMinX = Math.min(...Object.values(layout.people).map(p => p.x)) - PERSON_SIZE - padding;
+        let contentMaxX = Math.max(...Object.values(layout.people).map(p => p.x)) + PERSON_SIZE + padding + 100;
+        let contentMinY = Math.min(...Object.values(layout.people).map(p => p.y)) - PERSON_SIZE - padding;
+        let contentMaxY = Math.max(...Object.values(layout.people).map(p => p.y)) + PERSON_SIZE + padding + 50;
 
-        const width = Math.max(400, maxX - minX);
-        const height = Math.max(300, maxY - minY);
-        svg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
-        svg.setAttribute('height', Math.min(600, height));
+        const contentWidth = contentMaxX - contentMinX;
+        const contentHeight = contentMaxY - contentMinY;
+        const minWidth = 400;
+        const minHeight = 300;
+
+        // Center content if viewBox is larger than content
+        let viewBoxX = contentMinX;
+        let viewBoxY = contentMinY;
+        let viewBoxWidth = contentWidth;
+        let viewBoxHeight = contentHeight;
+
+        if (contentWidth < minWidth) {
+            viewBoxWidth = minWidth;
+            viewBoxX = contentMinX - (minWidth - contentWidth) / 2;
+        }
+        if (contentHeight < minHeight) {
+            viewBoxHeight = minHeight;
+            viewBoxY = contentMinY - (minHeight - contentHeight) / 2;
+        }
+
+        svg.setAttribute('viewBox', `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`);
+        svg.setAttribute('height', Math.min(600, viewBoxHeight));
 
         // Render pair bonds first (so they're behind people)
         for (const pb of diagramData.pair_bonds) {
@@ -429,6 +447,10 @@ Parameters:
                     isDivorced: isDivorced
                 });
 
+                // Mark both members as positioned to avoid duplicate familyUnits
+                positionedInGen.add(person.id);
+                positionedInGen.add(spouseId);
+
                 if (personParents) processedSiblingGroups.add(personParents);
                 if (spouseParents) processedSiblingGroups.add(spouseParents);
             }
@@ -547,12 +569,26 @@ Parameters:
             if (childMinX === Infinity) continue;
 
             // Parents should encompass children with padding
-            const requiredLeft = childMinX - CANOPY_PADDING;
-            const requiredRight = childMaxX + CANOPY_PADDING;
+            let requiredLeft = childMinX - CANOPY_PADDING;
+            let requiredRight = childMaxX + CANOPY_PADDING;
 
             // Determine which parent is left and which is right
             const leftParent = personA.x < personB.x ? personA : personB;
             const rightParent = personA.x < personB.x ? personB : personA;
+            const leftParentGen = generations[leftParent.person?.id];
+
+            // Check for collisions with other people in the same generation
+            // Don't move left parent if it would collide with someone else
+            if (leftParentGen !== undefined) {
+                for (const [otherId, otherPos] of Object.entries(layout.people)) {
+                    if (otherId == leftParent.person?.id || otherId == rightParent.person?.id) continue;
+                    if (generations[otherId] !== leftParentGen) continue;
+                    // If other person is to the left of where we want to move, limit our movement
+                    if (otherPos.x < leftParent.x && otherPos.x + PERSON_SPACING > requiredLeft) {
+                        requiredLeft = Math.max(requiredLeft, otherPos.x + PERSON_SPACING);
+                    }
+                }
+            }
 
             // Adjust positions if needed (move parents outward)
             if (leftParent.x > requiredLeft) {
@@ -626,8 +662,8 @@ Parameters:
 
                 // Check if these two are a divorced couple - need extra space
                 const pb = data.pair_bonds.find(b =>
-                    (b.person_a == prev.id && b.person_b == curr.id) ||
-                    (b.person_b == prev.id && b.person_a == curr.id)
+                    (b.person_a === prev.id && b.person_b === curr.id) ||
+                    (b.person_b === prev.id && b.person_a === curr.id)
                 );
                 if (pb && (pb.divorced || pb.separated)) {
                     minGap = PERSON_SPACING * 1.5;
@@ -692,8 +728,9 @@ Parameters:
                 }
             }
 
-            const middleY = (minY + maxY) / 2;
-            let unconnectedX = maxX + PERSON_SPACING * 1.5; // Gap from family
+            // If no connected people exist, use default Y position
+            const middleY = (minY === Infinity) ? 100 : (minY + maxY) / 2;
+            let unconnectedX = (minY === Infinity) ? 100 : maxX + PERSON_SPACING * 1.5;
 
             for (const person of unconnectedPeople) {
                 layout.people[person.id] = { x: unconnectedX, y: middleY, person: person };
@@ -745,7 +782,7 @@ Parameters:
         let leftNeighborDist = Infinity;
 
         for (const otherId in layout.people) {
-            if (otherId == person.id) continue;
+            if (otherId === String(person.id)) continue;
             const otherPos = layout.people[otherId];
             // Check if other person is on the same row (similar Y)
             if (Math.abs(otherPos.y - pos.y) < PERSON_SIZE) {
@@ -763,7 +800,7 @@ Parameters:
         const isLeftmost = leftNeighborDist === Infinity;
 
         // Check if person has parents (child-of line going up)
-        const hasParents = person.parents != null;
+        const hasParents = person.parents !== null && person.parents !== undefined;
 
         // Tight threshold for "above" placement - when sides are crowded on both sides
         const TIGHT_THRESHOLD = PERSON_SPACING * 1.25;  // 125% of standard spacing

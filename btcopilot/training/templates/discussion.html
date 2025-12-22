@@ -27,65 +27,96 @@ window.discussionConfig = {
 </script>
 
 <style>
-/* Speaker-specific color variations - light mode (iPhone Messages theme) */
 
-/* User message bubbles - blue spectrum variations */
-.user-message-bubble.speaker-1 { background: #007AFF; color: white; }
-.user-message-bubble.speaker-2 { background: #ADD8E6; color: black; }
-.user-message-bubble.speaker-3 { background: #001F3F; color: white; }
-.user-message-bubble.speaker-4 { background: #89CFF0; color: black; }
-.user-message-bubble.speaker-5 { background: #0047AB; color: white; }
-.user-message-bubble.speaker-6 { background: #66B3FF; color: black; }
-.user-message-bubble.speaker-7 { background: #191970; color: white; }
-.user-message-bubble.speaker-8 { background: #87CEEB; color: black; }
+/* Speaker-specific color variations using CSS custom properties for light/dark mode support */
 
-/* AI message bubbles - light grey variations */
-.ai-message-bubble.speaker-1 { background: #E9E9EB; border-color: #D1D1D6; }
-.ai-message-bubble.speaker-2 { background: #F2F2F7; border-color: #E5E5EA; }
-.ai-message-bubble.speaker-3 { background: #E5E5EA; border-color: #D1D1D6; }
-.ai-message-bubble.speaker-4 { background: #F0F0F5; border-color: #E0E0E5; }
-.ai-message-bubble.speaker-5 { background: #EBEBF0; border-color: #D6D6DB; }
-.ai-message-bubble.speaker-6 { background: #F5F5F8; border-color: #E8E8ED; }
-.ai-message-bubble.speaker-7 { background: #EFEFF4; border-color: #DCDCE1; }
-.ai-message-bubble.speaker-8 { background: #E8E8ED; border-color: #CFCFD4; }
+:root {
+    --speaker-1-light: #007AFF;
+    --speaker-2-light: #ADD8E6;
+    --speaker-3-light: #001F3F;
+    --speaker-4-light: #89CFF0;
+    --speaker-5-light: #0047AB;
+    --speaker-6-light: #66B3FF;
+    --speaker-7-light: #191970;
+    --speaker-8-light: #87CEEB;
+
+    --speaker-1-ai-light: #E9E9EB;
+    --speaker-2-ai-light: #F2F2F7;
+    --speaker-3-ai-light: #E5E5EA;
+    --speaker-4-ai-light: #F0F0F5;
+    --speaker-5-ai-light: #EBEBF0;
+    --speaker-6-ai-light: #F5F5F8;
+    --speaker-7-ai-light: #EFEFF4;
+    --speaker-8-ai-light: #E8E8ED;
+
+    --speaker-1-ai-border-light: #D1D1D6;
+    --speaker-2-ai-border-light: #E5E5EA;
+    --speaker-3-ai-border-light: #D1D1D6;
+    --speaker-4-ai-border-light: #E0E0E5;
+    --speaker-5-ai-border-light: #D6D6DB;
+    --speaker-6-ai-border-light: #E8E8ED;
+    --speaker-7-ai-border-light: #DCDCE1;
+    --speaker-8-ai-border-light: #CFCFD4;
+}
+
+[data-theme="dark"] {
+    --speaker-1-light: #0A84FF;
+    --speaker-2-light: #5EB3E6;
+    --speaker-3-light: #2A5A8A;
+    --speaker-4-light: #6BA3D6;
+    --speaker-5-light: #1B7FFF;
+    --speaker-6-light: #4FA5FF;
+    --speaker-7-light: #4A6FA5;
+    --speaker-8-light: #7BB3D6;
+
+    --speaker-1-ai-light: #3A3A3E;
+    --speaker-2-ai-light: #4A4A4E;
+    --speaker-3-ai-light: #454549;
+    --speaker-4-ai-light: #4F4F53;
+    --speaker-5-ai-light: #3F3F43;
+    --speaker-6-ai-light: #54545A;
+    --speaker-7-ai-light: #48484C;
+    --speaker-8-ai-light: #42424A;
+
+    --speaker-1-ai-border-light: #5A5A5E;
+    --speaker-2-ai-border-light: #6A6A6E;
+    --speaker-3-ai-border-light: #656569;
+    --speaker-4-ai-border-light: #6F6F73;
+    --speaker-5-ai-border-light: #5F5F63;
+    --speaker-6-ai-border-light: #74747A;
+    --speaker-7-ai-border-light: #68686C;
+    --speaker-8-ai-border-light: #62626A;
+}
+
+/* User message bubbles */
+.user-message-bubble.speaker-1 { background: var(--speaker-1-light); color: white; }
+.user-message-bubble.speaker-2 { background: var(--speaker-2-light); color: black; }
+.user-message-bubble.speaker-3 { background: var(--speaker-3-light); color: white; }
+.user-message-bubble.speaker-4 { background: var(--speaker-4-light); color: black; }
+.user-message-bubble.speaker-5 { background: var(--speaker-5-light); color: white; }
+.user-message-bubble.speaker-6 { background: var(--speaker-6-light); color: black; }
+.user-message-bubble.speaker-7 { background: var(--speaker-7-light); color: white; }
+.user-message-bubble.speaker-8 { background: var(--speaker-8-light); color: black; }
+
+/* AI message bubbles */
+.ai-message-bubble.speaker-1 { background: var(--speaker-1-ai-light); border-color: var(--speaker-1-ai-border-light); }
+.ai-message-bubble.speaker-2 { background: var(--speaker-2-ai-light); border-color: var(--speaker-2-ai-border-light); }
+.ai-message-bubble.speaker-3 { background: var(--speaker-3-ai-light); border-color: var(--speaker-3-ai-border-light); }
+.ai-message-bubble.speaker-4 { background: var(--speaker-4-ai-light); border-color: var(--speaker-4-ai-border-light); }
+.ai-message-bubble.speaker-5 { background: var(--speaker-5-ai-light); border-color: var(--speaker-5-ai-border-light); }
+.ai-message-bubble.speaker-6 { background: var(--speaker-6-ai-light); border-color: var(--speaker-6-ai-border-light); }
+.ai-message-bubble.speaker-7 { background: var(--speaker-7-ai-light); border-color: var(--speaker-7-ai-border-light); }
+.ai-message-bubble.speaker-8 { background: var(--speaker-8-ai-light); border-color: var(--speaker-8-ai-border-light); }
 
 /* Expanded AI message bubbles with green highlight */
-.ai-message-bubble.expanded.speaker-1 { background: #FFFFFF; border-color: #34C759; }
-.ai-message-bubble.expanded.speaker-2 { background: #FEFEFF; border-color: #34C759; }
-.ai-message-bubble.expanded.speaker-3 { background: #FDFDFE; border-color: #34C759; }
-.ai-message-bubble.expanded.speaker-4 { background: #FCFCFD; border-color: #34C759; }
-.ai-message-bubble.expanded.speaker-5 { background: #FAFAFB; border-color: #34C759; }
-.ai-message-bubble.expanded.speaker-6 { background: #F9F9FA; border-color: #34C759; }
-.ai-message-bubble.expanded.speaker-7 { background: #F8F8F9; border-color: #34C759; }
-.ai-message-bubble.expanded.speaker-8 { background: #F7F7F8; border-color: #34C759; }
-
-/* Dark mode speaker colors */
-[data-theme="dark"] .user-message-bubble.speaker-1 { background: #0A84FF; }
-[data-theme="dark"] .user-message-bubble.speaker-2 { background: #5EB3E6; color: white; }
-[data-theme="dark"] .user-message-bubble.speaker-3 { background: #2A5A8A; }
-[data-theme="dark"] .user-message-bubble.speaker-4 { background: #6BA3D6; color: white; }
-[data-theme="dark"] .user-message-bubble.speaker-5 { background: #1B7FFF; }
-[data-theme="dark"] .user-message-bubble.speaker-6 { background: #4FA5FF; color: white; }
-[data-theme="dark"] .user-message-bubble.speaker-7 { background: #4A6FA5; }
-[data-theme="dark"] .user-message-bubble.speaker-8 { background: #7BB3D6; color: white; }
-
-[data-theme="dark"] .ai-message-bubble.speaker-1 { background: #3A3A3E; border-color: #5A5A5E; }
-[data-theme="dark"] .ai-message-bubble.speaker-2 { background: #4A4A4E; border-color: #6A6A6E; }
-[data-theme="dark"] .ai-message-bubble.speaker-3 { background: #454549; border-color: #656569; }
-[data-theme="dark"] .ai-message-bubble.speaker-4 { background: #4F4F53; border-color: #6F6F73; }
-[data-theme="dark"] .ai-message-bubble.speaker-5 { background: #3F3F43; border-color: #5F5F63; }
-[data-theme="dark"] .ai-message-bubble.speaker-6 { background: #54545A; border-color: #74747A; }
-[data-theme="dark"] .ai-message-bubble.speaker-7 { background: #48484C; border-color: #68686C; }
-[data-theme="dark"] .ai-message-bubble.speaker-8 { background: #42424A; border-color: #62626A; }
-
-[data-theme="dark"] .ai-message-bubble.expanded.speaker-1 { background: #1E1E23; border-color: #34C759; }
-[data-theme="dark"] .ai-message-bubble.expanded.speaker-2 { background: #2A2A2F; border-color: #34C759; }
-[data-theme="dark"] .ai-message-bubble.expanded.speaker-3 { background: #25252B; border-color: #34C759; }
-[data-theme="dark"] .ai-message-bubble.expanded.speaker-4 { background: #2F2F35; border-color: #34C759; }
-[data-theme="dark"] .ai-message-bubble.expanded.speaker-5 { background: #1F1F25; border-color: #34C759; }
-[data-theme="dark"] .ai-message-bubble.expanded.speaker-6 { background: #34343A; border-color: #34C759; }
-[data-theme="dark"] .ai-message-bubble.expanded.speaker-7 { background: #28282D; border-color: #34C759; }
-[data-theme="dark"] .ai-message-bubble.expanded.speaker-8 { background: #22222A; border-color: #34C759; }
+.ai-message-bubble.expanded.speaker-1 { background: var(--color-card-bg); border-color: #34C759; }
+.ai-message-bubble.expanded.speaker-2 { background: var(--color-card-bg); border-color: #34C759; }
+.ai-message-bubble.expanded.speaker-3 { background: var(--color-card-bg); border-color: #34C759; }
+.ai-message-bubble.expanded.speaker-4 { background: var(--color-card-bg); border-color: #34C759; }
+.ai-message-bubble.expanded.speaker-5 { background: var(--color-card-bg); border-color: #34C759; }
+.ai-message-bubble.expanded.speaker-6 { background: var(--color-card-bg); border-color: #34C759; }
+.ai-message-bubble.expanded.speaker-7 { background: var(--color-card-bg); border-color: #34C759; }
+.ai-message-bubble.expanded.speaker-8 { background: var(--color-card-bg); border-color: #34C759; }
 
 /* Relationship field horizontal layout - Override Bulma CSS with high specificity */
 .mechanism-details,
@@ -1365,6 +1396,31 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(init, 500);
 })();
 </script>
+
+<!-- Family Diagram Modal -->
+<div class="modal" id="familyDiagramModal">
+    <div class="modal-background" onclick="closeFamilyDiagramModal()"></div>
+    <div class="modal-card" style="width: 95vw; max-width: none; height: 90vh;">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Family Diagram</p>
+            <button class="delete" onclick="closeFamilyDiagramModal()"></button>
+        </header>
+        <section class="modal-card-body" style="max-height: none; overflow: auto; padding: 20px;">
+            <div id="familyDiagramContent" style="min-height: 300px; display: flex; align-items: center; justify-content: center;">
+                <span class="icon is-large has-text-grey-light">
+                    <i class="fas fa-spinner fa-pulse fa-3x"></i>
+                </span>
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-info" id="openFullDiagramBtn" onclick="openFullFamilyDiagram()">
+                <span class="icon"><i class="fas fa-external-link-alt"></i></span>
+                <span>Open Full Page</span>
+            </button>
+            <button class="button" onclick="closeFamilyDiagramModal()">Close</button>
+        </footer>
+    </div>
+</div>
 
 <!-- Data Editor Modal -->
 <!-- Prompt Editor Modal -->

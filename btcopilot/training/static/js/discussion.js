@@ -6,8 +6,6 @@ function reloadPreservingParams() {
     window.location.reload();
 }
 
-// MARK: Section Name
-
 function toggleExtractedData(componentId) {
     // Data section elements
     const dataCollapsed = document.getElementById('data-collapsed-' + componentId);
@@ -135,6 +133,14 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
         saveEventDateTime(eventIndex, newValue) {
             if (!this.extractedData.events[eventIndex]) return;
             this.extractedData.events[eventIndex].dateTime = newValue;
+            this.extractedData.events[eventIndex].confidence = 1.0;
+            this.cancelEdit();
+            this.autoSave();
+        },
+
+        saveDateCertainty(eventIndex, newValue) {
+            if (!this.extractedData.events[eventIndex]) return;
+            this.extractedData.events[eventIndex].dateCertainty = newValue;
             this.extractedData.events[eventIndex].confidence = 1.0;
             this.cancelEdit();
             this.autoSave();
@@ -4652,10 +4658,79 @@ async function reextractFromResultModal() {
     }
 }
 
+// Store current diagram context for full page navigation
+let currentDiagramContext = null;
+
 function openFamilyDiagram(statementId, auditorId) {
+    currentDiagramContext = { statementId, auditorId };
+
     let url = `/training/diagrams/render/${statementId}`;
     if (auditorId && auditorId !== 'AI') {
         url += `/${auditorId}`;
     }
+    url += '?embed=true';
+
+    const modal = document.getElementById('familyDiagramModal');
+    const content = document.getElementById('familyDiagramContent');
+
+    // Show loading spinner
+    content.innerHTML = `
+        <span class="icon is-large has-text-grey-light">
+            <i class="fas fa-spinner fa-pulse fa-3x"></i>
+        </span>
+    `;
+
+    modal.classList.add('is-active');
+
+    // Fetch embedded diagram
+    fetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to load diagram');
+            return response.text();
+        })
+        .then(html => {
+            content.innerHTML = html;
+            // Execute any scripts in the inserted HTML
+            const scripts = content.querySelectorAll('script');
+            scripts.forEach(oldScript => {
+                const newScript = document.createElement('script');
+                newScript.textContent = oldScript.textContent;
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+            });
+        })
+        .catch(error => {
+            content.innerHTML = `
+                <div class="notification is-danger is-light">
+                    <p>Failed to load family diagram: ${error.message}</p>
+                </div>
+            `;
+        });
+}
+
+function closeFamilyDiagramModal() {
+    const modal = document.getElementById('familyDiagramModal');
+    modal.classList.remove('is-active');
+    currentDiagramContext = null;
+}
+
+function openFullFamilyDiagram() {
+    if (!currentDiagramContext) return;
+
+    let url = `/training/diagrams/render/${currentDiagramContext.statementId}`;
+    if (currentDiagramContext.auditorId && currentDiagramContext.auditorId !== 'AI') {
+        url += `/${currentDiagramContext.auditorId}`;
+    }
     window.open(url, '_blank');
 }
+
+// Global escape key handler for modals
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        // Close family diagram modal if open
+        const diagramModal = document.getElementById('familyDiagramModal');
+        if (diagramModal && diagramModal.classList.contains('is-active')) {
+            closeFamilyDiagramModal();
+            return;
+        }
+    }
+});

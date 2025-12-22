@@ -95,6 +95,15 @@ The interactive, re-usable component for reviewing and editing extracted clinica
 - **Features**: Collapsed/expanded views, in-place editing, feedback controls, cumulative data display
 - **Used in**: Training module for domain-expert review and fine-tuning of AI extraction model
 
+### Family Diagram Renderer
+SVG-based family diagram visualization for displaying cumulative PDP (Pending Data Pool) data.
+- **Component**: `btcopilot/training/templates/components/family_diagram_svg.html`
+- **Route**: `btcopilot/training/routes/diagrams.py` - `/diagrams/render/<statement_id>` endpoint
+- **Standalone Page**: `/training/diagrams/render/<statement_id>/<auditor_id>` - Full page view for development and testing diagram layout
+- **Embed Mode**: Add `?embed=true` to get just the SVG component (used in modals)
+- **Modal Access**: Discussion page has "Diagram" buttons that open embedded view in a modal
+- **Purpose**: Visualize cumulative family data (people, pair bonds, parent-child relationships) at any statement
+
 ### Personal App Chat Flow
 The AI-powered conversation system that extracts family relationship data from user messages. For detailed architecture and prompt engineering guidance:
 - **File**: [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md)
