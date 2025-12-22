@@ -1,14 +1,14 @@
 import btcopilot
-from btcopilot import auth
+from btcopilot import auth, pdp
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram, AccessRight, User
-from btcopilot.schema import DiagramData
+from btcopilot.schema import DiagramData, EventKind, asdict
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.models.speaker import Speaker
 
 import logging
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
 
 
 _log = logging.getLogger(__name__)
@@ -24,7 +24,6 @@ bp = minimum_role(btcopilot.ROLE_AUDITOR)(bp)
 
 @bp.route("", methods=["POST"])
 def create():
-    """Create a new diagram for the auditor"""
     current_user = auth.current_user()
 
     data = request.get_json()
@@ -71,7 +70,6 @@ def create():
 
 @bp.route("/<int:diagram_id>", methods=["DELETE"])
 def delete(diagram_id):
-    """Delete a diagram - auditors can delete their own, admins can delete any"""
     from btcopilot.training.models import Feedback
 
     current_user = auth.current_user()
@@ -154,7 +152,6 @@ def delete(diagram_id):
 
 @bp.route("/<int:diagram_id>/access-rights", methods=["GET"])
 def get_access_rights(diagram_id):
-    """Get access rights for a diagram"""
     current_user = auth.current_user()
 
     diagram = Diagram.query.get_or_404(diagram_id)
@@ -177,7 +174,6 @@ def get_access_rights(diagram_id):
 
 @bp.route("/<int:diagram_id>/access-rights", methods=["POST"])
 def grant_access_right(diagram_id):
-    """Grant or update access right to a diagram"""
     current_user = auth.current_user()
     data = request.get_json()
 
@@ -271,7 +267,6 @@ def grant_access_right(diagram_id):
 
 @bp.route("/<int:diagram_id>/access-rights/<int:access_right_id>", methods=["DELETE"])
 def revoke_access_right(diagram_id, access_right_id):
-    """Revoke access right from a diagram"""
     current_user = auth.current_user()
 
     diagram = Diagram.query.get_or_404(diagram_id)
@@ -300,3 +295,114 @@ def revoke_access_right(diagram_id, access_right_id):
     )
 
     return jsonify({"success": True, "message": "Access revoked"})
+
+
+@bp.route("/render/<int:statement_id>")
+@bp.route("/render/<int:statement_id>/<auditor_id>")
+def render(statement_id: int, auditor_id: str = None):
+    from flask import url_for
+
+    current_user = auth.current_user()
+    statement = Statement.query.get_or_404(statement_id)
+    discussion = statement.discussion
+    is_embed = request.args.get("embed", "false").lower() == "true"
+
+    breadcrumbs = [
+        {"title": "Coding", "url": url_for("training.audit.index")},
+        {
+            "title": discussion.summary or "Discussion",
+            "url": url_for("training.discussions.audit", discussion_id=discussion.id),
+        },
+        {"title": "Family Diagram", "url": None},
+    ]
+
+    pdp_data = pdp.cumulative(discussion, statement, auditor_id)
+
+    # Convert PDP to rendering format
+    if not pdp_data.people and not pdp_data.events and not pdp_data.pair_bonds:
+        render_data = {"people": [], "pair_bonds": [], "parent_child": []}
+    else:
+        # Build people list with derived fields for SVG rendering
+        people_list = []
+        for person in pdp_data.people:
+            person_dict = asdict(person)
+            person_dict["name"] = person.name or f"Person {person.id}"
+            person_dict["gender"] = "unknown"
+            person_dict["deceased"] = False
+            person_dict["primary"] = False
+            people_list.append(person_dict)
+
+        # Build pair bonds from explicit pair_bonds
+        pair_bonds_list = []
+        pair_bonds_by_persons = {}
+        for pb in pdp_data.pair_bonds:
+            key = tuple(sorted([pb.person_a, pb.person_b]))
+            pb_dict = asdict(pb)
+            pb_dict["married"] = True
+            pb_dict["separated"] = False
+            pb_dict["divorced"] = False
+            pair_bonds_list.append(pb_dict)
+            pair_bonds_by_persons[key] = pb_dict
+
+        # Create pair bonds from married/bonded events
+        for event in pdp_data.events:
+            if event.kind in (EventKind.Married, EventKind.Bonded):
+                if event.person and event.spouse:
+                    key = tuple(sorted([event.person, event.spouse]))
+                    if key not in pair_bonds_by_persons:
+                        pb_dict = {
+                            "id": event.id,
+                            "person_a": event.person,
+                            "person_b": event.spouse,
+                            "married": event.kind == EventKind.Married,
+                            "separated": False,
+                            "divorced": False,
+                        }
+                        pair_bonds_list.append(pb_dict)
+                        pair_bonds_by_persons[key] = pb_dict
+            elif event.kind == EventKind.Separated:
+                if event.person and event.spouse:
+                    key = tuple(sorted([event.person, event.spouse]))
+                    if key in pair_bonds_by_persons:
+                        pair_bonds_by_persons[key]["separated"] = True
+            elif event.kind == EventKind.Divorced:
+                if event.person and event.spouse:
+                    key = tuple(sorted([event.person, event.spouse]))
+                    if key in pair_bonds_by_persons:
+                        pair_bonds_by_persons[key]["divorced"] = True
+
+        # Build parent-child relationships
+        parent_child = []
+        for person_dict in people_list:
+            if person_dict.get("parents"):
+                parent_child.append(
+                    {
+                        "child_id": person_dict["id"],
+                        "pair_bond_id": person_dict["parents"],
+                    }
+                )
+
+        render_data = {
+            "people": people_list,
+            "pair_bonds": pair_bonds_list,
+            "parent_child": parent_child,
+        }
+
+    if is_embed:
+        return render_template(
+            "components/family_diagram_svg.html",
+            data=render_data,
+            statement_id=statement_id,
+            auditor_id=auditor_id,
+        )
+
+    return render_template(
+        "diagram_render.html",
+        data=render_data,
+        statement_id=statement_id,
+        auditor_id=auditor_id,
+        discussion=discussion,
+        statement=statement,
+        breadcrumbs=breadcrumbs,
+        current_user=current_user,
+    )

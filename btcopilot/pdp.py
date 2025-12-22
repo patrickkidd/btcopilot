@@ -156,9 +156,20 @@ def validate_pdp_deltas(pdp: PDP, deltas: PDPDeltas) -> None:
         raise PDPValidationError(errors)
 
 
-def cumulative(discussion, up_to_statement) -> PDP:
-    """Build cumulative PDP from discussion statements up to a given statement."""
-    cumulative_pdp = PDP()
+def cumulative(discussion, up_to_statement, auditor_id: str | None = None) -> PDP:
+    """
+    Build cumulative PDP from discussion statements up to a given statement.
+
+    Args:
+        discussion: Discussion object with statements
+        up_to_statement: Include statements up to and including this one
+        auditor_id: If provided, use auditor's edited_extraction instead of AI pdp_deltas.
+                   Pass "AI" or None to use AI extractions.
+
+    Returns:
+        PDP with accumulated people, events, pair_bonds
+    """
+    from btcopilot.personal.models import SpeakerType
 
     sorted_statements = sorted(
         discussion.statements, key=lambda s: (s.order or 0, s.id or 0)
@@ -168,33 +179,68 @@ def cumulative(discussion, up_to_statement) -> PDP:
     events_by_id = {}
     pair_bonds_by_id = {}
 
+    # Get auditor feedback if requested
+    feedback_by_stmt = {}
+    if auditor_id and auditor_id != "AI":
+        from btcopilot.training.models import Feedback
+
+        feedbacks = Feedback.query.filter(
+            Feedback.statement_id.in_([s.id for s in sorted_statements]),
+            Feedback.auditor_id == auditor_id,
+            Feedback.feedback_type == "extraction",
+        ).all()
+        for fb in feedbacks:
+            feedback_by_stmt[fb.statement_id] = fb
+
     up_to_order = up_to_statement.order or 0
     for stmt in sorted_statements:
         stmt_order = stmt.order or 0
-        if stmt_order < up_to_order and stmt.pdp_deltas:
-            if "people" in stmt.pdp_deltas:
-                for person_data in stmt.pdp_deltas["people"]:
-                    person = from_dict(Person, person_data)
-                    if person.id:
-                        people_by_id[person.id] = person
+        if stmt_order > up_to_order:
+            break
 
-            if "events" in stmt.pdp_deltas:
-                for event_data in stmt.pdp_deltas["events"]:
-                    event = from_dict(Event, event_data)
-                    if event.id:
-                        events_by_id[event.id] = event
+        # Only process Subject statements (where extraction data is stored)
+        if not stmt.speaker or stmt.speaker.type != SpeakerType.Subject:
+            continue
 
-            if "pair_bonds" in stmt.pdp_deltas:
-                for pair_bond_data in stmt.pdp_deltas["pair_bonds"]:
-                    pair_bond = from_dict(PairBond, pair_bond_data)
-                    if pair_bond.id:
-                        pair_bonds_by_id[pair_bond.id] = pair_bond
+        # Get deltas from auditor feedback or AI extraction
+        deltas_source = None
+        if auditor_id and auditor_id != "AI":
+            fb = feedback_by_stmt.get(stmt.id)
+            if fb and fb.edited_extraction:
+                deltas_source = fb.edited_extraction
+        elif stmt.pdp_deltas:
+            deltas_source = stmt.pdp_deltas
 
-    cumulative_pdp.people = list(people_by_id.values())
-    cumulative_pdp.events = list(events_by_id.values())
-    cumulative_pdp.pair_bonds = list(pair_bonds_by_id.values())
+        if not deltas_source:
+            continue
 
-    return cumulative_pdp
+        # Parse and accumulate
+        for person_data in deltas_source.get("people", []):
+            person = from_dict(Person, person_data)
+            if person.id:
+                people_by_id[person.id] = person
+
+        for event_data in deltas_source.get("events", []):
+            event = from_dict(Event, event_data)
+            if event.id:
+                events_by_id[event.id] = event
+
+        for pb_data in deltas_source.get("pair_bonds", []):
+            pair_bond = from_dict(PairBond, pb_data)
+            if pair_bond.id:
+                pair_bonds_by_id[pair_bond.id] = pair_bond
+
+        # Handle deletes
+        for delete_id in deltas_source.get("delete", []):
+            people_by_id.pop(delete_id, None)
+            events_by_id.pop(delete_id, None)
+            pair_bonds_by_id.pop(delete_id, None)
+
+    pdp = PDP()
+    pdp.people = list(people_by_id.values())
+    pdp.events = list(events_by_id.values())
+    pdp.pair_bonds = list(pair_bonds_by_id.values())
+    return pdp
 
 
 async def update(

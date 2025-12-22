@@ -1,0 +1,887 @@
+{#
+Family Diagram SVG Component
+
+Renders an HTML5/SVG family diagram based on the visual spec in
+btcopilot/doc/FAMILY_DIAGRAM_VISUAL_SPEC.md
+
+Parameters:
+- data: Dict with 'people', 'pair_bonds', 'parent_child' lists
+#}
+
+{% set PERSON_SIZE = 50 %}
+{% set PERSON_SPACING = 120 %}
+{% set GENERATION_GAP = 150 %}
+{% set PAIR_BOND_DROP = (PERSON_SIZE / 2.2)|int %}
+{% set NAME_OFFSET = (PERSON_SIZE * 0.2)|int %}
+
+<style>
+/* Inline styles for embed mode - uses CSS variables with fallbacks */
+.family-diagram-svg .fd-person-shape {
+    fill: none;
+    stroke: var(--color-fg-default, #1a1a1a);
+    stroke-width: 2;
+}
+.family-diagram-svg .fd-person-shape.primary {
+    stroke-width: 3;
+}
+.family-diagram-svg .fd-person-deceased line {
+    stroke: var(--color-fg-default, #1a1a1a);
+    stroke-width: 2;
+}
+.family-diagram-svg .fd-person-primary-outer {
+    fill: none;
+    stroke: var(--color-fg-default, #1a1a1a);
+    stroke-width: 2;
+}
+.family-diagram-svg .fd-person-age {
+    fill: var(--color-fg-default, #1a1a1a);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    text-anchor: middle;
+    dominant-baseline: central;
+}
+.family-diagram-svg .fd-no-data {
+    fill: var(--color-fg-muted, #666);
+    font-size: 14px;
+}
+.family-diagram-svg .fd-person-name {
+    fill: var(--color-fg-default, #1a1a1a);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+}
+.family-diagram-svg .fd-pair-bond {
+    fill: none;
+    stroke: var(--color-fg-default, #1a1a1a);
+    stroke-width: 2;
+}
+.family-diagram-svg .fd-pair-bond.bonded {
+    stroke-dasharray: 8, 4;
+}
+.family-diagram-svg .fd-separation-slash {
+    stroke: var(--color-fg-default, #1a1a1a);
+    stroke-width: 2;
+}
+.family-diagram-svg .fd-child-line {
+    fill: none;
+    stroke: var(--color-fg-default, #1a1a1a);
+    stroke-width: 2;
+}
+.family-diagram-svg .fd-child-line.adopted {
+    stroke-dasharray: 8, 4;
+}
+.family-diagram-svg .fd-jig-line {
+    fill: none;
+    stroke: var(--color-fg-default, #1a1a1a);
+    stroke-width: 2;
+}
+</style>
+
+<svg class="family-diagram-svg"
+     id="family-diagram-{{ statement_id }}"
+     xmlns="http://www.w3.org/2000/svg"
+     width="100%"
+     height="400"
+     viewBox="0 0 800 400"
+     preserveAspectRatio="xMidYMid meet">
+
+    <defs>
+    </defs>
+
+    <!-- Diagram content rendered by JavaScript -->
+    <g class="fd-diagram-content" id="fd-content-{{ statement_id }}">
+        <text x="400" y="200" text-anchor="middle" class="fd-person-name" style="font-size: 14px;">
+            Loading diagram...
+        </text>
+    </g>
+</svg>
+
+<script>
+(function() {
+    // Diagram data from server
+    const diagramData = {{ data | tojson }};
+    const statementId = {{ statement_id }};
+
+    // Visual constants from spec
+    const PERSON_SIZE = 50;
+    const PERSON_SPACING = 120;
+    const GENERATION_GAP = 150;
+    const PAIR_BOND_DROP = Math.floor(PERSON_SIZE / 2.2);
+    const NAME_OFFSET = Math.floor(PERSON_SIZE * 0.2);
+
+    // Build the diagram
+    function buildDiagram() {
+        const svg = document.getElementById(`family-diagram-${statementId}`);
+        const content = document.getElementById(`fd-content-${statementId}`);
+
+        if (!svg || !content) return;
+
+        // Clear loading message
+        content.innerHTML = '';
+
+        if (!diagramData.people || diagramData.people.length === 0) {
+            content.innerHTML = `
+                <text x="400" y="200" text-anchor="middle" class="fd-no-data">
+                    No family data to display
+                </text>
+            `;
+            return;
+        }
+
+        // Layout algorithm: arrange people and pair bonds
+        const layout = computeLayout(diagramData);
+
+        // Update viewBox to fit content
+        const padding = 50;
+        const minX = Math.min(...Object.values(layout.people).map(p => p.x)) - PERSON_SIZE - padding;
+        const maxX = Math.max(...Object.values(layout.people).map(p => p.x)) + PERSON_SIZE + padding + 100;
+        const minY = Math.min(...Object.values(layout.people).map(p => p.y)) - PERSON_SIZE - padding;
+        const maxY = Math.max(...Object.values(layout.people).map(p => p.y)) + PERSON_SIZE + padding + 50;
+
+        const width = Math.max(400, maxX - minX);
+        const height = Math.max(300, maxY - minY);
+        svg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
+        svg.setAttribute('height', Math.min(600, height));
+
+        // Render pair bonds first (so they're behind people)
+        for (const pb of diagramData.pair_bonds) {
+            const personA = layout.people[pb.person_a];
+            const personB = layout.people[pb.person_b];
+            if (personA && personB) {
+                renderPairBond(content, pb, personA, personB, layout);
+            }
+        }
+
+        // Render child connections
+        for (const pc of diagramData.parent_child) {
+            const child = layout.people[pc.child_id];
+            const pairBond = layout.pairBonds[pc.pair_bond_id];
+            if (child && pairBond) {
+                renderChildConnection(content, child, pairBond);
+            }
+        }
+
+        // Render people
+        for (const person of diagramData.people) {
+            const pos = layout.people[person.id];
+            if (pos) {
+                renderPerson(content, person, pos, layout);
+            }
+        }
+    }
+
+    function computeLayout(data) {
+        const layout = {
+            people: {},
+            pairBonds: {}
+        };
+
+        const pairBondsByPerson = {};
+        for (const pb of data.pair_bonds) {
+            pairBondsByPerson[pb.person_a] = pairBondsByPerson[pb.person_a] || [];
+            pairBondsByPerson[pb.person_a].push(pb);
+            pairBondsByPerson[pb.person_b] = pairBondsByPerson[pb.person_b] || [];
+            pairBondsByPerson[pb.person_b].push(pb);
+        }
+
+        // Find children for each pair bond
+        const childrenByPairBond = {};
+        for (const pc of data.parent_child) {
+            childrenByPairBond[pc.pair_bond_id] = childrenByPairBond[pc.pair_bond_id] || [];
+            childrenByPairBond[pc.pair_bond_id].push(pc.child_id);
+        }
+
+        // Build person lookup
+        const peopleById = {};
+        for (const p of data.people) {
+            peopleById[p.id] = p;
+        }
+
+        // Determine generations using parent-child relationships
+        const generations = {};
+        const visited = new Set();
+
+        function assignGeneration(personId, gen) {
+            if (visited.has(personId)) return;
+            visited.add(personId);
+            generations[personId] = gen;
+
+            // Assign same generation to spouses
+            const pbs = pairBondsByPerson[personId] || [];
+            for (const pb of pbs) {
+                const spouseId = pb.person_a === personId ? pb.person_b : pb.person_a;
+                if (!visited.has(spouseId)) {
+                    visited.add(spouseId);
+                    generations[spouseId] = gen;
+                }
+                // Find children through pair bonds
+                const children = childrenByPairBond[pb.id] || [];
+                for (const childId of children) {
+                    assignGeneration(childId, gen + 1);
+                }
+            }
+        }
+
+        // Start from people who have children (they establish the hierarchy)
+        // First pass: find all people who are parents
+        const parentIds = new Set();
+        for (const pc of data.parent_child) {
+            const pb = data.pair_bonds.find(b => b.id === pc.pair_bond_id);
+            if (pb) {
+                parentIds.add(pb.person_a);
+                parentIds.add(pb.person_b);
+            }
+        }
+
+        // Find the oldest generation: people who have children but no parents
+        const rootParents = data.people.filter(p => parentIds.has(p.id) && !p.parents);
+        for (const person of rootParents) {
+            assignGeneration(person.id, 0);
+        }
+
+        // Handle people with parents but not yet assigned (children)
+        for (const person of data.people) {
+            if (generations[person.id] === undefined && person.parents) {
+                // Find parent's generation
+                const parentPb = data.pair_bonds.find(pb => pb.id === person.parents);
+                if (parentPb) {
+                    const parentGen = generations[parentPb.person_a] ?? generations[parentPb.person_b];
+                    if (parentGen !== undefined) {
+                        assignGeneration(person.id, parentGen + 1);
+                    }
+                }
+            }
+        }
+
+        // Handle remaining unassigned people (no family connections)
+        // Place them at generation 0 by default
+        for (const person of data.people) {
+            if (generations[person.id] === undefined) {
+                generations[person.id] = 0;
+            }
+        }
+
+        // Group by generation
+        const byGeneration = {};
+        for (const person of data.people) {
+            const gen = generations[person.id];
+            byGeneration[gen] = byGeneration[gen] || [];
+            byGeneration[gen].push(person);
+        }
+
+        // Identify truly unconnected people (no parents, no spouse, no children)
+        // parentIds already defined above for generation assignment
+        const unconnectedPeople = data.people.filter(p =>
+            !p.parents &&
+            !pairBondsByPerson[p.id]?.length &&
+            !parentIds.has(p.id)
+        );
+        const unconnectedIds = new Set(unconnectedPeople.map(p => p.id));
+
+        // Smart positioning: spouses adjacent, children under parents
+        const genKeys = Object.keys(byGeneration).map(Number).sort((a, b) => a - b);
+        const positioned = new Set();
+
+        // First pass: position pair bonds (couples) together, starting from root generation
+        for (const gen of genKeys) {
+            let currentX = 100;
+            const genY = 100 + gen * GENERATION_GAP;
+            const peopleInGen = byGeneration[gen];
+
+            // Group people by their pair bonds - couples should be adjacent
+            // But divorced/separated couples should be treated as unrelated (extra spacing)
+            const couples = [];
+            const singles = [];
+            const processedInGen = new Set();
+
+            for (const person of peopleInGen) {
+                if (processedInGen.has(person.id)) continue;
+
+                // Find if this person is in a pair bond with someone in same generation
+                const pbs = pairBondsByPerson[person.id] || [];
+                let foundCouple = false;
+
+                for (const pb of pbs) {
+                    const partnerId = pb.person_a === person.id ? pb.person_b : pb.person_a;
+                    const partner = peopleById[partnerId];
+                    if (partner && generations[partnerId] === gen && !processedInGen.has(partnerId)) {
+                        // Check if divorced - divorced couples need extra spacing
+                        const isDivorced = pb.divorced || pb.separated;
+                        couples.push({ person1: person, person2: partner, pairBond: pb, isDivorced: isDivorced });
+                        processedInGen.add(person.id);
+                        processedInGen.add(partnerId);
+                        foundCouple = true;
+                        break;
+                    }
+                }
+
+                if (!foundCouple && !processedInGen.has(person.id)) {
+                    singles.push(person);
+                    processedInGen.add(person.id);
+                }
+            }
+
+            // Position couples first, then singles
+            // For children: try to position under their parents
+            const elementsToPosition = [];
+
+            // Add couples
+            for (const couple of couples) {
+                elementsToPosition.push({ type: 'couple', data: couple });
+            }
+
+            // Add singles
+            for (const single of singles) {
+                elementsToPosition.push({ type: 'single', data: single });
+            }
+
+            // Position strategy (COUPLES TAKE PRIORITY):
+            // 1. Find all couples in this generation
+            // 2. Build "family units": couple + their respective siblings
+            // 3. Position family units: left-siblings, person1, person2, right-siblings
+            // 4. People without parents or spouses go at the end
+
+            const positioned = new Set();
+
+            // Build spouse map for this generation
+            const spouseOf = {}; // personId -> spouseId
+            for (const person of peopleInGen) {
+                const pbs = pairBondsByPerson[person.id] || [];
+                for (const pb of pbs) {
+                    const partnerId = pb.person_a === person.id ? pb.person_b : pb.person_a;
+                    if (generations[partnerId] === gen) {
+                        spouseOf[person.id] = partnerId;
+                        break;
+                    }
+                }
+            }
+
+            // Group people by parent pair bond
+            const siblingGroups = {}; // parentPbId -> [people]
+            const noParents = [];
+
+            for (const person of peopleInGen) {
+                if (person.parents) {
+                    siblingGroups[person.parents] = siblingGroups[person.parents] || [];
+                    siblingGroups[person.parents].push(person);
+                } else {
+                    noParents.push(person);
+                }
+            }
+
+            // Find couples that bridge two sibling groups (married between families)
+            // These couples anchor "family units" that include both sets of siblings
+            const familyUnits = []; // [{couple: [p1, p2], leftSiblings: [], rightSiblings: []}]
+            const processedSiblingGroups = new Set();
+
+            for (const person of peopleInGen) {
+                if (positioned.has(person.id)) continue;
+                const spouseId = spouseOf[person.id];
+                if (!spouseId) continue;
+
+                const spouse = peopleById[spouseId];
+                if (!spouse || positioned.has(spouseId)) continue;
+
+                // Find the pair bond to check divorce status
+                const pbs = pairBondsByPerson[person.id] || [];
+                const theirPb = pbs.find(pb =>
+                    (pb.person_a === person.id && pb.person_b === spouseId) ||
+                    (pb.person_b === person.id && pb.person_a === spouseId)
+                );
+                const isDivorced = theirPb && (theirPb.divorced || theirPb.separated);
+
+                // This is a couple - build a family unit around them
+                const personParents = person.parents;
+                const spouseParents = spouse.parents;
+
+                // Collect siblings (excluding the married person themselves)
+                const personSiblings = personParents ?
+                    (siblingGroups[personParents] || []).filter(s => s.id !== person.id && !spouseOf[s.id]) : [];
+                const spouseSiblings = spouseParents ?
+                    (siblingGroups[spouseParents] || []).filter(s => s.id !== spouseId && !spouseOf[s.id]) : [];
+
+                // Determine left/right based on parent positions
+                let leftSiblings, rightSiblings, person1, person2;
+                const personParentX = personParents && layout.pairBonds[personParents] ?
+                    (layout.pairBonds[personParents].x1 + layout.pairBonds[personParents].x2) / 2 : 0;
+                const spouseParentX = spouseParents && layout.pairBonds[spouseParents] ?
+                    (layout.pairBonds[spouseParents].x1 + layout.pairBonds[spouseParents].x2) / 2 : 0;
+
+                if (personParentX <= spouseParentX) {
+                    // Person's family on left, spouse's family on right
+                    leftSiblings = personSiblings;
+                    rightSiblings = spouseSiblings;
+                    person1 = person;
+                    person2 = spouse;
+                } else {
+                    // Spouse's family on left, person's family on right
+                    leftSiblings = spouseSiblings;
+                    rightSiblings = personSiblings;
+                    person1 = spouse;
+                    person2 = person;
+                }
+
+                familyUnits.push({
+                    couple: [person1, person2],
+                    leftSiblings: leftSiblings,
+                    rightSiblings: rightSiblings,
+                    personParents: personParents,
+                    spouseParents: spouseParents,
+                    isDivorced: isDivorced
+                });
+
+                if (personParents) processedSiblingGroups.add(personParents);
+                if (spouseParents) processedSiblingGroups.add(spouseParents);
+            }
+
+            // Sort family units by average parent X position
+            familyUnits.sort((a, b) => {
+                const getAvgX = (unit) => {
+                    let sum = 0, count = 0;
+                    if (unit.personParents && layout.pairBonds[unit.personParents]) {
+                        const pb = layout.pairBonds[unit.personParents];
+                        sum += (pb.x1 + pb.x2) / 2;
+                        count++;
+                    }
+                    if (unit.spouseParents && layout.pairBonds[unit.spouseParents]) {
+                        const pb = layout.pairBonds[unit.spouseParents];
+                        sum += (pb.x1 + pb.x2) / 2;
+                        count++;
+                    }
+                    return count > 0 ? sum / count : Infinity;
+                };
+                return getAvgX(a) - getAvgX(b);
+            });
+
+            // Position family units
+            for (const unit of familyUnits) {
+                // Left siblings
+                for (const sib of unit.leftSiblings) {
+                    if (!positioned.has(sib.id)) {
+                        layout.people[sib.id] = { x: currentX, y: genY, person: sib };
+                        positioned.add(sib.id);
+                        currentX += PERSON_SPACING;
+                    }
+                }
+
+                // The couple (person1 then person2)
+                // Divorced couples get extra spacing (1.5× person width as per spec)
+                const coupleSpacing = unit.isDivorced ? PERSON_SPACING * 1.5 : PERSON_SPACING;
+                for (const p of unit.couple) {
+                    if (!positioned.has(p.id)) {
+                        layout.people[p.id] = { x: currentX, y: genY, person: p };
+                        positioned.add(p.id);
+                        currentX += coupleSpacing;
+                    }
+                }
+
+                // Right siblings
+                for (const sib of unit.rightSiblings) {
+                    if (!positioned.has(sib.id)) {
+                        layout.people[sib.id] = { x: currentX, y: genY, person: sib };
+                        positioned.add(sib.id);
+                        currentX += PERSON_SPACING;
+                    }
+                }
+
+                currentX += PERSON_SPACING / 2; // Gap between family units
+            }
+
+            // Position remaining sibling groups (not part of any couple)
+            for (const [parentPbId, siblings] of Object.entries(siblingGroups)) {
+                if (processedSiblingGroups.has(parentPbId)) continue;
+
+                const parentPb = layout.pairBonds[parentPbId];
+                let groupStartX = currentX;
+                if (parentPb) {
+                    const parentCenterX = (parentPb.x1 + parentPb.x2) / 2;
+                    const groupWidth = siblings.filter(s => !positioned.has(s.id)).length * PERSON_SPACING;
+                    groupStartX = Math.max(currentX, parentCenterX - groupWidth / 2);
+                }
+
+                let x = groupStartX;
+                for (const sib of siblings) {
+                    if (!positioned.has(sib.id)) {
+                        layout.people[sib.id] = { x: x, y: genY, person: sib };
+                        positioned.add(sib.id);
+                        x += PERSON_SPACING;
+                    }
+                }
+                currentX = x + PERSON_SPACING / 2;
+            }
+
+            // Position remaining people (no parents, not positioned as spouses)
+            // Exclude truly unconnected people - they go on the perimeter
+            for (const person of noParents) {
+                if (!positioned.has(person.id) && !unconnectedIds.has(person.id)) {
+                    layout.people[person.id] = { x: currentX, y: genY, person: person };
+                    positioned.add(person.id);
+                    currentX += PERSON_SPACING;
+                }
+            }
+        }
+
+        // Position unconnected people on the right perimeter at vertical middle
+        if (unconnectedPeople.length > 0) {
+            // Find the rightmost X position and vertical middle
+            let maxX = 100;
+            let minY = Infinity, maxY = -Infinity;
+            for (const pos of Object.values(layout.people)) {
+                maxX = Math.max(maxX, pos.x);
+                minY = Math.min(minY, pos.y);
+                maxY = Math.max(maxY, pos.y);
+            }
+
+            const middleY = (minY + maxY) / 2;
+            let unconnectedX = maxX + PERSON_SPACING * 1.5; // Extra gap for perimeter
+
+            for (const person of unconnectedPeople) {
+                if (!positioned.has(person.id)) {
+                    layout.people[person.id] = { x: unconnectedX, y: middleY, person: person };
+                    positioned.add(person.id);
+                    unconnectedX += PERSON_SPACING;
+                }
+            }
+        }
+
+        // Adjust parent positions to encompass children (canopy effect via positioning)
+        // Per spec: parents move outward so children fall between them, creating wider U-shape
+        const CANOPY_PADDING = PERSON_SPACING / 2;
+
+        for (const pb of data.pair_bonds) {
+            const personA = layout.people[pb.person_a];
+            const personB = layout.people[pb.person_b];
+            if (!personA || !personB) continue;
+
+            const children = childrenByPairBond[pb.id] || [];
+            if (children.length === 0) continue;
+
+            // Find children X range
+            let childMinX = Infinity, childMaxX = -Infinity;
+            for (const childId of children) {
+                const childPos = layout.people[childId];
+                if (childPos) {
+                    childMinX = Math.min(childMinX, childPos.x);
+                    childMaxX = Math.max(childMaxX, childPos.x);
+                }
+            }
+
+            if (childMinX === Infinity) continue;
+
+            // Parents should encompass children with padding
+            const requiredLeft = childMinX - CANOPY_PADDING;
+            const requiredRight = childMaxX + CANOPY_PADDING;
+
+            // Determine which parent is left and which is right
+            const leftParent = personA.x < personB.x ? personA : personB;
+            const rightParent = personA.x < personB.x ? personB : personA;
+
+            // Adjust positions if needed (move parents outward)
+            if (leftParent.x > requiredLeft) {
+                leftParent.x = requiredLeft;
+            }
+            if (rightParent.x < requiredRight) {
+                rightParent.x = requiredRight;
+            }
+        }
+
+        // Calculate pair bond positions (horizontal bar)
+        // U-shape goes strictly from person A to person B (per spec Section 2)
+        for (const pb of data.pair_bonds) {
+            const personA = layout.people[pb.person_a];
+            const personB = layout.people[pb.person_b];
+            if (personA && personB) {
+                const y = Math.max(personA.y, personB.y) + PERSON_SIZE / 2 + PAIR_BOND_DROP;
+                const coupleX1 = Math.min(personA.x, personB.x);
+                const coupleX2 = Math.max(personA.x, personB.x);
+
+                layout.pairBonds[pb.id] = {
+                    x1: coupleX1,
+                    x2: coupleX2,
+                    coupleX1: coupleX1,
+                    coupleX2: coupleX2,
+                    y: y,
+                    pairBond: pb
+                };
+            }
+        }
+
+        return layout;
+    }
+
+    function renderPerson(container, person, pos, layout) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
+        g.setAttribute('class', 'fd-person');
+        g.setAttribute('data-person-id', person.id);
+
+        const halfSize = PERSON_SIZE / 2;
+
+        // Detect if we should place label on left instead of right
+        // Check for close neighbor on the right that would cause overlap
+        // Threshold should be >= PERSON_SPACING to move labels when people are at standard spacing
+        const COLLISION_THRESHOLD = PERSON_SPACING + halfSize;  // 120 + 25 = 145
+        let labelOnLeft = false;
+
+        for (const otherId in layout.people) {
+            if (otherId == person.id) continue;
+            const otherPos = layout.people[otherId];
+            // Check if other person is on the same row (similar Y) and close to the right
+            if (Math.abs(otherPos.y - pos.y) < PERSON_SIZE &&
+                otherPos.x > pos.x &&
+                otherPos.x - pos.x < COLLISION_THRESHOLD) {
+                labelOnLeft = true;
+                break;
+            }
+        }
+
+        // Determine shape based on gender
+        // Since PDP doesn't track gender, default to unknown (rounded rect)
+        const gender = person.gender || 'unknown';
+
+        if (gender === 'male') {
+            // Square for male
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', -halfSize);
+            rect.setAttribute('y', -halfSize);
+            rect.setAttribute('width', PERSON_SIZE);
+            rect.setAttribute('height', PERSON_SIZE);
+            rect.setAttribute('class', 'fd-person-shape' + (person.primary ? ' primary' : ''));
+            g.appendChild(rect);
+
+            // Double outline for primary person
+            if (person.primary) {
+                const outer = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                const margin = 5;
+                outer.setAttribute('x', -halfSize - margin);
+                outer.setAttribute('y', -halfSize - margin);
+                outer.setAttribute('width', PERSON_SIZE + margin * 2);
+                outer.setAttribute('height', PERSON_SIZE + margin * 2);
+                outer.setAttribute('class', 'fd-person-primary-outer');
+                g.insertBefore(outer, rect);
+            }
+        } else if (gender === 'female') {
+            // Circle for female
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', 0);
+            circle.setAttribute('cy', 0);
+            circle.setAttribute('r', halfSize);
+            circle.setAttribute('class', 'fd-person-shape' + (person.primary ? ' primary' : ''));
+            g.appendChild(circle);
+
+            // Double outline for primary person
+            if (person.primary) {
+                const outer = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                const margin = 5;
+                outer.setAttribute('cx', 0);
+                outer.setAttribute('cy', 0);
+                outer.setAttribute('r', halfSize + margin);
+                outer.setAttribute('class', 'fd-person-primary-outer');
+                g.insertBefore(outer, circle);
+            }
+        } else {
+            // Unknown gender: rounded rectangle with "?"
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', -halfSize);
+            rect.setAttribute('y', -halfSize);
+            rect.setAttribute('width', PERSON_SIZE);
+            rect.setAttribute('height', PERSON_SIZE);
+            rect.setAttribute('rx', 15);
+            rect.setAttribute('ry', 15);
+            rect.setAttribute('class', 'fd-person-shape');
+            g.appendChild(rect);
+
+            // Question mark for unknown gender
+            const qmark = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            qmark.setAttribute('x', 0);
+            qmark.setAttribute('y', 0);
+            qmark.setAttribute('class', 'fd-person-age');
+            qmark.textContent = '?';
+            g.appendChild(qmark);
+        }
+
+        // Deceased X
+        if (person.deceased) {
+            const deceasedG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            deceasedG.setAttribute('class', 'fd-person-deceased');
+
+            // Shorten X lines slightly to keep age visible
+            const margin = 8;
+            const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line1.setAttribute('x1', -halfSize + margin);
+            line1.setAttribute('y1', -halfSize + margin);
+            line1.setAttribute('x2', halfSize - margin);
+            line1.setAttribute('y2', halfSize - margin);
+
+            const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line2.setAttribute('x1', halfSize - margin);
+            line2.setAttribute('y1', -halfSize + margin);
+            line2.setAttribute('x2', -halfSize + margin);
+            line2.setAttribute('y2', halfSize - margin);
+
+            deceasedG.appendChild(line1);
+            deceasedG.appendChild(line2);
+            g.appendChild(deceasedG);
+        }
+
+        // Age inside shape (if available and gender is known)
+        if (person.age && gender !== 'unknown') {
+            const age = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            age.setAttribute('x', 0);
+            age.setAttribute('y', 0);
+            age.setAttribute('class', 'fd-person-age');
+            age.textContent = person.age;
+            g.appendChild(age);
+        }
+
+        // Name label - placed on left if collision detected, otherwise right (per spec)
+        const name = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        if (labelOnLeft) {
+            name.setAttribute('x', -(halfSize + NAME_OFFSET));
+            name.setAttribute('text-anchor', 'end');
+        } else {
+            name.setAttribute('x', halfSize + NAME_OFFSET);
+        }
+        name.setAttribute('y', -halfSize + 12);
+        name.setAttribute('class', 'fd-person-name');
+        name.textContent = person.name || `Person ${person.id}`;
+        g.appendChild(name);
+
+        // ID label (for debugging/development)
+        const idLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        if (labelOnLeft) {
+            idLabel.setAttribute('x', -(halfSize + NAME_OFFSET));
+            idLabel.setAttribute('text-anchor', 'end');
+        } else {
+            idLabel.setAttribute('x', halfSize + NAME_OFFSET);
+        }
+        idLabel.setAttribute('y', -halfSize + 26);
+        idLabel.setAttribute('class', 'fd-person-name');
+        idLabel.setAttribute('style', 'font-size: 10px; fill: var(--color-fg-muted);');
+        idLabel.textContent = `ID: ${person.id}`;
+        g.appendChild(idLabel);
+
+        container.appendChild(g);
+    }
+
+    function renderPairBond(container, pairBond, personA, personB, layout) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'fd-pair-bond-group');
+        g.setAttribute('data-pair-bond-id', pairBond.id);
+
+        // Get pair bond bar from layout
+        const pbLayout = layout.pairBonds[pairBond.id];
+        const barX1 = pbLayout ? pbLayout.x1 : personA.x;  // Stretched left (for children)
+        const barX2 = pbLayout ? pbLayout.x2 : personB.x;  // Stretched right (for children)
+        const coupleX1 = pbLayout ? pbLayout.coupleX1 : Math.min(personA.x, personB.x);  // Original couple left
+        const coupleX2 = pbLayout ? pbLayout.coupleX2 : Math.max(personA.x, personB.x);  // Original couple right
+        const barY = pbLayout ? pbLayout.y : Math.max(personA.y, personB.y) + PERSON_SIZE / 2 + PAIR_BOND_DROP;
+
+        // Draw U-shape connecting the couple, with optional extensions for children
+        const aBottom = personA.y + PERSON_SIZE / 2;
+        const bBottom = personB.y + PERSON_SIZE / 2;
+        const bondClass = 'fd-pair-bond' + (!pairBond.married ? ' bonded' : '');
+
+        // Vertical line from personA down to bar
+        const lineA = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        lineA.setAttribute('x1', personA.x);
+        lineA.setAttribute('y1', aBottom);
+        lineA.setAttribute('x2', personA.x);
+        lineA.setAttribute('y2', barY);
+        lineA.setAttribute('class', bondClass);
+        g.appendChild(lineA);
+
+        // Vertical line from personB down to bar
+        const lineB = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        lineB.setAttribute('x1', personB.x);
+        lineB.setAttribute('y1', bBottom);
+        lineB.setAttribute('x2', personB.x);
+        lineB.setAttribute('y2', barY);
+        lineB.setAttribute('class', bondClass);
+        g.appendChild(lineB);
+
+        // Horizontal bar - strictly between the couple (per spec Section 2)
+        // The canopy effect comes from positioning parents further apart, not extending lines
+        const coupleBar = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        coupleBar.setAttribute('x1', coupleX1);
+        coupleBar.setAttribute('y1', barY);
+        coupleBar.setAttribute('x2', coupleX2);
+        coupleBar.setAttribute('y2', barY);
+        coupleBar.setAttribute('class', bondClass);
+        g.appendChild(coupleBar);
+
+        // Separation/divorce slashes (centered on the couple's horizontal bar, not extended span)
+        if (pairBond.separated || pairBond.divorced) {
+            const midX = (coupleX1 + coupleX2) / 2;
+            const slashHeight = 15;
+            const slashOffset = 10;
+
+            // First slash (separation)
+            const slash1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            slash1.setAttribute('x1', midX - slashOffset);
+            slash1.setAttribute('y1', barY + slashHeight / 2);
+            slash1.setAttribute('x2', midX);
+            slash1.setAttribute('y2', barY - slashHeight / 2);
+            slash1.setAttribute('class', 'fd-separation-slash');
+            g.appendChild(slash1);
+
+            // Second slash (divorce only)
+            if (pairBond.divorced) {
+                const slash2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                slash2.setAttribute('x1', midX);
+                slash2.setAttribute('y1', barY + slashHeight / 2);
+                slash2.setAttribute('x2', midX + slashOffset);
+                slash2.setAttribute('y2', barY - slashHeight / 2);
+                slash2.setAttribute('class', 'fd-separation-slash');
+                g.appendChild(slash2);
+            }
+        }
+
+        container.appendChild(g);
+    }
+
+    function renderChildConnection(container, child, pairBond) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'fd-child-connection');
+
+        const childTop = child.y - PERSON_SIZE / 2;
+
+        // Use ORIGINAL couple span for child attachment (not stretched span)
+        // Per spec: diagonal when outside couple span, vertical when inside
+        const coupleLeft = pairBond.coupleX1 !== undefined ? pairBond.coupleX1 : Math.min(pairBond.x1, pairBond.x2);
+        const coupleRight = pairBond.coupleX2 !== undefined ? pairBond.coupleX2 : Math.max(pairBond.x1, pairBond.x2);
+
+        // Determine connection point on parent bar
+        let connectionX;
+        if (child.x >= coupleLeft && child.x <= coupleRight) {
+            // Child is within couple span - vertical line
+            connectionX = child.x;
+        } else if (child.x < coupleLeft) {
+            // Child is left of couple - diagonal to left end
+            connectionX = coupleLeft;
+        } else {
+            // Child is right of couple - diagonal to right end
+            connectionX = coupleRight;
+        }
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', child.x);
+        line.setAttribute('y1', childTop);
+        line.setAttribute('x2', connectionX);
+        line.setAttribute('y2', pairBond.y);
+
+        // Check if child is adopted (would need to be passed in data)
+        const isAdopted = child.person && child.person.adopted;
+        line.setAttribute('class', 'fd-child-line' + (isAdopted ? ' adopted' : ''));
+
+        g.appendChild(line);
+        container.appendChild(g);
+    }
+
+    // Build diagram when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', buildDiagram);
+    } else {
+        buildDiagram();
+    }
+})();
+</script>

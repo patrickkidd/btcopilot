@@ -237,6 +237,21 @@ Each person appears **exactly once** on the diagram. Lines may cross to maintain
 
 ## 8. Layout Guidelines
 
+### Core Layout Principles
+
+**These rules are mandatory and take priority over aesthetics:**
+
+1. **Same-generation rule**: All people in the same generation appear on the same horizontal row, unless space constraints require an exception.
+
+2. **Spouse proximity**: Partners in a pair bond must be positioned adjacent to each other horizontally. No other people should be placed between them.
+
+3. **Children under parents**: Children should be positioned horizontally beneath their parents' pair bond bar. The diagram does NOT need to be symmetrical—prioritize placing children under their parents over centering the diagram.
+
+4. **Unconnected people**: People with no family connections (friends, acquaintances) should be:
+   - Placed on the same row as their associated family member if that association is known
+   - Otherwise, positioned near the vertical middle on the perimeter of the family diagram
+   - May be placed randomly if no association can be determined
+
 ### Spacing Summary
 
 | Element Pair | Recommended Minimum Spacing |
@@ -244,13 +259,18 @@ Each person appears **exactly once** on the diagram. Lines may cross to maintain
 | Between siblings | 2× person width |
 | Between unrelated persons (same row) | 1.5× person width |
 | Between generations (vertical) | 2× person height |
+| Between pair bond partners | Minimal (adjacent positioning) |
+| Between divorced/separated ex-spouses | 1.5× person width (treat as unrelated) |
 
 ### Visual Priorities
 
 When arranging elements, prioritize in this order:
-1. **Clarity**: No overlapping elements
-2. **Compactness**: Minimal wasted space
-3. **Aesthetics**: Pleasing proportions
+1. **Correctness**: Children under parents, spouses adjacent
+2. **Clarity**: No overlapping elements
+3. **Compactness**: Minimal wasted space
+4. **Aesthetics**: Pleasing proportions (lowest priority)
+
+**Note**: The diagram does NOT need to be symmetrical. Family structure takes priority over visual balance.
 
 ### Large Families
 
@@ -337,6 +357,67 @@ A married couple (square = male, circle = female) with three children (two sons,
 ```
 
 A man (center) with two pair bonds: divorced from his first wife (left, indicated by double slashes on the horizontal bar) and married to his second wife (right). The U-shape connects all three, with the divorce indicator on the left segment. Each child connects via a single vertical line to the parents' horizontal bar.
+
+---
+
+## 11. Implementation Notes
+
+### HTML5/SVG Renderer (Training App)
+
+The training app includes an HTML5/SVG renderer for visualizing PDP (Pending Data Pool) extractions. This renderer implements a subset of the full specification for quick visualization during SARF coding.
+
+**Endpoint**: `/training/diagrams/render/<statement_id>`
+
+**Supported Features**:
+- Person symbols (unknown gender shown as rounded rectangles with "?")
+- Name labels positioned to the right of each person
+- ID labels for debugging (negative IDs indicate PDP items)
+- Pair bond U-shapes with solid/dashed lines
+- Child connections (vertical/diagonal lines to parent bars)
+- Dark/light mode adaptation via CSS custom properties
+
+**Not Yet Implemented**:
+- Gender-specific shapes (requires gender field in PDP schema)
+- Deceased indicators (X through shape)
+- Primary/index person double outline
+- Separation/divorce slashes on pair bonds
+- Multiple birth jig lines
+- Age display inside person symbols
+
+**CSS Color Variables**:
+The renderer uses CSS custom properties for theme adaptation:
+- `--color-fg-default`: Primary stroke and text color
+- `--color-fg-muted`: Secondary text (IDs, labels)
+- `--color-canvas-default`: Background color
+
+**Layout Algorithm**:
+1. Determine generations via parent-child relationships
+2. Assign root generation (0) to people without parents
+3. Assign spouses the same generation as their partner
+4. Position people horizontally within each generation using "family units":
+   - **Couples take priority over sibling groups**: When a sibling from one family marries a sibling from another family, the couple is positioned together
+   - A "family unit" = left-siblings + couple + right-siblings
+   - Left siblings are from the spouse whose parents are further left
+   - Right siblings are from the spouse whose parents are further right
+   - Unmarried siblings without couple connections are positioned separately
+5. **Unconnected people on perimeter**: People with no family connections (no parents, no spouse, no children) are positioned on the right edge of the diagram at the vertical middle (average of min/max Y positions)
+6. **Position parents to encompass children** (canopy effect):
+   - When a couple has children, the parents' X positions should be adjusted outward so that children fall between them
+   - Add padding (e.g., half of PERSON_SPACING) beyond the outermost children's positions
+   - This creates a "canopy" effect by expanding the couple's positions, NOT by extending lines
+   - The U-shape pair bond naturally becomes wider because the parents are further apart
+   - This breaks the grid-like appearance and emphasizes the parent-child hierarchy
+   - **Exceptions**: Do NOT apply canopy positioning when:
+     - There isn't enough horizontal space (would cause overlap with adjacent elements)
+     - There are too many children to reasonably fit under the parents
+   - In exception cases, children may extend beyond the parents' positions
+7. Draw pair bond U-shape:
+   - The horizontal bar goes **strictly from person A's X to person B's X** (per Section 2)
+   - Vertical lines descend from each partner's bottom center to the horizontal bar
+   - NO extensions beyond the couple's positions - the canopy effect comes from positioning, not line extension
+8. Connect children to parent pair bonds:
+   - Children attach to the horizontal bar between the parents
+   - Vertical line if child is within couple span, diagonal to nearest corner if outside
 
 ---
 

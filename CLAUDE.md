@@ -348,6 +348,30 @@ Add SARF confidence threshold validation
 
 **Verification**: After updating, use the `/update-sarf-docs` slash command (if available) or manually review the entire doc for consistency.
 
+### Family Diagram Visual Spec Maintenance
+
+**CRITICAL**: When working on family diagram rendering (HTML5 renderer, layout algorithms, SVG generation), you MUST automatically update [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) with any new rules or layout behaviors.
+
+**Trigger Files** (changes to any of these require spec review):
+- `training/templates/components/family_diagram_svg.html` - SVG renderer and layout algorithm
+- `training/routes/diagram_render.py` - Diagram rendering endpoint
+- Any file implementing diagram layout logic
+
+**What to Update**:
+- New layout rules (positioning, spacing, generation assignment)
+- Changes to visual conventions (shapes, lines, symbols)
+- New relationship types or indicators
+- Layout algorithm behaviors
+- Any user-reported layout issues and their solutions
+
+**Process**:
+1. When user reports a layout issue or requests a change, FIRST update the visual spec with the new rule
+2. Then implement the rule in code
+3. Test the implementation
+4. Confirm the spec and code are in sync
+
+This ensures the visual spec remains the authoritative source of truth for all family diagram layout implementations.
+
 ---
 
 ## Debugging and validation rules

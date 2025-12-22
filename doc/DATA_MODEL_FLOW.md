@@ -875,6 +875,46 @@ Approved ground truth is exported to `./model_tests/data/uncategorized/` as JSON
 
 **Alpine.js State Management**: Tracks editing state, tab selection, approval status, and person data version for reactive updates.
 
+### Ground Truth Data Access Rules
+
+**CRITICAL - Never forget these:**
+
+1. **PDP is ALWAYS cumulative** - The PDP (shown in the "Cumulative Notes" column of the discussion page) builds incrementally from all statements up to a given point. No exceptions. Use `pdp_module.cumulative(discussion, statement)`.
+
+2. **All GT data is associated with an auditor** - Ground truth is created through human auditor feedback, not AI extraction. The AI `pdp_deltas` field on Statement is the raw AI output; GT comes from auditor-edited Feedback records.
+
+3. **Current auditor**: `patrick@alaskafamilysystems.com` is currently the only auditor approving GT data.
+
+4. **To get GT data for a statement**: Query `Feedback` table with the auditor_id and `feedback_type='extraction'`. The `edited_extraction` field contains the human-corrected PDP data.
+
+5. **Parent-child relationships**: The `Person.parents` field references a `PairBond.id`. If parents exist, the person is a child of that pair bond.
+
+6. **Pair bonds come from events, not direct pair_bond entries**: In the SARF editor (discussion page), pair bonds are NOT added directly. Instead, married/bonded relationships are recorded as **Event** deltas with `kind: married` or `kind: bonded`, plus `person` and `spouse` fields. To render pair bonds in a diagram, you must scan events for these kinds and create pair bonds from the person/spouse pairs. The `pair_bonds` array in `edited_extraction` is only populated when assigning parents to a person (which creates the parent pair bond).
+
+**Testing GT data correctly:**
+```python
+# WRONG - AI extraction may be empty for many statements
+stmt.pdp_deltas
+
+# WRONG - pdp_module.cumulative() uses AI pdp_deltas, not auditor feedback
+cumulative = pdp_module.cumulative(discussion, statement)
+
+# RIGHT - Auditor feedback contains GT for a single statement
+feedback = Feedback.query.filter_by(
+    statement_id=stmt.id,
+    auditor_id='patrick@alaskafamilysystems.com',
+    feedback_type='extraction'
+).first()
+if feedback and feedback.edited_extraction:
+    pdp = from_dict(PDPDeltas, feedback.edited_extraction)
+
+# RIGHT - Build cumulative from auditor feedback (see discussions.py audit route)
+# Loop through sorted statements, get each auditor's edited_extraction,
+# and accumulate people/events/pair_bonds by ID
+```
+
+**CRITICAL**: The `pdp_module.cumulative()` function builds cumulative PDP from `Statement.pdp_deltas` (AI extraction). For GT data from auditors, you must build cumulative by iterating through statements and using `Feedback.edited_extraction`. See `_build_cumulative_pdp()` in `diagram_render.py` or the audit route in `discussions.py` for the correct pattern.
+
 ### Critical Differences from Personal App Data Flow
 
 | Aspect | Personal App | Training App |

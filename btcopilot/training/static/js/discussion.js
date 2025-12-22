@@ -4651,3 +4651,11 @@ async function reextractFromResultModal() {
         button.disabled = false;
     }
 }
+
+function openFamilyDiagram(statementId, auditorId) {
+    let url = `/training/diagrams/render/${statementId}`;
+    if (auditorId && auditorId !== 'AI') {
+        url += `/${auditorId}`;
+    }
+    window.open(url, '_blank');
+}

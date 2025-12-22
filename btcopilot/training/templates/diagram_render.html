@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* Family Diagram SVG styles - adapts to light/dark mode */
+.family-diagram-container {
+    width: 100%;
+    min-height: 400px;
+    border: 1px solid var(--color-border-default);
+    border-radius: 8px;
+    background: var(--color-canvas-default);
+    overflow: auto;
+    padding: 20px;
+}
+
+.family-diagram-svg {
+    display: block;
+    margin: 0 auto;
+}
+
+/* Person shapes */
+.fd-person-shape {
+    fill: none;
+    stroke: var(--color-fg-default);
+    stroke-width: 2;
+}
+
+.fd-person-shape.primary {
+    stroke-width: 3;
+}
+
+.fd-person-deceased line {
+    stroke: var(--color-fg-default);
+    stroke-width: 2;
+}
+
+/* Double outline for primary/index person */
+.fd-person-primary-outer {
+    fill: none;
+    stroke: var(--color-fg-default);
+    stroke-width: 2;
+}
+
+/* Age text inside person */
+.fd-person-age {
+    fill: var(--color-fg-default);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    text-anchor: middle;
+    dominant-baseline: central;
+}
+
+/* Name label */
+.fd-person-name {
+    fill: var(--color-fg-default);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+}
+
+/* Pair bond lines */
+.fd-pair-bond {
+    fill: none;
+    stroke: var(--color-fg-default);
+    stroke-width: 2;
+}
+
+.fd-pair-bond.bonded {
+    stroke-dasharray: 8, 4;
+}
+
+/* Separation/divorce indicators */
+.fd-separation-slash {
+    stroke: var(--color-fg-default);
+    stroke-width: 2;
+}
+
+/* Child connection lines */
+.fd-child-line {
+    fill: none;
+    stroke: var(--color-fg-default);
+    stroke-width: 2;
+}
+
+.fd-child-line.adopted {
+    stroke-dasharray: 8, 4;
+}
+
+/* Multiple birth jig line */
+.fd-jig-line {
+    fill: none;
+    stroke: var(--color-fg-default);
+    stroke-width: 2;
+}
+
+/* Info panel */
+.diagram-info {
+    margin-bottom: 1rem;
+}
+</style>
+
+<div class="diagram-info">
+    <h2 class="title is-4">Family Diagram</h2>
+    <p class="subtitle is-6">
+        Statement #{{ statement.order + 1 }} (ID: {{ statement.id }})
+        {% if auditor_id and auditor_id != 'AI' %}
+        &middot; Auditor: {{ auditor_id }}
+        {% else %}
+        &middot; AI Extraction
+        {% endif %}
+    </p>
+</div>
+
+<div class="family-diagram-container">
+    {% include "components/family_diagram_svg.html" %}
+</div>
+
+<div class="mt-4">
+    <h3 class="title is-5">Data Summary</h3>
+    <div class="columns">
+        <div class="column">
+            <h4 class="title is-6">People ({{ data.people|length }})</h4>
+            <ul>
+                {% for person in data.people %}
+                <li>
+                    <strong>{{ person.name }}</strong>
+                    <span class="has-text-grey-light">(ID: {{ person.id }})</span>
+                    {% if person.parents %}
+                    <span class="tag is-small is-light">Parents: {{ person.parents }}</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="column">
+            <h4 class="title is-6">Pair Bonds ({{ data.pair_bonds|length }})</h4>
+            <ul>
+                {% for pb in data.pair_bonds %}
+                <li>
+                    <span class="has-text-grey-light">(ID: {{ pb.id }})</span>
+                    Person {{ pb.person_a }} &harr; Person {{ pb.person_b }}
+                    {% if pb.married %}
+                    <span class="tag is-small is-success">Married</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
