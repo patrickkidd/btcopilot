@@ -197,14 +197,14 @@ def dates_within_tolerance(
     Check if two dates are within tolerance based on certainty levels.
 
     Tolerance is determined by the LEAST certain date:
-    - If either is Uncertain: always matches
+    - If either is Unknown: always matches
     - If either is Approximate: ±365 days
     - Both Certain or None: ±7 days (current behavior)
     """
     c1 = certainty1 or DateCertainty.Certain
     c2 = certainty2 or DateCertainty.Certain
 
-    if c1 == DateCertainty.Uncertain or c2 == DateCertainty.Uncertain:
+    if c1 == DateCertainty.Unknown or c2 == DateCertainty.Unknown:
         return True
 
     dt1 = date1 if isinstance(date1, datetime) else parse_date_flexible(date1)
@@ -232,14 +232,14 @@ def calculate_date_similarity(
     Calculate date similarity score (0.0 to 1.0) considering certainty.
 
     Tolerance is determined by the LEAST certain date:
-    - If either is Uncertain: returns 1.0
+    - If either is Unknown: returns 1.0
     - If either is Approximate: use 365-day tolerance
     - Both Certain or None: use 7-day tolerance
     """
     c1 = certainty1 or DateCertainty.Certain
     c2 = certainty2 or DateCertainty.Certain
 
-    if c1 == DateCertainty.Uncertain or c2 == DateCertainty.Uncertain:
+    if c1 == DateCertainty.Unknown or c2 == DateCertainty.Unknown:
         return 1.0
 
     dt1 = date1 if isinstance(date1, datetime) else parse_date_flexible(date1)

@@ -267,7 +267,7 @@ class VariableShift(enum.StrEnum):
 
 
 class DateCertainty(enum.StrEnum):
-    Uncertain = "uncertain"  # any date matches
+    Unknown = "unknown"  # any date matches
     Approximate = "approximate"  # ±365 days
     Certain = "certain"  # ±7 days
 

@@ -352,14 +352,14 @@ def test_match_events_mismatched_links():
 
 
 def test_match_events_uncertain_always_matches():
-    """Uncertain dates always match regardless of actual date distance."""
+    """Unknown dates always match regardless of actual date distance."""
     ai_events = [
         Event(
             id=-1,
             kind=EventKind.Shift,
             description="Something happened",
             dateTime=datetime(2020, 1, 1),
-            dateCertainty=DateCertainty.Uncertain,
+            dateCertainty=DateCertainty.Unknown,
         )
     ]
     gt_events = [
@@ -456,19 +456,19 @@ def test_match_events_certainty_none_backward_compat():
     assert len(result.matched_pairs) == 0
 
 
-def test_dates_within_tolerance_uncertain():
-    """Uncertain dates always match regardless of actual date."""
+def test_dates_within_tolerance_unknown():
+    """Unknown dates always match regardless of actual date."""
     assert dates_within_tolerance(
         "2020-01-01",
         "2025-12-31",
-        DateCertainty.Uncertain,
+        DateCertainty.Unknown,
         DateCertainty.Certain,
     )
     assert dates_within_tolerance(
         "2020-01-01",
         "2025-12-31",
         DateCertainty.Certain,
-        DateCertainty.Uncertain,
+        DateCertainty.Unknown,
     )
 
 
@@ -510,13 +510,13 @@ def test_dates_within_tolerance_none_is_certain():
     assert not dates_within_tolerance("2025-01-01", "2025-01-15", None, None)
 
 
-def test_calculate_date_similarity_uncertain():
-    """Uncertain dates always return 1.0."""
+def test_calculate_date_similarity_unknown():
+    """Unknown dates always return 1.0."""
     assert (
         calculate_date_similarity(
             "2020-01-01",
             "2025-12-31",
-            DateCertainty.Uncertain,
+            DateCertainty.Unknown,
             DateCertainty.Certain,
         )
         == 1.0
