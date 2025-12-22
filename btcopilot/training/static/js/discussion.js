@@ -121,6 +121,19 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
 
             this.autoSave();
         },
+
+        startEditPersonGender(fieldName, currentValue) {
+            this.editingField = fieldName;
+            this.editingValue = currentValue || '';
+        },
+
+        savePersonGender(personIndex, newValue) {
+            if (!this.extractedData.people[personIndex]) return;
+            this.extractedData.people[personIndex].gender = newValue || null;
+            this.extractedData.people[personIndex].confidence = 1.0;
+            this.cancelEdit();
+            this.autoSave();
+        },
         
         saveEventDescription(eventIndex, newValue) {
             if (!this.extractedData.events[eventIndex]) return;
@@ -1995,6 +2008,46 @@ async function bulkApproveDiscussion() {
     } catch (error) {
         console.error('Bulk approval error:', error);
         alert(`Failed to bulk approve: ${error.message}`);
+    }
+}
+
+async function bulkUnapproveDiscussion() {
+    const discussionId = window.discussionConfig.discussionId;
+    const auditorId = window.selectedAuditor;
+
+    if (!auditorId || auditorId === "AI") {
+        alert("Please select a human auditor to bulk unapprove");
+        return;
+    }
+
+    const confirmed = confirm(
+        `Unapprove ALL feedbacks from ${auditorId} for this discussion?\n\n` +
+        `This will remove approval from all statements with approved feedback from this auditor.`
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/training/admin/unapprove-discussion/${discussionId}/${encodeURIComponent(auditorId)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(`${data.message}`);
+            window.location.reload();
+        } else {
+            alert(`Error: ${data.error || 'Unknown error'}`);
+        }
+    } catch (error) {
+        console.error('Bulk unapproval error:', error);
+        alert(`Failed to bulk unapprove: ${error.message}`);
     }
 }
 
@@ -4672,6 +4725,11 @@ function openFamilyDiagram(statementId, auditorId) {
 
     const modal = document.getElementById('familyDiagramModal');
     const content = document.getElementById('familyDiagramContent');
+    const title = document.getElementById('familyDiagramModalTitle');
+
+    // Update title with discussion ID and statement ID
+    const discussionId = window.discussionConfig?.discussionId || '?';
+    title.textContent = `Family Diagram - Discussion ${discussionId}, Statement ${statementId}`;
 
     // Show loading spinner
     content.innerHTML = `

@@ -168,6 +168,14 @@ def from_dict(cls, data):
     return cls(**kwargs)
 
 
+class PersonKind(enum.StrEnum):
+    Male = "male"
+    Female = "female"
+    Abortion = "abortion"
+    Miscarriage = "miscarriage"
+    Unknown = "unknown"
+
+
 class EventKind(enum.Enum):
 
     Bonded = "bonded"
@@ -256,6 +264,7 @@ class Person:
     id: int | None = None
     name: str | None = None
     last_name: str | None = None
+    gender: PersonKind | None = None
     parents: int | None = None
     confidence: float | None = None  # PDP
 

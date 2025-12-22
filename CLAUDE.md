@@ -182,7 +182,7 @@ Documentation for the F1 metrics system that evaluates AI extraction quality aga
 - **Start PostgreSQL**: `docker-compose up fd-server` (requires `docker volume create familydiagram_postgres` first)
 
 ### Running the Application
-- **Manual run**: `uv run python manage.py run -h 0.0.0.0 -p 5555`
+- **Development server**: Managed by user on port 8888 (NEVER start one yourself)
 - **Production**: `docker-compose -d production.yml up fd-server`
 
 ## Critical Data Serialization Rules
@@ -206,46 +206,45 @@ Documentation for the F1 metrics system that evaluates AI extraction quality aga
 
 ## Flask Server Management
 
+**CRITICAL: The Flask dev server must already be running on port 8888. NEVER start a Flask server yourself.**
+
 **IMPORTANT**: This project uses Flask 3.x's native CLI. The obsolete `flask-cli` package is incompatible with Flask 3.x application factory pattern and has been removed from dependencies in `btcopilot/pyproject.toml`.
 
-**Use the `btcopilot-flask` MCP server** to manage the Flask development server. This replaces the bash scripts and provides better integration with Claude Code.
+The Flask development server is managed externally by the user on port 8888.
 
-| MCP Tool | Description |
-|----------|-------------|
-| `start_server()` | Start Flask with auto-auth, live reload, cache clear |
-| `stop_server()` | Graceful shutdown |
-| `restart_server()` | Stop + clear cache + start (use for bytecode issues) |
-| `kill_server()` | Force kill processes on ports 5555-5565 |
-| `server_status()` | Get running state, port, pid, uptime, recent output |
+| Action | What to do |
+|--------|------------|
+| Verify server running | `curl -s http://127.0.0.1:8888/ > /dev/null && echo "OK" || echo "ERROR"` |
+| Server not running | **STOP and ask user to start it** - NEVER start one yourself |
+| Server not responding | Ask user to restart it |
+| Bytecode issues | Ask user to clear cache: `find . -name "*.pyc" -delete` |
 
-Features:
-- Auto-selects first available port from 5555-5565
+Features (when running):
+- **Access URL**: http://127.0.0.1:8888
 - Auto-authenticates as test user (patrick@alaskafamilysystems.com)
-- Clears Python bytecode cache before starting
-- Enables live reloading for development
+- Live reloading enabled for development
 
 **Troubleshooting:**
 
-If Flask server fails to start or shows errors about function signatures:
-- Use `restart_server()` - it automatically clears bytecode cache and restarts
-
 Common issues:
-- **"create_app() takes from 0 to 1 positional arguments but 2 were given"** - Either stale bytecode OR `flask-cli` package is installed. First check `uv pip show flask-cli`. If installed, remove it from `btcopilot/pyproject.toml` dependencies and run `uv sync`. Then use `restart_server()` to clear bytecode.
-- **Port already in use** - Use `kill_server()` to force kill all processes on ports 5555-5565.
-- **Import errors** - Check that you're in the project root directory.
-- **Server starts but immediately fails on first request** - Bytecode cache issue. Use `restart_server()`.
+- **"create_app() takes from 0 to 1 positional arguments but 2 were given"** - Either stale bytecode OR `flask-cli` package is installed. Ask user to check `uv pip show flask-cli`. If installed, remove it from `btcopilot/pyproject.toml` dependencies and run `uv sync`. Then ask user to restart server after clearing bytecode.
+- **Port 8888 not responding** - Ask user to restart the Flask server.
+- **Import errors** - Check that user is in the project root directory.
+- **Server starts but immediately fails on first request** - Bytecode cache issue. Ask user to clear cache and restart.
 - **Torch dependency errors on macOS x86_64** - The project pins torch to 2.0.x because newer versions don't have wheels for Intel Macs. If you see "can't be installed because it doesn't have a source distribution or wheel", remove `uv.lock` and run `uv sync --extra app --extra test` to re-resolve dependencies.
 
 ## Testing Flask Changes with chrome-devtools-mcp
 
 When making changes to the training app (btcopilot/training), **always test using chrome-devtools-mcp**:
 
-1. Start Flask server: `start_server()` (btcopilot-flask MCP)
-2. Navigate to relevant page using `mcp__chrome-devtools__navigate_page` or `new_page`
-3. Take snapshot with `mcp__chrome-devtools__take_snapshot` to verify UI state
-4. Test interactions using `click`, `fill`, `fill_form`, etc.
-5. Verify functionality before declaring completion
-6. Stop server when done: `stop_server()` (btcopilot-flask MCP)
+**CRITICAL: Flask dev server must already be running on port 8888. NEVER start one yourself.**
+
+1. Verify Flask server is running: `curl -s http://127.0.0.1:8888/ > /dev/null && echo "OK" || echo "ERROR"`
+2. If server not running, **STOP and ask user to start it**
+3. Navigate to relevant page using `mcp__chrome-devtools__navigate_page` or `new_page` (http://127.0.0.1:8888/...)
+4. Take snapshot with `mcp__chrome-devtools__take_snapshot` to verify UI state
+5. Test interactions using `click`, `fill`, `fill_form`, etc.
+6. Verify functionality before declaring completion
 
 **This is mandatory for all HTML, CSS, JavaScript, and Flask route changes.**
 
@@ -253,7 +252,7 @@ When making changes to the training app (btcopilot/training), **always test usin
 - **Start Redis**: `redis-server` (required for Celery broker/backend)
 - **Start Celery worker**: `uv run celery -A btcopilot.celery:celery worker --loglevel=info`
 - **Start Celery beat scheduler**: `uv run celery -A btcopilot.celery:celery beat --loglevel=info`
-- **Monitor tasks**: `uv run celery -A btcopilot.celery:celery flower` (web UI at http://localhost:5555)
+- **Monitor tasks**: `uv run celery -A btcopilot.celery:celery flower` (web UI at http://localhost:5556)
 - **Debug Celery worker**: Use VSCode "Celery Worker (Debug)" configuration (single-threaded with breakpoints)
 - **Debug Celery beat**: Use VSCode "Celery Beat" configuration
 
@@ -384,5 +383,5 @@ This ensures the visual spec remains the authoritative source of truth for all f
 ---
 
 ## Debugging and validation rules
-- You may start a flask server on port 4999 with FLASK_CONFIG=development to
-  debug templates and endpoints
+- The Flask dev server runs on port 8888 (managed by user) - NEVER start one yourself
+- If you need the server, verify it's running first and ask user to start it if not

@@ -814,6 +814,57 @@ def bulk_approve_discussion(discussion_id, auditor_id):
     )
 
 
+@bp.route("/unapprove-discussion/<int:discussion_id>/<auditor_id>", methods=["POST"])
+def bulk_unapprove_discussion(discussion_id, auditor_id):
+    current_user = auth.current_user()
+
+    if not current_user.has_role(btcopilot.ROLE_ADMIN):
+        return jsonify({"error": "Admin role required"}), 403
+
+    from btcopilot.personal.models import Discussion, Statement
+    from btcopilot.training.models import Feedback
+    from btcopilot.training.f1_metrics import invalidate_f1_cache
+
+    discussion = Discussion.query.get_or_404(discussion_id)
+
+    feedbacks_to_unapprove = (
+        Feedback.query.join(Statement)
+        .filter(Statement.discussion_id == discussion_id)
+        .filter(Feedback.auditor_id == auditor_id)
+        .filter(Feedback.feedback_type == "extraction")
+        .filter(Feedback.approved == True)
+        .all()
+    )
+
+    if not feedbacks_to_unapprove:
+        return jsonify({"error": "No approved feedbacks found to unapprove"}), 404
+
+    unapproved_count = 0
+
+    for feedback in feedbacks_to_unapprove:
+        feedback.approved = False
+        feedback.approved_by = None
+        feedback.approved_at = None
+        feedback.exported_at = None
+        unapproved_count += 1
+        invalidate_f1_cache(feedback.statement_id)
+
+    db.session.commit()
+
+    message = (
+        f"Bulk unapproved {unapproved_count} feedbacks for discussion {discussion_id}"
+    )
+    _log.info(f"Admin {current_user.username} {message}")
+
+    return jsonify(
+        {
+            "success": True,
+            "message": message,
+            "unapproved_count": unapproved_count,
+        }
+    )
+
+
 @bp.route("/export-ground-truth", methods=["GET"])
 def export_ground_truth():
     current_user = auth.current_user()

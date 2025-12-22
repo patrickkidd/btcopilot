@@ -1019,30 +1019,32 @@ Parameters:
         coupleBar.setAttribute('class', bondClass);
         g.appendChild(coupleBar);
 
-        // Separation/divorce slashes (centered on the couple's horizontal bar, not extended span)
+        // Separation/divorce lines (vertical, centered on the couple's horizontal bar)
+        // No custody implemented yet, so lines are straight up and down
         if (pairBond.separated || pairBond.divorced) {
             const midX = (coupleX1 + coupleX2) / 2;
-            const slashHeight = 15;
-            const slashOffset = 10;
+            const lineHeight = 15;
+            const lineSpacing = 6;
 
-            // First slash (separation)
-            const slash1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            slash1.setAttribute('x1', midX - slashOffset);
-            slash1.setAttribute('y1', barY + slashHeight / 2);
-            slash1.setAttribute('x2', midX);
-            slash1.setAttribute('y2', barY - slashHeight / 2);
-            slash1.setAttribute('class', 'fd-separation-slash');
-            g.appendChild(slash1);
+            // First line (separation - single vertical line)
+            const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            const line1X = pairBond.divorced ? midX - lineSpacing / 2 : midX;
+            line1.setAttribute('x1', line1X);
+            line1.setAttribute('y1', barY + lineHeight / 2);
+            line1.setAttribute('x2', line1X);
+            line1.setAttribute('y2', barY - lineHeight / 2);
+            line1.setAttribute('class', 'fd-separation-slash');
+            g.appendChild(line1);
 
-            // Second slash (divorce only)
+            // Second line (divorce only - two parallel vertical lines)
             if (pairBond.divorced) {
-                const slash2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                slash2.setAttribute('x1', midX);
-                slash2.setAttribute('y1', barY + slashHeight / 2);
-                slash2.setAttribute('x2', midX + slashOffset);
-                slash2.setAttribute('y2', barY - slashHeight / 2);
-                slash2.setAttribute('class', 'fd-separation-slash');
-                g.appendChild(slash2);
+                const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line2.setAttribute('x1', midX + lineSpacing / 2);
+                line2.setAttribute('y1', barY + lineHeight / 2);
+                line2.setAttribute('x2', midX + lineSpacing / 2);
+                line2.setAttribute('y2', barY - lineHeight / 2);
+                line2.setAttribute('class', 'fd-separation-slash');
+                g.appendChild(line2);
             }
         }
 

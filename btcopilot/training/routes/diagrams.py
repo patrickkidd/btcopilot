@@ -316,77 +316,121 @@ def render(statement_id: int, auditor_id: str = None):
         {"title": "Family Diagram", "url": None},
     ]
 
+    # Get committed diagram data (includes User ID: 1, Assistant ID: 2)
+    diagram_data = discussion.diagram.get_diagram_data() if discussion.diagram else None
+
+    # Get cumulative PDP from statements
     pdp_data = pdp.cumulative(discussion, statement, auditor_id)
 
-    # Convert PDP to rendering format
-    if not pdp_data.people and not pdp_data.events and not pdp_data.pair_bonds:
-        render_data = {"people": [], "pair_bonds": [], "parent_child": []}
-    else:
-        # Build people list with derived fields for SVG rendering
-        people_list = []
-        for person in pdp_data.people:
-            person_dict = asdict(person)
-            person_dict["name"] = person.name or f"Person {person.id}"
-            person_dict["gender"] = "unknown"
-            person_dict["deceased"] = False
-            person_dict["primary"] = False
-            people_list.append(person_dict)
+    # Build people list: start with committed diagram people, then merge PDP people
+    people_by_id = {}
 
-        # Build pair bonds from explicit pair_bonds
-        pair_bonds_list = []
-        pair_bonds_by_persons = {}
-        for pb in pdp_data.pair_bonds:
-            key = tuple(sorted([pb.person_a, pb.person_b]))
-            pb_dict = asdict(pb)
-            pb_dict["married"] = True
-            pb_dict["separated"] = False
-            pb_dict["divorced"] = False
+    # Add committed diagram people first (including User ID: 1, excluding Assistant ID: 2)
+    if diagram_data:
+        for person_dict in diagram_data.people:
+            pid = person_dict.get("id")
+            if pid is not None and pid != 2:  # Skip Assistant (ID: 2)
+                people_by_id[pid] = {
+                    "id": pid,
+                    "name": person_dict.get("name") or f"Person {pid}",
+                    "gender": person_dict.get("gender", "unknown"),
+                    "deceased": person_dict.get("deceased", False),
+                    "primary": person_dict.get("primary", False),
+                    "parents": person_dict.get("parents"),
+                }
+
+    # Merge PDP people (overwrites committed if same ID, adds new negative IDs)
+    for person in pdp_data.people:
+        person_dict = asdict(person)
+        person_dict["name"] = person.name or f"Person {person.id}"
+        person_dict["gender"] = person.gender.value if person.gender else "unknown"
+        person_dict["deceased"] = False
+        person_dict["primary"] = False
+        people_by_id[person.id] = person_dict
+
+    people_list = list(people_by_id.values())
+
+    # Build pair bonds
+    pair_bonds_list = []
+    pair_bonds_by_persons = {}
+
+    # Add committed diagram pair bonds
+    if diagram_data:
+        for pb_dict in diagram_data.pair_bonds:
+            person_a = pb_dict.get("personA") or pb_dict.get("person_a")
+            person_b = pb_dict.get("personB") or pb_dict.get("person_b")
+            if person_a and person_b:
+                key = tuple(sorted([person_a, person_b]))
+                pb_data = {
+                    "id": pb_dict.get("id"),
+                    "person_a": person_a,
+                    "person_b": person_b,
+                    "married": pb_dict.get("married", True),
+                    "separated": pb_dict.get("separated", False),
+                    "divorced": pb_dict.get("divorced", False),
+                }
+                pair_bonds_list.append(pb_data)
+                pair_bonds_by_persons[key] = pb_data
+
+    # Add PDP pair bonds
+    for pb in pdp_data.pair_bonds:
+        key = tuple(sorted([pb.person_a, pb.person_b]))
+        pb_dict = asdict(pb)
+        pb_dict["married"] = True
+        pb_dict["separated"] = False
+        pb_dict["divorced"] = False
+        if key in pair_bonds_by_persons:
+            pair_bonds_by_persons[key].update(pb_dict)
+        else:
             pair_bonds_list.append(pb_dict)
             pair_bonds_by_persons[key] = pb_dict
 
-        # Create pair bonds from married/bonded events
-        for event in pdp_data.events:
-            if event.kind in (EventKind.Married, EventKind.Bonded):
-                if event.person and event.spouse:
-                    key = tuple(sorted([event.person, event.spouse]))
-                    if key not in pair_bonds_by_persons:
-                        pb_dict = {
-                            "id": event.id,
-                            "person_a": event.person,
-                            "person_b": event.spouse,
-                            "married": event.kind == EventKind.Married,
-                            "separated": False,
-                            "divorced": False,
-                        }
-                        pair_bonds_list.append(pb_dict)
-                        pair_bonds_by_persons[key] = pb_dict
-            elif event.kind == EventKind.Separated:
-                if event.person and event.spouse:
-                    key = tuple(sorted([event.person, event.spouse]))
-                    if key in pair_bonds_by_persons:
-                        pair_bonds_by_persons[key]["separated"] = True
-            elif event.kind == EventKind.Divorced:
-                if event.person and event.spouse:
-                    key = tuple(sorted([event.person, event.spouse]))
-                    if key in pair_bonds_by_persons:
-                        pair_bonds_by_persons[key]["divorced"] = True
-
-        # Build parent-child relationships
-        parent_child = []
-        for person_dict in people_list:
-            if person_dict.get("parents"):
-                parent_child.append(
-                    {
-                        "child_id": person_dict["id"],
-                        "pair_bond_id": person_dict["parents"],
+    # Create pair bonds from married/bonded events (first pass)
+    for event in pdp_data.events:
+        if event.kind in (EventKind.Married, EventKind.Bonded):
+            if event.person and event.spouse:
+                key = tuple(sorted([event.person, event.spouse]))
+                if key not in pair_bonds_by_persons:
+                    pb_dict = {
+                        "id": event.id,
+                        "person_a": event.person,
+                        "person_b": event.spouse,
+                        "married": event.kind == EventKind.Married,
+                        "separated": False,
+                        "divorced": False,
                     }
-                )
+                    pair_bonds_list.append(pb_dict)
+                    pair_bonds_by_persons[key] = pb_dict
 
-        render_data = {
-            "people": people_list,
-            "pair_bonds": pair_bonds_list,
-            "parent_child": parent_child,
-        }
+    # Apply separated/divorced status (second pass, after pair bonds exist)
+    for event in pdp_data.events:
+        if event.kind == EventKind.Separated:
+            if event.person and event.spouse:
+                key = tuple(sorted([event.person, event.spouse]))
+                if key in pair_bonds_by_persons:
+                    pair_bonds_by_persons[key]["separated"] = True
+        elif event.kind == EventKind.Divorced:
+            if event.person and event.spouse:
+                key = tuple(sorted([event.person, event.spouse]))
+                if key in pair_bonds_by_persons:
+                    pair_bonds_by_persons[key]["divorced"] = True
+
+    # Build parent-child relationships
+    parent_child = []
+    for person_dict in people_list:
+        if person_dict.get("parents"):
+            parent_child.append(
+                {
+                    "child_id": person_dict["id"],
+                    "pair_bond_id": person_dict["parents"],
+                }
+            )
+
+    render_data = {
+        "people": people_list,
+        "pair_bonds": pair_bonds_list,
+        "parent_child": parent_child,
+    }
 
     if is_embed:
         return render_template(

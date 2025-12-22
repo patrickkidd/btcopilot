@@ -6,7 +6,8 @@ to human ground truth codes (Feedback.edited_extraction).
 
 Matching Logic:
 - People: Fuzzy name matching (token_set_ratio >= 0.6) after stripping titles
-          (Aunt, Uncle, Dr., etc.) AND parents match (ignore if null).
+          (Aunt, Uncle, Dr., etc.) AND parents match (ignore if null) AND
+          gender match (ignore if either is None/Unknown).
           "Aunt Carol" matches "Carol", "Dr. Smith" matches "Smith".
 - Events: kind exact + description similarity > 0.5 (80% weight) + date proximity (20% weight, None matches any) + links match
 - PairBonds: person_a/person_b match resolved IDs
@@ -38,6 +39,7 @@ from btcopilot.schema import (
     PairBond,
     PDPDeltas,
     DateCertainty,
+    PersonKind,
     from_dict,
 )
 
@@ -266,7 +268,7 @@ def match_people(
     ai_people: list[Person], gt_people: list[Person]
 ) -> tuple[EntityMatchResult, dict[int, int]]:
     """
-    Match people by name similarity and parent matching.
+    Match people by name similarity, parent matching, and gender matching.
 
     Returns:
         EntityMatchResult: matched pairs, unmatched AI, unmatched GT
@@ -299,7 +301,16 @@ def match_people(
                 if set(resolved_ai_parents) != set(gt_person.parents):
                     parents_match = False
 
-            if parents_match and name_sim > best_score:
+            # Gender must match if both are set (ignore if either is None/Unknown)
+            gender_match = True
+            if ai_person.gender is not None and gt_person.gender is not None:
+                if (
+                    ai_person.gender != PersonKind.Unknown
+                    and gt_person.gender != PersonKind.Unknown
+                ):
+                    gender_match = ai_person.gender == gt_person.gender
+
+            if parents_match and gender_match and name_sim > best_score:
                 best_score = name_sim
                 best_match = gt_person
 
@@ -678,11 +689,15 @@ def normalize_pdp_for_comparison(pdp_dict: dict | PDPDeltas) -> dict:
             parent_b = person.get("parent_b")
 
         parent_ids = [id_map.get(p, p) for p in [parent_a, parent_b] if p is not None]
+        gender = person.get("gender")
+        if gender is not None:
+            gender = str(gender)
         normalized["people"].append(
             {
                 "id": new_id,
                 "name": person.get("name"),
                 "last_name": person.get("last_name"),
+                "gender": gender,
                 "parents": [p for p in parent_ids if p is not None],
             }
         )

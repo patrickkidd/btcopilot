@@ -200,7 +200,7 @@ Score penalties:
 
 ### Option A: Web UI (Recommended)
 
-1. Start the training app: `bash btcopilot/bin/flask_start.sh`
+1. Start the training app via the btcopilot-flask mcp server
 2. Navigate to `http://127.0.0.1:5555/training/synthetic/`
 3. Select a persona from the dropdown
 4. Set max turns (default 20)

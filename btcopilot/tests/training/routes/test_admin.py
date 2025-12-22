@@ -267,6 +267,74 @@ def test_export_ground_truth_specific_discussions(admin, test_user):
     assert data["discussions"][0]["id"] == disc1.id
 
 
+def test_unapprove_discussion(admin, test_user):
+    """Test bulk unapprove only affects specified discussion and auditor."""
+    disc1 = Discussion(user_id=test_user.id, summary="Discussion 1")
+    disc2 = Discussion(user_id=test_user.id, summary="Discussion 2")
+    db.session.add_all([disc1, disc2])
+    db.session.commit()
+
+    speaker1 = Speaker(discussion_id=disc1.id, name="User", type=SpeakerType.Subject)
+    speaker2 = Speaker(discussion_id=disc2.id, name="User", type=SpeakerType.Subject)
+    db.session.add_all([speaker1, speaker2])
+    db.session.commit()
+
+    stmt1 = Statement(
+        discussion_id=disc1.id,
+        speaker_id=speaker1.id,
+        text="Statement in disc1",
+        order=0,
+    )
+    stmt2 = Statement(
+        discussion_id=disc2.id,
+        speaker_id=speaker2.id,
+        text="Statement in disc2",
+        order=0,
+    )
+    db.session.add_all([stmt1, stmt2])
+    db.session.commit()
+
+    # Feedback for auditor1 in disc1 - should be unapproved
+    fb1_d1_a1 = Feedback(
+        statement_id=stmt1.id,
+        auditor_id="auditor1",
+        feedback_type="extraction",
+        approved=True,
+        edited_extraction={"people": []},
+    )
+    # Feedback for auditor2 in disc1 - should NOT be unapproved
+    fb1_d1_a2 = Feedback(
+        statement_id=stmt1.id,
+        auditor_id="auditor2",
+        feedback_type="extraction",
+        approved=True,
+        edited_extraction={"people": []},
+    )
+    # Feedback for auditor1 in disc2 - should NOT be unapproved (different discussion)
+    fb2_d2_a1 = Feedback(
+        statement_id=stmt2.id,
+        auditor_id="auditor1",
+        feedback_type="extraction",
+        approved=True,
+        edited_extraction={"people": []},
+    )
+    db.session.add_all([fb1_d1_a1, fb1_d1_a2, fb2_d2_a1])
+    db.session.commit()
+
+    response = admin.post(f"/training/admin/unapprove-discussion/{disc1.id}/auditor1")
+    assert response.status_code == 200
+    assert response.json["success"] is True
+    assert response.json["unapproved_count"] == 1
+
+    db.session.refresh(fb1_d1_a1)
+    db.session.refresh(fb1_d1_a2)
+    db.session.refresh(fb2_d2_a1)
+
+    assert fb1_d1_a1.approved is False
+    assert fb1_d1_a2.approved is True
+    assert fb2_d2_a1.approved is True
+
+
 def test_admin_index_with_f1_metrics(admin, test_user):
     discussion = Discussion(user_id=test_user.id, summary="Test")
     db.session.add(discussion)

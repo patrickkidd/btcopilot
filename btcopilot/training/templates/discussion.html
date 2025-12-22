@@ -28,6 +28,12 @@ window.discussionConfig = {
 
 <style>
 
+/* Make container fluid on discussion page to use full width with minimap */
+.section > .container {
+    max-width: none;
+    width: 100%;
+}
+
 /* Speaker-specific color variations using CSS custom properties for light/dark mode support */
 
 :root {
@@ -57,6 +63,8 @@ window.discussionConfig = {
     --speaker-6-ai-border-light: #E8E8ED;
     --speaker-7-ai-border-light: #DCDCE1;
     --speaker-8-ai-border-light: #CFCFD4;
+
+    --expanded-message-border: #34C759;
 }
 
 [data-theme="dark"] {
@@ -86,6 +94,8 @@ window.discussionConfig = {
     --speaker-6-ai-border-light: #74747A;
     --speaker-7-ai-border-light: #68686C;
     --speaker-8-ai-border-light: #62626A;
+
+    --expanded-message-border: #32AE5E;
 }
 
 /* User message bubbles */
@@ -109,14 +119,7 @@ window.discussionConfig = {
 .ai-message-bubble.speaker-8 { background: var(--speaker-8-ai-light); border-color: var(--speaker-8-ai-border-light); }
 
 /* Expanded AI message bubbles with green highlight */
-.ai-message-bubble.expanded.speaker-1 { background: var(--color-card-bg); border-color: #34C759; }
-.ai-message-bubble.expanded.speaker-2 { background: var(--color-card-bg); border-color: #34C759; }
-.ai-message-bubble.expanded.speaker-3 { background: var(--color-card-bg); border-color: #34C759; }
-.ai-message-bubble.expanded.speaker-4 { background: var(--color-card-bg); border-color: #34C759; }
-.ai-message-bubble.expanded.speaker-5 { background: var(--color-card-bg); border-color: #34C759; }
-.ai-message-bubble.expanded.speaker-6 { background: var(--color-card-bg); border-color: #34C759; }
-.ai-message-bubble.expanded.speaker-7 { background: var(--color-card-bg); border-color: #34C759; }
-.ai-message-bubble.expanded.speaker-8 { background: var(--color-card-bg); border-color: #34C759; }
+.ai-message-bubble.expanded { background: var(--color-card-bg); border-color: var(--expanded-message-border); }
 
 /* Relationship field horizontal layout - Override Bulma CSS with high specificity */
 .mechanism-details,
@@ -361,19 +364,19 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     right: 8px;
     top: 120px;
     bottom: 20px;
-    width: 80px;
+    width: 27px;
     background: var(--color-canvas-subtle);
     border: 1px solid var(--color-border-default);
     border-radius: 4px;
     overflow: hidden;
     z-index: 100;
-    opacity: 0.9;
+    opacity: 0.7;
     transition: opacity 0.2s, width 0.2s;
 }
 
 .discussion-minimap:hover {
     opacity: 1;
-    width: 100px;
+    width: 80px;
 }
 
 .minimap-content {
@@ -387,18 +390,25 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     position: absolute;
     left: 0;
     right: 0;
-    background: transparent;
-    border: 2px solid rgba(128, 128, 128, 0.8);
+    background: rgba(100, 150, 240, 0.2);
+    border: 2px solid rgba(100, 150, 240, 0.6);
     border-radius: 2px;
     pointer-events: none;
     transition: top 0.1s ease-out, height 0.1s ease-out;
     z-index: 10;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .minimap-viewport {
+    background: rgba(100, 150, 240, 0.3);
+    border: 2px solid rgba(100, 150, 240, 0.8);
+    box-shadow: 0 0 6px rgba(100, 150, 240, 0.4);
 }
 
 .minimap-item {
     position: absolute;
-    left: 4px;
-    right: 4px;
+    left: 2px;
+    right: 50%;
     cursor: pointer;
     border-radius: 2px;
     transition: transform 0.1s;
@@ -408,7 +418,7 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     transform: scaleX(1.1);
 }
 
-/* Statement type colors */
+/* Statement type colors - left half only */
 .minimap-item.subject {
     background: var(--minimap-subject-color);
 }
@@ -417,42 +427,35 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     background: var(--minimap-expert-color);
 }
 
-/* Code indicator colors - gradient overlay for statements with codes */
-.minimap-item.has-codes {
-    background: linear-gradient(90deg,
-        var(--base-color) 0%,
-        var(--base-color) 60%,
-        var(--minimap-coded-color) 60%,
-        var(--minimap-coded-color) 100%
-    );
-}
-
-.minimap-item.subject.has-codes {
-    --base-color: var(--minimap-subject-color);
-}
-
-.minimap-item.expert.has-codes {
-    --base-color: var(--minimap-expert-color);
-}
-
-/* Variable indicator stripes */
-.minimap-item.has-symptom::before,
-.minimap-item.has-relationship::after {
+/* Code indicator - right half */
+.minimap-item.has-codes::after {
     content: '';
     position: absolute;
     top: 0;
-    width: 3px;
+    left: calc(100% + 2px);
+    width: calc(100% - 2px);
     height: 100%;
+    background: var(--minimap-coded-color);
+    border-radius: 2px;
 }
 
-.minimap-item.has-symptom::before {
-    left: 0;
+/* SARF variable shift indicator - red stripe on right side of code column */
+.minimap-item.has-codes.has-symptom::after,
+.minimap-item.has-codes.has-relationship::after {
+    background: linear-gradient(to right, var(--minimap-coded-color) 60%, var(--minimap-symptom-color) 60%);
+}
+
+/* SARF indicator for statements without codes - show red in right column */
+.minimap-item.has-symptom:not(.has-codes)::after,
+.minimap-item.has-relationship:not(.has-codes)::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: calc(100% + 2px);
+    width: calc(100% - 2px);
+    height: 100%;
     background: var(--minimap-symptom-color);
-}
-
-.minimap-item.has-relationship::after {
-    right: 0;
-    background: var(--minimap-relationship-color);
+    border-radius: 2px;
 }
 
 /* Minimap legend */
@@ -472,17 +475,10 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     opacity: 1;
 }
 
-/* Adjust main content to make room for minimap */
-.audit-table-container {
-    margin-right: 90px;
-}
-
+/* Minimap floats over right margin - no extra margin needed */
 @media (max-width: 1200px) {
     .discussion-minimap {
         display: none;
-    }
-    .audit-table-container {
-        margin-right: 0;
     }
 }
 
@@ -599,6 +595,10 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
             <button class="button is-small is-success" onclick="bulkApproveDiscussion()" style="flex: 1;">
                 <span class="icon"><i class="fas fa-check-double"></i></span>
                 <span>Approve</span>
+            </button>
+            <button class="button is-small is-warning" onclick="bulkUnapproveDiscussion()" style="flex: 1;">
+                <span class="icon"><i class="fas fa-times-circle"></i></span>
+                <span>Unapprove</span>
             </button>
             {% endif %}
         </div>
@@ -914,8 +914,16 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Minimap items will be rendered by JavaScript -->
     </div>
     <div class="minimap-legend">
-        <span style="color: var(--minimap-subject-color);">●</span> Subject
-        <span style="color: var(--minimap-coded-color);">●</span> Coded
+        <div style="display: flex; justify-content: space-around;">
+            <span style="color: var(--minimap-symptom-color);">■</span>
+            <span style="color: var(--minimap-subject-color);">■</span>
+            <span style="color: var(--minimap-coded-color);">■</span>
+        </div>
+        <div style="display: flex; justify-content: space-around; font-size: 6px;">
+            <span>SARF</span>
+            <span>Stmt</span>
+            <span>Code</span>
+        </div>
     </div>
 </div>
 
@@ -1402,7 +1410,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="modal-background" onclick="closeFamilyDiagramModal()"></div>
     <div class="modal-card" style="width: 95vw; max-width: none; height: 90vh;">
         <header class="modal-card-head">
-            <p class="modal-card-title">Family Diagram</p>
+            <p class="modal-card-title" id="familyDiagramModalTitle">Family Diagram</p>
             <button class="delete" onclick="closeFamilyDiagramModal()"></button>
         </header>
         <section class="modal-card-body" style="max-height: none; overflow: auto; padding: 20px;">

@@ -2,7 +2,7 @@
 
 **Document Purpose**: Technical reference for Claude Code when modifying the btcopilot training app's ground truth coding workflow.
 
-**Last Updated**: 2025-11-10
+**Last Updated**: 2025-12-21
 
 ---
 
@@ -17,9 +17,10 @@
    - [Export Pipeline](#15-export-pipeline)
 3. [SARF-Specific Schema](#2-sarf-specific-schema)
    - [Event Object Structure](#21-event-object-structure)
-   - [VariableShift Enum](#22-variableshift-enum)
-   - [RelationshipKind Enum](#23-relationshipkind-enum)
-   - [Confidence Scoring](#24-confidence-scoring)
+   - [PersonKind Enum](#22-personkind-enum)
+   - [VariableShift Enum](#23-variableshift-enum)
+   - [RelationshipKind Enum](#24-relationshipkind-enum)
+   - [Confidence Scoring](#25-confidence-scoring)
 4. [UI Component Architecture](#3-ui-component-architecture)
    - [Main Component: sarf_editor.html](#31-main-component-sarf_editorhtml)
    - [Inline Editing Pattern](#32-inline-editing-pattern)
@@ -342,7 +343,7 @@ for statement in approved_statements:
 
 ### 2.0 Person Object Structure
 
-**Location**: [btcopilot/schema.py:190-197](../btcopilot/schema.py)
+**Location**: [btcopilot/schema.py:262-269](../btcopilot/schema.py)
 
 ```python
 @dataclass
@@ -350,6 +351,7 @@ class Person:
     id: int | None = None
     name: str | None = None
     last_name: str | None = None
+    gender: PersonKind | None = None  # Male, Female, Abortion, Miscarriage, or Unknown
     parents: int | None = None  # Reference to PairBond object (parents)
     confidence: float | None = None
 ```
@@ -453,9 +455,36 @@ class EventKind(enum.Enum):
     Death = "death"
 ```
 
+### 2.2 PersonKind Enum
+
+**Location**: [btcopilot/schema.py:171-176](../btcopilot/schema.py)
+
+```python
+class PersonKind(enum.StrEnum):
+    Male = "male"
+    Female = "female"
+    Abortion = "abortion"
+    Miscarriage = "miscarriage"
+    Unknown = "unknown"
+```
+
+**Purpose**: Represents a person's gender/biological sex in the family diagram.
+
+**Values**:
+- `Male` - Biological male
+- `Female` - Biological female
+- `Abortion` - Pregnancy ending in abortion (not a living person)
+- `Miscarriage` - Pregnancy ending in miscarriage (not a living person)
+- `Unknown` - Gender not determined or not specified
+
+**Matching Rules in F1 Metrics** ([f1_metrics.py:304-311](../btcopilot/training/f1_metrics.py)):
+- Gender must match during people matching IF both AI and GT have non-Unknown values
+- If either person has `Unknown` gender, the gender check is skipped (treated as a match)
+- Mismatched genders result in no match (people considered distinct)
+
 ---
 
-### 2.2 VariableShift Enum
+### 2.3 VariableShift Enum
 
 **Location**: [btcopilot/schema.py:194](../btcopilot/schema.py)
 
@@ -482,7 +511,7 @@ class VariableShift(enum.StrEnum):
 
 ---
 
-### 2.3 RelationshipKind Enum
+### 2.4 RelationshipKind Enum
 
 **Location**: [btcopilot/schema.py:149](../btcopilot/schema.py)
 
@@ -548,7 +577,7 @@ for person_id in event.relationshipTriangles:
 
 ---
 
-### 2.4 Confidence Scoring
+### 2.5 Confidence Scoring
 
 **In AI Extraction** (`Statement.pdp_deltas`):
 - Contains `confidence` field (0.0-1.0) on Person and Event objects

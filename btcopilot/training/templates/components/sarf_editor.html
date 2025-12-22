@@ -359,14 +359,43 @@ Parameters:
                                         </span>
                                         {% endif %}
                                     </div>
-                                    
+
+                                    <!-- Kind Row -->
+                                    <div class="mb-2">
+                                        <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; table-layout: fixed;">
+                                            <tr>
+                                                <td style="width: 60px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
+                                                    Kind:
+                                                </td>
+                                                <td style="padding: 0;">
+                                                    {% if editable_mode %}
+                                                    <select x-show="canEdit"
+                                                            :value="person.gender || ''"
+                                                            @change="savePersonGender(index, $event.target.value)"
+                                                            class="inline-select-visible">
+                                                        <option value="">-</option>
+                                                        <option value="male">male</option>
+                                                        <option value="female">female</option>
+                                                        <option value="abortion">abortion</option>
+                                                        <option value="miscarriage">miscarriage</option>
+                                                        <option value="unknown">unknown</option>
+                                                    </select>
+                                                    <span x-show="!canEdit" class="event-kind-indicator" x-text="person.gender || '-'"></span>
+                                                    {% else %}
+                                                    <span class="event-kind-indicator" x-text="person.gender || '-'"></span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+
                                     <!-- Confidence Row -->
                                     <div class="mb-2">
                                         <small class="is-size-7" x-show="person.confidence && person.confidence < 0.999">
                                             Confidence: <span x-text="(person.confidence * 100).toFixed(0) + '%'"></span>
                                         </small>
                                     </div>
-                                    
+
                                     <!-- Person List Fields -->
                                     <div class="person-lists">
                                         <!-- Parents (Pair-Bond) -->
@@ -458,29 +487,21 @@ Parameters:
                                                 </td>
                                                 <td style="padding: 0;">
                                                     {% if editable_mode %}
-                                                    <span class="event-kind-indicator"
-                                                          :class="{'editable-field': canEdit}"
-                                                          @mouseenter="canEdit && (hoveredField = 'event-' + index + '-kind')"
-                                                          @mouseleave="hoveredField = null"
-                                                          @click.stop="canEdit && startEditEventKind('event-' + index + '-kind', event.kind)">
-                                                        <span x-show="!isEditing('event-' + index + '-kind')" x-text="event.kind || 'shift'"></span>
-                                                        <select x-show="isEditing('event-' + index + '-kind')"
-                                                                x-model="editingValue"
-                                                                @change="saveEventKind(index, $event.target.value); cancelEdit()"
-                                                                @blur="cancelEdit()"
-                                                                @keydown.escape="cancelEdit()"
-                                                                class="inline-edit-select">
-                                                            <option value="shift">shift</option>
-                                                            <option value="birth">birth</option>
-                                                            <option value="adopted">adopted</option>
-                                                            <option value="bonded">bonded</option>
-                                                            <option value="married">married</option>
-                                                            <option value="separated">separated</option>
-                                                            <option value="divorced">divorced</option>
-                                                            <option value="moved">moved</option>
-                                                            <option value="death">death</option>
-                                                        </select>
-                                                    </span>
+                                                    <select x-show="canEdit"
+                                                            :value="event.kind || 'shift'"
+                                                            @change="saveEventKind(index, $event.target.value)"
+                                                            class="inline-select-visible">
+                                                        <option value="shift">shift</option>
+                                                        <option value="birth">birth</option>
+                                                        <option value="adopted">adopted</option>
+                                                        <option value="bonded">bonded</option>
+                                                        <option value="married">married</option>
+                                                        <option value="separated">separated</option>
+                                                        <option value="divorced">divorced</option>
+                                                        <option value="moved">moved</option>
+                                                        <option value="death">death</option>
+                                                    </select>
+                                                    <span x-show="!canEdit" class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
                                                     {% else %}
                                                     <span class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
                                                     {% endif %}
@@ -655,30 +676,17 @@ Parameters:
                                                         <span x-text="formatDate(event.dateTime) || 'Not specified'"></span>
                                                         {% endif %}
                                                     </td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                        Certainty:
-                                                    </td>
-                                                    <td style="padding: 0;">
+                                                    <td style="padding: 0 0 0 8px; vertical-align: middle;">
                                                         {% if editable_mode %}
-                                                        <span class="date-certainty-indicator"
-                                                              :class="{'editable-field': canEdit}"
-                                                              @mouseenter="canEdit && (hoveredField = 'event-' + index + '-dateCertainty')"
-                                                              @mouseleave="hoveredField = null"
-                                                              @click.stop="canEdit && startEdit('event-' + index + '-dateCertainty', event.dateCertainty || 'certain')">
-                                                            <span x-show="!isEditing('event-' + index + '-dateCertainty')" x-text="event.dateCertainty || 'certain'"></span>
-                                                            <select x-show="isEditing('event-' + index + '-dateCertainty')"
-                                                                    x-model="editingValue"
-                                                                    @change="saveDateCertainty(index, $event.target.value); cancelEdit()"
-                                                                    @blur="cancelEdit()"
-                                                                    @keydown.escape="cancelEdit()"
-                                                                    class="inline-edit-select">
-                                                                <option value="certain">certain</option>
-                                                                <option value="approximate">approximate</option>
-                                                                <option value="unknown">unknown</option>
-                                                            </select>
-                                                        </span>
+                                                        <select x-show="canEdit"
+                                                                :value="event.dateCertainty || 'certain'"
+                                                                @change="saveDateCertainty(index, $event.target.value)"
+                                                                class="inline-select-visible">
+                                                            <option value="certain">certain</option>
+                                                            <option value="approximate">approximate</option>
+                                                            <option value="unknown">unknown</option>
+                                                        </select>
+                                                        <span x-show="!canEdit" class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
                                                         {% else %}
                                                         <span class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
                                                         {% endif %}
@@ -697,26 +705,20 @@ Parameters:
                                             <span class="is-size-7">Symptom:</span>
                                             <template x-if="event.symptom">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator is-small"
-                                                      :class="['shift-' + event.symptom, {'editable-shift': canEdit}]"
-                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-symptom-shift')"
-                                                      @mouseleave="hoveredField = null"
-                                                      @click.stop="canEdit && startEditShift('event-' + index + '-symptom-shift', event.symptom)">
-                                                    <span x-show="!isEditing('event-' + index + '-symptom-shift')" x-text="event.symptom"></span>
-                                                    <select x-show="isEditing('event-' + index + '-symptom-shift')" 
-                                                            x-model="editingValue"
-                                                            @change="saveShift(index, 'symptom', $event.target.value); cancelEdit()"
-                                                            @blur="cancelEdit()"
-                                                            @keydown.escape="cancelEdit()"
-                                                            class="inline-edit-select symptom-select">
+                                                <span class="shift-indicator is-small" :class="'shift-' + event.symptom">
+                                                    <select x-show="canEdit"
+                                                            :value="event.symptom"
+                                                            @change="saveShift(index, 'symptom', $event.target.value)"
+                                                            class="inline-select-visible">
                                                         <option value="up">up</option>
                                                         <option value="down">down</option>
                                                         <option value="same">same</option>
                                                     </select>
+                                                    <span x-show="!canEdit" x-text="event.symptom"></span>
                                                 </span>
                                                 {% else %}
-                                                <span class="shift-indicator is-small" 
-                                                      :class="'shift-' + event.symptom" 
+                                                <span class="shift-indicator is-small"
+                                                      :class="'shift-' + event.symptom"
                                                       x-text="event.symptom"></span>
                                                 {% endif %}
                                             </template>
@@ -733,7 +735,7 @@ Parameters:
                                             </template>
                                             {% if editable_mode %}
                                             <span class="delete-variable"
-                                                  x-show="canEdit && event.symptom && !isEditing('event-' + index + '-symptom-shift')"
+                                                  x-show="canEdit && event.symptom"
                                                   @click.stop="removeVariable(index, 'symptom')"
                                                   title="Remove symptom">
                                                 <i class="fas fa-times"></i>
@@ -746,26 +748,20 @@ Parameters:
                                             <span class="is-size-7">Anxiety:</span>
                                             <template x-if="event.anxiety">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator is-small"
-                                                      :class="['shift-' + event.anxiety, {'editable-shift': canEdit}]"
-                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-anxiety-shift')"
-                                                      @mouseleave="hoveredField = null"
-                                                      @click.stop="canEdit && startEditShift('event-' + index + '-anxiety-shift', event.anxiety)">
-                                                    <span x-show="!isEditing('event-' + index + '-anxiety-shift')" x-text="event.anxiety"></span>
-                                                    <select x-show="isEditing('event-' + index + '-anxiety-shift')" 
-                                                            x-model="editingValue"
-                                                            @change="saveShift(index, 'anxiety', $event.target.value); cancelEdit()"
-                                                            @blur="cancelEdit()"
-                                                            @keydown.escape="cancelEdit()"
-                                                            class="inline-edit-select anxiety-select">
+                                                <span class="shift-indicator is-small" :class="'shift-' + event.anxiety">
+                                                    <select x-show="canEdit"
+                                                            :value="event.anxiety"
+                                                            @change="saveShift(index, 'anxiety', $event.target.value)"
+                                                            class="inline-select-visible">
                                                         <option value="up">up</option>
                                                         <option value="down">down</option>
                                                         <option value="same">same</option>
                                                     </select>
+                                                    <span x-show="!canEdit" x-text="event.anxiety"></span>
                                                 </span>
                                                 {% else %}
-                                                <span class="shift-indicator is-small" 
-                                                      :class="'shift-' + event.anxiety" 
+                                                <span class="shift-indicator is-small"
+                                                      :class="'shift-' + event.anxiety"
                                                       x-text="event.anxiety"></span>
                                                 {% endif %}
                                             </template>
@@ -782,7 +778,7 @@ Parameters:
                                             </template>
                                             {% if editable_mode %}
                                             <span class="delete-variable"
-                                                  x-show="canEdit && event.anxiety && !isEditing('event-' + index + '-anxiety-shift')"
+                                                  x-show="canEdit && event.anxiety"
                                                   @click.stop="removeVariable(index, 'anxiety')"
                                                   title="Remove anxiety">
                                                 <i class="fas fa-times"></i>
@@ -795,18 +791,11 @@ Parameters:
                                             <span class="is-size-7">Relationship:</span>
                                             <template x-if="event.relationship">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator shift-relationship is-small"
-                                                      :class="{'editable-shift': canEdit}"
-                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-relationship-kind')"
-                                                      @mouseleave="hoveredField = null"
-                                                      @click.stop="canEdit && startEditRelationship('event-' + index + '-relationship-kind', event.relationship)">
-                                                    <span x-show="!isEditing('event-' + index + '-relationship-kind')" x-text="event.relationship"></span>
-                                                    <select x-show="isEditing('event-' + index + '-relationship-kind')"
-                                                            x-model="editingValue"
-                                                            @change="saveRelationshipKind(index, $event.target.value); cancelEdit()"
-                                                            @blur="cancelEdit()"
-                                                            @keydown.escape="cancelEdit()"
-                                                            class="inline-edit-select relationship-select">
+                                                <span class="shift-indicator shift-relationship is-small">
+                                                    <select x-show="canEdit"
+                                                            :value="event.relationship"
+                                                            @change="saveRelationshipKind(index, $event.target.value)"
+                                                            class="inline-select-visible">
                                                         <option value="conflict">conflict</option>
                                                         <option value="distance">distance</option>
                                                         <option value="overfunctioning">overfunctioning</option>
@@ -819,9 +808,10 @@ Parameters:
                                                         <option value="outside">outside</option>
                                                         <option value="cutoff">cutoff</option>
                                                     </select>
+                                                    <span x-show="!canEdit" x-text="event.relationship"></span>
                                                 </span>
                                                 {% else %}
-                                                <span class="shift-indicator shift-relationship is-small" 
+                                                <span class="shift-indicator shift-relationship is-small"
                                                       x-text="event.relationship"></span>
                                                 {% endif %}
                                             </template>
@@ -838,7 +828,7 @@ Parameters:
                                             </template>
                                             {% if editable_mode %}
                                             <span class="delete-variable"
-                                                  x-show="canEdit && event.relationship && !isEditing('event-' + index + '-relationship-kind')"
+                                                  x-show="canEdit && event.relationship"
                                                   @click.stop="removeVariable(index, 'relationship')"
                                                   title="Remove relationship">
                                                 <i class="fas fa-times"></i>
@@ -929,22 +919,16 @@ Parameters:
                                             <span class="is-size-7">Functioning:</span>
                                             <template x-if="event.functioning">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator is-small"
-                                                      :class="['shift-functioning-' + event.functioning, {'editable-shift': canEdit}]"
-                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-functioning-shift')"
-                                                      @mouseleave="hoveredField = null"
-                                                      @click.stop="canEdit && startEditShift('event-' + index + '-functioning-shift', event.functioning)">
-                                                    <span x-show="!isEditing('event-' + index + '-functioning-shift')" x-text="event.functioning"></span>
-                                                    <select x-show="isEditing('event-' + index + '-functioning-shift')"
-                                                            x-model="editingValue"
-                                                            @change="saveShift(index, 'functioning', $event.target.value); cancelEdit()"
-                                                            @blur="cancelEdit()"
-                                                            @keydown.escape="cancelEdit()"
-                                                            class="inline-edit-select functioning-select">
+                                                <span class="shift-indicator is-small" :class="'shift-functioning-' + event.functioning">
+                                                    <select x-show="canEdit"
+                                                            :value="event.functioning"
+                                                            @change="saveShift(index, 'functioning', $event.target.value)"
+                                                            class="inline-select-visible">
                                                         <option value="up">up</option>
                                                         <option value="down">down</option>
                                                         <option value="same">same</option>
                                                     </select>
+                                                    <span x-show="!canEdit" x-text="event.functioning"></span>
                                                 </span>
                                                 {% else %}
                                                 <span class="shift-indicator is-small"
@@ -965,7 +949,7 @@ Parameters:
                                             </template>
                                             {% if editable_mode %}
                                             <span class="delete-variable"
-                                                  x-show="canEdit && event.functioning && !isEditing('event-' + index + '-functioning-shift')"
+                                                  x-show="canEdit && event.functioning"
                                                   @click.stop="removeVariable(index, 'functioning')"
                                                   title="Remove functioning">
                                                 <i class="fas fa-times"></i>
@@ -997,22 +981,15 @@ Parameters:
                                     <div class="is-flex is-align-items-center">
                                         <strong class="is-size-7">ID: </strong>
                                         {% if editable_mode %}
-                                        <span class="editable-field delete-id ml-1"
-                                              @mouseenter="hoveredField = 'delete-' + index + '-id'"
-                                              @mouseleave="hoveredField = null"
-                                              @click.stop="startEditDelete(index, deleteId)">
-                                            <span x-show="!isEditing('delete-' + index + '-id')" x-text="deleteId"></span>
-                                            <select x-show="isEditing('delete-' + index + '-id')" 
-                                                    x-model="editingValue"
-                                                    @change="saveDeleteId(index, parseInt($event.target.value)); cancelEdit()"
-                                                    @blur="cancelEdit()"
-                                                    @keydown.escape="cancelEdit()"
-                                                    class="inline-edit-select delete-select">
-                                                <template x-for="availableId in getAllAvailableIds()" :key="availableId.id">
-                                                    <option :value="availableId.id" x-text="availableId.label"></option>
-                                                </template>
-                                            </select>
-                                        </span>
+                                        <select x-show="canEdit"
+                                                :value="deleteId"
+                                                @change="saveDeleteId(index, parseInt($event.target.value))"
+                                                class="inline-select-visible ml-1">
+                                            <template x-for="availableId in getAllAvailableIds()" :key="availableId.id">
+                                                <option :value="availableId.id" x-text="availableId.label"></option>
+                                            </template>
+                                        </select>
+                                        <span x-show="!canEdit" class="is-size-7 ml-1" x-text="deleteId"></span>
                                         <span x-show="canEdit" class="delete-variable ml-auto" @click.stop="removeDelete(index)" title="Remove delete">
                                             <i class="fas fa-times"></i>
                                         </span>
@@ -1359,29 +1336,21 @@ Parameters:
                                                 </td>
                                                 <td style="padding: 0;">
                                                     {% if editable_mode %}
-                                                    <span class="event-kind-indicator"
-                                                          :class="{'editable-field': canEdit}"
-                                                          @mouseenter="canEdit && (hoveredField = 'event-' + index + '-kind')"
-                                                          @mouseleave="hoveredField = null"
-                                                          @click.stop="canEdit && startEditEventKind('event-' + index + '-kind', event.kind)">
-                                                        <span x-show="!isEditing('event-' + index + '-kind')" x-text="event.kind || 'shift'"></span>
-                                                        <select x-show="isEditing('event-' + index + '-kind')"
-                                                                x-model="editingValue"
-                                                                @change="saveEventKind(index, $event.target.value); cancelEdit()"
-                                                                @blur="cancelEdit()"
-                                                                @keydown.escape="cancelEdit()"
-                                                                class="inline-edit-select">
-                                                            <option value="shift">shift</option>
-                                                            <option value="birth">birth</option>
-                                                            <option value="adopted">adopted</option>
-                                                            <option value="bonded">bonded</option>
-                                                            <option value="married">married</option>
-                                                            <option value="separated">separated</option>
-                                                            <option value="divorced">divorced</option>
-                                                            <option value="moved">moved</option>
-                                                            <option value="death">death</option>
-                                                        </select>
-                                                    </span>
+                                                    <select x-show="canEdit"
+                                                            :value="event.kind || 'shift'"
+                                                            @change="saveEventKind(index, $event.target.value)"
+                                                            class="inline-select-visible">
+                                                        <option value="shift">shift</option>
+                                                        <option value="birth">birth</option>
+                                                        <option value="adopted">adopted</option>
+                                                        <option value="bonded">bonded</option>
+                                                        <option value="married">married</option>
+                                                        <option value="separated">separated</option>
+                                                        <option value="divorced">divorced</option>
+                                                        <option value="moved">moved</option>
+                                                        <option value="death">death</option>
+                                                    </select>
+                                                    <span x-show="!canEdit" class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
                                                     {% else %}
                                                     <span class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
                                                     {% endif %}
@@ -1556,30 +1525,17 @@ Parameters:
                                                         <span x-text="formatDate(event.dateTime) || 'Not specified'"></span>
                                                         {% endif %}
                                                     </td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                        Certainty:
-                                                    </td>
-                                                    <td style="padding: 0;">
+                                                    <td style="padding: 0 0 0 8px; vertical-align: middle;">
                                                         {% if editable_mode %}
-                                                        <span class="date-certainty-indicator"
-                                                              :class="{'editable-field': canEdit}"
-                                                              @mouseenter="canEdit && (hoveredField = 'event-' + index + '-dateCertainty')"
-                                                              @mouseleave="hoveredField = null"
-                                                              @click.stop="canEdit && startEdit('event-' + index + '-dateCertainty', event.dateCertainty || 'certain')">
-                                                            <span x-show="!isEditing('event-' + index + '-dateCertainty')" x-text="event.dateCertainty || 'certain'"></span>
-                                                            <select x-show="isEditing('event-' + index + '-dateCertainty')"
-                                                                    x-model="editingValue"
-                                                                    @change="saveDateCertainty(index, $event.target.value); cancelEdit()"
-                                                                    @blur="cancelEdit()"
-                                                                    @keydown.escape="cancelEdit()"
-                                                                    class="inline-edit-select">
-                                                                <option value="certain">certain</option>
-                                                                <option value="approximate">approximate</option>
-                                                                <option value="unknown">unknown</option>
-                                                            </select>
-                                                        </span>
+                                                        <select x-show="canEdit"
+                                                                :value="event.dateCertainty || 'certain'"
+                                                                @change="saveDateCertainty(index, $event.target.value)"
+                                                                class="inline-select-visible">
+                                                            <option value="certain">certain</option>
+                                                            <option value="approximate">approximate</option>
+                                                            <option value="unknown">unknown</option>
+                                                        </select>
+                                                        <span x-show="!canEdit" class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
                                                         {% else %}
                                                         <span class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
                                                         {% endif %}
@@ -1598,26 +1554,20 @@ Parameters:
                                             <span class="is-size-7">Symptom:</span>
                                             <template x-if="event.symptom">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator is-small"
-                                                      :class="['shift-' + event.symptom, {'editable-shift': canEdit}]"
-                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-symptom-shift')"
-                                                      @mouseleave="hoveredField = null"
-                                                      @click.stop="canEdit && startEditShift('event-' + index + '-symptom-shift', event.symptom)">
-                                                    <span x-show="!isEditing('event-' + index + '-symptom-shift')" x-text="event.symptom"></span>
-                                                    <select x-show="isEditing('event-' + index + '-symptom-shift')" 
-                                                            x-model="editingValue"
-                                                            @change="saveShift(index, 'symptom', $event.target.value); cancelEdit()"
-                                                            @blur="cancelEdit()"
-                                                            @keydown.escape="cancelEdit()"
-                                                            class="inline-edit-select symptom-select">
+                                                <span class="shift-indicator is-small" :class="'shift-' + event.symptom">
+                                                    <select x-show="canEdit"
+                                                            :value="event.symptom"
+                                                            @change="saveShift(index, 'symptom', $event.target.value)"
+                                                            class="inline-select-visible">
                                                         <option value="up">up</option>
                                                         <option value="down">down</option>
                                                         <option value="same">same</option>
                                                     </select>
+                                                    <span x-show="!canEdit" x-text="event.symptom"></span>
                                                 </span>
                                                 {% else %}
-                                                <span class="shift-indicator is-small" 
-                                                      :class="'shift-' + event.symptom" 
+                                                <span class="shift-indicator is-small"
+                                                      :class="'shift-' + event.symptom"
                                                       x-text="event.symptom"></span>
                                                 {% endif %}
                                             </template>
@@ -1634,7 +1584,7 @@ Parameters:
                                             </template>
                                             {% if editable_mode %}
                                             <span class="delete-variable"
-                                                  x-show="canEdit && event.symptom && !isEditing('event-' + index + '-symptom-shift')"
+                                                  x-show="canEdit && event.symptom"
                                                   @click.stop="removeVariable(index, 'symptom')"
                                                   title="Remove symptom">
                                                 <i class="fas fa-times"></i>
@@ -1647,26 +1597,20 @@ Parameters:
                                             <span class="is-size-7">Anxiety:</span>
                                             <template x-if="event.anxiety">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator is-small"
-                                                      :class="['shift-' + event.anxiety, {'editable-shift': canEdit}]"
-                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-anxiety-shift')"
-                                                      @mouseleave="hoveredField = null"
-                                                      @click.stop="canEdit && startEditShift('event-' + index + '-anxiety-shift', event.anxiety)">
-                                                    <span x-show="!isEditing('event-' + index + '-anxiety-shift')" x-text="event.anxiety"></span>
-                                                    <select x-show="isEditing('event-' + index + '-anxiety-shift')" 
-                                                            x-model="editingValue"
-                                                            @change="saveShift(index, 'anxiety', $event.target.value); cancelEdit()"
-                                                            @blur="cancelEdit()"
-                                                            @keydown.escape="cancelEdit()"
-                                                            class="inline-edit-select anxiety-select">
+                                                <span class="shift-indicator is-small" :class="'shift-' + event.anxiety">
+                                                    <select x-show="canEdit"
+                                                            :value="event.anxiety"
+                                                            @change="saveShift(index, 'anxiety', $event.target.value)"
+                                                            class="inline-select-visible">
                                                         <option value="up">up</option>
                                                         <option value="down">down</option>
                                                         <option value="same">same</option>
                                                     </select>
+                                                    <span x-show="!canEdit" x-text="event.anxiety"></span>
                                                 </span>
                                                 {% else %}
-                                                <span class="shift-indicator is-small" 
-                                                      :class="'shift-' + event.anxiety" 
+                                                <span class="shift-indicator is-small"
+                                                      :class="'shift-' + event.anxiety"
                                                       x-text="event.anxiety"></span>
                                                 {% endif %}
                                             </template>
@@ -1683,7 +1627,7 @@ Parameters:
                                             </template>
                                             {% if editable_mode %}
                                             <span class="delete-variable"
-                                                  x-show="canEdit && event.anxiety && !isEditing('event-' + index + '-anxiety-shift')"
+                                                  x-show="canEdit && event.anxiety"
                                                   @click.stop="removeVariable(index, 'anxiety')"
                                                   title="Remove anxiety">
                                                 <i class="fas fa-times"></i>
@@ -1696,18 +1640,11 @@ Parameters:
                                             <span class="is-size-7">Relationship:</span>
                                             <template x-if="event.relationship">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator shift-relationship is-small"
-                                                      :class="{'editable-shift': canEdit}"
-                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-relationship-kind')"
-                                                      @mouseleave="hoveredField = null"
-                                                      @click.stop="canEdit && startEditRelationship('event-' + index + '-relationship-kind', event.relationship)">
-                                                    <span x-show="!isEditing('event-' + index + '-relationship-kind')" x-text="event.relationship"></span>
-                                                    <select x-show="isEditing('event-' + index + '-relationship-kind')"
-                                                            x-model="editingValue"
-                                                            @change="saveRelationshipKind(index, $event.target.value); cancelEdit()"
-                                                            @blur="cancelEdit()"
-                                                            @keydown.escape="cancelEdit()"
-                                                            class="inline-edit-select relationship-select">
+                                                <span class="shift-indicator shift-relationship is-small">
+                                                    <select x-show="canEdit"
+                                                            :value="event.relationship"
+                                                            @change="saveRelationshipKind(index, $event.target.value)"
+                                                            class="inline-select-visible">
                                                         <option value="conflict">conflict</option>
                                                         <option value="distance">distance</option>
                                                         <option value="overfunctioning">overfunctioning</option>
@@ -1720,9 +1657,10 @@ Parameters:
                                                         <option value="outside">outside</option>
                                                         <option value="cutoff">cutoff</option>
                                                     </select>
+                                                    <span x-show="!canEdit" x-text="event.relationship"></span>
                                                 </span>
                                                 {% else %}
-                                                <span class="shift-indicator shift-relationship is-small" 
+                                                <span class="shift-indicator shift-relationship is-small"
                                                       x-text="event.relationship"></span>
                                                 {% endif %}
                                             </template>
@@ -1739,7 +1677,7 @@ Parameters:
                                             </template>
                                             {% if editable_mode %}
                                             <span class="delete-variable"
-                                                  x-show="canEdit && event.relationship && !isEditing('event-' + index + '-relationship-kind')"
+                                                  x-show="canEdit && event.relationship"
                                                   @click.stop="removeVariable(index, 'relationship')"
                                                   title="Remove relationship">
                                                 <i class="fas fa-times"></i>
@@ -1830,22 +1768,16 @@ Parameters:
                                             <span class="is-size-7">Functioning:</span>
                                             <template x-if="event.functioning">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator is-small"
-                                                      :class="['shift-functioning-' + event.functioning, {'editable-shift': canEdit}]"
-                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-functioning-shift')"
-                                                      @mouseleave="hoveredField = null"
-                                                      @click.stop="canEdit && startEditShift('event-' + index + '-functioning-shift', event.functioning)">
-                                                    <span x-show="!isEditing('event-' + index + '-functioning-shift')" x-text="event.functioning"></span>
-                                                    <select x-show="isEditing('event-' + index + '-functioning-shift')"
-                                                            x-model="editingValue"
-                                                            @change="saveShift(index, 'functioning', $event.target.value); cancelEdit()"
-                                                            @blur="cancelEdit()"
-                                                            @keydown.escape="cancelEdit()"
-                                                            class="inline-edit-select functioning-select">
+                                                <span class="shift-indicator is-small" :class="'shift-functioning-' + event.functioning">
+                                                    <select x-show="canEdit"
+                                                            :value="event.functioning"
+                                                            @change="saveShift(index, 'functioning', $event.target.value)"
+                                                            class="inline-select-visible">
                                                         <option value="up">up</option>
                                                         <option value="down">down</option>
                                                         <option value="same">same</option>
                                                     </select>
+                                                    <span x-show="!canEdit" x-text="event.functioning"></span>
                                                 </span>
                                                 {% else %}
                                                 <span class="shift-indicator is-small"
@@ -1866,7 +1798,7 @@ Parameters:
                                             </template>
                                             {% if editable_mode %}
                                             <span class="delete-variable"
-                                                  x-show="canEdit && event.functioning && !isEditing('event-' + index + '-functioning-shift')"
+                                                  x-show="canEdit && event.functioning"
                                                   @click.stop="removeVariable(index, 'functioning')"
                                                   title="Remove functioning">
                                                 <i class="fas fa-times"></i>
@@ -1898,22 +1830,15 @@ Parameters:
                                     <div class="is-flex is-align-items-center">
                                         <strong class="is-size-7">ID: </strong>
                                         {% if editable_mode %}
-                                        <span class="editable-field delete-id ml-1"
-                                              @mouseenter="hoveredField = 'delete-' + index + '-id'"
-                                              @mouseleave="hoveredField = null"
-                                              @click.stop="startEditDelete(index, deleteId)">
-                                            <span x-show="!isEditing('delete-' + index + '-id')" x-text="deleteId"></span>
-                                            <select x-show="isEditing('delete-' + index + '-id')" 
-                                                    x-model="editingValue"
-                                                    @change="saveDeleteId(index, parseInt($event.target.value)); cancelEdit()"
-                                                    @blur="cancelEdit()"
-                                                    @keydown.escape="cancelEdit()"
-                                                    class="inline-edit-select delete-select">
-                                                <template x-for="availableId in getAllAvailableIds()" :key="availableId.id">
-                                                    <option :value="availableId.id" x-text="availableId.label"></option>
-                                                </template>
-                                            </select>
-                                        </span>
+                                        <select x-show="canEdit"
+                                                :value="deleteId"
+                                                @change="saveDeleteId(index, parseInt($event.target.value))"
+                                                class="inline-select-visible ml-1">
+                                            <template x-for="availableId in getAllAvailableIds()" :key="availableId.id">
+                                                <option :value="availableId.id" x-text="availableId.label"></option>
+                                            </template>
+                                        </select>
+                                        <span x-show="!canEdit" class="is-size-7 ml-1" x-text="deleteId"></span>
                                         <span x-show="canEdit" class="delete-variable ml-auto" @click.stop="removeDelete(index)" title="Remove delete">
                                             <i class="fas fa-times"></i>
                                         </span>
@@ -2375,6 +2300,38 @@ Parameters:
     border-radius: 3px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     cursor: pointer;
+}
+
+/* Always-visible select that looks like text until clicked */
+.inline-select-visible {
+    position: relative;
+    border: 1px solid #676767;
+    border-radius: 3px;
+    background: transparent;
+    padding: 1px 2px;
+    font-size: inherit;
+    font-weight: inherit;
+    cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    color: inherit;
+}
+
+.inline-select-visible:focus {
+    outline: none;
+    border-color: #007bff;
+    border-radius: 3px;
+    background: white;
+}
+
+[data-theme="dark"] .inline-select-visible:focus {
+    background: #2d2b2a;
+}
+
+[data-theme="dark"] .inline-select-visible option {
+    background: #2d2b2a;
+    color: #ffffff;
 }
 
 .inline-edit-select:focus {

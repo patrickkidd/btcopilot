@@ -290,7 +290,12 @@ SECTION 1: DATA MODEL (Semantic definitions - what things mean)
   variables. Extra attention is paid to nuclear and extended family members, at
   least three generations. A person only has two biological parents and can have
   any number of siblings. Deduplicate by name, ensuring one mother/father per
-  user.
+  user. Person has a `gender` field with PersonKind values:
+  - "male": Male person (infer from names like John, Michael, Bob, etc.)
+  - "female": Female person (infer from names like Sarah, Mary, Jennifer, etc.)
+  - "abortion": Pregnancy terminated by abortion
+  - "miscarriage": Pregnancy loss due to miscarriage
+  - "unknown": Gender cannot be determined from name or context
 
 *Event*: A SPECIFIC INCIDENT that occurred at a particular point in time, not a
   general characterization or ongoing pattern. Events indicate shifts in the
@@ -451,6 +456,16 @@ NOT the current date.
   - Sarah says "my mom" → "Sarah's Mom"
   - Unknown speaker → "User's Mother"
 
+**GENDER INFERENCE RULES:**
+
+- ALWAYS set `gender` field for every person extracted
+- Infer gender from first names when recognizable (e.g., "John" → "male", "Mary" → "female")
+- Infer gender from relational titles:
+  - "Mom", "Mother", "Grandmother", "Aunt", "Sister", "Wife" → "female"
+  - "Dad", "Father", "Grandfather", "Uncle", "Brother", "Husband" → "male"
+- Use "abortion" or "miscarriage" only when explicitly stated
+- Use "unknown" when gender cannot be determined from name or context
+
 **DELTA EXTRACTION RULES:**
 
 1. NEW ONLY: Don't include people/events already in database unless new info
@@ -505,9 +520,9 @@ WHY WRONG: The user said "Aunt Linda", "Uncle Tom", "Uncle Bill" - these titles 
 ✅ CORRECT OUTPUT:
 {
     "people": [
-        {"id": -1, "name": "Aunt Linda", "confidence": 0.8},
-        {"id": -2, "name": "Uncle Tom", "confidence": 0.8},
-        {"id": -3, "name": "Uncle Bill", "confidence": 0.8}
+        {"id": -1, "name": "Aunt Linda", "gender": "female", "confidence": 0.8},
+        {"id": -2, "name": "Uncle Tom", "gender": "male", "confidence": 0.8},
+        {"id": -3, "name": "Uncle Bill", "gender": "male", "confidence": 0.8}
     ],
     "events": [],
     "delete": []
@@ -550,7 +565,7 @@ WHY WRONG:
 ✅ CORRECT OUTPUT:
 {
     "people": [
-        {"id": -1, "name": "Dr Brezel", "confidence": 0.8}
+        {"id": -1, "name": "Dr Brezel", "gender": "unknown", "confidence": 0.8}
     ],
     "events": [],
     "delete": []
@@ -558,6 +573,7 @@ WHY WRONG:
 
 **RULE**: When both generic ("the doctor") and named ("Dr Brezel") references exist,
 extract ONLY the named version with EXACT spelling (no periods added to "Dr").
+Note: "Dr Brezel" gets "unknown" gender since first name is not given.
 
 # ─────────────────────────────────────────────────────────────────────────────
 # [PERSON_POSSESSIVE_NAMING]
@@ -581,16 +597,16 @@ extract ONLY the named version with EXACT spelling (no periods added to "Dr").
 ✅ CORRECT OUTPUT:
 {
     "people": [
-        {"id": -1, "name": "Sarah's Mom", "confidence": 0.8}
+        {"id": -1, "name": "Sarah's Mom", "gender": "female", "confidence": 0.8}
     ],
     "events": [],
     "delete": []
 }
 
 **RULE**: When extracting unnamed family relations, always prefix with speaker's name:
-- Sarah says "my mom" → "Sarah's Mom"
-- Marcus says "my father" → "Marcus' Father"
-- Unknown speaker → "User's Mother"
+- Sarah says "my mom" → "Sarah's Mom" with gender "female"
+- Marcus says "my father" → "Marcus' Father" with gender "male"
+- Unknown speaker → "User's Mother" with gender "female"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # [OVER_EXTRACTION_GENERAL_CHARACTERIZATION]
@@ -625,7 +641,7 @@ specific incident at a point in time. No event should be created.
 CORRECT Output:
 {
     "people": [
-        {"id": -1, "name": "Brother-in-law", "confidence": 0.8}
+        {"id": -1, "name": "Brother-in-law", "gender": "male", "confidence": 0.8}
     ],
     "events": [],  // No event - just a general feeling about a person
     "delete": []
@@ -661,7 +677,7 @@ WHY WRONG: The user said "born 12/3/1954" - that's a birth EVENT with a date. Yo
 ✅ CORRECT OUTPUT:
 {
     "people": [
-        {"id": -1, "name": "Elizabeth Smith", "confidence": 0.9}
+        {"id": -1, "name": "Elizabeth Smith", "gender": "female", "confidence": 0.9}
     ],
     "events": [
         {
@@ -677,6 +693,7 @@ WHY WRONG: The user said "born 12/3/1954" - that's a birth EVENT with a date. Yo
 }
 
 **RULE**: When you see "Name, born MM/DD/YYYY" or "Name, dob MM/DD/YYYY", you MUST extract BOTH the person AND a birth event. This is not optional. If you extract the person without the birth event, you are making a mistake.
+Note: "Elizabeth" is a female name, so gender is "female".
 
 # ─────────────────────────────────────────────────────────────────────────────
 # [RELATIONSHIP_TARGETS_REQUIRED]
@@ -719,7 +736,7 @@ DiagramData: {
 ✅ CORRECT OUTPUT:
 {
     "people": [
-        {"id": -1, "name": "Brother-in-law", "confidence": 0.8}
+        {"id": -1, "name": "Brother-in-law", "gender": "male", "confidence": 0.8}
     ],
     "events": [
         {
@@ -737,6 +754,7 @@ DiagramData: {
 }
 
 WHY: Every relationship event MUST specify who the person interacted with via relationshipTargets. A "run-in" involves at least 2 people.
+Note: "Brother-in-law" implies male gender.
 
 # ─────────────────────────────────────────────────────────────────────────────
 # [EVENT_TIMEFRAME_SPECIFIC_INCIDENT]
@@ -907,16 +925,19 @@ Output:
         {
             "id": -1,
             "name": "Mom",
+            "gender": "female",
             "confidence": 0.8
         },
         {
             "id": -3,
             "name": "Allen",
+            "gender": "male",
             "parents": -4,
             "confidence": 0.8
         },
         {
             "id": 1,
+            "gender": "female",
             "parents": -4,
             "confidence": 0.99
         }
@@ -997,6 +1018,7 @@ Output:
         {
             "id": -234,
             "name": "Jim's Wife",
+            "gender": "female",
             "confidence": 0.8
         }
     ],

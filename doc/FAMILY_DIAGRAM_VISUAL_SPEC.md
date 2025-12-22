@@ -381,18 +381,18 @@ The training app includes an HTML5/SVG renderer for visualizing PDP (Pending Dat
 **Endpoint**: `/training/diagrams/render/<statement_id>`
 
 **Supported Features**:
-- Person symbols (unknown gender shown as rounded rectangles with "?")
-- Name labels positioned to the right of each person
+- Person symbols (male=square, female=circle, unknown=rounded rectangle with "?")
+- Name labels with smart placement (right, left, or above based on neighbors)
 - ID labels for debugging (negative IDs indicate PDP items)
 - Pair bond U-shapes with solid/dashed lines
+- Separation indicator (single diagonal slash through pair bond line)
+- Divorce indicator (two diagonal slashes through pair bond line)
 - Child connections (vertical/diagonal lines to parent bars)
+- Deceased indicators (X through shape)
+- Primary/index person double outline
 - Dark/light mode adaptation via CSS custom properties
 
 **Not Yet Implemented**:
-- Gender-specific shapes (requires gender field in PDP schema)
-- Deceased indicators (X through shape)
-- Primary/index person double outline
-- Separation/divorce slashes on pair bonds
 - Multiple birth jig lines
 - Age display inside person symbols
 
