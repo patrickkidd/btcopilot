@@ -22,9 +22,9 @@ The current F1 metrics are artificially low due to overly strict matching. Fix t
 - [x] **dateCertainty implemented** - The `Event.dateCertainty` field now provides
       smart date tolerance based on certainty level:
   - `Unknown`: always matches (any date)
-  - `Approximate`: ±365 days tolerance
+  - `Approximate`: ±270 days tolerance (9 months)
   - `Certain`: ±7 days tolerance (`DATE_TOLERANCE_DAYS`)
-- [ ] Lower `DESCRIPTION_SIMILARITY_THRESHOLD` from 0.5 → 0.4 (already done: 0.4)
+- [x] Lower `DESCRIPTION_SIMILARITY_THRESHOLD` from 0.5 → 0.4 (confirmed: 0.4)
 
 After changes, re-run baseline to see true current performance.
 
