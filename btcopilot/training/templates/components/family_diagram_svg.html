@@ -299,7 +299,104 @@ Parameters:
         const genKeys = Object.keys(byGeneration).map(Number).sort((a, b) => a - b);
         const positioned = new Set();
 
-        // First pass: position pair bonds (couples) together, starting from root generation
+        // PHASE 1: Determine couple ordering based on descendants (bottom-up)
+        // Per spec: "Ordering Couples in the Same Generation" - couples are ordered
+        // based on their descendants' marriages, propagating upward
+        const coupleOrder = {}; // pairBondId -> order index (lower = further left)
+
+        // Process generations bottom-up to propagate ordering
+        const genKeysReversed = [...genKeys].reverse();
+        for (const gen of genKeysReversed) {
+            const peopleInGen = byGeneration[gen];
+
+            // Find couples in this generation
+            const couplesInGen = [];
+            const seenInGen = new Set();
+
+            for (const person of peopleInGen) {
+                if (seenInGen.has(person.id)) continue;
+                const pbs = pairBondsByPerson[person.id] || [];
+                for (const pb of pbs) {
+                    const partnerId = pb.person_a === person.id ? pb.person_b : pb.person_a;
+                    if (generations[partnerId] === gen && !seenInGen.has(partnerId)) {
+                        couplesInGen.push(pb);
+                        seenInGen.add(person.id);
+                        seenInGen.add(partnerId);
+                        break;
+                    }
+                }
+            }
+
+            // For each couple, determine order based on children's positions
+            for (const pb of couplesInGen) {
+                const children = childrenByPairBond[pb.id] || [];
+                if (children.length === 0) {
+                    // No children - order will be determined by other factors
+                    continue;
+                }
+
+                // Find the leftmost child's position (based on their couple's order)
+                let minChildOrder = Infinity;
+                for (const childId of children) {
+                    const child = peopleById[childId];
+                    if (!child) continue;
+
+                    // Check if this child is in a couple
+                    const childPbs = pairBondsByPerson[childId] || [];
+                    for (const childPb of childPbs) {
+                        if (coupleOrder[childPb.id] !== undefined) {
+                            minChildOrder = Math.min(minChildOrder, coupleOrder[childPb.id]);
+                        }
+                    }
+                }
+
+                if (minChildOrder !== Infinity) {
+                    coupleOrder[pb.id] = minChildOrder;
+                }
+            }
+
+            // For couples without order yet, assign based on their position in children's marriages
+            // If child A (from couple X) marries child B (from couple Y), and A is male (left),
+            // then couple X should be left of couple Y
+            for (const pb of couplesInGen) {
+                if (coupleOrder[pb.id] !== undefined) continue;
+
+                const children = childrenByPairBond[pb.id] || [];
+                for (const childId of children) {
+                    const child = peopleById[childId];
+                    if (!child) continue;
+
+                    // Check if this child married someone from another family
+                    const childPbs = pairBondsByPerson[childId] || [];
+                    for (const childPb of childPbs) {
+                        const spouseId = childPb.person_a === childId ? childPb.person_b : childPb.person_a;
+                        const spouse = peopleById[spouseId];
+                        if (!spouse || spouse.parents === pb.id) continue; // Same family
+
+                        // Found a marriage between families
+                        // Per spec: male on left, so check gender to determine order
+                        const childGender = child.gender || 'unknown';
+                        const spouseGender = spouse.gender || 'unknown';
+
+                        // Find spouse's parent couple
+                        const spouseParentPbId = spouse.parents;
+                        if (!spouseParentPbId) continue;
+
+                        if (childGender === 'male' || (childGender === 'unknown' && spouseGender === 'female')) {
+                            // This child is on left, so this couple should be left of spouse's parents
+                            coupleOrder[pb.id] = (coupleOrder[spouseParentPbId] || 0) - 1;
+                        } else if (childGender === 'female' || (childGender === 'unknown' && spouseGender === 'male')) {
+                            // This child is on right, so this couple should be right of spouse's parents
+                            coupleOrder[pb.id] = (coupleOrder[spouseParentPbId] || 0) + 1;
+                        }
+                        break;
+                    }
+                    if (coupleOrder[pb.id] !== undefined) break;
+                }
+            }
+        }
+
+        // PHASE 2: Position generations top-down using the computed couple ordering
         for (const gen of genKeys) {
             let currentX = 100;
             const genY = 100 + gen * GENERATION_GAP;
@@ -417,14 +514,36 @@ Parameters:
                 const spouseSiblings = spouseParents ?
                     (siblingGroups[spouseParents] || []).filter(s => s.id !== spouseId && !spouseOf[s.id]) : [];
 
-                // Determine left/right based on parent positions
+                // Determine left/right based on parent positions or coupleOrder (for root generation)
                 let leftSiblings, rightSiblings, person1, person2;
                 const personParentX = personParents && layout.pairBonds[personParents] ?
-                    (layout.pairBonds[personParents].x1 + layout.pairBonds[personParents].x2) / 2 : 0;
+                    (layout.pairBonds[personParents].x1 + layout.pairBonds[personParents].x2) / 2 : null;
                 const spouseParentX = spouseParents && layout.pairBonds[spouseParents] ?
-                    (layout.pairBonds[spouseParents].x1 + layout.pairBonds[spouseParents].x2) / 2 : 0;
+                    (layout.pairBonds[spouseParents].x1 + layout.pairBonds[spouseParents].x2) / 2 : null;
 
-                if (personParentX <= spouseParentX) {
+                // Use parent positions if available, otherwise use gender convention (male on left)
+                let personOnLeft;
+                if (personParentX !== null && spouseParentX !== null) {
+                    personOnLeft = personParentX <= spouseParentX;
+                } else if (personParentX !== null) {
+                    personOnLeft = true; // person has parents, spouse doesn't - person's family anchors left
+                } else if (spouseParentX !== null) {
+                    personOnLeft = false; // spouse has parents, person doesn't - spouse's family anchors left
+                } else {
+                    // Neither has parents (root generation) - use gender convention: male on left
+                    const personGender = person.gender || 'unknown';
+                    const spouseGender = spouse.gender || 'unknown';
+                    if (personGender === 'male') {
+                        personOnLeft = true;
+                    } else if (spouseGender === 'male') {
+                        personOnLeft = false;
+                    } else {
+                        // Both unknown - arbitrary, person first
+                        personOnLeft = true;
+                    }
+                }
+
+                if (personOnLeft) {
                     // Person's family on left, spouse's family on right
                     leftSiblings = personSiblings;
                     rightSiblings = spouseSiblings;
@@ -444,7 +563,8 @@ Parameters:
                     rightSiblings: rightSiblings,
                     personParents: personParents,
                     spouseParents: spouseParents,
-                    isDivorced: isDivorced
+                    isDivorced: isDivorced,
+                    pairBondId: theirPb ? theirPb.id : null
                 });
 
                 // Mark both members as positioned to avoid duplicate familyUnits
@@ -455,9 +575,10 @@ Parameters:
                 if (spouseParents) processedSiblingGroups.add(spouseParents);
             }
 
-            // Sort family units by average parent X position
+            // Sort family units by average parent X position, or by coupleOrder for root generation
             familyUnits.sort((a, b) => {
-                const getAvgX = (unit) => {
+                const getOrder = (unit) => {
+                    // First try parent positions
                     let sum = 0, count = 0;
                     if (unit.personParents && layout.pairBonds[unit.personParents]) {
                         const pb = layout.pairBonds[unit.personParents];
@@ -469,9 +590,24 @@ Parameters:
                         sum += (pb.x1 + pb.x2) / 2;
                         count++;
                     }
-                    return count > 0 ? sum / count : Infinity;
+                    if (count > 0) {
+                        return { type: 'position', value: sum / count };
+                    }
+                    // Fall back to coupleOrder (computed from descendants)
+                    if (unit.pairBondId && coupleOrder[unit.pairBondId] !== undefined) {
+                        return { type: 'order', value: coupleOrder[unit.pairBondId] };
+                    }
+                    return { type: 'none', value: Infinity };
                 };
-                return getAvgX(a) - getAvgX(b);
+                const orderA = getOrder(a);
+                const orderB = getOrder(b);
+                // Same type - compare values directly
+                if (orderA.type === orderB.type) {
+                    return orderA.value - orderB.value;
+                }
+                // Different types - position takes precedence, then order, then none
+                const typePriority = { position: 0, order: 1, none: 2 };
+                return typePriority[orderA.type] - typePriority[orderB.type];
             });
 
             // Position family units
@@ -568,13 +704,21 @@ Parameters:
 
             if (childMinX === Infinity) continue;
 
-            // Parents should encompass children with padding
-            let requiredLeft = childMinX - CANOPY_PADDING;
-            let requiredRight = childMaxX + CANOPY_PADDING;
-
             // Determine which parent is left and which is right
             const leftParent = personA.x < personB.x ? personA : personB;
             const rightParent = personA.x < personB.x ? personB : personA;
+
+            // Per spec: MINIMAL expansion only - only expand if children fall outside current span
+            // If children already fit between parents, do NOT expand
+            const childrenFitWithinParents = childMinX >= leftParent.x && childMaxX <= rightParent.x;
+            if (childrenFitWithinParents) {
+                continue; // No canopy adjustment needed
+            }
+
+            // Children extend beyond parents - calculate minimal required expansion
+            let requiredLeft = Math.min(leftParent.x, childMinX - CANOPY_PADDING);
+            let requiredRight = Math.max(rightParent.x, childMaxX + CANOPY_PADDING);
+
             const leftParentGen = generations[leftParent.person?.id];
 
             // Check for collisions with other people in the same generation
@@ -680,7 +824,7 @@ Parameters:
             }
         }
 
-        // Re-run canopy adjustment after compaction
+        // Re-run canopy adjustment after compaction (with same minimal expansion logic)
         for (const pb of data.pair_bonds) {
             const personA = layout.people[pb.person_a];
             const personB = layout.people[pb.person_b];
@@ -700,11 +844,18 @@ Parameters:
 
             if (childMinX === Infinity) continue;
 
-            const requiredLeft = childMinX - CANOPY_PADDING;
-            const requiredRight = childMaxX + CANOPY_PADDING;
-
             const leftParent = personA.x < personB.x ? personA : personB;
             const rightParent = personA.x < personB.x ? personB : personA;
+
+            // Per spec: MINIMAL expansion only - only expand if children fall outside current span
+            const childrenFitWithinParents = childMinX >= leftParent.x && childMaxX <= rightParent.x;
+            if (childrenFitWithinParents) {
+                continue; // No canopy adjustment needed
+            }
+
+            // Children extend beyond parents - calculate minimal required expansion
+            const requiredLeft = Math.min(leftParent.x, childMinX - CANOPY_PADDING);
+            const requiredRight = Math.max(rightParent.x, childMaxX + CANOPY_PADDING);
 
             if (leftParent.x > requiredLeft) {
                 leftParent.x = requiredLeft;
@@ -760,6 +911,63 @@ Parameters:
             }
         }
 
+        // LABEL COMPACTION PASS: Compute label positions to avoid overlaps
+        // Labels default to 'right', but move to 'left' or 'above' if they would collide
+        const halfSize = PERSON_SIZE / 2;
+        const COLLISION_THRESHOLD = PERSON_SPACING + halfSize;
+        const TIGHT_THRESHOLD = PERSON_SPACING * 1.25;
+
+        for (const [personId, pos] of Object.entries(layout.people)) {
+            const person = pos.person || peopleById[personId];
+            if (!person) continue;
+
+            // Calculate label width
+            const labelText = person.name || `Person ${personId}`;
+            const estimatedLabelWidth = labelText.length * 7;
+            const labelWouldOverlapSelf = estimatedLabelWidth > (halfSize + NAME_OFFSET);
+
+            // Find neighbors in same row
+            let rightNeighborDist = Infinity;
+            let leftNeighborDist = Infinity;
+
+            for (const [otherId, otherPos] of Object.entries(layout.people)) {
+                if (otherId === personId) continue;
+                if (Math.abs(otherPos.y - pos.y) < PERSON_SIZE) {
+                    const dist = otherPos.x - pos.x;
+                    if (dist > 0 && dist < rightNeighborDist) {
+                        rightNeighborDist = dist;
+                    } else if (dist < 0 && -dist < leftNeighborDist) {
+                        leftNeighborDist = -dist;
+                    }
+                }
+            }
+
+            const hasParents = person.parents !== null && person.parents !== undefined;
+
+            // Check if right-placed label would collide with right neighbor
+            const labelRightEdge = halfSize + NAME_OFFSET + estimatedLabelWidth;
+            const rightLabelWouldCollide = rightNeighborDist < (labelRightEdge + halfSize + 10);
+
+            // Determine label position
+            let labelPosition = 'right'; // default
+
+            if (hasParents && rightNeighborDist < TIGHT_THRESHOLD && leftNeighborDist < TIGHT_THRESHOLD) {
+                labelPosition = 'above-right';
+            } else if (rightLabelWouldCollide) {
+                // Right label would collide - try left or above
+                if (labelWouldOverlapSelf) {
+                    labelPosition = hasParents ? 'above-right' : 'right'; // accept collision if no better option
+                } else if (leftNeighborDist < COLLISION_THRESHOLD) {
+                    labelPosition = hasParents ? 'above-right' : 'right'; // left also crowded
+                } else {
+                    labelPosition = 'left';
+                }
+            }
+
+            // Store label position in layout
+            pos.labelPosition = labelPosition;
+        }
+
         return layout;
     }
 
@@ -771,59 +979,8 @@ Parameters:
 
         const halfSize = PERSON_SIZE / 2;
 
-        // Smart label placement - choose position based on available space
-        // Options: 'right' (default), 'left', 'above-right', 'above-left'
-        // 'above' positions nestle in corner between person and child-of line
-        const COLLISION_THRESHOLD = PERSON_SPACING + halfSize;
-        let labelPosition = 'right';  // default
-
-        // Count neighbors and their distances on each side
-        let rightNeighborDist = Infinity;
-        let leftNeighborDist = Infinity;
-
-        for (const otherId in layout.people) {
-            if (otherId === String(person.id)) continue;
-            const otherPos = layout.people[otherId];
-            // Check if other person is on the same row (similar Y)
-            if (Math.abs(otherPos.y - pos.y) < PERSON_SIZE) {
-                const dist = otherPos.x - pos.x;
-                if (dist > 0 && dist < rightNeighborDist) {
-                    rightNeighborDist = dist;
-                } else if (dist < 0 && -dist < leftNeighborDist) {
-                    leftNeighborDist = -dist;
-                }
-            }
-        }
-
-        // Check if this person is at the rightmost position in their row
-        const isRightmost = rightNeighborDist === Infinity;
-        const isLeftmost = leftNeighborDist === Infinity;
-
-        // Check if person has parents (child-of line going up)
-        const hasParents = person.parents !== null && person.parents !== undefined;
-
-        // Tight threshold for "above" placement - when sides are crowded on both sides
-        const TIGHT_THRESHOLD = PERSON_SPACING * 1.25;  // 125% of standard spacing
-
-        // Determine label position:
-        // 1. If both sides are tight AND person has parents -> use 'above' position
-        // 2. If right side is crowded -> use 'left'
-        // 3. If rightmost with left neighbor -> use 'left' for compactness
-        // 4. Otherwise -> use 'right' (default)
-
-        if (hasParents && rightNeighborDist < TIGHT_THRESHOLD && leftNeighborDist < TIGHT_THRESHOLD) {
-            // Both sides crowded, use above position
-            // Choose above-left or above-right based on child-of line position
-            // Default to above-right (nestled in top-right corner)
-            labelPosition = 'above-right';
-        } else if (rightNeighborDist < COLLISION_THRESHOLD) {
-            labelPosition = 'left';
-        } else if (isRightmost && leftNeighborDist > COLLISION_THRESHOLD && leftNeighborDist < COLLISION_THRESHOLD * 2) {
-            // Rightmost person with left neighbor that's not too close - put label on left for compactness
-            // Only if left neighbor is far enough to not collide with a left-positioned label
-            labelPosition = 'left';
-        }
-        // else: keep default 'right'
+        // Use pre-computed label position from layout (computed in label compaction pass)
+        const labelPosition = pos.labelPosition || 'right';
 
         // Determine shape based on gender
         // Since PDP doesn't track gender, default to unknown (rounded rect)

@@ -172,6 +172,20 @@ Recommended minimum spacing:
 
 **Proportional spacing**: Siblings with descendants receive more horizontal space to accommodate their family branches. The space allocation accounts for the width of the entire subtree below that person.
 
+### Ordering Couples in the Same Generation
+
+When multiple couples exist in the same generation, their horizontal order is determined by their descendants:
+
+1. **Couples with married children**: If children from two different families marry each other, position the parents so the married couple remains adjacent. The parents of the **left spouse** (per the male-left convention) are positioned to the **left**; parents of the right spouse go to the right.
+
+2. **Propagate upward**: This rule applies recursively. Grandparents are ordered based on their children's positions, which are based on grandchildren's marriages, and so on.
+
+3. **No descendant relationship**: When two couples in the same generation have no descendant connections (their family trees never intersect), order is arbitrary—but should remain consistent within the diagram.
+
+**Example**: If Barbara (female) marries Richard (male), Richard is on the left per convention. Therefore:
+- Richard's parents (George + Richard's Mother) go on the **left**
+- Barbara's parents (Ruth + Harold) go on the **right**
+
 ### Multiple Partnerships
 
 When a person has had multiple partners (remarriage, serial relationships):
@@ -212,7 +226,9 @@ Labels should be automatically positioned to avoid overlaps and minimize diagram
 
 3. **Above placement**: When a person has neighbors on both sides within tight spacing AND has parents, the label may be placed above the person—nestled in the corner between the person symbol and the child-of line. This leverages the empty space created by the line going up to parents.
 
-4. **Default**: Labels appear to the right of the person when none of the above conditions apply.
+4. **Self-overlap prevention**: When placing a label on the left side, verify that the label text width does not cause it to overlap the person's own shape. If a left-placed label would overlap, fall back to right placement or above placement.
+
+5. **Default**: Labels appear to the right of the person when none of the above conditions apply.
 
 ### Date Abbreviations
 
@@ -413,12 +429,13 @@ The renderer uses CSS custom properties for theme adaptation:
    - Right siblings are from the spouse whose parents are further right
    - Unmarried siblings without couple connections are positioned separately
 5. **Position parents to encompass children** (canopy effect):
-   - When a couple has children, the parents' X positions should be adjusted outward so that children fall between them
-   - Add padding (e.g., half of PERSON_SPACING) beyond the outermost children's positions
+   - When a couple has children, the parents' X positions **may** be adjusted outward so that children fall between them
+   - **Minimal expansion only**: Only expand if children would otherwise fall outside the parents' current span. If children already fit between the parents at standard spacing, do NOT expand.
+   - When expansion is needed, add minimal padding (e.g., half of PERSON_SPACING) beyond the outermost children's positions
    - This creates a "canopy" effect by expanding the couple's positions, NOT by extending lines
    - The U-shape pair bond naturally becomes wider because the parents are further apart
-   - This breaks the grid-like appearance and emphasizes the parent-child hierarchy
    - **Exceptions**: Do NOT apply canopy positioning when:
+     - Children already fit within the parents' span at standard spacing
      - There isn't enough horizontal space (would cause overlap with adjacent elements)
      - There are too many children to reasonably fit under the parents
    - In exception cases, children may extend beyond the parents' positions
@@ -428,6 +445,7 @@ The renderer uses CSS custom properties for theme adaptation:
    - Reduce all gaps to minimum required spacing (PERSON_SPACING)
    - Respect divorced/separated couple extra spacing (1.5× standard)
    - Re-run canopy adjustment after compaction to ensure parents still encompass children
+   - **Label compaction pass**: After person positions are finalized, compute optimal label positions. If a right-placed label would collide with a neighbor, move it to 'left' or 'above-right'. This keeps person spacing uniform while avoiding label overlaps.
 7. **Unconnected people on perimeter**: People with no family connections (no parents, no spouse, no children) are positioned AFTER compaction on the right edge of the diagram at the vertical middle. Position them with a small gap (1.5× PERSON_SPACING) from the rightmost connected person.
 8. **Draw pair bond U-shape**:
    - The horizontal bar goes strictly from person A's X to person B's X (per Section 2)
