@@ -377,8 +377,9 @@ def test_match_events_uncertain_always_matches():
     assert len(result.matched_pairs) == 1
 
 
-def test_match_events_approximate_within_year():
-    """Approximate dates match within ±365 days."""
+def test_match_events_approximate_within_tolerance():
+    """Approximate dates match within ±270 days (9 months)."""
+    # 214 days apart - within 270 day tolerance
     ai_events = [
         Event(
             id=-1,
@@ -403,8 +404,9 @@ def test_match_events_approximate_within_year():
     assert len(result.matched_pairs) == 1
 
 
-def test_match_events_approximate_outside_year():
-    """Approximate dates do not match beyond ±365 days."""
+def test_match_events_approximate_outside_tolerance():
+    """Approximate dates do not match beyond ±270 days (9 months)."""
+    # 730 days apart - outside 270 day tolerance
     ai_events = [
         Event(
             id=-1,
@@ -473,15 +475,31 @@ def test_dates_within_tolerance_unknown():
 
 
 def test_dates_within_tolerance_approximate():
-    """Approximate dates use 365-day tolerance."""
+    """Approximate dates use 270-day (9 month) tolerance."""
+    # 214 days apart - within 270 day tolerance
     assert dates_within_tolerance(
         "2024-06-01",
         "2025-01-01",
         DateCertainty.Approximate,
         DateCertainty.Certain,
     )
+    # 730 days apart - outside 270 day tolerance
     assert not dates_within_tolerance(
         "2023-01-01",
+        "2025-01-01",
+        DateCertainty.Approximate,
+        DateCertainty.Certain,
+    )
+    # Edge case: exactly at 270 days should pass
+    assert dates_within_tolerance(
+        "2024-04-06",  # 270 days before 2025-01-01
+        "2025-01-01",
+        DateCertainty.Approximate,
+        DateCertainty.Certain,
+    )
+    # Just outside 270 days should fail
+    assert not dates_within_tolerance(
+        "2024-04-05",  # 271 days before 2025-01-01
         "2025-01-01",
         DateCertainty.Approximate,
         DateCertainty.Certain,
@@ -524,7 +542,8 @@ def test_calculate_date_similarity_unknown():
 
 
 def test_calculate_date_similarity_approximate():
-    """Approximate dates use 365-day tolerance for similarity."""
+    """Approximate dates use 270-day (9 month) tolerance for similarity."""
+    # 214 days apart - within tolerance, partial similarity
     sim = calculate_date_similarity(
         "2024-06-01",
         "2025-01-01",
@@ -534,6 +553,7 @@ def test_calculate_date_similarity_approximate():
     assert sim > 0.0
     assert sim < 1.0
 
+    # 730 days apart - outside 270-day tolerance
     sim_far = calculate_date_similarity(
         "2023-01-01",
         "2025-01-01",

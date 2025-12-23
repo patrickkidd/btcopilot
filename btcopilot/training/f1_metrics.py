@@ -200,8 +200,8 @@ def dates_within_tolerance(
 
     Tolerance is determined by the LEAST certain date:
     - If either is Unknown: always matches
-    - If either is Approximate: ±365 days
-    - Both Certain or None: ±7 days (current behavior)
+    - If either is Approximate: ±270 days (9 months)
+    - Both Certain or None: ±7 days
     """
     c1 = certainty1 or DateCertainty.Certain
     c2 = certainty2 or DateCertainty.Certain
@@ -235,7 +235,7 @@ def calculate_date_similarity(
 
     Tolerance is determined by the LEAST certain date:
     - If either is Unknown: returns 1.0
-    - If either is Approximate: use 365-day tolerance
+    - If either is Approximate: use 270-day tolerance (9 months)
     - Both Certain or None: use 7-day tolerance
     """
     c1 = certainty1 or DateCertainty.Certain
