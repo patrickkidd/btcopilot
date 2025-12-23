@@ -5,7 +5,7 @@ import pytest
 from mock import patch
 
 from btcopilot import pdp
-from btcopilot.schema import PDP, PDPDeltas
+from btcopilot.schema import PDP, PDPDeltas, PairBond
 from btcopilot.schema import (
     DiagramData,
     VariableShift,
@@ -35,9 +35,7 @@ def test_update(test_user):
 
     deltas = PDPDeltas()
     with patch("btcopilot.extensions.llm.submit", return_value=deltas):
-        with patch(
-            "btcopilot.pdp.apply_deltas", return_value={"dummy": "data"}
-        ):
+        with patch("btcopilot.pdp.apply_deltas", return_value={"dummy": "data"}):
             returned = asyncio.run(pdp.update(discussion, DiagramData(), "blah blah"))
     assert returned == ({"dummy": "data"}, deltas)
 
@@ -248,3 +246,90 @@ def test_apply_deltas(data):
     assert NotImplementedError
     returned = pdp.apply_deltas(data["pre_pdp"], data["deltas"])
     assert returned == data["expected_pdp"]
+
+
+def test_cleanup_pair_bonds_removes_invalid_refs():
+    """Pair bonds referencing non-existent people should be removed."""
+    input_pdp = PDP(
+        people=[
+            Person(id=-1, name="Alice"),
+            Person(id=-2, name="Bob"),
+        ],
+        pair_bonds=[
+            PairBond(id=-10, person_a=-1, person_b=-2),  # valid
+            PairBond(id=-11, person_a=-1, person_b=-99),  # invalid: -99 doesn't exist
+            PairBond(id=-12, person_a=-98, person_b=-2),  # invalid: -98 doesn't exist
+        ],
+    )
+    # Add parents reference so valid bond isn't orphaned
+    input_pdp.people[0].parents = -10
+
+    result = pdp.cleanup_pair_bonds(input_pdp)
+
+    assert len(result.pair_bonds) == 1
+    assert result.pair_bonds[0].id == -10
+
+
+def test_cleanup_pair_bonds_removes_duplicates():
+    """Duplicate pair bonds (same person pair) should be deduplicated."""
+    input_pdp = PDP(
+        people=[
+            Person(id=-1, name="Alice", parents=-10),
+            Person(id=-2, name="Bob"),
+            Person(id=-3, name="Child", parents=-11),
+        ],
+        pair_bonds=[
+            PairBond(id=-10, person_a=-1, person_b=-2),  # first bond
+            PairBond(id=-11, person_a=-2, person_b=-1),  # duplicate (reversed order)
+        ],
+    )
+
+    result = pdp.cleanup_pair_bonds(input_pdp)
+
+    assert len(result.pair_bonds) == 1
+    assert result.pair_bonds[0].id == -10  # keeps first encountered
+
+
+def test_cleanup_pair_bonds_removes_orphans():
+    """Pair bonds not referenced by any person's parents should be removed."""
+    input_pdp = PDP(
+        people=[
+            Person(id=-1, name="Alice"),
+            Person(id=-2, name="Bob"),
+            Person(id=-3, name="Child", parents=-10),  # only references -10
+        ],
+        pair_bonds=[
+            PairBond(id=-10, person_a=-1, person_b=-2),  # referenced
+            PairBond(id=-11, person_a=-1, person_b=-2),  # orphaned (not referenced)
+        ],
+    )
+
+    result = pdp.cleanup_pair_bonds(input_pdp)
+
+    assert len(result.pair_bonds) == 1
+    assert result.pair_bonds[0].id == -10
+
+
+def test_cleanup_pair_bonds_preserves_valid():
+    """Valid, unique, referenced pair bonds should be preserved."""
+    input_pdp = PDP(
+        people=[
+            Person(id=-1, name="Father"),
+            Person(id=-2, name="Mother"),
+            Person(id=-3, name="Child", parents=-10),
+            Person(id=-4, name="GrandFather"),
+            Person(id=-5, name="GrandMother"),
+        ],
+        pair_bonds=[
+            PairBond(id=-10, person_a=-1, person_b=-2),  # parents of child
+        ],
+    )
+    # Add grandparent bond
+    input_pdp.people[0].parents = -11
+    input_pdp.pair_bonds.append(PairBond(id=-11, person_a=-4, person_b=-5))
+
+    result = pdp.cleanup_pair_bonds(input_pdp)
+
+    assert len(result.pair_bonds) == 2
+    pair_bond_ids = {pb.id for pb in result.pair_bonds}
+    assert pair_bond_ids == {-10, -11}

@@ -1,14 +1,14 @@
 import pytest
-from mock import patch
+from unittest.mock import patch
 
 
 from btcopilot.extensions import db
 from btcopilot.training.models import Feedback
+from btcopilot.training.routes.feedback import cleanup_extraction_pair_bonds
 
 
 @pytest.fixture
 def feedback(discussion):
-    """Create audit feedback for testing"""
     statement = discussion.statements[1]  # Expert statement
     feedback = Feedback(
         statement_id=statement.id,
@@ -79,3 +79,73 @@ def test_admin_download(admin):
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "application/json"
     assert "attachment" in response.headers["Content-Disposition"]
+
+
+def test_cleanup_extraction_pair_bonds_removes_orphans():
+    """Pair bonds not referenced by any person's parents should be removed."""
+    extraction = {
+        "people": [
+            {"id": -1, "name": "Alice"},
+            {"id": -2, "name": "Bob"},
+            {"id": -3, "name": "Child", "parents": -10},
+        ],
+        "pair_bonds": [
+            {"id": -10, "person_a": -1, "person_b": -2},  # referenced by Child
+            {"id": -11, "person_a": -1, "person_b": -2},  # orphaned
+        ],
+        "events": [],
+    }
+
+    result = cleanup_extraction_pair_bonds(extraction)
+
+    assert len(result["pair_bonds"]) == 1
+    assert result["pair_bonds"][0]["id"] == -10
+
+
+def test_cleanup_extraction_pair_bonds_removes_invalid_refs():
+    """Pair bonds referencing non-existent people should be removed."""
+    extraction = {
+        "people": [
+            {"id": -1, "name": "Alice", "parents": -10},
+            {"id": -2, "name": "Bob"},
+        ],
+        "pair_bonds": [
+            {"id": -10, "person_a": -1, "person_b": -2},  # valid
+            {"id": -11, "person_a": -1, "person_b": -99},  # invalid ref
+        ],
+        "events": [],
+    }
+
+    result = cleanup_extraction_pair_bonds(extraction)
+
+    assert len(result["pair_bonds"]) == 1
+    assert result["pair_bonds"][0]["id"] == -10
+
+
+def test_cleanup_extraction_pair_bonds_preserves_other_fields():
+    """Cleanup should preserve events and other extraction fields."""
+    extraction = {
+        "people": [
+            {"id": -1, "name": "Alice", "parents": -10},
+            {"id": -2, "name": "Bob"},
+        ],
+        "pair_bonds": [{"id": -10, "person_a": -1, "person_b": -2}],
+        "events": [{"id": -5, "kind": "shift", "description": "test"}],
+        "delete": [-99],
+    }
+
+    result = cleanup_extraction_pair_bonds(extraction)
+
+    assert result["events"] == extraction["events"]
+    assert result["delete"] == extraction["delete"]
+    assert len(result["pair_bonds"]) == 1
+
+
+def test_cleanup_extraction_pair_bonds_handles_empty():
+    """Cleanup should handle empty or None extractions."""
+    assert cleanup_extraction_pair_bonds(None) is None
+    assert cleanup_extraction_pair_bonds({}) == {}
+    assert cleanup_extraction_pair_bonds({"people": [], "events": []}) == {
+        "people": [],
+        "events": [],
+    }

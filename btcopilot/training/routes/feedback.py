@@ -1,6 +1,7 @@
 import logging
 import json
-from flask import Blueprint, request, jsonify, session, abort
+from datetime import datetime
+from flask import Blueprint, request, jsonify, session, make_response
 
 import btcopilot
 from btcopilot import auth
@@ -11,10 +12,52 @@ from btcopilot.pro.models import User
 from btcopilot.personal.models import Statement, SpeakerType, Discussion
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_auditor_id
+from btcopilot.schema import PDP, PairBond, Person, from_dict
+from btcopilot.pdp import cleanup_pair_bonds
 
 # from btcopilot.training.sse import sse_manager
 
 _log = logging.getLogger(__name__)
+
+
+def cleanup_extraction_pair_bonds(extraction: dict) -> dict:
+    """
+    Clean up pair bonds in extraction data before saving.
+
+    Removes invalid, duplicate, and orphaned pair bonds to prevent
+    accumulation of stale data in feedback records.
+    """
+    if not extraction:
+        return extraction
+
+    people_data = extraction.get("people", [])
+    pair_bonds_data = extraction.get("pair_bonds", [])
+
+    if not pair_bonds_data:
+        return extraction
+
+    # Build a temporary PDP to use the cleanup logic
+    people = [from_dict(Person, p) for p in people_data]
+    pair_bonds = [from_dict(PairBond, pb) for pb in pair_bonds_data]
+
+    temp_pdp = PDP(people=people, pair_bonds=pair_bonds)
+    cleaned_pdp = cleanup_pair_bonds(temp_pdp)
+
+    # Update extraction with cleaned pair bonds
+    cleaned_extraction = extraction.copy()
+    cleaned_extraction["pair_bonds"] = [
+        {"id": pb.id, "person_a": pb.person_a, "person_b": pb.person_b}
+        for pb in cleaned_pdp.pair_bonds
+    ]
+
+    removed_count = len(pair_bonds_data) - len(cleaned_extraction["pair_bonds"])
+    if removed_count > 0:
+        _log.info(
+            f"Cleaned {removed_count} invalid/orphaned pair bonds from extraction"
+        )
+
+    return cleaned_extraction
+
 
 # Create the feedback blueprint
 bp = Blueprint(
@@ -189,6 +232,8 @@ def create():
         existing.thumbs_down = data.get("thumbs_down", False)
         existing.comment = data.get("comment")
         edited_extraction = data.get("edited_extraction")
+        if edited_extraction:
+            edited_extraction = cleanup_extraction_pair_bonds(edited_extraction)
         existing.edited_extraction = edited_extraction
         existing.updated_at = func.now()
 
@@ -228,6 +273,8 @@ def create():
         )
 
     edited_extraction = data.get("edited_extraction")
+    if edited_extraction:
+        edited_extraction = cleanup_extraction_pair_bonds(edited_extraction)
     feedback = Feedback(
         statement_id=data["message_id"],
         auditor_id=auditor_id,
@@ -326,11 +373,6 @@ def download():
                 filtered_datapoints.append(dp)
 
         datapoints = filtered_datapoints
-
-    # Create response with JSON data
-    from flask import jsonify, make_response
-    from datetime import datetime
-    import json
 
     # Add comprehensive metadata for fine-tuning
     export_data = {

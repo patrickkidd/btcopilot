@@ -156,6 +156,62 @@ def validate_pdp_deltas(pdp: PDP, deltas: PDPDeltas) -> None:
         raise PDPValidationError(errors)
 
 
+def cleanup_pair_bonds(pdp: PDP) -> PDP:
+    """
+    Clean up pair bonds by removing invalid, duplicate, and orphaned entries.
+
+    Removes:
+    - Pair bonds referencing non-existent people
+    - Duplicate pair bonds (same person pair, keeps first encountered)
+    - Orphaned pair bonds (not referenced by any person's parents field)
+
+    Returns:
+        New PDP with cleaned pair bonds
+    """
+    pdp = copy.deepcopy(pdp)
+
+    person_ids = {p.id for p in pdp.people if p.id is not None}
+    referenced_pair_bond_ids = {p.parents for p in pdp.people if p.parents is not None}
+
+    seen_person_pairs: set[tuple[int, int]] = set()
+    cleaned_pair_bonds = []
+
+    for pb in pdp.pair_bonds:
+        if pb.id is None:
+            continue
+
+        # Skip if either person doesn't exist
+        if pb.person_a not in person_ids or pb.person_b not in person_ids:
+            _log.debug(
+                f"Removing pair bond {pb.id}: references non-existent person "
+                f"(person_a={pb.person_a}, person_b={pb.person_b}, valid={person_ids})"
+            )
+            continue
+
+        # Skip if this person pair already has a bond (dedup)
+        person_pair = tuple(sorted([pb.person_a, pb.person_b]))
+        if person_pair in seen_person_pairs:
+            _log.debug(
+                f"Removing duplicate pair bond {pb.id}: "
+                f"pair {person_pair} already has a bond"
+            )
+            continue
+
+        # Skip if no one references this pair bond as parents
+        if pb.id not in referenced_pair_bond_ids:
+            _log.debug(
+                f"Removing orphaned pair bond {pb.id}: "
+                f"not referenced by any person's parents field"
+            )
+            continue
+
+        seen_person_pairs.add(person_pair)
+        cleaned_pair_bonds.append(pb)
+
+    pdp.pair_bonds = cleaned_pair_bonds
+    return pdp
+
+
 def cumulative(discussion, up_to_statement, auditor_id: str | None = None) -> PDP:
     """
     Build cumulative PDP from discussion statements up to a given statement.
@@ -167,7 +223,7 @@ def cumulative(discussion, up_to_statement, auditor_id: str | None = None) -> PD
                    Pass "AI" or None to use AI extractions.
 
     Returns:
-        PDP with accumulated people, events, pair_bonds
+        PDP with accumulated people, events, pair_bonds (cleaned of invalid/duplicate/orphaned)
     """
     from btcopilot.personal.models import SpeakerType
 
@@ -240,6 +296,10 @@ def cumulative(discussion, up_to_statement, auditor_id: str | None = None) -> PD
     pdp.people = list(people_by_id.values())
     pdp.events = list(events_by_id.values())
     pdp.pair_bonds = list(pair_bonds_by_id.values())
+
+    # Clean up invalid, duplicate, and orphaned pair bonds
+    pdp = cleanup_pair_bonds(pdp)
+
     return pdp
 
 

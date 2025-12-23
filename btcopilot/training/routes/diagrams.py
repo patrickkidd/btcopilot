@@ -417,6 +417,7 @@ def render(statement_id: int, auditor_id: str = None):
 
     # Build parent-child relationships
     parent_child = []
+    referenced_pair_bond_ids = set()
     for person_dict in people_list:
         if person_dict.get("parents"):
             parent_child.append(
@@ -425,10 +426,42 @@ def render(statement_id: int, auditor_id: str = None):
                     "pair_bond_id": person_dict["parents"],
                 }
             )
+            referenced_pair_bond_ids.add(person_dict["parents"])
+
+    # Clean up pair bonds: remove invalid refs, duplicates, and orphans
+    person_ids = {p["id"] for p in people_list}
+    seen_person_pairs: set[tuple[int, int]] = set()
+    cleaned_pair_bonds = []
+
+    for pb in pair_bonds_list:
+        pb_id = pb.get("id")
+        person_a = pb.get("person_a")
+        person_b = pb.get("person_b")
+
+        # Skip if either person doesn't exist
+        if person_a not in person_ids or person_b not in person_ids:
+            _log.debug(
+                f"Render: removing pair bond {pb_id}: references non-existent person"
+            )
+            continue
+
+        # Skip duplicates (same person pair)
+        person_pair = tuple(sorted([person_a, person_b]))
+        if person_pair in seen_person_pairs:
+            _log.debug(f"Render: removing duplicate pair bond {pb_id}")
+            continue
+
+        # Skip orphaned pair bonds (not referenced by any person's parents)
+        if pb_id not in referenced_pair_bond_ids:
+            _log.debug(f"Render: removing orphaned pair bond {pb_id}")
+            continue
+
+        seen_person_pairs.add(person_pair)
+        cleaned_pair_bonds.append(pb)
 
     render_data = {
         "people": people_list,
-        "pair_bonds": pair_bonds_list,
+        "pair_bonds": cleaned_pair_bonds,
         "parent_child": parent_child,
     }
 
