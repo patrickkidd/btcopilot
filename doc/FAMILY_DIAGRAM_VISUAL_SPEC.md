@@ -438,6 +438,7 @@ The renderer uses CSS custom properties for theme adaptation:
      - Children already fit within the parents' span at standard spacing
      - There isn't enough horizontal space (would cause overlap with adjacent elements)
      - There are too many children to reasonably fit under the parents
+     - **The child is married** and positioned with their spouse's family - the child's position is anchored by their marriage, not their parents
    - In exception cases, children may extend beyond the parents' positions
 6. **Compaction pass** (footprint optimization):
    - After initial positioning, compact each generation leftward to minimize diagram width

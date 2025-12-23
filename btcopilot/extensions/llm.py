@@ -7,9 +7,7 @@ from functools import lru_cache
 from typing import get_origin, get_args, Union
 import logging
 
-from google import genai
-from google.genai import types
-
+    from btcopilot.schema import from_dict
 _log = logging.getLogger(__name__)
 
 
@@ -120,7 +118,7 @@ def _type_to_schema(field_type, descriptions: dict = None) -> dict:
 
 class LLMFunction(enum.StrEnum):
     """
-    Indentify which models are best for which task, balancing
+    Identify which models are best for which task, balancing
     accuracy/performance with cost.
 
     """
@@ -239,12 +237,15 @@ class LLM:
 
     @lru_cache(maxsize=1)
     def _gemini_client(self):
+        from google import genai
+        
         return genai.Client(api_key=os.environ["GOOGLE_GEMINI_API_KEY"])
 
     async def gemini(self, prompt: str = None, response_format=None):
         """Gemini for structured data extraction (PDP) using native API."""
+        from google.genai import types
+
         start_time = time.time()
-        from btcopilot.schema import from_dict
 
         client = self._gemini_client()
         response_schema = dataclass_to_json_schema(
@@ -255,6 +256,7 @@ class LLM:
             model="gemini-2.0-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
+                temperature=0.1,
                 response_mime_type="application/json",
                 response_schema=response_schema,
             ),

@@ -1,10 +1,10 @@
 # F1 Improvement Plan for SARF Extraction MVP
 
-## Current State
-- People F1: ~0.72 ✓ (good enough, no more work needed)
-- Events F1: ~0.13 (blocking SARF evaluation)
-- SARF F1: ~0.00-0.03 (cannot improve until events match)
-- Aggregate F1: ~0.15
+## Current State (2025-12-22 baseline, 31 cases)
+- People F1: 0.505 (was ~0.72, needs investigation)
+- Events F1: 0.113 (blocking SARF evaluation)
+- SARF F1: 0.032 (cannot improve until events match)
+- Aggregate F1: 0.103
 
 ## Target State (Prompt Engineering Ceiling)
 - People F1: 0.80-0.90
@@ -19,30 +19,37 @@ The current F1 metrics are artificially low due to overly strict matching. Fix t
 
 **File: `btcopilot/training/f1_metrics.py`**
 
-- [ ] Increase `DATE_TOLERANCE_DAYS` from 7 → 30 (or 60)
-- [ ] Lower `DESCRIPTION_SIMILARITY_THRESHOLD` from 0.5 → 0.4
+- [x] **dateCertainty implemented** - The `Event.dateCertainty` field now provides
+      smart date tolerance based on certainty level:
+  - `Unknown`: always matches (any date)
+  - `Approximate`: ±365 days tolerance
+  - `Certain`: ±7 days tolerance (`DATE_TOLERANCE_DAYS`)
+- [ ] Lower `DESCRIPTION_SIMILARITY_THRESHOLD` from 0.5 → 0.4 (already done: 0.4)
 
 After changes, re-run baseline to see true current performance.
 
 ### 2. Reduce Model Stochasticity
 Same prompt gives different results across runs, making improvements hard to measure.
 
-- [ ] Check pydantic_ai configuration in `btcopilot/pdp.py` for temperature settings
-- [ ] If using Gemini 2.0 Flash, reduce temperature to 0.1-0.3
+**File: `btcopilot/extensions/llm.py`**
+
+- [x] Add `temperature=0.1` to Gemini config in the `gemini()` method
+  - Updated in `btcopilot/extensions/llm.py`
 
 ### 3. Prompt Improvements (Already Done)
 - [x] Added conversation continuity check to EVENT EXTRACTION CHECKLIST (item 5)
 - [x] Added `[CONVERSATION_CONTINUITY_DUPLICATE_EVENT]` example
 - [x] Fixed prompt structure (removed duplicate rules from header, consolidated in SECTION 2)
+- [x] Added `dateCertainty` field to prompt with clear guidance (certain/approximate/unknown)
 
 ### 4. GT Data Quality Review
 - [ ] Review GT event dates for consistency (especially discussion 36)
 - [ ] Check if GT description style is consistent (concise 2-5 words)
 
 ## Key Files
-- `btcopilot/training/f1_metrics.py` - Matching thresholds
-- `btcopilot/personal/prompts.py` - Extraction prompts
-- `btcopilot/pdp.py` - LLM configuration
+- `btcopilot/training/f1_metrics.py` - Matching thresholds (already handles dateCertainty)
+- `btcopilot/personal/prompts.py` - Extraction prompts (already includes dateCertainty)
+- `btcopilot/extensions/llm.py` - LLM configuration (needs temperature)
 - `doc/PROMPT_ENG_EXTRACTION_STRATEGY.md` - Detailed strategy doc
 
 ## Commands
@@ -52,3 +59,4 @@ uv run python -m btcopilot.training.test_prompts_live --detailed
 
 # Run tests
 uv run pytest btcopilot/tests/personal/ -v
+```
