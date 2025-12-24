@@ -30,10 +30,42 @@ This is a Jinja2 template that renders an SVG family diagram. The layout logic i
 1. **Start the Flask development server** (user manages this externally on port 8888)
 2. **Navigate to a diagram render endpoint**:
    ```
-   http://127.0.0.1:8888/training/diagrams/render/<statement_id>
+   http://127.0.0.1:8888/training/diagrams/render/<statement_id>/<auditor_id>
    ```
 3. **Use chrome-devtools MCP server** to take snapshots and screenshots
 4. **Verify invariants manually** by inspecting person positions in the rendered SVG
+
+### Known-Good Test Data
+
+Use these for manual verification during development:
+
+| Test Case | Statement | Discussion | Auditor | URL |
+|-----------|-----------|------------|---------|-----|
+| Multi-generation family | 1900 | 36 ("Synthetic: Sarah") | `patrick@alaskafamilysystems.com` | `/training/diagrams/render/1900/patrick@alaskafamilysystems.com` |
+
+**CRITICAL**: The `auditor_id` parameter is required to get Ground Truth (GT) data. Without it, AI extraction is used which may lack parent-child relationships. See [DATA_MODEL_FLOW.md](DATA_MODEL_FLOW.md) §12 for GT vs AI data rules.
+
+**Statement 1900 characteristics**:
+- Multiple generations with parent-child relationships
+- Pair bonds from marriage events
+- Tests generation assignment, couple positioning, and canopy rules
+
+### Reference Screenshots (Pro App Ground Truth)
+
+These screenshots from the Pro app show the target layout style:
+
+| Screenshot | Key Features |
+|------------|--------------|
+| [diagram-gt-1-multi-generation.png](/Users/patrick/Documents/2 - Work/2 - Alaska Family Systems/2 - Personal App/Diagram Arrangement GT/diagram-gt-1-multi-generation.png) | 4 generations, divorce indicators (double slash), deceased markers (X), pair bond bars with marriage dates, labels to right of shapes |
+| [diagram-gt-2-complex-family.png](/Users/patrick/Documents/2 - Work/2 - Alaska Family Systems/2 - Personal App/Diagram Arrangement GT/diagram-gt-2-complex-family.png) | Many siblings, multiple marriages per person, geographic annotations, wide horizontal spread |
+| [diagram-gt-3-wide-family.png](/Users/patrick/Documents/2 - Work/2 - Alaska Family Systems/2 - Personal App/Diagram Arrangement GT/diagram-gt-3-wide-family.png) | Multiple unrelated family branches, couples from different families joining, label collision avoidance |
+
+**Visual patterns to match**:
+- Males (squares) on left, females (circles) on right in couples
+- Children centered under parents when possible
+- Horizontal pair bond bars connecting couples
+- Vertical lines from pair bond bar down to children
+- Labels positioned to avoid overlap (right, left, or above)
 
 ### Data Flow
 
@@ -728,6 +760,52 @@ Before making ANY change to the algorithm:
 - **Related Issues**: None yet
 - **Resolution**: Pending - logged as first occurrence, need to see if pattern repeats
 
+### F-0002: Canopy Expanding Parents Independently (INV-2 Violation)
+- **Date**: 2024-12-24
+- **Source**: Statement 2020, `/training/diagrams/render/2020/patrick@alaskafamilysystems.com`
+- **Symptom**: Richard at x=100, Barbara at x=400 (300px gap instead of 120px)
+- **Expected**: Richard-Barbara should be adjacent (120px apart) as a married couple
+- **Actual**: Phase 4 canopy moved Barbara right to cover children, but left Richard in place
+- **Root Cause**: `_phase4_canopy` had `rightParent.x = requiredRight` without also moving leftParent
+- **Related Issues**: INV-2 violation
+- **Resolution**: Fixed 2024-12-24 - Canopy now shifts ENTIRE couple as a unit to center over children
+
+### F-0003: Compaction Ignoring Parent Positions
+- **Date**: 2024-12-24
+- **Source**: Statement 2020, `/training/diagrams/render/2020/patrick@alaskafamilysystems.com`
+- **Symptom**: Twin 1/Twin 2 at x=100,220 while parents Kevin-Lisa at x=460,580
+- **Expected**: Twins should be positioned under Kevin-Lisa (~x=460,580)
+- **Actual**: Phase 3 compaction shifted Gen 3 left to BASE_X regardless of parent positions
+- **Root Cause**: Compaction computed `minStartX = BASE_X` for every generation, ignoring parent positions
+- **Related Issues**: SOFT-1 violation (children under parents)
+- **Resolution**: Fixed 2024-12-24 - Compaction now computes minStartX based on parent pair bond positions
+
+### F-0004: Pair Bonds Calculated Too Late
+- **Date**: 2024-12-24
+- **Source**: Statement 2020, `/training/diagrams/render/2020/patrick@alaskafamilysystems.com`
+- **Symptom**: Children not centered under parents despite `_positionRemainingSiblings` logic
+- **Expected**: Children positioned relative to parent pair bond center
+- **Actual**: `ctx.layout.pairBonds` was empty during Phase 2 child positioning
+- **Root Cause**: Pair bonds calculated in Phase 5, but needed during Phase 2 for child positioning
+- **Related Issues**: F-0003 (same symptom, different root cause)
+- **Resolution**: Fixed 2024-12-24 - Added `_updatePairBondsForGeneration()` called after each generation in Phase 2
+
+---
+
+## Implementation Notes
+
+Critical timing requirements discovered during debugging:
+
+### Pair Bond Calculation Timing
+The spec says "Calculate pair bond positions for this generation (needed for next generation's child positioning)" but doesn't emphasize HOW critical this timing is. Pair bonds MUST be calculated **immediately after each generation is positioned**, not in a separate Phase 5. Otherwise:
+- `_positionRemainingSiblings` can't center children under parents (uses `ctx.layout.pairBonds`)
+- `_phase3_compaction` can't respect parent positions (checks `ctx.layout.pairBonds`)
+
+Implementation: `_updatePairBondsForGeneration(ctx, data, gen)` called at end of each generation's processing in Phase 2.
+
+### Compaction vs Descendants
+The spec says "shift ALL their descendants by the same amount" but this is complex to implement correctly. An alternative approach (currently implemented): instead of shifting descendants, prevent compaction from shifting children left of their parents' span. This achieves the same goal (children stay under parents) without cascading shifts.
+
 ---
 
 ## Revision History
@@ -737,4 +815,7 @@ Before making ANY change to the algorithm:
 | 0.1 | 2024-12-23 | Initial draft. Defines invariants, phases, refinement process. |
 | 0.2 | 2024-12-23 | Added Self-Improvement Protocol with failure log, escalation thresholds, and anti-thrashing safeguards. |
 | 0.3 | 2024-12-23 | Added standalone context: Implementation location, data structures, constants, coordinate system, complete worked example. Document now usable in separate thread with no prior context. |
+| 0.4 | 2024-12-23 | Added "Known-Good Test Data" section with Statement 1900 test case. Updated URL format to include auditor_id parameter (required for GT data). |
+| 0.5 | 2024-12-23 | Added "Reference Screenshots" section with 3 Pro app GT examples showing target layout style. |
+| 0.6 | 2024-12-24 | Added F-0002 through F-0004 to Failure Log (all fixed). Added "Implementation Notes" section documenting critical pair bond timing and compaction approach. |
 

@@ -806,6 +806,26 @@
 
 ## 12. Training App & SARF Ground Truth Coding
 
+### ⚠️ CRITICAL: Ground Truth (GT) vs AI Extraction
+
+**GT ALWAYS comes from auditors, NEVER from AI.** This is the foundational rule:
+
+| Data Type | Source | Storage | Access Pattern |
+|-----------|--------|---------|----------------|
+| **AI Extraction** | LLM output | `Statement.pdp_deltas` | Raw, unreviewed |
+| **Ground Truth** | Auditor review | `Feedback.edited_extraction` | Human-corrected |
+
+**How to get the right data**:
+```python
+# pdp.cumulative() with auditor_id → uses GT from Feedback.edited_extraction
+cumulative = pdp.cumulative(discussion, statement, auditor_id="patrick@alaskafamilysystems.com")
+
+# pdp.cumulative() without auditor_id or auditor_id="AI" → uses AI extraction
+cumulative = pdp.cumulative(discussion, statement)  # AI data
+```
+
+**Training app URLs**: `/diagrams/render/<statement_id>/<auditor_id>` - the auditor_id parameter ensures GT data is used for rendering.
+
 ### Overview
 
 The btcopilot training app extends the data model with a ground truth coding workflow for model training and evaluation. While the personal app uses AI to extract SARF (Symptom, Anxiety, Relationship, Functioning) data from conversations, the training app allows domain experts to review, correct, and approve these extractions as ground truth.

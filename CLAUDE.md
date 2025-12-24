@@ -25,15 +25,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## Project Documentation
+## Documentation Index
 
-**📋 [Decision Log](decisions/log.md)** - Major architectural decisions and innovations (PDP deltas, IRR study, synthetic data generation, hierarchical F1 metrics)
+**READ THESE FIRST** when working on a subsystem:
 
-**📖 [README.md](README.md)** - Project overview and development journal
+| Subsystem | Doc File | Key Content |
+|-----------|----------|-------------|
+| **PDP / Ground Truth** | [doc/DATA_MODEL_FLOW.md](doc/DATA_MODEL_FLOW.md) §12 | **GT from auditors not AI**, `pdp.cumulative()` with auditor_id |
+| **SARF Editor** | [doc/SARF_GROUND_TRUTH_TECHNICAL.md](doc/SARF_GROUND_TRUTH_TECHNICAL.md) | Approval workflow, Feedback model, UI patterns |
+| **Family Diagram Renderer** | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md), [doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md](doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md) | Visual spec, layout algorithm |
+| **F1 Metrics** | [doc/F1_METRICS.md](doc/F1_METRICS.md), [doc/F1_DASHBOARD.md](doc/F1_DASHBOARD.md) | Extraction evaluation, metrics dashboard |
+| **Prompt Engineering** | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md), [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md) | Lessons learned, extraction strategy |
+| **Prompt Induction** | [doc/PROMPT_INDUCTION_AUTOMATED.md](doc/PROMPT_INDUCTION_AUTOMATED.md), [doc/PROMPT_INDUCTION_CLI.md](doc/PROMPT_INDUCTION_CLI.md) | Automated tuning, CLI usage |
+| **Chat Flow** | [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md) | Personal app conversation architecture |
 
-**📚 [CONTEXT.md](CONTEXT.md)** - Bowen theory domain model, SARF constructs, auditing workflow
-
-**🏗️ [ADRs](adrs/)** - Architecture Decision Records
+**General docs:**
+- [decisions/log.md](decisions/log.md) - Major architectural decisions
+- [README.md](README.md) - Project overview and development journal
+- [CONTEXT.md](CONTEXT.md) - Bowen theory domain model, SARF constructs
+- [adrs/](adrs/) - Architecture Decision Records
 
 ## Architecture Overview
 
@@ -356,13 +366,26 @@ Add SARF confidence threshold validation
 
 **Verification**: After updating, use the `/update-sarf-docs` slash command (if available) or manually review the entire doc for consistency.
 
+### Family Diagram Data Model
+
+**CRITICAL - READ BEFORE ANY DIAGRAM WORK**: [doc/DATA_MODEL_FLOW.md](doc/DATA_MODEL_FLOW.md) Section 12
+
+**Quick Reference** (authoritative details in DATA_MODEL_FLOW.md):
+- **GT ALWAYS from auditors, NEVER AI** - Use `pdp.cumulative(discussion, stmt, auditor_id)` for GT
+- **Pair bonds from EVENTS** - Scan events with `kind: married/bonded` for person/spouse pairs
+- **Person.parents is a PairBond ID** - Not a list of parent person IDs
+- **PDP is cumulative** - Builds incrementally from all statements
+
+**When diagram shows all people in single row**: No parent-child relationships. Check `Person.parents` fields and pair bonds.
+
 ### Family Diagram Visual Spec Maintenance
 
 **CRITICAL**: When working on family diagram rendering (HTML5 renderer, layout algorithms, SVG generation), you MUST automatically update [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) with any new rules or layout behaviors.
 
 **Trigger Files** (changes to any of these require spec review):
-- `training/templates/components/family_diagram_svg.html` - SVG renderer and layout algorithm
-- `training/routes/diagram_render.py` - Diagram rendering endpoint
+- `training/diagramlayout.py` - Python layout algorithm (phases 0-5, generation assignment, positioning)
+- `training/templates/components/family_diagram_svg.html` - SVG renderer
+- `training/routes/diagrams.py` - Diagram rendering endpoint (builds render_data from PDP)
 - Any file implementing diagram layout logic
 
 **What to Update**:
