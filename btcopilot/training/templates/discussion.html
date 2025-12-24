@@ -1196,9 +1196,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const minimap = document.getElementById('discussion-minimap');
     const minimapContent = document.getElementById('minimap-content');
     const viewport = document.getElementById('minimap-viewport');
-    const auditTable = document.querySelector('.audit-table-container');
 
-    if (!minimap || !minimapContent || !auditTable || !window.minimapData) return;
+    if (!minimap || !minimapContent || !window.minimapData) return;
 
     const data = window.minimapData;
     if (data.length === 0) {
@@ -1206,150 +1205,116 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // Configuration
-    const MIN_ITEM_HEIGHT = 3;
-    const MAX_ITEM_HEIGHT = 12;
-    const ITEM_GAP = 1;
+    // Fixed layout: each item gets equal space, deterministic positioning
+    const ITEM_HEIGHT = 6;
+    const ITEM_GAP = 2;
+    const PADDING = 10;
 
-    // Calculate item positions based on actual DOM elements
-    function calculatePositions() {
-        const rows = document.querySelectorAll('.message-row');
-        const positions = [];
-        let minTop = Infinity;
-        let maxBottom = 0;
-
-        rows.forEach((row, index) => {
-            const rect = row.getBoundingClientRect();
-            const docTop = rect.top + window.scrollY;
-            const docBottom = docTop + rect.height;
-            positions.push({
-                element: row,
-                top: docTop,
-                height: rect.height,
-                data: data[index] || {}
-            });
-            minTop = Math.min(minTop, docTop);
-            maxBottom = Math.max(maxBottom, docBottom);
-        });
-
-        // totalHeight is now the height of just the content area (not from document top)
-        const totalHeight = maxBottom - minTop;
-        return { positions, totalHeight, contentStartOffset: minTop };
-    }
-
-    // Render minimap items
+    // Render minimap items with fixed index-based positioning
     function renderMinimap() {
-        // Clear existing items (keep viewport)
         const existingItems = minimapContent.querySelectorAll('.minimap-item');
         existingItems.forEach(item => item.remove());
 
-        const { positions, totalHeight, contentStartOffset } = calculatePositions();
-        const minimapHeight = minimapContent.clientHeight - 20; // Leave room for legend
-
-        if (positions.length === 0 || totalHeight === 0) return;
-
-        // Calculate scale
-        const scale = minimapHeight / totalHeight;
-
-        positions.forEach((pos, index) => {
+        data.forEach((itemData, index) => {
             const item = document.createElement('div');
             item.className = 'minimap-item';
 
-            // Add type class
-            if (pos.data.type === 'subject') {
+            if (itemData.type === 'subject') {
                 item.classList.add('subject');
             } else {
                 item.classList.add('expert');
             }
 
-            // Add code indicator classes
-            if (pos.data.hasCodes) {
+            if (itemData.hasCodes) {
                 item.classList.add('has-codes');
             }
-            if (pos.data.hasSymptom) {
+            if (itemData.hasSymptom) {
                 item.classList.add('has-symptom');
             }
-            if (pos.data.hasRelationship) {
+            if (itemData.hasRelationship) {
                 item.classList.add('has-relationship');
             }
 
-            // Calculate position and size (offset by contentStartOffset)
-            const itemTop = (pos.top - contentStartOffset) * scale;
-            let itemHeight = pos.height * scale;
-            itemHeight = Math.max(MIN_ITEM_HEIGHT, Math.min(MAX_ITEM_HEIGHT, itemHeight));
+            // Deterministic position based on index
+            item.style.top = (PADDING + index * (ITEM_HEIGHT + ITEM_GAP)) + 'px';
+            item.style.height = ITEM_HEIGHT + 'px';
+            item.dataset.statementId = itemData.id;
+            item.dataset.index = index;
 
-            item.style.top = itemTop + 'px';
-            item.style.height = itemHeight + 'px';
-
-            // Store statement ID for click handling
-            item.dataset.statementId = pos.data.id;
-
-            // Add tooltip
-            let tooltip = pos.data.type === 'subject' ? 'Subject' : 'Expert';
-            if (pos.data.eventCount > 0 || pos.data.peopleCount > 0) {
-                tooltip += ` (${pos.data.peopleCount}P, ${pos.data.eventCount}E)`;
+            let tooltip = itemData.type === 'subject' ? 'Subject' : 'Expert';
+            if (itemData.eventCount > 0 || itemData.peopleCount > 0) {
+                tooltip += ` (${itemData.peopleCount}P, ${itemData.eventCount}E)`;
             }
             item.title = tooltip;
 
-            // Click to navigate
             item.addEventListener('click', function() {
-                const statementId = this.dataset.statementId;
-                const targetRow = document.getElementById('statement-' + statementId);
+                const targetRow = document.getElementById('statement-' + this.dataset.statementId);
                 if (targetRow) {
                     targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // Flash highlight
                     targetRow.style.transition = 'background-color 0.3s';
                     targetRow.style.backgroundColor = 'rgba(100, 149, 237, 0.3)';
-                    setTimeout(() => {
-                        targetRow.style.backgroundColor = '';
-                    }, 1000);
+                    setTimeout(() => { targetRow.style.backgroundColor = ''; }, 1000);
                 }
             });
 
             minimapContent.appendChild(item);
         });
-
-        // Store for viewport calculations
-        minimap._totalHeight = totalHeight;
-        minimap._scale = scale;
-        minimap._contentStartOffset = contentStartOffset;
     }
 
-    // Update viewport indicator
+    // Find which statement rows are currently visible in the viewport
+    function getVisibleRange() {
+        const rows = document.querySelectorAll('.message-row');
+        if (rows.length === 0) return { first: 0, last: 0 };
+
+        const windowTop = window.scrollY;
+        const windowBottom = windowTop + window.innerHeight;
+        let firstVisible = -1;
+        let lastVisible = -1;
+
+        rows.forEach((row, index) => {
+            const rect = row.getBoundingClientRect();
+            const rowTop = rect.top + window.scrollY;
+            const rowBottom = rowTop + rect.height;
+
+            // Row is visible if any part is in the viewport
+            if (rowBottom > windowTop && rowTop < windowBottom) {
+                if (firstVisible === -1) firstVisible = index;
+                lastVisible = index;
+            }
+        });
+
+        return {
+            first: Math.max(0, firstVisible),
+            last: Math.max(0, lastVisible)
+        };
+    }
+
+    // Update viewport to highlight visible item range
     function updateViewport() {
-        if (!minimap._totalHeight || !minimap._scale) return;
+        const { first, last } = getVisibleRange();
+        const itemStep = ITEM_HEIGHT + ITEM_GAP;
 
-        const scrollTop = window.scrollY;
-        const windowHeight = window.innerHeight;
-        const minimapHeight = minimapContent.clientHeight - 20;
-        const contentStartOffset = minimap._contentStartOffset || 0;
+        const top = PADDING + first * itemStep - 2;
+        const bottom = PADDING + (last + 1) * itemStep;
+        const height = Math.max(12, bottom - top);
 
-        // Offset scroll position by where content starts
-        const adjustedScrollTop = Math.max(0, scrollTop - contentStartOffset);
-        const viewportTop = adjustedScrollTop * minimap._scale;
-        const viewportHeight = Math.min(
-            windowHeight * minimap._scale,
-            minimapHeight - viewportTop
-        );
-
-        viewport.style.top = Math.max(0, viewportTop) + 'px';
-        viewport.style.height = Math.max(10, viewportHeight) + 'px';
+        viewport.style.top = top + 'px';
+        viewport.style.height = height + 'px';
     }
 
-    // Click on minimap background to jump
+    // Click minimap background to jump to that index
     minimapContent.addEventListener('click', function(e) {
-        if (e.target === minimapContent || e.target === viewport) {
-            const rect = minimapContent.getBoundingClientRect();
-            const clickY = e.clientY - rect.top;
-            const contentStartOffset = minimap._contentStartOffset || 0;
+        if (e.target !== minimapContent && e.target !== viewport) return;
 
-            if (minimap._totalHeight && minimap._scale) {
-                // Convert minimap position back to document scroll position
-                const scrollTarget = (clickY / minimap._scale) + contentStartOffset;
-                window.scrollTo({
-                    top: scrollTarget - window.innerHeight / 2,
-                    behavior: 'smooth'
-                });
+        const rect = minimapContent.getBoundingClientRect();
+        const clickY = e.clientY - rect.top - PADDING;
+        const itemStep = ITEM_HEIGHT + ITEM_GAP;
+        const targetIndex = Math.floor(clickY / itemStep);
+
+        if (targetIndex >= 0 && targetIndex < data.length) {
+            const targetRow = document.getElementById('statement-' + data[targetIndex].id);
+            if (targetRow) {
+                targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
     });
@@ -1357,61 +1322,59 @@ document.addEventListener('DOMContentLoaded', function() {
     // Drag viewport to scroll
     let isDragging = false;
     let dragStartY = 0;
-    let scrollStartY = 0;
+    let dragStartIndex = 0;
 
     viewport.addEventListener('mousedown', function(e) {
         isDragging = true;
         dragStartY = e.clientY;
-        scrollStartY = window.scrollY;
+        dragStartIndex = getVisibleRange().first;
+        viewport.style.pointerEvents = 'auto';
         e.preventDefault();
     });
 
     document.addEventListener('mousemove', function(e) {
-        if (!isDragging || !minimap._scale) return;
+        if (!isDragging) return;
         const deltaY = e.clientY - dragStartY;
-        const scrollDelta = deltaY / minimap._scale;
-        window.scrollTo(0, scrollStartY + scrollDelta);
+        const itemStep = ITEM_HEIGHT + ITEM_GAP;
+        const indexDelta = Math.round(deltaY / itemStep);
+        const targetIndex = Math.max(0, Math.min(data.length - 1, dragStartIndex + indexDelta));
+
+        if (targetIndex !== getVisibleRange().first) {
+            const targetRow = document.getElementById('statement-' + data[targetIndex].id);
+            if (targetRow) {
+                targetRow.scrollIntoView({ behavior: 'auto', block: 'start' });
+            }
+        }
     });
 
     document.addEventListener('mouseup', function() {
         isDragging = false;
+        viewport.style.pointerEvents = '';
     });
 
-    // Initialize
-    function init() {
-        renderMinimap();
-        updateViewport();
-    }
-
-    // Throttle scroll updates
+    // Throttled scroll handler
     let scrollTimeout;
     window.addEventListener('scroll', function() {
         if (scrollTimeout) return;
         scrollTimeout = setTimeout(function() {
             scrollTimeout = null;
             updateViewport();
-        }, 16); // ~60fps
+        }, 16);
     });
 
-    // Debounce resize updates
-    let resizeTimeout;
+    // Initialize
+    renderMinimap();
+    setTimeout(updateViewport, 100);
+
+    // Update on resize
     window.addEventListener('resize', function() {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(function() {
-            renderMinimap();
-            updateViewport();
-        }, 100);
+        updateViewport();
     });
 
-    // Wait for DOM to be ready and images loaded
-    if (document.readyState === 'complete') {
-        init();
-    } else {
-        window.addEventListener('load', init);
-    }
-
-    // Re-render after Alpine initializes (in case it changes DOM)
-    setTimeout(init, 500);
+    // Update viewport when sections expand/collapse (visible rows may change)
+    window.addEventListener('minimapRefresh', function() {
+        updateViewport();
+    });
 })();
 </script>
 

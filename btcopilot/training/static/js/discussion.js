@@ -2134,7 +2134,7 @@ function collapseAllMessages() {
     document.querySelectorAll('[id^="cumulative-expanded-"]').forEach(cumulativeExpanded => {
         const messageId = cumulativeExpanded.id.replace('cumulative-expanded-', '');
         const cumulativeCollapsed = document.getElementById('cumulative-collapsed-' + messageId);
-        
+
         if (cumulativeCollapsed) {
             cumulativeCollapsed.style.display = 'block';
             cumulativeExpanded.style.display = 'none';
@@ -2148,14 +2148,14 @@ function toggleCumulativeSection(messageId) {
     // Cumulative section elements
     const cumulativeCollapsed = document.getElementById('cumulative-collapsed-' + messageId);
     const cumulativeExpanded = document.getElementById('cumulative-expanded-' + messageId);
-    
+
     // Data section elements (synchronize with cumulative section)
     const dataCollapsed = document.getElementById('data-collapsed-' + messageId);
     const dataExpanded = document.getElementById('data-expanded-' + messageId);
-    
+
     // Check current state
     const isExpanded = cumulativeExpanded && cumulativeExpanded.style.display !== 'none';
-    
+
     if (isExpanded) {
         // Collapse both cumulative and data sections
         if (cumulativeCollapsed && cumulativeExpanded) {
@@ -2177,6 +2177,9 @@ function toggleCumulativeSection(messageId) {
             dataExpanded.style.display = 'block';
         }
     }
+
+    // Update minimap viewport after DOM settles
+    setTimeout(() => window.dispatchEvent(new CustomEvent('minimapRefresh')), 150);
 }
 
 function submitFeedback(messageId, type, thumbsDown, comment) {
