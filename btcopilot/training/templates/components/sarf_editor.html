@@ -68,6 +68,31 @@ Parameters:
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+/* Unified field row layout using CSS Grid for consistent alignment */
+.sarf-field-row {
+    display: grid;
+    grid-template-columns: 80px 1fr auto;
+    gap: 35px;
+    align-items: center;
+    min-height: 24px;
+    font-size: 0.75rem;
+    padding: 2px 0;
+}
+.sarf-field-row .sarf-label {
+    color: var(--color-fg-muted, #666);
+    white-space: nowrap;
+}
+.sarf-field-row .sarf-value {
+    min-width: 0;
+}
+.sarf-field-row .sarf-actions {
+    justify-self: end;
+}
+.sarf-divider {
+    border-top: 1px solid var(--color-border, #3c3c3cff);
+    margin: 6px 15px;
+}
 </style>
 
 {# Pre-compute Alpine component parameters for lazy initialization #}
@@ -360,77 +385,65 @@ Parameters:
                                         {% endif %}
                                     </div>
 
-                                    <!-- Kind Row -->
-                                    <div class="mb-2">
-                                        <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; table-layout: fixed;">
-                                            <tr>
-                                                <td style="width: 60px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                    Kind:
-                                                </td>
-                                                <td style="padding: 0;">
-                                                    {% if editable_mode %}
-                                                    <select x-show="canEdit"
-                                                            :value="person.gender || ''"
-                                                            @change="savePersonGender(index, $event.target.value)"
-                                                            class="inline-select-visible">
-                                                        <option value="">-</option>
-                                                        <option value="male">male</option>
-                                                        <option value="female">female</option>
-                                                        <option value="abortion">abortion</option>
-                                                        <option value="miscarriage">miscarriage</option>
-                                                        <option value="unknown">unknown</option>
-                                                    </select>
-                                                    <span x-show="!canEdit" class="event-kind-indicator" x-text="person.gender || '-'"></span>
-                                                    {% else %}
-                                                    <span class="event-kind-indicator" x-text="person.gender || '-'"></span>
-                                                    {% endif %}
-                                                </td>
-                                            </tr>
-                                        </table>
+                                    <!-- Person Kind -->
+                                    <div class="sarf-field-row">
+                                        <span class="sarf-label">Kind:</span>
+                                        <span class="sarf-value">
+                                            {% if editable_mode %}
+                                            <select x-show="canEdit"
+                                                    :value="person.gender || ''"
+                                                    @change="savePersonGender(index, $event.target.value)"
+                                                    class="inline-select-visible">
+                                                <option value="">-</option>
+                                                <option value="male">male</option>
+                                                <option value="female">female</option>
+                                                <option value="abortion">abortion</option>
+                                                <option value="miscarriage">miscarriage</option>
+                                                <option value="unknown">unknown</option>
+                                            </select>
+                                            <span x-show="!canEdit" class="event-kind-indicator" x-text="person.gender || '-'"></span>
+                                            {% else %}
+                                            <span class="event-kind-indicator" x-text="person.gender || '-'"></span>
+                                            {% endif %}
+                                        </span>
                                     </div>
 
                                     <!-- Confidence Row -->
-                                    <div class="mb-2">
-                                        <small class="is-size-7" x-show="person.confidence && person.confidence < 0.999">
-                                            Confidence: <span x-text="(person.confidence * 100).toFixed(0) + '%'"></span>
-                                        </small>
+                                    <div class="sarf-field-row" x-show="person.confidence && person.confidence < 0.999">
+                                        <span class="sarf-label">Confidence:</span>
+                                        <span class="sarf-value" x-text="(person.confidence * 100).toFixed(0) + '%'"></span>
                                     </div>
 
-                                    <!-- Person List Fields -->
-                                    <div class="person-lists">
-                                        <!-- Parents (Pair-Bond) -->
-                                        <template x-if="person.parents || {{ 'true' if editable_mode else 'false' }}">
-                                            <div class="person-list-field mb-1">
-                                                <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem;">
-                                                    <div style="color: #666; white-space: nowrap;">
-                                                        Parents:
+                                    <!-- Person Parents -->
+                                    <template x-if="person.parents || {{ 'true' if editable_mode else 'false' }}">
+                                        <div class="sarf-field-row">
+                                            <span class="sarf-label">Parents:</span>
+                                            <span class="sarf-value">
+                                                <template x-if="person.parents">
+                                                    <span class="person-tag"
+                                                          :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                          :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                          @click="{{ 'canEdit && editPairBond(index)' if editable_mode else '' }}">
+                                                        <span x-text="getPairBondName(person.parents, personDataVersion)"></span>
                                                         {% if editable_mode %}
-                                                        <template x-if="!person.parents && canEdit">
-                                                            <span class="add-element"
-                                                                  @click.stop="selectPairBond(index)"
-                                                                  title="Add parents"
-                                                                  style="margin-left: 4px;">
-                                                                <i class="fas fa-plus-circle"></i>
-                                                            </span>
-                                                        </template>
+                                                        <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                              @click.stop="removePairBond(index)">×</span>
                                                         {% endif %}
-                                                    </div>
-                                                    <template x-if="person.parents">
-                                                        <span class="person-tag"
-                                                              :style="{ cursor: canEdit ? 'pointer' : 'default', flexShrink: 1, minWidth: 0, whiteSpace: 'normal', wordBreak: 'break-word' }"
-                                                              :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
-                                                              @click="{{ 'canEdit && editPairBond(index)' if editable_mode else '' }}">
-                                                            <span x-text="getPairBondName(person.parents, personDataVersion)" style="display: inline;"></span>
-                                                            {% if editable_mode %}
-                                                            <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold; flex-shrink: 0;"
-                                                                  @click.stop="removePairBond(index)">×</span>
-                                                            {% endif %}
-                                                        </span>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </div>
+                                                    </span>
+                                                </template>
+                                                <template x-if="!person.parents && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element"
+                                                          @click.stop="selectPairBond(index)"
+                                                          title="Add parents">
+                                                        <i class="fas fa-plus-circle"></i>
+                                                    </span>
+                                                </template>
+                                                <template x-if="!person.parents && !canEdit">
+                                                    <span>-</span>
+                                                </template>
+                                            </span>
+                                        </div>
+                                    </template>
                                 </div>
                                 </template>
                             </template>
@@ -478,483 +491,441 @@ Parameters:
                                         </div>
                                     </div>
 
-                                    <!-- Event Kind Section -->
-                                    <div class="event-kind-section" style="margin-top: 8px;">
-                                        <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
-                                            <tr>
-                                                <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                    Event Kind:
-                                                </td>
-                                                <td style="padding: 0;">
-                                                    {% if editable_mode %}
-                                                    <select x-show="canEdit"
-                                                            :value="event.kind || 'shift'"
-                                                            @change="saveEventKind(index, $event.target.value)"
-                                                            class="inline-select-visible">
-                                                        <option value="shift">shift</option>
-                                                        <option value="birth">birth</option>
-                                                        <option value="adopted">adopted</option>
-                                                        <option value="bonded">bonded</option>
-                                                        <option value="married">married</option>
-                                                        <option value="separated">separated</option>
-                                                        <option value="divorced">divorced</option>
-                                                        <option value="moved">moved</option>
-                                                        <option value="death">death</option>
-                                                    </select>
-                                                    <span x-show="!canEdit" class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
-                                                    {% else %}
-                                                    <span class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
-                                                    {% endif %}
-                                                </td>
-                                            </tr>
-                                        </table>
+                                    <!-- Event Kind -->
+                                    <div class="sarf-field-row">
+                                        <span class="sarf-label">Event Kind:</span>
+                                        <span class="sarf-value">
+                                            {% if editable_mode %}
+                                            <select x-show="canEdit"
+                                                    :value="event.kind || 'shift'"
+                                                    @change="saveEventKind(index, $event.target.value)"
+                                                    class="inline-select-visible">
+                                                <option value="shift">shift</option>
+                                                <option value="birth">birth</option>
+                                                <option value="adopted">adopted</option>
+                                                <option value="bonded">bonded</option>
+                                                <option value="married">married</option>
+                                                <option value="separated">separated</option>
+                                                <option value="divorced">divorced</option>
+                                                <option value="moved">moved</option>
+                                                <option value="death">death</option>
+                                            </select>
+                                            <span x-show="!canEdit" class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
+                                            {% else %}
+                                            <span class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
+                                            {% endif %}
+                                        </span>
                                     </div>
 
-                                    <!-- Event Person Section -->
+                                    <div class="sarf-divider"></div>
+
+                                    <!-- Event Person -->
                                     <template x-if="event.person || {{ 'true' if editable_mode else 'false' }}">
-                                        <div class="event-person-section" style="margin-top: 8px;">
-                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
-                                                <tr>
-                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;"
-                                                        x-text="getPersonLabel(event.kind, event.relationship)">
-                                                    </td>
-                                                    <td style="padding: 0;">
-                                                        <template x-if="event.person">
-                                                            <span class="person-tag"
-                                                                  :style="{ cursor: canEdit ? 'pointer' : 'default' }"
-                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
-                                                                  @click="{{ 'canEdit && editEventPerson(index, event.person)' if editable_mode else '' }}">
-                                                                <span x-text="getPersonName(event.person, personDataVersion)"></span>
-                                                                {% if editable_mode %}
-                                                                <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
-                                                                      @click.stop="clearEventPerson(index)">×</span>
-                                                                {% endif %}
-                                                            </span>
-                                                        </template>
-                                                        <template x-if="!event.person && {{ 'true' if editable_mode else 'false' }} && canEdit">
-                                                            <span style="display: inline-flex; gap: 4px; position: relative;">
-                                                                <span class="add-element edit-event-person-button" style="opacity: 1;" @click.stop="editEventPerson($event, index)" title="Select Existing Person for Event">
-                                                                    <i class="fas fa-edit"></i>
-                                                                </span>
-                                                            </span>
-                                                        </template>
-                                                    </td>
-                                                </tr>
-                                            </table>
+                                        <div class="sarf-field-row">
+                                            <span class="sarf-label" x-text="getPersonLabel(event.kind, event.relationship)"></span>
+                                            <span class="sarf-value">
+                                                <template x-if="event.person">
+                                                    <span class="person-tag"
+                                                          :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                          :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                          @click="{{ 'canEdit && editEventPerson(index, event.person)' if editable_mode else '' }}">
+                                                        <span x-text="getPersonName(event.person, personDataVersion)"></span>
+                                                        {% if editable_mode %}
+                                                        <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                              @click.stop="clearEventPerson(index)">×</span>
+                                                        {% endif %}
+                                                    </span>
+                                                </template>
+                                                <template x-if="!event.person && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element edit-event-person-button" style="opacity: 1;" @click.stop="editEventPerson($event, index)" title="Select Existing Person for Event">
+                                                        <i class="fas fa-edit"></i>
+                                                    </span>
+                                                </template>
+                                            </span>
                                         </div>
                                     </template>
 
-                                    <!-- Event Spouse Section (conditionally visible) -->
+                                    <!-- Event Spouse -->
                                     <template x-if="(['bonded', 'married', 'separated', 'divorced', 'moved', 'birth', 'adopted'].includes(event.kind) && (event.spouse || {{ 'true' if editable_mode else 'false' }})) || (event.spouse && {{ 'true' if editable_mode else 'false' }})">
-                                        <div class="event-spouse-section" style="margin-top: 8px;">
-                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
-                                                <tr>
-                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;"
-                                                        x-text="(event.kind === 'birth' || event.kind === 'adopted') ? 'Parent 2:' : (event.kind === 'moved') ? 'Partner:' : 'Partner 2:'">
-                                                    </td>
-                                                    <td style="padding: 0;">
-                                                        <template x-if="event.spouse">
-                                                            <span class="person-tag"
-                                                                  :style="{ cursor: canEdit ? 'pointer' : 'default' }"
-                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
-                                                                  @click="{{ 'canEdit && editEventSpouse(index, event.spouse)' if editable_mode else '' }}">
-                                                                <span x-text="getPersonName(event.spouse, personDataVersion)"></span>
-                                                                {% if editable_mode %}
-                                                                <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
-                                                                      @click.stop="clearEventSpouse(index)">×</span>
-                                                                {% endif %}
-                                                            </span>
-                                                        </template>
-                                                        <template x-if="!event.spouse && {{ 'true' if editable_mode else 'false' }} && canEdit">
-                                                            <span style="display: inline-flex; gap: 4px; position: relative;">
-                                                                <span class="add-element edit-event-spouse-button" style="opacity: 1;" @click.stop="editEventSpouse($event, index)" title="Select Existing Spouse for Event">
-                                                                    <i class="fas fa-edit"></i>
-                                                                </span>
-                                                            </span>
-                                                        </template>
-                                                    </td>
-                                                </tr>
-                                            </table>
+                                        <div class="sarf-field-row">
+                                            <span class="sarf-label" x-text="(event.kind === 'birth' || event.kind === 'adopted') ? 'Parent 2:' : (event.kind === 'moved') ? 'Partner:' : 'Partner 2:'"></span>
+                                            <span class="sarf-value">
+                                                <template x-if="event.spouse">
+                                                    <span class="person-tag"
+                                                          :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                          :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                          @click="{{ 'canEdit && editEventSpouse(index, event.spouse)' if editable_mode else '' }}">
+                                                        <span x-text="getPersonName(event.spouse, personDataVersion)"></span>
+                                                        {% if editable_mode %}
+                                                        <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                              @click.stop="clearEventSpouse(index)">×</span>
+                                                        {% endif %}
+                                                    </span>
+                                                </template>
+                                                <template x-if="!event.spouse && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element edit-event-spouse-button" style="opacity: 1;" @click.stop="editEventSpouse($event, index)" title="Select Existing Spouse for Event">
+                                                        <i class="fas fa-edit"></i>
+                                                    </span>
+                                                </template>
+                                            </span>
                                         </div>
                                     </template>
 
-                                    <!-- Event Child Section (conditionally visible) -->
+                                    <!-- Event Child -->
                                     <template x-if="(['birth', 'adopted'].includes(event.kind) && (event.child || {{ 'true' if editable_mode else 'false' }})) || (event.child && {{ 'true' if editable_mode else 'false' }})">
-                                        <div class="event-child-section" style="margin-top: 8px;">
-                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
-                                                <tr>
-                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                        Child:
-                                                    </td>
-                                                    <td style="padding: 0;">
-                                                        <template x-if="event.child">
-                                                            <span class="person-tag"
-                                                                  :style="{ cursor: canEdit ? 'pointer' : 'default' }"
-                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
-                                                                  @click="{{ 'canEdit && editEventChild(index, event.child)' if editable_mode else '' }}">
-                                                                <span x-text="getPersonName(event.child, personDataVersion)"></span>
-                                                                {% if editable_mode %}
-                                                                <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
-                                                                      @click.stop="clearEventChild(index)">×</span>
-                                                                {% endif %}
-                                                            </span>
-                                                        </template>
-                                                        <template x-if="!event.child && {{ 'true' if editable_mode else 'false' }} && canEdit">
-                                                            <span style="display: inline-flex; gap: 4px; position: relative;">
-                                                                <span class="add-element edit-event-child-button" style="opacity: 1;" @click.stop="editEventChild($event, index)" title="Select Existing Child for Event">
-                                                                    <i class="fas fa-edit"></i>
-                                                                </span>
-                                                            </span>
-                                                        </template>
-                                                    </td>
-                                                </tr>
-                                            </table>
+                                        <div class="sarf-field-row">
+                                            <span class="sarf-label">Child:</span>
+                                            <span class="sarf-value">
+                                                <template x-if="event.child">
+                                                    <span class="person-tag"
+                                                          :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                          :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                          @click="{{ 'canEdit && editEventChild(index, event.child)' if editable_mode else '' }}">
+                                                        <span x-text="getPersonName(event.child, personDataVersion)"></span>
+                                                        {% if editable_mode %}
+                                                        <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                              @click.stop="clearEventChild(index)">×</span>
+                                                        {% endif %}
+                                                    </span>
+                                                </template>
+                                                <template x-if="!event.child && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element edit-event-child-button" style="opacity: 1;" @click.stop="editEventChild($event, index)" title="Select Existing Child for Event">
+                                                        <i class="fas fa-edit"></i>
+                                                    </span>
+                                                </template>
+                                            </span>
                                         </div>
                                     </template>
 
-                                    <!-- Event Description Section (for shift and death events) -->
+                                    <!-- Event Description (for shift and death events) -->
                                     <template x-if="!event.kind || event.kind === 'shift' || event.kind === 'death'">
-                                        <div class="event-description-section" style="margin-top: 8px;">
-                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
-                                                <tr>
-                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;"
-                                                        x-text="event.kind === 'death' ? 'Cause:' : 'Description:'">
-                                                    </td>
-                                                    <td style="padding: 0;">
-                                                        {% if editable_mode %}
-                                                        <span class="event-description"
-                                                              :class="{'editable-field': canEdit}"
-                                                              @mouseenter="canEdit && (hoveredField = 'event-' + index + '-description')"
-                                                              @mouseleave="hoveredField = null"
-                                                              @click.stop="canEdit && startEdit('event-' + index + '-description', event.description || '')">
-                                                            <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || 'Not set'"></span>
-                                                            <input x-show="isEditing('event-' + index + '-description')"
-                                                                   :value="editingValue"
-                                                                   @input="editingValue = $event.target.value"
-                                                                   @blur="saveEventDescription(index, $event.target.value)"
-                                                                   @keydown.enter="saveEventDescription(index, $event.target.value); $event.target.blur()"
-                                                                   @keydown.escape="cancelEdit(); $event.target.blur()"
-                                                                   class="inline-edit-input"
-                                                                   type="text">
-                                                        </span>
-                                                        {% else %}
-                                                        <span x-text="event.description || 'Not specified'"></span>
-                                                        {% endif %}
-                                                    </td>
-                                                </tr>
-                                            </table>
+                                        <div class="sarf-field-row">
+                                            <span class="sarf-label" x-text="event.kind === 'death' ? 'Cause:' : 'Description:'"></span>
+                                            <span class="sarf-value">
+                                                {% if editable_mode %}
+                                                <span class="event-description"
+                                                      :class="{'editable-field': canEdit}"
+                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-description')"
+                                                      @mouseleave="hoveredField = null"
+                                                      @click.stop="canEdit && startEdit('event-' + index + '-description', event.description || '')">
+                                                    <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || 'Not set'"></span>
+                                                    <input x-show="isEditing('event-' + index + '-description')"
+                                                           :value="editingValue"
+                                                           @input="editingValue = $event.target.value"
+                                                           @blur="saveEventDescription(index, $event.target.value)"
+                                                           @keydown.enter="saveEventDescription(index, $event.target.value); $event.target.blur()"
+                                                           @keydown.escape="cancelEdit(); $event.target.blur()"
+                                                           class="inline-edit-input"
+                                                           type="text">
+                                                </span>
+                                                {% else %}
+                                                <span x-text="event.description || 'Not specified'"></span>
+                                                {% endif %}
+                                            </span>
                                         </div>
                                     </template>
 
-                                    <!-- Event DateTime Section -->
+                                    <div class="sarf-divider"></div>
+
+                                    <!-- Event DateTime -->
                                     <template x-if="(event.dateTime && event.dateTime.trim() !== '') || {{ 'true' if editable_mode else 'false' }}">
-                                        <div class="event-datetime-section" style="margin-top: 8px;">
-                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
-                                                <tr>
-                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                        Date/Time:
-                                                    </td>
-                                                    <td style="padding: 0;">
-                                                        {% if editable_mode %}
-                                                        <span class="event-datetime"
-                                                              :class="{'editable-field': canEdit}"
-                                                              @mouseenter="canEdit && (hoveredField = 'event-' + index + '-dateTime')"
-                                                              @mouseleave="hoveredField = null"
-                                                              @click.stop="canEdit && startEdit('event-' + index + '-dateTime', event.dateTime || '')">
-                                                            <span x-show="!isEditing('event-' + index + '-dateTime')" x-text="formatDate(event.dateTime) || 'Not set'"></span>
-                                                            <input x-show="isEditing('event-' + index + '-dateTime')"
-                                                                   :value="editingValue"
-                                                                   @input="editingValue = $event.target.value"
-                                                                   @blur="saveEventDateTime(index, $event.target.value)"
-                                                                   @keydown.enter="saveEventDateTime(index, $event.target.value); $event.target.blur()"
-                                                                   @keydown.escape="cancelEdit(); $event.target.blur()"
-                                                                   class="inline-edit-input"
-                                                                   type="date"
-                                                                   style="width: 150px;">
-                                                        </span>
-                                                        {% else %}
-                                                        <span x-text="formatDate(event.dateTime) || 'Not specified'"></span>
-                                                        {% endif %}
-                                                    </td>
-                                                    <td style="padding: 0 0 0 8px; vertical-align: middle;">
-                                                        {% if editable_mode %}
-                                                        <select x-show="canEdit"
-                                                                :value="event.dateCertainty || 'certain'"
-                                                                @change="saveDateCertainty(index, $event.target.value)"
-                                                                class="inline-select-visible">
-                                                            <option value="certain">certain</option>
-                                                            <option value="approximate">approximate</option>
-                                                            <option value="unknown">unknown</option>
-                                                        </select>
-                                                        <span x-show="!canEdit" class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
-                                                        {% else %}
-                                                        <span class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
-                                                        {% endif %}
-                                                    </td>
-                                                </tr>
-                                            </table>
+                                        <div class="sarf-field-row">
+                                            <span class="sarf-label">Date/Time:</span>
+                                            <span class="sarf-value">
+                                                {% if editable_mode %}
+                                                <span class="event-datetime"
+                                                      :class="{'editable-field': canEdit}"
+                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-dateTime')"
+                                                      @mouseleave="hoveredField = null"
+                                                      @click.stop="canEdit && startEdit('event-' + index + '-dateTime', event.dateTime || '')">
+                                                    <span x-show="!isEditing('event-' + index + '-dateTime')" x-text="formatDate(event.dateTime) || 'Not set'"></span>
+                                                    <input x-show="isEditing('event-' + index + '-dateTime')"
+                                                           :value="editingValue"
+                                                           @input="editingValue = $event.target.value"
+                                                           @blur="saveEventDateTime(index, $event.target.value)"
+                                                           @keydown.enter="saveEventDateTime(index, $event.target.value); $event.target.blur()"
+                                                           @keydown.escape="cancelEdit(); $event.target.blur()"
+                                                           class="inline-edit-input"
+                                                           type="date"
+                                                           style="width: 150px;">
+                                                </span>
+                                                {% else %}
+                                                <span x-text="formatDate(event.dateTime) || 'Not specified'"></span>
+                                                {% endif %}
+                                            </span>
+                                            <span class="sarf-actions">
+                                                {% if editable_mode %}
+                                                <select x-show="canEdit"
+                                                        :value="event.dateCertainty || 'certain'"
+                                                        @change="saveDateCertainty(index, $event.target.value)"
+                                                        class="inline-select-visible">
+                                                    <option value="certain">certain</option>
+                                                    <option value="approximate">approximate</option>
+                                                    <option value="unknown">unknown</option>
+                                                </select>
+                                                <span x-show="!canEdit" class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
+                                                {% else %}
+                                                <span class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
+                                                {% endif %}
+                                            </span>
                                         </div>
                                     </template>
 
-                                    <!-- Variable Changes Grid (only shown for 'shift' events) -->
-                                    <div class="variables-compact data-section"
+                                    <div class="sarf-divider" x-show="!event.kind || event.kind === 'shift'"></div>
+
+                                    <!-- SARF Variables (only shown for 'shift' events) -->
+                                    <div class="sarf-variables-section"
                                          x-show="!event.kind || event.kind === 'shift'"
                                          {% if editable_mode %}@click.stop{% endif %}>
-                                        <!-- Symptom Variable - Fixed Position #1 -->
-                                        <div class="variable-item" :class="{ 'add-variable': !event.symptom }">
-                                            <span class="is-size-7">Symptom:</span>
-                                            <template x-if="event.symptom">
-                                                {% if editable_mode %}
-                                                <span class="shift-indicator is-small" :class="'shift-' + event.symptom">
-                                                    <select x-show="canEdit"
-                                                            :value="event.symptom"
-                                                            @change="saveShift(index, 'symptom', $event.target.value)"
-                                                            class="inline-select-visible">
-                                                        <option value="up">up</option>
-                                                        <option value="down">down</option>
-                                                        <option value="same">same</option>
-                                                    </select>
-                                                    <span x-show="!canEdit" x-text="event.symptom"></span>
-                                                </span>
-                                                {% else %}
-                                                <span class="shift-indicator is-small"
-                                                      :class="'shift-' + event.symptom"
-                                                      x-text="event.symptom"></span>
-                                                {% endif %}
-                                            </template>
-                                            <!-- Rationale display for Symptom -->
-                                            <template x-if="event.symptom && event.symptom.rationale">
-                                                <div class="variable-rationale">
-                                                    <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.symptom.rationale"></span>
-                                                </div>
-                                            </template>
-                                            <template x-if="!event.symptom && {{ 'true' if editable_mode else 'false' }} && canEdit">
-                                                <span class="add-element" @click.stop="addVariable(index, 'symptom')" title="Add symptom variable">
-                                                    <i class="fas fa-plus-circle"></i>
-                                                </span>
-                                            </template>
-                                            {% if editable_mode %}
-                                            <span class="delete-variable"
-                                                  x-show="canEdit && event.symptom"
-                                                  @click.stop="removeVariable(index, 'symptom')"
-                                                  title="Remove symptom">
-                                                <i class="fas fa-times"></i>
+                                        <!-- Symptom Variable -->
+                                        <div class="sarf-field-row" :class="{ 'has-text-grey-light': !event.symptom }">
+                                            <span class="sarf-label">Symptom:</span>
+                                            <span class="sarf-value">
+                                                <template x-if="event.symptom">
+                                                    {% if editable_mode %}
+                                                    <span class="shift-indicator is-small" :class="'shift-' + event.symptom">
+                                                        <select x-show="canEdit"
+                                                                :value="event.symptom"
+                                                                @change="saveShift(index, 'symptom', $event.target.value)"
+                                                                class="inline-select-visible">
+                                                            <option value="up">up</option>
+                                                            <option value="down">down</option>
+                                                            <option value="same">same</option>
+                                                        </select>
+                                                        <span x-show="!canEdit" x-text="event.symptom"></span>
+                                                    </span>
+                                                    {% else %}
+                                                    <span class="shift-indicator is-small" :class="'shift-' + event.symptom" x-text="event.symptom"></span>
+                                                    {% endif %}
+                                                </template>
+                                                <template x-if="!event.symptom && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element" @click.stop="addVariable(index, 'symptom')" title="Add symptom variable">
+                                                        <i class="fas fa-plus-circle"></i>
+                                                    </span>
+                                                </template>
+                                                <template x-if="!event.symptom && !canEdit">
+                                                    <span>-</span>
+                                                </template>
                                             </span>
-                                            {% endif %}
-                                        </div>
-                                        
-                                        <!-- Anxiety Variable - Fixed Position #2 -->
-                                        <div class="variable-item" :class="{ 'add-variable': !event.anxiety }">
-                                            <span class="is-size-7">Anxiety:</span>
-                                            <template x-if="event.anxiety">
+                                            <span class="sarf-actions">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator is-small" :class="'shift-' + event.anxiety">
-                                                    <select x-show="canEdit"
-                                                            :value="event.anxiety"
-                                                            @change="saveShift(index, 'anxiety', $event.target.value)"
-                                                            class="inline-select-visible">
-                                                        <option value="up">up</option>
-                                                        <option value="down">down</option>
-                                                        <option value="same">same</option>
-                                                    </select>
-                                                    <span x-show="!canEdit" x-text="event.anxiety"></span>
+                                                <span class="delete-variable"
+                                                      x-show="canEdit && event.symptom"
+                                                      @click.stop="removeVariable(index, 'symptom')"
+                                                      title="Remove symptom">
+                                                    <i class="fas fa-times"></i>
                                                 </span>
-                                                {% else %}
-                                                <span class="shift-indicator is-small"
-                                                      :class="'shift-' + event.anxiety"
-                                                      x-text="event.anxiety"></span>
                                                 {% endif %}
-                                            </template>
-                                            <!-- Rationale display for Anxiety -->
-                                            <template x-if="event.anxiety && event.anxiety.rationale">
-                                                <div class="variable-rationale">
-                                                    <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.anxiety.rationale"></span>
-                                                </div>
-                                            </template>
-                                            <template x-if="!event.anxiety && {{ 'true' if editable_mode else 'false' }} && canEdit">
-                                                <span class="add-element" @click.stop="addVariable(index, 'anxiety')" title="Add anxiety variable">
-                                                    <i class="fas fa-plus-circle"></i>
-                                                </span>
-                                            </template>
-                                            {% if editable_mode %}
-                                            <span class="delete-variable"
-                                                  x-show="canEdit && event.anxiety"
-                                                  @click.stop="removeVariable(index, 'anxiety')"
-                                                  title="Remove anxiety">
-                                                <i class="fas fa-times"></i>
                                             </span>
-                                            {% endif %}
                                         </div>
-                                        
-                                        <!-- Relationship Variable - Fixed Position #3 -->
-                                        <div class="variable-item" :class="{ 'add-variable': !event.relationship }">
-                                            <span class="is-size-7">Relationship:</span>
-                                            <template x-if="event.relationship">
+                                        <!-- Anxiety Variable -->
+                                        <div class="sarf-field-row" :class="{ 'has-text-grey-light': !event.anxiety }">
+                                            <span class="sarf-label">Anxiety:</span>
+                                            <span class="sarf-value">
+                                                <template x-if="event.anxiety">
+                                                    {% if editable_mode %}
+                                                    <span class="shift-indicator is-small" :class="'shift-' + event.anxiety">
+                                                        <select x-show="canEdit"
+                                                                :value="event.anxiety"
+                                                                @change="saveShift(index, 'anxiety', $event.target.value)"
+                                                                class="inline-select-visible">
+                                                            <option value="up">up</option>
+                                                            <option value="down">down</option>
+                                                            <option value="same">same</option>
+                                                        </select>
+                                                        <span x-show="!canEdit" x-text="event.anxiety"></span>
+                                                    </span>
+                                                    {% else %}
+                                                    <span class="shift-indicator is-small" :class="'shift-' + event.anxiety" x-text="event.anxiety"></span>
+                                                    {% endif %}
+                                                </template>
+                                                <template x-if="!event.anxiety && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element" @click.stop="addVariable(index, 'anxiety')" title="Add anxiety variable">
+                                                        <i class="fas fa-plus-circle"></i>
+                                                    </span>
+                                                </template>
+                                                <template x-if="!event.anxiety && !canEdit">
+                                                    <span>-</span>
+                                                </template>
+                                            </span>
+                                            <span class="sarf-actions">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator shift-relationship is-small">
-                                                    <select x-show="canEdit"
-                                                            :value="event.relationship"
-                                                            @change="saveRelationshipKind(index, $event.target.value)"
-                                                            class="inline-select-visible">
-                                                        <option value="conflict">conflict</option>
-                                                        <option value="distance">distance</option>
-                                                        <option value="overfunctioning">overfunctioning</option>
-                                                        <option value="underfunctioning">underfunctioning</option>
-                                                        <option value="projection">projection</option>
-                                                        <option value="defined-self">defined-self</option>
-                                                        <option value="toward">toward</option>
-                                                        <option value="away">away</option>
-                                                        <option value="inside">inside</option>
-                                                        <option value="outside">outside</option>
-                                                        <option value="cutoff">cutoff</option>
-                                                    </select>
-                                                    <span x-show="!canEdit" x-text="event.relationship"></span>
+                                                <span class="delete-variable"
+                                                      x-show="canEdit && event.anxiety"
+                                                      @click.stop="removeVariable(index, 'anxiety')"
+                                                      title="Remove anxiety">
+                                                    <i class="fas fa-times"></i>
                                                 </span>
-                                                {% else %}
-                                                <span class="shift-indicator shift-relationship is-small"
-                                                      x-text="event.relationship"></span>
                                                 {% endif %}
-                                            </template>
-                                            <!-- Rationale display for Relationship -->
-                                            <template x-if="event.relationship && event.relationship.rationale">
-                                                <div class="variable-rationale">
-                                                    <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.relationship.rationale"></span>
-                                                </div>
-                                            </template>
-                                            <template x-if="!event.relationship && {{ 'true' if editable_mode else 'false' }} && canEdit">
-                                                <span class="add-element" @click.stop="addVariable(index, 'relationship')" title="Add relationship variable">
-                                                    <i class="fas fa-plus-circle"></i>
-                                                </span>
-                                            </template>
-                                            {% if editable_mode %}
-                                            <span class="delete-variable"
-                                                  x-show="canEdit && event.relationship"
-                                                  @click.stop="removeVariable(index, 'relationship')"
-                                                  title="Remove relationship">
-                                                <i class="fas fa-times"></i>
                                             </span>
-                                            {% endif %}
                                         </div>
-                                        
+                                        <!-- Relationship Variable -->
+                                        <div class="sarf-field-row" :class="{ 'has-text-grey-light': !event.relationship }">
+                                            <span class="sarf-label">Relationship:</span>
+                                            <span class="sarf-value">
+                                                <template x-if="event.relationship">
+                                                    {% if editable_mode %}
+                                                    <span class="shift-indicator shift-relationship is-small">
+                                                        <select x-show="canEdit"
+                                                                :value="event.relationship"
+                                                                @change="saveRelationshipKind(index, $event.target.value)"
+                                                                class="inline-select-visible">
+                                                            <option value="conflict">conflict</option>
+                                                            <option value="distance">distance</option>
+                                                            <option value="overfunctioning">overfunctioning</option>
+                                                            <option value="underfunctioning">underfunctioning</option>
+                                                            <option value="projection">projection</option>
+                                                            <option value="defined-self">defined-self</option>
+                                                            <option value="toward">toward</option>
+                                                            <option value="away">away</option>
+                                                            <option value="inside">inside</option>
+                                                            <option value="outside">outside</option>
+                                                            <option value="cutoff">cutoff</option>
+                                                        </select>
+                                                        <span x-show="!canEdit" x-text="event.relationship"></span>
+                                                    </span>
+                                                    {% else %}
+                                                    <span class="shift-indicator shift-relationship is-small" x-text="event.relationship"></span>
+                                                    {% endif %}
+                                                </template>
+                                                <template x-if="!event.relationship && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element" @click.stop="addVariable(index, 'relationship')" title="Add relationship variable">
+                                                        <i class="fas fa-plus-circle"></i>
+                                                    </span>
+                                                </template>
+                                                <template x-if="!event.relationship && !canEdit">
+                                                    <span>-</span>
+                                                </template>
+                                            </span>
+                                            <span class="sarf-actions">
+                                                {% if editable_mode %}
+                                                <span class="delete-variable"
+                                                      x-show="canEdit && event.relationship"
+                                                      @click.stop="removeVariable(index, 'relationship')"
+                                                      title="Remove relationship">
+                                                    <i class="fas fa-times"></i>
+                                                </span>
+                                                {% endif %}
+                                            </span>
+                                        </div>
                                         <!-- Relationship Details - Shown below the main variable row -->
                                         <template x-if="event.relationship">
-                                            <div class="relationship-details-content" style="margin-top: 4px;">
-                                                <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; margin-left: 1em; table-layout: fixed;">
-                                                    <!-- Relationship Targets - shown for all relationship types -->
-                                                    <template x-if="(event.relationshipTargets && event.relationshipTargets.length > 0) || {{ 'true' if editable_mode else 'false' }}">
-                                                        <tr>
-                                                            <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                                <span x-text="getTargetsLabel(event.relationship)"></span>
-                                                            </td>
-                                                            <td style="padding: 0;">
-                                                                <span style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; position: relative;">
-                                                                    <template x-for="(personId, idx) in (event.relationshipTargets || [])" :key="personId + '-' + idx">
+                                            <div class="relationship-details-content" style="margin-left: 1em;">
+                                                <!-- Relationship Targets - shown for all relationship types -->
+                                                <template x-if="(event.relationshipTargets && event.relationshipTargets.length > 0) || {{ 'true' if editable_mode else 'false' }}">
+                                                    <div class="sarf-field-row">
+                                                        <span class="sarf-label" x-text="getTargetsLabel(event.relationship)"></span>
+                                                        <span class="sarf-value">
+                                                            <span style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px;">
+                                                                <template x-for="(personId, idx) in (event.relationshipTargets || [])" :key="personId + '-' + idx">
+                                                                    <span class="person-tag"
+                                                                          :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                                          :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                                          @click="{{ 'canEdit && editRelationshipPerson($event, index, \'targets\', idx)' if editable_mode else '' }}">
+                                                                        <span x-text="getPersonName(personId, personDataVersion)"></span>
+                                                                        {% if editable_mode %}
+                                                                        <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                              @click.stop="removeRelationshipPerson(index, 'targets', idx)">×</span>
+                                                                        {% endif %}
+                                                                    </span>
+                                                                </template>
+                                                                {% if editable_mode %}
+                                                                <span x-show="canEdit" class="add-element add-relationship-person-button"
+                                                                      @click.stop="addRelationshipPerson($event, index, 'targets')"
+                                                                      title="Select existing person"
+                                                                      style="opacity: 1;">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </span>
+                                                                {% endif %}
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                </template>
+
+                                                <!-- Relationship Triangles - ONLY shown for inside/outside -->
+                                                <template x-if="['inside', 'outside'].includes(event.relationship)">
+                                                    <template x-if="(event.relationshipTriangles && event.relationshipTriangles.length > 0) || {{ 'true' if editable_mode else 'false' }}">
+                                                        <div class="sarf-field-row">
+                                                            <span class="sarf-label" x-text="getTrianglesLabel(event.relationship)"></span>
+                                                            <span class="sarf-value">
+                                                                <span style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px;">
+                                                                    <template x-for="(personId, idx) in (event.relationshipTriangles || [])" :key="personId + '-' + idx">
                                                                         <span class="person-tag"
-                                                                              :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                                              style="display: inline-block; padding: 2px 8px; margin: 2px; background: #ffe8e8; border: 1px solid #ffb3b3; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; cursor: pointer;"
                                                                               :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
-                                                                              @click="{{ 'canEdit && editRelationshipPerson($event, index, \'targets\', idx)' if editable_mode else '' }}">
+                                                                              @click="{{ 'canEdit && editRelationshipPerson($event, index, \'triangles\', idx)' if editable_mode else '' }}">
                                                                             <span x-text="getPersonName(personId, personDataVersion)"></span>
                                                                             {% if editable_mode %}
                                                                             <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
-                                                                                  @click.stop="removeRelationshipPerson(index, 'targets', idx)">×</span>
+                                                                                  @click.stop="removeRelationshipPerson(index, 'triangles', idx)">×</span>
                                                                             {% endif %}
                                                                         </span>
                                                                     </template>
                                                                     {% if editable_mode %}
                                                                     <span x-show="canEdit" class="add-element add-relationship-person-button"
-                                                                          @click.stop="addRelationshipPerson($event, index, 'targets')"
+                                                                          @click.stop="addRelationshipPerson($event, index, 'triangles')"
                                                                           title="Select existing person"
                                                                           style="opacity: 1;">
                                                                         <i class="fas fa-edit"></i>
                                                                     </span>
                                                                     {% endif %}
                                                                 </span>
-                                                            </td>
-                                                        </tr>
+                                                            </span>
+                                                        </div>
                                                     </template>
-
-                                                    <!-- Relationship Triangles - ONLY shown for inside/outside -->
-                                                    <template x-if="['inside', 'outside'].includes(event.relationship)">
-                                                        <template x-if="(event.relationshipTriangles && event.relationshipTriangles.length > 0) || {{ 'true' if editable_mode else 'false' }}">
-                                                            <tr>
-                                                                <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                                    <span x-text="getTrianglesLabel(event.relationship)"></span>
-                                                                </td>
-                                                                <td style="padding: 0;">
-                                                                    <span style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; position: relative;">
-                                                                        <template x-for="(personId, idx) in (event.relationshipTriangles || [])" :key="personId + '-' + idx">
-                                                                            <span class="person-tag"
-                                                                                  style="display: inline-block; padding: 2px 8px; margin: 2px; background: #ffe8e8; border: 1px solid #ffb3b3; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; cursor: pointer;"
-                                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
-                                                                                  @click="{{ 'canEdit && editRelationshipPerson($event, index, \'triangles\', idx)' if editable_mode else '' }}">
-                                                                                <span x-text="getPersonName(personId, personDataVersion)"></span>
-                                                                                {% if editable_mode %}
-                                                                                <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
-                                                                                      @click.stop="removeRelationshipPerson(index, 'triangles', idx)">×</span>
-                                                                                {% endif %}
-                                                                            </span>
-                                                                        </template>
-                                                                        {% if editable_mode %}
-                                                                        <span x-show="canEdit" class="add-element add-relationship-person-button"
-                                                                              @click.stop="addRelationshipPerson($event, index, 'triangles')"
-                                                                              title="Select existing person"
-                                                                              style="opacity: 1;">
-                                                                            <i class="fas fa-edit"></i>
-                                                                        </span>
-                                                                        {% endif %}
-                                                                    </span>
-                                                                </td>
-                                                            </tr>
-                                                        </template>
-                                                    </template>
-                                                </table>
+                                                </template>
                                             </div>
                                         </template>
 
                                         <!-- Subtle divider before Functioning -->
                                         <div class="variable-divider"></div>
 
-                                        <!-- Functioning Variable - Fixed Position #4 -->
-                                        <div class="variable-item" :class="{ 'add-variable': !event.functioning }">
-                                            <span class="is-size-7">Functioning:</span>
-                                            <template x-if="event.functioning">
-                                                {% if editable_mode %}
-                                                <span class="shift-indicator is-small" :class="'shift-functioning-' + event.functioning">
-                                                    <select x-show="canEdit"
-                                                            :value="event.functioning"
-                                                            @change="saveShift(index, 'functioning', $event.target.value)"
-                                                            class="inline-select-visible">
-                                                        <option value="up">up</option>
-                                                        <option value="down">down</option>
-                                                        <option value="same">same</option>
-                                                    </select>
-                                                    <span x-show="!canEdit" x-text="event.functioning"></span>
-                                                </span>
-                                                {% else %}
-                                                <span class="shift-indicator is-small"
-                                                      :class="'shift-functioning-' + event.functioning"
-                                                      x-text="event.functioning"></span>
-                                                {% endif %}
-                                            </template>
-                                            <!-- Rationale display for Functioning -->
-                                            <template x-if="event.functioning && event.functioning.rationale">
-                                                <div class="variable-rationale">
+                                        <!-- Functioning Variable -->
+                                        <div class="sarf-field-row" :class="{ 'has-text-grey-light': !event.functioning }">
+                                            <span class="sarf-label">Functioning:</span>
+                                            <span class="sarf-value">
+                                                <template x-if="event.functioning">
+                                                    {% if editable_mode %}
+                                                    <span class="shift-indicator is-small" :class="'shift-functioning-' + event.functioning">
+                                                        <select x-show="canEdit"
+                                                                :value="event.functioning"
+                                                                @change="saveShift(index, 'functioning', $event.target.value)"
+                                                                class="inline-select-visible">
+                                                            <option value="up">up</option>
+                                                            <option value="down">down</option>
+                                                            <option value="same">same</option>
+                                                        </select>
+                                                        <span x-show="!canEdit" x-text="event.functioning"></span>
+                                                    </span>
+                                                    {% else %}
+                                                    <span class="shift-indicator is-small"
+                                                          :class="'shift-functioning-' + event.functioning"
+                                                          x-text="event.functioning"></span>
+                                                    {% endif %}
+                                                </template>
+                                                <!-- Rationale display for Functioning -->
+                                                <template x-if="event.functioning && event.functioning.rationale">
                                                     <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.functioning.rationale"></span>
-                                                </div>
-                                            </template>
-                                            <template x-if="!event.functioning && {{ 'true' if editable_mode else 'false' }} && canEdit">
-                                                <span class="add-element" @click.stop="addVariable(index, 'functioning')" title="Add functioning variable">
-                                                    <i class="fas fa-plus-circle"></i>
-                                                </span>
-                                            </template>
-                                            {% if editable_mode %}
-                                            <span class="delete-variable"
-                                                  x-show="canEdit && event.functioning"
-                                                  @click.stop="removeVariable(index, 'functioning')"
-                                                  title="Remove functioning">
-                                                <i class="fas fa-times"></i>
+                                                </template>
+                                                <template x-if="!event.functioning && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element" @click.stop="addVariable(index, 'functioning')" title="Add functioning variable">
+                                                        <i class="fas fa-plus-circle"></i>
+                                                    </span>
+                                                </template>
+                                                <template x-if="!event.functioning && !canEdit">
+                                                    <span>-</span>
+                                                </template>
                                             </span>
-                                            {% endif %}
+                                            <span class="sarf-actions">
+                                                {% if editable_mode %}
+                                                <span class="delete-variable"
+                                                      x-show="canEdit && event.functioning"
+                                                      @click.stop="removeVariable(index, 'functioning')"
+                                                      title="Remove functioning">
+                                                    <i class="fas fa-times"></i>
+                                                </span>
+                                                {% endif %}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -1257,29 +1228,23 @@ Parameters:
                                     
                                     <!-- Confidence Row (only show for AI extractions, not cumulative/human-reviewed data) -->
                                     {% if not is_cumulative %}
-                                    <div class="mb-2">
-                                        <small class="is-size-7" x-show="person.confidence && person.confidence < 0.999">
-                                            Confidence: <span x-text="(person.confidence * 100).toFixed(0) + '%'"></span>
-                                        </small>
+                                    <div class="sarf-field-row" x-show="person.confidence && person.confidence < 0.999">
+                                        <span class="sarf-label">Confidence:</span>
+                                        <span class="sarf-value" x-text="(person.confidence * 100).toFixed(0) + '%'"></span>
                                     </div>
                                     {% endif %}
 
-                                    <!-- Person List Fields -->
-                                    <div class="person-lists">
-                                        <!-- Parents (Pair-Bond) -->
-                                        <template x-if="person.parents">
-                                            <div class="person-list-field mb-1">
-                                                <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem;">
-                                                    <div style="color: #666; white-space: nowrap;">
-                                                        Parents:
-                                                    </div>
-                                                    <span class="person-tag" style="flex-shrink: 1; min-width: 0; white-space: normal !important; word-break: break-word;">
-                                                        <span x-text="getPairBondName(person.parents, personDataVersion)" style="display: inline;"></span>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </div>
+                                    <!-- Person Parents -->
+                                    <template x-if="person.parents">
+                                        <div class="sarf-field-row">
+                                            <span class="sarf-label">Parents:</span>
+                                            <span class="sarf-value">
+                                                <span class="person-tag">
+                                                    <span x-text="getPairBondName(person.parents, personDataVersion)"></span>
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </template>
                                 </div>
                                 </template>
                             </template>
@@ -1327,483 +1292,441 @@ Parameters:
                                         </div>
                                     </div>
 
-                                    <!-- Event Kind Section -->
-                                    <div class="event-kind-section" style="margin-top: 8px;">
-                                        <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
-                                            <tr>
-                                                <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                    Event Kind:
-                                                </td>
-                                                <td style="padding: 0;">
-                                                    {% if editable_mode %}
-                                                    <select x-show="canEdit"
-                                                            :value="event.kind || 'shift'"
-                                                            @change="saveEventKind(index, $event.target.value)"
-                                                            class="inline-select-visible">
-                                                        <option value="shift">shift</option>
-                                                        <option value="birth">birth</option>
-                                                        <option value="adopted">adopted</option>
-                                                        <option value="bonded">bonded</option>
-                                                        <option value="married">married</option>
-                                                        <option value="separated">separated</option>
-                                                        <option value="divorced">divorced</option>
-                                                        <option value="moved">moved</option>
-                                                        <option value="death">death</option>
-                                                    </select>
-                                                    <span x-show="!canEdit" class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
-                                                    {% else %}
-                                                    <span class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
-                                                    {% endif %}
-                                                </td>
-                                            </tr>
-                                        </table>
+                                    <!-- Event Kind -->
+                                    <div class="sarf-field-row">
+                                        <span class="sarf-label">Event Kind:</span>
+                                        <span class="sarf-value">
+                                            {% if editable_mode %}
+                                            <select x-show="canEdit"
+                                                    :value="event.kind || 'shift'"
+                                                    @change="saveEventKind(index, $event.target.value)"
+                                                    class="inline-select-visible">
+                                                <option value="shift">shift</option>
+                                                <option value="birth">birth</option>
+                                                <option value="adopted">adopted</option>
+                                                <option value="bonded">bonded</option>
+                                                <option value="married">married</option>
+                                                <option value="separated">separated</option>
+                                                <option value="divorced">divorced</option>
+                                                <option value="moved">moved</option>
+                                                <option value="death">death</option>
+                                            </select>
+                                            <span x-show="!canEdit" class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
+                                            {% else %}
+                                            <span class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
+                                            {% endif %}
+                                        </span>
                                     </div>
 
-                                    <!-- Event Person Section -->
+                                    <div class="sarf-divider"></div>
+
+                                    <!-- Event Person -->
                                     <template x-if="event.person || {{ 'true' if editable_mode else 'false' }}">
-                                        <div class="event-person-section" style="margin-top: 8px;">
-                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
-                                                <tr>
-                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;"
-                                                        x-text="getPersonLabel(event.kind, event.relationship)">
-                                                    </td>
-                                                    <td style="padding: 0;">
-                                                        <template x-if="event.person">
-                                                            <span class="person-tag"
-                                                                  :style="{ cursor: canEdit ? 'pointer' : 'default' }"
-                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
-                                                                  @click="{{ 'canEdit && editEventPerson(index, event.person)' if editable_mode else '' }}">
-                                                                <span x-text="getPersonName(event.person, personDataVersion)"></span>
-                                                                {% if editable_mode %}
-                                                                <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
-                                                                      @click.stop="clearEventPerson(index)">×</span>
-                                                                {% endif %}
-                                                            </span>
-                                                        </template>
-                                                        <template x-if="!event.person && {{ 'true' if editable_mode else 'false' }} && canEdit">
-                                                            <span style="display: inline-flex; gap: 4px; position: relative;">
-                                                                <span class="add-element edit-event-person-button" style="opacity: 1;" @click.stop="editEventPerson($event, index)" title="Select Existing Person for Event">
-                                                                    <i class="fas fa-edit"></i>
-                                                                </span>
-                                                            </span>
-                                                        </template>
-                                                    </td>
-                                                </tr>
-                                            </table>
+                                        <div class="sarf-field-row">
+                                            <span class="sarf-label" x-text="getPersonLabel(event.kind, event.relationship)"></span>
+                                            <span class="sarf-value">
+                                                <template x-if="event.person">
+                                                    <span class="person-tag"
+                                                          :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                          :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                          @click="{{ 'canEdit && editEventPerson(index, event.person)' if editable_mode else '' }}">
+                                                        <span x-text="getPersonName(event.person, personDataVersion)"></span>
+                                                        {% if editable_mode %}
+                                                        <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                              @click.stop="clearEventPerson(index)">×</span>
+                                                        {% endif %}
+                                                    </span>
+                                                </template>
+                                                <template x-if="!event.person && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element edit-event-person-button" style="opacity: 1;" @click.stop="editEventPerson($event, index)" title="Select Existing Person for Event">
+                                                        <i class="fas fa-edit"></i>
+                                                    </span>
+                                                </template>
+                                            </span>
                                         </div>
                                     </template>
 
-                                    <!-- Event Spouse Section (conditionally visible) -->
+                                    <!-- Event Spouse -->
                                     <template x-if="(['bonded', 'married', 'separated', 'divorced', 'moved', 'birth', 'adopted'].includes(event.kind) && (event.spouse || {{ 'true' if editable_mode else 'false' }})) || (event.spouse && {{ 'true' if editable_mode else 'false' }})">
-                                        <div class="event-spouse-section" style="margin-top: 8px;">
-                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
-                                                <tr>
-                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;"
-                                                        x-text="(event.kind === 'birth' || event.kind === 'adopted') ? 'Parent 2:' : (event.kind === 'moved') ? 'Partner:' : 'Partner 2:'">
-                                                    </td>
-                                                    <td style="padding: 0;">
-                                                        <template x-if="event.spouse">
-                                                            <span class="person-tag"
-                                                                  :style="{ cursor: canEdit ? 'pointer' : 'default' }"
-                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
-                                                                  @click="{{ 'canEdit && editEventSpouse(index, event.spouse)' if editable_mode else '' }}">
-                                                                <span x-text="getPersonName(event.spouse, personDataVersion)"></span>
-                                                                {% if editable_mode %}
-                                                                <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
-                                                                      @click.stop="clearEventSpouse(index)">×</span>
-                                                                {% endif %}
-                                                            </span>
-                                                        </template>
-                                                        <template x-if="!event.spouse && {{ 'true' if editable_mode else 'false' }} && canEdit">
-                                                            <span style="display: inline-flex; gap: 4px; position: relative;">
-                                                                <span class="add-element edit-event-spouse-button" style="opacity: 1;" @click.stop="editEventSpouse($event, index)" title="Select Existing Spouse for Event">
-                                                                    <i class="fas fa-edit"></i>
-                                                                </span>
-                                                            </span>
-                                                        </template>
-                                                    </td>
-                                                </tr>
-                                            </table>
+                                        <div class="sarf-field-row">
+                                            <span class="sarf-label" x-text="(event.kind === 'birth' || event.kind === 'adopted') ? 'Parent 2:' : (event.kind === 'moved') ? 'Partner:' : 'Partner 2:'"></span>
+                                            <span class="sarf-value">
+                                                <template x-if="event.spouse">
+                                                    <span class="person-tag"
+                                                          :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                          :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                          @click="{{ 'canEdit && editEventSpouse(index, event.spouse)' if editable_mode else '' }}">
+                                                        <span x-text="getPersonName(event.spouse, personDataVersion)"></span>
+                                                        {% if editable_mode %}
+                                                        <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                              @click.stop="clearEventSpouse(index)">×</span>
+                                                        {% endif %}
+                                                    </span>
+                                                </template>
+                                                <template x-if="!event.spouse && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element edit-event-spouse-button" style="opacity: 1;" @click.stop="editEventSpouse($event, index)" title="Select Existing Spouse for Event">
+                                                        <i class="fas fa-edit"></i>
+                                                    </span>
+                                                </template>
+                                            </span>
                                         </div>
                                     </template>
 
-                                    <!-- Event Child Section (conditionally visible) -->
+                                    <!-- Event Child -->
                                     <template x-if="(['birth', 'adopted'].includes(event.kind) && (event.child || {{ 'true' if editable_mode else 'false' }})) || (event.child && {{ 'true' if editable_mode else 'false' }})">
-                                        <div class="event-child-section" style="margin-top: 8px;">
-                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
-                                                <tr>
-                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                        Child:
-                                                    </td>
-                                                    <td style="padding: 0;">
-                                                        <template x-if="event.child">
-                                                            <span class="person-tag"
-                                                                  :style="{ cursor: canEdit ? 'pointer' : 'default' }"
-                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
-                                                                  @click="{{ 'canEdit && editEventChild(index, event.child)' if editable_mode else '' }}">
-                                                                <span x-text="getPersonName(event.child, personDataVersion)"></span>
-                                                                {% if editable_mode %}
-                                                                <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
-                                                                      @click.stop="clearEventChild(index)">×</span>
-                                                                {% endif %}
-                                                            </span>
-                                                        </template>
-                                                        <template x-if="!event.child && {{ 'true' if editable_mode else 'false' }} && canEdit">
-                                                            <span style="display: inline-flex; gap: 4px; position: relative;">
-                                                                <span class="add-element edit-event-child-button" style="opacity: 1;" @click.stop="editEventChild($event, index)" title="Select Existing Child for Event">
-                                                                    <i class="fas fa-edit"></i>
-                                                                </span>
-                                                            </span>
-                                                        </template>
-                                                    </td>
-                                                </tr>
-                                            </table>
+                                        <div class="sarf-field-row">
+                                            <span class="sarf-label">Child:</span>
+                                            <span class="sarf-value">
+                                                <template x-if="event.child">
+                                                    <span class="person-tag"
+                                                          :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                          :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                          @click="{{ 'canEdit && editEventChild(index, event.child)' if editable_mode else '' }}">
+                                                        <span x-text="getPersonName(event.child, personDataVersion)"></span>
+                                                        {% if editable_mode %}
+                                                        <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                              @click.stop="clearEventChild(index)">×</span>
+                                                        {% endif %}
+                                                    </span>
+                                                </template>
+                                                <template x-if="!event.child && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element edit-event-child-button" style="opacity: 1;" @click.stop="editEventChild($event, index)" title="Select Existing Child for Event">
+                                                        <i class="fas fa-edit"></i>
+                                                    </span>
+                                                </template>
+                                            </span>
                                         </div>
                                     </template>
 
-                                    <!-- Event Description Section (for shift and death events) -->
+                                    <!-- Event Description (for shift and death events) -->
                                     <template x-if="!event.kind || event.kind === 'shift' || event.kind === 'death'">
-                                        <div class="event-description-section" style="margin-top: 8px;">
-                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
-                                                <tr>
-                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;"
-                                                        x-text="event.kind === 'death' ? 'Cause:' : 'Description:'">
-                                                    </td>
-                                                    <td style="padding: 0;">
-                                                        {% if editable_mode %}
-                                                        <span class="event-description"
-                                                              :class="{'editable-field': canEdit}"
-                                                              @mouseenter="canEdit && (hoveredField = 'event-' + index + '-description')"
-                                                              @mouseleave="hoveredField = null"
-                                                              @click.stop="canEdit && startEdit('event-' + index + '-description', event.description || '')">
-                                                            <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || 'Not set'"></span>
-                                                            <input x-show="isEditing('event-' + index + '-description')"
-                                                                   :value="editingValue"
-                                                                   @input="editingValue = $event.target.value"
-                                                                   @blur="saveEventDescription(index, $event.target.value)"
-                                                                   @keydown.enter="saveEventDescription(index, $event.target.value); $event.target.blur()"
-                                                                   @keydown.escape="cancelEdit(); $event.target.blur()"
-                                                                   class="inline-edit-input"
-                                                                   type="text">
-                                                        </span>
-                                                        {% else %}
-                                                        <span x-text="event.description || 'Not specified'"></span>
-                                                        {% endif %}
-                                                    </td>
-                                                </tr>
-                                            </table>
+                                        <div class="sarf-field-row">
+                                            <span class="sarf-label" x-text="event.kind === 'death' ? 'Cause:' : 'Description:'"></span>
+                                            <span class="sarf-value">
+                                                {% if editable_mode %}
+                                                <span class="event-description"
+                                                      :class="{'editable-field': canEdit}"
+                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-description')"
+                                                      @mouseleave="hoveredField = null"
+                                                      @click.stop="canEdit && startEdit('event-' + index + '-description', event.description || '')">
+                                                    <span x-show="!isEditing('event-' + index + '-description')" x-text="event.description || 'Not set'"></span>
+                                                    <input x-show="isEditing('event-' + index + '-description')"
+                                                           :value="editingValue"
+                                                           @input="editingValue = $event.target.value"
+                                                           @blur="saveEventDescription(index, $event.target.value)"
+                                                           @keydown.enter="saveEventDescription(index, $event.target.value); $event.target.blur()"
+                                                           @keydown.escape="cancelEdit(); $event.target.blur()"
+                                                           class="inline-edit-input"
+                                                           type="text">
+                                                </span>
+                                                {% else %}
+                                                <span x-text="event.description || 'Not specified'"></span>
+                                                {% endif %}
+                                            </span>
                                         </div>
                                     </template>
 
-                                    <!-- Event DateTime Section -->
+                                    <div class="sarf-divider"></div>
+
+                                    <!-- Event DateTime -->
                                     <template x-if="(event.dateTime && event.dateTime.trim() !== '') || {{ 'true' if editable_mode else 'false' }}">
-                                        <div class="event-datetime-section" style="margin-top: 8px;">
-                                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; table-layout: fixed;">
-                                                <tr>
-                                                    <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                        Date/Time:
-                                                    </td>
-                                                    <td style="padding: 0;">
-                                                        {% if editable_mode %}
-                                                        <span class="event-datetime"
-                                                              :class="{'editable-field': canEdit}"
-                                                              @mouseenter="canEdit && (hoveredField = 'event-' + index + '-dateTime')"
-                                                              @mouseleave="hoveredField = null"
-                                                              @click.stop="canEdit && startEdit('event-' + index + '-dateTime', event.dateTime || '')">
-                                                            <span x-show="!isEditing('event-' + index + '-dateTime')" x-text="formatDate(event.dateTime) || 'Not set'"></span>
-                                                            <input x-show="isEditing('event-' + index + '-dateTime')"
-                                                                   :value="editingValue"
-                                                                   @input="editingValue = $event.target.value"
-                                                                   @blur="saveEventDateTime(index, $event.target.value)"
-                                                                   @keydown.enter="saveEventDateTime(index, $event.target.value); $event.target.blur()"
-                                                                   @keydown.escape="cancelEdit(); $event.target.blur()"
-                                                                   class="inline-edit-input"
-                                                                   type="date"
-                                                                   style="width: 150px;">
-                                                        </span>
-                                                        {% else %}
-                                                        <span x-text="formatDate(event.dateTime) || 'Not specified'"></span>
-                                                        {% endif %}
-                                                    </td>
-                                                    <td style="padding: 0 0 0 8px; vertical-align: middle;">
-                                                        {% if editable_mode %}
-                                                        <select x-show="canEdit"
-                                                                :value="event.dateCertainty || 'certain'"
-                                                                @change="saveDateCertainty(index, $event.target.value)"
-                                                                class="inline-select-visible">
-                                                            <option value="certain">certain</option>
-                                                            <option value="approximate">approximate</option>
-                                                            <option value="unknown">unknown</option>
-                                                        </select>
-                                                        <span x-show="!canEdit" class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
-                                                        {% else %}
-                                                        <span class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
-                                                        {% endif %}
-                                                    </td>
-                                                </tr>
-                                            </table>
+                                        <div class="sarf-field-row">
+                                            <span class="sarf-label">Date/Time:</span>
+                                            <span class="sarf-value">
+                                                {% if editable_mode %}
+                                                <span class="event-datetime"
+                                                      :class="{'editable-field': canEdit}"
+                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-dateTime')"
+                                                      @mouseleave="hoveredField = null"
+                                                      @click.stop="canEdit && startEdit('event-' + index + '-dateTime', event.dateTime || '')">
+                                                    <span x-show="!isEditing('event-' + index + '-dateTime')" x-text="formatDate(event.dateTime) || 'Not set'"></span>
+                                                    <input x-show="isEditing('event-' + index + '-dateTime')"
+                                                           :value="editingValue"
+                                                           @input="editingValue = $event.target.value"
+                                                           @blur="saveEventDateTime(index, $event.target.value)"
+                                                           @keydown.enter="saveEventDateTime(index, $event.target.value); $event.target.blur()"
+                                                           @keydown.escape="cancelEdit(); $event.target.blur()"
+                                                           class="inline-edit-input"
+                                                           type="date"
+                                                           style="width: 150px;">
+                                                </span>
+                                                {% else %}
+                                                <span x-text="formatDate(event.dateTime) || 'Not specified'"></span>
+                                                {% endif %}
+                                            </span>
+                                            <span class="sarf-actions">
+                                                {% if editable_mode %}
+                                                <select x-show="canEdit"
+                                                        :value="event.dateCertainty || 'certain'"
+                                                        @change="saveDateCertainty(index, $event.target.value)"
+                                                        class="inline-select-visible">
+                                                    <option value="certain">certain</option>
+                                                    <option value="approximate">approximate</option>
+                                                    <option value="unknown">unknown</option>
+                                                </select>
+                                                <span x-show="!canEdit" class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
+                                                {% else %}
+                                                <span class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
+                                                {% endif %}
+                                            </span>
                                         </div>
                                     </template>
 
-                                    <!-- Variable Changes Grid (only shown for 'shift' events) -->
-                                    <div class="variables-compact data-section"
+                                    <div class="sarf-divider" x-show="!event.kind || event.kind === 'shift'"></div>
+
+                                    <!-- SARF Variables (only shown for 'shift' events) -->
+                                    <div class="sarf-variables-section"
                                          x-show="!event.kind || event.kind === 'shift'"
                                          {% if editable_mode %}@click.stop{% endif %}>
-                                        <!-- Symptom Variable - Fixed Position #1 -->
-                                        <div class="variable-item" :class="{ 'add-variable': !event.symptom }">
-                                            <span class="is-size-7">Symptom:</span>
-                                            <template x-if="event.symptom">
-                                                {% if editable_mode %}
-                                                <span class="shift-indicator is-small" :class="'shift-' + event.symptom">
-                                                    <select x-show="canEdit"
-                                                            :value="event.symptom"
-                                                            @change="saveShift(index, 'symptom', $event.target.value)"
-                                                            class="inline-select-visible">
-                                                        <option value="up">up</option>
-                                                        <option value="down">down</option>
-                                                        <option value="same">same</option>
-                                                    </select>
-                                                    <span x-show="!canEdit" x-text="event.symptom"></span>
-                                                </span>
-                                                {% else %}
-                                                <span class="shift-indicator is-small"
-                                                      :class="'shift-' + event.symptom"
-                                                      x-text="event.symptom"></span>
-                                                {% endif %}
-                                            </template>
-                                            <!-- Rationale display for Symptom -->
-                                            <template x-if="event.symptom && event.symptom.rationale">
-                                                <div class="variable-rationale">
-                                                    <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.symptom.rationale"></span>
-                                                </div>
-                                            </template>
-                                            <template x-if="!event.symptom && {{ 'true' if editable_mode else 'false' }} && canEdit">
-                                                <span class="add-element" @click.stop="addVariable(index, 'symptom')" title="Add symptom variable">
-                                                    <i class="fas fa-plus-circle"></i>
-                                                </span>
-                                            </template>
-                                            {% if editable_mode %}
-                                            <span class="delete-variable"
-                                                  x-show="canEdit && event.symptom"
-                                                  @click.stop="removeVariable(index, 'symptom')"
-                                                  title="Remove symptom">
-                                                <i class="fas fa-times"></i>
+                                        <!-- Symptom Variable -->
+                                        <div class="sarf-field-row" :class="{ 'has-text-grey-light': !event.symptom }">
+                                            <span class="sarf-label">Symptom:</span>
+                                            <span class="sarf-value">
+                                                <template x-if="event.symptom">
+                                                    {% if editable_mode %}
+                                                    <span class="shift-indicator is-small" :class="'shift-' + event.symptom">
+                                                        <select x-show="canEdit"
+                                                                :value="event.symptom"
+                                                                @change="saveShift(index, 'symptom', $event.target.value)"
+                                                                class="inline-select-visible">
+                                                            <option value="up">up</option>
+                                                            <option value="down">down</option>
+                                                            <option value="same">same</option>
+                                                        </select>
+                                                        <span x-show="!canEdit" x-text="event.symptom"></span>
+                                                    </span>
+                                                    {% else %}
+                                                    <span class="shift-indicator is-small" :class="'shift-' + event.symptom" x-text="event.symptom"></span>
+                                                    {% endif %}
+                                                </template>
+                                                <template x-if="!event.symptom && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element" @click.stop="addVariable(index, 'symptom')" title="Add symptom variable">
+                                                        <i class="fas fa-plus-circle"></i>
+                                                    </span>
+                                                </template>
+                                                <template x-if="!event.symptom && !canEdit">
+                                                    <span>-</span>
+                                                </template>
                                             </span>
-                                            {% endif %}
-                                        </div>
-                                        
-                                        <!-- Anxiety Variable - Fixed Position #2 -->
-                                        <div class="variable-item" :class="{ 'add-variable': !event.anxiety }">
-                                            <span class="is-size-7">Anxiety:</span>
-                                            <template x-if="event.anxiety">
+                                            <span class="sarf-actions">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator is-small" :class="'shift-' + event.anxiety">
-                                                    <select x-show="canEdit"
-                                                            :value="event.anxiety"
-                                                            @change="saveShift(index, 'anxiety', $event.target.value)"
-                                                            class="inline-select-visible">
-                                                        <option value="up">up</option>
-                                                        <option value="down">down</option>
-                                                        <option value="same">same</option>
-                                                    </select>
-                                                    <span x-show="!canEdit" x-text="event.anxiety"></span>
+                                                <span class="delete-variable"
+                                                      x-show="canEdit && event.symptom"
+                                                      @click.stop="removeVariable(index, 'symptom')"
+                                                      title="Remove symptom">
+                                                    <i class="fas fa-times"></i>
                                                 </span>
-                                                {% else %}
-                                                <span class="shift-indicator is-small"
-                                                      :class="'shift-' + event.anxiety"
-                                                      x-text="event.anxiety"></span>
                                                 {% endif %}
-                                            </template>
-                                            <!-- Rationale display for Anxiety -->
-                                            <template x-if="event.anxiety && event.anxiety.rationale">
-                                                <div class="variable-rationale">
-                                                    <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.anxiety.rationale"></span>
-                                                </div>
-                                            </template>
-                                            <template x-if="!event.anxiety && {{ 'true' if editable_mode else 'false' }} && canEdit">
-                                                <span class="add-element" @click.stop="addVariable(index, 'anxiety')" title="Add anxiety variable">
-                                                    <i class="fas fa-plus-circle"></i>
-                                                </span>
-                                            </template>
-                                            {% if editable_mode %}
-                                            <span class="delete-variable"
-                                                  x-show="canEdit && event.anxiety"
-                                                  @click.stop="removeVariable(index, 'anxiety')"
-                                                  title="Remove anxiety">
-                                                <i class="fas fa-times"></i>
                                             </span>
-                                            {% endif %}
                                         </div>
-                                        
-                                        <!-- Relationship Variable - Fixed Position #3 -->
-                                        <div class="variable-item" :class="{ 'add-variable': !event.relationship }">
-                                            <span class="is-size-7">Relationship:</span>
-                                            <template x-if="event.relationship">
+                                        <!-- Anxiety Variable -->
+                                        <div class="sarf-field-row" :class="{ 'has-text-grey-light': !event.anxiety }">
+                                            <span class="sarf-label">Anxiety:</span>
+                                            <span class="sarf-value">
+                                                <template x-if="event.anxiety">
+                                                    {% if editable_mode %}
+                                                    <span class="shift-indicator is-small" :class="'shift-' + event.anxiety">
+                                                        <select x-show="canEdit"
+                                                                :value="event.anxiety"
+                                                                @change="saveShift(index, 'anxiety', $event.target.value)"
+                                                                class="inline-select-visible">
+                                                            <option value="up">up</option>
+                                                            <option value="down">down</option>
+                                                            <option value="same">same</option>
+                                                        </select>
+                                                        <span x-show="!canEdit" x-text="event.anxiety"></span>
+                                                    </span>
+                                                    {% else %}
+                                                    <span class="shift-indicator is-small" :class="'shift-' + event.anxiety" x-text="event.anxiety"></span>
+                                                    {% endif %}
+                                                </template>
+                                                <template x-if="!event.anxiety && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element" @click.stop="addVariable(index, 'anxiety')" title="Add anxiety variable">
+                                                        <i class="fas fa-plus-circle"></i>
+                                                    </span>
+                                                </template>
+                                                <template x-if="!event.anxiety && !canEdit">
+                                                    <span>-</span>
+                                                </template>
+                                            </span>
+                                            <span class="sarf-actions">
                                                 {% if editable_mode %}
-                                                <span class="shift-indicator shift-relationship is-small">
-                                                    <select x-show="canEdit"
-                                                            :value="event.relationship"
-                                                            @change="saveRelationshipKind(index, $event.target.value)"
-                                                            class="inline-select-visible">
-                                                        <option value="conflict">conflict</option>
-                                                        <option value="distance">distance</option>
-                                                        <option value="overfunctioning">overfunctioning</option>
-                                                        <option value="underfunctioning">underfunctioning</option>
-                                                        <option value="projection">projection</option>
-                                                        <option value="defined-self">defined-self</option>
-                                                        <option value="toward">toward</option>
-                                                        <option value="away">away</option>
-                                                        <option value="inside">inside</option>
-                                                        <option value="outside">outside</option>
-                                                        <option value="cutoff">cutoff</option>
-                                                    </select>
-                                                    <span x-show="!canEdit" x-text="event.relationship"></span>
+                                                <span class="delete-variable"
+                                                      x-show="canEdit && event.anxiety"
+                                                      @click.stop="removeVariable(index, 'anxiety')"
+                                                      title="Remove anxiety">
+                                                    <i class="fas fa-times"></i>
                                                 </span>
-                                                {% else %}
-                                                <span class="shift-indicator shift-relationship is-small"
-                                                      x-text="event.relationship"></span>
                                                 {% endif %}
-                                            </template>
-                                            <!-- Rationale display for Relationship -->
-                                            <template x-if="event.relationship && event.relationship.rationale">
-                                                <div class="variable-rationale">
-                                                    <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.relationship.rationale"></span>
-                                                </div>
-                                            </template>
-                                            <template x-if="!event.relationship && {{ 'true' if editable_mode else 'false' }} && canEdit">
-                                                <span class="add-element" @click.stop="addVariable(index, 'relationship')" title="Add relationship variable">
-                                                    <i class="fas fa-plus-circle"></i>
-                                                </span>
-                                            </template>
-                                            {% if editable_mode %}
-                                            <span class="delete-variable"
-                                                  x-show="canEdit && event.relationship"
-                                                  @click.stop="removeVariable(index, 'relationship')"
-                                                  title="Remove relationship">
-                                                <i class="fas fa-times"></i>
                                             </span>
-                                            {% endif %}
                                         </div>
-                                        
+                                        <!-- Relationship Variable -->
+                                        <div class="sarf-field-row" :class="{ 'has-text-grey-light': !event.relationship }">
+                                            <span class="sarf-label">Relationship:</span>
+                                            <span class="sarf-value">
+                                                <template x-if="event.relationship">
+                                                    {% if editable_mode %}
+                                                    <span class="shift-indicator shift-relationship is-small">
+                                                        <select x-show="canEdit"
+                                                                :value="event.relationship"
+                                                                @change="saveRelationshipKind(index, $event.target.value)"
+                                                                class="inline-select-visible">
+                                                            <option value="conflict">conflict</option>
+                                                            <option value="distance">distance</option>
+                                                            <option value="overfunctioning">overfunctioning</option>
+                                                            <option value="underfunctioning">underfunctioning</option>
+                                                            <option value="projection">projection</option>
+                                                            <option value="defined-self">defined-self</option>
+                                                            <option value="toward">toward</option>
+                                                            <option value="away">away</option>
+                                                            <option value="inside">inside</option>
+                                                            <option value="outside">outside</option>
+                                                            <option value="cutoff">cutoff</option>
+                                                        </select>
+                                                        <span x-show="!canEdit" x-text="event.relationship"></span>
+                                                    </span>
+                                                    {% else %}
+                                                    <span class="shift-indicator shift-relationship is-small" x-text="event.relationship"></span>
+                                                    {% endif %}
+                                                </template>
+                                                <template x-if="!event.relationship && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element" @click.stop="addVariable(index, 'relationship')" title="Add relationship variable">
+                                                        <i class="fas fa-plus-circle"></i>
+                                                    </span>
+                                                </template>
+                                                <template x-if="!event.relationship && !canEdit">
+                                                    <span>-</span>
+                                                </template>
+                                            </span>
+                                            <span class="sarf-actions">
+                                                {% if editable_mode %}
+                                                <span class="delete-variable"
+                                                      x-show="canEdit && event.relationship"
+                                                      @click.stop="removeVariable(index, 'relationship')"
+                                                      title="Remove relationship">
+                                                    <i class="fas fa-times"></i>
+                                                </span>
+                                                {% endif %}
+                                            </span>
+                                        </div>
                                         <!-- Relationship Details - Shown below the main variable row -->
                                         <template x-if="event.relationship">
-                                            <div class="relationship-details-content" style="margin-top: 4px;">
-                                                <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 0.5rem; margin-left: 1em; table-layout: fixed;">
-                                                    <!-- Relationship Targets - shown for all relationship types -->
-                                                    <template x-if="(event.relationshipTargets && event.relationshipTargets.length > 0) || {{ 'true' if editable_mode else 'false' }}">
-                                                        <tr>
-                                                            <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                                <span x-text="getTargetsLabel(event.relationship)"></span>
-                                                            </td>
-                                                            <td style="padding: 0;">
-                                                                <span style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; position: relative;">
-                                                                    <template x-for="(personId, idx) in (event.relationshipTargets || [])" :key="personId + '-' + idx">
+                                            <div class="relationship-details-content" style="margin-left: 1em;">
+                                                <!-- Relationship Targets - shown for all relationship types -->
+                                                <template x-if="(event.relationshipTargets && event.relationshipTargets.length > 0) || {{ 'true' if editable_mode else 'false' }}">
+                                                    <div class="sarf-field-row">
+                                                        <span class="sarf-label" x-text="getTargetsLabel(event.relationship)"></span>
+                                                        <span class="sarf-value">
+                                                            <span style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px;">
+                                                                <template x-for="(personId, idx) in (event.relationshipTargets || [])" :key="personId + '-' + idx">
+                                                                    <span class="person-tag"
+                                                                          :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                                          :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
+                                                                          @click="{{ 'canEdit && editRelationshipPerson($event, index, \'targets\', idx)' if editable_mode else '' }}">
+                                                                        <span x-text="getPersonName(personId, personDataVersion)"></span>
+                                                                        {% if editable_mode %}
+                                                                        <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
+                                                                              @click.stop="removeRelationshipPerson(index, 'targets', idx)">×</span>
+                                                                        {% endif %}
+                                                                    </span>
+                                                                </template>
+                                                                {% if editable_mode %}
+                                                                <span x-show="canEdit" class="add-element add-relationship-person-button"
+                                                                      @click.stop="addRelationshipPerson($event, index, 'targets')"
+                                                                      title="Select existing person"
+                                                                      style="opacity: 1;">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </span>
+                                                                {% endif %}
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                </template>
+
+                                                <!-- Relationship Triangles - ONLY shown for inside/outside -->
+                                                <template x-if="['inside', 'outside'].includes(event.relationship)">
+                                                    <template x-if="(event.relationshipTriangles && event.relationshipTriangles.length > 0) || {{ 'true' if editable_mode else 'false' }}">
+                                                        <div class="sarf-field-row">
+                                                            <span class="sarf-label" x-text="getTrianglesLabel(event.relationship)"></span>
+                                                            <span class="sarf-value">
+                                                                <span style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px;">
+                                                                    <template x-for="(personId, idx) in (event.relationshipTriangles || [])" :key="personId + '-' + idx">
                                                                         <span class="person-tag"
-                                                                              :style="{ cursor: canEdit ? 'pointer' : 'default' }"
+                                                                              style="display: inline-block; padding: 2px 8px; margin: 2px; background: #ffe8e8; border: 1px solid #ffb3b3; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; cursor: pointer;"
                                                                               :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
-                                                                              @click="{{ 'canEdit && editRelationshipPerson($event, index, \'targets\', idx)' if editable_mode else '' }}">
+                                                                              @click="{{ 'canEdit && editRelationshipPerson($event, index, \'triangles\', idx)' if editable_mode else '' }}">
                                                                             <span x-text="getPersonName(personId, personDataVersion)"></span>
                                                                             {% if editable_mode %}
                                                                             <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
-                                                                                  @click.stop="removeRelationshipPerson(index, 'targets', idx)">×</span>
+                                                                                  @click.stop="removeRelationshipPerson(index, 'triangles', idx)">×</span>
                                                                             {% endif %}
                                                                         </span>
                                                                     </template>
                                                                     {% if editable_mode %}
                                                                     <span x-show="canEdit" class="add-element add-relationship-person-button"
-                                                                          @click.stop="addRelationshipPerson($event, index, 'targets')"
+                                                                          @click.stop="addRelationshipPerson($event, index, 'triangles')"
                                                                           title="Select existing person"
                                                                           style="opacity: 1;">
                                                                         <i class="fas fa-edit"></i>
                                                                     </span>
                                                                     {% endif %}
                                                                 </span>
-                                                            </td>
-                                                        </tr>
+                                                            </span>
+                                                        </div>
                                                     </template>
-
-                                                    <!-- Relationship Triangles - ONLY shown for inside/outside -->
-                                                    <template x-if="['inside', 'outside'].includes(event.relationship)">
-                                                        <template x-if="(event.relationshipTriangles && event.relationshipTriangles.length > 0) || {{ 'true' if editable_mode else 'false' }}">
-                                                            <tr>
-                                                                <td style="width: 80px; padding: 0 4px 0 0; vertical-align: middle; white-space: nowrap; color: #666; font-size: 0.75rem;">
-                                                                    <span x-text="getTrianglesLabel(event.relationship)"></span>
-                                                                </td>
-                                                                <td style="padding: 0;">
-                                                                    <span style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; position: relative;">
-                                                                        <template x-for="(personId, idx) in (event.relationshipTriangles || [])" :key="personId + '-' + idx">
-                                                                            <span class="person-tag"
-                                                                                  style="display: inline-block; padding: 2px 8px; margin: 2px; background: #ffe8e8; border: 1px solid #ffb3b3; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; cursor: pointer;"
-                                                                                  :class="{'editable': {{ 'true' if editable_mode else 'false' }} && canEdit}"
-                                                                                  @click="{{ 'canEdit && editRelationshipPerson($event, index, \'triangles\', idx)' if editable_mode else '' }}">
-                                                                                <span x-text="getPersonName(personId, personDataVersion)"></span>
-                                                                                {% if editable_mode %}
-                                                                                <span x-show="canEdit" style="margin-left: 4px; color: #ff4444; cursor: pointer; font-weight: bold;"
-                                                                                      @click.stop="removeRelationshipPerson(index, 'triangles', idx)">×</span>
-                                                                                {% endif %}
-                                                                            </span>
-                                                                        </template>
-                                                                        {% if editable_mode %}
-                                                                        <span x-show="canEdit" class="add-element add-relationship-person-button"
-                                                                              @click.stop="addRelationshipPerson($event, index, 'triangles')"
-                                                                              title="Select existing person"
-                                                                              style="opacity: 1;">
-                                                                            <i class="fas fa-edit"></i>
-                                                                        </span>
-                                                                        {% endif %}
-                                                                    </span>
-                                                                </td>
-                                                            </tr>
-                                                        </template>
-                                                    </template>
-                                                </table>
+                                                </template>
                                             </div>
                                         </template>
 
                                         <!-- Subtle divider before Functioning -->
                                         <div class="variable-divider"></div>
 
-                                        <!-- Functioning Variable - Fixed Position #4 -->
-                                        <div class="variable-item" :class="{ 'add-variable': !event.functioning }">
-                                            <span class="is-size-7">Functioning:</span>
-                                            <template x-if="event.functioning">
-                                                {% if editable_mode %}
-                                                <span class="shift-indicator is-small" :class="'shift-functioning-' + event.functioning">
-                                                    <select x-show="canEdit"
-                                                            :value="event.functioning"
-                                                            @change="saveShift(index, 'functioning', $event.target.value)"
-                                                            class="inline-select-visible">
-                                                        <option value="up">up</option>
-                                                        <option value="down">down</option>
-                                                        <option value="same">same</option>
-                                                    </select>
-                                                    <span x-show="!canEdit" x-text="event.functioning"></span>
-                                                </span>
-                                                {% else %}
-                                                <span class="shift-indicator is-small"
-                                                      :class="'shift-functioning-' + event.functioning"
-                                                      x-text="event.functioning"></span>
-                                                {% endif %}
-                                            </template>
-                                            <!-- Rationale display for Functioning -->
-                                            <template x-if="event.functioning && event.functioning.rationale">
-                                                <div class="variable-rationale">
+                                        <!-- Functioning Variable -->
+                                        <div class="sarf-field-row" :class="{ 'has-text-grey-light': !event.functioning }">
+                                            <span class="sarf-label">Functioning:</span>
+                                            <span class="sarf-value">
+                                                <template x-if="event.functioning">
+                                                    {% if editable_mode %}
+                                                    <span class="shift-indicator is-small" :class="'shift-functioning-' + event.functioning">
+                                                        <select x-show="canEdit"
+                                                                :value="event.functioning"
+                                                                @change="saveShift(index, 'functioning', $event.target.value)"
+                                                                class="inline-select-visible">
+                                                            <option value="up">up</option>
+                                                            <option value="down">down</option>
+                                                            <option value="same">same</option>
+                                                        </select>
+                                                        <span x-show="!canEdit" x-text="event.functioning"></span>
+                                                    </span>
+                                                    {% else %}
+                                                    <span class="shift-indicator is-small"
+                                                          :class="'shift-functioning-' + event.functioning"
+                                                          x-text="event.functioning"></span>
+                                                    {% endif %}
+                                                </template>
+                                                <!-- Rationale display for Functioning -->
+                                                <template x-if="event.functioning && event.functioning.rationale">
                                                     <span class="is-size-7 has-text-grey is-italic" x-text="'→ ' + event.functioning.rationale"></span>
-                                                </div>
-                                            </template>
-                                            <template x-if="!event.functioning && {{ 'true' if editable_mode else 'false' }} && canEdit">
-                                                <span class="add-element" @click.stop="addVariable(index, 'functioning')" title="Add functioning variable">
-                                                    <i class="fas fa-plus-circle"></i>
-                                                </span>
-                                            </template>
-                                            {% if editable_mode %}
-                                            <span class="delete-variable"
-                                                  x-show="canEdit && event.functioning"
-                                                  @click.stop="removeVariable(index, 'functioning')"
-                                                  title="Remove functioning">
-                                                <i class="fas fa-times"></i>
+                                                </template>
+                                                <template x-if="!event.functioning && {{ 'true' if editable_mode else 'false' }} && canEdit">
+                                                    <span class="add-element" @click.stop="addVariable(index, 'functioning')" title="Add functioning variable">
+                                                        <i class="fas fa-plus-circle"></i>
+                                                    </span>
+                                                </template>
+                                                <template x-if="!event.functioning && !canEdit">
+                                                    <span>-</span>
+                                                </template>
                                             </span>
-                                            {% endif %}
+                                            <span class="sarf-actions">
+                                                {% if editable_mode %}
+                                                <span class="delete-variable"
+                                                      x-show="canEdit && event.functioning"
+                                                      @click.stop="removeVariable(index, 'functioning')"
+                                                      title="Remove functioning">
+                                                    <i class="fas fa-times"></i>
+                                                </span>
+                                                {% endif %}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -2177,50 +2100,6 @@ Parameters:
     opacity: 0.6;
 }
 
-/* Variables container - each variable on its own row */
-.variables-compact {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-}
-
-/* Variable item layout - consistent row styling */
-.variable-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 24px;
-}
-
-/* Subtle divider between variables */
-.variable-divider {
-    height: 1px;
-    background-color: #e0e0e0;
-    margin: 0;
-    opacity: 0.5;
-}
-
-/* Variable labels */
-.variable-item .is-size-7 {
-    min-width: 80px;
-    font-weight: 600;
-    color: #495057;
-    flex-shrink: 0;
-}
-
-/* Shift indicators and selects */
-.variable-item .shift-indicator {
-    min-width: 50px;
-    text-align: center;
-    position: relative;
-}
-
-/* Delete button positioning - fixed distance from shift indicator */
-.variable-item .delete-variable {
-    margin-left: 8px;
-    margin-right: 0;
-    flex-shrink: 0;
-}
 
 /* Delete event button - positioned absolutely in upper right corner */
 .delete-event {
@@ -2244,19 +2123,6 @@ Parameters:
     background: rgba(220, 53, 69, 0.1);
 }
 
-/* Variable items with only add buttons get muted styling */
-.variable-item.add-variable {
-    opacity: 0.7;
-    transition: opacity 0.2s;
-}
-
-.variable-item.add-variable:hover {
-    opacity: 1;
-}
-
-.variable-item.add-variable .is-size-7 {
-    color: #6c757d;
-}
 
 /* Semantic shift colors for variables */
 .shift-up {
@@ -2316,6 +2182,11 @@ Parameters:
     -moz-appearance: none;
     appearance: none;
     color: inherit;
+}
+
+/* Remove border when select is inside a colored shift-indicator */
+.shift-indicator .inline-select-visible {
+    border: none;
 }
 
 .inline-select-visible:focus {
@@ -2504,18 +2375,6 @@ Parameters:
     font-size: 0.75rem;
     color: #1565c0;
     display: inline-block;
-}
-
-/* Force relationship details to display as full-width block */
-.variable-item.relationship-details {
-    width: 100% !important;
-    flex: 1 1 100% !important;
-    display: block !important;
-}
-
-/* Ensure variables-compact doesn't force inline display for relationships */
-.variables-compact .relationship-details {
-    order: 999; /* Move to end of flex container */
 }
 
 /* Delete item styling */
