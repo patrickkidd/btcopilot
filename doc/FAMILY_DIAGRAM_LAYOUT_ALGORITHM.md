@@ -760,6 +760,52 @@ Before making ANY change to the algorithm:
 - **Related Issues**: None yet
 - **Resolution**: Pending - logged as first occurrence, need to see if pattern repeats
 
+### F-0002: Canopy Expanding Parents Independently (INV-2 Violation)
+- **Date**: 2024-12-24
+- **Source**: Statement 2020, `/training/diagrams/render/2020/patrick@alaskafamilysystems.com`
+- **Symptom**: Richard at x=100, Barbara at x=400 (300px gap instead of 120px)
+- **Expected**: Richard-Barbara should be adjacent (120px apart) as a married couple
+- **Actual**: Phase 4 canopy moved Barbara right to cover children, but left Richard in place
+- **Root Cause**: `_phase4_canopy` had `rightParent.x = requiredRight` without also moving leftParent
+- **Related Issues**: INV-2 violation
+- **Resolution**: Fixed 2024-12-24 - Canopy now shifts ENTIRE couple as a unit to center over children
+
+### F-0003: Compaction Ignoring Parent Positions
+- **Date**: 2024-12-24
+- **Source**: Statement 2020, `/training/diagrams/render/2020/patrick@alaskafamilysystems.com`
+- **Symptom**: Twin 1/Twin 2 at x=100,220 while parents Kevin-Lisa at x=460,580
+- **Expected**: Twins should be positioned under Kevin-Lisa (~x=460,580)
+- **Actual**: Phase 3 compaction shifted Gen 3 left to BASE_X regardless of parent positions
+- **Root Cause**: Compaction computed `minStartX = BASE_X` for every generation, ignoring parent positions
+- **Related Issues**: SOFT-1 violation (children under parents)
+- **Resolution**: Fixed 2024-12-24 - Compaction now computes minStartX based on parent pair bond positions
+
+### F-0004: Pair Bonds Calculated Too Late
+- **Date**: 2024-12-24
+- **Source**: Statement 2020, `/training/diagrams/render/2020/patrick@alaskafamilysystems.com`
+- **Symptom**: Children not centered under parents despite `_positionRemainingSiblings` logic
+- **Expected**: Children positioned relative to parent pair bond center
+- **Actual**: `ctx.layout.pairBonds` was empty during Phase 2 child positioning
+- **Root Cause**: Pair bonds calculated in Phase 5, but needed during Phase 2 for child positioning
+- **Related Issues**: F-0003 (same symptom, different root cause)
+- **Resolution**: Fixed 2024-12-24 - Added `_updatePairBondsForGeneration()` called after each generation in Phase 2
+
+---
+
+## Implementation Notes
+
+Critical timing requirements discovered during debugging:
+
+### Pair Bond Calculation Timing
+The spec says "Calculate pair bond positions for this generation (needed for next generation's child positioning)" but doesn't emphasize HOW critical this timing is. Pair bonds MUST be calculated **immediately after each generation is positioned**, not in a separate Phase 5. Otherwise:
+- `_positionRemainingSiblings` can't center children under parents (uses `ctx.layout.pairBonds`)
+- `_phase3_compaction` can't respect parent positions (checks `ctx.layout.pairBonds`)
+
+Implementation: `_updatePairBondsForGeneration(ctx, data, gen)` called at end of each generation's processing in Phase 2.
+
+### Compaction vs Descendants
+The spec says "shift ALL their descendants by the same amount" but this is complex to implement correctly. An alternative approach (currently implemented): instead of shifting descendants, prevent compaction from shifting children left of their parents' span. This achieves the same goal (children stay under parents) without cascading shifts.
+
 ---
 
 ## Revision History
@@ -771,4 +817,5 @@ Before making ANY change to the algorithm:
 | 0.3 | 2024-12-23 | Added standalone context: Implementation location, data structures, constants, coordinate system, complete worked example. Document now usable in separate thread with no prior context. |
 | 0.4 | 2024-12-23 | Added "Known-Good Test Data" section with Statement 1900 test case. Updated URL format to include auditor_id parameter (required for GT data). |
 | 0.5 | 2024-12-23 | Added "Reference Screenshots" section with 3 Pro app GT examples showing target layout style. |
+| 0.6 | 2024-12-24 | Added F-0002 through F-0004 to Failure Log (all fixed). Added "Implementation Notes" section documenting critical pair bond timing and compaction approach. |
 

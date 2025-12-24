@@ -192,6 +192,7 @@ Parameters:
         const gender = person.gender || 'unknown';
 
         if (gender === 'male') {
+            // Rectangle for male
             const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
             rect.setAttribute('x', -halfSize);
             rect.setAttribute('y', -halfSize);
@@ -201,6 +202,7 @@ Parameters:
             g.appendChild(rect);
 
             if (person.primary) {
+                // Double outline for primary person
                 const outer = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
                 const margin = 5;
                 outer.setAttribute('x', -halfSize - margin);
@@ -211,6 +213,7 @@ Parameters:
                 g.insertBefore(outer, rect);
             }
         } else if (gender === 'female') {
+            // Circle for female
             const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             circle.setAttribute('cx', 0);
             circle.setAttribute('cy', 0);
@@ -219,6 +222,7 @@ Parameters:
             g.appendChild(circle);
 
             if (person.primary) {
+                // Double outline for primary person
                 const outer = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 const margin = 5;
                 outer.setAttribute('cx', 0);
@@ -228,6 +232,7 @@ Parameters:
                 g.insertBefore(outer, circle);
             }
         } else {
+            // Unknown gender: rounded rectangle with "?"
             const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
             rect.setAttribute('x', -halfSize);
             rect.setAttribute('y', -halfSize);
@@ -246,10 +251,12 @@ Parameters:
             g.appendChild(qmark);
         }
 
+        // Deceased X
         if (person.deceased) {
             const deceasedG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             deceasedG.setAttribute('class', 'fd-person-deceased');
 
+            // Shorten X lines slightly to keep age visible
             const margin = 8;
             const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line1.setAttribute('x1', -halfSize + margin);
@@ -268,6 +275,7 @@ Parameters:
             g.appendChild(deceasedG);
         }
 
+        // Age inside shape (if available and gender is known)
         if (person.age && gender !== 'unknown') {
             const age = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             age.setAttribute('x', 0);
@@ -277,10 +285,12 @@ Parameters:
             g.appendChild(age);
         }
 
+        // Name label - positioned based on labelPosition
         const name = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         const idLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
 
         if (labelPosition === 'above-right') {
+            // Nestled in top-right corner, above the person
             name.setAttribute('x', halfSize + 2);
             name.setAttribute('y', -(halfSize + 8));
             name.setAttribute('text-anchor', 'start');
@@ -288,6 +298,7 @@ Parameters:
             idLabel.setAttribute('y', -(halfSize + 22));
             idLabel.setAttribute('text-anchor', 'start');
         } else if (labelPosition === 'above-left') {
+            // Nestled in top-left corner, above the person
             name.setAttribute('x', -(halfSize + 2));
             name.setAttribute('y', -(halfSize + 8));
             name.setAttribute('text-anchor', 'end');
@@ -295,6 +306,7 @@ Parameters:
             idLabel.setAttribute('y', -(halfSize + 22));
             idLabel.setAttribute('text-anchor', 'end');
         } else if (labelPosition === 'left') {
+            // To the left of the person
             name.setAttribute('x', -(halfSize + NAME_OFFSET));
             name.setAttribute('y', -halfSize + 12);
             name.setAttribute('text-anchor', 'end');
@@ -302,6 +314,7 @@ Parameters:
             idLabel.setAttribute('y', -halfSize + 26);
             idLabel.setAttribute('text-anchor', 'end');
         } else {
+            // Default: to the right of the person
             name.setAttribute('x', halfSize + NAME_OFFSET);
             name.setAttribute('y', -halfSize + 12);
             idLabel.setAttribute('x', halfSize + NAME_OFFSET);
@@ -312,6 +325,7 @@ Parameters:
         name.textContent = person.name || `Person ${person.id}`;
         g.appendChild(name);
 
+        // ID label (for debugging/development)
         idLabel.setAttribute('class', 'fd-person-name');
         idLabel.setAttribute('style', 'font-size: 10px; fill: var(--color-fg-muted);');
         idLabel.textContent = `ID: ${person.id}`;
@@ -325,15 +339,18 @@ Parameters:
         g.setAttribute('class', 'fd-pair-bond-group');
         g.setAttribute('data-pair-bond-id', pairBond.id);
 
+        // Get pair bond bar from layout
         const pbLayout = layout.pairBonds[pairBond.id];
         const coupleX1 = pbLayout ? pbLayout.coupleX1 : Math.min(personA.x, personB.x);
         const coupleX2 = pbLayout ? pbLayout.coupleX2 : Math.max(personA.x, personB.x);
         const barY = pbLayout ? pbLayout.y : Math.max(personA.y, personB.y) + PERSON_SIZE / 2 + PAIR_BOND_DROP;
 
+        // Draw U-shape connecting the couple, with optional extensions for children
         const aBottom = personA.y + PERSON_SIZE / 2;
         const bBottom = personB.y + PERSON_SIZE / 2;
         const bondClass = 'fd-pair-bond' + (!pairBond.married ? ' bonded' : '');
 
+        // Vertical line from personA down to bar
         const lineA = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         lineA.setAttribute('x1', personA.x);
         lineA.setAttribute('y1', aBottom);
@@ -342,6 +359,7 @@ Parameters:
         lineA.setAttribute('class', bondClass);
         g.appendChild(lineA);
 
+        // Vertical line from personB down to bar
         const lineB = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         lineB.setAttribute('x1', personB.x);
         lineB.setAttribute('y1', bBottom);
@@ -350,6 +368,8 @@ Parameters:
         lineB.setAttribute('class', bondClass);
         g.appendChild(lineB);
 
+        // Horizontal bar - strictly between the couple (per spec Section 2)
+        // The canopy effect comes from positioning parents further apart, not extending lines
         const coupleBar = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         coupleBar.setAttribute('x1', coupleX1);
         coupleBar.setAttribute('y1', barY);
@@ -358,11 +378,14 @@ Parameters:
         coupleBar.setAttribute('class', bondClass);
         g.appendChild(coupleBar);
 
+        // Separation/divorce lines (vertical, centered on the couple's horizontal bar)
+        // No custody implemented yet, so lines are straight up and down
         if (pairBond.separated || pairBond.divorced) {
             const midX = (coupleX1 + coupleX2) / 2;
             const lineHeight = 15;
             const lineSpacing = 6;
 
+            // First line (separation - single vertical line)
             const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             const line1X = pairBond.divorced ? midX - lineSpacing / 2 : midX;
             line1.setAttribute('x1', line1X);
@@ -372,6 +395,7 @@ Parameters:
             line1.setAttribute('class', 'fd-separation-slash');
             g.appendChild(line1);
 
+            // Second line (divorce only - two parallel vertical lines)
             if (pairBond.divorced) {
                 const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 line2.setAttribute('x1', midX + lineSpacing / 2);
@@ -392,15 +416,21 @@ Parameters:
 
         const childTop = child.y - PERSON_SIZE / 2;
 
+        // Use ORIGINAL couple span for child attachment (not stretched span)
+        // Per spec: diagonal when outside couple span, vertical when inside
         const coupleLeft = pairBond.coupleX1 !== undefined ? pairBond.coupleX1 : Math.min(pairBond.x1, pairBond.x2);
         const coupleRight = pairBond.coupleX2 !== undefined ? pairBond.coupleX2 : Math.max(pairBond.x1, pairBond.x2);
 
+        // Determine connection point on parent bar
         let connectionX;
         if (child.x >= coupleLeft && child.x <= coupleRight) {
+            // Child is within couple span - vertical line
             connectionX = child.x;
         } else if (child.x < coupleLeft) {
+            // Child is left of couple - diagonal to left end
             connectionX = coupleLeft;
         } else {
+            // Child is right of couple - diagonal to right end
             connectionX = coupleRight;
         }
 
@@ -410,6 +440,7 @@ Parameters:
         line.setAttribute('x2', connectionX);
         line.setAttribute('y2', pairBond.y);
 
+        // Check if child is adopted (would need to be passed in data)
         const isAdopted = child.person && child.person.adopted;
         line.setAttribute('class', 'fd-child-line' + (isAdopted ? ' adopted' : ''));
 
@@ -417,6 +448,7 @@ Parameters:
         container.appendChild(g);
     }
 
+    // Build diagram when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', buildDiagram);
     } else {
