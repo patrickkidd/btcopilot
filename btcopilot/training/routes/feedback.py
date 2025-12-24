@@ -12,8 +12,6 @@ from btcopilot.pro.models import User
 from btcopilot.personal.models import Statement, SpeakerType, Discussion
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_auditor_id
-from btcopilot.schema import PDP, PairBond, Person, from_dict
-from btcopilot.pdp import cleanup_pair_bonds
 
 # from btcopilot.training.sse import sse_manager
 
@@ -24,38 +22,46 @@ def cleanup_extraction_pair_bonds(extraction: dict) -> dict:
     """
     Clean up pair bonds in extraction data before saving.
 
-    Removes invalid, duplicate, and orphaned pair bonds to prevent
-    accumulation of stale data in feedback records.
+    Only removes duplicate pair bonds (same person pair). Does NOT remove
+    pair bonds referencing people from other statements, since pair bonds
+    can legitimately reference people from the cumulative PDP.
+
+    Full cleanup (invalid refs, orphans) happens in cumulative() when
+    building the complete PDP from all statements.
     """
     if not extraction:
         return extraction
 
-    people_data = extraction.get("people", [])
     pair_bonds_data = extraction.get("pair_bonds", [])
-
     if not pair_bonds_data:
         return extraction
 
-    # Build a temporary PDP to use the cleanup logic
-    people = [from_dict(Person, p) for p in people_data]
-    pair_bonds = [from_dict(PairBond, pb) for pb in pair_bonds_data]
+    # Only deduplicate - remove pair bonds with same person pair
+    seen_person_pairs: set[tuple[int, int]] = set()
+    cleaned_pair_bonds = []
 
-    temp_pdp = PDP(people=people, pair_bonds=pair_bonds)
-    cleaned_pdp = cleanup_pair_bonds(temp_pdp)
+    for pb in pair_bonds_data:
+        pb_id = pb.get("id")
+        person_a = pb.get("person_a")
+        person_b = pb.get("person_b")
 
-    # Update extraction with cleaned pair bonds
-    cleaned_extraction = extraction.copy()
-    cleaned_extraction["pair_bonds"] = [
-        {"id": pb.id, "person_a": pb.person_a, "person_b": pb.person_b}
-        for pb in cleaned_pdp.pair_bonds
-    ]
+        if pb_id is None or person_a is None or person_b is None:
+            continue
 
-    removed_count = len(pair_bonds_data) - len(cleaned_extraction["pair_bonds"])
+        person_pair = tuple(sorted([person_a, person_b]))
+        if person_pair in seen_person_pairs:
+            _log.debug(f"Removing duplicate pair bond {pb_id}: pair {person_pair}")
+            continue
+
+        seen_person_pairs.add(person_pair)
+        cleaned_pair_bonds.append(pb)
+
+    removed_count = len(pair_bonds_data) - len(cleaned_pair_bonds)
     if removed_count > 0:
-        _log.info(
-            f"Cleaned {removed_count} invalid/orphaned pair bonds from extraction"
-        )
+        _log.info(f"Removed {removed_count} duplicate pair bonds from extraction")
 
+    cleaned_extraction = extraction.copy()
+    cleaned_extraction["pair_bonds"] = cleaned_pair_bonds
     return cleaned_extraction
 
 

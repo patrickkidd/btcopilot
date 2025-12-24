@@ -81,8 +81,8 @@ def test_admin_download(admin):
     assert "attachment" in response.headers["Content-Disposition"]
 
 
-def test_cleanup_extraction_pair_bonds_removes_orphans():
-    """Pair bonds not referenced by any person's parents should be removed."""
+def test_cleanup_extraction_pair_bonds_removes_duplicates():
+    """Duplicate pair bonds (same person pair) should be removed, keeping first."""
     extraction = {
         "people": [
             {"id": -1, "name": "Alice"},
@@ -90,8 +90,9 @@ def test_cleanup_extraction_pair_bonds_removes_orphans():
             {"id": -3, "name": "Child", "parents": -10},
         ],
         "pair_bonds": [
-            {"id": -10, "person_a": -1, "person_b": -2},  # referenced by Child
-            {"id": -11, "person_a": -1, "person_b": -2},  # orphaned
+            {"id": -10, "person_a": -1, "person_b": -2},  # first occurrence
+            {"id": -11, "person_a": -1, "person_b": -2},  # duplicate - same people
+            {"id": -12, "person_a": -2, "person_b": -1},  # duplicate - reversed order
         ],
         "events": [],
     }
@@ -102,22 +103,23 @@ def test_cleanup_extraction_pair_bonds_removes_orphans():
     assert result["pair_bonds"][0]["id"] == -10
 
 
-def test_cleanup_extraction_pair_bonds_removes_invalid_refs():
-    """Pair bonds referencing non-existent people should be removed."""
+def test_cleanup_extraction_pair_bonds_preserves_cross_statement_refs():
+    """Pair bonds referencing people from other statements should be preserved."""
+    # This is the key fix - pair bonds can reference people from cumulative PDP
     extraction = {
         "people": [
-            {"id": -1, "name": "Alice", "parents": -10},
-            {"id": -2, "name": "Bob"},
+            {"id": -1, "name": "Child", "parents": -10},
         ],
         "pair_bonds": [
-            {"id": -10, "person_a": -1, "person_b": -2},  # valid
-            {"id": -11, "person_a": -1, "person_b": -99},  # invalid ref
+            # person_a and person_b are from earlier statements, not in this extraction
+            {"id": -10, "person_a": -5, "person_b": -6},
         ],
         "events": [],
     }
 
     result = cleanup_extraction_pair_bonds(extraction)
 
+    # Pair bond should be preserved even though -5 and -6 aren't in this extraction
     assert len(result["pair_bonds"]) == 1
     assert result["pair_bonds"][0]["id"] == -10
 
