@@ -1215,21 +1215,26 @@ document.addEventListener('DOMContentLoaded', function() {
     function calculatePositions() {
         const rows = document.querySelectorAll('.message-row');
         const positions = [];
-        let totalHeight = 0;
+        let minTop = Infinity;
+        let maxBottom = 0;
 
         rows.forEach((row, index) => {
             const rect = row.getBoundingClientRect();
             const docTop = rect.top + window.scrollY;
+            const docBottom = docTop + rect.height;
             positions.push({
                 element: row,
                 top: docTop,
                 height: rect.height,
                 data: data[index] || {}
             });
-            totalHeight = Math.max(totalHeight, docTop + rect.height);
+            minTop = Math.min(minTop, docTop);
+            maxBottom = Math.max(maxBottom, docBottom);
         });
 
-        return { positions, totalHeight };
+        // totalHeight is now the height of just the content area (not from document top)
+        const totalHeight = maxBottom - minTop;
+        return { positions, totalHeight, contentStartOffset: minTop };
     }
 
     // Render minimap items
@@ -1238,7 +1243,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const existingItems = minimapContent.querySelectorAll('.minimap-item');
         existingItems.forEach(item => item.remove());
 
-        const { positions, totalHeight } = calculatePositions();
+        const { positions, totalHeight, contentStartOffset } = calculatePositions();
         const minimapHeight = minimapContent.clientHeight - 20; // Leave room for legend
 
         if (positions.length === 0 || totalHeight === 0) return;
@@ -1268,8 +1273,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 item.classList.add('has-relationship');
             }
 
-            // Calculate position and size
-            const itemTop = pos.top * scale;
+            // Calculate position and size (offset by contentStartOffset)
+            const itemTop = (pos.top - contentStartOffset) * scale;
             let itemHeight = pos.height * scale;
             itemHeight = Math.max(MIN_ITEM_HEIGHT, Math.min(MAX_ITEM_HEIGHT, itemHeight));
 
@@ -1307,6 +1312,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Store for viewport calculations
         minimap._totalHeight = totalHeight;
         minimap._scale = scale;
+        minimap._contentStartOffset = contentStartOffset;
     }
 
     // Update viewport indicator
@@ -1316,8 +1322,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const scrollTop = window.scrollY;
         const windowHeight = window.innerHeight;
         const minimapHeight = minimapContent.clientHeight - 20;
+        const contentStartOffset = minimap._contentStartOffset || 0;
 
-        const viewportTop = scrollTop * minimap._scale;
+        // Offset scroll position by where content starts
+        const adjustedScrollTop = Math.max(0, scrollTop - contentStartOffset);
+        const viewportTop = adjustedScrollTop * minimap._scale;
         const viewportHeight = Math.min(
             windowHeight * minimap._scale,
             minimapHeight - viewportTop
@@ -1332,10 +1341,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target === minimapContent || e.target === viewport) {
             const rect = minimapContent.getBoundingClientRect();
             const clickY = e.clientY - rect.top;
-            const minimapHeight = minimapContent.clientHeight - 20;
+            const contentStartOffset = minimap._contentStartOffset || 0;
 
             if (minimap._totalHeight && minimap._scale) {
-                const scrollTarget = clickY / minimap._scale;
+                // Convert minimap position back to document scroll position
+                const scrollTarget = (clickY / minimap._scale) + contentStartOffset;
                 window.scrollTo({
                     top: scrollTarget - window.innerHeight / 2,
                     behavior: 'smooth'
