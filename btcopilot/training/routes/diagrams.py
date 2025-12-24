@@ -386,6 +386,8 @@ def render(statement_id: int, auditor_id: str = None):
             pair_bonds_by_persons[key] = pb_dict
 
     # Create pair bonds from married/bonded events (first pass)
+    # Track these separately - they should not be subject to orphan filtering
+    marriage_pair_bond_ids = set()
     for event in pdp_data.events:
         if event.kind in (EventKind.Married, EventKind.Bonded):
             if event.person and event.spouse:
@@ -401,6 +403,7 @@ def render(statement_id: int, auditor_id: str = None):
                     }
                     pair_bonds_list.append(pb_dict)
                     pair_bonds_by_persons[key] = pb_dict
+                    marriage_pair_bond_ids.add(event.id)
 
     # Apply separated/divorced status (second pass, after pair bonds exist)
     for event in pdp_data.events:
@@ -452,7 +455,8 @@ def render(statement_id: int, auditor_id: str = None):
             continue
 
         # Skip orphaned pair bonds (not referenced by any person's parents)
-        if pb_id not in referenced_pair_bond_ids:
+        # But keep pair bonds from marriage events - they represent spousal relationships
+        if pb_id not in referenced_pair_bond_ids and pb_id not in marriage_pair_bond_ids:
             _log.debug(f"Render: removing orphaned pair bond {pb_id}")
             continue
 
