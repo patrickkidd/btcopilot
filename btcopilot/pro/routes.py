@@ -905,111 +905,34 @@ def copilot_chat(conversation_id: int = None):
 
 @bp.route("/arrange", methods=["POST"])
 @encrypted
-def arrange():
-    import json, asyncio
-    from btcopilot.arrange import DiagramDelta
+def arrangeEndpoint():
+    import json
     from dataclasses import asdict
+    from btcopilot.arrange import Diagram, Person, Point, Rect
+    from btcopilot.training.diagramlayout import arrange
 
-    diagram = json.loads(request.data)
+    data = json.loads(request.data)
 
-    PROMPT = f"""
-You are an expert in family tree layout optimization. Your task is to suggest
-improved center positions for selected people in a family diagram.
+    people = []
+    for p in data.get("people", []):
+        center = p.get("center", {})
+        rect = p.get("boundingRect", {})
+        people.append(Person(
+            id=p["id"],
+            center=Point(x=center.get("x", 0), y=center.get("y", 0)),
+            boundingRect=Rect(
+                x=rect.get("x", 0),
+                y=rect.get("y", 0),
+                width=rect.get("width", 100),
+                height=rect.get("height", 100),
+            ),
+            isMovable=p.get("isMovable", False),
+            partners=p.get("partners", []),
+            parent_a=p.get("parent_a"),
+            parent_b=p.get("parent_b"),
+            birthDateTime=p.get("birthDateTime"),
+        ))
 
-COORDINATE SYSTEM (Qt/QGraphicsScene):
-- Origin (0,0) is scene center
-- X increases to the right
-- Y increases DOWNWARD (higher Y = lower on screen)
-- Nominal person size: 100x100 units (but varies with scaling per person)
-- boundingRect format: {{x: left_edge, y: top_edge, width: W, height: H}}
-  (NOT min_x/max_x format - this is standard x,y,width,height)
-
-DATA MODEL:
-- Person.center: current center position on scene (x, y)
-- Person.boundingRect: absolute scene coordinates of bounding box (accounts for scaling)
-- Person.isMovable: true = selected (can move), false = fixed (DO NOT MOVE)
-- Person.partners: list of person IDs who are partners with this person
-- Person.parent_a, parent_b: IDs of parents (nullable)
-- Person.birthDateTime: ISO date string (nullable, format: "YYYY-MM-DD")
-- Partnership lines are NOT separate objects - infer from partners lists
-
-SPACING RULES (all relative to person dimensions):
-Calculate spacing proportional to each person's actual boundingRect dimensions:
-- Horizontal gap between people: ~30% of average width of the two people
-- Vertical gap parent-to-child: ~100-150% of parent's height
-- Minimum padding: max(20 units, 20% of smaller person's diagonal)
-
-LAYOUT RULES:
-1. NEVER move people where isMovable == false. They are anchors.
-
-2. Partners (people in each other's partners lists):
-   - Place horizontally adjacent at same Y coordinate
-   - Use proportional horizontal gap based on their widths
-   - Partnership line renders automatically below them
-
-3. Children (people with parent_a and parent_b):
-   - Place BELOW parents (higher Y value than parents)
-   - Center horizontally between the two parents (avg X of parent centers)
-   - Both parents should be at same Y level (same generation)
-   - Siblings ordering:
-     * If birthDateTime available: order by birthDateTime (oldest left, youngest right)
-     * If NO birthDateTime: preserve current left-to-right ordering from input
-       (users often arrange chronologically, don't break this)
-     * Space evenly with proportional gaps between siblings
-   - Use proportional vertical gap based on parent height
-
-4. No overlaps:
-   - Calculate bounding boxes from boundingRect (already provided in absolute coords)
-   - Ensure proportional padding between ALL bounding rectangles
-   - Check movable-to-movable AND movable-to-fixed overlaps
-
-5. Aesthetics:
-   - Balance and symmetry within family units
-   - Minimize line crossings
-   - Align generations horizontally (same Y for same generation level)
-   - Siblings flow left-to-right by birth order if inferable
-
-6. Constraints:
-   - Canvas is unlimited - don't hesitate to use space
-   - Prefer wider spacing over cramped layouts
-
-ALGORITHM:
-1. Identify fixed anchors (isMovable=false) - these define structural constraints
-2. Establish generational levels:
-   - Start from topmost fixed people and work downward
-   - Assign consistent Y coordinates for each generation level
-   - Use fixed people's Y positions as reference points
-3. For chaotic diagrams, apply strong corrections:
-   - Separate overlapping people with proper proportional gaps
-   - Align all same-generation people to consistent Y levels
-   - Center children properly under parents
-   - Create clear visual hierarchy
-4. Position each movable person following layout rules:
-   a. Determine generation level from parent relationships
-   b. If has partner(s): align horizontally with partner at that generation's Y
-   c. If has parents: center below parents (avg X), generation below
-   d. If has children: ensure sufficient vertical space to next generation
-   e. Apply proportional spacing based on person dimensions
-5. Resolve overlaps and crowding:
-   - Spread siblings evenly left-to-right
-   - Push apart any overlapping bounding rectangles
-   - Maintain family unit cohesion while preventing overlaps
-6. Output ONLY movable people with new centers
-
-INPUT DATA:
-{diagram}
-
-OUTPUT FORMAT:
-Return a DiagramDelta with a people list of PersonDelta objects. Each PersonDelta must contain:
-- id: the person's ID
-- center: the new center Point with x and y coordinates
-
-Include ONLY movable people (isMovable=true) with updated positions. Do not include:
-- Fixed people (isMovable=false)
-- People whose positions didn't change
-- Any other fields (boundingRect, isMovable, parents) - only id and center
-    """
-    result = asyncio.run(
-        llm.submit(LLMFunction.Arrange, prompt=PROMPT, response_format=DiagramDelta)
-    )
+    diagram = Diagram(people=people)
+    result = arrange(diagram)
     return asdict(result)

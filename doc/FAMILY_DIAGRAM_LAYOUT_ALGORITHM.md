@@ -30,10 +30,42 @@ This is a Jinja2 template that renders an SVG family diagram. The layout logic i
 1. **Start the Flask development server** (user manages this externally on port 8888)
 2. **Navigate to a diagram render endpoint**:
    ```
-   http://127.0.0.1:8888/training/diagrams/render/<statement_id>
+   http://127.0.0.1:8888/training/diagrams/render/<statement_id>/<auditor_id>
    ```
 3. **Use chrome-devtools MCP server** to take snapshots and screenshots
 4. **Verify invariants manually** by inspecting person positions in the rendered SVG
+
+### Known-Good Test Data
+
+Use these for manual verification during development:
+
+| Test Case | Statement | Discussion | Auditor | URL |
+|-----------|-----------|------------|---------|-----|
+| Multi-generation family | 1900 | 36 ("Synthetic: Sarah") | `patrick@alaskafamilysystems.com` | `/training/diagrams/render/1900/patrick@alaskafamilysystems.com` |
+
+**CRITICAL**: The `auditor_id` parameter is required to get Ground Truth (GT) data. Without it, AI extraction is used which may lack parent-child relationships. See [DATA_MODEL_FLOW.md](DATA_MODEL_FLOW.md) §12 for GT vs AI data rules.
+
+**Statement 1900 characteristics**:
+- Multiple generations with parent-child relationships
+- Pair bonds from marriage events
+- Tests generation assignment, couple positioning, and canopy rules
+
+### Reference Screenshots (Pro App Ground Truth)
+
+These screenshots from the Pro app show the target layout style:
+
+| Screenshot | Key Features |
+|------------|--------------|
+| [diagram-gt-1-multi-generation.png](/Users/patrick/Documents/2 - Work/2 - Alaska Family Systems/2 - Personal App/Diagram Arrangement GT/diagram-gt-1-multi-generation.png) | 4 generations, divorce indicators (double slash), deceased markers (X), pair bond bars with marriage dates, labels to right of shapes |
+| [diagram-gt-2-complex-family.png](/Users/patrick/Documents/2 - Work/2 - Alaska Family Systems/2 - Personal App/Diagram Arrangement GT/diagram-gt-2-complex-family.png) | Many siblings, multiple marriages per person, geographic annotations, wide horizontal spread |
+| [diagram-gt-3-wide-family.png](/Users/patrick/Documents/2 - Work/2 - Alaska Family Systems/2 - Personal App/Diagram Arrangement GT/diagram-gt-3-wide-family.png) | Multiple unrelated family branches, couples from different families joining, label collision avoidance |
+
+**Visual patterns to match**:
+- Males (squares) on left, females (circles) on right in couples
+- Children centered under parents when possible
+- Horizontal pair bond bars connecting couples
+- Vertical lines from pair bond bar down to children
+- Labels positioned to avoid overlap (right, left, or above)
 
 ### Data Flow
 
@@ -737,4 +769,6 @@ Before making ANY change to the algorithm:
 | 0.1 | 2024-12-23 | Initial draft. Defines invariants, phases, refinement process. |
 | 0.2 | 2024-12-23 | Added Self-Improvement Protocol with failure log, escalation thresholds, and anti-thrashing safeguards. |
 | 0.3 | 2024-12-23 | Added standalone context: Implementation location, data structures, constants, coordinate system, complete worked example. Document now usable in separate thread with no prior context. |
+| 0.4 | 2024-12-23 | Added "Known-Good Test Data" section with Statement 1900 test case. Updated URL format to include auditor_id parameter (required for GT data). |
+| 0.5 | 2024-12-23 | Added "Reference Screenshots" section with 3 Pro app GT examples showing target layout style. |
 

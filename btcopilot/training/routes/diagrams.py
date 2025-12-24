@@ -6,6 +6,7 @@ from btcopilot.pro.models import Diagram, AccessRight, User
 from btcopilot.schema import DiagramData, EventKind, asdict
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.models.speaker import Speaker
+from btcopilot.training import diagramlayout
 
 import logging
 from flask import Blueprint, request, jsonify, render_template
@@ -469,10 +470,13 @@ def render(statement_id: int, auditor_id: str = None):
         "parent_child": parent_child,
     }
 
+    layout = diagramlayout.compute(render_data)
+
     if is_embed:
         return render_template(
             "components/family_diagram_svg.html",
             data=render_data,
+            layout=layout,
             statement_id=statement_id,
             auditor_id=auditor_id,
         )
@@ -480,6 +484,7 @@ def render(statement_id: int, auditor_id: str = None):
     return render_template(
         "diagram_render.html",
         data=render_data,
+        layout=layout,
         statement_id=statement_id,
         auditor_id=auditor_id,
         discussion=discussion,
