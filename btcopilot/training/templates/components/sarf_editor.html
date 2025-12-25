@@ -1226,6 +1226,14 @@ Parameters:
                                         {% endif %}
                                     </div>
                                     
+                                    <!-- Person Kind (cumulative view - read only) -->
+                                    <div class="sarf-field-row" x-show="person.gender">
+                                        <span class="sarf-label">Kind:</span>
+                                        <span class="sarf-value">
+                                            <span class="event-kind-indicator" x-text="person.gender || '-'"></span>
+                                        </span>
+                                    </div>
+
                                     <!-- Confidence Row (only show for AI extractions, not cumulative/human-reviewed data) -->
                                     {% if not is_cumulative %}
                                     <div class="sarf-field-row" x-show="person.confidence && person.confidence < 0.999">

@@ -265,9 +265,8 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 id: personId,
                 name: 'New Person',
                 last_name: null,
-                spouses: [],
-                parent_a: null,
-                parent_b: null,
+                gender: null,
+                parents: null,
                 confidence: 1.0
             };
 
@@ -387,6 +386,9 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             const personDelta = {
                 id: personId,
                 name: existingName,
+                last_name: existingPerson?.last_name || null,
+                gender: existingPerson?.gender || null,
+                parents: existingPerson?.parents || null,
                 confidence: 1.0
             };
 
@@ -1291,9 +1293,8 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 id: personId,
                 name: 'New Person',
                 last_name: null,
-                spouses: [],
-                parent_a: null,
-                parent_b: null,
+                gender: null,
+                parents: null,
                 confidence: 1.0
             };
 
@@ -1397,9 +1398,8 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 id: personId,
                 name: 'New Spouse',
                 last_name: null,
-                spouses: [],
-                parent_a: null,
-                parent_b: null,
+                gender: null,
+                parents: null,
                 confidence: 1.0
             };
 
@@ -1503,9 +1503,8 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 id: personId,
                 name: 'New Child',
                 last_name: null,
-                spouses: [],
-                parent_a: null,
-                parent_b: null,
+                gender: null,
+                parents: null,
                 confidence: 1.0
             };
 
@@ -3097,9 +3096,8 @@ function addPerson() {
         id: null,
         name: '',
         last_name: null,
-        spouses: [],
-        parent_a: null,
-        parent_b: null,
+        gender: null,
+        parents: null,
         confidence: null
     });
     renderDataEditor();

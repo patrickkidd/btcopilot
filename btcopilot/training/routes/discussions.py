@@ -864,6 +864,7 @@ def audit(discussion_id):
                             "id",
                             "name",
                             "last_name",
+                            "gender",
                             "parents",
                             "confidence",
                         }
