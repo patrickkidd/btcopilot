@@ -289,6 +289,7 @@ class Event:
     spouse: int | None = None
     child: int | None = None
     description: str | None = None
+    location: str | None = None
     dateTime: str | None = None
     endDateTime: str | None = None
     dateCertainty: DateCertainty = DateCertainty.Certain

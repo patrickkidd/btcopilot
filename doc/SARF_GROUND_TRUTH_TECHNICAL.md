@@ -418,8 +418,10 @@ class Event:
     spouse: int | None = None
     child: int | None = None
     description: str | None = None
+    location: str | None = None
     dateTime: str | None = None
     endDateTime: str | None = None
+    dateCertainty: DateCertainty = DateCertainty.Certain
 
     # THE FOUR SARF VARIABLES:
     symptom: VariableShift | None = None
@@ -439,6 +441,8 @@ class Event:
 - Each event can have 0-4 SARF variables coded
 - `symptom`, `anxiety`, `functioning` use `VariableShift` enum
 - `relationship` uses `RelationshipKind` enum
+- `location` stores the geographic location where the event occurred (editable in SARF editor)
+- `dateCertainty` tracks date precision: `Unknown` (any date matches), `Approximate` (±365 days), or `Certain` (±7 days)
 - `confidence` only present in PDP items (AI extractions), set to 1.0 for committed items
 
 **EventKind Enum** (schema.py:100):
@@ -1963,28 +1967,44 @@ uv run python -m flask db upgrade
 
 **Note**: JSON columns don't have strict schema, but may need data migration script for existing records.
 
-### Step 3: Update UI Component
+### Step 3: Update `filter_event_fields` Whitelist (CRITICAL)
+The cumulative PDP display uses a field whitelist in [discussions.py](../btcopilot/training/routes/discussions.py).
+
+**If you add a field to Event, you MUST add it to the `filter_event_fields` function's `valid_fields` set around line 876**, otherwise the field will be silently dropped when building cumulative notes.
+
+```python
+def filter_event_fields(event_data):
+    valid_fields = {
+        "id", "kind", "person", "spouse", "child",
+        "description", "location",  # <-- add new fields here
+        "dateTime", "endDateTime", "symptom", "anxiety",
+        "relationship", "relationshipTargets", "relationshipTriangles",
+        "confidence",
+    }
+```
+
+### Step 4: Update UI Component
 - Edit [sarf_editor.html](../btcopilot/training/templates/components/sarf_editor.html)
 - Add/remove form fields
 - Update display logic
 - Update submit payload
 
-### Step 4: Update Export Format
+### Step 5: Update Export Format
 - Edit [export_tests.py](../btcopilot/training/export_tests.py)
 - Ensure new fields included in test case JSON
 - Update test harness if needed
 
-### Step 5: Update Validation
+### Step 6: Update Validation
 - Edit [btcopilot/pdp.py](../btcopilot/pdp.py):validate_pdp_deltas()
 - Add validation rules for new fields
 - Update error messages
 
-### Step 6: Test in Personal App
+### Step 7: Test in Personal App
 - Verify AI extraction still works with schema changes
 - Test `pdp.update()` generates correct deltas
 - Check personal app UI displays new fields
 
-### Step 7: Consider Backward Compatibility
+### Step 8: Consider Backward Compatibility
 - Existing `Feedback.edited_extraction` JSON may not have new fields
 - Add default values when deserializing old records
 - Consider data migration if critical

@@ -625,6 +625,34 @@ Parameters:
                                         </div>
                                     </template>
 
+                                    <!-- Event Location (for moved events only) -->
+                                    <template x-if="event.kind === 'moved'">
+                                        <div class="sarf-field-row">
+                                            <span class="sarf-label">Location:</span>
+                                            <span class="sarf-value">
+                                                {% if editable_mode %}
+                                                <span class="event-location"
+                                                      :class="{'editable-field': canEdit}"
+                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-location')"
+                                                      @mouseleave="hoveredField = null"
+                                                      @click.stop="canEdit && startEdit('event-' + index + '-location', event.location || '')">
+                                                    <span x-show="!isEditing('event-' + index + '-location')" x-text="event.location || 'Not set'"></span>
+                                                    <input x-show="isEditing('event-' + index + '-location')"
+                                                           :value="editingValue"
+                                                           @input="editingValue = $event.target.value"
+                                                           @blur="saveEventLocation(index, $event.target.value)"
+                                                           @keydown.enter="saveEventLocation(index, $event.target.value); $event.target.blur()"
+                                                           @keydown.escape="cancelEdit(); $event.target.blur()"
+                                                           class="inline-edit-input"
+                                                           type="text">
+                                                </span>
+                                                {% else %}
+                                                <span x-text="event.location || 'Not specified'"></span>
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    </template>
+
                                     <div class="sarf-divider"></div>
 
                                     <!-- Event DateTime -->
@@ -1434,6 +1462,34 @@ Parameters:
                                         </div>
                                     </template>
 
+                                    <!-- Event Location (for moved events only) -->
+                                    <template x-if="event.kind === 'moved'">
+                                        <div class="sarf-field-row">
+                                            <span class="sarf-label">Location:</span>
+                                            <span class="sarf-value">
+                                                {% if editable_mode %}
+                                                <span class="event-location"
+                                                      :class="{'editable-field': canEdit}"
+                                                      @mouseenter="canEdit && (hoveredField = 'event-' + index + '-location')"
+                                                      @mouseleave="hoveredField = null"
+                                                      @click.stop="canEdit && startEdit('event-' + index + '-location', event.location || '')">
+                                                    <span x-show="!isEditing('event-' + index + '-location')" x-text="event.location || 'Not set'"></span>
+                                                    <input x-show="isEditing('event-' + index + '-location')"
+                                                           :value="editingValue"
+                                                           @input="editingValue = $event.target.value"
+                                                           @blur="saveEventLocation(index, $event.target.value)"
+                                                           @keydown.enter="saveEventLocation(index, $event.target.value); $event.target.blur()"
+                                                           @keydown.escape="cancelEdit(); $event.target.blur()"
+                                                           class="inline-edit-input"
+                                                           type="text">
+                                                </span>
+                                                {% else %}
+                                                <span x-text="event.location || 'Not specified'"></span>
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    </template>
+
                                     <div class="sarf-divider"></div>
 
                                     <!-- Event DateTime -->
@@ -1997,13 +2053,15 @@ Parameters:
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Remove left padding specifically for event description inputs */
-.event-description .inline-edit-input {
+/* Remove left padding specifically for event description/location inputs */
+.event-description .inline-edit-input,
+.event-location .inline-edit-input {
     padding-left: 0 !important;
 }
 
-/* Remove left padding from event description editable field */
-.event-description .editable-field {
+/* Remove left padding from event description/location editable field */
+.event-description .editable-field,
+.event-location .editable-field {
     padding-left: 0 !important;
 }
 

@@ -142,7 +142,15 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             this.cancelEdit();
             this.autoSave();
         },
-        
+
+        saveEventLocation(eventIndex, newValue) {
+            if (!this.extractedData.events[eventIndex]) return;
+            this.extractedData.events[eventIndex].location = newValue;
+            this.extractedData.events[eventIndex].confidence = 1.0;
+            this.cancelEdit();
+            this.autoSave();
+        },
+
         saveEventDateTime(eventIndex, newValue) {
             if (!this.extractedData.events[eventIndex]) return;
             this.extractedData.events[eventIndex].dateTime = newValue;

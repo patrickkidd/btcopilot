@@ -880,6 +880,7 @@ def audit(discussion_id):
                             "spouse",
                             "child",
                             "description",
+                            "location",
                             "dateTime",
                             "endDateTime",
                             "symptom",
