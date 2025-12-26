@@ -656,16 +656,16 @@ Parameters:
                                             <span class="sarf-actions">
                                                 {% if editable_mode %}
                                                 <select x-show="canEdit"
-                                                        :value="event.dateCertainty || 'certain'"
+                                                        :value="event.dateCertainty || 'approximate'"
                                                         @change="saveDateCertainty(index, $event.target.value)"
                                                         class="inline-select-visible">
-                                                    <option value="certain">certain</option>
                                                     <option value="approximate">approximate</option>
+                                                    <option value="certain">certain</option>
                                                     <option value="unknown">unknown</option>
                                                 </select>
-                                                <span x-show="!canEdit" class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
+                                                <span x-show="!canEdit" class="date-certainty-indicator" x-text="event.dateCertainty || 'approximate'"></span>
                                                 {% else %}
-                                                <span class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
+                                                <span class="date-certainty-indicator" x-text="event.dateCertainty || 'approximate'"></span>
                                                 {% endif %}
                                             </span>
                                         </div>
@@ -1465,16 +1465,16 @@ Parameters:
                                             <span class="sarf-actions">
                                                 {% if editable_mode %}
                                                 <select x-show="canEdit"
-                                                        :value="event.dateCertainty || 'certain'"
+                                                        :value="event.dateCertainty || 'approximate'"
                                                         @change="saveDateCertainty(index, $event.target.value)"
                                                         class="inline-select-visible">
-                                                    <option value="certain">certain</option>
                                                     <option value="approximate">approximate</option>
+                                                    <option value="certain">certain</option>
                                                     <option value="unknown">unknown</option>
                                                 </select>
-                                                <span x-show="!canEdit" class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
+                                                <span x-show="!canEdit" class="date-certainty-indicator" x-text="event.dateCertainty || 'approximate'"></span>
                                                 {% else %}
-                                                <span class="date-certainty-indicator" x-text="event.dateCertainty || 'certain'"></span>
+                                                <span class="date-certainty-indicator" x-text="event.dateCertainty || 'approximate'"></span>
                                                 {% endif %}
                                             </span>
                                         </div>

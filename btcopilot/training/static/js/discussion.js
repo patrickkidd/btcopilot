@@ -437,6 +437,7 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 relationshipTargets: [],
                 relationshipTriangles: [],
                 functioning: null,
+                dateCertainty: 'approximate',
                 confidence: 1.0
             };
 
@@ -3125,6 +3126,7 @@ function addEvent() {
         relationshipTargets: [],
         relationshipTriangles: [],
         functioning: null,
+        dateCertainty: 'approximate',
         confidence: null
     });
     renderDataEditor();
