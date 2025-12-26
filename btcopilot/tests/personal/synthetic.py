@@ -985,10 +985,16 @@ class ConversationSimulator:
 
         diagram = None
         if self.persist:
+            diagram_data = DiagramData.create_with_defaults()
+            # Update default "User" person name to persona name
+            for person in diagram_data.people:
+                if person.get("id") == 1:
+                    person["name"] = persona.name
+                    break
             diagram = Diagram(
                 user_id=user_id,
                 name=f"Synthetic: {persona.name}",
-                data=pickle.dumps(asdict(DiagramData.create_with_defaults())),
+                data=pickle.dumps(asdict(diagram_data)),
             )
             db.session.add(diagram)
             db.session.flush()
