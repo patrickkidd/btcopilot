@@ -180,8 +180,11 @@ def cleanup_pair_bonds(pdp: PDP) -> PDP:
         if pb.id is None:
             continue
 
-        # Skip if either person doesn't exist
-        if pb.person_a not in person_ids or pb.person_b not in person_ids:
+        # Skip if either person doesn't exist in PDP
+        # Positive IDs reference committed diagram people (assumed valid)
+        person_a_valid = pb.person_a > 0 or pb.person_a in person_ids
+        person_b_valid = pb.person_b > 0 or pb.person_b in person_ids
+        if not person_a_valid or not person_b_valid:
             _log.debug(
                 f"Removing pair bond {pb.id}: references non-existent person "
                 f"(person_a={pb.person_a}, person_b={pb.person_b}, valid={person_ids})"

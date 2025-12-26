@@ -3493,8 +3493,7 @@ function confirmRelationshipPersonSelection() {
             return;
         }
         
-        // Generate unique negative ID for audit-only person
-        personId = -Date.now() - Math.floor(Math.random() * 1000);
+        personId = nextPdpId(context.component);
         newPersonData = {
             id: personId,
             name: personName,
@@ -3545,11 +3544,22 @@ function showPairBondModal() {
 
     pairBondSelect.innerHTML = '<option value="">-- Select existing pair bond --</option>';
     const allPairBonds = [];
+    const seenPbIds = new Set();
     if (alpineData.extractedData && alpineData.extractedData.pair_bonds) {
-        allPairBonds.push(...alpineData.extractedData.pair_bonds);
+        alpineData.extractedData.pair_bonds.forEach(pb => {
+            if (!seenPbIds.has(pb.id)) {
+                allPairBonds.push(pb);
+                seenPbIds.add(pb.id);
+            }
+        });
     }
     if (alpineData.cumulativePdp && alpineData.cumulativePdp.pair_bonds) {
-        allPairBonds.push(...alpineData.cumulativePdp.pair_bonds);
+        alpineData.cumulativePdp.pair_bonds.forEach(pb => {
+            if (!seenPbIds.has(pb.id)) {
+                allPairBonds.push(pb);
+                seenPbIds.add(pb.id);
+            }
+        });
     }
 
     allPairBonds.forEach(pb => {
@@ -3557,7 +3567,7 @@ function showPairBondModal() {
         option.value = pb.id;
         const personAName = alpineData.getPersonName(pb.person_a);
         const personBName = alpineData.getPersonName(pb.person_b);
-        option.textContent = `${personAName} & ${personBName}`;
+        option.textContent = `[${pb.id}] ${personAName} & ${personBName}`;
         pairBondSelect.appendChild(option);
     });
 
@@ -3675,7 +3685,7 @@ function confirmPairBondSelection() {
         if (existingPairBond) {
             pairBondId = existingPairBond.id;
         } else {
-            pairBondId = -Date.now() - Math.floor(Math.random() * 1000);
+            pairBondId = nextPdpId(alpineData);
             const newPairBond = {
                 id: pairBondId,
                 person_a: personAId,
@@ -3713,6 +3723,16 @@ function getUsedIds(component, dataType) {
         }
     });
     return seen;
+}
+
+function nextPdpId(component) {
+    const allIds = [];
+    ['people', 'events', 'pair_bonds'].forEach(dataType => {
+        getUsedIds(component, dataType).forEach(id => {
+            if (id != null) allIds.push(id);
+        });
+    });
+    return Math.min(...allIds, 0) - 1;
 }
 
 

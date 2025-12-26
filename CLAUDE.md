@@ -25,15 +25,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## Project Documentation
+## Authoritative Documentation Index
 
-**📋 [Decision Log](decisions/log.md)** - Major architectural decisions and innovations (PDP deltas, IRR study, synthetic data generation, hierarchical F1 metrics)
+**When learning new facts about a domain, integrate them into the authoritative doc for that domain.**
 
-**📖 [README.md](README.md)** - Project overview and development journal
+| Knowledge Domain | Authoritative Doc |
+|------------------|-------------------|
+| PDP behavior, deltas, cumulative logic | [doc/DATA_MODEL_FLOW.md](doc/DATA_MODEL_FLOW.md) |
+| SARF coding, GT workflow, approval | [doc/SARF_GROUND_TRUTH_TECHNICAL.md](doc/SARF_GROUND_TRUTH_TECHNICAL.md) |
+| Prompt engineering decisions | [doc/PROMPT_ENGINEERING_CONTEXT.md](doc/PROMPT_ENGINEERING_CONTEXT.md) |
+| Bowen theory domain concepts | [CONTEXT.md](CONTEXT.md) |
+| Diagram layout, rendering, SVG | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) |
+| F1 metrics, evaluation | [doc/F1_METRICS.md](doc/F1_METRICS.md) |
+| Chat flow, personal app AI | [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md) |
+| Major decisions (career, strategy) | [decisions/log.md](decisions/log.md) |
+| Architecture decisions | [adrs/](adrs/) |
 
-**📚 [CONTEXT.md](CONTEXT.md)** - Bowen theory domain model, SARF constructs, auditing workflow
-
-**🏗️ [ADRs](adrs/)** - Architecture Decision Records
+**Other references:**
+- [README.md](README.md) - Project overview
 
 ## Architecture Overview
 

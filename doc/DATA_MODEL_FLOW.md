@@ -677,6 +677,7 @@
    6. **Two Stages**: AI extracts deltas → user reviews → accepts/rejects to confirm
    7. **JSON-Storable**: PDPDeltas convert to JSON via asdict() for Statement.pdp_deltas column
    8. **Enumeration**: EventKind, VariableShift, RelationshipKind provide structured event types
+   9. **PDP is cumulative up to a statement**: Each statement's PDP includes only data from that statement and all preceding statements. Later statements do NOT retroactively affect earlier statements' PDP view. Each statement has its own point-in-time cumulative view of family data.
 
    ---
 
