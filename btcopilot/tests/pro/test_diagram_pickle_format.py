@@ -54,6 +54,7 @@ def test_pickle_contains_json_serializable_dicts(db_session, test_user):
                     "spouse": None,
                     "child": None,
                     "description": None,
+                    "location": None,
                     "dateTime": None,
                     "endDateTime": None,
                     "dateCertainty": "certain",

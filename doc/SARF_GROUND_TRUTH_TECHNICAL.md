@@ -1994,17 +1994,25 @@ def filter_event_fields(event_data):
 - Ensure new fields included in test case JSON
 - Update test harness if needed
 
-### Step 6: Update Validation
+### Step 6: Update Tests with Hardcoded Event Dicts
+These test files have hardcoded Event dict expectations that must include new fields:
+
+- [test_diagram_pickle_format.py](../btcopilot/tests/pro/test_diagram_pickle_format.py) - Expected pickle format
+- [test_diagramdata.py](../btcopilot/tests/training/test_diagramdata.py) - `as_dict` fixture and `test_PDEvent_as_dict`
+
+Add `"new_field": None` to each Event dict in these files.
+
+### Step 7: Update Validation
 - Edit [btcopilot/pdp.py](../btcopilot/pdp.py):validate_pdp_deltas()
 - Add validation rules for new fields
 - Update error messages
 
-### Step 7: Test in Personal App
+### Step 8: Test in Personal App
 - Verify AI extraction still works with schema changes
 - Test `pdp.update()` generates correct deltas
 - Check personal app UI displays new fields
 
-### Step 8: Consider Backward Compatibility
+### Step 9: Consider Backward Compatibility
 - Existing `Feedback.edited_extraction` JSON may not have new fields
 - Add default values when deserializing old records
 - Consider data migration if critical
