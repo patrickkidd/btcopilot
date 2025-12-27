@@ -11,6 +11,7 @@ Matching Logic:
           "Aunt Carol" matches "Carol", "Dr. Smith" matches "Smith".
 - Events:
   - Shift events: kind + description similarity >= 0.4 + date proximity + links match
+    Description uses hybrid matching: max(token_set_ratio, substring, ratio)
   - Structural events (Birth, Death, Married, etc.): kind + date + links match (skip description)
 - PairBonds: person_a/person_b match resolved IDs
 - SARF variables: Macro-F1 across matched events (exact enum match)
@@ -383,13 +384,18 @@ def match_events(
             # For Shift events, require description similarity
             # For structural events (Birth, Death, etc.), skip description matching
             if not is_structural:
-                desc_sim = (
-                    fuzz.ratio(
-                        (ai_event.description or "").lower(),
-                        (gt_event.description or "").lower(),
-                    )
-                    / 100.0
-                )
+                ai_desc = (ai_event.description or "").lower()
+                gt_desc = (gt_event.description or "").lower()
+
+                # Hybrid matching: try multiple strategies, take best
+                # 1. token_set_ratio - matches shared tokens regardless of order/extras
+                token_sim = fuzz.token_set_ratio(ai_desc, gt_desc) / 100.0
+                # 2. substring check - GT is often a concise version of verbose AI
+                substring_sim = 1.0 if gt_desc and gt_desc in ai_desc else 0.0
+                # 3. standard ratio - character-level similarity
+                ratio_sim = fuzz.ratio(ai_desc, gt_desc) / 100.0
+
+                desc_sim = max(token_sim, substring_sim, ratio_sim)
 
                 if desc_sim < DESCRIPTION_SIMILARITY_THRESHOLD:
                     continue

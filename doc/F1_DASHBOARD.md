@@ -19,18 +19,7 @@
 
 ## Priority Burndown
 
-### P0: Shift Event Description Matching
-Root cause analysis (2025-12-26): AI produces verbose descriptions, GT has concise ones.
-- AI: "Expanded practice, taking on more administrative responsibilities..."
-- GT: "Expanded practice"
-- Similarity: 0.13 (below 0.4 threshold)
-
-**Options**:
-1. Lower threshold further (risk: false positives)
-2. Use semantic similarity (embeddings) instead of fuzzy ratio
-3. GT style guide: require 2-5 word descriptions matching AI output style
-
-### P1: AI Under-extraction
+### P0: AI Under-extraction
 13 statements where AI produces 0 events but GT expects 1+:
 - Structural events (Birth from age mentions)
 - Subtle Shift events (e.g., "things have been rocky")
@@ -39,9 +28,13 @@ Root cause analysis (2025-12-26): AI produces verbose descriptions, GT has conci
 1. Prompt updates to extract more aggressively
 2. GT review - are these events reasonable to expect?
 
-### P2: Person Link Mismatches
+### P1: Person Link Mismatches
 - AI links event to person=1 (user), GT links to different person
 - Example: "diagnosed with dementia" - AI puts on user (experiencing), GT puts on mom (subject)
+
+### P2: Prompt Description Verbosity
+- AI produces verbose descriptions despite prompt saying "Brief" (prompts.py:310)
+- Need to strengthen prompt with explicit word count (2-5 words) and fix long examples
 
 ---
 
@@ -68,6 +61,9 @@ uv run pytest btcopilot/tests/training/test_f1_metrics.py -v
 ## Archive (Completed)
 
 ### Evaluation Metrics Fixes (2025-12-26)
+- [x] **Hybrid description matching** - Shift events now use max(token_set_ratio, substring, ratio)
+  - Handles verbose AI vs concise GT: "Expanded practice, taking on..." matches "Expanded practice"
+  - Future: Add Gemini embeddings as fallback if edge cases fail (tested: 0.75+ for matches, 0.4-0.5 for non-matches)
 - [x] **Structural events skip description matching** - Birth, Death, Married, etc. match by kind+links+date only
   - Only Shift events require description similarity
   - Added `STRUCTURAL_EVENT_KINDS` constant in f1_metrics.py
