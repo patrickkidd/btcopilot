@@ -41,10 +41,17 @@ Fixed in prod via Training App.
 ### P1: Person Link Mismatches
 - AI links event to person=1 (user), GT links to different person
 - Example: "diagnosed with dementia" - AI puts on user (experiencing), GT puts on mom (subject)
+- Root cause: Pronoun resolution failure. Prompt says to "check conversation_history to identify who" (prompts.py:412-414) but AI doesn't comply reliably
+- Action: Add `[EVENT_PERSON_PRONOUN_RESOLUTION]` example showing WRONG/CORRECT for pronoun-to-person mapping
 
-### P2: Prompt Description Verbosity
-- AI produces verbose descriptions despite prompt saying "Brief" (prompts.py:310)
-- Need to strengthen prompt with explicit word count (2-5 words) and fix long examples
+### P2: Event Description Length
+- AI produces verbose descriptions; GT uses concise 2-5 word phrases
+- Example: AI "Having trouble sleeping and feeling really anxious lately" vs GT "Trouble sleeping"
+- Impact: Verbose descriptions hurt fuzzy matching (mitigated by hybrid matching, but still noisy)
+- Actions:
+  1. Strengthen prompt: change "Brief" to explicit "2-5 words" constraint (prompts.py:310)
+  2. Fix examples in SECTION 3 that have long descriptions
+  3. Add `[EVENT_DESCRIPTION_LENGTH]` example showing WRONG verbose / CORRECT concise
 
 ---
 
