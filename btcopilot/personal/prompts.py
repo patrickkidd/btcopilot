@@ -474,6 +474,9 @@ NOT the current date.
 4. BIRTH EVENTS: "Name, born MM/DD/YYYY" = extract BOTH person AND birth event
 5. DELETIONS: When user corrects previous information (e.g., "actually I don't
    have a sister"), add the incorrect item's ID to the delete array
+6. STRUCTURAL EVENT CERTAINTY: For birth/married/divorced/death events, skip if
+   an event already exists with equal or higher dateCertainty (certain > approximate
+   > unknown). Only create when no event exists or yours has higher certainty.
 
 **Constraints:**
 
@@ -694,6 +697,61 @@ WHY WRONG: The user said "born 12/3/1954" - that's a birth EVENT with a date. Yo
 
 **RULE**: When you see "Name, born MM/DD/YYYY" or "Name, dob MM/DD/YYYY", you MUST extract BOTH the person AND a birth event. This is not optional. If you extract the person without the birth event, you are making a mistake.
 Note: "Elizabeth" is a female name, so gender is "female".
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [UNDER_EXTRACTION_BIRTH_FROM_AGE]
+# Error Pattern: AI extracts person but misses birth event when user mentions age
+# CRITICAL: When someone's age is mentioned, calculate birth year and create birth event
+# ─────────────────────────────────────────────────────────────────────────────
+
+**User statement**: "My mother's name is Barbara, and she's 72 years old."
+
+Current date: 2025-12-26
+
+DiagramData: {
+    "people": [
+        {"id": 1, "name": "User", "confidence": 1.0}
+    ],
+    "events": [],
+    "pdp": {"people": [], "events": []}
+}
+
+❌ WRONG OUTPUT (missing birth event - COMMON ERROR):
+{
+    "people": [
+        {"id": -1, "name": "Barbara", "gender": "female", "confidence": 0.9}
+    ],
+    "events": [],  // WRONG - age mention implies birth year!
+    "delete": []
+}
+
+WHY WRONG: The user said "she's 72 years old". From today's date (2025-12-26) and age 72, you can calculate birth year ≈ 1953. This is a birth EVENT with an approximate date.
+
+✅ CORRECT OUTPUT:
+{
+    "people": [
+        {"id": -1, "name": "Barbara", "gender": "female", "confidence": 0.9}
+    ],
+    "events": [
+        {
+            "id": -2,
+            "kind": "birth",
+            "person": -1,
+            "child": -1,
+            "description": "Born",
+            "dateTime": "1953-01-01",
+            "dateCertainty": "approximate",
+            "confidence": 0.8
+        }
+    ],
+    "delete": []
+}
+
+**RULE**: When someone's age is mentioned:
+1. Calculate birth year: current_year - age (use January 1st as default)
+2. Create a birth event with kind="birth", person=child=the person's ID
+3. Set dateCertainty="approximate" (exact birth date unknown, only year inferred)
+4. This applies to ALL age mentions: "she's 72", "he is 40", "who is 14", etc.
 
 # ─────────────────────────────────────────────────────────────────────────────
 # [RELATIONSHIP_TARGETS_REQUIRED]

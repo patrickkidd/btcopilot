@@ -19,14 +19,21 @@
 
 ## Priority Burndown
 
-### P0: AI Under-extraction
-13 statements where AI produces 0 events but GT expects 1+:
-- Structural events (Birth from age mentions)
-- Subtle Shift events (e.g., "things have been rocky")
+### P0: GT Quality Review
+6 statements have GT events that violate the EVENT EXTRACTION CHECKLIST (general patterns, not specific incidents):
 
-**Options**:
-1. Prompt updates to extract more aggressively
-2. GT review - are these events reasonable to expect?
+| Statement | GT Event | Issue |
+|-----------|----------|-------|
+| 2032 | "Projecting expectation onto Ethan" | Introspection, not incident |
+| 2042 | "Self-care ideas" | Future intentions, not past event |
+| 1844 | "Really taken a step back" | General pattern |
+| 1860 | "Can't remember things, chaotic" | Vague characterization |
+| 1862 | "Things have been rocky since divorce" | General pattern |
+| 1874 | "I don't really keep up with them" | General pattern |
+
+**Action**: Review these GT codings. Either:
+1. Remove events (they're general characterizations per prompt rules)
+2. Or update EVENT EXTRACTION CHECKLIST to allow these patterns
 
 ### P1: Person Link Mismatches
 - AI links event to person=1 (user), GT links to different person
@@ -59,6 +66,12 @@ uv run pytest btcopilot/tests/training/test_f1_metrics.py -v
 ---
 
 ## Archive (Completed)
+
+### Prompt Improvements (2025-12-26)
+- [x] **Birth events from age mentions** - Added `[UNDER_EXTRACTION_BIRTH_FROM_AGE]` example
+  - Pattern: "she's 72 years old" → Birth event with calculated year
+  - 8 of 13 under-extraction cases were birth events from ages
+  - Remaining 6 are GT quality issues (general patterns, not incidents)
 
 ### Evaluation Metrics Fixes (2025-12-26)
 - [x] **Hybrid description matching** - Shift events now use max(token_set_ratio, substring, ratio)
