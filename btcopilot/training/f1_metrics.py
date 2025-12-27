@@ -9,7 +9,9 @@ Matching Logic:
           (Aunt, Uncle, Dr., etc.) AND parents match (ignore if null) AND
           gender match (ignore if either is None/Unknown).
           "Aunt Carol" matches "Carol", "Dr. Smith" matches "Smith".
-- Events: kind exact + description similarity > 0.5 (80% weight) + date proximity (20% weight, None matches any) + links match
+- Events:
+  - Shift events: kind + description similarity >= 0.4 + date proximity + links match
+  - Structural events (Birth, Death, Married, etc.): kind + date + links match (skip description)
 - PairBonds: person_a/person_b match resolved IDs
 - SARF variables: Macro-F1 across matched events (exact enum match)
 - IDs ignored: Match purely by content, not IDs
@@ -36,12 +38,25 @@ from sklearn.metrics import f1_score
 from btcopilot.schema import (
     Person,
     Event,
+    EventKind,
     PairBond,
     PDPDeltas,
     DateCertainty,
     PersonKind,
     from_dict,
 )
+
+# Structural events don't use description for matching (descriptions are generic like "Born", "Died")
+STRUCTURAL_EVENT_KINDS = frozenset([
+    EventKind.Birth,
+    EventKind.Death,
+    EventKind.Married,
+    EventKind.Divorced,
+    EventKind.Separated,
+    EventKind.Bonded,
+    EventKind.Moved,
+    EventKind.Adopted,
+])
 
 _log = logging.getLogger(__name__)
 
@@ -340,14 +355,13 @@ def match_events(
     ai_events: list[Event], gt_events: list[Event], id_map: dict[int, int]
 ) -> EntityMatchResult:
     """
-    Match events by kind, description similarity (80% weight), date proximity (20% weight), and link matching.
+    Match events by kind, links, date, and optionally description.
 
     Matching criteria:
     - kind must match exactly
-    - description similarity >= 0.5 threshold
-    - date within tolerance (None matches any date)
+    - For Shift events: description similarity >= threshold (80% weight) + date (20% weight)
+    - For structural events (Birth, Death, etc.): skip description, match by kind + links + date
     - links must match after ID resolution
-    - Overall score = 0.8 * desc_sim + 0.2 * date_sim
 
     Args:
         id_map: Mapping from AI person IDs to GT person IDs
@@ -360,21 +374,27 @@ def match_events(
     for ai_event in ai_events:
         best_match = None
         best_score = 0.0
+        is_structural = ai_event.kind in STRUCTURAL_EVENT_KINDS
 
         for gt_event in gt_remaining:
             if ai_event.kind != gt_event.kind:
                 continue
 
-            desc_sim = (
-                fuzz.ratio(
-                    (ai_event.description or "").lower(),
-                    (gt_event.description or "").lower(),
+            # For Shift events, require description similarity
+            # For structural events (Birth, Death, etc.), skip description matching
+            if not is_structural:
+                desc_sim = (
+                    fuzz.ratio(
+                        (ai_event.description or "").lower(),
+                        (gt_event.description or "").lower(),
+                    )
+                    / 100.0
                 )
-                / 100.0
-            )
 
-            if desc_sim < DESCRIPTION_SIMILARITY_THRESHOLD:
-                continue
+                if desc_sim < DESCRIPTION_SIMILARITY_THRESHOLD:
+                    continue
+            else:
+                desc_sim = 1.0  # Structural events auto-pass description
 
             if not dates_within_tolerance(
                 ai_event.dateTime,

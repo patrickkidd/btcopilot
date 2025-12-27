@@ -4,14 +4,14 @@
 - **Maintenance**: Update baseline after each change. Move completed items to Archive.
 - **Target Rationale**: See [Appendix A](#appendix-a-target-rationale) for benchmarks and citations.
 
-## Current Baseline (2025-12-22, 31 cases)
+## Current Baseline (2025-12-26, 45 cases)
 
 | Metric | Current | Target | Gap | Rationale |
 |--------|---------|--------|-----|-----------|
-| Aggregate F1 | 0.103 | **0.50** | -0.40 | Weighted average of component targets |
-| People F1 | 0.505 | **0.75** | -0.25 | NER benchmark: 65-78% for clinical entities |
-| Events F1 | 0.113 | **0.55** | -0.44 | Event extraction: 55-70% typical for clinical |
-| SARF F1 | 0.032 | **0.45** | -0.42 | Relation extraction: 45-65% for complex relations |
+| Aggregate F1 | 0.071 | **0.50** | -0.43 | Weighted average of component targets |
+| People F1 | 0.456 | **0.75** | -0.29 | NER benchmark: 65-78% for clinical entities |
+| Events F1 | 0.078 | **0.55** | -0.47 | Event extraction: 55-70% typical for clinical |
+| SARF F1 | 0.022 | **0.45** | -0.43 | Relation extraction: 45-65% for complex relations |
 
 **Blocker**: Events F1 blocks SARF evaluation (SARF codes only match on matched events).
 
@@ -19,16 +19,29 @@
 
 ## Priority Burndown
 
-### P0: GT Data Quality Review
-- [ ] Review GT event dates for consistency (especially discussion 36)
-- [ ] Check if GT description style is consistent (concise 2-5 words)
+### P0: Shift Event Description Matching
+Root cause analysis (2025-12-26): AI produces verbose descriptions, GT has concise ones.
+- AI: "Expanded practice, taking on more administrative responsibilities..."
+- GT: "Expanded practice"
+- Similarity: 0.13 (below 0.4 threshold)
 
-### P1: Investigate People F1 Drop
-- [ ] Was ~0.72 in earlier tests, now 0.505 - determine cause
+**Options**:
+1. Lower threshold further (risk: false positives)
+2. Use semantic similarity (embeddings) instead of fuzzy ratio
+3. GT style guide: require 2-5 word descriptions matching AI output style
 
-### P2: Improve Event Matching
-- [ ] Analyze why events fail to match (description mismatch? date mismatch? link mismatch?)
-- [ ] Consider lowering `DESCRIPTION_SIMILARITY_THRESHOLD` further if needed
+### P1: AI Under-extraction
+13 statements where AI produces 0 events but GT expects 1+:
+- Structural events (Birth from age mentions)
+- Subtle Shift events (e.g., "things have been rocky")
+
+**Options**:
+1. Prompt updates to extract more aggressively
+2. GT review - are these events reasonable to expect?
+
+### P2: Person Link Mismatches
+- AI links event to person=1 (user), GT links to different person
+- Example: "diagnosed with dementia" - AI puts on user (experiencing), GT puts on mom (subject)
 
 ---
 
@@ -54,7 +67,10 @@ uv run pytest btcopilot/tests/training/test_f1_metrics.py -v
 
 ## Archive (Completed)
 
-### Evaluation Metrics Fixes
+### Evaluation Metrics Fixes (2025-12-26)
+- [x] **Structural events skip description matching** - Birth, Death, Married, etc. match by kind+links+date only
+  - Only Shift events require description similarity
+  - Added `STRUCTURAL_EVENT_KINDS` constant in f1_metrics.py
 - [x] **dateCertainty implemented** - Smart date tolerance by certainty:
   - `Unknown`: always matches
   - `Approximate`: ±270 days (9 months)
