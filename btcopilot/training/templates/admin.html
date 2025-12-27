@@ -304,12 +304,17 @@
     <script>
         // Extraction progress polling for admin dashboard
         let extractionPollingInterval = null;
+        let noExtractionsSince = null;  // Timestamp when we first saw no extractions
+        const IDLE_TIMEOUT_MS = 30000;  // Stop polling after 30s of no activity
 
         function startExtractionPolling() {
+            noExtractionsSince = null;  // Reset idle timer
             // Initial fetch
             fetchExtractionProgress();
             // Poll every 3 seconds
-            extractionPollingInterval = setInterval(fetchExtractionProgress, 3000);
+            if (!extractionPollingInterval) {
+                extractionPollingInterval = setInterval(fetchExtractionProgress, 3000);
+            }
         }
 
         function stopExtractionPolling() {
@@ -389,6 +394,18 @@
                 } else {
                     extractAllBtn.disabled = false;
                     extractAllBtn.classList.remove('is-loading');
+                }
+            }
+
+            // Idle timeout: stop polling after 30s of no active extractions
+            if (anyExtracting) {
+                noExtractionsSince = null;  // Reset timer when extractions are running
+            } else {
+                if (noExtractionsSince === null) {
+                    noExtractionsSince = Date.now();
+                } else if (Date.now() - noExtractionsSince >= IDLE_TIMEOUT_MS) {
+                    console.log('No extractions for 30s, stopping poll timer');
+                    stopExtractionPolling();
                 }
             }
         }
