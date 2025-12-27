@@ -501,6 +501,7 @@ Parameters:
                                                     @change="saveEventKind(index, $event.target.value)"
                                                     class="inline-select-visible">
                                                 <option value="shift">shift</option>
+                                                <option disabled class="select-divider">──────</option>
                                                 <option value="birth">birth</option>
                                                 <option value="adopted">adopted</option>
                                                 <option value="bonded">bonded</option>
@@ -508,6 +509,7 @@ Parameters:
                                                 <option value="separated">separated</option>
                                                 <option value="divorced">divorced</option>
                                                 <option value="moved">moved</option>
+                                                <option disabled class="select-divider">──────</option>
                                                 <option value="death">death</option>
                                             </select>
                                             <span x-show="!canEdit" class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
@@ -1338,6 +1340,7 @@ Parameters:
                                                     @change="saveEventKind(index, $event.target.value)"
                                                     class="inline-select-visible">
                                                 <option value="shift">shift</option>
+                                                <option disabled class="select-divider">──────</option>
                                                 <option value="birth">birth</option>
                                                 <option value="adopted">adopted</option>
                                                 <option value="bonded">bonded</option>
@@ -1345,6 +1348,7 @@ Parameters:
                                                 <option value="separated">separated</option>
                                                 <option value="divorced">divorced</option>
                                                 <option value="moved">moved</option>
+                                                <option disabled class="select-divider">──────</option>
                                                 <option value="death">death</option>
                                             </select>
                                             <span x-show="!canEdit" class="event-kind-indicator" x-text="event.kind || 'shift'"></span>
@@ -1926,6 +1930,15 @@ Parameters:
 </div>
 
 <style>
+/* CSS custom properties for theme-aware styling */
+:root {
+    --divider-border-color: #ccc;
+}
+
+[data-theme="dark"] {
+    --divider-border-color: #555;
+}
+
 /* In-place editor styles */
 .editable-field {
     position: relative;
@@ -2269,6 +2282,17 @@ Parameters:
 [data-theme="dark"] .inline-select-visible option {
     background: #2d2b2a;
     color: #ffffff;
+}
+
+/* Divider option in select dropdowns */
+.select-divider {
+    font-size: 6px;
+    line-height: 1px;
+    padding: 0;
+    margin: 0;
+    border-top: 1px solid var(--divider-border-color);
+    color: transparent !important;
+    background: transparent !important;
 }
 
 .inline-edit-select:focus {
