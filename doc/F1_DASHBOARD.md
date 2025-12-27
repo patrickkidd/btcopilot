@@ -4,36 +4,39 @@
 - **Maintenance**: Update baseline after each change. Move completed items to Archive.
 - **Target Rationale**: See [Appendix A](#appendix-a-target-rationale) for benchmarks and citations.
 
-## Current Baseline (2025-12-26, 45 cases)
+## Current Baseline (2025-12-27, 45 cases)
 
 | Metric | Current | Target | Gap | Rationale |
 |--------|---------|--------|-----|-----------|
-| Aggregate F1 | 0.071 | **0.50** | -0.43 | Weighted average of component targets |
-| People F1 | 0.456 | **0.75** | -0.29 | NER benchmark: 65-78% for clinical entities |
-| Events F1 | 0.078 | **0.55** | -0.47 | Event extraction: 55-70% typical for clinical |
-| SARF F1 | 0.022 | **0.45** | -0.43 | Relation extraction: 45-65% for complex relations |
+| Aggregate F1 | 0.278 | **0.50** | -0.22 | Weighted average of component targets |
+| People F1 | 0.682 | **0.75** | -0.07 | NER benchmark: 65-78% for clinical entities |
+| Events F1 | 0.200 | **0.55** | -0.35 | Event extraction: 55-70% typical for clinical |
+| Symptom F1 | 0.244 | **0.45** | -0.21 | SARF variable extraction |
+| Anxiety F1 | 0.267 | **0.45** | -0.18 | SARF variable extraction |
+| Relationship F1 | 0.244 | **0.45** | -0.21 | SARF variable extraction |
+| Functioning F1 | 0.244 | **0.45** | -0.21 | SARF variable extraction |
 
-**Blocker**: Events F1 blocks SARF evaluation (SARF codes only match on matched events).
+**Change log**:
+- 2025-12-26: Events F1 +42% (0.078→0.111) after P0 prompt fixes
+- 2025-12-27: GT quality fixes (8 null person fields) - SARF F1 now non-zero
+- 2025-12-27: **Fixed test_prompts_live.py bug** - was using cumulative PDP including current statement. All metrics jumped significantly (People F1: 0.41→0.68, SARF F1s: ~0.02→0.24)
 
 ---
 
 ## Priority Burndown
 
-### P0: GT Quality Review
-6 statements have GT events that violate the EVENT EXTRACTION CHECKLIST (general patterns, not specific incidents):
+### P0-DONE: GT Quality - Null Person Fields (8 events) ✅
 
-| Statement | GT Event | Issue |
-|-----------|----------|-------|
-| 2032 | "Projecting expectation onto Ethan" | Introspection, not incident |
-| 2042 | "Self-care ideas" | Future intentions, not past event |
-| 1844 | "Really taken a step back" | General pattern |
-| 1860 | "Can't remember things, chaotic" | Vague characterization |
-| 1862 | "Things have been rocky since divorce" | General pattern |
-| 1874 | "I don't really keep up with them" | General pattern |
+Fixed in prod via Training App.
 
-**Action**: Review these GT codings. Either:
-1. Remove events (they're general characterizations per prompt rules)
-2. Or update EVENT EXTRACTION CHECKLIST to allow these patterns
+### P0-DONE: Prompt Under-Extraction Fixes
+
+| Discussion | Statement | GT Event | Issue | Action |
+|------------|-----------|----------|-------|--------|
+| 36 | 1844 | "Really taken a step back" | ✅ Fixed via prompt | Added `[UNDER_EXTRACTION_TIME_ANCHORED_SHIFT]` example |
+| 36 | 1860 | "Can't remember things, chaotic" | ✅ Fixed via prompt | Added `[UNDER_EXTRACTION_FUZZY_MEMORY_ANXIETY]` example |
+| 36 | 1862 | "Things have been rocky since divorce" | ✅ Fixed via prompt | Added `[UNDER_EXTRACTION_SHIFT_WITH_MISSING_ANCHOR]` example |
+| 36 | 1874 | "I don't really keep up with them" | ✅ Fixed via prompt | Added `[UNDER_EXTRACTION_PERSISTENT_DISTANCE]` example |
 
 ### P1: Person Link Mismatches
 - AI links event to person=1 (user), GT links to different person

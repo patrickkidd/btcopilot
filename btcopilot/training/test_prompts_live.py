@@ -67,14 +67,22 @@ def test_prompts_live(detailed=False, discussion_id=None):
             continue
 
         try:
-            # Build diagram data with cumulative PDP up to this statement
+            # Build diagram data with cumulative PDP BEFORE this statement
             if discussion.diagram:
                 diagram_data = discussion.diagram.get_diagram_data()
             else:
                 diagram_data = DiagramData()
 
-            # Build cumulative PDP from prior statements
-            diagram_data.pdp = pdp.cumulative(discussion, stmt)
+            # Build cumulative PDP from statements BEFORE this one (exclusive)
+            from btcopilot.personal.models import Statement as StmtModel
+            prev_stmt = StmtModel.query.filter_by(
+                discussion_id=stmt.discussion_id
+            ).filter(StmtModel.order < stmt.order).order_by(StmtModel.order.desc()).first()
+
+            if prev_stmt:
+                diagram_data.pdp = pdp.cumulative(discussion, prev_stmt)
+            else:
+                diagram_data.pdp = PDP()
 
             # Re-extract with current prompts
             _, fresh_deltas = asyncio.run(

@@ -754,6 +754,238 @@ WHY WRONG: The user said "she's 72 years old". From today's date (2025-12-26) an
 4. This applies to ALL age mentions: "she's 72", "he is 40", "who is 14", etc.
 
 # ─────────────────────────────────────────────────────────────────────────────
+# [UNDER_EXTRACTION_TIME_ANCHORED_SHIFT]
+# Error Pattern: AI skips relationship shifts anchored to existing PDP events
+# CRITICAL: "since X happened" patterns ARE extractable when X is in the PDP
+# ─────────────────────────────────────────────────────────────────────────────
+
+**User statement**: "Since Mom's diagnosis, he's really taken a step back. It feels like I'm doing everything, and he just... isn't."
+
+DiagramData: {
+    "people": [
+        {"id": 1, "name": "User", "confidence": 1.0}
+    ],
+    "events": [],
+    "pdp": {
+        "people": [
+            {"id": -1, "name": "Mom"},
+            {"id": -2, "name": "Michael"}
+        ],
+        "events": [
+            {"id": -5, "kind": "shift", "person": -1, "description": "Diagnosed with dementia", "dateTime": "2025-06-27"}
+        ]
+    }
+}
+
+❌ WRONG OUTPUT (no event extracted - treating as "general pattern"):
+{
+    "people": [],
+    "events": [],
+    "delete": []
+}
+
+WHY WRONG: "Since Mom's diagnosis" anchors this to a SPECIFIC TIME (event -5 in PDP, date 2025-06-27). This is NOT a vague general pattern - it's a relationship shift that started at a known point in time.
+
+✅ CORRECT OUTPUT:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -6,
+            "kind": "shift",
+            "person": -2,
+            "description": "Stepped back from caregiving",
+            "dateTime": "2025-06-27",
+            "dateCertainty": "approximate",
+            "relationship": "away",
+            "relationshipTargets": [-1, 1],
+            "confidence": 0.8
+        }
+    ],
+    "delete": []
+}
+
+**RULE**: When a behavioral shift is anchored to another event, extract it:
+- Patterns: "since X", "after X", "when X happened", "ever since X", "following X"
+- Examples: "since Mom's diagnosis", "after the divorce", "when Dad passed away"
+1. Look up the referenced event in diagram_data.pdp.events to find its date
+2. If the referenced event is NOT in PDP, create it too (e.g., divorce event)
+3. Use that date for the shift event
+4. If user says "I'm not sure when" or similar, use dateCertainty="unknown"
+5. person = who INITIATED the behavior or is experiencing the shift
+6. This is a valid shift event, not a "general pattern" to skip
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [UNDER_EXTRACTION_FUZZY_MEMORY_ANXIETY]
+# Error Pattern: AI skips anxiety events when user reports fuzzy memory around stressful events
+# CRITICAL: Fuzzy memory during stressful events = elevated anxiety (threat response active)
+# ─────────────────────────────────────────────────────────────────────────────
+
+**User statement**: "I don't really remember any specific events around that time, but I know it felt like everything was just chaotic. There was so much going on with Grandma's passing."
+
+DiagramData: {
+    "people": [{"id": 1, "name": "User"}],
+    "events": [],
+    "pdp": {
+        "people": [{"id": -1, "name": "Grandma"}],
+        "events": [
+            {"id": -5, "kind": "death", "person": -1, "description": "Passed away", "dateTime": "2018-01-01"}
+        ]
+    }
+}
+
+❌ WRONG OUTPUT (no event - treating fuzzy memory as "no specific events"):
+{
+    "people": [],
+    "events": [],
+    "delete": []
+}
+
+WHY WRONG: In this behavioral health model, fuzzy memory during emotionally salient or stressful events is a psychological marker of the anxiety/threat response being active. The user saying "I don't really remember" + "chaotic" + context of Grandma's passing indicates their anxiety was elevated during that period. This IS a valid anxiety shift event.
+
+✅ CORRECT OUTPUT:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -6,
+            "kind": "shift",
+            "person": 1,
+            "description": "Chaotic, fuzzy memory around Grandma's passing",
+            "dateTime": "2018-01-01",
+            "dateCertainty": "approximate",
+            "anxiety": "up",
+            "confidence": 0.7
+        }
+    ],
+    "delete": []
+}
+
+**RULE**: Fuzzy memory around stressful events indicates elevated anxiety:
+- Patterns: "I don't really remember", "it's all a blur", "I can't recall specifics"
+- Context: Must be around a stressful/impactful event (death, divorce, diagnosis, etc.)
+- The fuzzy memory itself is evidence of threat response activation → anxiety: "up"
+- Use the referenced event's date for the anxiety shift
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [UNDER_EXTRACTION_SHIFT_WITH_MISSING_ANCHOR]
+# Error Pattern: AI skips shifts anchored to events not yet in PDP
+# CRITICAL: Create BOTH the anchor event AND the shift when anchor is missing
+# ─────────────────────────────────────────────────────────────────────────────
+
+**User statement**: "I'm not sure exactly when, but things have always been rocky since my parents divorced."
+
+DiagramData: {
+    "people": [
+        {"id": 1, "name": "User"},
+        {"id": -1, "name": "Mom"},
+        {"id": -2, "name": "Dad"}
+    ],
+    "events": [],
+    "pdp": {"people": [], "events": []}
+}
+
+❌ WRONG OUTPUT (no events - treating as general pattern):
+{
+    "people": [],
+    "events": [],
+    "delete": []
+}
+
+WHY WRONG: "since my parents divorced" anchors this shift to a divorce event. Even though the user says "I'm not sure exactly when", this is still extractable:
+1. The divorce DID happen (it's a fact, not a pattern)
+2. The functioning shift started at that divorce
+3. Both should be extracted with dateCertainty="unknown"
+
+✅ CORRECT OUTPUT:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -3,
+            "kind": "divorced",
+            "person": -1,
+            "spouse": -2,
+            "description": "Divorced",
+            "dateTime": "2000-01-01",
+            "dateCertainty": "unknown",
+            "confidence": 0.7
+        },
+        {
+            "id": -4,
+            "kind": "shift",
+            "person": 1,
+            "description": "Rocky since parents' divorce",
+            "dateTime": "2000-01-01",
+            "dateCertainty": "unknown",
+            "functioning": "down",
+            "confidence": 0.6
+        }
+    ],
+    "delete": []
+}
+
+**RULE**: When a shift references an event not in PDP:
+1. Create the anchor event (divorce, death, etc.) with dateCertainty="unknown" if date is uncertain
+2. Create the shift event with the same date and dateCertainty
+3. Use a reasonable estimate for dateTime (divorce often ~20 years ago for adult users)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [UNDER_EXTRACTION_PERSISTENT_DISTANCE]
+# Error Pattern: AI skips persistent relationship patterns described as current state
+# CRITICAL: Statements indicating ongoing reduced contact or emotional investment
+# between people = RelationshipKind.Distance
+# ─────────────────────────────────────────────────────────────────────────────
+
+**User statement**: "My dad has two brothers, Uncle Tom and Uncle Bill, but I don't really keep up with them."
+
+DiagramData: {
+    "people": [
+        {"id": 1, "name": "User"},
+        {"id": -1, "name": "Uncle Tom"},
+        {"id": -2, "name": "Uncle Bill"}
+    ],
+    "events": [],
+    "pdp": {"people": [], "events": []}
+}
+
+❌ WRONG OUTPUT (no events):
+{
+    "people": [],
+    "events": [],
+    "delete": []
+}
+
+WHY WRONG: "I don't really keep up with them" describes a persistent relationship pattern between User and the uncles. This indicates ongoing reduced emotional investment - clinically significant as RelationshipKind.Distance.
+
+✅ CORRECT OUTPUT:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -3,
+            "kind": "shift",
+            "person": 1,
+            "description": "Doesn't keep up with uncles",
+            "dateTime": "2010-01-01",
+            "dateCertainty": "unknown",
+            "relationship": "distance",
+            "relationshipTargets": [-1, -2],
+            "confidence": 0.7
+        }
+    ],
+    "delete": []
+}
+
+**RULE**: Persistent relationship distance is extractable:
+1. When someone describes ongoing reduced contact or emotional investment with others, extract as Distance
+2. Examples: "don't really keep up with", "we're not that close", "don't really talk to", "haven't seen in years"
+3. relationship = "distance" (persistent reduced investment, not a recent shift)
+4. dateTime = best-guess to establish ordering (e.g., ~15 years ago for longstanding adult patterns)
+5. dateCertainty = "unknown" when no timeframe mentioned
+6. relationshipTargets = the distant people
+
+# ─────────────────────────────────────────────────────────────────────────────
 # [RELATIONSHIP_TARGETS_REQUIRED]
 # Error Pattern: AI fails to set relationshipTargets field for relationship events
 # ─────────────────────────────────────────────────────────────────────────────
