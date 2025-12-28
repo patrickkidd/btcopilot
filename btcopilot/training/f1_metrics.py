@@ -217,10 +217,11 @@ def dates_within_tolerance(
     Tolerance is determined by the LEAST certain date:
     - If either is Unknown: always matches
     - If either is Approximate: ±270 days (9 months)
-    - Both Certain or None: ±7 days
+    - Both Certain: ±7 days
+    - None (missing): treated as Approximate (therapy transcripts rarely have precise dates)
     """
-    c1 = certainty1 or DateCertainty.Certain
-    c2 = certainty2 or DateCertainty.Certain
+    c1 = certainty1 or DateCertainty.Approximate
+    c2 = certainty2 or DateCertainty.Approximate
 
     if c1 == DateCertainty.Unknown or c2 == DateCertainty.Unknown:
         return True
@@ -252,10 +253,11 @@ def calculate_date_similarity(
     Tolerance is determined by the LEAST certain date:
     - If either is Unknown: returns 1.0
     - If either is Approximate: use 270-day tolerance (9 months)
-    - Both Certain or None: use 7-day tolerance
+    - Both Certain: use 7-day tolerance
+    - None (missing): treated as Approximate (therapy transcripts rarely have precise dates)
     """
-    c1 = certainty1 or DateCertainty.Certain
-    c2 = certainty2 or DateCertainty.Certain
+    c1 = certainty1 or DateCertainty.Approximate
+    c2 = certainty2 or DateCertainty.Approximate
 
     if c1 == DateCertainty.Unknown or c2 == DateCertainty.Unknown:
         return 1.0

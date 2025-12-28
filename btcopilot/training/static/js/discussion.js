@@ -469,11 +469,18 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             if (!dropdown || !dropdown.classList.contains('create-event-dropdown')) {
                 dropdown = document.createElement('div');
                 dropdown.className = 'create-event-dropdown dropdown-menu';
-                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 250px; max-height: 300px; overflow-y: scroll; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);';
+                dropdown.style.cssText = 'position: absolute; z-index: 1000; display: none; min-width: 100px; background: var(--bulma-text, #4a4a4a); color: var(--bulma-dropdown-content-background-color, white); border: 1px solid var(--bulma-border, #dbdbdb); border-radius: 4px; box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1); padding: 0;';
                 button.parentNode.appendChild(dropdown);
 
-                const eventKinds = ['shift', 'birth', 'adopted', 'bonded', 'married', 'separated', 'divorced', 'moved', 'death'];
+                const eventKinds = ['shift', '---', 'birth', 'adopted', 'bonded', 'married', 'separated', 'divorced', 'moved', '---', 'death'];
                 eventKinds.forEach(kind => {
+                    if (kind === '---') {
+                        const divider = document.createElement('hr');
+                        divider.className = 'dropdown-divider';
+                        divider.style.cssText = 'margin: 0; border: none; border-top: 1px solid var(--bulma-border, #dbdbdb);';
+                        dropdown.appendChild(divider);
+                        return;
+                    }
                     const item = document.createElement('a');
                     item.className = 'dropdown-item';
                     item.style.cssText = 'display: block; padding: 0.375rem 1rem; cursor: pointer; color: var(--bulma-dropdown-content-background-color, white);';

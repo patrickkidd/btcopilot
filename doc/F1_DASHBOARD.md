@@ -25,6 +25,64 @@
 
 ## Priority Burndown
 
+### P0: Missing dateCertainty in GT (CRITICAL BLOCKER)
+
+**Problem**: 70% of GT events have no `dateCertainty` field. Code defaults missing to `Certain`, forcing 7-day tolerance when it should be `Approximate` (270 days) or `Unknown` (always match).
+
+**Evidence** (from approved GT analysis):
+```
+Total GT events: 74
+  approximate: 19 (25.7%)
+  certain: 2 (2.7%)
+  unknown: 1 (1.4%)
+  (missing): 52 (70.3%)  ← Treated as Certain (7-day tolerance)
+```
+
+**Cascade**: Missing dateCertainty → 7-day tolerance → Date mismatch → Event doesn't match → SARF never evaluated → All F1 = 0
+
+**Fix options** (choose one):
+1. **Change default**: In `f1_metrics.py:222-223`, default missing dateCertainty to `Approximate` instead of `Certain`
+2. **Backfill GT**: Add dateCertainty to all 52 missing GT events via Training App
+3. **Increase base tolerance**: Raise DATE_TOLERANCE_DAYS from 7 to 30-90
+
+**Recommended**: Option 1 (1-line fix, immediate impact). Option 2 is correct long-term but labor-intensive.
+
+**Actions**:
+- [ ] Change default from `Certain` to `Approximate` in `f1_metrics.py:222-223`
+- [ ] Run F1 eval to measure impact
+- [ ] Backfill GT dateCertainty over time
+
+### P0.5: GT Date Quality
+
+**Problem**: Some GT events have incorrect dates (2025-12-15 for events from 2018).
+
+**Actions**:
+- [ ] Review discussion 36 event dates in Training App
+- [ ] Correct dates for historical events ("when mother died" → actual year, not session date)
+
+### P1: Person Link Mismatches
+
+*Blocked by P0 - only matters after date matching is fixed*
+
+- AI links event to person=1 (user), GT links to different person
+- Example: "diagnosed with dementia" - AI puts on user (experiencing), GT puts on mom (subject)
+- Root cause: Pronoun resolution failure
+- Action: Add `[EVENT_PERSON_PRONOUN_RESOLUTION]` example showing WRONG/CORRECT
+
+### P2: Event Description Length
+
+*Blocked by P0 - only matters after date matching is fixed*
+
+- AI produces verbose descriptions; GT uses concise 2-5 word phrases
+- Example: AI "Having trouble sleeping and feeling really anxious lately" vs GT "Trouble sleeping"
+- Actions:
+  1. Strengthen prompt: "2-5 words" constraint (prompts.py:310)
+  2. Add `[EVENT_DESCRIPTION_LENGTH]` example
+
+---
+
+## Archive (Completed)
+
 ### P0-DONE: GT Quality - Null Person Fields (8 events) ✅
 
 Fixed in prod via Training App.
@@ -37,21 +95,6 @@ Fixed in prod via Training App.
 | 36 | 1860 | "Can't remember things, chaotic" | ✅ Fixed via prompt | Added `[UNDER_EXTRACTION_FUZZY_MEMORY_ANXIETY]` example |
 | 36 | 1862 | "Things have been rocky since divorce" | ✅ Fixed via prompt | Added `[UNDER_EXTRACTION_SHIFT_WITH_MISSING_ANCHOR]` example |
 | 36 | 1874 | "I don't really keep up with them" | ✅ Fixed via prompt | Added `[UNDER_EXTRACTION_PERSISTENT_DISTANCE]` example |
-
-### P1: Person Link Mismatches
-- AI links event to person=1 (user), GT links to different person
-- Example: "diagnosed with dementia" - AI puts on user (experiencing), GT puts on mom (subject)
-- Root cause: Pronoun resolution failure. Prompt says to "check conversation_history to identify who" (prompts.py:412-414) but AI doesn't comply reliably
-- Action: Add `[EVENT_PERSON_PRONOUN_RESOLUTION]` example showing WRONG/CORRECT for pronoun-to-person mapping
-
-### P2: Event Description Length
-- AI produces verbose descriptions; GT uses concise 2-5 word phrases
-- Example: AI "Having trouble sleeping and feeling really anxious lately" vs GT "Trouble sleeping"
-- Impact: Verbose descriptions hurt fuzzy matching (mitigated by hybrid matching, but still noisy)
-- Actions:
-  1. Strengthen prompt: change "Brief" to explicit "2-5 words" constraint (prompts.py:310)
-  2. Fix examples in SECTION 3 that have long descriptions
-  3. Add `[EVENT_DESCRIPTION_LENGTH]` example showing WRONG verbose / CORRECT concise
 
 ---
 
