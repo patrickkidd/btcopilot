@@ -239,6 +239,19 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Hash navigation highlight on page load
+    if (window.location.hash) {
+        const element = document.getElementById(window.location.hash.substring(1));
+        if (element) {
+            setTimeout(() => {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                element.style.transition = 'background-color 0.3s';
+                element.style.backgroundColor = 'rgba(100, 149, 237, 0.3)';
+                setTimeout(() => { element.style.backgroundColor = ''; }, 1000);
+            }, 300);
+        }
+    }
+
     const entityTypeFilter = document.getElementById('entity-type-filter');
     const matchTypeCheckboxes = document.querySelectorAll('.match-type-checkbox');
     const sarfVariableFilter = document.getElementById('sarf-variable-filter');

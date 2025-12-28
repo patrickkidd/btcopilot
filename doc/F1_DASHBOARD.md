@@ -4,84 +4,115 @@
 - **Maintenance**: Update baseline after each change. Move completed items to Archive.
 - **Target Rationale**: See [Appendix A](#appendix-a-target-rationale) for benchmarks and citations.
 
+## Workflow
+
+**Before each work session**, pick a priority from the burndown and:
+
+1. **Micro analysis** (10-30 min): Open the Analysis page, review the specific failing statements listed in the priority's evidence. For each:
+   - Is this a GT error? → Fix in Training App
+   - Is this an AI error? → Note the pattern for prompt fix
+
+2. **Fix** (varies):
+   - GT fixes: Edit in Training App, re-run F1 eval
+   - Prompt fixes: Add example to `prompts.py`, re-run F1 eval
+
+3. **Update dashboard**:
+   - Update baseline metrics
+   - Add to change log
+   - Move completed items to Archive
+   - Re-prioritize if needed
+
+**Tools**:
+- Analysis page: `http://127.0.0.1:8888/training/analysis/` (micro view)
+- F1 eval: `GOOGLE_GEMINI_API_KEY=... uv run python -m btcopilot.training.test_prompts_live`
+- This dashboard: macro view, priorities, patterns
+
 ## Current Baseline (2025-12-27, 45 cases)
 
 | Metric | Current | Target | Gap | Rationale |
 |--------|---------|--------|-----|-----------|
-| Aggregate F1 | 0.278 | **0.50** | -0.22 | Weighted average of component targets |
-| People F1 | 0.682 | **0.75** | -0.07 | NER benchmark: 65-78% for clinical entities |
-| Events F1 | 0.200 | **0.55** | -0.35 | Event extraction: 55-70% typical for clinical |
-| Symptom F1 | 0.244 | **0.45** | -0.21 | SARF variable extraction |
-| Anxiety F1 | 0.267 | **0.45** | -0.18 | SARF variable extraction |
+| Aggregate F1 | 0.314 | **0.50** | -0.19 | Weighted average of component targets |
+| People F1 | 0.722 | **0.75** | -0.03 | NER benchmark: 65-78% for clinical entities |
+| Events F1 | 0.224 | **0.55** | -0.33 | Event extraction: 55-70% typical for clinical |
+| Symptom F1 | 0.222 | **0.45** | -0.23 | SARF variable extraction |
+| Anxiety F1 | 0.252 | **0.45** | -0.20 | SARF variable extraction |  
 | Relationship F1 | 0.244 | **0.45** | -0.21 | SARF variable extraction |
 | Functioning F1 | 0.244 | **0.45** | -0.21 | SARF variable extraction |
 
 **Change log**:
 - 2025-12-26: Events F1 +42% (0.078→0.111) after P0 prompt fixes
 - 2025-12-27: GT quality fixes (8 null person fields) - SARF F1 now non-zero
-- 2025-12-27: **Fixed test_prompts_live.py bug** - was using cumulative PDP including current statement. All metrics jumped significantly (People F1: 0.41→0.68, SARF F1s: ~0.02→0.24)
+- 2025-12-27: Fixed test_prompts_live.py bug - was using cumulative PDP including current statement
+- 2025-12-27: **dateCertainty default → Approximate** + GT dateCertainty backfill. Aggregate F1: 0.278→0.314 (+13%)
 
 ---
 
 ## Priority Burndown
 
-### P0: Missing dateCertainty in GT (CRITICAL BLOCKER)
+### P1: Over-Extraction (AI extracts too many events)
 
-**Problem**: 70% of GT events have no `dateCertainty` field. Code defaults missing to `Certain`, forcing 7-day tolerance when it should be `Approximate` (270 days) or `Unknown` (always match).
+**Problem**: AI frequently extracts 2-4 events when GT has 1. This hurts precision.
 
-**Evidence** (from approved GT analysis):
-```
-Total GT events: 74
-  approximate: 19 (25.7%)
-  certain: 2 (2.7%)
-  unknown: 1 (1.4%)
-  (missing): 52 (70.3%)  ← Treated as Certain (7-day tolerance)
-```
+**Review these statements** (click to open in Analysis page):
+| Statement | Issue | Verdict |
+|-----------|-------|---------|
+| [1846](http://127.0.0.1:8888/training/analysis/discussion/36#statement-1846) | GT: 1 moved, AI: 4 shifts | |
+| [1848](http://127.0.0.1:8888/training/analysis/discussion/36#statement-1848) | GT: 1 birth, AI: 2 (birth + shift) | |
+| [1850](http://127.0.0.1:8888/training/analysis/discussion/36#statement-1850) | GT: 2 events, AI: 3 | |
+| [1840](http://127.0.0.1:8888/training/analysis/discussion/36#statement-1840) | GT: 1 shift, AI: 2 shifts | |
 
-**Cascade**: Missing dateCertainty → 7-day tolerance → Date mismatch → Event doesn't match → SARF never evaluated → All F1 = 0
+**Root cause hypothesis**: AI interprets emotional context as separate shift events when GT only extracts concrete facts.
 
-**Fix options** (choose one):
-1. **Change default**: In `f1_metrics.py:222-223`, default missing dateCertainty to `Approximate` instead of `Certain`
-2. **Backfill GT**: Add dateCertainty to all 52 missing GT events via Training App
-3. **Increase base tolerance**: Raise DATE_TOLERANCE_DAYS from 7 to 30-90
+**Actions** (after micro analysis):
+- [ ] Fix any GT errors found
+- [ ] If AI pattern confirmed: Add `[OVER_EXTRACTION_EMOTIONAL_CONTEXT]` example
 
-**Recommended**: Option 1 (1-line fix, immediate impact). Option 2 is correct long-term but labor-intensive.
+### P2: Event Kind Mismatch
+
+**Problem**: AI uses wrong event kind (shift vs moved, birth vs married).
+
+**Review these statements**:
+| Statement | Issue | Verdict |
+|-----------|-------|---------|
+| [2014](http://127.0.0.1:8888/training/analysis/discussion/39#statement-2014) | GT: moved, AI: shift | |
+| [2020](http://127.0.0.1:8888/training/analysis/discussion/39#statement-2020) | GT: birth, AI: married | |
+
+**Actions** (after micro analysis):
+- [ ] Fix any GT errors found
+- [ ] If AI pattern confirmed: Add examples clarifying `moved` vs `shift`
+
+### P3: Event Description Length
+
+**Problem**: AI produces verbose descriptions; GT uses concise 2-5 word phrases.
+
+**Example**: AI "Taken a step back since Mom's..." vs GT "Really taken a step back"
 
 **Actions**:
-- [ ] Change default from `Certain` to `Approximate` in `f1_metrics.py:222-223`
-- [ ] Run F1 eval to measure impact
-- [ ] Backfill GT dateCertainty over time
+- [ ] Strengthen prompt: "2-5 words" constraint (prompts.py:310)
+- [ ] Add `[EVENT_DESCRIPTION_LENGTH]` example
 
-### P0.5: GT Date Quality
+### P4: Person Link Mismatches
 
-**Problem**: Some GT events have incorrect dates (2025-12-15 for events from 2018).
+**Problem**: AI links event to wrong person.
 
-**Actions**:
-- [ ] Review discussion 36 event dates in Training App
-- [ ] Correct dates for historical events ("when mother died" → actual year, not session date)
+**Review these statements**:
+| Statement | Issue | Verdict |
+|-----------|-------|---------|
+| [1840](http://127.0.0.1:8888/training/analysis/discussion/36#statement-1840) | Same event, different person | |
 
-### P1: Person Link Mismatches
+**Root cause hypothesis**: Pronoun resolution failure.
 
-*Blocked by P0 - only matters after date matching is fixed*
-
-- AI links event to person=1 (user), GT links to different person
-- Example: "diagnosed with dementia" - AI puts on user (experiencing), GT puts on mom (subject)
-- Root cause: Pronoun resolution failure
-- Action: Add `[EVENT_PERSON_PRONOUN_RESOLUTION]` example showing WRONG/CORRECT
-
-### P2: Event Description Length
-
-*Blocked by P0 - only matters after date matching is fixed*
-
-- AI produces verbose descriptions; GT uses concise 2-5 word phrases
-- Example: AI "Having trouble sleeping and feeling really anxious lately" vs GT "Trouble sleeping"
-- Actions:
-  1. Strengthen prompt: "2-5 words" constraint (prompts.py:310)
-  2. Add `[EVENT_DESCRIPTION_LENGTH]` example
+**Actions** (after micro analysis):
+- [ ] Fix any GT errors found
+- [ ] If AI pattern confirmed: Add `[EVENT_PERSON_PRONOUN_RESOLUTION]` example
 
 ---
 
 ## Archive (Completed)
+
+### P0-DONE: dateCertainty Default Fix (2025-12-27) ✅
+
+Changed default from `Certain` to `Approximate` in f1_metrics.py. Combined with GT dateCertainty backfill, improved Aggregate F1 from 0.278→0.314 (+13%).
 
 ### P0-DONE: GT Quality - Null Person Fields (8 events) ✅
 
@@ -95,30 +126,6 @@ Fixed in prod via Training App.
 | 36 | 1860 | "Can't remember things, chaotic" | ✅ Fixed via prompt | Added `[UNDER_EXTRACTION_FUZZY_MEMORY_ANXIETY]` example |
 | 36 | 1862 | "Things have been rocky since divorce" | ✅ Fixed via prompt | Added `[UNDER_EXTRACTION_SHIFT_WITH_MISSING_ANCHOR]` example |
 | 36 | 1874 | "I don't really keep up with them" | ✅ Fixed via prompt | Added `[UNDER_EXTRACTION_PERSISTENT_DISTANCE]` example |
-
----
-
-## Key Files
-
-| File | Purpose |
-|------|---------|
-| `btcopilot/training/f1_metrics.py` | Matching thresholds, F1 calculation |
-| `btcopilot/personal/prompts.py` | Extraction prompts |
-| `btcopilot/extensions/llm.py` | LLM config (temperature) |
-
-## Commands
-
-```bash
-# Run F1 evaluation (requires GOOGLE_GEMINI_API_KEY)
-GOOGLE_GEMINI_API_KEY=... uv run python -m btcopilot.training.test_prompts_live --detailed
-
-# Run tests
-uv run pytest btcopilot/tests/training/test_f1_metrics.py -v
-```
-
----
-
-## Archive (Completed)
 
 ### Prompt Improvements (2025-12-26)
 - [x] **Birth events from age mentions** - Added `[UNDER_EXTRACTION_BIRTH_FROM_AGE]` example
@@ -212,3 +219,23 @@ Targets are based on published clinical NLP benchmarks, adjusted downward to acc
 2. Domain-specific constructs (differentiation, anxiety, etc.)
 3. Implicit vs explicit mentions
 4. Current cascade dependency (SARF F1 limited by Events F1)
+
+---
+
+## Reference
+
+**Key Files**:
+| File | Purpose |
+|------|---------|
+| `btcopilot/training/f1_metrics.py` | Matching thresholds, F1 calculation |
+| `btcopilot/personal/prompts.py` | Extraction prompts |
+| `btcopilot/extensions/llm.py` | LLM config (temperature) |
+
+**Commands**:
+```bash
+# Run F1 evaluation
+GOOGLE_GEMINI_API_KEY=... uv run python -m btcopilot.training.test_prompts_live --detailed
+
+# Run tests
+uv run pytest btcopilot/tests/training/test_f1_metrics.py -v
+```

@@ -1,10 +1,10 @@
 # BT Copilot
 
-Infrastructure for training LLMs to extract structured clinical data from natural conversation. Implements the SARF novel clinical data model (Symptom, Anxiety, Relationship, Functioning) for family systems clinical assessment. Powers the [Family Diagram](https://familydiagram.com) app.
+Clinical NLP system for extracting structured data from therapy transcripts. Uses zero-shot LLM prompting to detect people, events, and relationship patterns from natural conversation—no fine-tuning required. Implements the SARF clinical data model (Symptom, Anxiety, Relationship, Functioning) for family systems assessment. Powers the [Family Diagram](https://familydiagram.com) app.
+
+**📊 [F1 Dashboard](doc/F1_DASHBOARD.md)** | **📋 [Decision Log](decisions/log.md)** | **📚 [Domain Context](CONTEXT.md)** | **📖 [Dev Journal](#development-journal)**
 
 [SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing)
-
-**📋 [Decision Log](decisions/log.md)** | **📚 [Domain Context](CONTEXT.md)** | **📖 [Dev Journal](#development-journal)**
 
 ## Novel Contributions to the Field
 
