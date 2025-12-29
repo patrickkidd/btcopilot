@@ -922,8 +922,8 @@ function submitExtractionFeedback(messageId, thumbsDown, editedData) {
 
 **Data Flow**:
 1. Both columns receive data from server-side template variables
-2. Column 2: `{% set data = item.pdp_deltas %}`
-3. Column 3: `{% set data = item.cumulative_pdp %}`
+2. Column 2 uses `item.pdp_deltas`
+3. Column 3 uses `item.cumulative_pdp`
 4. NO direct JavaScript communication between columns
 5. NO shared Alpine.js store
 
@@ -952,7 +952,7 @@ function toggleSection(componentId) {
 
 #### CRITICAL: Jinja2 Variable Scope Isolation
 
-**Issue**: Jinja2 `{% set %}` variables persist across `<td>` boundaries within the same row. Without explicit resets, Column 3 (Cumulative) inherits variables from Column 2 (Changes).
+**Issue**: Jinja2 `set` variables persist across `<td>` boundaries within the same row. Without explicit resets, Column 3 (Cumulative) inherits variables from Column 2 (Changes).
 
 **Manifestation**: Cumulative column would display auditor's edited extraction instead of full cumulative state when `feedback_data` leaked from Column 2.
 
