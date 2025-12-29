@@ -29,17 +29,17 @@
 - This dashboard: macro view, priorities, patterns
 - Timeseries plot: [f1_timeseries.html](f1_timeseries.html) (open in browser)
 
-## Current Baseline (2025-12-28, 44 cases)
+## Current Baseline (2025-12-28, 45 cases)
 
 | Metric | Current | Target | Gap | Rationale |
 |--------|---------|--------|-----|-----------|
-| Aggregate F1 | 0.299 | **0.50** | -0.20 | Weighted average of component targets |
-| People F1 | 0.737 | **0.75** | -0.01 | NER benchmark: 65-78% for clinical entities |
-| Events F1 | 0.205 | **0.55** | -0.35 | Event extraction: 55-70% typical for clinical |
-| Symptom F1 | 0.182 | **0.45** | -0.27 | SARF variable extraction |
-| Anxiety F1 | 0.167 | **0.45** | -0.28 | SARF variable extraction |
-| Relationship F1 | 0.182 | **0.45** | -0.27 | SARF variable extraction |
-| Functioning F1 | 0.182 | **0.45** | -0.27 | SARF variable extraction |
+| Aggregate F1 | 0.327 | **0.50** | -0.17 | Weighted average of component targets |
+| People F1 | 0.743 | **0.75** | -0.01 | NER benchmark: 65-78% for clinical entities |
+| Events F1 | 0.217 | **0.55** | -0.33 | Event extraction: 55-70% typical for clinical |
+| Symptom F1 | 0.222 | **0.45** | -0.23 | SARF variable extraction |
+| Anxiety F1 | 0.207 | **0.45** | -0.24 | SARF variable extraction |
+| Relationship F1 | 0.244 | **0.45** | -0.21 | SARF variable extraction |
+| Functioning F1 | 0.244 | **0.45** | -0.21 | SARF variable extraction |
 
 **Change log**:
 - 2025-12-26: Events F1 +42% (0.078→0.111) after P0 prompt fixes
@@ -47,6 +47,7 @@
 - 2025-12-27: Fixed test_prompts_live.py bug - was using cumulative PDP including current statement
 - 2025-12-27: **dateCertainty default → Approximate** + GT dateCertainty backfill. Aggregate F1: 0.278→0.314 (+13%)
 - 2025-12-28: **[SATURATION_PATTERN_ELABORATION]** prompt. Events F1: 0.181→0.205 (+13%)
+- 2025-12-28: **Saturation check in EVENT EXTRACTION CHECKLIST**. Aggregate F1: 0.299→0.327 (+9%)
 
 ---
 

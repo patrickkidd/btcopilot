@@ -109,6 +109,18 @@
       "relationship": 0.182,
       "functioning": 0.182,
       "note": "[SATURATION_PATTERN_ELABORATION] prompt - Events F1: 0.181->0.205 (+13%)"
+    },
+    {
+      "date": "2025-12-28T16:17",
+      "commit": "dc057db",
+      "aggregate": 0.327,
+      "people": 0.743,
+      "events": 0.217,
+      "symptom": 0.222,
+      "anxiety": 0.207,
+      "relationship": 0.244,
+      "functioning": 0.244,
+      "note": "Saturation check in EVENT EXTRACTION CHECKLIST - Aggregate F1: 0.299->0.327 (+9%)"
     }
   ]
 }
