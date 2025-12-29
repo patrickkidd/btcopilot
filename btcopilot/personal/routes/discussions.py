@@ -6,7 +6,7 @@ from sqlalchemy.orm import subqueryload
 
 from btcopilot import auth
 from btcopilot.extensions import db
-from btcopilot.schema import DiagramData, Person, asdict
+from btcopilot.schema import asdict
 from btcopilot.pro.models import Diagram
 from btcopilot.personal import Response, ask
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
@@ -16,33 +16,15 @@ _log = logging.getLogger(__name__)
 bp = Blueprint("discussions", __name__, url_prefix="/discussions")
 
 
-def _create_initial_database() -> DiagramData:
-    """Create initial database with User and Assistant people."""
-    initial_database = DiagramData()
-
-    # Add User person (ID will be 1)
-    user_person = Person(name="User", confidence=1.0)
-    initial_database.add_person(user_person)
-
-    # Add Assistant person (ID will be 2)
-    assistant_person = Person(name="Assistant", confidence=1.0)
-    initial_database.add_person(assistant_person)
-
-    return initial_database
-
-
 def _create_discussion(data: dict) -> Discussion:
     user = auth.current_user()
 
     # Ensure user has a free_diagram
     if not user.free_diagram:
-        # Create initial database with User and Assistant people
-        initial_database = _create_initial_database()
-
         diagram = Diagram(
             user_id=user.id,
             name=f"{user.username} Personal Case File",
-            data=pickle.dumps(asdict(initial_database)),
+            data=pickle.dumps({}),
         )
 
         db.session.add(diagram)
@@ -115,6 +97,23 @@ def chat(discussion_id: int):
         return ("Only 'Content-Type: application/json' is supported", 415)
 
     discussion = Discussion.query.get(discussion_id)
+    if not discussion:
+        return abort(404)
+
+    # Ensure User and Assistant people exist in the diagram (if diagram exists)
+    if discussion.diagram:
+        diagram_data = discussion.diagram.get_diagram_data()
+        user_person_id, _, changed = diagram_data.ensure_chat_defaults()
+        if changed:
+            discussion.diagram.set_diagram_data(diagram_data)
+
+        # Update speaker person_ids if primary person differs from default
+        user_speaker = Speaker.query.filter_by(
+            discussion_id=discussion.id, type=SpeakerType.Subject
+        ).first()
+        if user_speaker and user_speaker.person_id != user_person_id:
+            user_speaker.person_id = user_person_id
+
     statement = request.json["statement"]
     response: Response = ask(discussion, statement)
 

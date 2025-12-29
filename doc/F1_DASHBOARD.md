@@ -29,6 +29,30 @@
 - This dashboard: macro view, priorities, patterns
 - Timeseries plot: [f1_timeseries.html](f1_timeseries.html) (open in browser)
 
+## Ground Truth Sample Size Requirements
+
+Current sample (45 statements, 3 discussions) provides ~±15% margin of error. Targets:
+
+| Confidence Level | Statements | Discussions | Margin |
+|------------------|------------|-------------|--------|
+| **Current** | 45 | 3 | ±15% |
+| "Usable" | 100 | 15-20 | ±10% |
+| "Publishable" | 400 | 30+ | ±5% |
+
+**Quality > quantity**:
+- Diversity matters more than count (30 varied > 100 similar)
+- IRR study required before scaling (if coders disagree, more GT doesn't help)
+- Need coverage across: presenting problems, family structures, communication styles
+
+**Current precision/recall breakdown** (to interpret F1):
+- People: P=77%, R=56% → decent, mostly missing some family members
+- Events: P=9%, R=8% → broken, both hallucinating and missing
+- Overall: FP=71, FN=106 → missing more than hallucinating (recall problem)
+
+**MVP implication**: People/PairBonds (F1 0.65-0.78) may be MVP-viable while Events/SARF need fundamental fixes. See [decisions/log.md](../decisions/log.md) entry 2025-12-27.
+
+---
+
 ## Current Baseline (2025-12-28, 45 cases)
 
 | Metric | Current | Target | Gap | Rationale |

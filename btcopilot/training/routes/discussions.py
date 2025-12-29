@@ -279,12 +279,13 @@ def _get_or_create_diagram(diagram_id, current_user):
     # Use current user's free diagram
     target_user = current_user
     if not target_user.free_diagram:
-        initial_database = DiagramData.create_with_defaults()
+        diagram_data = DiagramData()
+        diagram_data.ensure_chat_defaults()
         diagram = Diagram(
             user_id=target_user.id,
             name=f"{target_user.username} Personal Case File",
         )
-        diagram.set_diagram_data(initial_database)
+        diagram.set_diagram_data(diagram_data)
         db.session.add(diagram)
         db.session.flush()
         target_user.free_diagram_id = diagram.id

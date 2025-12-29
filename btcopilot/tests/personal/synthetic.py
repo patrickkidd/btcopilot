@@ -985,7 +985,8 @@ class ConversationSimulator:
 
         diagram = None
         if self.persist:
-            diagram_data = DiagramData.create_with_defaults()
+            diagram_data = DiagramData()
+            diagram_data.ensure_chat_defaults()
             # Update default "User" person name to persona name
             for person in diagram_data.people:
                 if person.get("id") == 1:

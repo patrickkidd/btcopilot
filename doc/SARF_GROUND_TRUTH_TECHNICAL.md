@@ -710,6 +710,80 @@ savePersonName(index, newName) {
 
 ---
 
+### 3.2.1 Person Selection Dropdowns (Event.person, relationshipTargets, etc.)
+
+**Location**: `editEventPerson()` in [discussion.js:1327](../btcopilot/training/static/js/discussion.js)
+
+**Purpose**: When clicking the edit icon next to an Event's "Person:" field (or similar fields like spouse, relationshipTargets), a dropdown appears allowing selection from available people.
+
+#### Data Sources for Person Dropdown
+
+The dropdown collects people from **three sources** in this priority order:
+
+1. **`window.diagramPeople`** - Committed diagram people (positive IDs)
+   - Set in [discussion.html:8](../btcopilot/training/templates/discussion.html): `window.diagramPeople = {{ diagram_people_list | tojson }}`
+   - Populated from `discussion.diagram.get_diagram_data().people`
+   - Only contains people already committed to the diagram file
+   - Empty for "Free Diagram" discussions with no base diagram
+
+2. **`this.cumulativePdp.people`** - PDP people from prior statements (negative IDs)
+   - Accumulated from all statements BEFORE the current one
+   - Represents "what the AI had seen so far"
+   - Only populated if earlier statements extracted people
+
+3. **`this.extractedData.people`** - People in current statement's delta (negative IDs)
+   - People extracted or added in the current statement
+   - May be empty if AI only extracted events without people
+
+#### Empty Dropdown Scenarios
+
+The dropdown will be empty when ALL of these are true:
+- No committed diagram people exist (`window.diagramPeople = []`)
+- No people in cumulative PDP from prior statements
+- No people in current statement's extraction
+
+**Common cause**: First statement in a "Free Diagram" discussion where AI extracted an event but no person.
+
+**Solution for auditors**: Use the "Create New Person" button (+ icon in People section header) to create a person first, then assign them to the event.
+
+#### JavaScript Implementation
+
+```javascript
+editEventPerson(event, eventIndex) {
+    // ... dropdown creation ...
+
+    const allPeople = new Map();  // Dedupe by ID
+
+    // Source 1: Committed diagram people
+    const diagramPeople = window.diagramPeople || [];
+    diagramPeople.forEach(person => {
+        if (person.id) allPeople.set(person.id, person);
+    });
+
+    // Source 2: Cumulative PDP people
+    if (this.cumulativePdp?.people?.length > 0) {
+        this.cumulativePdp.people.forEach(person => {
+            if (person.id) allPeople.set(person.id, person);
+        });
+    }
+
+    // Source 3: Current statement's extracted people
+    if (Array.isArray(this.extractedData.people)) {
+        this.extractedData.people.forEach(person => {
+            if (person.id) allPeople.set(person.id, person);
+        });
+    }
+
+    // Build dropdown items from collected people
+    const peopleArray = Array.from(allPeople.values());
+    // ... render dropdown items ...
+}
+```
+
+**GOTCHA**: If all three sources are empty, the dropdown appears but is empty with no items to select. The UI should show a helpful message in this case (see fix below).
+
+---
+
 ### 3.3 Conditional Field Visibility
 
 **EventKind-Based Conditionals** ([sarf_editor.html:488-512, 625](../btcopilot/training/templates/components/sarf_editor.html)):

@@ -1366,6 +1366,14 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             }
 
             const peopleArray = Array.from(allPeople.values());
+
+            if (peopleArray.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.style.cssText = 'padding: 8px 12px; color: var(--bulma-dropdown-content-background-color, white); font-style: italic; opacity: 0.7;';
+                emptyMsg.textContent = 'No people available. Create a person first using + in People section.';
+                dropdown.appendChild(emptyMsg);
+            }
+
             peopleArray.forEach(person => {
                 const item = document.createElement('div');
                 item.style.cssText = 'padding: 8px 12px; cursor: pointer; color: var(--bulma-dropdown-content-background-color, white);';

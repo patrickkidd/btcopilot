@@ -757,19 +757,51 @@ class DiagramData:
             ),
         )
 
-    @staticmethod
-    def create_with_defaults() -> "DiagramData":
-        diagram_data = DiagramData()
+    def ensure_chat_defaults(self) -> tuple[int, int, bool]:
+        """Idempotently ensure chat speaker people exist.
 
-        # Add default User person (ID 1) - matches default chat_user_speaker
-        user_person = Person(id=1, name="User")
-        diagram_data.people.append(asdict(user_person))
+        If a person with primary=True exists (pro app diagram), use them as the
+        user speaker. Otherwise, ensure User (ID=1) exists.
 
-        # Add default Assistant person (ID 2) - matches default chat_ai_speaker
-        assistant_person = Person(id=2, name="Assistant")
-        diagram_data.people.append(asdict(assistant_person))
+        Always ensure Assistant (ID=2) exists.
 
-        # Ensure lastItemId accounts for the default people
-        diagram_data.lastItemId = max(diagram_data.lastItemId, 2)
+        Returns (user_person_id, assistant_person_id, changed).
+        """
+        changed = False
 
-        return diagram_data
+        # Find primary person (pro app) or existing User person
+        primary_person = None
+        user_person_id = None
+        assistant_person_id = None
+
+        for p in self.people:
+            if not isinstance(p, dict):
+                continue
+            if p.get("primary"):
+                primary_person = p
+            if p.get("id") == 1:
+                user_person_id = 1
+            if p.get("id") == 2:
+                assistant_person_id = 2
+
+        # Use primary person as user if present, otherwise ensure User (ID=1)
+        if primary_person:
+            user_person_id = primary_person.get("id")
+        elif user_person_id is None:
+            user_dict = asdict(Person(id=1, name="User"))
+            user_dict["primary"] = True
+            self.people.append(user_dict)
+            user_person_id = 1
+            changed = True
+
+        # Ensure Assistant (ID=2) exists
+        if assistant_person_id is None:
+            assistant_person = Person(id=2, name="Assistant")
+            self.people.append(asdict(assistant_person))
+            assistant_person_id = 2
+            changed = True
+
+        if changed:
+            self.lastItemId = max(self.lastItemId, 2)
+
+        return user_person_id, assistant_person_id, changed

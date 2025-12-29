@@ -446,8 +446,9 @@ def user_clear_db(user_id):
 
     # Clear the user's free diagram database
     if target_user.free_diagram:
-
-        target_user.free_diagram.set_diagram_data(DiagramData.create_with_defaults())
+        diagram_data = DiagramData()
+        diagram_data.ensure_chat_defaults()
+        target_user.free_diagram.set_diagram_data(diagram_data)
 
     old_database = {}
     db.session.commit()

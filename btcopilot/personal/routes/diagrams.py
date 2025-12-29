@@ -30,8 +30,9 @@ def create():
 
     diagram = Diagram(user_id=user.id, name=name, data=b"")
 
-    database_with_defaults = DiagramData.create_with_defaults()
-    diagram.set_diagram_data(database_with_defaults)
+    diagram_data = DiagramData()
+    diagram_data.ensure_chat_defaults()
+    diagram.set_diagram_data(diagram_data)
 
     db.session.add(diagram)
     db.session.commit()
