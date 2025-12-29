@@ -1,0 +1,204 @@
+<style>
+.f1-timeseries-chart-container {
+    position: relative;
+    height: 250px;
+    border-radius: 8px;
+}
+.f1-timeseries-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 10px;
+    justify-content: center;
+}
+.f1-timeseries-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.8em;
+}
+.f1-timeseries-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+</style>
+
+<div class="admin-section mb-5">
+    <div class="box">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h2 class="title is-4">
+                        <span class="icon"><i class="fas fa-chart-line"></i></span>
+                        F1 Score History
+                    </h2>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a href="https://patrickkidd.github.io/btcopilot/doc/f1_timeseries.html" class="button is-link is-outlined" target="_blank">
+                        <span class="icon"><i class="fas fa-external-link-alt"></i></span>
+                        <span>Full Page</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="f1-timeseries-chart-container">
+            <canvas id="f1-timeseries-chart"></canvas>
+        </div>
+
+        <div class="f1-timeseries-legend" id="f1-timeseries-legend"></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script>
+(function() {
+    const JSON_URL = 'https://raw.githubusercontent.com/patrickkidd/btcopilot/refs/heads/master/doc/f1_timeseries.json';
+
+    const targets = {
+        aggregate: 0.50,
+        people: 0.75,
+        events: 0.55,
+        symptom: 0.45,
+        anxiety: 0.45,
+        relationship: 0.45,
+        functioning: 0.45
+    };
+
+    const colors = {
+        aggregate: '#f59e0b',
+        people: '#3b82f6',
+        events: '#10b981',
+        symptom: '#ef4444',
+        anxiety: '#8b5cf6',
+        relationship: '#ec4899',
+        functioning: '#06b6d4'
+    };
+
+    const labels = {
+        aggregate: 'Aggregate',
+        people: 'People',
+        events: 'Events',
+        symptom: 'Symptom',
+        anxiety: 'Anxiety',
+        relationship: 'Relationship',
+        functioning: 'Functioning'
+    };
+
+    async function initF1Timeseries() {
+        let data;
+        try {
+            const response = await fetch(JSON_URL);
+            data = await response.json();
+        } catch (e) {
+            document.getElementById('f1-timeseries-chart').parentElement.innerHTML =
+                '<p class="has-text-danger">Failed to load timeseries data</p>';
+            return;
+        }
+
+        const datasets = data.metrics.map(metric => ({
+            label: labels[metric],
+            data: data.data.map(d => ({
+                x: new Date(d.date),
+                y: d[metric]
+            })).filter(d => d.y !== null),
+            borderColor: colors[metric],
+            backgroundColor: colors[metric] + '33',
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 2
+        }));
+
+        // Add target lines as dashed
+        data.metrics.forEach(metric => {
+            const pts = data.data.filter(d => d[metric] !== null);
+            if (pts.length > 0) {
+                datasets.push({
+                    label: `${labels[metric]} Target`,
+                    data: [
+                        { x: new Date(pts[0].date), y: targets[metric] },
+                        { x: new Date(pts[pts.length - 1].date), y: targets[metric] }
+                    ],
+                    borderColor: colors[metric] + '66',
+                    borderDash: [5, 5],
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    tension: 0
+                });
+            }
+        });
+
+        const ctx = document.getElementById('f1-timeseries-chart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: { datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: function(items) {
+                                const d = data.data.find(dd =>
+                                    new Date(dd.date).getTime() === items[0].parsed.x
+                                );
+                                return d ? `${d.date} (${d.commit})` : items[0].label;
+                            },
+                            afterBody: function(items) {
+                                const d = data.data.find(dd =>
+                                    new Date(dd.date).getTime() === items[0].parsed.x
+                                );
+                                return d && d.note ? [`\n${d.note}`] : [];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: { unit: 'day', displayFormats: { day: 'MMM d' } },
+                        grid: { color: 'rgba(128,128,128,0.2)' },
+                        ticks: { color: 'inherit' }
+                    },
+                    y: {
+                        min: 0,
+                        max: 1,
+                        grid: { color: 'rgba(128,128,128,0.2)' },
+                        ticks: {
+                            color: 'inherit',
+                            callback: v => (v * 100).toFixed(0) + '%'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Build legend
+        const legendEl = document.getElementById('f1-timeseries-legend');
+        data.metrics.forEach(m => {
+            legendEl.innerHTML += `
+                <div class="f1-timeseries-legend-item">
+                    <div class="f1-timeseries-legend-dot" style="background: ${colors[m]}"></div>
+                    <span>${labels[m]}</span>
+                </div>
+            `;
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initF1Timeseries);
+    } else {
+        initF1Timeseries();
+    }
+})();
+</script>
