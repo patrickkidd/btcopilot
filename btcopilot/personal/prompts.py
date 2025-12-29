@@ -368,6 +368,10 @@ SECTION 2: EXTRACTION RULES (Operational guidance)
 5. Is this a NEW incident, not a continuation/elaboration of an event already
    discussed in the conversation_history? (Check if previous messages describe
    the same incident - if so, DON'T create a duplicate event)
+6. **SATURATION CHECK**: Is this a genuinely NEW pattern, or just emotional
+   texture/elaboration of an existing pattern in pdp.events? If pdp.events
+   already has "overfunctioning" for this person, don't create new events for
+   guilt, anxiety, or self-neglect that are part of that same overfunctioning.
 If any answer is NO, do NOT create the event.
 
 **CRITICAL: dateTime is REQUIRED - NEVER use null**. Always provide a date, even
