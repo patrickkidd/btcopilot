@@ -66,21 +66,6 @@
 </section>
 
 {% include 'partials/speaker_bubble_styles.html' %}
-
-<style>
-/* Fix details/summary arrow icons */
-details summary {
-    list-style: none;
-}
-details summary::-webkit-details-marker {
-    display: none;
-}
-details summary::before {
-    content: '▼ ';
-}
-details[open] summary::before {
-    content: '▲ ';
-}
-</style>
+{% include 'partials/analysis_styles.html' %}
 
 {% endblock %}

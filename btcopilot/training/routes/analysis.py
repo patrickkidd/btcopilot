@@ -25,6 +25,8 @@ _log = logging.getLogger(__name__)
 
 bp = Blueprint("analysis", __name__, url_prefix="/analysis")
 
+SARF_ORDER = ["symptom", "anxiety", "relationship", "functioning"]
+
 
 def _calculate_discussion_f1(statement_breakdowns):
     if not statement_breakdowns:
@@ -123,16 +125,6 @@ def _calculate_discussion_f1(statement_breakdowns):
 
 
 def _get_person_name_from_people(person_id, people_lists):
-    """
-    Get person name by ID, trying multiple people lists in order.
-
-    Args:
-        person_id: Person ID to resolve
-        people_lists: List of people arrays to search in order (e.g., [gt_people, ai_people])
-
-    Returns:
-        Person name or "Person {id}" if not found
-    """
     for people in people_lists:
         for person in people:
             if person.id == person_id:
@@ -143,38 +135,29 @@ def _get_person_name_from_people(person_id, people_lists):
     return f"Person {person_id}"
 
 
-def _preprocess_breakdown_for_display(breakdown):
-    """
-    Preprocess breakdown data to create deduplicated person-centric display structure.
+def _extract_sarf_from_event(event_dict):
+    """Extract SARF variables from an event dict, ordered by SARF_ORDER."""
+    if not event_dict:
+        return []
+    sarf_data = []
+    for var_name in SARF_ORDER:
+        value = event_dict.get(var_name)
+        if value is not None:
+            item = {"variable_name": var_name, "value": value}
+            if var_name == "relationship":
+                item["targets"] = event_dict.get("relationshipTargets", [])
+                item["triangles"] = event_dict.get("relationshipTriangles", [])
+            sarf_data.append(item)
+    return sarf_data
 
-    Returns list of display blocks, where each block is:
-    {
-        'person_id': int,
-        'person_name': str,
-        'gt_person': bool,  # True if person exists in GT
-        'ai_person': bool,  # True if person exists in AI
-        'person_match_type': str | None,  # TP/FP/FN for person match
-        'gt_event': dict | None,  # Event entity dict if exists
-        'ai_event': dict | None,  # Event entity dict if exists
-        'event_match_type': str | None,  # TP/FP/FN for event match
-        'sarf_data': [  # SARF variables for this person
-            {
-                'variable_name': str,  # 'symptom', 'anxiety', 'relationship', 'functioning'
-                'gt_value': str | None,
-                'ai_value': str | None,
-                'value_match': str | None,  # 'match' or 'mismatch'
-                'gt_people': list[str],  # For relationship targets
-                'ai_people': list[str],
-                'people_match': str | None
-            }
-        ]
-    }
-    """
+
+def _preprocess_breakdown_for_display(breakdown):
+    """Transform breakdown to match sarf_editor layout: People section then Events section."""
     ai_people = getattr(breakdown, "ai_people", [])
     gt_people = getattr(breakdown, "gt_people", [])
-    person_blocks = {}
 
-    # First, add all people from people_matches
+    # Build people section
+    people_list = []
     for person_match in breakdown.people_matches:
         person_id = (
             person_match.gt_entity.get("id")
@@ -184,88 +167,49 @@ def _preprocess_breakdown_for_display(breakdown):
         if not person_id:
             continue
 
-        # Try GT people first, fall back to cumulative (AI) people
         person_name = _get_person_name_from_people(person_id, [gt_people, ai_people])
-
-        person_blocks[person_id] = {
-            "person_id": person_id,
-            "person_name": person_name,
-            "gt_person": person_match.gt_entity is not None,
-            "ai_person": person_match.ai_entity is not None,
-            "person_match_type": person_match.match_type,
-            "gt_event": None,
-            "ai_event": None,
-            "event_match_type": None,
-            "sarf_data": [],
-        }
-
-    # Then add event data
-    for event_match in breakdown.event_matches:
-        person_id = (
-            event_match.gt_entity.get("person")
-            if event_match.gt_entity
-            else event_match.ai_entity.get("person")
-        )
-        # Use sentinel 0 for events without a person assignment
-        if not person_id:
-            person_id = 0
-
-        if person_id not in person_blocks:
-            if person_id == 0:
-                person_name = "(Unassigned)"
-            else:
-                person_name = _get_person_name_from_people(
-                    person_id, [gt_people, ai_people]
-                )
-
-            person_blocks[person_id] = {
+        people_list.append(
+            {
                 "person_id": person_id,
                 "person_name": person_name,
-                "gt_person": event_match.gt_entity is not None,
-                "ai_person": event_match.ai_entity is not None,
-                "person_match_type": None,
-                "gt_event": None,
-                "ai_event": None,
-                "event_match_type": None,
-                "sarf_data": [],
-            }
-
-        block = person_blocks[person_id]
-        if event_match.gt_entity:
-            block["gt_event"] = event_match.gt_entity
-        if event_match.ai_entity:
-            block["ai_event"] = event_match.ai_entity
-        block["event_match_type"] = event_match.match_type
-
-    # Finally add SARF data
-    for sarf in breakdown.sarf_matches:
-        person_id = sarf.person_id
-        if person_id not in person_blocks:
-            person_blocks[person_id] = {
-                "person_id": person_id,
-                "person_name": sarf.person_name,
-                "gt_person": sarf.gt_value is not None,
-                "ai_person": sarf.ai_value is not None,
-                "person_match_type": None,
-                "gt_event": None,
-                "ai_event": None,
-                "event_match_type": None,
-                "sarf_data": [],
-            }
-
-        person_blocks[person_id]["sarf_data"].append(
-            {
-                "variable_name": sarf.variable_name,
-                "gt_value": sarf.gt_value,
-                "ai_value": sarf.ai_value,
-                "value_match": sarf.value_match,
-                "gt_people": sarf.gt_people,
-                "ai_people": sarf.ai_people,
-                "people_match": sarf.people_match,
+                "gt_person": person_match.gt_entity,
+                "ai_person": person_match.ai_entity,
+                "match_type": person_match.match_type,
             }
         )
 
-    return sorted(person_blocks.values(), key=lambda x: x["person_id"])
+    # Build events section - each event_match becomes a separate entry
+    events_list = []
+    for event_match in breakdown.event_matches:
+        gt_event = event_match.gt_entity
+        ai_event = event_match.ai_entity
+
+        person_id = (
+            gt_event.get("person") if gt_event else ai_event.get("person") if ai_event else 0
+        )
+        if not person_id:
+            person_id = 0
+            person_name = "(Unassigned)"
+        else:
+            person_name = _get_person_name_from_people(person_id, [gt_people, ai_people])
+
+        events_list.append(
+            {
+                "gt_event": gt_event,
+                "ai_event": ai_event,
+                "match_type": event_match.match_type,
+                "person_id": person_id,
+                "person_name": person_name,
+                "gt_sarf": _extract_sarf_from_event(gt_event),
+                "ai_sarf": _extract_sarf_from_event(ai_event),
+            }
+        )
+
+    # Sort people and events by ID for consistent ordering
+    people_list.sort(key=lambda x: x["person_id"])
+    events_list.sort(key=lambda x: x["person_id"])
+
+    return {"people": people_list, "events": events_list}
 
 
 @bp.route("/discussion/<int:discussion_id>")

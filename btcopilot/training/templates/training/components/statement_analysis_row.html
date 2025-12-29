@@ -1,10 +1,10 @@
-<div class="statement-analysis-row box mb-2 py-3" id="statement-{{ item.statement.id }}" data-statement-id="{{ item.statement.id }}" style="background: rgba(255,255,255,0.03);">
+<div class="statement-analysis-row box mb-2 py-3" id="statement-{{ item.statement.id }}" data-statement-id="{{ item.statement.id }}">
     <div class="columns is-mobile mb-0">
         <!-- Column 1: Statement Text (25%) -->
         <div class="column is-3 py-2">
             <p class="heading is-size-7 mb-1">STATEMENT {{ item.statement.id }}</p>
-            <a href="{{ url_for('training.discussions.audit', discussion_id=item.statement.discussion_id) }}#statement-{{ item.statement.id }}" class="statement-link" style="text-decoration: none;">
-                <div class="statement-preview {% if item.statement.speaker.type.value == 'subject' %}user-message-bubble speaker-{{ subject_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in subject_speaker_map else 1 }}{% else %}ai-message-bubble speaker-{{ expert_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in expert_speaker_map else 1 }}{% endif %}" style="border-radius: 18px; padding: 8px 12px; font-size: 0.75rem; margin-bottom: 0.5rem; line-height: 1.4; cursor: pointer; transition: all 0.2s ease;">
+            <a href="{{ url_for('training.discussions.audit', discussion_id=item.statement.discussion_id) }}#statement-{{ item.statement.id }}" class="statement-link">
+                <div class="statement-preview {% if item.statement.speaker.type.value == 'subject' %}user-message-bubble speaker-{{ subject_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in subject_speaker_map else 1 }}{% else %}ai-message-bubble speaker-{{ expert_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in expert_speaker_map else 1 }}{% endif %}">
                     {{ item.statement.text }}
                 </div>
             </a>
@@ -12,116 +12,150 @@
         </div>
 
         <!-- Columns 2-3: Side-by-side Expert and AI SARF Editor Blocks -->
-        <div class="column is-6 py-2" style="border-left: 1px solid rgba(255,255,255,0.1);">
-            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <div class="column is-6 py-2 analysis-column-divider">
+            <div class="is-flex mb-2" style="gap: 0.5rem;">
                 <div style="flex: 1;">
                     <div class="section-header is-size-7 has-text-weight-bold">EXPERT GROUND TRUTH</div>
                 </div>
-                <div style="flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 0.5rem;">
+                <div class="analysis-column-divider" style="flex: 1; padding-left: 0.5rem;">
                     <div class="section-header is-size-7 has-text-weight-bold">AI EXTRACTION</div>
                 </div>
             </div>
 
-            <!-- Iterate preprocessed display blocks - one box pair per person -->
-            {% for block in item.display_blocks %}
-            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
-                <!-- GT Event Box -->
-                <div style="flex: 1;">
-                    <div class="event-item p-2 has-background-light">
-                        <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse;">
-                            <tr>
-                                <td style="width: 80px; padding: 2px 4px 2px 0; color: #999; vertical-align: top;">Person:</td>
-                                <td style="padding: 2px 4px; vertical-align: top;">{{ block.person_name }}</td>
-                            </tr>
-                            {% if block.gt_event %}
-                            <tr>
-                                <td style="width: 80px; padding: 2px 4px 2px 0; color: #999; vertical-align: top;">Kind:</td>
-                                <td style="padding: 2px 4px; vertical-align: top;">{{ block.gt_event.kind }}</td>
-                            </tr>
-                            {% endif %}
-                            {% for sarf in block.sarf_data %}
-                                {% if sarf.gt_value %}
-                            <tr>
-                                <td style="padding: 2px 4px 2px 0; color: #999; vertical-align: top;">{{ sarf.variable_name|capitalize }}:</td>
-                                <td style="padding: 2px 4px; vertical-align: top;">{{ sarf.gt_value }}</td>
-                            </tr>
-                                    {% if sarf.variable_name == 'relationship' and sarf.gt_people %}
-                            <tr>
-                                <td style="padding: 2px 4px 2px 12px; color: #999; vertical-align: top;">→ Targets:</td>
-                                <td style="padding: 2px 4px; vertical-align: top;">{{ sarf.gt_people|join(', ') }}</td>
-                            </tr>
-                                    {% endif %}
-                                {% endif %}
-                            {% endfor %}
-                        </table>
+            <!-- PEOPLE SECTION -->
+            {% if item.display_blocks.people %}
+            <div class="analysis-section mb-3">
+                <div class="section-header is-size-7 has-text-weight-bold mb-2 section-label">
+                    <span class="icon is-small"><i class="fas fa-users"></i></span> People
+                </div>
+                {% for person in item.display_blocks.people %}
+                <div class="is-flex mb-1" style="gap: 0.5rem;">
+                    <!-- GT Person -->
+                    <div style="flex: 1;">
+                        {% if person.gt_person %}
+                        <span class="tag is-success is-light is-small">{{ person.person_name }}</span>
+                        {% endif %}
+                    </div>
+                    <!-- AI Person -->
+                    <div class="analysis-column-divider" style="flex: 1; padding-left: 0.5rem;">
+                        {% if person.ai_person %}
+                        <span class="tag {% if person.match_type == 'TP' %}is-success{% elif person.match_type == 'FP' %}is-warning{% else %}is-light{% endif %} is-small">{{ person.person_name }}</span>
+                        {% elif person.gt_person %}
+                        <span class="has-text-danger is-size-7">❌ missed</span>
+                        {% endif %}
                     </div>
                 </div>
-
-                <!-- AI Event Box -->
-                <div style="flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 0.5rem;">
-                    <div class="event-item p-2 has-background-light">
-                        <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse;">
-                            <tr>
-                                <td style="width: 80px; padding: 2px 4px 2px 0; color: #999; vertical-align: top;">Person:</td>
-                                <td style="padding: 2px 4px; vertical-align: top;">
-                                    {% if block.ai_person %}
-                                        {% set match = block.event_match_type or block.person_match_type %}
-                                        <span class="{% if match == 'TP' %}has-text-success{% elif match == 'FP' %}has-text-warning{% endif %}">{{ block.person_name }}</span>
-                                    {% elif block.gt_person %}
-                                        <span class="has-text-danger">❌</span>
-                                    {% else %}
-                                        {{ block.person_name }}
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% if block.ai_event %}
-                            <tr>
-                                <td style="width: 80px; padding: 2px 4px 2px 0; color: #999; vertical-align: top;">Kind:</td>
-                                <td style="padding: 2px 4px; vertical-align: top;">
-                                    <span class="{% if block.ai_match_type == 'TP' %}has-text-success{% elif block.ai_match_type == 'FP' %}has-text-warning{% endif %}">{{ block.ai_event.kind }}</span>
-                                </td>
-                            </tr>
-                            {% elif block.gt_event %}
-                            <tr>
-                                <td style="width: 80px; padding: 2px 4px 2px 0; color: #999; vertical-align: top;">Kind:</td>
-                                <td style="padding: 2px 4px; vertical-align: top;">
-                                    <span class="has-text-danger">❌</span>
-                                </td>
-                            </tr>
-                            {% endif %}
-                            {% for sarf in block.sarf_data %}
-                            <tr>
-                                <td style="padding: 2px 4px 2px 0; color: #999; vertical-align: top;">{{ sarf.variable_name|capitalize }}:</td>
-                                <td style="padding: 2px 4px; vertical-align: top;">
-                                    {% if sarf.ai_value %}
-                                    <span class="{% if sarf.value_match == 'mismatch' %}has-text-warning{% else %}has-text-success{% endif %}">{{ sarf.ai_value }}</span>
-                                    {% elif sarf.gt_value %}
-                                    <span class="has-text-danger">❌</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                                {% if sarf.variable_name == 'relationship' and (sarf.ai_people or sarf.gt_people) %}
-                            <tr>
-                                <td style="padding: 2px 4px 2px 12px; color: #999; vertical-align: top;">→ Targets:</td>
-                                <td style="padding: 2px 4px; vertical-align: top;">
-                                    {% if sarf.ai_people %}
-                                    <span class="{% if sarf.people_match == 'mismatch' %}has-text-warning{% else %}has-text-success{% endif %}">{{ sarf.ai_people|join(', ') }}</span>
-                                    {% elif sarf.gt_people %}
-                                    <span class="has-text-danger">❌</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                                {% endif %}
-                            {% endfor %}
-                        </table>
-                    </div>
-                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
+            {% endif %}
+
+            <!-- EVENTS SECTION -->
+            {% if item.display_blocks.events %}
+            <div class="analysis-section">
+                <div class="section-header is-size-7 has-text-weight-bold mb-2 section-label">
+                    <span class="icon is-small"><i class="fas fa-calendar-alt"></i></span> Events
+                </div>
+                {% for event in item.display_blocks.events %}
+                <div class="is-flex mb-2" style="gap: 0.5rem;">
+                    <!-- GT Event Box -->
+                    <div style="flex: 1;">
+                        {% if event.gt_event %}
+                        <div class="event-item p-2 has-background-light">
+                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse;">
+                                <tr>
+                                    <td class="sarf-label">Kind:</td>
+                                    <td class="sarf-value" title="{{ event.gt_event.kind or 'shift' }}">{{ (event.gt_event.kind or 'shift')|string|replace('EventKind.', '') }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="sarf-label">Person:</td>
+                                    <td class="sarf-value">{{ event.person_name }}</td>
+                                </tr>
+                                {% if event.gt_event.dateTime %}
+                                <tr>
+                                    <td class="sarf-label">Date:</td>
+                                    <td class="sarf-value">{{ event.gt_event.dateTime }}</td>
+                                </tr>
+                                {% endif %}
+                                {% for sarf in event.gt_sarf %}
+                                <tr>
+                                    <td class="sarf-label">{{ sarf.variable_name|capitalize }}:</td>
+                                    <td class="sarf-value" title="{{ sarf.value }}">{{ sarf.value|string|replace('RelationshipKind.', '') }}</td>
+                                </tr>
+                                    {% if sarf.variable_name == 'relationship' and sarf.targets %}
+                                <tr>
+                                    <td class="sarf-indent">→ Targets:</td>
+                                    <td class="sarf-value">{{ sarf.targets|join(', ') }}</td>
+                                </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="event-item p-2 has-background-light has-text-grey-light is-size-7">
+                            (no GT event)
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- AI Event Box -->
+                    <div class="analysis-column-divider" style="flex: 1; padding-left: 0.5rem;">
+                        {% if event.ai_event %}
+                        <div class="event-item p-2 has-background-light">
+                            <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse;">
+                                <tr>
+                                    <td class="sarf-label">Kind:</td>
+                                    <td class="sarf-value" title="{{ event.ai_event.kind or 'shift' }}">
+                                        <span class="{% if event.match_type == 'TP' %}has-text-success{% elif event.match_type == 'FP' %}has-text-danger{% endif %}">{{ (event.ai_event.kind or 'shift')|string|replace('EventKind.', '') }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="sarf-label">Person:</td>
+                                    <td class="sarf-value">
+                                        <span class="{% if event.match_type == 'TP' %}has-text-success{% elif event.match_type == 'FP' %}has-text-danger{% endif %}">{{ event.person_name }}</span>
+                                    </td>
+                                </tr>
+                                {% if event.ai_event.dateTime %}
+                                <tr>
+                                    <td class="sarf-label">Date:</td>
+                                    <td class="sarf-value">
+                                        <span class="{% if event.match_type == 'TP' %}has-text-success{% elif event.match_type == 'FP' %}has-text-danger{% endif %}">{{ event.ai_event.dateTime }}</span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% for sarf in event.ai_sarf %}
+                                <tr>
+                                    <td class="sarf-label">{{ sarf.variable_name|capitalize }}:</td>
+                                    <td class="sarf-value" title="{{ sarf.value }}">
+                                        <span class="{% if event.match_type == 'TP' %}has-text-success{% elif event.match_type == 'FP' %}has-text-danger{% endif %}">{{ sarf.value|string|replace('RelationshipKind.', '') }}</span>
+                                    </td>
+                                </tr>
+                                    {% if sarf.variable_name == 'relationship' and sarf.targets %}
+                                <tr>
+                                    <td class="sarf-indent">→ Targets:</td>
+                                    <td class="sarf-value"><span class="{% if event.match_type == 'TP' %}has-text-success{% elif event.match_type == 'FP' %}has-text-danger{% endif %}">{{ sarf.targets|join(', ') }}</span></td>
+                                </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </table>
+                        </div>
+                        {% elif event.gt_event %}
+                        <div class="event-item p-2 has-background-light">
+                            <span class="has-text-danger is-size-7">❌ missed</span>
+                        </div>
+                        {% else %}
+                        <div class="event-item p-2 has-background-light has-text-grey-light is-size-7">
+                            (no AI event)
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
 
         <!-- Column 4: Match Breakdown (25%) -->
-        <div class="column is-3 py-2" style="border-left: 1px solid rgba(255,255,255,0.1);">
+        <div class="column is-3 py-2 analysis-column-divider">
             <p class="heading is-size-7 mb-1">MATCH BREAKDOWN</p>
             <div class="is-size-7">
                 {% set people_tp = item.breakdown.people_matches|selectattr('match_type', 'equalto', 'TP')|list|length %}

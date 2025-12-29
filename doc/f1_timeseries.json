@@ -1,0 +1,114 @@
+{
+  "description": "F1 score timeseries data - update when F1_DASHBOARD.md baseline changes",
+  "metrics": ["aggregate", "people", "events", "symptom", "anxiety", "relationship", "functioning"],
+  "data": [
+    {
+      "date": "2025-12-23",
+      "commit": "ec735d1",
+      "aggregate": 0.103,
+      "people": 0.505,
+      "events": 0.113,
+      "symptom": null,
+      "anxiety": null,
+      "relationship": null,
+      "functioning": null,
+      "note": "Initial tracking - SARF metrics not yet tracked"
+    },
+    {
+      "date": "2025-12-26T20:48",
+      "commit": "37ff660",
+      "aggregate": 0.071,
+      "people": 0.456,
+      "events": 0.078,
+      "symptom": null,
+      "anxiety": null,
+      "relationship": null,
+      "functioning": null,
+      "note": "f1 fix don't match Event.description for non-shift"
+    },
+    {
+      "date": "2025-12-26T21:14",
+      "commit": "0297bcb",
+      "aggregate": 0.071,
+      "people": 0.456,
+      "events": 0.078,
+      "symptom": null,
+      "anxiety": null,
+      "relationship": null,
+      "functioning": null,
+      "note": "improve Event.description matching"
+    },
+    {
+      "date": "2025-12-27T02:48",
+      "commit": "6e54e90",
+      "aggregate": 0.071,
+      "people": 0.456,
+      "events": 0.078,
+      "symptom": null,
+      "anxiety": null,
+      "relationship": null,
+      "functioning": null,
+      "note": "detect events from age statement"
+    },
+    {
+      "date": "2025-12-27T11:11",
+      "commit": "604aede",
+      "aggregate": 0.278,
+      "people": 0.682,
+      "events": 0.200,
+      "symptom": 0.244,
+      "anxiety": 0.267,
+      "relationship": 0.244,
+      "functioning": 0.244,
+      "note": "huge F1 improvement from fixing prev-stmt PDP calc bug + SARF metrics added"
+    },
+    {
+      "date": "2025-12-27T12:14",
+      "commit": "3fcd6ef",
+      "aggregate": 0.278,
+      "people": 0.682,
+      "events": 0.200,
+      "symptom": 0.244,
+      "anxiety": 0.267,
+      "relationship": 0.244,
+      "functioning": 0.244,
+      "note": "updated dashboard"
+    },
+    {
+      "date": "2025-12-27T22:35",
+      "commit": "262b308",
+      "aggregate": 0.278,
+      "people": 0.682,
+      "events": 0.200,
+      "symptom": 0.244,
+      "anxiety": 0.267,
+      "relationship": 0.244,
+      "functioning": 0.244,
+      "note": "sarf styling"
+    },
+    {
+      "date": "2025-12-28T08:22",
+      "commit": "66d5972",
+      "aggregate": 0.314,
+      "people": 0.722,
+      "events": 0.224,
+      "symptom": 0.222,
+      "anxiety": 0.252,
+      "relationship": 0.244,
+      "functioning": 0.244,
+      "note": "dateCertainty default fix - Aggregate F1: 0.278->0.314 (+13%)"
+    },
+    {
+      "date": "2025-12-28T14:45",
+      "commit": "66d5972",
+      "aggregate": 0.299,
+      "people": 0.737,
+      "events": 0.205,
+      "symptom": 0.182,
+      "anxiety": 0.167,
+      "relationship": 0.182,
+      "functioning": 0.182,
+      "note": "[SATURATION_PATTERN_ELABORATION] prompt - Events F1: 0.181->0.205 (+13%)"
+    }
+  ]
+}

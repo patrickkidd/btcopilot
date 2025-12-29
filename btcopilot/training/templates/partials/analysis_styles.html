@@ -1,0 +1,64 @@
+<style>
+/* Fix details/summary arrow icons */
+details summary {
+    list-style: none;
+}
+details summary::-webkit-details-marker {
+    display: none;
+}
+details summary::before {
+    content: '▼ ';
+}
+details[open] summary::before {
+    content: '▲ ';
+}
+
+/* Analysis row styling */
+.statement-analysis-row {
+    background: var(--color-canvas-subtle, rgba(255,255,255,0.03));
+}
+
+.statement-analysis-row .statement-preview {
+    border-radius: 18px;
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.statement-analysis-row .statement-link {
+    text-decoration: none;
+}
+
+.statement-analysis-row .analysis-column-divider {
+    border-left: 1px solid var(--color-border-default, rgba(255,255,255,0.1));
+}
+
+.statement-analysis-row .section-label {
+    color: var(--color-fg-muted, #999);
+}
+
+.statement-analysis-row .event-item table td.sarf-label {
+    width: 80px;
+    padding: 2px 4px 2px 0;
+    color: var(--color-fg-muted, #999);
+    vertical-align: top;
+}
+
+.statement-analysis-row .event-item table td.sarf-value {
+    padding: 2px 4px;
+    vertical-align: top;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.statement-analysis-row .event-item table td.sarf-indent {
+    padding: 2px 4px 2px 12px;
+    color: var(--color-fg-muted, #999);
+    vertical-align: top;
+}
+</style>

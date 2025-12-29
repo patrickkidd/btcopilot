@@ -17,7 +17,8 @@
    - Prompt fixes: Add example to `prompts.py`, re-run F1 eval
 
 3. **Update dashboard**:
-   - Update baseline metrics
+   - Update baseline metrics table below
+   - Add entry to `f1_timeseries.json` (see [Timeseries Tracking](#timeseries-tracking))
    - Add to change log
    - Move completed items to Archive
    - Re-prioritize if needed
@@ -26,24 +27,26 @@
 - Analysis page: `http://127.0.0.1:8888/training/analysis/` (micro view)
 - F1 eval: `GOOGLE_GEMINI_API_KEY=... uv run python -m btcopilot.training.test_prompts_live`
 - This dashboard: macro view, priorities, patterns
+- Timeseries plot: [f1_timeseries.html](f1_timeseries.html) (open in browser)
 
-## Current Baseline (2025-12-27, 45 cases)
+## Current Baseline (2025-12-28, 44 cases)
 
 | Metric | Current | Target | Gap | Rationale |
 |--------|---------|--------|-----|-----------|
-| Aggregate F1 | 0.314 | **0.50** | -0.19 | Weighted average of component targets |
-| People F1 | 0.722 | **0.75** | -0.03 | NER benchmark: 65-78% for clinical entities |
-| Events F1 | 0.224 | **0.55** | -0.33 | Event extraction: 55-70% typical for clinical |
-| Symptom F1 | 0.222 | **0.45** | -0.23 | SARF variable extraction |
-| Anxiety F1 | 0.252 | **0.45** | -0.20 | SARF variable extraction |  
-| Relationship F1 | 0.244 | **0.45** | -0.21 | SARF variable extraction |
-| Functioning F1 | 0.244 | **0.45** | -0.21 | SARF variable extraction |
+| Aggregate F1 | 0.299 | **0.50** | -0.20 | Weighted average of component targets |
+| People F1 | 0.737 | **0.75** | -0.01 | NER benchmark: 65-78% for clinical entities |
+| Events F1 | 0.205 | **0.55** | -0.35 | Event extraction: 55-70% typical for clinical |
+| Symptom F1 | 0.182 | **0.45** | -0.27 | SARF variable extraction |
+| Anxiety F1 | 0.167 | **0.45** | -0.28 | SARF variable extraction |
+| Relationship F1 | 0.182 | **0.45** | -0.27 | SARF variable extraction |
+| Functioning F1 | 0.182 | **0.45** | -0.27 | SARF variable extraction |
 
 **Change log**:
 - 2025-12-26: Events F1 +42% (0.078→0.111) after P0 prompt fixes
 - 2025-12-27: GT quality fixes (8 null person fields) - SARF F1 now non-zero
 - 2025-12-27: Fixed test_prompts_live.py bug - was using cumulative PDP including current statement
 - 2025-12-27: **dateCertainty default → Approximate** + GT dateCertainty backfill. Aggregate F1: 0.278→0.314 (+13%)
+- 2025-12-28: **[SATURATION_PATTERN_ELABORATION]** prompt. Events F1: 0.181→0.205 (+13%)
 
 ---
 
@@ -51,21 +54,30 @@
 
 ### P1: Over-Extraction (AI extracts too many events)
 
-**Problem**: AI frequently extracts 2-4 events when GT has 1. This hurts precision.
+**Problem**: AI frequently extracts 2-4 events when GT has 0-1. This hurts precision.
 
-**Review these statements** (click to open in Analysis page):
-| Statement | Issue | Verdict |
-|-----------|-------|---------|
-| [1846](http://127.0.0.1:8888/training/analysis/discussion/36#statement-1846) | GT: 1 moved, AI: 4 shifts | |
-| [1848](http://127.0.0.1:8888/training/analysis/discussion/36#statement-1848) | GT: 1 birth, AI: 2 (birth + shift) | |
-| [1850](http://127.0.0.1:8888/training/analysis/discussion/36#statement-1850) | GT: 2 events, AI: 3 | |
-| [1840](http://127.0.0.1:8888/training/analysis/discussion/36#statement-1840) | GT: 1 shift, AI: 2 shifts | |
+**Micro-analysis completed (2025-12-28):**
 
-**Root cause hypothesis**: AI interprets emotional context as separate shift events when GT only extracts concrete facts.
+| Statement | Text Pattern | GT | AI | Root Cause |
+|-----------|--------------|----|----|------------|
+| [1910](http://127.0.0.1:8888/training/analysis/discussion/37#statement-1910) | "I found myself...", "I felt guilty...", "I was just a mess" | 0 events | 4 shifts | Reflective narrative → shift events |
+| [1846](http://127.0.0.1:8888/training/analysis/discussion/36#statement-1846) | "I can't pinpoint...", "I feel like...", "she just seems lost" | 1 moved | 4 shifts | Vague feelings → shift events |
+| [1856](http://127.0.0.1:8888/training/analysis/discussion/36#statement-1856) | "Mom fell apart", "I took charge", "it felt like..." | 1 shift | 4 shifts | Each emotional phrase → separate event |
+| [1840](http://127.0.0.1:8888/training/analysis/discussion/36#statement-1840) | "It's just exhausting", "I feel like I'm the one..." | 1 shift | 2 shifts | Current feelings → shift events |
 
-**Actions** (after micro analysis):
-- [ ] Fix any GT errors found
-- [ ] If AI pattern confirmed: Add `[OVER_EXTRACTION_EMOTIONAL_CONTEXT]` example
+**Root cause confirmed**: AI treats emotional/reflective language as shift events:
+- "I found myself..." / "I felt like..." / "It's like..."
+- Vague characterizations ("she seems lost", "he's avoiding it all")
+- Internal processing ("I was just a mess", "I couldn't be honest")
+
+**Attempted fixes (2025-12-28)**:
+1. ❌ Added `[OVER_EXTRACTION_EMOTIONAL_NARRATIVE]` example → Events F1 dropped (too aggressive)
+2. ❌ Added rules to "Do NOT create events for" section → Events F1 dropped (too aggressive)
+3. ✅ Added `[SATURATION_PATTERN_ELABORATION]` example → **Events F1 +13%** (0.181→0.205)
+
+**Root cause**: Not just "emotional language" but **pattern saturation** - AI was treating elaborations of already-captured patterns as new events. Fix teaches AI to recognize when emotional details are texture of existing patterns vs new shifts.
+
+**Key insight**: The problem wasn't emotional language per se, but failing to check if the functional pattern (overfunctioning, distancing, etc.) was already coded in the PDP before creating new events for its emotional manifestations.
 
 ### P2: Event Kind Mismatch
 
@@ -219,6 +231,31 @@ Targets are based on published clinical NLP benchmarks, adjusted downward to acc
 2. Domain-specific constructs (differentiation, anxiety, etc.)
 3. Implicit vs explicit mentions
 4. Current cascade dependency (SARF F1 limited by Events F1)
+
+---
+
+## Timeseries Tracking
+
+When updating the baseline metrics, add an entry to `f1_timeseries.json`:
+
+```json
+{
+  "date": "YYYY-MM-DDTHH:MM",
+  "commit": "short_hash",
+  "aggregate": 0.XXX,
+  "people": 0.XXX,
+  "events": 0.XXX,
+  "symptom": 0.XXX,
+  "anxiety": 0.XXX,
+  "relationship": 0.XXX,
+  "functioning": 0.XXX,
+  "note": "Brief description of change"
+}
+```
+
+The HTML plot fetches the JSON dynamically - just update the JSON file and push.
+
+**View locally**: `cd btcopilot/doc && python -m http.server 8000` → http://localhost:8000/f1_timeseries.html
 
 ---
 

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Score Timeseries</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        h1 { margin: 0 0 10px 0; font-size: 1.5em; }
+        .subtitle { color: #888; margin-bottom: 20px; font-size: 0.9em; }
+        .chart-container {
+            position: relative;
+            height: 500px;
+            background: #16213e;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .legend-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85em;
+        }
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .targets {
+            margin-top: 20px;
+            padding: 15px;
+            background: #16213e;
+            border-radius: 8px;
+        }
+        .targets h3 { margin: 0 0 10px 0; font-size: 1em; }
+        .target-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #333;
+        }
+        .target-row:last-child { border-bottom: none; }
+        .current { color: #4ade80; }
+        .gap { color: #f87171; }
+    </style>
+</head>
+<body>
+    <h1>F1 Score Timeseries - SARF Extraction</h1>
+    <p class="subtitle">Smoothed line graph of F1 metrics over time. Data from git history of F1_DASHBOARD.md</p>
+
+    <div class="chart-container">
+        <canvas id="chart"></canvas>
+    </div>
+
+    <div class="legend-container" id="legend"></div>
+
+    <div class="targets" id="targets"></div>
+
+    <script>
+    let data = null;
+
+    async function init() {
+        try {
+            const response = await fetch('f1_timeseries.json');
+            data = await response.json();
+        } catch (e) {
+            // Fallback for local file:// access (CORS blocks fetch)
+            document.body.innerHTML = '<p style="padding:20px">To view locally, run: <code>python -m http.server 8000</code> in btcopilot/doc/ then open http://localhost:8000/f1_timeseries.html</p>';
+            return;
+        }
+        render();
+    }
+
+    function render() {
+
+    const targets = {
+        aggregate: 0.50,
+        people: 0.75,
+        events: 0.55,
+        symptom: 0.45,
+        anxiety: 0.45,
+        relationship: 0.45,
+        functioning: 0.45
+    };
+
+    const colors = {
+        aggregate: '#f59e0b',
+        people: '#3b82f6',
+        events: '#10b981',
+        symptom: '#ef4444',
+        anxiety: '#8b5cf6',
+        relationship: '#ec4899',
+        functioning: '#06b6d4'
+    };
+
+    const labels = {
+        aggregate: 'Aggregate',
+        people: 'People',
+        events: 'Events',
+        symptom: 'Symptom',
+        anxiety: 'Anxiety',
+        relationship: 'Relationship',
+        functioning: 'Functioning'
+    };
+
+    const datasets = data.metrics.map(metric => ({
+        label: labels[metric],
+        data: data.data.map(d => ({
+            x: new Date(d.date),
+            y: d[metric]
+        })).filter(d => d.y !== null),
+        borderColor: colors[metric],
+        backgroundColor: colors[metric] + '33',
+        tension: 0.3,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        borderWidth: 2
+    }));
+
+    // Add target lines as dashed
+    data.metrics.forEach(metric => {
+        const pts = data.data.filter(d => d[metric] !== null);
+        if (pts.length > 0) {
+            datasets.push({
+                label: `${labels[metric]} Target`,
+                data: [
+                    { x: new Date(pts[0].date), y: targets[metric] },
+                    { x: new Date(pts[pts.length - 1].date), y: targets[metric] }
+                ],
+                borderColor: colors[metric] + '66',
+                borderDash: [5, 5],
+                borderWidth: 1,
+                pointRadius: 0,
+                tension: 0
+            });
+        }
+    });
+
+    const ctx = document.getElementById('chart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        title: function(items) {
+                            const d = data.data.find(dd =>
+                                new Date(dd.date).getTime() === items[0].parsed.x
+                            );
+                            return d ? `${d.date} (${d.commit})` : items[0].label;
+                        },
+                        afterBody: function(items) {
+                            const d = data.data.find(dd =>
+                                new Date(dd.date).getTime() === items[0].parsed.x
+                            );
+                            return d && d.note ? [`\n${d.note}`] : [];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: { unit: 'day', displayFormats: { day: 'MMM d' } },
+                    grid: { color: '#333' },
+                    ticks: { color: '#888' }
+                },
+                y: {
+                    min: 0,
+                    max: 1,
+                    grid: { color: '#333' },
+                    ticks: {
+                        color: '#888',
+                        callback: v => (v * 100).toFixed(0) + '%'
+                    }
+                }
+            }
+        }
+    });
+
+    // Build legend
+    const legendEl = document.getElementById('legend');
+    data.metrics.forEach(m => {
+        legendEl.innerHTML += `
+            <div class="legend-item">
+                <div class="legend-dot" style="background: ${colors[m]}"></div>
+                <span>${labels[m]}</span>
+            </div>
+        `;
+    });
+
+    // Build targets table
+    const latest = data.data[data.data.length - 1];
+    const targetsEl = document.getElementById('targets');
+    targetsEl.innerHTML = '<h3>Current vs Target</h3>';
+    data.metrics.forEach(m => {
+        const current = latest[m];
+        const target = targets[m];
+        const gap = current !== null ? (current - target).toFixed(3) : '-';
+        targetsEl.innerHTML += `
+            <div class="target-row">
+                <span>${labels[m]}</span>
+                <span>
+                    <span class="current">${current !== null ? current.toFixed(3) : '-'}</span>
+                    / ${target.toFixed(2)}
+                    <span class="gap">(${gap})</span>
+                </span>
+            </div>
+        `;
+    });
+    }
+
+    init();
+    </script>
+</body>
+</html>

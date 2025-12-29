@@ -323,6 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 {% include 'partials/speaker_bubble_styles.html' %}
+{% include 'partials/analysis_styles.html' %}
 
 <style>
 /* Collapsible help header */
@@ -345,20 +346,6 @@ html.theme-dark .help-header {
 
 .help-content {
     padding: 1.25rem;
-}
-
-/* Fix details/summary arrow icons */
-details summary {
-    list-style: none;
-}
-details summary::-webkit-details-marker {
-    display: none;
-}
-details summary::before {
-    content: '▼ ';
-}
-details[open] summary::before {
-    content: '▲ ';
 }
 </style>
 

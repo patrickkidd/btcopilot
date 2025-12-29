@@ -1161,6 +1161,64 @@ extracted, do NOT create a duplicate event. Signs of continuation include:
 - Follow-up statements in direct response to questions about a previous event
 
 # ─────────────────────────────────────────────────────────────────────────────
+# [SATURATION_PATTERN_ELABORATION]
+# Error Pattern: AI creates new events for emotional elaboration of already-captured pattern
+# CRITICAL: Once a functional pattern (overfunctioning, distancing, etc.) is coded,
+# subsequent descriptions of the TEXTURE of that pattern are NOT new events
+# ─────────────────────────────────────────────────────────────────────────────
+
+**Conversation History**:
+User: My mom took on so much with Helen. She was completely exhausted, snapping at everyone. I felt this pressure to be the rock for her. I couldn't process my own feelings while trying to support her. It's like I was stuck in this role of caretaker.
+Assistant: How did this experience affect your relationship with your mom?
+
+**NEW USER STATEMENT TO ANALYZE**:
+"I mean, it definitely shifted our dynamic. I found myself stepping into this caregiver role. I think I felt guilty for not being able to do more, and that guilt made me avoid talking about my own struggles. I remember one night my mom just broke down in front of me, and I felt this urge to comfort her, but inside, I was just a mess."
+
+DiagramData: {
+    "people": [{"id": 1, "name": "User"}, {"id": -4, "name": "Helen"}, {"id": -5, "name": "Marcus' Mother"}],
+    "events": [],
+    "pdp": {
+        "people": [],
+        "events": [
+            {"id": -10, "kind": "shift", "person": -5, "relationship": "overfunctioning", "relationshipTargets": [-4]},
+            {"id": -11, "kind": "shift", "person": 1, "relationship": "overfunctioning", "relationshipTargets": [-5]}
+        ]
+    }
+}
+
+❌ WRONG OUTPUT (creating events for pattern elaboration):
+{
+    "people": [],
+    "events": [
+        {"id": -12, "kind": "shift", "person": 1, "anxiety": "up"},
+        {"id": -13, "kind": "shift", "person": 1, "relationship": "distance"},
+        {"id": -14, "kind": "shift", "person": 1, "functioning": "down"}
+    ],
+    "delete": []
+}
+
+WHY WRONG: The PDP already contains event -11 capturing "User overfunctioning → Mother".
+This statement describes the TEXTURE of that overfunctioning pattern:
+- "guilt" = emotional component of overfunctioning (not a separate anxiety event)
+- "avoid talking about my own struggles" = part of the overfunctioning dynamic (not distance)
+- "I was just a mess" = how the overfunctioning feels (not a new functioning shift)
+
+These are not new shifts - they are elaborations of the SAME pattern already captured.
+
+✅ CORRECT OUTPUT:
+{
+    "people": [],
+    "events": [],
+    "delete": []
+}
+
+**SATURATION RULE**: Once a relational pattern is coded in the PDP, recognize that:
+1. Guilt, anxiety, overwhelm during overfunctioning = part of that pattern, not separate events
+2. "I couldn't be honest" during overfunctioning = manifestation, not a new distance event
+3. "I was a mess" = emotional description, not a functioning shift
+4. Only create NEW events if there's a CHANGE to the pattern (e.g., "then I stopped helping")
+
+# ─────────────────────────────────────────────────────────────────────────────
 # [RELATIONSHIP_TRIANGLE_MISSING_THIRD_PERSON]
 # Error Pattern: Missing 3rd person in triangular dynamics
 # ─────────────────────────────────────────────────────────────────────────────
