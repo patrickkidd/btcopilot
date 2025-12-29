@@ -857,7 +857,7 @@ def audit(discussion_id):
                         "people": deltas_source.get("people", []),
                         "events": deltas_source.get("events", []),
                         "pair_bonds": deltas_source.get("pair_bonds", []),
-                        "deletes": deltas_source.get("delete", []),
+                        "delete": deltas_source.get("delete", []),
                     }
 
                     def filter_person_fields(person_data):
@@ -908,7 +908,7 @@ def audit(discussion_id):
                             PairBond(**pair_bond_data)
                             for pair_bond_data in pdp_deltas.get("pair_bonds", [])
                         ],
-                        delete=pdp_deltas.get("deletes", []),
+                        delete=pdp_deltas.get("delete", []),
                     )
                 except (ValueError, KeyError, TypeError) as e:
                     _log.warning(f"Error parsing deltas for statement {stmt.id}: {e}")
