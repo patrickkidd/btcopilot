@@ -522,10 +522,11 @@ def test_dates_within_tolerance_certain():
     )
 
 
-def test_dates_within_tolerance_none_is_certain():
-    """None certainty treated as Certain."""
+def test_dates_within_tolerance_none_is_approximate():
+    """None certainty treated as Approximate (therapy transcripts rarely have precise dates)."""
     assert dates_within_tolerance("2025-01-01", "2025-01-05", None, None)
-    assert not dates_within_tolerance("2025-01-01", "2025-01-15", None, None)
+    assert dates_within_tolerance("2025-01-01", "2025-01-15", None, None)  # Within 270 days
+    assert not dates_within_tolerance("2025-01-01", "2026-01-01", None, None)  # 365 days > 270
 
 
 def test_calculate_date_similarity_unknown():
