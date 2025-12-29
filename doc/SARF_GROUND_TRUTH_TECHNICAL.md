@@ -956,17 +956,7 @@ function toggleSection(componentId) {
 
 **Manifestation**: Cumulative column would display auditor's edited extraction instead of full cumulative state when `feedback_data` leaked from Column 2.
 
-**Fix** ([discussion.html:517-523](../btcopilot/training/templates/discussion.html)):
-```jinja2
-<!-- Column 3 must explicitly reset all Column 2 variables -->
-{% set feedback_data = none %}
-{% set all_ext_feedback = [] %}
-{% set all_ext_feedback_dict = [] %}
-{% set admin_ext_feedback = none %}
-{% set approved = false %}
-{% set approved_by = none %}
-{% set approved_at = none %}
-```
+**Fix** ([discussion.html:517-523](../btcopilot/training/templates/discussion.html)): Column 3 explicitly resets all variables (`feedback_data`, `all_ext_feedback`, `all_ext_feedback_dict`, `admin_ext_feedback`, `approved`, `approved_by`, `approved_at`) to their default values before rendering.
 
 **Why this matters**: Without these resets, the component's initialization logic uses leaked `feedback_data.edited_extraction` instead of `item.cumulative_pdp`, causing cumulative to show only the current statement's deltas instead of the accumulated state.
 
