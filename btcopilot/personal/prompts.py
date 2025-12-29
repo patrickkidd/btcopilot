@@ -307,8 +307,9 @@ SECTION 1: DATA MODEL (Semantic definitions - what things mean)
     - "certain": date is known precisely (e.g., "March 15, 2025", "last Tuesday")
     - "approximate": date is within a year (e.g., "sometime in 1985", "in college")
     - "unknown": date is completely unknown/guessed, no temporal info
-  - `description`: Brief, one issue (e.g., "Trouble sleeping", not "Having
-    trouble sleeping and feeling really anxious lately")
+  - `description`: Minimal phrase, ideally 3 words, 5 max. Strip articles/filler.
+    Good: "Trouble sleeping", "Boss criticized project", "Argument at dinner"
+    Bad: "Having trouble sleeping and feeling really anxious lately"
   - `kind`: EventKind enum value
 
   EventKind values and meanings:

@@ -159,7 +159,7 @@ PDP_SCHEMA_DESCRIPTIONS = {
     "Event.id": "MUST be negative integer for new entries (-1, -2, -3, etc.)",
     "Event.kind": "Type of event: shift (SARF variable change), birth, death, married, etc.",
     "Event.person": "ID of the main person this event is about",
-    "Event.description": "Brief description of the specific incident",
+    "Event.description": "Minimal phrase, 3 words ideal, 5 max (e.g., 'Trouble sleeping')",
     "Event.symptom": "Change in physical/mental health: up, down, or same",
     "Event.anxiety": "Change in anxiety level: up (more anxious), down (relieved), same",
     "Event.functioning": "Change in functioning: up (more productive), down (overwhelmed)",
