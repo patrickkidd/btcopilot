@@ -236,7 +236,6 @@ class LLM:
         _log.debug(f"llm.openai(): --> \n\n{content}")
         return content
 
-    @lru_cache(maxsize=1)
     def _gemini_client(self):
         from google import genai
 
