@@ -1,7 +1,7 @@
 import copy
 import logging
 import os
-from datetime import datetime
+from datetime import date, datetime
 
 from btcopilot.schema import (
     DiagramData,
@@ -304,6 +304,56 @@ def cumulative(discussion, up_to_statement, auditor_id: str | None = None) -> PD
     pdp = cleanup_pair_bonds(pdp)
 
     return pdp
+
+
+async def import_text(
+    diagram_data: DiagramData,
+    text: str,
+    reference_date: date | None = None,
+) -> tuple[PDP, PDPDeltas]:
+    from btcopilot.personal.prompts import (
+        DATA_EXTRACTION_PROMPT,
+        DATA_EXTRACTION_EXAMPLES,
+        DATA_EXTRACTION_CONTEXT,
+    )
+    from btcopilot.extensions import llm, LLMFunction, ai_log
+
+    if reference_date is None:
+        reference_date = datetime.now().date()
+
+    diagram_data_dict = asdict(diagram_data)
+
+    _log.info(
+        f"PDP IMPORT_TEXT INPUTS:\n"
+        f"  text length: {len(text)}\n"
+        f"  diagram_data.pdp.people: {[p.name for p in diagram_data.pdp.people]}\n"
+        f"  diagram_data.pdp.events count: {len(diagram_data.pdp.events)}\n"
+        f"  diagram_data.people count: {len(diagram_data.people)}\n"
+    )
+
+    data_extraction_prompt = (
+        DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
+        + DATA_EXTRACTION_EXAMPLES
+        + DATA_EXTRACTION_CONTEXT.format(
+            diagram_data=diagram_data_dict,
+            conversation_history="",
+            user_message=text,
+        )
+    )
+
+    pdp_deltas = await llm.submit(
+        LLMFunction.JSON,
+        prompt=data_extraction_prompt,
+        response_format=PDPDeltas,
+    )
+
+    if os.getenv("FLASK_CONFIG") == "development":
+        ai_log.info(f"DELTAS:\n\n{_pretty_repr(pdp_deltas)}")
+
+    new_pdp = apply_deltas(diagram_data.pdp, pdp_deltas)
+    if os.getenv("FLASK_CONFIG") == "development":
+        ai_log.info(f"New PDP: {_pretty_repr(new_pdp)}")
+    return new_pdp, pdp_deltas
 
 
 async def update(

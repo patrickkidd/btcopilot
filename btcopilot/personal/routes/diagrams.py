@@ -4,9 +4,10 @@ from flask import Blueprint, request, jsonify, abort
 from sqlalchemy.orm import subqueryload
 
 import btcopilot
-from btcopilot import auth
+from btcopilot import auth, pdp
+from btcopilot.async_utils import one_result
 from btcopilot.extensions import db
-from btcopilot.schema import DiagramData
+from btcopilot.schema import DiagramData, asdict
 from btcopilot.pro.models import Diagram, AccessRight
 from btcopilot.personal.models import Discussion, Statement
 
@@ -157,3 +158,43 @@ def discussions(diagram_id):
             for discussion in discussions
         ]
     )
+
+
+@diagrams_bp.route("/<int:diagram_id>/import-text", methods=["POST"])
+def import_journal(diagram_id):
+    user = auth.current_user()
+
+    diagram = Diagram.query.get(diagram_id)
+    if not diagram:
+        abort(404)
+
+    if not diagram.check_write_access(user):
+        abort(403)
+
+    data = request.get_json()
+    if not data or "text" not in data:
+        return jsonify(error="Text is required"), 400
+
+    text = data["text"]
+    if not text.strip():
+        return jsonify(error="Text cannot be empty"), 400
+
+    diagram_data = diagram.get_diagram_data()
+
+    new_pdp, deltas = one_result(pdp.import_text(diagram_data, text))
+
+    diagram_data.pdp = new_pdp
+    diagram.set_diagram_data(diagram_data)
+    db.session.commit()
+
+    summary = {
+        "people": len(deltas.people),
+        "events": len(deltas.events),
+        "pairBonds": len(deltas.pair_bonds),
+    }
+
+    _log.info(
+        f"User {user.username} imported journal to diagram {diagram_id}: {summary}"
+    )
+
+    return jsonify(success=True, pdp=asdict(new_pdp), summary=summary)
