@@ -110,9 +110,16 @@ class DatadogJSONFormatter(logging.Formatter):
             "btcopilot": {
                 "version": version(),
             },
-            "version": (
-                getattr(g, "fd_client_version", None) if has_app_context() else None
-            ),
+            "client": {
+                "version": (
+                    getattr(g, "fd_client_version", None) if has_app_context() else None
+                ),
+                "app_type": (
+                    getattr(g, "fd_client_app_type", None)
+                    if has_app_context()
+                    else None
+                ),
+            },
         }
 
         if has_request_context():

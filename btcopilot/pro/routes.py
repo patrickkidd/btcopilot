@@ -96,6 +96,7 @@ def encrypted(func):
         g.user = auth.current_user()
         # Client Version determines if payloads are encrypted
         g.fd_client_version = request.headers.get("FD-Client-Version")
+        g.fd_client_app_type = request.headers.get("FD-Client-App-Type")
 
         ## Run view
 
