@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""
+Clear diagram data for a specific diagram by ID.
+
+Uses the same logic as PersonalAppController.clearDiagramData:
+- Clears events, pdp
+- Optionally clears people (except IDs 1, 2), pair_bonds, emotions
+
+Usage (from btcopilot/):
+    uv run bin/clear_diagram_data 1824                  # Clear events/pdp only
+    uv run bin/clear_diagram_data 1824 --clear-people   # Also clear people/pair_bonds/emotions
+    uv run bin/clear_diagram_data 1824 --dry-run        # Show what would be cleared
+"""
+
+import argparse
+import os
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).parent.parent
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Clear diagram data by diagram ID",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("diagram_id", type=int, help="Diagram ID to clear")
+    parser.add_argument(
+        "--clear-people",
+        action="store_true",
+        help="Also clear people (except 1, 2), pair_bonds, emotions",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be cleared without making changes",
+    )
+    parser.add_argument(
+        "--config",
+        default="development",
+        help="Flask config (default: development)",
+    )
+
+    args = parser.parse_args()
+
+    os.environ["FLASK_CONFIG"] = args.config
+
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+    from btcopilot.app import create_app
+    from btcopilot.extensions import db
+    from btcopilot.pro.models import Diagram
+
+    app = create_app()
+
+    with app.app_context():
+        diagram = db.session.get(Diagram, args.diagram_id)
+        if not diagram:
+            print(f"Error: Diagram {args.diagram_id} not found")
+            sys.exit(1)
+
+        diagram_data = diagram.get_diagram_data()
+
+        print(f"Diagram {args.diagram_id} (owner: {diagram.user_id}, version: {diagram.version})")
+        print(f"  People: {len(diagram_data.people)}")
+        print(f"  Events: {len(diagram_data.events)}")
+        print(f"  Pair bonds: {len(diagram_data.pair_bonds)}")
+        print(f"  Emotions: {len(diagram_data.emotions)}")
+        if diagram_data.pdp:
+            print(f"  PDP people: {len(diagram_data.pdp.people)}")
+            print(f"  PDP events: {len(diagram_data.pdp.events)}")
+            print(f"  PDP pair_bonds: {len(diagram_data.pdp.pair_bonds)}")
+        print()
+
+        if args.dry_run:
+            print("Dry run - would clear:")
+            print("  - All events")
+            print("  - PDP data")
+            if args.clear_people:
+                print("  - People (except IDs 1, 2)")
+                print("  - All pair_bonds")
+                print("  - All emotions")
+            sys.exit(0)
+
+        import pickle
+
+        data = pickle.loads(diagram.data) if diagram.data else {}
+
+        data["events"] = []
+        data["pdp"] = {}
+
+        if args.clear_people:
+            data["people"] = [
+                p for p in data.get("people", []) if p.get("id") in (1, 2)
+            ]
+            data["pair_bonds"] = []
+            data["emotions"] = []
+
+        diagram.data = pickle.dumps(data)
+        diagram.version += 1
+        db.session.commit()
+
+        print(f"Cleared diagram {args.diagram_id}")
+        print(f"  New version: {diagram.version}")
+        print(f"  People remaining: {len(data.get('people', []))}")
+
+
+if __name__ == "__main__":
+    main()

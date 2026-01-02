@@ -1,6 +1,7 @@
 import enum
 import logging
 import datetime
+import os
 from dataclasses import (
     dataclass,
     field,
@@ -437,6 +438,10 @@ class DiagramData:
             if item_id >= 0:
                 raise ValueError(f"Item ID {item_id} must be negative (PDP item)")
 
+        # Export pre-commit state in development mode
+        if os.getenv("FLASK_CONFIG") == "development":
+            self._export_commit_state(item_ids, "pre")
+
         # Create inferred items for Birth/Adopted events before gathering transitive refs
         self._create_inferred_birth_items(item_ids)
 
@@ -500,7 +505,43 @@ class DiagramData:
             self._remap_pair_bond_ids(pb, id_mapping) for pb in self.pdp.pair_bonds
         ]
 
+        # Export post-commit state in development mode
+        if os.getenv("FLASK_CONFIG") == "development":
+            self._export_commit_state(item_ids, "post", id_mapping)
+
         return id_mapping
+
+    def _export_commit_state(
+        self,
+        item_ids: list[int],
+        phase: str,
+        id_mapping: dict[int, int] | None = None,
+    ) -> None:
+        """Export commit state to JSON file for debugging."""
+        import json
+        from datetime import datetime
+        from pathlib import Path
+
+        export_dir = Path("/tmp/pdp_commit_debug")
+        export_dir.mkdir(exist_ok=True)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = export_dir / f"commit_{phase}_{timestamp}.json"
+
+        export_data = {
+            "phase": phase,
+            "item_ids": item_ids,
+            "id_mapping": id_mapping,
+            "pdp": asdict(self.pdp),
+            "people": self.people,
+            "events": self.events,
+            "pair_bonds": self.pair_bonds,
+        }
+
+        with open(filename, "w") as f:
+            json.dump(export_data, f, indent=2, default=str)
+
+        _log.info(f"Exported commit {phase} state to {filename}")
 
     def reject_pdp_item(self, item_id: int) -> None:
         """Remove a PDP item and cascade-delete any items that reference it."""
