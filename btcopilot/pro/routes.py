@@ -76,7 +76,7 @@ def init_app(app):
     app.register_blueprint(bp)
 
 
-def toBool(x):
+def to_bool(x):
     y = ast.literal_eval(x)
     return bool(y)
 
@@ -273,7 +273,7 @@ def diagrams(id=None):
                 return ("Access Denied", 401)
             Diagram.query.filter_by(id=diagram.id).delete()
             db.session.commit()
-            _log.info("Deleted diagram for user: %s" % g.user)
+            _log.info(f"Deleted diagram for user: {g.user}")
             return ("Success", 200)
 
 
@@ -484,11 +484,28 @@ def sessions_init():
 @bp.route("/sessions", methods=("POST",))
 @encrypted
 def sessions_login():
+    import os
+
     args = pickle.loads(request.data)
     include_therapist = args.get("include_therapist", False)
-    user = User.query.filter_by(username=args["username"].lower()).first()
-    if not user or not user.check_password(args["password"]):
-        return ("Unauthorized", 401)
+    password = args.get("password")
+    username = args.get("username")
+
+    # Dev auto-login: no password required when FLASK_AUTO_AUTH_USER is set
+    auto_auth_email = os.environ.get("FLASK_AUTO_AUTH_USER")
+    if not password and auto_auth_email:
+        username = username or auto_auth_email
+        user = User.query.filter_by(username=username.lower()).first()
+        if not user:
+            return ("User not found", 404)
+        _log.info(f"Dev auto-login user: {user}")
+    else:
+        if not username or not password:
+            return ("Unauthorized", 401)
+        user = User.query.filter_by(username=username.lower()).first()
+        if not user or not user.check_password(password):
+            return ("Unauthorized", 401)
+
     session = Session(user_id=user.id)
     db.session.add(session)
     db.session.commit()
