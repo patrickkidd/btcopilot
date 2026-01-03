@@ -51,6 +51,12 @@ uv run pytest btcopilot/btcopilot/tests/personal/test_synthetic.py -v -m e2e
 uv run pytest btcopilot/btcopilot/tests/personal/test_synthetic.py -v -m "e2e and not slow"
 ```
 
+### Journal ID validation (tests LLM person/event ID separation)
+
+```bash
+uv run --env-file .env pytest btcopilot/btcopilot/tests/personal/test_journal_id_validation.py -v --e2e
+```
+
 ## Evaluators
 
 ### QualityEvaluator

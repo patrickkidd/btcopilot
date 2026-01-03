@@ -517,7 +517,13 @@ class DiagramData:
         phase: str,
         id_mapping: dict[int, int] | None = None,
     ) -> None:
-        """Export commit state to JSON file for debugging."""
+        """
+        Export commit state to JSON for debugging and audit trail.
+
+        Creates timestamped files in /tmp/pdp_commit_debug/ showing the commit
+        transformation. The id_mapping tracks negative PDP IDs → positive
+        committed IDs (e.g., -124 → 434). JSON serializes int keys as strings.
+        """
         import json
         from datetime import datetime
         from pathlib import Path

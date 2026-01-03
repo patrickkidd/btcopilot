@@ -12,25 +12,36 @@ from btcopilot.schema import from_dict
 _log = logging.getLogger(__name__)
 
 
-def dataclass_to_json_schema(cls, descriptions: dict = None) -> dict:
+class OutputTruncatedError(Exception):
+    pass
+
+
+def dataclass_to_json_schema(
+    cls, descriptions: dict = None, force_required: dict = None
+) -> dict:
     """Convert a dataclass to JSON Schema for Gemini structured output.
 
     Args:
         cls: The dataclass type to convert
         descriptions: Optional dict mapping "ClassName.field_name" to description strings
+        force_required: Optional dict mapping class names to list of field names
+                       that should be marked as required even if they have defaults.
+                       e.g., {"Event": ["description", "dateTime"]}
     """
     if not hasattr(cls, "__dataclass_fields__"):
         raise TypeError(f"{cls} is not a dataclass")
 
     descriptions = descriptions or {}
+    force_required = force_required or {}
     properties = {}
     required = []
     class_name = cls.__name__
+    class_force_required = force_required.get(class_name, [])
 
     for f in fields(cls):
         field_name = f.name
         field_type = f.type
-        prop = _type_to_schema(field_type, descriptions)
+        prop = _type_to_schema(field_type, descriptions, force_required)
 
         # Add description if provided
         desc_key = f"{class_name}.{field_name}"
@@ -40,7 +51,10 @@ def dataclass_to_json_schema(cls, descriptions: dict = None) -> dict:
         properties[field_name] = prop
 
         # Field is required if it has no default and no default_factory
+        # OR if it's in the force_required list for this class
         if f.default is MISSING and f.default_factory is MISSING:
+            required.append(field_name)
+        elif field_name in class_force_required:
             required.append(field_name)
 
     schema = {"type": "object", "properties": properties}
@@ -49,9 +63,12 @@ def dataclass_to_json_schema(cls, descriptions: dict = None) -> dict:
     return schema
 
 
-def _type_to_schema(field_type, descriptions: dict = None) -> dict:
+def _type_to_schema(
+    field_type, descriptions: dict = None, force_required: dict = None
+) -> dict:
     """Convert a Python type annotation to JSON Schema."""
     descriptions = descriptions or {}
+    force_required = force_required or {}
     origin = get_origin(field_type)
 
     # Handle None type
@@ -66,12 +83,14 @@ def _type_to_schema(field_type, descriptions: dict = None) -> dict:
             if hasattr(item_type, "__dataclass_fields__"):
                 return {
                     "type": "array",
-                    "items": dataclass_to_json_schema(item_type, descriptions),
+                    "items": dataclass_to_json_schema(
+                        item_type, descriptions, force_required
+                    ),
                 }
             else:
                 return {
                     "type": "array",
-                    "items": _type_to_schema(item_type, descriptions),
+                    "items": _type_to_schema(item_type, descriptions, force_required),
                 }
         return {"type": "array"}
 
@@ -82,9 +101,9 @@ def _type_to_schema(field_type, descriptions: dict = None) -> dict:
         args = get_args(field_type)
         non_none_args = [a for a in args if a is not type(None)]
         if len(non_none_args) == 1:
-            return _type_to_schema(non_none_args[0], descriptions)
+            return _type_to_schema(non_none_args[0], descriptions, force_required)
         if non_none_args:
-            return _type_to_schema(non_none_args[0], descriptions)
+            return _type_to_schema(non_none_args[0], descriptions, force_required)
 
     # Handle X | None syntax (Python 3.10+)
     if (
@@ -94,9 +113,9 @@ def _type_to_schema(field_type, descriptions: dict = None) -> dict:
         args = get_args(field_type)
         non_none_args = [a for a in args if a is not type(None)]
         if len(non_none_args) == 1:
-            return _type_to_schema(non_none_args[0], descriptions)
+            return _type_to_schema(non_none_args[0], descriptions, force_required)
         if non_none_args:
-            return _type_to_schema(non_none_args[0], descriptions)
+            return _type_to_schema(non_none_args[0], descriptions, force_required)
 
     # Handle Enum types
     if isinstance(field_type, type) and issubclass(field_type, enum.Enum):
@@ -105,7 +124,7 @@ def _type_to_schema(field_type, descriptions: dict = None) -> dict:
 
     # Handle dataclasses (nested)
     if hasattr(field_type, "__dataclass_fields__"):
-        return dataclass_to_json_schema(field_type, descriptions)
+        return dataclass_to_json_schema(field_type, descriptions, force_required)
 
     # Handle basic types
     type_map = {
@@ -159,7 +178,8 @@ PDP_SCHEMA_DESCRIPTIONS = {
     "Event.id": "MUST be negative integer for new entries (-1, -2, -3, etc.)",
     "Event.kind": "Type of event: shift (SARF variable change), birth, death, married, etc.",
     "Event.person": "ID of the main person this event is about",
-    "Event.description": "Minimal phrase, 3 words ideal, 5 max (e.g., 'Trouble sleeping')",
+    "Event.description": "REQUIRED - NEVER null. Minimal phrase, 3 words ideal, 5 max (e.g., 'Trouble sleeping', 'Diagnosed with dementia')",
+    "Event.dateTime": "REQUIRED - NEVER null. When it happened (ISO format or fuzzy like '2025-03-15')",
     "Event.symptom": "Change in physical/mental health: up, down, or same",
     "Event.anxiety": "Change in anxiety level: up (more anxious), down (relieved), same",
     "Event.functioning": "Change in functioning: up (more productive), down (overwhelmed)",
@@ -170,6 +190,12 @@ PDP_SCHEMA_DESCRIPTIONS = {
     "PairBond.id": "MUST be negative integer for new entries",
     "PairBond.person_a": "ID of first person in the bond",
     "PairBond.person_b": "ID of second person in the bond",
+}
+
+# Fields that must be marked as required in JSON Schema, even though they have
+# defaults in the dataclass. This enforces that the LLM always provides these.
+PDP_FORCE_REQUIRED = {
+    "Event": ["description", "dateTime", "person", "dateCertainty"],
 }
 
 
@@ -241,7 +267,7 @@ class LLM:
 
         return genai.Client(api_key=os.environ["GOOGLE_GEMINI_API_KEY"])
 
-    async def gemini(self, prompt: str = None, response_format=None):
+    async def gemini(self, prompt: str = None, response_format=None, large=False):
         """Gemini for structured data extraction (PDP) using native API."""
         from google.genai import types
 
@@ -249,23 +275,37 @@ class LLM:
 
         client = self._gemini_client()
         response_schema = dataclass_to_json_schema(
-            response_format, PDP_SCHEMA_DESCRIPTIONS
+            response_format, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED
         )
 
+        if large:
+            model = "gemini-2.5-flash"
+            max_tokens = 65536
+        else:
+            model = "gemini-2.0-flash"
+            max_tokens = 8192
+
         response = await client.aio.models.generate_content(
-            model="gemini-2.0-flash",
+            model=model,
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.1,
+                max_output_tokens=max_tokens,
                 response_mime_type="application/json",
                 response_schema=response_schema,
             ),
         )
 
         _log.debug(f"Completed response in {time.time() - start_time} seconds")
+        finish_reason = response.candidates[0].finish_reason
+        _log.debug(f"llm.gemini() finish_reason: {finish_reason}")
         _log.debug(f"llm.gemini() raw: {response.text}")
 
-        # Parse JSON and convert to dataclass instance
+        if finish_reason == "MAX_TOKENS":
+            raise OutputTruncatedError(
+                "LLM response truncated due to token limit. Input data too large."
+            )
+
         data = json.loads(response.text)
         result = from_dict(response_format, data)
         _log.debug(f"llm.gemini(): --> {result}")
@@ -274,7 +314,9 @@ class LLM:
     async def submit(self, llm_type: LLMFunction, prompt: str = None, **kwargs):
         if llm_type in (LLMFunction.JSON, LLMFunction.PDP):
             return await self.gemini(
-                prompt, response_format=kwargs.get("response_format")
+                prompt,
+                response_format=kwargs.get("response_format"),
+                large=kwargs.get("large", False),
             )
         else:
             return await self.openai(prompt, **kwargs)

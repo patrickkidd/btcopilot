@@ -263,3 +263,46 @@ def test_add_pdp_deltas_without_validation():
     )
     new_pdp = apply_deltas(pdp, deltas)
     assert len(new_pdp.events) == 1
+
+
+def test_dataclass_to_json_schema_force_required():
+    """Verify force_required adds fields to required list even if they have defaults."""
+    from btcopilot.extensions.llm import dataclass_to_json_schema
+
+    # Event has description with default=None, so without force_required it's optional
+    schema_no_force = dataclass_to_json_schema(Event, {}, {})
+    assert "description" not in schema_no_force.get("required", [])
+    assert "dateTime" not in schema_no_force.get("required", [])
+
+    # With force_required, these should be in required list
+    force_required = {"Event": ["description", "dateTime", "person", "dateCertainty"]}
+    schema_with_force = dataclass_to_json_schema(Event, {}, force_required)
+    assert "description" in schema_with_force["required"]
+    assert "dateTime" in schema_with_force["required"]
+    assert "person" in schema_with_force["required"]
+    assert "dateCertainty" in schema_with_force["required"]
+
+
+def test_pdp_deltas_schema_has_event_required_fields():
+    """Verify PDPDeltas schema marks Event required fields via PDP_FORCE_REQUIRED."""
+    from btcopilot.extensions.llm import (
+        dataclass_to_json_schema,
+        PDP_SCHEMA_DESCRIPTIONS,
+        PDP_FORCE_REQUIRED,
+    )
+
+    schema = dataclass_to_json_schema(PDPDeltas, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED)
+
+    # Get nested Event schema from events array items
+    events_schema = schema["properties"]["events"]["items"]
+    event_required = events_schema.get("required", [])
+
+    # id and kind are required by default (no default value in dataclass)
+    assert "id" in event_required
+    assert "kind" in event_required
+
+    # These are forced required via PDP_FORCE_REQUIRED
+    assert "description" in event_required
+    assert "dateTime" in event_required
+    assert "person" in event_required
+    assert "dateCertainty" in event_required

@@ -34,20 +34,22 @@ def get_all_pdp_item_ids(pdp: PDP) -> set[int]:
     return ids
 
 
-def validate_pdp_deltas(pdp: PDP, deltas: PDPDeltas) -> None:
+def validate_pdp_deltas(
+    pdp: PDP,
+    deltas: PDPDeltas,
+    diagram_data: DiagramData | None = None,
+    source: str | None = None,
+) -> None:
     """
     Validate that deltas can be safely applied to PDP.
     Raises PDPValidationError if validation fails.
+
+    If diagram_data and source are provided, exports debug info before raising.
 
     Note: btcopilot only manages PDP. All PDP items must have negative IDs.
     References to positive IDs (FD committed items) are assumed valid.
     """
     errors = []
-
-    existing_pdp_ids = get_all_pdp_item_ids(pdp)
-    new_item_ids = {p.id for p in deltas.people if p.id is not None}
-    new_item_ids.update(e.id for e in deltas.events)
-    new_item_ids.update(pb.id for pb in deltas.pair_bonds if pb.id is not None)
 
     person_ids_in_delta = {p.id for p in deltas.people if p.id is not None}
     event_ids_in_delta = {e.id for e in deltas.events}
@@ -60,8 +62,6 @@ def validate_pdp_deltas(pdp: PDP, deltas: PDPDeltas) -> None:
         errors.append(
             f"Person, Event, and PairBond in delta share same ID(s): {collision}"
         )
-
-    all_pdp_item_ids = existing_pdp_ids | new_item_ids
 
     existing_pdp_person_ids = {p.id for p in pdp.people if p.id is not None}
     new_person_ids = {p.id for p in deltas.people if p.id is not None}
@@ -78,6 +78,11 @@ def validate_pdp_deltas(pdp: PDP, deltas: PDPDeltas) -> None:
     for event in deltas.events:
         if event.id >= 0:
             errors.append(f"PDP event must have negative ID, got {event.id}")
+        if not event.description:
+            _log.warning(
+                f"Event {event.id} (kind={event.kind}) has no description - "
+                f"Learn view will show empty text"
+            )
 
     for pair_bond in deltas.pair_bonds:
         if pair_bond.id is not None and pair_bond.id >= 0:
@@ -153,27 +158,26 @@ def validate_pdp_deltas(pdp: PDP, deltas: PDPDeltas) -> None:
             )
 
     if errors:
+        if diagram_data and source:
+            _export_validation_failure(diagram_data, deltas, errors, source)
         raise PDPValidationError(errors)
 
 
-def _export_invalid_pdp_deltas(
+def _export_validation_failure(
     diagram_data: DiagramData,
-    pdp_deltas: PDPDeltas,
+    deltas: PDPDeltas,
     errors: list[str],
     source: str,
 ) -> None:
-    """Export invalid PDP deltas to JSON file for debugging/test creation."""
+    """Export failed validation data to JSON for debugging."""
     import json
     from pathlib import Path
 
     if os.getenv("FLASK_CONFIG") != "development":
         return
 
-    export_dir = Path("/tmp/pdp_validation_errors")
-    export_dir.mkdir(exist_ok=True)
-
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = export_dir / f"pdp_error_{source}_{timestamp}.json"
+    filename = Path(f"/tmp/pdp_validation_{source}_{timestamp}.json")
 
     export_data = {
         "source": source,
@@ -184,45 +188,13 @@ def _export_invalid_pdp_deltas(
             "events": diagram_data.events,
             "pair_bonds": diagram_data.pair_bonds,
         },
-        "pdp_deltas": asdict(pdp_deltas),
+        "pdp_deltas": asdict(deltas),
     }
 
     with open(filename, "w") as f:
         json.dump(export_data, f, indent=2, default=str)
 
-    _log.warning(f"Exported invalid PDP deltas to {filename}")
-
-
-def _fix_invalid_parents(pdp: PDP, deltas: PDPDeltas) -> PDPDeltas:
-    """
-    Fix invalid parents references in deltas by clearing them.
-
-    When LLM incorrectly sets Person.parents to an Event ID instead of a
-    PairBond ID, this function clears those invalid references.
-    """
-    from dataclasses import replace
-
-    existing_pair_bond_ids = {pb.id for pb in pdp.pair_bonds if pb.id is not None}
-    new_pair_bond_ids = {pb.id for pb in deltas.pair_bonds if pb.id is not None}
-    all_pair_bond_ids = existing_pair_bond_ids | new_pair_bond_ids
-
-    fixed_people = []
-    for person in deltas.people:
-        if person.parents is not None and person.parents < 0:
-            if person.parents not in all_pair_bond_ids:
-                _log.warning(
-                    f"Clearing invalid parents reference {person.parents} for person {person.id} "
-                    f"(not a PairBond ID)"
-                )
-                person = replace(person, parents=None)
-        fixed_people.append(person)
-
-    return PDPDeltas(
-        people=fixed_people,
-        events=deltas.events,
-        pair_bonds=deltas.pair_bonds,
-        delete=deltas.delete,
-    )
+    _log.warning(f"Exported validation failure to {filename}")
 
 
 def cleanup_pair_bonds(pdp: PDP) -> PDP:
@@ -383,14 +355,12 @@ async def import_text(
     from btcopilot.personal.prompts import (
         DATA_EXTRACTION_PROMPT,
         DATA_EXTRACTION_EXAMPLES,
-        DATA_EXTRACTION_CONTEXT,
+        DATA_IMPORT_CONTEXT,
     )
     from btcopilot.extensions import llm, LLMFunction, ai_log
 
     if reference_date is None:
         reference_date = datetime.now().date()
-
-    diagram_data_dict = asdict(diagram_data)
 
     _log.info(
         f"PDP IMPORT_TEXT INPUTS:\n"
@@ -400,13 +370,15 @@ async def import_text(
         f"  diagram_data.people count: {len(diagram_data.people)}\n"
     )
 
+    diagram_data_dict = asdict(diagram_data)
     data_extraction_prompt = (
         DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
         + DATA_EXTRACTION_EXAMPLES
-        + DATA_EXTRACTION_CONTEXT.format(
+        + DATA_IMPORT_CONTEXT.format(
             diagram_data=diagram_data_dict,
-            conversation_history="",
-            user_message=text,
+            text_chunk=text,
+            chunk_num=1,
+            total_chunks=1,
         )
     )
 
@@ -414,21 +386,18 @@ async def import_text(
         LLMFunction.JSON,
         prompt=data_extraction_prompt,
         response_format=PDPDeltas,
+        large=True,
     )
 
     if os.getenv("FLASK_CONFIG") == "development":
         ai_log.info(f"DELTAS:\n\n{_pretty_repr(pdp_deltas)}")
 
-    try:
-        validate_pdp_deltas(diagram_data.pdp, pdp_deltas)
-    except PDPValidationError as e:
-        _log.warning(f"PDP validation errors (auto-fixing): {e.errors}")
-        _export_invalid_pdp_deltas(diagram_data, pdp_deltas, e.errors, "import_text")
-        pdp_deltas = _fix_invalid_parents(diagram_data.pdp, pdp_deltas)
-
+    validate_pdp_deltas(diagram_data.pdp, pdp_deltas, diagram_data, "import_text")
     new_pdp = apply_deltas(diagram_data.pdp, pdp_deltas)
+
     if os.getenv("FLASK_CONFIG") == "development":
         ai_log.info(f"New PDP: {_pretty_repr(new_pdp)}")
+
     return new_pdp, pdp_deltas
 
 
@@ -495,13 +464,7 @@ async def update(
     if os.getenv("FLASK_CONFIG") == "development":
         ai_log.info(f"DELTAS:\n\n{_pretty_repr(pdp_deltas)}")
 
-    try:
-        validate_pdp_deltas(diagram_data.pdp, pdp_deltas)
-    except PDPValidationError as e:
-        _log.warning(f"PDP validation errors (auto-fixing): {e.errors}")
-        _export_invalid_pdp_deltas(diagram_data, pdp_deltas, e.errors, "update")
-        pdp_deltas = _fix_invalid_parents(diagram_data.pdp, pdp_deltas)
-
+    validate_pdp_deltas(diagram_data.pdp, pdp_deltas, diagram_data, "update")
     new_pdp = apply_deltas(diagram_data.pdp, pdp_deltas)
     if os.getenv("FLASK_CONFIG") == "development":
         ai_log.info(f"New PDP: {_pretty_repr(new_pdp)}")

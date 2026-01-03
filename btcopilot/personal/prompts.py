@@ -450,6 +450,7 @@ NOT the current date.
 - Generate new IDs by counting down from lowest existing PDP ID
 - Example: If PDP has -1, -2, -3, new entries start at -4, -5, -6
 - NEVER reuse -1 for every new person
+- NEVER use an event ID as a person reference (see [ID_NAMESPACE_COLLISION] example)
 
 **PERSON EXTRACTION RULES:**
 
@@ -1522,6 +1523,64 @@ Conversation context: User was just asked about their father.
 }
 
 **RULE**: For death events, `person` = the person who died. Look up their ID in the existing diagram_data or PDP. Use pronouns ("he", "she") and conversation context to identify who is being discussed.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# [ID_NAMESPACE_COLLISION]
+# Error Pattern: AI uses an event ID as a person reference
+# CRITICAL: Person IDs and event IDs are SEPARATE namespaces - never cross-reference
+# ─────────────────────────────────────────────────────────────────────────────
+
+**Scenario**: Extracting many people and events from a long journal entry.
+
+DiagramData: {
+    "people": [
+        {"id": 1, "name": "User", "confidence": 1.0},
+        {"id": 2, "name": "Assistant", "confidence": 1.0}
+    ],
+    "events": [],
+    "pdp": {"people": [], "events": []}
+}
+
+❌ WRONG OUTPUT (event references event ID as person):
+{
+    "people": [
+        {"id": -1, "name": "Mom", "confidence": 0.8},
+        {"id": -2, "name": "Dad", "confidence": 0.8},
+        {"id": -3, "name": "Brother", "confidence": 0.8}
+    ],
+    "events": [
+        {"id": -4, "kind": "shift", "person": 1, "description": "Stressed at work"},
+        {"id": -5, "kind": "shift", "person": -1, "description": "Mom called"},
+        {"id": -6, "kind": "shift", "person": -4, "description": "Insomnia"}
+        // WRONG ^^^^^^^^ -4 is an EVENT ID, not a person ID!
+    ],
+    "delete": []
+}
+
+WHY WRONG: Event -6 has `"person": -4`, but -4 is the ID of event "Stressed at work",
+not a person. This causes validation failure. The AI confused event IDs with person IDs.
+
+✅ CORRECT OUTPUT:
+{
+    "people": [
+        {"id": -1, "name": "Mom", "confidence": 0.8},
+        {"id": -2, "name": "Dad", "confidence": 0.8},
+        {"id": -3, "name": "Brother", "confidence": 0.8}
+    ],
+    "events": [
+        {"id": -4, "kind": "shift", "person": 1, "description": "Stressed at work"},
+        {"id": -5, "kind": "shift", "person": -1, "description": "Mom called"},
+        {"id": -6, "kind": "shift", "person": 1, "description": "Insomnia"}
+        // CORRECT ^^^^^^^^ 1 is the User's ID (committed person)
+    ],
+    "delete": []
+}
+
+**RULE**: Before assigning a person/spouse/child/relationshipTargets ID, verify it exists:
+- Positive IDs (1, 2, 3...): Must exist in diagram_data.people
+- Negative IDs (-1, -2, -3...): Must exist in YOUR deltas.people array
+- NEVER use an event ID (from your deltas.events) as a person reference
+- When in doubt, use the User's ID (typically 1) for first-person events ("I", "my")
 """
 
 # Part 3: Context with template variables ({diagram_data}, {conversation_history}, {user_message})
@@ -1549,5 +1608,26 @@ information from previous messages that is already captured in the diagram_data.
 
 **REMINDER:** Return only NEW people, NEW events, or UPDATES to existing
 entries. Do not include existing data that hasn't changed.
+
+"""
+
+DATA_IMPORT_CONTEXT = """
+
+**BULK IMPORT MODE - Extract ALL data from this text chunk:**
+
+You are importing a journal or document. Extract ALL people, events, and
+relationships mentioned in the text below. This is NOT incremental - extract
+everything you find.
+
+**Existing Diagram State (avoid duplicates with these):**
+
+{diagram_data}
+
+**TEXT TO EXTRACT FROM (this is chunk {chunk_num} of {total_chunks}):**
+
+{text_chunk}
+
+**EXTRACT:** All people mentioned, all events with dates, all relationships.
+Use negative IDs starting from the lowest existing PDP ID minus 1.
 
 """
