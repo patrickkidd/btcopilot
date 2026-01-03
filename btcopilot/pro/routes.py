@@ -493,7 +493,8 @@ def sessions_login():
 
     # Dev auto-login: no password required when FLASK_AUTO_AUTH_USER is set
     auto_auth_email = os.environ.get("FLASK_AUTO_AUTH_USER")
-    if not password and auto_auth_email:
+    is_dev = os.environ.get("FLASK_CONFIG") == "development"
+    if not password and auto_auth_email and is_dev:
         username = username or auto_auth_email
         user = User.query.filter_by(username=username.lower()).first()
         if not user:
