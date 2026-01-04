@@ -171,15 +171,17 @@ PDP_SCHEMA_DESCRIPTIONS = {
     "PDPDeltas.pair_bonds": "NEW pair bonds between people. Use NEGATIVE IDs.",
     "PDPDeltas.delete": "IDs of items to delete from PDP.",
     # Person fields
-    "Person.id": "MUST be negative integer for new entries (-1, -2, -3, etc.)",
+    "Person.id": "REQUIRED - MUST be negative integer for new entries (-1, -2, -3, etc.)",
     "Person.name": "Person's name or role (e.g., 'Mom', 'Dr. Smith', 'Brother')",
     "Person.parents": "ID of the PairBond representing this person's parents",
     # Event fields
-    "Event.id": "MUST be negative integer for new entries (-1, -2, -3, etc.)",
-    "Event.kind": "Type of event: shift (SARF variable change), birth, death, married, etc.",
-    "Event.person": "ID of the main person this event is about",
+    "Event.id": "REQUIRED - NEVER null. MUST be negative integer for new entries (-1, -2, -3, etc.)",
+    "Event.kind": "REQUIRED - NEVER null.Type of event: shift (SARF variable change), birth, death, married, etc.",
+    "Event.person": "REQUIRED - NEVER null. ID of the main person this event is about",
     "Event.description": "REQUIRED - NEVER null. Minimal phrase, 3 words ideal, 5 max (e.g., 'Trouble sleeping', 'Diagnosed with dementia')",
+    "Event.notes": "Optional additional detail about the event, multi-line text for context not captured in description. May contain opinions, feelings, and other subjective material adds detail to the factual Event.description",
     "Event.dateTime": "REQUIRED - NEVER null. When it happened (ISO format or fuzzy like '2025-03-15')",
+    "Event.dateCertainty": "REQUIRED - NEVER null. Certainty of the date: certain, approximate, unknown",
     "Event.symptom": "Change in physical/mental health: up, down, or same",
     "Event.anxiety": "Change in anxiety level: up (more anxious), down (relieved), same",
     "Event.functioning": "Change in functioning: up (more productive), down (overwhelmed)",
@@ -187,9 +189,9 @@ PDP_SCHEMA_DESCRIPTIONS = {
     "Event.relationshipTargets": "REQUIRED for relationship events: list of person IDs involved",
     "Event.relationshipTriangles": "For triangle moves: list of person IDs on the 'outside'",
     # PairBond fields
-    "PairBond.id": "MUST be negative integer for new entries",
-    "PairBond.person_a": "ID of first person in the bond",
-    "PairBond.person_b": "ID of second person in the bond",
+    "PairBond.id": "REQUIRED - NEVER null. MUST be negative integer for new entries",
+    "PairBond.person_a": "REQUIRED - NEVER null. ID of first person in the bond",
+    "PairBond.person_b": "REQUIRED - NEVER null. ID of second person in the bond",
 }
 
 # Fields that must be marked as required in JSON Schema, even though they have

@@ -41,8 +41,8 @@ def validate_pdp_deltas(
     source: str | None = None,
 ) -> None:
     """
-    Validate that deltas can be safely applied to PDP.
-    Raises PDPValidationError if validation fails.
+    Validate that deltas can be safely applied to PDP. Raises PDPValidationError
+    if validation fails. Likely remove it in production, we'll see.
 
     If diagram_data and source are provided, exports debug info before raising.
 
@@ -89,6 +89,11 @@ def validate_pdp_deltas(
             errors.append(f"PDP pair_bond must have negative ID, got {pair_bond.id}")
 
     for event in deltas.events:
+        if event.kind.isPairBond() and event.spouse is None:
+            errors.append(
+                f"PairBond event {event.id} (kind={event.kind.value}) requires spouse"
+            )
+
         if (
             event.person is not None
             and event.person < 0

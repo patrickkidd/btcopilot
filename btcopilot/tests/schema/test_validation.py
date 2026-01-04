@@ -129,6 +129,24 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_spouse():
     assert "non-existent PDP spouse -999" in exc_info.value.errors[0]
 
 
+def test_validate_deltas_rejects_pair_bond_event_without_spouse():
+    pdp = PDP()
+    deltas = PDPDeltas(
+        events=[
+            Event(
+                id=-1,
+                kind=EventKind.Divorced,
+                person=1,
+                spouse=None,
+            )
+        ]
+    )
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas)
+    assert len(exc_info.value.errors) == 1
+    assert "requires spouse" in exc_info.value.errors[0]
+
+
 def test_validate_deltas_rejects_event_with_nonexistent_pdp_child():
     pdp = PDP()
     deltas = PDPDeltas(
@@ -137,6 +155,7 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_child():
                 id=-1,
                 kind=EventKind.Birth,
                 person=1,
+                spouse=2,
                 child=-999,
             )
         ]
