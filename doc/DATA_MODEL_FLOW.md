@@ -577,6 +577,13 @@
    PDP:       -1, -2, -3, ... (negative integers)
    ```
 
+   **CRITICAL: People, Events, and PairBonds share a single ID namespace.**
+   - A person ID -1 and an event ID -1 would COLLIDE - this is invalid
+   - The LLM must generate unique IDs across ALL entity types
+   - Validation rejects deltas where any ID appears in multiple entity types
+   - Example valid delta: people=[-1, -2], events=[-3, -4], pair_bonds=[-5]
+   - Example INVALID delta: people=[-1], events=[-1] (collision on -1)
+
    ### 6.2 Person Constraints
    - Each person has at most one parents PairBond
    - Spouses/partners are represented via PairBond entries

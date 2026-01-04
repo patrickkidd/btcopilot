@@ -10,6 +10,7 @@ from btcopilot.schema import (
     PDPValidationError,
     Person,
     Event,
+    EventKind,
     PairBond,
     asdict,
     from_dict,
@@ -32,6 +33,93 @@ def get_all_pdp_item_ids(pdp: PDP) -> set[int]:
     ids.update(e.id for e in pdp.events)
     ids.update(pb.id for pb in pdp.pair_bonds if pb.id is not None)
     return ids
+
+
+def reassign_delta_ids(pdp: PDP, deltas: PDPDeltas) -> None:
+    """
+    Reassign IDs in deltas to ensure no collisions across entity types.
+
+    LLMs often reuse IDs across people/events/pair_bonds. This function
+    assigns new unique IDs and updates all references in-place.
+    """
+    existing_ids = get_all_pdp_item_ids(pdp)
+
+    # Collect all IDs from delta
+    delta_person_ids = [p.id for p in deltas.people if p.id is not None]
+    delta_event_ids = [e.id for e in deltas.events]
+    delta_pair_bond_ids = [pb.id for pb in deltas.pair_bonds if pb.id is not None]
+
+    # Check if reassignment needed
+    all_delta_ids = (
+        set(delta_person_ids) | set(delta_event_ids) | set(delta_pair_bond_ids)
+    )
+    has_collision = len(all_delta_ids) < len(delta_person_ids) + len(
+        delta_event_ids
+    ) + len(delta_pair_bond_ids) or bool(all_delta_ids & existing_ids)
+    if not has_collision:
+        return
+
+    # Find lowest available ID
+    all_ids = existing_ids | all_delta_ids
+    next_id = min(all_ids) - 1 if all_ids else -1
+
+    # Phase 1: Build separate mappings for each entity type
+    # People get assigned first (they are referenced by events)
+    person_id_map: dict[int, int] = {}
+    for person in deltas.people:
+        if person.id is not None and person.id < 0:
+            person_id_map[person.id] = next_id
+            next_id -= 1
+
+    # Pair bonds second (referenced by person.parents)
+    pair_bond_id_map: dict[int, int] = {}
+    for pair_bond in deltas.pair_bonds:
+        if pair_bond.id is not None and pair_bond.id < 0:
+            pair_bond_id_map[pair_bond.id] = next_id
+            next_id -= 1
+
+    # Events last
+    event_id_map: dict[int, int] = {}
+    for event in deltas.events:
+        if event.id < 0:
+            event_id_map[event.id] = next_id
+            next_id -= 1
+
+    # Phase 2: Apply mappings
+    for person in deltas.people:
+        if person.id is not None and person.id in person_id_map:
+            person.id = person_id_map[person.id]
+        if person.parents is not None and person.parents in pair_bond_id_map:
+            person.parents = pair_bond_id_map[person.parents]
+
+    for pair_bond in deltas.pair_bonds:
+        if pair_bond.id is not None and pair_bond.id in pair_bond_id_map:
+            pair_bond.id = pair_bond_id_map[pair_bond.id]
+        if pair_bond.person_a is not None and pair_bond.person_a in person_id_map:
+            pair_bond.person_a = person_id_map[pair_bond.person_a]
+        if pair_bond.person_b is not None and pair_bond.person_b in person_id_map:
+            pair_bond.person_b = person_id_map[pair_bond.person_b]
+
+    for event in deltas.events:
+        if event.id in event_id_map:
+            event.id = event_id_map[event.id]
+        if event.person is not None and event.person in person_id_map:
+            event.person = person_id_map[event.person]
+        if event.spouse is not None and event.spouse in person_id_map:
+            event.spouse = person_id_map[event.spouse]
+        if event.child is not None and event.child in person_id_map:
+            event.child = person_id_map[event.child]
+        event.relationshipTargets = [
+            person_id_map.get(t, t) for t in event.relationshipTargets
+        ]
+        event.relationshipTriangles = [
+            person_id_map.get(t, t) for t in event.relationshipTriangles
+        ]
+
+    _log.warning(
+        "reassign_delta_ids: LLM produced ID collisions, "
+        f"reassigned {len(person_id_map)} people, {len(event_id_map)} events, {len(pair_bond_id_map)} pair_bonds"
+    )
 
 
 def validate_pdp_deltas(
@@ -89,7 +177,8 @@ def validate_pdp_deltas(
             errors.append(f"PDP pair_bond must have negative ID, got {pair_bond.id}")
 
     for event in deltas.events:
-        if event.kind.isPairBond() and event.spouse is None:
+        # Moved is temporarily exempt from spouse requirement (schema change pending)
+        if event.kind.isPairBond() and event.kind != EventKind.Moved and event.spouse is None:
             errors.append(
                 f"PairBond event {event.id} (kind={event.kind.value}) requires spouse"
             )
@@ -397,6 +486,7 @@ async def import_text(
     if os.getenv("FLASK_CONFIG") == "development":
         ai_log.info(f"DELTAS:\n\n{_pretty_repr(pdp_deltas)}")
 
+    reassign_delta_ids(diagram_data.pdp, pdp_deltas)
     validate_pdp_deltas(diagram_data.pdp, pdp_deltas, diagram_data, "import_text")
     new_pdp = apply_deltas(diagram_data.pdp, pdp_deltas)
 
@@ -469,6 +559,7 @@ async def update(
     if os.getenv("FLASK_CONFIG") == "development":
         ai_log.info(f"DELTAS:\n\n{_pretty_repr(pdp_deltas)}")
 
+    reassign_delta_ids(diagram_data.pdp, pdp_deltas)
     validate_pdp_deltas(diagram_data.pdp, pdp_deltas, diagram_data, "update")
     new_pdp = apply_deltas(diagram_data.pdp, pdp_deltas)
     if os.getenv("FLASK_CONFIG") == "development":
@@ -477,10 +568,9 @@ async def update(
 
 
 def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
-    if os.getenv("FLASK_CONFIG") == "development":
+    is_dev = os.getenv("FLASK_CONFIG") == "development"
+    if is_dev:
         _log.debug(f"Pre-PDP:\n\n{_pretty_repr(pdp)}")
-
-    if os.getenv("FLASK_CONFIG") == "development":
         _log.debug(f"Applying deltas:\n\n{_pretty_repr(deltas)}")
 
     pdp = copy.deepcopy(pdp)
@@ -573,6 +663,6 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if pdp.pair_bonds[idx].id in to_delete_ids:
             del pdp.pair_bonds[idx]
 
-    if os.getenv("FLASK_CONFIG") == "development":
+    if is_dev:
         _log.debug(f"Post-PDP:\n\n{_pretty_repr(pdp)}")
     return pdp

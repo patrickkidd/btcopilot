@@ -1,6 +1,11 @@
 import pytest
 
-from btcopilot.pdp import get_all_pdp_item_ids, validate_pdp_deltas, apply_deltas
+from btcopilot.pdp import (
+    get_all_pdp_item_ids,
+    validate_pdp_deltas,
+    apply_deltas,
+    reassign_delta_ids,
+)
 from btcopilot.schema import (
     DiagramData,
     PDP,
@@ -11,6 +16,7 @@ from btcopilot.schema import (
     EventKind,
     VariableShift,
     RelationshipKind,
+    PairBond,
 )
 
 
@@ -93,6 +99,46 @@ def test_validate_deltas_detects_id_collision_in_delta():
     assert "share same ID" in exc_info.value.errors[0]
 
 
+def test_validate_deltas_detects_person_pair_bond_collision():
+    """Person and pair_bond cannot share the same ID."""
+    pdp = PDP()
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="Alice")],
+        pair_bonds=[PairBond(id=-1, person_a=1, person_b=2)],
+    )
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas)
+    assert len(exc_info.value.errors) == 1
+    assert "share same ID" in exc_info.value.errors[0]
+
+
+def test_validate_deltas_detects_event_pair_bond_collision():
+    """Event and pair_bond cannot share the same ID."""
+    pdp = PDP()
+    deltas = PDPDeltas(
+        events=[Event(id=-1, kind=EventKind.Shift, person=1)],
+        pair_bonds=[PairBond(id=-1, person_a=1, person_b=2)],
+    )
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas)
+    assert len(exc_info.value.errors) == 1
+    assert "share same ID" in exc_info.value.errors[0]
+
+
+def test_validate_deltas_detects_all_three_types_collision():
+    """Person, event, and pair_bond all using the same ID."""
+    pdp = PDP()
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="Alice")],
+        events=[Event(id=-1, kind=EventKind.Shift, person=-1)],
+        pair_bonds=[PairBond(id=-1, person_a=1, person_b=2)],
+    )
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas)
+    assert len(exc_info.value.errors) == 1
+    assert "share same ID" in exc_info.value.errors[0]
+
+
 def test_validate_deltas_rejects_event_with_nonexistent_pdp_person():
     pdp = PDP()
     deltas = PDPDeltas(
@@ -145,6 +191,22 @@ def test_validate_deltas_rejects_pair_bond_event_without_spouse():
         validate_pdp_deltas(pdp, deltas)
     assert len(exc_info.value.errors) == 1
     assert "requires spouse" in exc_info.value.errors[0]
+
+
+def test_validate_deltas_allows_moved_without_spouse():
+    """Moved events are temporarily exempt from spouse requirement."""
+    pdp = PDP()
+    deltas = PDPDeltas(
+        events=[
+            Event(
+                id=-1,
+                kind=EventKind.Moved,
+                person=1,
+                spouse=None,
+            )
+        ]
+    )
+    validate_pdp_deltas(pdp, deltas)
 
 
 def test_validate_deltas_rejects_event_with_nonexistent_pdp_child():
@@ -310,7 +372,9 @@ def test_pdp_deltas_schema_has_event_required_fields():
         PDP_FORCE_REQUIRED,
     )
 
-    schema = dataclass_to_json_schema(PDPDeltas, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED)
+    schema = dataclass_to_json_schema(
+        PDPDeltas, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED
+    )
 
     # Get nested Event schema from events array items
     events_schema = schema["properties"]["events"]["items"]
@@ -325,3 +389,66 @@ def test_pdp_deltas_schema_has_event_required_fields():
     assert "dateTime" in event_required
     assert "person" in event_required
     assert "dateCertainty" in event_required
+
+
+def test_reassign_delta_ids_no_collision():
+    """When no collision, IDs remain unchanged."""
+    pdp = PDP()
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="Alice")],
+        events=[Event(id=-2, kind=EventKind.Shift, person=-1)],
+    )
+    reassign_delta_ids(pdp, deltas)
+    assert deltas.people[0].id == -1
+    assert deltas.events[0].id == -2
+    assert deltas.events[0].person == -1
+
+
+def test_reassign_delta_ids_fixes_collision():
+    """Colliding IDs are reassigned to unique values."""
+    pdp = PDP()
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="Alice")],
+        events=[Event(id=-1, kind=EventKind.Shift, person=-1)],
+    )
+    reassign_delta_ids(pdp, deltas)
+
+    # IDs now unique
+    assert deltas.people[0].id != deltas.events[0].id
+    # Reference updated
+    assert deltas.events[0].person == deltas.people[0].id
+
+
+def test_reassign_delta_ids_with_pair_bond():
+    """Pair bond collisions are fixed."""
+    pdp = PDP()
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
+        events=[Event(id=-1, kind=EventKind.Shift, person=-1)],
+        pair_bonds=[PairBond(id=-2, person_a=-1, person_b=-2)],
+    )
+    reassign_delta_ids(pdp, deltas)
+
+    all_ids = {
+        deltas.people[0].id,
+        deltas.people[1].id,
+        deltas.events[0].id,
+        deltas.pair_bonds[0].id,
+    }
+    assert len(all_ids) == 4
+
+    # References updated
+    assert deltas.pair_bonds[0].person_a == deltas.people[0].id
+    assert deltas.pair_bonds[0].person_b == deltas.people[1].id
+
+
+def test_reassign_delta_ids_avoids_existing_pdp():
+    """New IDs don't collide with existing PDP IDs."""
+    pdp = PDP(people=[Person(id=-1, name="Existing")])
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="New")],
+    )
+    reassign_delta_ids(pdp, deltas)
+
+    assert deltas.people[0].id != -1
+    assert deltas.people[0].id < -1

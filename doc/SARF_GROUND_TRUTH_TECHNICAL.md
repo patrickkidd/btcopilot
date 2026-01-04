@@ -1567,7 +1567,7 @@ def apply_deltas(pdp, deltas):
 - Removes deleted items (from all collections)
 - Deduplicates by ID
 - Suitable for actual state management
-- Handles people, events, and pair_bonds separately (they share ID namespace)
+- Handles people, events, and pair_bonds separately (they share a single ID namespace - no ID can appear in more than one entity type)
 
 **When to Use Which**:
 - **cumulative()**: Displaying conversation context in UI

@@ -33,7 +33,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |------------------|-------------------|
 | PDP behavior, deltas, cumulative logic | [doc/DATA_MODEL_FLOW.md](doc/DATA_MODEL_FLOW.md) |
 | SARF coding, GT workflow, approval | [doc/SARF_GROUND_TRUTH_TECHNICAL.md](doc/SARF_GROUND_TRUTH_TECHNICAL.md) |
-| Prompt engineering decisions | [doc/PROMPT_ENGINEERING_CONTEXT.md](doc/PROMPT_ENGINEERING_CONTEXT.md) |
+| Prompt engineering decisions | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) |
+| Prompt induction workflow | [doc/PROMPT_INDUCTION_CLI.md](doc/PROMPT_INDUCTION_CLI.md) |
 | Bowen theory domain concepts | [CONTEXT.md](CONTEXT.md) |
 | Diagram layout, rendering, SVG | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) |
 | F1 metrics, evaluation | [doc/F1_METRICS.md](doc/F1_METRICS.md) |
@@ -151,6 +152,41 @@ Documentation for the F1 metrics system that evaluates AI extraction quality aga
 - **Includes**: Current F1 baseline, root cause analysis (event matching brittleness, model stochasticity, sparse GT), established best practices, manual investigation workflow
 - **Use When**: F1 scores are low, prompt induction stops improving, or planning next optimization steps
 - **Self-updating**: Document should be updated after each induction run or manual investigation
+
+### Prompt Induction Workflow
+
+## ⚠️ MANDATORY FOR ALL PROMPT CHANGES ⚠️
+
+**Trigger Files** (changes to ANY of these REQUIRE the induction workflow):
+- `btcopilot/personal/prompts.py` - Extraction prompts
+- `btcopilot/extensions/llm.py` - `PDP_FIELD_DESCRIPTIONS` dict
+
+**BEFORE making prompt changes**:
+1. Read [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) - critical lessons and known issues
+2. Check `PDP_FIELD_DESCRIPTIONS` in `btcopilot/extensions/llm.py` for field documentation
+3. Both locations must stay in sync
+
+| Doc | Purpose |
+|-----|---------|
+| [doc/PROMPT_INDUCTION_CLI.md](doc/PROMPT_INDUCTION_CLI.md) | **PRIMARY** - CLI-driven automated iteration ($0 cost, RECOMMENDED) |
+| [doc/PROMPT_OPTIMIZATION_MANUAL.md](doc/PROMPT_OPTIMIZATION_MANUAL.md) | Manual copy-paste approach (current MVP) |
+| [doc/PROMPT_INDUCTION_AUTOMATED.md](doc/PROMPT_INDUCTION_AUTOMATED.md) | Future roadmap - NOT IMPLEMENTED |
+
+**Required Process**:
+1. Export GT: `uv run python -m btcopilot.training.export_gt`
+2. Edit prompts in `btcopilot/personal/prompts.py` AND/OR `PDP_FIELD_DESCRIPTIONS` in `llm.py`
+3. **TEST IMMEDIATELY**: `uv run python -m btcopilot.training.test_prompts`
+4. Only commit if F1 improves (or document why regression is acceptable)
+5. Save induction report to `btcopilot-sources/training/induction-reports/`
+
+**⚠️ CRITICAL: NEVER skip step 3.** Even for "obvious" fixes like adding validation rules or clarifying instructions, you MUST run `test_prompts` before declaring completion. Prompt changes can have unexpected effects on F1 scores.
+
+**Key Rules**:
+- ADD nuance to prompts, don't replace entire sections
+- Never remove working examples without F1 validation
+- Track all iterations in induction reports
+- Large refactors need explicit approval
+- **Test after EVERY prompt edit** - no exceptions
 
 ### Family Diagram Visual Specification
 **PLATFORM-INDEPENDENT LAYOUT SPEC**: Comprehensive specification for arranging and rendering family diagrams (Bowen theory family diagrams).

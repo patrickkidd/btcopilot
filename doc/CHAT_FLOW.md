@@ -69,7 +69,7 @@ User Message → pdp.update()
 - Positive IDs reference committed database entries
 
 **Validation:** [btcopilot/pdp.py:37-157](btcopilot/btcopilot/pdp.py#L37-L157)
-- Ensures no ID collisions between people/events/pair_bonds
+- **CRITICAL: People, events, and pair_bonds share a single ID namespace** - no ID can appear in more than one entity type
 - Validates all references to negative IDs exist in PDP
 - Validates all PDP items have negative IDs
 - Raises PDPValidationError on failures

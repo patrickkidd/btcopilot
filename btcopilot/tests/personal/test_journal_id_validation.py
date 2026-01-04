@@ -96,11 +96,22 @@ def test_journal_import_person_event_id_separation(subscriber):
     pdp = data.get("pdp", {})
     person_ids = {p["id"] for p in pdp.get("people", [])}
     event_ids = {e["id"] for e in pdp.get("events", [])}
+    pair_bond_ids = {pb["id"] for pb in pdp.get("pair_bonds", [])}
 
-    overlap = person_ids & event_ids
-    assert (
-        not overlap
-    ), f"ID collision! These IDs are used for both people and events: {overlap}"
+    # All three entity types share a single ID namespace - no collisions allowed
+    person_event_overlap = person_ids & event_ids
+    person_pair_bond_overlap = person_ids & pair_bond_ids
+    event_pair_bond_overlap = event_ids & pair_bond_ids
+
+    assert not person_event_overlap, (
+        f"ID collision! These IDs are used for both people and events: {person_event_overlap}"
+    )
+    assert not person_pair_bond_overlap, (
+        f"ID collision! These IDs are used for both people and pair_bonds: {person_pair_bond_overlap}"
+    )
+    assert not event_pair_bond_overlap, (
+        f"ID collision! These IDs are used for both events and pair_bonds: {event_pair_bond_overlap}"
+    )
 
     invalid_refs = []
     for event in pdp.get("events", []):
