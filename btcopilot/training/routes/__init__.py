@@ -1,4 +1,3 @@
-import os.path
 import logging
 import datetime
 
@@ -78,6 +77,18 @@ bp.register_blueprint(analysis_bp)
 bp.register_blueprint(synthetic_bp)
 
 
+def is_session_expired():
+    logged_in_at = session.get("logged_in_at")
+    if not logged_in_at:
+        return True
+    try:
+        login_time = datetime.datetime.fromisoformat(logged_in_at)
+        lifetime = current_app.permanent_session_lifetime
+        return datetime.datetime.now(datetime.timezone.utc) - login_time > lifetime
+    except (ValueError, TypeError):
+        return True
+
+
 @bp.before_request
 def _():
     # Auto-authenticate for development/MCP testing
@@ -89,6 +100,9 @@ def _():
             user = User.query.filter_by(username=auto_auth_user).first()
             if user:
                 session["user_id"] = user.id
+                session["logged_in_at"] = datetime.datetime.now(
+                    datetime.timezone.utc
+                ).isoformat()
                 session.permanent = True
                 if not user.roles:
                     user.roles = btcopilot.ROLE_SUBSCRIBER
@@ -101,6 +115,12 @@ def _():
         or request.endpoint in ("training.auth.login", "training.login")
     ):
         return
+
+    # Server-side session expiration check
+    if "user_id" in session and is_session_expired():
+        _log.info(f"Session expired for user {session.get('user_id')}")
+        session.clear()
+        return redirect(url_for("training.auth.login"))
 
     # Get the required role dynamically based on the hierarchy
     required_role = btcopilot_auth.get_required_role()

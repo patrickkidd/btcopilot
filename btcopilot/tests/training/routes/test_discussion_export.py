@@ -4,6 +4,7 @@ import pytest
 
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, SpeakerType
+from btcopilot.tests.training.conftest import set_test_session
 
 
 def test_export_success(auditor, discussion):
@@ -92,11 +93,9 @@ def test_export_with_statements(auditor, discussion):
 def test_export_permission_denied(flask_app, discussion, test_user_2):
     with flask_app.test_client(use_cookies=True) as client:
         with client.session_transaction() as sess:
-            sess["user_id"] = test_user_2.id
-            response = client.get(f"/training/discussions/{discussion.id}/export")
-        # Users without ROLE_AUDITOR get redirected to login
-        assert response.status_code == 302
-        assert "/auth/login" in response.headers.get("Location", "")
+            set_test_session(sess, test_user_2.id)
+        response = client.get(f"/training/discussions/{discussion.id}/export")
+        assert response.status_code == 403
 
 
 def test_export_auditor_access(auditor, discussion):

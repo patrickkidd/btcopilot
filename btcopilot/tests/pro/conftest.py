@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 
 import btcopilot
@@ -5,6 +7,11 @@ from btcopilot.extensions import db
 
 
 from btcopilot.tests.pro.fdencryptiontestclient import FDEncryptionTestClient
+
+
+def set_test_session(sess, user_id):
+    sess["user_id"] = user_id
+    sess["logged_in_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
 @pytest.fixture(autouse=True)
@@ -20,7 +27,7 @@ def subscriber(test_user, flask_app):
     with flask_app.test_client(use_cookies=True, user=test_user) as client:
         client.user = test_user
         with client.session_transaction() as sess:
-            sess["user_id"] = test_user.id
+            set_test_session(sess, test_user.id)
         yield client
 
 
@@ -32,5 +39,5 @@ def admin(flask_app, test_user):
     with flask_app.test_client(use_cookies=True, user=test_user) as client:
         client.user = test_user
         with client.session_transaction() as sess:
-            sess["user_id"] = test_user.id
+            set_test_session(sess, test_user.id)
         yield client

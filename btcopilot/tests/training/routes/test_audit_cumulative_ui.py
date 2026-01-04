@@ -11,6 +11,7 @@ from btcopilot.schema import (
     VariableShift,
     asdict,
 )
+from btcopilot.tests.training.conftest import set_test_session
 
 
 @pytest.fixture
@@ -584,7 +585,7 @@ def test_no_auditor_selector_for_non_admin(flask_app, test_user):
 
     with flask_app.test_client(use_cookies=True) as auditor_client:
         with auditor_client.session_transaction() as sess:
-            sess["user_id"] = test_user.id
+            set_test_session(sess, test_user.id)
 
         response = auditor_client.get(f"/training/discussions/{discussion.id}")
         assert response.status_code == 200
@@ -597,7 +598,7 @@ def test_no_auditor_selector_for_non_admin(flask_app, test_user):
 
     with flask_app.test_client(use_cookies=True) as admin_client:
         with admin_client.session_transaction() as sess:
-            sess["user_id"] = test_user.id
+            set_test_session(sess, test_user.id)
 
         response = admin_client.get(f"/training/discussions/{discussion.id}")
         assert response.status_code == 200

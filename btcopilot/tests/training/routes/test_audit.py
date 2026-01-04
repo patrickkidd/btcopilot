@@ -4,6 +4,7 @@ from btcopilot.pro.models import Diagram, User
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.schema import DiagramData
 from btcopilot.tests.pro.fdencryptiontestclient import FDEncryptionTestClient
+from btcopilot.tests.training.conftest import set_test_session
 
 
 def test_audit_403(subscriber):
@@ -65,7 +66,7 @@ def test_audit_discussion_with_read_access(flask_app, test_user, test_user_2):
     with flask_app.test_client(use_cookies=True) as client:
         client.user = test_user_2
         with client.session_transaction() as sess:
-            sess["user_id"] = test_user_2.id
+            set_test_session(sess, test_user_2.id)
         response = client.get(f"/training/discussions/{discussion.id}")
     assert response.status_code == 200
 
@@ -91,7 +92,7 @@ def test_audit_discussion_admin_bypasses_access_check(
     with flask_app.test_client(use_cookies=True) as client:
         client.user = test_user_2
         with client.session_transaction() as sess:
-            sess["user_id"] = test_user_2.id
+            set_test_session(sess, test_user_2.id)
         response = client.get(f"/training/discussions/{discussion.id}")
     assert response.status_code == 200
 

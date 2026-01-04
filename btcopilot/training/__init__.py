@@ -19,7 +19,7 @@ def sort_by_modified(diagrams):
 
 
 def init_app(app):
-    app.register_blueprint(routes.bp)
+    routes.init_app(app)
     app.jinja_env.filters["format_date_us"] = format_date_us
     app.jinja_env.filters["sort_by_modified"] = sort_by_modified
 

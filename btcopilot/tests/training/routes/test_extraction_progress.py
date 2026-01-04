@@ -1,6 +1,7 @@
 import pytest
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
+from btcopilot.tests.training.conftest import set_test_session
 
 
 def test_progress_endpoint(auditor, discussion):
@@ -111,7 +112,7 @@ def test_progress_permission_denied(flask_app, discussion, test_user_2):
     # Try to access another user's discussion progress
     with flask_app.test_client(use_cookies=True) as client:
         with client.session_transaction() as sess:
-            sess["user_id"] = test_user_2.id
+            set_test_session(sess, test_user_2.id)
         response = client.get(f"/training/discussions/{discussion.id}/progress")
         assert response.status_code == 403
 
