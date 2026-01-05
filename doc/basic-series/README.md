@@ -15,6 +15,9 @@ These lectures represent Bowen teaching directly — his explanations, clinical 
 
 ## Table of Contents
 
+*Click the link for each to drill down into complete detail*
+
+
 | Part | Title | File |
 |------|-------|------|
 | 1 | Triangles and the Scale of Differentiation | [Basic-Series-1-Triangles-and-the-Scale-of-Differentiation.md](Basic-Series-1-Triangles-and-the-Scale-of-Differentiation.md) |
