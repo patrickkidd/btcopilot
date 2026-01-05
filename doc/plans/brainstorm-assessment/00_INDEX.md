@@ -1,5 +1,13 @@
 # Brainstorm Assessment: Implicit Behavioral Model Synthesis
 
+## Goal
+
+Synthesize insights from neuroscience (Sridhar/Couzin), philosophy of mind (Stinson), and clinical observation (Bowen) into a unified theoretical framework — the Implicit Behavioral Model — that explains how humans navigate anxiety through automatic behavioral patterns. The value: a cross-validated model grounded in three independent lines of inquiry, each confirming the others.
+
+**Note on validity of sources**: Sridhar/Couzin is formal experimental neuroscience; Bowen is formal experimental clinical observation (3,000+ family histories); Stinson is theoretical philosophy of mind synthesizing existing experimental literature for data collection in the [coming AI Personal clinical app](github.com/patrickkidd/btcopilot)
+
+**Inspiration**: [AI's Trillion Dollar Opportunity: Context Graphs](https://foundationcapital.com/ais-trillion-dollar-opportunity-context-graphs/) and [ccmemory](https://github.com/patrickkidd/ccmemory) inspired exploring an event-sourced clinical context graph from both timeline data and raw chat data in the Personal app.
+
 **Purpose**: Capture and preserve all source materials and insights before final synthesis. No compression until synthesis complete.
 
 **Date Started**: 2026-01-04
@@ -12,39 +20,39 @@
 
 | # | Document | Status | Location |
 |---|----------|--------|----------|
-| 01 | Decision Graph Insight | ✅ Captured | `01_DECISION_GRAPH_INSIGHT.md` |
-| 02 | Sridhar et al. 2021 — Geometry of Decision-Making | ✅ Exhaustively captured | `02_COUZIN_GEOMETRY_OF_DECISION.md` |
-| 03 | Stinson 2020 — The Implicit Model | ✅ Exhaustively captured | `03_STINSON_IMPLICIT_MODEL.md` |
-| — | Bowen Basic Series Part 1 — Triangles & Scale | ✅ Exhaustively captured | `../../basic-series/Basic-Series-1-Triangles-and-the-Scale-of-Differentiation.md` |
-| — | Bowen Basic Series Part 2 — Nuclear Family & Projection | ✅ Exhaustively captured | `../../basic-series/Basic-Series-2-Nuclear-Family-Emotional-System-and-Family-Projection-Process.md` |
-| — | Bowen Basic Series Part 3 — Multigenerational & Sibling | ✅ Exhaustively captured | `../../basic-series/Basic-Series-3-Multigenerational-Transmission-Process.md` |
-| — | Bowen Basic Series Part 4 — I Position / Differentiation | ✅ Exhaustively captured | `../../basic-series/Basic-Series-4-Differentiation-of-Self-or-the-I-Position.md` |
-| — | Bowen Basic Series Part 5 — Symptom Development | ✅ Exhaustively captured | `../../basic-series/Basic-Series-5-Symptom-Development.md` |
-| — | Bowen Basic Series Part 6 — Family Reaction to Death | ✅ Exhaustively captured | `../../basic-series/Basic-Series-6-Family-Reaction-to-Death.md` |
-| — | Bowen Basic Series Part 7 — Emotional Cutoff (Clinical Example) | ✅ Exhaustively captured | `../../basic-series/Basic-Series-7-Emotional-Cutoff-A-Clinical-Example.md` |
+| 01 | Decision Graph Insight | ✅ Captured | [01_DECISION_GRAPH_INSIGHT.md](01_DECISION_GRAPH_INSIGHT.md) |
+| 02 | Sridhar et al. 2021 — Geometry of Decision-Making | ✅ Exhaustively captured | [02_COUZIN_GEOMETRY_OF_DECISION.md](02_COUZIN_GEOMETRY_OF_DECISION.md) |
+| 03 | Stinson 2020 — The Implicit Model | ✅ Exhaustively captured | [03_STINSON_IMPLICIT_MODEL.md](03_STINSON_IMPLICIT_MODEL.md) |
+| — | Bowen Basic Series Part 1 — Triangles & Scale | ✅ Exhaustively captured | [Basic-Series-1](../../basic-series/Basic-Series-1-Triangles-and-the-Scale-of-Differentiation.md) |
+| — | Bowen Basic Series Part 2 — Nuclear Family & Projection | ✅ Exhaustively captured | [Basic-Series-2](../../basic-series/Basic-Series-2-Nuclear-Family-Emotional-System-and-Family-Projection-Process.md) |
+| — | Bowen Basic Series Part 3 — Multigenerational & Sibling | ✅ Exhaustively captured | [Basic-Series-3](../../basic-series/Basic-Series-3-Multigenerational-Transmission-Process.md) |
+| — | Bowen Basic Series Part 4 — I Position / Differentiation | ✅ Exhaustively captured | [Basic-Series-4](../../basic-series/Basic-Series-4-Differentiation-of-Self-or-the-I-Position.md) |
+| — | Bowen Basic Series Part 5 — Symptom Development | ✅ Exhaustively captured | [Basic-Series-5](../../basic-series/Basic-Series-5-Symptom-Development.md) |
+| — | Bowen Basic Series Part 6 — Family Reaction to Death | ✅ Exhaustively captured | [Basic-Series-6](../../basic-series/Basic-Series-6-Family-Reaction-to-Death.md) |
+| — | Bowen Basic Series Part 7 — Emotional Cutoff (Clinical Example) | ✅ Exhaustively captured | [Basic-Series-7](../../basic-series/Basic-Series-7-Emotional-Cutoff-A-Clinical-Example.md) |
 
 ### Synthesis
 
 | # | Document | Status | Location |
 |---|----------|--------|----------|
-| 12 | Implicit Behavioral Model Synthesis | ✅ Complete | `12_IMPLICIT_BEHAVIORAL_MODEL_SYNTHESIS.md` |
+| 12 | Implicit Behavioral Model Synthesis | ✅ Complete | [12_IMPLICIT_BEHAVIORAL_MODEL_SYNTHESIS.md](12_IMPLICIT_BEHAVIORAL_MODEL_SYNTHESIS.md) |
 
 ### Superseded
 
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
-| 04 | Synthesis Draft | Earlier draft, superseded by 12 | `04_SYNTHESIS_DRAFT.md` |
+| 04 | Synthesis Draft | Earlier draft, superseded by 12 | [04_SYNTHESIS_DRAFT.md](04_SYNTHESIS_DRAFT.md) |
 
 ### Referenced (External)
 
 | Document | Path |
 |----------|------|
-| Universal Context Graph | `/Users/patrick/ccmemory/doc/UNIVERSAL_CONTEXT_GRAPH.md` |
-| Implementation Spec | `/Users/patrick/ccmemory/doc/IMPLEMENTATION_SPEC.md` |
-| Pattern Intelligence Vision | `../PATTERN_INTELLIGENCE_VISION.md` |
-| Learn Tab Evaluation | `../LEARN_TAB_EVALUATION.md` |
-| Chat Flow Architecture | `../../CHAT_FLOW.md` |
-| Bowen Theory Context | `../../../CONTEXT.md` |
+| Universal Context Graph | [UNIVERSAL_CONTEXT_GRAPH.md](/Users/patrick/ccmemory/doc/UNIVERSAL_CONTEXT_GRAPH.md) |
+| Implementation Spec | [IMPLEMENTATION_SPEC.md](/Users/patrick/ccmemory/doc/IMPLEMENTATION_SPEC.md) |
+| Pattern Intelligence Vision | [PATTERN_INTELLIGENCE_VISION.md](../PATTERN_INTELLIGENCE_VISION.md) |
+| Learn Tab Evaluation | [LEARN_TAB_EVALUATION.md](../LEARN_TAB_EVALUATION.md) |
+| Chat Flow Architecture | [CHAT_FLOW.md](../../CHAT_FLOW.md) |
+| Bowen Theory Context | [CONTEXT.md](../../../CONTEXT.md) |
 
 ---
 
@@ -233,7 +241,25 @@ All seven parts captured. Actual titles vs. expected:
 
 ---
 
-## Rules for This Synthesis (Applied)
+## Methodology
+
+**Date Executed**: 2026-01-04
+
+### Tools Used
+
+- **Claude Opus 4.5** — Anthropic's frontier reasoning model
+- **Claude Code** — Anthropic's agentic coding assistant (CLI)
+
+### Process
+
+1. **Source capture** — Each source document read in full and exhaustively captured with NO LOSSY COMPRESSION
+2. **Verbatim preservation** — Key quotes and conceptual language preserved exactly where articulated
+3. **Cross-source mapping** — Terminology and concepts mapped across all three domains (neuroscience, philosophy, clinical)
+4. **Tension surfacing** — Disagreements and divergences noted, not prematurely resolved
+5. **Provenance tracking** — Every insight traced to its source document
+6. **Synthesis** — Only after all sources fully captured, unified framework constructed
+
+### Rules Applied
 
 1. **No lossy compression** until final synthesis
 2. **Preserve all detail** from source documents

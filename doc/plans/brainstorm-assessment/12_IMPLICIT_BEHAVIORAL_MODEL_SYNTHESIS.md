@@ -2,13 +2,17 @@
 
 **Purpose**: Unified theoretical framework synthesizing insights from three source domains into a coherent model of how humans navigate anxiety through implicit behavioral patterns.
 
+**Inspiration**: [AI's Trillion Dollar Opportunity: Context Graphs](https://foundationcapital.com/ais-trillion-dollar-opportunity-context-graphs/) and [ccmemory](https://github.com/patrickkidd/ccmemory) inspired exploring an event-sourced clinical context graph from both timeline data and raw chat data in the Personal app.
+
 **Date**: 2026-01-04
 
 **Source Documents**:
-- 01: Decision Graph Insight
-- 02: Sridhar/Couzin 2021 — The Geometry of Decision-Making
-- 03: Stinson 2020 — The Implicit Model
-- 05-11: Bowen Basic Series Parts 1-7
+- [01: Decision Graph Insight](01_DECISION_GRAPH_INSIGHT.md)
+- [02: Sridhar/Couzin 2021 — The Geometry of Decision-Making](02_COUZIN_GEOMETRY_OF_DECISION.md)
+- [03: Stinson 2020 — The Implicit Model](03_STINSON_IMPLICIT_MODEL.md)
+- Bowen Basic Series Parts 1-7: [Part 1](../../basic-series/Basic-Series-1-Triangles-and-the-Scale-of-Differentiation.md) | [Part 2](../../basic-series/Basic-Series-2-Nuclear-Family-Emotional-System-and-Family-Projection-Process.md) | [Part 3](../../basic-series/Basic-Series-3-Multigenerational-Transmission-Process.md) | [Part 4](../../basic-series/Basic-Series-4-Differentiation-of-Self-or-the-I-Position.md) | [Part 5](../../basic-series/Basic-Series-5-Symptom-Development.md) | [Part 6](../../basic-series/Basic-Series-6-Family-Reaction-to-Death.md) | [Part 7](../../basic-series/Basic-Series-7-Emotional-Cutoff-A-Clinical-Example.md)
+
+**Methodology**: See [00_INDEX.md](00_INDEX.md) for the full source document index and synthesis methodology
 
 ---
 
