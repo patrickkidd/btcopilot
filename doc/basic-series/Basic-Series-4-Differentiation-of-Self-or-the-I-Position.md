@@ -1,4 +1,4 @@
-# 08 — Bowen Basic Series Part 4: Differentiation of Self / The I Position
+# Bowen Basic Series Part 4: Differentiation of Self / The I Position
 
 **Source**: Murray Bowen, MD — Basic Series Video Lecture 4
 **Captured**: 2026-01-04

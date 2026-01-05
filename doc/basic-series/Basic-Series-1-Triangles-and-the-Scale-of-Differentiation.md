@@ -1,4 +1,4 @@
-# 05 — Bowen Basic Series Part 1: Triangles and the Scale of Differentiation
+# Bowen Basic Series Part 1: Triangles and the Scale of Differentiation
 
 **Source**: Murray Bowen, MD — Basic Series Video Lecture 1
 **Captured**: 2026-01-04

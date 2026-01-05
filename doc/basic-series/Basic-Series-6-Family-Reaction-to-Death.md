@@ -1,4 +1,4 @@
-# 10 — Bowen Basic Series Part 6: Family Reaction to Death
+# Bowen Basic Series Part 6: Family Reaction to Death
 
 **Source**: Murray Bowen, MD — Conference on "The Relationships Between the Dying Patient, the Family, and the Physician" (Department of Psychiatry)
 **Captured**: 2026-01-04

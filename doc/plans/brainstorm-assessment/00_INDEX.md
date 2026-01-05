@@ -15,13 +15,13 @@
 | 01 | Decision Graph Insight | ✅ Captured | `01_DECISION_GRAPH_INSIGHT.md` |
 | 02 | Sridhar et al. 2021 — Geometry of Decision-Making | ✅ Exhaustively captured | `02_COUZIN_GEOMETRY_OF_DECISION.md` |
 | 03 | Stinson 2020 — The Implicit Model | ✅ Exhaustively captured | `03_STINSON_IMPLICIT_MODEL.md` |
-| 05 | Bowen Basic Series Part 1 — Triangles & Scale | ✅ Exhaustively captured | `../../basic-series/05_BOWEN_BASIC_SERIES_1.md` |
-| 06 | Bowen Basic Series Part 2 — Nuclear Family & Projection | ✅ Exhaustively captured | `../../basic-series/06_BOWEN_BASIC_SERIES_2.md` |
-| 07 | Bowen Basic Series Part 3 — Multigenerational & Sibling | ✅ Exhaustively captured | `../../basic-series/07_BOWEN_BASIC_SERIES_3.md` |
-| 08 | Bowen Basic Series Part 4 — I Position / Differentiation | ✅ Exhaustively captured | `../../basic-series/08_BOWEN_BASIC_SERIES_4.md` |
-| 09 | Bowen Basic Series Part 5 — Symptom Development | ✅ Exhaustively captured | `../../basic-series/09_BOWEN_BASIC_SERIES_5.md` |
-| 10 | Bowen Basic Series Part 6 — Family Reaction to Death | ✅ Exhaustively captured | `../../basic-series/10_BOWEN_BASIC_SERIES_6.md` |
-| 11 | Bowen Basic Series Part 7 — Emotional Cutoff (Clinical Example) | ✅ Exhaustively captured | `../../basic-series/11_BOWEN_BASIC_SERIES_7.md` |
+| — | Bowen Basic Series Part 1 — Triangles & Scale | ✅ Exhaustively captured | `../../basic-series/Basic-Series-1-Triangles-and-the-Scale-of-Differentiation.md` |
+| — | Bowen Basic Series Part 2 — Nuclear Family & Projection | ✅ Exhaustively captured | `../../basic-series/Basic-Series-2-Nuclear-Family-Emotional-System-and-Family-Projection-Process.md` |
+| — | Bowen Basic Series Part 3 — Multigenerational & Sibling | ✅ Exhaustively captured | `../../basic-series/Basic-Series-3-Multigenerational-Transmission-Process.md` |
+| — | Bowen Basic Series Part 4 — I Position / Differentiation | ✅ Exhaustively captured | `../../basic-series/Basic-Series-4-Differentiation-of-Self-or-the-I-Position.md` |
+| — | Bowen Basic Series Part 5 — Symptom Development | ✅ Exhaustively captured | `../../basic-series/Basic-Series-5-Symptom-Development.md` |
+| — | Bowen Basic Series Part 6 — Family Reaction to Death | ✅ Exhaustively captured | `../../basic-series/Basic-Series-6-Family-Reaction-to-Death.md` |
+| — | Bowen Basic Series Part 7 — Emotional Cutoff (Clinical Example) | ✅ Exhaustively captured | `../../basic-series/Basic-Series-7-Emotional-Cutoff-A-Clinical-Example.md` |
 
 ### Synthesis
 
@@ -87,7 +87,7 @@
 - **Cross-Species Objectivity**: Ability to predict context with minimal error
 - **Darwinian Truth**: Models factually wrong but adaptively correct
 
-### From Bowen Basic Series Part 1 (05)
+### From Bowen Basic Series Part 1
 - **Triangle as Molecule**: The unit of any emotional system; series of interlocking triangles
 - **Therapy = Modify Triangle**: "Modify the triangle and you have modified the system"
 - **Two-Person Instability**: Dyads stable only when calm; stress triangles in third
@@ -100,7 +100,7 @@
 - **Cutoff and Pattern Transfer**: Adolescent cutoff → same pattern dumps into marriage
 - **Natural Systems Frame**: Family as biological organism, not abstract systems
 
-### From Bowen Basic Series Part 2 (06)
+### From Bowen Basic Series Part 2
 - **Three Mechanisms**: Marital conflict, spouse dysfunction, projection to child
 - **Solid vs Pseudo Self**: Solid = non-negotiable beliefs; Pseudo = negotiable under pressure
 - **Problem Rests in One Person**: Emotional system crystallizes problems in single person
@@ -109,7 +109,7 @@
 - **Physician as Projection Agent**: Doctor can "aid and abet" projection by confirming mother's diagnosis
 - **Mixture = Better Therapy**: Families with mix of mechanisms (not fixed in one) do better
 
-### From Bowen Basic Series Part 3 (07)
+### From Bowen Basic Series Part 3
 - **Multigenerational Transmission**: Nuclear family process across generations; minimum 3 generations to schizophrenia
 - **Upward and Downward Movement**: Simultaneous — some going down scale, others going up
 - **Predictive Validity**: From nuclear family data, can predict children's outcomes generations later
@@ -118,7 +118,7 @@
 - **Expectations Transmission**: "Communicated to future generation" regardless of stated beliefs
 - **Dates Reveal Connections**: Symptom timing often corresponds to events elsewhere in family
 
-### From Bowen Basic Series Part 4 (08)
+### From Bowen Basic Series Part 4
 - **Undifferentiated Family Ego Mass**: "An emotional stuck-togetherness" — all members living in each other's selves
 - **Fusion → Impairment**: Fused people "not free to do what they might do, function as they might function"
 - **Self Defined by Action**: "A self is never defined in words. It's defined only when you can take an action stand"
@@ -134,7 +134,7 @@
 - **Telling Self vs Telling Other**: Define what you will do, not what other should do
 - **Bowen's Own Family Work**: Applied differentiation principles systematically to F-O with "pretty good results"
 
-### From Bowen Basic Series Part 5 (09)
+### From Bowen Basic Series Part 5
 - **Four Governing Variables**: (1) differentiation level, (2) relationship patterns, (3) contact with past generations, (4) anxiety
 - **Four Relationship Patterns**: Distance, marital conflict, dysfunction in spouse, projection to child
 - **Male/Female Dominated Fusion**: Fusion direction determines which spouse develops symptoms
@@ -153,7 +153,7 @@
 - **Three-Generation Refinement**: Possible but rare; "most of the time this process can be slowed down"
 - **Systems Thinking Advantage**: "Same number of variables for dealing with it in therapy"
 
-### From Bowen Basic Series Part 6 (10)
+### From Bowen Basic Series Part 6
 - **Death as Chief Taboo**: "Chief among all taboo subjects in a person's life is death"
 - **Open vs Closed System**: Open = communicate thoughts/feelings/fantasies; Closed = taboo subjects accumulate
 - **Courtship as Best Open System**: Less dependent, free to communicate; marriage progressively closes
@@ -170,7 +170,7 @@
 - **Children Handle Death Well**: "Amazingly capable of dealing with death if confronted with facts on terms they can understand"
 - **The Loneliest Life**: Dying person cut off from everyone — surgeon denies, spouse jokes, therapist waits
 
-### From Bowen Basic Series Part 7 (11)
+### From Bowen Basic Series Part 7
 - **Cutoff Predicts Next Generation Cutoff**: "When my parents die, my generation is ripe for cutting off even more than my parents did"
 - **Social Success / Family Failure Split**: "People who are cut off will make a big thing out of their social relationships" — wonderful hostess, can't talk to kids
 - **Flat-Footed Denial**: "Flat-footed statements which contradict facts" — mother insisting relationships are good while behavior shows opposite

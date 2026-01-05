@@ -1,4 +1,4 @@
-# 07 — Bowen Basic Series Part 3: Multigenerational Transmission Process and Sibling Position
+# Bowen Basic Series Part 3: Multigenerational Transmission Process and Sibling Position
 
 **Source**: Murray Bowen, MD — Basic Series Video Lecture 3
 **Captured**: 2026-01-04

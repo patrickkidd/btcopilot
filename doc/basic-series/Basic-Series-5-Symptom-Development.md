@@ -1,4 +1,4 @@
-# 09 — Bowen Basic Series Part 5: Symptom Development
+# Bowen Basic Series Part 5: Symptom Development
 
 **Source**: Murray Bowen, MD — Basic Series Video Lecture 5
 **Captured**: 2026-01-04

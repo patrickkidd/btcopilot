@@ -1,4 +1,4 @@
-# 06 — Bowen Basic Series Part 2: Nuclear Family Emotional System and Family Projection Process
+# Bowen Basic Series Part 2: Nuclear Family Emotional System and Family Projection Process
 
 **Source**: Murray Bowen, MD — Basic Series Video Lecture 2
 **Captured**: 2026-01-04

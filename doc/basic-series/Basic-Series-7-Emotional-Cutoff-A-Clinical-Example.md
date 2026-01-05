@@ -1,4 +1,4 @@
-# 11 — Bowen Basic Series Part 7: Emotional Cutoff — A Clinical Example
+# Bowen Basic Series Part 7: Emotional Cutoff — A Clinical Example
 
 **Source**: Murray Bowen, MD — Videotaped Interview with Kathleen Yanks (Family Center faculty)
 **Captured**: 2026-01-04
