@@ -1,4 +1,4 @@
-# Reproduction, Adoption, Fertility from EC
+# Reproduction Scenarios from EC
 
 Ideas for diagram symbology. A list of different ways reproduction plays out.
 
