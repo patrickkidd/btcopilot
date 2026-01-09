@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% from "components/irr_macros.html" import render_kappa %}
+
+{% block title %}IRR - {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
+
+{% macro render_kappa_small(kappa) %}
+    {% if kappa is not none and kappa == kappa %}{{ "%.2f"|format(kappa) }}{% else %}-{% endif %}
+{% endmacro %}
+
+{% block content %}
+<section class="section">
+    <div class="container is-fluid">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <div>
+                        <h1 class="title">{{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
+                        <p class="subtitle">
+                            {{ discussion_irr.coded_statement_count }} coded statements &bull;
+                            {{ discussion_irr.coders|length }} coders: {{ discussion_irr.coders|join(', ') }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a href="{{ url_for('training.irr.pairwise_matrix', discussion_id=discussion.id) }}" class="button is-info">
+                        <span class="icon"><i class="fas fa-th"></i></span>
+                        <span>Pairwise Matrix</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary metrics -->
+        <div class="box mb-4">
+            <h2 class="title is-5">Discussion Summary</h2>
+            <div class="columns">
+                <div class="column">
+                    <table class="table is-narrow">
+                        <tr>
+                            <th>Avg Events F1</th>
+                            <td>{{ "%.3f"|format(discussion_irr.avg_events_f1) if discussion_irr.avg_events_f1 is not none else '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Avg Aggregate F1</th>
+                            <td>{{ "%.3f"|format(discussion_irr.avg_aggregate_f1) if discussion_irr.avg_aggregate_f1 is not none else '-' }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="column">
+                    <table class="table is-narrow">
+                        <tr>
+                            <th>Symptom &kappa;</th>
+                            <td>{{ render_kappa(discussion_irr.avg_symptom_kappa) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Anxiety &kappa;</th>
+                            <td>{{ render_kappa(discussion_irr.avg_anxiety_kappa) }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="column">
+                    <table class="table is-narrow">
+                        <tr>
+                            <th>Relationship &kappa;</th>
+                            <td>{{ render_kappa(discussion_irr.avg_relationship_kappa) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Functioning &kappa;</th>
+                            <td>{{ render_kappa(discussion_irr.avg_functioning_kappa) }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Per-coder-pair breakdown -->
+        {% if discussion_irr.pairwise_metrics %}
+        <div class="box mb-4">
+            <h2 class="title is-5">Pairwise Coder Comparison</h2>
+            <table class="table is-fullwidth is-striped">
+                <thead>
+                    <tr>
+                        <th>Coder Pair</th>
+                        <th>Events F1</th>
+                        <th>People F1</th>
+                        <th>Matched Events</th>
+                        <th>S &kappa;</th>
+                        <th>A &kappa;</th>
+                        <th>R &kappa;</th>
+                        <th>F &kappa;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pair in discussion_irr.pairwise_metrics %}
+                    <tr>
+                        <td>
+                            <span class="is-size-7">{{ pair.coder_a|truncate(20) }}</span>
+                            <span class="has-text-grey">&harr;</span>
+                            <span class="is-size-7">{{ pair.coder_b|truncate(20) }}</span>
+                        </td>
+                        <td>{{ "%.2f"|format(pair.events_f1) }}</td>
+                        <td>{{ "%.2f"|format(pair.people_f1) }}</td>
+                        <td>{{ pair.matched_event_count }}</td>
+                        <td>{{ render_kappa(pair.symptom_kappa) }}</td>
+                        <td>{{ render_kappa(pair.anxiety_kappa) }}</td>
+                        <td>{{ render_kappa(pair.relationship_kappa) }}</td>
+                        <td>{{ render_kappa(pair.functioning_kappa) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- Per-statement breakdown -->
+        <h2 class="title is-5">Per-Statement Breakdown</h2>
+        {% for item in statement_irrs %}
+            <div class="box mb-3">
+                <div class="level">
+                    <div class="level-left">
+                        <div class="level-item">
+                            <span class="tag is-light">Statement {{ loop.index }}</span>
+                        </div>
+                        {% if item.irr %}
+                        <div class="level-item">
+                            <span class="tag is-info">{{ item.irr.coders|length }} coders</span>
+                        </div>
+                        <div class="level-item">
+                            <span class="is-size-7">
+                                Events F1: {{ "%.2f"|format(item.irr.avg_events_f1) if item.irr.avg_events_f1 is not none else '-' }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="content">
+                    <p class="is-family-monospace is-size-7" style="white-space: pre-wrap;">{{ item.statement.text|truncate(500) }}</p>
+                </div>
+
+                {% if item.irr %}
+                    {% if item.irr.coder_pairs %}
+                    <table class="table is-narrow is-size-7">
+                        <thead>
+                            <tr>
+                                <th>Pair</th>
+                                <th>Agg F1</th>
+                                <th>Events F1</th>
+                                <th>S &kappa;</th>
+                                <th>A &kappa;</th>
+                                <th>R &kappa;</th>
+                                <th>F &kappa;</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cp in item.irr.coder_pairs %}
+                            <tr>
+                                <td>{{ cp.coder_a|truncate(15) }} &harr; {{ cp.coder_b|truncate(15) }}</td>
+                                <td>{{ "%.2f"|format(cp.aggregate_f1) }}</td>
+                                <td>{{ "%.2f"|format(cp.events_f1) }}</td>
+                                <td>{{ render_kappa_small(cp.symptom_kappa) }}</td>
+                                <td>{{ render_kappa_small(cp.anxiety_kappa) }}</td>
+                                <td>{{ render_kappa_small(cp.relationship_kappa) }}</td>
+                                <td>{{ render_kappa_small(cp.functioning_kappa) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% endif %}
+                {% else %}
+                <p class="has-text-grey is-size-7">Insufficient coder data (requires 2+ coders)</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

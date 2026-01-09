@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% from "components/irr_macros.html" import render_kappa %}
+
+{% block title %}Inter-Rater Reliability{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container is-fluid">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <div>
+                        <h1 class="title">Inter-Rater Reliability</h1>
+                        <p class="subtitle">{{ discussions|length }} discussion{% if discussions|length != 1 %}s{% endif %} with multiple coders</p>
+                    </div>
+                </div>
+            </div>
+            <div class="level-right">
+                {% if discussions %}
+                <div class="level-item">
+                    <a href="{{ url_for('training.irr.system') }}" class="button is-primary">
+                        <span class="icon"><i class="fas fa-chart-bar"></i></span>
+                        <span>System-Wide IRR</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="box mb-4">
+            <div class="content is-small">
+                <p><strong>Kappa Interpretation (Landis &amp; Koch):</strong></p>
+                <div class="tags">
+                    <span class="tag is-success">0.81-1.00 Almost Perfect</span>
+                    <span class="tag is-info">0.61-0.80 Substantial</span>
+                    <span class="tag is-warning">0.41-0.60 Moderate</span>
+                    <span class="tag is-danger">0.21-0.40 Fair</span>
+                    <span class="tag is-dark">&le;0.20 Poor</span>
+                </div>
+                <p class="mt-2"><strong>Legend:</strong> S=Symptom, A=Anxiety, R=Relationship, F=Functioning (SARF variables)</p>
+            </div>
+        </div>
+
+        {% if discussions %}
+        <div class="table-container">
+            <table class="table is-fullwidth is-striped is-hoverable">
+                <thead>
+                    <tr>
+                        <th>Discussion</th>
+                        <th>Coders</th>
+                        <th>Stmts</th>
+                        <th>Events F1</th>
+                        <th>S &kappa;</th>
+                        <th>A &kappa;</th>
+                        <th>R &kappa;</th>
+                        <th>F &kappa;</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in discussions %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('training.irr.discussion', discussion_id=d.discussion.id) }}">
+                                {{ d.discussion.summary or 'Discussion ' ~ d.discussion.id }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="tag is-light">{{ d.coder_count }}</span>
+                            <span class="is-size-7 has-text-grey">{{ d.coders|join(', ')|truncate(30) }}</span>
+                        </td>
+                        <td>{{ d.statement_count }}</td>
+                        <td>
+                            {% if d.avg_events_f1 is not none %}
+                                <span class="{% if d.avg_events_f1 >= 0.6 %}has-text-success{% elif d.avg_events_f1 >= 0.4 %}has-text-warning{% else %}has-text-danger{% endif %}">
+                                    {{ "%.2f"|format(d.avg_events_f1) }}
+                                </span>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>{{ render_kappa(d.avg_symptom_kappa) }}</td>
+                        <td>{{ render_kappa(d.avg_anxiety_kappa) }}</td>
+                        <td>{{ render_kappa(d.avg_relationship_kappa) }}</td>
+                        <td>{{ render_kappa(d.avg_functioning_kappa) }}</td>
+                        <td>
+                            <div class="buttons are-small">
+                                <a href="{{ url_for('training.irr.discussion', discussion_id=d.discussion.id) }}"
+                                   class="button is-small is-info" title="View details">
+                                    <span class="icon"><i class="fas fa-list"></i></span>
+                                </a>
+                                <a href="{{ url_for('training.irr.pairwise_matrix', discussion_id=d.discussion.id) }}"
+                                   class="button is-small" title="Pairwise matrix">
+                                    <span class="icon"><i class="fas fa-th"></i></span>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="notification is-warning">
+            <p><strong>No discussions with multiple coders found.</strong></p>
+            <p>IRR analysis requires at least 2 coders to have submitted extraction feedback for the same discussion.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

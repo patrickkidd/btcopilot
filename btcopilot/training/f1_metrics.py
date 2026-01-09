@@ -315,8 +315,8 @@ def match_people(
 
             parents_match = True
             if ai_person.parents is not None and gt_person.parents is not None:
-                resolved_ai_parents = [id_map.get(p, p) for p in ai_person.parents]
-                if set(resolved_ai_parents) != set(gt_person.parents):
+                resolved_ai_parent = id_map.get(ai_person.parents, ai_person.parents)
+                if resolved_ai_parent != gt_person.parents:
                     parents_match = False
 
             # Gender must match if both are set (ignore if either is None/Unknown)

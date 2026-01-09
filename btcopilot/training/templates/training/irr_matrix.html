@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% from "components/irr_macros.html" import render_kappa %}
+
+{% block title %}IRR Matrix - {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
+
+{% macro render_kappa_matrix(coders, matrix, attr) %}
+<table class="table is-bordered is-narrow is-size-7">
+    <thead>
+        <tr>
+            <th></th>
+            {% for coder in coders %}
+            <th>{{ coder|truncate(10) }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row_coder in coders %}
+        <tr>
+            <th>{{ row_coder|truncate(10) }}</th>
+            {% for col_coder in coders %}
+            <td class="has-text-centered">
+                {% if row_coder == col_coder %}
+                <span class="has-text-grey">-</span>
+                {% else %}
+                {% set pair = matrix.get((row_coder, col_coder)) %}
+                {% if pair %}
+                    {% set kappa = pair|attr(attr) %}
+                    {{ render_kappa(kappa) }}
+                {% else %}-{% endif %}
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endmacro %}
+
+{% block content %}
+<section class="section">
+    <div class="container is-fluid">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <div>
+                        <h1 class="title">Pairwise Coder Matrix</h1>
+                        <p class="subtitle">{{ discussion.summary or 'Discussion ' ~ discussion.id }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="box mb-4">
+            <div class="content is-small">
+                <p><strong>Kappa Interpretation (Landis &amp; Koch):</strong></p>
+                <div class="tags">
+                    <span class="tag is-success">0.81-1.00 Almost Perfect</span>
+                    <span class="tag is-info">0.61-0.80 Substantial</span>
+                    <span class="tag is-warning">0.41-0.60 Moderate</span>
+                    <span class="tag is-danger">0.21-0.40 Fair</span>
+                    <span class="tag is-dark">&le;0.20 Poor</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aggregate F1 Matrix -->
+        <div class="box mb-4">
+            <h2 class="title is-5">Aggregate F1 Matrix</h2>
+            <table class="table is-bordered is-narrow">
+                <thead>
+                    <tr>
+                        <th></th>
+                        {% for coder in coders %}
+                        <th class="is-size-7">{{ coder|truncate(15) }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row_coder in coders %}
+                    <tr>
+                        <th class="is-size-7">{{ row_coder|truncate(15) }}</th>
+                        {% for col_coder in coders %}
+                        <td class="has-text-centered">
+                            {% if row_coder == col_coder %}
+                            <span class="has-text-grey">-</span>
+                            {% else %}
+                            {% set pair = matrix.get((row_coder, col_coder)) %}
+                            {% if pair %}
+                            <span class="{% if pair.aggregate_f1 >= 0.8 %}has-text-success has-text-weight-bold{% elif pair.aggregate_f1 >= 0.6 %}has-text-info{% elif pair.aggregate_f1 >= 0.4 %}has-text-warning{% else %}has-text-danger{% endif %}">
+                                {{ "%.2f"|format(pair.aggregate_f1) }}
+                            </span>
+                            {% else %}-{% endif %}
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Events F1 Matrix -->
+        <div class="box mb-4">
+            <h2 class="title is-5">Events F1 Matrix</h2>
+            <table class="table is-bordered is-narrow">
+                <thead>
+                    <tr>
+                        <th></th>
+                        {% for coder in coders %}
+                        <th class="is-size-7">{{ coder|truncate(15) }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row_coder in coders %}
+                    <tr>
+                        <th class="is-size-7">{{ row_coder|truncate(15) }}</th>
+                        {% for col_coder in coders %}
+                        <td class="has-text-centered">
+                            {% if row_coder == col_coder %}
+                            <span class="has-text-grey">-</span>
+                            {% else %}
+                            {% set pair = matrix.get((row_coder, col_coder)) %}
+                            {% if pair %}{{ "%.2f"|format(pair.events_f1) }}{% else %}-{% endif %}
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- SARF Kappa Matrices -->
+        <div class="columns">
+            <div class="column">
+                <div class="box">
+                    <h3 class="title is-6">Symptom &kappa;</h3>
+                    {{ render_kappa_matrix(coders, matrix, 'symptom_kappa') }}
+                </div>
+            </div>
+            <div class="column">
+                <div class="box">
+                    <h3 class="title is-6">Anxiety &kappa;</h3>
+                    {{ render_kappa_matrix(coders, matrix, 'anxiety_kappa') }}
+                </div>
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column">
+                <div class="box">
+                    <h3 class="title is-6">Relationship &kappa;</h3>
+                    {{ render_kappa_matrix(coders, matrix, 'relationship_kappa') }}
+                </div>
+            </div>
+            <div class="column">
+                <div class="box">
+                    <h3 class="title is-6">Functioning &kappa;</h3>
+                    {{ render_kappa_matrix(coders, matrix, 'functioning_kappa') }}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

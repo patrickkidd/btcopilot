@@ -44,6 +44,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Other references:**
 - [README.md](README.md) - Project overview
+- [doc/plans/](doc/plans/) - Feature plans and synthesis projects
 
 ## Architecture Overview
 

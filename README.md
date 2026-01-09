@@ -10,6 +10,7 @@ Clinical NLP system for extracting structured data from therapy transcripts. Use
 
 - [SARF Literature Review](doc/sarf-definitions/) - First exhaustive, 100% traceable literature review for Bowen Theory technical terms
 - [SARF Data Model White Paper](https://docs.google.com/document/d/1k6ZvYEG1644L4SKqXzXoOvBnepmus2-8WwUfMh4R_4Y/edit?usp=sharing) - Novel clinical data model operationalizing Bowen theory constructs
+- [Implicit Behavioral Model Synthesis](doc/plans/brainstorm-assessment/12_IMPLICIT_BEHAVIORAL_MODEL_SYNTHESIS.md) - Cross-validated theoretical framework synthesizing neuroscience, philosophy of mind, and clinical observation
 - [Family Diagram Visual Specification](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) - Platform-independent specification for rendering Bowen family diagrams
 - [Conversational Flow Evaluation](#phase-7-conversational-flow-evaluation-) - Objective metrics for measuring clinical interview quality
 - [Inter-Rater Reliability Study](#phase-11-inter-rater-reliability-study) - First formal IRR study for family systems constructs at scale

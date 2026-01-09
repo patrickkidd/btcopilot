@@ -56,22 +56,21 @@ def test_match_people_fuzzy():
 
 
 def test_match_people_with_parents():
-    parent_a = Person(id=-1, name="Parent A")
-    parent_b = Person(id=-2, name="Parent B")
-    ai_child = Person(id=-3, name="Child", parents=[-1, -2])
-    gt_parent_a = Person(id=-10, name="Parent A")
-    gt_parent_b = Person(id=-20, name="Parent B")
-    gt_child = Person(id=-30, name="Child", parents=[-10, -20])
+    # parents is int | None per schema (single parent reference)
+    parent = Person(id=-1, name="Parent A")
+    ai_child = Person(id=-3, name="Child", parents=-1)
+    gt_parent = Person(id=-10, name="Parent A")
+    gt_child = Person(id=-30, name="Child", parents=-10)
 
-    ai_people = [parent_a, parent_b, ai_child]
-    gt_people = [gt_parent_a, gt_parent_b, gt_child]
+    ai_people = [parent, ai_child]
+    gt_people = [gt_parent, gt_child]
 
     result, id_map = match_people(ai_people, gt_people)
 
-    assert len(result.matched_pairs) == 3
+    assert len(result.matched_pairs) == 2
     assert len(result.ai_unmatched) == 0
     assert len(result.gt_unmatched) == 0
-    assert id_map == {-1: -10, -2: -20, -3: -30}
+    assert id_map == {-1: -10, -3: -30}
 
 
 def test_match_people_below_threshold():

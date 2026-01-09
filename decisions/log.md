@@ -6,6 +6,36 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ---
 
+## 2026-01
+
+### 2026-01-08: IRR analysis page using F1 + Cohen's/Fleiss' Kappa for SARF validation
+
+**Context:** First GT discussion coded by Patrick and one IRR coder, with two more coders finishing the same synthetic discussion soon. Need formal, publishable IRR metrics for clinical validity of SARF data model.
+
+**Options considered:**
+1. Reuse existing F1 analysis page (AI vs GT) for coder-vs-coder comparison
+2. Build new IRR page with clinical-standard Kappa metrics alongside F1
+3. Use traditional eyeball/non-scalable IRR methods from clinical psychology literature
+
+**Decision:** Option 2 - New `/training/irr/` page with:
+- Entity-level F1 (reusing existing matching logic from f1_metrics.py)
+- Cohen's Kappa (pairwise, sklearn) per SARF variable
+- Fleiss' Kappa (3+ coders) per SARF variable
+- Primary vs IRR coder distinction via existing `Feedback.approved` field (no schema change)
+
+**Reasoning:**
+- Existing F1 matching logic is source-agnostic (compares two PDPDeltas regardless of origin)
+- Kappa is the clinical standard for IRR - chance-corrected, publishable
+- Dual-purpose: validates SARF clinical reliability + provides IRR-validated GT for AI training
+- Fleiss' extends to 3+ coders (Guillermo, Kathy, Patrick) without N² pairwise comparisons
+- Separate page avoids confusing AI evaluation with human agreement metrics
+
+**Publication focus:** SARF variable kappas (symptom, anxiety, relationship, functioning) on matched events - this is the clinically novel contribution. Entity F1 is secondary infrastructure.
+
+**Revisit trigger:** If kappa values are unacceptably low (<0.4), indicating SARF model needs refinement before scaling IRR coder recruitment.
+
+---
+
 ## 2025-12
 
 ### 2025-12-27: MVP scope - consider shipping People/PairBonds only, defer Events/SARF

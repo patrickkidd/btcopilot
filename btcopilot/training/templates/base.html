@@ -1008,6 +1008,12 @@
                     </span>
                     <span>Coding</span>
                 </a>
+                <a class="navbar-item {% if request.endpoint and request.endpoint.startswith('training.irr') %}is-active{% endif %}" href="{{ url_for('training.irr.index') }}">
+                    <span class="icon">
+                        <i class="fas fa-users"></i>
+                    </span>
+                    <span>IRR</span>
+                </a>
                 {% endif %}
                 {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) %}
                 <a class="navbar-item {% if request.endpoint and request.endpoint.startswith('training.synthetic') %}is-active{% endif %}" href="{{ url_for('training.synthetic.index') }}">

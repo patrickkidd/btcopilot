@@ -50,6 +50,14 @@ You could do this one of two ways and I definitely have a stronger preference fo
 
 *The second way (my preference):*  Have a solid line connecting the adopted person to any parents they have - bio or adopted.  This is more consistent with Bowen theory, which says that adoptive family emotional process may be more relevant than bio family emotional process depending on age of person at time of adoption.  It will be obvious that the person is adopted without needing dashed lines to designate it if you include all of the parents (bio and adopted) on the diagram, which IMHO should be the standard practice for diagramming all adopted people/families.  It also addresses the possibility of "chosen parents"/chosen family, where people consider certain parental figures not connected to them via either bio ties or adoptive legal status to be like a parent to them.  Those relationships could be the ones indicated using dashed lines, rather than adoptive relationships.  This would also be consistent with Bowen theory.
 
+## Terminated Adoption
+
+The flip side of Non-completed Adoption.  In rare situations, but not as rare as would be ideal, people adopt a child and then terminate the adoption.  It's terrible when it happens, and obviously incredibly traumatic, especially for the child.  It would be symbolized with the same double slash that is used for divorce along the line connecting the child with the parents.  
+
 ## Foster Parents
 
 Some adoptees were moved around quite a few times from one foster home to another before being adopted and those foster parents (especially of long duration) would be important to track.
+
+## Emancipated Minor
+
+That symbology could also apply to instances where minors (whether adopted or bio kids) emancipate themselves from their parents prior to adulthood.  I suppose this could also just be coded as Cutoff and not given its own symbol since the symbol would only be relevant for the duration of time between when they emancipated and when they were still a minor.  After they turn 18, they are just an offspring of the parents.  But on the other hand it does seem worthwhile to have a symbol that differentiates it from Cutoff in that many people cut off from their parents, but don't go to the trouble of making it legal, which is a lot of work to do.  

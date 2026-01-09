@@ -1,0 +1,23 @@
+{# Shared macros for IRR display across multiple templates #}
+
+{% macro render_kappa(kappa) %}
+    {% if kappa is not none and kappa == kappa %}
+        {% if kappa >= 0.81 %}
+            <span class="has-text-success has-text-weight-bold">{{ "%.2f"|format(kappa) }}</span>
+        {% elif kappa >= 0.61 %}
+            <span class="has-text-info">{{ "%.2f"|format(kappa) }}</span>
+        {% elif kappa >= 0.41 %}
+            <span class="has-text-warning">{{ "%.2f"|format(kappa) }}</span>
+        {% elif kappa >= 0.21 %}
+            <span class="has-text-danger">{{ "%.2f"|format(kappa) }}</span>
+        {% else %}
+            <span class="has-text-grey">{{ "%.2f"|format(kappa) }}</span>
+        {% endif %}
+    {% else %}-{% endif %}
+{% endmacro %}
+
+{% macro render_kappa_large(kappa) %}
+    {% if kappa is not none and kappa == kappa %}{{ "%.3f"|format(kappa) }}{% else %}-{% endif %}
+{% endmacro %}
+
+{% macro kappa_class(kappa) %}{% if kappa is not none and kappa == kappa and kappa >= 0.61 %}is-success{% elif kappa is not none and kappa == kappa and kappa >= 0.41 %}is-warning{% else %}is-light{% endif %}{% endmacro %}

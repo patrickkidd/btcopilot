@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% from "components/irr_macros.html" import render_kappa, render_kappa_large, kappa_class %}
+
+{% block title %}System-Wide IRR{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container is-fluid">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <div>
+                        <h1 class="title">System-Wide Inter-Rater Reliability</h1>
+                        <p class="subtitle">
+                            {{ system_metrics.discussion_count }} discussion{% if system_metrics.discussion_count != 1 %}s{% endif %} &bull;
+                            {{ system_metrics.total_statements }} statements
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="box mb-4">
+            <div class="content is-small">
+                <p><strong>Kappa Interpretation (Landis &amp; Koch):</strong></p>
+                <div class="tags">
+                    <span class="tag is-success">0.81-1.00 Almost Perfect</span>
+                    <span class="tag is-info">0.61-0.80 Substantial</span>
+                    <span class="tag is-warning">0.41-0.60 Moderate</span>
+                    <span class="tag is-danger">0.21-0.40 Fair</span>
+                    <span class="tag is-dark">&le;0.20 Poor</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- System-wide metrics summary -->
+        <div class="box mb-4">
+            <h2 class="title is-5">Aggregate Metrics</h2>
+            <div class="columns">
+                <div class="column">
+                    <div class="notification is-light">
+                        <p class="heading">Average Events F1</p>
+                        <p class="title is-4">
+                            {% if system_metrics.avg_events_f1 is not none %}
+                            {{ "%.3f"|format(system_metrics.avg_events_f1) }}
+                            {% else %}-{% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="notification is-light">
+                        <p class="heading">Average Aggregate F1</p>
+                        <p class="title is-4">
+                            {% if system_metrics.avg_aggregate_f1 is not none %}
+                            {{ "%.3f"|format(system_metrics.avg_aggregate_f1) }}
+                            {% else %}-{% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="title is-6 mt-4">SARF Variable Kappas</h3>
+            <div class="columns">
+                <div class="column">
+                    <div class="notification {{ kappa_class(system_metrics.avg_symptom_kappa) }}">
+                        <p class="heading">Symptom &kappa;</p>
+                        <p class="title is-4">{{ render_kappa_large(system_metrics.avg_symptom_kappa) }}</p>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="notification {{ kappa_class(system_metrics.avg_anxiety_kappa) }}">
+                        <p class="heading">Anxiety &kappa;</p>
+                        <p class="title is-4">{{ render_kappa_large(system_metrics.avg_anxiety_kappa) }}</p>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="notification {{ kappa_class(system_metrics.avg_relationship_kappa) }}">
+                        <p class="heading">Relationship &kappa;</p>
+                        <p class="title is-4">{{ render_kappa_large(system_metrics.avg_relationship_kappa) }}</p>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="notification {{ kappa_class(system_metrics.avg_functioning_kappa) }}">
+                        <p class="heading">Functioning &kappa;</p>
+                        <p class="title is-4">{{ render_kappa_large(system_metrics.avg_functioning_kappa) }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Per-discussion breakdown -->
+        <h2 class="title is-5">Per-Discussion Breakdown</h2>
+        <div class="table-container">
+            <table class="table is-fullwidth is-striped">
+                <thead>
+                    <tr>
+                        <th>Discussion</th>
+                        <th>Coders</th>
+                        <th>Statements</th>
+                        <th>Events F1</th>
+                        <th>S &kappa;</th>
+                        <th>A &kappa;</th>
+                        <th>R &kappa;</th>
+                        <th>F &kappa;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for irr in discussion_irrs %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('training.irr.discussion', discussion_id=irr.discussion_id) }}">
+                                Discussion {{ irr.discussion_id }}
+                            </a>
+                        </td>
+                        <td>{{ irr.coders|length }}</td>
+                        <td>{{ irr.coded_statement_count }}</td>
+                        <td>{{ "%.2f"|format(irr.avg_events_f1) if irr.avg_events_f1 is not none else '-' }}</td>
+                        <td>{{ render_kappa(irr.avg_symptom_kappa) }}</td>
+                        <td>{{ render_kappa(irr.avg_anxiety_kappa) }}</td>
+                        <td>{{ render_kappa(irr.avg_relationship_kappa) }}</td>
+                        <td>{{ render_kappa(irr.avg_functioning_kappa) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}
