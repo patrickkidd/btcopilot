@@ -535,6 +535,32 @@ Output:
 
 (No event created - "sometimes hard to deal with" is a general characterization,
 not a specific incident at a point in time.)
+
+Example 5: Parent/child relationship with PairBond
+[PARENT_CHILD_PAIRBOND_SEMANTIC]
+
+**User statement**: "My parents are Mary and John. I have a sister named Sarah."
+
+Output:
+{
+    "people": [
+        {"id": -1, "name": "Mary", "gender": "female", "confidence": 0.9},
+        {"id": -2, "name": "John", "gender": "male", "confidence": 0.9},
+        {"id": -3, "name": "Sarah", "gender": "female", "parents": -4, "confidence": 0.9}
+    ],
+    "events": [],
+    "pair_bonds": [
+        {"id": -4, "person_a": -1, "person_b": -2, "confidence": 0.9}
+    ],
+    "delete": []
+}
+
+CRITICAL: PairBond connects SPOUSES (Mary & John). The `parents` field is set on
+CHILDREN (Sarah) to reference the PairBond ID. Mary and John do NOT have
+`parents: -4` - that would incorrectly make them children of themselves.
+
+WRONG: {"id": -1, "name": "Mary", "parents": -4}  (spouse as child of own marriage)
+RIGHT: {"id": -3, "name": "Sarah", "parents": -4}  (child references parents' PairBond)
 """
 
 # Part 3: Context with template variables ({diagram_data}, {conversation_history}, {user_message})
