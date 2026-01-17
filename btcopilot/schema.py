@@ -443,8 +443,9 @@ class DiagramData:
         if os.getenv("FLASK_CONFIG") == "development":
             self._export_commit_state(item_ids, "pre")
 
-        # Create inferred items for Birth/Adopted events before gathering transitive refs
+        # Create inferred items before gathering transitive refs
         self._create_inferred_birth_items(item_ids)
+        self._create_inferred_pair_bond_items(item_ids)
 
         all_item_ids = self._get_transitive_pdp_references(item_ids)
 
@@ -697,6 +698,40 @@ class DiagramData:
                 self.pdp.events[event_idx] = replace(event, child=child_id)
 
                 _log.info(f"Created inferred child for {person_name}: child={child_id}")
+
+    def _create_inferred_pair_bond_items(self, item_ids: list[int]) -> None:
+        pdp_events_map = {e.id: e for e in self.pdp.events}
+
+        for event_id in item_ids:
+            if event_id not in pdp_events_map:
+                continue
+            event = pdp_events_map[event_id]
+            if event.kind not in (EventKind.Married, EventKind.Bonded):
+                continue
+            if not event.person or not event.spouse:
+                continue
+
+            # Check if a PairBond already exists for this couple
+            existing_pair_bond = None
+            for pb in self.pdp.pair_bonds:
+                if {pb.person_a, pb.person_b} == {event.person, event.spouse}:
+                    existing_pair_bond = pb
+                    break
+
+            if existing_pair_bond:
+                continue
+
+            # Create a new PairBond
+            pair_bond = PairBond(
+                id=self._next_pdp_id(),
+                person_a=event.person,
+                person_b=event.spouse,
+            )
+            self.pdp.pair_bonds.append(pair_bond)
+            _log.info(
+                f"Created inferred pair bond {pair_bond.id} for {event.kind.value} event {event_id}: "
+                f"person_a={pair_bond.person_a}, person_b={pair_bond.person_b}"
+            )
 
     def _get_transitive_pdp_references(self, item_ids: list[int]) -> set[int]:
         from btcopilot.pdp import get_all_pdp_item_ids

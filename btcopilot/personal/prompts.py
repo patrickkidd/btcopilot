@@ -497,6 +497,61 @@ Output:
     "delete": []
 }
 
+Example 2b: Event with notes for additional context
+
+**User statement**: "Last Tuesday my mom called crying because dad had been
+drinking again. She said he's been doing it every night since he lost his job,
+and she feels like she's 'doing everything around the house while he just sits
+there.' I felt my anxiety spike and couldn't sleep that night."
+
+(Context: Mom is ID 4, Dad is ID 3, User is ID 1 - all already in PDP)
+
+Output:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -1,
+            "kind": "shift",
+            "person": 3,
+            "description": "Drinking every night",
+            "notes": "Started after job loss. Mom called crying about it.",
+            "dateTime": "2025-01-07",
+            "dateCertainty": "approximate",
+            "symptom": "up",
+            "confidence": 0.8
+        },
+        {
+            "id": -2,
+            "kind": "shift",
+            "person": 4,
+            "description": "Overfunctioning at home",
+            "notes": "\"feels like she's doing everything around the house while he just sits there\"",
+            "dateTime": "2025-01-07",
+            "dateCertainty": "approximate",
+            "relationship": "overfunctioning",
+            "relationshipTargets": [3],
+            "confidence": 0.7
+        },
+        {
+            "id": -3,
+            "kind": "shift",
+            "person": 1,
+            "description": "Couldn't sleep",
+            "notes": "Anxiety spiked after mom's call about dad",
+            "dateTime": "2025-01-07",
+            "dateCertainty": "certain",
+            "symptom": "up",
+            "anxiety": "up",
+            "confidence": 0.9
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+(Notes capture: quoted opinions, causal context, and emotional detail.)
+
 Example 3: Death event
 
 **User statement**: "Yeah, he's deceased. He died in January of 1979."
