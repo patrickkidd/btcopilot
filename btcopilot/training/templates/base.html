@@ -1087,6 +1087,27 @@
                 <li{% if loop.last %} class="is-active"{% endif %}>
                     {% if breadcrumb.url and not loop.last %}
                     <a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a>
+                    {% elif breadcrumb.menu %}
+                    <div class="dropdown is-hoverable">
+                        <div class="dropdown-trigger">
+                            <a class="breadcrumb-dropdown-trigger" aria-haspopup="true" style="cursor: pointer;">
+                                {{ breadcrumb.title }} <span class="icon is-small"><i class="fas fa-angle-down"></i></span>
+                            </a>
+                        </div>
+                        <div class="dropdown-menu" role="menu" style="left: 0; min-width: 10rem;">
+                            <div class="dropdown-content">
+                                {% for item in breadcrumb.menu %}
+                                {% if item.divider %}
+                                <hr class="dropdown-divider">
+                                {% else %}
+                                <a href="{{ item.url }}" class="dropdown-item{% if item.active %} is-active{% endif %}">
+                                    {% if item.icon %}<span class="icon"><i class="fas fa-{{ item.icon }}"></i></span> {% endif %}{{ item.title }}
+                                </a>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
                     {% else %}
                     <a>{{ breadcrumb.title }}</a>
                     {% endif %}

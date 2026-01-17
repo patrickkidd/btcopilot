@@ -230,7 +230,6 @@ def test_commit_complex_transitive_closure():
 
 
 def test_commit_birth_event_creates_inferred_parents():
-    """When committing a Birth event with only child set, create inferred parents."""
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="Baby")],
@@ -264,7 +263,6 @@ def test_commit_birth_event_creates_inferred_parents():
 
 
 def test_commit_birth_event_creates_inferred_spouse():
-    """When committing a Birth event with person but no spouse, create inferred spouse."""
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="Alice"), Person(id=-2, name="Baby")],
@@ -295,7 +293,6 @@ def test_commit_birth_event_creates_inferred_spouse():
 
 
 def test_commit_birth_event_creates_inferred_child():
-    """When committing a Birth event with person/spouse but no child, create inferred child."""
     data = DiagramData(
         pdp=PDP(
             people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
@@ -324,3 +321,88 @@ def test_commit_birth_event_creates_inferred_child():
     event = data.events[0]
     assert event["person"] == alice["id"]
     assert event["child"] == child["id"]
+
+
+def test_commit_married_event_creates_inferred_pair_bond():
+    """When committing a Married event with person/spouse but no PairBond, create one."""
+    data = DiagramData(
+        pdp=PDP(
+            people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
+            events=[
+                Event(
+                    id=-3,
+                    kind=EventKind.Married,
+                    person=-1,
+                    spouse=-2,
+                    dateTime="2020-01-01",
+                )
+            ],
+        )
+    )
+    data.commit_pdp_items([-3])
+
+    assert len(data.people) == 2
+    assert len(data.pair_bonds) == 1
+    assert len(data.events) == 1
+
+    alice = [p for p in data.people if p["name"] == "Alice"][0]
+    bob = [p for p in data.people if p["name"] == "Bob"][0]
+    pair_bond = data.pair_bonds[0]
+
+    assert {pair_bond["person_a"], pair_bond["person_b"]} == {alice["id"], bob["id"]}
+
+    event = data.events[0]
+    assert event["person"] == alice["id"]
+    assert event["spouse"] == bob["id"]
+
+
+def test_commit_bonded_event_creates_inferred_pair_bond():
+    """When committing a Bonded event with person/spouse but no PairBond, create one."""
+    data = DiagramData(
+        pdp=PDP(
+            people=[Person(id=-1, name="Carol"), Person(id=-2, name="Dave")],
+            events=[
+                Event(
+                    id=-3,
+                    kind=EventKind.Bonded,
+                    person=-1,
+                    spouse=-2,
+                    dateTime="2020-06-15",
+                )
+            ],
+        )
+    )
+    data.commit_pdp_items([-3])
+
+    assert len(data.people) == 2
+    assert len(data.pair_bonds) == 1
+
+    carol = [p for p in data.people if p["name"] == "Carol"][0]
+    dave = [p for p in data.people if p["name"] == "Dave"][0]
+    pair_bond = data.pair_bonds[0]
+
+    assert {pair_bond["person_a"], pair_bond["person_b"]} == {carol["id"], dave["id"]}
+
+
+def test_commit_married_event_uses_existing_pair_bond():
+    """When committing a Married event with existing PairBond, don't create duplicate."""
+    data = DiagramData(
+        pdp=PDP(
+            pair_bonds=[PairBond(id=-4, person_a=-1, person_b=-2)],
+            people=[Person(id=-1, name="Eve"), Person(id=-2, name="Frank")],
+            events=[
+                Event(
+                    id=-3,
+                    kind=EventKind.Married,
+                    person=-1,
+                    spouse=-2,
+                    dateTime="2020-01-01",
+                )
+            ],
+        )
+    )
+    data.commit_pdp_items([-3])
+
+    assert len(data.people) == 2
+    assert len(data.pair_bonds) == 1
+    assert len(data.events) == 1

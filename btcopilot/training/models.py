@@ -15,8 +15,6 @@ from btcopilot.modelmixin import ModelMixin
 
 
 class Feedback(db.Model, ModelMixin):
-    """Stores feedback from domain experts on AI responses"""
-
     __tablename__ = "feedbacks"
 
     statement_id = Column(Integer, ForeignKey("statements.id"), nullable=False)
@@ -48,3 +46,14 @@ class Feedback(db.Model, ModelMixin):
 
     def __repr__(self):
         return f"<Feedback {self.id}: {self.feedback_type} for statement {self.statement_id}>"
+
+
+class ReconciliationNote(db.Model, ModelMixin):
+    __tablename__ = "reconciliation_notes"
+
+    statement_id = Column(Integer, ForeignKey("statements.id"), nullable=False)
+    note = Column(Text, nullable=False)
+    resolved = Column(Boolean, default=False)
+    created_by = Column(String(255), nullable=False)
+
+    statement = relationship("Statement", backref="reconciliation_notes")

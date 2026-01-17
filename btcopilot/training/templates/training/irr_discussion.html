@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "components/irr_macros.html" import render_kappa %}
 
-{% block title %}IRR - {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
+{% block title %}IRR Analysis - {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
 
 {% macro render_kappa_small(kappa) %}
     {% if kappa is not none and kappa == kappa %}{{ "%.2f"|format(kappa) }}{% else %}-{% endif %}
@@ -10,70 +10,74 @@
 {% block content %}
 <section class="section">
     <div class="container is-fluid">
-        <div class="level">
-            <div class="level-left">
-                <div class="level-item">
-                    <div>
-                        <h1 class="title">{{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
-                        <p class="subtitle">
-                            {{ discussion_irr.coded_statement_count }} coded statements &bull;
-                            {{ discussion_irr.coders|length }} coders: {{ discussion_irr.coders|join(', ') }}
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div class="level-right">
-                <div class="level-item">
-                    <a href="{{ url_for('training.irr.pairwise_matrix', discussion_id=discussion.id) }}" class="button is-info">
-                        <span class="icon"><i class="fas fa-th"></i></span>
-                        <span>Pairwise Matrix</span>
-                    </a>
-                </div>
-            </div>
+        <div class="mb-4">
+            <h1 class="title">{{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
+            <p class="subtitle">IRR Analysis - {{ discussion_irr.coded_statement_count }} coded statements</p>
         </div>
 
         <!-- Summary metrics -->
-        <div class="box mb-4">
-            <h2 class="title is-5">Discussion Summary</h2>
-            <div class="columns">
-                <div class="column">
-                    <table class="table is-narrow">
-                        <tr>
-                            <th>Avg Events F1</th>
-                            <td>{{ "%.3f"|format(discussion_irr.avg_events_f1) if discussion_irr.avg_events_f1 is not none else '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Avg Aggregate F1</th>
-                            <td>{{ "%.3f"|format(discussion_irr.avg_aggregate_f1) if discussion_irr.avg_aggregate_f1 is not none else '-' }}</td>
-                        </tr>
-                    </table>
+        {% if discussion_irr %}
+        <div class="box">
+            <h2 class="title is-5">Discussion-Level IRR Metrics</h2>
+            <div class="columns is-multiline">
+                <div class="column is-3">
+                    <div class="notification is-primary has-text-centered">
+                        <p class="heading">Overall F1</p>
+                        <p class="title is-3">{{ "%.3f"|format(discussion_irr.avg_aggregate_f1) if discussion_irr.avg_aggregate_f1 is not none else '-' }}</p>
+                    </div>
                 </div>
-                <div class="column">
-                    <table class="table is-narrow">
-                        <tr>
-                            <th>Symptom &kappa;</th>
-                            <td>{{ render_kappa(discussion_irr.avg_symptom_kappa) }}</td>
-                        </tr>
-                        <tr>
-                            <th>Anxiety &kappa;</th>
-                            <td>{{ render_kappa(discussion_irr.avg_anxiety_kappa) }}</td>
-                        </tr>
-                    </table>
+                <div class="column is-3">
+                    <div class="notification is-info is-light has-text-centered">
+                        <p class="heading">Events</p>
+                        <p class="title is-4">{{ "%.3f"|format(discussion_irr.avg_events_f1) if discussion_irr.avg_events_f1 is not none else '-' }}</p>
+                    </div>
                 </div>
-                <div class="column">
-                    <table class="table is-narrow">
-                        <tr>
-                            <th>Relationship &kappa;</th>
-                            <td>{{ render_kappa(discussion_irr.avg_relationship_kappa) }}</td>
-                        </tr>
-                        <tr>
-                            <th>Functioning &kappa;</th>
-                            <td>{{ render_kappa(discussion_irr.avg_functioning_kappa) }}</td>
-                        </tr>
-                    </table>
+                <div class="column is-3">
+                    <div class="notification is-info is-light has-text-centered">
+                        <p class="heading">Coders</p>
+                        <p class="title is-4">{{ discussion_irr.coders|length }}</p>
+                    </div>
+                </div>
+                <div class="column is-3">
+                    <div class="notification is-warning is-light has-text-centered">
+                        <p class="heading">SARF Avg</p>
+                        {% set sarf_kappas = [discussion_irr.avg_symptom_kappa, discussion_irr.avg_anxiety_kappa, discussion_irr.avg_relationship_kappa, discussion_irr.avg_functioning_kappa]|select('number')|list %}
+                        <p class="title is-4">{% if sarf_kappas %}{{ "%.3f"|format(sarf_kappas|sum / sarf_kappas|length) }}{% else %}-{% endif %}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content mt-4">
+                <h4 class="title is-5">SARF Variable Agreement (Kappa)</h4>
+                <div class="columns is-multiline">
+                    <div class="column is-3">
+                        <div class="notification is-warning is-light has-text-centered">
+                            <p class="heading">Symptom</p>
+                            <p class="title is-4">{{ render_kappa(discussion_irr.avg_symptom_kappa) }}</p>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <div class="notification is-warning is-light has-text-centered">
+                            <p class="heading">Anxiety</p>
+                            <p class="title is-4">{{ render_kappa(discussion_irr.avg_anxiety_kappa) }}</p>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <div class="notification is-warning is-light has-text-centered">
+                            <p class="heading">Relationship</p>
+                            <p class="title is-4">{{ render_kappa(discussion_irr.avg_relationship_kappa) }}</p>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <div class="notification is-warning is-light has-text-centered">
+                            <p class="heading">Functioning</p>
+                            <p class="title is-4">{{ render_kappa(discussion_irr.avg_functioning_kappa) }}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <!-- Per-coder-pair breakdown -->
         {% if discussion_irr.pairwise_metrics %}
@@ -86,10 +90,10 @@
                         <th>Events F1</th>
                         <th>People F1</th>
                         <th>Matched Events</th>
-                        <th>S &kappa;</th>
-                        <th>A &kappa;</th>
-                        <th>R &kappa;</th>
-                        <th>F &kappa;</th>
+                        <th>S kappa</th>
+                        <th>A kappa</th>
+                        <th>R kappa</th>
+                        <th>F kappa</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -97,7 +101,7 @@
                     <tr>
                         <td>
                             <span class="is-size-7">{{ pair.coder_a|truncate(20) }}</span>
-                            <span class="has-text-grey">&harr;</span>
+                            <span class="has-text-grey">&#8596;</span>
                             <span class="is-size-7">{{ pair.coder_b|truncate(20) }}</span>
                         </td>
                         <td>{{ "%.2f"|format(pair.events_f1) }}</td>
@@ -114,66 +118,507 @@
         </div>
         {% endif %}
 
-        <!-- Per-statement breakdown -->
-        <h2 class="title is-5">Per-Statement Breakdown</h2>
+        <div id="statements-container">
         {% for item in statement_irrs %}
-            <div class="box mb-3">
-                <div class="level">
-                    <div class="level-left">
-                        <div class="level-item">
-                            <span class="tag is-light">Statement {{ loop.index }}</span>
+            <div class="statement-analysis-row box mb-2 py-3" id="statement-{{ item.statement.id }}" data-statement-id="{{ item.statement.id }}">
+                <div class="columns is-mobile mb-0">
+                    <!-- Column 1: Statement Text (25%) -->
+                    <div class="column is-3 py-2">
+                        <p class="heading is-size-7 mb-1">STATEMENT {{ item.statement.id }}</p>
+                        <a href="{{ url_for('training.discussions.audit', discussion_id=discussion.id) }}#statement-{{ item.statement.id }}" class="statement-link">
+                            <div class="statement-preview {% if item.statement.speaker.type.value == 'subject' %}user-message-bubble speaker-{{ subject_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in subject_speaker_map else 1 }}{% else %}ai-message-bubble speaker-{{ expert_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in expert_speaker_map else 1 }}{% endif %}">
+                                {{ item.statement.text }}
+                            </div>
+                        </a>
+                        <span class="tag is-info is-small">F1: {{ "%.2f"|format(item.irr.avg_aggregate_f1) if item.irr and item.irr.avg_aggregate_f1 is not none else '-' }}</span>
+                    </div>
+
+                    <!-- Column 2-3: Coder Extractions (50%) -->
+                    <div class="column is-6 py-2 analysis-column-divider">
+                        <div class="is-flex mb-2 coder-header-row">
+                            {% for coder in coders %}
+                            <div class="coder-column{% if not loop.first %} analysis-column-divider{% endif %}">
+                                <div class="section-header is-size-7 has-text-weight-bold" title="{{ coder }}">{{ coder|truncate(25)|upper }}</div>
+                            </div>
+                            {% endfor %}
                         </div>
-                        {% if item.irr %}
-                        <div class="level-item">
-                            <span class="tag is-info">{{ item.irr.coders|length }} coders</span>
+
+                        <!-- PEOPLE SECTION - only show if any coder has people -->
+                        {%- set people_ns = namespace(has_any=false) -%}
+                        {%- for coder in coders -%}
+                            {%- set extraction = item.extractions.get(coder) -%}
+                            {%- if extraction and extraction.people -%}
+                                {%- set people_ns.has_any = true -%}
+                            {%- endif -%}
+                        {%- endfor -%}
+                        {% if people_ns.has_any %}
+                        <div class="analysis-section mb-3">
+                            <div class="section-header is-size-7 has-text-weight-bold mb-2 section-label">
+                                <span class="icon is-small"><i class="fas fa-users"></i></span> People
+                            </div>
+                            <div class="is-flex coder-data-row">
+                                {% for coder in coders %}
+                                <div class="coder-column{% if not loop.first %} analysis-column-divider{% endif %}">
+                                    {% set extraction = item.extractions.get(coder) %}
+                                    {% if extraction and extraction.people %}
+                                        {% for person in extraction.people %}
+                                        {% set person_idx = loop.index0 %}
+                                        <div class="person-item mb-1 p-2" style="position: relative;">
+                                            {% if person.id %}<span class="person-id-debug">{{ person.id }}</span>{% endif %}
+                                            <div class="is-flex is-align-items-center">
+                                                <strong class="is-size-7">{{ person.name or 'Unnamed' }}</strong>
+                                            </div>
+                                            {# Gender/Kind field #}
+                                            {%- set gender_val = (person.gender.value if person.gender is defined and person.gender.value is defined else person.gender) -%}
+                                            {%- set gender_coded = gender_val and gender_val != '-' and gender_val != 'None' and gender_val != none -%}
+                                            {%- set gender_disagree = item.disagreements.get(coder ~ '|' ~ person_idx ~ '|gender') -%}
+                                            {%- set gender_any_coded = item.person_any_coded.get(person_idx ~ '|gender') -%}
+                                            {% if gender_any_coded %}
+                                            <div class="sarf-field-row{% if not gender_coded and not gender_disagree %} has-text-grey-light{% endif %}">
+                                                <span class="sarf-label">Kind:</span>
+                                                <span class="sarf-value {% if gender_disagree %}has-text-danger{% elif gender_coded %}has-text-success{% endif %}">{{ gender_val if gender_coded else '-' }}</span>
+                                            </div>
+                                            {% endif %}
+                                            {# Last Name field #}
+                                            {%- set last_name_val = person.last_name -%}
+                                            {%- set last_name_coded = last_name_val and last_name_val != '-' and last_name_val != '' -%}
+                                            {%- set last_name_disagree = item.disagreements.get(coder ~ '|' ~ person_idx ~ '|last_name') -%}
+                                            {%- set last_name_any_coded = item.person_any_coded.get(person_idx ~ '|last_name') -%}
+                                            {% if last_name_any_coded %}
+                                            <div class="sarf-field-row{% if not last_name_coded and not last_name_disagree %} has-text-grey-light{% endif %}">
+                                                <span class="sarf-label">Last Name:</span>
+                                                <span class="sarf-value {% if last_name_disagree %}has-text-danger{% elif last_name_coded %}has-text-success{% endif %}">{{ last_name_val if last_name_coded else '-' }}</span>
+                                            </div>
+                                            {% endif %}
+                                            {# Parents field #}
+                                            {%- set parents_val = person.parents -%}
+                                            {%- set parents_coded = parents_val and parents_val != none -%}
+                                            {%- set parents_disagree = item.disagreements.get(coder ~ '|' ~ person_idx ~ '|parents') -%}
+                                            {%- set parents_any_coded = item.person_any_coded.get(person_idx ~ '|parents') -%}
+                                            {% if parents_any_coded %}
+                                            {%- set parents_person = item.all_people.get(parents_val) if item.all_people and parents_val else none -%}
+                                            {%- set parents_name = parents_person.get('name') or parents_person.get('last_name') or '?' if parents_person else (parents_val if parents_val else '-') -%}
+                                            <div class="sarf-field-row{% if not parents_coded and not parents_disagree %} has-text-grey-light{% endif %}">
+                                                <span class="sarf-label">Parents:</span>
+                                                <span class="sarf-value {% if parents_disagree %}has-text-danger{% elif parents_coded %}has-text-success{% endif %}">{{ parents_name if parents_coded else '-' }}</span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                    <span class="has-text-grey-light is-size-7">(none)</span>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
                         </div>
-                        <div class="level-item">
-                            <span class="is-size-7">
-                                Events F1: {{ "%.2f"|format(item.irr.avg_events_f1) if item.irr.avg_events_f1 is not none else '-' }}
-                            </span>
+                        {% endif %}
+
+                        <!-- EVENTS SECTION - only show if any coder has events -->
+                        {%- set events_ns = namespace(has_any=false) -%}
+                        {%- for coder in coders -%}
+                            {%- set extraction = item.extractions.get(coder) -%}
+                            {%- if extraction and extraction.events -%}
+                                {%- set events_ns.has_any = true -%}
+                            {%- endif -%}
+                        {%- endfor -%}
+                        {% if events_ns.has_any %}
+                        <div class="analysis-section">
+                            <div class="section-header is-size-7 has-text-weight-bold mb-2 section-label">
+                                <span class="icon is-small"><i class="fas fa-calendar-alt"></i></span> Events
+                            </div>
+                            <div class="is-flex coder-data-row">
+                                {% for coder in coders %}
+                                <div class="coder-column{% if not loop.first %} analysis-column-divider{% endif %}">
+                                    {% set extraction = item.extractions.get(coder) %}
+                                    {% if extraction and extraction.events %}
+                                        {% for event in extraction.events %}
+                                        {% set event_idx = loop.index0 %}
+                                        <div class="event-item mb-2 p-2" style="position: relative;">
+                                            {%- set event_id = event.get('id') if event.get is defined else event.id -%}
+                                            {% if event_id %}<span class="event-id-debug">{{ event_id }}</span>{% endif %}
+                                            {%- set kind_val = (event.kind.value if event.kind is defined and event.kind.value is defined else event.kind)|default('shift')|replace('EventKind.', '') -%}
+                                            {%- set kind_disagree = item.disagreements.get(coder ~ '|' ~ event_idx ~ '|kind') -%}
+                                            <div class="sarf-field-row">
+                                                <span class="sarf-label">Event Kind:</span>
+                                                <span class="sarf-value {% if kind_disagree %}has-text-danger{% else %}has-text-success{% endif %}">{{ kind_val }}</span>
+                                            </div>
+                                            {%- set person_id = event.get('person') if event.get is defined else event.person -%}
+                                            {%- set ns = namespace(person_name='-') -%}
+                                            {%- if person_id == 1 -%}
+                                                {%- set ns.person_name = 'User' -%}
+                                            {%- elif person_id == 2 -%}
+                                                {%- set ns.person_name = 'Assistant' -%}
+                                            {%- elif person_id and item.all_people -%}
+                                                {%- set found_person = item.all_people.get(person_id) -%}
+                                                {%- if found_person -%}
+                                                    {%- set ns.person_name = found_person.get('name') or found_person.get('last_name') or '?' -%}
+                                                {%- endif -%}
+                                            {%- endif -%}
+                                            {%- set person_disagree = item.disagreements.get(coder ~ '|' ~ event_idx ~ '|person') -%}
+                                            {%- set person_coded = ns.person_name and ns.person_name != '-' -%}
+                                            {% if person_coded or person_disagree %}
+                                            <div class="sarf-field-row">
+                                                <span class="sarf-label">Person:</span>
+                                                <span class="sarf-value {% if person_disagree %}has-text-danger{% elif person_coded %}has-text-success{% endif %}">{{ ns.person_name }}</span>
+                                            </div>
+                                            {% endif %}
+                                            {# Spouse field for married/divorced events - no color since not compared #}
+                                            {%- set spouse_id = event.get('spouse') if event.get is defined else event.spouse -%}
+                                            {% if spouse_id %}
+                                            {%- set spouse_person = item.all_people.get(spouse_id) if item.all_people else none -%}
+                                            {%- set spouse_name = spouse_person.get('name') or spouse_person.get('last_name') or '?' if spouse_person else (spouse_id if spouse_id else '-') -%}
+                                            <div class="sarf-field-row">
+                                                <span class="sarf-label">Spouse:</span>
+                                                <span class="sarf-value">{{ spouse_name }}</span>
+                                            </div>
+                                            {% endif %}
+                                            {# Child field for birth/adopted events - no color since not compared #}
+                                            {%- set child_id = event.get('child') if event.get is defined else event.child -%}
+                                            {% if child_id %}
+                                            {%- set child_person = item.all_people.get(child_id) if item.all_people else none -%}
+                                            {%- set child_name = child_person.get('name') or child_person.get('last_name') or '?' if child_person else (child_id if child_id else '-') -%}
+                                            <div class="sarf-field-row">
+                                                <span class="sarf-label">Child:</span>
+                                                <span class="sarf-value">{{ child_name }}</span>
+                                            </div>
+                                            {% endif %}
+                                            {# Description field #}
+                                            {%- set desc_val = event.get('description') if event.get is defined else event.description -%}
+                                            {%- set desc_coded = desc_val and desc_val != '' -%}
+                                            {%- set desc_disagree = item.disagreements.get(coder ~ '|' ~ event_idx ~ '|description') -%}
+                                            {%- set desc_any_coded = item.any_coded.get(event_idx ~ '|description') -%}
+                                            {% if desc_any_coded %}
+                                            <div class="sarf-field-row{% if not desc_coded and not desc_disagree %} has-text-grey-light{% endif %}">
+                                                <span class="sarf-label">{{ 'Cause:' if kind_val == 'death' else 'Description:' }}</span>
+                                                <span class="sarf-value {% if desc_disagree %}has-text-danger{% elif desc_coded %}has-text-success{% endif %}">{{ desc_val if desc_coded else '-' }}</span>
+                                            </div>
+                                            {% endif %}
+                                            {# DateTime field #}
+                                            {%- set date_val = event.get('dateTime') if event.get is defined else event.dateTime -%}
+                                            {%- set date_coded = date_val and date_val != '' -%}
+                                            {%- set date_disagree = item.disagreements.get(coder ~ '|' ~ event_idx ~ '|dateTime') -%}
+                                            {%- set date_any_coded = item.any_coded.get(event_idx ~ '|dateTime') -%}
+                                            {% if date_any_coded %}
+                                            <div class="sarf-field-row{% if not date_coded and not date_disagree %} has-text-grey-light{% endif %}">
+                                                <span class="sarf-label">Date:</span>
+                                                <span class="sarf-value {% if date_disagree %}has-text-danger{% elif date_coded %}has-text-success{% endif %}">{{ date_val if date_coded else '-' }}</span>
+                                            </div>
+                                            {% endif %}
+                                            {# DateCertainty field #}
+                                            {%- set cert_val = event.get('dateCertainty') if event.get is defined else event.dateCertainty -%}
+                                            {%- set cert_val = cert_val.value if cert_val is defined and cert_val.value is defined else cert_val -%}
+                                            {%- set cert_coded = cert_val and cert_val != '' -%}
+                                            {%- set cert_disagree = item.disagreements.get(coder ~ '|' ~ event_idx ~ '|dateCertainty') -%}
+                                            {%- set cert_any_coded = item.any_coded.get(event_idx ~ '|dateCertainty') -%}
+                                            {% if cert_any_coded %}
+                                            <div class="sarf-field-row{% if not cert_coded and not cert_disagree %} has-text-grey-light{% endif %}">
+                                                <span class="sarf-label">Date Certainty:</span>
+                                                <span class="sarf-value {% if cert_disagree %}has-text-danger{% elif cert_coded %}has-text-success{% endif %}">{{ cert_val if cert_coded else '-' }}</span>
+                                            </div>
+                                            {% endif %}
+                                            {# SARF fields only shown for shift events AND if any coder coded the field #}
+                                            {% if kind_val == 'shift' %}
+                                            {%- set symptom_val = (event.symptom.value if event.symptom is defined and event.symptom.value is defined else event.symptom) -%}
+                                            {%- set symptom_coded = symptom_val and symptom_val != '-' and symptom_val != 'None' and symptom_val != none -%}
+                                            {%- set symptom_disagree = item.disagreements.get(coder ~ '|' ~ event_idx ~ '|symptom') -%}
+                                            {%- set symptom_any_coded = item.any_coded.get(event_idx ~ '|symptom') -%}
+                                            {% if symptom_any_coded %}
+                                            <div class="sarf-field-row{% if not symptom_coded and not symptom_disagree %} has-text-grey-light{% endif %}">
+                                                <span class="sarf-label">Symptom:</span>
+                                                <span class="sarf-value {% if symptom_disagree %}has-text-danger{% elif symptom_coded %}has-text-success{% endif %}">{{ symptom_val|default('-') if symptom_coded else '-' }}</span>
+                                            </div>
+                                            {% endif %}
+                                            {%- set anxiety_val = (event.anxiety.value if event.anxiety is defined and event.anxiety.value is defined else event.anxiety) -%}
+                                            {%- set anxiety_coded = anxiety_val and anxiety_val != '-' and anxiety_val != 'None' and anxiety_val != none -%}
+                                            {%- set anxiety_disagree = item.disagreements.get(coder ~ '|' ~ event_idx ~ '|anxiety') -%}
+                                            {%- set anxiety_any_coded = item.any_coded.get(event_idx ~ '|anxiety') -%}
+                                            {% if anxiety_any_coded %}
+                                            <div class="sarf-field-row{% if not anxiety_coded and not anxiety_disagree %} has-text-grey-light{% endif %}">
+                                                <span class="sarf-label">Anxiety:</span>
+                                                <span class="sarf-value {% if anxiety_disagree %}has-text-danger{% elif anxiety_coded %}has-text-success{% endif %}">{{ anxiety_val|default('-') if anxiety_coded else '-' }}</span>
+                                            </div>
+                                            {% endif %}
+                                            {%- set relationship_val = (event.relationship.value if event.relationship is defined and event.relationship.value is defined else event.relationship) -%}
+                                            {%- set relationship_coded = relationship_val and relationship_val != '-' and relationship_val != 'None' and relationship_val != none -%}
+                                            {%- set relationship_disagree = item.disagreements.get(coder ~ '|' ~ event_idx ~ '|relationship') -%}
+                                            {%- set relationship_any_coded = item.any_coded.get(event_idx ~ '|relationship') -%}
+                                            {% if relationship_any_coded %}
+                                            <div class="sarf-field-row{% if not relationship_coded and not relationship_disagree %} has-text-grey-light{% endif %}">
+                                                <span class="sarf-label">Relationship:</span>
+                                                <span class="sarf-value {% if relationship_disagree %}has-text-danger{% elif relationship_coded %}has-text-success{% endif %}">{{ relationship_val|default('-')|replace('RelationshipKind.', '') if relationship_coded else '-' }}</span>
+                                            </div>
+                                            {# Relationship Targets - no color since not compared #}
+                                            {%- set rel_targets = event.get('relationshipTargets') if event.get is defined else event.relationshipTargets -%}
+                                            {% if rel_targets and rel_targets|length > 0 %}
+                                            <div class="sarf-field-row sarf-field-indented">
+                                                <span class="sarf-label">Targets:</span>
+                                                <span class="sarf-value">
+                                                    {%- for tid in rel_targets -%}
+                                                        {%- set tperson = item.all_people.get(tid) if item.all_people else none -%}
+                                                        {%- if tid == 1 -%}User{%- elif tid == 2 -%}Assistant{%- elif tperson -%}{{ tperson.get('name') or tperson.get('last_name') or '?' }}{%- else -%}{{ tid }}{%- endif -%}
+                                                        {%- if not loop.last %}, {% endif -%}
+                                                    {%- endfor -%}
+                                                </span>
+                                            </div>
+                                            {% endif %}
+                                            {# Relationship Triangles (only for inside/outside) - no color since not compared #}
+                                            {%- set rel_triangles = event.get('relationshipTriangles') if event.get is defined else event.relationshipTriangles -%}
+                                            {% if rel_triangles and rel_triangles|length > 0 and relationship_val in ['inside', 'outside'] %}
+                                            <div class="sarf-field-row sarf-field-indented">
+                                                <span class="sarf-label">Triangles:</span>
+                                                <span class="sarf-value">
+                                                    {%- for tid in rel_triangles -%}
+                                                        {%- set tperson = item.all_people.get(tid) if item.all_people else none -%}
+                                                        {%- if tid == 1 -%}User{%- elif tid == 2 -%}Assistant{%- elif tperson -%}{{ tperson.get('name') or tperson.get('last_name') or '?' }}{%- else -%}{{ tid }}{%- endif -%}
+                                                        {%- if not loop.last %}, {% endif -%}
+                                                    {%- endfor -%}
+                                                </span>
+                                            </div>
+                                            {% endif %}
+                                            {% endif %}
+                                            {%- set functioning_val = (event.functioning.value if event.functioning is defined and event.functioning.value is defined else event.functioning) -%}
+                                            {%- set functioning_coded = functioning_val and functioning_val != '-' and functioning_val != 'None' and functioning_val != none -%}
+                                            {%- set functioning_disagree = item.disagreements.get(coder ~ '|' ~ event_idx ~ '|functioning') -%}
+                                            {%- set functioning_any_coded = item.any_coded.get(event_idx ~ '|functioning') -%}
+                                            {% if functioning_any_coded %}
+                                            <div class="sarf-field-row{% if not functioning_coded and not functioning_disagree %} has-text-grey-light{% endif %}">
+                                                <span class="sarf-label">Functioning:</span>
+                                                <span class="sarf-value {% if functioning_disagree %}has-text-danger{% elif functioning_coded %}has-text-success{% endif %}">{{ functioning_val|default('-') if functioning_coded else '-' }}</span>
+                                            </div>
+                                            {% endif %}
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                    <span class="has-text-grey-light is-size-7">(none)</span>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
                         </div>
                         {% endif %}
                     </div>
-                </div>
 
-                <div class="content">
-                    <p class="is-family-monospace is-size-7" style="white-space: pre-wrap;">{{ item.statement.text|truncate(500) }}</p>
-                </div>
-
-                {% if item.irr %}
-                    {% if item.irr.coder_pairs %}
-                    <table class="table is-narrow is-size-7">
-                        <thead>
-                            <tr>
-                                <th>Pair</th>
-                                <th>Agg F1</th>
-                                <th>Events F1</th>
-                                <th>S &kappa;</th>
-                                <th>A &kappa;</th>
-                                <th>R &kappa;</th>
-                                <th>F &kappa;</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                    <!-- Column 4: IRR Metrics + Reconciliation Note (25%) -->
+                    <div class="column is-3 py-2 analysis-column-divider">
+                        <p class="heading is-size-7 mb-1">IRR METRICS</p>
+                        {% if item.irr and item.irr.coder_pairs %}
+                        <div class="is-size-7">
                             {% for cp in item.irr.coder_pairs %}
-                            <tr>
-                                <td>{{ cp.coder_a|truncate(15) }} &harr; {{ cp.coder_b|truncate(15) }}</td>
-                                <td>{{ "%.2f"|format(cp.aggregate_f1) }}</td>
-                                <td>{{ "%.2f"|format(cp.events_f1) }}</td>
-                                <td>{{ render_kappa_small(cp.symptom_kappa) }}</td>
-                                <td>{{ render_kappa_small(cp.anxiety_kappa) }}</td>
-                                <td>{{ render_kappa_small(cp.relationship_kappa) }}</td>
-                                <td>{{ render_kappa_small(cp.functioning_kappa) }}</td>
-                            </tr>
+                            <div class="mb-2">
+                                <strong>{{ cp.coder_a|truncate(20) }} &#8596; {{ cp.coder_b|truncate(20) }}</strong>
+                                <div class="irr-kappa-grid">
+                                    <span class="has-text-weight-bold">S:</span><span>{{ render_kappa_small(cp.symptom_kappa) }}</span>
+                                    <span class="has-text-weight-bold">A:</span><span>{{ render_kappa_small(cp.anxiety_kappa) }}</span>
+                                    <span class="has-text-weight-bold">R:</span><span>{{ render_kappa_small(cp.relationship_kappa) }}</span>
+                                    <span class="has-text-weight-bold">F:</span><span>{{ render_kappa_small(cp.functioning_kappa) }}</span>
+                                </div>
+                            </div>
                             {% endfor %}
-                        </tbody>
-                    </table>
-                    {% endif %}
-                {% else %}
-                <p class="has-text-grey is-size-7">Insufficient coder data (requires 2+ coders)</p>
-                {% endif %}
+                        </div>
+                        {% else %}
+                        <p class="has-text-grey is-size-7">Insufficient coder data</p>
+                        {% endif %}
+
+                        <!-- Reconciliation Note -->
+                        <div class="mt-3 pt-2 irr-note-section">
+                            <details{% if item.note %} open{% endif %}>
+                                <summary class="is-size-7 has-text-link irr-note-summary">
+                                    {% if item.note %}
+                                        {% if item.note.resolved %}
+                                        <span class="has-text-success">Resolved</span>
+                                        {% else %}
+                                        <span class="has-text-warning">Has Note</span>
+                                        {% endif %}
+                                    {% else %}
+                                    Add Note
+                                    {% endif %}
+                                </summary>
+                                <div class="mt-2">
+                                    <textarea class="textarea is-small note-textarea auto-expand"
+                                              id="note-{{ item.statement.id }}"
+                                              placeholder="Reconciliation note..."
+                                              data-statement-id="{{ item.statement.id }}"
+                                              rows="1">{{ item.note.note if item.note else '' }}</textarea>
+                                    <div class="mt-1">
+                                        <button class="button is-small is-primary save-note-btn"
+                                                data-statement-id="{{ item.statement.id }}">Save</button>
+                                        <span class="resolve-btn-container{% if not item.note %} irr-hidden{% endif %}" data-statement-id="{{ item.statement.id }}">
+                                            <button class="button is-small resolve-btn {% if item.note and item.note.resolved %}is-success{% else %}is-light{% endif %}"
+                                                    data-statement-id="{{ item.statement.id }}"
+                                                    data-resolved="{{ 'true' if item.note and item.note.resolved else 'false' }}">
+                                                {% if item.note and item.note.resolved %}Resolved{% else %}Resolve{% endif %}
+                                            </button>
+                                        </span>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
             </div>
         {% endfor %}
+        </div>
     </div>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-expand textareas
+    function autoExpand(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+    document.querySelectorAll('.auto-expand').forEach(textarea => {
+        autoExpand(textarea);
+        textarea.addEventListener('input', () => autoExpand(textarea));
+    });
+
+    // Hash navigation highlight on page load
+    if (window.location.hash) {
+        const element = document.getElementById(window.location.hash.substring(1));
+        if (element) {
+            setTimeout(() => {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                element.classList.add('irr-highlighted');
+                setTimeout(() => { element.classList.remove('irr-highlighted'); }, 1000);
+            }, 300);
+        }
+    }
+
+    document.querySelectorAll('.save-note-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const statementId = this.dataset.statementId;
+            const textarea = document.getElementById('note-' + statementId);
+            const noteText = textarea.value;
+
+            btn.classList.add('is-loading');
+            try {
+                const response = await fetch(`/training/irr/statement/${statementId}/note`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({note: noteText})
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const resolveContainer = document.querySelector(`.resolve-btn-container[data-statement-id="${statementId}"]`);
+                    if (data.note) {
+                        resolveContainer.style.display = '';
+                    } else {
+                        resolveContainer.style.display = 'none';
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to save note:', err);
+            } finally {
+                btn.classList.remove('is-loading');
+            }
+        });
+    });
+
+    document.querySelectorAll('.resolve-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const statementId = this.dataset.statementId;
+
+            btn.classList.add('is-loading');
+            try {
+                const response = await fetch(`/training/irr/statement/${statementId}/resolve`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await response.json();
+                if (data.success) {
+                    if (data.resolved) {
+                        btn.classList.remove('is-light');
+                        btn.classList.add('is-success');
+                        btn.textContent = 'Resolved';
+                    } else {
+                        btn.classList.remove('is-success');
+                        btn.classList.add('is-light');
+                        btn.textContent = 'Resolve';
+                    }
+                    btn.dataset.resolved = data.resolved ? 'true' : 'false';
+                }
+            } catch (err) {
+                console.error('Failed to toggle resolved:', err);
+            } finally {
+                btn.classList.remove('is-loading');
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.sarf-field-row {
+    display: grid;
+    grid-template-columns: 80px 1fr auto;
+    gap: 35px;
+    align-items: center;
+    min-height: 24px;
+    font-size: 0.75rem;
+    padding: 2px 0;
+}
+.sarf-field-row .sarf-label {
+    color: var(--color-fg-muted);
+    white-space: nowrap;
+}
+.sarf-field-row .sarf-value {
+    min-width: 0;
+}
+.sarf-field-row .sarf-actions {
+    justify-self: end;
+}
+
+.sarf-field-indented {
+    margin-left: 1em;
+}
+
+.irr-kappa-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 0.5rem;
+}
+
+.irr-note-summary {
+    cursor: pointer;
+}
+
+.irr-hidden {
+    display: none;
+}
+
+.irr-highlighted {
+    transition: background-color 0.3s;
+    background-color: var(--bulma-info-light);
+}
+
+.event-id-debug,
+.person-id-debug {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: var(--bulma-grey-lighter);
+    color: var(--bulma-grey-dark);
+    padding: 1px 4px;
+    font-size: 0.65rem;
+    border-radius: 2px;
+    font-family: monospace;
+    z-index: 5;
+    opacity: 0.7;
+    pointer-events: auto;
+    user-select: text;
+}
+
+[data-theme="dark"] .event-id-debug,
+[data-theme="dark"] .person-id-debug {
+    background: var(--bulma-grey-darker);
+    color: var(--bulma-grey-lighter);
+}
+</style>
+
+{% include 'partials/speaker_bubble_styles.html' %}
+{% include 'partials/analysis_styles.html' %}
+
 {% endblock %}

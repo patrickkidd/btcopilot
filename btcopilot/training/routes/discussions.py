@@ -38,7 +38,7 @@ from btcopilot.schema import (
 )
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.training.models import Feedback
-from btcopilot.training.utils import get_breadcrumbs, get_auditor_id
+from btcopilot.training.utils import get_breadcrumbs, get_auditor_id, get_discussion_view_menu
 
 
 _log = logging.getLogger(__name__)
@@ -1044,6 +1044,7 @@ def audit(discussion_id):
     if expert_statements:
         expert_statements[-1]["is_last_expert"] = True
 
+    menu, active_title = get_discussion_view_menu(discussion_id, "coding")
     breadcrumbs = get_breadcrumbs("thread")
     if discussion.diagram:
         breadcrumbs.append(
@@ -1058,7 +1059,7 @@ def audit(discussion_id):
             "url": url_for("training.discussions.audit", discussion_id=discussion.id),
         }
     )
-    breadcrumbs.append({"title": "Codes", "url": None})
+    breadcrumbs.append({"title": active_title, "menu": menu})
 
     # Get current user for navigation
     current_user = auth.current_user()
