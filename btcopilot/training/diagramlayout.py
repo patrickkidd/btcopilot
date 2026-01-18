@@ -443,6 +443,9 @@ def _phase2_positioning(ctx: LayoutContext, data: dict) -> None:
         currentX = _positionRemainingSiblings(
             ctx, data, gen, peopleInGen, currentX, genY, positioned, unconnectedIds
         )
+        _positionAdditionalSpouses(
+            ctx, data, gen, peopleInGen, genY, positioned, unconnectedIds
+        )
         _positionNoParents(ctx, peopleInGen, currentX, genY, positioned, unconnectedIds)
 
         # Calculate pair bonds for this generation so children can reference them
@@ -731,6 +734,83 @@ def _positionRemainingSiblings(
         currentX = x + PERSON_SPACING // 2
 
     return currentX
+
+
+def _positionAdditionalSpouses(
+    ctx: LayoutContext,
+    data: dict,
+    gen: int,
+    peopleInGen: list[dict],
+    genY: float,
+    positioned: set[int],
+    unconnectedIds: set[int],
+) -> None:
+    """Position people who are additional spouses of already-positioned people.
+
+    Handles multiple marriages: if person A has two spouses B and C, and A-B
+    were positioned as a family unit, C needs to be positioned adjacent to A
+    on the opposite side from B.
+    """
+    for person in peopleInGen:
+        pid = person["id"]
+        if pid in positioned or pid in unconnectedIds:
+            continue
+
+        for pb in ctx.pairBondsByPerson.get(pid, []):
+            spouseId = pb["person_b"] if pb["person_a"] == pid else pb["person_a"]
+            if ctx.generations.get(spouseId) != gen:
+                continue
+            if spouseId not in positioned:
+                continue
+
+            spousePos = ctx.layout.people.get(spouseId)
+            if not spousePos:
+                continue
+
+            otherSpouseX = None
+            for otherPb in ctx.pairBondsByPerson.get(spouseId, []):
+                otherSpouseId = (
+                    otherPb["person_b"]
+                    if otherPb["person_a"] == spouseId
+                    else otherPb["person_a"]
+                )
+                if otherSpouseId == pid:
+                    continue
+                if otherSpouseId in positioned:
+                    otherPos = ctx.layout.people.get(otherSpouseId)
+                    if otherPos and abs(otherPos.y - genY) < PERSON_SIZE:
+                        otherSpouseX = otherPos.x
+                        break
+
+            if otherSpouseX is not None:
+                if otherSpouseX > spousePos.x:
+                    newX = spousePos.x - PERSON_SPACING
+                else:
+                    newX = spousePos.x + PERSON_SPACING
+            else:
+                newX = spousePos.x + PERSON_SPACING
+
+            collision = False
+            for otherId, otherPos in ctx.layout.people.items():
+                if abs(otherPos.y - genY) < PERSON_SIZE:
+                    if abs(otherPos.x - newX) < PERSON_SPACING:
+                        collision = True
+                        break
+
+            if collision:
+                maxX = max(
+                    (
+                        p.x
+                        for p in ctx.layout.people.values()
+                        if abs(p.y - genY) < PERSON_SIZE
+                    ),
+                    default=BASE_X,
+                )
+                newX = maxX + PERSON_SPACING
+
+            ctx.layout.people[pid] = PersonLayout(x=newX, y=genY, person=person)
+            positioned.add(pid)
+            break
 
 
 def _positionNoParents(

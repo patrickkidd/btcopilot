@@ -575,3 +575,73 @@ def test_arrangeSelection_empty():
     """arrangeSelection with empty diagram returns empty result."""
     result = arrangeSelection({"people": []})
     assert result == {"people": []}
+
+
+def test_multiple_marriages():
+    """F-0005: Person with multiple marriages has both spouses positioned adjacently.
+
+    George has two marriages: to Wife1 and to Wife2.
+    Both spouses should be adjacent to George (one on each side).
+    """
+    data = {
+        "people": [
+            {"id": 1, "name": "George", "gender": "male", "parents": None},
+            {"id": 2, "name": "Wife1", "gender": "female", "parents": None},
+            {"id": 3, "name": "Wife2", "gender": "female", "parents": None},
+        ],
+        "pair_bonds": [
+            {
+                "id": 100,
+                "person_a": 1,
+                "person_b": 2,
+                "married": True,
+                "separated": False,
+                "divorced": False,
+            },
+            {
+                "id": 101,
+                "person_a": 1,
+                "person_b": 3,
+                "married": True,
+                "separated": False,
+                "divorced": False,
+            },
+        ],
+        "parent_child": [],
+    }
+
+    layout = compute(data)
+
+    george = layout["people"][1]
+    wife1 = layout["people"][2]
+    wife2 = layout["people"][3]
+
+    # All three should be in the same generation
+    assert george["y"] == wife1["y"] == wife2["y"]
+
+    # Both wives should be adjacent to George (PERSON_SPACING apart)
+    george_wife1_gap = abs(george["x"] - wife1["x"])
+    george_wife2_gap = abs(george["x"] - wife2["x"])
+
+    assert george_wife1_gap == PERSON_SPACING
+    assert george_wife2_gap == PERSON_SPACING
+
+    # Wives should be on opposite sides of George
+    if wife1["x"] > george["x"]:
+        assert wife2["x"] < george["x"]
+    else:
+        assert wife2["x"] > george["x"]
+
+    # INV-3: No one between George and either wife
+    min_wife1_george = min(george["x"], wife1["x"])
+    max_wife1_george = max(george["x"], wife1["x"])
+    min_wife2_george = min(george["x"], wife2["x"])
+    max_wife2_george = max(george["x"], wife2["x"])
+
+    for pid, pos in layout["people"].items():
+        if pid == 1:
+            continue
+        if pid == 2:
+            assert not (min_wife2_george < pos["x"] < max_wife2_george)
+        elif pid == 3:
+            assert not (min_wife1_george < pos["x"] < max_wife1_george)

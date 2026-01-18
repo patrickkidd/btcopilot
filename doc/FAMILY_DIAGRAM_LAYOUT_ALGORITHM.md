@@ -1,6 +1,6 @@
 # Family Diagram Layout Algorithm Specification
 
-**Version**: 0.3 (Draft)
+**Version**: 0.7 (Draft)
 **Status**: Under Development
 **Related**: [FAMILY_DIAGRAM_VISUAL_SPEC.md](./FAMILY_DIAGRAM_VISUAL_SPEC.md)
 
@@ -790,6 +790,16 @@ Before making ANY change to the algorithm:
 - **Related Issues**: F-0003 (same symptom, different root cause)
 - **Resolution**: Fixed 2024-12-24 - Added `_updatePairBondsForGeneration()` called after each generation in Phase 2
 
+### F-0005: Multiple Marriages Positioned Incorrectly (George-Dorothy Case)
+- **Date**: 2024-12-24
+- **Source**: Statement 2020, `/training/diagrams/render/2020/patrick@alaskafamilysystems.com`
+- **Symptom**: George-Dorothy pair bond spans entire generation (x1=100 to x2=580, 480px)
+- **Expected**: Second spouse (Dorothy) positioned adjacent to anchor person (George), creating two adjacent pair bonds
+- **Actual**: Dorothy positioned at far right (x=580) via `_positionNoParents`, not recognized as George's second spouse
+- **Root Cause**: `_buildFamilyUnits` uses `break` after finding first spouse (line 550), so only first marriage forms a family unit. Second spouse skipped because anchor is marked "processed".
+- **Related Issues**: Open Question #3 in spec (multiple marriages handling)
+- **Resolution**: Fixed 2024-12-24 - Added `_positionAdditionalSpouses()` function to Phase 2. Positions additional spouses adjacent to anchor person on opposite side from first spouse.
+
 ---
 
 ## Implementation Notes
@@ -806,6 +816,17 @@ Implementation: `_updatePairBondsForGeneration(ctx, data, gen)` called at end of
 ### Compaction vs Descendants
 The spec says "shift ALL their descendants by the same amount" but this is complex to implement correctly. An alternative approach (currently implemented): instead of shifting descendants, prevent compaction from shifting children left of their parents' span. This achieves the same goal (children stay under parents) without cascading shifts.
 
+### Multiple Marriages Handling
+When a person has multiple pair bonds (multiple marriages), the algorithm now handles this via `_positionAdditionalSpouses()`:
+
+1. After family units are built (which only captures first spouse), remaining spouses are identified
+2. For each unpositioned person with a pair bond to an already-positioned person:
+   - Find where the anchor's other spouse is positioned
+   - Position on the opposite side of the anchor from the other spouse
+   - Check for collisions and fall back to far right if needed
+
+This creates the visual pattern: `Spouse2 <-- Anchor --> Spouse1` where the anchor person is in the middle with spouses on either side.
+
 ---
 
 ## Revision History
@@ -818,4 +839,5 @@ The spec says "shift ALL their descendants by the same amount" but this is compl
 | 0.4 | 2024-12-23 | Added "Known-Good Test Data" section with Statement 1900 test case. Updated URL format to include auditor_id parameter (required for GT data). |
 | 0.5 | 2024-12-23 | Added "Reference Screenshots" section with 3 Pro app GT examples showing target layout style. |
 | 0.6 | 2024-12-24 | Added F-0002 through F-0004 to Failure Log (all fixed). Added "Implementation Notes" section documenting critical pair bond timing and compaction approach. |
+| 0.7 | 2024-12-24 | Added F-0005 (multiple marriages). Added `_positionAdditionalSpouses()` to handle second/third spouses. Updated Implementation Notes with Multiple Marriages Handling section. |
 
