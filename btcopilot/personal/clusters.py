@@ -6,15 +6,15 @@ from dataclasses import dataclass, field
 from btcopilot.extensions import llm, LLMFunction
 from btcopilot.schema import (
     Event,
-    Vignette,
-    VignettePattern,
-    VignetteResult,
+    Cluster,
+    ClusterPattern,
+    ClusterResult,
     asdict,
 )
 
 _log = logging.getLogger(__name__)
 
-VIGNETTE_PROMPT = """You are analyzing a family therapy case timeline to identify clinically meaningful episodes (vignettes).
+CLUSTER_PROMPT = """You are analyzing a behavioral health case timeline to identify clinically meaningful event clusters.
 
 ## SARF Theory Context
 
@@ -41,30 +41,36 @@ Four variables track family system dynamics:
 
 ## Task
 
-Group these events into vignettes. Events belong in the same vignette when they:
-1. Occur within a short time period (typically 1-15 days, up to 3 weeks for major life events)
-2. Show SARF interaction patterns (cascades, reciprocal effects)
-3. Involve the same relational dynamics or stressor
-4. Form a narrative arc (trigger → escalation → peak → processing → resolution)
+Group these events into clusters. Events belong in the same cluster when they:
+1. *Required:* Occur in a relatively clustered time frame within the total timeseries. There is often gaps of weeks, months or years between clusters.
+2. Form a narrative arc (trigger → escalation → peak → processing → resolution)
+3. Optional: Show SARF interaction patterns (cascades, reciprocal effects)
 
-**Vignette sizing guidelines**:
+**Outlier handling**:
+- Birth events, childhood events, or other events that occur years/decades before the main timeline should be left unclustered unless they directly connect to a recent narrative arc
+- Focus clustering on events that show clear temporal and thematic relationships
+
+**Cluster sizing guidelines**:
 - Short (1-6 days): Single incident or brief cascade
 - Medium (1-2 weeks): Conflict-resolution arc
 - Long (2-3 weeks): Major life event with processing
-- Isolated events (1 day) can be their own vignette if significant
+- Isolated events (1 day) can be their own cluster if significant
 
 **Requirements**:
-- Every event MUST be assigned to exactly one vignette
+- Only include events in clusters when they form meaningful narrative arcs
+- Events that are isolated outliers (e.g., birth events from decades before the main timeline) should NOT be forced into clusters
+- Each event can belong to at most one cluster
 - Use abstract titles (NO person names) - e.g., "Work Stress Cascade" not "Patrick's Work Stress"
 - Set `pattern` to the primary SARF pattern if one is clearly dominant
 - Set `dominantVariable` to "S", "A", "R", or "F" based on which is most prominent
+- No two clusters should be within a couple of days of each other, otherwise they should be merged into a single cluster.
 
-Return a JSON object with a `vignettes` array."""
+Return a JSON object with a `clusters` array."""
 
 
 @dataclass
-class VignetteListResponse:
-    vignettes: list[Vignette] = field(default_factory=list)
+class ClusterListResponse:
+    clusters: list[Cluster] = field(default_factory=list)
 
 
 def _enumValue(val):
@@ -89,9 +95,9 @@ def computeCacheKey(events: list[Event]) -> str:
     return hashlib.sha256(content.encode()).hexdigest()[:16]
 
 
-def detectVignettes(events: list[Event]) -> VignetteResult:
+def detectClusters(events: list[Event]) -> ClusterResult:
     if not events:
-        return VignetteResult(vignettes=[], cacheKey="empty")
+        return ClusterResult(clusters=[], cacheKey="empty")
 
     cacheKey = computeCacheKey(events)
 
@@ -115,24 +121,24 @@ def detectVignettes(events: list[Event]) -> VignetteResult:
         events_for_prompt.append(event_dict)
 
     events_json = json.dumps(events_for_prompt, indent=2)
-    prompt = VIGNETTE_PROMPT.format(events_json=events_json)
+    prompt = CLUSTER_PROMPT.format(events_json=events_json)
 
-    _log.info(f"Detecting vignettes for {len(events)} events")
+    _log.info(f"Detecting clusters for {len(events)} events")
 
     response = llm.submit_one(
-        LLMFunction.Vignette,
+        LLMFunction.Cluster,
         prompt,
-        response_format=VignetteListResponse,
+        response_format=ClusterListResponse,
     )
 
-    vignettes = response.vignettes if response else []
+    clusters = response.clusters if response else []
 
-    for v in vignettes:
-        event_dates = [e.dateTime for e in events if e.id in v.eventIds and e.dateTime]
+    for c in clusters:
+        event_dates = [e.dateTime for e in events if e.id in c.eventIds and e.dateTime]
         if event_dates:
-            v.startDate = min(event_dates)
-            v.endDate = max(event_dates)
+            c.startDate = min(event_dates)
+            c.endDate = max(event_dates)
 
-    _log.info(f"Detected {len(vignettes)} vignettes")
+    _log.info(f"Detected {len(clusters)} clusters")
 
-    return VignetteResult(vignettes=vignettes, cacheKey=cacheKey)
+    return ClusterResult(clusters=clusters, cacheKey=cacheKey)

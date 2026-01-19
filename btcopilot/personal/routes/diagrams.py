@@ -10,7 +10,7 @@ from btcopilot.extensions import db
 from btcopilot.schema import DiagramData, Event, asdict, from_dict
 from btcopilot.pro.models import Diagram, AccessRight
 from btcopilot.personal.models import Discussion, Statement
-from btcopilot.personal.vignettes import detectVignettes
+from btcopilot.personal.clusters import detectClusters
 
 _log = logging.getLogger(__name__)
 
@@ -201,8 +201,8 @@ def import_journal(diagram_id):
     return jsonify(success=True, pdp=asdict(new_pdp), summary=summary)
 
 
-@diagrams_bp.route("/<int:diagram_id>/vignettes", methods=["POST"])
-def detect_vignettes(diagram_id):
+@diagrams_bp.route("/<int:diagram_id>/clusters", methods=["POST"])
+def detect_clusters(diagram_id):
     user = auth.current_user()
 
     diagram = Diagram.query.get(diagram_id)
@@ -218,11 +218,11 @@ def detect_vignettes(diagram_id):
 
     events = [from_dict(Event, e) for e in data["events"]]
 
-    _log.info(f"Detecting vignettes for diagram {diagram_id} with {len(events)} events")
+    _log.info(f"Detecting clusters for diagram {diagram_id} with {len(events)} events")
 
-    result = detectVignettes(events)
+    result = detectClusters(events)
 
     return jsonify(
-        vignettes=[asdict(v) for v in result.vignettes],
+        clusters=[asdict(c) for c in result.clusters],
         cacheKey=result.cacheKey,
     )
