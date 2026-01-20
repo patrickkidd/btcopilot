@@ -63,7 +63,7 @@ Group these events into clusters. Events belong in the same cluster when they:
 - Use abstract titles (NO person names) - e.g., "Work Stress Cascade" not "Patrick's Work Stress"
 - Set `pattern` to the primary SARF pattern if one is clearly dominant
 - Set `dominantVariable` to "S", "A", "R", or "F" based on which is most prominent
-- No two clusters should be within a couple of days of each other, otherwise they should be merged into a single cluster.
+- **Cluster separation**: Clusters should be separated by *relatively* large gaps compared to the spacing within the cluster. If events are in a fairly continuous string (e.g., several events over a week or two with gaps of only a few days between them), they belong in the same cluster. Only create separate clusters when there is a clear gap that is significantly larger than the typical inter-event spacing within the group. Make your own judgement, but at a minimum there should never be events that are three days apart and in different clusters.
 
 Return a JSON object with a `clusters` array."""
 
