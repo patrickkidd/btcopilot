@@ -57,13 +57,13 @@ Group these events into clusters. Events belong in the same cluster when they:
 - Isolated events (1 day) can be their own cluster if significant
 
 **Requirements**:
+- **CRITICAL - Do not over-split clusters**: Events spanning a continuous date range (e.g., May 31 to June 4, or July 16 to July 21) MUST be in a single cluster, not split into multiple clusters. A "continuous range" means events where the largest gap between consecutive events is less than ~2 weeks. Err on the side of fewer, larger clusters rather than many small ones.
 - Only include events in clusters when they form meaningful narrative arcs
 - Events that are isolated outliers (e.g., birth events from decades before the main timeline) should NOT be forced into clusters
 - Each event can belong to at most one cluster
 - Use abstract titles (NO person names) - e.g., "Work Stress Cascade" not "Patrick's Work Stress"
 - Set `pattern` to the primary SARF pattern if one is clearly dominant
 - Set `dominantVariable` to "S", "A", "R", or "F" based on which is most prominent
-- **Cluster separation**: Clusters should be separated by *relatively* large gaps compared to the spacing within the cluster. If events are in a fairly continuous string (e.g., several events over a week or two with gaps of only a few days between them), they belong in the same cluster. Only create separate clusters when there is a clear gap that is significantly larger than the typical inter-event spacing within the group. Make your own judgement, but at a minimum there should never be events that are three days apart and in different clusters.
 
 Return a JSON object with a `clusters` array."""
 
