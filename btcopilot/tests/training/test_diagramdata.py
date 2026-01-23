@@ -195,6 +195,8 @@ def as_dict():
         "loggedDateTime": [],
         "masterKey": None,
         "alias": None,
+        "clusterCacheKey": None,
+        "clusters": [],
         "readOnly": False,
         "contributeToResearch": False,
         "useRealNames": False,
