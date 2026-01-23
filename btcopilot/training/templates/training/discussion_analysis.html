@@ -1,27 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Ground Truth Analysis - Discussion {{ discussion.id }}{% endblock %}
+{% block title %}F1 Analysis - {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
 
 {% block content %}
 <section class="section">
     <div class="container is-fluid">
-        <div class="level">
-            <div class="level-left">
-                <div class="level-item">
-                    <div>
-                        <h1 class="title">Discussion {{ discussion.id }}</h1>
-                        <p class="subtitle">Ground Truth Analysis - {{ statement_breakdowns|length }} statements</p>
-                    </div>
-                </div>
-            </div>
-            <div class="level-right">
-                <div class="level-item">
-                    <a href="{{ url_for('training.discussions.audit', discussion_id=discussion.id) }}" class="button">
-                        <span class="icon"><i class="fas fa-arrow-left"></i></span>
-                        <span>Back to Discussion</span>
-                    </a>
-                </div>
-            </div>
+        <div class="mb-4">
+            <h1 class="title">{{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
+            <p class="subtitle">F1 Analysis - {{ statement_breakdowns|length }} statements</p>
         </div>
 
         <div class="box" style="padding: 0;">

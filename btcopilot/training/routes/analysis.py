@@ -14,7 +14,7 @@ from flask import Blueprint, render_template, request, abort, jsonify, url_for
 import btcopilot
 from btcopilot import auth
 from btcopilot.extensions import db
-from btcopilot.training.utils import get_breadcrumbs
+from btcopilot.training.utils import get_breadcrumbs, get_discussion_view_menu
 from btcopilot.auth import minimum_role
 from btcopilot.personal.models import Statement
 from btcopilot.training.models import Feedback
@@ -264,6 +264,7 @@ def discussion_analysis(discussion_id):
         speaker.id: idx + 1 for idx, speaker in enumerate(expert_speakers)
     }
 
+    menu, active_title = get_discussion_view_menu(discussion_id, "f1")
     breadcrumbs = get_breadcrumbs("thread")
     if discussion.diagram:
         breadcrumbs.append(
@@ -274,11 +275,11 @@ def discussion_analysis(discussion_id):
         )
     breadcrumbs.append(
         {
-            "title": f"{discussion.summary or 'Untitled Discussion'} (ID: {discussion.id})",
-            "url": url_for("training.discussions.audit", discussion_id=discussion.id),
+            "title": discussion.summary or f"Discussion {discussion_id}",
+            "url": url_for("training.discussions.audit", discussion_id=discussion_id),
         }
     )
-    breadcrumbs.append({"title": "Analysis", "url": None})
+    breadcrumbs.append({"title": active_title, "menu": menu})
 
     return render_template(
         "training/discussion_analysis.html",

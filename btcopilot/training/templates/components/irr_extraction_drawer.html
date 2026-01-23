@@ -1,0 +1,142 @@
+{% macro render_sarf_value(value) %}
+{%- if value %}{{ value.value if value.value is defined else value }}{%- else %}-{%- endif -%}
+{% endmacro %}
+
+{% macro render_person_item(person) %}
+<div class="person-item p-2 has-background-light mb-1">
+    <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse;">
+        <tr>
+            <td class="sarf-label">Name:</td>
+            <td class="sarf-value">{{ person.name or 'Unnamed' }}</td>
+        </tr>
+        {% if person.gender %}
+        <tr>
+            <td class="sarf-label">Gender:</td>
+            <td class="sarf-value">{{ person.gender.value if person.gender.value is defined else person.gender }}</td>
+        </tr>
+        {% endif %}
+    </table>
+</div>
+{% endmacro %}
+
+{% macro render_event_item(event) %}
+<div class="event-item p-2 has-background-light mb-1">
+    <table class="is-size-7" style="width: 100%; border: none; border-collapse: collapse;">
+        <tr>
+            <td class="sarf-label">Kind:</td>
+            <td class="sarf-value">{{ (event.kind.value if event.kind.value is defined else event.kind)|replace('EventKind.', '') }}</td>
+        </tr>
+        {% if event.dateTime %}
+        <tr>
+            <td class="sarf-label">Date:</td>
+            <td class="sarf-value">{{ event.dateTime }}</td>
+        </tr>
+        {% endif %}
+        {% if event.description %}
+        <tr>
+            <td class="sarf-label">Desc:</td>
+            <td class="sarf-value" title="{{ event.description }}">{{ event.description|truncate(30) }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+            <td class="sarf-label">Symptom:</td>
+            <td class="sarf-value">{{ render_sarf_value(event.symptom) }}</td>
+        </tr>
+        <tr>
+            <td class="sarf-label">Anxiety:</td>
+            <td class="sarf-value">{{ render_sarf_value(event.anxiety) }}</td>
+        </tr>
+        <tr>
+            <td class="sarf-label">Relationship:</td>
+            <td class="sarf-value">{% if event.relationship %}{{ (event.relationship.value if event.relationship.value is defined else event.relationship)|replace('RelationshipKind.', '') }}{% else %}-{% endif %}</td>
+        </tr>
+        <tr>
+            <td class="sarf-label">Functioning:</td>
+            <td class="sarf-value">{{ render_sarf_value(event.functioning) }}</td>
+        </tr>
+    </table>
+</div>
+{% endmacro %}
+
+{% macro render_extraction_column(coder, extraction) %}
+<div class="irr-coder-column">
+    <div class="section-header is-size-7 has-text-weight-bold mb-2" title="{{ coder }}">{{ coder|truncate(20) }}</div>
+
+    {% if extraction %}
+    <div class="analysis-section mb-3">
+        <div class="section-header is-size-7 has-text-weight-bold mb-1 section-label">
+            <span class="icon is-small"><i class="fas fa-users"></i></span> People
+        </div>
+        {% for person in extraction.people %}
+            {{ render_person_item(person) }}
+        {% else %}
+        <p class="is-size-7 has-text-grey-light">(none)</p>
+        {% endfor %}
+    </div>
+
+    <div class="analysis-section">
+        <div class="section-header is-size-7 has-text-weight-bold mb-1 section-label">
+            <span class="icon is-small"><i class="fas fa-calendar-alt"></i></span> Events
+        </div>
+        {% for event in extraction.events %}
+            {{ render_event_item(event) }}
+        {% else %}
+        <p class="is-size-7 has-text-grey-light">(none)</p>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="is-size-7 has-text-grey-light">No extraction</p>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{% macro render_drawer(item, coders, discussion_id) %}
+<div class="irr-drawer statement-analysis-row mt-3 pt-3" id="drawer-{{ item.statement.id }}" style="display: none; border-top: 1px solid var(--color-border-default, rgba(255,255,255,0.1));">
+    <div class="columns is-multiline is-mobile">
+        {% for coder in coders %}
+        <div class="column is-3-desktop is-6-tablet is-12-mobile{% if not loop.first %} analysis-column-divider{% endif %}">
+            {{ render_extraction_column(coder, item.extractions.get(coder)) }}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="level mt-3">
+        <div class="level-left">
+            <div class="level-item">
+                <a href="{{ url_for('training.discussions.audit', discussion_id=discussion_id) }}#statement-{{ item.statement.id }}"
+                   class="button is-small is-light" target="_blank">
+                    <span class="icon"><i class="fas fa-external-link-alt"></i></span>
+                    <span>View Context</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="reconciliation-section mt-3 pt-3" style="border-top: 1px solid var(--color-border-default, rgba(255,255,255,0.1));">
+        <div class="field">
+            <label class="label is-small">Reconciliation Note</label>
+            <div class="control">
+                <textarea class="textarea is-small note-textarea"
+                          id="note-{{ item.statement.id }}"
+                          placeholder="Add notes from reconciliation discussion..."
+                          data-statement-id="{{ item.statement.id }}">{{ item.note.note if item.note else '' }}</textarea>
+            </div>
+        </div>
+        <div class="level mt-2">
+            <div class="level-left">
+                <div class="level-item">
+                    <button class="button is-small is-primary save-note-btn"
+                            data-statement-id="{{ item.statement.id }}">Save Note</button>
+                </div>
+                <div class="level-item resolve-btn-container" data-statement-id="{{ item.statement.id }}"{% if not item.note %} style="display: none;"{% endif %}>
+                    <button class="button is-small resolve-btn {% if item.note and item.note.resolved %}is-success{% else %}is-light{% endif %}"
+                            data-statement-id="{{ item.statement.id }}"
+                            data-resolved="{{ 'true' if item.note and item.note.resolved else 'false' }}">
+                        {% if item.note and item.note.resolved %}✓ Resolved{% else %}Mark Resolved{% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}

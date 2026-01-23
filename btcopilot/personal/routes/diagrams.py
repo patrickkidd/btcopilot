@@ -7,9 +7,10 @@ import btcopilot
 from btcopilot import auth, pdp
 from btcopilot.async_utils import one_result
 from btcopilot.extensions import db
-from btcopilot.schema import DiagramData, asdict
+from btcopilot.schema import DiagramData, Event, asdict, from_dict
 from btcopilot.pro.models import Diagram, AccessRight
 from btcopilot.personal.models import Discussion, Statement
+from btcopilot.personal.clusters import detectClusters
 
 _log = logging.getLogger(__name__)
 
@@ -198,3 +199,30 @@ def import_journal(diagram_id):
     )
 
     return jsonify(success=True, pdp=asdict(new_pdp), summary=summary)
+
+
+@diagrams_bp.route("/<int:diagram_id>/clusters", methods=["POST"])
+def detect_clusters(diagram_id):
+    user = auth.current_user()
+
+    diagram = Diagram.query.get(diagram_id)
+    if not diagram:
+        abort(404)
+
+    if diagram.user_id != user.id and not user.has_role(btcopilot.ROLE_ADMIN):
+        abort(403)
+
+    data = request.get_json()
+    if not data or "events" not in data:
+        return jsonify(error="Events array is required"), 400
+
+    events = [from_dict(Event, e) for e in data["events"]]
+
+    _log.info(f"Detecting clusters for diagram {diagram_id} with {len(events)} events")
+
+    result = detectClusters(events)
+
+    return jsonify(
+        clusters=[asdict(c) for c in result.clusters],
+        cacheKey=result.cacheKey,
+    )

@@ -1,15 +1,4 @@
-"""
-Inter-Rater Reliability (IRR) Metrics for SARF Coding
-
-Calculates agreement metrics between human coders:
-- Percent Agreement (simple)
-- F1 Score (entity-level)
-- Cohen's Kappa (chance-corrected pairwise)
-- Fleiss' Kappa (3+ coders)
-- Per-SARF-variable Kappa (symptom, anxiety, relationship, functioning)
-
-Reuses entity matching logic from f1_metrics.py.
-"""
+"""Inter-Rater Reliability metrics: agreement and F1 scores between human coders."""
 
 import logging
 from collections import defaultdict
@@ -136,9 +125,7 @@ def calculate_fleiss_kappa(ratings_matrix: list[list[int]]) -> float | None:
     return kappa
 
 
-def calculate_sarf_kappa_for_pair(
-    matched_pairs: list[tuple], variable_name: str
-) -> float | None:
+def calculate_sarf_kappa_for_pair(matched_pairs: list[tuple], variable_name: str) -> float | None:
     coder_a_values = []
     coder_b_values = []
 
@@ -162,9 +149,7 @@ def calculate_pairwise_irr(
 ) -> CoderPairMetrics:
     people_result, id_map = match_people(extraction_a.people, extraction_b.people)
     events_result = match_events(extraction_a.events, extraction_b.events, id_map)
-    bonds_result = match_pair_bonds(
-        extraction_a.pair_bonds, extraction_b.pair_bonds, id_map
-    )
+    bonds_result = match_pair_bonds(extraction_a.pair_bonds, extraction_b.pair_bonds, id_map)
 
     people_tp = len(people_result.matched_pairs)
     people_fp = len(people_result.ai_unmatched)
@@ -187,18 +172,10 @@ def calculate_pairwise_irr(
     total_fn = people_fn + events_fn + bonds_fn
     aggregate_f1 = calculate_f1_from_counts(total_tp, total_fp, total_fn).f1
 
-    symptom_kappa = calculate_sarf_kappa_for_pair(
-        events_result.matched_pairs, "symptom"
-    )
-    anxiety_kappa = calculate_sarf_kappa_for_pair(
-        events_result.matched_pairs, "anxiety"
-    )
-    relationship_kappa = calculate_sarf_kappa_for_pair(
-        events_result.matched_pairs, "relationship"
-    )
-    functioning_kappa = calculate_sarf_kappa_for_pair(
-        events_result.matched_pairs, "functioning"
-    )
+    symptom_kappa = calculate_sarf_kappa_for_pair(events_result.matched_pairs, "symptom")
+    anxiety_kappa = calculate_sarf_kappa_for_pair(events_result.matched_pairs, "anxiety")
+    relationship_kappa = calculate_sarf_kappa_for_pair(events_result.matched_pairs, "relationship")
+    functioning_kappa = calculate_sarf_kappa_for_pair(events_result.matched_pairs, "functioning")
 
     total_unique = total_tp + total_fp + total_fn
     percent_agreement = total_tp / total_unique if total_unique > 0 else 1.0
@@ -232,9 +209,7 @@ def calculate_statement_irr(statement_id: int) -> StatementIRRMetrics | None:
     if len(feedbacks) < 2:
         return None
 
-    extractions = {
-        fb.auditor_id: from_dict(PDPDeltas, fb.edited_extraction) for fb in feedbacks
-    }
+    extractions = {fb.auditor_id: from_dict(PDPDeltas, fb.edited_extraction) for fb in feedbacks}
 
     coder_ids = sorted(extractions.keys())
     coder_pairs = []
@@ -319,6 +294,18 @@ def calculate_discussion_irr(discussion_id: int) -> DiscussionIRRMetrics | None:
     )
 
 
+def get_statement_extractions(statement_id: int) -> dict[str, PDPDeltas]:
+    from btcopilot.training.models import Feedback
+
+    feedbacks = Feedback.query.filter(
+        Feedback.statement_id == statement_id,
+        Feedback.feedback_type == "extraction",
+        Feedback.edited_extraction.isnot(None),
+    ).all()
+
+    return {fb.auditor_id: from_dict(PDPDeltas, fb.edited_extraction) for fb in feedbacks}
+
+
 def get_multi_coder_discussions() -> list[tuple[int, int, list[str]]]:
     """
     Find discussions with 2+ coders who have submitted extraction feedback.
@@ -335,9 +322,9 @@ def get_multi_coder_discussions() -> list[tuple[int, int, list[str]]]:
         db.session.query(
             Statement.discussion_id,
             func.count(func.distinct(Feedback.auditor_id)).label("coder_count"),
-            func.string_agg(
-                func.distinct(Feedback.auditor_id), literal_column("','")
-            ).label("coder_ids"),
+            func.string_agg(func.distinct(Feedback.auditor_id), literal_column("','")).label(
+                "coder_ids"
+            ),
         )
         .join(Statement, Feedback.statement_id == Statement.id)
         .filter(Feedback.feedback_type == "extraction")

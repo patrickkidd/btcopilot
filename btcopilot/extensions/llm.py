@@ -162,6 +162,8 @@ class LLMFunction(enum.StrEnum):
 
     Arrange = "arrange"
 
+    Cluster = "cluster"  # Detect event clusters in timeline
+
 
 # Schema descriptions for PDPDeltas - critical semantic hints for Gemini
 PDP_SCHEMA_DESCRIPTIONS = {
@@ -314,7 +316,7 @@ class LLM:
         return result
 
     async def submit(self, llm_type: LLMFunction, prompt: str = None, **kwargs):
-        if llm_type in (LLMFunction.JSON, LLMFunction.PDP):
+        if llm_type in (LLMFunction.JSON, LLMFunction.PDP, LLMFunction.Cluster):
             return await self.gemini(
                 prompt,
                 response_format=kwargs.get("response_format"),

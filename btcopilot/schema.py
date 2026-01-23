@@ -321,6 +321,33 @@ class PDP:
     pair_bonds: list[PairBond] = field(default_factory=list)
 
 
+class ClusterPattern(enum.StrEnum):
+    AnxietyCascade = "anxiety_cascade"
+    TriangleActivation = "triangle_activation"
+    ConflictResolution = "conflict_resolution"
+    ReciprocalDisturbance = "reciprocal_disturbance"
+    FunctioningGain = "functioning_gain"
+    WorkFamilySpillover = "work_family_spillover"
+
+
+@dataclass
+class Cluster:
+    id: str
+    title: str
+    summary: str
+    eventIds: list[int] = field(default_factory=list)
+    startDate: str | None = None
+    endDate: str | None = None
+    pattern: ClusterPattern | None = None
+    dominantVariable: str | None = None
+
+
+@dataclass
+class ClusterResult:
+    clusters: list[Cluster] = field(default_factory=list)
+    cacheKey: str | None = None
+
+
 @dataclass
 class DiagramData:
     id: int | None = None
@@ -342,6 +369,9 @@ class DiagramData:
     alias: str | None = None
     version: str | None = None
     versionCompat: str | None = None
+    # Clusters (LLM-detected event clusters)
+    clusters: list[dict] = field(default_factory=list)
+    clusterCacheKey: str | None = None
     # PDP (negative-id staging)
     pdp: PDP = field(default_factory=PDP)
     lastItemId: int = field(default=0)
@@ -458,6 +488,17 @@ class DiagramData:
         pdp_pair_bonds_map = {
             pb.id: pb for pb in self.pdp.pair_bonds if pb.id is not None
         }
+
+        # Validate all item IDs exist in their respective maps before committing
+        for old_id in all_item_ids:
+            if (
+                old_id not in pdp_people_map
+                and old_id not in pdp_events_map
+                and old_id not in pdp_pair_bonds_map
+            ):
+                raise ValueError(
+                    f"PDP item {old_id} referenced but not found in PDP people, events, or pair_bonds"
+                )
 
         for old_id in all_item_ids:
             if old_id in pdp_pair_bonds_map:

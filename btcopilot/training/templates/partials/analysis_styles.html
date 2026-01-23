@@ -61,4 +61,25 @@ details[open] summary::before {
     color: var(--color-fg-muted, #999);
     vertical-align: top;
 }
+
+.coder-header-row,
+.coder-data-row {
+    gap: 0.5rem;
+}
+
+.coder-column {
+    flex: 1;
+}
+
+.coder-column:not(:first-child) {
+    padding-left: 0.5rem;
+}
+
+.event-item-bg {
+    background-color: var(--color-canvas-subtle, rgba(255,255,255,0.08));
+}
+
+.irr-note-section {
+    border-top: 1px solid var(--color-border-default, rgba(100,100,100,0.2));
+}
 </style>

@@ -316,14 +316,18 @@ SECTION 1: DATA MODEL (Semantic definitions - what things mean)
     - "approximate": date is within a year (e.g., "sometime in 1985", "in
       college")
     - "unknown": date is completely unknown/guessed, no temporal info
-  - `description`: Minimal phrase, ideally 3 words, 5 max. Strip
-    articles/filler. Good: "Trouble sleeping", "Boss criticized project",
-    "Argument at dinner" Bad: "Having trouble sleeping and feeling really
-    anxious lately"
-  - `notes`: Optional additional context not captured in description. May
-    contain opinions, feelings, subjective material, and multi-line detail.
-    Use for elaboration beyond the factual description. Put opinions in quotes
-    (e.g., "feels like I'm doing everything").
+  - `description`: SPECIFIC INCIDENT phrase, 3-5 words. Describe WHAT HAPPENED,
+    not which variable shifted. NEVER use SARF labels as descriptions.
+    GOOD: "Trouble sleeping", "Boss criticized project", "Argument at dinner",
+      "Started drinking nightly", "Avoided family gathering"
+    BAD: "Symptom up", "Anxiety increased", "Relationship shift", "Functioning
+      down" (these just restate the variable - useless for understanding)
+  - `notes`: REQUIRED for shift events. Can fill for other event types when
+    needed. Capture the CONTEXT: what triggered it, what was going on, why it
+    matters. Without notes, a description like "Trouble sleeping" is meaningless
+    - notes explain "after mom's call about dad's drinking" or "started when job
+    stress increased". Include opinions, feelings, causal relationships, and
+    quoted material from user.
   - `kind`: EventKind enum value
 
   EventKind values and meanings: - `"shift"`: Changes in one of the "variables";
