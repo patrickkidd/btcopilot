@@ -317,8 +317,8 @@ SECTION 1: DATA MODEL (Semantic definitions - what things mean)
       college")
     - "unknown": date is completely unknown/guessed, no temporal info
   - `description`: SPECIFIC INCIDENT phrase, 3-5 words. Describe WHAT HAPPENED,
-    not which variable shifted. NEVER use SARF labels as descriptions. GOOD:
-    "Trouble sleeping", "Boss criticized project", "Argument at dinner",
+    not which variable shifted. NEVER use SARF labels as descriptions.
+    GOOD: "Trouble sleeping", "Boss criticized project", "Argument at dinner",
       "Started drinking nightly", "Avoided family gathering"
     BAD: "Symptom up", "Anxiety increased", "Relationship shift", "Functioning
       down" (these just restate the variable - useless for understanding)
@@ -372,68 +372,75 @@ SECTION 1: DATA MODEL (Semantic definitions - what things mean)
 SECTION 2: EXTRACTION RULES (Operational guidance)
 ===============================================================================
 
-**EVENT EXTRACTION CHECKLIST** (all must be YES to create an event): 1. Is there
-a SPECIFIC INCIDENT (not a general pattern)? 2. Is there a TIME REFERENCE (even
-vague like "last week", "in 1979")? 3. Can you identify WHO the event is about?
-4. Is this event NOT already captured in diagram_data.pdp.events? If any answer
-is NO, do NOT create the event.
+**EVENT EXTRACTION CHECKLIST** (all must be YES to create an event):
+1. Is there a SPECIFIC INCIDENT (not a general pattern)?
+2. Is there a TIME REFERENCE (even vague like "last week", "in 1979")?
+3. Can you identify WHO the event is about?
+4. Is this event NOT already captured in diagram_data.pdp.events?
+If any answer is NO, do NOT create the event.
 
 **CRITICAL: dateTime is REQUIRED - NEVER use null**. Always provide a date, even
 if vague or imprecise. A vague date is always better than null.
 
-**DATE CERTAINTY CODING (REQUIRED for every event):** - "certain" = Specific
-date mentioned - "approximate" = Vague timeframe ("sometime last year", "in the
-80s") - "unknown" = No date info at all, using pure estimate
+**DATE CERTAINTY CODING (REQUIRED for every event):**
+- "certain" = Specific date mentioned
+- "approximate" = Vague timeframe ("sometime last year", "in the 80s")
+- "unknown" = No date info at all, using pure estimate
 
 **Do NOT create events for**: General characterizations ("he's difficult"),
-ongoing patterns without specific incidents ("she always criticizes me"), vague
-feelings without concrete occurrences.
+ongoing patterns without specific incidents ("she always criticizes me"),
+vague feelings without concrete occurrences.
 
 **DO create events for**: Specific arguments/conflicts with timeframe,
 particular incidents of distancing, concrete relationship moves.
 
-**EVENT.PERSON ASSIGNMENT**: Every Event MUST have the correct `person` field. -
-`"death"`: person = who DIED (not the speaker) - `"birth"`: person = who was
-BORN, child = same ID - `"married"/"bonded"/"separated"/"divorced"`: person =
-one partner, spouse = other - `"shift"` with relationship: person = who
-INITIATED the behavior - `"shift"` without relationship: person = who is
-experiencing the change
+**EVENT.PERSON ASSIGNMENT**: Every Event MUST have the correct `person` field.
+- `"death"`: person = who DIED (not the speaker)
+- `"birth"`: person = who was BORN, child = same ID
+- `"married"/"bonded"/"separated"/"divorced"`: person = one partner, spouse = other
+- `"shift"` with relationship: person = who INITIATED the behavior
+- `"shift"` without relationship: person = who is experiencing the change
 
-**RELATIONSHIP EVENT RULES:** - relationshipTargets is REQUIRED for ALL
-relationship events - relationshipTriangles is REQUIRED when relationship is
-"inside" or "outside"
+**RELATIONSHIP EVENT RULES:**
+- relationshipTargets is REQUIRED for ALL relationship events
+- relationshipTriangles is REQUIRED when relationship is "inside" or "outside"
 
-**SYMPTOM DIRECTION CODING:** - "up" = symptom worsening/present/emerged (ALMOST
-ALWAYS USE THIS) - "down" = ONLY when symptom is explicitly improving
+**SYMPTOM DIRECTION CODING:**
+- "up" = symptom worsening/present/emerged (ALMOST ALWAYS USE THIS)
+- "down" = ONLY when symptom is explicitly improving
 
-**ID ASSIGNMENT RULES:** - People, events, and pair_bonds share a SINGLE ID
-namespace - NEW PDP entries MUST use unique negative IDs across ALL entity types
-- Example valid: people=[-1, -2], events=[-3, -4], pair_bonds=[-5] - Example
-INVALID: people=[-1], events=[-1] (collision on -1)
+**ID ASSIGNMENT RULES:**
+- People, events, and pair_bonds share a SINGLE ID namespace
+- NEW PDP entries MUST use unique negative IDs across ALL entity types
+- Example valid: people=[-1, -2], events=[-3, -4], pair_bonds=[-5]
+- Example INVALID: people=[-1], events=[-1] (collision on -1)
 
-**PERSON EXTRACTION RULES:** - Extract ALL named individuals (first name, full
-name, title+name) - AVOID DUPLICATE EXTRACTIONS: If both generic and named
-exist, extract ONLY named - Use possessive patterns for unnamed relations: "my
-mom" -> "User's Mother"
+**PERSON EXTRACTION RULES:**
+- Extract ALL named individuals (first name, full name, title+name)
+- AVOID DUPLICATE EXTRACTIONS: If both generic and named exist, extract ONLY named
+- Use possessive patterns for unnamed relations: "my mom" -> "User's Mother"
 
-**GENDER INFERENCE RULES:** - ALWAYS set `gender` field for every person
-extracted - Infer gender from first names when recognizable - Infer gender from
-relational titles (Mom->female, Dad->male, etc.) - Use "unknown" when gender
-cannot be determined
+**GENDER INFERENCE RULES:**
+- ALWAYS set `gender` field for every person extracted
+- Infer gender from first names when recognizable
+- Infer gender from relational titles (Mom->female, Dad->male, etc.)
+- Use "unknown" when gender cannot be determined
 
-**DELTA EXTRACTION RULES:** 1. NEW ONLY: Don't include people/events already in
-database unless new info 2. SEPARATE EVENTS PER ISSUE: "trouble sleeping AND
-drinking more" = TWO events 3. BIRTH EVENTS: "Name, born MM/DD/YYYY" = extract
-BOTH person AND birth event 4. DELETIONS: When user corrects previous
-information, add incorrect ID to delete
+**DELTA EXTRACTION RULES:**
+1. NEW ONLY: Don't include people/events already in database unless new info
+2. SEPARATE EVENTS PER ISSUE: "trouble sleeping AND drinking more" = TWO events
+3. BIRTH EVENTS: "Name, born MM/DD/YYYY" = extract BOTH person AND birth event
+4. DELETIONS: When user corrects previous information, add incorrect ID to delete
 
-**Constraints:** - One biological mother/father per user - One event per
-variable shift (merge by timestamp, people, variables) - For parent
-relationships, use PairBond entities and set Person.parents
+**Constraints:**
+- One biological mother/father per user
+- One event per variable shift (merge by timestamp, people, variables)
+- For parent relationships, use PairBond entities and set Person.parents
 
-**Output:** - Return SPARSE deltas - often empty arrays if nothing new - Use
-negative integers for new PDP entries - Include confidence level between 0.0 -
-0.9
+**Output:**
+- Return SPARSE deltas - often empty arrays if nothing new
+- Use negative integers for new PDP entries
+- Include confidence level between 0.0 - 0.9
 """
 
 # Part 2: SECTION 3 examples (no template variables - contains literal JSON)
@@ -688,9 +695,7 @@ _prompts_path = _os.environ.get("FDSERVER_PROMPTS_PATH")
 if _prompts_path:
     if _os.path.exists(_prompts_path):
         try:
-            _spec = _importlib_util.spec_from_file_location(
-                "_private_prompts", _prompts_path
-            )
+            _spec = _importlib_util.spec_from_file_location("_private_prompts", _prompts_path)
             _private = _importlib_util.module_from_spec(_spec)
             _spec.loader.exec_module(_private)
 
