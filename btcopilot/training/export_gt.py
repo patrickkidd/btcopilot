@@ -75,7 +75,7 @@ def export_gt_cases(output_path=None):
         f"3. Ask Claude to analyze AI vs GT discrepancies and propose prompt improvements"
     )
     print(
-        f"4. Test proposed prompts with: uv run python -m btcopilot.training.test_prompts"
+        f"4. Test proposed prompts with: uv run python -m btcopilot.training.run_prompts"
     )
 
     return {"count": len(cases), "path": str(output_path)}

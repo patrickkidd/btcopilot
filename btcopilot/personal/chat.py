@@ -40,6 +40,21 @@ def ask(
         if discussion.diagram:
             discussion.diagram.set_diagram_data(diagram_data)
 
+    # Build structured conversation turns before adding new statement to session
+    system_instruction = CONVERSATION_FLOW_PROMPT
+    if hasattr(g, "custom_prompts"):
+        system_instruction = g.custom_prompts.get(
+            "CONVERSATION_FLOW_PROMPT", system_instruction
+        )
+
+    turns = []
+    for s in discussion.statements:
+        role = (
+            "model" if s.speaker_id == discussion.chat_ai_speaker_id else "user"
+        )
+        turns.append((role, s.text))
+    turns.append(("user", user_statement))
+
     statement = Statement(
         discussion_id=discussion.id,
         text=user_statement,
@@ -49,23 +64,7 @@ def ask(
     )
     db.session.add(statement)
 
-    # Get the llm to generate a human-like response according to the direction
-    # of the conversation and the context. Otherwise we would just have the same
-    # canned response for each mode
-
-    # Check for custom prompts in g context (used for testing)
-    conversation_prompt = CONVERSATION_FLOW_PROMPT
-    if hasattr(g, "custom_prompts"):
-        conversation_prompt = g.custom_prompts.get(
-            "CONVERSATION_FLOW_PROMPT", conversation_prompt
-        )
-
-    meta_prompt = conversation_prompt.format(
-        conversation_history=discussion.conversation_history(),
-        user_statement=user_statement,
-    )
-
-    ai_response = _generate_response(discussion, diagram_data, meta_prompt)
+    ai_response = _generate_response(system_instruction, turns)
     ai_log.info(f"AI response: {ai_response}")
 
     response = Response(
@@ -83,7 +82,12 @@ def ask(
 
 
 def _generate_response(
-    discussion: Discussion, diagram_data: DiagramData, meta_prompt: str
+    system_instruction: str, turns: list[tuple[str, str]]
 ) -> str:
-    ai_response = llm.submit_one(LLMFunction.Respond, meta_prompt, temperature=0.45)
+    ai_response = llm.submit_one(
+        LLMFunction.Respond,
+        system_instruction=system_instruction,
+        turns=turns,
+        temperature=0.45,
+    )
     return ai_response.strip()

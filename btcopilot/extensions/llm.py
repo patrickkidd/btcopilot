@@ -271,20 +271,34 @@ class LLM:
 
         return genai.Client(api_key=os.environ["GOOGLE_GEMINI_API_KEY"])
 
-    async def gemini_text(self, prompt: str, **kwargs) -> str:
+    async def gemini_text(self, prompt: str = None, **kwargs) -> str:
         from google.genai import types
 
         start_time = time.time()
         client = self._gemini_client()
         temperature = kwargs.get("temperature", 0.45)
+
+        config = types.GenerateContentConfig(
+            temperature=temperature,
+            max_output_tokens=2048,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        )
+
+        system_instruction = kwargs.get("system_instruction")
+        turns = kwargs.get("turns")
+        if system_instruction and turns:
+            config.system_instruction = system_instruction
+            contents = [
+                types.Content(role=role, parts=[types.Part(text=text)])
+                for role, text in turns
+            ]
+        else:
+            contents = prompt
+
         response = await client.aio.models.generate_content(
             model="gemini-3-flash-preview",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=temperature,
-                max_output_tokens=2048,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-            ),
+            contents=contents,
+            config=config,
         )
         content = response.text
         _log.debug(f"Completed response in {time.time() - start_time} seconds")
@@ -379,7 +393,7 @@ class LLM:
     #     else:
     #         raise ValueError(f"Unknown LLM type: {llm_type}")
 
-    def submit_one(self, llm_type: LLMFunction, prompt: str, **kwargs) -> str:
+    def submit_one(self, llm_type: LLMFunction, prompt: str = None, **kwargs) -> str:
         """
         Submit a single LLM request and return the response.
         This is a synchronous version of submit, for use in places where

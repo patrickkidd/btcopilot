@@ -1,97 +1,61 @@
 """
-Live prompt testing - re-extracts with current prompts.
+Test current extraction prompts against approved ground truth.
 
-Unlike test_prompts.py which uses cached Statement.pdp_deltas, this script
-actually calls pdp.update() with the current prompts to get fresh extractions.
+Computes F1 metrics on all approved GT cases using current prompts in prompts.py.
+Use this to measure improvement after updating prompts based on Claude Code analysis.
 
 Usage:
-    uv run python -m btcopilot.training.test_prompts_live
-    uv run python -m btcopilot.training.test_prompts_live --detailed
+    uv run python -m btcopilot.training.run_prompts
+    uv run python -m btcopilot.training.run_prompts --detailed
 """
 
 import argparse
-import asyncio
 import sys
 from collections import defaultdict
-from dataclasses import asdict
-
-import nest_asyncio
 
 from btcopilot.app import create_app
-from btcopilot.schema import DiagramData, PDP
 from btcopilot.training.models import Feedback
 from btcopilot.training.f1_metrics import calculate_statement_f1
-from btcopilot import pdp
 
 
-def test_prompts_live(detailed=False, discussion_id=None):
+def run_prompts(detailed=False):
     """
-    Compute F1 metrics by re-extracting with current prompts.
+    Compute F1 metrics for current prompts on all approved GT.
 
     Args:
         detailed: If True, show per-statement breakdown
-        discussion_id: If set, only test statements from this discussion
 
     Returns:
         dict with overall and per-type F1 scores
     """
-    nest_asyncio.apply()
-
-    from btcopilot.personal.models import Statement
-
-    query = Feedback.query.filter_by(approved=True, feedback_type="extraction").join(
-        Feedback.statement
+    feedbacks = (
+        Feedback.query.filter_by(approved=True, feedback_type="extraction")
+        .join(Feedback.statement)
+        .order_by(Feedback.id)
+        .all()
     )
-    if discussion_id:
-        query = query.filter(Statement.discussion_id == discussion_id)
-    feedbacks = query.order_by(Feedback.id).all()
 
     if not feedbacks:
-        print("No approved GT cases found.")
+        print(
+            "No approved GT cases found. Run export_gt.py first to see available cases."
+        )
         return None
 
-    print(
-        f"Testing current prompts on {len(feedbacks)} GT cases (live extraction)...\n"
-    )
+    print(f"Testing current prompts on {len(feedbacks)} approved GT cases...\n")
 
     all_metrics = []
     error_counts = defaultdict(int)
 
     for fb in feedbacks:
         stmt = fb.statement
-        discussion = stmt.discussion
 
-        if not fb.edited_extraction:
-            print(f"⚠ Statement {stmt.id}: Missing GT extraction, skipping")
-            error_counts["missing_gt"] += 1
+        if not stmt.pdp_deltas or not fb.edited_extraction:
+            print(f"⚠ Statement {stmt.id}: Missing AI or GT extraction, skipping")
+            error_counts["missing_extraction"] += 1
             continue
 
         try:
-            # Build diagram data with cumulative PDP BEFORE this statement
-            if discussion.diagram:
-                diagram_data = discussion.diagram.get_diagram_data()
-            else:
-                diagram_data = DiagramData()
-
-            # Build cumulative PDP from statements BEFORE this one (exclusive)
-            from btcopilot.personal.models import Statement as StmtModel
-            prev_stmt = StmtModel.query.filter_by(
-                discussion_id=stmt.discussion_id
-            ).filter(StmtModel.order < stmt.order).order_by(StmtModel.order.desc()).first()
-
-            if prev_stmt:
-                diagram_data.pdp = pdp.cumulative(discussion, prev_stmt)
-            else:
-                diagram_data.pdp = PDP()
-
-            # Re-extract with current prompts
-            _, fresh_deltas = asyncio.run(
-                pdp.update(discussion, diagram_data, stmt.text, stmt.order)
-            )
-
-            fresh_extraction = asdict(fresh_deltas) if fresh_deltas else {}
-
-            metrics = calculate_statement_f1(fresh_extraction, fb.edited_extraction)
+            metrics = calculate_statement_f1(stmt.pdp_deltas, fb.edited_extraction)
             metrics.statement_id = stmt.id
             all_metrics.append(metrics)
 
@@ -107,8 +71,8 @@ def test_prompts_live(detailed=False, discussion_id=None):
                 print()
 
         except Exception as e:
-            print(f"✗ Statement {stmt.id}: Error: {e}")
-            error_counts["extraction_error"] += 1
+            print(f"✗ Statement {stmt.id}: Error calculating F1: {e}")
+            error_counts["calculation_error"] += 1
             continue
 
     if not all_metrics:
@@ -128,7 +92,7 @@ def test_prompts_live(detailed=False, discussion_id=None):
     )
 
     print("=" * 60)
-    print(f"LIVE EXTRACTION RESULTS ({len(all_metrics)} cases)")
+    print(f"OVERALL RESULTS ({len(all_metrics)} cases)")
     print("=" * 60)
     print(f"Aggregate F1:     {avg_aggregate_f1:.3f}")
     print(f"People F1:        {avg_people_f1:.3f}")
@@ -143,6 +107,12 @@ def test_prompts_live(detailed=False, discussion_id=None):
         print(f"\nErrors:")
         for error_type, count in error_counts.items():
             print(f"  {error_type}: {count}")
+
+    print(f"\nTo improve these scores:")
+    print(f"1. Export GT: uv run python -m btcopilot.training.export_gt")
+    print(f"2. Analyze with Claude Code to propose prompt improvements")
+    print(f"3. Update btcopilot/personal/prompts.py")
+    print(f"4. Re-run: uv run python -m btcopilot.training.run_prompts")
 
     return {
         "count": len(all_metrics),
@@ -159,25 +129,18 @@ def test_prompts_live(detailed=False, discussion_id=None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Test extraction prompts with live re-extraction"
+        description="Test extraction prompts against approved GT"
     )
     parser.add_argument(
         "--detailed",
         action="store_true",
         help="Show per-statement F1 breakdown",
     )
-    parser.add_argument(
-        "--discussion",
-        type=int,
-        help="Only test statements from this discussion ID",
-    )
     args = parser.parse_args()
 
     app = create_app()
     with app.app_context():
-        result = test_prompts_live(
-            detailed=args.detailed, discussion_id=args.discussion
-        )
+        result = run_prompts(detailed=args.detailed)
         sys.exit(0 if result and result["count"] > 0 else 1)
 
 

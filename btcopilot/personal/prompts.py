@@ -236,14 +236,6 @@ back to WHO, WHEN, and how things shifted.
   what's going on. Now let me get some family background. What's your
   mom's name and how old is she?"
 - Do NOT parrot back what the user just said - move the conversation forward
-
-**Conversation History**
-
-{conversation_history}
-
-**Last User Statement**
-
-{user_statement}
 """
 
 
