@@ -13,6 +13,7 @@ Usage:
 import argparse
 import asyncio
 import sys
+import time
 from collections import defaultdict
 from dataclasses import asdict
 
@@ -65,15 +66,20 @@ def run_prompts_live(detailed=False, discussion_id=None, model=None):
 
     all_metrics = []
     error_counts = defaultdict(int)
+    total = len(feedbacks)
+    run_start = time.time()
 
-    for fb in feedbacks:
+    for i, fb in enumerate(feedbacks, 1):
         stmt = fb.statement
         discussion = stmt.discussion
 
         if not fb.edited_extraction:
-            print(f"⚠ Statement {stmt.id}: Missing GT extraction, skipping")
+            print(f"[{i}/{total}] Statement {stmt.id}: Missing GT, skipping")
             error_counts["missing_gt"] += 1
             continue
+
+        print(f"[{i}/{total}] Statement {stmt.id} (order={stmt.order})...", end=" ", flush=True)
+        stmt_start = time.time()
 
         try:
             # Build diagram data with cumulative PDP BEFORE this statement
@@ -108,6 +114,9 @@ def run_prompts_live(detailed=False, discussion_id=None, model=None):
             metrics.statement_id = stmt.id
             all_metrics.append(metrics)
 
+            elapsed = time.time() - stmt_start
+            print(f"F1={metrics.aggregate_micro_f1:.3f} ({elapsed:.1f}s)")
+
             if detailed:
                 print(f"Statement {stmt.id}:")
                 print(f"  Aggregate F1: {metrics.aggregate_micro_f1:.3f}")
@@ -120,7 +129,8 @@ def run_prompts_live(detailed=False, discussion_id=None, model=None):
                 print()
 
         except Exception as e:
-            print(f"✗ Statement {stmt.id}: Error: {e}")
+            elapsed = time.time() - stmt_start
+            print(f"ERROR ({elapsed:.1f}s): {e}")
             error_counts["extraction_error"] += 1
             continue
 
@@ -140,8 +150,10 @@ def run_prompts_live(detailed=False, discussion_id=None, model=None):
         all_metrics
     )
 
+    total_elapsed = time.time() - run_start
+    print()
     print("=" * 60)
-    print(f"LIVE EXTRACTION RESULTS ({len(all_metrics)} cases)")
+    print(f"LIVE EXTRACTION RESULTS ({len(all_metrics)} cases, {total_elapsed:.0f}s)")
     print("=" * 60)
     print(f"Aggregate F1:     {avg_aggregate_f1:.3f}")
     print(f"People F1:        {avg_people_f1:.3f}")

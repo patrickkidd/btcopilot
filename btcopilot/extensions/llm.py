@@ -212,8 +212,8 @@ class LLM:
     Really just here to cache the clients.
     """
 
-    extractionModel = "gemini-3-flash-preview"
-    extractionModelLarge = "gemini-3-flash-preview"
+    extractionModel = "gemini-2.0-flash"
+    extractionModelLarge = "gemini-2.5-flash"
     responseModel = "gemini-3-flash-preview"
 
     @lru_cache(maxsize=1)  # Thread-safe due to lru_cache
@@ -333,6 +333,7 @@ class LLM:
                 max_output_tokens=65536,
                 response_mime_type="application/json",
                 response_schema=response_schema,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
 

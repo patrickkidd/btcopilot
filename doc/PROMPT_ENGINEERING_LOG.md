@@ -8,15 +8,23 @@
 
 ## Model Selection
 
-### Current: Gemini 2.0 Flash
+### Current: Gemini 2.0 Flash (extraction) / Gemini 3 Flash Preview (responses)
+
+**Extraction**: gemini-2.0-flash (small), gemini-2.5-flash (large imports via `import_text`)
+**Responses**: gemini-3-flash-preview (conversational chat responses)
+
+**Why Gemini 2.0 Flash for extraction over newer models:**
+- Prompts and few-shot examples tuned specifically for 2.0-flash behavior
+- Gemini 2.5-flash and 3-flash-preview both showed F1 regression (see Feb 2026 decision log)
+- 2.5-flash used only for large imports due to 64K output token limit
 
 **Why Gemini 2.0 Flash over GPT-4o-mini:**
 - Larger context window (1M tokens vs 128K)
 - Lower cost per token
-- Native structured JSON output via pydantic_ai
+- Native structured JSON output
 - Better performance on classification tasks in our testing
 
-**Integration**: Via `pydantic_ai` library with dataclass schema (not Pydantic models - see constraints below).
+**Model names configurable** via `LLM.extractionModel`, `LLM.extractionModelLarge`, `LLM.responseModel` class attributes. CLI override: `--model` on `run_prompts_live.py`.
 
 ---
 
@@ -234,3 +242,25 @@ See `btcopilot/doc/TODO_GEMINI_SCHEMA.md` for:
 **Decision**: Added runtime detection in `pdp.py` to log `GEMINI_ARRAY_ISSUE` warnings.
 
 **Status**: Active, monitoring frequency.
+
+### Feb 2026: Gemini 3 Flash Preview extraction evaluation
+
+**Context**: Evaluated switching extraction from gemini-2.0-flash/2.5-flash to gemini-3-flash-preview for potential quality improvements. Also made model names configurable via `LLM` class attributes and added `--model` CLI arg to `run_prompts_live.py` for A/B testing.
+
+**Results** (45 GT cases):
+
+| Metric | gemini-2.0-flash (baseline) | gemini-2.5-flash | gemini-3-flash-preview |
+|--------|----------------------------|------------------|------------------------|
+| Aggregate F1 | **0.327** | 0.241 (-26%) | 0.188 (-43%) |
+| People F1 | **0.743** | 0.701 | 0.582 |
+| Events F1 | **0.217** | 0.134 | 0.101 |
+| Symptom F1 | 0.222 | 0.111 | **0.200** |
+| Anxiety F1 | 0.207 | 0.111 | **0.200** |
+| Relationship F1 | 0.244 | 0.133 | **0.222** |
+| Functioning F1 | 0.244 | 0.133 | **0.200** |
+
+**Decision**: Keep gemini-2.0-flash for extraction (small), gemini-2.5-flash for large imports. Use gemini-3-flash-preview only for conversational responses.
+
+**Rationale**: Each successive model generation performed worse on aggregate extraction despite being "better" overall. Prompts and few-shot examples were tuned for gemini-2.0-flash behavior. Newer models respond differently to the same prompt structure. SARF variables showed slight improvement on 3-flash but not enough to offset the people/events regression.
+
+**Lesson**: Model upgrades don't automatically improve extraction when prompts were tuned for a specific model. Moving extraction to a newer model requires prompt re-tuning via the induction workflow.
