@@ -25,9 +25,9 @@ CONVERSATION_FLOW_PROMPT = """
   initially see.
 - Be warm and curious. Ask questions that invite stories: "How did your
   parents meet?" "What was going on in the family when you were born?"
-- Keep responses conversational (2-3 sentences). Guide to the next piece of
-  the story. Vary your responses naturally - don't start every reply the same
-  way.
+- Keep responses brief. One question per turn - like real conversation. Not
+  every turn needs a question; sometimes a short reflection or observation
+  keeps them talking without being asked.
 
 **AVOID therapist clichés:**
 
@@ -194,26 +194,10 @@ Timeline of Nodal Events:
 - [ ] Connection between events and symptoms
 
 **Questioning Style**:
-- Balance specific questions with open-ended ones that invite the story to emerge
-- Weave in timeline questions to anchor events in time ("When was this?" "What
-  year?" "How old were you?") - the timeline is the backbone of the diagram
-- Transition naturally between topics - don't use the same opener every time
-- When someone shares something, STAY WITH IT. Ask follow-up after follow-up:
-  What happened exactly? How did others react? What was the timeline? How did it
-  affect your relationship? Keep asking until they've told you the whole story.
-  Don't change topics while there's more to learn about the current one.
-- Listen for the sentiment behind their words - what makes this important to them?
-  Your follow-up questions should reflect that you heard what matters, not just
-  the facts. Gather facts while showing you understand why this is significant.
-- When someone mentions a moment in time (a move, a symptom onset, a shift in their
-  social world), EXPAND that moment before moving on. Ask about how things shifted:
-  health ("Did your sleep get worse then?"), stress ("Were you worried?"),
-  relationships ("How were things between you and your dad?"), coping ("Could you
-  focus on work?"). Get the texture of that moment anchored in time.
-- After an exchange about values, culture, or abstract meaning, steer back to
-  timeline: "That's helpful context. So when exactly did [the thing] happen?"
-  Values/feelings are fine occasionally but shouldn't dominate - keep the
-  structure (WHO, WHEN, how things shifted) in focus.
+- Stay in the story. When someone shares something, keep digging into it across
+  turns until there's nothing left to learn. Don't change topics prematurely.
+- Keep anchoring to timeline - who, when, and how things shifted. This structure
+  is the backbone of the diagram.
 
 **When is data collection "done"?**
 
@@ -246,12 +230,11 @@ before moving on - phrased naturally, specific to what they just said.
 Values and culture can go in notes, but shouldn't dominate - keep coming
 back to WHO, WHEN, and how things shifted.
 
-**Your next response (2-3 sentences):**
+**Your next response:**
 - Ask for the next missing data point from the current phase
 - If pivoting from problem to family: "OK, I have a good picture of
   what's going on. Now let me get some family background. What's your
   mom's name and how old is she?"
-- Vary your responses naturally - don't start every reply the same way
 - Do NOT parrot back what the user just said - move the conversation forward
 
 **Conversation History**
@@ -650,6 +633,21 @@ entries. Do not include existing data that hasn't changed.
 
 """
 
+DATA_EXTRACTION_CORRECTION = """
+
+--- CORRECTION REQUIRED ---
+
+Your most recent extraction attempt produced these deltas:
+
+{failed_deltas}
+
+Error history (do NOT reintroduce ANY of these errors):
+
+{error_history}
+
+Fix ALL errors and return the complete corrected deltas.
+"""
+
 DATA_IMPORT_CONTEXT = """
 
 **BULK IMPORT MODE - Extract ALL data from this text chunk:**
@@ -705,6 +703,7 @@ if _prompts_path:
             DATA_EXTRACTION_PROMPT = _private.DATA_EXTRACTION_PROMPT
             DATA_EXTRACTION_EXAMPLES = _private.DATA_EXTRACTION_EXAMPLES
             DATA_EXTRACTION_CONTEXT = _private.DATA_EXTRACTION_CONTEXT
+            DATA_EXTRACTION_CORRECTION = _private.DATA_EXTRACTION_CORRECTION
             DATA_IMPORT_CONTEXT = _private.DATA_IMPORT_CONTEXT
 
             _log.info(f"Loaded private prompts from {_prompts_path}")

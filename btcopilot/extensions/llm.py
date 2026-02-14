@@ -271,6 +271,26 @@ class LLM:
 
         return genai.Client(api_key=os.environ["GOOGLE_GEMINI_API_KEY"])
 
+    async def gemini_text(self, prompt: str, **kwargs) -> str:
+        from google.genai import types
+
+        start_time = time.time()
+        client = self._gemini_client()
+        temperature = kwargs.get("temperature", 0.45)
+        response = await client.aio.models.generate_content(
+            model="gemini-3-flash-preview",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=temperature,
+                max_output_tokens=2048,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
+            ),
+        )
+        content = response.text
+        _log.debug(f"Completed response in {time.time() - start_time} seconds")
+        _log.debug(f"llm.gemini_text(): --> \n\n{content}")
+        return content
+
     async def gemini(self, prompt: str = None, response_format=None, large=False):
         """Gemini for structured data extraction (PDP) using native API."""
         from google.genai import types
@@ -322,6 +342,8 @@ class LLM:
                 response_format=kwargs.get("response_format"),
                 large=kwargs.get("large", False),
             )
+        elif llm_type == LLMFunction.Respond:
+            return await self.gemini_text(prompt, **kwargs)
         else:
             return await self.openai(prompt, **kwargs)
 

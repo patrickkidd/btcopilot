@@ -193,8 +193,16 @@ def test_validate_deltas_rejects_pair_bond_event_without_spouse():
     assert "requires spouse" in exc_info.value.errors[0]
 
 
+def test_validate_deltas_allows_offspring_without_spouse():
+    pdp = PDP()
+    for kind in (EventKind.Birth, EventKind.Adopted):
+        deltas = PDPDeltas(
+            events=[Event(id=-1, kind=kind, person=1, child=1, spouse=None)]
+        )
+        validate_pdp_deltas(pdp, deltas)
+
+
 def test_validate_deltas_allows_moved_without_spouse():
-    """Moved events are temporarily exempt from spouse requirement."""
     pdp = PDP()
     deltas = PDPDeltas(
         events=[

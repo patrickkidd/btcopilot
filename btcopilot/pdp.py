@@ -177,8 +177,9 @@ def validate_pdp_deltas(
             errors.append(f"PDP pair_bond must have negative ID, got {pair_bond.id}")
 
     for event in deltas.events:
-        # Moved is temporarily exempt from spouse requirement (schema change pending)
-        if event.kind.isPairBond() and event.kind != EventKind.Moved and event.spouse is None:
+        # Offspring and moved events may lack spouse at extraction time; commit logic infers it
+        spouse_exempt = event.kind.isOffspring() or event.kind == EventKind.Moved
+        if event.kind.isPairBond() and not spouse_exempt and event.spouse is None:
             errors.append(
                 f"PairBond event {event.id} (kind={event.kind.value}) requires spouse"
             )
@@ -441,6 +442,66 @@ def cumulative(discussion, up_to_statement, auditor_id: str | None = None) -> PD
     return pdp
 
 
+MAX_EXTRACTION_RETRIES = 3
+
+
+async def _extract_and_validate(
+    prompt: str,
+    diagram_data: DiagramData,
+    source: str,
+    large: bool = False,
+) -> tuple[PDP, PDPDeltas]:
+    """Submit extraction prompt to LLM, validate, retry up to MAX_EXTRACTION_RETRIES on failure."""
+    import json
+    from btcopilot.personal.prompts import DATA_EXTRACTION_CORRECTION
+    from btcopilot.extensions import llm, LLMFunction, ai_log
+
+    is_dev = os.getenv("FLASK_CONFIG") == "development"
+    pdp = diagram_data.pdp
+    current_prompt = prompt
+    error_history: list[tuple[int, list[str]]] = []
+
+    for attempt in range(1 + MAX_EXTRACTION_RETRIES):
+        pdp_deltas = await llm.submit(
+            LLMFunction.JSON,
+            prompt=current_prompt,
+            response_format=PDPDeltas,
+            large=large,
+        )
+
+        if is_dev:
+            label = "DELTAS" if attempt == 0 else f"RETRY {attempt} DELTAS"
+            ai_log.info(f"{label}:\n\n{_pretty_repr(pdp_deltas)}")
+
+        reassign_delta_ids(pdp, pdp_deltas)
+        try:
+            validate_pdp_deltas(pdp, pdp_deltas, diagram_data, source)
+            if attempt > 0:
+                _log.info(f"PDP extraction succeeded on retry {attempt} ({source})")
+            break
+        except PDPValidationError as e:
+            error_history.append((attempt + 1, e.errors))
+            _log.warning(
+                f"PDP validation failed ({source}, attempt {attempt + 1}/{1 + MAX_EXTRACTION_RETRIES}): "
+                f"{'; '.join(e.errors)}"
+            )
+            if attempt == MAX_EXTRACTION_RETRIES:
+                raise
+            history_lines = []
+            for attempt_num, errors in error_history:
+                history_lines.append(f"Attempt {attempt_num}:")
+                history_lines.extend(f"  - {err}" for err in errors)
+            current_prompt = prompt + DATA_EXTRACTION_CORRECTION.format(
+                failed_deltas=json.dumps(asdict(pdp_deltas), indent=2, default=str),
+                error_history="\n".join(history_lines),
+            )
+
+    new_pdp = apply_deltas(pdp, pdp_deltas)
+    if is_dev:
+        ai_log.info(f"New PDP: {_pretty_repr(new_pdp)}")
+    return new_pdp, pdp_deltas
+
+
 async def import_text(
     diagram_data: DiagramData,
     text: str,
@@ -451,7 +512,6 @@ async def import_text(
         DATA_EXTRACTION_EXAMPLES,
         DATA_IMPORT_CONTEXT,
     )
-    from btcopilot.extensions import llm, LLMFunction, ai_log
 
     if reference_date is None:
         reference_date = datetime.now().date()
@@ -464,36 +524,17 @@ async def import_text(
         f"  diagram_data.people count: {len(diagram_data.people)}\n"
     )
 
-    diagram_data_dict = asdict(diagram_data)
-    data_extraction_prompt = (
+    prompt = (
         DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
         + DATA_EXTRACTION_EXAMPLES
         + DATA_IMPORT_CONTEXT.format(
-            diagram_data=diagram_data_dict,
+            diagram_data=asdict(diagram_data),
             text_chunk=text,
             chunk_num=1,
             total_chunks=1,
         )
     )
-
-    pdp_deltas = await llm.submit(
-        LLMFunction.JSON,
-        prompt=data_extraction_prompt,
-        response_format=PDPDeltas,
-        large=True,
-    )
-
-    if os.getenv("FLASK_CONFIG") == "development":
-        ai_log.info(f"DELTAS:\n\n{_pretty_repr(pdp_deltas)}")
-
-    reassign_delta_ids(diagram_data.pdp, pdp_deltas)
-    validate_pdp_deltas(diagram_data.pdp, pdp_deltas, diagram_data, "import_text")
-    new_pdp = apply_deltas(diagram_data.pdp, pdp_deltas)
-
-    if os.getenv("FLASK_CONFIG") == "development":
-        ai_log.info(f"New PDP: {_pretty_repr(new_pdp)}")
-
-    return new_pdp, pdp_deltas
+    return await _extract_and_validate(prompt, diagram_data, "import_text", large=True)
 
 
 async def update(
@@ -517,7 +558,6 @@ async def update(
         DATA_EXTRACTION_EXAMPLES,
         DATA_EXTRACTION_CONTEXT,
     )
-    from btcopilot.extensions import llm, LLMFunction, ai_log
 
     reference_date = (
         discussion.discussion_date
@@ -525,11 +565,8 @@ async def update(
         else datetime.now().date()
     )
 
-    # Assemble full prompt: header+rules, examples, context with data
     conversation_history = discussion.conversation_history(up_to_order)
-    diagram_data_dict = asdict(diagram_data)
 
-    # Debug logging for prompt inputs
     _log.info(
         f"PDP UPDATE INPUTS:\n"
         f"  up_to_order: {up_to_order}\n"
@@ -540,31 +577,16 @@ async def update(
         f"  diagram_data.people count: {len(diagram_data.people)}\n"
     )
 
-    data_extraction_prompt = (
+    prompt = (
         DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
         + DATA_EXTRACTION_EXAMPLES
         + DATA_EXTRACTION_CONTEXT.format(
-            diagram_data=diagram_data_dict,
+            diagram_data=asdict(diagram_data),
             conversation_history=conversation_history,
             user_message=user_message,
         )
     )
-
-    pdp_deltas = await llm.submit(
-        LLMFunction.JSON,
-        prompt=data_extraction_prompt,
-        response_format=PDPDeltas,
-    )
-
-    if os.getenv("FLASK_CONFIG") == "development":
-        ai_log.info(f"DELTAS:\n\n{_pretty_repr(pdp_deltas)}")
-
-    reassign_delta_ids(diagram_data.pdp, pdp_deltas)
-    validate_pdp_deltas(diagram_data.pdp, pdp_deltas, diagram_data, "update")
-    new_pdp = apply_deltas(diagram_data.pdp, pdp_deltas)
-    if os.getenv("FLASK_CONFIG") == "development":
-        ai_log.info(f"New PDP: {_pretty_repr(new_pdp)}")
-    return new_pdp, pdp_deltas
+    return await _extract_and_validate(prompt, diagram_data, "update")
 
 
 def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
