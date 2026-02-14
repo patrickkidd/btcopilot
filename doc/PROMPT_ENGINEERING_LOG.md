@@ -8,15 +8,16 @@
 
 ## Model Selection
 
-### Current: Gemini 2.0 Flash (extraction) / Gemini 3 Flash Preview (responses)
+### Current: Gemini 2.5 Flash (extraction) / Gemini 3 Flash Preview (responses)
 
-**Extraction**: gemini-2.0-flash (small), gemini-2.5-flash (large imports via `import_text`)
+**Extraction**: gemini-2.5-flash (all extraction — both incremental and large imports)
 **Responses**: gemini-3-flash-preview (conversational chat responses)
 
-**Why Gemini 2.0 Flash for extraction over newer models:**
-- Prompts and few-shot examples tuned specifically for 2.0-flash behavior
-- Gemini 2.5-flash and 3-flash-preview both showed F1 regression (see Feb 2026 decision log)
-- 2.5-flash used only for large imports due to 64K output token limit
+**Why Gemini 2.5 Flash for extraction:**
+- gemini-2.0-flash deprecated March 31, 2026 and showing server-side drift
+- Aggregate F1 within 3% of 2.0-flash, better SARF variable scores
+- 64K output token limit supports large imports
+- `thinking_config=ThinkingConfig(thinking_budget=0)` explicitly disables thinking for speed/cost
 
 **Why Gemini 2.0 Flash over GPT-4o-mini:**
 - Larger context window (1M tokens vs 128K)
@@ -264,3 +265,39 @@ See `btcopilot/doc/TODO_GEMINI_SCHEMA.md` for:
 **Rationale**: Each successive model generation performed worse on aggregate extraction despite being "better" overall. Prompts and few-shot examples were tuned for gemini-2.0-flash behavior. Newer models respond differently to the same prompt structure. SARF variables showed slight improvement on 3-flash but not enough to offset the people/events regression.
 
 **Lesson**: Model upgrades don't automatically improve extraction when prompts were tuned for a specific model. Moving extraction to a newer model requires prompt re-tuning via the induction workflow.
+
+### Feb 2026: gemini-2.0-flash server-side regression and model migration
+
+**Context**: Aggregate F1 dropped from 0.327 to ~0.257 with no code changes. Investigation confirmed: no GT data changes, no prompt changes, pinning `gemini-2.0-flash-001` produced identical results. Conclusion: server-side model behavior drift, likely related to 2.0-flash deprecation (March 31, 2026).
+
+**Updated results** (45 GT cases, Feb 14 2026):
+
+| Metric | gemini-2.0-flash | gemini-2.5-flash | gemini-3-flash-preview |
+|--------|-----------------|------------------|------------------------|
+| Aggregate F1 | **0.257** | 0.249 | 0.180 |
+| People F1 | **0.718** | 0.718 | 0.582 |
+| Events F1 | **0.179** | 0.154 | 0.081 |
+| Symptom F1 | 0.200 | **0.205** | 0.178 |
+| Anxiety F1 | 0.200 | **0.205** | 0.178 |
+| Relationship F1 | 0.233 | **0.250** | 0.200 |
+| Functioning F1 | 0.222 | **0.227** | 0.178 |
+
+**Decision**: Switch all extraction to gemini-2.5-flash. The 3% aggregate gap vs 2.0-flash is within noise, SARF variable scores are better, and 2.0-flash is being deprecated.
+
+**Config notes**: `thinking_config=ThinkingConfig(thinking_budget=0)` explicitly disables thinking mode on 2.5-flash (was a no-op on 2.0-flash). `max_output_tokens=65536` is within 2.5-flash limits.
+
+### Feb 2026: Multi-turn prompt format evaluation
+
+**Context**: Tested converting flat prompt (conversation history concatenated into system prompt) to Gemini's native multi-turn content structure, where prior conversation turns are passed as structured `(role, text)` tuples.
+
+**Results** (gemini-2.5-flash, 45 GT cases):
+
+| Metric | Flat prompt | Multi-turn | Delta |
+|--------|------------|------------|-------|
+| Aggregate F1 | **0.249** | 0.198 | -20% |
+| People F1 | **0.718** | 0.680 | -5% |
+| Events F1 | **0.154** | 0.133 | -14% |
+
+**Decision**: Keep flat prompt format. Multi-turn causes 20% aggregate regression, more ID collision warnings, and worse people/events extraction. The model loses context about existing diagram_data when conversation history is separated from extraction instructions.
+
+**Lesson**: Structured multi-turn is not automatically better for extraction tasks. The flat prompt keeps all context (instructions, examples, existing data, conversation, new statement) together, which helps the model track IDs and avoid re-extraction.
