@@ -212,6 +212,10 @@ class LLM:
     Really just here to cache the clients.
     """
 
+    extractionModel = "gemini-3-flash-preview"
+    extractionModelLarge = "gemini-3-flash-preview"
+    responseModel = "gemini-3-flash-preview"
+
     @lru_cache(maxsize=1)  # Thread-safe due to lru_cache
     def _openai(self):
         import openai
@@ -296,7 +300,7 @@ class LLM:
             contents = prompt
 
         response = await client.aio.models.generate_content(
-            model="gemini-3-flash-preview",
+            model=self.responseModel,
             contents=contents,
             config=config,
         )
@@ -317,18 +321,16 @@ class LLM:
         )
 
         if large:
-            model = "gemini-2.5-flash"
-            max_tokens = 65536
+            model = self.extractionModelLarge
         else:
-            model = "gemini-2.0-flash"
-            max_tokens = 8192
+            model = self.extractionModel
 
         response = await client.aio.models.generate_content(
             model=model,
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.1,
-                max_output_tokens=max_tokens,
+                max_output_tokens=65536,
                 response_mime_type="application/json",
                 response_schema=response_schema,
             ),

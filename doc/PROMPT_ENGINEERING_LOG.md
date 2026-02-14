@@ -167,7 +167,7 @@ Based on failed experiments:
 
 ### F1 Score Tracking
 
-- **Test harness**: `uv run python -m btcopilot.training.test_prompts_live`
+- **Test harness**: `uv run python -m btcopilot.training.run_prompts_live`
 - **Ground truth**: `instance/gt_export.json` (symlinked from btcopilot-sources)
 - **Metrics tracked**: Aggregate F1, People F1, Events F1, per-variable F1 (symptom, anxiety, relationship, functioning)
 

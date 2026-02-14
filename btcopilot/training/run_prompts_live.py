@@ -7,6 +7,7 @@ actually calls pdp.update() with the current prompts to get fresh extractions.
 Usage:
     uv run python -m btcopilot.training.run_prompts_live
     uv run python -m btcopilot.training.run_prompts_live --detailed
+    uv run python -m btcopilot.training.run_prompts_live --model gemini-3-flash-preview
 """
 
 import argparse
@@ -24,18 +25,26 @@ from btcopilot.training.f1_metrics import calculate_statement_f1
 from btcopilot import pdp
 
 
-def run_prompts_live(detailed=False, discussion_id=None):
+def run_prompts_live(detailed=False, discussion_id=None, model=None):
     """
     Compute F1 metrics by re-extracting with current prompts.
 
     Args:
         detailed: If True, show per-statement breakdown
         discussion_id: If set, only test statements from this discussion
+        model: If set, override default extraction models with this model
 
     Returns:
         dict with overall and per-type F1 scores
     """
     nest_asyncio.apply()
+
+    if model:
+        from btcopilot.extensions.llm import LLM
+
+        LLM.extractionModel = model
+        LLM.extractionModelLarge = model
+        print(f"Using model: {model}\n")
 
     from btcopilot.personal.models import Statement
 
@@ -75,9 +84,13 @@ def run_prompts_live(detailed=False, discussion_id=None):
 
             # Build cumulative PDP from statements BEFORE this one (exclusive)
             from btcopilot.personal.models import Statement as StmtModel
-            prev_stmt = StmtModel.query.filter_by(
-                discussion_id=stmt.discussion_id
-            ).filter(StmtModel.order < stmt.order).order_by(StmtModel.order.desc()).first()
+
+            prev_stmt = (
+                StmtModel.query.filter_by(discussion_id=stmt.discussion_id)
+                .filter(StmtModel.order < stmt.order)
+                .order_by(StmtModel.order.desc())
+                .first()
+            )
 
             if prev_stmt:
                 diagram_data.pdp = pdp.cumulative(discussion, prev_stmt)
@@ -171,12 +184,17 @@ def main():
         type=int,
         help="Only test statements from this discussion ID",
     )
+    parser.add_argument(
+        "--model",
+        type=str,
+        help="Override extraction model (e.g. gemini-3-flash-preview)",
+    )
     args = parser.parse_args()
 
     app = create_app()
     with app.app_context():
         result = run_prompts_live(
-            detailed=args.detailed, discussion_id=args.discussion
+            detailed=args.detailed, discussion_id=args.discussion, model=args.model
         )
         sys.exit(0 if result and result["count"] > 0 else 1)
 
