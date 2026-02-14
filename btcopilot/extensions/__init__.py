@@ -31,7 +31,6 @@ from celery import Celery
 
 from btcopilot import version
 from .handlers import ColorfulSMTPHandler
-from .llm import LLM, LLMFunction
 from .chroma import Chroma
 
 SERVER_FOLDER_PATH = os.path.realpath(
@@ -41,24 +40,11 @@ SERVER_FOLDER_PATH = os.path.realpath(
 
 EMBEDDINGS_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
-# # Best so far
-# LLM_MODEL = "mistral"
-
-LLM_MODEL = "gpt-4o-mini"
-
-# LLM_MODEL = "mistral:7b-text-q8_0"
-
-# LLM_MODEL = "tinyllama" # Had dirty answers
-
-# LLM_MODEL = "deepseek-r1:14b"
-# LLM_MODEL = "deepseek-r1:1.5b"
-
 
 _log = logging.getLogger(__name__)
 
 
 chroma = Chroma()
-llm = LLM()
 db = SQLAlchemy()
 mail = Mail()
 csrf = CSRFProtect()

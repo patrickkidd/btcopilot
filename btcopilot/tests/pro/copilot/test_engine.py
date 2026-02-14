@@ -2,7 +2,7 @@ import pytest
 import mock
 
 from btcopilot.pro.copilot import Engine, Event
-from btcopilot.pro.copilot.engine import formatTimelineData
+from btcopilot.pro.copilot.engine import format_timeline_data
 
 
 ANSWER = "There is no point"
@@ -14,7 +14,7 @@ def engine(tmp_path):
 
     with mock.patch.object(
         Engine,
-        "vector_db",
+        "get_vector_db",
         similarity_search_with_score=mock.Mock(
             return_value=[
                 Document(
@@ -28,7 +28,7 @@ def engine(tmp_path):
             ]
         ),
     ):
-        with mock.patch.object(Engine, "llm") as llm:
+        with mock.patch.object(Engine, "get_llm") as llm:
             llm.return_value.invoke.return_value = ANSWER
             yield Engine(tmp_path)
 
@@ -36,8 +36,8 @@ def engine(tmp_path):
 def test_ask(engine):
     response = engine.ask("What is the point?")
     assert response.answer == ANSWER
-    engine.vector_db().similarity_search_with_score.assert_called_once()
-    engine.llm().invoke.assert_called_once()
+    engine.get_vector_db().similarity_search_with_score.assert_called_once()
+    engine.get_llm().invoke.assert_called_once()
 
 
 def test_ask_with_events(engine):
@@ -56,7 +56,7 @@ def test_ask_with_events(engine):
         ),
     ]
     response = engine.ask("Where is the shift?", events=events)
-    s_timeseries = formatTimelineData(events)
+    s_timeseries = format_timeline_data(events)
     assert response.answer == ANSWER
-    engine.vector_db().similarity_search_with_score.assert_called_once()
-    assert s_timeseries in engine.llm().invoke.call_args[0][0]
+    engine.get_vector_db().similarity_search_with_score.assert_called_once()
+    assert s_timeseries in engine.get_llm().invoke.call_args[0][0]

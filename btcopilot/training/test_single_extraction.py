@@ -51,7 +51,7 @@ def main():
             DATA_EXTRACTION_EXAMPLES,
             DATA_EXTRACTION_CONTEXT,
         )
-        from btcopilot.extensions import llm, LLMFunction
+        from btcopilot.llmutil import gemini_structured
         from btcopilot import pdp
 
         stmt = Statement.query.get(args.statement_id)
@@ -142,15 +142,7 @@ def main():
         print("RUNNING EXTRACTION...")
         print("=" * 80)
 
-        async def run_extraction():
-            result = await llm.submit(
-                LLMFunction.JSON,
-                prompt=full_prompt,
-                response_format=PDPDeltas,
-            )
-            return result
-
-        extracted = asyncio.run(run_extraction())
+        extracted = asyncio.run(gemini_structured(full_prompt, PDPDeltas))
 
         print()
         print("=" * 80)

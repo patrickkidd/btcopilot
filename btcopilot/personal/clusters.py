@@ -3,7 +3,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 
-from btcopilot.extensions import llm, LLMFunction
+from btcopilot.llmutil import gemini_structured_sync
 from btcopilot.schema import (
     Event,
     Cluster,
@@ -73,33 +73,33 @@ class ClusterListResponse:
     clusters: list[Cluster] = field(default_factory=list)
 
 
-def _enumValue(val):
+def _enum_value(val):
     """Extract enum value or return as-is for non-enum types."""
     return val.value if hasattr(val, "value") else val
 
 
-def computeCacheKey(events: list[Event]) -> str:
+def compute_cache_key(events: list[Event]) -> str:
     event_data = []
     for e in events:
         event_data.append(
             {
                 "id": e.id,
                 "dateTime": e.dateTime,
-                "symptom": _enumValue(e.symptom) if e.symptom else None,
-                "anxiety": _enumValue(e.anxiety) if e.anxiety else None,
-                "relationship": _enumValue(e.relationship) if e.relationship else None,
-                "functioning": _enumValue(e.functioning) if e.functioning else None,
+                "symptom": _enum_value(e.symptom) if e.symptom else None,
+                "anxiety": _enum_value(e.anxiety) if e.anxiety else None,
+                "relationship": _enum_value(e.relationship) if e.relationship else None,
+                "functioning": _enum_value(e.functioning) if e.functioning else None,
             }
         )
     content = json.dumps(event_data, sort_keys=True)
     return hashlib.sha256(content.encode()).hexdigest()[:16]
 
 
-def detectClusters(events: list[Event]) -> ClusterResult:
+def detect_clusters(events: list[Event]) -> ClusterResult:
     if not events:
         return ClusterResult(clusters=[], cacheKey="empty")
 
-    cacheKey = computeCacheKey(events)
+    cache_key = compute_cache_key(events)
 
     events_for_prompt = []
     for e in events:
@@ -109,13 +109,13 @@ def detectClusters(events: list[Event]) -> ClusterResult:
             "description": e.description or "",
         }
         if e.symptom:
-            event_dict["symptom"] = _enumValue(e.symptom)
+            event_dict["symptom"] = _enum_value(e.symptom)
         if e.anxiety:
-            event_dict["anxiety"] = _enumValue(e.anxiety)
+            event_dict["anxiety"] = _enum_value(e.anxiety)
         if e.relationship:
-            event_dict["relationship"] = _enumValue(e.relationship)
+            event_dict["relationship"] = _enum_value(e.relationship)
         if e.functioning:
-            event_dict["functioning"] = _enumValue(e.functioning)
+            event_dict["functioning"] = _enum_value(e.functioning)
         if e.notes:
             event_dict["notes"] = e.notes
         events_for_prompt.append(event_dict)
@@ -125,11 +125,7 @@ def detectClusters(events: list[Event]) -> ClusterResult:
 
     _log.info(f"Detecting clusters for {len(events)} events")
 
-    response = llm.submit_one(
-        LLMFunction.Cluster,
-        prompt,
-        response_format=ClusterListResponse,
-    )
+    response = gemini_structured_sync(prompt, ClusterListResponse)
 
     clusters = response.clusters if response else []
 
@@ -141,4 +137,4 @@ def detectClusters(events: list[Event]) -> ClusterResult:
 
     _log.info(f"Detected {len(clusters)} clusters")
 
-    return ClusterResult(clusters=clusters, cacheKey=cacheKey)
+    return ClusterResult(clusters=clusters, cacheKey=cache_key)

@@ -13,7 +13,8 @@ import logging
 import pickle
 from dataclasses import dataclass, field
 
-from btcopilot.extensions import db, llm, LLMFunction
+from btcopilot.extensions import db
+from btcopilot.llmutil import gemini_text_sync
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
 from btcopilot.pro.models import Diagram, User
 from btcopilot.schema import DiagramData, asdict
@@ -934,7 +935,7 @@ Start differently - with a fact, a name, a date, an emotion, or a question."""
 
 **Your response:**"""
 
-    response = llm.submit_one(LLMFunction.Respond, prompt, temperature=0.75)
+    response = gemini_text_sync(prompt, temperature=0.75)
     return response.strip()
 
 

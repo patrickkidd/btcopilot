@@ -2,8 +2,8 @@ def main_server():
     from btcopilot.app import create_app
 
     app = create_app()
-    app.engine.llm()
-    app.engine.vector_db()
+    app.engine.get_llm()
+    app.engine.get_vector_db()
     app.run("0.0.0.0", port=8888)
 
 

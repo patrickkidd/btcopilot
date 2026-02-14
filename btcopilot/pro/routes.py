@@ -43,8 +43,6 @@ from btcopilot.extensions import (
     mail,
     create_stripe_Subscription,
     ensure_stripe_Customer,
-    llm,
-    LLMFunction,
 )
 from btcopilot.pro.models import (
     Activation,
@@ -1028,7 +1026,7 @@ Include ONLY movable people (isMovable=true) with updated positions. Do not incl
 - People whose positions didn't change
 - Any other fields (boundingRect, isMovable, parents) - only id and center
     """
-    result = asyncio.run(
-        llm.submit(LLMFunction.Arrange, prompt=PROMPT, response_format=DiagramDelta)
-    )
+    from btcopilot.llmutil import gemini_structured
+
+    result = asyncio.run(gemini_structured(PROMPT, DiagramDelta))
     return asdict(result)

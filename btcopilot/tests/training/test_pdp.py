@@ -34,7 +34,7 @@ def test_update(test_user):
     )
 
     deltas = PDPDeltas()
-    with patch("btcopilot.extensions.llm.submit", return_value=deltas):
+    with patch("btcopilot.llmutil.gemini_structured", return_value=deltas):
         with patch("btcopilot.pdp.apply_deltas", return_value={"dummy": "data"}):
             returned = asyncio.run(pdp.update(discussion, DiagramData(), "blah blah"))
     assert returned == ({"dummy": "data"}, deltas)

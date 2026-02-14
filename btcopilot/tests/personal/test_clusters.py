@@ -13,12 +13,12 @@ from btcopilot.schema import (
     ClusterResult,
     asdict,
 )
-from btcopilot.personal.clusters import computeCacheKey, detectClusters
+from btcopilot.personal.clusters import compute_cache_key, detect_clusters
 
 
 def test_compute_cache_key_empty():
-    result = computeCacheKey([])
-    assert result == computeCacheKey([])
+    result = compute_cache_key([])
+    assert result == compute_cache_key([])
     assert len(result) == 16
 
 
@@ -27,21 +27,21 @@ def test_compute_cache_key_deterministic():
         Event(id=1, kind=EventKind.Shift, dateTime="2024-01-15", symptom="up"),
         Event(id=2, kind=EventKind.Shift, dateTime="2024-01-20", anxiety="down"),
     ]
-    key1 = computeCacheKey(events)
-    key2 = computeCacheKey(events)
+    key1 = compute_cache_key(events)
+    key2 = compute_cache_key(events)
     assert key1 == key2
 
 
 def test_compute_cache_key_changes_with_data():
     events1 = [Event(id=1, kind=EventKind.Shift, dateTime="2024-01-15", symptom="up")]
     events2 = [Event(id=1, kind=EventKind.Shift, dateTime="2024-01-15", symptom="down")]
-    key1 = computeCacheKey(events1)
-    key2 = computeCacheKey(events2)
+    key1 = compute_cache_key(events1)
+    key2 = compute_cache_key(events2)
     assert key1 != key2
 
 
 def test_detect_clusters_empty():
-    result = detectClusters([])
+    result = detect_clusters([])
     assert isinstance(result, ClusterResult)
     assert result.clusters == []
     assert result.cacheKey == "empty"
@@ -77,8 +77,10 @@ def test_detect_clusters_calls_llm():
         )
     ]
 
-    with patch("btcopilot.personal.clusters.llm.submit_one", return_value=mock_response):
-        result = detectClusters(events)
+    with patch(
+        "btcopilot.personal.clusters.gemini_structured_sync", return_value=mock_response
+    ):
+        result = detect_clusters(events)
 
     assert isinstance(result, ClusterResult)
     assert len(result.clusters) == 1
@@ -145,7 +147,9 @@ def test_detect_clusters_route_success(subscriber):
         )
     ]
 
-    with patch("btcopilot.personal.clusters.llm.submit_one", return_value=mock_response):
+    with patch(
+        "btcopilot.personal.clusters.gemini_structured_sync", return_value=mock_response
+    ):
         response = subscriber.post(
             f"/personal/diagrams/{diagram.id}/clusters", json={"events": events_data}
         )

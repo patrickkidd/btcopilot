@@ -10,7 +10,7 @@ from btcopilot.extensions import db
 from btcopilot.schema import DiagramData, Event, asdict, from_dict
 from btcopilot.pro.models import Diagram, AccessRight
 from btcopilot.personal.models import Discussion, Statement
-from btcopilot.personal.clusters import detectClusters
+from btcopilot.personal import clusters
 
 _log = logging.getLogger(__name__)
 
@@ -220,7 +220,7 @@ def detect_clusters(diagram_id):
 
     _log.info(f"Detecting clusters for diagram {diagram_id} with {len(events)} events")
 
-    result = detectClusters(events)
+    result = clusters.detect_clusters(events)
 
     return jsonify(
         clusters=[asdict(c) for c in result.clusters],

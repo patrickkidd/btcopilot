@@ -22,14 +22,14 @@ def llm_response():
         with (
             patch.object(
                 Engine,
-                "vector_db",
+                "get_vector_db",
                 return_value=Mock(
                     similarity_search_with_score=Mock(
                         return_value=[(x, 1.0) for x in sources]
                     )
                 ),
             ),
-            patch.object(Engine, "llm") as llm,
+            patch.object(Engine, "get_llm") as llm,
             patch.object(Engine, "_chat_template") as _chat_template,
         ):
             llm.return_value.invoke.return_value = response

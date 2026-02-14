@@ -3,8 +3,9 @@ import logging
 from dataclasses import dataclass
 from flask import g
 
-from btcopilot.extensions import db, ai_log, llm, LLMFunction
+from btcopilot.extensions import db, ai_log
 from btcopilot.async_utils import one_result
+from btcopilot.llmutil import gemini_text_sync
 from btcopilot import pdp
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.schema import DiagramData, PDP, asdict
@@ -49,9 +50,7 @@ def ask(
 
     turns = []
     for s in discussion.statements:
-        role = (
-            "model" if s.speaker_id == discussion.chat_ai_speaker_id else "user"
-        )
+        role = "model" if s.speaker_id == discussion.chat_ai_speaker_id else "user"
         turns.append((role, s.text))
     turns.append(("user", user_statement))
 
@@ -81,11 +80,8 @@ def ask(
     return response
 
 
-def _generate_response(
-    system_instruction: str, turns: list[tuple[str, str]]
-) -> str:
-    ai_response = llm.submit_one(
-        LLMFunction.Respond,
+def _generate_response(system_instruction: str, turns: list[tuple[str, str]]) -> str:
+    ai_response = gemini_text_sync(
         system_instruction=system_instruction,
         turns=turns,
         temperature=0.45,

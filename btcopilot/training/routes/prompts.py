@@ -6,7 +6,8 @@ from sqlalchemy.orm import subqueryload
 import btcopilot
 from btcopilot import auth
 from btcopilot.auth import minimum_role
-from btcopilot.extensions import db, llm, LLMFunction
+from btcopilot.extensions import db
+from btcopilot.llmutil import gemini_text_sync
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal import prompts, ask, Response
 from btcopilot.schema import DiagramData, asdict
@@ -198,7 +199,7 @@ def suggest_improvements():
     """
 
     try:
-        response = llm.submit_one(LLMFunction.General, coach_prompt)
+        response = gemini_text_sync(coach_prompt)
 
         return jsonify(
             {"suggestions": response, "artifact_id": artifact.get("statement_id")}
@@ -272,9 +273,7 @@ def test_extraction():
 
         finally:
             # Always restore original prompts
-            prompts.DATA_EXTRACTION_PROMPT = original_prompts[
-                "DATA_EXTRACTION_PROMPT"
-            ]
+            prompts.DATA_EXTRACTION_PROMPT = original_prompts["DATA_EXTRACTION_PROMPT"]
             prompts.DATA_EXTRACTION_EXAMPLES = original_prompts[
                 "DATA_EXTRACTION_EXAMPLES"
             ]
@@ -328,7 +327,7 @@ def coach_chat():
     """
 
     try:
-        response = llm.submit_one(LLMFunction.General, chat_prompt)
+        response = gemini_text_sync(chat_prompt)
         return jsonify({"response": response})
     except Exception as e:
         _log.error(f"Error in coach chat: {e}", exc_info=True)

@@ -14,9 +14,9 @@ import logging
 import time
 from dataclasses import dataclass
 
-from btcopilot.extensions import LLM_MODEL
-
 _log = logging.getLogger(__name__)
+
+LLM_MODEL = "gpt-4o-mini"
 
 
 PROMPT_TEMPLATE = """
@@ -77,17 +77,17 @@ class Event:
     variables: dict[str, str]
 
 
-def formatTimelineData(events: list[Event]) -> str:
-    timelineData = ""
+def format_timeline_data(events: list[Event]) -> str:
+    timeline_data = ""
     for event in events:
         s_variables = ", ".join(f"{k}: {v}" for k, v in event.variables.items())
-        timelineData += (
+        timeline_data += (
             f"Timestamp: {event.dateTime}\t"
             f"Description: {event.description}\t"
             f"People: {', '.join(event.people)}\t"
             f"Variables: {s_variables}\n"
         )
-    return timelineData
+    return timeline_data
 
 
 class Engine:
@@ -110,13 +110,9 @@ class Engine:
             raise RuntimeError("Cannot change engine data_dir after initialization")
         self._data_dir = data_dir
 
-    def llm(self):
+    def get_llm(self):
         if not self._llm:
             _log.info(f"Creating LLM using {LLM_MODEL}...")
-            # from langchain_ollama import OllamaLLM
-
-            # self._llm = OllamaLLM(model=LLM_MODEL, temperature=0)
-
             from langchain_openai import ChatOpenAI
 
             self._llm = ChatOpenAI(
@@ -133,14 +129,14 @@ class Engine:
         """
         from langchain_core.messages import AIMessage
 
-        ai_message = self.llm().invoke(question)
+        ai_message = self.get_llm().invoke(question)
         if isinstance(ai_message, AIMessage):
             response_text = ai_message.content
         else:
             response_text = ai_message
         return response_text.strip()
 
-    def vector_db(self):
+    def get_vector_db(self):
         if not self._vector_db:
             _log.info(f"Loading vector db from {self.data_dir()}...")
             from langchain_openai import OpenAIEmbeddings
@@ -148,7 +144,7 @@ class Engine:
 
             embeddings = OpenAIEmbeddings(
                 model="text-embedding-3-small",
-                openai_api_key=os.getenv("OPENAI_API_KEY")
+                openai_api_key=os.getenv("OPENAI_API_KEY"),
             )
             self._vector_db = Chroma(
                 collection_name="btcopilot",
@@ -173,7 +169,9 @@ class Engine:
         _log.info(f"Query with question: {question}")
 
         total_start_time = vector_start_time = time.perf_counter()
-        doc_results = self.vector_db().similarity_search_with_score(question, k=self._k)
+        doc_results = self.get_vector_db().similarity_search_with_score(
+            question, k=self._k
+        )
         vector_end_time = time.perf_counter()
         _log.info(f"Using {len(doc_results)} matching results for this query.")
 
@@ -182,7 +180,7 @@ class Engine:
         )
         if events:
             _log.info(f"Using {len(events)} timeline events for this query.")
-            context_timeseries = formatTimelineData(events)
+            context_timeseries = format_timeline_data(events)
             prompt_template = self._chat_template(PROMPT_TEMPLATE_WITH_TIMESERIES)
             prompt = prompt_template.format(
                 literature=context_literature,
@@ -218,7 +216,7 @@ class Engine:
         return response
 
     def _on_response(self, response: Response):
-        """mock for tests"""
+        pass
 
 
 # from langchain_ollama import OllamaEmbeddings

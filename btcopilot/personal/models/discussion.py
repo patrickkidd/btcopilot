@@ -1,7 +1,8 @@
 from sqlalchemy import Column, Text, Integer, Boolean, Date, JSON
 from sqlalchemy.orm import relationship
 
-from btcopilot.extensions import db, llm, LLMFunction
+from btcopilot.extensions import db
+from btcopilot.llmutil import gemini_text_sync
 from btcopilot.modelmixin import ModelMixin
 
 
@@ -100,8 +101,7 @@ class Discussion(db.Model, ModelMixin):
     def update_summary(self):
         from btcopilot.personal.prompts import SUMMARIZE_MESSAGES_PROMPT
 
-        self.summary = llm.submit_one(
-            LLMFunction.Summarize,
+        self.summary = gemini_text_sync(
             SUMMARIZE_MESSAGES_PROMPT.format(
                 conversation_history=self.conversation_history()
             ),

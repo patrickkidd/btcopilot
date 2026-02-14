@@ -118,7 +118,7 @@ def ingest(sources_dir, data_dir):
     #     # To set explicit id's for upsert logic
     #     # , ids=[doc.id for doc in documents])
     #     engine = current_app.engine
-    engine.vector_db().add_documents(documents)
+    engine.get_vector_db().add_documents(documents)
 
     _log.info(f"{len(documents)} document splits ingested and stored.")
 

@@ -454,7 +454,8 @@ async def _extract_and_validate(
     """Submit extraction prompt to LLM, validate, retry up to MAX_EXTRACTION_RETRIES on failure."""
     import json
     from btcopilot.personal.prompts import DATA_EXTRACTION_CORRECTION
-    from btcopilot.extensions import llm, LLMFunction, ai_log
+    from btcopilot.extensions import ai_log
+    from btcopilot.llmutil import gemini_structured
 
     is_dev = os.getenv("FLASK_CONFIG") == "development"
     pdp = diagram_data.pdp
@@ -462,10 +463,9 @@ async def _extract_and_validate(
     error_history: list[tuple[int, list[str]]] = []
 
     for attempt in range(1 + MAX_EXTRACTION_RETRIES):
-        pdp_deltas = await llm.submit(
-            LLMFunction.JSON,
-            prompt=current_prompt,
-            response_format=PDPDeltas,
+        pdp_deltas = await gemini_structured(
+            current_prompt,
+            PDPDeltas,
             large=large,
         )
 

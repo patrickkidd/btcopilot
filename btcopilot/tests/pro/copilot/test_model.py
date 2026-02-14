@@ -24,9 +24,9 @@ def engine():
         )
     _engine = Engine(data_dir=DATA_DIR)
     _log.debug(f"Initializing vector db from {DATA_DIR}..")
-    _engine.vector_db()
+    _engine.get_vector_db()
     _log.debug(f"Initializing llm..")
-    _engine.llm()
+    _engine.get_llm()
     _log.debug(f"Engine initialized.")
     yield _engine
 

@@ -41,10 +41,10 @@ def run_prompts_live(detailed=False, discussion_id=None, model=None):
     nest_asyncio.apply()
 
     if model:
-        from btcopilot.extensions.llm import LLM
+        import btcopilot.llmutil as llmutil
 
-        LLM.extractionModel = model
-        LLM.extractionModelLarge = model
+        llmutil.EXTRACTION_MODEL = model
+        llmutil.EXTRACTION_MODEL_LARGE = model
         print(f"Using model: {model}\n")
 
     from btcopilot.personal.models import Statement
@@ -78,7 +78,11 @@ def run_prompts_live(detailed=False, discussion_id=None, model=None):
             error_counts["missing_gt"] += 1
             continue
 
-        print(f"[{i}/{total}] Statement {stmt.id} (order={stmt.order})...", end=" ", flush=True)
+        print(
+            f"[{i}/{total}] Statement {stmt.id} (order={stmt.order})...",
+            end=" ",
+            flush=True,
+        )
         stmt_start = time.time()
 
         try:

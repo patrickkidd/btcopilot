@@ -356,7 +356,7 @@ def test_add_pdp_deltas_without_validation():
 
 def test_dataclass_to_json_schema_force_required():
     """Verify force_required adds fields to required list even if they have defaults."""
-    from btcopilot.extensions.llm import dataclass_to_json_schema
+    from btcopilot.llmutil import dataclass_to_json_schema
 
     # Event has description with default=None, so without force_required it's optional
     schema_no_force = dataclass_to_json_schema(Event, {}, {})
@@ -374,7 +374,7 @@ def test_dataclass_to_json_schema_force_required():
 
 def test_pdp_deltas_schema_has_event_required_fields():
     """Verify PDPDeltas schema marks Event required fields via PDP_FORCE_REQUIRED."""
-    from btcopilot.extensions.llm import (
+    from btcopilot.llmutil import (
         dataclass_to_json_schema,
         PDP_SCHEMA_DESCRIPTIONS,
         PDP_FORCE_REQUIRED,
