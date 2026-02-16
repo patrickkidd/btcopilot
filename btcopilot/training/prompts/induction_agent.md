@@ -150,9 +150,9 @@ b. **Initialize run folder and log**: Create timestamped folder immediately
    # If INDUCTION_FOCUS is set: 2025-12-15_22-01-02--focus-People
    # If no focus: 2025-12-15_22-01-02
    if [ -n "$INDUCTION_FOCUS" ]; then
-       RUN_FOLDER="btcopilot/induction-reports/${TIMESTAMP}--focus-${INDUCTION_FOCUS}"
+       RUN_FOLDER="doc/induction-reports/${TIMESTAMP}--focus-${INDUCTION_FOCUS}"
    else
-       RUN_FOLDER="btcopilot/induction-reports/${TIMESTAMP}"
+       RUN_FOLDER="doc/induction-reports/${TIMESTAMP}"
    fi
 
    mkdir -p "$RUN_FOLDER"
@@ -164,7 +164,7 @@ b. **Initialize run folder and log**: Create timestamped folder immediately
    - Every action from this point forward MUST be logged to this file
    - Log format: JSON Lines (one JSON object per line)
 
-c. **Read previous run history**: `btcopilot/induction-reports/*/`
+c. **Read previous run history**: `doc/induction-reports/*/`
    - **CRITICAL**: Before proposing ANY change, check what previous runs tried
    - Read the most recent 3-5 log files (`*_log.jsonl`) to see:
      - What changes were attempted and their outcomes (kept/reverted)
@@ -407,7 +407,7 @@ Use `TodoWrite` to:
 - Mark current iteration complete
 - Update status
 
-**MANDATORY: Append to log file** (`btcopilot/induction-reports/TIMESTAMP_log.jsonl`):
+**MANDATORY: Append to log file** (`doc/induction-reports/TIMESTAMP_log.jsonl`):
 ```json
 {"type": "iteration", "iteration": N, "timestamp": "ISO8601", "change": "description", "target_section": "SECTION_N", "rationale": "why", "f1_scores": {"aggregate": 0.XXX, "people": 0.XXX, "events": 0.XXX, "symptom": 0.XXX, "anxiety": 0.XXX, "relationship": 0.XXX, "functioning": 0.XXX}, "delta_from_baseline": {"aggregate": +0.XXX, ...}, "delta_from_previous": {"aggregate": +0.XXX, ...}, "outcome": "kept|reverted"}
 ```
@@ -433,7 +433,7 @@ Use the `Bash` tool with `echo '...' >> LOG_FILE` to append each entry.
 
 #### g. Pruning Pass (Every 5th Run)
 
-**Check if this is a pruning run**: Count folders in `btcopilot/induction-reports/`. If count % 5 == 0, perform a pruning audit:
+**Check if this is a pruning run**: Count folders in `doc/induction-reports/`. If count % 5 == 0, perform a pruning audit:
 
 1. **Audit SECTION 3 examples**:
    - For each example, check if its error pattern still appears in current GT errors
@@ -527,7 +527,7 @@ After stopping, write a comprehensive report to `${RUN_FOLDER}/${TIMESTAMP}.md` 
 
 ```bash
 # If improved, commit (report path will be printed by agent)
-git add btcopilot/btcopilot/personal/prompts.py btcopilot/induction-reports/
+git add btcopilot/btcopilot/personal/prompts.py doc/induction-reports/
 git commit -m "Automated prompt induction (F1: X.XX → Y.YY)"
 
 # If not improved, revert
@@ -605,7 +605,7 @@ Your induction run is successful if:
 - `btcopilot/btcopilot/training/test_prompts_live.py` - Live test harness (DO NOT MODIFY)
 - `btcopilot/doc/DATA_MODEL_FLOW.md` - Data model documentation (PDPDeltas structure, ID conventions, sparse delta pattern)
 - `btcopilot/doc/sarf-definitions/*.md` - Authoritative SARF variable definitions (consult when editing prompts)
-- `btcopilot/induction-reports/*/_log.jsonl` - Previous run logs (check before proposing changes to avoid oscillation)
+- `doc/induction-reports/*/_log.jsonl` - Previous run logs (check before proposing changes to avoid oscillation)
 
 **Read at start, propose updates at end**:
 - `btcopilot/doc/PROMPT_ENG_EXTRACTION_STRATEGY.md` - **CRITICAL**: Cumulative strategy doc with lessons from ALL runs. Read FIRST before any iterations. Propose updates at end of run (see "Strategy Document Updates" section).
@@ -728,8 +728,8 @@ Generating report...
 `${RUN_FOLDER}/${TIMESTAMP}_log.jsonl`
 
 Examples:
-- With focus: `btcopilot/induction-reports/2025-12-15_22-01-02--focus-People/2025-12-15_22-01-02_log.jsonl`
-- Without focus: `btcopilot/induction-reports/2025-12-15_22-01-02/2025-12-15_22-01-02_log.jsonl`
+- With focus: `doc/induction-reports/2025-12-15_22-01-02--focus-People/2025-12-15_22-01-02_log.jsonl`
+- Without focus: `doc/induction-reports/2025-12-15_22-01-02/2025-12-15_22-01-02_log.jsonl`
 
 Create the folder and log file immediately at run start.
 
@@ -770,7 +770,7 @@ Each entry is a single JSON line. Append entries using `echo '...' >> LOG_FILE`.
 #### 6. Run End Entry (final entry)
 
 ```json
-{"type": "run_end", "timestamp": "2024-01-15T14:46:00Z", "total_iterations": 7, "kept_iterations": 5, "reverted_iterations": 2, "final_f1_scores": {"aggregate": 0.877, "people": 0.891, "events": 0.841, "symptom": 0.701, "anxiety": 0.756, "relationship": 0.723, "functioning": 0.718}, "total_improvement": {"aggregate": 0.054, "people": 0.0, "events": 0.065, "symptom": 0.019, "anxiety": 0.011, "relationship": 0.025, "functioning": 0.006}, "focus_metric_improvement": 0.019, "recommendation": "commit|review|revert", "run_folder": "btcopilot/induction-reports/2024-01-15_14-30-00--focus-People", "report_file": "2024-01-15_14-30-00.md"}
+{"type": "run_end", "timestamp": "2024-01-15T14:46:00Z", "total_iterations": 7, "kept_iterations": 5, "reverted_iterations": 2, "final_f1_scores": {"aggregate": 0.877, "people": 0.891, "events": 0.841, "symptom": 0.701, "anxiety": 0.756, "relationship": 0.723, "functioning": 0.718}, "total_improvement": {"aggregate": 0.054, "people": 0.0, "events": 0.065, "symptom": 0.019, "anxiety": 0.011, "relationship": 0.025, "functioning": 0.006}, "focus_metric_improvement": 0.019, "recommendation": "commit|review|revert", "run_folder": "doc/induction-reports/2024-01-15_14-30-00--focus-People", "report_file": "2024-01-15_14-30-00.md"}
 ```
 
 ### Logging Rules
@@ -864,7 +864,7 @@ The strategy document is the **cumulative memory** across all induction runs. Wi
 Start your autonomous induction now.
 
 1. **Read strategy doc first** - `btcopilot/doc/PROMPT_ENG_EXTRACTION_STRATEGY.md`
-2. **Create log file** - `btcopilot/induction-reports/TIMESTAMP_log.jsonl`
+2. **Create log file** - `doc/induction-reports/TIMESTAMP_log.jsonl`
 3. Log run_start and strategy_read entries
 4. Use `TodoWrite` to create iteration tracking (Iterations 1-10)
 5. Read `instance/gt_export.json` and `btcopilot/btcopilot/personal/prompts.py`

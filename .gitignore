@@ -6,7 +6,7 @@ btcopilot-sources/
 ai_log.txt
 
 # Clinical data (confidential - stored in btcopilot-sources repo)
-btcopilot/induction-reports
+doc/induction-reports
 debug_log.txt
 node_modules
 uv.lock

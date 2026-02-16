@@ -18,6 +18,34 @@ from btcopilot.training.utils import get_auditor_id
 _log = logging.getLogger(__name__)
 
 
+PLACEHOLDER_DESCRIPTIONS = frozenset(["new event", ""])
+
+
+CHILD_CENTRIC_KINDS = frozenset(["birth", "adopted"])
+
+
+def validate_extraction_for_approval(extraction: dict) -> list[str]:
+    errors = []
+    if not extraction:
+        return errors
+
+    for i, event in enumerate(extraction.get("events", [])):
+        kind = event.get("kind", "?")
+        desc = (event.get("description") or "").strip()
+
+        if kind in CHILD_CENTRIC_KINDS:
+            if event.get("child") is None:
+                errors.append(f"Event {i+1} ({kind}): missing child link")
+        else:
+            if event.get("person") is None:
+                errors.append(f"Event {i+1} ({kind}): missing person link")
+
+        if desc.lower() in PLACEHOLDER_DESCRIPTIONS:
+            errors.append(f"Event {i+1} ({kind}): placeholder or empty description")
+
+    return errors
+
+
 def cleanup_extraction_pair_bonds(extraction: dict) -> dict:
     """
     Clean up pair bonds in extraction data before saving.

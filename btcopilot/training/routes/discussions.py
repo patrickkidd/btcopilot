@@ -98,163 +98,135 @@ def extract_next_statement(*args, **kwargs):
     _log.info(f"extract_next_statement() called with: args: {args}, kwargs: {kwargs}")
 
     try:
+        db.session.get_bind()
+    except RuntimeError:
+        engine = create_engine(current_app.config["SQLALCHEMY_DATABASE_URI"])
+        db.session.bind = engine
 
-        try:
-            db.session.get_bind()
-        except Exception as e:
-            _log.debug(f"DB session bind not available, reconnecting: {e}")
-            engine = create_engine(current_app.config["SQLALCHEMY_DATABASE_URI"])
-            db.session.bind = engine
+    statement = _next_statement()
 
-        # Query for the oldest unprocessed Subject statement from discussions with extracting=True
-        # Order by discussion_id first, then by order column for reliable sorting
-        statement = _next_statement()
-
-        if not statement:
-            _log.debug("No pending statements found")
-            return False
-
-        discussion = statement.discussion
-        if not discussion or not discussion.user:
-            _log.warning(
-                f"Skipping statement {statement.id} - missing discussion or user"
-            )
-            return False
-
-        _log.info(
-            f"Data extraction started - "
-            f"statement_id: {statement.id}, "
-            f"discussion_id: {statement.discussion_id}, "
-            f"speaker_type: {statement.speaker.type}, "
-            f"text_length: {len(statement.text)}"
-        )
-
-        # Get or create diagram database
-        if discussion.diagram:
-            database = discussion.diagram.get_diagram_data()
-        else:
-            database = DiagramData()
-
-        # Build PDP from stored pdp_deltas of prior statements
-        # This ensures consistent state whether fresh extraction or re-extraction
-        database.pdp = pdp.cumulative(discussion, statement)
-
-        _log.info(
-            f"EXTRACT_NEXT_STATEMENT - Statement {statement.id}:\n"
-            f"  statement.order: {statement.order}\n"
-            f"  statement.text[:100]: {statement.text[:100] if statement.text else 'None'}\n"
-            f"  database.pdp.people: {[p.name for p in database.pdp.people]}\n"
-            f"  database.pdp.events count: {len(database.pdp.events)}\n"
-            f"  database.people count: {len(database.people)}\n"
-        )
-
-        try:
-            # Apply nest_asyncio to allow nested event loops in Celery workers
-            nest_asyncio.apply()
-
-            # Run pdp.update for this statement
-            # Pass statement order so conversation_history only includes up to this statement
-            new_pdp, pdp_deltas = asyncio.run(
-                pdp.update(discussion, database, statement.text, statement.order)
-            )
-
-            # Refresh discussion to check if extraction was cancelled
-            db.session.refresh(discussion)
-
-            # If extraction was cancelled (cleared), abort and don't save results
-            if not discussion.extracting:
-                _log.info(
-                    f"Extraction was cancelled - "
-                    f"discussion_id: {discussion.id}, "
-                    f"statement_id: {statement.id}, "
-                    f"discarding results"
-                )
-                db.session.rollback()
-                return False
-
-            # Update database and statement
-            database.pdp = new_pdp
-            if discussion.diagram:
-                discussion.diagram.set_diagram_data(database)
-            if pdp_deltas:
-                statement.pdp_deltas = asdict(pdp_deltas)
-                event_count = len(pdp_deltas.events)
-                people_count = len(pdp_deltas.people)
-                _log.info(
-                    f"Data extraction completed - "
-                    f"statement_id: {statement.id}, "
-                    f"discussion_id: {discussion.id}, "
-                    f"events_extracted: {event_count}, "
-                    f"people_extracted: {people_count}"
-                )
-            else:
-                statement.pdp_deltas = None
-                _log.info(
-                    f"Data extraction completed - "
-                    f"statement_id: {statement.id}, "
-                    f"discussion_id: {discussion.id}, "
-                    f"events_extracted: 0, "
-                    f"people_extracted: 0"
-                )
-
-            # Check if there are any more unprocessed statements in this discussion
-            # We need to check manually because JSON column filters are unreliable
-            remaining_candidates = (
-                Statement.query.join(Speaker)
-                .filter(
-                    Speaker.type == SpeakerType.Subject,
-                    Statement.text.isnot(None),
-                    Statement.text != "",
-                    Statement.discussion_id == discussion.id,
-                    Statement.id != statement.id,  # Exclude the current statement
-                )
-                .all()
-            )
-
-            # Count how many actually need processing
-            remaining_statements = sum(
-                1
-                for s in remaining_candidates
-                if s.pdp_deltas is None or s.pdp_deltas == {}
-            )
-
-            # If no more statements to process in this discussion, set extracting to False
-            if remaining_statements == 0:
-                discussion.extracting = False
-                total_statements = Statement.query.filter_by(
-                    discussion_id=discussion.id
-                ).count()
-                _log.info(
-                    f"Discussion extraction complete - "
-                    f"discussion_id: {discussion.id}, "
-                    f"total_statements: {total_statements}"
-                )
-            else:
-                _log.info(
-                    f"Discussion extraction continuing - "
-                    f"discussion_id: {discussion.id}, "
-                    f"remaining_statements: {remaining_statements}"
-                )
-                # There are more statements in this discussion, schedule another task
-                from btcopilot.extensions import celery
-
-                celery.send_task("extract_next_statement", countdown=1)
-
-            # Commit this statement's updates
-            db.session.commit()
-            return True
-
-        except Exception as e:
-            _log.error(
-                f"Error processing statement {statement.id if statement else None}: {e}",
-                exc_info=True,
-            )
-            db.session.rollback()
-            return False
-
-    except Exception as e:
-        _log.error(f"Unexpected error in extract_next_statement: {e}", exc_info=True)
+    if not statement:
+        _log.debug("No pending statements found")
         return False
+
+    discussion = statement.discussion
+    if not discussion or not discussion.user:
+        _log.warning(
+            f"Skipping statement {statement.id} - missing discussion or user"
+        )
+        return False
+
+    _log.info(
+        f"Data extraction started - "
+        f"statement_id: {statement.id}, "
+        f"discussion_id: {statement.discussion_id}, "
+        f"speaker_type: {statement.speaker.type}, "
+        f"text_length: {len(statement.text)}"
+    )
+
+    # Get or create diagram database
+    if discussion.diagram:
+        database = discussion.diagram.get_diagram_data()
+    else:
+        database = DiagramData()
+
+    # Build PDP from stored pdp_deltas of prior statements
+    database.pdp = pdp.cumulative(discussion, statement)
+
+    _log.info(
+        f"EXTRACT_NEXT_STATEMENT - Statement {statement.id}:\n"
+        f"  statement.order: {statement.order}\n"
+        f"  statement.text[:100]: {statement.text[:100] if statement.text else 'None'}\n"
+        f"  database.pdp.people: {[p.name for p in database.pdp.people]}\n"
+        f"  database.pdp.events count: {len(database.pdp.events)}\n"
+        f"  database.people count: {len(database.people)}\n"
+    )
+
+    # Apply nest_asyncio to allow nested event loops in Celery workers
+    nest_asyncio.apply()
+
+    new_pdp, pdp_deltas = asyncio.run(
+        pdp.update(discussion, database, statement.text, statement.order)
+    )
+
+    # Refresh discussion to check if extraction was cancelled
+    db.session.refresh(discussion)
+
+    # If extraction was cancelled (cleared), abort and don't save results
+    if not discussion.extracting:
+        _log.info(
+            f"Extraction was cancelled - "
+            f"discussion_id: {discussion.id}, "
+            f"statement_id: {statement.id}, "
+            f"discarding results"
+        )
+        db.session.rollback()
+        return False
+
+    # Update database and statement
+    database.pdp = new_pdp
+    if discussion.diagram:
+        discussion.diagram.set_diagram_data(database)
+    if pdp_deltas:
+        statement.pdp_deltas = asdict(pdp_deltas)
+        event_count = len(pdp_deltas.events)
+        people_count = len(pdp_deltas.people)
+        _log.info(
+            f"Data extraction completed - "
+            f"statement_id: {statement.id}, "
+            f"discussion_id: {discussion.id}, "
+            f"events_extracted: {event_count}, "
+            f"people_extracted: {people_count}"
+        )
+    else:
+        statement.pdp_deltas = None
+        _log.info(
+            f"Data extraction completed - "
+            f"statement_id: {statement.id}, "
+            f"discussion_id: {discussion.id}, "
+            f"events_extracted: 0, "
+            f"people_extracted: 0"
+        )
+
+    # Check if there are any more unprocessed statements in this discussion
+    # We need to check manually because JSON column filters are unreliable
+    remaining_candidates = (
+        Statement.query.join(Speaker)
+        .filter(
+            Speaker.type == SpeakerType.Subject,
+            Statement.text.isnot(None),
+            Statement.text != "",
+            Statement.discussion_id == discussion.id,
+            Statement.id != statement.id,
+        )
+        .all()
+    )
+
+    remaining_statements = sum(
+        1
+        for s in remaining_candidates
+        if s.pdp_deltas is None or s.pdp_deltas == {}
+    )
+
+    if remaining_statements == 0:
+        discussion.extracting = False
+        total_statements = Statement.query.filter_by(
+            discussion_id=discussion.id
+        ).count()
+        _log.info(
+            f"Discussion extraction complete - "
+            f"discussion_id: {discussion.id}, "
+            f"total_statements: {total_statements}"
+        )
+    else:
+        _log.info(
+            f"Discussion extraction continuing - "
+            f"discussion_id: {discussion.id}, "
+            f"remaining_statements: {remaining_statements}"
+        )
+
+    db.session.commit()
+    return True
 
 
 # Create the discussions blueprint

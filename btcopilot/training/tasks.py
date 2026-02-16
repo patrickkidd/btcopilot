@@ -22,57 +22,43 @@ _log = logging.getLogger(__name__)
 def extract_next_statement():
     _log.info(f"extract_next_statement() called")
 
+    # Ensure we have a database connection
     try:
-        # Ensure we have a database connection
-        try:
-            db.session.get_bind()
-        except RuntimeError:
-            engine = create_engine(current_app.config["SQLALCHEMY_DATABASE_URI"])
-            db.session.bind = engine
+        db.session.get_bind()
+    except RuntimeError:
+        engine = create_engine(current_app.config["SQLALCHEMY_DATABASE_URI"])
+        db.session.bind = engine
 
-        # Close any existing session to ensure fresh data
-        db.session.close()
+    # Close any existing session to ensure fresh data
+    db.session.close()
 
-        result = _extract_next_statement()
+    result = _extract_next_statement()
 
-        # If there are more statements to process, schedule another task
-        if result:
-            # Schedule next extraction with 1 second delay
-            from btcopilot.extensions import celery
+    # If there are more statements to process, schedule another task
+    if result:
+        from btcopilot.extensions import celery
 
-            celery.send_task("extract_next_statement", countdown=1)
+        celery.send_task("extract_next_statement", countdown=1)
+    else:
+        _log.info("No statements pending extraction")
 
-        return result
-
-    except Exception as e:
-        _log.error(f"Error in extract_next_statement task: {e}", exc_info=True)
-        return False
+    return result
 
 
 def extract_discussion_statements(discussion_id: int):
-    try:
-        discussion = Discussion.query.get(discussion_id)
-        if not discussion:
-            _log.error(f"Discussion {discussion_id} not found")
-            return False
+    discussion = Discussion.query.get(discussion_id)
+    if not discussion:
+        raise ValueError(f"Discussion {discussion_id} not found")
 
-        discussion.extracting = True
-        db.session.commit()
+    discussion.extracting = True
+    db.session.commit()
 
-        # Start the extraction process
-        from btcopilot.extensions import celery
+    from btcopilot.extensions import celery
 
-        celery.send_task("extract_next_statement")
+    celery.send_task("extract_next_statement")
 
-        _log.info(f"Celery extraction task started - discussion_id: {discussion_id}")
-        return True
-
-    except Exception as e:
-        _log.error(
-            f"Error starting extraction for discussion {discussion_id}: {e}",
-            exc_info=True,
-        )
-        return False
+    _log.info(f"Celery extraction task started - discussion_id: {discussion_id}")
+    return True
 
 
 @click.command("extract-discussion-data")

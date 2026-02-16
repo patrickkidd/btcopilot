@@ -41,6 +41,7 @@ from btcopilot.schema import (
     Event,
     EventKind,
     PairBond,
+    PDP,
     PDPDeltas,
     DateCertainty,
     PersonKind,
@@ -48,16 +49,18 @@ from btcopilot.schema import (
 )
 
 # Structural events don't use description for matching (descriptions are generic like "Born", "Died")
-STRUCTURAL_EVENT_KINDS = frozenset([
-    EventKind.Birth,
-    EventKind.Death,
-    EventKind.Married,
-    EventKind.Divorced,
-    EventKind.Separated,
-    EventKind.Bonded,
-    EventKind.Moved,
-    EventKind.Adopted,
-])
+STRUCTURAL_EVENT_KINDS = frozenset(
+    [
+        EventKind.Birth,
+        EventKind.Death,
+        EventKind.Married,
+        EventKind.Divorced,
+        EventKind.Separated,
+        EventKind.Bonded,
+        EventKind.Moved,
+        EventKind.Adopted,
+    ]
+)
 
 _log = logging.getLogger(__name__)
 
@@ -174,6 +177,28 @@ class StatementF1Metrics:
     people_metrics: F1Metrics = field(default_factory=F1Metrics)
     events_metrics: F1Metrics = field(default_factory=F1Metrics)
     pair_bonds_metrics: F1Metrics = field(default_factory=F1Metrics)
+
+
+@dataclass
+class CumulativeF1Metrics:
+    discussion_id: int
+    discussion_summary: str = ""
+    auditor_id: str = ""
+    aggregate_micro_f1: float = 0.0
+    people_f1: float = 0.0
+    events_f1: float = 0.0
+    pair_bonds_f1: float = 0.0
+    people_metrics: F1Metrics = field(default_factory=F1Metrics)
+    events_metrics: F1Metrics = field(default_factory=F1Metrics)
+    pair_bonds_metrics: F1Metrics = field(default_factory=F1Metrics)
+    symptom_macro_f1: float = 0.0
+    anxiety_macro_f1: float = 0.0
+    relationship_macro_f1: float = 0.0
+    functioning_macro_f1: float = 0.0
+    ai_people_count: int = 0
+    ai_events_count: int = 0
+    gt_people_count: int = 0
+    gt_events_count: int = 0
 
 
 @dataclass
@@ -385,9 +410,11 @@ def match_events(
 
             # For Shift events, require description similarity
             # For structural events (Birth, Death, etc.), skip description matching
-            if not is_structural:
+            gt_desc = (gt_event.description or "").lower()
+            if is_structural:
+                desc_sim = 1.0
+            else:
                 ai_desc = (ai_event.description or "").lower()
-                gt_desc = (gt_event.description or "").lower()
 
                 # Hybrid matching: try multiple strategies, take best
                 # 1. token_set_ratio - matches shared tokens regardless of order/extras
@@ -401,8 +428,6 @@ def match_events(
 
                 if desc_sim < DESCRIPTION_SIMILARITY_THRESHOLD:
                     continue
-            else:
-                desc_sim = 1.0  # Structural events auto-pass description
 
             if not dates_within_tolerance(
                 ai_event.dateTime,
@@ -418,11 +443,24 @@ def match_events(
             ai_targets = resolve_person_list(ai_event.relationshipTargets, id_map)
             ai_triangles = resolve_person_list(ai_event.relationshipTriangles, id_map)
 
-            links_match = (
-                ai_person == gt_event.person
-                and ai_spouse == gt_event.spouse
-                and ai_child == gt_event.child
-                and set(ai_targets) == set(gt_event.relationshipTargets or [])
+            # Birth/Adopted: child is the primary link (who was born/adopted),
+            # person/spouse are optional parent links.
+            # Other events: person is the primary link.
+            is_child_centric = ai_event.kind in (EventKind.Birth, EventKind.Adopted)
+            if is_child_centric:
+                links_match = (
+                    ai_child == gt_event.child
+                    and (gt_event.person is None or ai_person == gt_event.person)
+                    and (gt_event.spouse is None or ai_spouse == gt_event.spouse)
+                )
+            else:
+                links_match = (
+                    ai_person == gt_event.person
+                    and ai_spouse == gt_event.spouse
+                    and ai_child == gt_event.child
+                )
+            links_match = links_match and (
+                set(ai_targets) == set(gt_event.relationshipTargets or [])
                 and set(ai_triangles) == set(gt_event.relationshipTriangles or [])
             )
 
@@ -902,6 +940,154 @@ def calculate_statement_f1(
     )
 
     return metrics
+
+
+def calculate_cumulative_f1(discussion_id: int) -> CumulativeF1Metrics:
+    from btcopilot.personal.models import Discussion, Statement
+    from btcopilot.training.models import Feedback
+    from btcopilot.pdp import cumulative
+
+    discussion = Discussion.query.get(discussion_id)
+    if not discussion:
+        raise ValueError(f"Discussion {discussion_id} not found")
+
+    # Find the approved auditor for this discussion
+    approved_feedback = (
+        Feedback.query.join(Statement, Feedback.statement_id == Statement.id)
+        .filter(Statement.discussion_id == discussion_id)
+        .filter(Feedback.approved == True)
+        .filter(Feedback.feedback_type == "extraction")
+        .first()
+    )
+    if not approved_feedback:
+        raise ValueError(f"No approved GT for discussion {discussion_id}")
+
+    auditor_id = approved_feedback.auditor_id
+
+    # Get last statement
+    last_stmt = max(discussion.statements, key=lambda s: (s.order or 0, s.id or 0))
+
+    ai_pdp = cumulative(discussion, last_stmt)
+    gt_pdp = cumulative(discussion, last_stmt, auditor_id=auditor_id)
+
+    metrics = CumulativeF1Metrics(
+        discussion_id=discussion_id,
+        discussion_summary=discussion.summary or "",
+        auditor_id=auditor_id,
+        ai_people_count=len(ai_pdp.people),
+        ai_events_count=len(ai_pdp.events),
+        gt_people_count=len(gt_pdp.people),
+        gt_events_count=len(gt_pdp.events),
+    )
+
+    people_result, id_map = match_people(ai_pdp.people, gt_pdp.people)
+    events_result = match_events(ai_pdp.events, gt_pdp.events, id_map)
+    bonds_result = match_pair_bonds(ai_pdp.pair_bonds, gt_pdp.pair_bonds, id_map)
+
+    metrics.people_metrics = calculate_f1_from_counts(
+        len(people_result.matched_pairs),
+        len(people_result.ai_unmatched),
+        len(people_result.gt_unmatched),
+    )
+    metrics.events_metrics = calculate_f1_from_counts(
+        len(events_result.matched_pairs),
+        len(events_result.ai_unmatched),
+        len(events_result.gt_unmatched),
+    )
+    metrics.pair_bonds_metrics = calculate_f1_from_counts(
+        len(bonds_result.matched_pairs),
+        len(bonds_result.ai_unmatched),
+        len(bonds_result.gt_unmatched),
+    )
+
+    metrics.people_f1 = metrics.people_metrics.f1
+    metrics.events_f1 = metrics.events_metrics.f1
+    metrics.pair_bonds_f1 = metrics.pair_bonds_metrics.f1
+
+    total_tp = (
+        metrics.people_metrics.tp
+        + metrics.events_metrics.tp
+        + metrics.pair_bonds_metrics.tp
+    )
+    total_fp = (
+        metrics.people_metrics.fp
+        + metrics.events_metrics.fp
+        + metrics.pair_bonds_metrics.fp
+    )
+    total_fn = (
+        metrics.people_metrics.fn
+        + metrics.events_metrics.fn
+        + metrics.pair_bonds_metrics.fn
+    )
+    metrics.aggregate_micro_f1 = calculate_f1_from_counts(
+        total_tp, total_fp, total_fn
+    ).f1
+
+    if events_result.matched_pairs:
+        sarf_f1s = calculate_sarf_macro_f1(events_result.matched_pairs)
+        metrics.symptom_macro_f1 = sarf_f1s.get("symptom", 0.0)
+        metrics.anxiety_macro_f1 = sarf_f1s.get("anxiety", 0.0)
+        metrics.relationship_macro_f1 = sarf_f1s.get("relationship", 0.0)
+        metrics.functioning_macro_f1 = sarf_f1s.get("functioning", 0.0)
+
+    return metrics
+
+
+@dataclass
+class SystemCumulativeF1:
+    aggregate_micro_f1: float = 0.0
+    people_f1: float = 0.0
+    events_f1: float = 0.0
+    pair_bonds_f1: float = 0.0
+    symptom_macro_f1: float = 0.0
+    anxiety_macro_f1: float = 0.0
+    relationship_macro_f1: float = 0.0
+    functioning_macro_f1: float = 0.0
+    total_discussions: int = 0
+    per_discussion: list = field(default_factory=list)
+
+
+def calculate_all_cumulative_f1(
+    include_synthetic: bool = True,
+) -> SystemCumulativeF1:
+    from btcopilot.personal.models import Statement, Discussion
+    from btcopilot.training.models import Feedback
+
+    query = (
+        Feedback.query.join(Statement, Feedback.statement_id == Statement.id)
+        .filter(Feedback.approved == True)
+        .filter(Feedback.feedback_type == "extraction")
+    )
+    if not include_synthetic:
+        query = query.join(
+            Discussion, Statement.discussion_id == Discussion.id
+        ).filter(Discussion.synthetic == False)
+
+    discussion_ids = (
+        query.with_entities(Statement.discussion_id).distinct().all()
+    )
+
+    results = []
+    for (disc_id,) in discussion_ids:
+        try:
+            metrics = calculate_cumulative_f1(disc_id)
+            results.append(metrics)
+        except ValueError as e:
+            _log.warning(f"Skipping discussion {disc_id}: {e}")
+
+    system = SystemCumulativeF1(per_discussion=results)
+    if results:
+        n = len(results)
+        system.total_discussions = n
+        system.aggregate_micro_f1 = sum(r.aggregate_micro_f1 for r in results) / n
+        system.people_f1 = sum(r.people_f1 for r in results) / n
+        system.events_f1 = sum(r.events_f1 for r in results) / n
+        system.pair_bonds_f1 = sum(r.pair_bonds_f1 for r in results) / n
+        system.symptom_macro_f1 = sum(r.symptom_macro_f1 for r in results) / n
+        system.anxiety_macro_f1 = sum(r.anxiety_macro_f1 for r in results) / n
+        system.relationship_macro_f1 = sum(r.relationship_macro_f1 for r in results) / n
+        system.functioning_macro_f1 = sum(r.functioning_macro_f1 for r in results) / n
+    return system
 
 
 def calculate_system_f1(include_synthetic: bool = True) -> SystemF1Metrics:

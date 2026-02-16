@@ -19,6 +19,10 @@ from btcopilot.training.utils import (
     get_discussion_gt_statuses,
     GTStatus,
 )
+from btcopilot.training.f1_metrics import (
+    calculate_system_f1,
+    calculate_all_cumulative_f1,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -262,10 +266,10 @@ def index():
     feedback_stats = get_feedback_statistics()
 
     # Calculate F1 metrics for approved ground truth (both with and without synthetic)
-    from btcopilot.training.f1_metrics import calculate_system_f1
-
     f1_metrics_all = calculate_system_f1(include_synthetic=True)
     f1_metrics_real = calculate_system_f1(include_synthetic=False)
+    cumulative_f1_all = calculate_all_cumulative_f1(include_synthetic=True)
+    cumulative_f1_real = calculate_all_cumulative_f1(include_synthetic=False)
 
     breadcrumbs = get_breadcrumbs("admin")
 
@@ -280,6 +284,9 @@ def index():
         f1_metrics=f1_metrics_all,
         f1_metrics_all=f1_metrics_all,
         f1_metrics_real=f1_metrics_real,
+        cumulative_f1=cumulative_f1_all,
+        cumulative_f1_all=cumulative_f1_all,
+        cumulative_f1_real=cumulative_f1_real,
         breadcrumbs=breadcrumbs,
         current_user=current_user,
         btcopilot=btcopilot,
@@ -659,6 +666,17 @@ def approve():
             )
             message = "Feedback approval removed"
         else:
+            from btcopilot.training.routes.feedback import (
+                validate_extraction_for_approval,
+            )
+
+            errors = validate_extraction_for_approval(feedback.edited_extraction)
+            if errors:
+                return (
+                    jsonify({"error": "GT data quality issues", "details": errors}),
+                    400,
+                )
+
             # Before approving this feedback, unapprove any other feedback for the same statement
             # Only one feedback should be approved per statement
             other_approved_feedback = (
@@ -750,6 +768,18 @@ def bulk_approve_discussion(discussion_id, auditor_id):
 
     if not feedbacks_to_approve:
         return jsonify({"error": "No feedbacks found to approve"}), 404
+
+    from btcopilot.training.routes.feedback import validate_extraction_for_approval
+
+    all_errors = {}
+    for feedback in feedbacks_to_approve:
+        if feedback.approved:
+            continue
+        errors = validate_extraction_for_approval(feedback.edited_extraction)
+        if errors:
+            all_errors[feedback.id] = errors
+    if all_errors:
+        return jsonify({"error": "GT data quality issues", "details": all_errors}), 400
 
     now = datetime.utcnow()
     approved_count = 0
@@ -1106,6 +1136,12 @@ def approve_statement():
             400,
         )
 
+    from btcopilot.training.routes.feedback import validate_extraction_for_approval
+
+    errors = validate_extraction_for_approval(statement.pdp_deltas)
+    if errors:
+        return jsonify({"error": "GT data quality issues", "details": errors}), 400
+
     now = datetime.utcnow()
 
     # Before approving statement, unapprove any approved feedback for the same statement
@@ -1173,6 +1209,12 @@ def quick_approve():
             jsonify({"error": "Can only approve extraction feedback with edited data"}),
             400,
         )
+
+    from btcopilot.training.routes.feedback import validate_extraction_for_approval
+
+    errors = validate_extraction_for_approval(feedback.edited_extraction)
+    if errors:
+        return jsonify({"error": "GT data quality issues", "details": errors}), 400
 
     now = datetime.utcnow()
 

@@ -130,14 +130,22 @@ def validate_pdp_deltas(
 ) -> None:
     """
     Validate that deltas can be safely applied to PDP. Raises PDPValidationError
-    if validation fails. Likely remove it in production, we'll see.
+    if validation fails.
 
-    If diagram_data and source are provided, exports debug info before raising.
-
-    Note: btcopilot only manages PDP. All PDP items must have negative IDs.
-    References to positive IDs (FD committed items) are assumed valid.
+    Delta entries use negative IDs for new PDP items, or positive IDs to update
+    committed diagram items (e.g. setting parents on the speaker). Cross-references
+    to positive IDs (committed items) are always valid.
     """
     errors = []
+
+    # Committed diagram item IDs (positive) — valid for delta entries to reference
+    committed_person_ids = set()
+    committed_event_ids = set()
+    committed_pair_bond_ids = set()
+    if diagram_data:
+        committed_person_ids = {p["id"] for p in diagram_data.people if "id" in p}
+        committed_event_ids = {e["id"] for e in diagram_data.events if "id" in e}
+        committed_pair_bond_ids = {pb["id"] for pb in diagram_data.pair_bonds if "id" in pb}
 
     person_ids_in_delta = {p.id for p in deltas.people if p.id is not None}
     event_ids_in_delta = {e.id for e in deltas.events}
@@ -160,12 +168,12 @@ def validate_pdp_deltas(
     all_pdp_pair_bond_ids = existing_pdp_pair_bond_ids | new_pair_bond_ids
 
     for person in deltas.people:
-        if person.id is not None and person.id >= 0:
-            errors.append(f"PDP person must have negative ID, got {person.id}")
+        if person.id is not None and person.id >= 0 and person.id not in committed_person_ids:
+            errors.append(f"Delta person has positive ID {person.id} not in committed diagram")
 
     for event in deltas.events:
-        if event.id >= 0:
-            errors.append(f"PDP event must have negative ID, got {event.id}")
+        if event.id >= 0 and event.id not in committed_event_ids:
+            errors.append(f"Delta event has positive ID {event.id} not in committed diagram")
         if not event.description:
             _log.warning(
                 f"Event {event.id} (kind={event.kind}) has no description - "
@@ -173,8 +181,8 @@ def validate_pdp_deltas(
             )
 
     for pair_bond in deltas.pair_bonds:
-        if pair_bond.id is not None and pair_bond.id >= 0:
-            errors.append(f"PDP pair_bond must have negative ID, got {pair_bond.id}")
+        if pair_bond.id is not None and pair_bond.id >= 0 and pair_bond.id not in committed_pair_bond_ids:
+            errors.append(f"Delta pair_bond has positive ID {pair_bond.id} not in committed diagram")
 
     for event in deltas.events:
         # Offspring and moved events may lack spouse at extraction time; commit logic infers it
@@ -293,21 +301,9 @@ def _export_validation_failure(
 
 
 def cleanup_pair_bonds(pdp: PDP) -> PDP:
-    """
-    Clean up pair bonds by removing invalid, duplicate, and orphaned entries.
-
-    Removes:
-    - Pair bonds referencing non-existent people
-    - Duplicate pair bonds (same person pair, keeps first encountered)
-    - Orphaned pair bonds (not referenced by any person's parents field)
-
-    Returns:
-        New PDP with cleaned pair bonds
-    """
     pdp = copy.deepcopy(pdp)
 
     person_ids = {p.id for p in pdp.people if p.id is not None}
-    referenced_pair_bond_ids = {p.parents for p in pdp.people if p.parents is not None}
 
     seen_person_pairs: set[tuple[int, int]] = set()
     cleaned_pair_bonds = []
@@ -316,7 +312,6 @@ def cleanup_pair_bonds(pdp: PDP) -> PDP:
         if pb.id is None:
             continue
 
-        # Skip if either person doesn't exist in PDP
         # Positive IDs reference committed diagram people (assumed valid)
         person_a_valid = pb.person_a > 0 or pb.person_a in person_ids
         person_b_valid = pb.person_b > 0 or pb.person_b in person_ids
@@ -327,20 +322,11 @@ def cleanup_pair_bonds(pdp: PDP) -> PDP:
             )
             continue
 
-        # Skip if this person pair already has a bond (dedup)
         person_pair = tuple(sorted([pb.person_a, pb.person_b]))
         if person_pair in seen_person_pairs:
             _log.debug(
                 f"Removing duplicate pair bond {pb.id}: "
                 f"pair {person_pair} already has a bond"
-            )
-            continue
-
-        # Skip if no one references this pair bond as parents
-        if pb.id not in referenced_pair_bond_ids:
-            _log.debug(
-                f"Removing orphaned pair bond {pb.id}: "
-                f"not referenced by any person's parents field"
             )
             continue
 

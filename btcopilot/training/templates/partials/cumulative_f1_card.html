@@ -1,0 +1,195 @@
+{% if cumulative_f1 and cumulative_f1.total_discussions > 0 %}
+<div class="admin-section" style="margin-bottom: 2rem;">
+    <div class="box">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <div>
+                        <h2 class="title is-4">
+                            <span class="icon"><i class="fas fa-layer-group"></i></span>
+                            Cumulative F1 Scores
+                        </h2>
+                        <p class="subtitle is-6" id="cumf1-subtitle">Comparing end-of-discussion cumulative PDPs across {{ cumulative_f1.total_discussions }} discussions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if cumulative_f1_all and cumulative_f1_real %}
+        <div class="tabs is-toggle is-small mb-4">
+            <ul>
+                <li class="is-active" id="cumf1-tab-all">
+                    <a onclick="showCumF1('all')">
+                        <span class="icon is-small"><i class="fas fa-database"></i></span>
+                        <span>All Data ({{ cumulative_f1_all.total_discussions }} discussions)</span>
+                    </a>
+                </li>
+                <li id="cumf1-tab-real">
+                    <a onclick="showCumF1('real')">
+                        <span class="icon is-small"><i class="fas fa-user"></i></span>
+                        <span>Real Users Only ({{ cumulative_f1_real.total_discussions }} discussions)</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="columns is-multiline">
+            <div class="column is-3">
+                <div class="notification is-primary has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
+                    <p class="heading">Overall F1</p>
+                    <p class="title is-2" id="cumf1-overall">{{ "%.3f"|format(cumulative_f1.aggregate_micro_f1) }}</p>
+                    <p class="subtitle is-6">Aggregate Micro-F1</p>
+                </div>
+            </div>
+            <div class="column is-3">
+                <div class="notification is-info is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
+                    <p class="heading">People</p>
+                    <p class="title is-3" id="cumf1-people">{{ "%.3f"|format(cumulative_f1.people_f1) }}</p>
+                    <p class="subtitle is-6">Detection F1</p>
+                </div>
+            </div>
+            <div class="column is-3">
+                <div class="notification is-info is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
+                    <p class="heading">Events</p>
+                    <p class="title is-3" id="cumf1-events">{{ "%.3f"|format(cumulative_f1.events_f1) }}</p>
+                    <p class="subtitle is-6">Detection F1</p>
+                </div>
+            </div>
+            <div class="column is-3">
+                <div class="notification is-info is-light has-text-centered" style="min-height: 130px; display: flex; flex-direction: column; justify-content: center;">
+                    <p class="heading">Pair Bonds</p>
+                    <p class="title is-3" id="cumf1-pair-bonds">{{ "%.3f"|format(cumulative_f1.pair_bonds_f1) }}</p>
+                    <p class="subtitle is-6">Detection F1</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <h4 class="title is-5">SARF Variable Coding (Macro-F1)</h4>
+            <div class="columns is-multiline">
+                <div class="column is-3">
+                    <div class="notification is-warning is-light has-text-centered">
+                        <p class="heading">Symptom</p>
+                        <p class="title is-4" id="cumf1-symptom">{{ "%.3f"|format(cumulative_f1.symptom_macro_f1) }}</p>
+                    </div>
+                </div>
+                <div class="column is-3">
+                    <div class="notification is-warning is-light has-text-centered">
+                        <p class="heading">Anxiety</p>
+                        <p class="title is-4" id="cumf1-anxiety">{{ "%.3f"|format(cumulative_f1.anxiety_macro_f1) }}</p>
+                    </div>
+                </div>
+                <div class="column is-3">
+                    <div class="notification is-warning is-light has-text-centered">
+                        <p class="heading">Relationship</p>
+                        <p class="title is-4" id="cumf1-relationship">{{ "%.3f"|format(cumulative_f1.relationship_macro_f1) }}</p>
+                    </div>
+                </div>
+                <div class="column is-3">
+                    <div class="notification is-warning is-light has-text-centered">
+                        <p class="heading">Functioning</p>
+                        <p class="title is-4" id="cumf1-functioning">{{ "%.3f"|format(cumulative_f1.functioning_macro_f1) }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if cumulative_f1.per_discussion %}
+        <details>
+            <summary><strong>Per-Discussion Breakdown</strong></summary>
+            <div class="table-container mt-3">
+                <table class="table is-fullwidth is-hoverable is-narrow">
+                    <thead>
+                        <tr>
+                            <th>Discussion</th>
+                            <th class="has-text-centered">F1</th>
+                            <th class="has-text-centered">People</th>
+                            <th class="has-text-centered">Events</th>
+                            <th class="has-text-centered">PairBonds</th>
+                            <th class="has-text-centered">AI People</th>
+                            <th class="has-text-centered">GT People</th>
+                            <th class="has-text-centered">AI Events</th>
+                            <th class="has-text-centered">GT Events</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in cumulative_f1.per_discussion %}
+                        <tr>
+                            <td>{{ d.discussion_summary or ("Discussion " ~ d.discussion_id) }}</td>
+                            <td class="has-text-centered">{{ "%.3f"|format(d.aggregate_micro_f1) }}</td>
+                            <td class="has-text-centered">{{ "%.3f"|format(d.people_f1) }}</td>
+                            <td class="has-text-centered">{{ "%.3f"|format(d.events_f1) }}</td>
+                            <td class="has-text-centered">{{ "%.3f"|format(d.pair_bonds_f1) }}</td>
+                            <td class="has-text-centered">{{ d.ai_people_count }}</td>
+                            <td class="has-text-centered">{{ d.gt_people_count }}</td>
+                            <td class="has-text-centered">{{ d.ai_events_count }}</td>
+                            <td class="has-text-centered">{{ d.gt_events_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </details>
+        {% endif %}
+
+        <details class="mt-3">
+            <summary><strong>How is this different from per-statement F1?</strong></summary>
+            <div class="content">
+                <p class="help mt-3">
+                    <strong>Per-statement F1</strong> compares AI vs GT deltas at each individual statement, then averages.
+                    Statements with no pair bonds get trivial 1.0 scores, inflating the average.
+                </p>
+                <p class="help mt-2">
+                    <strong>Cumulative F1</strong> builds the full accumulated PDP from all statements in a discussion,
+                    then compares the final AI PDP against the final GT PDP. This better reflects the end-user experience
+                    and avoids inflation from empty-vs-empty matches.
+                </p>
+            </div>
+        </details>
+    </div>
+</div>
+
+{% if cumulative_f1_all and cumulative_f1_real %}
+<script>
+const cumF1All = {
+    total_discussions: {{ cumulative_f1_all.total_discussions }},
+    aggregate_micro_f1: {{ cumulative_f1_all.aggregate_micro_f1 }},
+    people_f1: {{ cumulative_f1_all.people_f1 }},
+    events_f1: {{ cumulative_f1_all.events_f1 }},
+    pair_bonds_f1: {{ cumulative_f1_all.pair_bonds_f1 }},
+    symptom_macro_f1: {{ cumulative_f1_all.symptom_macro_f1 }},
+    anxiety_macro_f1: {{ cumulative_f1_all.anxiety_macro_f1 }},
+    relationship_macro_f1: {{ cumulative_f1_all.relationship_macro_f1 }},
+    functioning_macro_f1: {{ cumulative_f1_all.functioning_macro_f1 }}
+};
+const cumF1Real = {
+    total_discussions: {{ cumulative_f1_real.total_discussions }},
+    aggregate_micro_f1: {{ cumulative_f1_real.aggregate_micro_f1 }},
+    people_f1: {{ cumulative_f1_real.people_f1 }},
+    events_f1: {{ cumulative_f1_real.events_f1 }},
+    pair_bonds_f1: {{ cumulative_f1_real.pair_bonds_f1 }},
+    symptom_macro_f1: {{ cumulative_f1_real.symptom_macro_f1 }},
+    anxiety_macro_f1: {{ cumulative_f1_real.anxiety_macro_f1 }},
+    relationship_macro_f1: {{ cumulative_f1_real.relationship_macro_f1 }},
+    functioning_macro_f1: {{ cumulative_f1_real.functioning_macro_f1 }}
+};
+
+function showCumF1(source) {
+    const m = source === 'all' ? cumF1All : cumF1Real;
+    document.getElementById('cumf1-tab-all').classList.toggle('is-active', source === 'all');
+    document.getElementById('cumf1-tab-real').classList.toggle('is-active', source === 'real');
+    document.getElementById('cumf1-subtitle').textContent =
+        `Comparing end-of-discussion cumulative PDPs across ${m.total_discussions} discussions`;
+    document.getElementById('cumf1-overall').textContent = m.aggregate_micro_f1.toFixed(3);
+    document.getElementById('cumf1-people').textContent = m.people_f1.toFixed(3);
+    document.getElementById('cumf1-events').textContent = m.events_f1.toFixed(3);
+    document.getElementById('cumf1-pair-bonds').textContent = m.pair_bonds_f1.toFixed(3);
+    document.getElementById('cumf1-symptom').textContent = m.symptom_macro_f1.toFixed(3);
+    document.getElementById('cumf1-anxiety').textContent = m.anxiety_macro_f1.toFixed(3);
+    document.getElementById('cumf1-relationship').textContent = m.relationship_macro_f1.toFixed(3);
+    document.getElementById('cumf1-functioning').textContent = m.functioning_macro_f1.toFixed(3);
+}
+</script>
+{% endif %}
+{% endif %}

@@ -10,11 +10,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Data Type | WRONG Location | CORRECT Location |
 |-----------|----------------|------------------|
-| Induction reports | `btcopilot/btcopilot/induction-reports/` | `btcopilot-sources/training/induction-reports/` |
+| Induction reports | `btcopilot/doc/induction-reports/` | `btcopilot-sources/training/induction-reports/` |
 | GT exports | `btcopilot/instance/gt_export.json` | `btcopilot-sources/training/gt-exports/` |
 
 **Symlinks exist** to allow workflow compatibility:
-- `btcopilot/btcopilot/induction-reports` → `btcopilot-sources/training/induction-reports/`
+- `btcopilot/doc/induction-reports` → `btcopilot-sources/training/induction-reports/`
 - `theapp/instance/gt_export.json` → `btcopilot-sources/training/gt-exports/gt_export.json`
 
 **If you create new clinical data outputs**:
@@ -41,6 +41,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Chat flow, personal app AI | [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md) |
 | Major decisions (career, strategy) | [decisions/log.md](decisions/log.md) |
 | Architecture decisions | [adrs/](adrs/) |
+| IRR working group, calibration, coding guidelines | [doc/irr/](doc/irr/) |
 
 **Other references:**
 - [README.md](README.md) - Project overview

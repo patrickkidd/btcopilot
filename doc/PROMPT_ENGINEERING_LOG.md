@@ -187,7 +187,7 @@ Based on failed experiments:
 
 ### Prompt Induction Reports
 
-- **Location**: `btcopilot/induction-reports/<timestamp>/`
+- **Location**: `doc/induction-reports/<timestamp>/`
 - **Contains**: Iteration logs, F1 deltas, final report
 
 ---

@@ -249,7 +249,6 @@ def test_apply_deltas(data):
 
 
 def test_cleanup_pair_bonds_removes_invalid_refs():
-    """Pair bonds referencing non-existent people should be removed."""
     input_pdp = PDP(
         people=[
             Person(id=-1, name="Alice"),
@@ -261,8 +260,6 @@ def test_cleanup_pair_bonds_removes_invalid_refs():
             PairBond(id=-12, person_a=-98, person_b=-2),  # invalid: -98 doesn't exist
         ],
     )
-    # Add parents reference so valid bond isn't orphaned
-    input_pdp.people[0].parents = -10
 
     result = pdp.cleanup_pair_bonds(input_pdp)
 
@@ -271,7 +268,6 @@ def test_cleanup_pair_bonds_removes_invalid_refs():
 
 
 def test_cleanup_pair_bonds_removes_duplicates():
-    """Duplicate pair bonds (same person pair) should be deduplicated."""
     input_pdp = PDP(
         people=[
             Person(id=-1, name="Alice", parents=-10),
@@ -290,17 +286,14 @@ def test_cleanup_pair_bonds_removes_duplicates():
     assert result.pair_bonds[0].id == -10  # keeps first encountered
 
 
-def test_cleanup_pair_bonds_removes_orphans():
-    """Pair bonds not referenced by any person's parents should be removed."""
+def test_cleanup_pair_bonds_keeps_unreferenced():
     input_pdp = PDP(
         people=[
             Person(id=-1, name="Alice"),
             Person(id=-2, name="Bob"),
-            Person(id=-3, name="Child", parents=-10),  # only references -10
         ],
         pair_bonds=[
-            PairBond(id=-10, person_a=-1, person_b=-2),  # referenced
-            PairBond(id=-11, person_a=-1, person_b=-2),  # orphaned (not referenced)
+            PairBond(id=-10, person_a=-1, person_b=-2),
         ],
     )
 
@@ -311,7 +304,6 @@ def test_cleanup_pair_bonds_removes_orphans():
 
 
 def test_cleanup_pair_bonds_preserves_valid():
-    """Valid, unique, referenced pair bonds should be preserved."""
     input_pdp = PDP(
         people=[
             Person(id=-1, name="Father"),

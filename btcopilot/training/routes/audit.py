@@ -13,6 +13,10 @@ from btcopilot.training.utils import (
     get_discussion_gt_statuses,
     GTStatus,
 )
+from btcopilot.training.f1_metrics import (
+    calculate_system_f1,
+    calculate_all_cumulative_f1,
+)
 
 
 _log = logging.getLogger(__name__)
@@ -91,9 +95,8 @@ def index():
     all_discussions.sort(key=sort_key)
 
     # Calculate F1 metrics for approved ground truth
-    from btcopilot.training.f1_metrics import calculate_system_f1
-
     f1_metrics = calculate_system_f1()
+    cumulative_f1 = calculate_all_cumulative_f1()
 
     breadcrumbs = get_breadcrumbs("audit")
 
@@ -111,6 +114,7 @@ def index():
         btcopilot=btcopilot,
         breadcrumbs=breadcrumbs,
         f1_metrics=f1_metrics,
+        cumulative_f1=cumulative_f1,
         viewing_other_user=viewing_other_user,
         gt_statuses=gt_statuses,
         GTStatus=GTStatus,

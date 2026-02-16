@@ -160,18 +160,24 @@ PDP_FORCE_REQUIRED = {
 # --- Gemini client ---
 
 
+GEMINI_TIMEOUT_MS = 120_000
+
+
 @lru_cache(maxsize=1)
 def _client():
     from google import genai
+    from google.genai import types
 
-    return genai.Client(api_key=os.environ["GOOGLE_GEMINI_API_KEY"])
+    return genai.Client(
+        api_key=os.environ["GOOGLE_GEMINI_API_KEY"],
+        http_options=types.HttpOptions(timeout=GEMINI_TIMEOUT_MS),
+    )
 
 
 # --- Public API ---
 
 
 async def gemini_structured(prompt, response_format, large=False):
-    """Structured JSON extraction via Gemini."""
     from google.genai import types
 
     start_time = time.time()
@@ -210,14 +216,12 @@ async def gemini_structured(prompt, response_format, large=False):
 
 
 def gemini_structured_sync(prompt, response_format, large=False):
-    """Synchronous wrapper for gemini_structured."""
     from btcopilot.async_utils import one_result
 
     return one_result(gemini_structured(prompt, response_format, large=large))
 
 
 async def gemini_text(prompt=None, **kwargs):
-    """Free-form text generation via Gemini."""
     from google.genai import types
 
     start_time = time.time()
@@ -252,7 +256,6 @@ async def gemini_text(prompt=None, **kwargs):
 
 
 def gemini_text_sync(prompt=None, **kwargs):
-    """Synchronous wrapper for gemini_text."""
     from btcopilot.async_utils import one_result
 
     return one_result(gemini_text(prompt, **kwargs))

@@ -4,59 +4,65 @@
 
 **Status**: Active - update as learnings emerge.
 
-**Last Updated**: 2025-12-18
+**Last Updated**: 2026-02-14
 
 ---
 
 ## Current State Summary
 
-### F1 Baseline (as of 2025-12-17)
+### F1 Baseline (as of 2026-02-14, gemini-2.5-flash)
 
 | Metric | Score | Assessment |
 |--------|-------|------------|
-| Aggregate F1 | ~0.15 | Very low |
+| Aggregate F1 | ~0.24 | Low (noisy ±0.03) |
 | People F1 | ~0.72 | Acceptable |
-| Events F1 | ~0.13 | Very low |
-| Symptom F1 | 0.00-0.03 | Near zero |
-| Anxiety F1 | 0.00-0.01 | Near zero |
-| Relationship F1 | 0.00-0.03 | Near zero |
-| Functioning F1 | 0.00-0.01 | Near zero |
+| Events F1 | ~0.14 | Very low |
+| Symptom F1 | ~0.20 | Low |
+| Anxiety F1 | ~0.22 | Low |
+| Relationship F1 | ~0.22 | Low |
+| Functioning F1 | ~0.22 | Low |
 
-**Diagnosis**: People extraction works reasonably well. Event extraction is the primary blocker. SARF variable F1 scores are near zero because:
-1. Event matching fails before SARF variables can be compared
-2. Sparse GT signal (few events have SARF variables coded)
-3. High model stochasticity (same prompt yields different results)
+**Diagnosis**: Scores are dominated by GT data quality issues and stochastic variance:
+1. **GT data quality** is the primary blocker (see section below)
+2. High model stochasticity makes ±0.03 improvements indistinguishable from noise
+3. 45-case benchmark is too small for reliable signal
+4. People extraction acceptable, event extraction blocked by matching issues
 
 ---
 
 ## Known Blockers (in priority order)
 
-### 1. Event Matching Brittleness (Critical)
+### 1. GT Data Quality (Critical - NEW 2026-02-14)
+
+**Problem**: GT data has systematic quality issues that prevent fair evaluation.
+
+**Evidence from 2026-02-14 analysis** (88 GT events total):
+- **20.5% of GT events (18/88) have person=None** — these can NEVER match AI events since the prompt requires person. 16 of 60 cases with events have at least one person=None event.
+- **27.3% of GT events (24/88) have placeholder descriptions** — "New Event" or empty. These fail description similarity matching.
+- **100% of GT events have dateCertainty=None** — the 7-day DATE_TOLERANCE_DAYS path is never taken; all dates use the 270-day approximate tolerance.
+
+**Fixes applied (2026-02-14)**:
+- [x] Treat GT person=None as wildcard in event matching
+- [x] Treat placeholder descriptions ("New Event", empty) as auto-pass
+- [ ] Review and fix GT person assignments (18 events need person set)
+- [ ] Review and fix GT descriptions (24 events have placeholders)
+- [ ] Add dateCertainty to GT events
+
+### 2. Event Matching Brittleness
 
 **Problem**: Event F1 uses strict matching that fails on "close but different" extractions.
 
 **Current matching requirements** (all must pass):
 - `kind` exact match
-- `description` fuzzy similarity >= 0.5 (40% weight)
-- `dateTime` within 7 days (20% weight)
-- **All person IDs must match exactly** (person, spouse, child, relationshipTargets, relationshipTriangles)
+- `description` fuzzy similarity >= 0.4 (80% weight) — lowered from 0.5
+- `dateTime` within tolerance (270 days when either certainty is None/Approximate)
+- Person links: GT None = wildcard, otherwise must match exactly
 
-**Cascading failure**: If person matching fails (even slightly), event matching fails, SARF variables never get compared.
-
-**Evidence from induction reports**:
-```
-GT: "Trouble sleeping" (16 chars)
-AI: "Having trouble sleeping and feeling really anxious" (48 chars)
-Similarity: 0.477 (below 0.5 threshold) → No match → All SARF F1 = 0
-```
-
-**Potential fixes**:
-- [ ] Lower `DESCRIPTION_SIMILARITY_THRESHOLD` from 0.5 to 0.4 in `f1_metrics.py`
+**Potential remaining fixes**:
 - [ ] Use semantic similarity (embeddings) instead of fuzzy string matching
-- [ ] Allow partial person ID matches with lower weight
 - [ ] Separate "event detected" from "event details correct" metrics
 
-### 2. High Model Stochasticity (Critical)
+### 3. High Model Stochasticity (Critical)
 
 **Problem**: Same prompt produces different outputs across runs.
 
@@ -172,6 +178,8 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 2. Clarifying direction coding ("up" almost always, "down" only for improvement)
 3. Requiring separate events per issue
 4. Preserving names with titles exactly as spoken
+5. Adding missing relationship types to prompt (toward, away, defined-self, cutoff, fusion) — schema-aligned (2026-02-14)
+6. Fixing F1 matching for GT person=None and placeholder descriptions (2026-02-14)
 
 **Things that failed**:
 1. Adding explicit negative examples for SARF variables (caused model to stop using them)
@@ -181,8 +189,16 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 5. Divorce event extraction example (2025-12-18) - no improvement, dates block matching
 6. Adding "away"/"toward" relationship kinds (2025-12-18) - no improvement, model already handles
 7. Verb phrase description style guidance (2025-12-18) - no improvement, dates block matching
+8. thinking_budget=1024 on gemini-2.5-flash (2026-02-14) - CATASTROPHIC latency: 29+ min per case, API hangs. Thinking+structured_output incompatible.
+9. Encouraging more extraction ("empty arrays should be rare") (2026-02-14) - aggregate dropped, reverted
+10. Temperature 0.0 vs 0.1 (2026-02-14) - negligible difference, reverted
+11. DATE_TOLERANCE_DAYS 7→30 (2026-02-14) - no effect because 100% of GT has dateCertainty=None (already uses 270-day tolerance)
 
-**Key insight**: The model is extremely sensitive to SARF-related prompt changes. Small modifications cause the model to stop coding SARF variables entirely.
+**Key insights**:
+- The model is extremely sensitive to SARF-related prompt changes
+- GT data quality is the primary measurement blocker, not prompt quality
+- 45-case benchmark has ~±0.03 noise floor — cannot measure improvements smaller than this
+- gemini-2.5-flash thinking mode is incompatible with structured JSON output (catastrophic latency)
 
 ---
 
@@ -302,33 +318,34 @@ Current state: Stage 1 not yet reached.
 
 ## Next Recommended Actions
 
-### Immediate (Before Next Induction Run)
+### Immediate (Highest Impact)
 
-1. **Lower description threshold**: Edit `btcopilot/training/f1_metrics.py`:
-   ```python
-   DESCRIPTION_SIMILARITY_THRESHOLD = 0.4  # was 0.5
-   ```
-   Re-run baseline to see impact.
+1. **Fix GT data quality** — This is the #1 blocker. Until GT is clean, F1 scores are unreliable:
+   - Assign `person` to 18 GT events currently set to None
+   - Replace 24 "New Event" placeholder descriptions with real descriptions
+   - Add `dateCertainty` to all GT events
+   - Review GT dates (many look like placeholders: 2025-06-01, 2025-12-15)
 
-2. **Reduce model temperature**: Check pydantic_ai configuration in `btcopilot/pdp.py` for temperature settings.
+2. **Increase GT dataset size** — 45 cases gives ~±0.03 noise floor. Need 100+ for reliable signal.
+   Run multiple extractions per statement (3x) and average scores to reduce variance.
 
-3. **Run ablation test**: Remove SECTION 3 examples entirely, measure F1. Determine if examples help or hurt.
+3. **Add event-only detection metric** — Separate "event detected at all" from "event details correct".
+   Current all-or-nothing matching hides partial matches.
 
-### Short-term (This Week)
+### Short-term (After GT Cleanup)
 
-4. **Add event-only F1 view**: Separate "event detected at all" from "event details match".
+4. **Re-run baseline** with clean GT to establish true performance floor.
 
-5. **Investigate GT quality**: Manually review 10 GT cases for description style consistency.
+5. **Semantic (embedding) matching** — Replace fuzzy string matching with embeddings for descriptions.
+   GT "Trouble sleeping" should match AI "Having trouble sleeping" at high confidence.
 
-6. **Run multiple extractions**: Extract same statement 3x, compare variance.
+6. **Run ablation test** — Remove SECTION 3 examples entirely, measure F1. Determine if examples help or hurt.
 
-### Medium-term (This Month)
+### Medium-term
 
-7. **Semantic matching prototype**: Test embedding-based event matching on subset.
+7. **GT expansion** — Add 50+ cases with all fields populated (person, description, dateCertainty, SARF variables).
 
-8. **GT expansion**: Add 20+ cases with SARF variables coded.
-
-9. **Prompt structure experiment**: Test prompt without SARF definitions (Events-only).
+8. **Confidence-based testing** — Instead of single-run scores, run each case 5x and report mean±std.
 
 ---
 
@@ -367,4 +384,4 @@ Current state: Stage 1 not yet reached.
 | [training/prompts/induction_agent.md](../btcopilot/training/prompts/induction_agent.md) | Agent meta-prompt |
 | [personal/prompts.py](../btcopilot/personal/prompts.py) | Extraction prompts (edit target) |
 | [training/f1_metrics.py](../btcopilot/training/f1_metrics.py) | F1 calculation (matching logic) |
-| [induction-reports/](../induction-reports/) | Historical run logs |
+| [induction-reports/](induction-reports/) | Historical run logs |

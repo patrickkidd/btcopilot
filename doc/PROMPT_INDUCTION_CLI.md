@@ -542,7 +542,7 @@ Key flags:
 
 **Generated Files** (stored in btcopilot-sources, symlinked):
 - `instance/gt_export.json` → `btcopilot-sources/training/gt-exports/gt_export.json`
-- `btcopilot/induction-reports/` → `btcopilot-sources/training/induction-reports/`
+- `doc/induction-reports/` → `btcopilot-sources/training/induction-reports/`
   - `<timestamp>[--focus-<field>]/` - Run folder per induction
     - `<timestamp>.md` - Report
     - `<timestamp>_log.jsonl` - Iteration log

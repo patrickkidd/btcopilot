@@ -75,7 +75,7 @@ def test_validate_deltas_rejects_positive_id_for_person():
     with pytest.raises(PDPValidationError) as exc_info:
         validate_pdp_deltas(pdp, deltas)
     assert len(exc_info.value.errors) == 1
-    assert "negative ID" in exc_info.value.errors[0]
+    assert "positive ID 1" in exc_info.value.errors[0]
 
 
 def test_validate_deltas_rejects_positive_id_for_event():
@@ -84,7 +84,23 @@ def test_validate_deltas_rejects_positive_id_for_event():
     with pytest.raises(PDPValidationError) as exc_info:
         validate_pdp_deltas(pdp, deltas)
     assert len(exc_info.value.errors) == 1
-    assert "negative ID" in exc_info.value.errors[0]
+    assert "positive ID 1" in exc_info.value.errors[0]
+
+
+def test_validate_deltas_allows_positive_id_in_committed_diagram():
+    pdp = PDP(
+        pair_bonds=[PairBond(id=-5, person_a=1, person_b=-3)],
+        people=[Person(id=-3, name="Richard")],
+    )
+    diagram_data = DiagramData(
+        people=[{"id": 1, "name": "Jennifer"}],
+        events=[],
+        pair_bonds=[],
+    )
+    deltas = PDPDeltas(
+        people=[Person(id=1, parents=-5, confidence=0.99)],
+    )
+    validate_pdp_deltas(pdp, deltas, diagram_data)
 
 
 def test_validate_deltas_detects_id_collision_in_delta():

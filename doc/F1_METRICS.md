@@ -337,6 +337,27 @@ DATE_WEIGHT = 0.2
 - `test_bulk_approval.py` - Bulk approval + cache invalidation
 - `test_ground_truth_export.py` - JSON export format
 
+## Cumulative F1
+
+### Purpose
+
+Per-statement F1 compares AI vs GT at each individual statement. This has weaknesses:
+- Statements with no pair bonds get trivial 1.0 scores, inflating the average
+- Missing people referenced later get penalized as FN then TP — double-counting
+- AI over-extraction on one statement and under-extraction on another can cancel out
+
+**Cumulative F1** compares the full accumulated PDP at the end of a discussion. Uses `pdp.cumulative()` to build both AI and GT PDPs from all statements, then runs the same matching logic.
+
+### Implementation
+
+- **`CumulativeF1Metrics`** dataclass: Per-discussion metrics
+- **`calculate_cumulative_f1(discussion_id)`**: Build AI + GT cumulative PDPs, run matching
+- **`calculate_all_cumulative_f1()`**: Run across all discussions with approved GT
+
+### Key Finding: Pair Bonds
+
+AI currently extracts **zero pair bonds** across all discussions. Per-statement F1 shows ~0.778 because most statements have 0 AI + 0 GT pair bonds → `calculate_f1_from_counts(0, 0, 0)` returns 1.0. Cumulative F1 correctly shows 0.000 since GT accumulates 3-5 pair bonds while AI stays at zero. This is a real AI capability gap for prompt improvement.
+
 ## Known Limitations
 
 1. **Fuzzy matching thresholds**: May need tuning based on real-world data

@@ -291,10 +291,11 @@ SECTION 1: DATA MODEL (Semantic definitions - what things mean)
     - "approximate": date is within a year (e.g., "sometime in 1985", "in
       college")
     - "unknown": date is completely unknown/guessed, no temporal info
-  - `description`: SPECIFIC INCIDENT phrase, 3-5 words. Describe WHAT HAPPENED,
-    not which variable shifted. NEVER use SARF labels as descriptions.
+  - `description`: Short phrase, 3-5 words. Describe WHAT HAPPENED or the
+    PATTERN, not which variable shifted. NEVER use SARF labels as descriptions.
     GOOD: "Trouble sleeping", "Boss criticized project", "Argument at dinner",
-      "Started drinking nightly", "Avoided family gathering"
+      "Started drinking nightly", "Avoided family gathering",
+      "Not much contact with siblings", "Dropped out of family"
     BAD: "Symptom up", "Anxiety increased", "Relationship shift", "Functioning
       down" (these just restate the variable - useless for understanding)
   - `notes`: REQUIRED for shift events. Can fill for other event types when
@@ -329,13 +330,23 @@ SECTION 1: DATA MODEL (Semantic definitions - what things mean)
 
   - **Relationship**: Emotive/automatic behavior by one person toward others,
     serving to decrease short-term discomfort. Use Event.relationship field.
+    Relationship events include BOTH specific incidents AND ongoing patterns
+    described with a timeframe (e.g., "not talking for years", "always fighting").
 
     A) Anxiety binding mechanisms (specify targets in relationshipTargets):
-      - "distance": Avoiding communication, up to cutoff
-      - "conflict": Overt arguments, up to violence
-      - "overfunctioning"/"underfunctioning": Reciprocal imbalance
-      - "projection": Attention to perceived problem in a child (use child
-        field)
+      - "distance": Avoiding contact/communication, emotional withdrawal
+      - "cutoff": Complete severing of contact (extreme distance)
+      - "conflict": Overt arguments, hostility, up to violence
+      - "overfunctioning"/"underfunctioning": Reciprocal imbalance where one
+        does too much and the other too little
+      - "projection": Focused attention on perceived problem in a child (use
+        child field)
+      - "toward": Moving toward someone, seeking closeness/approval/reassurance,
+        making demands for contact or attention
+      - "away": Pulling away, retreating from engagement, withdrawing
+      - "defined-self": Taking a non-reactive position, maintaining own course
+        despite pressure from others
+      - "fusion": Emotional merging, loss of separate self in relationship
 
     B) Triangle moves (relationshipTriangles is REQUIRED for inside/outside):
       - "inside": Event.person aligns WITH relationshipTargets (the "insiders"),
@@ -348,8 +359,8 @@ SECTION 2: EXTRACTION RULES (Operational guidance)
 ===============================================================================
 
 **EVENT EXTRACTION CHECKLIST** (all must be YES to create an event):
-1. Is there a SPECIFIC INCIDENT (not a general pattern)?
-2. Is there a TIME REFERENCE (even vague like "last week", "in 1979")?
+1. Is there something that HAPPENED or a PATTERN being described?
+2. Is there a TIME REFERENCE (even vague like "last week", "in 1979", "for years")?
 3. Can you identify WHO the event is about?
 4. Is this event NOT already captured in diagram_data.pdp.events?
 If any answer is NO, do NOT create the event.
@@ -362,12 +373,13 @@ if vague or imprecise. A vague date is always better than null.
 - "approximate" = Vague timeframe ("sometime last year", "in the 80s")
 - "unknown" = No date info at all, using pure estimate
 
-**Do NOT create events for**: General characterizations ("he's difficult"),
-ongoing patterns without specific incidents ("she always criticizes me"),
-vague feelings without concrete occurrences.
+**Do NOT create events for**: Pure personality traits ("he's difficult"),
+abstract feelings without any behavioral indication.
 
-**DO create events for**: Specific arguments/conflicts with timeframe,
-particular incidents of distancing, concrete relationship moves.
+**DO create events for**: Specific incidents with timeframe, relationship
+patterns described in context ("not talking for years" = distance, "she dropped
+out of the family" = cutoff, "always fighting" = conflict), health changes,
+functioning changes.
 
 **EVENT.PERSON ASSIGNMENT**: Every Event MUST have the correct `person` field.
 - `"death"`: person = who DIED (not the speaker)
@@ -393,6 +405,9 @@ particular incidents of distancing, concrete relationship moves.
 **PERSON EXTRACTION RULES:**
 - Extract ALL named individuals (first name, full name, title+name)
 - AVOID DUPLICATE EXTRACTIONS: If both generic and named exist, extract ONLY named
+- REUSE EXISTING IDs: Before creating a new Person, scan diagram_data.pdp.people
+  for someone with the same or equivalent name. If found, use their existing ID
+  for events — do NOT create a duplicate Person entry.
 - Use possessive patterns for unnamed relations: "my mom" -> "User's Mother"
 
 **GENDER INFERENCE RULES:**
@@ -555,7 +570,7 @@ Output:
     "delete": []
 }
 
-Example 4: No new data (general characterization)
+Example 4: No new data (personality trait)
 
 **User statement**: "My brother-in-law is sometimes hard to deal with."
 
@@ -567,10 +582,54 @@ Output:
     "delete": []
 }
 
-(No event created - "sometimes hard to deal with" is a general characterization,
-not a specific incident at a point in time.)
+(No event created - "sometimes hard to deal with" is a personality trait with no
+behavioral pattern or timeframe.)
 
-Example 5: Parent/child relationship with PairBond
+Example 5: Relationship pattern events
+
+**User statement**: "My siblings and I haven't had much contact since mom died.
+My sister pretty much dropped out of the picture completely."
+
+(Context: User is ID 1, Mom death already captured, Sister is ID 5, Brother is
+ID 6 - all in PDP. Mom died about 2 years ago.)
+
+Output:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -1,
+            "kind": "shift",
+            "person": 1,
+            "description": "Not much contact with siblings",
+            "notes": "Since mom died",
+            "dateTime": "2023-06-01",
+            "dateCertainty": "approximate",
+            "relationship": "distance",
+            "relationshipTargets": [5, 6],
+            "confidence": 0.7
+        },
+        {
+            "id": -2,
+            "kind": "shift",
+            "person": 5,
+            "description": "Dropped out of the picture",
+            "notes": "Complete withdrawal from family after mom's death",
+            "dateTime": "2023-06-01",
+            "dateCertainty": "approximate",
+            "relationship": "cutoff",
+            "relationshipTargets": [1, 6],
+            "confidence": 0.7
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+(Relationship PATTERNS with a timeframe ("since mom died") ARE events. Each
+person's behavior is a separate event. "Dropped out completely" = cutoff.)
+
+Example 6: Parent/child relationship with PairBond
 [PARENT_CHILD_PAIRBOND_SEMANTIC]
 
 **User statement**: "My parents are Mary and John. I have a sister named Sarah."
@@ -595,6 +654,36 @@ CHILDREN (Sarah) to reference the PairBond ID. Mary and John do NOT have
 
 WRONG: {"id": -1, "name": "Mary", "parents": -4}  (spouse as child of own marriage)
 RIGHT: {"id": -3, "name": "Sarah", "parents": -4}  (child references parents' PairBond)
+
+Example 7: Person already exists in PDP (no duplicate extraction)
+
+**Current diagram_data.pdp.people**: [{"id": -3, "name": "Michael", "gender": "male"}]
+
+**User statement**: "Michael came to visit Mom last weekend and we got into an argument."
+
+Output:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -8,
+            "kind": "shift",
+            "person": -3,
+            "description": "Argument during visit",
+            "notes": "Michael visited last weekend, got into argument",
+            "dateTime": "2025-01-11",
+            "dateCertainty": "approximate",
+            "relationship": "conflict",
+            "relationshipTargets": [1],
+            "confidence": 0.7
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+(Michael already exists at id=-3 in the PDP. Do NOT create a new Person entry.
+Use the existing id=-3 when referencing him in events.)
 """
 
 # Part 3: Context with template variables ({diagram_data}, {conversation_history}, {user_message})

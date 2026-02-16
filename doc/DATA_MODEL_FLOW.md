@@ -147,26 +147,58 @@
        events: list[Event] = field(default_factory=list)
    ```
 
-   **Purpose**: Container for pending extractions waiting user confirmation.
+   **Purpose**: Container for pending extractions waiting user confirmation. The PDP is a stream of deltas for the committed diagram data — it is the output of all AI-driven data management logic.
+
+   **Two-Tier Delta Architecture**:
+   - **Tier 1 (per-statement)**: Extraction produces `PDPDeltas` for each statement, which are applied to the PDP via `apply_deltas()`
+   - **Tier 2 (PDP → diagram)**: The accumulated PDP contains deltas for the committed diagram data, applied when the user accepts
+   - Both tiers can reference either committed diagram items (positive IDs) or other PDP items (negative IDs)
 
    **Characteristics**:
-   - Contains unconfirmed Person and Event entries
-   - All IDs are negative integers
-   - All confidence values < 1.0
-   - User can accept (move to main DiagramData) or reject
+   - New PDP items use negative IDs
+   - Positive IDs in the PDP reference committed diagram items (e.g. setting `parents` on the speaker)
+   - All confidence values < 1.0 for new items
+   - User can accept entire PDP or individual items, or reject individual items with cascade deletion of orphaned references
 
    ---
 
-   ### 1.5 PDPDeltas (Change Set)
+   ### 1.5 PairBond (Couple)
+   ```python
+   @dataclass
+   class PairBond:
+       id: int | None = None
+       person_a: int | None = None
+       person_b: int | None = None
+       confidence: float | None = None
+   ```
+
+   **Purpose**: Represents a reproductive/emotional pair bond between two people. Central to Bowen theory — pair bonds encode the instinctual attachment and automatic relationship processes between partners.
+
+   **ID Convention**: Same shared namespace as Person and Event (negative = PDP, positive = committed).
+
+   **Relationships**:
+   - `Person.parents` references a PairBond ID (children point to their parents' pair bond)
+   - Events (Married, Bonded, Separated, Divorced) reference the same people via `person` + `spouse`
+
+   **Two Creation Paths** (both valid, system deduplicates):
+   1. **Explicit extraction**: AI/auditor creates PairBond entity directly (e.g., "my parents are Mary and John")
+   2. **Event inference**: System auto-creates PairBond at commit from Married/Bonded/Birth events via `_create_inferred_pair_bond_items()` / `_create_inferred_birth_items()`
+
+   The explicit path is primary for AI extraction. Event inference is a fallback. See decision log 2026-02-14.
+
+   ---
+
+   ### 1.6 PDPDeltas (Change Set)
    ```python
    @dataclass
    class PDPDeltas:
        people: list[Person] = field(default_factory=list)
        events: list[Event] = field(default_factory=list)
+       pair_bonds: list[PairBond] = field(default_factory=list)
        delete: list[int] = field(default_factory=list)
    ```
 
-   **Purpose**: Represents only NEW or CHANGED items to apply to PDP.
+   **Purpose**: Represents NEW or CHANGED items to apply to PDP. Can contain both negative IDs (new PDP items) and positive IDs (updates to committed diagram items, e.g. setting `parents` on the speaker person).
 
    **CRITICAL DESIGN PATTERN**:
    - **SPARSE**: Most deltas contain very few items (often empty arrays)
@@ -177,8 +209,9 @@
    **Use Cases**:
    1. **New person mentioned**: Add to `people` list
    2. **New event/incident**: Add to `events` list
-   3. **Update existing person**: Include only changed fields (name correction, new relationship)
-   4. **Delete after correction**: Add ID to `delete` list
+   3. **New pair bond**: Add to `pair_bonds` list (when relationship between two people is stated)
+   4. **Update existing person**: Include only changed fields (name correction, new relationship)
+   5. **Delete after correction**: Add ID to `delete` list
 
    ---
 
@@ -414,6 +447,11 @@
 
    ### 3.3 PDP Acceptance/Rejection (btcopilot.personal.routes.diagrams)
 
+   **Acceptance modes**:
+   - **Accept all**: Apply all PDP deltas to committed diagram data
+   - **Accept individual**: Accept a single PDP item (person/event/pair_bond)
+   - **Reject individual**: Remove a PDP item and cascade-delete any other PDP items that reference it, preventing orphaned/dangling references
+
    **Accept (move from PDP to main database)**:
    ```python
    @diagrams_bp.route("/<int:diagram_id>/pdp/<int:pdp_id>/accept", methods=["POST"])
@@ -510,7 +548,40 @@
    )
    ```
 
-   ### 4.4 Multiple Relationships (Triangle)
+   ### 4.4 Update Committed Person (Positive ID in Delta)
+   ```python
+   # Speaker (id=1) mentions parents → delta links committed person to new PairBond
+   PDPDeltas(
+       people=[
+           Person(id=-3, name="Richard", gender="male", parents=-4, confidence=0.8),
+           Person(id=1, parents=-4, confidence=0.99),  # Update committed speaker
+       ],
+       events=[],
+       pair_bonds=[
+           PairBond(id=-4, person_a=-5, person_b=-3, confidence=0.8),
+       ],
+       delete=[]
+   )
+   ```
+
+   ### 4.5 INVALID: Positive ID Not in Committed Diagram
+   ```python
+   # LLM hallucinates a positive ID that doesn't exist in committed diagram
+   # Committed people: [{id: 1, name: "Jennifer"}, {id: 2, name: "Assistant"}]
+   PDPDeltas(
+       people=[
+           Person(id=5, parents=-2, confidence=0.9),  # INVALID: no person 5 in diagram
+       ],
+       events=[
+           Event(id=-3, kind=EventKind.Shift, person=1, ...),  # Valid: person 1 exists
+       ],
+       pair_bonds=[],
+       delete=[]
+   )
+   # Raises PDPValidationError: "Delta person has positive ID 5 not in committed diagram"
+   ```
+
+   ### 4.6 Multiple Relationships (Triangle)
    ```python
    PDPDeltas(
        people=[
@@ -573,8 +644,8 @@
 
    ### 6.1 ID Management
    ```
-   Committed: 1, 2, 3, ... (positive integers)
-   PDP:       -1, -2, -3, ... (negative integers)
+   Committed diagram: 1, 2, 3, ... (positive integers)
+   New PDP items:     -1, -2, -3, ... (negative integers)
    ```
 
    **CRITICAL: People, Events, and PairBonds share a single ID namespace.**
@@ -583,6 +654,11 @@
    - Validation rejects deltas where any ID appears in multiple entity types
    - Example valid delta: people=[-1, -2], events=[-3, -4], pair_bonds=[-5]
    - Example INVALID delta: people=[-1], events=[-1] (collision on -1)
+
+   **Positive IDs in PDPDeltas are valid** when they reference committed diagram items:
+   - Example: `{id: 1, parents: -5}` updates committed person 1 with a new parent PairBond
+   - Validation checks positive delta IDs against committed diagram item IDs
+   - Cross-references to positive IDs (e.g. `event.person = 1`) are always valid
 
    ### 6.2 Person Constraints
    - Each person has at most one parents PairBond
@@ -677,11 +753,11 @@
    ## Key Takeaways
 
    1. **Pickle-based Storage**: Diagram data is serialized as pickle binary, preserving existing scene data
-   2. **Negative IDs for PDP**: All pending entries use negative IDs for easy identification
+   2. **Two-tier delta system**: Extraction produces per-statement deltas for the PDP (tier 1), and the PDP contains deltas for the committed diagram (tier 2). Both tiers can reference committed items (positive IDs) or PDP items (negative IDs).
    3. **Sparse Deltas**: PDPDeltas should contain only NEW or CHANGED items, not entire dataset
    4. **Confidence Tracking**: Confidence scores (0-1) distinguish committed (1.0) from pending (0-0.9) data
    5. **Stateful Updates**: apply_deltas() uses model_fields_set to identify only changed fields
-   6. **Two Stages**: AI extracts deltas → user reviews → accepts/rejects to confirm
+   6. **Acceptance flow**: User can accept/reject entire PDP or individual items. Rejecting individual items cascade-deletes orphaned references.
    7. **JSON-Storable**: PDPDeltas convert to JSON via asdict() for Statement.pdp_deltas column
    8. **Enumeration**: EventKind, VariableShift, RelationshipKind provide structured event types
    9. **PDP is cumulative up to a statement**: Each statement's PDP includes only data from that statement and all preceding statements. Later statements do NOT retroactively affect earlier statements' PDP view. Each statement has its own point-in-time cumulative view of family data.
@@ -897,7 +973,7 @@ Approved ground truth is exported to `./model_tests/data/uncategorized/` as JSON
 
 5. **Parent-child relationships**: The `Person.parents` field references a `PairBond.id`. If parents exist, the person is a child of that pair bond.
 
-6. **Pair bonds come from events, not direct pair_bond entries**: In the SARF editor (discussion page), pair bonds are NOT added directly. Instead, married/bonded relationships are recorded as **Event** deltas with `kind: married` or `kind: bonded`, plus `person` and `spouse` fields. To render pair bonds in a diagram, you must scan events for these kinds and create pair bonds from the person/spouse pairs. The `pair_bonds` array in `edited_extraction` is only populated when assigning parents to a person (which creates the parent pair bond).
+6. **Pair bonds are first-class entities**: PairBonds appear in `edited_extraction.pair_bonds` and `Statement.pdp_deltas.pair_bonds`. The AI should extract them directly when relationships are stated (e.g., "my parents are Mary and John"). The SARF editor has a pair bond form for assigning Person.parents. Auto-inference from Married/Bonded/Birth events at commit time is a fallback, not the primary path. See decision log 2026-02-14.
 
 **Testing GT data correctly:**
 ```python

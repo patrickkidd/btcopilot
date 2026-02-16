@@ -6,6 +6,41 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ---
 
+## 2026-02
+
+### 2026-02-14: PairBonds are first-class entities, explicitly extracted by AI
+
+**Context:** Cumulative F1 revealed AI extracts zero pair bonds across all discussions (0.000 F1). Investigation showed the fdserver prompt has zero positive PairBond extraction examples, and `cleanup_pair_bonds()` aggressively prunes pair bonds not referenced by Person.parents.
+
+**Background — two creation paths exist:**
+1. **Explicit**: AI/auditor creates PairBond entity, sets Person.parents to reference it
+2. **Inferred**: AI creates Married/Birth event with person+spouse → system auto-creates PairBond at commit time via `_create_inferred_pair_bond_items()` / `_create_inferred_birth_items()`
+
+**Options considered:**
+1. Fix AI prompt to extract PairBonds directly as first-class delta entities
+2. Lean into auto-inference only, exclude pair bonds from F1
+3. Add pair bond inference to F1 calculation to mirror commit-time behavior
+
+**Decision:** Option 1 — PairBonds are first-class, explicitly extracted.
+
+**Reasoning:**
+- PairBonds encode *relationships* (stated facts). Events encode *occurrences*. "My parents are Mary and John" is a relationship, not an occurrence — only a PairBond makes sense.
+- The pro app's event-first design ("add events, diagram builds itself") was a UX simplification for non-technical clinicians, not a statement about PairBond importance in the domain model.
+- Person.parents needs a PairBond ID to reference. The SARF editor needs PairBonds for coding. F1 needs them for measurement. All downstream consumers expect explicit PairBonds.
+- Auto-inference stays as a fallback for cases the AI misses, not the primary path.
+
+**Changes:**
+- Add positive PairBond extraction examples to fdserver prompt
+- Fix `cleanup_pair_bonds()` to keep pair bonds referenced by events (not just Person.parents)
+- Keep pair bonds in F1 metric
+- Update DATA_MODEL_FLOW.md to correctly document PairBond lifecycle
+
+**The conceptual inconsistency** (Birth events + explicit PairBonds both establish parentage) is acceptable for MVP. Dedup logic in `_create_inferred_pair_bond_items()` handles it. Full resolution would require major refactoring not warranted now.
+
+**Revisit trigger:** If PairBond F1 remains low after prompt fix, revisit whether the extraction schema or inference approach needs restructuring.
+
+---
+
 ## 2026-01
 
 ### 2026-01-08: IRR analysis page using F1 + Cohen's/Fleiss' Kappa for SARF validation
