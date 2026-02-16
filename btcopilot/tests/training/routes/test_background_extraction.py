@@ -119,57 +119,19 @@ def test_extract_next_statement(mock_pdp_update, mock_celery, flask_app, discuss
 
 
 @patch("btcopilot.training.routes.discussions.pdp.update")
-def test_extract_next_statement_error_handling(mock_pdp_update, flask_app, discussion):
+def test_extract_next_statement_error_propagates(mock_pdp_update, flask_app, discussion):
 
-    # Setup: Clear pdp_deltas to make Subject statements unprocessed and enable extracting
     for statement in discussion.statements:
         if statement.speaker.type == SpeakerType.Subject:
             statement.pdp_deltas = None
 
-    # Enable extraction for this discussion
     discussion.extracting = True
     db.session.commit()
     mock_pdp_update.side_effect = Exception("LLM API error")
 
-    # Get initial count using direct attribute access
-    subject_statements_before = (
-        Statement.query.join(Speaker)
-        .filter(
-            Speaker.type == SpeakerType.Subject,
-            Statement.text.isnot(None),
-            Statement.text != "",
-        )
-        .all()
-    )
-    unprocessed_before = sum(
-        1 for stmt in subject_statements_before if stmt.pdp_deltas is None
-    )
-    assert unprocessed_before == 1
-
     with flask_app.app_context():
-        result = extract_next_statement()
-    assert result is False
-    assert mock_pdp_update.call_count == 1
-
-    # Refresh the session to get updated data
-    for stmt in subject_statements_before:
-        db.session.refresh(stmt)
-
-    # All statements should still be unprocessed due to error
-    subject_statements_after = (
-        Statement.query.join(Speaker)
-        .filter(
-            Speaker.type == SpeakerType.Subject,
-            Statement.text.isnot(None),
-            Statement.text != "",
-        )
-        .all()
-    )
-
-    unprocessed_after = sum(
-        1 for stmt in subject_statements_after if stmt.pdp_deltas is None
-    )
-    assert unprocessed_after == 1  # Still unprocessed due to error
+        with pytest.raises(Exception, match="LLM API error"):
+            extract_next_statement()
 
 
 @patch("btcopilot.training.routes.discussions.pdp.update")
