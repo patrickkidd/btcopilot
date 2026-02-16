@@ -1,0 +1,501 @@
+Patrick: Sa. Hey, Kathy.
+Kathy: Hey.
+Kathy: Good to be here.
+Patrick: Yeah. Yeah. This is going to be cool and messy.
+Kathy: Yeah, yeah, yeah.
+Patrick: I sent an email about 10 minutes ago with a link that I put together a bunch of info just.
+Kathy: Should I look at that now?
+Patrick: Yeah, it's just about the process and, and yeah, stuff like that, how to think about it. I mean, I'll summarize it a little bit, but.
+Kathy: Okay.
+Patrick: But I'm storing it all online. I'm getting really good at. At keeping track of stuff like meeting minutes and at work and elsewhere and keeping it in a way that I can use AI to go through it decision logs. So meeting minutes for this thing will. Will definitely go in there and get catalogs so I can get like an AI agent and go back through it. And I think that'll. That ought to be interesting for irr.
+Kathy: Actually did that, did that getting all that together more. So come about just for your. For your focusing on putting it together or was it more just AI? What AI is contributing?
+Patrick: I'm not sure quite what you're asking, but I can tell you that, I mean I'm spending all day in my day job doing this like figuring like, you know, you have all these meetings with all of this really valuable information about your project. People are talking, it's not getting recorded all the time. And then also I'm coding with agents all day. Like I'm typing. I do all my work in AI now and all the things that you put in is invaluable information about the project and it just gets lost unless you, you know, similar to meeting minutes. Right, it gets lost unless you, you record it, organize it so that later on when you're like, why do we design something this way? Or like for this meeting it'll be like, why did we end up with this rule for this code? You can go back and figure out why it's such a big deal. So I'm sort of just getting good at organizing things like this so that that's easier to do. So that's possible and that it's easier to do. It's pretty awesome.
+Kathy: That's great. That's great. It makes total sense. I'm trying to open your email and I get the Apple touch icon and the thumb, but I'm not getting any documents.
+Patrick: You don't see my email with the link.
+Kathy: The one. The zoom link, or this co pilot working group. Here's it, here's. Yeah, here's at the home link where I'll be storing all the.
+Patrick: Yeah, that one.
+Kathy: Right.
+Kathy: So is. Oh Is it a Google Doc?
+Patrick: No, it's the source code repository where all this stuff is going. All the source code for the apps, all this working group stuff.
+Kathy: So when it says open with and it has a list.
+Patrick: I mean, it's a web link. It's just a URL, it's just a web page.
+Kathy: Yeah. It's not opening that way for me.
+Kathy: Huh. Unless.
+Kathy: Oh, I see it. I see it. Okay.
+Patrick: It's the same place that.
+Kathy: There it is. There it is. Got it.
+Patrick: Nice.
+Kathy: Wow. Wow. Very cool. I mean, just. It looks very organized.
+Patrick: Oh, yeah.
+Kathy: Nice, nice.
+Patrick: There's a theoretical thing at the end from Collective intelligence and Bowen that is supposed to orient us mentally to how to talk. And, you know, I'm gonna summarize that when we start.
+Kathy: Wow. Okay.
+Patrick: I bet no interrater reliability study has ever explicitly laid that stuff out. Actually, that kind of. It's sort of implicit, probably, but.
+Kathy: Well, I had a. I had a big discovery. Anyway, I'll save it for the meeting of just how I did. How I did Marcus and then how I did Jennifer in a way that really sped it up for me.
+Patrick: Oh, cool. Yeah, we. We're going to focus on Sarah, but see if there's a spot. We're going to go through statement by statement with Sarah, but see if there's a way to shoehorn in the idea at least.
+Kathy: Good. Basically, I did on the last one I did, which would be the third one, Sarah, Marcus, and Jennifer. I did what I did for the app seminar, which I made up at a worksheet of. Of the event and how it would be coded. And then I just had to follow that in the entry into the pilot went so much faster.
+Patrick: So. Okay, say it one more time.
+Kathy: I went through like I was going to start to do Jennifer. The first. You know, the first part of the transcript. The first one. Okay, who are the people? What are the events? And I'm actively thinking it through and doing it, but instead I went through the whole thing first and on a separate document, made a column for the time, the. The time stamp on that part of the transcript. And. And then in a separate column, the coding, the people, the event, and the moves that I was going to. In the. In the sarf. What sarf. Things I was going to enter. So I did that. Then I went through and did it all. And it. Not only could I think about it better, but it was so much faster.
+Patrick: Oh, so you took notes as you went and. So that you could do a second pass with the coder, with the form Right?
+Guillermo: Yeah.
+Kathy: Cool.
+Patrick: Yeah. Great. Guillermo.
+Guillermo: Hey, guys.
+Kathy: Hey, Guillermo.
+Kathy: Hey.
+Guillermo: Coffee?
+Kathy: You always look like you're. You're in a palapa.
+Patrick: Is this your background?
+Guillermo: Yeah, yeah, yeah. It's a little cheeky hut.
+Patrick: It's too distracting.
+Kathy: You are in a palapa. Pretty much, he's in Alaska. You're too distracting.
+Patrick: Check this out. Let's just contrast our. See?
+Guillermo: Oh, my God.
+Patrick: Can you guys see what's out there?
+Guillermo: That's beautiful.
+Patrick: Well, yeah, but that's just trees. Look at. There you go. How about that? Yeah, it's like 5, 000ft.
+Guillermo: Wow.
+Patrick: Anyway, we're. We're straddling the continent here.
+Guillermo: Where are you guys, Patrick?
+Patrick: Oh, I met our cabin just a couple hours south of town.
+Guillermo: Nice.
+Patrick: Yeah.
+Guillermo: You guys go there a lot?
+Patrick: Oh, yeah. Connie's doing her avalanche course. Avalanche level one certification. Right now, like, about 40 minutes away. And I'm just doing this all weekend. Cool.
+Guillermo: What is that? I wasn't sure.
+Kathy: Avalanche course?
+Guillermo: Yeah.
+Patrick: Yeah.
+Guillermo: Is that for, like, an actual avalanche? If something like emergency course.
+Patrick: It's, you know, mountain travel in the winter, snow, avalanches. You need to know how to not die.
+Guillermo: And.
+Patrick: Yeah, people not die when they screw up.
+Kathy: Mainly for backcountry skiing.
+Patrick: You mean backcountry skiing? Snowmobiling? Yeah.
+Guillermo: Got it.
+Kathy: Yep.
+Patrick: Kind of a big deal.
+Guillermo: No, it makes perfect sense. I. I'd like. I'd want to take one if I lived there and was doing that.
+Patrick: Yeah, it's. It's pretty essential. I think a lot of people take it, too.
+Guillermo: Or you just. You're going to rely on Connie?
+Patrick: Yeah, she's. You know, I'm just gonna go out on a limb and say I don't rely on her. When there's a lot of acute anxiety, she doesn't handle that very well. I'm the guy who does that. But I did my certification 15 years ago, so.
+Guillermo: Oh, cool.
+Patrick: At this stage, it's like, you know, stuff like that, you just wanna use the training, so you never have to use the training, you know?
+Guillermo: Yeah, yeah, I get it. I get it.
+Kathy: Just to even out the playing field, I'm going to show my backyard here. Oh, the creek rising with the torrential rain that just started. Oh, my goodness, the beach is disappearing.
+Patrick: Wow.
+Guillermo: Kathy, where are you?
+Kathy: I'm in Northern California, in the foothills of the Sierras. Nevada city.
+Patrick: Yeah, that's right. That's awesome. So a lot of rain, huh?
+Kathy: Well, you know, like 12 hours after none this winter, so. But now it's coming.
+Patrick: Well, it's five. It's five after. I don't know what Laura's gonna do. She's her. She has shown up late to a few cinema hour meetings, so it might be her pattern, which. Which is what it is. But either. Either she's not coming. I know she's focused on the Florida thing, but that's okay.
+Kathy: Do you remember, Patrick, do you remember every seminar in Sebastopol when she would get there about 10 or 15 minutes late?
+Patrick: Oh, no, I don't. Yeah, okay, well, that's. Hey, data points, you know, n of 10.
+Guillermo: Let.
+Patrick: She's asking for the link. Let me give her the link. And what is. Do you guys have a hard stop at the top of the hour? What's your time frame?
+Guillermo: Not today. I'm good today.
+Patrick: Oh, good. Because I'm off today.
+Guillermo: Yeah, it's President's Day over here, so no, no clinic for me.
+Patrick: Cool. Well, let's, you know, Laura's retired.
+Guillermo: Do I have a minute to grab some coffee, Patrick?
+Patrick: Oh, yeah, yeah. Cool.
+Kathy: Well, we're getting real casual.
+Patrick: Maybe we can. Yeah, I mean, I'm open to having this take a little longer if it, if, if everybody's got time. Hi, Laura.
+Laura: Good morning or good afternoon or what is it? Good morning.
+Patrick: It's barely morning here and it's afternoon for everyone else.
+Laura: Yeah.
+Patrick: Okay, so Guillermo. Guillermo's just grabbing some coffee and Laura, what's your time frame today? Do you have a hard stop at the top of the hour or do you. How much time?
+Laura: No, it's not hard stop, but I. I think I'm going to go get a glass of water myself.
+Patrick: Okay, well, we'll start right when you get back.
+Laura: Okay.
+Patrick: Yeah. I spent all day in the snowmobiling snow. We call it snow machining snow machine out in the mountains yesterday and.
+Guillermo: Oh, cool.
+Patrick: God, if I could just bring you along for a day. It's like Star wars white Star wars instead of sand colored.
+Guillermo: That's awesome. Do you guys. Patrick, do you keep your. Do you get your own snowmobiles? You keep them at the cabin or something?
+Patrick: Yeah, yeah, we have a couple.
+Kathy: Yeah.
+Patrick: Mountain sleds, you know.
+Kathy: Are you a speed demon?
+Patrick: Yes, in work and play and probably marriage. I'll let Connie speak for that. I think I go a little too fast for her. Need to learn to slow down a little bit anyway. All right, so we're all here and all of us have said that we don't have a hard stop at the top of the hour. It's presence day, so that's kind of nice. I mean, first meeting, you know, it's. I'd like to be somewhat efficient, but it also means we don't, you know, an hour is not that much time, so that's kind of nice. So I sent out an email just half hour ago to the three of you and it's got a link to the open source code repository that I'm doing all of this R and D stuff in. And I've got a subfolder in there that I sent you a link to about the IRR project where it summarizes. It's got a few different documents in there. Just check it out. But the main one to check out as when you can, is the primer that orients mentally to the process. And, but I'll. But just so that we can focus on actually going through Sarah and digging into it, I'll just give you a short primer.
+Laura: So.
+Patrick: Primer. Primer of the primer so that we don't spend too much time on it. The, the main takeaways in there from the section in the end, which is it's got a little bit of a synthesis of the collective intelligence research and then Bowen's concept differentiation. They're really important for irr. I think our every IRR study could benefit from it. It's that you're always balancing.
+Laura: Patrick.
+Patrick: Yes.
+Kathy: Do you think it would help to do a screen share of it for us?
+Patrick: No, I'm going to leave it, I'll leave it to you to review because I just want to keep this short. Thanks for the.
+Kathy: So where's the primer?
+Patrick: It's in. So I was looking at it, I sent you a link. Right. And it's.
+Laura: Yeah.
+Kathy: Oh, there it is, there it is, there it is.
+Patrick: So the main, the main mental frame is that we're balancing two things here. We're balancing, you know, technically speaking, IRR is about agreement. Inter rater reliability means if you give each of us a case and we blindly code it as we've already done with one case, then we should come out, we should see the same patterns in it, we should code it the same way. That's agreement on one hand, on the other hand is validity. And that's where the collective intelligence research comes in. Because you can over agree and, and, but agree on the wrong thing. Right. So validity means we're agreeing on something that actually is useful, that matters. And that means really coming up with rules to code SARF in a way that's actually useful and hopefully predictive in clinical cases, basically. So balancing those two and agreement we achieve mechanically kind of through these meetings. That's what these meetings are for, where we code independently and then the goal is to talk, just have a discussion. And I don't know how that part's going to go. That's the messy part. I'm learning that too. But the goal is for us to discuss each code and try to sort of extract from their rules that go into the like SARF manual very slowly, kind of an evolutionary process. And that's how agreement is formed. But at the same time validity is achieved when you have more than one person, like we have four, and you have a difference in opinion. So the plurality of opinions are necessary in order to capture the nuance, to get the actual agreement correct. That's validity, to make it valid. So it's kind of like when we have Bowen. Like, you know, the lore of the way you ran your training consultation seminar was under this principle that Bowen was very attuned to where people have their own opinions and you're trying not to over agree. But at the same time, you know, when you're coaching a family, for example, that family has to make decisions together, right? They have to have some agreement, but you also have to have the plurality of opinion. So as we're going, the, the process that I thought we'd start an experiment with is we go through statement by statement with Sarah and just look at each code, just talk, but each of us keeping in mind that it's important, it's going to be easy to agree with each other. You know, I've worked more than anybody on operationalizing this stuff and I've probably burnt more mental calories on it. It's really easy to agree with me on that. And each of you are going to have your own little niches that are easy for the others to agree with as well. So it's a balance, difference of opinion, but we also have to come up with an agreement. Does that make sense? Opinions, questions, comments before we get going?
+Laura: Yes, I just had one.
+Kathy: You know, probably it doesn't matter because you like set. Like you said, this is going to be messy. But having done a couple of them now, I think I was the crudest and the most unskilled, unknowledgeable during Sarah. And then it may be a little more so with Marcus and Jennifer. So I don't know what others think about if we feel like we sort of got over the hump with, you know, certain basic things and going through one of the latter ones might be.
+Patrick: Yeah, I noticed that when I was doing this too. And the, the kind of hunch that I've got about this is there's going to be some throwaway cases and the process of us discussing will automatically over time sort of smooth out, you know, and, but yeah, I think Sarah's going to be throwaway at least. Question is, will the other two be throwaways too or will it smooth out before then? So.
+Guillermo: Huh.
+Laura: Yeah.
+Patrick: We were all just learning how to even use the editor and I, I was using Sarah to develop the editor. I mean it's, there's a lot of mess in there. So. So anyway, anybody else real quick before we go?
+Guillermo: No, no, I found the same thing. I started getting better the after Sarah.
+Laura: So I've just done s. Sarah. I just actually finished it last night. So I did, you know, the worst way possible, like probably return to it a half a dozen times over, you know, a month.
+Patrick: Yeah.
+Laura: Had to pick up where I left off. But anyway, yeah, it makes sense. It all makes sense.
+Patrick: And then a process comment. Kathy, I mentioned this to you before the others joined. So in that link you're going to see there's, there's a place in there where I'm going to be taking, keeping a log of all our discussions. And the way I'm going to do that is I'm going to take the Zoom transcript and I'm going to throw it into my coding agent and I'm going to. Because I've got rules set up for this that it's going to follow and it's going to basically put together Cliffs Notes of, of our discussions. And my, my goal in, in tuning how it does that, which is something I'm spending all day doing on my day jobs getting good at this is to try to get it to capture all of the little nuances in our discussion. Kathy, if you have a particular opinion about or a point, you know about symptom and when that's a symptom, when it's not or when it's up versus down or you know, Laura. And then you have a different. I'm just going to try to capture that level of detail in each meeting's kind of like minutes. And I'm going to use AI to take the Zoom transcript to do that. It's going to be. We're going to miss a lot, but it's going to do a lot better job than a person really at the end of the day. So, so we'll be able to go back and I'll be able to ask use AI to even go back and synthesize all that information. Say, you know, when we were coding. Symptom like. Like a few weeks ago. Can't remember when it. What. When it was what. There was some point that was like this or that or the other. Can you help me find it and make sense of it? And that's the idea there. So, all right, I'm going to share my screen. So I don't. So here we go into the messy part. I'm not sure how best to do this, but I think right now the first thing I would try is just to pull up Sarah. I don't have a way to com. I don't think I have a good way to compare all four of us next to each other, but I have to double check that. But we can at least. We can at least go through and talk about each code and then I can maybe click through and just see what we coded and we'll just see how it goes. Let's see here. Sarah is here. You create a new tab. Zoom Share is really making the computer slow for some reason. All right, let's see here. So I can switch encoders here. I have this. I don't think you guys have this drop down. I can do that. But I also have this IRR dashboard that has a lot of bugs. I want to see if it will show our codes reliably side by side, because that's the goal at least, is to be able to just go through. You know, this is kind of a really bad view.
+Guillermo: But.
+Patrick: I should probably work on this and make it a little more usable. It's kind of cluttered. Well, we can refer back maybe. Let's try. Let's try just going through. Or maybe I can make a tab for each one. So I'm leaving out AI. I'm going to go to Guillermo and then let's do. So IRR page will be first. Guo will be there. And then I'm going to go to Kathy, set up the Kathy one. I guess I do this before the next meeting, save time. Then I'm going to pull up the Patrick one. And then Laura can be. Put me first so I remember where I am. Patrick, Laura, and then this is Guillermo, Kathy. So that's another way to just compare. We'll have to just switch between tabs. Okay. All right, let's see here. So let's see how this can work. All right, so the first statement, I've been having trouble sleeping and feeling really anxious, lady. Things got a lot worse about six months ago when my mom was diagnosed with early Stage dementia. And actually, I'm going to go. I'm going to start from right to the left. Start with Kathy. And Kathy put in the delta here for Sarah with female. And then shift a shift event 113. Let's see here. The. The discussion date is set. I set this to 1217 because that's. It needs a reference point for all relative date statements. And this is saying I've been having trouble sleeping and feeling really anxious lately. So lately is. Is dependent on that date. So Kathy wrote, trouble sleeping H and anxious lately, worse for six months since mom diagnosed with dementia 11326. Approximate. And I think approximate, I can't remember, but I think that the approximate date certainty setting is like six months. It's really wide. It might be a month. I can't remember.
+Kathy: But that looks like that was just the date that I was doing the coding.
+Laura: I didn't.
+Kathy: I didn't. I wasn't thinking dates yet.
+Patrick: Yeah, and then anxiety up. And then if I switch to Guillermo, Guo said we'll skip the person delta. That one was. Those are important, but we can talk about them later. So gau you had person. Sarah's mom diagnosed with early stage dementia, symptom up. And then the date was probably on coding date. I'm not sure. 1.
+Guillermo: Yeah, it was coding. Coding date, sure.
+Patrick: And then a separate shift for Sarah, which is symptom and anxiety, trouble sleeping, feeling anxious. Laura had. The same thing, different dates. And then I had, oh, zoom controls in the way. Let's put this down here. And then I had. Oh, gotta get my zoom controls out of the way. Okay. Sarah, trouble sleeping, symptom up, anxiety up. So the agreement with Laura, basically, Sarah's mom diagnosed with early stage dementia, symptom up. Now, the goal here for this dashboard that's little. Maybe a little too messy, is to automatically show where we agree and disagree in red and. And green. So I think that's going to be a great way to do it. I just feel like this is a little messy and hard to read right now. But it looks to me like Laura and I agreed we effectively have the same codes where Sarah has her own symptom and anxiety up and symptom up for her mother. And then we both backdated the dates six months before the. The date of the discussion. And then Guillermo had also had two event. Guillermo, you did it too. Actually, it's just that you were. You. Your dates were like coding date.
+Guillermo: Yeah, Yeah, I didn't. I didn't do the dates.
+Patrick: And then. Okay, so you Just didn't do the dates. And then, Kathy, you had. You had the code for anxiety up Sarah.
+Kathy: Yeah, I don't think I knew I could do one more. More than one entry on one. One piece at that. At that first moment.
+Patrick: I think mine.
+Kathy: My. The rest of those come later for me. I don't know. I can't remember. In other words, I thought I could only do one event entry at that point.
+Patrick: Gotcha. Yeah. So you're saying that you would code it as two separate ones? Two separate shifts? Yeah.
+Kathy: Yes.
+Patrick: Right. Yeah. And I don't really know how to run this discussion session, so, you know, you guys just pipe up whenever you feel like you need to, and we'll figure out a process. But. So it seems to me like we're basically all in agreement about that one, that there's. That this statement implies a separate shift for Sarah's mother and for Sarah and Kathy. What do you think about the symptom part for Sarah?
+Kathy: Sarah would. Would. Yes, I would. I would include a symptom. Trouble sleeping.
+Patrick: Right. I've been having.
+Kathy: And then also a symptom for her. Her mom, obviously, in a separate entry. So symptom of trouble sleeping and anxiety up for Sarah would be the entry. And symptom for mother would be a separate entry with a date six months prior to her report of the anxiety and the symptom.
+Patrick: Yeah, it seems like we're all basically in agreement on that, actually.
+Kathy: Yeah.
+Patrick: So. So we're at 100% agreement so far. First on the first. First statement.
+Laura: Yeah.
+Patrick: Let me try to close this because my computer is going really slow, and I want to try to close some apps so it maybe speeds it up a little bit. Hold on a second. Close some stuff out. Not sure what's doing this. Go away code, But there we go. Okay. Hopefully that'll speed things up a little bit. It looks like it did. Okay. All right, so the second one. And if you guys have any suggestions about how to do this more efficiently or more accurately, let me know. I'm just kind of winging it here. Okay.
+Laura: Okay.
+Patrick: The next. And then. So it sounds like the A says. It sounds like diagnosis had a significant impact on you. Can you tell me a bit more about how your mom is doing with her dementia? How has your family been coping? I mean, she's okay, I guess. Some days she seems fine, but other times she gets confused and forgets things. It's really hard to watch my family. Well, Michael doesn't really help much, and I feel like I'm the one holding Everything together. It's just exhausting, honestly. So Kathy added the mother in there. Of course, if we're adding two separate shifts, that would end up in the first statement, like we discussed the Sarah delta. So I would say that this delta, just technically, IRR aside, this delta is unnecessary because we've already got a Sarah in there. But they do. She does mention Michael the first time. So that adds. So that person has to be added by name. We don't know anything so far about how he's related or who he even is. Could have been a great, great, great, great grandparent, you know, so. But he's in there.
+Kathy: So you don't. You don't include as people. You don't include people who are even prior. Prior people in that under. People. Just anybody involved in that. In that particular transcription right there.
+Patrick: That's. That's right. That's a rule outside of the IRR discussion. It's just a rule that whenever somebody's added, you have to add a delta for them here so that they're in the diagram so that they can be referenced by events, basically.
+Kathy: Oh, but otherwise you don't need to repeat them.
+Patrick: Exactly. You don't have to repeat them because what matters is that the delta in the middle column just gets that person into the right column and the right column, you know, accumulates over time. They'll be there for the rest of the discussion. That makes sense. Anyway, you put in here, exhausted by Mon's confusion and forgetting Michael doesn't help. Where anxiety was the same, Guo wrote, he added, michael put the male field in there. And actually, Kathy, you. You might go back. And that's another rule is just try to put the assumed sex in there. That's so Sarah helps with mom, Michael doesn't. Now, Sarah, you or Guillermo, you said it's an inside, so triangle inside. A move to the inside by Sarah towards Sarah's mom, with Michael on the outside. Now, I guess maybe before jumping to the other two, mine and Laura's. What. What do you. Do you remember your rationale? We could kind of figure that out.
+Guillermo: I think I. I think I initially wanted to put over under functioning, but I. I felt like it was more of an assumption. So I think I was trying to find a way to get as concrete as I could. Now that I'm looking at it since then, I don't know how useful that is, you know, but I think that's what I was thinking at the moment. Patrick.
+Patrick: Yeah.
+Guillermo: I can't really justify it right now.
+Patrick: Okay. Yeah. How's that.
+Kathy: Well, in the event of, of mother's illness, Sarah is moving more towards her, her mother and Michael is not. So it's always, you know, it's always a toss up about towards in a way or inside, outside. But this makes sense to me. I think just it doesn't, you know, really matter if it's a, just a continuation of an existing trial triangle or, or just in this moment in time. But yeah, there's moves going on.
+Patrick: Well, let's jump. I was going to say what do you think, Laura? But we could jump over to Laura's tab because she's next. So Laura, for this one said shift event, she added Michael. We all did that pretty well, I think. And then made it set an under functioning R shift around the time this is going to be like the, the discussion date was what she chose. And then it's Michael under functioning where Sarah's over functioning.
+Laura: Yeah. So that's what Guillermo thought he was going to do to begin with. And you know, I, I, I, I, I think Guillermo's rationale that there's not that it makes an assumption. I think that's probably true. But, and I could also, you know, my, you know, my guess if I step back from the text is is that idea about the triangle, it probably is that that triangle is probably there. I'm guessing. But I think, I guess is there enough evidence that it's a triangle? I don't know. I, I think they're both reasonable hunches in my opinion at this point.
+Patrick: Yeah. Where did you, so where do you guys get you Laura or you GMO or K anybody? Where, where. What do you think is a rationale for the triangle being there from the statement?
+Laura: Well, it goes back to the first one. She, I don't know. I, Right now. What was the first statement?
+Patrick: I've been having trouble sleeping and feeling really anxious lately. Things got a lot worse about six months ago when my mom was diagnosed with early stage dementia.
+Laura: Okay. So the information about who is doing what, I'm the one holding everything together. So she's in there with the mother and Michael is not in there with the mother or with her helping. So, so make, it would make sense that Sarah and the mother are on the inside and that Michael would be on the outside with both of them. Just based on, you know, not, not helping.
+Patrick: Just realize I need to start taking notes on this type of thing. This is exactly the kind of stuff we got to take notes on. So.
+Kathy: I agree. It seems like both things are true. Yeah, the, the over under and the Triangle. I don't know. Could you enter them both? Two different entries.
+Guillermo: You mean a triangle and over under functioning.
+Kathy: Yeah, just repeat, you know, do another entry, another event, another set of.
+Guillermo: I was thinking about that Kathy, because it's always. I think the challenge is things play out in a triangle pattern. Right over under functioning conflict usually if it's. If those things are happening, they're happening in the context of a triangle. So it's a good question. I don't, I don't know if you, if the triangle is really obvious. Do you do both of them? It's a good question.
+Patrick: So the A rule. Let me see if I can. If I can explain this. There's a thought process that I do that includes like what you got to just said is about the first half of it and then there's a second half of it that there's like the first half is getting the concepts straight and everything like that. And you know, you kind with the question should can we code two at once? Can we code a triangle and over functioning for example? And then the second half of is it is what do you do with that information? I may be like what is this? Because. Because you have to see it all end to end to really figure out what the right mechanics of the coding is. I may be the only person to be able to see the second half. I'm not sure but I'll try to explain. So when you. So at the end of the. What matters is the end state at the end of the conversation with the cumulative notes. Right. You want to make that valid. And so it's like the notepad process notepad at the end of the session, the handwritten notepad. So when you. So the question really is there's the mechanics of coding like you're saying and then there's what is useful at the end of it. So I'm kind of wondering like if we have, if we have under functioning in there and the triangle then, then does that conflate things? Does that confuse things? I'm not sure what the answer what my opinion is on that. But this is kind of a point to bookmark is think of it in the final state when you're doing like an evaluation. What. What is the useful information to see? You know, just a bookmark mental note, I think.
+Laura: So maybe this is a. A good time to put this in it. It may be that the most conservative core coding would be that Sarah moved towards her mom and Michael moves away from the mom. And it. It kind of does not come to that. Does not come to conclusion about whether it's a triangle or over under functioning. So that adds a third possibility here. I could maybe. I thought about doing that in this instance. My, my hunch about what you're saying about the second half though is there's probably. I mean, I think the reason I, I thought, well, I'll put this in now is that it's probably better to come to just. If you can get to. To have just one. Rather than to have triangles and over and under functioning, you know, how do you decide which. And then the tord and the waste symbols are. I think they, they have a lot of use because they don't come to premature conclusions about what's going on. So at this point, for instance, you could say, you know, know, maybe it's not overunder functioning. Maybe it's that Michael has been, you know, out just busting his butt to, you know, borrow money from the family to help or something. You know, that he's just been, you know, at this point, that might be a misattribution on his sister's part and that she's over functioning well, you know, maybe she's saying these things, but she's actually depressed in bed all day.
+Patrick: You know, it's an interesting point just to just to kind of pay attention to how this, how these assumptions evolve through a conversation or even a case over multiple conversations. You start out with some impression and then it can change. And, and that is why this is designed the way it is. It's kind of clunky in some cases. In other cases it's very sophisticated. The reason there's deltas is so you can update later. Even if it's four statements later.
+Laura: Yeah.
+Patrick: You know, so at the. If you're, if the end goal is the cumulative state at the end, you know, all the notes you've written down at the end of the session, it doesn't matter as much how you enter things up in the beginning so long as you correct them, you know, more appropriately later.
+Laura: Yeah. Does the, do the statistics take that into account?
+Patrick: Right now I'm actually. Because I'm developing that dashboard. Right. So I'm. I'm trying to figure out the right level to apply the statistics and.
+Kathy: The.
+Patrick: Everything is designed right now to track statement per statement accuracy.
+Laura: Right.
+Patrick: And I have been work. I've worked very hard for a number of months already trying to improve that at that level. And what I'm starting to question and what I started working through a couple days ago is that that level of granularity may be Too high because there's so much variation. Like this is an example of how people may just code differently, but it doesn't really matter because it gets corrected eventually. And I'm kind of wondering, okay, should I shift towards really just measuring the end state? Because the end state is really what matters.
+Laura: Yeah, I think doing it, focusing on what really matters is good.
+Patrick: Especially when you don't have any time for this stuff. Yeah. So part of the messiness that I'm assuming is going to be happening here is that if. If we're focusing on this, like at a very high level of granularity, like everything's assigned statement by statement, that there may be just enough. So much variation that we could spend a lot of time working and not come up with much of an agreement know on things that don't really matter as much. But we could find out. So. Okay, well, one of the things that came.
+Kathy: Can I make one more comment?
+Patrick: Yeah, but before you do, one of the things that came up in. In that I added in that document about how to run these meetings is to also kind of set a time limit on per statement or per topic to keep it moving. So anyway, with that said, quickly. Kathy. Yeah, go ahead.
+Kathy: Okay. I was just hearkening back to seminar at the very beginning of it and kind of the goal to stick to the granular moves like toward, in a way and to not make assumptions about descriptors like under functioning, over functioning. And I think this discussion is consistent with that. That based on the data, we have two, you know, two events in two things in. It seems like the most accurate would be to. Toward in a way and, and as a. And kind of maybe just that's a, That's a good place to start, you know, and the rest will be. Be kind of revealed as time goes on because. Yeah, we don't. We don't know actually, you know. Well, just what. What Laura was saying about what all. What all could be the, the background on what Michael's doing and all that.
+Patrick: Yeah. And to add another level of complication which, you know, we, we should move to the. To my code and then to the next statement probably, but to. There's a vertical alignment rule underneath all of this stuff. Vertical alignment means you've got a whole bunch of different parts of this stack. We have all these. We have all these apps, three apps. We've got the IRR study and then we have the AI component and those all need to be aligned. And the AI things, you know, depends on human alignment actually. So it, it sort of Depends on the IRR part working. But that, but one thing that the AI part introduces is that there needs whatever. Basically. Let me say this again in a different way. The AI kind of punches up the aspect of inter rater reliability methodology where you have to define rules for these things. So in this case, we. The goal actually is what is the rule for when you re default to toward no way. And so in this case, we may have to actually break it down to a level of detail we're not prepared to like, oh, we've got under functioning in a triangle and it could kind of be both and we're not sure. But then you have to define under functioning over functioning and triangles and that with rules. And it gets complicated. So there's something to just remember, kind of bookmark as we go forward that we've got to actually come up with mechanistic rules for this stuff eventually as well. Even if it's just to keep things simple and default of tord in a way, we have to have rules for that that are easy to follow on their face. So anyway. Okay. And I, I, maybe that might not even make sense right now, the way I'm explaining it, but just kind of keep it, keep that in mind. All right, so the way I, I coded this, I added mother of Sarah. Why did I do that? Negative one. Negative. Oh, I just renamed her for some reason. I wouldn't do that again. And I have extra deltas in there I need to go clean out. Got Michael. I. Wait a second. Is this mine? I coded anxiety, same. I think that's. I don't think that's the way.
+Kathy: I think that's mine. I think that's mine.
+Patrick: It's showing mine.
+Laura: That's a difference, isn't it?
+Patrick: Wait a second. I think you're right. Kathy. Let me do this and see if I can. Oh, this is. You know what?
+Guillermo: It's just cool.
+Patrick: I'm not on the right. I'm on my development version. I need to open this all up on the production version so they're almost the same. They're synced regularly, but different enough. Open this. You know, let me. There we go. I remember how I coded this one. I remember thinking about it. Okay, coding. Go down to Sarah, Guillermo, tab, Back to Kathy, tab, Laura. There we go. That one over here. And then Patrick. All right, so Patrick, Laura, Guillermo, Kathy. I did do that. I, I think I might have broken this or something later. That's interesting because I coded it as Sarah over functioning for Michael. And I'm going to fix that. Here, because this is, I don't like this. I remember thinking about that and I, I might have changed this and broken it when I was teaching the, the course at, at the Michigan School. This is technically bad practice to go back and change it. But making an decision. Thank you very much. So the reason, and it's actually over functioning. So Sarah. I thought that Sarah was over functioning for Michael. And the way I was thinking about this was like I said, kind of a clear rule. I just wanted some clear rule. And I thought on its face, the fact that it's, that I'm, I just thought I'm the only one holding it together and it's just exhausting, honestly. Just on its face just seemed like it was easy to draw a rule that went from that to over functioning or under functioning. And my head did go into the, the triangles thing and whether that's enough evidence for that for over functioning or under functioning. And I thought, ah, it's just easy to write a rule. So I just threw it in there. It's easy to make an assumption that can be corrected. And, and then I wanted to add a comment. I don't know what you guys think about this. It's the, it's the, it goes to the definition of under functioning. Over functioning. Reciprocity. I, I haven't gone back to the lit review for this, but the way I've been thinking about it is that the reason that that mechanism has been named and exists is because is, is because it points out a, a place where somebody is automatically like without thinking, doing something for someone else, where there's an opportunity to choose something different. It's like you're doing this all the time and maybe if you just stop doing it, the other person will pick it up and maybe they'll be kicked back on that or whatever. But there's a wiggle room opportunity because you get into these weird, these really complicated debates about, you know, what if like when somebody starts getting older and they just need help, you know, is that over functioning when you start helping them down the stairs or not? And I, I just thought that that definition sort of cleans that up. It's like I'm doing something for somebody else. I don't need to. Because I thought about the, the anxiety binding mechanisms, all four of them, as things that are automatic, things that are adaptive, but they're there and named so that you can consider whether they're necessary really in retrospect, something like that. What do you guys think?
+Laura: Yeah, I mean, I think they're, you know, Theoretically there are. The mechanisms are driven by anxiety, not by reality.
+Guillermo: So yeah, I like that idea of wiggle room Patrick, that it, it's the. There's room to consider if it's necessary. I think that's a good marker.
+Patrick: That's Laura's term by the way. Laura, you said that in one of your PBT meetings.
+Laura: What did I say?
+Patrick: Oh you, you said wiggle room. You're. You're just trying to get some wiggle room. I just always picked it up.
+Guillermo: Well because I, I think that's like in terms of coaching going to the human aspect, that's what you're trying to get people to do is to think about the degree to which something is useful, not useful, necessary, not necessary.
+Patrick: You know, that's how I was thinking about it is. That is. It's all about what choices are you, what choice are you going to insert and change your behavior in the future. That's the out the kind of things you're looking for and what automatic things can you turn into choices. And so then if the utility of how of even naming anxiety binding mechanisms is just to kind of point them out when they're a problem to ask the question is there another way to do it or not? You know, then that's something to nail down. I. I read this and thought it's just kind of feels that way like Michael doesn't help that much and I'm exhausted. It feels like an over functioning under functioning thing and it's an easy to make a rule for that just and that you can update later. And I didn't really pick up much for the triangle part like just on its face, you know. Although I my assumption in a non evident assumption that I is. Would be in line with. I think with what you guys would say that there's you know, she's probably on the inside or she at least and I don't know if the mother's reciprocating that but that she is talking like she's on the inside and she's kind of trying to get the coach on the outside on the inside with her or against Michael or something like that on the inside with mother. But I don't know. Anyway we could move on. We could come back to this too.
+Laura: Not sure how to I just ask say okay say if, if we came to agreement like yeah it's probably over under functioning is the best, the best choice here then how would the rule be written?
+Patrick: That's the question. That's right. That's a good question that, that we're supposed to be answering to our best of our ability here.
+Laura: Okay.
+Guillermo: Yeah.
+Patrick: And it may, we may not be able to, we may just, they may evolve over time or we may need to come back to it, you know, but that is the goal.
+Laura: You know, I guess the way I think about it that over, over time as we come to make decisions about what the best choices are in a specific instance that something about the AI picks up, picks, picks up from examples. Oh, this one is like that example or, or something like that.
+Patrick: And that's, that's exactly right. And in fact, if you look, if I were to show you the system prompt that's extremely long now that the app feeds into the AI just in the same way that you would Type 1 into ChatGPT or something, it's almost all examples and all of that hard work that goes into that is about getting that data set in the examples as short but as comprehensive as possible. So what we're doing here, this is part of the vertical alignment. We're doing this so that we can eyeball compare in discussion. But this is all being tracked in this system so that it can produce examples that, that are used to train the AI in that way. So the rule becomes implicit in the examples in the data as training data. At the same time, it helps us kind of clarify the human part if we, if we write them down.
+Laura: But anyway, so, so I'm thinking, you know, when come to, well, probably we should move on to for examples. But if it comes to examples where there's a few patterns that are, I, you know, that have, there's enough evidence to define a few patterns operating in a specific turn of talk. And I, I guess the goal then would, to get, would be to get all of them to have.
+Patrick: Yeah, okay, that's the goal. Yeah. Well, let's just keep talking. Let's keep going through it. What do you guys think? Go to the next one. And again, you know, I, I also have a hunch that. I'll just say one more thing. I have a hunch that over time we're going to develop an implicit agreement that just comes. The question is that the whole point of this though, at the same time is that we're trying to make it explicit so that you have instructions that you can hand off to a new person and they can also do it, you know, otherwise it requires training and that's fine. You know, that's the implicit standard in the Bowen Network at the Bowen center right now is that you go to the program and you get trained up because it's not explicit as a manual and it takes that, it takes a while to get pick up the implicit agreement, something like that. So we want to make as much of it as explicit as possible. And when it's explicit it can be passed off to AI as well. So, so anyway. Okay. It sounds like you're carrying a heavy load right now, especially feeling like the one holding everything together. Can you tell me a bit about Michael? Is how is he related to you and what do you think is behind his lack of support? The AI doing a reasonable job at the questions. Michael is my younger brother. I guess I just don't understand why he can't step up more. He's got a family. But it feels like I'm the only one who's really involved with mom right now. It just adds to my stress when I see him not doing his part. Jump over to Kathy's. So this is 1842 Kathy. Well, I'll go to the events first. Let's do this. Because the people part is, has some issues for all of us. So you said shift Sarah anxiety up again. Got that coding date?
+Kathy: Yeah, yeah. I, you know, I'm just thinking about my entries back then and you know, I, I, at that point I, I wasn't thinking inter rater reliability. I was thinking, I think I sort of took up the mantle of your video that you made of just get the mechanics down of the how to and kind of like almost like this one for me was like warming up before the event of just the mechanics. And I think I, I think it was kind of nerve wracking and I wasn't even thinking really that much about the purpose of it, you know, which is the moves and the sarf. And so I don't have any explanation right here for my entries.
+Patrick: But yeah, so, so you know, I.
+Kathy: Was just, yeah, like I remember you said just, you know, it doesn't matter right now, just learn how to do it.
+Patrick: So that's great. I think that's, that's fine.
+Kathy: So basically around with it at this point.
+Patrick: So basically you're saying, well how about this for the productivity in the conversation? How would you code that now?
+Kathy: Okay, well I would, I would, I would put in probably an approximate date or something, an unknown date that is younger than Sarah or just wait or I would just wait until it's revealed, you know, how much younger he is.
+Patrick: But you mean a birth date for Michael.
+Kathy: Yeah, or, or maybe a father of a mother, father pair bound that's not named and identify them as siblings. Put In a wife. And let's see, it just adds to my stress when I see him not doing his part. It certainly probably would. Would include over under functioning at this point.
+Patrick: Okay, that's interesting. Yeah. Okay, good. And then Guillermo, 1, 2, 3. Michael's my younger brother. 1842. So event, kind shift, Sarah, description approximate over. Okay, so here, here, Guillermo, you. You moved to over functioning.
+Guillermo: Yeah, I think I just wanted to. If I could do it now, I'd probably. I might even flip them. I put the over functioning in the last thing.
+Patrick: Oh, you mean you'd. You'd have over functioning in the previous statement and in this statement you do?
+Guillermo: Yeah.
+Patrick: Oh, yeah. Interesting.
+Guillermo: Because here she really says explicitly, I'm the only one involved with mom right now.
+Patrick: Yeah. Okay.
+Guillermo: Which it could just be a reiteration of the over functioning as well, though.
+Patrick: Also I think, I mean this technically would be something to discuss, but I think I'm going to throw it down as a rule. I'm that confident in it. Is that when we're adding people, what we've got to have, we. We also need a rule for when the people are added for the AI's sake. And I think that definitely when the first person's named, like Michael goes in there on the first statement. Right. You don't have to make assumptions about how he's related. But here, okay, Michael is her brother. He is younger brother. He is younger. And I think that the first time that you are told that the rules should be the first time you're told that someone is a sibling, then that means there needs to be a common parent pair bond. And so in this statement, and that's. I just want to throw that down there, that, that. Let's do that. Let's try to agree on that. We'll see if we can code it consistently. But so you add those people in and you may not have their names for the parents, but that's okay because you can just start out with Sarah's mother, Sarah's father, and then Michael can just also be. Have them as his parents.
+Kathy: So would you put an approximate date for a younger sibling or older sibling or would you just leave it until you know more?
+Patrick: I don't have. I can't explicate. I can't explain myself. I just left it, you know.
+Laura: Yeah, yeah.
+Patrick: Because it boils down to the granularity to the date certainty field. It's how much control you have with that. And I think it's like, it's like within a week is certain plus or minus three And a half days is. Is what certainty is. And then it's like plus or minus six, six months per approximate. And then uncertain is no match at all. It just ignores it. So considering that it's like, how much does it help to actually add in a birth date? I don't know. Maybe not much.
+Kathy: Yeah, it's false, actually. Yeah.
+Patrick: So let's go to Laura for this one. This is 1840. So Laura said a shift and it's missing a person, which Laura, you'll need to go correct that one. And you said anxiety up and inside. So I guess it's Sarah moving to. Sarah's mother moving with. So it's the same in triangle move as before. It's Michael's on the outside, Sarah's moving towards mother.
+Laura: And. And actually looking at it today, I'm thinking, I don't know that I would code any shift. You know, it's just kind of reiterating what was said in the first entry.
+Kathy: Yeah, Yeah.
+Patrick: You know what? I was thinking about that. I think there is a little bit of a difference. It's. It's that she. You got a little more evidence about the triangle here, actually. And it's statement. I guess I just don't understand why he can't step up more. That feels to me like she's trying to get the coach on the inside with her and her mother with Michael on the outside. Like there's an emotional. A sentiment detector would probably pick that up.
+Laura: Yeah.
+Patrick: Does that change what you were thinking, Laura, or do you. Do you still look at it that way?
+Laura: Yeah, I. I guess the only problem I have with it is considering an event shift more than. But that's just the way we're able to designate that at this point. Like nothing's. It's not. It's not pointing to any different event. It's just. It's pointing to the triangle that is probably the baseline here.
+Patrick: Yeah. And actually that's. So there's some thinking that went into the date certainty variable with that because you've. And. And this goes back to the Pro app, where a lot of. Sometimes we draw things on without dates, kind of implying a baseline, just a pattern that doesn't have a place in time. And then we have specific shifts. So the idea with the dates, those three categories for the date certainty variable, which, by the way, took me six years to finally decide to add, I hesitated because I wasn't sure how to do it. And then I thought, I think you can kind of capture both use cases with that date certainty variable because you can add in an event that has an uncertain date with for example, this inside move and then the date is just not matched at all in the statistics. But it does get it in the notes. Right?
+Laura: Well, so, so given that, I mean approximate, you know, you said means within a week or so.
+Patrick: Six months, I think months or so. Six months. I think it is.
+Laura: But I put a date in there.
+Guillermo: Yeah.
+Laura: I guess I took it back to that original, that six months ago when things got worse, when the mother. It takes it back to the date of the mother's diagnosis.
+Guillermo: Right.
+Patrick: Let's see what I did. I think I did something similar. Of course I don't have anything in there. All I did was set up relationships.
+Kathy: Laura, would you, do you think that you sh. Shift switched from inside outside to from reciprocity because of the, the just the, the word statements in that one that I'm the only one who's involved. She mentioned her mother and the involvement.
+Laura: I, I think I wasn't to switch so much. Is it I think had to do with just, you know, I had already identified over and under functioning.
+Kathy: Ah huh.
+Laura: You know, I'm picking up more that there's a triangle.
+Kathy: Both of which.
+Laura: Okay, okay. So it's just adding the triangle pattern in which this over functioning and under functioning relationship exists.
+Guillermo: Yeah, I, I agree with you guys. If I did it again, I'd like I said to Patrick, I'd flip them, I put over and under to the previous statement and move the triangle down to this statement.
+Patrick: So you would code it the same way Laura did?
+Guillermo: Yeah. After our conversation here.
+Kathy: Well, would you do also.
+Laura: Sorry.
+Kathy: Go ahead, Laura.
+Laura: Oh, I, I just wondered what, what would you do, Patrick? Because you kind of went with what I was wondering today. Like did anything really happen there?
+Patrick: Yeah, let's see. So I'm just looking at the log here. Trouble sleeping, diagnosis exhausted. Oh, first of all, well, let me, let me refresh the page because I changed this. And then get this accurate because I changed it to. I changed my second one to over functioning. Under functioning. And then I did not add a triangle. I thought so the second one, I thought, like I said, I thought that was over functioning and under functioning. I liked coding that that way. The second one, I, I didn't add anything. If I were to do it now, I, I, I can't tell if, if this is really me thinking independently. You guys are not. Or if I'm just agreeing with the conversation honestly, because we're just. That happens so much. But I, I like the idea of putting the Triangle in here for the reason I said, which is that I, I detected a little emotional sentiment in there. Negativity towards Michael, positivity towards mother and coach.
+Laura: Yeah.
+Patrick: So I'm not going to change that here because I want to keep. I did correct the previous statement because I think that was a mistake when I was teaching a course. But I. I'm going to leave this here because it's important that we keep the original disagreements there.
+Laura: Are we supposed to go back and correct ours?
+Guillermo: No.
+Laura: Okay.
+Patrick: No. So. So all of this data is going to stay exactly the way it is. And we're. Instead of doing that, we're just going to generate more conversations and just keep moving.
+Laura: Yeah. Okay.
+Patrick: So we'll have a log of all this stuff and then we'll also have the meeting notes. You know, that will all. Everything we're saying right now will be aligned statement by statement in the notes, hopefully, and we'll be able to capture that as well.
+Kathy: I'm noticing that these are all entered as new events rather than editing an existing event. And I think what I'm doing in the subsequent codings have been, since this is all about the first statement of the symptom and Michael and the mother's illness, my question is about if that original event, all these relate to, would it be entered as the event is the editing of the prior event. You know, where you get the list of all the previous events and you associate it with that. I've been doing a lot of that in my subsequent coding.
+Patrick: Well, it. All this goes back to the main, main principle here. Right. Is that what matters is how that third column looks after whatever your change is. And so we want to get like, so far, I think there's a bit of agreement between all of us that it's important to capture the symptom shift, the anxiety shift for Sarah. Right. And then. And that that happened six months before this discussion. And then that there's. That there was also a diagnosis that happened around that time with her mother. So those are separate events because they pertain to separate people. But then we also have. We're adding in another one that's another one or two that's over functioning under functioning or triangle and you. It is a matter of opinion. I mean, rule, technically, in terms of coding rules, it's a matter of opinion, for example, whether or not you want to capture that triangle shift in the same event as the symptom and anxiety shift. You know, you could potentially do that if you think that they're the same, occur the same Actual event in time. But then that doesn't, you know, you also have to deal with the fact that you've, you're trying to talk about maybe two relationship shifts. You can't code those in the same event. So you just kind of have to think about how you want this to show up at the end. If you like. If you want to put the, the, the triangle move, let's say, in the same shift as the symptom and anxiety. I think there's got to be a semantic explanation for that. They have to actually mean that shift has to mean all three things at once, that shift in time. Does that make sense?
+Kathy: I'm, I'm not sure. I'm trying to think of. Okay, so like, all of you entered each of these under description. Each of these things were entered as a new event. Is that correct?
+Patrick: Right.
+Laura: Yeah.
+Kathy: Okay, so what I've been doing subsequently is, let's say it's the period of Helen's death in a future one or something. And then under event, I'll say, you know, edit a prior event and I'll enter it all in the context of Helen's death and all the subsequent things. So I think I may be just getting off in a wrong direction there.
+Laura: It's.
+Patrick: Yeah. I mean, you, you, you want to capture shifts in people. When there's one shift that's like an atomic occurrence in a comic event, then that needs to be in one event. But the exception to that is that when you have two relationship shifts going on at the same time, you just, you can only track one relationship shift per event. So you have to add two events with the same timestamp, you know, the same date. But that's really the only rule is that you're just trying to capture atomic shifts for a person at particular point in time.
+Kathy: So you wouldn't be using edit existing event very often.
+Patrick: Not, not so far.
+Kathy: Okay. I'm using it constantly.
+Patrick: Yeah. Probably not constantly. That's, that's true.
+Kathy: Okay.
+Patrick: Yeah.
+Kathy: Yikes. That's.
+Patrick: Yeah.
+Guillermo: No, no, Kathy, I, I understand the impulse because the impulse is it's this thing that's shifting over time. And I think. Patrick.
+Kathy: Right.
+Guillermo: It looks like that from a macro level, but on a micro level, it would be these small atomic shifts over time which are independent but linked.
+Kathy: Okay.
+Patrick: Right. That's, that's a good point.
+Guillermo: Patrick. I had a, I had a thought about this vertical, what you call it vertical alignment.
+Patrick: Yeah.
+Guillermo: I wonder if maybe a rule, a potential rule for whether something is a applicable a shift would be something like can you ask a question. That would be relevant to that type of shift? In other words, if you're marking it over under functioning, would there be a question that the therapist could ask that would be relevant to that shift if you're marking it that way?
+Patrick: Oh, are you talking about like in the personal app, what you would stick in the guidance tab, for example?
+Guillermo: Well, we were talking about how do you know when it's over under functioning versus triangling when to market which I feel like one good marker might be like, could you follow if you're marking it over functioning, would a therapy, the therapeutic question that's relevant to that be. Be something about over functioning? And if you're marking it a triangle, would the relevant question be about a toward or away move?
+Patrick: So you're getting your. Are you, are you. Is your point partially how to identify when a certain move is happening?
+Guillermo: Yeah, like is it. Which. Which question for this client would be most relevant as a follow up might be a good marker for. To mark that shift.
+Patrick: Oh, like as a, as a mental trick to kind of check yourself. Yeah. That's interesting. You know, I think I do that. I think that's how I arrived at that triangle, at the sentiment, the negative sentiment. I hadn't thought about it the thoroughly the way you did, but that's how I'm picking apart the evidence. What, what is missing? What's in here and what's missing? What would I need to know for it to actually to be absolutely sure that it's triangle, you know?
+Guillermo: Yeah.
+Patrick: Like my mother, my. You know, Michael is such an idiot because he doesn't help me with my mom. Don't you agree? You know, I, I'd need to hear something like that to be a lot more confident. That's interesting.
+Guillermo: I know there might be something in there about training the AI too.
+Patrick: Okay. All right, let's keep moving here. Oh, I'm going to go Kathy first. We have an order here. So 1844, it's AI says it sounds like there's a lot of pressure because it loves saying it sounds like I fixed that, by the way. I just had a. It's so annoying. The, the AI and I can't wait to make a new conversation. The AI conversation is in so much better now. It's actually impressive and it helped me in like 10 statements. I'm getting off, off track here. It helped me in 10 statements, see a correlation in my own timeline I'd never thought of before. And it asked me a question that actually made my brain hurt about my Parental triangle. I mean, it was. It's so cool. I can't wait for you guys to see it.
+Kathy: Well, wow.
+Patrick: So in the meantime, it sounds like there's a lot of pressure on you, especially feeling like you're the only one stepping up for your mom. How has your relationship with Michael been in the past? Kind of cool. Has he always been less involved or is this a new dynamic? So it's getting at the timeline at least, which is cool. I don't know. It's hard to say. Michael has always been a bit more laid back, I guess, but I feel like since mom's diagnosis, he's really taken a step back. I mean, I don't want to blame him completely. Maybe he just doesn't know how to handle it. But it frustrates me when I see him not trying. It feels like I'm doing everything and he just isn't. Okay, So Kathy, you wrote more removed than usual and I assume that. Okay, so you put in a distance 1. I assume that was supposed to be for Sarah being the distancer. And Michael's on the receiving end of that.
+Kathy: Right.
+Patrick: I feel like since my he's really taking it. I mean, I don't want to blame him. Maybe he just doesn't know how to handle it that it forget. And then also Sarah as over. Okay, so then you came around to the over functioning thing. You just did it a little later than the rest of it, it looks like.
+Kathy: So I think. So I did. Did I not need to re. Enter any of those people then?
+Patrick: Right.
+Kathy: That's good to know because sometimes it just like I think the problem there is it. It self selects who the person is and then you can't change it or something.
+Laura: Yeah.
+Kathy: Okay.
+Patrick: Yeah. And if you always can just go back and delete these deltas that have done it and it won't break anything. So. Okay, so more so how about this distance part? How did you see that?
+Kathy: He's always been a little bit more laid back. More so now. I was interpreting laid back as hanging back in the back, you know, being. Being more removed.
+Patrick: So you're implying that Michael is doing the distancing and Sarah's on the recipient receiving end of it.
+Kathy: Yes.
+Patrick: Ah, okay. So then the way you would. If that's. You're the opinion that you're coding the way you would code that is that Michael is the person and Sarah is here in the recipient. In the person two or whatever. If that makes sense. That's not a very good title person too, because it really should be like recipient or something.
+Kathy: But okay. So that the distancer is the person doing the distancing. Huh.
+Patrick: Okay, if you will. Okay. And then the other. Yeah. So then the over functioning part we probably don't need to discuss too much, except for there's just difference when we code it. But we'll see how that plays out in the future. So, Guillermo, and so now in this one, you've got Sarah over functioning for Michael. Oh, that's same thing. Okay, so it could be no duplicate. Yeah, yeah, so that's clear. Because. Because duplicates are unnecessary. So that just you would do one or the other.
+Kathy: And then concern necessary.
+Patrick: Right.
+Laura: What is the duplicate? What do you. What's the meaning of duplicate here?
+Patrick: So Guillermo added in the same delta in two. Two statements back to back. It's same time stamp, same person, same our shift.
+Laura: All right.
+Patrick: So those need to be do. Deduplicated. We saying computer science, you just get rid of one.
+Kathy: Ah.
+Laura: Okay.
+Kathy: If it's the same time stamp, what if not if it's a repeated comment in a different timestamp.
+Patrick: Exactly. Because if it happened at a different time, that's a different shift.
+Kathy: Okay.
+Patrick: Yep. And then Laura, you had for. Let me make sure I have the right statement. Id 1844. You had distance Michael distancing from Sarah's mother, which is not the same as Kathy's thinking. Michael distancing from Sarah. What do you think about the relevance?
+Laura: Yeah, well, who knows who he's distancing from. Actually, you could put both. I don't know if there's that.
+Patrick: Technically you. The data model and the coder is set up so that you can have more than one person on the receiving end of any move.
+Laura: Okay.
+Patrick: Any R shift rather, which is a move.
+Laura: So. But you know, I guess I may be looking at it now would say the mother because it's a shift since her diagnosis. Well, I mean, you still don't really know who he's stepping back from, but. But yeah. And I. I probably chose that because I'd already done over and under functioning. It's not. It's not a different time. It's not a different event in time here.
+Patrick: And date wise, you put it approximate at the date of the conversation.
+Laura: Yeah, I put it in the present. Yeah. So I guess it could be over and under functioning because it would be a different timestamp.
+Patrick: And then you also just in terms of the timestamp part, the description you put in here is Michael doesn't help. Which is present tense. So that matches your. Your.
+Laura: Right.
+Patrick: Your.
+Guillermo: Yeah.
+Patrick: And that's important. There has to be semantic similarity between the event description and the tense of the event description and the timestamp. I just realized that.
+Laura: Yeah.
+Patrick: Yeah. Okay. Let's see what I put. Oh look, I put in a away move. Interesting.
+Laura: Oh yeah.
+Patrick: Michael really taking a step back, moving away from Sarah's mom and Sarah whose user. So my rationale for this, I mean, I think it's kind of obvious that the distance in a way part is kind of obvious because it's semantically captured in the statement. But I, you know, just between the four of us, I've always been trying to figure out the difference between an away and. And distance. Away has a little less assumption. Sometimes it's obvious, but at the same time, sometimes I think, you know, away is always distance. But really distance as a mechanism is meant to mean emotional distance. And I think, you know, it's, it's, there's, there is content to be discussed and we're not discussing it because of the anxiety of the tension. So, so I put away on here and probably trying to be dispassionate and trying not to assume what his lack of engagement is, to use another kind of synonym for away and distance. Just. He's doing less, he's less involved, he's less engaged, but trying not to make an assumption about whether or not that was because it's too hard for him to coordinate with these people, for example. And it really isn't a bind, a mechanism, a non pair bond mechanism. So I just said away.
+Guillermo: That makes sense. Patrick. To minimize assumption, I think is a good rule.
+Laura: Yeah.
+Kathy: Towards and aware are always kind of more. More factually factual.
+Guillermo: I think emotional distance is tricky. I think even Bo. I think Bowen said emotional distance is part of every mechanism.
+Laura: You did?
+Guillermo: I forgot who. I read it in one of the Bowen texts or something like that.
+Laura: Emotional distance is part of every mechanism to some degree.
+Guillermo: There's a, there's a bit of emotional distance when you're under functioning. Over functioning conflict. There's.
+Kathy: Uhhuh.
+Laura: I'd like to see the reference to that. I, I'm not quite sure. Yeah, I'm not. Yeah, it's kind of, it's a new thought for me and. But yet, you know, he made emotional distance a separate, A separate mechanism in its. So it's emotionally driven. I mean I, I think away can mean it's not necessarily an emotional reaction.
+Patrick: Yeah. Like we just don't know is the way I've been thinking about it because. And it's implied in, in the transcript here already. And she's kind of aware of that discrepancy that she doesn't really understand why he's not engaging and she's aware that she may be misattributing that.
+Laura: Yeah.
+Patrick: But at the same time she's got, which kind of corrects my, what I said, that there's like some negative sentiment in there. It's kind of a triangle.
+Laura: Yeah.
+Patrick: You know, but you know, I remember also that Dan Papper once said that like people are, it's hard to tell from the outside about distance or tension. I don't remember what word he was using. But that people really know themselves or they're pretty good at reporting whether or not they think that, that they're staying away from a person or if there's tension.
+Laura: Yeah.
+Patrick: You know, and I, I find that, I mean, geez, I look at myself and Connie and it's like we both know when there's tension. Holy crap. Every time. Luckily we talk about it so far at least. But that's just interesting how people know, you know, people. It's a self report thing. But that people seem to be really aware of that. Like, like consciously aware often.
+Laura: Yeah. You know, there's a lot of denial going around.
+Patrick: That's true. Yeah. It's a good point.
+Laura: But I, you know, I, I, maybe I'll put this in here. I'm thinking about the process that Kathy and I went through when we were doing the reliability study on the weight loss data. And, and we went through a process of like more particular, you know, item coding. But, but the thing that mattered in the end was was there a shift, whatever the heck it was that affected anxiety and functioning. And I, I think the significance of that allowing us to come to a conclusion was that, you know, given that the emotional system has, you know, is expressing multiple patterns at any given moment, put it that way, that means that you, there's reason to re. You can reasonably cold coded a number of different ways. There's not a right or wrong to it. There's a rationale that is defensible. So you can, you can code things, specific items differently, but come to the conclusion that's significant, which is that there's a, a shift in the relationship system that is related to a shift in anxiety or functioning.
+Patrick: Laura, do you mean like, are you implying like some relationship shift without getting too detailed about what it was?
+Laura: We did not. Yes. I mean we didn't say, well it was conflict or it was.
+Kathy: Yeah, right.
+Laura: We didn't, yeah. We didn't specify what the shift Was because it was, it could be. You know, there's an infinite number of possible shifts.
+Patrick: You know, I have.
+Kathy: Right. It was like at the top.
+Patrick: Sorry, go ahead, Kathy.
+Kathy: Yes. You're saying that I'm remembering what we, what we did that led up to the conclusions of a shift when it happened. It was anxiety reducing in most cases and a few. Anxiety increasing and then the increase in functioning. Those were the variables. But up until then it was just deeming if a particular part of the transcript was relevant or not. And that, that, that was at this point in what we're doing here was more like we were just saying yes or no, relevant or not. And then if it's relevant, note it, and if it's not, leave it. And, and then just looking at that, what that led to in the person reporting at this point in time, I thought about losing weight and it was associated in time with this change in a relationship that they described as, you know, anxiety reducing or anxiety increasing. Is that, is that in line with your descriptor of it, Laura?
+Laura: Yeah, I'm not sure. I mean, I, it, it seems like yes. At any point the question was, is this relevant to a shift that affects anxiety, mainly that we're functioning. Or the symptom. Yeah, I mean, any of them. So we were not coding every statement and.
+Kathy: Right.
+Laura: That transcript. Yeah. But I, I guess my point is just simply. Yeah, that, that it's relevant. There's something happened. There was a conflict. There was a shift in reciprocity. There was an event there that, you know, increased anxiety. There was a distancing. There was. Yeah.
+Kathy: Or there's. There was something maybe that seemed relevant, like somebody moved or.
+Laura: Yeah, there was an event. Yeah. So, so we, we, we didn't go through and, and do this. Definitely. So anyway, I, I think my, my, my point is that, you know, I don't know if there's a way to captures. But you know, I think we should just keep moving and keep saying it. You know.
+Kathy: It'S.
+Laura: But the, My point is like we can be coding these specific things different ways and yet from a systems framework, we're. Right. We're really not in. You know, we're really not. Well, we may be. We're different in our individual focus on the system, but we're. Are we in an agreement that there's been a shift and what it. And, and whether anxiety and whether. And whether. And the changes in the other variables.
+Patrick: Well, and that would come when you look at the key, the ends, the, the resulting notes at an value at a, at an actual evaluation pass of the holist of the data holistically.
+Laura: Right, right, right.
+Patrick: So. And because that's the level that you guys did.
+Laura: Right.
+Patrick: And.
+Kathy: And nothing was apparent until the end.
+Patrick: Yeah. So I mean part of, part the, the vertical alignment makes things complicated because there's a number of different goals here. One of them is to have AI be able to produce a diagram and timeline and for that you need a stream of deltas. Yeah, well, maybe, you know, I've, I'm considering moving it to the final pass, but. But it's still the same logic, so. But what you're saying is interesting because it's. Because you're also just, you're also have, you have a simpler framing for our shift that isn't as granular. And with the assumption with inserting whenever you do an evaluation, you, you start making more assumptions from the theoretical background that you have and saying this is how I, this is why I think this shift was related to those other two data points. You know, so one of the strengths of the approach that we're doing here is it tries to lay down a data model that has fewer of the evaluation level assumptions in just to kind of try to capture them separately, which may not be possible, but to just try to get the raw data in there so that the evaluation pass can have less assumption baked in basically. Or so that the data, the data has less assumption built in baked in before you do the evaluation pass, rather.
+Laura: Yeah. It just brings down the Iterator reliability scores immediately.
+Patrick: Yeah. Like in the short term in the statement by statement level, more variation, basically that. And which is part of your main point. We may be coding this differently and it goes back to the first thing I was saying. It may we. It. Part of the goal is figuring out what. How much of it matters.
+Laura: Yeah, right.
+Patrick: Exactly right. I'll tell you what though. This conversation, I, I was thinking that regardless of even how far we go, meeting by meeting, the conversation forces us. It, it just makes us really think about what these codes are and, and gets us really doing the important thinking on a level that you can't do on your own, you know. So. Yeah, agree with that. All right, so how are you guys doing time and energy wise? We've been going about an hour and 40 minutes. I'm going to top out at two hours, but.
+Guillermo: Yeah, I gotta, gotta go soon. I got.
+Patrick: Okay. My wife over here. Okay. We should, we should probably round up then. I wonder. Well, let's just, let's just tie this up. What do you, what do you guys Observe about the process inefficiencies, inefficiencies, efficiencies or inefficiencies. Validity, non validity ways to improve.
+Laura: You know, I guess my idea to begin with is to, you know, just set up regular meetings, you know, have them be an hour, hour and a half or whatever makes sense to people and be just going through and having these conversations around data and you know, try to be and, and, and see if we improve. I, you know, so far that's my best idea about what to do, you know, and, and maybe try it, try it, try it different ways. It seems like for the first few meetings to stop and take more time to discuss and then maybe we should have a meeting where there's, you know, we just don't discuss, just go through and look at our different ways we're scoring it and see if we're getting any closer, you know.
+Kathy: You know, I was just thinking about the weight study and, and recalling that as we did the A case and then discussed was exactly like this, that we would come up with some questions, some time discrepancies or something and you would make it, you would make a new rule and then we do that again and we do that again. Not change previous rules, but just, or how we were defining whatever. I can't remember the details of it, but it was, our method was evolving as it went is what I'm saying.
+Laura: Yeah, definitely.
+Kathy: Which is, you know, is different than doing a research where everything is predetermined about how you're going to do it, what rules you're going to follow. So this is like that.
+Laura: Yeah. So I think out of that, you know, it, it got defined enough to where I could run a little study with the network group and asked them to, to do it on a specific case and could give clear enough instructions to get a, a comparison between people. Just, just. But it was much simpler than, much simpler question. It was basically like this, you know, is, is there a shift? What is it?
+Guillermo: Patrick? Maybe. I mean maybe another layer of it might be the. I guess you're talking about this Kathy, that vertical alignment that we're trying to figure out. Like what are the, what are the guidelines for assessing what shift is being coded?
+Patrick: Was that a clarification question? Sorry, yeah.
+Guillermo: No, it was me thinking out loud. Patrick.
+Patrick: Oh yeah. Vertical alignment just means you've got all these different goals and you make sure that when you make a change it works with all of them. We have. I'd like to publish this thing if it ever gets to that level of quality. You know, that's one goal that's classical irr. And then there's the AI training part. Those have, those two have to be aligned. Whenever we're doing things, they need to be aligned. It also has to make sense in the apps. You know, all of these things are aligned. And when you have that alignment, it adds, it makes things more complicated, but it also adds this huge level of consilience. I mean, when things click everywhere, you know, you're onto something. So that's kind of cool.
+Guillermo: But I wonder if that maybe, maybe that could be kind of. It sounds like you really keep an eye on that, on the con, the vertical part, and moving toward that consilience. Maybe that could be what frames our meetings over time, like what you're seeing.
+Patrick: Oh, yeah, that's true. I mean, I, I definitely watch that like a hawk because if we do something in here that doesn't work with one of the apps, I'm screwed. You know, like, Laura was having me, you know, fix some bugs in a diagram the other day yesterday, and I'm still working on it, and that actually overlapped with the problem there, overlapped with things that are impacted by changes in this training model, you know, so that's what I'm talking. Another way to say that is that all of these systems are very tightly interlinked, you know, and when they're all coherent, you get incredible magic things that come out of it, you know, but it adds some complexity. So that's the vertical alignment idea. It's a word from corporate culture where all those parts, all the different levels of the organization are aligned toward a common goal. Anyway, Laura, I, oh, shoot. Did I forget what I was going to say? Oh, Kathy and Laura, I, I, I can't say I'm thinking about things any differently than what you guys were. I think a lot of it's just going to come out of conversation and, and I think it's fun. It's really cool. So I kind of lean on that. I really like this kind of stuff and I've been waiting.
+Laura: It is forward to this.
+Patrick: It is.
+Laura: You know, I remember at some point, you know, some conversation with Dan Papro, early days at the family center and, you know, there, these conversations, to get a structure to where we can have these conversations is a, isn't a big important thing in itself because what he said was, I wish we could do more of that, you know, back at the family center, talk about, you know, is this distance or is that cut off or how do you, you know, actually in a disciplined way conceptualize what. What occurred in this case. So, anyway, I think just. Just. I think. I think we're having.
+Kathy: It's.
+Laura: It's a unique thing to be having this conversation.
+Patrick: I absolutely agree. That's why I said I've been looking forward to this, because this is the kind of thing that I think has to happen. You've got to have the infrastructure, the tooling helps with that, the vision, the plan. You've got to have the methodology all laid out in order to do it systematically in a way where you remember what you were talking about and your act progress is actually made. And I thought that, you know, that I never saw anything like that when I was at the Bowen center. And that's why I. I thought this needed to happen. It has to happen for this stuff to actually go anywhere in a. In a predictable way.
+Kathy: So it's crystallizing.
+Patrick: Yes. Also. And I know you got to go, Guillermo. Okay. But I. I thought that. Back to the point, I'm coming off of what Laura, what you and Kathy were just saying about just talking is a big part of it, and it will kind of crystallize over time. But also, I think that tracking the transcript in zoom, keeping it in that source code folder, is all stuff I'm going to do. And then having. I'm getting really good at having the agent that I've been spending a lot of time with, the AI agent, take sources like that and condense them down without losing any detail and logging that in a systematic way. I think that. I think that that's going to be a really good data source in retrospect, to help us make sense of what we've been saying over time and to pick out and synthesize the kinds of rules, like if we just keep talking about it, we're producing all of this raw data that is extremely descriptive if you have a way to go through and make sense of it well enough, you know, so just talking about it will be great.
+Laura: I have just tons of notes from Kathy, and I did that. I was trying to track it on pen and paper, you know.
+Kathy: Yeah.
+Laura: I think it's overwhelming to think about going back to all of that, but. Yes, that's terrific.
+Kathy: Is that something we should be. We can be using. Looking at in the primer, something we're using at this point?
+Patrick: No. No. So it's all. It's a. It's a workflow that I do entirely on my own, but. Okay, the. The raw data, and starting with this one, as soon as we're done, I'm going to take the Zoom transcript, I'm going to check it into that source code repository and it should be listed that readme file that I sent you will be updated with that log entry. So the raw data will be there. And then what I'm going to do, either soon after that or whenever I get time, is I'm going to do a little bit of an evaluation pass on that with help of AI and say, what were the main points? Like a really good meeting summary where the goal is not just summarizing what we said like Zoom already does, but it's trying to extract out just like this srf, you know, principle. Right. With a real discussion, extract out all of the meaningful little data points like we talked about. Triangles over functioning, under functioning, we have different opinions and try to catalog that in a comprehensive way so that we've got this data set where I can do come back even later and do another AI pass on that and draw more conclusions from it. And so you'll be able to read that analysis. It'll be, you know, kind of verbose, but does that make sense, Kathy? And you'll be able to, you know, this is open source. If you wanted to, you'll be able to come back and clone that repository. And if you had access to an AI agent like Anthropic is now putting, putting out Claude, Cowork, everybody can go out and, and get this desktop version of it and say, hey, I've got a folder full of files and start asking questions about it, you know, so if you wanted to get techie like that, you could do that. But I'm going to be driving it all in the repository.
+Kathy: You can put all the notes in that. Sarah and to Claude. Yeah, did I say Sarah? I meant Laura. We were doing Sarah's case.
+Laura: So.
+Patrick: Yeah, actually if you can, if you can scan those, get them into plain text, drop them in there, you have a new MacBook that, that supports that application and you could probably do that with those.
+Laura: With handwritten notes.
+Patrick: Yeah, you could take pictures and stick them in a folder or you scan them or there's a couple ways you could do that. Claude, Cowork clock.
+Laura: Cowork.
+Patrick: Yeah, I mean it's changing everything.
+Laura: Is that a paid for app or is that free?
+Patrick: Yeah, I think the first tier is 200. I pay a hundred dollars a month for the cotton version. Yeah, I've paid up to $200 in a month to do that because it's just, it's invaluable.
+Laura: Yeah.
+Patrick: Anyway.
+Kathy: All right, guys, Patrick could I hang on for two minutes and re ask. I mean, let everybody just re. Ask a question that I already asked about the operational part of the entries.
+Patrick: Yeah, sure, that's fine.
+Kathy: So I don't want to hold everybody.
+Patrick: Else up, but I'm getting tired too, so we won't go too well.
+Guillermo: Patrick, when are we meeting again?
+Patrick: Very good. The next meeting is two weeks. This is actually this meeting. Even though we did the rescheduling, we thrashed a little bit with the rescheduling. Today's meeting was on the original scheduled cadence, which is every two years. Okay, let's meet in a couple of weeks and if we need to meet more, we can. But I think that's going to be kind of tough just workload wise on the outset, so it sounds good to me.
+Kathy: The next date is what?
+Patrick: I think it's March 3rd, March 2nd.
+Guillermo: Second.
+Laura: I'm going to be traveling on that. So I think we should just keep the dates. Whoever makes it, makes it. Not mess around. I'm going to be traveling and I'll be, you know, I won't be back until I'll be traveling through the following Monday. So it another two weeks after that.
+Kathy: Actually, I think I have a flight too. How did I miss this on that day? I'm looking.
+Patrick: Can you guys meet next week?
+Guillermo: Yeah.
+Laura: Yeah. I found not completely nuts about my presentation by then.
+Patrick: Yeah.
+Guillermo: But I. Patrick, most of the times on Monday I only have an hour because I have to get to class.
+Patrick: Gotcha. Yeah, I only, I can only do an hour when it's not a holiday, so. Okay.
+Guillermo: Okay.
+Laura: Next Monday is what?
+Patrick: Next Monday is March 23rd.
+Laura: Yeah. So I'm sorry, I am not going to be able to make it. I have a. Another appointment.
+Patrick: Kathy, can you do this a week from today?
+Kathy: Yes.
+Patrick: Okay, let's meet the three of us then. Because I. I don't want to let it lapse a bunch of weeks.
+Laura: Yeah. A week.
+Kathy: A week from today. Yeah. And I quickly, quickly see if that following week, if I. If I am actually flying on that.
+Laura: Day going forward, I'll be careful about not scheduling when we have these scheduled, so.
+Patrick: Okay. Well, after Florida, things will for us both, so. Okay. Well anyway, let's. Let's meet next week, the three of us.
+Guillermo: Okay.
+Patrick: And so G, you can take off.
+Guillermo: All right, I'll see you guys later.
+Patrick: Okay. Thanks for your time.
+Laura: Okay, I'm on my way too.
+Patrick: All right, good stuff. Good luck with the presentation. Yeah, give me a. Get set up a meeting with me if you, you know, want to look at the symbology and all that stuff.
+Laura: Yeah. Well, I'm just thinking that's the reason I'm wanting to have that other one fixed is I'm not sure that the confidentiality stuff is going to work out okay. Or not. I think it. Can I just. I, you know, as I've been reading about it, I'll just take a second here. I just may need to change more to make it more unidentifiable. You know, I've just been reading up on what is in literature about what st current ethical practices according to HIPAA and all this stuff.
+Patrick: So honestly I think that should just become standard practice. It's. I think it's actually easy to do.
+Laura: Okay, well, maybe I'll. I'll talk with you about that. But you know, one of the things, you know, when I put this through AI it said if you're doing something and you're, you're doing a. A, an account, over time the story becomes identifiable and that's kind of a problem.
+Patrick: Can.
+Laura: Even though you've got different geographies, the standard is. Well, the person who. The person, if they run into it will they recognize.
+Guillermo: Right.
+Laura: So. So I was thinking of turning this person into a gay person. A diff. Just change their sex, you know, which might be the ticket anyway.
+Patrick: Yeah, I mean for public presentations I think it's a good standard to set to just make it unidentifiable at all those levels. Because if it's a public presentation, you're probably not going to do it that often and you're trying to keep it simple anyway. So just try to keep the content on the diagram as simple as possible and. But we can look at it. I can help you operationalize that. So.
+Laura: Okay. All right.
+Patrick: Kathy wants to triangle with you. So she apparently wants to talk to me in confidence or against you.
+Kathy: Laura can stick around for my question about edit existing event or new event. That's my question. My question was just if you said don't change anything, but because that's an operational thing, can I go back and change those errors where I have so many entries that say edit existing event that associate it with a prior shift.
+Patrick: Should I change that for Sarah? I mean Sarah is looking messy.
+Kathy: No, it's for. It's more for Jennifer and Marcus I think for. Certainly Jennifer look.
+Patrick: Yes, change away because no one else is looking at that yet. Right. So the, the rule is that, right, we want to keep a log of what we've done for historical purposes, for methodological. What do you call it? Soundness because we. We've had a meeting on Sarah, and we want to keep the errors and. And variation in there so that we can see how things have changed, you know? But the other two, Marcus and Jennifer, nobody's looked at it yet, so do whatever you want.
+Kathy: Okay.
+Patrick: Well, you could clear it and recode it if you want.
+Kathy: Okay.
+Patrick: Okay.
+Kathy: I'm glad I asked. Okay, thanks. All right, so next week? I'm good. All right.
+Patrick: Okay. See you then. Bye.
+Kathy: Bye.
