@@ -14,6 +14,7 @@ Clinical NLP system for extracting structured data from therapy transcripts. Use
 - [Family Diagram Visual Specification](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) - Platform-independent specification for rendering Bowen family diagrams
 - [Conversational Flow Evaluation](#phase-7-conversational-flow-evaluation-) - Objective metrics for measuring clinical interview quality
 - [Inter-Rater Reliability Study](#phase-11-inter-rater-reliability-study) - First formal IRR study for family systems constructs at scale
+- [Attachment and Big 5-Based Conversation Modeling & Measurement](#phase-12-attachment-based-conversation-modeling--assessment) - Synthetic client narratives structured by attachment style, with multi-dimensional clinical quality rubrics
 
 
 ---
@@ -32,7 +33,7 @@ Clinical NLP system for extracting structured data from therapy transcripts. Use
   - [Phase 9: Hierarchical F1 Metrics](#phase-9-hierarchical-f1-metrics-)
   - [Phase 10: Prompt Induction](#phase-10-prompt-induction)
   - [Phase 11: Inter-Rater Reliability Study](#phase-11-inter-rater-reliability-study)
-  - [Phase 13: ???]
+  - [Phase 12: Attachment and Big 5-Based Conversation Modeling & Measurement](#phase-12-attachment-and-big-5-based-conversation-modeling--measurement)
 - [Future: Human Clinician Training](#phase-N-human-clinician-training-application)
 - [Clinical Research Compliance](#clinical-research-compliance)
 - [Components](#components)
@@ -207,7 +208,24 @@ Source: [bin/induction](bin/induction)
 
 Parallel expert coding (multiple auditors on same cases) to validate whether SARF model produces consistent results across practitioners. First formal IRR study for family systems constructs at scale.
 
-### Phase 12: ???
+### Phase 12: Attachment and Big 5-Based Conversation Modeling & Measurement
+*Planned*
+
+Synthetic client personas grounded in empirical personality and attachment research rather than surface behavioral labels. Three psychological frameworks drive persona construction:
+
+1. **Attachment theory (AAI narrative structure)**: Each persona's attachment style (secure, anxious-preoccupied, dismissive-avoidant, fearful-avoidant) determines *how the narrative is structured* — coherent, fragmented, idealized, or contradictory — following Adult Attachment Interview coding dimensions.
+2. **Big Five personality dimensions (OCEAN)**: Traits like neuroticism, agreeableness, extraversion, openness, and conscientiousness shape conversational behaviors — rumination patterns, emotional vocabulary range, narrative organization, rapport orientation. Used as internal design constraints to ensure trait combinations are psychologically coherent.
+3. **Sex-differentiated and generational communication norms**: Help-seeking framing, emotional vocabulary, externalizing vs. internalizing presentation, somatic reporting, and rapport-talk vs. report-talk tendencies calibrated by sex and age cohort.
+
+Dynamic persona generation: select parameters (attachment style, traits, sex, age) via web form, LLM generates a unique client with full three-generation family history. Each generated client persists as a named case for ground truth coding.
+
+Multi-dimensional clinical quality measurement replaces single-score evaluation:
+- **Therapist rubric**: robotic pattern detection, topic coverage, multigenerational exploration, emotional attunement, pacing — dimensions that map to clinical competencies for eventual human trainee assessment
+- **Client rubric**: therapy-speak absence, information delivery naturalness, first-session behavior, emotional arc progression, narrative coherence by attachment style — constructs designed for eventual psychometric validation
+
+Versioned rubrics allow longitudinal tracking as scoring criteria evolve. Same framework applies to both AI-generated and human conversations.
+
+Spec: [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md) | Plan: [doc/plans/SYNTHETIC_CLIENT_PERSONALITIES.md](doc/plans/SYNTHETIC_CLIENT_PERSONALITIES.md)
 
 ## Future: Human Clinician Training Application
 *Future*

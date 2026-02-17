@@ -42,6 +42,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Major decisions (career, strategy) | [decisions/log.md](decisions/log.md) |
 | Architecture decisions | [adrs/](adrs/) |
 | IRR working group, calibration, coding guidelines | [doc/irr/](doc/irr/) |
+| Synthetic client personas, evals | [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md) |
+| Feature/behavior specs | [doc/specs/](doc/specs/) |
 
 **Other references:**
 - [README.md](README.md) - Project overview
@@ -141,7 +143,7 @@ Documentation for the F1 metrics system that evaluates AI extraction quality aga
 
 ### Prompt Engineering Context
 **CRITICAL FOR PROMPT INDUCTION**: Authoritative record of prompt engineering decisions, experiments, and lessons learned.
-- **File**: [doc/PROMPT_ENGINEERING_CONTEXT.md](doc/PROMPT_ENGINEERING_CONTEXT.md)
+- **File**: [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md)
 - **Purpose**: Prevents regressions by documenting what works, what doesn't, and why
 - **Includes**: Model selection (Gemini 2.0 Flash), known issues, critical lessons (verbose definitions killed F1), prompt architecture, what NOT to include
 - **Use When**: Modifying extraction prompts, running prompt induction, or diagnosing F1 score issues
