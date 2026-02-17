@@ -15,6 +15,7 @@
 3. [High-Functioning Persona Rules](#3-high-functioning-persona-rules)
 4. [Presenting Problem Delivery](#4-presenting-problem-delivery)
 5. [Implementation Notes](#5-implementation-notes)
+6. [Psychological Research Context for Persona Design](#6-psychological-research-context-for-persona-design)
 
 ---
 
@@ -331,3 +332,135 @@ After implementing prompt changes:
 2. Compare old vs new transcripts side-by-side for naturalness
 3. Verify that coverage rates don't drop significantly — more natural clients may be harder for the AI coach to extract data from, which is actually more realistic
 4. Adjust `max_turns` if needed — more natural conversations may need more turns to achieve the same coverage
+
+---
+
+## 6. Psychological Research Context for Persona Design
+
+This section captures findings from personality psychology and sex differences research that should inform how synthetic personas are tuned and steered. The current persona system uses surface behavioral labels (Evasive, Defensive, Terse). The research below provides deeper, empirically grounded dimensions that predict *how people structure their narratives* — not just what topics they avoid.
+
+### 6.1 Big Five Personality Dimensions (OCEAN)
+
+The Big Five is the most empirically validated personality model. Each dimension predicts specific conversational behaviors that the current trait system only partially captures.
+
+#### Neuroticism
+
+- **High-N**: Rumination — returning to the same worry unprompted. Catastrophizing. Seeking reassurance ("Do you think it'll be okay?"). Physiological stress leaking into speech (choppy, pressured). The current "Emotional" trait is really high-Neuroticism but misses the *repetitive* quality — neurotic clients don't just get emotional once, they circle back to the same fears across the whole conversation.
+- **Low-N**: Minimizes distress, may underreport symptoms, presents as "fine" even when things clearly aren't. Different from Defensive (which is reactive) — low-N clients genuinely don't register their own distress. Relevant for David and Jennifer personas who are "high-functioning" but may actually be low-N avoidant.
+
+#### Agreeableness
+
+- **High-A**: Accommodates the coach's framing, says "yes" too easily, avoids disagreement, may tell the coach what they think the coach wants to hear. This is a *realism problem* the current prompts don't address — overly agreeable clients produce conversations that look good but contain less authentic data.
+- **Low-A**: Challenges the coach, questions the process, pushes back on interpretations. The current "Defensive" trait captures some of this but misses the distinction — low-A clients aren't wounded, they're just skeptical and direct. "I don't buy that" said flatly, not angrily.
+
+#### Extraversion
+
+- **High-E**: Fills silence, thinks out loud, tells stories with dramatic flair, volunteers information, finds the conversation energizing.
+- **Low-E**: Needs silence to formulate answers, gives more considered but shorter responses, may find the conversation itself tiring. The current "Terse" trait conflates low-E with guardedness — but a terse client might be perfectly willing to share, they just don't use many words to do it.
+
+#### Openness
+
+- **High-O**: Makes metaphors, wonders about patterns unprompted, is curious about the process, comfortable with abstract connections. The "high-functioning" personas (David, Jennifer) are currently coded as high-O.
+- **Low-O**: Concrete and literal. "What does my grandmother have to do with my sleep?" isn't defensiveness, it's low-O pragmatism. A high-functioning low-O client would be an interesting addition — someone capable and cooperative but with zero interest in exploring patterns.
+
+#### Conscientiousness
+
+- **High-C**: Gives dates, names, chronological sequences, organized narrative. Arrives prepared, may have thought about what to say.
+- **Low-C**: Jumps around, forgets what they were saying, needs the coach to help structure their story. This dimension is completely absent from the current trait system but would add a lot — the difference between "My mom is Carol, she's 68, diagnosed six months ago" vs. "My mom — what was the question again?"
+
+#### Design Recommendation
+
+Instead of assigning behavioral labels, assign each persona a rough Big Five profile and let behavioral instructions flow from that. A persona who is high-N, low-A, low-E produces Defensive+Terse behavior naturally, but with more internal consistency than two independent trait flags. The Big Five profile doesn't need to be exposed in the prompt — it's useful as an internal design tool to ensure traits don't contradict each other.
+
+### 6.2 Sex Differences in Clinical Communication
+
+The seven personas split 4F/3M but the communication style doesn't currently differ by sex in any meaningful way. Population-level research suggests it should. These are defaults that individual personas can deviate from — and the deviation itself can be interesting.
+
+#### Help-Seeking and Framing
+
+Men are significantly less likely to seek help voluntarily, and when they do, they're more likely to frame the problem in **situational or behavioral terms** rather than emotional ones. James's presenting problem ("My wife and I have been arguing about kids") does this well. Marcus ("I've been feeling kind of stuck in life") speaks in a way that's more typical of how women or highly therapy-acculturated men present. A more realistic Marcus might say "My girlfriend broke up with me and my work has been suffering."
+
+#### Emotional Vocabulary
+
+Women tend to have a larger and more differentiated emotional vocabulary. Women are more likely to distinguish between "anxious," "worried," "nervous," and "on edge." Men are more likely to use global terms: "stressed," "off," "not great." This affects how they answer "How did that make you feel?" — men more often answer with *what they did* rather than *what they felt*: "I just went back to work" instead of "I felt helpless."
+
+#### Rapport-Talk vs. Report-Talk (Tannen)
+
+Women tend toward connection-building language — shared experience, empathy, reciprocal disclosure. In a coaching session this means women are more likely to ask the coach personal questions ("Do you have kids?"), make bids for connection ("You probably see this all the time"), and respond to the coach's tone. Men tend toward information exchange — facts, sequences, problem-solving. They're more likely to treat the session as a transaction: "What do you need to know?"
+
+#### Externalizing vs. Internalizing
+
+Men are more likely to frame distress as anger, frustration, or blame ("My wife is being unreasonable about the kids thing"). Women are more likely to frame it as anxiety, sadness, or self-blame ("I think I'm not handling this well"). This is a population tendency, not a rule, but it affects how presenting problems get delivered and how defensiveness manifests — male defensiveness often looks like irritation, female defensiveness often looks like deflection or minimizing.
+
+#### Somatic Presentation
+
+Men are significantly more likely to present with somatic complaints — headaches, stomach problems, sleep disruption, fatigue — rather than naming the emotional state. James's backstory includes childhood stomach aches correlated with parental conflict, which is realistic. In the actual conversation, a realistic James might lead with "I've been getting headaches" rather than "My wife and I argue about kids."
+
+#### Design Recommendation
+
+Add sex-differentiated communication defaults to persona prompt instructions. Not rigid rules, but defaults the persona can deviate from. A male persona who *does* have high emotional vocabulary (Marcus, 28, grew up in therapy culture) becomes more interesting precisely because he deviates from the norm — and that deviation itself could be noted in the persona background as a character detail.
+
+### 6.3 Attachment Style
+
+Arguably more useful than the current trait system for predicting clinical conversational behavior. Four styles, each producing distinctive patterns of narrative structure.
+
+#### Secure
+
+Coherent narrative, can describe both positive and negative experiences, appropriate emotional range, comfortable with not knowing. This is what the "high-functioning" personas should feel like — but secure doesn't mean *easy*. Secure clients still have painful experiences; they're just more organized in how they process them.
+
+#### Anxious-Preoccupied
+
+Floods the coach with information (looks like Oversharing), seeks reassurance, hypervigilant to the coach's reactions ("Are you judging me?"), has trouble with boundaries, tells the same story multiple times, preoccupied with how others perceive them. Marcus and Elena map here. Key tell: anxious clients *ask the coach for feedback more often* than other types.
+
+#### Dismissive-Avoidant
+
+Minimizes the importance of relationships, short answers about emotional topics but can talk at length about facts/logistics, idealizes parents in vague terms ("We had a great childhood") without supporting evidence, may intellectualize. James maps here. The key insight: avoidant clients don't *refuse* to answer — they give answers that sound complete but are actually empty of emotional content. The coach has to notice what's *missing*.
+
+#### Fearful-Avoidant (Disorganized)
+
+Contradictory — wants connection but fears it, may start to disclose and then abruptly shut down, narrative is fragmented and hard to follow, may shift between clingy and dismissive within a single session. This attachment style is absent from the current personas but would produce the most realistic and challenging synthetic conversations.
+
+#### Design Recommendation
+
+Attachment style predicts not just *what* someone says but *how their narrative is structured*. A dismissive-avoidant client's story sounds coherent but has gaps the coach has to notice. An anxious client's story is detailed but disorganized. This is a deeper lever than surface traits. Consider assigning each persona an attachment style (possibly as an additional field on the Persona dataclass) and using it to shape the narrative structure instructions in the prompt.
+
+### 6.4 Age and Generational Effects
+
+The current personas span ages 28-55 but their communication style is uniform. Research suggests meaningful differences.
+
+#### Younger Adults (20s-30s)
+
+More likely to use psychological vocabulary ("boundaries," "trauma," "toxic," "gaslighting"). More likely to have been in therapy before or at least consumed therapy content on social media. May self-diagnose using pop psychology. May have expectations shaped by influencer therapy culture. Marcus at 28 should sound fundamentally different from Linda at 55.
+
+#### Older Adults (50s+)
+
+More narrative style — stories are longer and more contextual. Less likely to use clinical terminology. May be more stoic about distress. May have stronger opinions about what's appropriate to discuss with a stranger. Different relationship to help-seeking — may view it as a sign of weakness or may have specific cultural expectations about what "counseling" means. Linda at 55 should have a different relationship to the coaching process than Marcus at 28.
+
+#### Generational Norms
+
+A 55-year-old woman raised by Greatest Generation parents has different defaults around self-disclosure than a 28-year-old man who grew up with therapy normalized. These aren't just age effects — they're cohort effects baked into how someone learned to talk about feelings (or not talk about them).
+
+#### Design Recommendation
+
+Add a few lines per persona about their generation's relationship to emotional disclosure and help-seeking. This is low effort but high realism impact. Examples:
+- Marcus (28): "Has consumed therapy content online, uses words like 'boundaries' and 'patterns' naturally, expects the process to be collaborative"
+- Linda (55): "Didn't grow up talking about feelings, views needing help as somewhat shameful, frames distress as physical symptoms more than emotional states"
+
+### 6.5 Integration Priority
+
+Ranked by impact on synthetic conversation naturalness:
+
+1. **Attachment style** — highest impact. Predicts narrative structure, not just surface behavior. Consider adding as a persona field.
+2. **Sex-differentiated communication defaults** — moderate effort, high realism. Add prompt instructions about emotional vocabulary, rapport vs. report orientation, externalizing vs. internalizing.
+3. **Big Five profiles** — useful as internal design consistency check. Design personas with coherent profiles; don't need to expose dimensions in the prompt itself.
+4. **Age/generational norms** — easy win. A couple of lines per persona about their generation's relationship to emotional disclosure.
+
+### 6.6 Key Insight
+
+The current system treats personality as *what topics someone avoids or approaches*. Psychology research says personality more fundamentally determines *how someone structures their narrative*:
+- **Coherent vs. fragmented** (attachment style)
+- **Emotionally differentiated vs. global** (sex differences, neuroticism)
+- **Self-focused vs. other-focused** (agreeableness, sex differences)
+- **Organized vs. associative** (conscientiousness, extraversion)
+
+That's the level to work at. Surface behaviors (evasive, defensive, terse) are symptoms of these deeper dimensions. Designing from the dimensions up produces more internally consistent and realistic personas than mixing and matching behavioral labels.
