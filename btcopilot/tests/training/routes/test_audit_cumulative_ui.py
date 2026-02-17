@@ -690,3 +690,180 @@ def test_auditor_view_shows_only_auditor_data_no_ai_mixing(admin):
     assert (
         mike_in_extraction == 0
     ), f"AI extraction (Mike) should NOT appear in auditor view (found {mike_in_extraction} times outside statement text)"
+
+
+@pytest.mark.audit_ui
+def test_functioning_preserved_in_cumulative(admin):
+    discussion = Discussion(user_id=admin.user.id, summary="Functioning test")
+    db.session.add(discussion)
+    db.session.flush()
+
+    subject = Speaker(
+        discussion_id=discussion.id, name="User", type=SpeakerType.Subject
+    )
+    db.session.add(subject)
+    db.session.flush()
+
+    stmt0 = Statement(
+        discussion_id=discussion.id,
+        speaker_id=subject.id,
+        text="Statement with functioning",
+        order=0,
+        pdp_deltas=asdict(
+            PDPDeltas(
+                people=[Person(id=-1, name="FuncPerson")],
+                events=[
+                    Event(
+                        id=-1,
+                        kind=EventKind.Shift,
+                        person=-1,
+                        description="Func event",
+                        functioning=VariableShift.Up,
+                    )
+                ],
+            )
+        ),
+    )
+
+    # Second statement so cumulative column renders for stmt0
+    stmt1 = Statement(
+        discussion_id=discussion.id,
+        speaker_id=subject.id,
+        text="Follow-up",
+        order=1,
+        pdp_deltas=asdict(
+            PDPDeltas(
+                people=[],
+                events=[
+                    Event(
+                        id=-2,
+                        kind=EventKind.Shift,
+                        person=-1,
+                        description="Second event",
+                    )
+                ],
+            )
+        ),
+    )
+
+    db.session.add_all([stmt0, stmt1])
+    db.session.commit()
+
+    response = admin.get(
+        f"/training/discussions/{discussion.id}?selected_auditor=AI"
+    )
+    assert response.status_code == 200
+    html = response.data.decode("utf-8")
+
+    assert "FuncPerson" in html
+    assert "Func event" in html
+    assert "F:up" in html or "functioning" in html.lower()
+
+
+@pytest.mark.audit_ui
+def test_clearing_sarf_variable_via_feedback(admin):
+    discussion = Discussion(user_id=admin.user.id, summary="Clear variable test")
+    db.session.add(discussion)
+    db.session.flush()
+
+    subject = Speaker(
+        discussion_id=discussion.id, name="User", type=SpeakerType.Subject
+    )
+    db.session.add(subject)
+    db.session.flush()
+
+    stmt = Statement(
+        discussion_id=discussion.id,
+        speaker_id=subject.id,
+        text="I feel stressed",
+        order=0,
+        pdp_deltas=asdict(
+            PDPDeltas(
+                people=[Person(id=-1, name="Self")],
+                events=[
+                    Event(
+                        id=-1,
+                        kind=EventKind.Shift,
+                        person=-1,
+                        description="Stress event",
+                        symptom=VariableShift.Up,
+                        functioning=VariableShift.Down,
+                    )
+                ],
+            )
+        ),
+    )
+    db.session.add(stmt)
+    db.session.flush()
+
+    auditor_id = str(admin.user.id)
+
+    # Step 1: Save initial feedback WITH functioning
+    response = admin.post(
+        "/training/feedback/",
+        json={
+            "message_id": stmt.id,
+            "feedback_type": "extraction",
+            "thumbs_down": False,
+            "edited_extraction": {
+                "people": [{"id": -1, "name": "Self"}],
+                "events": [
+                    {
+                        "id": -1,
+                        "kind": "shift",
+                        "person": -1,
+                        "description": "Stress event",
+                        "symptom": "up",
+                        "functioning": "down",
+                    }
+                ],
+            },
+        },
+        headers={"X-Auditor-Id": auditor_id},
+    )
+    assert response.status_code == 200
+    fb = Feedback.query.filter_by(
+        statement_id=stmt.id, auditor_id=auditor_id
+    ).first()
+    assert fb.edited_extraction["events"][0]["functioning"] == "down"
+
+    # Step 2: Save again WITHOUT functioning (user cleared it)
+    response = admin.post(
+        "/training/feedback/",
+        json={
+            "message_id": stmt.id,
+            "feedback_type": "extraction",
+            "thumbs_down": False,
+            "edited_extraction": {
+                "people": [{"id": -1, "name": "Self"}],
+                "events": [
+                    {
+                        "id": -1,
+                        "kind": "shift",
+                        "person": -1,
+                        "description": "Stress event",
+                        "symptom": "up",
+                        # functioning key intentionally absent
+                    }
+                ],
+            },
+        },
+        headers={"X-Auditor-Id": auditor_id},
+    )
+    assert response.status_code == 200
+
+    # Verify the DB reflects the cleared variable
+    db.session.expire_all()
+    fb = Feedback.query.filter_by(
+        statement_id=stmt.id, auditor_id=auditor_id
+    ).first()
+    assert "functioning" not in fb.edited_extraction["events"][0]
+    assert fb.edited_extraction["events"][0]["symptom"] == "up"
+
+    # Step 3: Verify page renders without the cleared variable
+    response = admin.get(
+        f"/training/discussions/{discussion.id}?selected_auditor={auditor_id}"
+    )
+    assert response.status_code == 200
+    html = response.data.decode("utf-8")
+    assert "Stress event" in html
