@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}IRR Review - {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
+
+{% block content %}
+
+<script>
+window.discussionConfig = {
+    discussionId: {{ discussion.id }},
+    isExtracting: false,
+    currentAuditor: null,
+    urls: { speakersUpdate: "" }
+};
+window.diagramPeople = [];
+window.diagramEvents = [];
+window.isAdmin = false;
+window.selectedAuditor = 'AI';
+window.currentUsername = '';
+</script>
+
+<section class="section">
+    <div class="container is-fluid">
+        <div class="mb-4">
+            <h1 class="title">{{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
+            <p class="subtitle">IRR Review - {{ coders|length }} coders</p>
+        </div>
+
+        <div id="statements-container">
+        {% for item in statement_data %}
+            <div class="irr-review-row box mb-2 py-3" id="statement-{{ item.statement.id }}">
+                <div class="irr-review-flex" style="overflow-x: auto;">
+                    <!-- Statement Text -->
+                    <div class="irr-review-statement py-2">
+                        <p class="heading is-size-7 mb-1">STATEMENT {{ item.statement.id }}</p>
+                        <a href="{{ url_for('training.discussions.audit', discussion_id=discussion.id) }}#statement-{{ item.statement.id }}" class="statement-link">
+                            <div class="statement-preview {% if item.statement.speaker.type.value == 'subject' %}user-message-bubble speaker-{{ subject_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in subject_speaker_map else 1 }}{% else %}ai-message-bubble speaker-{{ expert_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in expert_speaker_map else 1 }}{% endif %}">
+                                {{ item.statement.text }}
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Coder Columns -->
+                    {% for coder in coders %}
+                    <div class="irr-review-coder{% if not loop.first %} analysis-column-divider{% endif %} py-2">
+                        <div class="section-header is-size-7 has-text-weight-bold mb-2" title="{{ coder }}">{{ coder|truncate(25)|upper }}</div>
+                        {% set extraction = item.extractions.get(coder) %}
+                        {% if extraction and (extraction.people or extraction.events) %}
+                            {% set data = extraction %}
+                            {% set cumulative_pdp = none %}
+                            {% set collapsed = false %}
+                            {% set show_feedback = false %}
+                            {% set message_id = none %}
+                            {% set feedback_data = none %}
+                            {% set component_id = 'review-' ~ item.statement.id ~ '-' ~ loop.index0 %}
+                            {% set editable_mode = false %}
+                            {% set is_cumulative = false %}
+                            {% set lazy_init = true %}
+                            {% set all_ext_feedback = [] %}
+                            {% set all_ext_feedback_dict = [] %}
+                            {% set admin_ext_feedback = none %}
+                            {% set approved = false %}
+                            {% set approved_by = none %}
+                            {% set approved_at = none %}
+                            {% include "components/sarf_editor.html" %}
+                        {% else %}
+                            <span class="has-text-grey-light is-size-7">(no codes)</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+</section>
+
+<script src="{{ url_for('training.audit.static', filename='js/discussion.js') }}"></script>
+
+<style>
+.irr-review-flex {
+    display: flex;
+    gap: 0;
+}
+.irr-review-statement {
+    min-width: 250px;
+    max-width: 300px;
+    flex-shrink: 0;
+}
+.irr-review-coder {
+    min-width: 280px;
+    flex: 1 1 0;
+}
+
+.irr-review-row .statement-preview {
+    border-radius: 18px;
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.irr-review-row .statement-link {
+    text-decoration: none;
+}
+
+.irr-review-row .analysis-column-divider {
+    border-left: 1px solid var(--color-border-default, rgba(255,255,255,0.1));
+    padding-left: 0.75rem;
+}
+</style>
+
+{% include 'partials/speaker_bubble_styles.html' %}
+
+{% endblock %}

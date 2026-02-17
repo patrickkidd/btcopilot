@@ -120,10 +120,10 @@
 
         <div id="statements-container">
         {% for item in statement_irrs %}
-            <div class="statement-analysis-row box mb-2 py-3" id="statement-{{ item.statement.id }}" data-statement-id="{{ item.statement.id }}">
-                <div class="columns is-mobile mb-0">
-                    <!-- Column 1: Statement Text (25%) -->
-                    <div class="column is-3 py-2">
+            <div class="statement-analysis-row box mb-2 py-3" id="statement-{{ item.statement.id }}" data-statement-id="{{ item.statement.id }}" style="overflow-x: auto;">
+                <div class="irr-row">
+                    <!-- Column 1: Statement Text -->
+                    <div class="irr-col-statement py-2">
                         <p class="heading is-size-7 mb-1">STATEMENT {{ item.statement.id }}</p>
                         <a href="{{ url_for('training.discussions.audit', discussion_id=discussion.id) }}#statement-{{ item.statement.id }}" class="statement-link">
                             <div class="statement-preview {% if item.statement.speaker.type.value == 'subject' %}user-message-bubble speaker-{{ subject_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in subject_speaker_map else 1 }}{% else %}ai-message-bubble speaker-{{ expert_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in expert_speaker_map else 1 }}{% endif %}">
@@ -133,8 +133,8 @@
                         <span class="tag is-info is-small">F1: {{ "%.2f"|format(item.irr.avg_aggregate_f1) if item.irr and item.irr.avg_aggregate_f1 is not none else '-' }}</span>
                     </div>
 
-                    <!-- Column 2-3: Coder Extractions (50%) -->
-                    <div class="column is-6 py-2 analysis-column-divider">
+                    <!-- Coder Extractions -->
+                    <div class="irr-col-coders py-2 analysis-column-divider">
                         <div class="is-flex mb-2 coder-header-row">
                             {% for coder in coders %}
                             <div class="coder-column{% if not loop.first %} analysis-column-divider{% endif %}">
@@ -400,8 +400,8 @@
                         {% endif %}
                     </div>
 
-                    <!-- Column 4: IRR Metrics + Reconciliation Note (25%) -->
-                    <div class="column is-3 py-2 analysis-column-divider">
+                    <!-- IRR Metrics + Reconciliation Note -->
+                    <div class="irr-col-metrics py-2 analysis-column-divider">
                         <p class="heading is-size-7 mb-1">IRR METRICS</p>
                         {% if item.irr and item.irr.coder_pairs %}
                         <div class="is-size-7">
@@ -551,6 +551,28 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
+.irr-row {
+    display: flex;
+    gap: 0;
+}
+.irr-col-statement {
+    min-width: 250px;
+    max-width: 300px;
+    flex-shrink: 0;
+}
+.irr-col-coders {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+}
+.irr-col-coders .coder-column {
+    min-width: 220px;
+}
+.irr-col-metrics {
+    min-width: 250px;
+    flex-shrink: 0;
+}
+
 .sarf-field-row {
     display: grid;
     grid-template-columns: 80px 1fr auto;

@@ -14,7 +14,7 @@ from btcopilot.training.irr_metrics import (
     get_statement_extractions,
     safe_avg,
 )
-from btcopilot.training.models import ReconciliationNote
+from btcopilot.training.models import Feedback, ReconciliationNote
 from btcopilot.training.utils import get_discussion_view_menu
 
 bp = Blueprint("irr", __name__, url_prefix="/irr")
@@ -285,6 +285,74 @@ def discussion(discussion_id: int):
         discussion_irr=irr,
         statement_irrs=statement_irrs,
         coders=sorted(irr.coders),
+        subject_speaker_map=subject_speaker_map,
+        expert_speaker_map=expert_speaker_map,
+        breadcrumbs=breadcrumbs,
+        current_user=auth.current_user(),
+    )
+
+
+@bp.route("/discussion/<int:discussion_id>/review")
+@minimum_role(btcopilot.ROLE_AUDITOR)
+def review(discussion_id: int):
+    disc = Discussion.query.get_or_404(discussion_id)
+
+    irr = calculate_discussion_irr(discussion_id)
+    if not irr:
+        abort(404, "No multi-coder data available for this discussion")
+
+    coders = sorted(irr.coders)
+    statements = (
+        Statement.query.filter_by(discussion_id=discussion_id)
+        .join(Speaker)
+        .filter(Speaker.type == SpeakerType.Subject)
+        .order_by(Statement.order)
+        .all()
+    )
+
+    statement_data = []
+    for stmt in statements:
+        # Get raw JSON extractions directly (avoids enum serialization issues)
+        feedbacks = Feedback.query.filter(
+            Feedback.statement_id == stmt.id,
+            Feedback.feedback_type == "extraction",
+            Feedback.edited_extraction.isnot(None),
+        ).all()
+        extractions_dict = {fb.auditor_id: fb.edited_extraction for fb in feedbacks}
+        statement_data.append(
+            {"statement": stmt, "extractions": extractions_dict}
+        )
+
+    unique_speakers = (
+        Speaker.query.filter(Speaker.discussion_id == discussion_id)
+        .order_by(Speaker.id)
+        .all()
+    )
+    subject_speakers = [s for s in unique_speakers if s.type == SpeakerType.Subject]
+    expert_speakers = [s for s in unique_speakers if s.type == SpeakerType.Expert]
+    subject_speaker_map = {
+        speaker.id: idx + 1 for idx, speaker in enumerate(subject_speakers)
+    }
+    expert_speaker_map = {
+        speaker.id: idx + 1 for idx, speaker in enumerate(expert_speakers)
+    }
+
+    menu, active_title = get_discussion_view_menu(discussion_id, "review")
+    breadcrumbs = [
+        {"title": "Coding", "url": url_for("training.audit.index")},
+        {"title": "IRR", "url": url_for("training.irr.index")},
+        {
+            "title": disc.summary or f"Discussion {discussion_id}",
+            "url": url_for("training.discussions.audit", discussion_id=discussion_id),
+        },
+        {"title": active_title, "menu": menu},
+    ]
+
+    return render_template(
+        "training/irr_review.html",
+        discussion=disc,
+        statement_data=statement_data,
+        coders=coders,
         subject_speaker_map=subject_speaker_map,
         expert_speaker_map=expert_speaker_map,
         breadcrumbs=breadcrumbs,

@@ -623,6 +623,18 @@
         .breadcrumb li.is-active a {
             color: var(--color-fg-default);
         }
+
+        /* Override Bulma's pointer-events:none on li.is-active a for dropdown items */
+        .breadcrumb .dropdown-item,
+        .breadcrumb .breadcrumb-dropdown-trigger {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }
+
+        .breadcrumb .dropdown-item {
+            justify-content: flex-start;
+            text-align: left;
+        }
         
         /* Custom button styling to match theme */
         .button.is-success {

@@ -127,12 +127,13 @@ def get_auditor_id(request, session):
 
 def get_discussion_view_menu(discussion_id, active_view):
     """Build breadcrumb dropdown menu for discussion-level views. Returns (menu, active_title)."""
-    titles = {"coding": "Coding", "f1": "F1 Analysis", "irr": "IRR Analysis", "matrix": "Pairwise Matrix"}
+    titles = {"coding": "Coding", "f1": "F1 Analysis", "irr": "IRR Analysis", "review": "IRR Review", "matrix": "Pairwise Matrix"}
     menu = [
         {"title": "Coding", "url": url_for("training.discussions.audit", discussion_id=discussion_id), "icon": "edit", "active": active_view == "coding"},
         {"title": "F1 Analysis", "url": url_for("training.analysis.discussion_analysis", discussion_id=discussion_id), "icon": "chart-bar", "active": active_view == "f1"},
         {"divider": True},
         {"title": "IRR Analysis", "url": url_for("training.irr.discussion", discussion_id=discussion_id), "icon": "users", "active": active_view == "irr"},
+        {"title": "IRR Review", "url": url_for("training.irr.review", discussion_id=discussion_id), "icon": "comments", "active": active_view == "review"},
         {"title": "Pairwise Matrix", "url": url_for("training.irr.pairwise_matrix", discussion_id=discussion_id), "icon": "th", "active": active_view == "matrix"},
     ]
     return menu, titles.get(active_view, "")
