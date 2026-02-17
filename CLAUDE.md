@@ -43,6 +43,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Architecture decisions | [adrs/](adrs/) |
 | IRR working group, calibration, coding guidelines | [doc/irr/](doc/irr/) |
 | Synthetic client personas, evals | [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md) |
+| Psychological foundations (persona generation) | [doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md](doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md) |
 | Feature/behavior specs | [doc/specs/](doc/specs/) |
 
 **Other references:**

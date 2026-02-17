@@ -225,7 +225,7 @@ Multi-dimensional clinical quality measurement replaces single-score evaluation:
 
 Versioned rubrics allow longitudinal tracking as scoring criteria evolve. Same framework applies to both AI-generated and human conversations.
 
-Spec: [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md) | Plan: [doc/plans/SYNTHETIC_CLIENT_PERSONALITIES.md](doc/plans/SYNTHETIC_CLIENT_PERSONALITIES.md)
+Spec: [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md) | Research: [doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md](doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md) | Plan: [doc/plans/SYNTHETIC_CLIENT_PERSONALITIES.md](doc/plans/SYNTHETIC_CLIENT_PERSONALITIES.md)
 
 ## Future: Human Clinician Training Application
 *Future*
