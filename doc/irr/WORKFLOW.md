@@ -91,6 +91,7 @@ Claude Code will:
 - Create **meeting notes** (conclusions only: disagreement tables, resolutions, rules, action items)
 - Update GUIDELINES.md with new rules
 - Update PROGRESS.md
+- Create a new **results snapshot** in `results/` (see below)
 
 ### 3. Review the output
 
@@ -101,10 +102,17 @@ Check:
 - `GUIDELINES.md` — rules captured correctly?
 - `PROGRESS.md` — status updated?
 
-### 4. Commit
+### 4. Create results snapshot
 
-Commit all artifacts: transcript, deliberation record, meeting notes, and updated GUIDELINES.md / PROGRESS.md.
-Update the README.md meeting index table with links to all new artifacts.
+Create a new timestamped results snapshot: `results/YYYY-MM-DD-irr-results.md`
+
+Each snapshot is a full point-in-time aggregation of all IRR products: study maturity, measurement approach status, quantitative metrics, coding rules registry, unresolved ambiguities, coder status, and product pipeline. New file each time — never edit a previous snapshot.
+
+Update the README.md Results Snapshots table to link to the new snapshot.
+
+### 5. Commit
+
+Commit all artifacts: transcript, deliberation record, meeting notes, results snapshot, and updated GUIDELINES.md / PROGRESS.md / README.md.
 
 ## Notes
 

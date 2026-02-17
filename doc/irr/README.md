@@ -20,6 +20,7 @@ Calibration meetings and coding guidelines for SARF inter-rater reliability.
 | [PROGRESS.md](PROGRESS.md) | Meeting log and calibration status |
 | [WORKFLOW.md](WORKFLOW.md) | How to process Zoom transcripts into meeting notes |
 | [meetings/](meetings/) | Per-meeting artifacts |
+| [results/](results/) | Timestamped results snapshots |
 
 ## Meetings
 
@@ -27,6 +28,12 @@ Calibration meetings and coding guidelines for SARF inter-rater reliability.
 |---|------|------|-----------|--------------|-------|------------|
 | 1 | 2026-02-16 | Sarah (stmts 1-4) | Patrick, Kathy, Guillermo, Laura | [deliberation](meetings/2026-02-16-sarah-round1-calibration-deliberation.md) | [notes](meetings/2026-02-16-sarah-round1-calibration-notes.md) | [transcript](meetings/2026-02-16-sarah-round1-calibration-transcript.txt) |
 | 2 | 2026-02-23 | Sarah (cont.) | Patrick, Kathy, Guillermo | — | — | — |
+
+## Results Snapshots
+
+| Date | Snapshot |
+|------|----------|
+| 2026-02-16 | [results](results/2026-02-16-irr-results.md) |
 
 ## Current Case
 
