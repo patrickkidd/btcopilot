@@ -13,15 +13,58 @@
             <div class="column is-half">
                 <form id="generate-form">
                     <div class="field">
-                        <label class="label">Persona</label>
+                        <label class="label">Traits</label>
+                        <div class="control">
+                            {% for opt in trait_options %}
+                            <label class="checkbox mr-3 mb-2">
+                                <input type="checkbox" name="traits" value="{{ opt.value }}">
+                                {{ opt.label }}
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Attachment Style</label>
                         <div class="control">
                             <div class="select is-fullwidth">
-                                <select id="persona-select" name="persona" required>
-                                    <option value="">Select a persona...</option>
-                                    {% for persona in personas %}
-                                    <option value="{{ persona.name }}">{{ persona.name }} ({{ persona.traits | join(', ') }})</option>
+                                <select id="attachment-style" name="attachment_style" required>
+                                    <option value="">Select attachment style...</option>
+                                    {% for opt in attachment_options %}
+                                    <option value="{{ opt.value }}">{{ opt.label }}</option>
                                     {% endfor %}
                                 </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="columns">
+                        <div class="column">
+                            <div class="field">
+                                <label class="label">Sex</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select id="sex" name="sex" required>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column">
+                            <div class="field">
+                                <label class="label">Age Range</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select id="age-range" name="age_range" required>
+                                            <option value="20s">20s</option>
+                                            <option value="30s">30s</option>
+                                            <option value="40s">40s</option>
+                                            <option value="50s">50s</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -63,7 +106,7 @@
                         <div class="control">
                             <button type="submit" class="button is-primary" id="generate-btn">
                                 <span class="icon"><i class="fas fa-play"></i></span>
-                                <span>Generate Discussion</span>
+                                <span>Generate Persona &amp; Discussion</span>
                             </button>
                         </div>
                     </div>
@@ -73,10 +116,10 @@
                     <div class="notification is-info is-light">
                         <h5 class="subtitle is-6 mb-2">
                             <span class="icon"><i class="fas fa-cog fa-spin"></i></span>
-                            <span id="progress-title">Generating discussion...</span>
+                            <span id="progress-title">Generating...</span>
                         </h5>
                         <progress id="progress-bar" class="progress is-info is-medium" value="0" max="100"></progress>
-                        <p class="help mt-1" id="progress-text">Starting generation...</p>
+                        <p class="help mt-1" id="progress-text">Starting...</p>
                         <div id="progress-preview" class="mt-3" style="display: none;">
                             <div class="columns is-mobile">
                                 <div class="column">
@@ -95,6 +138,7 @@
                 <div id="result-container" style="display: none;" class="mt-4">
                     <div class="notification is-success">
                         <p><strong>Discussion generated successfully!</strong></p>
+                        <p>Persona: <strong id="result-persona-name"></strong></p>
                         <p>Discussion ID: <a id="result-discussion-id" href="#" class="has-text-weight-bold"></a></p>
                         <p>Turns: <span id="result-turn-count"></span></p>
                         <p>Quality Score: <span id="result-quality"></span></p>
@@ -108,7 +152,7 @@
 
                 <div id="error-container" style="display: none;" class="mt-4">
                     <div class="notification is-danger">
-                        <p><strong>Error generating discussion:</strong></p>
+                        <p><strong>Error:</strong></p>
                         <p id="error-message"></p>
                     </div>
                 </div>
@@ -116,13 +160,6 @@
 
             <div class="column is-half">
                 <div class="box">
-                    <h3 class="title is-5">Persona Details</h3>
-                    <div id="persona-details">
-                        <p class="has-text-grey">Select a persona to see details</p>
-                    </div>
-                </div>
-
-                <div class="box mt-4">
                     <h3 class="title is-5">
                         <span class="icon"><i class="fas fa-database"></i></span>
                         Data Created
@@ -130,6 +167,7 @@
                     <div class="content">
                         <p>Generating a synthetic discussion creates the following records:</p>
                         <ul class="mt-2">
+                            <li><strong>1 SyntheticPersona</strong> - LLM-generated persona with background and traits</li>
                             <li><strong>1 Diagram</strong> - Family diagram owned by the selected user</li>
                             <li><strong>1 Discussion</strong> - Conversation thread linked to the diagram</li>
                             <li><strong>N Statements</strong> - One per conversation turn (user message + AI response)</li>
@@ -145,10 +183,50 @@
         </div>
     </div>
 
+    {% if generated_personas %}
+    <div class="box">
+        <h3 class="title is-5">
+            <span class="icon"><i class="fas fa-users"></i></span>
+            <span>Previously Generated Personas ({{ generated_personas|length }})</span>
+        </h3>
+        <table class="table is-fullwidth is-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Traits</th>
+                    <th>Attachment</th>
+                    <th>Sex</th>
+                    <th>Age</th>
+                    <th>Created</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in generated_personas %}
+                <tr>
+                    <td>{{ p.name }}</td>
+                    <td>{{ p.traits | join(', ') }}</td>
+                    <td>{{ p.attachment_style.replace('_', ' ').title() }}</td>
+                    <td>{{ p.sex.title() }}</td>
+                    <td>{{ p.age }}</td>
+                    <td>{{ p.created_at.strftime('%Y-%m-%d') if p.created_at else '' }}</td>
+                    <td>
+                        <button class="button is-small is-info reuse-btn" data-persona-id="{{ p.id }}" data-persona-name="{{ p.name }}">
+                            <span class="icon is-small"><i class="fas fa-redo"></i></span>
+                            <span>Re-generate</span>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
     <div class="box">
         <h3 class="title is-5">About Synthetic Discussions</h3>
         <div class="content">
-            <p>Synthetic discussions are generated using LLM-simulated personas that respond naturally based on their defined background, traits, and presenting problem.</p>
+            <p>Synthetic discussions are generated using LLM-simulated personas that respond naturally based on their generated background, traits, and attachment style.</p>
             <p><strong>Two purposes:</strong></p>
             <ul>
                 <li><strong>Ground Truth Corpus:</strong> Generate and persist conversations, then code the extractions as ground truth for F1 metrics.</li>
@@ -156,87 +234,142 @@
             </ul>
             <p><strong>Workflow:</strong></p>
             <ol>
-                <li>Generate a synthetic discussion (with extraction enabled)</li>
+                <li>Configure traits, attachment style, sex, and age range</li>
+                <li>Generate persona (LLM creates background and presenting problem)</li>
+                <li>Conversation is automatically generated via Celery</li>
                 <li>Review the conversation in the audit UI</li>
-                <li>Edit and correct the AI extractions</li>
-                <li>Approve as ground truth</li>
+                <li>Edit and correct the AI extractions, approve as ground truth</li>
             </ol>
         </div>
     </div>
 </div>
 
 <script>
-const personas = {{ personas | tojson }};
-
-document.getElementById('persona-select').addEventListener('change', function() {
-    const persona = personas.find(p => p.name === this.value);
-    const detailsDiv = document.getElementById('persona-details');
-
-    if (persona) {
-        detailsDiv.innerHTML = `
-            <p><strong>Name:</strong> ${persona.name}</p>
-            <p><strong>Traits:</strong> ${persona.traits.join(', ')}</p>
-            <p><strong>Background:</strong></p>
-            <p class="is-size-7">${persona.background}</p>
-        `;
-    } else {
-        detailsDiv.innerHTML = '<p class="has-text-grey">Select a persona to see details</p>';
-    }
-});
-
 document.getElementById('generate-form').addEventListener('submit', async function(e) {
     e.preventDefault();
 
-    const persona = document.getElementById('persona-select').value;
+    const traitCheckboxes = document.querySelectorAll('input[name="traits"]:checked');
+    const traits = Array.from(traitCheckboxes).map(cb => cb.value);
+    const attachmentStyle = document.getElementById('attachment-style').value;
+    const sex = document.getElementById('sex').value;
+    const ageRange = document.getElementById('age-range').value;
     const username = document.getElementById('user-select').value;
     const maxTurns = document.getElementById('max-turns').value;
     const includeExtraction = document.getElementById('include-extraction').checked;
 
-    if (!persona) {
-        alert('Please select a persona');
+    if (!attachmentStyle) {
+        alert('Please select an attachment style');
         return;
     }
 
-    document.getElementById('generate-btn').disabled = true;
+    const btn = document.getElementById('generate-btn');
+    btn.disabled = true;
     document.getElementById('progress-container').style.display = 'block';
     document.getElementById('result-container').style.display = 'none';
     document.getElementById('error-container').style.display = 'none';
     document.getElementById('progress-bar').removeAttribute('value');
-    document.getElementById('progress-text').textContent = 'Starting generation...';
-    document.getElementById('progress-title').textContent = 'Generating discussion...';
+    document.getElementById('progress-text').textContent = 'Generating persona...';
+    document.getElementById('progress-title').textContent = 'Creating persona via LLM...';
     document.getElementById('progress-preview').style.display = 'none';
 
     try {
-        const response = await fetch('{{ url_for("training.synthetic.generate") }}', {
+        // Step 1: Generate persona
+        const personaResponse = await fetch('{{ url_for("training.synthetic.generate_persona_route") }}', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                persona: persona,
+                traits: traits,
+                attachment_style: attachmentStyle,
+                sex: sex,
+                age_range: ageRange,
+            }),
+        });
+
+        const personaData = await personaResponse.json();
+        if (personaData.error) {
+            throw new Error(personaData.error);
+        }
+
+        document.getElementById('progress-text').textContent = `Persona "${personaData.name}" created. Starting conversation...`;
+        document.getElementById('progress-title').textContent = 'Generating discussion...';
+
+        // Step 2: Generate discussion
+        const genResponse = await fetch('{{ url_for("training.synthetic.generate") }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                persona_id: personaData.persona_id,
                 username: username || null,
                 max_turns: parseInt(maxTurns),
                 skip_extraction: !includeExtraction,
             }),
         });
 
-        const data = await response.json();
-        if (data.error) {
-            throw new Error(data.error);
+        const genData = await genResponse.json();
+        if (genData.error) {
+            throw new Error(genData.error);
         }
 
-        await pollTaskStatus(data.task_id);
+        // Step 3: Poll for task completion
+        await pollTaskStatus(genData.task_id, personaData.name);
 
     } catch (error) {
         document.getElementById('progress-container').style.display = 'none';
         document.getElementById('error-message').textContent = error.message;
         document.getElementById('error-container').style.display = 'block';
-        document.getElementById('generate-btn').disabled = false;
+        btn.disabled = false;
     }
 });
 
-function showResult(data) {
+// Re-use existing persona buttons
+document.querySelectorAll('.reuse-btn').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+        const personaId = this.dataset.personaId;
+        const personaName = this.dataset.personaName;
+        const username = document.getElementById('user-select').value;
+        const maxTurns = document.getElementById('max-turns').value;
+        const includeExtraction = document.getElementById('include-extraction').checked;
+
+        document.getElementById('generate-btn').disabled = true;
+        document.getElementById('progress-container').style.display = 'block';
+        document.getElementById('result-container').style.display = 'none';
+        document.getElementById('error-container').style.display = 'none';
+        document.getElementById('progress-bar').removeAttribute('value');
+        document.getElementById('progress-text').textContent = `Re-generating with "${personaName}"...`;
+        document.getElementById('progress-title').textContent = 'Generating discussion...';
+        document.getElementById('progress-preview').style.display = 'none';
+
+        try {
+            const response = await fetch('{{ url_for("training.synthetic.generate") }}', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    persona_id: parseInt(personaId),
+                    username: username || null,
+                    max_turns: parseInt(maxTurns),
+                    skip_extraction: !includeExtraction,
+                }),
+            });
+
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            await pollTaskStatus(data.task_id, personaName);
+
+        } catch (error) {
+            document.getElementById('progress-container').style.display = 'none';
+            document.getElementById('error-message').textContent = error.message;
+            document.getElementById('error-container').style.display = 'block';
+            document.getElementById('generate-btn').disabled = false;
+        }
+    });
+});
+
+function showResult(data, personaName) {
     document.getElementById('progress-container').style.display = 'none';
+    document.getElementById('result-persona-name').textContent = personaName || '';
     const idLink = document.getElementById('result-discussion-id');
     idLink.textContent = data.discussion_id;
     idLink.href = data.redirect_url;
@@ -248,9 +381,8 @@ function showResult(data) {
     document.getElementById('generate-btn').disabled = false;
 }
 
-async function pollTaskStatus(taskId) {
+async function pollTaskStatus(taskId, personaName) {
     const pollInterval = 2000;
-    const maxTurns = parseInt(document.getElementById('max-turns').value);
 
     while (true) {
         try {
@@ -258,7 +390,7 @@ async function pollTaskStatus(taskId) {
             const data = await response.json();
 
             if (data.status === 'complete') {
-                showResult(data);
+                showResult(data, personaName);
                 return;
             } else if (data.status === 'error') {
                 document.getElementById('progress-container').style.display = 'none';

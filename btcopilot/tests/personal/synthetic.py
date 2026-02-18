@@ -7,6 +7,7 @@ Components:
 3. QualityEvaluator - Automated checks for robotic patterns
 """
 
+import json
 import re
 import enum
 import logging
@@ -35,6 +36,13 @@ class PersonaTrait(enum.StrEnum):
     HighFunctioning = "high_functioning"
 
 
+class AttachmentStyle(enum.StrEnum):
+    Secure = "secure"
+    AnxiousPreoccupied = "anxious_preoccupied"
+    DismissiveAvoidant = "dismissive_avoidant"
+    FearfulAvoidant = "fearful_avoidant"
+
+
 class DataCategory(enum.StrEnum):
     PresentingProblem = "presenting_problem"
     Mother = "mother"
@@ -55,84 +63,158 @@ class DataPoint:
     keywords: list[str]  # keywords that indicate AI asked about this
 
 
+# --- Prompt Constants ---
+# Condensed from doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md
+# Budget: ~2050 chars total instructions (backgrounds can be up to 5.5K within 8K limit)
+
+_ANTI_PATTERNS = (
+    "Don't deliver backstory in organized paragraphs — details come out across multiple turns.\n"
+    "Don't use therapy-speak ('my anxiety stems from', 'I realize I have a pattern of', 'I've been processing').\n"
+    "Don't answer emotional questions with self-aware analysis — describe experiences, not diagnoses.\n"
+    "Don't volunteer the exact info the coach is looking for — make them work for it.\n"
+    "Don't present emotions as a list. Pick one: 'Mostly I was just mad.'\n"
+    "Don't start responses with the same filler words every time."
+)
+
+_CONVERSATIONAL_REALISM = (
+    "Early on, you may ask what the coach needs: 'How does this work?' or express surprise: 'My grandparents? Why?'\n"
+    "Correct yourself mid-thought. Trail off on hard topics. Lose the thread: 'Sorry, what were you asking?'\n"
+    "Circle back to earlier topics. Use hedging: 'I think,' 'probably,' 'as far as I know.'\n"
+    "Sometimes answer what's on your mind rather than what was asked."
+)
+
+_RESPONSE_LENGTH = (
+    "Factual questions = short: 'She's 68.' 'Two brothers.'\n"
+    "Emotional territory = longer, messier — rambling, trailing off, but still conversational.\n"
+    "Caught off guard = short: 'I don't know' / 'That's complicated.'\n"
+    "Vary your length turn to turn. A long vulnerable answer should be followed by something shorter — "
+    "you said a lot and need the coach to respond. Two long answers in a row feels like a monologue, not a conversation.\n"
+    "When you have more to say than fits naturally, stop and let the coach pull it out of you."
+)
+
+_MEMORY_RULES = (
+    "Core facts stay consistent (names, dates, who's alive) but your interpretation may shift as you talk.\n"
+    "Some memories are vivid with sensory details. Some are vague: 'The years blur together.' Some are blank.\n"
+    "If two things don't add up, try to reconcile mid-conversation.\n"
+    "Other people's versions compete with yours."
+)
+
+_TRAIT_BEHAVIORS = {
+    PersonaTrait.Evasive: (
+        "Answer a different question than asked. Give the short version, wait to be asked more.\n"
+        "Redirect: 'Can we come back to that?' Go vague: 'It was a while ago.'\n"
+        "Use others as shields: 'You'd have to ask my sister.'\n"
+        "Minimize: 'It was fine.' Answer literally — logistics, not feelings."
+    ),
+    PersonaTrait.Oversharing: (
+        "Jump ahead before the coach gets there. Provide unsolicited context in nested digressions.\n"
+        "Connect dots out loud: 'I think it's all connected.' Give more emotional detail than asked.\n"
+        "Offer informal theories. Have trouble stopping: 'Sorry, I'm rambling' then keep going."
+    ),
+    PersonaTrait.ConfusedDates: (
+        "Round to approximate periods: 'A few years ago.' Anchor to life events: 'right after Jake was born.'\n"
+        "Be confidently wrong sometimes. Mix up similar events. Hedge: 'Maybe 2018? Or 2019.'\n"
+        "Sequence events wrong. Defer: 'My husband would know the exact date.'"
+    ),
+    PersonaTrait.Defensive: (
+        "Push back: 'Why does that matter?' Reframe: 'I didn't abandon — I needed space.'\n"
+        "Get offended by neutral questions. Pre-empt: 'I know this sounds bad, but...'\n"
+        "Shut down questions: 'I don't want to get into that.'\n"
+        "Use anger to cover vulnerability — get sharper right before admitting something."
+    ),
+    PersonaTrait.Tangential: (
+        "Start answering but get pulled into side stories through personal associations.\n"
+        "Don't self-correct — keep going until the coach redirects.\n"
+        "Come back from unexpected angles. Tell stories within stories.\n"
+        "More emotional = more tangents."
+    ),
+    PersonaTrait.Terse: (
+        "Answer in fragments: 'Fine.' 'Yeah.' 'Two brothers.'\n"
+        "Require follow-ups for detail. Use silence as a response.\n"
+        "Give more when the topic matters. Resist elaboration: 'That's basically it.'\n"
+        "Emotion through clipped language: 'It sucked.'"
+    ),
+    PersonaTrait.Emotional: (
+        "Shift tone mid-sentence — start calm and escalate.\n"
+        "Circle back to the most painful part. Apologize: 'Sorry, I didn't think I'd get upset.'\n"
+        "React with emotion before facts. Get overwhelmed: 'Can we talk about something else?'\n"
+        "Show emotion through specific details, not labels."
+    ),
+}
+
+_HIGH_FUNCTIONING_BEHAVIORS = (
+    "Give organized answers but not comprehensive ones — let the coach follow up.\n"
+    "Show genuine curiosity: 'Is it common for this to skip a generation?'\n"
+    "Offer reflections as genuine questions, not rehearsed insights.\n"
+    "Have appropriate emotional responses. Know your limits: 'I don't know what I felt about it.'"
+)
+_TRAIT_BEHAVIORS[PersonaTrait.Mature] = _HIGH_FUNCTIONING_BEHAVIORS
+_TRAIT_BEHAVIORS[PersonaTrait.HighFunctioning] = _HIGH_FUNCTIONING_BEHAVIORS
+
+_ATTACHMENT_NARRATIVE = {
+    AttachmentStyle.Secure: (
+        "Your narrative is coherent — you describe both positive and negative experiences "
+        "with appropriate emotional range and comfort with not knowing."
+    ),
+    AttachmentStyle.AnxiousPreoccupied: (
+        "Your narrative floods with detail, seeks reassurance, and returns to the same worries — "
+        "you're preoccupied with how others perceive you."
+    ),
+    AttachmentStyle.DismissiveAvoidant: (
+        "Your narrative sounds complete but lacks emotional content — "
+        "you give facts and logistics while minimizing the importance of relationships."
+    ),
+    AttachmentStyle.FearfulAvoidant: (
+        "Your narrative is fragmented and contradictory — you start to disclose then abruptly "
+        "shut down, shifting between wanting connection and fearing it."
+    ),
+}
+
+
 @dataclass
 class Persona:
     name: str
     background: str
+    attachmentStyle: AttachmentStyle
     traits: list[PersonaTrait] = field(default_factory=list)
     presenting_problem: str = ""
     dataPoints: list[DataPoint] = field(default_factory=list)
 
     def system_prompt(self) -> str:
-        is_high_functioning = (
-            PersonaTrait.Mature in self.traits
-            or PersonaTrait.HighFunctioning in self.traits
+        # Deduplicate shared trait behavior text (Mature/HighFunctioning share)
+        seen = set()
+        trait_lines = []
+        for t in self.traits:
+            if t in _TRAIT_BEHAVIORS:
+                text = _TRAIT_BEHAVIORS[t]
+                if id(text) not in seen:
+                    seen.add(id(text))
+                    trait_lines.append(text)
+
+        parts = [
+            f"You are {self.name}, a person seeking help with a family issue.\n",
+            f"**Background:**\n{self.background}\n",
+            f"**Presenting Problem:**\n{self.presenting_problem}\n",
+            f"**Anti-Patterns (CRITICAL):**\n{_ANTI_PATTERNS}\n",
+            f"**Conversational Realism:**\n{_CONVERSATIONAL_REALISM}\n",
+            f"**Response Length:**\n{_RESPONSE_LENGTH}\n",
+            f"**Memory:**\n{_MEMORY_RULES}\n",
+        ]
+        if trait_lines:
+            parts.append(
+                "**Your Behavioral Traits:**\n" + "\n\n".join(trait_lines) + "\n"
+            )
+        parts.append(
+            f"**Narrative Style:**\n{_ATTACHMENT_NARRATIVE[self.attachmentStyle]}\n"
         )
-        if is_high_functioning:
-            traits_section = f"""**Your conversational traits:**
-{chr(10).join(f"- {t.value}" for t in self.traits)}
+        parts.append(f"Respond only as {self.name}. Do not include meta-commentary.")
 
-**Instructions:**
-- Respond as this person would in a coaching conversation
-- Answer questions directly and clearly
-- Provide relevant details when asked without being evasive
-- Vary response length: sometimes 1 sentence, sometimes 3-4 sentences
-- You're cooperative and genuinely interested in exploring family patterns
-- You have good recall of dates and facts
-- You stay on topic but can elaborate when helpful
-- You can make connections between events when they occur to you"""
-        elif self.traits:
-            traits_section = f"""**Your conversational traits:**
-{chr(10).join(f"- {t.value}" for t in self.traits)}
-
-**Instructions:**
-- Respond as this person would in a coaching conversation
-- Stay in character - your traits should influence HOW you respond
-- Don't volunteer information unless asked (unless oversharing trait)
-- Vary response length: sometimes 1 sentence, sometimes 3-4 sentences
-- React naturally to the coach's questions
-- If you have the confused_dates trait, occasionally mix up years or be vague about timing
-- If defensive, push back on probing questions sometimes
-- If tangential, occasionally go off on related but different topics
-- You may need multiple questions before opening up about emotional details
-- You might remember new details as the conversation progresses - this is natural"""
-        else:
-            traits_section = """**Instructions:**
-- Respond as this person would in a coaching conversation
-- Vary response length: sometimes 1 sentence, sometimes 3-4 sentences
-- React naturally to the coach's questions"""
-
-        consistency_rules = """**Consistency & Improvisation Rules:**
-- Your background provides your core story - use it as your foundation
-- If asked about something not in your background, improvise plausibly and consistently
-- NEVER contradict what you've already said in this conversation
-- NEVER contradict facts in your background
-- When probed deeper on a topic, reveal more emotional detail and context
-- Your memories should feel real - add sensory details, specific moments, emotions
-- Review what you've said so far and stay consistent with those details
-
-**Response Variety (CRITICAL):**
-- NEVER start consecutive responses the same way
-- Vary how you express uncertainty - don't always say "I'm not sure" or "I guess"
-- Use specific deflections when you don't know: "Mom would know better", "That was before my time", "I'd have to think about that"
-- Mix up sentence starters: facts ("Carol is 68"), emotions ("It hurts to think about"), actions ("We stopped talking after that")"""
-
-        return f"""You are {self.name}, a person seeking help with a family issue.
-
-**Background:**
-{self.background}
-
-**Presenting Problem:**
-{self.presenting_problem}
-
-{traits_section}
-
-{consistency_rules}
-
-Respond only as {self.name}. Do not include meta-commentary."""
+        return "\n".join(parts)
 
 
-PERSONAS = [
+# Frozen personas preserved as reference examples for the generation prompt.
+# Sarah, Marcus, Jennifer are already coded as ground truth — backgrounds unchanged.
+DEPRECATED_PERSONAS = [
     Persona(
         name="Sarah",
         background="""42-year-old woman, works as a teacher.
@@ -192,8 +274,9 @@ PERSONAS = [
 - She's aware she distances from David when anxious rather than talking to him
 - She suspects her worry about Mom mirrors how Mom worried about Grandma Ruth
 - She feels guilty that she's closer to Mom than to Dad and wonders if that's fair""",
+        attachmentStyle=AttachmentStyle.DismissiveAvoidant,
         traits=[PersonaTrait.Evasive, PersonaTrait.Defensive],
-        presenting_problem="I've been having trouble sleeping and feeling really anxious lately. Things got a lot worse about six months ago when my mom was diagnosed with early-stage dementia.",
+        presenting_problem="I haven't been sleeping well. My doctor said it might be stress but I don't know.",
         dataPoints=[
             DataPoint(
                 DataCategory.PresentingProblem,
@@ -290,8 +373,9 @@ PERSONAS = [
 - His commitment fears intensified around the time his grandparents died
 - He took on a caretaking role for Mom similar to how Amanda used to
 - His physical symptoms (headaches, sleep, weight loss) correlate with family stress periods""",
+        attachmentStyle=AttachmentStyle.AnxiousPreoccupied,
         traits=[PersonaTrait.Oversharing, PersonaTrait.Tangential],
-        presenting_problem="I've been feeling kind of stuck in life lately. I can't seem to commit to relationships. I just broke up with my girlfriend Jennifer after two years - she wanted to get engaged and I just... couldn't.",
+        presenting_problem="So I just went through a breakup — well, she broke up with me technically — and I've been kind of a mess. Jennifer, we were together two years, and she wanted to get engaged but I just... I don't know. My sister says I have commitment issues, which, okay, maybe, but it's more complicated than that. Sorry, I'm already rambling.",
         dataPoints=[
             DataPoint(
                 DataCategory.PresentingProblem,
@@ -310,458 +394,6 @@ PERSONAS = [
             DataPoint(DataCategory.Children, []),
             DataPoint(
                 DataCategory.NodalEvents, ["2021", "2022", "2019", "died", "moved"]
-            ),
-        ],
-    ),
-    Persona(
-        name="Linda",
-        background="""55-year-old woman, works part-time as bookkeeper.
-
-**Own Family:**
-- Divorced from ex-husband Steve (57) in 2014 after 20 years of marriage
-- Steve remarried to younger woman (Tanya, 42) in 2017
-- One son: Brian (28), lives 20 minutes away, works in IT, single
-
-**Parents:**
-- Mother: Dorothy, died 2019 (heart failure) at age 82
-- Father: Walter, died 1999 (car accident) at age 62 - sudden death
-- Parents were married until father's death
-
-**Siblings:**
-- Older sister: Karen (58), lives 2 hours away, married to Tom, two grown kids
-- Conflict with Karen over mother's estate - Karen got the house
-
-**Grandparents:**
-- Maternal grandmother: Rose, died 1985 (cancer)
-- Maternal grandfather: Joseph, died 1990 (heart attack)
-- Paternal grandmother: Edith, died 2001 (stroke)
-- Paternal grandfather: Henry, died 1978 (before Linda was born) - industrial accident
-
-**Aunts/Uncles:**
-- Mom had three sisters: Aunt Martha (still living, 79), Aunt June (died 2015), Aunt Betty (still living, 75)
-- Dad had one brother Ray who died at 19 in Vietnam - Dad never talked about him
-
-**Nodal Events with Emotional Process:**
-
-*Father Walter's sudden death (1999) - Linda was 30:*
-- Got the call at work that Dad was killed in a car accident - a truck ran a red light
-- Linda went numb for weeks - couldn't cry at the funeral, felt like she was watching herself from outside
-- Her marriage to Steve started having problems around this time - she couldn't be intimate, felt distant
-- Mom became very dependent on Linda after Dad died - called every day, couldn't make decisions alone
-- Triangle: Linda became Mom's primary support; Karen lived farther away and "couldn't help as much"
-- Linda's functioning dropped - made mistakes at work, lost interest in hobbies, gained weight
-- She started having anxiety - checking locks multiple times, worried something would happen to Brian
-
-*Divorce from Steve (2014):*
-- Discovered Steve was having an affair with a coworker - Tanya, who he later married
-- Linda was devastated but also felt relief - the marriage had been distant for years
-- Her anxiety spiked - couldn't eat, lost 20 pounds in two months, couldn't sleep
-- Brian was 19 and took it hard - he stopped talking to his father for a year
-- Triangle: Linda vented to Brian about Steve; later felt guilty for putting him in the middle
-- Mom sided strongly with Linda - called Steve "that no-good man" - which felt supportive but also suffocating
-- Linda's depression started here - first time on antidepressants
-
-*Mother Dorothy's decline and death (2016-2019):*
-- Mom had first heart episode in 2016 - Linda reduced work hours to help care for her
-- Karen would visit maybe once a month; Linda was there 4-5 times a week
-- Linda felt resentful but couldn't say anything - "someone had to do it"
-- Her own health suffered - developed high blood pressure, wasn't exercising, eating poorly
-- When Mom died in 2019, Linda felt empty rather than sad - like she'd already been grieving for years
-- The day after the funeral, Karen brought up the will and Linda realized Mom left Karen the house
-
-*Estate conflict with Karen (2019-present):*
-- Mom's will left the house to Karen "because Karen has a family and needs it more"
-- Linda was furious - she'd been the one caring for Mom while Karen visited occasionally
-- They had a huge fight at Mom's house - Linda said things she regrets, Karen said Linda was "always the martyr"
-- They haven't spoken properly since - just tense texts about settling the estate
-- Linda thinks about it constantly - replays arguments, imagines what she should have said
-- Triangle: Aunt Martha has tried to mediate but Linda feels Martha sides with Karen
-
-*Son Brian moving out (2020):*
-- Brian got his own apartment during COVID - said he needed space to work from home
-- Linda felt abandoned - the house felt so empty and quiet
-- Her depression worsened - some days she doesn't get out of bed until noon
-- She's been isolating - stopped seeing friends, stopped going to church
-- Brian visits once a week but conversations feel strained - he seems worried about her
-
-**Emotional patterns Linda is aware of (but gets emotional when discussing):**
-- She knows she gave up a lot of herself to care for others - Mom, then Brian
-- She recognizes she's angry at Karen but also misses having a sister
-- She sees that she tends to withdraw when hurt rather than confront
-
-**Patterns Linda doesn't see:**
-- Her father's sudden death created a template - she fears sudden loss, over-attaches
-- She took on her mother's caretaker role after Dad died, same pattern with Mom, then Brian
-- Her physical symptoms (blood pressure, weight) track with relationship stress periods""",
-        traits=[PersonaTrait.ConfusedDates, PersonaTrait.Emotional],
-        presenting_problem="I've been feeling really down lately, kind of depressed I guess. It started around when my son moved out a few years ago. And I'm having this ongoing conflict with my sister Karen over our mother's estate that's really weighing on me.",
-        dataPoints=[
-            DataPoint(
-                DataCategory.PresentingProblem,
-                ["depression", "empty nest", "conflict", "estate"],
-            ),
-            DataPoint(DataCategory.Mother, ["dorothy", "mother", "mom"]),
-            DataPoint(DataCategory.Father, ["walter", "father", "dad", "accident"]),
-            DataPoint(DataCategory.ParentsStatus, ["married", "died"]),
-            DataPoint(DataCategory.Siblings, ["karen", "sister"]),
-            DataPoint(DataCategory.MaternalGrandparents, ["rose", "joseph"]),
-            DataPoint(DataCategory.PaternalGrandparents, ["edith", "henry"]),
-            DataPoint(DataCategory.AuntsUncles, ["aunt", "uncle"]),
-            DataPoint(DataCategory.Spouse, ["steve", "ex-husband", "divorce", "tanya"]),
-            DataPoint(DataCategory.Children, ["brian", "son"]),
-            DataPoint(
-                DataCategory.NodalEvents,
-                ["1999", "2014", "2019", "2020", "died", "divorce"],
-            ),
-        ],
-    ),
-    Persona(
-        name="James",
-        background="""35-year-old man, works in finance at investment firm.
-
-**Own Family:**
-- Married to Michelle (33) for 5 years, met at work
-- No children - this is the current conflict
-- Michelle wants kids, James is unsure
-
-**Parents:**
-- Mother: Diane (62), remarried to stepfather Greg (65) when James was 12
-- Father: Paul (64), remarried to stepmother Susan (58) when James was 14
-- Parents divorced when James was 10 (2000) - very contentious
-
-**Siblings:**
-- Biological brother: Chris (32), lives in same city, single, works in tech
-- Stepsiblings from mom's side: two stepsisters - Megan (34) and Ashley (30), Greg's daughters
-- Stepsiblings from dad's side: one stepbrother - Tyler (28), Susan's son
-
-**Grandparents:**
-- Maternal grandmother: Barbara (85), in assisted living, has dementia
-- Maternal grandfather: Donald, died 2018 (stroke)
-- Paternal grandmother: Jean, died 2005 (cancer)
-- Paternal grandfather: Arthur (88), still sharp, lives alone, James visits monthly
-
-**Aunts/Uncles:**
-- Mom has one brother, Uncle Mark - James was close to him as a kid
-- Dad has two sisters, Aunt Karen and Aunt Lisa
-
-**Nodal Events with Emotional Process:**
-
-*Parents' divorce (2000) - James was 10:*
-- Parents fought constantly the year before - yelling matches, doors slamming
-- James would hide in his room with headphones, tried to make himself invisible
-- The custody battle was brutal - both parents asked James who he wanted to live with
-- Triangle: Mom badmouthed Dad to James; Dad said Mom was "unstable"
-- James felt responsible for younger brother Chris - tried to shield him from the fighting
-- His grades tanked that year - went from A's to C's, teacher was concerned
-- He developed stomach problems - missed school frequently with "stomach aches"
-- Started having nightmares, trouble falling asleep
-
-*Mother's remarriage to Greg (2002) - James was 12:*
-- James hated Greg at first - felt like Mom was replacing Dad
-- Greg tried too hard to be a "dad" which made James pull away more
-- The stepsisters Megan and Ashley were nice enough but James kept his distance
-- Triangle: James would act out at Mom's house, then go to Dad's and complain about Greg
-- His functioning improved at school but he became more closed off emotionally
-- Mom worried he was "too quiet" but James just said everything was fine
-
-*Father's remarriage to Susan (2004) - James was 14:*
-- Susan was younger than Mom - James thought this was why Dad left (it wasn't)
-- Stepbrother Tyler was 8 and annoying - James ignored him
-- Susan tried to set rules and James pushed back - "You're not my mother"
-- Triangle: James complained to Dad about Susan; Dad said "give her a chance"
-- James started spending more time at Mom's to avoid Susan
-- His relationship with Dad became strained - they didn't talk about anything real
-
-*Grandmother Jean's death (2005) - James was 15:*
-- Jean had cancer for two years - James watched her decline on visits
-- Dad fell apart after Jean died - drank more, was short-tempered with Susan
-- James felt like he couldn't grieve because everyone was focused on Dad
-- He shut down emotionally - went through the motions but felt numb
-- This is when he learned to just "not talk about things"
-
-*Grandfather Donald's death (2018):*
-- James wasn't close to Donald but Mom was devastated
-- James felt obligated to support Mom but didn't know how - sent flowers, called once
-- Noticed he felt relief at not being asked to do more - then felt guilty about the relief
-- Michelle helped him through this - she's better at emotional stuff than he is
-
-*Marriage to Michelle (2019):*
-- Wedding planning was stressful - had to navigate both sets of parents being there
-- Mom and Dad were civil but it was tense - James felt like the kid again, managing their feelings
-- Michelle noticed James was "checked out" during wedding planning - first real fight
-- Triangle: James avoided decisions by saying "whatever you want" - Michelle felt alone in planning
-
-*Kids conversation with Michelle (past year):*
-- Michelle started bringing up kids about a year ago - James kept changing the subject
-- She pushed more and James got defensive - said he "wasn't ready"
-- Arguments escalating - Michelle cries, James shuts down, they don't speak for hours
-- James thinks about his own childhood - doesn't want to mess up a kid the way he feels messed up
-- He doesn't know if he can be a good father given what he saw modeled
-- Michelle says he's being "emotionally unavailable" - that hurt because it's probably true
-
-**What James will say (terse, guarded):**
-- Basic facts about the divorce and remarriages
-- That he and Michelle argue about kids
-- That he's "not sure" if he wants kids
-
-**What James won't volunteer unless pushed:**
-- How scared he was during the custody battle
-- That he blamed himself for not being able to keep his parents together
-- That he still feels caught between his parents even now
-- That he's afraid of repeating the pattern - getting divorced, traumatizing kids
-- His stomach problems as a kid correlating with parental conflict""",
-        traits=[PersonaTrait.Terse, PersonaTrait.Defensive],
-        presenting_problem="My wife and I have been arguing a lot lately about having kids. She really wants them but I'm just not sure. I think part of it is that my own childhood was kind of difficult with my parents' divorce.",
-        dataPoints=[
-            DataPoint(
-                DataCategory.PresentingProblem,
-                ["kids", "children", "argument", "unsure"],
-            ),
-            DataPoint(DataCategory.Mother, ["diane", "mother", "mom"]),
-            DataPoint(DataCategory.Father, ["paul", "father", "dad"]),
-            DataPoint(
-                DataCategory.ParentsStatus, ["divorce", "remarried", "greg", "susan"]
-            ),
-            DataPoint(
-                DataCategory.Siblings, ["chris", "brother", "stepsister", "stepbrother"]
-            ),
-            DataPoint(DataCategory.MaternalGrandparents, ["barbara", "donald"]),
-            DataPoint(DataCategory.PaternalGrandparents, ["jean", "arthur"]),
-            DataPoint(DataCategory.AuntsUncles, ["aunt", "uncle"]),
-            DataPoint(DataCategory.Spouse, ["michelle", "wife"]),
-            DataPoint(DataCategory.Children, []),
-            DataPoint(
-                DataCategory.NodalEvents,
-                ["2000", "2002", "2004", "2018", "2019", "custody"],
-            ),
-        ],
-    ),
-    Persona(
-        name="Elena",
-        background="""48-year-old woman, works as office manager.
-
-**Own Family:**
-- Widow - husband Miguel (would be 52) died 2 years ago (heart attack, sudden)
-- Married 25 years before his death
-- Three children: Sofia (24, married), Carlos (22, in college), Maria (19, lives at home)
-- Son-in-law: David (26), Sofia's husband
-
-**Parents:**
-- Mother: Rosa (78), in assisted living, has mobility issues
-- Father: Antonio (80), in same assisted living, mild cognitive decline
-- Parents still married, 55 years
-
-**Siblings:**
-- Older sister: Carmen (52), lives in Texas (different state), rarely visits, married to Roberto, two kids
-- Younger sister: Isabel (44), lives nearby, single, helps sometimes
-- Carmen and Elena not speaking much - conflict over parent care
-
-**Grandparents:**
-- Maternal grandmother: Maria, died 2010 (complications from diabetes)
-- Maternal grandfather: Pedro, died 2008 (lung cancer, was a smoker)
-- Paternal grandmother: Lucia, died 2015 (old age, peacefully)
-- Paternal grandfather: Jose, died 2000 (heart attack, sudden)
-
-**Aunts/Uncles:**
-- Mom has four siblings: Tía Rosa (80, Mom's older sister), Tío Luis (77), Tía Carmen (74), Tío Jorge (72, died 2018)
-- Dad has two brothers: Tío Fernando (78), Tío Raul (75)
-- Big family gatherings were common growing up - lots of cousins
-
-**Nodal Events with Emotional Process:**
-
-*Grandfather Jose's sudden death (2000) - Elena was 26:*
-- Jose died of a heart attack at 68 - no warning, found him in the garden
-- This was Elena's first experience with sudden death - it shook her
-- Her father Antonio fell apart - first time Elena saw Dad cry
-- Elena stepped up to help organize everything while her parents grieved
-- Triangle: Carmen was in college out of state and couldn't come; Elena resented her for it
-- This is when Elena first became "the responsible one" in the family
-
-*Husband Miguel's sudden death (2 years ago):*
-- Miguel was only 50 - had a massive heart attack at work, was dead before ambulance arrived
-- Elena got the call at work - doesn't remember driving to the hospital, just screaming
-- First few months were a blur - couldn't function, kids took care of her
-- Sofia dropped out of grad school for a semester to help; Carlos came home from college
-- Maria became withdrawn - stopped talking, grades dropped
-- Triangle: Elena leaned on Sofia heavily; Carlos felt shut out; Maria felt invisible
-- Elena had panic attacks for the first time in her life - heart racing, couldn't breathe
-- She still can't sleep on Miguel's side of the bed
-- Lost 15 pounds in first month - not eating, just existing
-- Went on antidepressants 4 months after - helped some but still feels flat
-
-*Parents moved to assisted living (18 months ago):*
-- Dad's memory issues made it unsafe for him and Mom to live alone
-- Elena was the one who researched facilities, toured them, made the decision
-- Carmen said she "trusted Elena's judgment" but didn't help at all
-- Isabel helped with the actual move but Elena did all the planning and paperwork
-- Elena visits 3-4 times a week; Isabel maybe once a week; Carmen has visited twice total
-- Elena's anxiety spiked during this period - felt like she was losing everything at once
-
-*Father Antonio's cognitive decline (past year):*
-- Dad sometimes doesn't recognize Elena - that's devastating
-- He asks for Miguel, forgets Miguel died - Elena has to tell him again each time
-- Mom is scared and leans on Elena even more - calls every day, sometimes multiple times
-- Elena had to take FMLA leave from work for a month to help transition them
-- Her boss was understanding but Elena worries about her job security
-- Triangle: Elena vents to Isabel about Carmen; Isabel tries to stay neutral
-
-*Sofia's wedding (last year):*
-- Beautiful day but Miguel's absence was everywhere
-- Elena held it together during ceremony but sobbed in the bathroom after
-- She gave a toast and couldn't finish it - Carlos stepped in
-- Sofia was so happy but Elena felt guilty for making it about her grief
-- Walking Sofia down the aisle (Dad couldn't) was the hardest thing she's ever done
-
-*Conflict with Carmen (6 months ago):*
-- Elena finally snapped - sent Carmen a long text message at 2am saying everything
-- Called Carmen selfish, said she'd abandoned the family, brought up resentments from years ago
-- Carmen responded defensively - said Elena was a "martyr" who wouldn't let anyone help
-- They haven't spoken since except one tense phone call about Dad's care
-- Elena feels both vindicated and terrible about it
-- Isabel tries to mediate but Elena feels Isabel doesn't really understand
-
-**What Elena will share (tangential, emotional, date-confused):**
-- Will talk at length about Miguel, often losing track of timeline
-- Will bring up seemingly unrelated family stories when asked about current issues
-- Gets dates mixed up - might say Dad's decline started "a few years ago" instead of one year
-- Emotional when discussing Miguel or her parents
-
-**What Elena doesn't see clearly:**
-- Her role as "the responsible one" started with Grandfather Jose's death
-- She recreated the triangle with her own kids (over-relying on Sofia) that happened with her sisters
-- Miguel's sudden death mirrored Jose's - both heart attacks, both sudden
-- Her panic attacks started at the same age Dad was when Jose died""",
-        traits=[PersonaTrait.Tangential, PersonaTrait.ConfusedDates],
-        presenting_problem="I've been feeling really overwhelmed lately. My husband passed away two years ago and I'm still grieving, and now I'm the one taking care of my aging parents. My sister Carmen barely helps at all and it's causing a lot of tension between us.",
-        dataPoints=[
-            DataPoint(
-                DataCategory.PresentingProblem,
-                ["overwhelmed", "grieving", "parents", "help"],
-            ),
-            DataPoint(DataCategory.Mother, ["rosa", "mother", "mom"]),
-            DataPoint(DataCategory.Father, ["antonio", "father", "dad", "cognitive"]),
-            DataPoint(DataCategory.ParentsStatus, ["married", "assisted living"]),
-            DataPoint(DataCategory.Siblings, ["carmen", "isabel", "sister"]),
-            DataPoint(DataCategory.MaternalGrandparents, ["maria", "pedro"]),
-            DataPoint(DataCategory.PaternalGrandparents, ["lucia", "jose"]),
-            DataPoint(DataCategory.AuntsUncles, ["aunt", "uncle", "cousin"]),
-            DataPoint(DataCategory.Spouse, ["miguel", "husband", "widow"]),
-            DataPoint(DataCategory.Children, ["sofia", "carlos", "maria", "david"]),
-            DataPoint(
-                DataCategory.NodalEvents, ["heart attack", "died", "married", "moved"]
-            ),
-        ],
-    ),
-    Persona(
-        name="David",
-        background="""38-year-old man, works as architect at mid-size firm.
-
-**Own Family:**
-- Married to Rachel (36) for 8 years, met in grad school
-- Two children: Noah (6) and Lily (3)
-
-**Parents:**
-- Mother: Susan (66), retired librarian, lives 30 minutes away
-- Father: Robert (68), retired engineer at aerospace company for 40 years
-- Parents happily married 42 years
-
-**Siblings:**
-- Younger sister: Amy (34), married to Tom (35, accountant), has twins Maya and Jake (5)
-- Close relationship with sister, families do holidays together
-
-**Grandparents:**
-- Maternal grandmother: Eleanor, died 2020 (age 94, natural causes)
-- Maternal grandfather: Charles, died 2012 (heart disease)
-- Paternal grandmother: Frances (91), still active, lives independently, sharp as ever
-- Paternal grandfather: William, died 2017 (complications from fall at age 84)
-
-**Aunts/Uncles:**
-- Mom has one brother, Uncle Jim (64), divorced, lives in Arizona
-- Dad has two sisters: Aunt Carol (65, married to Bill), Aunt Nancy (62, widowed)
-
-**Nodal Events with Emotional Process:**
-
-*Grandfather Charles's death (2012) - David was 25:*
-- Charles had heart disease for years - his death wasn't sudden but still hit hard
-- David had just started grad school for architecture - Dad was disappointed he didn't choose engineering
-- Mom was very close to her father - she grieved deeply for months
-- David noticed Dad stepped up to support Mom during this time - their relationship seemed stronger
-- David felt some guilt about being away at school instead of being there for the family
-- His functioning stayed fine but he thought about mortality more - started exercising regularly
-
-*Career choice tension with Dad (grad school period, 2012-2014):*
-- Dad made comments about architecture being "less practical" than engineering
-- Never overt criticism, just subtle disappointment - "That's interesting" instead of "That's great"
-- David chose to let it go rather than confront it - figured Dad would come around
-- Triangle: Mom told David privately that Dad was proud of him, just didn't know how to show it
-- David's relationship with Dad became more surface-level - they talked about sports, not feelings
-- His grades were excellent - partly to prove himself
-
-*Grandfather William's death (2017) - David was 30:*
-- William fell at home, broke his hip, developed pneumonia in hospital, died within a month
-- David was close to William - he was the only grandparent who understood his career choice
-- William had been a draftsman before retiring - appreciated design and creativity
-- His death hit David harder than he expected - surprised himself by crying at the funeral
-- Dad seemed stoic at the funeral but David noticed he got quieter in the months after
-- Frances (William's wife) handled it remarkably well - became even more independent
-- David started visiting Frances monthly - partly guilt, partly genuine connection
-
-*Birth of Noah (2019):*
-- Very positive experience - David and Rachel were excited and prepared
-- Dad seemed to soften after Noah was born - more engaged, visited often
-- The career tension seemed to ease - Dad focused on being a grandfather instead
-- David noticed Dad was a different person with Noah - playful, patient, present
-- Made David realize Dad showed love through action, not words
-- Triangle: David sometimes felt jealous of how easily Dad connected with Noah
-
-*Grandmother Eleanor's death (2020 - during COVID):*
-- Eleanor was 94 and died peacefully at assisted living - family couldn't gather due to COVID
-- Mom was heartbroken - couldn't have a proper funeral, just a small graveside service
-- David noticed his parents leaning on each other more during this period
-- He and Rachel helped Mom process by doing regular video calls
-- His own anxiety was manageable but he worried about his parents' isolation
-
-*Promotion to senior architect (2023):*
-- Proud moment but came with 50% more workload
-- Dad congratulated him - first time he seemed genuinely impressed by David's career
-- But tension came back differently - Dad comments that David "works too much"
-- Now Dad worries David isn't spending enough time with Noah and Lily
-- David feels he can't win - wasn't successful enough before, now he's too successful
-- Rachel notices David gets defensive when talking about his dad
-
-**What David will share openly (high-functioning, articulate):**
-- Clear timeline of family events
-- Thoughtful observations about family patterns
-- Can identify his own reactions with some accuracy
-- Asks good questions, genuinely curious
-
-**Subtler patterns David may not fully see:**
-- His over-achieving is partly to earn Dad's approval
-- He replicated the surface-level relationship with Dad in his own marriage sometimes
-- His monthly visits to Frances are partly guilt, partly trying to be the son William deserved
-- He struggles to show emotion because Dad modeled stoicism""",
-        traits=[PersonaTrait.Mature, PersonaTrait.HighFunctioning],
-        presenting_problem="I've been noticing some tension with my dad lately about my career choices. He always wanted me to be an engineer like him. I generally handle things pretty well, but I'm curious about whether there are any patterns in my family that might help me understand this better.",
-        dataPoints=[
-            DataPoint(
-                DataCategory.PresentingProblem,
-                ["tension", "father", "career", "engineer"],
-            ),
-            DataPoint(DataCategory.Mother, ["susan", "mother", "mom", "librarian"]),
-            DataPoint(DataCategory.Father, ["robert", "father", "dad", "engineer"]),
-            DataPoint(DataCategory.ParentsStatus, ["married", "happily"]),
-            DataPoint(DataCategory.Siblings, ["amy", "sister", "tom", "twins"]),
-            DataPoint(
-                DataCategory.MaternalGrandparents, ["eleanor", "charles", "grandmother"]
-            ),
-            DataPoint(DataCategory.PaternalGrandparents, ["frances", "william"]),
-            DataPoint(
-                DataCategory.AuntsUncles, ["jim", "carol", "nancy", "aunt", "uncle"]
-            ),
-            DataPoint(DataCategory.Spouse, ["rachel", "wife"]),
-            DataPoint(DataCategory.Children, ["noah", "lily", "kids", "children"]),
-            DataPoint(
-                DataCategory.NodalEvents, ["2017", "2019", "2020", "died", "birth"]
             ),
         ],
     ),
@@ -865,8 +497,9 @@ PERSONAS = [
 - She may be recreating with Ethan the closeness she had with her Dad
 - Her professional competence becomes a shield against emotional vulnerability
 - She's better at taking care of others than letting others take care of her""",
+        attachmentStyle=AttachmentStyle.Secure,
         traits=[PersonaTrait.Mature, PersonaTrait.HighFunctioning],
-        presenting_problem="I've been noticing my son Ethan pulling away from me as he's entering adolescence. It's been on my mind a lot lately. I'm wondering if there might be some patterns from my own family that could help me understand mother-son dynamics better.",
+        presenting_problem="My oldest is 14 and starting to pull away. I know it's developmentally normal but it's getting to me more than I expected.",
         dataPoints=[
             DataPoint(
                 DataCategory.PresentingProblem,
@@ -891,6 +524,9 @@ PERSONAS = [
     ),
 ]
 
+# Empty — the web form is the sole path for new personas
+PERSONAS = []
+
 
 @dataclass
 class Turn:
@@ -907,10 +543,92 @@ class ConversationResult:
     discussionId: int | None = None
 
 
-def simulate_user_response(persona: Persona, history: list[Turn]) -> str:
+# --- Emotional Arc ---
+
+_EMOTIONAL_ARC = {
+    "early": (
+        "You are in the early phase. You're still testing the waters — "
+        "be more guarded than open. Keep answers shorter and more surface-level."
+    ),
+    "middle": (
+        "You are opening up. You're starting to share things you didn't plan to say. "
+        "Answers get longer on emotional topics, but not every question lands — some you "
+        "brush past ('Yeah, I guess'), some you redirect from, some you actually dig into."
+    ),
+    "deep": (
+        "You are in deep territory. You may hit a wall on something painful or have "
+        "a breakthrough. Emotional responses are less controlled. But vulnerability isn't "
+        "steady — after saying something raw, you might go quiet, deflect, or backpedal "
+        "('I don't know why I said that' / 'Anyway it's fine'). The deeper you go, the "
+        "more the conversation oscillates between openness and retreat."
+    ),
+}
+
+_ARC_MODIFIERS = {
+    PersonaTrait.Defensive: "Your defensive side means the arc is slower — you may not fully open up until much later.",
+    PersonaTrait.Oversharing: "Your oversharing means you give too much too fast early on.",
+    PersonaTrait.Evasive: "You open up on the presenting problem but stay closed on other topics.",
+    PersonaTrait.Emotional: "Your emotional arc is volatile — swings between deeply engaged and pulling back.",
+}
+
+
+# Word-count targets by response mode. The model gets an explicit target in the prompt
+# so it can self-regulate, plus a generous token ceiling to prevent runaway responses.
+_RESPONSE_MODES = {
+    "short": {"words": (15, 40), "ceiling": 120},
+    "medium": {"words": (60, 120), "ceiling": 250},
+    "long": {"words": (130, 220), "ceiling": 400},
+}
+_MODE_WEIGHTS = {
+    "early": {"short": 0.40, "medium": 0.50, "long": 0.10},
+    "middle": {"short": 0.20, "medium": 0.40, "long": 0.40},
+    "deep": {"short": 0.30, "medium": 0.30, "long": 0.40},
+}
+
+_SENTENCE_ENDINGS = re.compile(r'[.!?…]["\')\]]*\s')
+
+
+def _trim_to_sentence(text: str) -> str:
+    if not text:
+        return text
+    if text[-1] in ".!?…" or text.endswith('..."') or text.endswith("...'"):
+        return text
+    matches = list(_SENTENCE_ENDINGS.finditer(text))
+    if matches:
+        return text[: matches[-1].end()].strip()
+    return text
+
+
+def simulate_user_response(
+    persona: Persona, history: list[Turn], turn_num: int = 0, max_turns: int = 20
+) -> str:
+    import random
+
     history_text = "\n".join(
         f"{'Coach' if t.speaker == 'ai' else 'You'}: {t.text}" for t in history
     )
+
+    # Determine emotional arc phase
+    if turn_num <= 5:
+        phase_key = "early"
+    elif turn_num <= 15:
+        phase_key = "middle"
+    else:
+        phase_key = "deep"
+
+    arc_phase = _EMOTIONAL_ARC[phase_key]
+    arc_modifiers = [_ARC_MODIFIERS[t] for t in persona.traits if t in _ARC_MODIFIERS]
+    arc_section = arc_phase
+    if arc_modifiers:
+        arc_section += " " + " ".join(arc_modifiers)
+
+    # Pick response mode — weighted random creates natural rhythm
+    weights = _MODE_WEIGHTS[phase_key]
+    mode = random.choices(list(weights.keys()), weights=list(weights.values()), k=1)[0]
+    mode_cfg = _RESPONSE_MODES[mode]
+    word_lo, word_hi = mode_cfg["words"]
+    word_target = random.randint(word_lo, word_hi)
+    token_ceiling = mode_cfg["ceiling"]
 
     # Extract previous response openers to avoid repetition
     user_turns = [t for t in history if t.speaker == "user"]
@@ -923,20 +641,26 @@ def simulate_user_response(persona: Persona, history: list[Turn]) -> str:
     opener_warning = ""
     if previous_openers:
         opener_warning = f"""
+
 **DO NOT start your response with any of these phrases you've already used:**
 {chr(10).join(f'- "{o}..."' for o in previous_openers)}
 Start differently - with a fact, a name, a date, an emotion, or a question."""
 
     prompt = f"""{persona.system_prompt()}
+
+**Emotional Arc (Turn {turn_num} of ~{max_turns}):**
+{arc_section}
 {opener_warning}
+
+**Length: ~{word_target} words.** Finish your thought completely — do not trail off mid-sentence.
 
 **Conversation so far:**
 {history_text}
 
 **Your response:**"""
 
-    response = gemini_text_sync(prompt, temperature=0.75)
-    return response.strip()
+    response = gemini_text_sync(prompt, temperature=0.75, max_output_tokens=token_ceiling)
+    return _trim_to_sentence(response.strip())
 
 
 class ConversationSimulator:
@@ -971,6 +695,7 @@ class ConversationSimulator:
             "name": persona.name,
             "background": persona.background,
             "traits": [t.value for t in persona.traits],
+            "attachmentStyle": persona.attachmentStyle.value,
             "presenting_problem": persona.presenting_problem,
         }
 
@@ -1057,7 +782,9 @@ class ConversationSimulator:
                     if yield_progress and progress_result:
                         yield progress_result
 
-                user_text = simulate_user_response(persona, turns)
+                user_text = simulate_user_response(
+                    persona, turns, turn_num, self.max_turns
+                )
 
         if yield_progress:
 
@@ -1098,6 +825,134 @@ class ConversationSimulator:
                 turns=turns, persona=persona, discussionId=discussion.id
             )
 
+
+# --- Big Five Mapping for Persona Generation ---
+
+_BIG_FIVE_TRAITS = {
+    PersonaTrait.Evasive: {"O": "low", "E": "low"},
+    PersonaTrait.Oversharing: {"E": "high", "N": "high"},
+    PersonaTrait.ConfusedDates: {"C": "low"},
+    PersonaTrait.Defensive: {"A": "low"},
+    PersonaTrait.Tangential: {"C": "low", "E": "high"},
+    PersonaTrait.Terse: {"E": "low"},
+    PersonaTrait.Emotional: {"N": "high"},
+    PersonaTrait.Mature: {"C": "high", "O": "high", "N": "low"},
+    PersonaTrait.HighFunctioning: {"C": "high", "O": "high", "N": "low"},
+}
+
+_BIG_FIVE_ATTACHMENT = {
+    AttachmentStyle.Secure: {"N": "low"},
+    AttachmentStyle.AnxiousPreoccupied: {"N": "high", "E": "high", "A": "high"},
+    AttachmentStyle.DismissiveAvoidant: {"N": "low", "A": "low", "E": "low"},
+    AttachmentStyle.FearfulAvoidant: {"N": "high", "A": "low", "E": "low"},
+}
+
+_BIG_FIVE_NAMES = {
+    "O": "Openness",
+    "C": "Conscientiousness",
+    "E": "Extraversion",
+    "A": "Agreeableness",
+    "N": "Neuroticism",
+}
+
+
+def _derive_big_five(traits, attachment_style):
+    profile = {}
+    for t in traits:
+        for dim, level in _BIG_FIVE_TRAITS.get(t, {}).items():
+            profile[dim] = level
+    for dim, level in _BIG_FIVE_ATTACHMENT.get(attachment_style, {}).items():
+        if dim not in profile:
+            profile[dim] = level
+    return ", ".join(
+        f"{profile.get(d, 'moderate')}-{n}" for d, n in _BIG_FIVE_NAMES.items()
+    )
+
+
+def generate_persona(traits, attachment_style, sex, age):
+    """Generate a new persona via LLM. Saves to DB, returns SyntheticPersona."""
+    from btcopilot.personal.models import SyntheticPersona
+
+    existing_names = [p.name for p in SyntheticPersona.query.all()]
+    deprecated_names = [p.name for p in DEPRECATED_PERSONAS]
+    excluded = existing_names + deprecated_names
+
+    big_five = _derive_big_five(traits, attachment_style)
+
+    example = DEPRECATED_PERSONAS[0]
+    example_bg = example.background[:1500]
+
+    trait_names = [t.value for t in traits]
+    categories = [c.value for c in DataCategory]
+
+    if PersonaTrait.Terse in traits or PersonaTrait.Defensive in traits:
+        style_note = (
+            "The presenting problem should be SHORT and guarded — 1-2 sentences max."
+        )
+    elif PersonaTrait.Oversharing in traits:
+        style_note = "The presenting problem should be long, rambling, with digressions and self-corrections."
+    else:
+        style_note = "The presenting problem should be natural and somewhat vague — 1-3 sentences."
+
+    prompt = f"""Generate a synthetic therapy client persona. Return ONLY valid JSON.
+
+**Parameters:**
+- Sex: {sex}
+- Age: {age}
+- Traits: {', '.join(trait_names)}
+- Attachment style: {attachment_style.value}
+- Big Five profile: {big_five}
+
+**Instructions:**
+1. Choose a {sex} first name NOT in: {', '.join(excluded)}
+2. Write a detailed family background with: own family, parents, siblings, grandparents, aunts/uncles, and 3-4 nodal events with emotional process descriptions (anxiety, functioning, triangles).
+3. {style_note}
+4. Generate data_points mapping family members to categories.
+5. Ensure consistency with the Big Five profile and attachment style.
+
+**Background format example (truncated):**
+{example_bg}...
+
+**DataPoint categories:** {', '.join(categories)}
+
+Return JSON:
+{{"name": "...", "background": "...", "presenting_problem": "...", "data_points": [{{"category": "...", "keywords": [...]}}]}}"""
+
+    response = gemini_text_sync(prompt, temperature=0.8)
+
+    # Parse JSON, stripping markdown code fences if present
+    text = response.strip()
+    if text.startswith("```"):
+        first_newline = text.find("\n")
+        if first_newline != -1:
+            text = text[first_newline + 1 :]
+        else:
+            text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    data = json.loads(text.strip())
+
+    for required in ("name", "background", "presenting_problem", "data_points"):
+        if required not in data:
+            raise ValueError(f"Missing field in generated persona: {required}")
+
+    db_persona = SyntheticPersona(
+        name=data["name"],
+        background=data["background"],
+        traits=[t.value for t in traits],
+        attachment_style=attachment_style.value,
+        presenting_problem=data["presenting_problem"],
+        data_points=data["data_points"],
+        sex=sex,
+        age=age,
+    )
+    db.session.add(db_persona)
+    db.session.flush()
+
+    return db_persona
+
+
+# --- Evaluators ---
 
 # Robotic patterns to detect
 ROBOTIC_PATTERNS = [
@@ -1290,6 +1145,264 @@ class CoverageEvaluator:
             coverageRate=rate,
             missedCategories=missed,
         )
+
+
+# --- Client Realism Evaluator ---
+
+# Therapy-speak patterns that real first-session clients wouldn't use
+CLIENT_THERAPY_SPEAK = [
+    (r"\b(boundaries|boundary)\b", "therapy_jargon"),
+    (r"\b(triggered|triggering)\b", "therapy_jargon"),
+    (r"\b(codependent|codependency)\b", "therapy_jargon"),
+    (r"\b(attachment style|attachment pattern)\b", "therapy_jargon"),
+    (r"\b(emotional regulation|self-regulate)\b", "therapy_jargon"),
+    (r"\b(inner child|core wound)\b", "therapy_jargon"),
+    (r"\b(narcissis(t|tic|m))\b", "pop_psychology"),
+    (r"\b(gasligh(t|ting|ted))\b", "pop_psychology"),
+    (r"\b(toxic|toxicity)\b", "pop_psychology"),
+    (r"\b(trauma bond|trauma response)\b", "pop_psychology"),
+    (r"\b(validate|validation)\b", "therapy_jargon"),
+    (r"\b(safe space|hold space)\b", "therapy_jargon"),
+    (r"\b(unpack that|unpack this)\b", "therapy_jargon"),
+    (r"\b(coping mechanism|coping strateg)\b", "therapy_jargon"),
+    (r"\b(enmesh(ed|ment))\b", "therapy_jargon"),
+    (r"\b(parentif(ied|ication))\b", "therapy_jargon"),
+]
+
+# Patterns indicating organized delivery (not how real clients talk)
+ORGANIZED_DELIVERY_PATTERNS = [
+    (r"(?:first|1)[,.]?\s*(?:second|2)[,.]?\s*(?:third|3)", "numbered_list"),
+    (r"(?:on one hand|on the other hand)", "rhetorical_structure"),
+    (r"(?:in summary|to summarize|in conclusion)", "summary_language"),
+    (
+        r"(?:there are (?:three|four|five|several) (?:things|reasons|issues))",
+        "enumeration",
+    ),
+    (r"(?:let me (?:explain|tell you|walk you through))", "presentation_language"),
+]
+
+
+@dataclass
+class ClientRealismResult:
+    # Heuristic dimensions
+    therapySpeakMatches: list[PatternMatch]
+    organizedDeliveryMatches: list[PatternMatch]
+    wordCountsPerTurn: list[int]
+    avgWordCount: float
+    wordCountStdDev: float
+    consecutiveLongStreaks: int  # max run of turns > 80 words
+    shortResponseRatio: float  # ratio of turns < 15 words (after turn 5)
+    # LLM-scored dimensions
+    emotionalArcScore: float  # 0-1, does the arc oscillate vs monotonic
+    emotionalArcEvidence: str
+    # Composite
+    score: float  # 0-1, higher = more realistic
+
+    @property
+    def passed(self) -> bool:
+        return self.score >= 0.6
+
+    def summary(self) -> str:
+        lines = [
+            f"Client Realism Score: {self.score:.2f} ({'PASS' if self.passed else 'FAIL'})",
+            f"  Avg words/turn: {self.avgWordCount:.0f} (std dev: {self.wordCountStdDev:.1f})",
+            f"  Short response ratio (after turn 5): {self.shortResponseRatio:.0%}",
+            f"  Max consecutive long streak: {self.consecutiveLongStreaks}",
+            f"  Therapy-speak matches: {len(self.therapySpeakMatches)}",
+            f"  Organized delivery matches: {len(self.organizedDeliveryMatches)}",
+            f"  Emotional arc score: {self.emotionalArcScore:.2f}",
+            f"  Arc evidence: {self.emotionalArcEvidence}",
+        ]
+        return "\n".join(lines)
+
+
+class ClientRealismEvaluator:
+    def evaluate(self, result: ConversationResult) -> ClientRealismResult:
+        user_turns = [t for t in result.turns if t.speaker == "user"]
+
+        therapy_speak = self._detect_therapy_speak(user_turns)
+        organized = self._detect_organized_delivery(user_turns)
+        word_counts = [len(t.text.split()) for t in user_turns]
+        avg_wc = sum(word_counts) / max(len(word_counts), 1)
+        std_dev = self._std_dev(word_counts)
+        long_streak = self._max_consecutive_long(word_counts)
+        short_ratio = self._short_response_ratio(word_counts)
+        arc_score, arc_evidence = self._score_emotional_arc(result)
+
+        score = self._calculate_score(
+            therapy_speak,
+            organized,
+            avg_wc,
+            std_dev,
+            long_streak,
+            short_ratio,
+            arc_score,
+            len(user_turns),
+        )
+
+        return ClientRealismResult(
+            therapySpeakMatches=therapy_speak,
+            organizedDeliveryMatches=organized,
+            wordCountsPerTurn=word_counts,
+            avgWordCount=avg_wc,
+            wordCountStdDev=std_dev,
+            consecutiveLongStreaks=long_streak,
+            shortResponseRatio=short_ratio,
+            emotionalArcScore=arc_score,
+            emotionalArcEvidence=arc_evidence,
+            score=score,
+        )
+
+    def _detect_therapy_speak(self, turns: list[Turn]) -> list[PatternMatch]:
+        matches = []
+        for i, turn in enumerate(turns):
+            for pattern, category in CLIENT_THERAPY_SPEAK:
+                if re.search(pattern, turn.text, re.IGNORECASE):
+                    matches.append(
+                        PatternMatch(
+                            pattern=pattern,
+                            category=category,
+                            turnIndex=i,
+                            text=turn.text,
+                        )
+                    )
+        return matches
+
+    def _detect_organized_delivery(self, turns: list[Turn]) -> list[PatternMatch]:
+        matches = []
+        for i, turn in enumerate(turns):
+            for pattern, category in ORGANIZED_DELIVERY_PATTERNS:
+                if re.search(pattern, turn.text, re.IGNORECASE):
+                    matches.append(
+                        PatternMatch(
+                            pattern=pattern,
+                            category=category,
+                            turnIndex=i,
+                            text=turn.text,
+                        )
+                    )
+        return matches
+
+    def _std_dev(self, values: list[int]) -> float:
+        if len(values) < 2:
+            return 0.0
+        mean = sum(values) / len(values)
+        variance = sum((v - mean) ** 2 for v in values) / len(values)
+        return variance**0.5
+
+    def _max_consecutive_long(self, word_counts: list[int], threshold: int = 80) -> int:
+        max_streak = 0
+        current = 0
+        for wc in word_counts:
+            if wc > threshold:
+                current += 1
+                max_streak = max(max_streak, current)
+            else:
+                current = 0
+        return max_streak
+
+    def _short_response_ratio(
+        self, word_counts: list[int], threshold: int = 30
+    ) -> float:
+        late_counts = word_counts[5:]
+        if not late_counts:
+            return 0.0
+        return sum(1 for wc in late_counts if wc < threshold) / len(late_counts)
+
+    def _score_emotional_arc(self, result: ConversationResult) -> tuple[float, str]:
+        user_turns = [t for t in result.turns if t.speaker == "user"]
+        if len(user_turns) < 6:
+            return 0.5, "Too few turns to assess arc"
+
+        turn_summaries = []
+        for i, t in enumerate(user_turns):
+            words = t.text.split()
+            wc = len(words)
+            if wc <= 40:
+                preview = t.text
+            else:
+                sentences = re.split(r"(?<=[.!?])\s+", t.text)
+                if len(sentences) > 2:
+                    preview = sentences[0] + " [...] " + sentences[-1]
+                else:
+                    preview = " ".join(words[:30]) + "..."
+            turn_summaries.append(f"Turn {i+1} ({wc} words): {preview}")
+
+        transcript = "\n".join(turn_summaries)
+
+        prompt = f"""Score this synthetic therapy client's emotional arc on realism (0.0-1.0).
+
+A realistic arc has:
+- Length variation (short AND long turns mixed throughout)
+- Pull-backs: after vulnerability, the client goes brief or deflects
+- Not every question lands — some get brushed off
+- Emotional intensity oscillates rather than only escalating
+
+An unrealistic arc has:
+- Uniformly long responses OR monotonically increasing length
+- Every turn goes deeper than the last with no resistance
+- No short defensive/deflecting responses after emotional moments
+
+Transcript (turn number, word count, content):
+{transcript}
+
+Respond with ONLY a JSON object: {{"score": 0.0-1.0, "evidence": "one sentence explanation"}}"""
+
+        try:
+            response = gemini_text_sync(prompt, temperature=0.0)
+            # Strip markdown code fences if present
+            cleaned = response.strip()
+            if cleaned.startswith("```"):
+                cleaned = re.sub(r"^```\w*\n?", "", cleaned)
+                cleaned = re.sub(r"\n?```$", "", cleaned)
+            data = json.loads(cleaned)
+            return float(data["score"]), str(data["evidence"])
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            _log.warning(f"Failed to parse emotional arc score: {e}")
+            return 0.5, f"Parse error: {e}"
+
+    def _calculate_score(
+        self,
+        therapy_speak: list[PatternMatch],
+        organized: list[PatternMatch],
+        avg_wc: float,
+        std_dev: float,
+        long_streak: int,
+        short_ratio: float,
+        arc_score: float,
+        num_turns: int,
+    ) -> float:
+        score = 1.0
+
+        # Therapy-speak penalty: -0.05 per match
+        score -= len(therapy_speak) * 0.05
+
+        # Organized delivery: -0.1 per match
+        score -= len(organized) * 0.1
+
+        # Average word count: penalize if consistently long
+        # Real clients average 30-60 words. Penalize above 80.
+        if avg_wc > 80:
+            score -= min(0.3, (avg_wc - 80) / 100)
+
+        # Low variation penalty: std_dev < 20 means robotic uniformity
+        if num_turns >= 6 and std_dev < 20:
+            score -= 0.15
+
+        # Consecutive long streak: penalize runs of 4+ long responses
+        if long_streak >= 4:
+            score -= min(0.2, (long_streak - 3) * 0.05)
+
+        # No short responses after turn 5: penalize lack of pull-backs
+        if num_turns > 8 and short_ratio < 0.05:
+            score -= 0.1
+
+        # Emotional arc (weighted heavily — this is the core signal)
+        # arc_score is already 0-1, weight it as 30% of total
+        arc_penalty = (1.0 - arc_score) * 0.3
+        score -= arc_penalty
+
+        return max(0.0, min(1.0, score))
 
 
 def run_synthetic_tests(

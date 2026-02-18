@@ -227,9 +227,10 @@ async def gemini_text(prompt=None, **kwargs):
     start_time = time.time()
     temperature = kwargs.get("temperature", 0.45)
 
+    max_output_tokens = kwargs.get("max_output_tokens", 2048)
     config = types.GenerateContentConfig(
         temperature=temperature,
-        max_output_tokens=2048,
+        max_output_tokens=max_output_tokens,
         thinking_config=types.ThinkingConfig(thinking_budget=0),
     )
 

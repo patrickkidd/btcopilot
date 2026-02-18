@@ -12,7 +12,10 @@ from btcopilot.personal.models import Discussion
 from btcopilot.training.routes.discussions import (
     extract_next_statement as _extract_next_statement,
 )
-from btcopilot.tests.personal.synthetic import ConversationSimulator, PERSONAS
+from btcopilot.tests.personal.synthetic import (
+    ConversationSimulator,
+    DEPRECATED_PERSONAS,
+)
 from btcopilot.personal.chat import ask
 
 
@@ -74,20 +77,35 @@ def extract_discussion_data():
 
 def generate_synthetic_discussion(
     self,
-    persona_name: str,
+    persona_id_or_name,
     username: str,
     max_turns: int,
     skip_extraction: bool,
 ):
     _log.info(
-        f"generate_synthetic_discussion() persona={persona_name}, user={username}, "
+        f"generate_synthetic_discussion() persona={persona_id_or_name}, user={username}, "
         f"max_turns={max_turns}, skip_extraction={skip_extraction}"
     )
 
     try:
-        persona = next((p for p in PERSONAS if p.name == persona_name), None)
-        if not persona:
-            raise ValueError(f"Persona not found: {persona_name}")
+        persona_id = None
+
+        if isinstance(persona_id_or_name, int):
+            # New path: load from DB
+            from btcopilot.personal.models import SyntheticPersona
+
+            db_persona = db.session.get(SyntheticPersona, persona_id_or_name)
+            if not db_persona:
+                raise ValueError(f"SyntheticPersona not found: {persona_id_or_name}")
+            persona = db_persona.to_persona()
+            persona_id = persona_id_or_name
+        else:
+            # Legacy path: look up from deprecated personas
+            persona = next(
+                (p for p in DEPRECATED_PERSONAS if p.name == persona_id_or_name), None
+            )
+            if not persona:
+                raise ValueError(f"Persona not found: {persona_id_or_name}")
 
         simulator = ConversationSimulator(
             max_turns=max_turns,
@@ -110,6 +128,13 @@ def generate_synthetic_discussion(
         result = simulator.run(
             persona, ask, on_progress=on_progress, yield_progress=False
         )
+
+        # Link to SyntheticPersona if available
+        if persona_id and result.discussionId:
+            discussion = db.session.get(Discussion, result.discussionId)
+            if discussion:
+                discussion.synthetic_persona_id = persona_id
+
         db.session.commit()
 
         _log.info(
@@ -122,7 +147,9 @@ def generate_synthetic_discussion(
             "discussion_id": result.discussionId,
             "turn_count": len(result.turns) // 2,
             "quality_score": result.quality.score if result.quality else None,
-            "coverage_rate": result.coverage.rate if result.coverage else None,
+            "coverage_rate": (
+                result.coverage.coverageRate if result.coverage else None
+            ),
         }
 
     except Exception as e:

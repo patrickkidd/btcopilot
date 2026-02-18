@@ -490,93 +490,95 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     <span>Pending changes requiring refresh</span>
 </div>
 
-<div class="is-flex is-justify-content-space-between is-align-items-stretch is-flex-wrap-wrap mb-4" style="gap: 0.75rem;">
-    <!-- Left side: Date, tags, and action buttons -->
-    <div class="is-flex is-flex-direction-column is-justify-content-space-between" style="gap: 0.5rem;">
-        <div class="is-flex is-align-items-center is-flex-wrap-wrap" style="gap: 0.75rem;">
-            <a href="https://github.com/patrickkidd/btcopilot/blob/master/doc/sarf-definitions/README.md"
-               target="_blank"
-               class="button is-small is-outlined is-link"
-               title="SARF coding reference for auditors">
-                <span class="icon"><i class="fas fa-book"></i></span>
-                <span>SARF Lit Review</span>
-            </a>
-            <div class="field has-addons mb-0">
-                <p class="control">
-                    <a class="button is-small is-static">
-                        Discussion Date
+<!-- Toolbar -->
+<div class="is-flex is-align-items-start mb-4" style="gap: 0.5rem;">
+    <div class="is-flex is-align-items-center is-flex-wrap-wrap" style="gap: 0.5rem; flex: 1; min-width: 0;">
+        <a href="https://github.com/patrickkidd/btcopilot/blob/master/doc/sarf-definitions/README.md"
+           target="_blank"
+           class="button is-small is-outlined is-link"
+           title="SARF coding reference for auditors">
+            <span class="icon"><i class="fas fa-book"></i></span>
+            <span>SARF Lit Review</span>
+        </a>
+        <div class="field has-addons mb-0">
+            <p class="control">
+                <a class="button is-small is-static">
+                    Discussion Date
+                </a>
+            </p>
+            <p class="control">
+                <input type="date"
+                       class="input is-small"
+                       id="discussion-date-input"
+                       value="{{ discussion.discussion_date.isoformat() if discussion.discussion_date else '' }}"
+                       onchange="saveDiscussionDate({{ discussion.id }}, this.value)"
+                       style="width: 150px;">
+            </p>
+        </div>
+        {% if has_ai_extractions and has_approved_gt %}
+        <a href="{{ url_for('training.analysis.discussion_analysis', discussion_id=discussion.id) }}"
+           class="button is-small is-outlined is-info">
+            <span class="icon"><i class="fas fa-chart-line"></i></span>
+            <span>View Analysis</span>
+        </a>
+        {% else %}
+        <span class="button is-small is-outlined is-info" disabled
+              title="{% if not has_ai_extractions and not has_approved_gt %}Requires both AI extractions and approved ground truth{% elif not has_ai_extractions %}No AI extractions available{% else %}No approved ground truth{% endif %}">
+            <span class="icon"><i class="fas fa-chart-line"></i></span>
+            <span>View Analysis</span>
+        </span>
+        {% endif %}
+        <button id="expand-all-btn" class="button is-small is-outlined" onclick="expandAllMessages()">
+            <span class="icon"><i class="fas fa-expand"></i></span>
+            <span>Expand All</span>
+        </button>
+        <button id="collapse-all-btn" class="button is-small is-outlined is-hidden" onclick="collapseAllMessages()">
+            <span class="icon"><i class="fas fa-compress"></i></span>
+            <span>Collapse All</span>
+        </button>
+        <div class="dropdown is-hoverable">
+            <div class="dropdown-trigger">
+                <button class="button is-small is-outlined is-info" aria-haspopup="true" aria-controls="export-dropdown">
+                    <span class="icon"><i class="fas fa-download"></i></span>
+                    <span>Export</span>
+                    <span class="icon is-small"><i class="fas fa-angle-down"></i></span>
+                </button>
+            </div>
+            <div class="dropdown-menu" id="export-dropdown" role="menu">
+                <div class="dropdown-content">
+                    <a href="{{ url_for('training.discussions.export', discussion_id=discussion.id, mode='statements') }}"
+                       class="dropdown-item"
+                       title="Export statements only (no extracted data)">
+                        <span class="icon"><i class="fas fa-comments"></i></span>
+                        <span>Statements Only</span>
                     </a>
-                </p>
-                <p class="control">
-                    <input type="date"
-                           class="input is-small"
-                           id="discussion-date-input"
-                           value="{{ discussion.discussion_date.isoformat() if discussion.discussion_date else '' }}"
-                           onchange="saveDiscussionDate({{ discussion.id }}, this.value)"
-                           style="width: 150px;">
-                </p>
-            </div>
-            <div class="tags mb-0">
-                {% if discussion.synthetic %}
-                <span class="tag is-warning" title="Persona: {{ discussion.synthetic_persona.name if discussion.synthetic_persona else 'Unknown' }}">
-                    <span class="icon is-small"><i class="fas fa-robot"></i></span>
-                    <span>Synthetic</span>
-                </span>
-                {% endif %}
-            </div>
-            {% if has_ai_extractions and has_approved_gt %}
-            <a href="{{ url_for('training.analysis.discussion_analysis', discussion_id=discussion.id) }}"
-               class="button is-small is-outlined is-info">
-                <span class="icon"><i class="fas fa-chart-line"></i></span>
-                <span>View Analysis</span>
-            </a>
-            {% else %}
-            <span class="button is-small is-outlined is-info" disabled
-                  title="{% if not has_ai_extractions and not has_approved_gt %}Requires both AI extractions and approved ground truth{% elif not has_ai_extractions %}No AI extractions available{% else %}No approved ground truth{% endif %}">
-                <span class="icon"><i class="fas fa-chart-line"></i></span>
-                <span>View Analysis</span>
-            </span>
-            {% endif %}
-        </div>
-        <div class="buttons has-addons mb-0">
-            <button id="expand-all-btn" class="button is-small is-outlined" onclick="expandAllMessages()">
-                <span class="icon"><i class="fas fa-expand"></i></span>
-                <span>Expand All</span>
-            </button>
-            <button id="collapse-all-btn" class="button is-small is-outlined is-hidden" onclick="collapseAllMessages()">
-                <span class="icon"><i class="fas fa-compress"></i></span>
-                <span>Collapse All</span>
-            </button>
-            <div class="dropdown is-hoverable">
-                <div class="dropdown-trigger">
-                    <button class="button is-small is-outlined is-info" aria-haspopup="true" aria-controls="export-dropdown">
-                        <span class="icon"><i class="fas fa-download"></i></span>
-                        <span>Export</span>
-                        <span class="icon is-small"><i class="fas fa-angle-down"></i></span>
-                    </button>
-                </div>
-                <div class="dropdown-menu" id="export-dropdown" role="menu">
-                    <div class="dropdown-content">
-                        <a href="{{ url_for('training.discussions.export', discussion_id=discussion.id, mode='statements') }}"
-                           class="dropdown-item"
-                           title="Export statements only (no extracted data)">
-                            <span class="icon"><i class="fas fa-comments"></i></span>
-                            <span>Statements Only</span>
-                        </a>
-                        <a href="{{ url_for('training.discussions.export', discussion_id=discussion.id, mode='full') }}"
-                           class="dropdown-item"
-                           title="Export with AI extractions and user corrections">
-                            <span class="icon"><i class="fas fa-database"></i></span>
-                            <span>With Extractions</span>
-                        </a>
-                    </div>
+                    <a href="{{ url_for('training.discussions.export', discussion_id=discussion.id, mode='full') }}"
+                       class="dropdown-item"
+                       title="Export with AI extractions and user corrections">
+                        <span class="icon"><i class="fas fa-database"></i></span>
+                        <span>With Extractions</span>
+                    </a>
                 </div>
             </div>
         </div>
+        {% if discussion.synthetic and discussion.synthetic_persona %}
+        <button class="button is-small is-outlined" onclick="togglePersonaDetails()">
+            <span class="icon"><i class="fas fa-robot"></i></span>
+            <span>Persona</span>
+            <span class="icon is-small" id="persona-toggle-icon"><i class="fas fa-angle-down"></i></span>
+        </button>
+        {% endif %}
+        {% if unique_speakers %}
+        <button class="button is-small is-outlined" onclick="toggleSpeakerMapping()">
+            <span class="icon"><i class="fas fa-users"></i></span>
+            <span>Speakers ({{ unique_speakers|length }})</span>
+            <span class="icon is-small" id="speaker-toggle-icon"><i class="fas fa-angle-down"></i></span>
+        </button>
+        {% endif %}
     </div>
-    <!-- Right side: Auditor controls -->
+    <!-- Auditor controls (pushed right, never wraps with toolbar buttons) -->
     {% if current_user.has_role(btcopilot.ROLE_ADMIN) and auditor_options %}
-    <div class="auditor-controls box p-3 mb-0">
+    <div class="auditor-controls box p-3 mb-0" style="flex-shrink: 0;">
         <div class="select is-fullwidth mb-2">
             <select id="auditor-filter" class="is-small" onchange="handleAuditorChange(this.value)">
                 {% for option in auditor_options %}
@@ -606,135 +608,137 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     {% endif %}
 </div>
 
-<!-- {% if discussion.summary %}
-<div class="notification is-info is-light">
-    <strong>Discussion Summary:</strong> {{ discussion.summary }}
-</div>
-{% endif %} -->
-
-<!-- Speaker mappings are now computed in Python and passed to template -->
-{% if unique_speakers %}
-<div class="card mb-4">
-    <div class="card-header is-clickable" onclick="toggleSpeakerMapping()">
-        <h5 class="card-header-title">
-            <span class="icon"><i class="fas fa-users"></i></span>
-            Speaker Mapping ({{ unique_speakers|length }} speakers detected)
-        </h5>
-        <button class="card-header-icon">
-            <span class="icon" id="speaker-toggle-icon">
-                <i class="fas fa-angle-down"></i>
-            </span>
-        </button>
+<!-- Persona details (synthetic only, toggled by toolbar button) -->
+{% if discussion.synthetic and discussion.synthetic_persona %}
+<div id="persona-details-content" class="box p-3 mb-4" style="display: none;">
+    <div class="is-flex is-align-items-center is-flex-wrap-wrap mb-2" style="gap: 0.5rem;">
+        <span class="icon"><i class="fas fa-robot"></i></span>
+        <strong>{{ discussion.synthetic_persona.name }}</strong>
+        <span class="tag is-info is-light">{{ discussion.synthetic_persona.attachmentStyle | replace('_', ' ') | title }}</span>
+        {% for trait in discussion.synthetic_persona.traits %}
+        <span class="tag is-light">{{ trait | replace('_', ' ') | title }}</span>
+        {% endfor %}
     </div>
-    <div id="speaker-mapping-content" class="card-content" style="display: none;">
-        <div class="content">
-            <p class="has-text-grey mb-3">Map detected speakers to people in the user's database:</p>
-            <table class="table is-fullwidth">
-                <thead>
-                    <tr>
-                        <th>Transcription Speaker</th>
-                        <th>Type</th>
-                        <th>Person</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for speaker in unique_speakers %}
-                    <tr class="speaker-mapping-row" data-speaker-id="{{ speaker.id }}">
-                        <td>
-                            <strong>{{ speaker.name }}</strong>
-                        </td>
-                        <td>
+    <div class="content is-small mb-0">
+        <div class="mb-1" id="persona-background"></div>
+        <p class="mb-0"><strong>Presenting Problem:</strong> {{ discussion.synthetic_persona.presenting_problem }}</p>
+    </div>
+</div>
+<script>
+(function() {
+    var bg = {{ discussion.synthetic_persona.background | tojson }};
+    document.getElementById('persona-background').innerHTML = '<strong>Background:</strong> ' + marked.parse(bg);
+})();
+function togglePersonaDetails() {
+    var content = document.getElementById('persona-details-content');
+    var icon = document.getElementById('persona-toggle-icon');
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.innerHTML = '<i class="fas fa-angle-up"></i>';
+    } else {
+        content.style.display = 'none';
+        icon.innerHTML = '<i class="fas fa-angle-down"></i>';
+    }
+}
+</script>
+{% endif %}
+
+<!-- Speaker mapping (collapsible, toggled by toolbar button) -->
+{% if unique_speakers %}
+<div id="speaker-mapping-content" class="box p-3 mb-4" style="display: none;">
+    <p class="has-text-grey mb-3">Map detected speakers to people in the user's database:</p>
+    <table class="table is-fullwidth">
+        <thead>
+            <tr>
+                <th>Transcription Speaker</th>
+                <th>Type</th>
+                <th>Person</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for speaker in unique_speakers %}
+            <tr class="speaker-mapping-row" data-speaker-id="{{ speaker.id }}">
+                <td>
+                    <strong>{{ speaker.name }}</strong>
+                </td>
+                <td>
+                    <div class="select">
+                        <select id="speaker-type-{{ speaker.id }}" onchange="updateSpeakerType({{ speaker.id }})">
+                            <option value="subject" {% if speaker.type == 'subject' %}selected{% endif %}>Subject</option>
+                            <option value="expert" {% if speaker.type == 'expert' %}selected{% endif %}>Expert</option>
+                        </select>
+                    </div>
+                </td>
+                <td>
+                    <div class="field has-addons" style="margin-bottom: 0;">
+                        <div class="control">
                             <div class="select">
-                                <select id="speaker-type-{{ speaker.id }}" onchange="updateSpeakerType({{ speaker.id }})">
-                                    <option value="subject" {% if speaker.type == 'subject' %}selected{% endif %}>Subject</option>
-                                    <option value="expert" {% if speaker.type == 'expert' %}selected{% endif %}>Expert</option>
+                                <select id="person-select-{{ speaker.id }}" onchange="updateSpeakerMapping({{ speaker.id }})">
+                                    <option value="">Select a person...</option>
+                                    {# Always show default User and Assistant options #}
+                                    <option value="1" {% if speaker.person_id == 1 %}selected{% endif %}>User</option>
+                                    <option value="2" {% if speaker.person_id == 2 %}selected{% endif %}>Assistant</option>
+                                    {# Show other people from database (excluding defaults to avoid duplicates) #}
+                                    {% for person in diagram_people_list %}
+                                        {% if person.id != 1 and person.id != 2 %}
+                                        <option value="{{ person.id }}"
+                                                {% if speaker.person_id == person.id %}selected{% endif %}>
+                                            {{ person.name }}
+                                        </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <option value="new">+ Create new person</option>
                                 </select>
                             </div>
-                        </td>
-                        <td>
-                            <div class="field has-addons" style="margin-bottom: 0;">
-                                <div class="control">
-                                    <div class="select">
-                                        <select id="person-select-{{ speaker.id }}" onchange="updateSpeakerMapping({{ speaker.id }})">
-                                            <option value="">Select a person...</option>
-                                            
-                                            {# Always show default User and Assistant options #}
-                                            <option value="1" {% if speaker.person_id == 1 %}selected{% endif %}>User</option>
-                                            <option value="2" {% if speaker.person_id == 2 %}selected{% endif %}>Assistant</option>
-                                            
-                                            {# Show other people from database (excluding defaults to avoid duplicates) #}
-                                            {% for person in diagram_people_list %}
-                                                {% if person.id != 1 and person.id != 2 %}
-                                                <option value="{{ person.id }}"
-                                                        {% if speaker.person_id == person.id %}selected{% endif %}>
-                                                    {{ person.name }}
-                                                </option>
-                                                {% endif %}
-                                            {% endfor %}
-                                            <option value="new">+ Create new person</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="control">
-                                    <button class="button is-info" onclick="showNewPersonModal({{ speaker.id }}, '{{ speaker.name }}')" 
-                                            title="Create new person">
-                                        <span class="icon is-small">
-                                            <i class="fas fa-plus"></i>
-                                        </span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div id="speaker-status-{{ speaker.id }}" class="help"></div>
-                        </td>
-                        <td></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Extraction Button -->
-        {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) %}
-        <div class="has-text-centered mt-4 pt-3" style="border-top: 1px solid var(--color-border-default);">
-            <button id="trigger-extraction-btn" 
-                    class="button is-primary" 
-                    onclick="triggerExtractionForDiscussion({{ discussion.id }})"
-                    disabled>
-                <span class="icon">
-                    <i class="fas fa-play"></i>
-                </span>
-                <span>Extract Data</span>
-            </button>
-            
-            <button id="export-test-cases-btn" 
-                    class="button is-info ml-2" 
-                    onclick="exportTestCases()">
-                <span class="icon">
-                    <i class="fas fa-download"></i>
-                </span>
-                <span>Export Test Cases</span>
-            </button>
-            
-            <p class="help has-text-grey mt-2">
-                Extract: Only available when all speakers are mapped to people<br>
-                Export: Exports all approved test cases to ./model_tests/data/
-            </p>
-            
-            <!-- Progress display (hidden by default) -->
-            <div id="extraction-progress" style="display: none;" class="mt-3">
-                <div class="extraction-progress-container" style="padding: 2rem; text-align: center;">
-                    <div class="icon is-large has-text-primary">
-                        <i class="fas fa-cogs fa-pulse fa-3x"></i>
+                        </div>
+                        <div class="control">
+                            <button class="button is-info" onclick="showNewPersonModal({{ speaker.id }}, '{{ speaker.name }}')"
+                                    title="Create new person">
+                                <span class="icon is-small">
+                                    <i class="fas fa-plus"></i>
+                                </span>
+                            </button>
+                        </div>
                     </div>
-                    <h3 class="title is-5 mt-3">Extracting Data</h3>
-                    <progress class="progress is-primary" max="100" id="extraction-progress-bar" value="0"></progress>
-                    <p class="subtitle is-6 mt-2" id="extraction-progress-text">Processing statements...</p>
+                    <div id="speaker-status-{{ speaker.id }}" class="help"></div>
+                </td>
+                <td></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if current_user and current_user.has_role(btcopilot.ROLE_ADMIN) %}
+    <div class="has-text-centered mt-4 pt-3" style="border-top: 1px solid var(--color-border-default);">
+        <button id="trigger-extraction-btn"
+                class="button is-primary"
+                onclick="triggerExtractionForDiscussion({{ discussion.id }})"
+                disabled>
+            <span class="icon"><i class="fas fa-play"></i></span>
+            <span>Extract Data</span>
+        </button>
+        <button id="export-test-cases-btn"
+                class="button is-info ml-2"
+                onclick="exportTestCases()">
+            <span class="icon"><i class="fas fa-download"></i></span>
+            <span>Export Test Cases</span>
+        </button>
+        <p class="help has-text-grey mt-2">
+            Extract: Only available when all speakers are mapped to people<br>
+            Export: Exports all approved test cases to ./model_tests/data/
+        </p>
+        <div id="extraction-progress" style="display: none;" class="mt-3">
+            <div class="extraction-progress-container" style="padding: 2rem; text-align: center;">
+                <div class="icon is-large has-text-primary">
+                    <i class="fas fa-cogs fa-pulse fa-3x"></i>
                 </div>
+                <h3 class="title is-5 mt-3">Extracting Data</h3>
+                <progress class="progress is-primary" max="100" id="extraction-progress-bar" value="0"></progress>
+                <p class="subtitle is-6 mt-2" id="extraction-progress-text">Processing statements...</p>
             </div>
         </div>
-        {% endif %}
     </div>
+    {% endif %}
 </div>
 {% endif %}
 

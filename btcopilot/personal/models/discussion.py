@@ -39,6 +39,12 @@ class Discussion(db.Model, ModelMixin):
         nullable=True,
         comment="Persona data for synthetic conversations (name, background, traits, presenting_problem)",
     )
+    synthetic_persona_id = Column(
+        Integer,
+        db.ForeignKey("synthetic_personas.id"),
+        nullable=True,
+        comment="FK to synthetic_personas for generated persona linkage",
+    )
     user = relationship("User")
     diagram = relationship("Diagram", back_populates="discussions")
     statements = relationship(
