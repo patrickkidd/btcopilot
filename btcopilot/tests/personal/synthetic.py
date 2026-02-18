@@ -70,10 +70,17 @@ class DataPoint:
 _ANTI_PATTERNS = (
     "Don't deliver backstory in organized paragraphs — details come out across multiple turns.\n"
     "Don't use therapy-speak ('my anxiety stems from', 'I realize I have a pattern of', 'I've been processing').\n"
-    "Don't answer emotional questions with self-aware analysis — describe experiences, not diagnoses.\n"
+    "Don't answer emotional questions with self-aware analysis — describe experiences, not diagnoses. "
+    "You do NOT have clinical insight into your own defense mechanisms. You don't know why you do what you do — "
+    "you just do it. If you notice a pattern, express confusion about it, not understanding.\n"
     "Don't volunteer the exact info the coach is looking for — make them work for it.\n"
     "Don't present emotions as a list. Pick one: 'Mostly I was just mad.'\n"
-    "Don't start responses with the same filler words every time."
+    "Don't start responses with the same filler words every time.\n"
+    "Don't end responses with rhetorical questions more than once or twice in the whole conversation. "
+    "Real people don't punctuate every answer with 'Why does that matter?' or 'Does that make sense?' — "
+    "they just stop talking.\n"
+    "Don't repeat the same verbal tic across multiple turns ('Anyway, it's fine', 'I don't know', etc). "
+    "Vary how you close out a thought."
 )
 
 _CONVERSATIONAL_REALISM = (
@@ -622,8 +629,14 @@ def simulate_user_response(
     if arc_modifiers:
         arc_section += " " + " ".join(arc_modifiers)
 
-    # Pick response mode — weighted random creates natural rhythm
-    weights = _MODE_WEIGHTS[phase_key]
+    user_turns = [t for t in history if t.speaker == "user"]
+
+    # Pick response mode — weighted random creates natural rhythm.
+    # After a long response, bias toward short/medium to prevent monologue streaks.
+    weights = dict(_MODE_WEIGHTS[phase_key])
+    if user_turns and len(user_turns[-1].text.split()) > 100:
+        weights["long"] = weights["long"] * 0.2
+        weights["short"] = weights["short"] + 0.3
     mode = random.choices(list(weights.keys()), weights=list(weights.values()), k=1)[0]
     mode_cfg = _RESPONSE_MODES[mode]
     word_lo, word_hi = mode_cfg["words"]
@@ -631,7 +644,6 @@ def simulate_user_response(
     token_ceiling = mode_cfg["ceiling"]
 
     # Extract previous response openers to avoid repetition
-    user_turns = [t for t in history if t.speaker == "user"]
     previous_openers = []
     for t in user_turns[-5:]:  # Last 5 user responses
         first_words = t.text.split()[:4]
@@ -659,7 +671,9 @@ Start differently - with a fact, a name, a date, an emotion, or a question."""
 
 **Your response:**"""
 
-    response = gemini_text_sync(prompt, temperature=0.75, max_output_tokens=token_ceiling)
+    response = gemini_text_sync(
+        prompt, temperature=0.75, max_output_tokens=token_ceiling
+    )
     return _trim_to_sentence(response.strip())
 
 
@@ -1191,7 +1205,9 @@ class ClientRealismResult:
     avgWordCount: float
     wordCountStdDev: float
     consecutiveLongStreaks: int  # max run of turns > 80 words
-    shortResponseRatio: float  # ratio of turns < 15 words (after turn 5)
+    shortResponseRatio: float  # ratio of turns < 30 words (after turn 5)
+    rhetoricalQuestionRatio: float  # ratio of turns ending with a question
+    repeatedClosers: int  # count of closing phrases used more than once
     # LLM-scored dimensions
     emotionalArcScore: float  # 0-1, does the arc oscillate vs monotonic
     emotionalArcEvidence: str
@@ -1208,6 +1224,8 @@ class ClientRealismResult:
             f"  Avg words/turn: {self.avgWordCount:.0f} (std dev: {self.wordCountStdDev:.1f})",
             f"  Short response ratio (after turn 5): {self.shortResponseRatio:.0%}",
             f"  Max consecutive long streak: {self.consecutiveLongStreaks}",
+            f"  Rhetorical question endings: {self.rhetoricalQuestionRatio:.0%}",
+            f"  Repeated closers: {self.repeatedClosers}",
             f"  Therapy-speak matches: {len(self.therapySpeakMatches)}",
             f"  Organized delivery matches: {len(self.organizedDeliveryMatches)}",
             f"  Emotional arc score: {self.emotionalArcScore:.2f}",
@@ -1227,6 +1245,8 @@ class ClientRealismEvaluator:
         std_dev = self._std_dev(word_counts)
         long_streak = self._max_consecutive_long(word_counts)
         short_ratio = self._short_response_ratio(word_counts)
+        rq_ratio = self._rhetorical_question_ratio(user_turns)
+        repeated_closers = self._repeated_closers(user_turns)
         arc_score, arc_evidence = self._score_emotional_arc(result)
 
         score = self._calculate_score(
@@ -1236,6 +1256,8 @@ class ClientRealismEvaluator:
             std_dev,
             long_streak,
             short_ratio,
+            rq_ratio,
+            repeated_closers,
             arc_score,
             len(user_turns),
         )
@@ -1248,6 +1270,8 @@ class ClientRealismEvaluator:
             wordCountStdDev=std_dev,
             consecutiveLongStreaks=long_streak,
             shortResponseRatio=short_ratio,
+            rhetoricalQuestionRatio=rq_ratio,
+            repeatedClosers=repeated_closers,
             emotionalArcScore=arc_score,
             emotionalArcEvidence=arc_evidence,
             score=score,
@@ -1309,6 +1333,34 @@ class ClientRealismEvaluator:
             return 0.0
         return sum(1 for wc in late_counts if wc < threshold) / len(late_counts)
 
+    def _rhetorical_question_ratio(self, turns: list[Turn]) -> float:
+        if not turns:
+            return 0.0
+        count = sum(1 for t in turns if t.text.rstrip().endswith("?"))
+        return count / len(turns)
+
+    def _repeated_closers(self, turns: list[Turn], window: int = 15) -> int:
+        closers: list[str] = []
+        for t in turns:
+            words = t.text.split()
+            tail = " ".join(words[-8:]).lower() if len(words) >= 8 else t.text.lower()
+            tail = re.sub(r"[.!?,;\"'…]+", "", tail).strip()
+            closers.append(tail)
+        repeats = 0
+        for i, c in enumerate(closers):
+            # Check against recent closers within window
+            for prev_c in closers[max(0, i - window) : i]:
+                # Fuzzy: if >60% of words overlap, it's a repeat
+                c_words = set(c.split())
+                prev_words = set(prev_c.split())
+                if not c_words or not prev_words:
+                    continue
+                overlap = len(c_words & prev_words) / min(len(c_words), len(prev_words))
+                if overlap > 0.6:
+                    repeats += 1
+                    break
+        return repeats
+
     def _score_emotional_arc(self, result: ConversationResult) -> tuple[float, str]:
         user_turns = [t for t in result.turns if t.speaker == "user"]
         if len(user_turns) < 6:
@@ -1369,36 +1421,36 @@ Respond with ONLY a JSON object: {{"score": 0.0-1.0, "evidence": "one sentence e
         std_dev: float,
         long_streak: int,
         short_ratio: float,
+        rq_ratio: float,
+        repeated_closers: int,
         arc_score: float,
         num_turns: int,
     ) -> float:
         score = 1.0
 
-        # Therapy-speak penalty: -0.05 per match
         score -= len(therapy_speak) * 0.05
-
-        # Organized delivery: -0.1 per match
         score -= len(organized) * 0.1
 
-        # Average word count: penalize if consistently long
-        # Real clients average 30-60 words. Penalize above 80.
         if avg_wc > 80:
             score -= min(0.3, (avg_wc - 80) / 100)
 
-        # Low variation penalty: std_dev < 20 means robotic uniformity
         if num_turns >= 6 and std_dev < 20:
             score -= 0.15
 
-        # Consecutive long streak: penalize runs of 4+ long responses
         if long_streak >= 4:
             score -= min(0.2, (long_streak - 3) * 0.05)
 
-        # No short responses after turn 5: penalize lack of pull-backs
         if num_turns > 8 and short_ratio < 0.05:
             score -= 0.1
 
-        # Emotional arc (weighted heavily — this is the core signal)
-        # arc_score is already 0-1, weight it as 30% of total
+        # Rhetorical questions: >30% of turns ending with "?" is formulaic
+        if num_turns >= 6 and rq_ratio > 0.3:
+            score -= min(0.15, (rq_ratio - 0.3) * 0.5)
+
+        # Repeated closers: penalize reusing the same ending phrases
+        if repeated_closers >= 2:
+            score -= min(0.1, repeated_closers * 0.03)
+
         arc_penalty = (1.0 - arc_score) * 0.3
         score -= arc_penalty
 

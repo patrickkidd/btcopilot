@@ -13,7 +13,12 @@
             <div class="column is-half">
                 <form id="generate-form">
                     <div class="field">
-                        <label class="label">Traits</label>
+                        <label class="label">
+                            Traits
+                            <a class="ml-1" onclick="document.getElementById('traits-modal').classList.add('is-active')" title="About traits">
+                                <span class="icon is-small has-text-info"><i class="fas fa-question-circle"></i></span>
+                            </a>
+                        </label>
                         <div class="control">
                             {% for opt in trait_options %}
                             <label class="checkbox mr-3 mb-2">
@@ -25,7 +30,12 @@
                     </div>
 
                     <div class="field">
-                        <label class="label">Attachment Style</label>
+                        <label class="label">
+                            Attachment Style
+                            <a class="ml-1" onclick="document.getElementById('attachment-modal').classList.add('is-active')" title="About attachment styles">
+                                <span class="icon is-small has-text-info"><i class="fas fa-question-circle"></i></span>
+                            </a>
+                        </label>
                         <div class="control">
                             <div class="select is-fullwidth">
                                 <select id="attachment-style" name="attachment_style" required>
@@ -241,6 +251,105 @@
                 <li>Edit and correct the AI extractions, approve as ground truth</li>
             </ol>
         </div>
+    </div>
+</div>
+
+<!-- Traits Help Modal -->
+<div id="traits-modal" class="modal">
+    <div class="modal-background" onclick="this.parentElement.classList.remove('is-active')"></div>
+    <div class="modal-card" style="max-width: 700px;">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Conversational Traits</p>
+            <button class="delete" onclick="document.getElementById('traits-modal').classList.remove('is-active')"></button>
+        </header>
+        <section class="modal-card-body">
+            <div class="content">
+                <p>Traits control <strong>surface conversational behaviors</strong> &mdash; how the person talks, not what they talk about. They are amplifiers or attenuators of tendencies that the attachment style already implies.</p>
+
+                <p>Internally, the system derives an approximate <strong>Big Five (OCEAN)</strong> personality profile from the selected traits + attachment style combination. This hidden layer ensures behavioral coherence &mdash; e.g., preventing a persona that is simultaneously defensive and emotionally volatile when attached to a Dismissive-Avoidant style (Costa &amp; McCrae, 1992).</p>
+
+                <table class="table is-fullwidth is-size-7">
+                    <thead>
+                        <tr><th>Trait</th><th>Behavior</th><th>Big Five Mapping</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><strong>Evasive</strong></td><td>Answers a different question, redirects, minimizes, uses others as shields</td><td>Low Openness, Low Extraversion</td></tr>
+                        <tr><td><strong>Terse</strong></td><td>Fragment answers, requires follow-ups, gives more only when topic matters</td><td>Low Extraversion</td></tr>
+                        <tr><td><strong>Defensive</strong></td><td>Pushes back, reframes, gets offended by neutral questions, anger covers vulnerability</td><td>Low Agreeableness</td></tr>
+                        <tr><td><strong>Oversharing</strong></td><td>Jumps ahead, nested digressions, offers informal theories, can't stop</td><td>High Extraversion, High Neuroticism</td></tr>
+                        <tr><td><strong>Tangential</strong></td><td>Side stories via personal associations, stories within stories</td><td>High Extraversion, Low Conscientiousness</td></tr>
+                        <tr><td><strong>Emotional</strong></td><td>Shifts tone mid-sentence, circles back to pain, gets overwhelmed</td><td>High Neuroticism</td></tr>
+                        <tr><td><strong>Confused Dates</strong></td><td>Rounds to periods, confidently wrong, mixes up events, hedges</td><td>Low Conscientiousness</td></tr>
+                        <tr><td><strong>Mature / High Functioning</strong></td><td>Organized but not comprehensive answers, genuine curiosity, knows own limits</td><td>Moderate-high across dimensions</td></tr>
+                    </tbody>
+                </table>
+
+                <h5>Overlap with Attachment Styles</h5>
+                <p>Traits overlap significantly with attachment style properties because they are surface manifestations of the same underlying dimensions:</p>
+                <ul>
+                    <li><strong>Evasive + Terse</strong> &asymp; Dismissive-Avoidant narrative properties (brief, affectively empty)</li>
+                    <li><strong>Oversharing + Tangential + Emotional</strong> &asymp; Anxious-Preoccupied properties (flooding, entangled)</li>
+                    <li><strong>Mature</strong> &asymp; Secure properties (coherent, balanced affect)</li>
+                </ul>
+                <p>The most interesting combinations are <em>mismatches</em> &mdash; e.g., Dismissive-Avoidant + Oversharing, or Secure + Terse &mdash; which produce nuanced personas that don't fit neat categories.</p>
+
+                <p class="is-size-7 has-text-grey">Based on the Five-Factor Model (Costa &amp; McCrae, 1992). See PSYCHOLOGICAL_FOUNDATIONS.md for full references.</p>
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- Attachment Style Help Modal -->
+<div id="attachment-modal" class="modal">
+    <div class="modal-background" onclick="this.parentElement.classList.remove('is-active')"></div>
+    <div class="modal-card" style="max-width: 700px;">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Attachment Styles</p>
+            <button class="delete" onclick="document.getElementById('attachment-modal').classList.remove('is-active')"></button>
+        </header>
+        <section class="modal-card-body">
+            <div class="content">
+                <p>Attachment style controls <strong>narrative structure</strong> &mdash; how the person organizes their story, not the surface behaviors. This is based on the Adult Attachment Interview (AAI; George, Kaplan, &amp; Main, 1985), which demonstrated that attachment classification can be derived from <em>structural properties</em> of narratives rather than their content.</p>
+
+                <table class="table is-fullwidth is-size-7">
+                    <thead>
+                        <tr><th>Style</th><th>Narrative Signature</th><th>Clinical Presentation</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Secure</strong></td>
+                            <td>Coherent, collaborative discourse. Integrates positive and negative experiences into balanced account. Comfortable with uncertainty.</td>
+                            <td>Organized storytelling with appropriate affect. Can describe difficult events without minimizing or flooding. Responds directly to questions.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Dismissive Avoidant</strong></td>
+                            <td>Brief, often idealized accounts lacking episodic support. Contradictions between semantic and episodic memory (&ldquo;It was fine&rdquo; while describing concerning behavior).</td>
+                            <td>Answers sound complete but are affectively empty. Talks readily about logistics and facts but deflects emotion. Clinician must notice what is <em>missing</em>.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Anxious Preoccupied</strong></td>
+                            <td>Long, entangled, often incoherent accounts. Becomes absorbed in past experiences. Returns to same grievance repeatedly with fresh affect.</td>
+                            <td>Floods with information. Seeks reassurance. Difficulty completing a thought. High emotional vocabulary but low emotional regulation.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Fearful Avoidant</strong></td>
+                            <td>Lapses in monitoring when discussing loss or trauma. May speak of deceased as if alive, long silences mid-sentence, abrupt topic shifts.</td>
+                            <td>May appear organized until a trigger causes fragmentation. Oscillates between seeking closeness and pushing away within a single exchange.</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h5>How Attachment Interacts with Traits</h5>
+                <p>Attachment style provides the narrative skeleton; traits add conversational texture. The system uses Big Five profiles as an internal consistency check to prevent psychologically implausible combinations:</p>
+                <ul>
+                    <li><strong>Defensive + Dismissive-Avoidant</strong> &rarr; low-A, low-N (cold pushback, not volatile)</li>
+                    <li><strong>Defensive + Fearful-Avoidant</strong> &rarr; low-A, high-N (volatile, erratic pushback)</li>
+                    <li><strong>Oversharing + Anxious-Preoccupied</strong> &rarr; high-E, high-N (natural amplification)</li>
+                </ul>
+
+                <p class="is-size-7 has-text-grey">Based on the Adult Attachment Interview (George, Kaplan, &amp; Main, 1985) and Main &amp; Goldwyn (1998) coding system. See PSYCHOLOGICAL_FOUNDATIONS.md for full references.</p>
+            </div>
+        </section>
     </div>
 </div>
 

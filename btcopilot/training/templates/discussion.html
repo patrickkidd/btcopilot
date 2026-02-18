@@ -614,7 +614,9 @@ input[type="date"].input.is-small::-webkit-calendar-picker-indicator {
     <div class="is-flex is-align-items-center is-flex-wrap-wrap mb-2" style="gap: 0.5rem;">
         <span class="icon"><i class="fas fa-robot"></i></span>
         <strong>{{ discussion.synthetic_persona.name }}</strong>
+        {% if discussion.synthetic_persona.attachmentStyle %}
         <span class="tag is-info is-light">{{ discussion.synthetic_persona.attachmentStyle | replace('_', ' ') | title }}</span>
+        {% endif %}
         {% for trait in discussion.synthetic_persona.traits %}
         <span class="tag is-light">{{ trait | replace('_', ' ') | title }}</span>
         {% endfor %}

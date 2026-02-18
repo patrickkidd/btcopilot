@@ -43,12 +43,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Architecture decisions | [adrs/](adrs/) |
 | IRR working group, calibration, coding guidelines | [doc/irr/](doc/irr/) |
 | Synthetic client personas, evals | [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md) |
+| Synthetic client dev log (changes, experiments, results) | [doc/log/synthetic-clients/](doc/log/synthetic-clients/) |
 | Psychological foundations (persona generation) | [doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md](doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md) |
 | Feature/behavior specs | [doc/specs/](doc/specs/) |
 
 **Other references:**
 - [README.md](README.md) - Project overview
 - [doc/plans/](doc/plans/) - Feature plans and synthesis projects
+
+### Synthetic Client Dev Log (MANDATORY)
+
+**After ANY change to how synthetic client conversations are generated**, create a timestamped log entry in `doc/log/synthetic-clients/`. See that directory's [README.md](doc/log/synthetic-clients/README.md) for the full trigger list and required content.
+
+**This includes**: prompt constant edits, response mode/weight changes, structural token mechanisms, evaluator tuning, persona generation changes, AND qualitative observations when evaluating synthetic discussions — even if no code changes follow. Every conceptual or psychological shift in how clients behave must be captured.
+
+**Process:**
+1. Make the code change
+2. Create `doc/log/synthetic-clients/YYYY-MM-DD_HH-MM--description.md`
+3. Add entry to the README.md index table
+4. Notify: "Logged synthetic client change in [file]"
 
 ## Architecture Overview
 
