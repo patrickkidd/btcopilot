@@ -14,7 +14,7 @@ Clinical NLP system for extracting structured data from therapy transcripts. Use
 - [Family Diagram Visual Specification](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) - Platform-independent specification for rendering Bowen family diagrams
 - [Conversational Flow Evaluation](#phase-7-conversational-flow-evaluation-) - Objective metrics for measuring clinical interview quality
 - [Inter-Rater Reliability Study](#phase-11-inter-rater-reliability-study) - First formal IRR study for family systems constructs at scale
-- [Attachment and Big 5-Based Conversation Modeling & Measurement](#phase-12-attachment-based-conversation-modeling--assessment) - Synthetic client narratives structured by attachment style, with multi-dimensional clinical quality rubrics
+- [Attachment and Big 5-Based Conversation Modeling & Measurement](#phase-12-attachment-and-big-5-based-conversation-modeling--measurement) - Synthetic client narratives structured by attachment style, with multi-dimensional clinical quality rubrics
 
 
 ---
