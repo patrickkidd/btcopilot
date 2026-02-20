@@ -51,6 +51,7 @@ def test_validate_deltas_valid_event_with_positive_person_id():
                 id=-1,
                 kind=EventKind.Shift,
                 person=1,
+                description="anxiety increased",
                 anxiety=VariableShift.Up,
             )
         ]
@@ -67,6 +68,7 @@ def test_validate_deltas_valid_event_with_new_person_in_same_delta():
                 id=-2,
                 kind=EventKind.Shift,
                 person=-1,
+                description="anxiety increased",
                 anxiety=VariableShift.Up,
             )
         ],
@@ -85,7 +87,9 @@ def test_validate_deltas_rejects_positive_id_for_person():
 
 def test_validate_deltas_rejects_positive_id_for_event():
     pdp = PDP()
-    deltas = PDPDeltas(events=[Event(id=1, kind=EventKind.Shift, person=1)])
+    deltas = PDPDeltas(
+        events=[Event(id=1, kind=EventKind.Shift, person=1, description="x")]
+    )
     with pytest.raises(PDPValidationError) as exc_info:
         validate_pdp_deltas(pdp, deltas)
     assert len(exc_info.value.errors) == 1
@@ -112,7 +116,7 @@ def test_validate_deltas_detects_id_collision_in_delta():
     pdp = PDP()
     deltas = PDPDeltas(
         people=[Person(id=-1, name="Alice")],
-        events=[Event(id=-1, kind=EventKind.Shift, person=-1)],
+        events=[Event(id=-1, kind=EventKind.Shift, person=-1, description="x")],
     )
     with pytest.raises(PDPValidationError) as exc_info:
         validate_pdp_deltas(pdp, deltas)
@@ -137,7 +141,7 @@ def test_validate_deltas_detects_event_pair_bond_collision():
     """Event and pair_bond cannot share the same ID."""
     pdp = PDP()
     deltas = PDPDeltas(
-        events=[Event(id=-1, kind=EventKind.Shift, person=1)],
+        events=[Event(id=-1, kind=EventKind.Shift, person=1, description="x")],
         pair_bonds=[PairBond(id=-1, person_a=1, person_b=2)],
     )
     with pytest.raises(PDPValidationError) as exc_info:
@@ -151,7 +155,7 @@ def test_validate_deltas_detects_all_three_types_collision():
     pdp = PDP()
     deltas = PDPDeltas(
         people=[Person(id=-1, name="Alice")],
-        events=[Event(id=-1, kind=EventKind.Shift, person=-1)],
+        events=[Event(id=-1, kind=EventKind.Shift, person=-1, description="x")],
         pair_bonds=[PairBond(id=-1, person_a=1, person_b=2)],
     )
     with pytest.raises(PDPValidationError) as exc_info:
@@ -168,6 +172,7 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_person():
                 id=-1,
                 kind=EventKind.Shift,
                 person=-999,
+                description="anxiety increased",
                 anxiety=VariableShift.Up,
             )
         ]
@@ -187,6 +192,7 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_spouse():
                 kind=EventKind.Married,
                 person=1,
                 spouse=-999,
+                description="wedding",
             )
         ]
     )
@@ -205,6 +211,7 @@ def test_validate_deltas_rejects_pair_bond_event_without_spouse():
                 kind=EventKind.Divorced,
                 person=1,
                 spouse=None,
+                description="divorce",
             )
         ]
     )
@@ -218,7 +225,11 @@ def test_validate_deltas_allows_offspring_without_spouse():
     pdp = PDP()
     for kind in (EventKind.Birth, EventKind.Adopted):
         deltas = PDPDeltas(
-            events=[Event(id=-1, kind=kind, person=1, child=1, spouse=None)]
+            events=[
+                Event(
+                    id=-1, kind=kind, person=1, child=1, spouse=None, description="x"
+                )
+            ]
         )
         validate_pdp_deltas(pdp, deltas)
 
@@ -232,6 +243,7 @@ def test_validate_deltas_allows_moved_without_spouse():
                 kind=EventKind.Moved,
                 person=1,
                 spouse=None,
+                description="relocation",
             )
         ]
     )
@@ -248,6 +260,7 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_child():
                 person=1,
                 spouse=2,
                 child=-999,
+                description="child born",
             )
         ]
     )
@@ -265,6 +278,7 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_relationship_target(
                 id=-1,
                 kind=EventKind.Shift,
                 person=1,
+                description="conflict",
                 relationship=RelationshipKind.Conflict,
                 relationshipTargets=[-999],
             )
@@ -284,6 +298,7 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_triangle_person():
                 id=-1,
                 kind=EventKind.Shift,
                 person=1,
+                description="triangulation",
                 relationship=RelationshipKind.Inside,
                 relationshipTriangles=[1, -999],
             )
@@ -293,6 +308,16 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_triangle_person():
         validate_pdp_deltas(pdp, deltas)
     assert len(exc_info.value.errors) == 1
     assert "non-existent PDP person -999 in triangle" in exc_info.value.errors[0]
+
+
+def test_validate_deltas_rejects_event_without_description():
+    pdp = PDP()
+    deltas = PDPDeltas(
+        events=[Event(id=-1, kind=EventKind.Shift, person=1)],
+    )
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas)
+    assert any("requires description" in e for e in exc_info.value.errors)
 
 
 def test_validate_deltas_rejects_person_with_nonexistent_pdp_parents():
@@ -314,6 +339,7 @@ def test_validate_deltas_multiple_errors():
                 kind=EventKind.Shift,
                 person=-888,
                 spouse=-777,
+                description="x",
             )
         ],
     )
@@ -331,6 +357,7 @@ def test_add_pdp_deltas_success():
                 id=-2,
                 kind=EventKind.Shift,
                 person=1,
+                description="anxiety increased",
                 anxiety=VariableShift.Up,
             )
         ],
@@ -351,6 +378,7 @@ def test_add_pdp_deltas_failure():
                 id=-1,
                 kind=EventKind.Shift,
                 person=-999,
+                description="x",
             )
         ]
     )

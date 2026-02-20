@@ -185,9 +185,8 @@ def validate_pdp_deltas(
                 f"Delta event has positive ID {event.id} not in committed diagram"
             )
         if not event.description:
-            _log.warning(
-                f"Event {event.id} (kind={event.kind}) has no description - "
-                f"Learn view will show empty text"
+            errors.append(
+                f"Event {event.id} (kind={event.kind.value}) requires description"
             )
 
     for pair_bond in deltas.pair_bonds:
