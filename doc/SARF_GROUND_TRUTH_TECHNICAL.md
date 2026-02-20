@@ -63,7 +63,7 @@ This document provides technical implementation details for future code modifica
 - **Personal app**: Real-time chat conversations between users and AI
 - **Training app**: AI-transcribed audio recordings of clinical interviews imported for expert review
 
-For discussion creation workflows, see [DATA_MODEL_FLOW.md](./DATA_MODEL_FLOW.md) sections on chat flow and statement models.
+For discussion creation workflows, see [specs/PDP_DATA_FLOW.md](specs/PDP_DATA_FLOW.md). For schema definitions, see [DATA_MODEL.md](specs/DATA_MODEL.md).
 
 ---
 
@@ -2102,7 +2102,8 @@ def load_feedback_extraction(feedback):
 
 ## 10. Related Documentation
 
-- [DATA_MODEL_FLOW.md](./DATA_MODEL_FLOW.md) - Overall diagram data flow (PDP, pickle, IDs)
+- [DATA_MODEL.md](./specs/DATA_MODEL.md) - Schema definitions (dataclasses, enums, validation)
+- [specs/PDP_DATA_FLOW.md](specs/PDP_DATA_FLOW.md) - PDP extraction pipeline and GT coding
 - [btcopilot/training/templates/components/README.md](../btcopilot/training/templates/components/README.md) - UI component documentation
 - [btcopilot/CLAUDE.md](../CLAUDE.md) - General project guidance
 

@@ -178,7 +178,7 @@ d. **Read ground truth**: `instance/gt_export.json`
    - Contains AI extractions vs. human-corrected ground truth
    - Each case has: statement text, AI extraction, GT extraction, expert feedback
 
-e. **Read data model documentation**: `btcopilot/doc/DATA_MODEL_FLOW.md`
+e. **Read data model documentation**: `btcopilot/doc/specs/DATA_MODEL.md` and `btcopilot/doc/specs/PDP_DATA_FLOW.md`
    - Explains how PDPDeltas, PDP, DiagramData, Person, Event all relate
    - **Key concepts to understand**:
      - Negative IDs (-1, -2, ...) = uncommitted PDP items; Positive IDs = committed
@@ -603,7 +603,8 @@ Your induction run is successful if:
 **Read-only**:
 - `instance/gt_export.json` - Ground truth cases (AI extractions vs. human corrections)
 - `btcopilot/btcopilot/training/test_prompts_live.py` - Live test harness (DO NOT MODIFY)
-- `btcopilot/doc/DATA_MODEL_FLOW.md` - Data model documentation (PDPDeltas structure, ID conventions, sparse delta pattern)
+- `btcopilot/doc/specs/DATA_MODEL.md` - Schema definitions (PDPDeltas structure, ID conventions)
+- `btcopilot/doc/specs/PDP_DATA_FLOW.md` - PDP extraction pipeline (sparse delta pattern, apply_deltas)
 - `btcopilot/doc/sarf-definitions/*.md` - Authoritative SARF variable definitions (consult when editing prompts)
 - `doc/induction-reports/*/_log.jsonl` - Previous run logs (check before proposing changes to avoid oscillation)
 

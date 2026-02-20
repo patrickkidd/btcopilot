@@ -286,7 +286,8 @@ See [LEARN_TAB_EVALUATION.md](LEARN_TAB_EVALUATION.md) for the related feature.
 - [LEARN_TAB_EVALUATION.md](LEARN_TAB_EVALUATION.md) — related Learn tab feature
 - [CHAT_FLOW.md](../CHAT_FLOW.md) — existing chat architecture
 - [CONTEXT.md](../../CONTEXT.md) — Bowen theory domain model
-- [DATA_MODEL_FLOW.md](../DATA_MODEL_FLOW.md) — PDP data structures
+- [DATA_MODEL.md](../specs/DATA_MODEL.md) — schema definitions
+- [specs/PDP_DATA_FLOW.md](../specs/PDP_DATA_FLOW.md) — PDP extraction pipeline
 
 ---
 

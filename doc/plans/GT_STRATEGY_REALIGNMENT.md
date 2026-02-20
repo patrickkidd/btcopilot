@@ -109,5 +109,6 @@ Not blocking MVP. Tracked here for continuity.
 - [Brainstorming: GT Strategy MVP](../brainstorming/2026-02-14-gt_strategy_mvp.md) — full strategic analysis with options considered
 - [SARF_GROUND_TRUTH_TECHNICAL.md](../SARF_GROUND_TRUTH_TECHNICAL.md) — GT coding workflow and approval state machine
 - [F1_METRICS.md](../F1_METRICS.md) — current F1 calculation methodology
-- [DATA_MODEL_FLOW.md](../DATA_MODEL_FLOW.md) — delta model and PDP architecture
+- [DATA_MODEL.md](../specs/DATA_MODEL.md) — schema definitions
+- [specs/PDP_DATA_FLOW.md](../specs/PDP_DATA_FLOW.md) — delta model and PDP architecture
 - [IRR_STUDY_VISION.md](../IRR_STUDY_VISION.md) — IRR study design (post-MVP)

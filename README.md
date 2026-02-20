@@ -322,7 +322,7 @@ Source Code: [btcopilot/pro](btcopilot/pro)
 
 __Data model + flow__
 
-Overview: [doc/DATA_MODEL_FLOW.md](doc/DATA_MODEL_FLOW.md)
+Schema: [doc/specs/DATA_MODEL.md](doc/specs/DATA_MODEL.md) | PDP flow: [doc/specs/PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md) | Sync: [familydiagram DATA_SYNC_FLOW.md](../familydiagram/doc/specs/DATA_SYNC_FLOW.md)
 
 ```
 familydiagram (Pro App)

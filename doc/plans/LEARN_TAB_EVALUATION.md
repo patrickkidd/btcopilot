@@ -234,7 +234,7 @@ Timeline Events → Cluster Detection → Context Linking → Clinical Evaluatio
 
 - [SARF_GRAPH.md](../../../familydiagram/doc/SARF_GRAPH.md) - Existing graph design
 - [PLAN_TAB_VISION.md](../PLAN_TAB_VISION.md) - Related insights feature
-- [DATA_MODEL_FLOW.md](../DATA_MODEL_FLOW.md) - Current data structures
+- [DATA_MODEL.md](../specs/DATA_MODEL.md) - Data model schema
 - [CONTEXT.md](../../CONTEXT.md) - Bowen theory domain context
 
 ---
