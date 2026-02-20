@@ -113,11 +113,15 @@ class PairBond:
 
 Represents a reproductive/emotional pair bond. Central to Bowen theory.
 
-**Two creation paths** (system deduplicates):
+**Two creation paths** (system deduplicates via `_pair_bond_exists()`):
 1. **Explicit**: AI/auditor creates PairBond directly ("my parents are Mary and
    John")
-2. **Inferred**: System auto-creates at commit from Married/Bonded/Birth events
-   via `_create_inferred_pair_bond_items()`
+2. **Inferred**: System auto-creates at commit time when a committed event
+   requires a PairBond between its person and spouse but none exists.
+   - `_create_inferred_pair_bond_items()` handles non-offspring `isPairBond()`
+     events: Bonded, Married, Separated, Divorced, Moved
+   - `_create_inferred_birth_items()` handles Birth/Adopted events, also
+     inferring missing people (spouse, child) and setting `child.parents`
 
 Explicit extraction is primary. Inference is fallback. See decision log
 2026-02-14.

@@ -456,6 +456,21 @@ def test_validate_deltas_rejects_pair_bond_with_nonexistent_committed_person():
     )
 
 
+def test_validate_deltas_rejects_duplicate_dyad_in_delta():
+    pdp = PDP(
+        people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
+    )
+    deltas = PDPDeltas(
+        pair_bonds=[
+            PairBond(id=-3, person_a=-1, person_b=-2),
+            PairBond(id=-4, person_a=-2, person_b=-1),
+        ],
+    )
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas)
+    assert any("duplicate PairBond" in e for e in exc_info.value.errors)
+
+
 def test_pdp_deltas_schema_has_pair_bond_required_fields():
     schema = dataclass_to_json_schema(
         PDPDeltas, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED

@@ -236,7 +236,7 @@ class RelationshipKind(enum.Enum):
 
     def menuLabel(self) -> str:
         labels = {
-            # self.Fusion: "Fusion",
+            self.Fusion: "Fusion",
             self.Conflict: "Conflict",
             self.Distance: "Distance",
             self.Overfunctioning: "Overfunctioning",
@@ -504,6 +504,22 @@ class DiagramData:
             if old_id in pdp_pair_bonds_map:
                 pair_bond = pdp_pair_bonds_map[old_id]
                 new_pair_bond = self._remap_pair_bond_ids(pair_bond, id_mapping)
+                dyad = {new_pair_bond.person_a, new_pair_bond.person_b}
+                existing = next(
+                    (
+                        pb
+                        for pb in self.pair_bonds
+                        if {pb["person_a"], pb["person_b"]} == dyad
+                    ),
+                    None,
+                )
+                if existing:
+                    id_mapping[old_id] = existing["id"]
+                    _log.info(
+                        f"Dedup: PDP pair bond {old_id} matches committed pair bond "
+                        f"{existing['id']} for dyad {dyad}, remapping"
+                    )
+                    continue
                 chunk = asdict(new_pair_bond)
                 _log.info(
                     f"Committed pair bond with new ID {new_pair_bond.id}: {new_pair_bond}"
@@ -593,39 +609,52 @@ class DiagramData:
         _log.info(f"Exported commit {phase} state to {filename}")
 
     def reject_pdp_item(self, item_id: int) -> None:
-        """Remove a PDP item and cascade-delete any items that reference it."""
+        """Remove a PDP item and transitively cascade-delete all dependents."""
         if item_id >= 0:
             raise ValueError(f"Item ID {item_id} must be negative (PDP item)")
 
         _log.info(f"Rejecting PDP item {item_id} and cascading deletes")
-        ids_to_remove = {item_id}
+        ids_to_remove = set()
+        to_visit = [item_id]
 
-        for event in self.pdp.events:
-            if (
-                event.person == item_id
-                or event.spouse == item_id
-                or event.child == item_id
-                or item_id in event.relationshipTargets
-                or item_id in event.relationshipTriangles
-            ):
-                _log.info(
-                    f"Also removing PDP event {event.id} referencing rejected item {item_id}"
-                )
-                ids_to_remove.add(event.id)
+        while to_visit:
+            current = to_visit.pop()
+            if current in ids_to_remove:
+                continue
+            ids_to_remove.add(current)
 
-        for pair_bond in self.pdp.pair_bonds:
-            if pair_bond.person_a == item_id or pair_bond.person_b == item_id:
-                _log.info(
-                    f"Also removing PDP pair bond {pair_bond.id} referencing rejected item {item_id}"
-                )
-                ids_to_remove.add(pair_bond.id)
+            for event in self.pdp.events:
+                if event.id in ids_to_remove:
+                    continue
+                if (
+                    event.person == current
+                    or event.spouse == current
+                    or event.child == current
+                    or current in event.relationshipTargets
+                    or current in event.relationshipTriangles
+                ):
+                    _log.info(
+                        f"Cascade removing PDP event {event.id} referencing {current}"
+                    )
+                    to_visit.append(event.id)
 
-        for person in self.pdp.people:
-            if person.parents == item_id:
-                _log.info(
-                    f"Also removing PDP person {person.id} whose parents reference rejected item {item_id}"
-                )
-                ids_to_remove.add(person.id)
+            for pair_bond in self.pdp.pair_bonds:
+                if pair_bond.id in ids_to_remove:
+                    continue
+                if pair_bond.person_a == current or pair_bond.person_b == current:
+                    _log.info(
+                        f"Cascade removing PDP pair bond {pair_bond.id} referencing {current}"
+                    )
+                    to_visit.append(pair_bond.id)
+
+            for person in self.pdp.people:
+                if person.id in ids_to_remove:
+                    continue
+                if person.parents == current:
+                    _log.info(
+                        f"Cascade removing PDP person {person.id} whose parents reference {current}"
+                    )
+                    to_visit.append(person.id)
 
         self.pdp.people = [p for p in self.pdp.people if p.id not in ids_to_remove]
         self.pdp.events = [e for e in self.pdp.events if e.id not in ids_to_remove]
@@ -699,20 +728,35 @@ class DiagramData:
 
             # Case 2: Birth with person but no spouse - find or create spouse
             elif event.person and not event.spouse:
-                # Check if there's an existing pair bond with this person
-                existing_spouse_id = None
+                spouse_id = None
+                pair_bond_id = None
+
+                # Search PDP pair bonds
                 for pb in self.pdp.pair_bonds:
                     if pb.person_a == event.person:
-                        existing_spouse_id = pb.person_b
+                        spouse_id = pb.person_b
+                        pair_bond_id = pb.id
                         break
                     elif pb.person_b == event.person:
-                        existing_spouse_id = pb.person_a
+                        spouse_id = pb.person_a
+                        pair_bond_id = pb.id
                         break
 
-                if existing_spouse_id:
-                    spouse_id = existing_spouse_id
+                # Search committed pair bonds
+                if spouse_id is None:
+                    for pb in self.pair_bonds:
+                        if pb["person_a"] == event.person:
+                            spouse_id = pb["person_b"]
+                            pair_bond_id = pb["id"]
+                            break
+                        elif pb["person_b"] == event.person:
+                            spouse_id = pb["person_a"]
+                            pair_bond_id = pb["id"]
+                            break
+
+                if spouse_id is not None:
                     _log.info(
-                        f"Found existing spouse for {person_name} in pair bond: spouse={spouse_id}"
+                        f"Found existing spouse for {person_name} in pair bond {pair_bond_id}: spouse={spouse_id}"
                     )
                 else:
                     spouse_id = self._next_pdp_id()
@@ -722,6 +766,29 @@ class DiagramData:
                         f"Created inferred spouse for {person_name}: spouse={spouse_id}"
                     )
 
+                    new_pb = PairBond(
+                        id=self._next_pdp_id(),
+                        person_a=event.person,
+                        person_b=spouse_id,
+                    )
+                    self.pdp.pair_bonds.append(new_pb)
+                    pair_bond_id = new_pb.id
+                    _log.info(
+                        f"Created inferred pair bond {new_pb.id} for birth event {event_id}: "
+                        f"person_a={new_pb.person_a}, person_b={new_pb.person_b}"
+                    )
+
+                # Update child's parents to reference the pair bond
+                if event.child and event.child in pdp_people_map:
+                    child_idx = next(
+                        i
+                        for i, p in enumerate(self.pdp.people)
+                        if p.id == event.child
+                    )
+                    self.pdp.people[child_idx] = replace(
+                        self.pdp.people[child_idx], parents=pair_bond_id
+                    )
+
                 event_idx = next(
                     i for i, e in enumerate(self.pdp.events) if e.id == event_id
                 )
@@ -729,8 +796,30 @@ class DiagramData:
 
             # Case 3: Birth with person/spouse but no child - create inferred child
             elif event.person and event.spouse and not event.child:
+                # Ensure pair bond exists
+                if not self._pair_bond_exists(event.person, event.spouse):
+                    new_pb = PairBond(
+                        id=self._next_pdp_id(),
+                        person_a=event.person,
+                        person_b=event.spouse,
+                    )
+                    self.pdp.pair_bonds.append(new_pb)
+                    pair_bond_id = new_pb.id
+                    _log.info(
+                        f"Created inferred pair bond {new_pb.id} for birth event {event_id}: "
+                        f"person_a={new_pb.person_a}, person_b={new_pb.person_b}"
+                    )
+                else:
+                    pair_bond_id = next(
+                        pb.id
+                        for pb in self.pdp.pair_bonds
+                        if {pb.person_a, pb.person_b} == {event.person, event.spouse}
+                    )
+
                 child_id = self._next_pdp_id()
-                child = Person(id=child_id, name=f"{person_name}'s child")
+                child = Person(
+                    id=child_id, name=f"{person_name}'s child", parents=pair_bond_id
+                )
                 self.pdp.people.append(child)
 
                 event_idx = next(
@@ -740,6 +829,16 @@ class DiagramData:
 
                 _log.info(f"Created inferred child for {person_name}: child={child_id}")
 
+    def _pair_bond_exists(self, person_id: int, spouse_id: int) -> bool:
+        pair = {person_id, spouse_id}
+        for pb in self.pdp.pair_bonds:
+            if {pb.person_a, pb.person_b} == pair:
+                return True
+        for pb in self.pair_bonds:
+            if {pb["person_a"], pb["person_b"]} == pair:
+                return True
+        return False
+
     def _create_inferred_pair_bond_items(self, item_ids: list[int]) -> None:
         pdp_events_map = {e.id: e for e in self.pdp.events}
 
@@ -747,22 +846,17 @@ class DiagramData:
             if event_id not in pdp_events_map:
                 continue
             event = pdp_events_map[event_id]
-            if event.kind not in (EventKind.Married, EventKind.Bonded):
+            # Birth/Adopted handled by _create_inferred_birth_items
+            if event.kind.isOffspring():
+                continue
+            if not event.kind.isPairBond():
                 continue
             if not event.person or not event.spouse:
                 continue
 
-            # Check if a PairBond already exists for this couple
-            existing_pair_bond = None
-            for pb in self.pdp.pair_bonds:
-                if {pb.person_a, pb.person_b} == {event.person, event.spouse}:
-                    existing_pair_bond = pb
-                    break
-
-            if existing_pair_bond:
+            if self._pair_bond_exists(event.person, event.spouse):
                 continue
 
-            # Create a new PairBond
             pair_bond = PairBond(
                 id=self._next_pdp_id(),
                 person_a=event.person,

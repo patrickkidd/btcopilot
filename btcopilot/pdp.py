@@ -288,6 +288,17 @@ def validate_pdp_deltas(
                 f"PairBond {pair_bond.id} references non-existent committed person_b {pair_bond.person_b}"
             )
 
+    # Check for duplicate dyads within the delta
+    seen_dyads: set[tuple[int, int]] = set()
+    for pair_bond in deltas.pair_bonds:
+        if pair_bond.person_a is not None and pair_bond.person_b is not None:
+            dyad = tuple(sorted([pair_bond.person_a, pair_bond.person_b]))
+            if dyad in seen_dyads:
+                errors.append(
+                    f"Delta contains duplicate PairBond {pair_bond.id} for dyad {dyad}"
+                )
+            seen_dyads.add(dyad)
+
     if errors:
         if diagram_data and source:
             _export_validation_failure(diagram_data, deltas, errors, source)

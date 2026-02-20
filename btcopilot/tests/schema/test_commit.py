@@ -291,6 +291,15 @@ def test_commit_birth_event_creates_inferred_spouse():
     assert event["person"] == alice["id"]
     assert event["spouse"] == spouse["id"]
 
+    # Should have created a pair bond between Alice and inferred spouse
+    assert len(data.pair_bonds) == 1
+    pb = data.pair_bonds[0]
+    assert {pb["person_a"], pb["person_b"]} == {alice["id"], spouse["id"]}
+
+    # Baby's parents should reference the pair bond
+    baby = [p for p in data.people if p["name"] == "Baby"][0]
+    assert baby["parents"] == pb["id"]
+
 
 def test_commit_birth_event_creates_inferred_child():
     data = DiagramData(
@@ -406,3 +415,202 @@ def test_commit_married_event_uses_existing_pair_bond():
     assert len(data.people) == 2
     assert len(data.pair_bonds) == 1
     assert len(data.events) == 1
+
+
+def test_commit_separated_event_creates_inferred_pair_bond():
+    data = DiagramData(
+        pdp=PDP(
+            people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
+            events=[
+                Event(
+                    id=-3,
+                    kind=EventKind.Separated,
+                    person=-1,
+                    spouse=-2,
+                    dateTime="2020-01-01",
+                )
+            ],
+        )
+    )
+    data.commit_pdp_items([-3])
+
+    assert len(data.pair_bonds) == 1
+    alice = [p for p in data.people if p["name"] == "Alice"][0]
+    bob = [p for p in data.people if p["name"] == "Bob"][0]
+    assert {data.pair_bonds[0]["person_a"], data.pair_bonds[0]["person_b"]} == {
+        alice["id"],
+        bob["id"],
+    }
+
+
+def test_commit_divorced_event_creates_inferred_pair_bond():
+    data = DiagramData(
+        pdp=PDP(
+            people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
+            events=[
+                Event(
+                    id=-3,
+                    kind=EventKind.Divorced,
+                    person=-1,
+                    spouse=-2,
+                    dateTime="2020-01-01",
+                )
+            ],
+        )
+    )
+    data.commit_pdp_items([-3])
+    assert len(data.pair_bonds) == 1
+
+
+def test_commit_birth_case3_creates_pair_bond():
+    """Birth with person+spouse but no child creates pair bond and inferred child."""
+    data = DiagramData(
+        pdp=PDP(
+            people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
+            events=[
+                Event(
+                    id=-3,
+                    kind=EventKind.Birth,
+                    person=-1,
+                    spouse=-2,
+                    dateTime="2020-01-01",
+                )
+            ],
+        )
+    )
+    data.commit_pdp_items([-3])
+
+    assert len(data.pair_bonds) == 1
+    alice = [p for p in data.people if p["name"] == "Alice"][0]
+    bob = [p for p in data.people if p["name"] == "Bob"][0]
+    assert {data.pair_bonds[0]["person_a"], data.pair_bonds[0]["person_b"]} == {
+        alice["id"],
+        bob["id"],
+    }
+
+    child = [p for p in data.people if "child" in p["name"]][0]
+    assert child["parents"] == data.pair_bonds[0]["id"]
+
+
+def test_commit_birth_existing_pair_bond_sets_child_parents():
+    """Birth Case 2 with existing pair bond should still set child.parents."""
+    data = DiagramData(
+        pdp=PDP(
+            people=[
+                Person(id=-1, name="Alice"),
+                Person(id=-2, name="Baby"),
+                Person(id=-3, name="Bob"),
+            ],
+            pair_bonds=[PairBond(id=-4, person_a=-1, person_b=-3)],
+            events=[
+                Event(
+                    id=-5,
+                    kind=EventKind.Birth,
+                    person=-1,
+                    child=-2,
+                    dateTime="2020-01-01",
+                )
+            ],
+        )
+    )
+    data.commit_pdp_items([-5])
+
+    baby = [p for p in data.people if p["name"] == "Baby"][0]
+    pb = data.pair_bonds[0]
+    assert baby["parents"] == pb["id"]
+
+
+def test_commit_dedup_pair_bond_against_committed():
+    """Committing a PDP pair bond whose dyad already exists in committed should reuse the committed one."""
+    data = DiagramData(
+        people=[{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}],
+        pair_bonds=[{"id": 3, "person_a": 1, "person_b": 2}],
+        pdp=PDP(
+            events=[
+                Event(id=-1, kind=EventKind.Married, person=1, spouse=2),
+            ],
+            pair_bonds=[PairBond(id=-2, person_a=1, person_b=2)],
+        ),
+    )
+    id_mapping = data.commit_pdp_items([-1])
+
+    assert len(data.pair_bonds) == 1
+    assert data.pair_bonds[0]["id"] == 3
+    assert id_mapping[-2] == 3
+    committed_event = data.events[0]
+    assert committed_event["person"] == 1
+    assert committed_event["spouse"] == 2
+
+
+def test_commit_dedup_pair_bond_child_parents_remapped():
+    """When a PDP pair bond is deduped, Person.parents should remap to the existing committed PB."""
+    data = DiagramData(
+        people=[{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}],
+        pair_bonds=[{"id": 3, "person_a": 1, "person_b": 2}],
+        pdp=PDP(
+            people=[Person(id=-1, name="Child", parents=-3)],
+            events=[
+                Event(
+                    id=-2, kind=EventKind.Birth, person=1, spouse=2, child=-1
+                ),
+            ],
+            pair_bonds=[PairBond(id=-3, person_a=1, person_b=2)],
+        ),
+    )
+    id_mapping = data.commit_pdp_items([-2])
+
+    assert len(data.pair_bonds) == 1
+    assert data.pair_bonds[0]["id"] == 3
+    assert id_mapping[-3] == 3
+    child = next(p for p in data.people if p["name"] == "Child")
+    assert child["parents"] == 3
+
+
+def test_commit_birth_case2_finds_committed_pair_bond():
+    """Birth Case 2 with committed person should find committed pair bond and spouse."""
+    data = DiagramData(
+        people=[{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}],
+        pair_bonds=[{"id": 3, "person_a": 1, "person_b": 2}],
+        pdp=PDP(
+            people=[Person(id=-1, name="Baby")],
+            events=[
+                Event(id=-2, kind=EventKind.Birth, person=1, child=-1),
+            ],
+        ),
+    )
+    id_mapping = data.commit_pdp_items([-2])
+
+    # Should reuse committed spouse and pair bond, not create inferred ones
+    assert len(data.pair_bonds) == 1
+    assert data.pair_bonds[0]["id"] == 3
+    committed_event = next(e for e in data.events if e["kind"] == "birth")
+    assert committed_event["person"] == 1
+    assert committed_event["spouse"] == 2
+    baby = next(p for p in data.people if p["name"] == "Baby")
+    assert baby["parents"] == 3
+    # No extra inferred spouse should exist
+    assert not any(p["name"] == "Alice's spouse" for p in data.people)
+
+
+def test_reject_transitive_cascade():
+    """Rejecting a person should transitively cascade through pair bonds to children."""
+    data = DiagramData(
+        pdp=PDP(
+            people=[
+                Person(id=-1, name="Alice"),
+                Person(id=-2, name="Bob"),
+                Person(id=-3, name="Child", parents=-4),
+            ],
+            pair_bonds=[PairBond(id=-4, person_a=-1, person_b=-2)],
+            events=[
+                Event(id=-5, kind=EventKind.Shift, person=-3, dateTime="2020-01-01")
+            ],
+        )
+    )
+    # Rejecting Alice should cascade: Alice -> pair_bond -4 -> Child -3 -> event -5
+    data.reject_pdp_item(-1)
+
+    assert len(data.pdp.people) == 1
+    assert data.pdp.people[0].name == "Bob"
+    assert len(data.pdp.pair_bonds) == 0
+    assert len(data.pdp.events) == 0

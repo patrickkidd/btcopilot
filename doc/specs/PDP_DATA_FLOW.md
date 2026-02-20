@@ -161,9 +161,38 @@ After commit, the caller adds items to the Qt scene and pushes to server. See
 [DATA_SYNC_FLOW.md](../../../familydiagram/doc/specs/DATA_SYNC_FLOW.md) for
 transport mechanics.
 
+### Commit Invariants
+
+`commit_pdp_items()` guarantees these invariants before returning committed data
+to the caller:
+
+1. **PairBond completeness**: Every committed `isPairBond()` event (Bonded,
+   Married, Separated, Divorced, Moved, Birth, Adopted) that has both `person`
+   and `spouse` will have a corresponding PairBond between those two people.
+   Created by `_create_inferred_pair_bond_items()` for non-offspring events, and
+   by `_create_inferred_birth_items()` for Birth/Adopted events.
+
+2. **Birth/Adopted completeness**: Every committed Birth/Adopted event will have
+   `person`, `spouse`, `child`, and a PairBond. Missing people are inferred.
+   The child's `parents` field is set to the PairBond ID. Three cases:
+   - Child only → infer both parents + pair bond
+   - Person only → find existing pair bond or infer spouse + pair bond
+   - Person + spouse → infer child + pair bond if missing
+
+3. **Transitive closure**: Accepting any item also commits all items it
+   transitively references (a person's events, an event's person/spouse/child,
+   an event's pair bond, a person's parents pair bond, etc.).
+
+4. **ID remapping**: All negative PDP IDs are replaced with positive committed
+   IDs. No negative IDs remain in the committed output.
+
+These invariants are required by the Qt scene's `_do_addItem()`, which validates
+that `isPairBond()` events have a Marriage object — a check suppressed only
+during `isInitializing` (see FR-4 in DATA_SYNC_FLOW.md).
+
 ## PDP Rejection
 
-Removing an item cascade-deletes dependents:
+Removing an item transitively cascade-deletes all dependents:
 - Events referencing the rejected person (as `person`, `spouse`, `child`,
   `relationshipTargets`, `relationshipTriangles`)
 - Pair bonds referencing the rejected person
