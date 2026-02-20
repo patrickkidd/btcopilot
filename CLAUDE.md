@@ -107,6 +107,23 @@ btcopilot provides:
 
 ---
 
+## Domain Knowledge
+
+### GT / F1 Data Model
+
+- Birth/Adopted events: `child` is the primary link (who was born/adopted), `person`/`spouse` are optional parent links. `person=None` on birth events is legitimate.
+- Other events: `person` is the primary link.
+- Structural events (Birth, Death, Married, etc.) skip description matching in F1 — only Shift events use descriptions.
+
+### IRR Deliberation Records
+
+- **Purpose:** Capture full diversity of opinions and their evolution per CI theory — both agreement AND unresolved ambiguity — for later retroactive rule extraction with confidence scores.
+- **Exhaustiveness rule:** Every substantive point must be captured. Common failure: summarizing away tangential points (heuristics, anecdotes, personal examples, side conversations, process observations, historical references). These MUST be included. Audit transcript line-by-line before declaring completion.
+- **Raw transcripts are always committed** — they are irreplaceable ground truth. Never delete them.
+- **Always keep `btcopilot/doc/irr/README.md` in sync** when adding/modifying meetings or artifacts.
+
+---
+
 ## Development Rules
 
 - Not concerned with legacy data — prefer delete/re-create over backward-compatibility code
