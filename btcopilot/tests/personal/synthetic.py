@@ -769,6 +769,7 @@ class ConversationSimulator:
             discussion.chat_ai_speaker_id = ai_speaker.id
 
         db.session.commit()
+        discussion_id = discussion.id
 
         def run_loop():
             nonlocal user_text
@@ -777,9 +778,16 @@ class ConversationSimulator:
                 turn_num += 1
                 turns.append(Turn(speaker="user", text=user_text))
 
+                # Re-fetch to avoid ObjectDeletedError after commit expires objects
+                _discussion = db.session.get(Discussion, discussion_id)
+                if not _discussion:
+                    raise RuntimeError(
+                        f"Discussion {discussion_id} was deleted during generation"
+                    )
+
                 # ask_fn creates both user and AI statements internally
                 response = ask_fn(
-                    discussion, user_text, skip_extraction=self.skip_extraction
+                    _discussion, user_text, skip_extraction=self.skip_extraction
                 )
                 ai_text = response.statement
                 turns.append(Turn(speaker="ai", text=ai_text))

@@ -145,7 +145,9 @@ def validate_pdp_deltas(
     if diagram_data:
         committed_person_ids = {p["id"] for p in diagram_data.people if "id" in p}
         committed_event_ids = {e["id"] for e in diagram_data.events if "id" in e}
-        committed_pair_bond_ids = {pb["id"] for pb in diagram_data.pair_bonds if "id" in pb}
+        committed_pair_bond_ids = {
+            pb["id"] for pb in diagram_data.pair_bonds if "id" in pb
+        }
 
     person_ids_in_delta = {p.id for p in deltas.people if p.id is not None}
     event_ids_in_delta = {e.id for e in deltas.events}
@@ -168,12 +170,20 @@ def validate_pdp_deltas(
     all_pdp_pair_bond_ids = existing_pdp_pair_bond_ids | new_pair_bond_ids
 
     for person in deltas.people:
-        if person.id is not None and person.id >= 0 and person.id not in committed_person_ids:
-            errors.append(f"Delta person has positive ID {person.id} not in committed diagram")
+        if (
+            person.id is not None
+            and person.id >= 0
+            and person.id not in committed_person_ids
+        ):
+            errors.append(
+                f"Delta person has positive ID {person.id} not in committed diagram"
+            )
 
     for event in deltas.events:
         if event.id >= 0 and event.id not in committed_event_ids:
-            errors.append(f"Delta event has positive ID {event.id} not in committed diagram")
+            errors.append(
+                f"Delta event has positive ID {event.id} not in committed diagram"
+            )
         if not event.description:
             _log.warning(
                 f"Event {event.id} (kind={event.kind}) has no description - "
@@ -181,8 +191,14 @@ def validate_pdp_deltas(
             )
 
     for pair_bond in deltas.pair_bonds:
-        if pair_bond.id is not None and pair_bond.id >= 0 and pair_bond.id not in committed_pair_bond_ids:
-            errors.append(f"Delta pair_bond has positive ID {pair_bond.id} not in committed diagram")
+        if (
+            pair_bond.id is not None
+            and pair_bond.id >= 0
+            and pair_bond.id not in committed_pair_bond_ids
+        ):
+            errors.append(
+                f"Delta pair_bond has positive ID {pair_bond.id} not in committed diagram"
+            )
 
     for event in deltas.events:
         # Offspring and moved events may lack spouse at extraction time; commit logic infers it
@@ -242,22 +258,34 @@ def validate_pdp_deltas(
             )
 
     for pair_bond in deltas.pair_bonds:
-        if (
-            pair_bond.person_a is not None
-            and pair_bond.person_a < 0
-            and pair_bond.person_a not in all_pdp_person_ids
-        ):
+        if pair_bond.person_a is None:
+            errors.append(f"PairBond {pair_bond.id} has null person_a")
+        elif pair_bond.person_a < 0 and pair_bond.person_a not in all_pdp_person_ids:
             errors.append(
                 f"PairBond {pair_bond.id} references non-existent PDP person_a {pair_bond.person_a}"
             )
-
-        if (
-            pair_bond.person_b is not None
-            and pair_bond.person_b < 0
-            and pair_bond.person_b not in all_pdp_person_ids
+        elif (
+            diagram_data
+            and pair_bond.person_a > 0
+            and pair_bond.person_a not in committed_person_ids
         ):
             errors.append(
+                f"PairBond {pair_bond.id} references non-existent committed person_a {pair_bond.person_a}"
+            )
+
+        if pair_bond.person_b is None:
+            errors.append(f"PairBond {pair_bond.id} has null person_b")
+        elif pair_bond.person_b < 0 and pair_bond.person_b not in all_pdp_person_ids:
+            errors.append(
                 f"PairBond {pair_bond.id} references non-existent PDP person_b {pair_bond.person_b}"
+            )
+        elif (
+            diagram_data
+            and pair_bond.person_b > 0
+            and pair_bond.person_b not in committed_person_ids
+        ):
+            errors.append(
+                f"PairBond {pair_bond.id} references non-existent committed person_b {pair_bond.person_b}"
             )
 
     if errors:
@@ -670,6 +698,8 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
     for idx in reversed(range(len(pdp.pair_bonds))):
         if pdp.pair_bonds[idx].id in to_delete_ids:
             del pdp.pair_bonds[idx]
+
+    pdp = cleanup_pair_bonds(pdp)
 
     if is_dev:
         _log.debug(f"Post-PDP:\n\n{_pretty_repr(pdp)}")

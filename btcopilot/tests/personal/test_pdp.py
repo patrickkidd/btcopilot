@@ -111,7 +111,11 @@ def test_validate_pdp_deltas_with_pair_bonds():
 
 def test_apply_deltas_with_pair_bonds():
     """Test that apply_deltas works with pair_bonds"""
-    pdp = PDP(people=[], events=[], pair_bonds=[])
+    pdp = PDP(
+        people=[Person(id=-3, name="Parent A"), Person(id=-4, name="Parent B")],
+        events=[],
+        pair_bonds=[],
+    )
 
     deltas = PDPDeltas(
         people=[Person(id=-1, name="Child", parents=-2)],
@@ -120,11 +124,26 @@ def test_apply_deltas_with_pair_bonds():
 
     new_pdp = apply_deltas(pdp, deltas)
 
-    assert len(new_pdp.people) == 1
-    assert new_pdp.people[0].parents == -2
+    assert len(new_pdp.people) == 3
+    child = next(p for p in new_pdp.people if p.id == -1)
+    assert child.parents == -2
     assert len(new_pdp.pair_bonds) == 1
     assert new_pdp.pair_bonds[0].person_a == -3
     assert new_pdp.pair_bonds[0].person_b == -4
+
+
+def test_apply_deltas_delete_person_cascades_pair_bond():
+    pdp = PDP(
+        people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
+        pair_bonds=[PairBond(id=-3, person_a=-1, person_b=-2)],
+    )
+    deltas = PDPDeltas(delete=[-1])
+
+    result = apply_deltas(pdp, deltas)
+
+    assert len(result.people) == 1
+    assert result.people[0].id == -2
+    assert len(result.pair_bonds) == 0
 
 
 def test_commit_pdp_items_direct():

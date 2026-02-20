@@ -18,6 +18,11 @@ from btcopilot.schema import (
     RelationshipKind,
     PairBond,
 )
+from btcopilot.llmutil import (
+    dataclass_to_json_schema,
+    PDP_SCHEMA_DESCRIPTIONS,
+    PDP_FORCE_REQUIRED,
+)
 
 
 def test_get_all_pdp_item_ids():
@@ -413,6 +418,53 @@ def test_pdp_deltas_schema_has_event_required_fields():
     assert "dateTime" in event_required
     assert "person" in event_required
     assert "dateCertainty" in event_required
+
+
+def test_validate_deltas_rejects_pair_bond_with_null_person_a():
+    pdp = PDP(people=[Person(id=-1, name="Alice")])
+    deltas = PDPDeltas(
+        pair_bonds=[PairBond(id=-2, person_a=None, person_b=-1)],
+    )
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas)
+    assert any("null person_a" in e for e in exc_info.value.errors)
+
+
+def test_validate_deltas_rejects_pair_bond_with_null_person_b():
+    pdp = PDP(people=[Person(id=-1, name="Alice")])
+    deltas = PDPDeltas(
+        pair_bonds=[PairBond(id=-2, person_a=-1, person_b=None)],
+    )
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas)
+    assert any("null person_b" in e for e in exc_info.value.errors)
+
+
+def test_validate_deltas_rejects_pair_bond_with_nonexistent_committed_person():
+    pdp = PDP()
+    diagram_data = DiagramData(people=[], events=[], pair_bonds=[])
+    deltas = PDPDeltas(
+        pair_bonds=[PairBond(id=-1, person_a=999, person_b=888)],
+    )
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas, diagram_data)
+    assert any(
+        "non-existent committed person_a 999" in e for e in exc_info.value.errors
+    )
+    assert any(
+        "non-existent committed person_b 888" in e for e in exc_info.value.errors
+    )
+
+
+def test_pdp_deltas_schema_has_pair_bond_required_fields():
+    schema = dataclass_to_json_schema(
+        PDPDeltas, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED
+    )
+    pb_schema = schema["properties"]["pair_bonds"]["items"]
+    pb_required = pb_schema.get("required", [])
+    assert "id" in pb_required
+    assert "person_a" in pb_required
+    assert "person_b" in pb_required
 
 
 def test_reassign_delta_ids_no_collision():

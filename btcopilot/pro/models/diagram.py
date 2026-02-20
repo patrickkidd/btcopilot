@@ -5,10 +5,11 @@ from flask import g
 from sqlalchemy import Column, Boolean, String, Integer, LargeBinary, ForeignKey
 from sqlalchemy import update as sql_update
 from sqlalchemy.orm import relationship
+from dataclasses import fields as dc_fields
 
 
 import btcopilot
-from btcopilot.schema import DiagramData
+from btcopilot.schema import DiagramData, PDP, from_dict
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
 
@@ -81,26 +82,13 @@ class Diagram(db.Model, ModelMixin):
 
     def get_diagram_data(self) -> DiagramData:
         import PyQt5.sip  # Required for unpickling QtCore objects
-        from btcopilot.schema import DiagramData, PDP, from_dict
 
         data = pickle.loads(self.data) if self.data else {}
-
-        # Return outer people/events/pair_bonds as raw dicts (READ-ONLY, may contain QtCore objects)
-        people = data.get("people", [])
-        events = data.get("events", [])
-        pair_bonds = data.get("pair_bonds", [])
-
-        # Convert PDP dict to dataclass
         pdp_dict = data.get("pdp", {})
-        pdp = from_dict(PDP, pdp_dict) if pdp_dict else PDP()
-
-        return DiagramData(
-            people=people,
-            events=events,
-            pair_bonds=pair_bonds,
-            pdp=pdp,
-            lastItemId=data.get("lastItemId", 0),
-        )
+        known = {f.name for f in dc_fields(DiagramData)} - {"pdp"}
+        kwargs = {k: data[k] for k in known if k in data}
+        kwargs["pdp"] = from_dict(PDP, pdp_dict) if pdp_dict else PDP()
+        return DiagramData(**kwargs)
 
     def set_diagram_data(self, diagram_data: DiagramData):
         import PyQt5.sip  # Required for pickling QtCore objects

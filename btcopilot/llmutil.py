@@ -154,6 +154,7 @@ PDP_SCHEMA_DESCRIPTIONS = {
 
 PDP_FORCE_REQUIRED = {
     "Event": ["description", "dateTime", "person", "dateCertainty"],
+    "PairBond": ["id", "person_a", "person_b"],
 }
 
 
