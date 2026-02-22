@@ -36,7 +36,7 @@ from btcopilot.schema import (
     PairBond,
     asdict,
 )
-from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
+from btcopilot.personal.models import Discussion, DiscussionStatus, Statement, Speaker, SpeakerType
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_breadcrumbs, get_auditor_id, get_discussion_view_menu
 
@@ -210,6 +210,7 @@ def extract_next_statement(*args, **kwargs):
 
     if remaining_statements == 0:
         discussion.extracting = False
+        discussion.status = DiscussionStatus.Ready
         total_statements = Statement.query.filter_by(
             discussion_id=discussion.id
         ).count()
@@ -1159,6 +1160,7 @@ def extract(discussion_id: int):
 
     # Set extracting to True
     discussion.extracting = True
+    discussion.status = DiscussionStatus.Extracting
     db.session.commit()
 
     from btcopilot.extensions import celery
@@ -1327,6 +1329,7 @@ def extract_selected():
 
         # Set extracting flag
         discussion.extracting = True
+        discussion.status = DiscussionStatus.Extracting
         triggered_count += 1
 
     db.session.commit()
@@ -1506,6 +1509,7 @@ def clear_extracted_data(discussion_id):
 
         # Reset extraction progress
         discussion.extracting = False
+        discussion.status = DiscussionStatus.PendingExtraction
 
         if discussion.diagram:
             database = discussion.diagram.get_diagram_data()

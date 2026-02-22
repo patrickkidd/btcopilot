@@ -36,8 +36,8 @@ def _create_discussion(data: dict) -> Discussion:
         diagram_id=user.free_diagram_id,
         summary="New Discussion",
         speakers=[
-            Speaker(name="User", type=SpeakerType.Subject, person_id=1),
-            Speaker(name="Assistant", type=SpeakerType.Expert, person_id=2),
+            Speaker(name="Client", type=SpeakerType.Subject, person_id=1),
+            Speaker(name="Coach", type=SpeakerType.Expert, person_id=2),
         ],
     )
     db.session.add(discussion)
