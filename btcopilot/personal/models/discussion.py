@@ -1,9 +1,20 @@
-from sqlalchemy import Column, Text, Integer, Boolean, Date, JSON
+import enum
+
+from sqlalchemy import Column, Text, Integer, Boolean, Date, JSON, Enum
 from sqlalchemy.orm import relationship
 
 from btcopilot.extensions import db
 from btcopilot.llmutil import gemini_text_sync
 from btcopilot.modelmixin import ModelMixin
+
+
+class DiscussionStatus(enum.StrEnum):
+    Pending = "pending"
+    Generating = "generating"
+    Failed = "failed"
+    PendingExtraction = "pending_extraction"
+    Extracting = "extracting"
+    Ready = "ready"
 
 
 class Discussion(db.Model, ModelMixin):
@@ -21,6 +32,12 @@ class Discussion(db.Model, ModelMixin):
     last_topic = Column(
         Text,
         comment="A the topic that the model should follow the user on, e.g. presenting problem, new issue",
+    )
+    status = Column(
+        Enum(DiscussionStatus, values_callable=lambda e: [x.value for x in e]),
+        default=DiscussionStatus.Pending,
+        nullable=False,
+        server_default=DiscussionStatus.Pending.value,
     )
     extracting = Column(
         Boolean,
