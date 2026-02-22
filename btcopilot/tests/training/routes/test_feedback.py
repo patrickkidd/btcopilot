@@ -4,7 +4,10 @@ from unittest.mock import patch
 
 from btcopilot.extensions import db
 from btcopilot.training.models import Feedback
-from btcopilot.training.routes.feedback import cleanup_extraction_pair_bonds
+from btcopilot.training.routes.feedback import (
+    cleanup_extraction_pair_bonds,
+    validate_extraction_for_approval,
+)
 
 
 @pytest.fixture
@@ -151,3 +154,56 @@ def test_cleanup_extraction_pair_bonds_handles_empty():
         "people": [],
         "events": [],
     }
+
+
+def test_validate_rejects_event_without_person():
+    errors = validate_extraction_for_approval({
+        "events": [{"kind": "shift", "description": "test"}],
+    })
+    assert any("missing person link" in e for e in errors)
+
+
+def test_validate_rejects_event_with_placeholder_description():
+    errors = validate_extraction_for_approval({
+        "events": [{"kind": "shift", "person": 1, "description": "new event"}],
+    })
+    assert any("placeholder or empty description" in e for e in errors)
+
+
+def test_validate_rejects_birth_without_child():
+    errors = validate_extraction_for_approval({
+        "events": [{"kind": "birth", "description": "born in 1990"}],
+    })
+    assert any("missing child link" in e for e in errors)
+
+
+def test_validate_accepts_valid_event():
+    errors = validate_extraction_for_approval({
+        "events": [{"kind": "shift", "person": 1, "description": "job loss"}],
+    })
+    assert len(errors) == 0
+
+
+def test_validate_accepts_valid_birth_event():
+    errors = validate_extraction_for_approval({
+        "events": [{"kind": "birth", "child": 2, "description": "born in 1990"}],
+    })
+    assert len(errors) == 0
+
+
+def test_create_extraction_rejects_invalid(auditor, discussion):
+    statement = discussion.statements[0]
+    with patch("btcopilot.training.sse.sse_manager.publish"):
+        response = auditor.post(
+            "/training/feedback/",
+            json={
+                "message_id": statement.id,
+                "feedback_type": "extraction",
+                "thumbs_down": False,
+                "edited_extraction": {
+                    "events": [{"kind": "shift", "description": ""}],
+                    "people": [],
+                },
+            },
+        )
+        assert response.status_code == 400

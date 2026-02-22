@@ -2,7 +2,7 @@ import pytest
 from mock import patch
 
 from btcopilot.extensions import db
-from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
+from btcopilot.personal.models import Discussion, DiscussionStatus, Statement, Speaker, SpeakerType
 from btcopilot.training.routes.discussions import extract_next_statement
 from btcopilot.schema import (
     DiagramData,
@@ -246,3 +246,23 @@ def test_extract_next_statement_ordering(mock_pdp_update, flask_app, test_user):
 
     assert processed_texts == expected_order
     assert mock_pdp_update.call_count == 2
+
+
+@patch("btcopilot.training.routes.discussions.pdp.update")
+def test_extraction_sets_ready_status(mock_pdp_update, flask_app, discussion):
+    for statement in discussion.statements:
+        if statement.speaker.type == SpeakerType.Subject:
+            statement.pdp_deltas = None
+    discussion.extracting = True
+    discussion.status = DiscussionStatus.Extracting
+    db.session.commit()
+
+    mock_pdp_update.return_value = (DiagramData().pdp, PDPDeltas(events=[], people=[]))
+
+    with flask_app.app_context():
+        result = extract_next_statement()
+    assert result is True
+
+    db.session.refresh(discussion)
+    assert discussion.extracting is False
+    assert discussion.status == DiscussionStatus.Ready

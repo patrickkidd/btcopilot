@@ -268,6 +268,9 @@ def create():
         edited_extraction = data.get("edited_extraction")
         if edited_extraction:
             edited_extraction = cleanup_extraction_pair_bonds(edited_extraction)
+            errors = validate_extraction_for_approval(edited_extraction)
+            if errors:
+                return jsonify({"error": errors}), 400
         existing.edited_extraction = edited_extraction
         existing.updated_at = func.now()
 
@@ -309,6 +312,9 @@ def create():
     edited_extraction = data.get("edited_extraction")
     if edited_extraction:
         edited_extraction = cleanup_extraction_pair_bonds(edited_extraction)
+        errors = validate_extraction_for_approval(edited_extraction)
+        if errors:
+            return jsonify({"error": errors}), 400
     feedback = Feedback(
         statement_id=data["message_id"],
         auditor_id=auditor_id,

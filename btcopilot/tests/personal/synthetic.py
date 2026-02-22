@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 
 from btcopilot.extensions import db
 from btcopilot.llmutil import gemini_text_sync
-from btcopilot.personal.models import Discussion, Speaker, SpeakerType
+from btcopilot.personal.models import Discussion, DiscussionStatus, Speaker, SpeakerType
 from btcopilot.pro.models import Diagram, User
 from btcopilot.schema import DiagramData, asdict
 
@@ -746,6 +746,7 @@ class ConversationSimulator:
             synthetic=self.persist,
             synthetic_persona=persona_dict if self.persist else None,
             summary=f"Synthetic: {persona.name}" if self.persist else None,
+            status=DiscussionStatus.Generating if self.persist else DiscussionStatus.Pending,
         )
         db.session.add(discussion)
         db.session.flush()
@@ -952,7 +953,10 @@ Return JSON:
             text = text[3:]
     if text.endswith("```"):
         text = text[:-3]
-    data = json.loads(text.strip())
+    try:
+        data = json.loads(text.strip())
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Failed to parse generated persona JSON: {e}")
 
     for required in ("name", "background", "presenting_problem", "data_points"):
         if required not in data:
