@@ -60,8 +60,8 @@ These are crash-level blockers. Both goals fail immediately without them.
 
 | # | Task | Goal | Severity | Verified | Auto | File(s) | Notes |
 |---|------|------|----------|----------|------|---------|-------|
-| **T0-1** | Fix emotionalunit.py crash on PDP accept | 1, 2 | CRASH | 2026-02-20 ✓ | CC | `familydiagram/pkdiagram/scene/emotionalunit.py:34` | `self._layer` is None → `else` branch accesses `self._layer.id`. Guard needed in `update()`. |
-| **T0-2** | Fix childOf bugs on accept (Conflict, Separated events) | 1, 2 | CRASH | 2026-02-20 ✓ | CC+H | `btcopilot/schema.py:674-830` | No code handles Shift/Conflict events in birth inference. Case 1 misfires on Separated creating phantom parents. Needs domain review of intended behavior. |
+| **T0-1** | ~~Fix emotionalunit.py crash on PDP accept~~ | 1, 2 | CRASH | 2026-02-20 ✅ | CC | `familydiagram/pkdiagram/scene/emotionalunit.py:34` | DONE. Guard added in `update()`. |
+| **T0-2** | Fix childOf bugs on accept (Conflict, Separated events) | 1, 2 | CRASH | 2026-02-20 ✓ | CC+H | `btcopilot/schema.py:674-830` | No code handles Shift/Conflict events in birth inference. Case 1 misfires on Separated creating phantom parents. Needs domain review of intended behavior. **2026-02-21**: Also fixed Marriage crash on corrupt pair_bond data — `Marriage.read()` now rejects unresolvable people, `scene.read()` skips errored items. |
 | ~~**T0-3**~~ | ~~Fix Pro app pickle TypeError on version conflict~~ | ~~1, 2~~ | ~~CRASH~~ | 2026-02-20: STALE | - | `familydiagram/pkdiagram/server_types.py:295` | All code paths set `self.data` to `bytes`. Crash cannot be triggered by current code. Remove or demote to "monitor." |
 | **T0-4** | Fix Pro app FR-2 violation (applyChange overwrites Personal data) | 1, 2 | DATA LOSS | 2026-02-20 ✓ | CC+H | `familydiagram/pkdiagram/server_types.py`, `familydiagram/pkdiagram/models/serverfilemanagermodel.py:538` | `applyChange` ignores refreshed `diagramData` argument entirely — returns `DiagramData` from closed-over local bytes. Must merge PDP/cluster fields from server. Needs review of merge semantics. |
 
@@ -73,9 +73,9 @@ Even if accepting doesn't crash, the extracted data must be good enough to be us
 |---|------|------|----------|------|---------|-------|
 | **T1-1** | Add PairBond extraction examples to fdserver prompt | 1, 2 | HIGH | H | `fdserver/...prompts...` | Requires domain expertise to write clinically accurate examples. CC can scaffold but human must validate content. |
 | **T1-2** | Add 10+ event extraction examples to fdserver prompt | 1, 2 | HIGH | H | `fdserver/...prompts...` | Same — needs domain expert to craft representative event examples with correct SARF coding. |
-| **T1-3** | Require Event.description in validation (reject null) | 1, 2 | MEDIUM | CC | `btcopilot/pdp.py:187-191` | Currently warns but doesn't reject. Straightforward validation change + test. |
+| **T1-3** | ~~Require Event.description in validation (reject null)~~ | 1, 2 | MEDIUM | CC | `btcopilot/pdp.py:187-191` | DONE 2026-02-20. Validation rejects null/placeholder descriptions. |
 | **T1-4** | Require Event.dateTime (use 1/1/YYYY with low dateCertainty for vague dates) | 1, 2 | MEDIUM | CC+H | `btcopilot/pdp.py`, fdserver prompt | Validation change is CC-automatable. Prompt wording for date estimation needs human review. |
-| **T1-5** | Include current date in extraction prompt | 2 | LOW | CC | fdserver prompt | Inject `datetime.now()` into prompt context. Mechanical change. |
+| **T1-5** | ~~Include current date in extraction prompt~~ | 2 | LOW | CC | fdserver prompt | DONE 2026-02-20. Already implemented. |
 
 ### Tier 2: Diagram Must Render Coherently
 
@@ -84,11 +84,11 @@ Accepted data must be viewable as a family diagram in both apps.
 | # | Task | Goal | Severity | Verified | Auto | File(s) | Notes |
 |---|------|------|----------|----------|------|---------|-------|
 | **T2-1** | Implement deterministic auto-arrange algorithm | 1, 2 | HIGH | 2026-02-20 ✓ | CC+H | `btcopilot/arrange.py`, `btcopilot/pro/routes.py:923-1032` | Still 100% Gemini-based, zero deterministic code. CC can implement the graph algorithm but needs human review of layout aesthetics. **Largest single item (~2-3 weeks).** |
-| **T2-2** | Add error handling to arrange endpoint | 1, 2 | MEDIUM | 2026-02-20 ✓ | CC | `btcopilot/pro/routes.py:1032` | No try/except. Mechanical fix. |
-| **T2-3** | Show arrange error feedback in UI | 1, 2 | LOW | - | CC | `familydiagram/pkdiagram/documentview/documentcontroller.py:927` | `_onError()` only logs to console. |
-| **T2-4** | Fix _do_addItem missing relationshipTriangle symbols | 1, 2 | MEDIUM | - | CC | `familydiagram/pkdiagram/scene/scene.py:433` | Needs to mirror relationshipTarget symbol logic. |
+| **T2-2** | ~~Add error handling to arrange endpoint~~ | 1, 2 | MEDIUM | 2026-02-20 ✅ | CC | `btcopilot/pro/routes.py:1032` | DONE 2026-02-20. |
+| **T2-3** | ~~Show arrange error feedback in UI~~ | 1, 2 | LOW | 2026-02-20 ✅ | CC | `familydiagram/pkdiagram/documentview/documentcontroller.py:927` | DONE 2026-02-20. QMessageBox.warning on HTTPError. |
+| **T2-4** | ~~Fix _do_addItem missing relationshipTriangle symbols~~ | 1, 2 | MEDIUM | 2026-02-20 | CC | `familydiagram/pkdiagram/scene/scene.py:433` | REVERTED — triangles are exclusively Inside/Outside. Domain constraint now in `doc/specs/BOWEN_THEORY.md`. |
 | **T2-5** | Fix baseline view in new diagrams | 2 | MEDIUM | - | CC+H | familydiagram views code | Needs investigation to determine root cause. |
-| **T2-6** | Fix `_log not defined` when re-opening after deleting views | 1, 2 | LOW | - | CC | familydiagram views code | Layer reference cleanup. |
+| **T2-6** | ~~Fix `_log not defined` when re-opening after deleting views~~ | 1, 2 | LOW | 2026-02-20 | CC | familydiagram views code | Cannot reproduce. Likely fixed by T0-1 or never existed as described. |
 
 ### Tier 3: Personal App Must Present Data Meaningfully (Goal 2)
 
@@ -96,12 +96,12 @@ Beta testers need to understand what the app is showing them.
 
 | # | Task | Goal | Severity | Auto | File(s) | Notes |
 |---|------|------|----------|------|---------|-------|
-| **T3-1** | Fix cluster graph text overlap | 2 | HIGH | CC | `familydiagram/pkdiagram/resources/qml/Personal/LearnView.qml` | QML layout fix. Needs MCP testing to verify. |
-| **T3-2** | Add event selection indication on cluster graph | 2 | MEDIUM | CC | Same | Add visual feedback state to QML. |
-| **T3-3** | Fix empty space to right of clusters | 2 | MEDIUM | CC | Same | QML layout fix. |
-| **T3-4** | SARF extraction should show direction format | 2 | MEDIUM | CC | PDPEventCard.qml | Show "Symptom: Up" instead of raw coding. Format string change. |
-| **T3-5** | Rename "User"→"Client", "Assistant"→"Coach" | 2 | LOW | CC | DiscussView.qml, prompts, server | Multi-file string rename. Grep + replace. |
-| **T3-6** | Scroll to bottom on chat submit | 2 | LOW | CC | DiscussView.qml | Standard QML ListView positioning. |
+| **T3-1** | ~~Fix cluster graph text overlap~~ | 2 | HIGH | CC | `familydiagram/pkdiagram/resources/qml/Personal/LearnView.qml` | DONE 2026-02-20. Constrained narrow label width from 240 → max(barWidth,80). |
+| **T3-2** | ~~Add event selection indication on cluster graph~~ | 2 | MEDIUM | CC | Same | DONE 2026-02-20. Already implemented (dot scale, ring highlights, row color, border). |
+| **T3-3** | ~~Fix empty space to right of clusters~~ | 2 | MEDIUM | CC | Same | DONE 2026-02-20. Used calculateOptimalZoom() instead of hardcoded 2.0. |
+| **T3-4** | ~~SARF extraction should show direction format~~ | 2 | MEDIUM | CC | PDPEventCard.qml | DONE 2026-02-20. Uses variableLabel() and relationshipLabel(). |
+| **T3-5** | ~~Rename "User"→"Client", "Assistant"→"Coach"~~ | 2 | LOW | CC | DiscussView.qml, prompts, server | DONE 2026-02-20. |
+| **T3-6** | ~~Scroll to bottom on chat submit~~ | 2 | LOW | CC | DiscussView.qml | DONE 2026-02-20. Already implemented. |
 | **T3-7** | Click event in timeline → highlight people in diagram | 2 | MEDIUM | CC+H | familydiagram scene code | Needs investigation of signal plumbing between timeline and scene. |
 
 ### Tier 4: Synthetic Pipeline Must Be Reliable (Goal 1)
@@ -110,11 +110,11 @@ Manual synthetic generation works but breaks under real usage.
 
 | # | Task | Goal | Severity | Verified | Auto | File(s) | Notes |
 |---|------|------|----------|----------|------|---------|-------|
-| **T4-1** | Fix Celery task error handling (currently swallows Exception) | 1 | HIGH | 2026-02-20 ✓ | CC | `btcopilot/training/tasks.py` | Broad `except Exception` returns `{"success": False}` — Celery sees SUCCESS. Should re-raise or use specific exceptions. |
+| **T4-1** | ~~Fix Celery task error handling (currently swallows Exception)~~ | 1 | HIGH | 2026-02-20 ✅ | CC | `btcopilot/training/tasks.py` | DONE 2026-02-20. Re-raises ValueError, uses autoretry_for on transient errors. |
 | **T4-2** | Auto-trigger extraction after synthetic generation | 1 | HIGH | 2026-02-20 ✓ | CC | `btcopilot/training/tasks.py` | Extraction is inline per-turn via `ask_fn`, not post-generation. Dashboard description was imprecise — real gap is that `skip_extraction=True` path has no recovery. |
-| **T4-3** | Add Discussion.status state machine | 1 | MEDIUM | 2026-02-20 ✓ | CC | `btcopilot/personal/models/discussion.py` | Only `extracting` boolean exists. Needs enum column + migration. |
+| **T4-3** | ~~Add Discussion.status state machine~~ | 1 | MEDIUM | 2026-02-20 ✅ | CC | `btcopilot/personal/models/discussion.py` | DONE 2026-02-20. DiscussionStatus enum + migration + transitions at all 5 mutation points. |
 | **T4-4** | Integrate quality+coverage evaluators into Celery task | 1 | MEDIUM | 2026-02-20 ✓ | CC+H | `btcopilot/training/tasks.py` | `ConversationSimulator.run()` never calls evaluators — `result.quality` and `result.coverage` always None. CC can wire them in, human reviews thresholds. |
-| **T4-5** | Validate generated persona JSON | 1 | LOW | - | CC | `btcopilot/tests/personal/synthetic.py` | Add JSONDecodeError handling. |
+| **T4-5** | ~~Validate generated persona JSON~~ | 1 | LOW | 2026-02-20 ✅ | CC | `btcopilot/tests/personal/synthetic.py` | DONE 2026-02-20. JSONDecodeError → ValueError with context. |
 
 ### Tier 5: GT/F1 Must Produce Actionable Signal (Goal 1)
 
@@ -126,7 +126,7 @@ Without this, we can't measure whether prompt changes improve extraction.
 | **T5-2** | Fix 24 GT events with placeholder descriptions | 1 | HIGH | H | SARF editor | Must read original discussion text and write correct descriptions. Domain expertise required. |
 | **T5-3** | Add dateCertainty to all 88 GT events | 1 | MEDIUM | H | SARF editor | Must assess each event's temporal specificity. Domain judgment. |
 | **T5-4** | Revert f1_metrics.py workarounds | 1 | MEDIUM | CC | `btcopilot/training/f1_metrics.py` | Remove person=None wildcard and placeholder auto-pass. Mechanical once T5-1/T5-2 done. |
-| **T5-5** | Add SARF editor validation (require person link + description) | 1 | MEDIUM | CC | Training app event form | Form validation. Straightforward. |
+| **T5-5** | ~~Add SARF editor validation (require person link + description)~~ | 1 | MEDIUM | CC | Training app event form | DONE 2026-02-20. Client + server validation. |
 | **T5-6** | Implement cumulative F1 metric | 1 | HIGH | CC+H | `btcopilot/training/f1_metrics.py` | Algorithm is CC-implementable. Human reviews whether metric captures intended signal. |
 | **T5-7** | Scale GT to 20-30 coded discussions | 1 | HIGH | H | Training app | Pure human labor — clinician must code each discussion. |
 
