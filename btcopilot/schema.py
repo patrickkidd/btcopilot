@@ -476,6 +476,7 @@ class DiagramData:
         # Create inferred items before gathering transitive refs
         self._create_inferred_birth_items(item_ids)
         self._create_inferred_pair_bond_items(item_ids)
+        self._repair_dangling_parents(item_ids)
 
         all_item_ids = self._get_transitive_pdp_references(item_ids)
 
@@ -867,6 +868,22 @@ class DiagramData:
                 f"Created inferred pair bond {pair_bond.id} for {event.kind.value} event {event_id}: "
                 f"person_a={pair_bond.person_a}, person_b={pair_bond.person_b}"
             )
+
+    def _repair_dangling_parents(self, item_ids: list[int]) -> None:
+        """Nullify person.parents that reference non-existent PDP pair bonds."""
+        from btcopilot.pdp import get_all_pdp_item_ids
+
+        pdp_item_ids = get_all_pdp_item_ids(self.pdp)
+        for person in self.pdp.people:
+            if (
+                person.parents is not None
+                and person.parents < 0
+                and person.parents not in pdp_item_ids
+            ):
+                _log.warning(
+                    f"Person {person.id} has dangling parents={person.parents}, clearing"
+                )
+                person.parents = None
 
     def _get_transitive_pdp_references(self, item_ids: list[int]) -> set[int]:
         from btcopilot.pdp import get_all_pdp_item_ids

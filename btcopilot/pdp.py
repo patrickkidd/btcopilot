@@ -116,6 +116,9 @@ def reassign_delta_ids(pdp: PDP, deltas: PDPDeltas) -> None:
             person_id_map.get(t, t) for t in event.relationshipTriangles
         ]
 
+    all_id_map = {**person_id_map, **pair_bond_id_map, **event_id_map}
+    deltas.delete = [all_id_map.get(d, d) for d in deltas.delete]
+
     _log.warning(
         "reassign_delta_ids: LLM produced ID collisions, "
         f"reassigned {len(person_id_map)} people, {len(event_id_map)} events, {len(pair_bond_id_map)} pair_bonds"
@@ -297,6 +300,32 @@ def validate_pdp_deltas(
                     f"Delta contains duplicate PairBond {pair_bond.id} for dyad {dyad}"
                 )
             seen_dyads.add(dyad)
+
+    # Check that deletes won't orphan surviving events
+    if deltas.delete:
+        delete_set = set(deltas.delete)
+        existing_pdp_event_ids = {e.id for e in pdp.events}
+        event_ids_being_deleted = delete_set & existing_pdp_event_ids
+        surviving_events = [
+            e
+            for e in pdp.events
+            if e.id not in event_ids_being_deleted
+        ]
+        for event in surviving_events:
+            for ref in [event.person, event.spouse, event.child]:
+                if ref is not None and ref in delete_set:
+                    errors.append(
+                        f"Delete of person {ref} would orphan event {event.id}"
+                    )
+        existing_pdp_person_ids = {p.id for p in pdp.people if p.id is not None}
+        surviving_people = [
+            p for p in pdp.people if p.id not in delete_set
+        ]
+        for person in surviving_people:
+            if person.parents is not None and person.parents in delete_set:
+                errors.append(
+                    f"Delete of pair_bond {person.parents} would orphan person {person.id}"
+                )
 
     if errors:
         if diagram_data and source:
