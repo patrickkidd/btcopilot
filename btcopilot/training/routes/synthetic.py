@@ -137,26 +137,23 @@ def task_status(task_id):
 
     result = AsyncResult(task_id, app=celery)
 
-    if result.ready():
-        task_result = result.get()
-        if task_result.get("success"):
-            return jsonify(
-                {
-                    "status": "complete",
-                    "discussion_id": task_result["discussion_id"],
-                    "turn_count": task_result["turn_count"],
-                    "quality_score": task_result.get("quality_score"),
-                    "coverage_rate": task_result.get("coverage_rate"),
-                    "redirect_url": url_for(
-                        "training.discussions.audit",
-                        discussion_id=task_result["discussion_id"],
-                    ),
-                }
-            )
-        else:
-            return jsonify({"status": "error", "error": task_result.get("error")})
-    elif result.failed():
+    if result.failed():
         return jsonify({"status": "error", "error": str(result.result)})
+    elif result.ready():
+        task_result = result.get()
+        return jsonify(
+            {
+                "status": "complete",
+                "discussion_id": task_result["discussion_id"],
+                "turn_count": task_result["turn_count"],
+                "quality_score": task_result.get("quality_score"),
+                "coverage_rate": task_result.get("coverage_rate"),
+                "redirect_url": url_for(
+                    "training.discussions.audit",
+                    discussion_id=task_result["discussion_id"],
+                ),
+            }
+        )
     elif result.state == "PROGRESS":
         meta = result.info or {}
         return jsonify(
