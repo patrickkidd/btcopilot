@@ -191,6 +191,10 @@ def validate_pdp_deltas(
             errors.append(
                 f"Event {event.id} (kind={event.kind.value}) requires description"
             )
+        if not event.dateTime:
+            errors.append(
+                f"Event {event.id} (kind={event.kind.value}) requires dateTime"
+            )
 
     for pair_bond in deltas.pair_bonds:
         if (

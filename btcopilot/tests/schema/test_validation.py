@@ -52,6 +52,7 @@ def test_validate_deltas_valid_event_with_positive_person_id():
                 kind=EventKind.Shift,
                 person=1,
                 description="anxiety increased",
+                dateTime="2025-01-01",
                 anxiety=VariableShift.Up,
             )
         ]
@@ -69,6 +70,7 @@ def test_validate_deltas_valid_event_with_new_person_in_same_delta():
                 kind=EventKind.Shift,
                 person=-1,
                 description="anxiety increased",
+                dateTime="2025-01-01",
                 anxiety=VariableShift.Up,
             )
         ],
@@ -88,7 +90,7 @@ def test_validate_deltas_rejects_positive_id_for_person():
 def test_validate_deltas_rejects_positive_id_for_event():
     pdp = PDP()
     deltas = PDPDeltas(
-        events=[Event(id=1, kind=EventKind.Shift, person=1, description="x")]
+        events=[Event(id=1, kind=EventKind.Shift, person=1, description="x", dateTime="2025-01-01")]
     )
     with pytest.raises(PDPValidationError) as exc_info:
         validate_pdp_deltas(pdp, deltas)
@@ -116,7 +118,7 @@ def test_validate_deltas_detects_id_collision_in_delta():
     pdp = PDP()
     deltas = PDPDeltas(
         people=[Person(id=-1, name="Alice")],
-        events=[Event(id=-1, kind=EventKind.Shift, person=-1, description="x")],
+        events=[Event(id=-1, kind=EventKind.Shift, person=-1, description="x", dateTime="2025-01-01")],
     )
     with pytest.raises(PDPValidationError) as exc_info:
         validate_pdp_deltas(pdp, deltas)
@@ -141,7 +143,7 @@ def test_validate_deltas_detects_event_pair_bond_collision():
     """Event and pair_bond cannot share the same ID."""
     pdp = PDP()
     deltas = PDPDeltas(
-        events=[Event(id=-1, kind=EventKind.Shift, person=1, description="x")],
+        events=[Event(id=-1, kind=EventKind.Shift, person=1, description="x", dateTime="2025-01-01")],
         pair_bonds=[PairBond(id=-1, person_a=1, person_b=2)],
     )
     with pytest.raises(PDPValidationError) as exc_info:
@@ -155,7 +157,7 @@ def test_validate_deltas_detects_all_three_types_collision():
     pdp = PDP()
     deltas = PDPDeltas(
         people=[Person(id=-1, name="Alice")],
-        events=[Event(id=-1, kind=EventKind.Shift, person=-1, description="x")],
+        events=[Event(id=-1, kind=EventKind.Shift, person=-1, description="x", dateTime="2025-01-01")],
         pair_bonds=[PairBond(id=-1, person_a=1, person_b=2)],
     )
     with pytest.raises(PDPValidationError) as exc_info:
@@ -173,6 +175,7 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_person():
                 kind=EventKind.Shift,
                 person=-999,
                 description="anxiety increased",
+                dateTime="2025-01-01",
                 anxiety=VariableShift.Up,
             )
         ]
@@ -193,6 +196,7 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_spouse():
                 person=1,
                 spouse=-999,
                 description="wedding",
+                dateTime="2025-01-01",
             )
         ]
     )
@@ -212,6 +216,7 @@ def test_validate_deltas_rejects_pair_bond_event_without_spouse():
                 person=1,
                 spouse=None,
                 description="divorce",
+                dateTime="2025-01-01",
             )
         ]
     )
@@ -227,7 +232,7 @@ def test_validate_deltas_allows_offspring_without_spouse():
         deltas = PDPDeltas(
             events=[
                 Event(
-                    id=-1, kind=kind, person=1, child=1, spouse=None, description="x"
+                    id=-1, kind=kind, person=1, child=1, spouse=None, description="x", dateTime="2025-01-01"
                 )
             ]
         )
@@ -244,6 +249,7 @@ def test_validate_deltas_allows_moved_without_spouse():
                 person=1,
                 spouse=None,
                 description="relocation",
+                dateTime="2025-01-01",
             )
         ]
     )
@@ -261,6 +267,7 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_child():
                 spouse=2,
                 child=-999,
                 description="child born",
+                dateTime="2025-01-01",
             )
         ]
     )
@@ -279,6 +286,7 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_relationship_target(
                 kind=EventKind.Shift,
                 person=1,
                 description="conflict",
+                dateTime="2025-01-01",
                 relationship=RelationshipKind.Conflict,
                 relationshipTargets=[-999],
             )
@@ -299,6 +307,7 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_triangle_person():
                 kind=EventKind.Shift,
                 person=1,
                 description="triangulation",
+                dateTime="2025-01-01",
                 relationship=RelationshipKind.Inside,
                 relationshipTriangles=[1, -999],
             )
@@ -318,6 +327,16 @@ def test_validate_deltas_rejects_event_without_description():
     with pytest.raises(PDPValidationError) as exc_info:
         validate_pdp_deltas(pdp, deltas)
     assert any("requires description" in e for e in exc_info.value.errors)
+
+
+def test_validate_deltas_rejects_event_without_datetime():
+    pdp = PDP()
+    deltas = PDPDeltas(
+        events=[Event(id=-1, kind=EventKind.Shift, person=1, description="Got fired")],
+    )
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas)
+    assert any("requires dateTime" in e for e in exc_info.value.errors)
 
 
 def test_validate_deltas_rejects_person_with_nonexistent_pdp_parents():
@@ -340,6 +359,7 @@ def test_validate_deltas_multiple_errors():
                 person=-888,
                 spouse=-777,
                 description="x",
+                dateTime="2025-01-01",
             )
         ],
     )
@@ -358,6 +378,7 @@ def test_add_pdp_deltas_success():
                 kind=EventKind.Shift,
                 person=1,
                 description="anxiety increased",
+                dateTime="2025-01-01",
                 anxiety=VariableShift.Up,
             )
         ],
@@ -379,6 +400,7 @@ def test_add_pdp_deltas_failure():
                 kind=EventKind.Shift,
                 person=-999,
                 description="x",
+                dateTime="2025-01-01",
             )
         ]
     )
