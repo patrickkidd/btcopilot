@@ -790,10 +790,25 @@ class DiagramData:
                         self.pdp.people[child_idx], parents=pair_bond_id
                     )
 
+                child_id = event.child
+                if not child_id:
+                    child_id = self._next_pdp_id()
+                    child = Person(
+                        id=child_id,
+                        name=f"{person_name}'s child",
+                        parents=pair_bond_id,
+                    )
+                    self.pdp.people.append(child)
+                    _log.info(
+                        f"Created inferred child for {person_name}: child={child_id}"
+                    )
+
                 event_idx = next(
                     i for i, e in enumerate(self.pdp.events) if e.id == event_id
                 )
-                self.pdp.events[event_idx] = replace(event, spouse=spouse_id)
+                self.pdp.events[event_idx] = replace(
+                    event, spouse=spouse_id, child=child_id
+                )
 
             # Case 3: Birth with person/spouse but no child - create inferred child
             elif event.person and event.spouse and not event.child:

@@ -40,7 +40,7 @@ User's hand-written notes with additional context: [TODO.md](../../TODO.md)
 |-----------|--------|---------------|
 | Chat flow (Personal app) | Working | - |
 | PDP extraction (AI→deltas) | Working. F1 numbers stale (Dec 2025 GT snapshot, before Feb 2026 prompt overhaul adding 18 event + 2 PairBond examples). Actual current quality unknown — requires re-running F1 against cleaned GT. | 1, 2 |
-| Delta acceptance ("accept all") | Partially working. T0-1 emotionalunit crash fixed. Birth event child resolution bug remains (eventsFor called with None after ID remapping). childOf inference issues (T0-2) still open. | 1, 2 |
+| Delta acceptance ("accept all") | Working. T0-1 emotionalunit crash fixed. T0-2 phantom pair bonds fixed. T0-5 birth child resolution crash fixed. Accept-all no longer crashes on birth/separated/divorced events. | 1, 2 |
 | Diagram auto-arrange | Non-functional (LLM-based, unreliable) | 1, 2 |
 | Pro app file loading | T0-3 STALE — crash cannot be triggered by current code | 1, 2 |
 | Personal app timeline/clusters | Improved. Cluster label overlap fixed (T3-1), optimal zoom (T3-3), selection border added. | 2 |
@@ -66,8 +66,8 @@ These are crash-level blockers. Both goals fail immediately without them.
 | # | Task | Goal | Severity | Verified | Auto | File(s) | Notes |
 |---|------|------|----------|----------|------|---------|-------|
 | **T0-1** | ~~Fix emotionalunit.py crash on PDP accept~~ | 1, 2 | CRASH | 2026-02-20 ✅ | CC | `familydiagram/pkdiagram/scene/emotionalunit.py:34` | DONE. Guard added in `update()`. |
-| **T0-2** | Fix childOf bugs on accept (Conflict, Separated events) | 1, 2 | CRASH | 2026-02-20 ✓ | CC+H | `btcopilot/schema.py:674-830` | No code handles Shift/Conflict events in birth inference. Case 1 misfires on Separated creating phantom parents. Needs domain review of intended behavior. **2026-02-21**: Marriage crash was MCP harness bug (fixed in inspector.py). |
-| **T0-5** | Fix birth event child resolution crash in accept flow | 1, 2 | CRASH | 2026-02-24 | CC | `familydiagram/pkdiagram/scene/scene.py:527` | `_do_addItem` calls `eventsFor(person)` where `person = item.child()` returns None for birth events after ID remapping. Discovered during MCP harness testing. Blocks PDP accept-all for any diagram with birth events. |
+| ~~**T0-2**~~ | ~~Fix childOf bugs on accept (Conflict, Separated events)~~ | 1, 2 | ~~CRASH~~ | 2026-02-24 ✓ | CC+H | `btcopilot/schema.py` | **Not a bug**: `isPairBond()` correctly infers pair bonds for Separated/Divorced (those events imply the couple existed). Original MCP harness bug was fixed earlier in inspector.py. Pair bond inference validated with tests. |
+| ~~**T0-5**~~ | ~~Fix birth event child resolution crash in accept flow~~ | 1, 2 | ~~CRASH~~ | 2026-02-24 ✓ | CC | `btcopilot/schema.py:782-796` | **Fixed**: `_create_inferred_birth_items` Case 2 (person set, no spouse) created spouse but never created child, leaving `event.child=None`. Scene then crashed at `eventsFor(item.child())`. Fix: Case 2 now creates inferred child when `event.child` is unset. |
 | ~~**T0-3**~~ | ~~Fix Pro app pickle TypeError on version conflict~~ | ~~1, 2~~ | ~~CRASH~~ | 2026-02-20: STALE | - | `familydiagram/pkdiagram/server_types.py:295` | All code paths set `self.data` to `bytes`. Crash cannot be triggered by current code. Remove or demote to "monitor." |
 | **T0-4** | Fix Pro app FR-2 violation (applyChange overwrites Personal data) | 1, 2 | DATA LOSS | 2026-02-20 ✓ | CC+H | `familydiagram/pkdiagram/server_types.py`, `familydiagram/pkdiagram/models/serverfilemanagermodel.py:538` | `applyChange` ignores refreshed `diagramData` argument entirely — returns `DiagramData` from closed-over local bytes. Must merge PDP/cluster fields from server. Needs review of merge semantics. |
 
@@ -231,10 +231,10 @@ Start with the CC-automatable tasks that unblock the most downstream work:
 **Objective:** A user can accept all PDP items from a discussion without crashes, and the Pro app can open the resulting diagram file.
 
 1. ~~T0-1: Fix emotionalunit.py crash~~ DONE
-2. T0-2: Fix childOf edge cases — open, needs domain review
+2. ~~T0-2: Not a bug~~ — Separated/Divorced correctly infer pair bonds (2026-02-24)
 3. ~~T0-3: Fix pickle TypeError~~ STALE — removed
 4. T0-4: Fix FR-2 violation — open
-5. **T0-5: Fix birth event child resolution crash** — NEW, blocks accept-all
+5. ~~T0-5: Fix birth event child resolution crash~~ DONE (2026-02-24)
 6. ~~T1-3: Require Event.description~~ DONE
 7. T1-4: Require Event.dateTime — open
 
@@ -243,7 +243,7 @@ Start with the CC-automatable tasks that unblock the most downstream work:
 - ~~T1-2: Add event examples to prompt~~ DONE (Feb 2026)
 - ~~T1-5: Include current date in prompt~~ DONE
 
-**Status:** Blocked by T0-5 (accept-all crashes on birth events). T0-2 and T0-4 also open.
+**Status:** T0-2 and T0-5 crash blockers fixed. Accept-all no longer crashes. T0-4 and T1-4 still open.
 
 ### Sprint 2 (Week 2-4): Auto-Arrange + Extraction Quality
 
