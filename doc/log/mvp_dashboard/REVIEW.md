@@ -1,5 +1,7 @@
 # MVP Task Review Tracker
 
+Patrick's approval log for MVP Dashboard tasks. Each row records a Claude Code implementation attempt, Patrick's review decision, and any revision notes. Tasks require explicit Patrick approval before the dashboard is updated. "No-op" entries are tasks that were already done or couldn't be reproduced — logged here to prevent re-investigation.
+
 Cross-ref: [MVP_DASHBOARD.md](../../../MVP_DASHBOARD.md) | Task logs: `T*.md` in this directory
 
 Status: `pending` | `approved` | `rejected` | `revised`
@@ -24,3 +26,7 @@ Status: `pending` | `approved` | `rejected` | `revised`
 | T4-3 | [T4-3.md](T4-3.md) | DiscussionStatus enum + migration | `discussion.py`, migration | approved | Code reviewed, committed |
 | T4-5 | [T4-5.md](T4-5.md) | JSONDecodeError → ValueError | `synthetic.py` | approved | Code reviewed, committed |
 | T5-5 | [T5-5.md](T5-5.md) | SARF editor validation at save | `feedback.py`, `discussion.js` | approved | Code reviewed, committed |
+| T1-1 | — | PairBond extraction examples in fdserver prompt | `fdserver/prompts/private_prompts.py` | approved | 2026-02-24 staleness audit: 2 labeled examples (`[PAIR_BOND_EXTRACTION]`, `[PAIR_BOND_WITH_MARRIAGE_EVENT]`) + trigger rules already present. Done ~Feb 2026. |
+| T1-2 | — | Event extraction examples in fdserver prompt | `fdserver/prompts/private_prompts.py` | approved | 2026-02-24 staleness audit: 18 labeled examples covering over/under-extraction, births, shifts, anxiety, distance, death, duplicates, SARF, triangles. Done ~Feb 2026. |
+| T5-4 | — | Revert f1_metrics.py workarounds | — | approved | 2026-02-24 staleness audit: No workarounds exist to revert. Code cleanly skips unmatchable events (lines 625-626, 653-655). Task is N/A. |
+| T5-6 | — | Cumulative F1 metric | `btcopilot/training/f1_metrics.py` | approved | 2026-02-24 staleness audit: `calculate_cumulative_f1()` and `calculate_all_cumulative_f1()` fully implemented. Wired into admin (line 271) and audit (line 99) routes. |

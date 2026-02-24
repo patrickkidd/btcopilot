@@ -51,6 +51,26 @@ Other: [README.md](README.md), [doc/plans/](doc/plans/)
 
 **Key prompt engineering lessons** (details in PROMPT_ENGINEERING_LOG.md): model is Gemini 2.0 Flash; verbose definitions killed F1 scores; see log for what NOT to include in prompts.
 
+### MVP Dashboard Maintenance (MANDATORY)
+
+[MVP_DASHBOARD.md](MVP_DASHBOARD.md) is the primary dev punchlist. Each task links to a detailed analysis in [doc/analyses/](doc/analyses/) — read the linked analysis before re-investigating whether a bug still exists. The dashboard must be a reliable cold-start reference for new sessions.
+
+After completing or reviewing any MVP task:
+1. Update the task's row in the tier table (strikethrough if done, add DONE date/notes)
+2. Update [REVIEW.md](doc/log/mvp_dashboard/REVIEW.md) with approval/rejection decision
+3. Update the "Current State Summary" table if the subsystem status changed
+4. Update the sprint plan status if sprint-level progress changed
+
+After new bugs are discovered during testing:
+1. Create a T*.md in `doc/log/mvp_dashboard/`
+2. Add a row to the appropriate tier table in MVP_DASHBOARD.md
+3. Update "Current State Summary" if it affects subsystem status
+
+Additional rules:
+- **Anti-staleness**: Never trust dashboard task statuses at face value. Verify against actual code before working on a task. Add findings to the Spot-Check Log.
+- **No hardcoded F1 values**: F1 numbers are computed on-demand by admin/audit routes. Dashboard should reference measurement date and conditions, not bare numbers.
+- **Task status must match code reality**: If implementation already exists, mark it done regardless of when it was implemented.
+
 ### Synthetic Client Dev Log (MANDATORY)
 
 After ANY change to synthetic conversation generation, create a timestamped entry in `doc/log/synthetic-clients/`. See [README.md](doc/log/synthetic-clients/README.md) for triggers and format.
