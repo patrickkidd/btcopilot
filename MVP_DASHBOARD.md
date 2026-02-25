@@ -2,51 +2,53 @@
 
 ## How to Use This Document
 
-This is the primary development punchlist. It flows **goals → open tasks → reference material**.
+Primary development punchlist. Goals → open tasks → reference material.
 
-**Re-evaluation:** Prompt "Re-evaluate the dashboard goals based on [new insight/question]" at any time. Goals and priorities may shift as the product evolves.
-
-**Task workflow:** Pick the next open task under the highest-priority goal. Read the linked analysis before investigating. Mark done when verified. Never add defensive code — fix root causes.
+**Task workflow:** Pick the next open task under the highest-priority goal. Mark done when verified.
 
 **Legend:** CC = Claude Code. CC+H = CC implements, human reviews. H = Human only.
 
 ---
 
-## Goal 1: Synthetic E2E
+## Goal 1: Single-Prompt Extraction E2E
 
-Generate synthetic discussion → AI-extract PDP → accept all deltas → view diagram+timeline in Personal app.
+Full conversation → single LLM call → complete PDP → accept all → view diagram+timeline.
 
-**Status: Pipeline functional.** E2E verified 2026-02-24 (test_e2e_synthetic.py). Remaining tasks are quality measurement, not pipeline blockers. Known issue: over-extraction (too many events on same date) breaks clustering — needs GT round to measure and tune.
+**Status: Pivoting.** Delta-by-delta extraction replaced by single-prompt (decision 2026-02-24). Proven on discussion 48: Aggregate F1 0.45 vs 0.25 delta-by-delta. Events F1 0.29 vs 0.10. People deterministic (11 AI / 14 GT, 2 FP). Need to implement backend, wire into Personal app, and validate on fresh GT.
 
 ### Open Tasks
 
 | # | Task | Auto | Effort | Notes |
 |---|------|------|--------|-------|
-| T6-1 | Code GT for 3 synthetic discussions | H | ~6 hr | Generate 3 synthetic discussions, then manually code correct People/Events/PairBonds as ground truth in SARF editor. These become the first GT cases with known synthetic personas. |
-| T6-2 | Establish cumulative F1 baseline | CC+H | ~1 hr | Run cumulative F1 against the 3 new GT cases from T6-1. Records baseline scores for People, PairBond, Event, SARF extraction. All future prompt/extraction changes measured against this. |
-| T4-4 | Wire quality/coverage evaluators into Celery task | CC+H | ~2 hr | `result.quality` and `result.coverage` always None. [Analysis](doc/analyses/2026-02-20_synthetic_pipeline.md) |
-| T5-1 | Fix 18 GT events with person=None | H | ~3 hr | SARF editor. Assign correct person link per event. |
+| T7-1 | Implement `pdp.extract_full()` | CC | ~2 hr | New function in `btcopilot/pdp.py`. Full conversation → one gemini_structured call → PDPDeltas as complete PDP. Reuses existing prompt assembly + validation. [Plan](doc/plans/SINGLE_PROMPT_EXTRACTION.md) |
+| T7-2 | Add `/personal/discussions/<id>/extract` endpoint | CC | ~1 hr | New route. Calls `extract_full()`, stores result on diagram. No Celery needed. |
+| T7-3 | Remove per-statement extraction from `chat.py:ask()` | CC | ~30 min | Chat becomes chat-only. Drop `skip_extraction` param, remove `pdp.update()` call. |
+| T7-4 | Add "Build my diagram" button in Personal app QML | CC+H | ~2 hr | DiscussView.qml. Calls T7-2 endpoint, populates PDP sheet. |
+| T7-5 | Generate 3 fresh synthetic discussions | CC | ~30 min | New personas via existing synthetic pipeline. Replaces stale discussions 36/37/39. |
+| T7-6 | Code GT for 3 fresh discussions | H | ~3 hr | Patrick codes People/Events/PairBonds in SARF editor. ~60 min each. |
+| T7-7 | Validate single-prompt F1 on fresh GT | CC | ~30 min | Run `calculate_cumulative_f1()` on T7-5 discussions. Target: People > 0.7, Events > 0.3. |
+| T7-8 | Prompt-tune on single-prompt path | CC+H | ~2 hr | Iterate on `fdserver/prompts/private_prompts.py` using fresh GT from T7-6. Stable surface — one call, low variance. |
+| T5-1 | Fix 18 GT events with person=None | H | ~3 hr | SARF editor. Existing disc 48 GT cleanup. |
 | T5-2 | Fix 24 GT events with placeholder descriptions | H | ~4 hr | Read transcripts, write correct descriptions. |
-| T5-3 | Add dateCertainty to 88 GT events | H | ~2 hr | Low impact — F1 defaults to Approximate gracefully. |
-| T5-7 | Scale GT to 20-30 coded discussions | H | ~40+ hr | Clinician codes each discussion. Ongoing. |
 
 ### Done
 
-T0-1, T0-2, T0-3, T0-5 (crash blockers), T1-1 through T1-5 (extraction quality), T4-1 through T4-5 (synthetic pipeline), T5-4 through T5-6 (F1 infrastructure). T4-2 not needed (extraction is inline per-turn).
+T0-1, T0-2, T0-3, T0-5 (crash blockers), T1-1 through T1-5 (extraction quality), T4-1 through T4-5 (synthetic pipeline), T5-4 through T5-6 (F1 infrastructure), T6-2 (cumulative F1 baseline established 2026-02-24).
 
 ---
 
 ## Goal 2: Human Beta
 
-Hand Personal app to human → chat → accept PDP data → detect event clusters → view SARF shifts meaningfully.
+Hand Personal app to human → chat → tap "Build my diagram" → accept PDP → view diagram+timeline with clusters.
 
-**Status: Partially ready.** Chat, PDP drawer, timeline all functional. Missing: timeline→diagram event highlighting, SARF legend, onboarding.
+**Status: Blocked on Goal 1.** Chat, PDP drawer, timeline functional. Needs single-prompt extraction (Goal 1) wired in before beta handoff.
 
 ### Open Tasks
 
 | # | Task | Auto | Effort | Notes |
 |---|------|------|--------|-------|
 | T3-7 | Click event in timeline → highlight people in diagram | CC+H | ~3 hr | Signal plumbing between LearnView and scene. [Analysis](doc/analyses/2026-02-20_personal_app_beta_readiness.md) |
+| T8-1 | Beta test with 1 human user | H | ~2 hr | Patrick or trusted tester runs full flow: chat → build diagram → review → accept. Notes friction points. |
 
 ### Done
 
@@ -54,9 +56,11 @@ T3-1 through T3-6 (cluster overlap, selection, zoom, SARF format, Client/Coach l
 
 ---
 
-## Goal 3: Pro App Viewing (Deferred)
+## Goal 3: Pro App Viewing
 
-Open Personal-app-generated diagrams in the Pro app with correct layout. **Deferred** — Pro app is in production; avoid risky changes until Goals 1+2 validated.
+Open Personal-app-generated diagrams in the Pro app with correct layout.
+
+**Status: Blocked on Goal 2.** Avoid risky Pro app changes until Goals 1+2 validated.
 
 ### Open Tasks
 
@@ -76,11 +80,10 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Over-extraction (many events on same date) | Clusters become meaningless (single-day buckets) | New GT round with synthetic personas → measure F1 → tune prompts |
-| F1 stays low even with prompt tuning | Goal 2 users see wrong events | Scope MVP to People/PairBonds only; hide events until quality improves |
-| SARF variable F1=0.11 (non-functional) | Timeline shows wrong shift data | Hide SARF variables from user-facing views |
-| GT scaling is 40+ hrs manual labor | Blocks ability to measure improvement | Time-trial with cumulative coding workflow |
-| Auto-arrange is 2-3 weeks | Delays Goal 3 | Consider simpler generational Y-alignment only |
+| Single-prompt hits context limit on long conversations | Extraction fails or truncates | gemini-2.5-flash has 1M token context; typical discussion is ~30K chars. Monitor. |
+| Events F1 plateaus below 0.4 | Users see wrong events | Prompt-tune on stable single-prompt surface (T7-8). Fallback: hide events, show People/PairBonds only. |
+| GT coding bottleneck (Patrick only) | Limits measurement iterations | ~60 min/discussion is fast enough for 3-5 GT cases needed for MVP. |
+| Auto-arrange is 2-3 weeks | Delays Goal 3 | Consider simpler generational Y-alignment only. |
 
 ---
 
@@ -88,11 +91,11 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 
 | Metric | Last Measured | Target | Notes |
 |--------|-------------|--------|-------|
-| People F1 | 0.65 (Dec 2025, stale) | > 0.7 | Re-run after GT fix (T5-1/T5-2) |
-| PairBond F1 | 0.78 (Dec 2025, stale) | > 0.5 explicit | Prompt examples added Feb 2026 |
-| Event F1 | 0.09 (Dec 2025, stale) | > 0.4 | Unknown current score |
-| GT coded discussions | 3 | 20-30 | T5-7 |
-| E2E synthetic | Verified 2026-02-24 | > 95% automated | test_e2e_synthetic.py |
+| People F1 (cumulative) | 0.72 (Feb 2026, single-prompt, disc 48) | > 0.7 | At target. Validate on fresh GT. |
+| Event F1 (cumulative) | 0.29 (Feb 2026, single-prompt, disc 48) | > 0.4 | Below target. Prompt tuning on T7-8. |
+| PairBond F1 (cumulative) | 0.33 (Feb 2026, single-prompt, disc 48) | > 0.5 | Below target. |
+| GT coded discussions | 4 (disc 36/37/39/48) | 5-8 for MVP | T7-5 + T7-6 adds 3 fresh. |
+| E2E synthetic | Verified 2026-02-24 | Functional | test_e2e_synthetic.py |
 
 ---
 
@@ -122,7 +125,6 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 | Synthetic generation | `btcopilot/tests/personal/synthetic.py` |
 | E2E pipeline test | `btcopilot/tests/personal/test_e2e_synthetic.py` |
 | Personal app QML | `familydiagram/pkdiagram/resources/qml/Personal/` |
-| GT strategy | `btcopilot/doc/plans/GT_STRATEGY_REALIGNMENT.md` |
 | Decision log | `btcopilot/decisions/log.md` |
 | Hand-written notes | [TODO.md](../../TODO.md) |
 
@@ -132,7 +134,8 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 |------|---------|----------|
 | 2026-02-20 | T0-*, T2-1, T4-* | T0-3 STALE. T4 descriptions refined. |
 | 2026-02-24 | All open tasks | T0-4 deferred. T4-2 not needed. E2E pipeline verified. |
+| 2026-02-24 | Architecture pivot | Single-prompt extraction proven. Dashboard rewritten. See decision log 2026-02-24. |
 
 ### Deferred (Post-MVP)
 
-PlanView content, SARF variable editing, IRR study, fine-tuning, per-statement F1 diagnostics, conversation flow versioning, LLM model selection, PDF export, pattern intelligence, Add Notes to PDP (`btcopilot/doc/plans/ADD_NOTES_TO_PDP.md`).
+PlanView content, SARF variable editing, IRR study (Guillermo/Kathy), fine-tuning, per-statement F1 diagnostics, conversation flow versioning, LLM model selection, PDF export, pattern intelligence, Add Notes to PDP (`btcopilot/doc/plans/ADD_NOTES_TO_PDP.md`), per-statement delta extraction for training app.
