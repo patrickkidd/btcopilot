@@ -163,11 +163,11 @@ def test_validate_rejects_event_without_person():
     assert any("missing person link" in e for e in errors)
 
 
-def test_validate_rejects_event_with_placeholder_description():
+def test_validate_rejects_event_with_empty_description():
     errors = validate_extraction_for_approval({
-        "events": [{"kind": "shift", "person": 1, "description": "new event"}],
+        "events": [{"kind": "shift", "person": 1, "description": ""}],
     })
-    assert any("placeholder or empty description" in e for e in errors)
+    assert any("missing description" in e for e in errors)
 
 
 def test_validate_rejects_birth_without_child():
@@ -187,6 +187,20 @@ def test_validate_accepts_valid_event():
 def test_validate_accepts_valid_birth_event():
     errors = validate_extraction_for_approval({
         "events": [{"kind": "birth", "child": 2, "description": "born in 1990"}],
+    })
+    assert len(errors) == 0
+
+
+def test_validate_accepts_self_describing_kind_without_description():
+    errors = validate_extraction_for_approval({
+        "events": [{"kind": "married", "person": 1, "spouse": 2}],
+    })
+    assert len(errors) == 0
+
+
+def test_validate_accepts_death_without_description():
+    errors = validate_extraction_for_approval({
+        "events": [{"kind": "death", "person": 1}],
     })
     assert len(errors) == 0
 

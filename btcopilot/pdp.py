@@ -187,7 +187,7 @@ def validate_pdp_deltas(
             errors.append(
                 f"Delta event has positive ID {event.id} not in committed diagram"
             )
-        if not event.description:
+        if not event.description and not event.kind.isSelfDescribing():
             errors.append(
                 f"Event {event.id} (kind={event.kind.value}) requires description"
             )

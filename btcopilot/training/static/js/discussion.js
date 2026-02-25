@@ -1830,7 +1830,11 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
                 if (data.success) {
                     reloadPreservingParams(); // Reload to show updated approval status
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
+                    let msg = data.error || 'Unknown error';
+                    if (data.details && data.details.length) {
+                        msg += '\n\n' + data.details.map(e => `  - ${e}`).join('\n');
+                    }
+                    alert(msg);
                 }
             })
             .catch(error => {
@@ -1838,7 +1842,7 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
                 alert('Network error');
             });
         },
-        
+
         // Approve statement extraction function
         approveStatement(statementId) {
             fetch('/training/admin/approve-statement', {
@@ -1855,7 +1859,11 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
                 if (data.success) {
                     reloadPreservingParams(); // Reload to show updated approval status and mutual exclusivity
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
+                    let msg = data.error || 'Unknown error';
+                    if (data.details && data.details.length) {
+                        msg += '\n\n' + data.details.map(e => `  - ${e}`).join('\n');
+                    }
+                    alert(msg);
                 }
             })
             .catch(error => {
@@ -1863,7 +1871,7 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
                 alert('Network error');
             });
         },
-        
+
         // Unapprove feedback function
         unapproveFeedback(feedbackId) {
             fetch('/training/admin/unapprove-feedback', {
@@ -2059,7 +2067,19 @@ async function bulkApproveDiscussion() {
             alert(`${data.message}`);
             window.location.reload();
         } else {
-            alert(`Error: ${data.error || 'Unknown error'}`);
+            let msg = data.error || 'Unknown error';
+            if (data.details) {
+                const lines = [];
+                for (const [key, errs] of Object.entries(data.details)) {
+                    lines.push(`${key}:`);
+                    for (const err of errs) {
+                        lines.push(`  - ${err}`);
+                    }
+                    lines.push('');
+                }
+                msg += '\n\n' + lines.join('\n');
+            }
+            alert(msg);
         }
     } catch (error) {
         console.error('Bulk approval error:', error);
@@ -4176,7 +4196,11 @@ function toggleApproval(type, id) {
             // Update export button state
             updateExportButtonState();
         } else {
-            showNotification(data.error || 'Failed to update approval status', 'is-danger');
+            let msg = data.error || 'Failed to update approval status';
+            if (data.details && data.details.length) {
+                msg += ': ' + data.details.map(e => `  - ${e}`).join('\n');
+            }
+            showNotification(msg, 'is-danger');
         }
     })
     .catch(error => {
