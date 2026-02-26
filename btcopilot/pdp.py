@@ -3,6 +3,19 @@ import logging
 import os
 from datetime import date, datetime
 
+import json
+
+from btcopilot.extensions import ai_log
+from btcopilot.llmutil import gemini_structured
+from btcopilot.personal.models import SpeakerType
+from btcopilot.personal.prompts import (
+    DATA_EXTRACTION_PROMPT,
+    DATA_EXTRACTION_EXAMPLES,
+    DATA_EXTRACTION_CONTEXT,
+    DATA_EXTRACTION_CORRECTION,
+    DATA_FULL_EXTRACTION_CONTEXT,
+    DATA_IMPORT_CONTEXT,
+)
 from btcopilot.schema import (
     DiagramData,
     PDP,
@@ -344,7 +357,6 @@ def _export_validation_failure(
     source: str,
 ) -> None:
     """Export failed validation data to JSON for debugging."""
-    import json
     from pathlib import Path
 
     if os.getenv("FLASK_CONFIG") != "development":
@@ -421,8 +433,6 @@ def cumulative(discussion, up_to_statement, auditor_id: str | None = None) -> PD
     Returns:
         PDP with accumulated people, events, pair_bonds (cleaned of invalid/duplicate/orphaned)
     """
-    from btcopilot.personal.models import SpeakerType
-
     sorted_statements = sorted(
         discussion.statements, key=lambda s: (s.order or 0, s.id or 0)
     )
@@ -434,7 +444,7 @@ def cumulative(discussion, up_to_statement, auditor_id: str | None = None) -> PD
     # Get auditor feedback if requested
     feedback_by_stmt = {}
     if auditor_id and auditor_id != "AI":
-        from btcopilot.training.models import Feedback
+        from btcopilot.training.models import Feedback  # circular: training.routes.prompts imports pdp
 
         feedbacks = Feedback.query.filter(
             Feedback.statement_id.in_([s.id for s in sorted_statements]),
@@ -509,11 +519,6 @@ async def _extract_and_validate(
     large: bool = False,
 ) -> tuple[PDP, PDPDeltas]:
     """Submit extraction prompt to LLM, validate, retry up to MAX_EXTRACTION_RETRIES on failure."""
-    import json
-    from btcopilot.personal.prompts import DATA_EXTRACTION_CORRECTION
-    from btcopilot.extensions import ai_log
-    from btcopilot.llmutil import gemini_structured
-
     is_dev = os.getenv("FLASK_CONFIG") == "development"
     pdp = diagram_data.pdp
     current_prompt = prompt
@@ -559,17 +564,42 @@ async def _extract_and_validate(
     return new_pdp, pdp_deltas
 
 
+async def extract_full(
+    discussion,
+    diagram_data: DiagramData,
+) -> tuple[PDP, PDPDeltas]:
+    reference_date = (
+        discussion.discussion_date
+        if discussion.discussion_date
+        else datetime.now().date()
+    )
+
+    conversation_history = discussion.conversation_history()
+
+    _log.info(
+        f"PDP EXTRACT_FULL INPUTS:\n"
+        f"  conversation_history length: {len(conversation_history)}\n"
+        f"  diagram_data.pdp.people: {[p.name for p in diagram_data.pdp.people]}\n"
+        f"  diagram_data.pdp.events count: {len(diagram_data.pdp.events)}\n"
+        f"  diagram_data.people count: {len(diagram_data.people)}\n"
+    )
+
+    prompt = (
+        DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
+        + DATA_EXTRACTION_EXAMPLES
+        + DATA_FULL_EXTRACTION_CONTEXT.format(
+            diagram_data=asdict(diagram_data),
+            conversation_history=conversation_history,
+        )
+    )
+    return await _extract_and_validate(prompt, diagram_data, "extract_full", large=True)
+
+
 async def import_text(
     diagram_data: DiagramData,
     text: str,
     reference_date: date | None = None,
 ) -> tuple[PDP, PDPDeltas]:
-    from btcopilot.personal.prompts import (
-        DATA_EXTRACTION_PROMPT,
-        DATA_EXTRACTION_EXAMPLES,
-        DATA_IMPORT_CONTEXT,
-    )
-
     if reference_date is None:
         reference_date = datetime.now().date()
 
@@ -610,12 +640,6 @@ async def update(
         up_to_order: If provided, only include conversation history up to this order.
                     Used during batch extraction to avoid seeing future statements.
     """
-    from btcopilot.personal.prompts import (
-        DATA_EXTRACTION_PROMPT,
-        DATA_EXTRACTION_EXAMPLES,
-        DATA_EXTRACTION_CONTEXT,
-    )
-
     reference_date = (
         discussion.discussion_date
         if discussion.discussion_date

@@ -24,10 +24,12 @@ Full conversation → single LLM call → complete PDP → accept all → view d
 | T7-2 | Add `/personal/discussions/<id>/extract` endpoint | CC | ~1 hr | New route. Calls `extract_full()`, stores result on diagram. No Celery needed. |
 | T7-3 | Remove per-statement extraction from `chat.py:ask()` | CC | ~30 min | Chat becomes chat-only. Drop `skip_extraction` param, remove `pdp.update()` call. |
 | T7-4 | Add "Build my diagram" button in Personal app QML | CC+H | ~2 hr | DiscussView.qml. Calls T7-2 endpoint, populates PDP sheet. |
-| T7-5 | Generate 3 fresh synthetic discussions | CC | ~30 min | New personas via existing synthetic pipeline. Replaces stale discussions 36/37/39. |
-| T7-6 | Code GT for 3 fresh discussions | H | ~3 hr | Patrick codes People/Events/PairBonds in SARF editor. ~60 min each. |
+| T7-5 | Code GT for fresh discussions | H | ~3 hr | Patrick codes People/Events/PairBonds in SARF editor. ~60 min each. Synthetic discussions already generated in prod. |
 | T7-7 | Validate single-prompt F1 on fresh GT | CC | ~30 min | Run `calculate_cumulative_f1()` on T7-5 discussions. Target: People > 0.7, Events > 0.3. |
-| T7-8 | Prompt-tune on single-prompt path | CC+H | ~2 hr | Iterate on `fdserver/prompts/private_prompts.py` using fresh GT from T7-6. Stable surface — one call, low variance. |
+| T7-8 | Prompt-tune on single-prompt path | CC+H | ~2 hr | Iterate on `fdserver/prompts/private_prompts.py` using fresh GT from T7-5. Stable surface — one call, low variance. |
+| T7-9 | Validate idempotent re-extraction (no duplication after accept) | CC | ~1 hr | Chat → extract → accept all → extract again → verify no duplicate people/events vs committed items. Tests LLM-based dedup in `DATA_FULL_EXTRACTION_CONTEXT`. |
+| T7-10 | Fix birth event self-reference bug | CC+H | ~2 hr | Birth events set person=child (person births themselves). Should set person=parent, child=born person, create parent PairBonds, infer sibling relationships from existing data. Prompt rules, examples, and validation all need updating. Needs design discussion first. |
+| T7-11 | Fix extraction dedup against committed items | CC+H | ~2 hr | `extract_full` re-extracts people/events already committed in `diagram_data`. LLM prompt says "avoid duplicates with committed items" but isn't working. May need rules-based post-filter in `_extract_and_validate` or `apply_deltas` to strip entries matching committed IDs/names, not just prompt reliance. |
 | T5-1 | Fix 18 GT events with person=None | H | ~3 hr | SARF editor. Existing disc 48 GT cleanup. |
 | T5-2 | Fix 24 GT events with placeholder descriptions | H | ~4 hr | Read transcripts, write correct descriptions. |
 

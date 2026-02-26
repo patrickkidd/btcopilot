@@ -787,9 +787,7 @@ class ConversationSimulator:
                     )
 
                 # ask_fn creates both user and AI statements internally
-                response = ask_fn(
-                    _discussion, user_text, skip_extraction=self.skip_extraction
-                )
+                response = ask_fn(_discussion, user_text)
                 ai_text = response.statement
                 turns.append(Turn(speaker="ai", text=ai_text))
 

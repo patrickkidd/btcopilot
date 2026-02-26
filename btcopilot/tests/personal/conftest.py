@@ -1,10 +1,9 @@
 import contextlib
 
 import pytest
-from mock import patch, AsyncMock
+from mock import patch
 
 from btcopilot.extensions import db
-from btcopilot.schema import PDP, PDPDeltas, from_dict
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.tests.pro.conftest import pro_client, subscriber, admin
 
@@ -29,16 +28,7 @@ def chat_flow(request):
         if marker is not None:
 
             response = marker.kwargs.get("response", "some response")
-            pdp_dict = marker.kwargs.get("pdp", {})
-            pdp_obj = from_dict(PDP, pdp_dict) if pdp_dict else PDP()
-            pdp = (pdp_obj, PDPDeltas())
 
-            stack.enter_context(
-                patch(
-                    "btcopilot.pdp.update",
-                    AsyncMock(return_value=pdp),
-                )
-            )
             stack.enter_context(
                 patch(
                     "btcopilot.personal.chat._generate_response",
@@ -47,7 +37,6 @@ def chat_flow(request):
             )
             ret = {
                 "response": response,
-                "pdp": pdp,
             }
         else:
             ret = None

@@ -4,10 +4,11 @@ import pickle
 from flask import Blueprint, jsonify, request, abort
 from sqlalchemy.orm import subqueryload
 
-from btcopilot import auth
+from btcopilot import auth, pdp
+from btcopilot.async_utils import one_result
 from btcopilot.extensions import db
-from btcopilot.schema import asdict
 from btcopilot.pro.models import Diagram
+from btcopilot.schema import PDP, asdict
 from btcopilot.personal import Response, ask
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
 
@@ -64,7 +65,6 @@ def create():
 
     ret = discussion.as_dict(include=["speakers", "statements"])
     if "statement" in data:
-        ret["pdp"] = asdict(response.pdp)
         ret["statement"] = response.statement
 
     return jsonify(ret)
@@ -196,7 +196,36 @@ def chat(discussion_id: int):
 
     db.session.commit()
 
-    return jsonify({"statement": response.statement, "pdp": asdict(response.pdp)})
+    return jsonify({"statement": response.statement})
+
+
+@bp.route("/<int:discussion_id>/extract", methods=["POST"])
+def extract(discussion_id: int):
+    user = auth.current_user()
+
+    discussion = Discussion.query.get(discussion_id)
+    if not discussion:
+        abort(404)
+    if discussion.user_id != user.id:
+        abort(401)
+    if not discussion.diagram:
+        abort(400, description="Discussion has no diagram attached")
+
+    diagram_data = discussion.diagram.get_diagram_data()
+    diagram_data.pdp = PDP()
+    new_pdp, deltas = one_result(pdp.extract_full(discussion, diagram_data))
+
+    diagram_data.pdp = new_pdp
+    discussion.diagram.set_diagram_data(diagram_data)
+    db.session.commit()
+
+    return jsonify(
+        success=True,
+        people_count=len(new_pdp.people),
+        events_count=len(new_pdp.events),
+        pair_bonds_count=len(new_pdp.pair_bonds),
+        pdp=asdict(new_pdp),
+    )
 
 
 # @bp.route("/<int:discussion_id>/statements", methods=["GET"])
