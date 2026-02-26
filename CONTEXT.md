@@ -8,7 +8,12 @@ backend for the Family Diagram app.
 
 See [doc/specs/BOWEN_THEORY.md](doc/specs/BOWEN_THEORY.md) for Bowen theory constructs, SARF variables, data model hierarchy, domain constraints, and error prioritization.
 
-## Auditing System Architecture
+## Auditing System Architecture (Training App Only)
+
+**Note**: The auditing system and per-statement `pdp_deltas` are used only by
+the training app for GT coding. The Personal app uses endpoint-driven
+single-prompt extraction (`pdp.extract_full()`) — no per-statement deltas. See
+[doc/specs/PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md).
 
 ### CRITICAL INVARIANT: Source Isolation
 

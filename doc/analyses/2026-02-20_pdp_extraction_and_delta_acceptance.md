@@ -4,23 +4,42 @@
 
 ## Current State
 
-The PDP pipeline is functionally complete but with significant quality gaps and edge case crashes. The architecture (two-tier delta system) is sound.
+**Updated 2026-02-26**: The Personal app pivoted from per-statement delta
+extraction to single-prompt extraction on 2026-02-24. See
+[decisions/log.md](../decisions/log.md) entry for rationale.
+
+The PDP pipeline is functionally complete with two extraction modes:
+- **Single-prompt** (Personal app): `pdp.extract_full()` — full conversation in
+  one LLM call, dramatically better F1.
+- **Per-statement** (Training app): `pdp.update()` — sparse deltas per
+  statement, used for GT coding workflows.
 
 ## Extraction Pipeline
+
+### Single-Prompt Results (2026-02-24, disc 48)
+| Entity | F1 |
+|--------|-----|
+| People | 0.72 |
+| PairBonds | 0.33 |
+| Events | 0.29 |
+| Aggregate | 0.45 |
+
+vs per-statement: Aggregate 0.25, Events 0.10.
 
 ### What Works
 - ID collision handling (`reassign_delta_ids()` in pdp.py:38-123)
 - Retry loop with validation (pdp.py:473-527, 3 retries on validation failure)
 - Comprehensive validation (pdp.py:125-305)
 - Sparse delta handling (only changed fields via `model_fields_set`)
+- Single-prompt extraction produces complete, coherent PDP in one call
 
-### What Doesn't Work
-- **Event extraction F1 = 0.09** (Precision 9%, Recall 8%). Prompt lacks event examples.
-- **Zero PairBond extraction by AI** (F1 = 0.0). No positive examples in fdserver prompt. Fallback inference at commit time handles some cases.
-- **SARF variable F1 = 0.11** (non-functional). Model isn't learning S/A/R/F coding.
+### Known Issues
+- **LLM-based dedup unreliable**: Prompt includes committed items but LLM
+  sometimes re-extracts them anyway. May need rules-based post-filter.
+- **Birth event self-reference**: Prompt says `person = who was BORN, child =
+  same ID`, causing person to birth themselves. Needs design fix.
 - **Event descriptions can be null** (pdp.py:187-191 warns but doesn't reject)
-- **No date enforcement** — dateTime can be null, breaking timeline positioning and F1 matching
-- **Conversation history usage unclear** — prompt includes history but no guidance on leveraging it
+- **No date enforcement** — dateTime can be null, breaking timeline positioning
 
 ## Delta Acceptance Flow
 
@@ -51,7 +70,15 @@ The PDP pipeline is functionally complete but with significant quality gaps and 
 
 ## F1 Evaluation
 
-### Current Metrics (45 statements, 3 discussions)
+### Current Metrics — Single-Prompt (2026-02-24, disc 48)
+| Entity | F1 |
+|--------|-----|
+| People | 0.72 |
+| PairBonds | 0.33 |
+| Events | 0.29 |
+| Aggregate | 0.45 |
+
+### Legacy Per-Statement Metrics (2026-02-20, 45 statements, 3 discussions)
 | Entity | Precision | Recall | F1 |
 |--------|-----------|--------|-----|
 | People | 77% | 56% | 0.65 |
@@ -59,9 +86,9 @@ The PDP pipeline is functionally complete but with significant quality gaps and 
 | Events | 9% | 8% | 0.09 |
 | SARF Variables | - | - | 0.11 |
 
-### Cumulative vs Per-Statement
-- Per-statement F1 indistinguishable across 6 prompt iterations (0.217-0.243 ±0.03)
-- Cumulative F1 not yet implemented (measures what user actually sees after "accept all")
+### Notes
+- Single-prompt is the primary extraction path going forward
+- Per-statement F1 plateaued across 6 prompt iterations (0.217-0.243 ±0.03)
 - GT data quality: ~40% of 88 GT events structurally unmatchable
 
 ## Test Coverage
@@ -79,12 +106,14 @@ The PDP pipeline is functionally complete but with significant quality gaps and 
 - No test for Moved event pair bond inference
 
 ## Key Files
-| Component | File | Lines |
+| Component | File | Notes |
 |-----------|------|-------|
-| Core extraction | btcopilot/pdp.py | 565-614 |
-| Validation | btcopilot/pdp.py | 125-305 |
-| commit_pdp_items() | btcopilot/schema.py | 463-571 |
-| Birth inference | btcopilot/schema.py | 674-830 |
-| Default prompts | btcopilot/personal/prompts.py | 247-687 |
-| Chat integration | btcopilot/personal/chat.py | 24-90 |
-| F1 metrics | btcopilot/training/f1_metrics.py | 1-1257 |
+| Single-prompt extraction | btcopilot/pdp.py | `extract_full()` |
+| Per-statement extraction | btcopilot/pdp.py | `update()` (training app) |
+| Validation | btcopilot/pdp.py | `validate_pdp_deltas()` |
+| commit_pdp_items() | btcopilot/schema.py | Acceptance/commit logic |
+| Birth inference | btcopilot/schema.py | `_create_inferred_birth_items()` |
+| Default prompts | btcopilot/personal/prompts.py | Overridden by fdserver |
+| Chat (chat-only) | btcopilot/personal/chat.py | `ask()` — no extraction |
+| Extract endpoint | btcopilot/personal/routes/discussions.py | `POST /extract` |
+| F1 metrics | btcopilot/training/f1_metrics.py | |

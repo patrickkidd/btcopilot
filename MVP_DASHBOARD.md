@@ -14,16 +14,12 @@ Primary development punchlist. Goals → open tasks → reference material.
 
 Full conversation → single LLM call → complete PDP → accept all → view diagram+timeline.
 
-**Status: Pivoting.** Delta-by-delta extraction replaced by single-prompt (decision 2026-02-24). Proven on discussion 48: Aggregate F1 0.45 vs 0.25 delta-by-delta. Events F1 0.29 vs 0.10. People deterministic (11 AI / 14 GT, 2 FP). Need to implement backend, wire into Personal app, and validate on fresh GT.
+**Status: Backend + UI implemented.** Single-prompt extraction (`pdp.extract_full()`) and extract endpoint live. Chat is chat-only. Personal app has extract button + PDP "Refresh" button. PDP cleared before each re-extraction for idempotency. Need to validate on fresh GT and prompt-tune.
 
 ### Open Tasks
 
 | # | Task | Auto | Effort | Notes |
 |---|------|------|--------|-------|
-| T7-1 | Implement `pdp.extract_full()` | CC | ~2 hr | New function in `btcopilot/pdp.py`. Full conversation → one gemini_structured call → PDPDeltas as complete PDP. Reuses existing prompt assembly + validation. [Plan](doc/plans/SINGLE_PROMPT_EXTRACTION.md) |
-| T7-2 | Add `/personal/discussions/<id>/extract` endpoint | CC | ~1 hr | New route. Calls `extract_full()`, stores result on diagram. No Celery needed. |
-| T7-3 | Remove per-statement extraction from `chat.py:ask()` | CC | ~30 min | Chat becomes chat-only. Drop `skip_extraction` param, remove `pdp.update()` call. |
-| T7-4 | Add "Build my diagram" button in Personal app QML | CC+H | ~2 hr | DiscussView.qml. Calls T7-2 endpoint, populates PDP sheet. |
 | T7-5 | Code GT for fresh discussions | H | ~3 hr | Patrick codes People/Events/PairBonds in SARF editor. ~60 min each. Synthetic discussions already generated in prod. |
 | T7-7 | Validate single-prompt F1 on fresh GT | CC | ~30 min | Run `calculate_cumulative_f1()` on T7-5 discussions. Target: People > 0.7, Events > 0.3. |
 | T7-8 | Prompt-tune on single-prompt path | CC+H | ~2 hr | Iterate on `fdserver/prompts/private_prompts.py` using fresh GT from T7-5. Stable surface — one call, low variance. |
@@ -35,15 +31,15 @@ Full conversation → single LLM call → complete PDP → accept all → view d
 
 ### Done
 
-T0-1, T0-2, T0-3, T0-5 (crash blockers), T1-1 through T1-5 (extraction quality), T4-1 through T4-5 (synthetic pipeline), T5-4 through T5-6 (F1 infrastructure), T6-2 (cumulative F1 baseline established 2026-02-24).
+T0-1, T0-2, T0-3, T0-5 (crash blockers), T1-1 through T1-5 (extraction quality), T4-1 through T4-5 (synthetic pipeline), T5-4 through T5-6 (F1 infrastructure), T6-2 (cumulative F1 baseline established 2026-02-24), T7-1 (`extract_full()` implemented), T7-2 (extract endpoint), T7-3 (chat-only, extraction removed), T7-4 (extract button + PDP Refresh button in Personal app).
 
 ---
 
 ## Goal 2: Human Beta
 
-Hand Personal app to human → chat → tap "Build my diagram" → accept PDP → view diagram+timeline with clusters.
+Hand Personal app to human → chat → tap extract button → accept PDP → view diagram+timeline with clusters.
 
-**Status: Blocked on Goal 1.** Chat, PDP drawer, timeline functional. Needs single-prompt extraction (Goal 1) wired in before beta handoff.
+**Status: Blocked on Goal 1 validation.** Chat, PDP drawer, timeline, extract button all functional. Needs GT validation (T7-5/T7-7) and prompt tuning (T7-8) before beta handoff.
 
 ### Open Tasks
 
@@ -96,7 +92,7 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 | People F1 (cumulative) | 0.72 (Feb 2026, single-prompt, disc 48) | > 0.7 | At target. Validate on fresh GT. |
 | Event F1 (cumulative) | 0.29 (Feb 2026, single-prompt, disc 48) | > 0.4 | Below target. Prompt tuning on T7-8. |
 | PairBond F1 (cumulative) | 0.33 (Feb 2026, single-prompt, disc 48) | > 0.5 | Below target. |
-| GT coded discussions | 4 (disc 36/37/39/48) | 5-8 for MVP | T7-5 + T7-6 adds 3 fresh. |
+| GT coded discussions | 4 (disc 36/37/39/48) | 5-8 for MVP | T7-5 adds fresh GT coding. |
 | E2E synthetic | Verified 2026-02-24 | Functional | test_e2e_synthetic.py |
 
 ---
@@ -119,9 +115,11 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 
 | Component | Location |
 |-----------|----------|
-| PDP extraction + validation | `btcopilot/pdp.py` |
-| Delta acceptance | `btcopilot/schema.py:463-976` |
-| Chat orchestration | `btcopilot/personal/chat.py` |
+| Single-prompt extraction | `btcopilot/pdp.py` (`extract_full()`) |
+| Extract endpoint | `btcopilot/personal/routes/discussions.py` (`POST /extract`) |
+| PDP validation | `btcopilot/pdp.py` (`validate_pdp_deltas()`) |
+| Delta acceptance | `btcopilot/schema.py` (`commit_pdp_items()`) |
+| Chat (chat-only) | `btcopilot/personal/chat.py` (`ask()`) |
 | Extraction prompts | `btcopilot/personal/prompts.py` (defaults), `fdserver/prompts/` (production) |
 | F1 metrics | `btcopilot/training/f1_metrics.py` |
 | Synthetic generation | `btcopilot/tests/personal/synthetic.py` |
@@ -137,6 +135,7 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 | 2026-02-20 | T0-*, T2-1, T4-* | T0-3 STALE. T4 descriptions refined. |
 | 2026-02-24 | All open tasks | T0-4 deferred. T4-2 not needed. E2E pipeline verified. |
 | 2026-02-24 | Architecture pivot | Single-prompt extraction proven. Dashboard rewritten. See decision log 2026-02-24. |
+| 2026-02-26 | T7-1 through T7-4 | Implemented and moved to Done. Extract button + PDP Refresh in Personal app. Chat is chat-only. PDP cleared before re-extraction. All architecture docs updated. |
 
 ### Deferred (Post-MVP)
 
