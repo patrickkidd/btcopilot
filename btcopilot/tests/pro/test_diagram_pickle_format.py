@@ -71,6 +71,7 @@ def test_pickle_contains_json_serializable_dicts(db_session, test_user):
             "pair_bonds": [],
         },
         "lastItemId": 2,
+        "pair_bonds": [],
     }
 
     pickled_data = pickle.loads(diagram.data)

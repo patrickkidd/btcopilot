@@ -225,6 +225,15 @@ ID collisions across entity types.
 - One event per variable shift (merge by timestamp + people + variables)
 - Relationship events require `relationshipTargets` or `relationshipTriangles`
 - Triangle requires 2 inside + 1 outside (or vice versa)
+- `birth`/`adopted` use `child` field; all other kinds use `person` field
+- PairBond kinds (`married`, `bonded`, `separated`, `divorced`) require `spouse`
+
+### Event.description Rules (source of truth: Pro app `Event.updateDescription`)
+- **Self-describing kinds** (`EventKind.isSelfDescribing()`): `birth`, `adopted`,
+  `married`, `separated`, `divorced`, `bonded`, `moved`, `death` — description
+  auto-generated from kind name. `moved` uses `"Moved to {location}"`.
+  User-typed description not required.
+- **`shift`**: description **required** — describes what happened
 
 ### Confidence Levels
 - 1.0 = committed diagram item

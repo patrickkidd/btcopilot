@@ -201,6 +201,19 @@ class EventKind(enum.Enum):
             self.Divorced,
         )
 
+    def isSelfDescribing(self) -> bool:
+        """Kind name is the description; Event.description not required."""
+        return self in (
+            self.Birth,
+            self.Adopted,
+            self.Married,
+            self.Separated,
+            self.Divorced,
+            self.Bonded,
+            self.Moved,
+            self.Death,
+        )
+
     def isOffspring(self) -> bool:
         return self in (self.Birth, self.Adopted)
 
@@ -476,6 +489,7 @@ class DiagramData:
         # Create inferred items before gathering transitive refs
         self._create_inferred_birth_items(item_ids)
         self._create_inferred_pair_bond_items(item_ids)
+        self._repair_dangling_parents(item_ids)
 
         all_item_ids = self._get_transitive_pdp_references(item_ids)
 
@@ -789,10 +803,25 @@ class DiagramData:
                         self.pdp.people[child_idx], parents=pair_bond_id
                     )
 
+                child_id = event.child
+                if not child_id:
+                    child_id = self._next_pdp_id()
+                    child = Person(
+                        id=child_id,
+                        name=f"{person_name}'s child",
+                        parents=pair_bond_id,
+                    )
+                    self.pdp.people.append(child)
+                    _log.info(
+                        f"Created inferred child for {person_name}: child={child_id}"
+                    )
+
                 event_idx = next(
                     i for i, e in enumerate(self.pdp.events) if e.id == event_id
                 )
-                self.pdp.events[event_idx] = replace(event, spouse=spouse_id)
+                self.pdp.events[event_idx] = replace(
+                    event, spouse=spouse_id, child=child_id
+                )
 
             # Case 3: Birth with person/spouse but no child - create inferred child
             elif event.person and event.spouse and not event.child:
@@ -867,6 +896,22 @@ class DiagramData:
                 f"Created inferred pair bond {pair_bond.id} for {event.kind.value} event {event_id}: "
                 f"person_a={pair_bond.person_a}, person_b={pair_bond.person_b}"
             )
+
+    def _repair_dangling_parents(self, item_ids: list[int]) -> None:
+        """Nullify person.parents that reference non-existent PDP pair bonds."""
+        from btcopilot.pdp import get_all_pdp_item_ids
+
+        pdp_item_ids = get_all_pdp_item_ids(self.pdp)
+        for person in self.pdp.people:
+            if (
+                person.parents is not None
+                and person.parents < 0
+                and person.parents not in pdp_item_ids
+            ):
+                _log.warning(
+                    f"Person {person.id} has dangling parents={person.parents}, clearing"
+                )
+                person.parents = None
 
     def _get_transitive_pdp_references(self, item_ids: list[int]) -> set[int]:
         from btcopilot.pdp import get_all_pdp_item_ids

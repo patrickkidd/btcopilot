@@ -3,11 +3,11 @@
 **Date:** YYYY-MM-DD
 **Attendees:** Patrick, Laura, Kathy, Guillermo
 **Case:** [case name]
-**Statements reviewed:** [range or list]
+**Statements reviewed:** [IDs, e.g. 1844, 1846]
 
 ## Disagreements
 
-### Statement N: "[quote or summary]"
+### Statement [ID]: "[quote or summary]"
 
 | Coder | S | A | R | F |
 |-------|---|---|---|---|

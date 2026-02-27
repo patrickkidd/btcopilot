@@ -100,15 +100,9 @@ class Diagram(db.Model, ModelMixin):
         data["pdp"] = asdict(diagram_data.pdp)
         data["lastItemId"] = diagram_data.lastItemId
 
-        # Write outer people/events/pair_bonds as raw dicts (if provided)
-        # Pro app: btcopilot never modifies these (FD manages them)
-        # Personal app: btcopilot may write to these after commits
-        if diagram_data.people:
-            data["people"] = diagram_data.people
-        if diagram_data.events:
-            data["events"] = diagram_data.events
-        if diagram_data.pair_bonds:
-            data["pair_bonds"] = diagram_data.pair_bonds
+        data["people"] = diagram_data.people
+        data["events"] = diagram_data.events
+        data["pair_bonds"] = diagram_data.pair_bonds
 
         self.data = pickle.dumps(data)
 
@@ -163,12 +157,9 @@ class Diagram(db.Model, ModelMixin):
             data = pickle.loads(self.data) if self.data else {}
             data["pdp"] = asdict(diagram_data.pdp)
             data["lastItemId"] = diagram_data.lastItemId
-            if diagram_data.people:
-                data["people"] = diagram_data.people
-            if diagram_data.events:
-                data["events"] = diagram_data.events
-            if diagram_data.pair_bonds:
-                data["pair_bonds"] = diagram_data.pair_bonds
+            data["people"] = diagram_data.people
+            data["events"] = diagram_data.events
+            data["pair_bonds"] = diagram_data.pair_bonds
             data_to_save = pickle.dumps(data)
         else:
             return (False, None)
