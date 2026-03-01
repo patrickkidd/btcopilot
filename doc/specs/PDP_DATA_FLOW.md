@@ -6,12 +6,12 @@ For the data structures themselves, see [DATA_MODEL.md](DATA_MODEL.md).
 For how diagram data syncs between apps and server, see
 [DATA_SYNC_FLOW.md](../../../familydiagram/doc/specs/DATA_SYNC_FLOW.md).
 
-## Two-Tier Delta Architecture
+## Two-Tier Architecture
 
-PDP operates as a two-tier delta system:
+PDP operates as a two-tier system:
 
-- **Tier 1 (per-statement)**: AI extraction produces `PDPDeltas` for each user
-  statement, applied to the PDP via `apply_deltas()`.
+- **Tier 1 (extraction → PDP)**: AI extraction produces `PDPDeltas` applied to
+  the PDP via `apply_deltas()`. Two extraction modes exist (see below).
 - **Tier 2 (PDP → diagram)**: The accumulated PDP contains deltas for the
   committed diagram data, applied when the user accepts items via
   `commit_pdp_items()`.
@@ -19,28 +19,58 @@ PDP operates as a two-tier delta system:
 Both tiers can reference committed diagram items (positive IDs) or PDP items
 (negative IDs).
 
-## Extraction Pipeline
+## Extraction Pipelines
 
-### Chat Flow
+### Personal App: Single-Prompt Extraction (Primary)
 
-1. User submits statement via Personal app
-2. Server loads current DiagramData from diagram blob
-3. `pdp.update()` compiles prompt with diagram state + conversation history +
-   new statement, calls LLM
-4. LLM returns `PDPDeltas` (JSON-structured response)
-5. `apply_deltas(diagram_data.pdp, pdp_deltas)` → updated PDP
-6. Updated PDP written back to diagram blob
-7. `PDPDeltas` stored as JSON in `Statement.pdp_deltas` column
-8. Response + updated PDP returned to client
+As of 2026-02-24, the Personal app uses endpoint-driven single-prompt
+extraction. Chat is chat-only — no extraction during conversation.
+
+1. User chats with AI coach (no extraction happens during chat)
+2. User taps extract button (or "Refresh" in PDP drawer)
+3. `POST /personal/discussions/<id>/extract` called
+4. Endpoint clears existing PDP (`diagram_data.pdp = PDP()`) for idempotent
+   re-extraction
+5. `pdp.extract_full(discussion, diagram_data)` sends full conversation history
+   + committed diagram data to LLM in one call
+6. LLM returns `PDPDeltas` — a complete extraction of the entire conversation
+7. `apply_deltas(empty_pdp, pdp_deltas)` → fresh PDP
+8. Updated PDP written back to diagram blob
+9. Fresh PDP returned to client
+
+```
+User taps extract button
+    → POST /personal/discussions/<id>/extract
+        → diagram_data.pdp = PDP()  # clear for idempotency
+        → pdp.extract_full(discussion, diagram_data)
+            → LLM (full conversation) → PDPDeltas
+        → apply_deltas(empty_pdp, pdp_deltas) → new PDP
+        → diagram.set_diagram_data(updated)
+```
+
+**Idempotency**: Each extraction re-extracts the entire conversation, producing
+a fresh PDP. Committed items are included in the prompt (`{diagram_data}`) so
+the LLM avoids duplicating them.
+
+**No cursor/up_to_order**: There is no incremental extraction. The LLM sees the
+full conversation every time.
+
+### Training App: Per-Statement Extraction (Legacy)
+
+The training app still uses per-statement extraction for GT coding workflows,
+where `Statement.pdp_deltas` stores per-statement deltas for auditor review.
+
+1. User submits statement via training interface
+2. `pdp.update()` extracts deltas for that single statement
+3. `PDPDeltas` stored in `Statement.pdp_deltas` column
+4. `apply_deltas(current_pdp, pdp_deltas)` → updated PDP
 
 ```
 User statement
-    → btcopilot.personal.chat.ask()
-        → pdp.update(discussion, diagram_data, statement)
-            → LLM → PDPDeltas
-        → apply_deltas(pdp, pdp_deltas) → new PDP
-        → diagram.set_diagram_data(updated)
-        → statement.pdp_deltas = asdict(pdp_deltas)
+    → pdp.update(discussion, diagram_data, statement)
+        → LLM → PDPDeltas (sparse, per-statement)
+    → apply_deltas(pdp, pdp_deltas) → updated PDP
+    → statement.pdp_deltas = asdict(pdp_deltas)
 ```
 
 ### apply_deltas()
@@ -60,18 +90,29 @@ Takes current PDP + new PDPDeltas, returns updated PDP:
 `btcopilot/pdp.py`
 
 Rebuilds the PDP state at any point in a discussion by replaying all
-statement deltas in order up to that point. Used for display context in the
-training app — shows "what the PDP looked like after statement N".
+statement deltas in order up to that point. **Training app only** — shows
+"what the PDP looked like after statement N" for auditor review.
 
 Each statement's `pdp_deltas` (or auditor `edited_extraction` if approved) is
 applied sequentially. Later statements override earlier ones for the same ID.
 
-**Not the same as `apply_deltas()`**: `cumulative()` is for read-only
-reconstruction. `apply_deltas()` is the live mutation used during chat.
+**Not used by Personal app**: Personal app uses single-prompt extraction which
+produces a complete PDP in one call, not per-statement replay.
 
 ## Prompt Engineering Rules
 
-The LLM is instructed to produce **sparse deltas**:
+### Single-Prompt (Personal App)
+
+The LLM receives the full conversation and committed diagram data, producing a
+**complete extraction** of all people, events, and pair bonds mentioned:
+
+1. **COMPLETE**: Extract everything from the conversation, not sparse deltas
+2. **DEDUP vs COMMITTED**: Avoid duplicating items already in `{diagram_data}`
+3. **NEGATIVE IDs**: All new items get negative IDs
+
+### Per-Statement (Training App)
+
+The LLM is instructed to produce **sparse deltas** per statement:
 
 1. **SPARSE**: Most deltas contain very few items, often empty arrays
 2. **NEW ONLY**: Don't re-extract data already in the diagram or PDP
@@ -264,10 +305,11 @@ For complete GT technical details, see
 | File | Contains |
 |------|----------|
 | `btcopilot/schema.py` | `DiagramData.commit_pdp_items()`, `PDPDeltas`, `PDP` |
-| `btcopilot/pdp.py` | `update()`, `apply_deltas()`, `cumulative()`, `cleanup_pair_bonds()`, `validate_pdp_deltas()` |
-| `btcopilot/personal/chat.py` | `ask()` — integrates extraction + storage + response |
+| `btcopilot/pdp.py` | `extract_full()`, `update()`, `apply_deltas()`, `cumulative()`, `cleanup_pair_bonds()`, `validate_pdp_deltas()` |
+| `btcopilot/personal/chat.py` | `ask()` — chat-only, no extraction |
+| `btcopilot/personal/routes/discussions.py` | `POST /extract` endpoint — single-prompt extraction |
 | `btcopilot/personal/prompts.py` | Default prompt constants (overridden by fdserver) |
 | `btcopilot/personal/routes/diagrams.py` | Server-side diagram endpoints |
-| `btcopilot/personal/models/statement.py` | `Statement.pdp_deltas` column |
+| `btcopilot/personal/models/statement.py` | `Statement.pdp_deltas` column (training app only) |
 | `btcopilot/training/routes/admin.py` | GT approval with mutual exclusivity |
 | `familydiagram/personal/personalappcontroller.py` | Client-side accept/reject callers |

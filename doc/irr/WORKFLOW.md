@@ -87,7 +87,7 @@ Drop the transcript file and prompt:
 
 Claude Code will:
 - Read the transcript **exhaustively** — every substantive point must be captured
-- Create **deliberation record** (per-statement: positions, reasoning, arguments, position evolution, resolution, ambiguity signals, rules). Must include ALL arguments, heuristics, anecdotes, references, process observations, and meta-discussions from the transcript. See the exhaustiveness rule above.
+- Create **deliberation record** (per-statement: positions, reasoning, arguments, position evolution, resolution, ambiguity signals, rules). Refer to statements by their database ID (e.g. "Statement 1844"), not by ordinal index (e.g. "Statement 1"). Must include ALL arguments, heuristics, anecdotes, references, process observations, and meta-discussions from the transcript. See the exhaustiveness rule above.
 - Create **meeting notes** (conclusions only: disagreement tables, resolutions, rules, action items)
 - Update GUIDELINES.md with new rules
 - Update PROGRESS.md

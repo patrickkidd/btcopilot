@@ -729,6 +729,32 @@ Error history (do NOT reintroduce ANY of these errors):
 Fix ALL errors and return the complete corrected deltas.
 """
 
+DATA_FULL_EXTRACTION_CONTEXT = """
+
+**FULL DISCUSSION EXTRACTION MODE:**
+
+You are analyzing an ENTIRE discussion transcript below. Extract ALL people,
+events, pair_bonds, and relationships mentioned throughout the conversation.
+This is NOT incremental — extract everything you find into a single complete
+result.
+
+**Existing Diagram State (avoid duplicates with committed items):**
+
+{diagram_data}
+
+**FULL DISCUSSION TRANSCRIPT:**
+
+{conversation_history}
+
+**EXTRACT:** All people mentioned (with names, gender, parent relationships),
+all events with dates and SARF variables, all pair_bonds between couples/parents.
+
+ID ASSIGNMENT REMINDER: People, events, and pair_bonds share ONE ID sequence.
+If you create people at -1 to -10, events must start at -11, not -1.
+Example: 5 people → [-1 to -5], 10 events → [-6 to -15], 1 pair_bond → [-16]
+
+"""
+
 DATA_IMPORT_CONTEXT = """
 
 **BULK IMPORT MODE - Extract ALL data from this text chunk:**
@@ -785,6 +811,7 @@ if _prompts_path:
             DATA_EXTRACTION_EXAMPLES = _private.DATA_EXTRACTION_EXAMPLES
             DATA_EXTRACTION_CONTEXT = _private.DATA_EXTRACTION_CONTEXT
             DATA_EXTRACTION_CORRECTION = _private.DATA_EXTRACTION_CORRECTION
+            DATA_FULL_EXTRACTION_CONTEXT = _private.DATA_FULL_EXTRACTION_CONTEXT
             DATA_IMPORT_CONTEXT = _private.DATA_IMPORT_CONTEXT
 
             _log.info(f"Loaded private prompts from {_prompts_path}")

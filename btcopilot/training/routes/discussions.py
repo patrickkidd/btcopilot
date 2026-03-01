@@ -36,7 +36,7 @@ from btcopilot.schema import (
     PairBond,
     asdict,
 )
-from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
+from btcopilot.personal.models import Discussion, DiscussionStatus, Statement, Speaker, SpeakerType
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_breadcrumbs, get_auditor_id, get_discussion_view_menu
 
@@ -210,6 +210,7 @@ def extract_next_statement(*args, **kwargs):
 
     if remaining_statements == 0:
         discussion.extracting = False
+        discussion.status = DiscussionStatus.Ready
         total_statements = Statement.query.filter_by(
             discussion_id=discussion.id
         ).count()
@@ -896,24 +897,12 @@ def audit(discussion_id):
 
         if pdp_deltas_model:
             for person in pdp_deltas_model.people:
-                if person.id in cumulative_people_by_id and person.id < 0:
-                    existing = cumulative_people_by_id[person.id].name
-                    _log.warning(
-                        f"PDP ID collision: Person {person.id} (stmt {stmt.id}) "
-                        f"existing={existing}, new={person.name}"
-                    )
                 cumulative_people_by_id[person.id] = person
 
             for event in pdp_deltas_model.events:
-                if event.id in cumulative_events_by_id and event.id < 0:
-                    _log.warning(f"PDP ID collision: Event {event.id} (stmt {stmt.id})")
                 cumulative_events_by_id[event.id] = event
 
             for pair_bond in pdp_deltas_model.pair_bonds:
-                if pair_bond.id in cumulative_pair_bonds_by_id and pair_bond.id < 0:
-                    _log.warning(
-                        f"PDP ID collision: PairBond {pair_bond.id} (stmt {stmt.id})"
-                    )
                 cumulative_pair_bonds_by_id[pair_bond.id] = pair_bond
 
             for delete_id in pdp_deltas_model.delete:
@@ -1159,6 +1148,7 @@ def extract(discussion_id: int):
 
     # Set extracting to True
     discussion.extracting = True
+    discussion.status = DiscussionStatus.Extracting
     db.session.commit()
 
     from btcopilot.extensions import celery
@@ -1327,6 +1317,7 @@ def extract_selected():
 
         # Set extracting flag
         discussion.extracting = True
+        discussion.status = DiscussionStatus.Extracting
         triggered_count += 1
 
     db.session.commit()
@@ -1506,6 +1497,7 @@ def clear_extracted_data(discussion_id):
 
         # Reset extraction progress
         discussion.extracting = False
+        discussion.status = DiscussionStatus.PendingExtraction
 
         if discussion.diagram:
             database = discussion.diagram.get_diagram_data()

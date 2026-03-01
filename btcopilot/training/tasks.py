@@ -49,11 +49,14 @@ def extract_next_statement():
 
 
 def extract_discussion_statements(discussion_id: int):
+    from btcopilot.personal.models import DiscussionStatus
+
     discussion = Discussion.query.get(discussion_id)
     if not discussion:
         raise ValueError(f"Discussion {discussion_id} not found")
 
     discussion.extracting = True
+    discussion.status = DiscussionStatus.Extracting
     db.session.commit()
 
     from btcopilot.extensions import celery
@@ -87,71 +90,68 @@ def generate_synthetic_discussion(
         f"max_turns={max_turns}, skip_extraction={skip_extraction}"
     )
 
-    try:
-        persona_id = None
+    persona_id = None
 
-        if isinstance(persona_id_or_name, int):
-            # New path: load from DB
-            from btcopilot.personal.models import SyntheticPersona
+    if isinstance(persona_id_or_name, int):
+        from btcopilot.personal.models import SyntheticPersona
 
-            db_persona = db.session.get(SyntheticPersona, persona_id_or_name)
-            if not db_persona:
-                raise ValueError(f"SyntheticPersona not found: {persona_id_or_name}")
-            persona = db_persona.to_persona()
-            persona_id = persona_id_or_name
-        else:
-            # Legacy path: look up from deprecated personas
-            persona = next(
-                (p for p in DEPRECATED_PERSONAS if p.name == persona_id_or_name), None
-            )
-            if not persona:
-                raise ValueError(f"Persona not found: {persona_id_or_name}")
+        db_persona = db.session.get(SyntheticPersona, persona_id_or_name)
+        if not db_persona:
+            raise ValueError(f"SyntheticPersona not found: {persona_id_or_name}")
+        persona = db_persona.to_persona()
+        persona_id = persona_id_or_name
+    else:
+        persona = next(
+            (p for p in DEPRECATED_PERSONAS if p.name == persona_id_or_name), None
+        )
+        if not persona:
+            raise ValueError(f"Persona not found: {persona_id_or_name}")
 
-        simulator = ConversationSimulator(
-            max_turns=max_turns,
-            persist=True,
-            username=username,
-            skip_extraction=skip_extraction,
+    from btcopilot.personal.models import DiscussionStatus
+
+    simulator = ConversationSimulator(
+        max_turns=max_turns,
+        persist=True,
+        username=username,
+        skip_extraction=skip_extraction,
+    )
+
+    def on_progress(turn_num, total, user_text, ai_text):
+        self.update_state(
+            state="PROGRESS",
+            meta={
+                "current": turn_num,
+                "total": total,
+                "user_text": user_text[:100] if user_text else "",
+                "ai_text": ai_text[:100] if ai_text else "",
+            },
         )
 
-        def on_progress(turn_num, total, user_text, ai_text):
-            self.update_state(
-                state="PROGRESS",
-                meta={
-                    "current": turn_num,
-                    "total": total,
-                    "user_text": user_text[:100] if user_text else "",
-                    "ai_text": ai_text[:100] if ai_text else "",
-                },
-            )
+    result = simulator.run(
+        persona, ask, on_progress=on_progress, yield_progress=False
+    )
 
-        result = simulator.run(
-            persona, ask, on_progress=on_progress, yield_progress=False
-        )
+    discussion = None
+    if result.discussionId:
+        discussion = db.session.get(Discussion, result.discussionId)
+    if discussion:
+        if persona_id:
+            discussion.synthetic_persona_id = persona_id
+        discussion.status = DiscussionStatus.Ready
 
-        # Link to SyntheticPersona if available
-        if persona_id and result.discussionId:
-            discussion = db.session.get(Discussion, result.discussionId)
-            if discussion:
-                discussion.synthetic_persona_id = persona_id
+    db.session.commit()
 
-        db.session.commit()
+    _log.info(
+        f"Synthetic discussion {result.discussionId} generated "
+        f"({len(result.turns) // 2} turns)"
+    )
 
-        _log.info(
-            f"Synthetic discussion {result.discussionId} generated "
-            f"({len(result.turns) // 2} turns)"
-        )
-
-        return {
-            "success": True,
-            "discussion_id": result.discussionId,
-            "turn_count": len(result.turns) // 2,
-            "quality_score": result.quality.score if result.quality else None,
-            "coverage_rate": (
-                result.coverage.coverageRate if result.coverage else None
-            ),
-        }
-
-    except Exception as e:
-        _log.error(f"Error generating synthetic discussion: {e}", exc_info=True)
-        return {"success": False, "error": str(e)}
+    return {
+        "success": True,
+        "discussion_id": result.discussionId,
+        "turn_count": len(result.turns) // 2,
+        "quality_score": result.quality.score if result.quality else None,
+        "coverage_rate": (
+            result.coverage.coverageRate if result.coverage else None
+        ),
+    }

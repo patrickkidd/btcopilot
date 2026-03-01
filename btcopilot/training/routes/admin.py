@@ -672,6 +672,10 @@ def approve():
 
             errors = validate_extraction_for_approval(feedback.edited_extraction)
             if errors:
+                lines = [f"GT data quality issues for feedback {feedback_id}:"]
+                for err in errors:
+                    lines.append(f"  - {err}")
+                _log.error("\n".join(lines))
                 return (
                     jsonify({"error": "GT data quality issues", "details": errors}),
                     400,
@@ -777,8 +781,16 @@ def bulk_approve_discussion(discussion_id, auditor_id):
             continue
         errors = validate_extraction_for_approval(feedback.edited_extraction)
         if errors:
-            all_errors[feedback.id] = errors
+            key = f"statement {feedback.statement_id}"
+            all_errors[key] = errors
     if all_errors:
+        lines = [f"GT data quality issues for discussion {discussion_id}:\n"]
+        for key, errs in all_errors.items():
+            lines.append(f"  {key}:")
+            for err in errs:
+                lines.append(f"    - {err}")
+            lines.append("")
+        _log.error("\n".join(lines))
         return jsonify({"error": "GT data quality issues", "details": all_errors}), 400
 
     now = datetime.utcnow()
@@ -1214,6 +1226,10 @@ def quick_approve():
 
     errors = validate_extraction_for_approval(feedback.edited_extraction)
     if errors:
+        lines = [f"GT data quality issues for feedback {feedback_id}:"]
+        for err in errors:
+            lines.append(f"  - {err}")
+        _log.error("\n".join(lines))
         return jsonify({"error": "GT data quality issues", "details": errors}), 400
 
     now = datetime.utcnow()

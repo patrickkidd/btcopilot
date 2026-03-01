@@ -1,6 +1,33 @@
 // Discussion page JavaScript - extracted from discussion.html template
 // Server-side configuration is provided via window.discussionConfig
 
+const CHILD_CENTRIC_KINDS = new Set(["birth", "adopted"]);
+const PLACEHOLDER_DESCRIPTIONS = new Set(["new event", ""]);
+
+function validateExtraction(extraction) {
+    const errors = [];
+    if (!extraction) return errors;
+    const events = extraction.events || [];
+    for (let i = 0; i < events.length; i++) {
+        const event = events[i];
+        const kind = event.kind || "?";
+        const desc = (event.description || "").trim();
+        if (CHILD_CENTRIC_KINDS.has(kind)) {
+            if (event.child == null) {
+                errors.push(`Event ${i+1} (${kind}): missing child link`);
+            }
+        } else {
+            if (event.person == null) {
+                errors.push(`Event ${i+1} (${kind}): missing person link`);
+            }
+        }
+        if (PLACEHOLDER_DESCRIPTIONS.has(desc.toLowerCase())) {
+            errors.push(`Event ${i+1} (${kind}): placeholder or empty description`);
+        }
+    }
+    return errors;
+}
+
 // Component extracted data functions
 function reloadPreservingParams() {
     window.location.reload();
@@ -904,6 +931,12 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
                 return;
             }
 
+            const errors = validateExtraction(this.extractedData);
+            if (errors.length > 0) {
+                showNotification(errors.join('\n'), 'is-danger');
+                return;
+            }
+
             // Submit as feedback - ensure messageId is an integer
             const msgId = parseInt(this.messageId);
             if (isNaN(msgId)) {
@@ -1020,8 +1053,8 @@ function componentExtractedData(extractedData, cumulativePdp, thumbsDown, submit
             }
             
             // Hardcoded fallbacks for known system people
-            if (numericId === 1) return 'User';
-            if (numericId === 2) return 'Assistant';
+            if (numericId === 1) return 'Client';
+            if (numericId === 2) return 'Coach';
             
             // Generic fallback for extracted people (negative IDs)
             if (numericId < 0) return `Person ${Math.abs(numericId)}`;
@@ -1797,7 +1830,11 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
                 if (data.success) {
                     reloadPreservingParams(); // Reload to show updated approval status
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
+                    let msg = data.error || 'Unknown error';
+                    if (data.details && data.details.length) {
+                        msg += '\n\n' + data.details.map(e => `  - ${e}`).join('\n');
+                    }
+                    alert(msg);
                 }
             })
             .catch(error => {
@@ -1805,7 +1842,7 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
                 alert('Network error');
             });
         },
-        
+
         // Approve statement extraction function
         approveStatement(statementId) {
             fetch('/training/admin/approve-statement', {
@@ -1822,7 +1859,11 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
                 if (data.success) {
                     reloadPreservingParams(); // Reload to show updated approval status and mutual exclusivity
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
+                    let msg = data.error || 'Unknown error';
+                    if (data.details && data.details.length) {
+                        msg += '\n\n' + data.details.map(e => `  - ${e}`).join('\n');
+                    }
+                    alert(msg);
                 }
             })
             .catch(error => {
@@ -1830,7 +1871,7 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
                 alert('Network error');
             });
         },
-        
+
         // Unapprove feedback function
         unapproveFeedback(feedbackId) {
             fetch('/training/admin/unapprove-feedback', {
@@ -2026,7 +2067,19 @@ async function bulkApproveDiscussion() {
             alert(`${data.message}`);
             window.location.reload();
         } else {
-            alert(`Error: ${data.error || 'Unknown error'}`);
+            let msg = data.error || 'Unknown error';
+            if (data.details) {
+                const lines = [];
+                for (const [key, errs] of Object.entries(data.details)) {
+                    lines.push(`${key}:`);
+                    for (const err of errs) {
+                        lines.push(`  - ${err}`);
+                    }
+                    lines.push('');
+                }
+                msg += '\n\n' + lines.join('\n');
+            }
+            alert(msg);
         }
     } catch (error) {
         console.error('Bulk approval error:', error);
@@ -3161,8 +3214,11 @@ function removeEvent(index) {
 }
 
 function saveEditedData() {
-    // Submit the auditor's corrected deltas as feedback
-    // This stores what the auditor thinks the extraction SHOULD have been
+    const errors = validateExtraction(currentEditingData);
+    if (errors.length > 0) {
+        showNotification(errors.join('\n'), 'is-danger');
+        return;
+    }
     submitExtractionFeedback(currentMessageId, false, currentEditingData);
     closeDataEditor();
 }
@@ -3363,17 +3419,17 @@ function showRelationshipPersonModal() {
     const allPeople = [];
     const seenIds = new Set();
     
-    // Always add default User and Assistant (same as speaker mapping section)
+    // Always add default Client and Coach (same as speaker mapping section)
     allPeople.push({
         id: 1,
-        name: "User",
+        name: "Client",
         source: "System"
     });
     seenIds.add(1);
 
     allPeople.push({
         id: 2,
-        name: "Assistant",
+        name: "Coach",
         source: "System"
     });
     seenIds.add(2);
@@ -3599,9 +3655,9 @@ function showPairBondModal() {
     const allPeople = [];
     const seenIds = new Set();
 
-    allPeople.push({id: 1, name: "User"});
+    allPeople.push({id: 1, name: "Client"});
     seenIds.add(1);
-    allPeople.push({id: 2, name: "Assistant"});
+    allPeople.push({id: 2, name: "Coach"});
     seenIds.add(2);
 
     const diagramPeople = window.diagramPeople || [];
@@ -4140,7 +4196,11 @@ function toggleApproval(type, id) {
             // Update export button state
             updateExportButtonState();
         } else {
-            showNotification(data.error || 'Failed to update approval status', 'is-danger');
+            let msg = data.error || 'Failed to update approval status';
+            if (data.details && data.details.length) {
+                msg += ': ' + data.details.map(e => `  - ${e}`).join('\n');
+            }
+            showNotification(msg, 'is-danger');
         }
     })
     .catch(error => {
