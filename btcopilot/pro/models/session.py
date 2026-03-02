@@ -68,14 +68,7 @@ class Session(db.Model, ModelMixin):
                             "free_diagram": (
                                 self.user.free_diagram.as_dict(
                                     exclude="data",
-                                    include={
-                                        "discussions": {
-                                            "include": [
-                                                "statements",
-                                                "speakers",
-                                            ]
-                                        },
-                                    },
+                                    include=[],
                                 )
                                 if self.user.free_diagram
                                 else None
@@ -84,12 +77,6 @@ class Session(db.Model, ModelMixin):
                     )
                 }
             )
-            # convert some non-standard object types that sneak in
-            for discussion in ret["session"]["user"]["free_diagram"].get(
-                "discussions", []
-            ):
-                for speaker in discussion.get("speakers", []):
-                    speaker["type"] = speaker["type"].value
         else:
             ret["session"] = None
         return ret
