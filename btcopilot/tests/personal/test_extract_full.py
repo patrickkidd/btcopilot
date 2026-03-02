@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 from mock import patch, AsyncMock
 
@@ -30,10 +31,9 @@ def test_extract_full_returns_pdp(discussion):
         AsyncMock(return_value=(mock_pdp, mock_deltas)),
     ) as mock_extract:
         from btcopilot.pdp import extract_full
-        from btcopilot.async_utils import one_result
 
         diagram_data = DiagramData()
-        result_pdp, result_deltas = one_result(
+        result_pdp, result_deltas = asyncio.run(
             extract_full(discussion, diagram_data)
         )
 
@@ -56,10 +56,9 @@ def test_extract_full_prompt_contains_full_history(discussion):
         AsyncMock(return_value=(mock_pdp, mock_deltas)),
     ) as mock_extract:
         from btcopilot.pdp import extract_full
-        from btcopilot.async_utils import one_result
 
         diagram_data = DiagramData()
-        one_result(extract_full(discussion, diagram_data))
+        asyncio.run(extract_full(discussion, diagram_data))
 
         prompt = mock_extract.call_args[0][0]
         assert "FULL DISCUSSION EXTRACTION MODE" in prompt
@@ -82,10 +81,9 @@ def test_extract_full_uses_discussion_date(discussion):
         AsyncMock(return_value=(mock_pdp, mock_deltas)),
     ) as mock_extract:
         from btcopilot.pdp import extract_full
-        from btcopilot.async_utils import one_result
 
         diagram_data = DiagramData()
-        one_result(extract_full(discussion, diagram_data))
+        asyncio.run(extract_full(discussion, diagram_data))
 
         prompt = mock_extract.call_args[0][0]
         assert "2025-06-15" in prompt
