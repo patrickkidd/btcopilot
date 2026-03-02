@@ -150,7 +150,7 @@ This enables systematic testing of extraction prompts without real clinical data
 
 Source: [btcopilot/tests/personal/synthetic.py](btcopilot/tests/personal/synthetic.py)
 
-![Synthetic Data Generator](doc/images/6--Synthetic-Data.jpg)
+![Synthetic Data Generator](doc/images/6--Synthetic-Data.png)
 ![Synthetic Discussion](doc/images/7--Synthetic-Discussion.jpg)
      
 
@@ -284,7 +284,7 @@ The core of the auditing system is the SARF editor. Every statement from the cli
 
 This body of corrections becomes "ground truth" for coding the SARF model in Bowen theory, which is an essential task for any clinical evaluation.
 
-![The SARF editor](doc/images/3--Discussion-SARF-Editor.jpg)
+![The SARF editor](doc/images/3--Discussion-SARF-Editor.png)
 
 Source Code: [btcopilot/training](btcopilot/training)
 
