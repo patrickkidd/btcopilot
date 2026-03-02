@@ -1,4 +1,3 @@
-import hashlib
 import json
 import logging
 from dataclasses import dataclass, field
@@ -10,6 +9,7 @@ from btcopilot.schema import (
     ClusterPattern,
     ClusterResult,
     asdict,
+    hash_sarf_dicts,
 )
 
 _log = logging.getLogger(__name__)
@@ -79,20 +79,18 @@ def _enum_value(val):
 
 
 def compute_cache_key(events: list[Event]) -> str:
-    event_data = []
-    for e in events:
-        event_data.append(
-            {
-                "id": e.id,
-                "dateTime": e.dateTime,
-                "symptom": _enum_value(e.symptom) if e.symptom else None,
-                "anxiety": _enum_value(e.anxiety) if e.anxiety else None,
-                "relationship": _enum_value(e.relationship) if e.relationship else None,
-                "functioning": _enum_value(e.functioning) if e.functioning else None,
-            }
-        )
-    content = json.dumps(event_data, sort_keys=True)
-    return hashlib.sha256(content.encode()).hexdigest()[:16]
+    event_data = [
+        {
+            "id": e.id,
+            "dateTime": e.dateTime,
+            "symptom": _enum_value(e.symptom) if e.symptom else None,
+            "anxiety": _enum_value(e.anxiety) if e.anxiety else None,
+            "relationship": _enum_value(e.relationship) if e.relationship else None,
+            "functioning": _enum_value(e.functioning) if e.functioning else None,
+        }
+        for e in events
+    ]
+    return hash_sarf_dicts(event_data)
 
 
 def detect_clusters(events: list[Event]) -> ClusterResult:
