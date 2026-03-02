@@ -2,7 +2,7 @@ import uuid, datetime
 import logging
 
 from sqlalchemy import Column, String, Integer, ForeignKey
-from sqlalchemy.orm import joinedload, relationship
+from sqlalchemy.orm import joinedload, selectinload, relationship
 
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
