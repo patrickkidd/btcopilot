@@ -4,6 +4,7 @@ import datetime
 from btcopilot.extensions import db
 from btcopilot.pro import DEACTIVATED_VERSIONS, SESSION_EXPIRATION_DAYS
 from btcopilot.pro.models import Session
+from btcopilot.personal.models import Discussion
 
 
 def test_sessions_login(flask_app, test_user, test_license, test_activation):
@@ -97,6 +98,52 @@ def test_sessions_init_updates_timestamp(flask_app, test_session, test_license):
 
     db.session.refresh(test_session)
     assert test_session.updated_at > old_updated_at
+
+
+def _add_discussion(test_session):
+    """Add a discussion to the test user's free diagram to exercise serialization."""
+    discussion = Discussion(
+        user_id=test_session.user.id,
+        diagram_id=test_session.user.free_diagram.id,
+        summary="test discussion",
+    )
+    db.session.add(discussion)
+    db.session.commit()
+
+
+def test_sessions_init_no_personal_refs(flask_app, test_session, test_license):
+    """Session payload must not contain btcopilot.personal references.
+    The pro app cannot import btcopilot.personal (it depends on flask, etc.)
+    so any pickled enum/object from that package causes ModuleNotFoundError.
+    """
+    _add_discussion(test_session)
+    args = pickle.dumps(
+        {
+            "licenses": [test_license.as_dict()],
+            "token": test_session.token,
+        }
+    )
+
+    with flask_app.test_client() as client:
+        response = client.get("/v1/init", data=args)
+    assert response.status_code == 200
+    assert b"btcopilot.personal" not in response.data
+
+
+def test_sessions_login_no_personal_refs(flask_app, test_user, test_license, test_activation):
+    args = {"username": test_user.username, "password": test_user._plaintext_password}
+    with flask_app.test_client() as client:
+        response = client.post("/v1/sessions", data=pickle.dumps(args))
+    assert response.status_code == 200
+    assert b"btcopilot.personal" not in response.data
+
+
+def test_sessions_verify_no_personal_refs(flask_app, test_session, test_license, test_activation):
+    _add_discussion(test_session)
+    with flask_app.test_client() as client:
+        response = client.get("/v1/sessions/%s" % test_session.token)
+    assert response.status_code == 200
+    assert b"btcopilot.personal" not in response.data
 
 
 def test_sessions_init_expires_old_session(flask_app, test_session, test_license):

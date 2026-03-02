@@ -2,7 +2,7 @@ import uuid, datetime
 import logging
 
 from sqlalchemy import Column, String, Integer, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import joinedload, relationship
 
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
@@ -14,7 +14,7 @@ _log = logging.getLogger(__name__)
 class Session(db.Model, ModelMixin):
     __tablename__ = "sessions"
 
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     user = relationship("User", back_populates="sessions")
 
     token = Column(String(64), nullable=False, unique=True)
@@ -36,7 +36,7 @@ class Session(db.Model, ModelMixin):
         return token
 
     def account_editor_dict(self):
-        from btcopilot.pro.models import User, Policy
+        from btcopilot.pro.models import User, Policy, License, Activation, Machine
         from btcopilot import pro
 
         if not self.user.free_diagram:
@@ -44,7 +44,15 @@ class Session(db.Model, ModelMixin):
             self.user.set_free_diagram(_commit=True)
 
         ret = {
-            "users": [u.as_dict() for u in User.query.filter_by(active=True)],
+            "users": [
+                u.as_dict()
+                for u in User.query.options(
+                    selectinload(User.licenses).options(
+                        selectinload(License.activations).joinedload(Activation.machine),
+                        joinedload(License.policy),
+                    )
+                ).filter_by(active=True)
+            ],
             "policies": [p.as_dict() for p in Policy.query.filter_by(public=True)],
             "deactivated_versions": pro.DEACTIVATED_VERSIONS,
         }
@@ -68,14 +76,7 @@ class Session(db.Model, ModelMixin):
                             "free_diagram": (
                                 self.user.free_diagram.as_dict(
                                     exclude="data",
-                                    include={
-                                        "discussions": {
-                                            "include": [
-                                                "statements",
-                                                "speakers",
-                                            ]
-                                        },
-                                    },
+                                    include=[],
                                 )
                                 if self.user.free_diagram
                                 else None
@@ -84,12 +85,6 @@ class Session(db.Model, ModelMixin):
                     )
                 }
             )
-            # convert some non-standard object types that sneak in
-            for discussion in ret["session"]["user"]["free_diagram"].get(
-                "discussions", []
-            ):
-                for speaker in discussion.get("speakers", []):
-                    speaker["type"] = speaker["type"].value
         else:
             ret["session"] = None
         return ret
