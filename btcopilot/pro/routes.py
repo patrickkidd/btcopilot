@@ -485,7 +485,6 @@ def sessions_login():
     import os
 
     args = pickle.loads(request.data)
-    include_therapist = args.get("include_therapist", False)
     password = args.get("password")
     username = args.get("username")
 
@@ -509,12 +508,6 @@ def sessions_login():
     db.session.add(session)
     db.session.commit()
     account_editor_dict = session.account_editor_dict()
-    if not include_therapist and account_editor_dict["session"]["user"].get(
-        "free_diagram"
-    ):
-        free_diagram = account_editor_dict["session"]["user"].get("free_diagram")
-        if "discussions" in free_diagram:
-            del free_diagram["discussions"]
     bdata = pickle.dumps(account_editor_dict)
     g.user = session.user
     if not IS_TEST:

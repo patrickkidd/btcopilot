@@ -59,7 +59,7 @@ class Diagram(db.Model, ModelMixin):
 
     __tablename__ = "diagrams"
 
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     user = relationship(
         "User", primaryjoin="Diagram.user_id == User.id", back_populates="diagrams"
     )
@@ -183,7 +183,7 @@ class Diagram(db.Model, ModelMixin):
         return (True, self.version)
 
     def as_dict(self, update=None, include=None, exclude=None):
-        if not include:
+        if include is None:
             include = ["user", "access_rights", "saved_at"]
         if update is None:
             update = {}
