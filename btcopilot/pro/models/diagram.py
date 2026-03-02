@@ -59,7 +59,7 @@ class Diagram(db.Model, ModelMixin):
 
     __tablename__ = "diagrams"
 
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     user = relationship(
         "User", primaryjoin="Diagram.user_id == User.id", back_populates="diagrams"
     )
