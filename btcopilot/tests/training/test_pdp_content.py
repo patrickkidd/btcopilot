@@ -7,8 +7,9 @@ from btcopilot.schema import (
     Event,
     RelationshipKind,
 )
+import asyncio
+
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
-from btcopilot.async_utils import one_result
 from btcopilot import pdp
 
 
@@ -66,4 +67,4 @@ def test_shift_topic():
 
     user_message = "I went for my turn at the chinese auction and she told me which one to pick and I threw up"
 
-    pdp_deltas = one_result(pdp.update(discussion, diagram_data, user_message))
+    pdp_deltas = asyncio.run(pdp.update(discussion, diagram_data, user_message))

@@ -1,10 +1,10 @@
+import asyncio
 import os
 import enum
 import json
 import time
 import logging
 from dataclasses import fields, MISSING
-from functools import lru_cache
 from typing import get_origin, get_args, Union
 
 from btcopilot.schema import from_dict
@@ -164,7 +164,6 @@ PDP_FORCE_REQUIRED = {
 GEMINI_TIMEOUT_MS = 120_000
 
 
-@lru_cache(maxsize=1)
 def _client():
     from google import genai
     from google.genai import types
@@ -217,9 +216,7 @@ async def gemini_structured(prompt, response_format, large=False):
 
 
 def gemini_structured_sync(prompt, response_format, large=False):
-    from btcopilot.async_utils import one_result
-
-    return one_result(gemini_structured(prompt, response_format, large=large))
+    return asyncio.run(gemini_structured(prompt, response_format, large=large))
 
 
 async def gemini_text(prompt=None, **kwargs):
@@ -258,6 +255,4 @@ async def gemini_text(prompt=None, **kwargs):
 
 
 def gemini_text_sync(prompt=None, **kwargs):
-    from btcopilot.async_utils import one_result
-
-    return one_result(gemini_text(prompt, **kwargs))
+    return asyncio.run(gemini_text(prompt, **kwargs))

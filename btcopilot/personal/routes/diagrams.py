@@ -3,9 +3,9 @@ import base64
 from flask import Blueprint, request, jsonify, abort
 from sqlalchemy.orm import subqueryload
 
+import asyncio
 import btcopilot
 from btcopilot import auth, pdp
-from btcopilot.async_utils import one_result
 from btcopilot.extensions import db
 from btcopilot.schema import DiagramData, Event, asdict, from_dict
 from btcopilot.pro.models import Diagram, AccessRight
@@ -182,7 +182,7 @@ def import_journal(diagram_id):
 
     diagram_data = diagram.get_diagram_data()
 
-    new_pdp, deltas = one_result(pdp.import_text(diagram_data, text))
+    new_pdp, deltas = asyncio.run(pdp.import_text(diagram_data, text))
 
     diagram_data.pdp = new_pdp
     diagram.set_diagram_data(diagram_data)

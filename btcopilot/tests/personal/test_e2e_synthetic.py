@@ -4,6 +4,7 @@ E2E test for Goal 1: Chat → Extract Full → Accept → View.
 Uses cached/mock data — no AI calls.
 """
 
+import asyncio
 import base64
 import pickle
 
@@ -126,10 +127,9 @@ def test_e2e_chat_then_extract(test_user, diagram_with_discussion):
         AsyncMock(return_value=(CACHED_PDP, CACHED_DELTAS)),
     ):
         from btcopilot.pdp import extract_full
-        from btcopilot.async_utils import one_result
 
         diagram_data = diagram.get_diagram_data()
-        new_pdp, _ = one_result(extract_full(discussion, diagram_data))
+        new_pdp, _ = asyncio.run(extract_full(discussion, diagram_data))
         diagram_data.pdp = new_pdp
         diagram.set_diagram_data(diagram_data)
         db.session.commit()

@@ -4,8 +4,8 @@ import pickle
 from flask import Blueprint, jsonify, request, abort
 from sqlalchemy.orm import subqueryload
 
+import asyncio
 from btcopilot import auth, pdp
-from btcopilot.async_utils import one_result
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram
 from btcopilot.schema import PDP, asdict
@@ -213,7 +213,7 @@ def extract(discussion_id: int):
 
     diagram_data = discussion.diagram.get_diagram_data()
     diagram_data.pdp = PDP()
-    new_pdp, deltas = one_result(pdp.extract_full(discussion, diagram_data))
+    new_pdp, deltas = asyncio.run(pdp.extract_full(discussion, diagram_data))
 
     diagram_data.pdp = new_pdp
     discussion.diagram.set_diagram_data(diagram_data)
