@@ -14,7 +14,7 @@ _log = logging.getLogger(__name__)
 class Session(db.Model, ModelMixin):
     __tablename__ = "sessions"
 
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     user = relationship("User", back_populates="sessions")
 
     token = Column(String(64), nullable=False, unique=True)
