@@ -35,6 +35,7 @@ def test_pickle_contains_json_serializable_dicts(db_session, test_user):
     expected = {
         "people": [{"id": 1, "name": "Alice"}],
         "events": [{"id": 2, "kind": "shift", "person": 1}],
+        "pair_bonds": [],
         "pdp": {
             "people": [
                 {
