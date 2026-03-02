@@ -212,3 +212,55 @@ def test_cumulative_pdp_with_unique_negative_ids():
     assert len(pdp.events) == 2
     assert pdp.events[0].id == -2
     assert pdp.events[1].id == -4
+
+
+def test_separated_event_infers_pair_bond():
+    """Separated implies the couple existed — must create pair bond if missing."""
+    pdp = PDP(
+        people=[
+            Person(id=-1, name="Alice"),
+            Person(id=-2, name="Bob"),
+        ],
+        events=[
+            Event(id=-20, kind=EventKind.Separated, person=-1, spouse=-2),
+        ],
+    )
+    diagram_data = DiagramData(pdp=pdp)
+    diagram_data.commit_pdp_items([-20])
+    assert len(diagram_data.pair_bonds) == 1
+
+
+def test_divorced_event_infers_pair_bond():
+    """Divorced implies the couple existed — must create pair bond if missing."""
+    pdp = PDP(
+        people=[
+            Person(id=-1, name="Alice"),
+            Person(id=-2, name="Bob"),
+        ],
+        events=[
+            Event(id=-20, kind=EventKind.Divorced, person=-1, spouse=-2),
+        ],
+    )
+    diagram_data = DiagramData(pdp=pdp)
+    diagram_data.commit_pdp_items([-20])
+    assert len(diagram_data.pair_bonds) == 1
+
+
+def test_birth_with_person_only_creates_inferred_child():
+    """Birth event with only person set must create inferred spouse AND child."""
+    pdp = PDP(
+        people=[Person(id=-1, name="Dad")],
+        events=[
+            Event(id=-20, kind=EventKind.Birth, person=-1, description="Child born"),
+        ],
+    )
+    diagram_data = DiagramData(pdp=pdp)
+    diagram_data.commit_pdp_items([-20])
+
+    assert len(diagram_data.people) == 3
+    assert len(diagram_data.pair_bonds) == 1
+
+    event = diagram_data.events[0]
+    assert event["child"] is not None
+    child = next(p for p in diagram_data.people if p["id"] == event["child"])
+    assert child["parents"] is not None

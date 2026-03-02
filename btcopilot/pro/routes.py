@@ -1026,7 +1026,12 @@ Include ONLY movable people (isMovable=true) with updated positions. Do not incl
 - People whose positions didn't change
 - Any other fields (boundingRect, isMovable, parents) - only id and center
     """
-    from btcopilot.llmutil import gemini_structured
+    from btcopilot.llmutil import gemini_structured, OutputTruncatedError
 
-    result = asyncio.run(gemini_structured(PROMPT, DiagramDelta))
+    try:
+        result = asyncio.run(gemini_structured(PROMPT, DiagramDelta))
+    except OutputTruncatedError:
+        return Response("Diagram too large to arrange", 413)
+    except json.JSONDecodeError:
+        return Response("Arrangement service returned invalid data", 502)
     return asdict(result)

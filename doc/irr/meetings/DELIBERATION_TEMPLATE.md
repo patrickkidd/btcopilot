@@ -3,7 +3,7 @@
 **Date:** YYYY-MM-DD
 **Attendees:** [names]
 **Case:** [case name]
-**Statements reviewed:** [range or list]
+**Statements reviewed:** [IDs, e.g. 1844, 1846]
 **Facilitator:** [who ran the meeting]
 
 ## Cross-Cutting Themes
@@ -12,7 +12,7 @@
 
 ---
 
-## Statement [N]: "[quote or summary]"
+## Statement [ID]: "[quote or summary]"
 
 ### Initial Positions
 

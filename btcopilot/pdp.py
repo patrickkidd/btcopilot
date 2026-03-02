@@ -3,6 +3,19 @@ import logging
 import os
 from datetime import date, datetime
 
+import json
+
+from btcopilot.extensions import ai_log
+from btcopilot.llmutil import gemini_structured
+from btcopilot.personal.models import SpeakerType
+from btcopilot.personal.prompts import (
+    DATA_EXTRACTION_PROMPT,
+    DATA_EXTRACTION_EXAMPLES,
+    DATA_EXTRACTION_CONTEXT,
+    DATA_EXTRACTION_CORRECTION,
+    DATA_FULL_EXTRACTION_CONTEXT,
+    DATA_IMPORT_CONTEXT,
+)
 from btcopilot.schema import (
     DiagramData,
     PDP,
@@ -116,6 +129,9 @@ def reassign_delta_ids(pdp: PDP, deltas: PDPDeltas) -> None:
             person_id_map.get(t, t) for t in event.relationshipTriangles
         ]
 
+    all_id_map = {**person_id_map, **pair_bond_id_map, **event_id_map}
+    deltas.delete = [all_id_map.get(d, d) for d in deltas.delete]
+
     _log.warning(
         "reassign_delta_ids: LLM produced ID collisions, "
         f"reassigned {len(person_id_map)} people, {len(event_id_map)} events, {len(pair_bond_id_map)} pair_bonds"
@@ -184,10 +200,13 @@ def validate_pdp_deltas(
             errors.append(
                 f"Delta event has positive ID {event.id} not in committed diagram"
             )
-        if not event.description:
-            _log.warning(
-                f"Event {event.id} (kind={event.kind}) has no description - "
-                f"Learn view will show empty text"
+        if not event.description and not event.kind.isSelfDescribing():
+            errors.append(
+                f"Event {event.id} (kind={event.kind.value}) requires description"
+            )
+        if not event.dateTime:
+            errors.append(
+                f"Event {event.id} (kind={event.kind.value}) requires dateTime"
             )
 
     for pair_bond in deltas.pair_bonds:
@@ -299,6 +318,32 @@ def validate_pdp_deltas(
                 )
             seen_dyads.add(dyad)
 
+    # Check that deletes won't orphan surviving events
+    if deltas.delete:
+        delete_set = set(deltas.delete)
+        existing_pdp_event_ids = {e.id for e in pdp.events}
+        event_ids_being_deleted = delete_set & existing_pdp_event_ids
+        surviving_events = [
+            e
+            for e in pdp.events
+            if e.id not in event_ids_being_deleted
+        ]
+        for event in surviving_events:
+            for ref in [event.person, event.spouse, event.child]:
+                if ref is not None and ref in delete_set:
+                    errors.append(
+                        f"Delete of person {ref} would orphan event {event.id}"
+                    )
+        existing_pdp_person_ids = {p.id for p in pdp.people if p.id is not None}
+        surviving_people = [
+            p for p in pdp.people if p.id not in delete_set
+        ]
+        for person in surviving_people:
+            if person.parents is not None and person.parents in delete_set:
+                errors.append(
+                    f"Delete of pair_bond {person.parents} would orphan person {person.id}"
+                )
+
     if errors:
         if diagram_data and source:
             _export_validation_failure(diagram_data, deltas, errors, source)
@@ -312,7 +357,6 @@ def _export_validation_failure(
     source: str,
 ) -> None:
     """Export failed validation data to JSON for debugging."""
-    import json
     from pathlib import Path
 
     if os.getenv("FLASK_CONFIG") != "development":
@@ -389,8 +433,6 @@ def cumulative(discussion, up_to_statement, auditor_id: str | None = None) -> PD
     Returns:
         PDP with accumulated people, events, pair_bonds (cleaned of invalid/duplicate/orphaned)
     """
-    from btcopilot.personal.models import SpeakerType
-
     sorted_statements = sorted(
         discussion.statements, key=lambda s: (s.order or 0, s.id or 0)
     )
@@ -402,7 +444,7 @@ def cumulative(discussion, up_to_statement, auditor_id: str | None = None) -> PD
     # Get auditor feedback if requested
     feedback_by_stmt = {}
     if auditor_id and auditor_id != "AI":
-        from btcopilot.training.models import Feedback
+        from btcopilot.training.models import Feedback  # circular: training.routes.prompts imports pdp
 
         feedbacks = Feedback.query.filter(
             Feedback.statement_id.in_([s.id for s in sorted_statements]),
@@ -477,11 +519,6 @@ async def _extract_and_validate(
     large: bool = False,
 ) -> tuple[PDP, PDPDeltas]:
     """Submit extraction prompt to LLM, validate, retry up to MAX_EXTRACTION_RETRIES on failure."""
-    import json
-    from btcopilot.personal.prompts import DATA_EXTRACTION_CORRECTION
-    from btcopilot.extensions import ai_log
-    from btcopilot.llmutil import gemini_structured
-
     is_dev = os.getenv("FLASK_CONFIG") == "development"
     pdp = diagram_data.pdp
     current_prompt = prompt
@@ -527,17 +564,42 @@ async def _extract_and_validate(
     return new_pdp, pdp_deltas
 
 
+async def extract_full(
+    discussion,
+    diagram_data: DiagramData,
+) -> tuple[PDP, PDPDeltas]:
+    reference_date = (
+        discussion.discussion_date
+        if discussion.discussion_date
+        else datetime.now().date()
+    )
+
+    conversation_history = discussion.conversation_history()
+
+    _log.info(
+        f"PDP EXTRACT_FULL INPUTS:\n"
+        f"  conversation_history length: {len(conversation_history)}\n"
+        f"  diagram_data.pdp.people: {[p.name for p in diagram_data.pdp.people]}\n"
+        f"  diagram_data.pdp.events count: {len(diagram_data.pdp.events)}\n"
+        f"  diagram_data.people count: {len(diagram_data.people)}\n"
+    )
+
+    prompt = (
+        DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
+        + DATA_EXTRACTION_EXAMPLES
+        + DATA_FULL_EXTRACTION_CONTEXT.format(
+            diagram_data=asdict(diagram_data),
+            conversation_history=conversation_history,
+        )
+    )
+    return await _extract_and_validate(prompt, diagram_data, "extract_full", large=True)
+
+
 async def import_text(
     diagram_data: DiagramData,
     text: str,
     reference_date: date | None = None,
 ) -> tuple[PDP, PDPDeltas]:
-    from btcopilot.personal.prompts import (
-        DATA_EXTRACTION_PROMPT,
-        DATA_EXTRACTION_EXAMPLES,
-        DATA_IMPORT_CONTEXT,
-    )
-
     if reference_date is None:
         reference_date = datetime.now().date()
 
@@ -578,12 +640,6 @@ async def update(
         up_to_order: If provided, only include conversation history up to this order.
                     Used during batch extraction to avoid seeing future statements.
     """
-    from btcopilot.personal.prompts import (
-        DATA_EXTRACTION_PROMPT,
-        DATA_EXTRACTION_EXAMPLES,
-        DATA_EXTRACTION_CONTEXT,
-    )
-
     reference_date = (
         discussion.discussion_date
         if discussion.discussion_date
