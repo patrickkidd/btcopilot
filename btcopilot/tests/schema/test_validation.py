@@ -51,6 +51,8 @@ def test_validate_deltas_valid_event_with_positive_person_id():
                 id=-1,
                 kind=EventKind.Shift,
                 person=1,
+                description="anxiety increased",
+                dateTime="2025-01-01",
                 anxiety=VariableShift.Up,
             )
         ]
@@ -67,6 +69,8 @@ def test_validate_deltas_valid_event_with_new_person_in_same_delta():
                 id=-2,
                 kind=EventKind.Shift,
                 person=-1,
+                description="anxiety increased",
+                dateTime="2025-01-01",
                 anxiety=VariableShift.Up,
             )
         ],
@@ -85,7 +89,9 @@ def test_validate_deltas_rejects_positive_id_for_person():
 
 def test_validate_deltas_rejects_positive_id_for_event():
     pdp = PDP()
-    deltas = PDPDeltas(events=[Event(id=1, kind=EventKind.Shift, person=1)])
+    deltas = PDPDeltas(
+        events=[Event(id=1, kind=EventKind.Shift, person=1, description="x", dateTime="2025-01-01")]
+    )
     with pytest.raises(PDPValidationError) as exc_info:
         validate_pdp_deltas(pdp, deltas)
     assert len(exc_info.value.errors) == 1
@@ -112,7 +118,7 @@ def test_validate_deltas_detects_id_collision_in_delta():
     pdp = PDP()
     deltas = PDPDeltas(
         people=[Person(id=-1, name="Alice")],
-        events=[Event(id=-1, kind=EventKind.Shift, person=-1)],
+        events=[Event(id=-1, kind=EventKind.Shift, person=-1, description="x", dateTime="2025-01-01")],
     )
     with pytest.raises(PDPValidationError) as exc_info:
         validate_pdp_deltas(pdp, deltas)
@@ -137,7 +143,7 @@ def test_validate_deltas_detects_event_pair_bond_collision():
     """Event and pair_bond cannot share the same ID."""
     pdp = PDP()
     deltas = PDPDeltas(
-        events=[Event(id=-1, kind=EventKind.Shift, person=1)],
+        events=[Event(id=-1, kind=EventKind.Shift, person=1, description="x", dateTime="2025-01-01")],
         pair_bonds=[PairBond(id=-1, person_a=1, person_b=2)],
     )
     with pytest.raises(PDPValidationError) as exc_info:
@@ -151,7 +157,7 @@ def test_validate_deltas_detects_all_three_types_collision():
     pdp = PDP()
     deltas = PDPDeltas(
         people=[Person(id=-1, name="Alice")],
-        events=[Event(id=-1, kind=EventKind.Shift, person=-1)],
+        events=[Event(id=-1, kind=EventKind.Shift, person=-1, description="x", dateTime="2025-01-01")],
         pair_bonds=[PairBond(id=-1, person_a=1, person_b=2)],
     )
     with pytest.raises(PDPValidationError) as exc_info:
@@ -168,6 +174,8 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_person():
                 id=-1,
                 kind=EventKind.Shift,
                 person=-999,
+                description="anxiety increased",
+                dateTime="2025-01-01",
                 anxiety=VariableShift.Up,
             )
         ]
@@ -187,6 +195,8 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_spouse():
                 kind=EventKind.Married,
                 person=1,
                 spouse=-999,
+                description="wedding",
+                dateTime="2025-01-01",
             )
         ]
     )
@@ -205,6 +215,8 @@ def test_validate_deltas_rejects_pair_bond_event_without_spouse():
                 kind=EventKind.Divorced,
                 person=1,
                 spouse=None,
+                description="divorce",
+                dateTime="2025-01-01",
             )
         ]
     )
@@ -218,7 +230,11 @@ def test_validate_deltas_allows_offspring_without_spouse():
     pdp = PDP()
     for kind in (EventKind.Birth, EventKind.Adopted):
         deltas = PDPDeltas(
-            events=[Event(id=-1, kind=kind, person=1, child=1, spouse=None)]
+            events=[
+                Event(
+                    id=-1, kind=kind, person=1, child=1, spouse=None, description="x", dateTime="2025-01-01"
+                )
+            ]
         )
         validate_pdp_deltas(pdp, deltas)
 
@@ -232,6 +248,8 @@ def test_validate_deltas_allows_moved_without_spouse():
                 kind=EventKind.Moved,
                 person=1,
                 spouse=None,
+                description="relocation",
+                dateTime="2025-01-01",
             )
         ]
     )
@@ -248,6 +266,8 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_child():
                 person=1,
                 spouse=2,
                 child=-999,
+                description="child born",
+                dateTime="2025-01-01",
             )
         ]
     )
@@ -265,6 +285,8 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_relationship_target(
                 id=-1,
                 kind=EventKind.Shift,
                 person=1,
+                description="conflict",
+                dateTime="2025-01-01",
                 relationship=RelationshipKind.Conflict,
                 relationshipTargets=[-999],
             )
@@ -284,6 +306,8 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_triangle_person():
                 id=-1,
                 kind=EventKind.Shift,
                 person=1,
+                description="triangulation",
+                dateTime="2025-01-01",
                 relationship=RelationshipKind.Inside,
                 relationshipTriangles=[1, -999],
             )
@@ -293,6 +317,26 @@ def test_validate_deltas_rejects_event_with_nonexistent_pdp_triangle_person():
         validate_pdp_deltas(pdp, deltas)
     assert len(exc_info.value.errors) == 1
     assert "non-existent PDP person -999 in triangle" in exc_info.value.errors[0]
+
+
+def test_validate_deltas_rejects_event_without_description():
+    pdp = PDP()
+    deltas = PDPDeltas(
+        events=[Event(id=-1, kind=EventKind.Shift, person=1)],
+    )
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas)
+    assert any("requires description" in e for e in exc_info.value.errors)
+
+
+def test_validate_deltas_rejects_event_without_datetime():
+    pdp = PDP()
+    deltas = PDPDeltas(
+        events=[Event(id=-1, kind=EventKind.Shift, person=1, description="Got fired")],
+    )
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas)
+    assert any("requires dateTime" in e for e in exc_info.value.errors)
 
 
 def test_validate_deltas_rejects_person_with_nonexistent_pdp_parents():
@@ -314,6 +358,8 @@ def test_validate_deltas_multiple_errors():
                 kind=EventKind.Shift,
                 person=-888,
                 spouse=-777,
+                description="x",
+                dateTime="2025-01-01",
             )
         ],
     )
@@ -331,6 +377,8 @@ def test_add_pdp_deltas_success():
                 id=-2,
                 kind=EventKind.Shift,
                 person=1,
+                description="anxiety increased",
+                dateTime="2025-01-01",
                 anxiety=VariableShift.Up,
             )
         ],
@@ -351,6 +399,8 @@ def test_add_pdp_deltas_failure():
                 id=-1,
                 kind=EventKind.Shift,
                 person=-999,
+                description="x",
+                dateTime="2025-01-01",
             )
         ]
     )
@@ -543,3 +593,105 @@ def test_reassign_delta_ids_avoids_existing_pdp():
 
     assert deltas.people[0].id != -1
     assert deltas.people[0].id < -1
+
+
+def test_reassign_delta_ids_remaps_delete_list():
+    """Delete entries must be remapped when IDs collide."""
+    pdp = PDP(
+        people=[Person(id=-1, name="Existing")],
+        pair_bonds=[PairBond(id=-5, person_a=-1, person_b=1)],
+    )
+    # Delta reuses -5 for a new pair_bond AND deletes -5
+    deltas = PDPDeltas(
+        pair_bonds=[PairBond(id=-5, person_a=-1, person_b=2)],
+        delete=[-5],
+    )
+    reassign_delta_ids(pdp, deltas)
+
+    # Pair bond should be remapped
+    assert deltas.pair_bonds[0].id != -5
+    # Delete should track the remapped ID, not the original PDP pair_bond
+    assert deltas.delete == [deltas.pair_bonds[0].id]
+
+
+def test_validate_deltas_rejects_delete_orphaning_event():
+    pdp = PDP(
+        people=[Person(id=-5, name="Mom")],
+        events=[
+            Event(
+                id=-7,
+                kind=EventKind.Separated,
+                person=-5,
+                description="Split up",
+            )
+        ],
+    )
+    deltas = PDPDeltas(delete=[-5])
+    with pytest.raises(PDPValidationError, match="orphan event -7"):
+        validate_pdp_deltas(pdp, deltas)
+
+
+def test_validate_deltas_rejects_delete_orphaning_person_parents():
+    pdp = PDP(
+        people=[
+            Person(id=-1, name="Child", parents=-10),
+            Person(id=-2, name="Mom"),
+            Person(id=-3, name="Dad"),
+        ],
+        pair_bonds=[PairBond(id=-10, person_a=-2, person_b=-3)],
+    )
+    deltas = PDPDeltas(delete=[-10])
+    with pytest.raises(PDPValidationError, match="orphan person -1"):
+        validate_pdp_deltas(pdp, deltas)
+
+
+def test_commit_repairs_dangling_parents():
+    diagram_data = DiagramData(
+        people=[{"id": 1, "name": "User"}],
+        events=[],
+        pair_bonds=[],
+        lastItemId=5,
+        pdp=PDP(
+            people=[
+                Person(id=-1, name="Mom"),
+                Person(id=-2, name="Dad"),
+                Person(id=-3, name="Child", parents=-99),
+            ],
+            events=[
+                Event(id=-4, kind=EventKind.Shift, person=-1, description="x"),
+            ],
+            pair_bonds=[],
+        ),
+    )
+    # -99 is dangling (no pair_bond -99 exists)
+    # commit should repair it and succeed
+    diagram_data.commit_pdp_items([-1, -2, -3, -4])
+    # Child's parents should have been cleared
+    committed_child = next(
+        p for p in diagram_data.people if p.get("name") == "Child"
+    )
+    assert committed_child["parents"] is None
+
+
+def test_commit_with_positive_id_people_in_pdp():
+    """Positive-ID people in PDP (committed item updates) should not be committed."""
+    diagram_data = DiagramData(
+        people=[{"id": 1, "name": "User"}],
+        events=[],
+        pair_bonds=[],
+        lastItemId=5,
+        pdp=PDP(
+            people=[
+                Person(id=1, name="User Updated"),
+                Person(id=-1, name="New Person"),
+            ],
+            events=[
+                Event(id=-2, kind=EventKind.Shift, person=-1, description="x"),
+            ],
+        ),
+    )
+    # Only commit negative IDs
+    mapping = diagram_data.commit_pdp_items([-1, -2])
+    assert -1 in mapping
+    assert -2 in mapping
+    assert 1 not in mapping

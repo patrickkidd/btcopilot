@@ -87,7 +87,6 @@ def test():
             {
                 "success": True,
                 "message": response.statement,
-                "pdp": asdict(response.pdp),
                 "prompts_used": list(custom_prompts.keys()),
             }
         )

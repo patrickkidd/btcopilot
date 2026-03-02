@@ -8,6 +8,56 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ## 2026-02
 
+### 2026-02-24: Single-prompt extraction replaces delta-by-delta for Personal app
+
+**Context:** Delta-by-delta extraction (one LLM call per statement, 25 calls for a discussion) produces massive over-extraction. Discussion 48 cumulative F1: Aggregate 0.25, Events 0.099 (60 AI events vs 21 GT). Cross-statement person duplication (Sam/Maya/Leo extracted twice), event inflation (3-4x GT count), and high run-to-run variance (same prompt yields aggregate F1 ranging 0.20-0.25).
+
+Single-prompt extraction (full conversation → one LLM call → complete PDP) tested on discussion 48: Aggregate 0.45, Events 0.29 (17 AI events vs 21 GT). People extraction deterministic across runs. Nearly 2x aggregate F1 improvement with zero prompt tuning.
+
+**Options considered:**
+1. Continue tuning delta-by-delta prompts (diminishing returns, high variance)
+2. Single-prompt extraction only post-conversation ("Build my diagram" button)
+3. Single-prompt re-extract after each turn (expensive, same code path)
+
+**Decision:** Option 2 — User-initiated single-prompt extraction for the Personal app.
+
+**UX flow:**
+- User chats freely (no extraction during chat — just conversation)
+- User taps "Build my diagram" → full conversation sent as one prompt → complete PDP returned
+- User can Accept All to commit, or continue chatting
+- Subsequent "Build my diagram" re-extracts full conversation, producing a fresh PDP that applies on top of any committed items
+
+**Architectural implications:**
+- `chat.py:ask()` drops `skip_extraction=False` path — chat is chat-only
+- New `pdp.extract_full()` function (alongside existing `update()` and `import_text()`)
+- `Statement.pdp_deltas` no longer written during Personal app use
+- Per-statement delta pipeline kept for training app GT coding/auditing only
+- Celery extraction chain not needed for Personal app users
+
+**Resolves decision 2025-12-27** (scope MVP to People/PairBonds only?): Full extraction is now viable at acceptable quality. Events F1 jumped from 0.09 to 0.29, above the "hide events" threshold.
+
+**Measured results (discussion 48, 2 runs):**
+
+| Metric | Delta-by-delta (best) | Single prompt (avg) |
+|--------|----------------------|---------------------|
+| Aggregate F1 | 0.252 | 0.450 |
+| People F1 | 0.595 (23 AI) | 0.720 (11 AI) |
+| Events F1 | 0.099 (60 AI) | 0.290 (17 AI) |
+| People FP | 12 | 2 |
+| Events FP | 56 | 11.5 |
+
+**Revisit trigger:** If conversations become too long for single-prompt context window, or if users need real-time PDP feedback during chat.
+
+### 2026-02-24: Patrick is sole GT source for MVP
+
+**Context:** IRR study with Guillermo and Kathy is valuable long-term but won't build consensus quickly enough for MVP timeline. Existing GT for discussions 36/37/39 may need replacement with new synthetic discussions using improved personas.
+
+**Decision:** Patrick codes all GT for MVP. Single source eliminates IRR delays. ~60 min per discussion. Target: 3-5 coded discussions.
+
+**Reasoning:** MVP needs a rapid iteration loop: extract → measure F1 → tune → re-extract. Waiting for multi-coder consensus breaks that loop.
+
+**Revisit trigger:** Post-MVP, when IRR study becomes relevant for clinical validation and publication.
+
 ### 2026-02-14: PairBonds are first-class entities, explicitly extracted by AI
 
 **Context:** Cumulative F1 revealed AI extracts zero pair bonds across all discussions (0.000 F1). Investigation showed the fdserver prompt has zero positive PairBond extraction examples, and `cleanup_pair_bonds()` aggressively prunes pair bonds not referenced by Person.parents.

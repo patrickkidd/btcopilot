@@ -51,6 +51,26 @@ Other: [README.md](README.md), [doc/plans/](doc/plans/)
 
 **Key prompt engineering lessons** (details in PROMPT_ENGINEERING_LOG.md): model is Gemini 2.0 Flash; verbose definitions killed F1 scores; see log for what NOT to include in prompts.
 
+### MVP Dashboard Maintenance (MANDATORY)
+
+[MVP_DASHBOARD.md](MVP_DASHBOARD.md) is the primary dev punchlist. Each task links to a detailed analysis in [doc/analyses/](doc/analyses/) — read the linked analysis before re-investigating whether a bug still exists. The dashboard must be a reliable cold-start reference for new sessions.
+
+After completing or reviewing any MVP task:
+1. Update the task's row in the tier table (strikethrough if done, add DONE date/notes)
+2. Update [REVIEW.md](doc/log/mvp_dashboard/REVIEW.md) with approval/rejection decision
+3. Update the "Current State Summary" table if the subsystem status changed
+4. Update the sprint plan status if sprint-level progress changed
+
+After new bugs are discovered during testing:
+1. Create a T*.md in `doc/log/mvp_dashboard/`
+2. Add a row to the appropriate tier table in MVP_DASHBOARD.md
+3. Update "Current State Summary" if it affects subsystem status
+
+Additional rules:
+- **Anti-staleness**: Never trust dashboard task statuses at face value. Verify against actual code before working on a task. Add findings to the Spot-Check Log.
+- **No hardcoded F1 values**: F1 numbers are computed on-demand by admin/audit routes. Dashboard should reference measurement date and conditions, not bare numbers.
+- **Task status must match code reality**: If implementation already exists, mark it done regardless of when it was implemented.
+
 ### Synthetic Client Dev Log (MANDATORY)
 
 After ANY change to synthetic conversation generation, create a timestamped entry in `doc/log/synthetic-clients/`. See [README.md](doc/log/synthetic-clients/README.md) for triggers and format.
@@ -66,7 +86,12 @@ Process: make change → create `doc/log/synthetic-clients/YYYY-MM-DD_HH-MM--des
 btcopilot provides:
 - Backend for Pro/Personal apps
 - AI/ML interface for SARF research
-- PDP (Pending Data Pool) extraction — deltas for diagram files, accepted/committed later by apps
+- PDP (Pending Data Pool) extraction — two modes:
+  - **Single-prompt** (Personal app): `pdp.extract_full()` via
+    `POST /personal/discussions/<id>/extract`. Full conversation → one LLM call
+    → complete PDP. Chat is chat-only.
+  - **Per-statement** (Training app): `pdp.update()` per statement for GT
+    coding workflows.
 
 ### Core Structure
 
@@ -74,7 +99,7 @@ btcopilot provides:
 |-----------|----------|---------|
 | App factory | `btcopilot/app.py:create_app()` | Flask init, extensions, error handlers |
 | Pro backend | `btcopilot/pro/` | Desktop app API (pickle over HTTPS) |
-| Personal backend | `btcopilot/personal/` | Mobile app API (JSON), AI extraction for SARF variables |
+| Personal backend | `btcopilot/personal/` | Mobile app API (JSON), chat-only conversation + endpoint-driven extraction |
 | Training app | `btcopilot/training/` | Domain-expert feedback for AI fine-tuning |
 | Schema | `btcopilot/pro/schema.py` | Core data model shared with Pro/Personal apps |
 | Personal DB | `btcopilot/personal/database.py` | JSON-based data schema |
@@ -100,10 +125,27 @@ btcopilot provides:
 |-----------|-----------|---------|
 | SARF Editor | `training/templates/components/sarf_editor.html` | Review/edit extracted clinical data (collapsed/expanded views, in-place editing, feedback, cumulative display) |
 | Diagram Renderer | `training/templates/components/family_diagram_svg.html`, `training/routes/diagrams.py` | SVG family diagram visualization. Standalone: `/training/diagrams/render/<statement_id>/<auditor_id>`, embed: `?embed=true`, modal via Discussion page "Diagram" buttons |
-| Chat Flow | [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md) | AI conversation system extracting family data. Architecture from `btcopilot.personal.ask`, system prompts, data extraction, LLM integration |
+| Chat Flow | [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md) | Chat-only AI conversation (no extraction). Extraction is endpoint-driven via `pdp.extract_full()` — see [PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md) |
 | Synthetic Testing | `btcopilot.tests.personal.synthetic`, [tests README](btcopilot/tests/personal/README.md) | Persona generator, conversation simulator, quality evaluator. Run: `uv run pytest btcopilot/btcopilot/tests/personal/test_synthetic.py -v -m e2e` |
 | F1 Metrics | [doc/F1_METRICS.md](doc/F1_METRICS.md) | F1 score calculation, entity matching, GT workflow, matching criteria, cache strategy |
 | Visual Spec | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) | Platform-independent layout spec: person symbols, PairBond geometry, ChildOf connections, MultipleBirth, generational layout, label positioning |
+
+---
+
+## Domain Knowledge
+
+### GT / F1 Data Model
+
+- Birth/Adopted events: `child` is the primary link (who was born/adopted), `person`/`spouse` are optional parent links. `person=None` on birth events is legitimate.
+- Other events: `person` is the primary link.
+- Structural events (Birth, Death, Married, etc.) skip description matching in F1 — only Shift events use descriptions.
+
+### IRR Deliberation Records
+
+- **Purpose:** Capture full diversity of opinions and their evolution per CI theory — both agreement AND unresolved ambiguity — for later retroactive rule extraction with confidence scores.
+- **Exhaustiveness rule:** Every substantive point must be captured. Common failure: summarizing away tangential points (heuristics, anecdotes, personal examples, side conversations, process observations, historical references). These MUST be included. Audit transcript line-by-line before declaring completion.
+- **Raw transcripts are always committed** — they are irreplaceable ground truth. Never delete them.
+- **Always keep `btcopilot/doc/irr/README.md` in sync** when adding/modifying meetings or artifacts.
 
 ---
 

@@ -18,30 +18,38 @@ from btcopilot.training.utils import get_auditor_id
 _log = logging.getLogger(__name__)
 
 
-PLACEHOLDER_DESCRIPTIONS = frozenset(["new event", ""])
-
-
-CHILD_CENTRIC_KINDS = frozenset(["birth", "adopted"])
-
-
 def validate_extraction_for_approval(extraction: dict) -> list[str]:
+    from btcopilot.schema import EventKind
+
     errors = []
     if not extraction:
         return errors
 
-    for i, event in enumerate(extraction.get("events", [])):
-        kind = event.get("kind", "?")
-        desc = (event.get("description") or "").strip()
+    people_by_id = {p["id"]: p.get("name", "?") for p in extraction.get("people", [])}
 
-        if kind in CHILD_CENTRIC_KINDS:
+    for event in extraction.get("events", []):
+        kind_str = event.get("kind", "?")
+        desc = (event.get("description") or "").strip()
+        event_id = event.get("id", "?")
+
+        try:
+            kind = EventKind(kind_str)
+        except ValueError:
+            errors.append(f"event {event_id}: unknown kind {kind_str!r}")
+            continue
+
+        if not desc and not kind.isSelfDescribing():
+            person_id = event.get("person")
+            person_name = people_by_id.get(person_id, person_id) if person_id else None
+            label = f", person={person_name}" if person_name else ""
+            errors.append(f"event {event_id} ({kind.value}{label}): missing description")
+
+        if kind.isOffspring():
             if event.get("child") is None:
-                errors.append(f"Event {i+1} ({kind}): missing child link")
+                errors.append(f"event {event_id} ({kind.value}): missing child link")
         else:
             if event.get("person") is None:
-                errors.append(f"Event {i+1} ({kind}): missing person link")
-
-        if desc.lower() in PLACEHOLDER_DESCRIPTIONS:
-            errors.append(f"Event {i+1} ({kind}): placeholder or empty description")
+                errors.append(f"event {event_id} ({kind.value}, desc={desc!r}): missing person link")
 
     return errors
 
@@ -268,6 +276,9 @@ def create():
         edited_extraction = data.get("edited_extraction")
         if edited_extraction:
             edited_extraction = cleanup_extraction_pair_bonds(edited_extraction)
+            errors = validate_extraction_for_approval(edited_extraction)
+            if errors:
+                return jsonify({"error": errors}), 400
         existing.edited_extraction = edited_extraction
         existing.updated_at = func.now()
 
@@ -309,6 +320,9 @@ def create():
     edited_extraction = data.get("edited_extraction")
     if edited_extraction:
         edited_extraction = cleanup_extraction_pair_bonds(edited_extraction)
+        errors = validate_extraction_for_approval(edited_extraction)
+        if errors:
+            return jsonify({"error": errors}), 400
     feedback = Feedback(
         statement_id=data["message_id"],
         auditor_id=auditor_id,

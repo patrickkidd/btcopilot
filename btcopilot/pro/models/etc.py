@@ -43,8 +43,8 @@ class AccessRight(db.Model, ModelMixin):
 
     __tablename__ = "access_rights"
 
-    diagram_id = Column(Integer, ForeignKey("diagrams.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    diagram_id = Column(Integer, ForeignKey("diagrams.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     right = Column(String, nullable=False)
 
     diagram = relationship(
