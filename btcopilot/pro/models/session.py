@@ -47,10 +47,10 @@ class Session(db.Model, ModelMixin):
             "users": [
                 u.as_dict()
                 for u in User.query.options(
-                    joinedload(User.licenses)
-                    .joinedload(License.activations)
-                    .joinedload(Activation.machine),
-                    joinedload(User.licenses).joinedload(License.policy),
+                    selectinload(User.licenses).options(
+                        selectinload(License.activations).joinedload(Activation.machine),
+                        joinedload(License.policy),
+                    )
                 ).filter_by(active=True)
             ],
             "policies": [p.as_dict() for p in Policy.query.filter_by(public=True)],
