@@ -19,6 +19,7 @@ from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerTyp
 _log = logging.getLogger(__name__)
 
 
+@pytest.mark.e2e
 def test_update(test_user):
 
     discussion = Discussion(
