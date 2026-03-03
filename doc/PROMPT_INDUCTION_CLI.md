@@ -21,7 +21,7 @@ claude --prompt-file btcopilot/training/prompts/induction_agent.md
 cat instance/induction_report.md
 
 # 4. If improved, commit
-git add btcopilot/personal/prompts.py instance/induction_report.md
+git add fdserver/prompts/private_prompts.py instance/induction_report.md
 git commit -m "Automated prompt induction (F1: 0.78 → 0.82)"
 ```
 
@@ -39,7 +39,7 @@ git commit -m "Automated prompt induction (F1: 0.78 → 0.82)"
    - Read GT export (`instance/gt_export.json`)
    - Analyze error patterns autonomously using its tools
    - Propose prompt improvements
-   - Edit `prompts.py` directly
+   - Edit `private_prompts.py` directly
    - Run `test_prompts.py` to validate
    - Iterate until F1 converges or max iterations reached
    - Generate report with findings
@@ -52,7 +52,7 @@ git commit -m "Automated prompt induction (F1: 0.78 → 0.82)"
 3. **Claude Code uses its tools** (no API needed):
    - `Read` - Load GT export and current prompts
    - `Grep`/`Glob` - Search codebase for context
-   - `Edit` - Modify prompts.py iteratively
+   - `Edit` - Modify private_prompts.py iteratively
    - `Bash` - Run test_prompts.py after each change
    - `TodoWrite` - Track iteration progress
    - `Write` - Generate final report
@@ -110,7 +110,7 @@ I'll analyze the error patterns in the ground truth export...
 Based on the GT cases, I see these top error patterns:
 1. Over-extraction of events from general statements
 2. Missing triangle relationships
-  ▶ Edit /Users/patrick/theapp/btcopilot/btcopilot/personal/prompts.py
+  ▶ Edit /Users/patrick/theapp/fdserver/prompts/private_prompts.py
     ✓ (3 lines, 156 chars)
   ▶ Bash - Run prompt tests
     $ uv run python -m btcopilot.training.test_prompts
@@ -171,13 +171,13 @@ You are an autonomous agent optimizing extraction prompts for a family relations
 
 ## Your Mission
 
-Improve prompts in `btcopilot/personal/prompts.py` to maximize F1 scores on ground truth cases.
+Improve prompts in `fdserver/prompts/private_prompts.py` to maximize F1 scores on ground truth cases.
 
 ## Workflow
 
 1. **Setup**
    - Read ground truth: `instance/gt_export.json`
-   - Read current prompts: `btcopilot/personal/prompts.py`
+   - Read current prompts: `fdserver/prompts/private_prompts.py`
    - Establish baseline: `uv run python -m btcopilot.training.test_prompts`
    - Create todo list with max 10 iterations
 
@@ -208,7 +208,7 @@ Improve prompts in `btcopilot/personal/prompts.py` to maximize F1 scores on grou
         * Make incremental adjustments
 
    c. **Edit Prompts**
-      - Use `Edit` tool to update `btcopilot/personal/prompts.py`
+      - Use `Edit` tool to update `fdserver/prompts/private_prompts.py`
       - Make precise changes (don't rewrite everything)
 
    d. **Test Changes**
@@ -283,11 +283,11 @@ Improve prompts in `btcopilot/personal/prompts.py` to maximize F1 scores on grou
 
    ```bash
    # If improved, commit
-   git add btcopilot/personal/prompts.py instance/induction_report.md
+   git add fdserver/prompts/private_prompts.py instance/induction_report.md
    git commit -m "Automated prompt induction (F1: X.XX → Y.YY)"
 
    # If not improved, revert
-   git checkout btcopilot/personal/prompts.py
+   git checkout fdserver/prompts/private_prompts.py
    ```
    ```
 
@@ -322,7 +322,7 @@ Improve prompts in `btcopilot/personal/prompts.py` to maximize F1 scores on grou
 - `btcopilot/training/test_prompts.py` - Test harness
 
 **Read-write**:
-- `btcopilot/personal/prompts.py` - Target for improvements (three parts):
+- `fdserver/prompts/private_prompts.py` - Target for improvements (three parts):
   - `DATA_EXTRACTION_PROMPT` - Header + SECTION 1 + SECTION 2
   - `DATA_EXTRACTION_EXAMPLES` - SECTION 3 (error patterns, literal JSON)
   - `DATA_EXTRACTION_CONTEXT` - Context with runtime variables
@@ -555,7 +555,7 @@ Example folder names:
 GT exports and induction reports contain confidential clinical data and are stored in the private `btcopilot-sources` repository. Symlinks in `theapp` point to these locations for workflow compatibility. Both paths are in `.gitignore` to prevent accidental commits to the public repo.
 
 **Target Files** (modified by agent):
-- `btcopilot/btcopilot/personal/prompts.py` - Extraction prompts
+- `fdserver/prompts/private_prompts.py` - Extraction prompts (private, overrides btcopilot defaults)
 
 **Supporting Files** (unchanged):
 - `btcopilot/btcopilot/training/export_gt.py` - GT export module
@@ -657,17 +657,17 @@ Generating report...
 | Aggregate F1 | 0.823 | 0.873 | +0.050 |
 
 📄 Full report: instance/induction_report.md
-📝 Changes: git diff btcopilot/personal/prompts.py
+📝 Changes: git diff fdserver/prompts/private_prompts.py
 
 Next steps:
   - Review report and git diff
-  - If improved: git add btcopilot/personal/prompts.py instance/induction_report.md && git commit
-  - If not improved: git checkout btcopilot/personal/prompts.py
+  - If improved: git add fdserver/prompts/private_prompts.py instance/induction_report.md && git commit
+  - If not improved: git checkout fdserver/prompts/private_prompts.py
 
-$ git diff btcopilot/personal/prompts.py
+$ git diff fdserver/prompts/private_prompts.py
 [Shows precise, targeted changes to event definition and triangle examples]
 
-$ git add btcopilot/personal/prompts.py instance/induction_report.md
+$ git add fdserver/prompts/private_prompts.py instance/induction_report.md
 $ git commit -m "Automated prompt induction (F1: 0.823 → 0.873)
 
 - Events F1: 0.776 → 0.841 (clarified event vs. pattern distinction)

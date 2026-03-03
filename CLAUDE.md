@@ -181,22 +181,37 @@ All web UI must work in **both light and dark modes**:
 
 ## Prompt Induction Workflow
 
-**MANDATORY for changes to**: `btcopilot/personal/prompts.py`, `btcopilot/extensions/llm.py` (`PDP_FIELD_DESCRIPTIONS`)
+**MANDATORY for ALL changes to extraction prompts**, including:
+- `fdserver/prompts/private_prompts.py` (production prompt overrides)
+- `btcopilot/personal/prompts.py` (default prompts)
+- `btcopilot/extensions/llm.py` (`PDP_FIELD_DESCRIPTIONS`)
 
-**Before editing**: read [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) and check `PDP_FIELD_DESCRIPTIONS` in `llm.py`. Both must stay in sync.
+**THE PROTOCOL**: [btcopilot/training/prompts/induction_agent.md](btcopilot/training/prompts/induction_agent.md) is the authoritative protocol for ALL prompt engineering work. Follow it completely — no exceptions, no shortcuts, no "I'll document later."
+
+**This applies to every prompt change, whether**:
+- Automated CLI-driven induction runs
+- Manual/ad-hoc prompt tuning sessions
+- Full-extraction (`extract_full()`) or per-statement (`pdp.update()`) prompts
+- Quick "let me just try one thing" experiments
+
+**Non-negotiable requirements from the protocol**:
+1. Read strategy doc FIRST: [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md)
+2. Create timestamped run folder + JSONL log file in `doc/induction-reports/`
+3. Establish and log baseline F1 before any changes
+4. Log EVERY iteration (kept AND reverted) with F1 scores
+5. Generate final report (`.md`) in the run folder
+6. Update strategy doc with what worked AND what failed
+7. Update [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md)
+8. Append entry to [doc/f1_timeseries.json](doc/f1_timeseries.json) (feeds admin/auditor dashboard chart)
+
+**Log negative results as thoroughly as positive ones** — the goal is to prevent future thrashing by documenting what was tried and why it failed.
 
 | Doc | Purpose |
 |-----|---------|
-| [doc/PROMPT_INDUCTION_CLI.md](doc/PROMPT_INDUCTION_CLI.md) | **PRIMARY** — CLI-driven automated iteration ($0, RECOMMENDED) |
-| [doc/PROMPT_OPTIMIZATION_MANUAL.md](doc/PROMPT_OPTIMIZATION_MANUAL.md) | Manual copy-paste approach (current MVP) |
-| [doc/PROMPT_INDUCTION_AUTOMATED.md](doc/PROMPT_INDUCTION_AUTOMATED.md) | Future roadmap — NOT IMPLEMENTED |
-
-**Process**:
-1. Export GT: `uv run python -m btcopilot.training.export_gt`
-2. Edit prompts in `prompts.py` and/or `PDP_FIELD_DESCRIPTIONS` in `llm.py`
-3. **TEST IMMEDIATELY**: `uv run python -m btcopilot.training.test_prompts` — **NEVER skip this step**
-4. Only commit if F1 improves (or document why regression is acceptable)
-5. Save induction report to `btcopilot-sources/training/induction-reports/`
+| [btcopilot/training/prompts/induction_agent.md](btcopilot/training/prompts/induction_agent.md) | **AUTHORITATIVE** — Full protocol with logging spec, iteration rules, report format |
+| [doc/PROMPT_INDUCTION_CLI.md](doc/PROMPT_INDUCTION_CLI.md) | CLI-driven automated iteration |
+| [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md) | Cumulative strategy doc — read before, update after |
+| [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) | Decision log — update after every run |
 
 **Rules**: ADD nuance, don't replace sections. Never remove working examples without F1 validation. Track iterations in reports. Large refactors need approval. Test after EVERY edit.
 

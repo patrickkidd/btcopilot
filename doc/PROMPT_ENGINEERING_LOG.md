@@ -2,7 +2,7 @@
 
 **Purpose**: Authoritative record of prompt engineering decisions, experiments, and lessons learned for the SARF data extraction system. Prevents regressions by documenting what works, what doesn't, and why.
 
-**Last Updated**: December 2024
+**Last Updated**: 2026-03-03
 
 ---
 
@@ -235,6 +235,35 @@ See `btcopilot/doc/TODO_GEMINI_SCHEMA.md` for:
 **Decision**: Reordered prompt assembly: PROMPT → EXAMPLES → RULES → CONTEXT
 
 **Status**: Active, monitoring F1 impact.
+
+### Mar 2026: Full-extraction prompt optimization (9 iterations)
+
+**Context**: Manual session optimizing `DATA_FULL_EXTRACTION_CONTEXT` in `fdserver/prompts/private_prompts.py` for the `extract_full()` pipeline. Tested on 6 GT discussions (36/37/39/48/50/51) using gemini-2.5-flash.
+
+**Baseline**: Events F1 = 0.302 (avg across 6 discussions).
+
+**Results**: 9 iterations, 1 kept (V9), 7 reverted, 1 superseded. Final Events F1 = 0.335 avg (3 runs), best single run 0.367.
+
+**What worked (V9)**: Minimal intervention — quality hints layered on original "extract everything" prompt:
+1. Scene-detail suppression with concrete examples ("slammed door", "made a drink" = not clinical events)
+2. Birth event reminder with age calculation formula
+3. Relationship type disambiguation (projection vs overfunctioning, inside vs conflict)
+4. Deduplication guidance
+5. Soft calibration ("15-30 events typical")
+
+**What failed (V1-V7)**:
+- Aggressive consolidation rules → model ignored them or killed TP proportionally to FP
+- "IGNORE" / "DO NOT APPLY" framing → destroyed useful per-statement event detection
+- "Follow BUT override" framing → model reverted to per-statement behavior (76 events)
+- Person-centric extraction → no improvement in event selection quality
+- Hard count targets → model drops events randomly, not by significance
+- Pre-transcript rule placement → less effective than post-transcript
+
+**Key lesson**: The 1770 lines of per-statement training examples dominate model behavior. Full-extraction context (~50 lines) cannot override this. The correct strategy is minimal quality hints layered on top of per-statement training, not overrides or rewrites.
+
+**Additional finding**: Description style mismatch (GT verbatim words vs AI clinical summaries) is the binding constraint on Events F1. Any consolidation that abstracts descriptions hurts matching. Raising similarity threshold from 0.4 to 0.5 is theoretically correct but hurts measured F1.
+
+**Report**: `doc/induction-reports/2026-03-03_08-20-00--full-extraction/`
 
 ### Dec 2024: Add Gemini array issue instrumentation
 
