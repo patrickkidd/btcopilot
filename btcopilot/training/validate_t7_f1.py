@@ -199,7 +199,7 @@ def main():
             print(f"Running cumulative F1 on discussions: {ids}\n")
             results = validate_discussions(ids, detailed=args.detailed)
             if not results:
-                print("No valid results. Check that discussions exist and have approved GT.")
+                print("No valid results. Check that discussions exist and have approved GT. Please ensure that the discussion IDs are correct and that approved ground truth data is available.")
                 sys.exit(1)
             all_pass = print_report(results, detailed=args.detailed)
             sys.exit(0 if all_pass else 1)
