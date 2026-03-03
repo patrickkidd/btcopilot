@@ -191,7 +191,7 @@ def main():
             print("Running cumulative F1 on all synthetic discussions with GT...\n")
             system = calculate_all_cumulative_f1(include_synthetic=True)
             if not system.per_discussion:
-                print("No discussions with approved GT found.")
+                print("No discussions with approved GT found. Please ensure that the discussions exist and have approved ground truth.")
                 sys.exit(1)
             print_report(system.per_discussion, detailed=args.detailed)
         else:
