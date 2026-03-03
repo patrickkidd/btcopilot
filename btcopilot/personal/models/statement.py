@@ -19,8 +19,8 @@ class Statement(db.Model, ModelMixin):
     __tablename__ = "statements"
 
     text = Column(Text)
-    discussion_id = Column(Integer, ForeignKey("discussions.id"))
-    speaker_id = Column(Integer, ForeignKey("speakers.id"))
+    discussion_id = Column(Integer, ForeignKey("discussions.id"), index=True)
+    speaker_id = Column(Integer, ForeignKey("speakers.id"), index=True)
     pdp_deltas = Column(JSON)
     custom_prompts = Column(JSON)  # Store custom prompts used for this statement
     order = Column(Integer)  # Order within discussion for reliable sorting

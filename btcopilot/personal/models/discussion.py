@@ -21,8 +21,8 @@ class Discussion(db.Model, ModelMixin):
 
     __tablename__ = "discussions"
 
-    user_id = Column(Integer, db.ForeignKey("users.id"))
-    diagram_id = Column(Integer, db.ForeignKey("diagrams.id"))
+    user_id = Column(Integer, db.ForeignKey("users.id"), index=True)
+    diagram_id = Column(Integer, db.ForeignKey("diagrams.id"), index=True)
     summary = Column(Text)
     discussion_date = Column(
         Date,

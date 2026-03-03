@@ -15,7 +15,7 @@ class Speaker(db.Model, ModelMixin):
 
     __tablename__ = "speakers"
 
-    discussion_id = Column(Integer, ForeignKey("discussions.id"))
+    discussion_id = Column(Integer, ForeignKey("discussions.id"), index=True)
     person_id = Column(
         Integer
     )  # References a Person in personal.database.Database JSON data
