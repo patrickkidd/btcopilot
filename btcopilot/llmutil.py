@@ -11,8 +11,8 @@ from btcopilot.schema import from_dict
 
 _log = logging.getLogger(__name__)
 
-EXTRACTION_MODEL = "gemini-2.5-flash"
-EXTRACTION_MODEL_LARGE = "gemini-2.5-flash"
+EXTRACTION_MODEL = "gemini-3.1-flash-lite-preview"
+EXTRACTION_MODEL_LARGE = "gemini-3.1-flash-lite-preview"
 RESPONSE_MODEL = "gemini-3-flash-preview"
 
 
