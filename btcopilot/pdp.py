@@ -14,7 +14,10 @@ from btcopilot.personal.prompts import (
     DATA_EXTRACTION_CONTEXT,
     DATA_EXTRACTION_CORRECTION,
     DATA_FULL_EXTRACTION_CONTEXT,
+    DATA_FULL_EXTRACTION_CONTEXT_SIMPLE,
     DATA_IMPORT_CONTEXT,
+    DATA_EXTRACTION_PROMPT_SIMPLE,
+    DATA_EXTRACTION_EXAMPLES_SIMPLE,
 )
 from btcopilot.schema import (
     DiagramData,
@@ -567,7 +570,20 @@ async def _extract_and_validate(
 async def extract_full(
     discussion,
     diagram_data: DiagramData,
+    simplified: bool = False,
 ) -> tuple[PDP, PDPDeltas]:
+    """
+    Extract PDP deltas from a full discussion transcript.
+
+    Args:
+        discussion: The Discussion object
+        diagram_data: Current diagram data with PDP context
+        simplified: If True, use simplified prompt that strips SARF clinical
+                   variables (symptom, anxiety, relationship, functioning) to
+                   test whether extraction accuracy improves when the LLM
+                   focuses on fewer fields. Defaults to False (no change to
+                   production behavior).
+    """
     reference_date = (
         discussion.discussion_date
         if discussion.discussion_date
@@ -576,23 +592,34 @@ async def extract_full(
 
     conversation_history = discussion.conversation_history()
 
+    prompt_mode = "SIMPLIFIED" if simplified else "FULL"
     _log.info(
-        f"PDP EXTRACT_FULL INPUTS:\n"
+        f"PDP EXTRACT_FULL INPUTS ({prompt_mode}):\n"
         f"  conversation_history length: {len(conversation_history)}\n"
         f"  diagram_data.pdp.people: {[p.name for p in diagram_data.pdp.people]}\n"
         f"  diagram_data.pdp.events count: {len(diagram_data.pdp.events)}\n"
         f"  diagram_data.people count: {len(diagram_data.people)}\n"
     )
 
+    if simplified:
+        extraction_prompt = DATA_EXTRACTION_PROMPT_SIMPLE
+        extraction_examples = DATA_EXTRACTION_EXAMPLES_SIMPLE
+        extraction_context = DATA_FULL_EXTRACTION_CONTEXT_SIMPLE
+    else:
+        extraction_prompt = DATA_EXTRACTION_PROMPT
+        extraction_examples = DATA_EXTRACTION_EXAMPLES
+        extraction_context = DATA_FULL_EXTRACTION_CONTEXT
+
     prompt = (
-        DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
-        + DATA_EXTRACTION_EXAMPLES
-        + DATA_FULL_EXTRACTION_CONTEXT.format(
+        extraction_prompt.format(current_date=reference_date.isoformat())
+        + extraction_examples
+        + extraction_context.format(
             diagram_data=asdict(diagram_data),
             conversation_history=conversation_history,
         )
     )
-    return await _extract_and_validate(prompt, diagram_data, "extract_full", large=True)
+    source = "extract_full_simplified" if simplified else "extract_full"
+    return await _extract_and_validate(prompt, diagram_data, source, large=True)
 
 
 async def import_text(

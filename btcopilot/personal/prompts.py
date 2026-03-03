@@ -780,6 +780,426 @@ If you create people at -1 to -10, events must start at -11, not -1.
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# SIMPLIFIED EXTRACTION PROMPTS (Experiment: strip SARF variables)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Hypothesis: Removing SARF clinical variables (symptom, anxiety, relationship,
+# functioning) lets the LLM focus on correctly identifying events, dates, and
+# person references — potentially boosting Events F1 above 0.4.
+#
+# These prompts are ONLY used when extract_full(simplified=True) is called.
+# They do NOT affect production extraction behavior.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+DATA_FULL_EXTRACTION_CONTEXT_SIMPLE = """
+
+**FULL DISCUSSION EXTRACTION MODE:**
+
+You are analyzing an ENTIRE discussion transcript below. Extract ALL people,
+events, and pair_bonds mentioned throughout the conversation.
+This is NOT incremental — extract everything you find into a single complete
+result.
+
+**Existing Diagram State (avoid duplicates with committed items):**
+
+{diagram_data}
+
+**FULL DISCUSSION TRANSCRIPT:**
+
+{conversation_history}
+
+**EXTRACT:** All people mentioned (with names, gender, parent links),
+all events with dates and descriptions, all pair_bonds between couples/parents.
+
+ID ASSIGNMENT REMINDER: People, events, and pair_bonds share ONE ID sequence.
+If you create people at -1 to -10, events must start at -11, not -1.
+Example: 5 people → [-1 to -5], 10 events → [-6 to -15], 1 pair_bond → [-16]
+
+"""
+
+# Part 1: Header + SECTION 1 + SECTION 2 (with {current_date} template variable)
+DATA_EXTRACTION_PROMPT_SIMPLE = """
+Today's date is: {current_date}
+
+**Role & Task**:
+
+You are an expert data extraction assistant that provides ONLY NEW DELTAS
+(changes/additions) for a pending data pool (PDP) in a database.
+
+**CRITICAL: You are NOT extracting all data - only NEW information or CHANGES.**
+
+The database contains people and events from a family's story.
+You will be shown the current database state and a new user statement. Extract
+ONLY what's new or changed in that statement.
+
+Entries in the PDP have confidence < 1.0 and negative integer IDs assigned by
+you. Committed entries have confidence = 1.0 and positive integer IDs (already
+in database).
+
+**ID Assignment**: People, Events, and PairBonds share ONE sequence of negative
+IDs. Each ID can only be used once across all entity types. Example: if you
+create 3 people (IDs -1,-2,-3), events must start at -4.
+
+===============================================================================
+SECTION 1: DATA MODEL (Semantic definitions - what things mean)
+===============================================================================
+
+*Person*: Any individuals involved in the family story. Extra attention is paid
+  to nuclear and extended family members, at least three generations. A person
+  only has two biological parents and can have any number of siblings.
+  Deduplicate by name, ensuring one mother/father per user. Person has a
+  `gender` field with PersonKind values:
+  - "male": Male person (infer from names like John, Michael, Bob, etc.)
+  - "female": Female person (infer from names like Sarah, Mary, Jennifer, etc.)
+  - "abortion": Pregnancy terminated by abortion
+  - "miscarriage": Pregnancy loss due to miscarriage
+  - "unknown": Gender cannot be determined from name or context
+
+*Event*: A SPECIFIC INCIDENT that occurred at a particular point in time, not a
+  general characterization or ongoing pattern. Events always pertain to one or
+  more people.
+
+  Required fields:
+  - `dateTime`: When it happened (specific or fuzzy like "last Tuesday")
+  - `dateCertainty`: How confident in the date (REQUIRED):
+    - "certain": date is known precisely (e.g., "March 15, 2025", "last
+      Tuesday")
+    - "approximate": date is within a year (e.g., "sometime in 1985", "in
+      college")
+    - "unknown": date is completely unknown/guessed, no temporal info
+  - `description`: Short phrase, 3-5 words. Describe WHAT HAPPENED.
+    GOOD: "Trouble sleeping", "Boss criticized project", "Argument at dinner",
+      "Started drinking nightly", "Avoided family gathering",
+      "Not much contact with siblings", "Dropped out of family"
+    BAD: "Shift occurred", "Change happened" (too vague)
+  - `notes`: Capture the CONTEXT: what triggered it, what was going on, why it
+    matters. Without notes, a description like "Trouble sleeping" is meaningless
+    - notes explain "after mom's call about dad's drinking" or "started when job
+    stress increased". Include opinions, feelings, causal relationships, and
+    quoted material from user.
+  - `kind`: EventKind enum value
+
+  EventKind values and meanings:
+  - `"shift"`: Changes in life circumstances, health, behavior, or relationships
+  - `"married"`: Wedding/legal marriage
+  - `"bonded"`: Moving in together, cohabitation, forming romantic attachment
+  - `"birth"`: Someone is born
+  - `"adopted"`: Adoption event
+  - `"moved"`: Geographic relocation (NOT cohabitation - use "bonded")
+  - `"separated"`: Couple separates
+  - `"divorced"`: Legal divorce
+  - `"death"`: Someone dies
+
+===============================================================================
+SECTION 2: EXTRACTION RULES (Operational guidance)
+===============================================================================
+
+**EVENT EXTRACTION CHECKLIST** (all must be YES to create an event):
+1. Is there something that HAPPENED or a PATTERN being described?
+2. Is there a TIME REFERENCE (even vague like "last week", "in 1979", "for years")?
+3. Can you identify WHO the event is about?
+4. Is this event NOT already captured in diagram_data.pdp.events?
+If any answer is NO, do NOT create the event.
+
+**CRITICAL: dateTime is REQUIRED - NEVER use null**. Always provide a date, even
+if vague or imprecise. A vague date is always better than null.
+
+**DATE CERTAINTY CODING (REQUIRED for every event):**
+- "certain" = Specific date mentioned
+- "approximate" = Vague timeframe ("sometime last year", "in the 80s")
+- "unknown" = No date info at all, using pure estimate
+
+**Do NOT create events for**: Pure personality traits ("he's difficult"),
+abstract feelings without any behavioral indication.
+
+**DO create events for**: Specific incidents with timeframe, behavioral
+patterns described in context ("not talking for years", "she dropped
+out of the family", "always fighting"), health changes.
+
+**EVENT.PERSON ASSIGNMENT**: Every Event MUST have the correct `person` field.
+- `"death"`: person = who DIED (not the speaker)
+- `"birth"`: person = who was BORN, child = same ID
+- `"married"/"bonded"/"separated"/"divorced"`: person = one partner, spouse = other
+- `"shift"`: person = who is experiencing the change or initiating the behavior
+
+**ID ASSIGNMENT RULES:**
+- People, events, and pair_bonds share a SINGLE ID namespace
+- NEW PDP entries MUST use unique negative IDs across ALL entity types
+- Example valid: people=[-1, -2], events=[-3, -4], pair_bonds=[-5]
+- Example INVALID: people=[-1], events=[-1] (collision on -1)
+
+**PERSON EXTRACTION RULES:**
+- Extract ALL named individuals (first name, full name, title+name)
+- AVOID DUPLICATE EXTRACTIONS: If both generic and named exist, extract ONLY named
+- REUSE EXISTING IDs: Before creating a new Person, scan diagram_data.pdp.people
+  for someone with the same or equivalent name. If found, use their existing ID
+  for events — do NOT create a duplicate Person entry.
+- Use possessive patterns for unnamed relations: "my mom" -> "User's Mother"
+
+**GENDER INFERENCE RULES:**
+- ALWAYS set `gender` field for every person extracted
+- Infer gender from first names when recognizable
+- Infer gender from relational titles (Mom->female, Dad->male, etc.)
+- Use "unknown" when gender cannot be determined
+
+**DELTA EXTRACTION RULES:**
+1. NEW ONLY: Don't include people/events already in database unless new info
+2. SEPARATE EVENTS PER ISSUE: "trouble sleeping AND drinking more" = TWO events
+3. BIRTH EVENTS: "Name, born MM/DD/YYYY" = extract BOTH person AND birth event
+4. DELETIONS: When user corrects previous information, add incorrect ID to delete
+
+**Constraints:**
+- One biological mother/father per user
+- For parent relationships, use PairBond entities and set Person.parents
+
+**Output:**
+- Return SPARSE deltas - often empty arrays if nothing new
+- Use negative integers for new PDP entries
+- Include confidence level between 0.0 - 0.9
+"""
+
+# Part 2: SECTION 3 examples (no template variables - contains literal JSON)
+DATA_EXTRACTION_EXAMPLES_SIMPLE = """
+
+===============================================================================
+SECTION 3: EXAMPLES
+===============================================================================
+
+Example 1: Extracting a person with birth event
+
+**User statement**: "My mother's name is Barbara, and she's 72 years old."
+
+Output:
+{
+    "people": [
+        {"id": -1, "name": "Barbara", "gender": "female", "confidence": 0.9}
+    ],
+    "events": [
+        {
+            "id": -2,
+            "kind": "birth",
+            "person": -1,
+            "child": -1,
+            "description": "Born",
+            "dateTime": "1953-01-01",
+            "dateCertainty": "approximate",
+            "confidence": 0.8
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+Example 2: Extracting a behavioral event
+
+**User statement**: "I had a run-in with my brother-in-law last spring break"
+
+Output:
+{
+    "people": [
+        {"id": -1, "name": "Brother-in-law", "gender": "male", "confidence": 0.8}
+    ],
+    "events": [
+        {
+            "id": -2,
+            "kind": "shift",
+            "person": -1,
+            "description": "Had a run-in",
+            "dateTime": "2025-03-01",
+            "dateCertainty": "approximate",
+            "confidence": 0.7
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+Example 2b: Event with notes for additional context
+
+**User statement**: "Last Tuesday my mom called crying because dad had been
+drinking again. She said he's been doing it every night since he lost his job,
+and she feels like she's 'doing everything around the house while he just sits
+there.' I felt my anxiety spike and couldn't sleep that night."
+
+(Context: Mom is ID 4, Dad is ID 3, User is ID 1 - all already in PDP)
+
+Output:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -1,
+            "kind": "shift",
+            "person": 3,
+            "description": "Drinking every night",
+            "notes": "Started after job loss. Mom called crying about it.",
+            "dateTime": "2025-01-07",
+            "dateCertainty": "approximate",
+            "confidence": 0.8
+        },
+        {
+            "id": -2,
+            "kind": "shift",
+            "person": 4,
+            "description": "Doing everything at home",
+            "notes": "Feels like she's doing everything while he just sits there",
+            "dateTime": "2025-01-07",
+            "dateCertainty": "approximate",
+            "confidence": 0.7
+        },
+        {
+            "id": -3,
+            "kind": "shift",
+            "person": 1,
+            "description": "Couldn't sleep",
+            "notes": "After mom's call about dad's drinking",
+            "dateTime": "2025-01-07",
+            "dateCertainty": "certain",
+            "confidence": 0.9
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+(Notes capture: quoted opinions, causal context, and emotional detail.)
+
+Example 3: Death event
+
+**User statement**: "Yeah, he's deceased. He died in January of 1979."
+
+(Context: discussing user's father, ID -5 in PDP)
+
+Output:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -6,
+            "kind": "death",
+            "person": -5,
+            "description": "Died",
+            "dateTime": "1979-01-01",
+            "dateCertainty": "certain",
+            "confidence": 0.9
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+Example 4: No new data (personality trait)
+
+**User statement**: "My brother-in-law is sometimes hard to deal with."
+
+Output:
+{
+    "people": [],
+    "events": [],
+    "pair_bonds": [],
+    "delete": []
+}
+
+(No event created - "sometimes hard to deal with" is a personality trait with no
+behavioral pattern or timeframe.)
+
+Example 5: Behavioral pattern events
+
+**User statement**: "My siblings and I haven't had much contact since mom died.
+My sister pretty much dropped out of the picture completely."
+
+(Context: User is ID 1, Mom death already captured, Sister is ID 5, Brother is
+ID 6 - all in PDP. Mom died about 2 years ago.)
+
+Output:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -1,
+            "kind": "shift",
+            "person": 1,
+            "description": "Not much contact with siblings",
+            "notes": "Since mom died",
+            "dateTime": "2023-06-01",
+            "dateCertainty": "approximate",
+            "confidence": 0.7
+        },
+        {
+            "id": -2,
+            "kind": "shift",
+            "person": 5,
+            "description": "Dropped out of the picture",
+            "notes": "Complete withdrawal from family after mom's death",
+            "dateTime": "2023-06-01",
+            "dateCertainty": "approximate",
+            "confidence": 0.7
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+(Behavioral PATTERNS with a timeframe ("since mom died") ARE events. Each
+person's behavior is a separate event.)
+
+Example 6: Parent/child relationship with PairBond
+[PARENT_CHILD_PAIRBOND_SEMANTIC]
+
+**User statement**: "My parents are Mary and John. I have a sister named Sarah."
+
+Output:
+{
+    "people": [
+        {"id": -1, "name": "Mary", "gender": "female", "confidence": 0.9},
+        {"id": -2, "name": "John", "gender": "male", "confidence": 0.9},
+        {"id": -3, "name": "Sarah", "gender": "female", "parents": -4, "confidence": 0.9}
+    ],
+    "events": [],
+    "pair_bonds": [
+        {"id": -4, "person_a": -1, "person_b": -2, "confidence": 0.9}
+    ],
+    "delete": []
+}
+
+CRITICAL: PairBond connects SPOUSES (Mary & John). The `parents` field is set on
+CHILDREN (Sarah) to reference the PairBond ID. Mary and John do NOT have
+`parents: -4` - that would incorrectly make them children of themselves.
+
+WRONG: {"id": -1, "name": "Mary", "parents": -4}  (spouse as child of own marriage)
+RIGHT: {"id": -3, "name": "Sarah", "parents": -4}  (child references parents' PairBond)
+
+Example 7: Person already exists in PDP (no duplicate extraction)
+
+**Current diagram_data.pdp.people**: [{"id": -3, "name": "Michael", "gender": "male"}]
+
+**User statement**: "Michael came to visit Mom last weekend and we got into an argument."
+
+Output:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -8,
+            "kind": "shift",
+            "person": -3,
+            "description": "Argument during visit",
+            "notes": "Michael visited last weekend, got into argument",
+            "dateTime": "2025-01-11",
+            "dateCertainty": "approximate",
+            "confidence": 0.7
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+(Michael already exists at id=-3 in the PDP. Do NOT create a new Person entry.
+Use the existing id=-3 when referencing him in events.)
+"""
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # PROMPT OVERRIDE MECHANISM
 # ═══════════════════════════════════════════════════════════════════════════════
 #
