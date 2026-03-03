@@ -422,6 +422,20 @@ functioning changes.
 3. BIRTH EVENTS: "Name, born MM/DD/YYYY" = extract BOTH person AND birth event
 4. DELETIONS: When user corrects previous information, add incorrect ID to delete
 
+**PAIRBOND EXTRACTION CHECKLIST** (all must be YES to create a PairBond):
+1. Are TWO specific people identified as being in a romantic/marital relationship?
+2. Is this couple NOT already represented in diagram_data.pdp.pair_bonds?
+3. Can you identify BOTH people by name or role?
+If all YES, create a PairBond with person_a and person_b.
+
+**PAIRBOND RULES:**
+- PairBond connects SPOUSES/PARTNERS only — NEVER parent-to-child
+- Children reference the PairBond via their `parents` field on Person
+- One PairBond per couple (even if divorced — PairBond represents the relationship)
+- If someone remarries, create a SECOND PairBond with the new spouse
+- Create PairBond whenever marriage, cohabitation, or children-of-couple are mentioned
+- Use married/bonded/separated/divorced Events to track relationship status changes
+
 **Constraints:**
 - One biological mother/father per user
 - One event per variable shift (merge by timestamp, people, variables)
@@ -684,6 +698,114 @@ Output:
 
 (Michael already exists at id=-3 in the PDP. Do NOT create a new Person entry.
 Use the existing id=-3 when referencing him in events.)
+
+Example 8: Remarriage with new PairBond
+
+**User statement**: "After my parents divorced, my mom married Steve in 2015."
+
+(Context: Mom is ID 3, Dad is ID 4, parents' PairBond is ID -5. User is ID 1.)
+
+Output:
+{
+    "people": [
+        {"id": -6, "name": "Steve", "gender": "male", "confidence": 0.8}
+    ],
+    "events": [
+        {
+            "id": -7,
+            "kind": "married",
+            "person": 3,
+            "spouse": -6,
+            "description": "Married",
+            "dateTime": "2015-01-01",
+            "dateCertainty": "approximate",
+            "confidence": 0.8
+        }
+    ],
+    "pair_bonds": [
+        {"id": -8, "person_a": 3, "person_b": -6, "confidence": 0.8}
+    ],
+    "delete": []
+}
+
+(Remarriage creates a NEW PairBond for Mom & Steve. The original PairBond
+for Mom & Dad still exists — it represents the parental relationship for
+children. Steve's Person and the married Event both use negative IDs from
+the shared namespace.)
+
+Example 9: Cohabitation (bonded) with PairBond
+
+**User statement**: "My brother and his girlfriend Lisa have been living
+together for about three years."
+
+(Context: Brother is ID 7.)
+
+Output:
+{
+    "people": [
+        {"id": -1, "name": "Lisa", "gender": "female", "confidence": 0.8}
+    ],
+    "events": [
+        {
+            "id": -2,
+            "kind": "bonded",
+            "person": 7,
+            "spouse": -1,
+            "description": "Moved in together",
+            "dateTime": "2023-03-01",
+            "dateCertainty": "approximate",
+            "confidence": 0.7
+        }
+    ],
+    "pair_bonds": [
+        {"id": -3, "person_a": 7, "person_b": -1, "confidence": 0.8}
+    ],
+    "delete": []
+}
+
+(Cohabitation = "bonded" EventKind. Create BOTH a bonded event AND a PairBond.
+PairBond represents the couple relationship; bonded event records when it started.)
+
+Example 10: Divorce event with existing PairBond
+
+**User statement**: "My parents split up when I was about 10. The divorce
+was finalized in 2005."
+
+(Context: User is ID 1, born ~1995. Mom is ID 3, Dad is ID 4, PairBond
+ID -5 already exists for Mom & Dad.)
+
+Output:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -6,
+            "kind": "separated",
+            "person": 3,
+            "spouse": 4,
+            "description": "Separated",
+            "dateTime": "2005-01-01",
+            "dateCertainty": "approximate",
+            "confidence": 0.7
+        },
+        {
+            "id": -7,
+            "kind": "divorced",
+            "person": 3,
+            "spouse": 4,
+            "description": "Divorced",
+            "dateTime": "2005-01-01",
+            "dateCertainty": "approximate",
+            "confidence": 0.8
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+(Divorce does NOT delete the PairBond — children still reference it via
+`parents`. Separated and divorced are separate Events. No new PairBond needed
+because the couple's bond already exists.)
 """
 
 # Part 3: Context with template variables ({diagram_data}, {conversation_history}, {user_message})
