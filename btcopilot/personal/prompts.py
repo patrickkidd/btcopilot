@@ -684,6 +684,158 @@ Output:
 
 (Michael already exists at id=-3 in the PDP. Do NOT create a new Person entry.
 Use the existing id=-3 when referencing him in events.)
+
+Example 8: Marriage event (structural event with person + spouse)
+
+**User statement**: "My parents got married in June of 1985."
+
+(Context: Mom is ID -1, Dad is ID -2, both already in PDP)
+
+Output:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -3,
+            "kind": "married",
+            "person": -1,
+            "spouse": -2,
+            "description": "Got married",
+            "dateTime": "1985-06-01",
+            "dateCertainty": "approximate",
+            "confidence": 0.9
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+(Marriage events need BOTH person AND spouse fields set. Never leave spouse null
+for married/bonded/separated/divorced events. If spouse name is unknown, create
+a new Person like "[Name]'s Husband" or "[Name]'s Wife".)
+
+Example 9: Moved event (geographic relocation)
+
+**User statement**: "We moved from Boston to Portland when I was about ten."
+
+(Context: User is ID 1, born ~2000. "About ten" = ~2010.)
+
+Output:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -5,
+            "kind": "moved",
+            "person": 1,
+            "description": "Moved from Boston to Portland",
+            "dateTime": "2010-01-01",
+            "dateCertainty": "approximate",
+            "confidence": 0.8
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+(Geographic relocations use kind="moved", NOT "shift". Description captures
+origin and destination when both are mentioned.)
+
+Example 10: Symptom shift with notes (health diagnosis)
+
+**User statement**: "Mom was diagnosed with breast cancer about two years ago.
+She's been doing chemo and it's been really hard on her."
+
+(Context: Mom is ID -3 in PDP. Current date is 2026-03-01.)
+
+Output:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -7,
+            "kind": "shift",
+            "person": -3,
+            "description": "Diagnosed with breast cancer",
+            "notes": "Has been doing chemo, it's been really hard on her.",
+            "dateTime": "2024-03-01",
+            "dateCertainty": "approximate",
+            "symptom": "up",
+            "functioning": "down",
+            "confidence": 0.8
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+(Health diagnoses = symptom "up". Ongoing treatment that is "hard on her" =
+functioning "down". Notes capture treatment details. Description is WHAT
+HAPPENED, not which variable shifted.)
+
+Example 11: Functioning shift (work/coping)
+
+**User statement**: "Dad lost his job last fall. He's been sitting around the
+house ever since."
+
+(Context: Dad is ID -2 in PDP.)
+
+Output:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -8,
+            "kind": "shift",
+            "person": -2,
+            "description": "Lost his job",
+            "notes": "Has been sitting around the house since.",
+            "dateTime": "2025-09-01",
+            "dateCertainty": "approximate",
+            "functioning": "down",
+            "confidence": 0.8
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+(Job loss = functioning "down". "Sitting around the house" is additional context
+captured in notes, not a separate event. One event per shift.)
+
+Example 12: Relationship shift anchored to an existing event
+
+**User statement**: "Since Mom's diagnosis, my sister and I don't really talk
+anymore. I think she blames me for not doing enough."
+
+(Context: User is ID 1, Sister is ID -4 in PDP. Mom's diagnosis is event -7 in
+PDP, dated 2024-03-01.)
+
+Output:
+{
+    "people": [],
+    "events": [
+        {
+            "id": -9,
+            "kind": "shift",
+            "person": -4,
+            "description": "Stopped talking to sibling",
+            "notes": "Since Mom's diagnosis. User thinks sister blames them for not doing enough.",
+            "dateTime": "2024-03-01",
+            "dateCertainty": "approximate",
+            "relationship": "distance",
+            "relationshipTargets": [1],
+            "confidence": 0.7
+        }
+    ],
+    "pair_bonds": [],
+    "delete": []
+}
+
+("Since Mom's diagnosis" anchors this shift to a known event's date. Look up the
+referenced event in PDP to get the date. Person = who INITIATED the distancing.
+Notes capture the user's interpretation of sister's motivation. If the anchor
+event is NOT yet in PDP, create both the anchor event AND the shift.)
 """
 
 # Part 3: Context with template variables ({diagram_data}, {conversation_history}, {user_message})
