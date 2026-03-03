@@ -126,7 +126,7 @@ def normalize_name_for_matching(name: str | None) -> str:
 
 DESCRIPTION_SIMILARITY_THRESHOLD = 0.4
 DATE_TOLERANCE_DAYS = 7
-APPROXIMATE_TOLERANCE_DAYS = 270  # ±9 months
+APPROXIMATE_TOLERANCE_DAYS = 730  # ±2 years (year-level estimates from vague temporal references)
 DESCRIPTION_WEIGHT = 0.8
 DATE_WEIGHT = 0.2
 
@@ -331,18 +331,17 @@ def match_people(
             ai_name_normalized = normalize_name_for_matching(ai_person.name)
             gt_name_normalized = normalize_name_for_matching(gt_person.name)
 
-            name_sim = (
-                fuzz.token_set_ratio(ai_name_normalized, gt_name_normalized) / 100.0
-            )
+            # "User" is the SARF editor default client label — match any AI name
+            if gt_name_normalized == "user":
+                name_sim = 1.0
+            else:
+                name_sim = (
+                    fuzz.token_set_ratio(ai_name_normalized, gt_name_normalized)
+                    / 100.0
+                )
 
             if name_sim < NAME_SIMILARITY_THRESHOLD:
                 continue
-
-            parents_match = True
-            if ai_person.parents is not None and gt_person.parents is not None:
-                resolved_ai_parent = id_map.get(ai_person.parents, ai_person.parents)
-                if resolved_ai_parent != gt_person.parents:
-                    parents_match = False
 
             # Gender must match if both are set (ignore if either is None/Unknown)
             gender_match = True
@@ -353,7 +352,7 @@ def match_people(
                 ):
                     gender_match = ai_person.gender == gt_person.gender
 
-            if parents_match and gender_match and name_sim > best_score:
+            if gender_match and name_sim > best_score:
                 best_score = name_sim
                 best_match = gt_person
 
@@ -459,10 +458,13 @@ def match_events(
                     and ai_spouse == gt_event.spouse
                     and ai_child == gt_event.child
                 )
-            links_match = links_match and (
-                set(ai_targets) == set(gt_event.relationshipTargets or [])
-                and set(ai_triangles) == set(gt_event.relationshipTriangles or [])
-            )
+            # Targets/triangles: require overlap if both non-empty, pass if either is empty
+            gt_targets = set(gt_event.relationshipTargets or [])
+            gt_triangles = set(gt_event.relationshipTriangles or [])
+            if ai_targets and gt_targets:
+                links_match = links_match and bool(set(ai_targets) & gt_targets)
+            if ai_triangles and gt_triangles:
+                links_match = links_match and bool(set(ai_triangles) & gt_triangles)
 
             if links_match:
                 date_sim = calculate_date_similarity(

@@ -474,31 +474,24 @@ def test_dates_within_tolerance_unknown():
 
 
 def test_dates_within_tolerance_approximate():
-    """Approximate dates use 270-day (9 month) tolerance."""
-    # 214 days apart - within 270 day tolerance
+    """Approximate dates use 730-day (2 year) tolerance for year-level estimates."""
+    # 214 days apart - within tolerance
     assert dates_within_tolerance(
         "2024-06-01",
         "2025-01-01",
         DateCertainty.Approximate,
         DateCertainty.Certain,
     )
-    # 730 days apart - outside 270 day tolerance
+    # 730 days apart - at boundary, should pass
+    assert dates_within_tolerance(
+        "2023-01-02",
+        "2025-01-01",
+        DateCertainty.Approximate,
+        DateCertainty.Certain,
+    )
+    # 731 days apart - just outside tolerance
     assert not dates_within_tolerance(
         "2023-01-01",
-        "2025-01-01",
-        DateCertainty.Approximate,
-        DateCertainty.Certain,
-    )
-    # Edge case: exactly at 270 days should pass
-    assert dates_within_tolerance(
-        "2024-04-06",  # 270 days before 2025-01-01
-        "2025-01-01",
-        DateCertainty.Approximate,
-        DateCertainty.Certain,
-    )
-    # Just outside 270 days should fail
-    assert not dates_within_tolerance(
-        "2024-04-05",  # 271 days before 2025-01-01
         "2025-01-01",
         DateCertainty.Approximate,
         DateCertainty.Certain,
@@ -524,8 +517,8 @@ def test_dates_within_tolerance_certain():
 def test_dates_within_tolerance_none_is_approximate():
     """None certainty treated as Approximate (therapy transcripts rarely have precise dates)."""
     assert dates_within_tolerance("2025-01-01", "2025-01-05", None, None)
-    assert dates_within_tolerance("2025-01-01", "2025-01-15", None, None)  # Within 270 days
-    assert not dates_within_tolerance("2025-01-01", "2026-01-01", None, None)  # 365 days > 270
+    assert dates_within_tolerance("2025-01-01", "2026-01-01", None, None)  # 365 days within 730
+    assert not dates_within_tolerance("2023-01-01", "2025-01-15", None, None)  # 745 days > 730
 
 
 def test_calculate_date_similarity_unknown():
