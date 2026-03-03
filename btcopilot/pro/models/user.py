@@ -149,9 +149,9 @@ class User(db.Model, ModelMixin):
             diagram = Diagram(user_id=self.id, name="Free Diagram", data=bdata)
             db_session = inspect(self).session
             db_session.add(diagram)
-            db_session.merge(diagram)
+            db_session.flush()
             self.update(free_diagram_id=diagram.id)
-            db_session.merge(diagram)
+            db_session.flush()
             db_session.refresh(self)
         if updated_at is not None:
             _updated_at = updated_at
