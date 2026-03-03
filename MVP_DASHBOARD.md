@@ -31,7 +31,7 @@ Full conversation → single LLM call → complete PDP → accept all → view d
 
 ### Done
 
-T0-1, T0-2, T0-3, T0-5 (crash blockers), T1-1 through T1-5 (extraction quality), T4-1 through T4-5 (synthetic pipeline), T5-4 through T5-6 (F1 infrastructure), T6-2 (cumulative F1 baseline established 2026-02-24), T7-1 (`extract_full()` implemented), T7-2 (extract endpoint), T7-3 (chat-only, extraction removed), T7-4 (extract button + PDP Refresh button in Personal app).
+T0-1, T0-2, T0-3, T0-5 (crash blockers), T1-1 through T1-5 (extraction quality), T4-1 through T4-5 (synthetic pipeline), T5-4 through T5-6 (F1 infrastructure), T6-2 (cumulative F1 baseline established 2026-02-24), T7-1 (`extract_full()` implemented), T7-2 (extract endpoint), T7-3 (chat-only, extraction removed), T7-4 (extract button + PDP Refresh button in Personal app), ~~T7-20~~ (gemini-flash-lite baseline eval — not viable, see [analysis](doc/analyses/gemini-flash-lite-baseline-20260303.md). DONE 2026-03-03).
 
 ---
 
@@ -99,10 +99,11 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 
 ## Reference
 
-### Analyses (2026-02-20)
+### Analyses
 
 | Analysis | Covers |
 |----------|--------|
+| [Gemini Flash Lite Baseline](doc/analyses/gemini-flash-lite-baseline-20260303.md) | gemini-2.5-flash-lite eval: People=0.622, Events=0.103, Aggregate=0.216. Not viable. (2026-03-03) |
 | [PDP Extraction & Delta Acceptance](doc/analyses/2026-02-20_pdp_extraction_and_delta_acceptance.md) | Extraction pipeline, validation, commit flow, F1 |
 | [Synthetic Pipeline](doc/analyses/2026-02-20_synthetic_pipeline.md) | Celery tasks, error handling, evaluators |
 | [Personal App Beta Readiness](doc/analyses/2026-02-20_personal_app_beta_readiness.md) | Chat UX, PDP drawer, timeline, PlanView |
@@ -136,6 +137,7 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 | 2026-02-24 | All open tasks | T0-4 deferred. T4-2 not needed. E2E pipeline verified. |
 | 2026-02-24 | Architecture pivot | Single-prompt extraction proven. Dashboard rewritten. See decision log 2026-02-24. |
 | 2026-02-26 | T7-1 through T7-4 | Implemented and moved to Done. Extract button + PDP Refresh in Personal app. Chat is chat-only. PDP cleared before re-extraction. All architecture docs updated. |
+| 2026-03-03 | T7-20 | gemini-2.5-flash-lite eval completed. People=0.622 (-0.098), Events=0.103 (-0.187), Aggregate=0.216 (-0.234). Not viable — stick with gemini-2.5-flash. |
 
 ### Deferred (Post-MVP)
 
