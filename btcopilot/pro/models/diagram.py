@@ -1,3 +1,4 @@
+import logging
 import pickle
 import re
 
@@ -12,6 +13,47 @@ import btcopilot
 from btcopilot.schema import DiagramData, PDP, from_dict
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
+
+_log = logging.getLogger(__name__)
+
+# Fields owned by the Personal app that must be preserved when a client
+# (e.g. Pro app) sends a full data blob that omits them.
+PERSONAL_OWNED_FIELDS = ("pdp", "clusters", "clusterCacheKey")
+
+
+def _merge_personal_fields(existing_blob: bytes | None, incoming_blob: bytes) -> bytes:
+    """Preserve Personal-owned fields when they are absent in incoming data.
+
+    When a client (e.g. Pro app) saves a full DiagramData blob, it may not
+    include Personal-owned fields like PDP and clusters. This function
+    deserializes both blobs and copies those fields from the existing data
+    so they are not lost.
+
+    If existing_blob is empty or the incoming data already contains all
+    Personal-owned fields, the incoming blob is returned unchanged to
+    avoid unnecessary re-serialization.
+    """
+    if not existing_blob:
+        return incoming_blob
+
+    import PyQt5.sip  # Required for unpickling QtCore objects
+
+    incoming = pickle.loads(incoming_blob)
+    missing_fields = [f for f in PERSONAL_OWNED_FIELDS if f not in incoming]
+
+    if not missing_fields:
+        # Incoming data has all Personal-owned fields — nothing to merge.
+        return incoming_blob
+
+    existing = pickle.loads(existing_blob)
+    for field_name in missing_fields:
+        if field_name in existing:
+            incoming[field_name] = existing[field_name]
+            _log.debug(
+                "Preserved Personal-owned field %r during diagram save", field_name
+            )
+
+    return pickle.dumps(incoming)
 
 
 # TODO: Remove once pro version adoption gets past 2.1.11
@@ -149,7 +191,7 @@ class Diagram(db.Model, ModelMixin):
         self, expected_version, new_data=None, diagram_data=None
     ):
         if new_data is not None:
-            data_to_save = new_data
+            data_to_save = _merge_personal_fields(self.data, new_data)
         elif diagram_data is not None:
             import PyQt5.sip
             from btcopilot.schema import asdict
