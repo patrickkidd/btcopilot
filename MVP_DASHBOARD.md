@@ -31,7 +31,7 @@ Full conversation → single LLM call → complete PDP → accept all → view d
 
 ### Done
 
-T0-1, T0-2, T0-3, T0-5 (crash blockers), T1-1 through T1-5 (extraction quality), T4-1 through T4-5 (synthetic pipeline), T5-4 through T5-6 (F1 infrastructure), T6-2 (cumulative F1 baseline established 2026-02-24), T7-1 (`extract_full()` implemented), T7-2 (extract endpoint), T7-3 (chat-only, extraction removed), T7-4 (extract button + PDP Refresh button in Personal app).
+T0-1, T0-2, T0-3, T0-5 (crash blockers), T1-1 through T1-5 (extraction quality), T4-1 through T4-5 (synthetic pipeline), T5-4 through T5-6 (F1 infrastructure), T6-2 (cumulative F1 baseline established 2026-02-24), T7-1 (`extract_full()` implemented), T7-2 (extract endpoint), T7-3 (chat-only, extraction removed), T7-4 (extract button + PDP Refresh button in Personal app), T7-20 (flash-lite baseline — flash-lite outperforms 2.5-flash on extract_full(); [analysis](doc/analyses/2026-03-03_gemini-flash-lite-extract-full-eval.md)).
 
 ---
 
@@ -92,6 +92,9 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 | People F1 (cumulative) | 0.72 (Feb 2026, single-prompt, disc 48) | > 0.7 | At target. Validate on fresh GT. |
 | Event F1 (cumulative) | 0.29 (Feb 2026, single-prompt, disc 48) | > 0.4 | Below target. Prompt tuning on T7-8. |
 | PairBond F1 (cumulative) | 0.33 (Feb 2026, single-prompt, disc 48) | > 0.5 | Below target. |
+| People F1 (extract_full, flash-lite) | 0.520 (Mar 2026, discs 48/50/51) | > 0.7 | T7-20: flash-lite beats 2.5-flash (0.417) on extract_full. |
+| Events F1 (extract_full, flash-lite) | 0.165 (Mar 2026, discs 48/50/51) | > 0.3 | T7-20: below target but beats 2.5-flash (0.149). |
+| PairBonds F1 (extract_full, flash-lite) | 0.679 (Mar 2026, discs 48/50/51) | > 0.5 | T7-20: above target, beats 2.5-flash (0.667). |
 | GT coded discussions | 4 (disc 36/37/39/48) | 5-8 for MVP | T7-5 adds fresh GT coding. |
 | E2E synthetic | Verified 2026-02-24 | Functional | test_e2e_synthetic.py |
 
@@ -110,6 +113,7 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 | [Diagram Viewing & Sync](doc/analyses/2026-02-20_diagram_viewing_and_sync.md) | Scene loading, version conflicts, FR-2 |
 | [Server API & Data Model](doc/analyses/2026-02-20_server_api_and_data_model.md) | Endpoints, validation, sync |
 | [Bugs & TODOs Inventory](doc/analyses/2026-02-20_bugs_and_todos_inventory.md) | Complete bug list, skipped tests |
+| [Flash Lite Eval](doc/analyses/2026-03-03_gemini-flash-lite-extract-full-eval.md) | T7-20: gemini-3.1-flash-lite-preview vs 2.5-flash on extract_full() |
 
 ### Key Files
 
@@ -136,6 +140,7 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 | 2026-02-24 | All open tasks | T0-4 deferred. T4-2 not needed. E2E pipeline verified. |
 | 2026-02-24 | Architecture pivot | Single-prompt extraction proven. Dashboard rewritten. See decision log 2026-02-24. |
 | 2026-02-26 | T7-1 through T7-4 | Implemented and moved to Done. Extract button + PDP Refresh in Personal app. Chat is chat-only. PDP cleared before re-extraction. All architecture docs updated. |
+| 2026-03-03 | T7-20 flash-lite eval | gemini-3.1-flash-lite-preview outperforms gemini-2.5-flash on extract_full() F1 (Agg 0.355 vs 0.254). Both models much weaker on extract_full than cumulative. Flash-lite is 2x faster and 40% cheaper on output tokens. |
 
 ### Deferred (Post-MVP)
 
