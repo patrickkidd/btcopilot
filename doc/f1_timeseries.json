@@ -1,6 +1,14 @@
 {
   "description": "F1 score timeseries data - update when F1_DASHBOARD.md baseline changes",
-  "metrics": ["aggregate", "people", "events", "symptom", "anxiety", "relationship", "functioning"],
+  "metrics": [
+    "aggregate",
+    "people",
+    "events",
+    "symptom",
+    "anxiety",
+    "relationship",
+    "functioning"
+  ],
   "data": [
     {
       "date": "2025-12-23",
@@ -145,6 +153,18 @@
       "relationship": null,
       "functioning": null,
       "note": "Pivot to full-extraction mode (extract_full, 6 GT discussions, gemini-2.5-flash, avg 3 runs). V9 prompt: quality hints. Aggregate 0.531->0.551, Events 0.302->0.335, PairBonds 0.698->0.732. SARF not tracked by run_extract_full_f1."
+    },
+    {
+      "date": "2026-03-03",
+      "commit": "76fd88d",
+      "aggregate": 0.595,
+      "people": 0.901,
+      "events": 0.470,
+      "symptom": 0.669,
+      "anxiety": 0.490,
+      "relationship": 0.282,
+      "functioning": 0.396,
+      "note": "Remove Event.description matching from F1 scoring (match on kind+date+person only). 5/6 discussions, avg 2 runs. Events 0.335->0.470, Agg 0.551->0.595."
     }
   ]
 }

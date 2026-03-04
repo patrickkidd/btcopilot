@@ -173,15 +173,14 @@ Fixed in prod via Training App.
 ### Evaluation Metrics Fixes (2025-12-26)
 - [x] **Hybrid description matching** - Shift events now use max(token_set_ratio, substring, ratio)
   - Handles verbose AI vs concise GT: "Expanded practice, taking on..." matches "Expanded practice"
-  - Future: Add Gemini embeddings as fallback if edge cases fail (tested: 0.75+ for matches, 0.4-0.5 for non-matches)
-- [x] **Structural events skip description matching** - Birth, Death, Married, etc. match by kind+links+date only
-  - Only Shift events require description similarity
-  - Added `STRUCTURAL_EVENT_KINDS` constant in f1_metrics.py
+- [x] **Description matching removed entirely** - All events (shift + structural) match by kind+date+person links only
+  - Description similarity was a hard gate rejecting legitimate matches due to paraphrasing variance
+  - Removed `STRUCTURAL_EVENT_KINDS`, `DESCRIPTION_SIMILARITY_THRESHOLD`, `DESCRIPTION_WEIGHT`, `DATE_WEIGHT`
+  - Events F1: 0.335 → 0.470 (+0.135)
 - [x] **dateCertainty implemented** - Smart date tolerance by certainty:
   - `Unknown`: always matches
-  - `Approximate`: ±270 days (9 months)
+  - `Approximate`: ±730 days (2 years)
   - `Certain`: ±7 days
-- [x] `DESCRIPTION_SIMILARITY_THRESHOLD`: 0.5 → 0.4
 
 ### Model Stochasticity
 - [x] `temperature=0.1` added to Gemini config (`btcopilot/extensions/llm.py`)

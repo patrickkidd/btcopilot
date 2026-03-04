@@ -9,10 +9,7 @@ Matching Logic:
           (Aunt, Uncle, Dr., etc.) AND parents match (ignore if null) AND
           gender match (ignore if either is None/Unknown).
           "Aunt Carol" matches "Carol", "Dr. Smith" matches "Smith".
-- Events:
-  - Shift events: kind + description similarity >= 0.4 + date proximity + links match
-    Description uses hybrid matching: max(token_set_ratio, substring, ratio)
-  - Structural events (Birth, Death, Married, etc.): kind + date + links match (skip description)
+- Events: kind + date proximity + person links match (description not used for matching)
 - PairBonds: person_a/person_b match resolved IDs
 - SARF variables: Macro-F1 across matched events (exact enum match)
 - IDs ignored: Match purely by content, not IDs
@@ -46,20 +43,6 @@ from btcopilot.schema import (
     DateCertainty,
     PersonKind,
     from_dict,
-)
-
-# Structural events don't use description for matching (descriptions are generic like "Born", "Died")
-STRUCTURAL_EVENT_KINDS = frozenset(
-    [
-        EventKind.Birth,
-        EventKind.Death,
-        EventKind.Married,
-        EventKind.Divorced,
-        EventKind.Separated,
-        EventKind.Bonded,
-        EventKind.Moved,
-        EventKind.Adopted,
-    ]
 )
 
 _log = logging.getLogger(__name__)
@@ -124,11 +107,8 @@ def normalize_name_for_matching(name: str | None) -> str:
     return " ".join(words)
 
 
-DESCRIPTION_SIMILARITY_THRESHOLD = 0.4
 DATE_TOLERANCE_DAYS = 7
 APPROXIMATE_TOLERANCE_DAYS = 730  # ±2 years (year-level estimates from vague temporal references)
-DESCRIPTION_WEIGHT = 0.8
-DATE_WEIGHT = 0.2
 
 
 @dataclass
@@ -382,13 +362,7 @@ def match_events(
     ai_events: list[Event], gt_events: list[Event], id_map: dict[int, int]
 ) -> EntityMatchResult:
     """
-    Match events by kind, links, date, and optionally description.
-
-    Matching criteria:
-    - kind must match exactly
-    - For Shift events: description similarity >= threshold (80% weight) + date (20% weight)
-    - For structural events (Birth, Death, etc.): skip description, match by kind + links + date
-    - links must match after ID resolution
+    Match events by kind, date, and person links (description not used).
 
     Args:
         id_map: Mapping from AI person IDs to GT person IDs
@@ -401,32 +375,10 @@ def match_events(
     for ai_event in ai_events:
         best_match = None
         best_score = 0.0
-        is_structural = ai_event.kind in STRUCTURAL_EVENT_KINDS
 
         for gt_event in gt_remaining:
             if ai_event.kind != gt_event.kind:
                 continue
-
-            # For Shift events, require description similarity
-            # For structural events (Birth, Death, etc.), skip description matching
-            gt_desc = (gt_event.description or "").lower()
-            if is_structural:
-                desc_sim = 1.0
-            else:
-                ai_desc = (ai_event.description or "").lower()
-
-                # Hybrid matching: try multiple strategies, take best
-                # 1. token_set_ratio - matches shared tokens regardless of order/extras
-                token_sim = fuzz.token_set_ratio(ai_desc, gt_desc) / 100.0
-                # 2. substring check - GT is often a concise version of verbose AI
-                substring_sim = 1.0 if gt_desc and gt_desc in ai_desc else 0.0
-                # 3. standard ratio - character-level similarity
-                ratio_sim = fuzz.ratio(ai_desc, gt_desc) / 100.0
-
-                desc_sim = max(token_sim, substring_sim, ratio_sim)
-
-                if desc_sim < DESCRIPTION_SIMILARITY_THRESHOLD:
-                    continue
 
             if not dates_within_tolerance(
                 ai_event.dateTime,
@@ -467,18 +419,14 @@ def match_events(
                 links_match = links_match and bool(set(ai_triangles) & gt_triangles)
 
             if links_match:
-                date_sim = calculate_date_similarity(
+                score = calculate_date_similarity(
                     ai_event.dateTime,
                     gt_event.dateTime,
                     ai_event.dateCertainty,
                     gt_event.dateCertainty,
                 )
-                weighted_score = (DESCRIPTION_WEIGHT * desc_sim) + (
-                    DATE_WEIGHT * date_sim
-                )
-
-                if weighted_score > best_score:
-                    best_score = weighted_score
+                if score > best_score:
+                    best_score = score
                     best_match = gt_event
 
         if best_match:
