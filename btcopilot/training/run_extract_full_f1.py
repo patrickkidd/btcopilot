@@ -9,12 +9,16 @@ Usage:
     uv run python -m btcopilot.training.run_extract_full_f1
     uv run python -m btcopilot.training.run_extract_full_f1 --discussion 50
     uv run python -m btcopilot.training.run_extract_full_f1 --model gemini-2.5-flash
+    uv run python -m btcopilot.training.run_extract_full_f1 --output-dir /tmp/eval
 """
 
 import argparse
 import asyncio
+import json
+import os
 import sys
 import time
+from datetime import datetime
 
 import nest_asyncio
 
@@ -31,7 +35,78 @@ from btcopilot.training.f1_metrics import (
 from btcopilot import pdp
 
 
-def run_extract_full_f1(discussion_id=None, model=None):
+def _build_entity_type_breakdown(results):
+    """Build per-entity-type F1 breakdown from per-discussion results.
+
+    Returns a dict with People/Events/PairBond keys, each containing
+    aggregated TP/FP/FN/precision/recall/F1.
+    """
+    breakdown = {}
+    for label, tp_key, fp_key, fn_key in [
+        ("People", "people_tp", "people_fp", "people_fn"),
+        ("Events", "events_tp", "events_fp", "events_fn"),
+        ("PairBond", "bonds_tp", "bonds_fp", "bonds_fn"),
+    ]:
+        total_tp = sum(r[tp_key] for r in results)
+        total_fp = sum(r[fp_key] for r in results)
+        total_fn = sum(r[fn_key] for r in results)
+        metrics = calculate_f1_from_counts(total_tp, total_fp, total_fn)
+        breakdown[label] = {
+            "tp": total_tp,
+            "fp": total_fp,
+            "fn": total_fn,
+            "precision": round(metrics.precision, 4),
+            "recall": round(metrics.recall, 4),
+            "f1": round(metrics.f1, 4),
+        }
+    return breakdown
+
+
+def _print_entity_type_table(breakdown):
+    """Print a formatted table of per-entity-type F1 breakdown."""
+    header = f"{'Entity Type':<12} {'TP':>4} {'FP':>4} {'FN':>4} {'Prec':>7} {'Recall':>7} {'F1':>7}"
+    separator = "-" * len(header)
+    print()
+    print("ENTITY-TYPE BREAKDOWN")
+    print(separator)
+    print(header)
+    print(separator)
+    for label in ["People", "Events", "PairBond"]:
+        row = breakdown[label]
+        print(
+            f"{label:<12} {row['tp']:>4} {row['fp']:>4} {row['fn']:>4} "
+            f"{row['precision']:>7.3f} {row['recall']:>7.3f} {row['f1']:>7.3f}"
+        )
+    print(separator)
+
+
+def _save_breakdown_json(summary, breakdown, output_dir):
+    """Save entity-type breakdown as a JSON artifact.
+
+    Returns the path to the saved file.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"extract_full_f1_breakdown_{timestamp}.json"
+    filepath = os.path.join(output_dir, filename)
+    artifact = {
+        "timestamp": datetime.now().isoformat(),
+        "aggregate": {
+            "count": summary["count"],
+            "people_f1": summary["people_f1"],
+            "events_f1": summary["events_f1"],
+            "pair_bonds_f1": summary["pair_bonds_f1"],
+            "aggregate_f1": summary["aggregate_f1"],
+        },
+        "entity_type_breakdown": breakdown,
+        "per_discussion": summary["per_discussion"],
+    }
+    with open(filepath, "w") as f:
+        json.dump(artifact, f, indent=2, default=str)
+    return filepath
+
+
+def run_extract_full_f1(discussion_id=None, model=None, output_dir=None):
     nest_asyncio.apply()
 
     if model:
@@ -145,6 +220,9 @@ def run_extract_full_f1(discussion_id=None, model=None):
             "events_tp": events_f1_metrics.tp,
             "events_fp": events_f1_metrics.fp,
             "events_fn": events_f1_metrics.fn,
+            "bonds_tp": bonds_f1_metrics.tp,
+            "bonds_fp": bonds_f1_metrics.fp,
+            "bonds_fn": bonds_f1_metrics.fn,
             "sarf": sarf,
             "elapsed": elapsed,
         }
@@ -200,6 +278,10 @@ def run_extract_full_f1(discussion_id=None, model=None):
             )
     print("=" * 60)
 
+    # Entity-type breakdown (aggregated TP/FP/FN across all discussions)
+    breakdown = _build_entity_type_breakdown(results)
+    _print_entity_type_table(breakdown)
+
     # Target check
     people_pass = avg_people > 0.7
     events_pass = avg_events > 0.3
@@ -211,14 +293,22 @@ def run_extract_full_f1(discussion_id=None, model=None):
         for disc_id, err in errors:
             print(f"  Disc {disc_id}: {err[:100]}")
 
-    return {
+    summary = {
         "count": n,
         "people_f1": avg_people,
         "events_f1": avg_events,
         "pair_bonds_f1": avg_bonds,
         "aggregate_f1": avg_aggregate,
+        "entity_type_breakdown": breakdown,
         "per_discussion": results,
     }
+
+    # Save JSON artifact if output directory specified
+    if output_dir:
+        filepath = _save_breakdown_json(summary, breakdown, output_dir)
+        print(f"\nBreakdown JSON saved to: {filepath}")
+
+    return summary
 
 
 def main():
@@ -235,12 +325,19 @@ def main():
         type=str,
         help="Override extraction model",
     )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        help="Directory to save breakdown JSON artifact",
+    )
     args = parser.parse_args()
 
     app = create_app()
     with app.app_context():
         result = run_extract_full_f1(
-            discussion_id=args.discussion, model=args.model
+            discussion_id=args.discussion,
+            model=args.model,
+            output_dir=args.output_dir,
         )
         sys.exit(0 if result and result["count"] > 0 else 1)
 
