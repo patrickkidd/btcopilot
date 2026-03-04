@@ -942,6 +942,80 @@ def calculate_statement_f1(
     return metrics
 
 
+def _augment_committed_id_map(
+    id_map: dict[int, int],
+    ai_pdp: PDP,
+    gt_pdp: PDP,
+    discussion,
+) -> None:
+    """
+    Augment id_map with mappings for committed (positive) person IDs.
+
+    When diagram_data has duplicate entries for the same person (e.g., id=1
+    "Sarah" and id=3 "Sarah"), the AI extraction may reference a different
+    committed ID than the GT cumulative PDP uses. This causes false negatives
+    in event matching even when the AI correctly identified the right person.
+
+    This function finds committed IDs referenced in AI events that don't appear
+    in GT, and maps them to GT committed IDs by name matching against
+    diagram_data.
+    """
+    if not discussion.diagram:
+        return
+
+    diagram_data = discussion.diagram.get_diagram_data()
+    committed_people = diagram_data.people
+    if not committed_people:
+        return
+
+    # Collect all positive (committed) IDs referenced in AI events
+    ai_committed_ids = set()
+    for event in ai_pdp.events:
+        for field in ("person", "spouse", "child"):
+            pid = getattr(event, field, None)
+            if pid is not None and pid > 0:
+                ai_committed_ids.add(pid)
+        for pid in getattr(event, "relationshipTargets", []) or []:
+            if pid > 0:
+                ai_committed_ids.add(pid)
+
+    # Collect all positive IDs in GT people
+    gt_committed_ids = {p.id for p in gt_pdp.people if p.id > 0}
+
+    # Find AI committed IDs that aren't in GT and try to map them
+    for ai_id in ai_committed_ids:
+        if ai_id in id_map or ai_id in gt_committed_ids:
+            continue  # Already mapped or same ID exists in GT
+
+        # Find the name of this committed person in diagram_data
+        ai_name = None
+        for cp in committed_people:
+            cp_id = cp.get("id") if isinstance(cp, dict) else getattr(cp, "id", None)
+            if cp_id == ai_id:
+                ai_name = (
+                    cp.get("name") if isinstance(cp, dict) else getattr(cp, "name", None)
+                )
+                break
+
+        if not ai_name:
+            continue
+
+        # Try to match this name to a GT committed person
+        ai_normalized = normalize_name_for_matching(ai_name)
+        for gt_person in gt_pdp.people:
+            if gt_person.id <= 0 or gt_person.id in id_map.values():
+                continue
+            gt_normalized = normalize_name_for_matching(gt_person.name)
+            sim = fuzz.token_set_ratio(ai_normalized, gt_normalized) / 100.0
+            if sim >= NAME_SIMILARITY_THRESHOLD:
+                id_map[ai_id] = gt_person.id
+                _log.debug(
+                    f"Committed ID map: AI {ai_id} ({ai_name}) -> "
+                    f"GT {gt_person.id} ({gt_person.name})"
+                )
+                break
+
+
 def calculate_cumulative_f1(discussion_id: int) -> CumulativeF1Metrics:
     from btcopilot.personal.models import Discussion, Statement
     from btcopilot.training.models import Feedback
@@ -981,6 +1055,14 @@ def calculate_cumulative_f1(discussion_id: int) -> CumulativeF1Metrics:
     )
 
     people_result, id_map = match_people(ai_pdp.people, gt_pdp.people)
+
+    # Resolve committed person ID mismatches: when diagram_data has duplicate
+    # entries for the same person (e.g., id=1 "Sarah" and id=3 "Sarah"), the AI
+    # may reference a different committed ID than GT uses. Add mappings for any
+    # committed (positive) IDs referenced in AI events that match GT people.
+    if discussion.diagram:
+        _augment_committed_id_map(id_map, ai_pdp, gt_pdp, discussion)
+
     events_result = match_events(ai_pdp.events, gt_pdp.events, id_map)
     bonds_result = match_pair_bonds(ai_pdp.pair_bonds, gt_pdp.pair_bonds, id_map)
 

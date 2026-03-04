@@ -22,10 +22,12 @@ Full conversation → single LLM call → complete PDP → accept all → view d
 |---|------|------|--------|-------|
 | T7-5 | Code GT for fresh discussions | H | ~3 hr | Patrick codes People/Events/PairBonds in SARF editor. ~60 min each. Synthetic discussions already generated in prod. |
 | T7-7 | Validate single-prompt F1 on fresh GT | CC | ~30 min | Run `calculate_cumulative_f1()` on T7-5 discussions. Target: People > 0.7, Events > 0.3. |
-| T7-8 | Prompt-tune on single-prompt path | CC+H | ~2 hr | Iterate on `fdserver/prompts/private_prompts.py` using fresh GT from T7-5. Stable surface — one call, low variance. |
+| T7-8 | Prompt-tune on single-prompt path | CC+H | ~2 hr | **In progress (Mar 2026)**: Over-extraction fixed — event counts now match GT (15 vs 14, 25 vs 24). But Events F1 still ~0.20 because AI extracts different events than GT coders (clinical judgment gap). Next steps: (1) review GT coding conventions with prompt examples, (2) add GT-aligned examples to `DATA_FULL_EXTRACTION_CONTEXT`, (3) investigate description matching thresholds. Fixed committed-ID resolution bug in f1_metrics.py. |
 | T7-9 | Validate idempotent re-extraction (no duplication after accept) | CC | ~1 hr | Chat → extract → accept all → extract again → verify no duplicate people/events vs committed items. Tests LLM-based dedup in `DATA_FULL_EXTRACTION_CONTEXT`. |
 | T7-10 | Fix birth event self-reference bug | CC+H | ~2 hr | Birth events set person=child (person births themselves). Should set person=parent, child=born person, create parent PairBonds, infer sibling relationships from existing data. Prompt rules, examples, and validation all need updating. Needs design discussion first. |
 | T7-11 | Fix extraction dedup against committed items | CC+H | ~2 hr | `extract_full` re-extracts people/events already committed in `diagram_data`. LLM prompt says "avoid duplicates with committed items" but isn't working. May need rules-based post-filter in `_extract_and_validate` or `apply_deltas` to strip entries matching committed IDs/names, not just prompt reliance. |
+| T7-12 | Auto-detect event clusters on PDP accept | CC+H | ~2-3 hr | Remove "Re-detect clusters" button, auto-detect on PDP accept, restore "Show clusters" checkbox. [Issue #31](https://github.com/patrickkidd/btcopilot/issues/31). Depends on T7-6. |
+| T7-13 | Fix timeline initial zoom and right-edge overflow | CC+H | ~1-2 hr | Timeline loads too zoomed in; last cluster runs off right edge. Fit all clusters in viewport on load, add right padding. [Issue #87](https://github.com/patrickkidd/familydiagram/issues/87). Can parallel T7-12. |
 | T5-1 | Fix 18 GT events with person=None | H | ~3 hr | SARF editor. Existing disc 48 GT cleanup. |
 | T5-2 | Fix 24 GT events with placeholder descriptions | H | ~4 hr | Read transcripts, write correct descriptions. |
 
@@ -79,7 +81,7 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 | Single-prompt hits context limit on long conversations | Extraction fails or truncates | gemini-2.5-flash has 1M token context; typical discussion is ~30K chars. Monitor. |
-| Events F1 plateaus below 0.4 | Users see wrong events | Prompt-tune on stable single-prompt surface (T7-8). Fallback: hide events, show People/PairBonds only. |
+| Events F1 plateaus below 0.4 | Users see wrong events | Prompt-tune on stable single-prompt surface (T7-8). Over-extraction fixed; remaining gap is clinical judgment alignment (AI picks different events than GT). Fallback: hide events, show People/PairBonds only. Next: GT-aligned examples in prompt. |
 | GT coding bottleneck (Patrick only) | Limits measurement iterations | ~60 min/discussion is fast enough for 3-5 GT cases needed for MVP. |
 | Auto-arrange is 2-3 weeks | Delays Goal 3 | Consider simpler generational Y-alignment only. |
 
@@ -90,7 +92,7 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 | Metric | Last Measured | Target | Notes |
 |--------|-------------|--------|-------|
 | People F1 (cumulative) | 0.72 (Feb 2026, single-prompt, disc 48) | > 0.7 | At target. Validate on fresh GT. |
-| Event F1 (cumulative) | 0.29 (Feb 2026, single-prompt, disc 48) | > 0.4 | Below target. Prompt tuning on T7-8. |
+| Event F1 (cumulative) | 0.20 avg (Mar 2026, single-prompt, disc 36/37/39/48) | > 0.4 | Below target. Over-extraction fixed (event counts now match GT). Remaining gap: AI extracts different events than GT coders (clinical judgment alignment). See T7-8 notes. |
 | PairBond F1 (cumulative) | 0.33 (Feb 2026, single-prompt, disc 48) | > 0.5 | Below target. |
 | GT coded discussions | 4 (disc 36/37/39/48) | 5-8 for MVP | T7-5 adds fresh GT coding. |
 | E2E synthetic | Verified 2026-02-24 | Functional | test_e2e_synthetic.py |
@@ -136,6 +138,7 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 | 2026-02-24 | All open tasks | T0-4 deferred. T4-2 not needed. E2E pipeline verified. |
 | 2026-02-24 | Architecture pivot | Single-prompt extraction proven. Dashboard rewritten. See decision log 2026-02-24. |
 | 2026-02-26 | T7-1 through T7-4 | Implemented and moved to Done. Extract button + PDP Refresh in Personal app. Chat is chat-only. PDP cleared before re-extraction. All architecture docs updated. |
+| 2026-03-03 | T7-8 Events F1 | Over-extraction fixed (AI event counts now match GT: 15/14, 25/24, 19/18, 27/21 across disc 36/37/39/48). Events F1 avg ~0.20, not yet at 0.40 target. Root cause: AI-GT clinical judgment gap — different events selected despite similar counts. Fixed committed-ID resolution bug in f1_metrics.py. |
 
 ### Deferred (Post-MVP)
 
