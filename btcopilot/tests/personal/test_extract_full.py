@@ -12,7 +12,7 @@ def test_extract_full_returns_pdp(discussion):
             Event(
                 id=-2,
                 kind=EventKind.Birth,
-                person=-1,
+                person=None,
                 child=-1,
                 description="Born",
                 dateTime="1953-01-01",

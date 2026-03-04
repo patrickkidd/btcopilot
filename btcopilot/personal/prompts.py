@@ -383,7 +383,7 @@ functioning changes.
 
 **EVENT.PERSON ASSIGNMENT**: Every Event MUST have the correct `person` field.
 - `"death"`: person = who DIED (not the speaker)
-- `"birth"`: person = who was BORN, child = same ID
+- `"birth"`: child = who was BORN, person = parent (optional, null if unknown)
 - `"married"/"bonded"/"separated"/"divorced"`: person = one partner, spouse = other
 - `"shift"` with relationship: person = who INITIATED the behavior
 - `"shift"` without relationship: person = who is experiencing the change
@@ -453,7 +453,7 @@ Output:
         {
             "id": -2,
             "kind": "birth",
-            "person": -1,
+            "person": null,
             "child": -1,
             "description": "Born",
             "dateTime": "1953-01-01",
@@ -464,6 +464,10 @@ Output:
     "pair_bonds": [],
     "delete": []
 }
+
+IMPORTANT: For birth events, `child` is who was born (Barbara). `person` is an
+optional parent link — set to null when the parent is unknown. NEVER set
+person = child (self-referential birth is semantically invalid).
 
 Example 2: Extracting a relationship shift
 
