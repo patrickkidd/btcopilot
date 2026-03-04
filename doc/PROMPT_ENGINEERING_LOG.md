@@ -2,7 +2,7 @@
 
 **Purpose**: Authoritative record of prompt engineering decisions, experiments, and lessons learned for the SARF data extraction system. Prevents regressions by documenting what works, what doesn't, and why.
 
-**Last Updated**: 2026-03-03
+**Last Updated**: 2026-03-03 (T7-18 split extraction)
 
 ---
 
@@ -52,6 +52,8 @@
 **Finding**: Gemini documentation suggests few-shot examples early in prompts improve quality.
 
 **Current assembly order** (`btcopilot/pdp.py`):
+
+Per-statement (training app only):
 ```python
 data_extraction_prompt = (
     DATA_EXTRACTION_PROMPT      # 1. Extraction intent + brief overview
@@ -59,6 +61,14 @@ data_extraction_prompt = (
     + DATA_EXTRACTION_RULES     # 3. Detailed schema/rules
     + DATA_EXTRACTION_CONTEXT   # 4. Actual data to process
 )
+```
+
+Full extraction (production, 2-pass):
+```python
+# Pass 1: People + PairBonds + Structural Events
+prompt1 = DATA_EXTRACTION_PASS1_PROMPT + DATA_EXTRACTION_PASS1_CONTEXT
+# Pass 2: Shift Events + SARF (given Pass 1 output)
+prompt2 = DATA_EXTRACTION_PASS2_PROMPT + DATA_EXTRACTION_PASS2_CONTEXT
 ```
 
 ---
@@ -117,15 +127,23 @@ data_extraction_prompt = (
 
 ## Prompt Architecture
 
-### File: `btcopilot/btcopilot/personal/prompts.py`
+### File: `btcopilot/btcopilot/personal/prompts.py` (defaults) / `fdserver/prompts/private_prompts.py` (overrides)
 
-**Constants**:
+**Per-statement constants** (training app only):
 | Constant | Purpose | Template Variables |
 |----------|---------|-------------------|
 | `DATA_EXTRACTION_PROMPT` | Extraction intent + data model overview | `{current_date}` |
 | `DATA_EXTRACTION_EXAMPLES` | Few-shot error pattern examples | None (literal JSON) |
 | `DATA_EXTRACTION_RULES` | Operational extraction guidance | None |
 | `DATA_EXTRACTION_CONTEXT` | Runtime data to process | `{diagram_data}`, `{conversation_history}`, `{user_message}` |
+
+**Full-extraction constants** (production, 2-pass):
+| Constant | Purpose | Template Variables |
+|----------|---------|-------------------|
+| `DATA_EXTRACTION_PASS1_PROMPT` | Pass 1: People + PairBonds + structural events | `{current_date}` |
+| `DATA_EXTRACTION_PASS1_CONTEXT` | Pass 1 runtime data | `{diagram_data}`, `{conversation_history}` |
+| `DATA_EXTRACTION_PASS2_PROMPT` | Pass 2: Shift events + SARF coding | `{current_date}` |
+| `DATA_EXTRACTION_PASS2_CONTEXT` | Pass 2 runtime data | `{pass1_data}`, `{conversation_history}` |
 
 **Why split into multiple constants**:
 1. Examples contain literal JSON with curly braces - keeping them separate avoids escaping issues with `.format()`
@@ -136,9 +154,11 @@ data_extraction_prompt = (
 
 | Metric | Target | Current |
 |--------|--------|---------|
-| Total prompt chars | <50K | ~41K |
-| Lines | <1000 | ~960 |
-| Examples | 5-10 | 9 |
+| Per-statement prompt chars | <50K | ~41K |
+| Per-statement lines | <1000 | ~960 |
+| Per-statement examples | 5-10 | 9 |
+| Pass 1 prompt (full) | — | ~150 lines |
+| Pass 2 prompt (full) | — | ~225 lines |
 
 ---
 
@@ -176,9 +196,10 @@ Based on failed experiments:
 
 ### F1 Score Tracking
 
-- **Test harness**: `uv run python -m btcopilot.training.run_prompts_live`
+- **Full-extraction harness**: `uv run python -m btcopilot.training.run_extract_full_f1` (production 2-pass, 6 GT discussions)
+- **Per-statement harness**: `uv run python -m btcopilot.training.run_prompts_live` (training app, 45 GT cases)
 - **Ground truth**: `instance/gt_export.json` (symlinked from btcopilot-sources)
-- **Metrics tracked**: Aggregate F1, People F1, Events F1, per-variable F1 (symptom, anxiety, relationship, functioning)
+- **Metrics tracked**: Aggregate F1, People F1, Events F1, PairBonds F1, per-variable F1 (symptom, anxiety, relationship, functioning)
 
 ### Gemini Issue Detection
 
@@ -206,8 +227,9 @@ See `btcopilot/doc/TODO_GEMINI_SCHEMA.md` for:
 
 | File | Purpose |
 |------|---------|
-| `btcopilot/btcopilot/personal/prompts.py` | Extraction prompts (modify with care) |
-| `btcopilot/btcopilot/pdp.py` | Prompt assembly + Gemini issue instrumentation |
+| `btcopilot/btcopilot/personal/prompts.py` | Extraction prompt defaults (empty stubs for private prompts) |
+| `fdserver/prompts/private_prompts.py` | Real extraction prompts (PASS1/PASS2 + per-statement) |
+| `btcopilot/btcopilot/pdp.py` | Prompt assembly + extraction pipeline (2-pass + per-statement) |
 | `btcopilot/btcopilot/schema.py` | Dataclass definitions |
 | `btcopilot/doc/TODO_GEMINI_SCHEMA.md` | Deferred Gemini optimizations |
 | `btcopilot/doc/SARF_EXTRACTION_REFERENCE.md` | Exhaustive SARF definitions (reference only) |
@@ -330,3 +352,52 @@ See `btcopilot/doc/TODO_GEMINI_SCHEMA.md` for:
 **Decision**: Keep flat prompt format. Multi-turn causes 20% aggregate regression, more ID collision warnings, and worse people/events extraction. The model loses context about existing diagram_data when conversation history is separated from extraction instructions.
 
 **Lesson**: Structured multi-turn is not automatically better for extraction tasks. The flat prompt keeps all context (instructions, examples, existing data, conversation, new statement) together, which helps the model track IDs and avoid re-extraction.
+
+### Mar 2026: 2-pass split extraction (T7-18)
+
+**Context**: Single-prompt `extract_full()` struggled with Events F1 (~0.47 with description-free matching). Hypothesis: splitting extraction into two focused passes would improve quality by reducing cognitive load per LLM call.
+
+**Architecture**:
+- **Pass 1**: Extract people, PairBonds, and structural events (birth, death, married, etc.) from full transcript
+- **Pass 2**: Given Pass 1 output, extract shift events with SARF variable coding
+
+Both passes route through `_extract_and_validate()` for retry/validation. Pass 2 receives `base_pdp=pass1_pdp` so validation runs against Pass 1's people/events.
+
+**Results** (gemini-2.5-flash, 6 GT discussions, avg 2 runs):
+
+| Metric | Baseline (single-prompt) | Split (2-pass) | Delta |
+|--------|-------------------------|----------------|-------|
+| Aggregate F1 | 0.595 | **0.669** | +12% |
+| People F1 | 0.901 | 0.909 | +1% |
+| Events F1 | 0.470 | **0.509** | +8% |
+| PairBonds F1 | 0.539 | **0.832** | +54% |
+| Completion | 4/6 (67%) | **6/6 (100%)** | fixed |
+
+**Decision**: Replaced single-prompt `extract_full()` with 2-pass. Removed `DATA_FULL_EXTRACTION_CONTEXT`. The old single-prompt path no longer exists.
+
+**Key observations**:
+- PairBonds F1 improved dramatically (+54%) — Pass 1's focused scope catches bonds that were missed in the single all-at-once prompt
+- 100% discussion completion vs 67% — smaller per-pass output avoids token limit failures
+- Per-statement prompt constants (`DATA_EXTRACTION_PROMPT`, `DATA_EXTRACTION_EXAMPLES`, etc.) are NOT used by `extract_full()` — the split prompts are independent
+
+**Lesson**: Task decomposition works. Splitting a complex extraction into two focused passes reduces cognitive load and improves quality on every metric. The key insight from the earlier 9-iteration experiment ("per-statement training dominates full-extraction context") motivated this split — instead of fighting the single-prompt format, we redesigned the pipeline.
+
+### Mar 2026: Description-free event matching (Strategy B)
+
+**Context**: Debug analysis of FP events in split extraction revealed many were semantically valid extractions that GT describes differently. `Event.description` is free-text prose — it varies widely between AI and human annotators. Fuzzy string matching at 0.4 threshold was a hard gate rejecting legitimate matches.
+
+**Change**: Removed `description` as both hard gate and soft scoring signal from `match_events()` in `f1_metrics.py`. Events now match on `kind + dateTime + person links` only. Weighted score simplified to `date_sim`.
+
+**Results** (same extraction output, different matching):
+
+| Metric | With description matching | Without (Strategy B) | Delta |
+|--------|--------------------------|---------------------|-------|
+| Events F1 | 0.335 | **0.470** | +40% |
+
+**Decision**: Adopted. Description matching was measuring "do AI and GT use similar words" not "did AI find the right event."
+
+**Risk**: If a person has 2+ genuinely different shift events within the 730-day date tolerance, they'll match incorrectly. Accepted as rare in practice with current GT dataset.
+
+**Alternatives considered but deferred**:
+- **SARF Signature Match** — match on SARF variable agreement instead of description. More precise than kind+date+person but adds complexity and creates circular dependency (SARF accuracy used for both matching and scoring).
+- **SARF + Description hybrid** — demote description to low-weight tiebreaker. Most complex, still affected by paraphrasing variance.

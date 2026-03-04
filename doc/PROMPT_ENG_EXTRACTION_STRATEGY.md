@@ -4,38 +4,34 @@
 
 **Status**: Active - update as learnings emerge.
 
-**Last Updated**: 2026-03-03
+**Last Updated**: 2026-03-03 (T7-18 split extraction)
 
 ---
 
 ## Current State Summary
 
-### F1 Baseline (as of 2026-02-14, gemini-2.5-flash)
+### F1 Baseline — Full Extraction, 2-Pass Split (as of 2026-03-03, gemini-2.5-flash, 6 GT discussions)
 
 | Metric | Score | Assessment |
 |--------|-------|------------|
-| Aggregate F1 | ~0.24 | Low (noisy ±0.03) |
-| People F1 | ~0.72 | Acceptable |
-| Events F1 | ~0.14 | Very low |
-| Symptom F1 | ~0.20 | Low |
-| Anxiety F1 | ~0.22 | Low |
-| Relationship F1 | ~0.22 | Low |
-| Functioning F1 | ~0.22 | Low |
+| Aggregate F1 | 0.669 | Good — Stage 2 reached |
+| People F1 | 0.909 | Strong |
+| Events F1 | 0.509 | Stage 2 reached (>0.5) |
+| PairBonds F1 | 0.832 | Strong |
+| Symptom F1 | 0.727 | Good |
+| Anxiety F1 | 0.399 | Moderate |
+| Relationship F1 | 0.311 | Low |
+| Functioning F1 | 0.627 | Good |
 
-### Full-Extraction Baseline (as of 2026-03-03, gemini-2.5-flash, 6 GT discussions)
+6/6 discussions completed (100%). Avg 2 runs. Description-free event matching (Strategy B).
 
-| Metric | Score | Assessment |
-|--------|-------|------------|
-| Events F1 (avg 3 runs) | ~0.335 | Low but improved from 0.302 baseline |
+### Previous Baselines (archived)
 
-Per-discussion: disc 36=0.548, disc 37=0.348, disc 39=0.273, disc 48=0.411, disc 50=0.347, disc 51=0.097 (unstable).
-Non-determinism: single runs range 0.313-0.367 on identical prompts.
+**Per-statement** (2026-02-14, gemini-2.5-flash, 45 GT cases): Aggregate ~0.24, People ~0.72, Events ~0.14. Superseded by full-extraction pipeline.
 
-**Diagnosis**: Scores are dominated by GT data quality issues and stochastic variance:
-1. **GT data quality** is the primary blocker (see section below)
-2. High model stochasticity makes ±0.03 improvements indistinguishable from noise
-3. 45-case benchmark is too small for reliable signal
-4. People extraction acceptable, event extraction blocked by matching issues
+**Full-extraction single-prompt** (2026-03-03): Aggregate 0.595, Events 0.470, PairBonds 0.539. Superseded by 2-pass split.
+
+**Diagnosis**: Primary remaining blockers are GT data quality and SARF accuracy (relationship F1 low). People and structural extraction are strong. Event detection has crossed the 0.5 threshold.
 
 ---
 
@@ -57,33 +53,19 @@ Non-determinism: single runs range 0.313-0.367 on identical prompts.
 - [ ] Review and fix GT descriptions (24 events have placeholders)
 - [ ] Add dateCertainty to GT events
 
-### 2. Full-Extraction: Per-Statement Training Dominance (NEW 2026-03-03)
+### 2. ~~Full-Extraction: Per-Statement Training Dominance~~ — RESOLVED (2026-03-03)
 
-**Problem**: Full-extraction mode (`extract_full()`) layers `DATA_FULL_EXTRACTION_CONTEXT` (~50 lines) on top of per-statement training (`DATA_EXTRACTION_PROMPT` + `DATA_EXTRACTION_EXAMPLES`, ~1770 lines). The per-statement training dominates model behavior.
+**Resolution**: 2-pass split extraction. Pass 1 and Pass 2 use independent prompts (`DATA_EXTRACTION_PASS1_PROMPT`, `DATA_EXTRACTION_PASS2_PROMPT`) that don't include per-statement training examples. This eliminates the dominance problem entirely — the 1770 lines of per-statement examples are only used by `update()` (training app).
 
-**Evidence from 9-iteration experiment**:
-- "IGNORE" framing: destroys useful event detection (TP dropped from 18 to 9)
-- "Follow BUT override" framing: model reverts to per-statement behavior (76 events instead of ~30)
-- "DO NOT APPLY" framing: no meaningful effect on event selection quality
-- Aggressive consolidation rules: kills TP proportionally to FP (model drops events randomly)
+**Original problem**: Single-prompt `extract_full()` layered ~50 lines of full-extraction context on ~1770 lines of per-statement training. The per-statement training dominated model behavior, and no amount of override framing could change it.
 
-**Working approach**: Minimal intervention — quality hints layered on top of per-statement training. Scene-detail suppression + soft calibration (15-30 events) + deduplication guidance. No override framing.
+### 3. ~~Event Matching Brittleness~~ — RESOLVED (2026-03-03)
 
-**Impact**: Full-extraction Events F1 is capped at ~0.35 via prompt-only approaches. Further improvement requires matching algorithm changes (embedding similarity) or GT description quality cleanup.
+**Resolution**: Strategy B — removed `Event.description` as both hard gate and soft scoring signal. Events match on `kind + dateTime + person links` only. Events F1 jumped from 0.335 to 0.470 (+40%) with no extraction changes.
 
-### 3. Event Matching Brittleness
+**Original problem**: `description` fuzzy similarity >= 0.4 was a hard gate that rejected legitimate matches due to paraphrasing variance between AI clinical summaries and GT verbatim words.
 
-**Problem**: Event F1 uses strict matching that fails on "close but different" extractions.
-
-**Current matching requirements** (all must pass):
-- `kind` exact match
-- `description` fuzzy similarity >= 0.4 (80% weight) — lowered from 0.5
-- `dateTime` within tolerance (270 days when either certainty is None/Approximate)
-- Person links: GT None = wildcard, otherwise must match exactly
-
-**Potential remaining fixes**:
-- [ ] Use semantic similarity (embeddings) instead of fuzzy string matching
-- [ ] Separate "event detected" from "event details correct" metrics
+**Remaining risk**: If a person has 2+ genuinely different shift events within the 730-day date tolerance, they'll match incorrectly. Accepted as rare with current GT dataset. SARF Signature Match (Proposal A from the experiment plan) is available as a future upgrade if this becomes a problem.
 
 ### 3. High Model Stochasticity (Critical)
 
@@ -206,6 +188,8 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 7. Scene-detail suppression with concrete negative examples in full-extraction context → Events F1 +0.033 avg (2026-03-03)
 8. Soft calibration hints ("15-30 events typical") — non-destructive count guidance for full-extraction (2026-03-03)
 9. Minimal intervention approach for full-extraction: quality hints layered on per-statement training, not overrides (2026-03-03)
+10. 2-pass split extraction: Pass 1 (people+bonds+structural) then Pass 2 (shifts+SARF) — Aggregate +12%, Events +8%, PairBonds +54%, 100% completion (2026-03-03, T7-18)
+11. Description-free event matching (Strategy B): remove Event.description from F1 matching gates — Events F1 +40% with no extraction changes (2026-03-03, T7-18)
 
 **Things that failed**:
 1. Adding explicit negative examples for SARF variables (caused model to stop using them)
@@ -232,10 +216,11 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 - GT data quality is the primary measurement blocker, not prompt quality
 - 45-case benchmark has ~±0.03 noise floor — cannot measure improvements smaller than this
 - gemini-2.5-flash thinking mode is incompatible with structured JSON output (catastrophic latency)
-- Description style mismatch (GT uses speaker verbatim words, AI uses clinical summaries) is the binding constraint on Events F1 (2026-03-03)
-- 1770 lines of per-statement examples dominate full-extraction model behavior — work WITH them, not against (2026-03-03)
+- Description style mismatch (GT uses speaker verbatim words, AI uses clinical summaries) is the binding constraint on Events F1 — resolved by removing description from matching (2026-03-03)
+- 1770 lines of per-statement examples dominate full-extraction model behavior — resolved by using independent split prompts (2026-03-03)
 - Full-extraction requires fundamentally different strategy than per-statement: minimal hints, not overrides (2026-03-03)
 - LLM non-determinism is ~10-15% for full-extraction — multi-run averaging is required for reliable signal (2026-03-03)
+- Task decomposition (2-pass split) is more effective than prompt engineering on a monolithic extraction — reducing cognitive load per LLM call improves quality on every metric (2026-03-03)
 
 ---
 
@@ -327,7 +312,7 @@ Focus improvement efforts in this order:
 | Stage 3 | SARF F1 > 0.3 | Variable coding working |
 | Stage 4 | SARF F1 > 0.5 | Production-ready quality |
 
-Current state: Stage 1 not yet reached.
+Current state: **Stage 2 reached** (Events F1 = 0.509). Next target: SARF F1 > 0.3 (Stage 3). Symptom (0.727) and Functioning (0.627) already exceed Stage 4. Relationship (0.311) barely at Stage 3. Anxiety (0.399) at Stage 3.
 
 ---
 
@@ -335,21 +320,21 @@ Current state: Stage 1 not yet reached.
 
 ### F1 Metric Modifications
 
-| Change | Rationale | Risk |
-|--------|-----------|------|
-| Lower description threshold to 0.4 | More lenient matching | May increase false positives |
-| Partial person ID matching | Don't fail event if 1 of 5 IDs wrong | May hide real errors |
-| Semantic (embedding) matching | Better "same meaning" detection | Slower, harder to debug |
-| Separate detection vs accuracy | "Found event" distinct from "correct details" | More metrics to track |
+| Change | Rationale | Status |
+|--------|-----------|--------|
+| ~~Lower description threshold to 0.4~~ | ~~More lenient matching~~ | ✅ Superseded — description removed entirely (Strategy B) |
+| ~~Semantic (embedding) matching~~ | ~~Better "same meaning" detection~~ | ✅ Superseded — description removed entirely |
+| SARF Signature Match | More precise than kind+date+person | Deferred — available if false matches emerge |
+| Separate detection vs accuracy | "Found event" distinct from "correct details" | Not done |
 
 ### GT Quality Improvements
 
 | Change | Rationale | Effort |
 |--------|-----------|--------|
-| Review GT description style | Align GT with expected AI output | Medium |
+| Assign person to 18 GT events | Remove wildcard matching dependency | Medium |
+| Replace 24 placeholder descriptions | Clean data for analysis | Medium |
 | Add more SARF-coded events | Increase signal density | High |
-| Standardize GT formats | Reduce arbitrary variation | Medium |
-| Add synthetic cases for edge patterns | Targeted coverage | Low |
+| Add more GT discussions | Reduce noise from 6-discussion benchmark | High |
 
 ---
 
@@ -357,32 +342,26 @@ Current state: Stage 1 not yet reached.
 
 ### Immediate (Highest Impact)
 
-1. **Fix GT data quality** — This is the #1 blocker. Until GT is clean, F1 scores are unreliable:
+1. **Remove per-statement extraction path** (issue #99) — `update()`, `extract_next_statement()`, `reextract_statement()` are training-app only and no longer needed for production. Convert `import_text()` to 2-pass. Remove orphaned prompt constants (`DATA_EXTRACTION_PROMPT`, `DATA_EXTRACTION_EXAMPLES`, `DATA_EXTRACTION_CONTEXT`).
+
+2. **Fix GT data quality** — Still the #1 measurement blocker:
    - Assign `person` to 18 GT events currently set to None
    - Replace 24 "New Event" placeholder descriptions with real descriptions
    - Add `dateCertainty` to all GT events
-   - Review GT dates (many look like placeholders: 2025-06-01, 2025-12-15)
 
-2. **Increase GT dataset size** — 45 cases gives ~±0.03 noise floor. Need 100+ for reliable signal.
-   Run multiple extractions per statement (3x) and average scores to reduce variance.
+3. **Improve Relationship F1** (0.311) — Lowest SARF variable. Investigate whether GT relationship coding is consistent, or if the Pass 2 prompt needs relationship-specific guidance.
 
-3. **Add event-only detection metric** — Separate "event detected at all" from "event details correct".
-   Current all-or-nothing matching hides partial matches.
+### Short-term
 
-### Short-term (After GT Cleanup)
+4. **Improve Anxiety F1** (0.399) — Second-lowest SARF variable. Same investigation as #3.
 
-4. **Re-run baseline** with clean GT to establish true performance floor.
-
-5. **Semantic (embedding) matching** — Replace fuzzy string matching with embeddings for descriptions.
-   GT "Trouble sleeping" should match AI "Having trouble sleeping" at high confidence.
-
-6. **Run ablation test** — Remove SECTION 3 examples entirely, measure F1. Determine if examples help or hurt.
+5. **SARF Signature Match** — If kind+date+person matching proves too loose (false matches on events with different SARF patterns for the same person near the same date), upgrade to Proposal A from the experiment plan.
 
 ### Medium-term
 
-7. **GT expansion** — Add 50+ cases with all fields populated (person, description, dateCertainty, SARF variables).
+6. **GT expansion** — Add more discussions with all fields populated (person, description, dateCertainty, SARF variables). Current 6-discussion benchmark is small.
 
-8. **Confidence-based testing** — Instead of single-run scores, run each case 5x and report mean±std.
+7. **Confidence-based testing** — Run each discussion 3-5x and report mean±std to reduce noise.
 
 ---
 
@@ -419,6 +398,8 @@ Current state: Stage 1 not yet reached.
 | [PROMPT_INDUCTION_CLI.md](PROMPT_INDUCTION_CLI.md) | Automated induction process |
 | [F1_METRICS.md](F1_METRICS.md) | F1 calculation details |
 | [training/prompts/induction_agent.md](../btcopilot/training/prompts/induction_agent.md) | Agent meta-prompt |
-| [personal/prompts.py](../btcopilot/personal/prompts.py) | Extraction prompts (edit target) |
+| [personal/prompts.py](../btcopilot/personal/prompts.py) | Extraction prompt defaults (empty stubs) |
+| [fdserver/prompts/private_prompts.py](../../fdserver/prompts/private_prompts.py) | Real extraction prompts (PASS1/PASS2) |
 | [training/f1_metrics.py](../btcopilot/training/f1_metrics.py) | F1 calculation (matching logic) |
+| [training/run_extract_full_f1.py](../btcopilot/training/run_extract_full_f1.py) | Full-extraction F1 harness |
 | [induction-reports/](induction-reports/) | Historical run logs |
