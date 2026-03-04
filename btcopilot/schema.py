@@ -1,4 +1,6 @@
 import enum
+import hashlib
+import json
 import logging
 import datetime
 import os
@@ -359,6 +361,11 @@ class Cluster:
 class ClusterResult:
     clusters: list[Cluster] = field(default_factory=list)
     cacheKey: str | None = None
+
+
+def hash_sarf_dicts(event_data: list[dict]) -> str:
+    content = json.dumps(event_data, sort_keys=True)
+    return hashlib.sha256(content.encode()).hexdigest()[:16]
 
 
 @dataclass

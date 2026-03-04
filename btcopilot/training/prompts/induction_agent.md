@@ -3,16 +3,16 @@
 You are an autonomous agent optimizing extraction prompts for a novel,
 family-based, behavioral health clinical model coding system.
 
-## ⚠️ CRITICAL WARNING: OPEN SOURCE REPOSITORY ⚠️
+## ⚠️ CRITICAL WARNING: CONFIDENTIAL DATA ⚠️
 
-**prompts.py is in a PUBLIC open source repo. GT data is CONFIDENTIAL.**
+**private_prompts.py is in the PRIVATE fdserver repo. GT data is CONFIDENTIAL.**
 
-When adding examples to prompts.py, NEVER copy real names, quotes, or details from GT.
+When adding examples to private_prompts.py, NEVER copy real names, quotes, or details from GT.
 Always invent generic fictional examples. See "CONFIDENTIALITY RULES" section below.
 
 ## Your Mission
 
-Improve prompts in `btcopilot/btcopilot/personal/prompts.py` to maximize F1 scores on ground truth cases.
+Improve prompts in `fdserver/prompts/private_prompts.py` to maximize F1 scores on ground truth cases.
 
 ## Focus Area (if specified)
 
@@ -197,7 +197,7 @@ f. **Read SARF operational definitions**: `btcopilot/doc/sarf-definitions/*.md`
      - Relationship patterns: `04-conflict.md`, `05-distance.md`, `06-cutoff.md`, `07-overfunctioning.md`, `08-underfunctioning.md`, `09-projection.md`, `10-inside.md`, `11-outside.md`, `12-definedself.md`
    - When editing prompts, use these definitions as initial hypothesis to improve F1 scores
 
-g. **Read current prompts**: `btcopilot/btcopilot/personal/prompts.py`
+g. **Read current prompts**: `fdserver/prompts/private_prompts.py`
    - Three-part structure (concatenated at runtime in pdp.py):
      - `DATA_EXTRACTION_PROMPT` - Header + SECTION 1 + SECTION 2 (with {current_date} variable)
      - `DATA_EXTRACTION_EXAMPLES` - SECTION 3 examples (no variables, literal JSON - edit freely)
@@ -261,7 +261,7 @@ Compare AI extractions vs. GT in `gt_export.json`. Identify the **top 2-3 error 
 #### b. Propose ONE Targeted Change
 
 **CRITICAL RULES**:
-  When tuning LLM prompts (like btcopilot/personal/prompts.py), the behavior being
+  When tuning LLM prompts (like fdserver/prompts/private_prompts.py), the behavior being
   shaped is complex and sophisticated. Do NOT thrash between oversimplified ideas
   by entirely replacing sections of the prompt. Instead:
   - ADD nuance to what exists rather than replacing it, unless asked to replace or overhaul it
@@ -335,9 +335,9 @@ Format each example:
 
 ## ⚠️ CRITICAL: CONFIDENTIALITY RULES ⚠️
 
-**The prompts.py file is in an OPEN SOURCE repository. GT data is CONFIDENTIAL clinical information.**
+**GT data is CONFIDENTIAL clinical information.**
 
-**NEVER copy ANY of the following from GT into prompts.py:**
+**NEVER copy ANY of the following from GT into private_prompts.py:**
 - Real names (people, places, employers, schools, etc.)
 - Actual statements or quotes from GT cases
 - Specific dates, ages, or identifying details
@@ -361,11 +361,11 @@ Format each example:
 **User statement**: "My aunt has been struggling since my uncle passed away"
 ```
 
-**If you violate this rule, you are leaking confidential clinical data to a public repository.**
+**If you violate this rule, you are leaking confidential clinical data.**
 
 #### c. Edit Prompts
 
-Use the `Edit` tool to update `btcopilot/btcopilot/personal/prompts.py`:
+Use the `Edit` tool to update `fdserver/prompts/private_prompts.py`:
 - Edit one of three constants:
   - `DATA_EXTRACTION_PROMPT` - for SECTION 1 (data model) or SECTION 2 (rules)
   - `DATA_EXTRACTION_EXAMPLES` - for SECTION 3 (error pattern examples)
@@ -527,11 +527,11 @@ After stopping, write a comprehensive report to `${RUN_FOLDER}/${TIMESTAMP}.md` 
 
 ```bash
 # If improved, commit (report path will be printed by agent)
-git add btcopilot/btcopilot/personal/prompts.py doc/induction-reports/
+git add fdserver/prompts/private_prompts.py doc/induction-reports/
 git commit -m "Automated prompt induction (F1: X.XX → Y.YY)"
 
 # If not improved, revert
-git checkout btcopilot/btcopilot/personal/prompts.py
+git checkout fdserver/prompts/private_prompts.py
 ```
 
 ## Technical Notes
@@ -564,7 +564,29 @@ The prompts are tuned for **Gemini 2.0 Flash** with structured JSON output (via 
 - Use strong typing in examples to match schema expectations
 ```
 
-### 4. Completion
+### 4. Update F1 Timeseries Graph
+
+**MANDATORY**: Append a new entry to `btcopilot/doc/f1_timeseries.json` with final F1 scores.
+
+This data feeds the admin/auditor dashboard chart. Add an entry with:
+```json
+{
+  "date": "YYYY-MM-DD",
+  "commit": null,
+  "aggregate": 0.XXX,
+  "people": 0.XXX,
+  "events": 0.XXX,
+  "symptom": 0.XXX,
+  "anxiety": 0.XXX,
+  "relationship": 0.XXX,
+  "functioning": 0.XXX,
+  "note": "Brief description of what changed and key F1 deltas"
+}
+```
+
+Use `null` for any metric not measured in this run. The commit hash will be filled in after the user commits.
+
+### 5. Completion
 
 - Mark all todos complete using `TodoWrite`
 - Report final F1 scores in your message to the user
@@ -597,6 +619,8 @@ Your induction run is successful if:
 - ✅ Git diff shows precise, targeted changes (not wholesale rewrites)
 - ✅ No test failures or syntax errors during any iteration
 - ✅ Clear recommendations provided in report
+- ✅ `btcopilot/doc/f1_timeseries.json` updated with final scores
+- ✅ `btcopilot/doc/PROMPT_ENG_EXTRACTION_STRATEGY.md` updated with worked/failed techniques
 
 ## Files You'll Work With
 
@@ -612,12 +636,15 @@ Your induction run is successful if:
 - `btcopilot/doc/PROMPT_ENG_EXTRACTION_STRATEGY.md` - **CRITICAL**: Cumulative strategy doc with lessons from ALL runs. Read FIRST before any iterations. Propose updates at end of run (see "Strategy Document Updates" section).
 
 **Read-write**:
-- `btcopilot/btcopilot/personal/prompts.py` - Target for improvements (three parts):
+- `fdserver/prompts/private_prompts.py` - Target for improvements (three parts):
   - `DATA_EXTRACTION_PROMPT` - Header + SECTION 1 + SECTION 2
     - SECTION 1: DATA MODEL (semantic definitions)
     - SECTION 2: EXTRACTION RULES (operational guidance)
   - `DATA_EXTRACTION_EXAMPLES` - SECTION 3 (error pattern examples, literal JSON)
   - `DATA_EXTRACTION_CONTEXT` - Context with runtime variables (rarely edited)
+
+**Update at end**:
+- `btcopilot/doc/f1_timeseries.json` - **MANDATORY**: Append new data point with final F1 scores (feeds admin/auditor dashboard chart)
 
 **Write-only** (created in timestamped folder):
 - `${RUN_FOLDER}/${TIMESTAMP}.md` - Final report
@@ -868,13 +895,14 @@ Start your autonomous induction now.
 2. **Create log file** - `doc/induction-reports/TIMESTAMP_log.jsonl`
 3. Log run_start and strategy_read entries
 4. Use `TodoWrite` to create iteration tracking (Iterations 1-10)
-5. Read `instance/gt_export.json` and `btcopilot/btcopilot/personal/prompts.py`
+5. Read `instance/gt_export.json` and `fdserver/prompts/private_prompts.py`
 6. Run baseline test and log baseline entry
 7. Begin iteration loop (log each iteration)
 8. Log convergence/completion
 9. Generate report (including Strategy Document Updates section)
 10. **Update strategy doc** - Apply proposed edits and log strategy_update
-11. Log run_end entry
-12. Report results to user
+11. **Update F1 timeseries** - Append entry to `btcopilot/doc/f1_timeseries.json`
+12. Log run_end entry
+13. Report results to user
 
 Remember: **ADD nuance, don't replace. Preserve existing careful tuning.** (Exception: Bootstrap Mode for metrics with F1 < 0.20 allows aggressive rewrites.)

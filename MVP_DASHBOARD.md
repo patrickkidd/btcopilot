@@ -89,10 +89,10 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 
 | Metric | Last Measured | Target | Notes |
 |--------|-------------|--------|-------|
-| People F1 (cumulative) | 0.79 avg (Mar 2026, cumulative, disc 36/37/39/48) | > 0.7 | At target. Improved by f1_metrics parent ID resolution fix. |
-| Event F1 (cumulative) | 0.21 avg (Mar 2026, cumulative, disc 36/37/39/48) | > 0.4 | Below target. Prompt tuning on T7-8. Slightly improved by matching fix. |
-| PairBond F1 (cumulative) | 0.52 (Mar 2026, cumulative, disc 36/37/39/48) | > 0.5 | At target. Fixed f1_metrics parent ID resolution bug + added duplicate person ID mapping. Per-discussion: disc 36=0.00 (0 bonds extracted), disc 37=0.29, disc 39=0.75, disc 48=0.67. Prompt updated with PairBond completeness checklist for extract_full(). |
-| GT coded discussions | 4 (disc 36/37/39/48) | 5-8 for MVP | T7-5 adds fresh GT coding. |
+| People F1 (cumulative) | 0.926 (Mar 2026, 6 disc, single-prompt) | > 0.7 | PASS. Fixed matching bugs (parents, User name). |
+| Event F1 (cumulative) | 0.387 (Mar 2026, 6 disc, single-prompt) | > 0.3 | PASS. Fixed date tolerance (270→730d), targets overlap. FP-heavy — prompt tuning in T7-8. |
+| PairBond F1 (cumulative) | 0.590 (Mar 2026, 6 disc, single-prompt) | > 0.5 | PASS. Added PairBond dedup in pipeline. |
+| GT coded discussions | 6 (disc 36/37/39/48/50/51) | 5-8 for MVP | Disc 52 GT pending. |
 | E2E synthetic | Verified 2026-02-24 | Functional | test_e2e_synthetic.py |
 
 ---

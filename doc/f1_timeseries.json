@@ -121,6 +121,30 @@
       "relationship": 0.244,
       "functioning": 0.244,
       "note": "Saturation check in EVENT EXTRACTION CHECKLIST - Aggregate F1: 0.299->0.327 (+9%)"
+    },
+    {
+      "date": "2026-02-14",
+      "commit": "6b84273",
+      "aggregate": 0.249,
+      "people": 0.718,
+      "events": 0.154,
+      "symptom": 0.205,
+      "anxiety": 0.205,
+      "relationship": 0.250,
+      "functioning": 0.227,
+      "note": "Model migration to gemini-2.5-flash (per-statement, 45 GT cases). Aggregate drop from 0.327 due to gemini-2.0-flash server-side drift + model switch."
+    },
+    {
+      "date": "2026-03-03",
+      "commit": "0160ec1",
+      "aggregate": 0.551,
+      "people": 0.926,
+      "events": 0.335,
+      "symptom": null,
+      "anxiety": null,
+      "relationship": null,
+      "functioning": null,
+      "note": "Pivot to full-extraction mode (extract_full, 6 GT discussions, gemini-2.5-flash, avg 3 runs). V9 prompt: quality hints. Aggregate 0.531->0.551, Events 0.302->0.335, PairBonds 0.698->0.732. SARF not tracked by run_extract_full_f1."
     }
   ]
 }

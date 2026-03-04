@@ -138,6 +138,32 @@ def reassign_delta_ids(pdp: PDP, deltas: PDPDeltas) -> None:
     )
 
 
+def dedup_pair_bonds(deltas: PDPDeltas) -> None:
+    """Remove duplicate PairBonds for the same dyad, keeping the first.
+    Remaps Person.parents references from removed IDs to kept IDs."""
+    seen: dict[tuple[int, int], int] = {}  # dyad -> kept PairBond ID
+    unique = []
+    remap: dict[int, int] = {}  # removed ID -> kept ID
+
+    for pb in deltas.pair_bonds:
+        if pb.person_a is not None and pb.person_b is not None:
+            dyad = tuple(sorted([pb.person_a, pb.person_b]))
+            if dyad in seen:
+                remap[pb.id] = seen[dyad]
+                continue
+            seen[dyad] = pb.id
+        unique.append(pb)
+
+    if remap:
+        _log.warning(
+            f"dedup_pair_bonds: removed {len(remap)} duplicate pair bonds"
+        )
+        deltas.pair_bonds = unique
+        for person in deltas.people:
+            if person.parents in remap:
+                person.parents = remap[person.parents]
+
+
 def validate_pdp_deltas(
     pdp: PDP,
     deltas: PDPDeltas,
@@ -536,6 +562,7 @@ async def _extract_and_validate(
             ai_log.info(f"{label}:\n\n{_pretty_repr(pdp_deltas)}")
 
         reassign_delta_ids(pdp, pdp_deltas)
+        dedup_pair_bonds(pdp_deltas)
         try:
             validate_pdp_deltas(pdp, pdp_deltas, diagram_data, source)
             if attempt > 0:

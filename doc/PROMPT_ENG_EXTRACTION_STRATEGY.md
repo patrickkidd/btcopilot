@@ -4,7 +4,7 @@
 
 **Status**: Active - update as learnings emerge.
 
-**Last Updated**: 2026-02-14
+**Last Updated**: 2026-03-03
 
 ---
 
@@ -21,6 +21,15 @@
 | Anxiety F1 | ~0.22 | Low |
 | Relationship F1 | ~0.22 | Low |
 | Functioning F1 | ~0.22 | Low |
+
+### Full-Extraction Baseline (as of 2026-03-03, gemini-2.5-flash, 6 GT discussions)
+
+| Metric | Score | Assessment |
+|--------|-------|------------|
+| Events F1 (avg 3 runs) | ~0.335 | Low but improved from 0.302 baseline |
+
+Per-discussion: disc 36=0.548, disc 37=0.348, disc 39=0.273, disc 48=0.411, disc 50=0.347, disc 51=0.097 (unstable).
+Non-determinism: single runs range 0.313-0.367 on identical prompts.
 
 **Diagnosis**: Scores are dominated by GT data quality issues and stochastic variance:
 1. **GT data quality** is the primary blocker (see section below)
@@ -48,7 +57,21 @@
 - [ ] Review and fix GT descriptions (24 events have placeholders)
 - [ ] Add dateCertainty to GT events
 
-### 2. Event Matching Brittleness
+### 2. Full-Extraction: Per-Statement Training Dominance (NEW 2026-03-03)
+
+**Problem**: Full-extraction mode (`extract_full()`) layers `DATA_FULL_EXTRACTION_CONTEXT` (~50 lines) on top of per-statement training (`DATA_EXTRACTION_PROMPT` + `DATA_EXTRACTION_EXAMPLES`, ~1770 lines). The per-statement training dominates model behavior.
+
+**Evidence from 9-iteration experiment**:
+- "IGNORE" framing: destroys useful event detection (TP dropped from 18 to 9)
+- "Follow BUT override" framing: model reverts to per-statement behavior (76 events instead of ~30)
+- "DO NOT APPLY" framing: no meaningful effect on event selection quality
+- Aggressive consolidation rules: kills TP proportionally to FP (model drops events randomly)
+
+**Working approach**: Minimal intervention — quality hints layered on top of per-statement training. Scene-detail suppression + soft calibration (15-30 events) + deduplication guidance. No override framing.
+
+**Impact**: Full-extraction Events F1 is capped at ~0.35 via prompt-only approaches. Further improvement requires matching algorithm changes (embedding similarity) or GT description quality cleanup.
+
+### 3. Event Matching Brittleness
 
 **Problem**: Event F1 uses strict matching that fails on "close but different" extractions.
 
@@ -180,6 +203,9 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 4. Preserving names with titles exactly as spoken
 5. Adding missing relationship types to prompt (toward, away, defined-self, cutoff, fusion) — schema-aligned (2026-02-14)
 6. Fixing F1 matching for GT person=None and placeholder descriptions (2026-02-14)
+7. Scene-detail suppression with concrete negative examples in full-extraction context → Events F1 +0.033 avg (2026-03-03)
+8. Soft calibration hints ("15-30 events typical") — non-destructive count guidance for full-extraction (2026-03-03)
+9. Minimal intervention approach for full-extraction: quality hints layered on per-statement training, not overrides (2026-03-03)
 
 **Things that failed**:
 1. Adding explicit negative examples for SARF variables (caused model to stop using them)
@@ -193,12 +219,23 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 9. Encouraging more extraction ("empty arrays should be rare") (2026-02-14) - aggregate dropped, reverted
 10. Temperature 0.0 vs 0.1 (2026-02-14) - negligible difference, reverted
 11. DATE_TOLERANCE_DAYS 7→30 (2026-02-14) - no effect because 100% of GT has dateCertainty=None (already uses 270-day tolerance)
+12. Aggressive consolidation rules in full-extraction context (2026-03-03) — kills TP proportionally to FP, model drops events randomly not intelligently
+13. "IGNORE" / "DO NOT APPLY" framing to override per-statement training (2026-03-03) — destroys useful event detection capability
+14. Person-centric extraction "1-3 episodes per person" (2026-03-03) — no improvement in event selection quality
+15. Hard event count targets in full-extraction (2026-03-03) — model drops events randomly, not by clinical significance
+16. Explicit birth event instructions at any specificity level (2026-03-03) — Gemini 2.5 Flash birth generation is non-deterministic regardless of prompt
+17. Pre-transcript rule placement for full-extraction (2026-03-03) — less effective than post-transcript (recency bias matters but 1770 lines of examples still dominate)
+18. Raising description similarity threshold from 0.4 to 0.5 (2026-03-03) — eliminates false matches but hurts measured F1 because false TPs were being counted
 
 **Key insights**:
 - The model is extremely sensitive to SARF-related prompt changes
 - GT data quality is the primary measurement blocker, not prompt quality
 - 45-case benchmark has ~±0.03 noise floor — cannot measure improvements smaller than this
 - gemini-2.5-flash thinking mode is incompatible with structured JSON output (catastrophic latency)
+- Description style mismatch (GT uses speaker verbatim words, AI uses clinical summaries) is the binding constraint on Events F1 (2026-03-03)
+- 1770 lines of per-statement examples dominate full-extraction model behavior — work WITH them, not against (2026-03-03)
+- Full-extraction requires fundamentally different strategy than per-statement: minimal hints, not overrides (2026-03-03)
+- LLM non-determinism is ~10-15% for full-extraction — multi-run averaging is required for reliable signal (2026-03-03)
 
 ---
 
