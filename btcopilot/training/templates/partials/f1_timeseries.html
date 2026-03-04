@@ -100,10 +100,26 @@
             return;
         }
 
+        // Format dates for x-axis labels (parse as local to avoid timezone shift)
+        const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const dateLabels = data.data.map(d => {
+            const [y, m, day] = d.date.split(/[-T]/);
+            return `${monthNames[parseInt(m) - 1]} ${parseInt(day)}`;
+        });
+
+        // Detect large gaps (>7 days) between consecutive entries
+        const GAP_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
+        const gapAfter = new Set();
+        for (let i = 1; i < data.data.length; i++) {
+            if (new Date(data.data[i].date) - new Date(data.data[i - 1].date) > GAP_THRESHOLD_MS)
+                gapAfter.add(i - 1);
+        }
+
+        // Use index-based x so points are evenly spaced regardless of date gaps
         const datasets = data.metrics.map(metric => ({
             label: labels[metric],
-            data: data.data.map(d => ({
-                x: new Date(d.date),
+            data: data.data.map((d, i) => ({
+                x: i,
                 y: d[metric]
             })).filter(d => d.y !== null),
             borderColor: colors[metric],
@@ -111,18 +127,30 @@
             tension: 0.3,
             pointRadius: 4,
             pointHoverRadius: 6,
-            borderWidth: 2
+            borderWidth: 2,
+            segment: {
+                borderDash: function(ctx) {
+                    const i0 = Math.round(ctx.p0.parsed.x);
+                    const i1 = Math.round(ctx.p1.parsed.x);
+                    for (let i = i0; i < i1; i++) {
+                        if (gapAfter.has(i)) return [6, 4];
+                    }
+                    return [];
+                }
+            }
         }));
 
         // Add target lines as dashed
         data.metrics.forEach(metric => {
-            const pts = data.data.filter(d => d[metric] !== null);
-            if (pts.length > 0) {
+            const indices = data.data
+                .map((d, i) => d[metric] !== null ? i : null)
+                .filter(i => i !== null);
+            if (indices.length > 0) {
                 datasets.push({
                     label: `${labels[metric]} Target`,
                     data: [
-                        { x: new Date(pts[0].date), y: targets[metric] },
-                        { x: new Date(pts[pts.length - 1].date), y: targets[metric] }
+                        { x: indices[0], y: targets[metric] },
+                        { x: indices[indices.length - 1], y: targets[metric] }
                     ],
                     borderColor: colors[metric] + '66',
                     borderDash: [5, 5],
@@ -149,15 +177,13 @@
                     tooltip: {
                         callbacks: {
                             title: function(items) {
-                                const d = data.data.find(dd =>
-                                    new Date(dd.date).getTime() === items[0].parsed.x
-                                );
-                                return d ? `${d.date} (${d.commit})` : items[0].label;
+                                const i = Math.round(items[0].parsed.x);
+                                const d = data.data[i];
+                                return d ? `${d.date} (${d.commit})` : '';
                             },
                             afterBody: function(items) {
-                                const d = data.data.find(dd =>
-                                    new Date(dd.date).getTime() === items[0].parsed.x
-                                );
+                                const i = Math.round(items[0].parsed.x);
+                                const d = data.data[i];
                                 return d && d.note ? [`\n${d.note}`] : [];
                             }
                         }
@@ -165,10 +191,21 @@
                 },
                 scales: {
                     x: {
-                        type: 'time',
-                        time: { unit: 'day', displayFormats: { day: 'MMM d' } },
+                        type: 'linear',
+                        min: -0.5,
+                        max: data.data.length - 0.5,
                         grid: { color: 'rgba(128,128,128,0.2)' },
-                        ticks: { color: 'inherit' }
+                        ticks: {
+                            color: 'inherit',
+                            autoSkip: true,
+                            maxTicksLimit: 12,
+                            callback: function(value) {
+                                const i = Math.round(value);
+                                if (i >= 0 && i < dateLabels.length && Math.abs(value - i) < 0.01)
+                                    return dateLabels[i];
+                                return null;
+                            }
+                        }
                     },
                     y: {
                         min: 0,
