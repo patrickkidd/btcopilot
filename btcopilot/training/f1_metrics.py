@@ -982,9 +982,10 @@ def _augment_committed_id_map(
             pid = getattr(event, field_name, None)
             if pid is not None and pid > 0:
                 ai_committed_ids.add(pid)
-        for pid in getattr(event, "relationshipTargets", []) or []:
-            if pid > 0:
-                ai_committed_ids.add(pid)
+        for field_name in ("relationshipTargets", "relationshipTriangles"):
+            for pid in getattr(event, field_name, []) or []:
+                if pid > 0:
+                    ai_committed_ids.add(pid)
     for bond in ai_pdp.pair_bonds:
         if bond.person_a is not None and bond.person_a > 0:
             ai_committed_ids.add(bond.person_a)
@@ -1022,8 +1023,7 @@ def _augment_committed_id_map(
             if sim >= NAME_SIMILARITY_THRESHOLD:
                 id_map[ai_id] = gt_person.id
                 _log.debug(
-                    f"Committed ID map: AI {ai_id} ({ai_name}) -> "
-                    f"GT {gt_person.id} ({gt_person.name})"
+                    f"Committed ID map: AI {ai_id} -> GT {gt_person.id}"
                 )
                 break
 
@@ -1076,8 +1076,7 @@ def _augment_duplicate_person_id_map(
         if best_gt_id is not None:
             id_map[ai_person.id] = best_gt_id
             _log.debug(
-                f"Duplicate person map: AI {ai_person.id} ({ai_person.name}) -> "
-                f"GT {best_gt_id} ({gt_id_to_name[best_gt_id]})"
+                f"Duplicate person map: AI {ai_person.id} -> GT {best_gt_id}"
             )
 
 
