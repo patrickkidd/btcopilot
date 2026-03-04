@@ -89,9 +89,9 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 
 | Metric | Last Measured | Target | Notes |
 |--------|-------------|--------|-------|
-| People F1 (cumulative) | 0.72 (Feb 2026, single-prompt, disc 48) | > 0.7 | At target. Validate on fresh GT. |
-| Event F1 (cumulative) | 0.29 (Feb 2026, single-prompt, disc 48) | > 0.4 | Below target. Prompt tuning on T7-8. |
-| PairBond F1 (cumulative) | 0.33 (Feb 2026, single-prompt, disc 48) | > 0.5 | Below target. |
+| People F1 (cumulative) | 0.79 avg (Mar 2026, cumulative, disc 36/37/39/48) | > 0.7 | At target. Improved by f1_metrics parent ID resolution fix. |
+| Event F1 (cumulative) | 0.21 avg (Mar 2026, cumulative, disc 36/37/39/48) | > 0.4 | Below target. Prompt tuning on T7-8. Slightly improved by matching fix. |
+| PairBond F1 (cumulative) | 0.52 (Mar 2026, cumulative, disc 36/37/39/48) | > 0.5 | At target. Fixed f1_metrics parent ID resolution bug + added duplicate person ID mapping. Per-discussion: disc 36=0.00 (0 bonds extracted), disc 37=0.29, disc 39=0.75, disc 48=0.67. Prompt updated with PairBond completeness checklist for extract_full(). |
 | GT coded discussions | 4 (disc 36/37/39/48) | 5-8 for MVP | T7-5 adds fresh GT coding. |
 | E2E synthetic | Verified 2026-02-24 | Functional | test_e2e_synthetic.py |
 
@@ -136,6 +136,7 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 | 2026-02-24 | All open tasks | T0-4 deferred. T4-2 not needed. E2E pipeline verified. |
 | 2026-02-24 | Architecture pivot | Single-prompt extraction proven. Dashboard rewritten. See decision log 2026-02-24. |
 | 2026-02-26 | T7-1 through T7-4 | Implemented and moved to Done. Extract button + PDP Refresh in Personal app. Chat is chat-only. PDP cleared before re-extraction. All architecture docs updated. |
+| 2026-03-03 | PairBond F1 | Fixed 3 bugs in f1_metrics.py: (1) match_people parent ID resolution blocked PairBond ID comparison — parents field references PairBond IDs which aren't in id_map, so comparison always failed; now skips comparison when parent ID not resolvable. (2) Added _augment_committed_id_map for committed person ID mismatches. (3) Added _augment_duplicate_person_id_map for AI person deduplication failures. PairBond F1 0.37→0.52 (pooled across disc 36/37/39/48). Also added PairBond completeness checklist to DATA_FULL_EXTRACTION_CONTEXT prompt. |
 
 ### Deferred (Post-MVP)
 

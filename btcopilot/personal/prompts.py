@@ -749,6 +749,29 @@ result.
 **EXTRACT:** All people mentioned (with names, gender, parent relationships),
 all events with dates and SARF variables, all pair_bonds between couples/parents.
 
+**PAIRBOND EXTRACTION — MANDATORY COMPLETENESS CHECK:**
+
+PairBonds are the MOST UNDER-EXTRACTED entity. After extracting people, you MUST
+create a PairBond for EVERY couple mentioned or implied in the discussion:
+
+1. User's parents → PairBond (person_a=mother, person_b=father)
+2. User + spouse/partner (if mentioned) → PairBond
+3. Each grandparent couple → PairBond (maternal grandparents, paternal grandparents)
+4. Any other mentioned couple (aunt+uncle, sibling+spouse, etc.) → PairBond
+
+VERIFICATION: Count your pair_bonds before outputting. A typical 3-generation
+family has 3-6 PairBonds (parents, 2 grandparent pairs, possibly user's own,
+possibly aunts/uncles). If you have 0-1 pair_bonds for a multi-generational
+discussion, you are MISSING bonds.
+
+PAIRBOND ID RULES:
+- person_a and person_b MUST reference person IDs from YOUR people array or
+  from diagram_data.people. Never create new person IDs just for PairBonds.
+- Each couple gets exactly ONE PairBond. Never create duplicate bonds for the
+  same pair of people.
+- Set Person.parents on CHILDREN (not on the spouses themselves) to reference
+  the PairBond ID.
+
 ID ASSIGNMENT REMINDER: People, events, and pair_bonds share ONE ID sequence.
 If you create people at -1 to -10, events must start at -11, not -1.
 Example: 5 people → [-1 to -5], 10 events → [-6 to -15], 1 pair_bond → [-16]
