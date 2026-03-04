@@ -7,6 +7,8 @@ import logging
 from dataclasses import fields, MISSING
 from typing import get_origin, get_args, Union
 
+from google.genai.errors import ServerError
+
 from btcopilot.schema import from_dict
 
 _log = logging.getLogger(__name__)
@@ -162,6 +164,8 @@ PDP_FORCE_REQUIRED = {
 
 
 GEMINI_TIMEOUT_MS = 120_000
+GEMINI_MAX_RETRIES = 3
+GEMINI_RETRY_BACKOFF = 5  # seconds, doubled each retry
 
 
 def _client():
@@ -188,17 +192,31 @@ async def gemini_structured(prompt, response_format, large=False):
     model = EXTRACTION_MODEL_LARGE if large else EXTRACTION_MODEL
 
     client = _client()
-    response = await client.aio.models.generate_content(
-        model=model,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.1,
-            max_output_tokens=65536,
-            response_mime_type="application/json",
-            response_schema=response_schema,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-        ),
+    config = types.GenerateContentConfig(
+        temperature=0.1,
+        max_output_tokens=65536,
+        response_mime_type="application/json",
+        response_schema=response_schema,
+        thinking_config=types.ThinkingConfig(thinking_budget=0),
     )
+
+    for attempt in range(GEMINI_MAX_RETRIES):
+        try:
+            response = await client.aio.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=config,
+            )
+            break
+        except ServerError as e:
+            if attempt == GEMINI_MAX_RETRIES - 1:
+                raise
+            delay = GEMINI_RETRY_BACKOFF * (2**attempt)
+            _log.warning(
+                f"Gemini ServerError (attempt {attempt + 1}/{GEMINI_MAX_RETRIES}), "
+                f"retrying in {delay}s: {e}"
+            )
+            await asyncio.sleep(delay)
 
     _log.debug(f"Completed response in {time.time() - start_time} seconds")
     finish_reason = response.candidates[0].finish_reason
@@ -244,11 +262,25 @@ async def gemini_text(prompt=None, **kwargs):
     else:
         contents = prompt
 
-    response = await _client().aio.models.generate_content(
-        model=RESPONSE_MODEL,
-        contents=contents,
-        config=config,
-    )
+    client = _client()
+    for attempt in range(GEMINI_MAX_RETRIES):
+        try:
+            response = await client.aio.models.generate_content(
+                model=RESPONSE_MODEL,
+                contents=contents,
+                config=config,
+            )
+            break
+        except ServerError as e:
+            if attempt == GEMINI_MAX_RETRIES - 1:
+                raise
+            delay = GEMINI_RETRY_BACKOFF * (2**attempt)
+            _log.warning(
+                f"Gemini ServerError (attempt {attempt + 1}/{GEMINI_MAX_RETRIES}), "
+                f"retrying in {delay}s: {e}"
+            )
+            await asyncio.sleep(delay)
+
     content = response.text
     _log.debug(f"Completed response in {time.time() - start_time} seconds")
     _log.debug(f"gemini_text(): --> \n\n{content}")
