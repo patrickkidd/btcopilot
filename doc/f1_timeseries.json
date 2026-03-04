@@ -165,6 +165,18 @@
       "relationship": 0.282,
       "functioning": 0.396,
       "note": "Remove Event.description matching from F1 scoring (match on kind+date+person only). 5/6 discussions, avg 2 runs. Events 0.335->0.470, Agg 0.551->0.595."
+    },
+    {
+      "date": "2026-03-03",
+      "commit": "t7-18-split-extraction",
+      "aggregate": 0.669,
+      "people": 0.909,
+      "events": 0.509,
+      "symptom": 0.727,
+      "anxiety": 0.399,
+      "relationship": 0.311,
+      "functioning": 0.627,
+      "note": "2-pass split extraction (extract_full_split) + description-free matching. 6/6 discussions, 100% completion. Events 0.470->0.509, Bonds 0.539->0.832, Agg 0.595->0.669."
     }
   ]
 }

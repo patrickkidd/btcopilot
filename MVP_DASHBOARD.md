@@ -79,7 +79,7 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 | Single-prompt hits context limit on long conversations | Extraction fails or truncates | gemini-2.5-flash has 1M token context; typical discussion is ~30K chars. Monitor. |
-| Events F1 plateaus below 0.5 | Users see wrong events | Description-free matching raised Events 0.335->0.470. Split extraction (T7-18) expected to push further. |
+| Events F1 plateaus below 0.5 | Users see wrong events | Description-free matching + split extraction raised Events 0.335->0.509. |
 | GT coding bottleneck (Patrick only) | Limits measurement iterations | ~60 min/discussion is fast enough for 3-5 GT cases needed for MVP. |
 | Auto-arrange is 2-3 weeks | Delays Goal 3 | Consider simpler generational Y-alignment only. |
 
@@ -89,10 +89,10 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 
 | Metric | Last Measured | Target | Notes |
 |--------|-------------|--------|-------|
-| People F1 (cumulative) | 0.901 (Mar 2026, 5/6 disc, single-prompt) | > 0.7 | PASS. |
-| Event F1 (cumulative) | 0.470 (Mar 2026, 5/6 disc, single-prompt) | > 0.3 | PASS. Description-free matching (kind+date+person). |
-| PairBond F1 (cumulative) | 0.539 (Mar 2026, 5/6 disc, single-prompt) | > 0.5 | PASS. |
-| Aggregate F1 | 0.595 (Mar 2026, 5/6 disc, single-prompt) | > 0.5 | PASS. +0.044 from matching fix. |
+| People F1 (cumulative) | 0.909 (Mar 2026, 6/6 disc, split) | > 0.7 | PASS. |
+| Event F1 (cumulative) | 0.509 (Mar 2026, 6/6 disc, split) | > 0.3 | PASS. Split extraction + description-free matching. |
+| PairBond F1 (cumulative) | 0.832 (Mar 2026, 6/6 disc, split) | > 0.5 | PASS. |
+| Aggregate F1 | 0.669 (Mar 2026, 6/6 disc, split) | > 0.5 | PASS. +0.118 from split+matching. |
 | GT coded discussions | 6 (disc 36/37/39/48/50/51) | 5-8 for MVP | Disc 52 GT pending. |
 | E2E synthetic | Verified 2026-02-24 | Functional | test_e2e_synthetic.py |
 

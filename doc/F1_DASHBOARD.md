@@ -72,6 +72,9 @@ Current sample (45 statements, 3 discussions) provides ~±15% margin of error. T
 - 2025-12-27: **dateCertainty default → Approximate** + GT dateCertainty backfill. Aggregate F1: 0.278→0.314 (+13%)
 - 2025-12-28: **[SATURATION_PATTERN_ELABORATION]** prompt. Events F1: 0.181→0.205 (+13%)
 - 2025-12-28: **Saturation check in EVENT EXTRACTION CHECKLIST**. Aggregate F1: 0.299→0.327 (+9%)
+- 2026-03-03: Pivot to full-extraction mode (extract_full). Aggregate 0.327→0.551, Events 0.217→0.335.
+- 2026-03-03: **Remove Event.description matching** (Strategy B: kind+date+person only). Events 0.335→0.470, Agg 0.551→0.595.
+- 2026-03-03: **2-pass split extraction** (extract_full_split). 6/6 disc, 100% completion. Events 0.470→0.509, Bonds 0.539→0.832, Agg 0.595→0.669.
 
 ---
 

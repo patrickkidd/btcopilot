@@ -13,7 +13,10 @@ from btcopilot.personal.prompts import (
     DATA_EXTRACTION_EXAMPLES,
     DATA_EXTRACTION_CONTEXT,
     DATA_EXTRACTION_CORRECTION,
-    DATA_FULL_EXTRACTION_CONTEXT,
+    DATA_EXTRACTION_PASS1_PROMPT,
+    DATA_EXTRACTION_PASS1_CONTEXT,
+    DATA_EXTRACTION_PASS2_PROMPT,
+    DATA_EXTRACTION_PASS2_CONTEXT,
     DATA_IMPORT_CONTEXT,
 )
 from btcopilot.schema import (
@@ -543,10 +546,11 @@ async def _extract_and_validate(
     diagram_data: DiagramData,
     source: str,
     large: bool = False,
+    base_pdp: PDP | None = None,
 ) -> tuple[PDP, PDPDeltas]:
     """Submit extraction prompt to LLM, validate, retry up to MAX_EXTRACTION_RETRIES on failure."""
     is_dev = os.getenv("FLASK_CONFIG") == "development"
-    pdp = diagram_data.pdp
+    pdp = base_pdp if base_pdp is not None else diagram_data.pdp
     current_prompt = prompt
     error_history: list[tuple[int, list[str]]] = []
 
@@ -595,13 +599,14 @@ async def extract_full(
     discussion,
     diagram_data: DiagramData,
 ) -> tuple[PDP, PDPDeltas]:
+    """Two-pass extraction: people+structure first, then shifts+SARF."""
     reference_date = (
         discussion.discussion_date
         if discussion.discussion_date
         else datetime.now().date()
     )
-
     conversation_history = discussion.conversation_history()
+    current_date = reference_date.isoformat()
 
     _log.info(
         f"PDP EXTRACT_FULL INPUTS:\n"
@@ -611,15 +616,39 @@ async def extract_full(
         f"  diagram_data.people count: {len(diagram_data.people)}\n"
     )
 
-    prompt = (
-        DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
-        + DATA_EXTRACTION_EXAMPLES
-        + DATA_FULL_EXTRACTION_CONTEXT.format(
+    # Pass 1: People + PairBonds + Structural Events
+    prompt1 = (
+        DATA_EXTRACTION_PASS1_PROMPT.format(current_date=current_date)
+        + DATA_EXTRACTION_PASS1_CONTEXT.format(
             diagram_data=asdict(diagram_data),
             conversation_history=conversation_history,
         )
     )
-    return await _extract_and_validate(prompt, diagram_data, "extract_full", large=True)
+    pass1_pdp, pass1_deltas = await _extract_and_validate(
+        prompt1, diagram_data, "extract_full_pass1", large=True,
+    )
+
+    # Pass 2: Shift Events + SARF (given Pass 1 output)
+    pass1_data = json.dumps(asdict(pass1_pdp), indent=2, default=str)
+    prompt2 = (
+        DATA_EXTRACTION_PASS2_PROMPT.format(current_date=current_date)
+        + DATA_EXTRACTION_PASS2_CONTEXT.format(
+            pass1_data=pass1_data,
+            conversation_history=conversation_history,
+        )
+    )
+    pass2_pdp, pass2_deltas = await _extract_and_validate(
+        prompt2, diagram_data, "extract_full_pass2", large=True,
+        base_pdp=pass1_pdp,
+    )
+
+    merged_deltas = PDPDeltas(
+        people=pass1_deltas.people + pass2_deltas.people,
+        events=pass1_deltas.events + pass2_deltas.events,
+        pair_bonds=pass1_deltas.pair_bonds + pass2_deltas.pair_bonds,
+        delete=pass1_deltas.delete + pass2_deltas.delete,
+    )
+    return pass2_pdp, merged_deltas
 
 
 async def import_text(
