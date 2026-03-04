@@ -136,6 +136,7 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 | 2026-02-24 | All open tasks | T0-4 deferred. T4-2 not needed. E2E pipeline verified. |
 | 2026-02-24 | Architecture pivot | Single-prompt extraction proven. Dashboard rewritten. See decision log 2026-02-24. |
 | 2026-02-26 | T7-1 through T7-4 | Implemented and moved to Done. Extract button + PDP Refresh in Personal app. Chat is chat-only. PDP cleared before re-extraction. All architecture docs updated. |
+| 2026-03-03 | PairBond F1 | Fixed 3 bugs in f1_metrics.py:<br/>- `match_people` parent ID resolution bug (PairBond IDs).<br/>- Added `_augment_committed_id_map` for committed person ID mismatches.<br/>- Added `_augment_duplicate_person_id_map` for AI person deduplication failures.<br/>Result: PairBond F1 0.37→0.52 (pooled).<br/>Also updated `DATA_FULL_EXTRACTION_CONTEXT` prompt. |
 
 ### Deferred (Post-MVP)
 
