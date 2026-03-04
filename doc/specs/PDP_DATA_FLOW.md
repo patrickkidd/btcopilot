@@ -50,7 +50,9 @@ User taps extract button
 
 **Idempotency**: Each extraction re-extracts the entire conversation, producing
 a fresh PDP. Committed items are included in the prompt (`{diagram_data}`) so
-the LLM avoids duplicating them.
+the LLM avoids duplicating them. As a safety net, `dedup_against_committed()`
+runs a deterministic Python post-filter after LLM extraction to remove items
+that match committed diagram data (see Post-Processing Pipeline below).
 
 **No cursor/up_to_order**: There is no incremental extraction. The LLM sees the
 full conversation every time.
@@ -72,6 +74,35 @@ User statement
     → apply_deltas(pdp, pdp_deltas) → updated PDP
     → statement.pdp_deltas = asdict(pdp_deltas)
 ```
+
+### Post-Processing Pipeline
+
+`btcopilot/pdp.py: _extract_and_validate()`
+
+After the LLM returns `PDPDeltas`, three deterministic Python passes run before
+validation:
+
+1. **`reassign_delta_ids()`** — Fixes LLM ID collisions across entity types
+   (people/events/pair_bonds share one ID namespace but the LLM sometimes reuses
+   IDs across types).
+
+2. **`dedup_pair_bonds()`** — Removes duplicate pair bonds for the same dyad
+   within the delta.
+
+3. **`dedup_against_committed()`** — Removes items that duplicate committed
+   diagram data. Three phases:
+   - **People**: Matched by normalized name (case-insensitive, whitespace-
+     collapsed). Matched people are removed; their negative IDs are remapped to
+     committed positive IDs in all remaining references.
+   - **PairBonds**: After person-ID remapping, any pair bond whose dyad already
+     exists in committed pair_bonds is removed.
+   - **Events**: Self-describing events (birth, death, married, etc.) whose
+     person reference points to a committed person AND a committed event of the
+     same kind+person exists are removed. Shift events are NOT deduped
+     (descriptions vary too much for deterministic matching).
+
+Then `validate_pdp_deltas()` checks reference integrity, and on success
+`apply_deltas()` merges deltas into the PDP.
 
 ### apply_deltas()
 
@@ -305,7 +336,7 @@ For complete GT technical details, see
 | File | Contains |
 |------|----------|
 | `btcopilot/schema.py` | `DiagramData.commit_pdp_items()`, `PDPDeltas`, `PDP` |
-| `btcopilot/pdp.py` | `extract_full()`, `update()`, `apply_deltas()`, `cumulative()`, `cleanup_pair_bonds()`, `validate_pdp_deltas()` |
+| `btcopilot/pdp.py` | `extract_full()`, `update()`, `apply_deltas()`, `cumulative()`, `cleanup_pair_bonds()`, `validate_pdp_deltas()`, `dedup_against_committed()` |
 | `btcopilot/personal/chat.py` | `ask()` — chat-only, no extraction |
 | `btcopilot/personal/routes/discussions.py` | `POST /extract` endpoint — single-prompt extraction |
 | `btcopilot/personal/prompts.py` | Default prompt constants (overridden by fdserver) |
