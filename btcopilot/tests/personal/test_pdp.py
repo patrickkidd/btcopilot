@@ -7,7 +7,11 @@ from btcopilot.schema import (
     EventKind,
     PairBond,
 )
-from btcopilot.pdp import validate_pdp_deltas, apply_deltas
+from btcopilot.pdp import (
+    validate_pdp_deltas,
+    apply_deltas,
+    fix_birth_event_self_references,
+)
 
 
 def test_accept_person():
@@ -264,3 +268,174 @@ def test_birth_with_person_only_creates_inferred_child():
     assert event["child"] is not None
     child = next(p for p in diagram_data.people if p["id"] == event["child"])
     assert child["parents"] is not None
+
+
+# ── Birth event self-reference bug (T7-10) ──────────────────────────────────
+
+
+def test_fix_birth_event_self_reference_clears_person():
+    """fix_birth_event_self_references must clear person when person==child."""
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="Barbara", confidence=0.9)],
+        events=[
+            Event(
+                id=-2,
+                kind=EventKind.Birth,
+                person=-1,
+                child=-1,
+                dateTime="1953-01-01",
+            )
+        ],
+    )
+
+    fix_birth_event_self_references(deltas)
+
+    event = deltas.events[0]
+    assert event.person is None, "person must be cleared when person==child"
+    assert event.child == -1, "child must remain set to the born person"
+
+
+def test_fix_birth_event_self_reference_preserves_correct_events():
+    """fix_birth_event_self_references must not touch correctly structured events."""
+    deltas = PDPDeltas(
+        people=[
+            Person(id=-1, name="Mom"),
+            Person(id=-2, name="Baby"),
+        ],
+        events=[
+            Event(
+                id=-3,
+                kind=EventKind.Birth,
+                person=-1,
+                child=-2,
+                dateTime="2020-06-15",
+            )
+        ],
+    )
+
+    fix_birth_event_self_references(deltas)
+
+    event = deltas.events[0]
+    assert event.person == -1, "person (parent) must remain unchanged"
+    assert event.child == -2, "child must remain unchanged"
+
+
+def test_fix_birth_event_self_reference_child_only():
+    """fix_birth_event_self_references must not touch events with child only."""
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="Barbara")],
+        events=[
+            Event(
+                id=-2,
+                kind=EventKind.Birth,
+                child=-1,
+                dateTime="1953-01-01",
+            )
+        ],
+    )
+
+    fix_birth_event_self_references(deltas)
+
+    event = deltas.events[0]
+    assert event.person is None
+    assert event.child == -1
+
+
+def test_fix_birth_event_self_reference_adopted():
+    """fix_birth_event_self_references also handles adopted events."""
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="Alex")],
+        events=[
+            Event(
+                id=-2,
+                kind=EventKind.Adopted,
+                person=-1,
+                child=-1,
+                dateTime="2005-03-10",
+            )
+        ],
+    )
+
+    fix_birth_event_self_references(deltas)
+
+    event = deltas.events[0]
+    assert event.person is None, "person must be cleared for adopted self-reference too"
+    assert event.child == -1
+
+
+def test_birth_self_reference_commit_creates_inferred_parents():
+    """After fixing self-reference, commit must create inferred parents via Case 1.
+
+    Simulates the full pipeline: LLM outputs person==child (self-reference),
+    fix_birth_event_self_references clears person, then commit_pdp_items
+    creates inferred parents (mother + father + pair bond).
+    """
+    # Simulate LLM output with self-reference
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="Barbara", confidence=0.9)],
+        events=[
+            Event(
+                id=-2,
+                kind=EventKind.Birth,
+                person=-1,
+                child=-1,
+                dateTime="1953-01-01",
+            )
+        ],
+    )
+
+    # Step 1: Fix self-reference (happens in _extract_and_validate pipeline)
+    fix_birth_event_self_references(deltas)
+
+    # Step 2: Apply deltas to empty PDP
+    pdp = PDP()
+    new_pdp = apply_deltas(pdp, deltas)
+
+    # Step 3: Commit the birth event (triggers _create_inferred_birth_items)
+    diagram_data = DiagramData(pdp=new_pdp)
+    diagram_data.commit_pdp_items([-2])
+
+    # Barbara must NOT be her own parent
+    event = diagram_data.events[0]
+    assert event["child"] is not None
+    assert event["person"] is not None
+    assert event["person"] != event["child"], (
+        "Birth event must not have person==child after commit"
+    )
+
+    # Barbara should be the child, inferred parents should be created
+    barbara = next(p for p in diagram_data.people if p["name"] == "Barbara")
+    assert barbara["id"] == event["child"]
+
+    # Inferred mother and father should exist
+    assert len(diagram_data.people) == 3, (
+        "Should have Barbara + inferred mother + inferred father"
+    )
+    assert len(diagram_data.pair_bonds) == 1, (
+        "Should have one pair bond between inferred parents"
+    )
+
+    # Barbara should have parents reference to the pair bond
+    assert barbara["parents"] is not None
+    assert barbara["parents"] > 0  # committed positive ID
+
+
+def test_fix_birth_self_reference_ignores_non_birth_events():
+    """fix_birth_event_self_references must not touch shift events."""
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="Alice")],
+        events=[
+            Event(
+                id=-2,
+                kind=EventKind.Shift,
+                person=-1,
+                description="Anxiety spike",
+                dateTime="2025-01-01",
+            )
+        ],
+    )
+
+    fix_birth_event_self_references(deltas)
+
+    event = deltas.events[0]
+    assert event.person == -1, "Shift events must not be modified"
