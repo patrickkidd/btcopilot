@@ -7,8 +7,6 @@ from btcopilot.training.f1_metrics import (
     match_events,
     match_pair_bonds,
     calculate_statement_f1,
-    calculate_system_f1,
-    invalidate_f1_cache,
     normalize_pdp_for_comparison,
     calculate_hierarchical_sarf_f1,
     normalize_name_for_matching,
@@ -713,83 +711,6 @@ def test_calculate_statement_f1_empty():
 
     assert metrics.aggregate_micro_f1 == 1.0
     assert metrics.exact_match is True
-
-
-def test_calculate_system_f1_no_approved_feedbacks(flask_app, test_user):
-    with flask_app.app_context():
-        metrics = calculate_system_f1()
-
-        assert metrics.total_statements == 0
-        assert metrics.aggregate_micro_f1 == 0.0
-
-
-def test_calculate_system_f1_with_approved_feedbacks(flask_app, test_user):
-    with flask_app.app_context():
-        discussion = Discussion(
-            user_id=test_user.id,
-            summary="Test",
-        )
-        db.session.add(discussion)
-        db.session.commit()
-
-        speaker = Speaker(
-            discussion_id=discussion.id,
-            name="User",
-            type=SpeakerType.Subject,
-        )
-        db.session.add(speaker)
-        db.session.commit()
-
-        stmt = Statement(
-            discussion_id=discussion.id,
-            speaker_id=speaker.id,
-            text="Test",
-            order=0,
-            pdp_deltas={"people": [{"id": -1, "name": "John"}]},
-        )
-        db.session.add(stmt)
-        db.session.commit()
-
-        feedback = Feedback(
-            statement_id=stmt.id,
-            auditor_id=test_user.username,
-            feedback_type="extraction",
-            approved=True,
-            edited_extraction={"people": [{"id": -10, "name": "John"}]},
-        )
-        db.session.add(feedback)
-        db.session.commit()
-
-        metrics = calculate_system_f1()
-
-        assert metrics.total_statements == 1
-        assert metrics.aggregate_micro_f1 == 1.0
-        assert metrics.people_f1 == 1.0
-
-
-def test_invalidate_f1_cache_specific_statement(flask_app):
-    from btcopilot.training.f1_metrics import _f1_cache
-
-    with flask_app.app_context():
-        _f1_cache["stmt_1_2_abc123"] = "test_data"
-        _f1_cache["stmt_2_3_def456"] = "other_data"
-
-        invalidate_f1_cache(statement_id=1)
-
-        assert "stmt_1_2_abc123" not in _f1_cache
-        assert "stmt_2_3_def456" in _f1_cache
-
-
-def test_invalidate_f1_cache_all(flask_app):
-    from btcopilot.training.f1_metrics import _f1_cache
-
-    with flask_app.app_context():
-        _f1_cache["stmt_1_2_abc123"] = "test_data"
-        _f1_cache["stmt_2_3_def456"] = "other_data"
-
-        invalidate_f1_cache()
-
-        assert len(_f1_cache) == 0
 
 
 def test_normalize_pdp_handles_dict_and_pdpdeltas():

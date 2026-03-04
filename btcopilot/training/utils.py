@@ -125,15 +125,34 @@ def get_auditor_id(request, session):
     return "anonymous"
 
 
+def _discussion_has_irr(discussion_id):
+    from btcopilot.personal.models import Statement
+    from btcopilot.training.models import Feedback
+
+    return (
+        db.session.query(func.count(func.distinct(Feedback.auditor_id)))
+        .join(Statement, Feedback.statement_id == Statement.id)
+        .filter(
+            Statement.discussion_id == discussion_id,
+            Feedback.feedback_type == "extraction",
+            Feedback.edited_extraction.isnot(None),
+        )
+        .scalar()
+        >= 2
+    )
+
+
 def get_discussion_view_menu(discussion_id, active_view):
     """Build breadcrumb dropdown menu for discussion-level views. Returns (menu, active_title)."""
     titles = {"coding": "Coding", "f1": "F1 Analysis", "irr": "IRR Analysis", "review": "IRR Review", "matrix": "Pairwise Matrix"}
+    has_irr = _discussion_has_irr(discussion_id)
+    no_data = " (no data)"
     menu = [
         {"title": "Coding", "url": url_for("training.discussions.audit", discussion_id=discussion_id), "icon": "edit", "active": active_view == "coding"},
         {"title": "F1 Analysis", "url": url_for("training.analysis.discussion_analysis", discussion_id=discussion_id), "icon": "chart-bar", "active": active_view == "f1"},
         {"divider": True},
-        {"title": "IRR Analysis", "url": url_for("training.irr.discussion", discussion_id=discussion_id), "icon": "users", "active": active_view == "irr"},
-        {"title": "IRR Review", "url": url_for("training.irr.review", discussion_id=discussion_id), "icon": "comments", "active": active_view == "review"},
-        {"title": "Pairwise Matrix", "url": url_for("training.irr.pairwise_matrix", discussion_id=discussion_id), "icon": "th", "active": active_view == "matrix"},
+        {"title": "IRR Analysis" + ("" if has_irr else no_data), "url": url_for("training.irr.discussion", discussion_id=discussion_id), "icon": "users", "active": active_view == "irr", "disabled": not has_irr},
+        {"title": "IRR Review" + ("" if has_irr else no_data), "url": url_for("training.irr.review", discussion_id=discussion_id), "icon": "comments", "active": active_view == "review", "disabled": not has_irr},
+        {"title": "Pairwise Matrix" + ("" if has_irr else no_data), "url": url_for("training.irr.pairwise_matrix", discussion_id=discussion_id), "icon": "th", "active": active_view == "matrix", "disabled": not has_irr},
     ]
     return menu, titles.get(active_view, "")

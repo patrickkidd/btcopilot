@@ -27,7 +27,6 @@ from .audit import bp as audit_bp
 from .admin import bp as admin_bp
 from .stream import bp as stream_bp
 from .speakers import bp as speakers_bp
-from .prompts import bp as prompts_bp
 from .discussions import bp as discussions_bp
 from .feedback import bp as feedback_bp
 from .diagrams import bp as diagrams_bp
@@ -69,7 +68,6 @@ bp.register_blueprint(audit_bp)
 bp.register_blueprint(admin_bp)
 bp.register_blueprint(stream_bp)
 bp.register_blueprint(speakers_bp)
-bp.register_blueprint(prompts_bp)
 bp.register_blueprint(discussions_bp)
 bp.register_blueprint(feedback_bp)
 bp.register_blueprint(diagrams_bp)

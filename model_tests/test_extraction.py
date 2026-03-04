@@ -89,9 +89,10 @@ async def test_extraction_accuracy(test_cases):
             user_statement = inputs["user_statement"]
 
             # Call the extraction model
+            # TODO: Rewrite to use pdp.extract_full() — per-statement pdp.update() was removed in #99
             try:
-                _, result_deltas = await pdp.update(
-                    thread=discussion, database=database, user_message=user_statement
+                _, result_deltas = await pdp.extract_full(
+                    discussion=discussion, diagram_data=database,
                 )
             except Exception as e:
                 failed_cases.append(f"{case['test_id']}: Extraction failed - {e}")

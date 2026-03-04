@@ -1,9 +1,8 @@
 import os
 import logging
 import json
-import asyncio
-import nest_asyncio
 import pickle
+import asyncio
 from datetime import datetime
 
 from flask import (
@@ -17,16 +16,14 @@ from flask import (
     make_response,
     url_for,
 )
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
 
 import btcopilot
-from btcopilot import auth
+from btcopilot import auth, pdp
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram, User
-from btcopilot import pdp
-from btcopilot.personal import Response, ask
 from btcopilot.schema import (
     DiagramData,
     PDP,
@@ -44,190 +41,10 @@ from btcopilot.training.utils import get_breadcrumbs, get_auditor_id, get_discus
 _log = logging.getLogger(__name__)
 
 
-def _next_statement() -> Statement:
-    # Expire all objects in session to ensure fresh data from database
-    db.session.expire_all()
-
-    # Get all subject statements from discussions marked for extraction
-    candidates = (
-        Statement.query.join(Speaker)
-        .join(Discussion, Statement.discussion_id == Discussion.id)
-        .filter(
-            Speaker.type == SpeakerType.Subject,
-            Statement.text.isnot(None),
-            Statement.text != "",
-            Discussion.extracting == True,
-        )
-        .order_by(
-            Statement.discussion_id.asc(),
-            Statement.order.asc(),
-            Statement.id.asc(),  # Tiebreaker for statements with same order
-        )
-        .all()
-    )
-
-    # Find the first one that actually needs processing
-    # Check for None or empty dict since SQLAlchemy JSON column filters are unreliable
-    for stmt in candidates:
-        if _needs_extraction(stmt.pdp_deltas):
-            return stmt
-
-    return None
 
 
-def _needs_extraction(pdp_deltas) -> bool:
-    """Check if a statement needs extraction.
-
-    Returns True only if pdp_deltas is None or empty dict {}.
-    Empty lists mean extraction ran but found nothing - that's a valid result.
-    """
-    if pdp_deltas is None:
-        return True
-    if pdp_deltas == {}:
-        return True
-    # If pdp_deltas has the expected structure (even with empty lists),
-    # extraction already ran - don't re-extract
-    return False
 
 
-def extract_next_statement(*args, **kwargs):
-    """
-    Background job to extract data from the oldest pending Subject statement.
-    Returns True if a statement was processed, False if no statements are pending.
-    """
-    _log.info(f"extract_next_statement() called with: args: {args}, kwargs: {kwargs}")
-
-    try:
-        db.session.get_bind()
-    except RuntimeError:
-        engine = create_engine(current_app.config["SQLALCHEMY_DATABASE_URI"])
-        db.session.bind = engine
-
-    statement = _next_statement()
-
-    if not statement:
-        _log.debug("No pending statements found")
-        return False
-
-    discussion = statement.discussion
-    if not discussion or not discussion.user:
-        _log.warning(
-            f"Skipping statement {statement.id} - missing discussion or user"
-        )
-        return False
-
-    _log.info(
-        f"Data extraction started - "
-        f"statement_id: {statement.id}, "
-        f"discussion_id: {statement.discussion_id}, "
-        f"speaker_type: {statement.speaker.type}, "
-        f"text_length: {len(statement.text)}"
-    )
-
-    # Get or create diagram database
-    if discussion.diagram:
-        database = discussion.diagram.get_diagram_data()
-    else:
-        database = DiagramData()
-
-    # Build PDP from stored pdp_deltas of prior statements
-    database.pdp = pdp.cumulative(discussion, statement)
-
-    _log.info(
-        f"EXTRACT_NEXT_STATEMENT - Statement {statement.id}:\n"
-        f"  statement.order: {statement.order}\n"
-        f"  statement.text[:100]: {statement.text[:100] if statement.text else 'None'}\n"
-        f"  database.pdp.people: {[p.name for p in database.pdp.people]}\n"
-        f"  database.pdp.events count: {len(database.pdp.events)}\n"
-        f"  database.people count: {len(database.people)}\n"
-    )
-
-    # Apply nest_asyncio to allow nested event loops in Celery workers
-    nest_asyncio.apply()
-
-    new_pdp, pdp_deltas = asyncio.run(
-        pdp.update(discussion, database, statement.text, statement.order)
-    )
-
-    # Refresh discussion to check if extraction was cancelled
-    db.session.refresh(discussion)
-
-    # If extraction was cancelled (cleared), abort and don't save results
-    if not discussion.extracting:
-        _log.info(
-            f"Extraction was cancelled - "
-            f"discussion_id: {discussion.id}, "
-            f"statement_id: {statement.id}, "
-            f"discarding results"
-        )
-        db.session.rollback()
-        return False
-
-    # Update database and statement
-    database.pdp = new_pdp
-    if discussion.diagram:
-        discussion.diagram.set_diagram_data(database)
-    if pdp_deltas:
-        statement.pdp_deltas = asdict(pdp_deltas)
-        event_count = len(pdp_deltas.events)
-        people_count = len(pdp_deltas.people)
-        _log.info(
-            f"Data extraction completed - "
-            f"statement_id: {statement.id}, "
-            f"discussion_id: {discussion.id}, "
-            f"events_extracted: {event_count}, "
-            f"people_extracted: {people_count}"
-        )
-    else:
-        statement.pdp_deltas = None
-        _log.info(
-            f"Data extraction completed - "
-            f"statement_id: {statement.id}, "
-            f"discussion_id: {discussion.id}, "
-            f"events_extracted: 0, "
-            f"people_extracted: 0"
-        )
-
-    # Check if there are any more unprocessed statements in this discussion
-    # We need to check manually because JSON column filters are unreliable
-    remaining_candidates = (
-        Statement.query.join(Speaker)
-        .filter(
-            Speaker.type == SpeakerType.Subject,
-            Statement.text.isnot(None),
-            Statement.text != "",
-            Statement.discussion_id == discussion.id,
-            Statement.id != statement.id,
-        )
-        .all()
-    )
-
-    remaining_statements = sum(
-        1
-        for s in remaining_candidates
-        if s.pdp_deltas is None or s.pdp_deltas == {}
-    )
-
-    if remaining_statements == 0:
-        discussion.extracting = False
-        discussion.status = DiscussionStatus.Ready
-        total_statements = Statement.query.filter_by(
-            discussion_id=discussion.id
-        ).count()
-        _log.info(
-            f"Discussion extraction complete - "
-            f"discussion_id: {discussion.id}, "
-            f"total_statements: {total_statements}"
-        )
-    else:
-        _log.info(
-            f"Discussion extraction continuing - "
-            f"discussion_id: {discussion.id}, "
-            f"remaining_statements: {remaining_statements}"
-        )
-
-    db.session.commit()
-    return True
 
 
 # Create the discussions blueprint
@@ -997,6 +814,34 @@ def audit(discussion_id):
                 }
             )
 
+    # If no per-statement deltas exist but extract_full() populated the diagram's PDP,
+    # show it on the last subject statement's Cumulative Notes column.
+    if (
+        not cumulative_people_by_id
+        and not cumulative_events_by_id
+        and not cumulative_pair_bonds_by_id
+        and diagram_data_cache
+        and diagram_data_cache.pdp
+        and (
+            diagram_data_cache.pdp.people
+            or diagram_data_cache.pdp.events
+            or diagram_data_cache.pdp.pair_bonds
+        )
+    ):
+        subject_items = [
+            item
+            for item in statements_with_feedback
+            if item["statement"].speaker
+            and item["statement"].speaker.type == SpeakerType.Subject
+        ]
+        if subject_items:
+            full_pdp = diagram_data_cache.pdp
+            subject_items[-1]["cumulative_pdp"] = {
+                "people": [asdict(p) for p in full_pdp.people],
+                "events": [asdict(e) for e in full_pdp.events],
+                "pair_bonds": [asdict(pb) for pb in full_pdp.pair_bonds],
+            }
+
     # Mark the last expert statement for prompt editing
     expert_statements = [
         item
@@ -1134,212 +979,14 @@ def audit(discussion_id):
     )
 
 
-@bp.route("/<int:discussion_id>/extract", methods=["POST"])
-@minimum_role(btcopilot.ROLE_ADMIN)
-def extract(discussion_id: int):
-    """Trigger background extraction for a specific discussion"""
-
-    # Get the discussion
-    discussion = Discussion.query.get(discussion_id)
-    if not discussion:
-        return jsonify({"error": "Discussion not found"}), 404
-
-    statement_count = Statement.query.filter_by(discussion_id=discussion_id).count()
-
-    # Set extracting to True
-    discussion.extracting = True
-    discussion.status = DiscussionStatus.Extracting
-    db.session.commit()
-
-    from btcopilot.extensions import celery
-
-    celery.send_task("extract_discussion_statements", args=[discussion_id])
-
-    _log.info(
-        f"Extraction triggered - "
-        f"discussion_id: {discussion_id}, "
-        f"total_statements: {statement_count}"
-    )
-
-    return jsonify({"success": True, "message": "Extraction triggered successfully"})
 
 
-def _get_discussion_progress(discussion_id: int) -> dict:
-    """Get extraction progress for a single discussion. Returns dict with progress data."""
-    discussion = Discussion.query.get(discussion_id)
-    if not discussion:
-        return None
-
-    # Count Subject statements that need processing
-    total_subject_statements = (
-        Statement.query.join(Speaker)
-        .filter(
-            Statement.discussion_id == discussion_id,
-            Speaker.type == SpeakerType.Subject,
-            Statement.text.isnot(None),
-            Statement.text != "",
-        )
-        .count()
-    )
-
-    # Count processed Subject statements (those with pdp_deltas)
-    all_subject_statements = (
-        Statement.query.join(Speaker)
-        .filter(
-            Statement.discussion_id == discussion_id,
-            Speaker.type == SpeakerType.Subject,
-            Statement.text.isnot(None),
-            Statement.text != "",
-        )
-        .all()
-    )
-
-    # Count statements that actually have pdp_deltas content
-    processed_statements = sum(
-        1
-        for stmt in all_subject_statements
-        if stmt.pdp_deltas is not None and stmt.pdp_deltas != {}
-    )
-
-    pending_statements = total_subject_statements - processed_statements
-
-    return {
-        "discussion_id": discussion_id,
-        "total": total_subject_statements,
-        "processed": processed_statements,
-        "pending": pending_statements,
-        "extracting": discussion.extracting,
-        "percent_complete": (
-            round((processed_statements / total_subject_statements) * 100, 1)
-            if total_subject_statements > 0
-            else 100
-        ),
-    }
 
 
-@bp.route("/<int:discussion_id>/progress", methods=["GET"])
-@minimum_role(btcopilot.ROLE_AUDITOR)
-def progress(discussion_id: int):
-    """Get extraction progress for statements in a discussion"""
-    current_user = auth.current_user()
-
-    discussion = Discussion.query.get(discussion_id)
-    if not discussion:
-        return abort(404)
-
-    # Check access rights - admins bypass, others need diagram access
-    if not current_user.has_role(btcopilot.ROLE_ADMIN):
-        if discussion.diagram:
-            if not discussion.diagram.check_read_access(current_user):
-                return abort(403)
-        elif discussion.user_id != current_user.id:
-            return abort(403)
-
-    progress_data = _get_discussion_progress(discussion_id)
-    if not progress_data:
-        return abort(404)
-
-    # Add legacy fields for backward compatibility
-    progress_data["is_processing"] = progress_data["pending"] > 0
-    return jsonify(progress_data)
 
 
-@bp.route("/progress/bulk", methods=["GET"])
-@minimum_role(btcopilot.ROLE_ADMIN)
-def progress_bulk():
-    """Get extraction progress for multiple discussions (admin only).
-
-    Query params:
-    - ids: comma-separated discussion IDs (optional, defaults to all discussions with extracting=True)
-    """
-    ids_param = request.args.get("ids")
-
-    if ids_param:
-        try:
-            discussion_ids = [int(d.strip()) for d in ids_param.split(",")]
-        except ValueError:
-            return jsonify({"error": "Invalid discussion_ids format"}), 400
-    else:
-        # Default: get all discussions that are currently extracting or have partial extractions
-        discussions = Discussion.query.all()
-        discussion_ids = [d.id for d in discussions]
-
-    results = {}
-    for discussion_id in discussion_ids:
-        progress_data = _get_discussion_progress(discussion_id)
-        if progress_data:
-            results[str(discussion_id)] = progress_data
-
-    return jsonify({"discussions": results})
 
 
-@bp.route("/extract-selected", methods=["POST"])
-@minimum_role(btcopilot.ROLE_ADMIN)
-def extract_selected():
-    """Clear AI extractions and trigger background extraction for selected discussions"""
-    current_user = auth.current_user()
-
-    data = request.get_json()
-    if not data or "discussion_ids" not in data:
-        return jsonify({"error": "discussion_ids required"}), 400
-
-    discussion_ids = data["discussion_ids"]
-    if not discussion_ids:
-        return jsonify({"error": "No discussions selected"}), 400
-
-    discussions = Discussion.query.filter(Discussion.id.in_(discussion_ids)).all()
-
-    cleared_count = 0
-    triggered_count = 0
-
-    for discussion in discussions:
-        # Clear existing AI extractions
-        stmt_count = (
-            Statement.query.filter_by(discussion_id=discussion.id)
-            .filter(Statement.pdp_deltas.isnot(None))
-            .count()
-        )
-
-        if stmt_count > 0:
-            Statement.query.filter_by(discussion_id=discussion.id).update(
-                {"pdp_deltas": None}, synchronize_session=False
-            )
-            cleared_count += stmt_count
-
-        # Clear PDP from diagram if present (with error handling for pickle issues)
-        if discussion.diagram:
-            try:
-                database = discussion.diagram.get_diagram_data()
-                database.pdp = PDP(people=[], events=[], pair_bonds=[])
-                discussion.diagram.set_diagram_data(database)
-            except (ModuleNotFoundError, ImportError) as e:
-                _log.warning(f"Could not clear PDP for discussion {discussion.id}: {e}")
-
-        # Set extracting flag
-        discussion.extracting = True
-        discussion.status = DiscussionStatus.Extracting
-        triggered_count += 1
-
-    db.session.commit()
-
-    # Trigger background extraction task
-    from btcopilot.extensions import celery
-
-    celery.send_task("extract_next_statement")
-
-    _log.info(
-        f"Admin {current_user.username} triggered extraction for {triggered_count} discussions - "
-        f"cleared {cleared_count} statements"
-    )
-
-    return jsonify(
-        {
-            "success": True,
-            "message": f"Cleared extractions from {cleared_count} statements, triggered extraction for {triggered_count} discussions",
-            "cleared_count": cleared_count,
-            "triggered_count": triggered_count,
-        }
-    )
 
 
 @bp.route("/<int:discussion_id>/export", methods=["GET"])
@@ -1431,6 +1078,27 @@ def export(discussion_id: int):
     )
 
     return response
+
+
+@bp.route("/<int:discussion_id>/extract", methods=["POST"])
+@minimum_role(btcopilot.ROLE_ADMIN)
+def extract(discussion_id):
+    discussion = Discussion.query.get_or_404(discussion_id)
+    if not discussion.diagram:
+        abort(400)
+    diagram_data = discussion.diagram.get_diagram_data()
+    diagram_data.pdp = PDP()
+    new_pdp, deltas = asyncio.run(pdp.extract_full(discussion, diagram_data))
+    diagram_data.pdp = new_pdp
+    discussion.diagram.set_diagram_data(diagram_data)
+    discussion.status = DiscussionStatus.Ready
+    db.session.commit()
+    return jsonify(
+        success=True,
+        people_count=len(new_pdp.people),
+        events_count=len(new_pdp.events),
+        pair_bonds_count=len(new_pdp.pair_bonds),
+    )
 
 
 @bp.route("/<int:discussion_id>/clear-extracted", methods=["POST"])
@@ -1663,100 +1331,5 @@ def delete(discussion_id):
     )
 
 
-@bp.route("/reextract/<int:statement_id>", methods=["POST"])
-@minimum_role(btcopilot.ROLE_ADMIN)
-def reextract_statement(statement_id):
-    """Re-extract a single statement without saving (preview mode)
-
-    Runs pdp.update() with current prompts.py code and returns
-    the new pdp_deltas for comparison. Does NOT save to database.
-    """
-    import nest_asyncio
-
-    nest_asyncio.apply()
-
-    statement = Statement.query.get_or_404(statement_id)
-    discussion = statement.discussion
-
-    if not discussion:
-        return jsonify({"error": "Statement has no discussion"}), 400
-
-    # Build context same as extract_next_statement()
-    if discussion.diagram:
-        database = discussion.diagram.get_diagram_data()
-    else:
-        database = DiagramData()
-
-    # Build cumulative PDP from prior statements
-    database.pdp = pdp.cumulative(discussion, statement)
-
-    _log.info(
-        f"Re-extracting statement {statement_id} - "
-        f"discussion_id: {discussion.id}, "
-        f"text_length: {len(statement.text) if statement.text else 0}"
-    )
-
-    # Run extraction (preview only - don't save)
-    new_pdp, pdp_deltas = asyncio.run(
-        pdp.update(discussion, database, statement.text, statement.order)
-    )
-
-    return jsonify(
-        {
-            "success": True,
-            "statement_id": statement_id,
-            "pdp_deltas": asdict(pdp_deltas) if pdp_deltas else {},
-            "original_deltas": statement.pdp_deltas,
-        }
-    )
 
 
-@bp.route("/debug-context/<int:statement_id>", methods=["GET"])
-@minimum_role(btcopilot.ROLE_ADMIN)
-def get_debug_context(statement_id):
-    """Get debug context for a statement for use in Claude Code.
-
-    Returns JSON with ALL inputs that pdp.update() receives for extraction,
-    plus the AI's output and any correction from feedback.
-    """
-    statement = Statement.query.get_or_404(statement_id)
-    discussion = statement.discussion
-
-    if not discussion:
-        return jsonify({"error": "Statement has no discussion"}), 400
-
-    # Build diagram_data same as reextract_statement() / pdp.update()
-    if discussion.diagram:
-        diagram_data = discussion.diagram.get_diagram_data()
-    else:
-        diagram_data = DiagramData()
-    diagram_data.pdp = pdp.cumulative(discussion, statement)
-
-    # Get reference date (same as pdp.update)
-    reference_date = (
-        discussion.discussion_date
-        if discussion.discussion_date
-        else datetime.now().date()
-    )
-
-    # Get full conversation history (same format as pdp.update)
-    conversation_history = discussion.conversation_history(statement.order)
-
-    # Get corrected extraction from Feedback if exists
-    feedback = Feedback.query.filter_by(
-        statement_id=statement_id, feedback_type="extraction"
-    ).first()
-    corrected = feedback.edited_extraction if feedback else None
-
-    return jsonify(
-        {
-            "statement_id": statement_id,
-            "discussion_id": discussion.id,
-            "user_statement": statement.text,
-            "current_date": reference_date.isoformat(),
-            "diagram_data": asdict(diagram_data),
-            "conversation_history": conversation_history,
-            "ai_extracted": statement.pdp_deltas,
-            "corrected": corrected,
-        }
-    )

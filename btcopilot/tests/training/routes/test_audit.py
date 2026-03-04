@@ -117,25 +117,3 @@ def test_export_discussion_without_read_access(flask_app, test_user, test_user_2
     with flask_app.test_client(user=test_user_2) as client:
         response = client.get(f"/training/discussions/{discussion.id}/export")
     assert response.status_code == 302
-
-
-def test_progress_discussion_without_read_access(flask_app, test_user, test_user_2):
-    diagram = Diagram(user_id=test_user.id, name="Test Diagram")
-    diagram.set_diagram_data(DiagramData())
-    db.session.add(diagram)
-    db.session.commit()
-
-    discussion = Discussion(
-        user_id=test_user.id, diagram_id=diagram.id, summary="Test discussion"
-    )
-    db.session.add(discussion)
-    db.session.commit()
-
-    test_user_2.roles = btcopilot.ROLE_AUDITOR
-    db.session.merge(test_user_2)
-    db.session.commit()
-
-    flask_app.test_client_class = FDEncryptionTestClient
-    with flask_app.test_client(user=test_user_2) as client:
-        response = client.get(f"/training/discussions/{discussion.id}/progress")
-    assert response.status_code == 302

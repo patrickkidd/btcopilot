@@ -1,17 +1,7 @@
 import logging
-import datetime
-import asyncio
-from datetime import timedelta
-
-import click
-from sqlalchemy import create_engine
-from flask import current_app
 
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion
-from btcopilot.training.routes.discussions import (
-    extract_next_statement as _extract_next_statement,
-)
 from btcopilot.tests.personal.synthetic import (
     ConversationSimulator,
     DEPRECATED_PERSONAS,
@@ -22,72 +12,15 @@ from btcopilot.personal.chat import ask
 _log = logging.getLogger(__name__)
 
 
-def extract_next_statement():
-    _log.info(f"extract_next_statement() called")
-
-    # Ensure we have a database connection
-    try:
-        db.session.get_bind()
-    except RuntimeError:
-        engine = create_engine(current_app.config["SQLALCHEMY_DATABASE_URI"])
-        db.session.bind = engine
-
-    # Close any existing session to ensure fresh data
-    db.session.close()
-
-    result = _extract_next_statement()
-
-    # If there are more statements to process, schedule another task
-    if result:
-        from btcopilot.extensions import celery
-
-        celery.send_task("extract_next_statement", countdown=1)
-    else:
-        _log.info("No statements pending extraction")
-
-    return result
-
-
-def extract_discussion_statements(discussion_id: int):
-    from btcopilot.personal.models import DiscussionStatus
-
-    discussion = Discussion.query.get(discussion_id)
-    if not discussion:
-        raise ValueError(f"Discussion {discussion_id} not found")
-
-    discussion.extracting = True
-    discussion.status = DiscussionStatus.Extracting
-    db.session.commit()
-
-    from btcopilot.extensions import celery
-
-    celery.send_task("extract_next_statement")
-
-    _log.info(f"Celery extraction task started - discussion_id: {discussion_id}")
-    return True
-
-
-@click.command("extract-discussion-data")
-def extract_discussion_data():
-    _log.info(f"extract_discussion_data() {datetime.datetime.now()}")
-
-    result = extract_next_statement()
-    if result:
-        _log.info("Discussion data extracted, another triggered")
-    else:
-        _log.info("All discussions extracted.")
-
-
 def generate_synthetic_discussion(
     self,
     persona_id_or_name,
     username: str,
     max_turns: int,
-    skip_extraction: bool,
 ):
     _log.info(
         f"generate_synthetic_discussion() persona={persona_id_or_name}, user={username}, "
-        f"max_turns={max_turns}, skip_extraction={skip_extraction}"
+        f"max_turns={max_turns}"
     )
 
     persona_id = None
@@ -113,7 +46,6 @@ def generate_synthetic_discussion(
         max_turns=max_turns,
         persist=True,
         username=username,
-        skip_extraction=skip_extraction,
     )
 
     def on_progress(turn_num, total, user_text, ai_text):

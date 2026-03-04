@@ -1,23 +1,13 @@
-import contextlib
 import datetime
 
 import pytest
-from mock import patch, AsyncMock
 import flask.json
 
 import btcopilot
 from btcopilot.extensions import db
-from btcopilot.schema import PDPDeltas, PDP
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 
 from btcopilot.tests.personal.conftest import discussion, discussions
-
-
-def pytest_configure(config):
-    config.addinivalue_line(
-        "markers",
-        "extraction_flow: mock PDP extraction for testing extraction lifecycle",
-    )
 
 
 def set_test_session(sess, user_id):
@@ -71,40 +61,6 @@ def admin(flask_app, test_user):
         with client.session_transaction() as sess:
             set_test_session(sess, test_user.id)
         yield client
-
-
-@pytest.fixture(autouse=True)
-def extraction_flow(request):
-    marker = request.node.get_closest_marker("extraction_flow")
-
-    with contextlib.ExitStack() as stack:
-        if marker is not None:
-            extractions = marker.kwargs.get("extractions", [])
-
-            if not isinstance(extractions, list):
-                extractions = [extractions]
-
-            extraction_iter = iter(extractions)
-
-            def mock_update(*args, **kwargs):
-                try:
-                    result = next(extraction_iter)
-                    if isinstance(result, tuple):
-                        return result
-                    else:
-                        return (PDP(), result if result else PDPDeltas())
-                except StopIteration:
-                    return (PDP(), PDPDeltas())
-
-            stack.enter_context(
-                patch(
-                    "btcopilot.training.routes.discussions.pdp.update",
-                    AsyncMock(side_effect=mock_update),
-                )
-            )
-            yield {"extractions": extractions}
-        else:
-            yield None
 
 
 @pytest.fixture

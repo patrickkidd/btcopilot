@@ -177,24 +177,6 @@ class StatementF1Metrics:
     # ... (full TP/FP/FN breakdown)
 ```
 
-### SystemF1Metrics
-
-System-wide metrics (aggregated across all approved statements):
-```python
-@dataclass
-class SystemF1Metrics:
-    aggregate_micro_f1: float
-    people_f1: float
-    events_f1: float
-    symptom_macro_f1: float
-    anxiety_macro_f1: float
-    relationship_macro_f1: float
-    functioning_macro_f1: float
-    exact_match_rate: float
-    total_statements: int
-    total_discussions: int
-```
-
 ## Ground Truth Requirements
 
 Only **approved** feedback is used for F1 calculation:

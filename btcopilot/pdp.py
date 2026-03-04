@@ -9,15 +9,11 @@ from btcopilot.extensions import ai_log
 from btcopilot.llmutil import gemini_structured
 from btcopilot.personal.models import SpeakerType
 from btcopilot.personal.prompts import (
-    DATA_EXTRACTION_PROMPT,
-    DATA_EXTRACTION_EXAMPLES,
-    DATA_EXTRACTION_CONTEXT,
     DATA_EXTRACTION_CORRECTION,
     DATA_EXTRACTION_PASS1_PROMPT,
     DATA_EXTRACTION_PASS1_CONTEXT,
     DATA_EXTRACTION_PASS2_PROMPT,
     DATA_EXTRACTION_PASS2_CONTEXT,
-    DATA_IMPORT_CONTEXT,
 )
 from btcopilot.schema import (
     DiagramData,
@@ -595,21 +591,15 @@ async def _extract_and_validate(
     return new_pdp, pdp_deltas
 
 
-async def extract_full(
-    discussion,
+async def _two_pass_extract(
     diagram_data: DiagramData,
+    conversation_history: str,
+    current_date: str,
+    source: str,
 ) -> tuple[PDP, PDPDeltas]:
     """Two-pass extraction: people+structure first, then shifts+SARF."""
-    reference_date = (
-        discussion.discussion_date
-        if discussion.discussion_date
-        else datetime.now().date()
-    )
-    conversation_history = discussion.conversation_history()
-    current_date = reference_date.isoformat()
-
     _log.info(
-        f"PDP EXTRACT_FULL INPUTS:\n"
+        f"PDP {source.upper()} INPUTS:\n"
         f"  conversation_history length: {len(conversation_history)}\n"
         f"  diagram_data.pdp.people: {[p.name for p in diagram_data.pdp.people]}\n"
         f"  diagram_data.pdp.events count: {len(diagram_data.pdp.events)}\n"
@@ -625,7 +615,7 @@ async def extract_full(
         )
     )
     pass1_pdp, pass1_deltas = await _extract_and_validate(
-        prompt1, diagram_data, "extract_full_pass1", large=True,
+        prompt1, diagram_data, f"{source}_pass1", large=True,
     )
 
     # Pass 2: Shift Events + SARF (given Pass 1 output)
@@ -638,7 +628,7 @@ async def extract_full(
         )
     )
     pass2_pdp, pass2_deltas = await _extract_and_validate(
-        prompt2, diagram_data, "extract_full_pass2", large=True,
+        prompt2, diagram_data, f"{source}_pass2", large=True,
         base_pdp=pass1_pdp,
     )
 
@@ -651,6 +641,23 @@ async def extract_full(
     return pass2_pdp, merged_deltas
 
 
+async def extract_full(
+    discussion,
+    diagram_data: DiagramData,
+) -> tuple[PDP, PDPDeltas]:
+    reference_date = (
+        discussion.discussion_date
+        if discussion.discussion_date
+        else datetime.now().date()
+    )
+    return await _two_pass_extract(
+        diagram_data,
+        discussion.conversation_history(),
+        reference_date.isoformat(),
+        "extract_full",
+    )
+
+
 async def import_text(
     diagram_data: DiagramData,
     text: str,
@@ -658,72 +665,12 @@ async def import_text(
 ) -> tuple[PDP, PDPDeltas]:
     if reference_date is None:
         reference_date = datetime.now().date()
-
-    _log.info(
-        f"PDP IMPORT_TEXT INPUTS:\n"
-        f"  text length: {len(text)}\n"
-        f"  diagram_data.pdp.people: {[p.name for p in diagram_data.pdp.people]}\n"
-        f"  diagram_data.pdp.events count: {len(diagram_data.pdp.events)}\n"
-        f"  diagram_data.people count: {len(diagram_data.people)}\n"
+    return await _two_pass_extract(
+        diagram_data,
+        text,
+        reference_date.isoformat(),
+        "import_text",
     )
-
-    prompt = (
-        DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
-        + DATA_EXTRACTION_EXAMPLES
-        + DATA_IMPORT_CONTEXT.format(
-            diagram_data=asdict(diagram_data),
-            text_chunk=text,
-            chunk_num=1,
-            total_chunks=1,
-        )
-    )
-    return await _extract_and_validate(prompt, diagram_data, "import_text", large=True)
-
-
-async def update(
-    discussion,
-    diagram_data: DiagramData,
-    user_message: str,
-    up_to_order: int | None = None,
-) -> tuple[PDP, PDPDeltas]:
-    """
-    Extract PDP deltas from a user message.
-
-    Args:
-        discussion: The Discussion object
-        diagram_data: Current diagram data with PDP context
-        user_message: The statement text to extract from
-        up_to_order: If provided, only include conversation history up to this order.
-                    Used during batch extraction to avoid seeing future statements.
-    """
-    reference_date = (
-        discussion.discussion_date
-        if discussion.discussion_date
-        else datetime.now().date()
-    )
-
-    conversation_history = discussion.conversation_history(up_to_order)
-
-    _log.info(
-        f"PDP UPDATE INPUTS:\n"
-        f"  up_to_order: {up_to_order}\n"
-        f"  user_message length: {len(user_message)}\n"
-        f"  conversation_history length: {len(conversation_history)}\n"
-        f"  diagram_data.pdp.people: {[p.name for p in diagram_data.pdp.people]}\n"
-        f"  diagram_data.pdp.events count: {len(diagram_data.pdp.events)}\n"
-        f"  diagram_data.people count: {len(diagram_data.people)}\n"
-    )
-
-    prompt = (
-        DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
-        + DATA_EXTRACTION_EXAMPLES
-        + DATA_EXTRACTION_CONTEXT.format(
-            diagram_data=asdict(diagram_data),
-            conversation_history=conversation_history,
-            user_message=user_message,
-        )
-    )
-    return await _extract_and_validate(prompt, diagram_data, "update")
 
 
 def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:

@@ -683,12 +683,10 @@ class ConversationSimulator:
         max_turns: int = 20,
         persist: bool = False,
         username: str | None = None,
-        skip_extraction: bool = True,
     ):
         self.max_turns = max_turns
         self.persist = persist
         self.username = username
-        self.skip_extraction = skip_extraction
 
     def run(self, persona: Persona, ask_fn, on_progress=None, yield_progress=False):
         """Run conversation simulation.

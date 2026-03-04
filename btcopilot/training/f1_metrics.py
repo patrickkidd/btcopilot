@@ -47,9 +47,6 @@ from btcopilot.schema import (
 
 _log = logging.getLogger(__name__)
 
-_f1_cache = {}
-_f1_cache_time = {}
-
 NAME_SIMILARITY_THRESHOLD = 0.60
 
 TITLE_PREFIXES = frozenset(
@@ -179,25 +176,6 @@ class CumulativeF1Metrics:
     ai_events_count: int = 0
     gt_people_count: int = 0
     gt_events_count: int = 0
-
-
-@dataclass
-class SystemF1Metrics:
-    aggregate_micro_f1: float = 0.0
-    people_f1: float = 0.0
-    events_f1: float = 0.0
-    pair_bonds_f1: float = 0.0
-    symptom_macro_f1: float = 0.0
-    anxiety_macro_f1: float = 0.0
-    relationship_macro_f1: float = 0.0
-    functioning_macro_f1: float = 0.0
-    symptom_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
-    anxiety_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
-    relationship_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
-    functioning_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
-    exact_match_rate: float = 0.0
-    total_statements: int = 0
-    total_discussions: int = 0
 
 
 def parse_date_flexible(date_str: str | None) -> datetime | None:
@@ -1052,6 +1030,17 @@ def calculate_cumulative_f1(discussion_id: int) -> CumulativeF1Metrics:
     ai_pdp = cumulative(discussion, last_stmt)
     gt_pdp = cumulative(discussion, last_stmt, auditor_id=auditor_id)
 
+    # Fall back to diagram PDP when no per-statement deltas exist (extract_full path)
+    if (
+        not ai_pdp.people
+        and not ai_pdp.events
+        and not ai_pdp.pair_bonds
+        and discussion.diagram
+    ):
+        diagram_data = discussion.diagram.get_diagram_data()
+        if diagram_data.pdp.people or diagram_data.pdp.events or diagram_data.pdp.pair_bonds:
+            ai_pdp = diagram_data.pdp
+
     metrics = CumulativeF1Metrics(
         discussion_id=discussion_id,
         discussion_summary=discussion.summary or "",
@@ -1178,170 +1167,3 @@ def calculate_all_cumulative_f1(
         system.relationship_macro_f1 = sum(r.relationship_macro_f1 for r in results) / n
         system.functioning_macro_f1 = sum(r.functioning_macro_f1 for r in results) / n
     return system
-
-
-def calculate_system_f1(include_synthetic: bool = True) -> SystemF1Metrics:
-    """
-    Calculate system-wide F1 metrics across all approved ground truth statements.
-
-    Queries database for all approved feedbacks and calculates aggregate metrics.
-
-    Args:
-        include_synthetic: If True, include synthetic discussions in metrics.
-                          If False, exclude discussions where Discussion.synthetic=True.
-    """
-    from btcopilot.training.models import Feedback
-    from btcopilot.personal.models import Statement, Discussion
-
-    metrics = SystemF1Metrics()
-
-    query = Feedback.query.filter(Feedback.approved == True).filter(
-        Feedback.feedback_type == "extraction"
-    )
-
-    if not include_synthetic:
-        query = (
-            query.join(Statement, Feedback.statement_id == Statement.id)
-            .join(Discussion, Statement.discussion_id == Discussion.id)
-            .filter(Discussion.synthetic == False)
-        )
-
-    approved_feedbacks = query.all()
-
-    if not approved_feedbacks:
-        return metrics
-
-    statement_metrics_list = []
-    discussion_ids = set()
-
-    for feedback in approved_feedbacks:
-        statement = Statement.query.get(feedback.statement_id)
-        if not statement or not statement.pdp_deltas:
-            continue
-
-        discussion_ids.add(statement.discussion_id)
-
-        try:
-            stmt_metrics = calculate_statement_f1(
-                statement.pdp_deltas, feedback.edited_extraction
-            )
-            stmt_metrics.statement_id = statement.id
-            statement_metrics_list.append(stmt_metrics)
-        except Exception as e:
-            _log.error(
-                f"Error calculating F1 for statement {statement.id}: {e}", exc_info=True
-            )
-            continue
-
-    if not statement_metrics_list:
-        return metrics
-
-    metrics.total_statements = len(statement_metrics_list)
-    metrics.total_discussions = len(discussion_ids)
-
-    metrics.aggregate_micro_f1 = sum(
-        m.aggregate_micro_f1 for m in statement_metrics_list
-    ) / len(statement_metrics_list)
-    metrics.people_f1 = sum(m.people_f1 for m in statement_metrics_list) / len(
-        statement_metrics_list
-    )
-    metrics.events_f1 = sum(m.events_f1 for m in statement_metrics_list) / len(
-        statement_metrics_list
-    )
-    metrics.pair_bonds_f1 = sum(m.pair_bonds_f1 for m in statement_metrics_list) / len(
-        statement_metrics_list
-    )
-
-    metrics.symptom_macro_f1 = sum(
-        m.symptom_macro_f1 for m in statement_metrics_list
-    ) / len(statement_metrics_list)
-    metrics.anxiety_macro_f1 = sum(
-        m.anxiety_macro_f1 for m in statement_metrics_list
-    ) / len(statement_metrics_list)
-    metrics.relationship_macro_f1 = sum(
-        m.relationship_macro_f1 for m in statement_metrics_list
-    ) / len(statement_metrics_list)
-    metrics.functioning_macro_f1 = sum(
-        m.functioning_macro_f1 for m in statement_metrics_list
-    ) / len(statement_metrics_list)
-
-    metrics.symptom_hierarchical = SARFVariableF1(
-        detection_f1=sum(
-            m.symptom_hierarchical.detection_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        value_match_f1=sum(
-            m.symptom_hierarchical.value_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        people_match_f1=sum(
-            m.symptom_hierarchical.people_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-    )
-    metrics.anxiety_hierarchical = SARFVariableF1(
-        detection_f1=sum(
-            m.anxiety_hierarchical.detection_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        value_match_f1=sum(
-            m.anxiety_hierarchical.value_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        people_match_f1=sum(
-            m.anxiety_hierarchical.people_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-    )
-    metrics.relationship_hierarchical = SARFVariableF1(
-        detection_f1=sum(
-            m.relationship_hierarchical.detection_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        value_match_f1=sum(
-            m.relationship_hierarchical.value_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        people_match_f1=sum(
-            m.relationship_hierarchical.people_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-    )
-    metrics.functioning_hierarchical = SARFVariableF1(
-        detection_f1=sum(
-            m.functioning_hierarchical.detection_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        value_match_f1=sum(
-            m.functioning_hierarchical.value_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        people_match_f1=sum(
-            m.functioning_hierarchical.people_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-    )
-
-    metrics.exact_match_rate = sum(m.exact_match for m in statement_metrics_list) / len(
-        statement_metrics_list
-    )
-
-    return metrics
-
-
-def invalidate_f1_cache(statement_id: int | None = None):
-    """
-    Invalidate F1 cache when feedback is approved/unapproved or edited.
-
-    Args:
-        statement_id: If provided, only invalidate cache for this statement.
-                     If None, invalidate all cache.
-    """
-    if statement_id is None:
-        _f1_cache.clear()
-        _f1_cache_time.clear()
-    else:
-        keys_to_remove = [k for k in _f1_cache if f"stmt_{statement_id}_" in k]
-        for k in keys_to_remove:
-            _f1_cache.pop(k, None)
-            _f1_cache_time.pop(k, None)

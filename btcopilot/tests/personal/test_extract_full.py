@@ -1,4 +1,6 @@
 import asyncio
+from datetime import date
+
 import pytest
 from mock import patch, AsyncMock, call
 
@@ -112,3 +114,67 @@ def test_extract_full_uses_discussion_date(discussion):
 
         pass1_prompt = mock_extract.call_args_list[0][0][0]
         assert "2025-06-15" in pass1_prompt
+
+
+def test_import_text_calls_two_pass():
+    mock_pdp = PDP()
+    mock_deltas = PDPDeltas()
+
+    with patch(
+        "btcopilot.pdp._extract_and_validate",
+        AsyncMock(return_value=(mock_pdp, mock_deltas)),
+    ) as mock_extract:
+        from btcopilot.pdp import import_text
+
+        diagram_data = DiagramData()
+        asyncio.run(import_text(diagram_data, "My mom Barbara is 72."))
+
+        assert mock_extract.call_count == 2
+        assert "import_text_pass1" in mock_extract.call_args_list[0][0]
+        assert "import_text_pass2" in mock_extract.call_args_list[1][0]
+
+
+def test_import_text_uses_reference_date():
+    mock_pdp = PDP()
+    mock_deltas = PDPDeltas()
+
+    with patch(
+        "btcopilot.pdp.DATA_EXTRACTION_PASS1_PROMPT",
+        "date={current_date}",
+    ), patch(
+        "btcopilot.pdp._extract_and_validate",
+        AsyncMock(return_value=(mock_pdp, mock_deltas)),
+    ) as mock_extract:
+        from btcopilot.pdp import import_text
+
+        diagram_data = DiagramData()
+        asyncio.run(
+            import_text(diagram_data, "test text", reference_date=date(2025, 3, 1))
+        )
+
+        pass1_prompt = mock_extract.call_args_list[0][0][0]
+        assert "2025-03-01" in pass1_prompt
+
+
+def test_import_text_passes_text_as_conversation_history():
+    mock_pdp = PDP()
+    mock_deltas = PDPDeltas()
+
+    with patch(
+        "btcopilot.pdp.DATA_EXTRACTION_PASS1_CONTEXT",
+        "{conversation_history}",
+    ), patch(
+        "btcopilot.pdp.DATA_EXTRACTION_PASS1_PROMPT",
+        "{current_date}",
+    ), patch(
+        "btcopilot.pdp._extract_and_validate",
+        AsyncMock(return_value=(mock_pdp, mock_deltas)),
+    ) as mock_extract:
+        from btcopilot.pdp import import_text
+
+        diagram_data = DiagramData()
+        text = "My family has three generations of doctors."
+        asyncio.run(import_text(diagram_data, text))
+
+        pass1_prompt = mock_extract.call_args_list[0][0][0]
+        assert text in pass1_prompt

@@ -1,44 +1,14 @@
-import logging
-import asyncio
-
 import pytest
-from mock import patch
 
 from btcopilot import pdp
 from btcopilot.schema import PDP, PDPDeltas, PairBond
 from btcopilot.schema import (
-    DiagramData,
     VariableShift,
     RelationshipKind,
     EventKind,
     Person,
     Event,
 )
-from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
-
-_log = logging.getLogger(__name__)
-
-
-@pytest.mark.e2e
-def test_update(test_user):
-
-    discussion = Discussion(
-        user=test_user,
-        statements=[
-            Statement(
-                text="Hello, how are you?", speaker=Speaker(type=SpeakerType.Subject)
-            ),
-            Statement(
-                text="I'm fine, thank you!", speaker=Speaker(type=SpeakerType.Expert)
-            ),
-        ],
-    )
-
-    deltas = PDPDeltas()
-    with patch("btcopilot.pdp.gemini_structured", return_value=deltas):
-        with patch("btcopilot.pdp.apply_deltas", return_value={"dummy": "data"}):
-            returned = asyncio.run(pdp.update(discussion, DiagramData(), "blah blah"))
-    assert returned == ({"dummy": "data"}, deltas)
 
 
 # Test case 1: Update existing person and add events with anxiety and conflict

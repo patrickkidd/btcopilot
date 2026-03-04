@@ -43,6 +43,22 @@
         background-color: hsl(171, 100%, 41%) !important;
         border-color: hsl(171, 100%, 41%) !important;
     }
+    .status-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.5em;
+        height: 1.5em;
+        border-radius: 4px;
+        font-size: 0.7rem;
+    }
+    .status-icon i { font-size: 0.65rem; }
+    .status-icon.is-success { background: hsl(141, 53%, 53%); color: #fff; }
+    .status-icon.is-warning { background: hsl(48, 100%, 67%); color: rgba(0,0,0,.7); }
+    .status-icon.is-success-light { background: hsla(141, 53%, 53%, 0.2); color: hsl(141, 53%, 40%); }
+    .status-icon.is-light { background: hsla(0, 0%, 50%, 0.15); color: hsl(0, 0%, 60%); }
+    .status-icon.is-danger-light { background: hsla(348, 100%, 61%, 0.2); color: hsl(348, 100%, 61%); }
+    .status-icon.is-queued { background: hsla(204, 71%, 53%, 0.2); color: hsl(204, 71%, 53%); }
 </style>
 
 <div>
@@ -53,9 +69,6 @@
             <p class="subtitle">Manage threads and user data</p>
             
         </div>
-
-        <!-- F1 Ground Truth Metrics Section -->
-        {% include "partials/f1_metrics_card.html" with context %}
 
         <!-- Cumulative F1 Metrics Section -->
         {% include "partials/cumulative_f1_card.html" with context %}
@@ -77,10 +90,6 @@
                         </h2>
                         <p class="subtitle is-6 mt-2">Total discussions: {{ discussions|length }}</p>
                     </div>
-                    <button id="extract-selected-btn" class="button is-warning" onclick="extractSelectedDiscussions()" title="Clear and re-extract selected discussions" disabled>
-                        <span class="icon"><i class="fas fa-sync-alt"></i></span>
-                        <span>Clear & Re-extract Selected (0)</span>
-                    </button>
                 </div>
 
                 <!-- Synthetic and GT filters -->
@@ -104,15 +113,19 @@
                             </select>
                         </div>
                     </div>
+                    <div class="control">
+                        <span id="bulk-progress" class="tag is-light is-small" style="display: none;"></span>
+                    </div>
                 </div>
+
 
                 {% if discussions %}
                 <div class="table-container" id="discussions-content" style="display: block;">
                     <table class="table is-fullwidth is-striped is-hoverable">
                         <thead>
                             <tr>
-                                <th style="width: 30px;"><input type="checkbox" id="select-all-discussions" onchange="toggleAllDiscussions(this.checked)" title="Select/deselect all"></th>
                                 <th>ID</th>
+                                <th></th>
                                 <th>GT</th>
                                 <th>Extraction</th>
                                 <th>User</th>
@@ -128,35 +141,36 @@
                             {% set gt = gt_statuses.get(discussion.id, {}) %}
                             <tr class="discussion-row" data-synthetic="{{ 'true' if discussion.synthetic else 'false' }}" data-gt="{{ gt.get('status', GTStatus.None_).value }}" data-discussion-id="{{ discussion.id }}">
                                 <td>
-                                    <input type="checkbox" class="discussion-checkbox" data-discussion-id="{{ discussion.id }}" onchange="updateSelectedCount()">
-                                </td>
-                                <td>
                                     <a href="/training/discussions/{{ discussion.id }}" class="has-text-weight-bold" title="View in audit system">
                                         {{ discussion.id }}
-                                        <span class="icon is-small ml-1">
-                                            <i class="fas fa-external-link-alt"></i>
-                                        </span>
+                                        <span class="icon is-small ml-1"><i class="fas fa-external-link-alt"></i></span>
                                     </a>
+                                </td>
+                                <td>
                                     {% if discussion.synthetic %}
-                                    <span class="tag is-warning is-light ml-2" title="Persona: {{ discussion.synthetic_persona.name if discussion.synthetic_persona else 'Unknown' }}">
-                                        <span class="icon is-small"><i class="fas fa-robot"></i></span>
-                                    </span>
+                                    <span class="status-icon is-warning" title="Synthetic: {{ discussion.synthetic_persona.name if discussion.synthetic_persona else 'Unknown' }}"><i class="fas fa-robot"></i></span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if gt.get('status') == GTStatus.Full %}
-                                    <span class="tag is-success" title="Ground Truth ({{ gt.approved }}/{{ gt.total }})" style="font-size: 0.65rem; height: 1.5em; padding: 0 0.5em;"><i class="fas fa-check"></i></span>
+                                    <span class="status-icon is-success" title="Ground Truth ({{ gt.approved }}/{{ gt.total }})"><i class="fas fa-check"></i></span>
                                     {% elif gt.get('status') == GTStatus.Partial %}
-                                    <span class="tag is-warning" title="Partial GT - {{ gt.approved }}/{{ gt.total }} approved" style="font-size: 0.65rem; height: 1.5em; padding: 0 0.5em;"><i class="fas fa-exclamation-triangle"></i></span>
+                                    <span class="status-icon is-warning" title="Partial GT - {{ gt.approved }}/{{ gt.total }} approved"><i class="fas fa-exclamation-triangle"></i></span>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    <div class="extraction-status" data-discussion-id="{{ discussion.id }}" style="min-width: 50px;">
-                                        <!-- Will be populated by JS -->
-                                        <span class="icon is-small has-text-grey-light" title="Loading...">
-                                            <i class="fas fa-circle-notch fa-spin"></i>
-                                        </span>
-                                    </div>
+                                <td class="extraction-cell" data-discussion-id="{{ discussion.id }}">
+                                    {% set has_extraction = discussion.statements|selectattr('pdp_deltas')|list|length > 0 or discussion.status.value == 'ready' %}
+                                    {% if has_extraction %}
+                                    <span class="extraction-icon has-extraction" onclick="toggleExtraction(this)" title="Click to clear" style="cursor: pointer;">
+                                        <span class="status-icon is-success-light"><i class="fas fa-check"></i></span>
+                                    </span>
+                                    {% elif discussion.diagram %}
+                                    <span class="extraction-icon no-extraction" onclick="toggleExtraction(this)" title="Click to queue extraction" style="cursor: pointer;">
+                                        <span class="status-icon is-light">—</span>
+                                    </span>
+                                    {% else %}
+                                    <span class="status-icon is-light" title="No diagram">—</span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     <span class="tag is-info">
@@ -184,12 +198,7 @@
                                 <td>
                                     <div class="field has-addons">
                                         <p class="control">
-                                            <a href="{{ url_for('training.prompts.index') }}?discussion={{ discussion.id }}" class="button is-small is-info" title="Experiment with prompts on this discussion">
-                                                <span class="icon"><i class="fas fa-flask"></i></span>
-                                            </a>
-                                        </p>
-                                        <p class="control">
-                                            <button class="button is-small is-danger" 
+                                            <button class="button is-small is-danger"
                                                     onclick="deleteDiscussion({{ discussion.id }}, '{{ (discussion.user.username if discussion.user else 'Unknown')|safe }}', {{ discussion.messages|length }})"
                                                     title="Delete this discussion">
                                                 <span class="icon"><i class="fas fa-trash"></i></span>
@@ -290,225 +299,10 @@
             </div>
         </div>
 
-    <style>
-        /* Extraction progress bar styling */
-        .extraction-progress-mini {
-            width: 50px;
-            height: 8px;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .extraction-progress-mini .progress {
-            height: 100%;
-            margin: 0;
-        }
-        .extraction-status-icon {
-            font-size: 0.75rem;
-        }
-    </style>
-
     <script>
-        // Extraction progress polling for admin dashboard
-        let extractionPollingInterval = null;
-        let noExtractionsSince = null;  // Timestamp when we first saw no extractions
-        const IDLE_TIMEOUT_MS = 30000;  // Stop polling after 30s of no activity
-
-        function startExtractionPolling() {
-            noExtractionsSince = null;  // Reset idle timer
-            // Initial fetch
-            fetchExtractionProgress();
-            // Poll every 3 seconds
-            if (!extractionPollingInterval) {
-                extractionPollingInterval = setInterval(fetchExtractionProgress, 3000);
-            }
-        }
-
-        function stopExtractionPolling() {
-            if (extractionPollingInterval) {
-                clearInterval(extractionPollingInterval);
-                extractionPollingInterval = null;
-            }
-        }
-
-        function fetchExtractionProgress() {
-            fetch('/training/discussions/progress/bulk')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.discussions) {
-                        updateExtractionStatuses(data.discussions);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching extraction progress:', error);
-                });
-        }
-
-        function updateExtractionStatuses(discussions) {
-            let anyExtracting = false;
-
-            document.querySelectorAll('.extraction-status').forEach(el => {
-                const discussionId = el.dataset.discussionId;
-                const progress = discussions[discussionId];
-
-                if (progress) {
-                    if (progress.extracting) {
-                        anyExtracting = true;
-                        // Show progress bar
-                        el.innerHTML = `
-                            <div class="extraction-progress-mini" title="${progress.processed}/${progress.total} statements (${progress.percent_complete}%)">
-                                <progress class="progress is-primary is-small" value="${progress.percent_complete}" max="100"></progress>
-                            </div>
-                        `;
-                    } else if (progress.percent_complete === 100 && progress.total > 0) {
-                        // Completed
-                        el.innerHTML = `
-                            <span class="extraction-status-icon has-text-success" title="Extraction complete (${progress.total} statements)">
-                                <i class="fas fa-check-circle"></i>
-                            </span>
-                        `;
-                    } else if (progress.total === 0) {
-                        // No statements to extract
-                        el.innerHTML = `
-                            <span class="extraction-status-icon has-text-grey-light" title="No statements">
-                                <i class="fas fa-minus"></i>
-                            </span>
-                        `;
-                    } else if (progress.percent_complete > 0) {
-                        // Partial extraction (not currently running)
-                        el.innerHTML = `
-                            <span class="extraction-status-icon has-text-warning" title="Partial: ${progress.processed}/${progress.total} statements (${progress.percent_complete}%)">
-                                <i class="fas fa-exclamation-circle"></i>
-                            </span>
-                        `;
-                    } else {
-                        // Not started
-                        el.innerHTML = `
-                            <span class="extraction-status-icon has-text-grey-light" title="Not extracted">
-                                <i class="fas fa-circle"></i>
-                            </span>
-                        `;
-                    }
-                }
-            });
-
-            // Update Extract All button state
-            const extractAllBtn = document.getElementById('extract-all-btn');
-            if (extractAllBtn) {
-                if (anyExtracting) {
-                    extractAllBtn.disabled = true;
-                    extractAllBtn.classList.add('is-loading');
-                } else {
-                    extractAllBtn.disabled = false;
-                    extractAllBtn.classList.remove('is-loading');
-                }
-            }
-
-            // Idle timeout: stop polling after 30s of no active extractions
-            if (anyExtracting) {
-                noExtractionsSince = null;  // Reset timer when extractions are running
-            } else {
-                if (noExtractionsSince === null) {
-                    noExtractionsSince = Date.now();
-                } else if (Date.now() - noExtractionsSince >= IDLE_TIMEOUT_MS) {
-                    console.log('No extractions for 30s, stopping poll timer');
-                    stopExtractionPolling();
-                }
-            }
-        }
-
-        function getSelectedDiscussionIds() {
-            const checkboxes = document.querySelectorAll('.discussion-checkbox:checked');
-            return Array.from(checkboxes).map(cb => cb.dataset.discussionId);
-        }
-
-        function updateSelectedCount() {
-            const selectedIds = getSelectedDiscussionIds();
-            const btn = document.getElementById('extract-selected-btn');
-            const count = selectedIds.length;
-            btn.querySelector('span:last-child').textContent = `Clear & Re-extract Selected (${count})`;
-            btn.disabled = count === 0;
-
-            // Update "select all" checkbox state
-            const allCheckboxes = document.querySelectorAll('.discussion-checkbox');
-            const selectAllCheckbox = document.getElementById('select-all-discussions');
-            if (allCheckboxes.length > 0) {
-                selectAllCheckbox.checked = selectedIds.length === allCheckboxes.length;
-                selectAllCheckbox.indeterminate = selectedIds.length > 0 && selectedIds.length < allCheckboxes.length;
-            }
-        }
-
-        function toggleAllDiscussions(checked) {
-            document.querySelectorAll('.discussion-checkbox').forEach(cb => {
-                cb.checked = checked;
-            });
-            updateSelectedCount();
-        }
-
-        function extractSelectedDiscussions() {
-            const selectedIds = getSelectedDiscussionIds();
-            if (selectedIds.length === 0) {
-                alert('Please select at least one discussion.');
-                return;
-            }
-
-            if (!confirm(`This will clear AI extractions and re-extract ${selectedIds.length} selected discussion(s).\n\nThis may take a long time and will consume API resources.\n\nAre you sure?`)) {
-                return;
-            }
-
-            const btn = document.getElementById('extract-selected-btn');
-            btn.disabled = true;
-            btn.classList.add('is-loading');
-            btn.querySelector('span:last-child').textContent = 'Triggering...';
-
-            fetch('/training/discussions/extract-selected', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ discussion_ids: selectedIds.map(id => parseInt(id)) })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    btn.querySelector('span:last-child').textContent = 'Extracting...';
-                    // Reset selected status icons to show loading
-                    selectedIds.forEach(id => {
-                        const el = document.querySelector(`.extraction-status[data-discussion-id="${id}"]`);
-                        if (el) {
-                            el.innerHTML = `
-                                <div class="extraction-progress-mini" title="Starting...">
-                                    <progress class="progress is-primary is-small" value="0" max="100"></progress>
-                                </div>
-                            `;
-                        }
-                    });
-                    // Ensure polling is active
-                    if (!extractionPollingInterval) {
-                        startExtractionPolling();
-                    }
-                    // Uncheck all and update count
-                    document.querySelectorAll('.discussion-checkbox').forEach(cb => cb.checked = false);
-                    document.getElementById('select-all-discussions').checked = false;
-                    updateSelectedCount();
-                    alert(data.message);
-                } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
-                    btn.disabled = false;
-                    btn.classList.remove('is-loading');
-                    updateSelectedCount();
-                }
-            })
-            .catch(error => {
-                console.error('Error triggering extraction:', error);
-                alert('Error triggering extraction: ' + error.message);
-                btn.disabled = false;
-                btn.classList.remove('is-loading');
-                updateSelectedCount();
-            });
-        }
-
-        // Start polling on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            startExtractionPolling();
-        });
+        // Extraction queue
+        let extractionQueue = [];
+        let extractionRunning = false;
 
         function toggleDiscussions() {
             const content = document.getElementById('discussions-content');
@@ -583,6 +377,75 @@ This action cannot be undone!`;
         }
 
 
+
+        window.addEventListener('beforeunload', e => {
+            if (extractionRunning) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
+        const spinnerTag = '<span class="status-icon is-light"><i class="fas fa-circle-notch fa-spin"></i></span>';
+        const errorTag = id => `<span class="status-icon is-danger-light" title="Error on ${id}"><i class="fas fa-times"></i></span>`;
+        const hasExtractionHtml = '<span class="extraction-icon has-extraction" onclick="toggleExtraction(this)" title="Click to clear" style="cursor: pointer;"><span class="status-icon is-success-light"><i class="fas fa-check"></i></span></span>';
+        const noExtractionHtml = '<span class="extraction-icon no-extraction" onclick="toggleExtraction(this)" title="Click to queue extraction" style="cursor: pointer;"><span class="status-icon is-light">—</span></span>';
+        const queuedHtml = '<span class="extraction-icon queued" onclick="toggleExtraction(this)" title="Click to dequeue" style="cursor: pointer;"><span class="status-icon is-queued"><i class="fas fa-clock"></i></span></span>';
+
+        function toggleExtraction(el) {
+            const cell = el.closest('.extraction-cell');
+            const id = cell.dataset.discussionId;
+
+            if (el.classList.contains('has-extraction')) {
+                if (!confirm(`Clear extraction data for discussion ${id}?`)) return;
+                cell.innerHTML = spinnerTag;
+                fetch(`/training/discussions/${id}/clear-extracted`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ auditor_id: 'AI' }),
+                })
+                .then(r => r.json())
+                .then(data => {
+                    cell.innerHTML = data.success ? noExtractionHtml : errorTag(id);
+                })
+                .catch(() => { cell.innerHTML = errorTag(id); });
+
+            } else if (el.classList.contains('no-extraction')) {
+                cell.innerHTML = queuedHtml;
+                extractionQueue.push(id);
+                runExtractionQueue();
+
+            } else if (el.classList.contains('queued')) {
+                extractionQueue = extractionQueue.filter(qid => qid !== id);
+                cell.innerHTML = noExtractionHtml;
+            }
+        }
+
+        async function runExtractionQueue() {
+            if (extractionRunning) return;
+            extractionRunning = true;
+            const progress = document.getElementById('bulk-progress');
+            progress.style.display = 'inline-flex';
+
+            while (extractionQueue.length > 0) {
+                const id = extractionQueue.shift();
+                const cell = document.querySelector(`.extraction-cell[data-discussion-id="${id}"]`);
+                if (!cell) continue;
+                cell.innerHTML = spinnerTag;
+                progress.textContent = `Extracting ID ${id}... (${extractionQueue.length} queued)`;
+                try {
+                    const resp = await fetch(`/training/discussions/${id}/extract`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                    const data = await resp.json();
+                    cell.innerHTML = data.success ? hasExtractionHtml : errorTag(id);
+                } catch {
+                    cell.innerHTML = errorTag(id);
+                }
+            }
+            progress.textContent = 'Done';
+            extractionRunning = false;
+        }
 
         // JSON Drop Handlers
         function handleJsonDragOver(event) {

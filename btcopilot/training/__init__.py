@@ -30,24 +30,6 @@ def init_celery(celery):
     from openai import PermissionDeniedError, RateLimitError
 
     celery.task(
-        tasks.extract_next_statement,
-        name="extract_next_statement",
-        autoretry_for=(ClientError, PermissionDeniedError, RateLimitError),
-        retry_backoff=60,
-        retry_backoff_max=600,
-        retry_jitter=True,
-        max_retries=5,
-    )
-    celery.task(
-        tasks.extract_discussion_statements,
-        name="extract_discussion_statements",
-        autoretry_for=(ClientError, PermissionDeniedError, RateLimitError),
-        retry_backoff=60,
-        retry_backoff_max=600,
-        retry_jitter=True,
-        max_retries=5,
-    )
-    celery.task(
         tasks.generate_synthetic_discussion,
         name="generate_synthetic_discussion",
         bind=True,

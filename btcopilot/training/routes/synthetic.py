@@ -111,12 +111,11 @@ def generate():
         return jsonify({"error": "persona_id is required"}), 400
 
     max_turns = data.get("max_turns", 20)
-    skip_extraction = data.get("skip_extraction", False)
     username = data.get("username") or current_user.username
 
     task = celery.send_task(
         "generate_synthetic_discussion",
-        args=[int(persona_id), username, int(max_turns), skip_extraction],
+        args=[int(persona_id), username, int(max_turns)],
     )
 
     _log.info(

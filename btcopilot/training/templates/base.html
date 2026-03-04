@@ -1034,12 +1034,6 @@
                     </span>
                     <span>Synthetic</span>
                 </a>
-                <a class="navbar-item {% if request.endpoint and request.endpoint.startswith('training.prompts') %}is-active{% endif %}" href="{{ url_for('training.prompts.index') }}">
-                    <span class="icon">
-                        <i class="fas fa-flask"></i>
-                    </span>
-                    <span>Lab</span>
-                </a>
                 {% endif %}
                 {% if current_user and current_user.has_role(btcopilot.ROLE_AUDITOR) %}
                 <span class="navbar-item" style="border-left: 1px solid rgba(255,255,255,0.3); padding-left: 0; margin-left: 0.5rem;"></span>
@@ -1112,7 +1106,7 @@
                                 {% if item.divider %}
                                 <hr class="dropdown-divider">
                                 {% else %}
-                                <a href="{{ item.url }}" class="dropdown-item{% if item.active %} is-active{% endif %}">
+                                <a {% if not item.disabled %}href="{{ item.url }}"{% endif %} class="dropdown-item{% if item.active %} is-active{% endif %}{% if item.disabled %} is-disabled{% endif %}" {% if item.disabled %}style="pointer-events: none; opacity: 0.4;"{% endif %}>
                                     {% if item.icon %}<span class="icon"><i class="fas fa-{{ item.icon }}"></i></span> {% endif %}{{ item.title }}
                                 </a>
                                 {% endif %}
@@ -1332,10 +1326,7 @@
             }, 5000);
         }
     </script>
-    
-    <!-- Extraction Progress Scripts -->
-    <script src="{{ url_for('training.audit.static', filename='js/extraction-progress.js') }}"></script>
-    
+
     <!-- Version Footer -->
     <footer class="footer mt-6" style="padding: 1rem 1.5rem;">
         <div class="content has-text-centered">
