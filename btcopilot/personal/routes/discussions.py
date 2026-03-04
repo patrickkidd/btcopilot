@@ -10,6 +10,7 @@ from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram
 from btcopilot.schema import PDP, asdict
 from btcopilot.personal import Response, ask
+from btcopilot.personal.insights import generate_insights
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
 
 _log = logging.getLogger(__name__)
@@ -219,12 +220,17 @@ def extract(discussion_id: int):
     discussion.diagram.set_diagram_data(diagram_data)
     db.session.commit()
 
+    # Generate pattern insights (non-blocking — empty list on failure)
+    conversation_history = discussion.conversation_history()
+    insights = one_result(generate_insights(new_pdp, conversation_history))
+
     return jsonify(
         success=True,
         people_count=len(new_pdp.people),
         events_count=len(new_pdp.events),
         pair_bonds_count=len(new_pdp.pair_bonds),
         pdp=asdict(new_pdp),
+        insights=insights,
     )
 
 
