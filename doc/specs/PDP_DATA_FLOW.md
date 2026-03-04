@@ -213,7 +213,18 @@ to the caller:
    Created by `_create_inferred_pair_bond_items()` for non-offspring events, and
    by `_create_inferred_birth_items()` for Birth/Adopted events.
 
-2. **Birth/Adopted completeness**: Every committed Birth/Adopted event will have
+2. **Birth/Adopted semantics**: On offspring events, the fields mean:
+   - `child` = who was born/adopted (mandatory, primary link)
+   - `person` = one parent (optional, null if unknown)
+   - `spouse` = other parent (optional, null if unknown)
+   - **NEVER** set `person == child` or `spouse == child` (self-reference bug T7-10)
+
+   The extraction pipeline enforces this with a three-layer defense:
+   1. Prompt rules instruct the LLM to use correct semantics
+   2. `_fix_birth_self_references()` sanitizer clears invalid person/spouse
+   3. `validate_pdp_deltas()` rejects any remaining self-references
+
+   **Commit completeness**: Every committed Birth/Adopted event will have
    `person`, `spouse`, `child`, and a PairBond. Missing people are inferred.
    The child's `parents` field is set to the PairBond ID. Three cases:
    - Child only → infer both parents + pair bond

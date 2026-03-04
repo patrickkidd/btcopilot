@@ -164,6 +164,39 @@ def dedup_pair_bonds(deltas: PDPDeltas) -> None:
                 person.parents = remap[person.parents]
 
 
+def _fix_birth_self_references(deltas: PDPDeltas) -> None:
+    """Fix birth/adopted events where person == child (self-referential).
+
+    The LLM sometimes incorrectly sets person=child on birth events, making
+    the born person appear as their own parent. This sanitizer clears the
+    invalid person/spouse field while preserving the child field.
+    """
+    for event in deltas.events:
+        if event.kind in (EventKind.Birth, EventKind.Adopted):
+            # Handle person == child
+            if (
+                event.child is not None
+                and event.person is not None
+                and event.child == event.person
+            ):
+                _log.warning(
+                    f"Sanitized birth self-reference: event {event.id} had "
+                    f"person == child ({event.child}), clearing person"
+                )
+                event.person = None
+            # Handle spouse == child
+            if (
+                event.child is not None
+                and event.spouse is not None
+                and event.child == event.spouse
+            ):
+                _log.warning(
+                    f"Sanitized birth self-reference: event {event.id} had "
+                    f"spouse == child ({event.child}), clearing spouse"
+                )
+                event.spouse = None
+
+
 def validate_pdp_deltas(
     pdp: PDP,
     deltas: PDPDeltas,
@@ -244,6 +277,30 @@ def validate_pdp_deltas(
             errors.append(
                 f"Delta pair_bond has positive ID {pair_bond.id} not in committed diagram"
             )
+
+    # Check for self-referential birth/adopted events
+    for event in deltas.events:
+        if event.kind in (EventKind.Birth, EventKind.Adopted):
+            if (
+                event.child is not None
+                and event.person is not None
+                and event.child == event.person
+            ):
+                errors.append(
+                    f"Birth/Adopted event {event.id} has self-referential "
+                    f"child == person ({event.child}): a person cannot be "
+                    f"a participant in their own birth"
+                )
+            if (
+                event.child is not None
+                and event.spouse is not None
+                and event.child == event.spouse
+            ):
+                errors.append(
+                    f"Birth/Adopted event {event.id} has self-referential "
+                    f"child == spouse ({event.child}): a person cannot be "
+                    f"a participant in their own birth"
+                )
 
     for event in deltas.events:
         # Offspring and moved events may lack spouse at extraction time; commit logic infers it
@@ -561,6 +618,7 @@ async def _extract_and_validate(
             label = "DELTAS" if attempt == 0 else f"RETRY {attempt} DELTAS"
             ai_log.info(f"{label}:\n\n{_pretty_repr(pdp_deltas)}")
 
+        _fix_birth_self_references(pdp_deltas)
         reassign_delta_ids(pdp, pdp_deltas)
         dedup_pair_bonds(pdp_deltas)
         try:
