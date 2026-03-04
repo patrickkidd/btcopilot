@@ -71,6 +71,16 @@ def test_get_404(subscriber):
     assert response.status_code == 404
 
 
+def test_get_unauthorized(subscriber, test_user_2):
+    """Accessing another user's discussion returns 401."""
+    other_discussion = Discussion(user_id=test_user_2.id, summary="Other user's")
+    db.session.add(other_discussion)
+    db.session.commit()
+
+    response = subscriber.get(f"/personal/discussions/{other_discussion.id}")
+    assert response.status_code == 401
+
+
 # def test_get_statements(subscriber, discussion):
 #     """Test getting statements for a discussion"""
 #     discussion_id = discussion.id

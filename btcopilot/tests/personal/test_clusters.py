@@ -1,4 +1,5 @@
 import pickle
+from enum import Enum
 
 from unittest.mock import patch, MagicMock
 
@@ -13,7 +14,21 @@ from btcopilot.schema import (
     ClusterResult,
     asdict,
 )
-from btcopilot.personal.clusters import compute_cache_key, detect_clusters
+from btcopilot.personal.clusters import compute_cache_key, detect_clusters, _enum_value
+
+
+def test_enum_value_with_enum():
+    class Color(Enum):
+        RED = "red"
+    assert _enum_value(Color.RED) == "red"
+
+
+def test_enum_value_with_plain_string():
+    assert _enum_value("up") == "up"
+
+
+def test_enum_value_with_none():
+    assert _enum_value(None) is None
 
 
 def test_compute_cache_key_empty():
@@ -160,6 +175,22 @@ def test_detect_clusters_route_success(subscriber):
     assert "cacheKey" in data
     assert len(data["clusters"]) == 1
     assert data["clusters"][0]["title"] == "Anxiety Cascade"
+
+
+def test_detect_clusters_llm_returns_none():
+    """When LLM returns None, detect_clusters returns empty cluster list."""
+    events = [
+        Event(id=1, kind=EventKind.Shift, dateTime="2024-01-15", description="Test"),
+    ]
+
+    with patch(
+        "btcopilot.personal.clusters.gemini_structured_sync", return_value=None
+    ):
+        result = detect_clusters(events)
+
+    assert isinstance(result, ClusterResult)
+    assert result.clusters == []
+    assert result.cacheKey is not None
 
 
 def test_detect_clusters_idempotent():
