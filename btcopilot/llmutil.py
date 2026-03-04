@@ -187,7 +187,8 @@ async def gemini_structured(prompt, response_format, large=False):
 
     model = EXTRACTION_MODEL_LARGE if large else EXTRACTION_MODEL
 
-    response = await _client().aio.models.generate_content(
+    client = _client()
+    response = await client.aio.models.generate_content(
         model=model,
         contents=prompt,
         config=types.GenerateContentConfig(
