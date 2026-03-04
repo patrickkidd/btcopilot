@@ -7,8 +7,6 @@ EXPERIMENTATION:
 - llm model
 """
 
-# from cachetools import TTLCache
-
 import os
 import logging
 import time
@@ -100,7 +98,6 @@ class Engine:
         self._vector_db = None
         self._data_dir = data_dir
         self._k = k
-        # self._conversation_chains = TTLCache(maxsize=1000, ttl=3600)
 
     def data_dir(self) -> str:
         return self._data_dir
@@ -162,9 +159,7 @@ class Engine:
 
         return ChatPromptTemplate.from_template(kind)
 
-    def ask(
-        self, question: str, events: list[Event] = None, conversation_id: str = None
-    ) -> Response:
+    def ask(self, question: str, events: list[Event] = None) -> Response:
 
         _log.info(f"Query with question: {question}")
 
@@ -217,29 +212,3 @@ class Engine:
 
     def _on_response(self, response: Response):
         pass
-
-
-# from langchain_ollama import OllamaEmbeddings
-# embeddings = OllamaEmbeddings(
-#     # model_name=EMBEDDINGS_MODEL
-#     model_name="nomic-embed-text"
-# )
-
-
-# retreiver = vector_db.as_retriever()
-# from langchain.chains import ConversationalRetrievalChain
-# from langchain.memory import ConversationBufferMemory
-# from langchain_community.chat_message_histories import SQLStatementHistory
-
-
-#         if conversation_id is None:  # New discussion
-#             chat_memory = SQLStatementHistory(
-#                 connection_string=str(db.engine.url), conversation_id=conversation_id
-#             )
-#             memory = ConversationBufferMemory(
-#                 chat_memory=chat_memory, return_messages=True
-#             )
-#             chain = ConversationalRetrievalChain.from_llm(llm, retriever, memory=memory)
-#             conversation_id = uuid.uuid()
-#             chain.conversation_id = conversation_id
-#             conversation_chains[conversation_id] = chain
