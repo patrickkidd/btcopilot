@@ -68,35 +68,8 @@ class User(db.Model, ModelMixin):
         if not "status" in kwargs:
             self.status = "pending"
 
-        # self.is_authenticated = False
-        # self.is_active = True
-        # self.is_anonymous = False
-
     def __str__(self):
         return "<User id: %i, %s, %s>" % (self.id, self.full_name(), self.username)
-
-    # Flask-Login
-    # def get_id(self) -> str:
-    #     """Flask-Login"""
-    #     return str(self.id)
-
-    # @staticmethod
-    # def generate_reset_password_code(email):
-    #     serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
-    #     return serializer.dumps(email, salt=app.config['SECURITY_PASSWORD_SALT'])
-
-    # @staticmethod
-    # def confirm_reset_password_code(tokecode, expiration=3600):
-    #     serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
-    #     try:
-    #         email = serializer.loads(
-    #             code,
-    #             salt=app.config['SECURITY_PASSWORD_SALT'],
-    #             max_age=expiration
-    #         )
-    #     except:
-    #         return False
-    #     return email
 
     def as_dict(self, update=None, include=None, exclude=None, only=None):
         if not exclude:
@@ -149,9 +122,9 @@ class User(db.Model, ModelMixin):
             diagram = Diagram(user_id=self.id, name="Free Diagram", data=bdata)
             db_session = inspect(self).session
             db_session.add(diagram)
-            db_session.merge(diagram)
+            db_session.flush()
             self.update(free_diagram_id=diagram.id)
-            db_session.merge(diagram)
+            db_session.flush()
             db_session.refresh(self)
         if updated_at is not None:
             _updated_at = updated_at
