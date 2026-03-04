@@ -123,6 +123,24 @@ The LLM is instructed to produce **sparse deltas** per statement:
 Real prompts are in fdserver (production overrides btcopilot defaults).
 `btcopilot/personal/prompts.py` has the default prompt constants.
 
+## Post-Extraction Fixups
+
+After LLM extraction, `_extract_and_validate()` applies these fixups in order
+before validation:
+
+1. **`reassign_delta_ids()`** — Deconflict IDs when LLM reuses them across
+   entity types
+2. **`dedup_pair_bonds()`** — Remove duplicate PairBonds for the same dyad
+3. **`fix_birth_event_self_references()`** — Fix birth/adopted events where
+   `person == child` (self-reference bug). The LLM sometimes sets both fields
+   to the same person, meaning "person births themselves." The correct
+   semantics: `child` = who was born, `person` = parent. When `person == child`,
+   this step clears `person` to None so `_create_inferred_birth_items()` can
+   create proper parent references during commit (Case 1: child only → infer
+   both parents + pair bond).
+4. **`validate_pdp_deltas()`** — Structural validation (ID references, required
+   fields)
+
 ## Delta Examples
 
 ### Simple Event
@@ -305,7 +323,7 @@ For complete GT technical details, see
 | File | Contains |
 |------|----------|
 | `btcopilot/schema.py` | `DiagramData.commit_pdp_items()`, `PDPDeltas`, `PDP` |
-| `btcopilot/pdp.py` | `extract_full()`, `update()`, `apply_deltas()`, `cumulative()`, `cleanup_pair_bonds()`, `validate_pdp_deltas()` |
+| `btcopilot/pdp.py` | `extract_full()`, `update()`, `apply_deltas()`, `cumulative()`, `cleanup_pair_bonds()`, `validate_pdp_deltas()`, `fix_birth_event_self_references()` |
 | `btcopilot/personal/chat.py` | `ask()` — chat-only, no extraction |
 | `btcopilot/personal/routes/discussions.py` | `POST /extract` endpoint — single-prompt extraction |
 | `btcopilot/personal/prompts.py` | Default prompt constants (overridden by fdserver) |
