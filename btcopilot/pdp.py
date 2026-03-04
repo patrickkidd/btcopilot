@@ -138,6 +138,180 @@ def reassign_delta_ids(pdp: PDP, deltas: PDPDeltas) -> None:
     )
 
 
+def _normalize_name(name: str | None) -> str:
+    """Normalize a person name for dedup matching: lowercase, strip whitespace."""
+    if not name:
+        return ""
+    return " ".join(name.strip().lower().split())
+
+
+def dedup_against_committed(deltas: PDPDeltas, diagram_data: DiagramData) -> None:
+    """Remove extracted items that duplicate already-committed diagram items.
+
+    Runs after LLM extraction and ID reassignment, before validation.
+    Matches:
+      - People: by normalized (first_name + last_name)
+      - PairBonds: by person dyad (unordered pair, after person ID remapping)
+      - Events: by kind + person/spouse/child refs (after remapping);
+        Shift events also match on normalized description.
+
+    Modifies *deltas* in-place: removes duplicate entries and remaps all
+    remaining references from removed PDP IDs to their committed counterparts.
+    """
+    if diagram_data is None:
+        return
+
+    # ── Phase 1: People ──────────────────────────────────────────────
+    def _person_key(name: str | None, last_name: str | None) -> str | None:
+        n = _normalize_name(name)
+        ln = _normalize_name(last_name)
+        key = f"{n}|{ln}"
+        return key if key != "|" else None
+
+    committed_people_by_key: dict[str, dict] = {}
+    for p in diagram_data.people:
+        key = _person_key(p.get("name"), p.get("last_name"))
+        if key:
+            committed_people_by_key[key] = p
+
+    person_remap: dict[int, int] = {}  # pdp_id → committed_id
+    people_to_keep: list[Person] = []
+
+    for person in deltas.people:
+        if person.id is None or person.id >= 0:
+            people_to_keep.append(person)
+            continue
+        key = _person_key(person.name, person.last_name)
+        committed = committed_people_by_key.get(key) if key else None
+        if committed:
+            person_remap[person.id] = committed["id"]
+            _log.info(
+                f"dedup_against_committed: PDP person {person.id} "
+                f"({person.name}) matches committed person "
+                f"{committed['id']} ({committed.get('name')})"
+            )
+        else:
+            people_to_keep.append(person)
+
+    if person_remap:
+        deltas.people = people_to_keep
+        _apply_person_remap(deltas, person_remap)
+
+    # ── Phase 2: PairBonds (after person remapping) ──────────────────
+    committed_dyads: dict[tuple[int, int], dict] = {}
+    for pb in diagram_data.pair_bonds:
+        a, b = pb.get("person_a"), pb.get("person_b")
+        if a is not None and b is not None:
+            committed_dyads[tuple(sorted([a, b]))] = pb
+
+    pb_remap: dict[int, int] = {}  # pdp_pb_id → committed_pb_id
+    pbs_to_keep: list[PairBond] = []
+
+    for pb in deltas.pair_bonds:
+        if pb.id is None or pb.id >= 0:
+            pbs_to_keep.append(pb)
+            continue
+        if pb.person_a is not None and pb.person_b is not None:
+            dyad = tuple(sorted([pb.person_a, pb.person_b]))
+            committed = committed_dyads.get(dyad)
+            if committed:
+                pb_remap[pb.id] = committed["id"]
+                _log.info(
+                    f"dedup_against_committed: PDP pair_bond {pb.id} "
+                    f"matches committed pair_bond {committed['id']} "
+                    f"for dyad {dyad}"
+                )
+                continue
+        pbs_to_keep.append(pb)
+
+    if pb_remap:
+        deltas.pair_bonds = pbs_to_keep
+        for person in deltas.people:
+            if person.parents is not None and person.parents in pb_remap:
+                person.parents = pb_remap[person.parents]
+
+    # ── Phase 3: Events (after person + pair_bond remapping) ─────────
+    def _event_match_key(kind_val: str, person, spouse, child, description: str | None) -> str:
+        parts = [
+            kind_val,
+            str(person or ""),
+            str(spouse or ""),
+            str(child or ""),
+        ]
+        if kind_val == "shift":
+            parts.append(_normalize_name(description))
+        return "|".join(parts)
+
+    committed_event_keys: dict[str, dict] = {}
+    for e in diagram_data.events:
+        kind_val = e.get("kind")
+        if isinstance(kind_val, EventKind):
+            kind_val = kind_val.value
+        key = _event_match_key(
+            str(kind_val),
+            e.get("person"),
+            e.get("spouse"),
+            e.get("child"),
+            e.get("description"),
+        )
+        committed_event_keys[key] = e
+
+    events_to_keep: list[Event] = []
+    events_removed = 0
+    for event in deltas.events:
+        if event.id >= 0:
+            events_to_keep.append(event)
+            continue
+        kind_val = event.kind.value if isinstance(event.kind, EventKind) else str(event.kind)
+        key = _event_match_key(kind_val, event.person, event.spouse, event.child, event.description)
+        if key in committed_event_keys:
+            events_removed += 1
+            _log.info(
+                f"dedup_against_committed: PDP event {event.id} "
+                f"(kind={event.kind}) matches committed event "
+                f"{committed_event_keys[key].get('id')}"
+            )
+        else:
+            events_to_keep.append(event)
+
+    if events_removed:
+        deltas.events = events_to_keep
+
+    total = len(person_remap) + len(pb_remap) + events_removed
+    if total:
+        _log.info(
+            f"dedup_against_committed: removed {len(person_remap)} people, "
+            f"{len(pb_remap)} pair_bonds, {events_removed} events"
+        )
+
+
+def _apply_person_remap(deltas: PDPDeltas, person_remap: dict[int, int]) -> None:
+    """Remap person ID references throughout deltas after dedup."""
+    for person in deltas.people:
+        # person.parents is a PairBond ID, not a person — skip
+        pass
+
+    for event in deltas.events:
+        if event.person is not None and event.person in person_remap:
+            event.person = person_remap[event.person]
+        if event.spouse is not None and event.spouse in person_remap:
+            event.spouse = person_remap[event.spouse]
+        if event.child is not None and event.child in person_remap:
+            event.child = person_remap[event.child]
+        event.relationshipTargets = [
+            person_remap.get(t, t) for t in event.relationshipTargets
+        ]
+        event.relationshipTriangles = [
+            person_remap.get(t, t) for t in event.relationshipTriangles
+        ]
+
+    for pb in deltas.pair_bonds:
+        if pb.person_a is not None and pb.person_a in person_remap:
+            pb.person_a = person_remap[pb.person_a]
+        if pb.person_b is not None and pb.person_b in person_remap:
+            pb.person_b = person_remap[pb.person_b]
+
+
 def dedup_pair_bonds(deltas: PDPDeltas) -> None:
     """Remove duplicate PairBonds for the same dyad, keeping the first.
     Remaps Person.parents references from removed IDs to kept IDs."""
@@ -563,6 +737,7 @@ async def _extract_and_validate(
 
         reassign_delta_ids(pdp, pdp_deltas)
         dedup_pair_bonds(pdp_deltas)
+        dedup_against_committed(pdp_deltas, diagram_data)
         try:
             validate_pdp_deltas(pdp, pdp_deltas, diagram_data, source)
             if attempt > 0:
