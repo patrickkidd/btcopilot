@@ -1,9 +1,14 @@
 // Discussion page JavaScript - extracted from discussion.html template
 // Server-side configuration is provided via window.discussionConfig
 
+const _markedRenderer = new marked.Renderer();
+_markedRenderer.link = function({ href, text }) {
+    return `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+};
+
 function renderMarkdown(text) {
     if (!text) return '';
-    return marked.parse(text);
+    return marked.parse(text, { renderer: _markedRenderer });
 }
 
 document.addEventListener('alpine:init', () => {
@@ -13,7 +18,40 @@ document.addEventListener('alpine:init', () => {
         error: null,
         analysis: null,
         event: null,
+        _statementId: null,
+        _eventIndex: null,
+        _auditorId: null,
         renderMarkdown,
+
+        regenerate() {
+            if (!this._statementId) return;
+            this.loading = true;
+            this.error = null;
+            this.analysis = null;
+
+            fetch('/training/calibration/event', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    statement_id: this._statementId,
+                    event_index: this._eventIndex,
+                    auditor_id: this._auditorId,
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                this.analysis = data.analysis;
+                this.event = data.event || this.event;
+                this.loading = false;
+            })
+            .catch(error => {
+                this.error = error.message;
+                this.loading = false;
+            });
+        },
     });
 });
 
@@ -1978,32 +2016,30 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
             store.event = events[eventIndex];
             store.analysis = null;
             store.error = null;
-            store.loading = true;
             store.open = true;
+            store._statementId = this.messageId;
+            store._eventIndex = eventIndex;
+            store._auditorId = window.selectedAuditor || window.discussionConfig.currentAuditor;
 
-            fetch('/training/calibration/event', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    statement_id: this.messageId,
-                    event_index: eventIndex,
-                    auditor_id: window.selectedAuditor || window.discussionConfig.currentAuditor
-                })
-            })
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                return response.json();
-            })
-            .then(data => {
-                store.analysis = data.analysis;
-                store.loading = false;
-            })
-            .catch(error => {
-                store.error = error.message;
-                store.loading = false;
+            // Try cached first
+            const params = new URLSearchParams({
+                statement_id: this.messageId,
+                event_index: eventIndex,
+                auditor_id: store._auditorId,
             });
+            store.loading = true;
+            fetch(`/training/calibration/event?${params}`)
+            .then(r => r.json())
+            .then(cached => {
+                if (cached && cached.analysis) {
+                    store.analysis = cached.analysis;
+                    store.event = cached.event || store.event;
+                    store.loading = false;
+                } else {
+                    store.regenerate();
+                }
+            })
+            .catch(() => store.regenerate());
         },
 
         // Update displayed data when selection changes

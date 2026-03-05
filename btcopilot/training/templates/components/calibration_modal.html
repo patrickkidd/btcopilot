@@ -1,4 +1,10 @@
 {# Calibration Modal - single page-level instance, reads from Alpine.store('calibration') #}
+<style>
+.calibration-analysis-content a {
+    color: var(--color-accent-fg);
+    text-decoration: underline;
+}
+</style>
 
 <div x-data x-show="$store.calibration.open" x-cloak
      class="modal" :class="{'is-active': $store.calibration.open}"
@@ -19,7 +25,7 @@
                     <span class="icon is-large">
                         <i class="fas fa-spinner fa-pulse fa-2x"></i>
                     </span>
-                    <p class="mt-3">Analyzing coding against operational definitions...</p>
+                    <p class="mt-3">Analyzing coding against the literature...</p>
                 </div>
             </template>
 
@@ -71,6 +77,14 @@
             </template>
         </section>
         <footer class="modal-card-foot">
+            <button class="button is-primary"
+                    :class="{'is-loading': $store.calibration.loading}"
+                    :disabled="$store.calibration.loading"
+                    x-show="$store.calibration.analysis"
+                    @click="$store.calibration.regenerate()">
+                <span class="icon"><i class="fas fa-sync-alt"></i></span>
+                <span>Re-calibrate</span>
+            </button>
             <button class="button" @click="$store.calibration.open = false">Close</button>
         </footer>
     </div>

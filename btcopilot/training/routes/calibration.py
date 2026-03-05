@@ -7,11 +7,12 @@ from flask import Blueprint, abort, jsonify, request
 import btcopilot
 from btcopilot import pdp as pdp_module
 from btcopilot.auth import minimum_role
+from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, SpeakerType, Statement
 from btcopilot.schema import asdict as schema_asdict
 from btcopilot.llmutil import gemini_calibration
 from btcopilot.training.models import Feedback
-from btcopilot.training.sarfdefinitions import definitions_for_event
+from btcopilot.training.sarfdefinitions import definitions_for_event, linkify_passages
 from btcopilot.training.calibrationprompts import (
     CODING_ADVISOR_SYSTEM,
     CODING_ADVISOR_USER,
@@ -84,6 +85,29 @@ def _build_definitions_text(event_dict):
     return "\n\n---\n\n".join(parts)
 
 
+def _advice_key(statement_id, auditor_id, event_index):
+    return f"{statement_id}:{auditor_id}:{event_index}"
+
+
+@bp.route("/event", methods=["GET"])
+@minimum_role(btcopilot.ROLE_AUDITOR)
+def get_cached_advice():
+    statement_id = request.args.get("statement_id", type=int)
+    event_index = request.args.get("event_index", type=int)
+    auditor_id = request.args.get("auditor_id")
+    if statement_id is None or event_index is None or not auditor_id:
+        abort(400, "statement_id, event_index, and auditor_id required")
+
+    stmt = Statement.query.get_or_404(statement_id)
+    discussion = Discussion.query.get_or_404(stmt.discussion_id)
+    cache = discussion.calibration_advice or {}
+    key = _advice_key(statement_id, auditor_id, event_index)
+    cached = cache.get(key)
+    if cached:
+        return jsonify(cached)
+    return jsonify(None)
+
+
 @bp.route("/event", methods=["POST"])
 @minimum_role(btcopilot.ROLE_AUDITOR)
 def calibrate_event():
@@ -100,7 +124,6 @@ def calibrate_event():
     stmt = Statement.query.get_or_404(statement_id)
     discussion = Discussion.query.get_or_404(stmt.discussion_id)
 
-    # Get the auditor's extraction for this statement
     feedback = Feedback.query.filter_by(
         statement_id=statement_id,
         auditor_id=auditor_id,
@@ -117,12 +140,10 @@ def calibrate_event():
 
     _log.info(f"  Event: {event_dict.get('description', '?')} | S={event_dict.get('symptom')} A={event_dict.get('anxiety')} R={event_dict.get('relationship')} F={event_dict.get('functioning')}")
 
-    # Build cumulative PDP up to this statement
     _log.info(f"  Building cumulative PDP up to stmt {statement_id}...")
     cum_pdp = pdp_module.cumulative(discussion, stmt, auditor_id=auditor_id)
     cum_pdp_dict = schema_asdict(cum_pdp)
 
-    # Build prompt
     statement_context = _get_statement_context(discussion, stmt)
     defs = definitions_for_event(event_dict)
     definitions_text = _build_definitions_text(event_dict)
@@ -144,7 +165,25 @@ def calibrate_event():
     )
     _log.info(f"  LLM response: {len(analysis)} chars")
 
-    return jsonify({"analysis": analysis, "event": event_dict})
+    analysis = linkify_passages(analysis)
+    result = {"analysis": analysis, "event": event_dict}
+
+    # Cache in discussion
+    cache = dict(discussion.calibration_advice or {})
+    cache[_advice_key(statement_id, auditor_id, event_index)] = result
+    discussion.calibration_advice = cache
+    db.session.commit()
+
+    return jsonify(result)
+
+
+@bp.route("/irr/<int:discussion_id>", methods=["GET"])
+@minimum_role(btcopilot.ROLE_AUDITOR)
+def get_cached_irr_report(discussion_id: int):
+    discussion = Discussion.query.get_or_404(discussion_id)
+    if discussion.calibration_report:
+        return jsonify(discussion.calibration_report)
+    return jsonify({"disagreements": []})
 
 
 @bp.route("/irr/<int:discussion_id>", methods=["POST"])
@@ -152,7 +191,6 @@ def calibrate_event():
 def irr_report(discussion_id: int):
     discussion = Discussion.query.get_or_404(discussion_id)
 
-    # Get all coders for this discussion
     sorted_stmts = sorted(
         discussion.statements, key=lambda s: (s.order or 0, s.id or 0)
     )
@@ -165,7 +203,6 @@ def irr_report(discussion_id: int):
 
     last_stmt = subject_stmts[-1]
 
-    # Find all coders
     stmt_ids = [s.id for s in sorted_stmts]
     feedbacks = Feedback.query.filter(
         Feedback.statement_id.in_(stmt_ids),
@@ -179,7 +216,6 @@ def irr_report(discussion_id: int):
 
     _log.info(f"IRR calibration: discussion={discussion_id} coders={coder_ids} stmts={len(sorted_stmts)}")
 
-    # Build cumulative PDP per coder
     cumulative_pdps = {}
     for coder_id in coder_ids:
         cumulative_pdps[coder_id] = pdp_module.cumulative(
@@ -187,7 +223,6 @@ def irr_report(discussion_id: int):
         )
         _log.info(f"  {coder_id}: {len(cumulative_pdps[coder_id].people)} people, {len(cumulative_pdps[coder_id].events)} events")
 
-    # Build per-coder per-statement feedback lookup for trace_to_statements
     fb_lookup = {(f.statement_id, f.auditor_id): f for f in feedbacks}
     coder_feedbacks = {}
     for coder_id in coder_ids:
@@ -202,8 +237,7 @@ def irr_report(discussion_id: int):
                 })
         coder_feedbacks[coder_id] = stmts_data
 
-    # Compare all coder pairs and collect disagreements + prompts
-    pending = []  # (metadata_dict, prompt)
+    pending = []
 
     for i, coder_a in enumerate(coder_ids):
         for coder_b in coder_ids[i + 1:]:
@@ -277,7 +311,13 @@ def irr_report(discussion_id: int):
 
     all_analyses = []
     for (metadata, _), analysis in zip(pending, analyses):
-        metadata["analysis"] = analysis
+        metadata["analysis"] = linkify_passages(analysis)
         all_analyses.append(metadata)
 
-    return jsonify({"disagreements": all_analyses})
+    report = {"disagreements": all_analyses}
+
+    # Cache in discussion
+    discussion.calibration_report = report
+    db.session.commit()
+
+    return jsonify(report)

@@ -193,13 +193,13 @@ Different sources use different terms for this pattern:
 
 | # | Search String (5-15 words for Cmd+F) | Concept Extracted |
 |---|--------------------------------------|-------------------|
-| FE2-216 | "overfunctioning" person shapes the attitudes, feelings, and behavior of an "underfunctioning" | Reciprocal shaping - each position maintains the other |
-| FE2-218 | "overfunctioning person is typically one who feels responsible for the emotional well-being of others" | Definition: feels responsible, compensates for deficits |
-| FE2-219 | "underfunctioning person, on the other hand, feels dependent on the overfunctioning one" | Definition: feels dependent, relies on other |
-| FE2-220 | "underfunctioning person who has been chronically ill may improve his functioning...overfunctioning partner becomes ill or dies" | Pattern reversal possible; underfunctioner can improve |
-| FE2-224 | "overfunctioning one derives a sense of well-being by virtue of doing for others" | Overfunctioner derives well-being from doing |
-| FE2-225 | "underfunctioning ones put more pressure on the overfunctioning wife and mother to help them" | Stress intensifies pattern; pressure increases |
-| FE2-226 | "overfunctioning one can 'absorb' a disproportionate amount of the family problem" | Overfunctioner absorbs anxiety; becomes symptomatic |
+| <a id="FE2-216"></a>FE2-216 | "overfunctioning" person shapes the attitudes, feelings, and behavior of an "underfunctioning" | Reciprocal shaping - each position maintains the other |
+| <a id="FE2-218"></a>FE2-218 | "overfunctioning person is typically one who feels responsible for the emotional well-being of others" | Definition: feels responsible, compensates for deficits |
+| <a id="FE2-219"></a>FE2-219 | "underfunctioning person, on the other hand, feels dependent on the overfunctioning one" | Definition: feels dependent, relies on other |
+| <a id="FE2-220"></a>FE2-220 | "underfunctioning person who has been chronically ill may improve his functioning...overfunctioning partner becomes ill or dies" | Pattern reversal possible; underfunctioner can improve |
+| <a id="FE2-224"></a>FE2-224 | "overfunctioning one derives a sense of well-being by virtue of doing for others" | Overfunctioner derives well-being from doing |
+| <a id="FE2-225"></a>FE2-225 | "underfunctioning ones put more pressure on the overfunctioning wife and mother to help them" | Stress intensifies pattern; pressure increases |
+| <a id="FE2-226"></a>FE2-226 | "overfunctioning one can 'absorb' a disproportionate amount of the family problem" | Overfunctioner absorbs anxiety; becomes symptomatic |
 
 ---
 
@@ -207,10 +207,10 @@ Different sources use different terms for this pattern:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE4-58 | "two people with basic levels of 35 who marry might...one spouse's functional level rises to an average of 55" | Functional level can rise through borrowing "self" |
-| FE4-60 | "The higher the basic level, the more consistently high the functional level" | High differentiation = less fluctuation; less over/under |
-| FE4-82 | "pseudo-self of each partner merges into the relationship" | Pseudo-self traded in relationships; basis for over/under |
-| FE4-110 | "Fixers try to 'correct' the situation...underestimating the resources of the people he intends to 'help'" | Overfunctioning as "fixing"; creates dependence |
+| <a id="FE4-58"></a>FE4-58 | "two people with basic levels of 35 who marry might...one spouse's functional level rises to an average of 55" | Functional level can rise through borrowing "self" |
+| <a id="FE4-60"></a>FE4-60 | "The higher the basic level, the more consistently high the functional level" | High differentiation = less fluctuation; less over/under |
+| <a id="FE4-82"></a>FE4-82 | "pseudo-self of each partner merges into the relationship" | Pseudo-self traded in relationships; basis for over/under |
+| <a id="FE4-110"></a>FE4-110 | "Fixers try to 'correct' the situation...underestimating the resources of the people he intends to 'help'" | Overfunctioning as "fixing"; creates dependence |
 
 ---
 
@@ -218,12 +218,12 @@ Different sources use different terms for this pattern:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE7-7 | "dominant-subordinate or overfunctioning-underfunctioning pattern" | Terms for reciprocal pattern |
-| FE7-8 | "increase in the levels of chronic anxiety can exaggerate this pattern to the point" | Anxiety intensifies pattern to symptom level |
-| FE7-9 | "person most prone to becoming symptomatic is the one who makes the most adjustments" | Adapting one (whether over or under) most at risk |
-| FE7-10 | "one making the most adjustments may be an overfunctioning person...or underfunctioning" | Either position can become symptomatic |
-| FE7-11 | "anxious focus of the dominant one and the adaptive one feels pressured" | Dominant focuses anxiously; adaptive feels pressured |
-| FE7-12 | "An 'emotional gain' in this process for the dominant one is unloading some anxiety" | Dominant "sprays" anxiety onto adaptive |
+| <a id="FE7-7"></a>FE7-7 | "dominant-subordinate or overfunctioning-underfunctioning pattern" | Terms for reciprocal pattern |
+| <a id="FE7-8"></a>FE7-8 | "increase in the levels of chronic anxiety can exaggerate this pattern to the point" | Anxiety intensifies pattern to symptom level |
+| <a id="FE7-9"></a>FE7-9 | "person most prone to becoming symptomatic is the one who makes the most adjustments" | Adapting one (whether over or under) most at risk |
+| <a id="FE7-10"></a>FE7-10 | "one making the most adjustments may be an overfunctioning person...or underfunctioning" | Either position can become symptomatic |
+| <a id="FE7-11"></a>FE7-11 | "anxious focus of the dominant one and the adaptive one feels pressured" | Dominant focuses anxiously; adaptive feels pressured |
+| <a id="FE7-12"></a>FE7-12 | "An 'emotional gain' in this process for the dominant one is unloading some anxiety" | Dominant "sprays" anxiety onto adaptive |
 
 ---
 
@@ -231,7 +231,7 @@ Different sources use different terms for this pattern:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE6-55 | "A chronic schizophrenic person, previously bogged down...may put them 'on the back burner'" | Underfunctioner can improve when overfunctioner becomes ill |
+| <a id="FE6-55"></a>FE6-55 | "A chronic schizophrenic person, previously bogged down...may put them 'on the back burner'" | Underfunctioner can improve when overfunctioner becomes ill |
 
 ---
 

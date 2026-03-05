@@ -16,7 +16,7 @@ _log = logging.getLogger(__name__)
 EXTRACTION_MODEL = "gemini-3-flash-preview"
 EXTRACTION_MODEL_LARGE = "gemini-3-flash-preview"
 RESPONSE_MODEL = "gemini-3-flash-preview"
-CALIBRATION_MODEL = "gemini-3.1-pro-preview"
+CALIBRATION_MODEL = "gemini-3-flash-preview"
 
 
 class OutputTruncatedError(Exception):
@@ -299,7 +299,6 @@ async def gemini_calibration(prompt, system_instruction=None):
     config = types.GenerateContentConfig(
         temperature=0.2,
         max_output_tokens=4096,
-        thinking_config=types.ThinkingConfig(thinking_budget=4096),
     )
     if system_instruction:
         config.system_instruction = system_instruction

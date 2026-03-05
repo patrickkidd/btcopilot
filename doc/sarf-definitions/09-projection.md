@@ -238,9 +238,9 @@ FTiCP Ch 9, FTiCP Ch 10, FE Ch 6, and FE Ch 7 agree:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE6-51 | "triangle of two parents and a child in which the child functions as an emotional appendage" | Child as emotional appendage of parental process |
-| FE6-83 | "symptom focused togetherness, with the underlying relationship dilemmas largely obscured" | Symptom focus on child obscures marital issues |
-| FE6-92 | "mother and two children triangle" | Anxiety acted out between mother and children |
+| <a id="FE6-51"></a>FE6-51 | "triangle of two parents and a child in which the child functions as an emotional appendage" | Child as emotional appendage of parental process |
+| <a id="FE6-83"></a>FE6-83 | "symptom focused togetherness, with the underlying relationship dilemmas largely obscured" | Symptom focus on child obscures marital issues |
+| <a id="FE6-92"></a>FE6-92 | "mother and two children triangle" | Anxiety acted out between mother and children |
 
 ---
 
@@ -248,7 +248,7 @@ FTiCP Ch 9, FTiCP Ch 10, FE Ch 6, and FE Ch 7 agree:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE7-5 | "Three categories of dysfunction occur in nuclear families" | (3) impairment of children = projection |
+| <a id="FE7-5"></a>FE7-5 | "Three categories of dysfunction occur in nuclear families" | (3) impairment of children = projection |
 
 ---
 
@@ -256,4 +256,4 @@ FTiCP Ch 9, FTiCP Ch 10, FE Ch 6, and FE Ch 7 agree:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE9-6 | "The 'patient' is no more the cause of the family's distress than the family is the cause" | Child is not cause; mutual reinforcement |
+| <a id="FE9-6"></a>FE9-6 | "The 'patient' is no more the cause of the family's distress than the family is the cause" | Child is not cause; mutual reinforcement |

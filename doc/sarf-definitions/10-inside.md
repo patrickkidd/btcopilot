@@ -182,13 +182,13 @@ FE Ch 6 (Triangles) is the primary source for inside/outside positions:
 
 | # | Search String (5-15 words for Cmd+F) | Concept Extracted |
 |---|--------------------------------------|-------------------|
-| FE6-5 | "The triangle is the basic molecule of an emotional system" | Triangle = smallest stable relationship unit |
-| FE6-9 | "The major influence on the activity of a triangle is anxiety" | Anxiety drives triangle movement |
-| FE6-13 | "two people are comfortably close (the insiders) and the third is a less comfortable outsider" | Basic structure: two insiders, one outsider |
-| FE6-15 | "the discomfort is felt far more by one person than the other" | Asymmetric comfort between insiders |
-| FE6-17 | "uncomfortable insider (A) can pull the outsider (C) into the situation through complaints" | Triangling = insider recruiting outsider |
-| FE6-19 | "one uncomfortable or conflictual relationship and two fairly comfortable ones" | Conflict = inside position (negative) |
-| FE6-22 | "perception of lack of sufficient separation can trigger feelings of being crowded, trapped" | Uncomfortable inside = feeling crowded/trapped |
-| FE6-24 | "conflict has shifted out of the original twosome and into the relationship between B and C" | Position shifts via triangling |
-| FE6-26 | "outside position is the most comfortable and desired" | At high anxiety, outside preferred |
-| FE6-77 | "discomfort eventually becomes so great...attempts to talk to her husband" | Inside discomfort triggers action |
+| <a id="FE6-5"></a>FE6-5 | "The triangle is the basic molecule of an emotional system" | Triangle = smallest stable relationship unit |
+| <a id="FE6-9"></a>FE6-9 | "The major influence on the activity of a triangle is anxiety" | Anxiety drives triangle movement |
+| <a id="FE6-13"></a>FE6-13 | "two people are comfortably close (the insiders) and the third is a less comfortable outsider" | Basic structure: two insiders, one outsider |
+| <a id="FE6-15"></a>FE6-15 | "the discomfort is felt far more by one person than the other" | Asymmetric comfort between insiders |
+| <a id="FE6-17"></a>FE6-17 | "uncomfortable insider (A) can pull the outsider (C) into the situation through complaints" | Triangling = insider recruiting outsider |
+| <a id="FE6-19"></a>FE6-19 | "one uncomfortable or conflictual relationship and two fairly comfortable ones" | Conflict = inside position (negative) |
+| <a id="FE6-22"></a>FE6-22 | "perception of lack of sufficient separation can trigger feelings of being crowded, trapped" | Uncomfortable inside = feeling crowded/trapped |
+| <a id="FE6-24"></a>FE6-24 | "conflict has shifted out of the original twosome and into the relationship between B and C" | Position shifts via triangling |
+| <a id="FE6-26"></a>FE6-26 | "outside position is the most comfortable and desired" | At high anxiety, outside preferred |
+| <a id="FE6-77"></a>FE6-77 | "discomfort eventually becomes so great...attempts to talk to her husband" | Inside discomfort triggers action |

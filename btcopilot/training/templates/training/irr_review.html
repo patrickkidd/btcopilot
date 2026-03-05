@@ -25,16 +25,22 @@ window.currentUsername = '';
                 <h1 class="title">{{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
                 <p class="subtitle">IRR Review - {{ coders|length }} coders</p>
             </div>
-            <div>
+            <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
                 <button class="button is-primary"
                         :class="{'is-loading': $store.calibrationReport.loading}"
                         :disabled="$store.calibrationReport.loading"
                         @click="$store.calibrationReport.confirmOpen = true">
                     <span class="icon"><i class="fas fa-balance-scale"></i></span>
-                    <span>Calibrate</span>
+                    <span x-text="$store.calibrationReport.generated ? 'Re-generate' : 'Calibrate'"></span>
                 </button>
-                <button class="button is-light ml-2"
-                        x-show="$store.calibrationReport.disagreements.length > 0 || $store.calibrationReport.loading"
+                <button class="button is-light"
+                        x-show="$store.calibrationReport.variableGroups.length > 0"
+                        @click="$store.calibrationReport.collapseAll()">
+                    <span class="icon"><i class="fas fa-compress-alt"></i></span>
+                    <span>Collapse All</span>
+                </button>
+                <button class="button is-light"
+                        x-show="$store.calibrationReport.variableGroups.length > 0 || $store.calibrationReport.loading"
                         @click="$store.calibrationReport.drawerOpen = !$store.calibrationReport.drawerOpen">
                     <span class="icon"><i class="fas" :class="$store.calibrationReport.drawerOpen ? 'fa-chevron-right' : 'fa-chevron-left'"></i></span>
                 </button>
@@ -98,7 +104,7 @@ window.currentUsername = '';
         <header class="modal-card-head">
             <p class="modal-card-title">
                 <span class="icon"><i class="fas fa-exclamation-triangle has-text-warning"></i></span>
-                Generate Calibration Report
+                <span x-text="$store.calibrationReport.generated ? 'Re-generate Calibration Report' : 'Generate Calibration Report'"></span>
             </p>
             <button class="delete" @click="$store.calibrationReport.confirmOpen = false"></button>
         </header>
@@ -109,7 +115,7 @@ window.currentUsername = '';
         <footer class="modal-card-foot">
             <button class="button is-primary"
                     @click="$store.calibrationReport.confirmOpen = false; $store.calibrationReport.generate()">
-                Generate
+                <span x-text="$store.calibrationReport.generated ? 'Re-generate' : 'Generate'"></span>
             </button>
             <button class="button" @click="$store.calibrationReport.confirmOpen = false">Cancel</button>
         </footer>
@@ -157,58 +163,73 @@ window.currentUsername = '';
             </div>
         </template>
 
-        <!-- Results -->
-        <template x-if="$store.calibrationReport.disagreements.length > 0">
+        <!-- Results grouped by variable -->
+        <template x-if="$store.calibrationReport.variableGroups.length > 0">
             <div class="p-3">
-                <template x-for="(d, idx) in $store.calibrationReport.disagreements" :key="idx">
-                    <div class="calibration-card mb-3" :class="'calibration-card-' + d.impact">
-                        <!-- Header -->
-                        <div class="calibration-card-header is-clickable" @click="d._expanded = !d._expanded">
-                            <span class="tag mr-2" :class="{
-                                'is-danger': d.impact === 'high',
-                                'is-warning': d.impact === 'medium',
-                                'is-info': d.impact === 'low',
-                            }" x-text="d.impact"></span>
-                            <strong x-text="d.person_name" style="color: var(--color-fg-default);"></strong>:
-                            <span x-text="d.description" class="ml-1" style="color: var(--color-fg-muted);"></span>
-                            <span class="icon ml-auto">
-                                <i class="fas" :class="d._expanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                <template x-for="(group, gIdx) in $store.calibrationReport.variableGroups" :key="group.variable">
+                    <div class="mb-4">
+                        <!-- Variable group header -->
+                        <div class="calibration-group-header is-clickable" @click="group._expanded = !group._expanded">
+                            <span class="icon is-small">
+                                <i class="fas" :class="group._expanded ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
                             </span>
+                            <strong x-text="group.label" class="ml-1"></strong>
+                            <span class="tag is-small ml-2" :class="{
+                                'is-danger': group.maxImpact === 'high',
+                                'is-warning': group.maxImpact === 'medium',
+                                'is-info': group.maxImpact === 'low',
+                            }" x-text="group.items.length"></span>
                         </div>
 
-                        <!-- Expanded -->
-                        <div x-show="d._expanded" class="calibration-card-body">
-                            <!-- Field disagreements -->
-                            <div class="mb-3">
-                                <template x-for="fd in d.field_disagreements" :key="fd.field">
-                                    <div class="calibration-field-row">
-                                        <strong x-text="fd.field" style="color: var(--color-fg-default);"></strong>:
-                                        <template x-for="(val, coder) in fd.values" :key="coder">
-                                            <span class="ml-2">
-                                                <span class="is-size-7" style="color: var(--color-fg-subtle);" x-text="coder.split('@')[0]"></span>=<code x-text="val || 'null'"></code>
-                                            </span>
-                                        </template>
+                        <!-- Variable group items -->
+                        <div x-show="group._expanded" class="ml-3 mt-2">
+                            <template x-for="(d, idx) in group.items" :key="d._key + '-' + group.variable">
+                                <div class="calibration-card mb-3" :class="'calibration-card-' + d.impact">
+                                    <div class="calibration-card-header is-clickable" @click="d._expanded = !d._expanded">
+                                        <span class="tag mr-2" :class="{
+                                            'is-danger': d.impact === 'high',
+                                            'is-warning': d.impact === 'medium',
+                                            'is-info': d.impact === 'low',
+                                        }" x-text="d.impact"></span>
+                                        <strong x-text="d.person_name" style="color: var(--color-fg-default);"></strong>:
+                                        <span x-text="d.description" class="ml-1" style="color: var(--color-fg-muted);"></span>
+                                        <span class="icon ml-auto">
+                                            <i class="fas" :class="d._expanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                                        </span>
                                     </div>
-                                </template>
-                            </div>
 
-                            <!-- Source statements -->
-                            <template x-if="d.source_statements && d.source_statements.length > 0">
-                                <div class="mb-3">
-                                    <p class="heading" style="color: var(--color-fg-muted);">Source Statements</p>
-                                    <template x-for="(ss, ssIdx) in d.source_statements" :key="ssIdx">
-                                        <div class="is-size-7 mb-1" style="color: var(--color-fg-muted);">
-                                            <span class="tag is-small" x-text="ss.coder_id.split('@')[0]"></span>
-                                            <span class="ml-1" x-text="ss.statement_text"></span>
+                                    <div x-show="d._expanded" class="calibration-card-body">
+                                        <div class="mb-3">
+                                            <template x-for="fd in d.field_disagreements" :key="fd.field">
+                                                <div class="calibration-field-row">
+                                                    <strong x-text="fd.field" style="color: var(--color-fg-default);"></strong>:
+                                                    <template x-for="(val, coder) in fd.values" :key="coder">
+                                                        <span class="ml-2">
+                                                            <span class="is-size-7" style="color: var(--color-fg-subtle);" x-text="coder.split('@')[0]"></span>=<code x-text="val || 'null'"></code>
+                                                        </span>
+                                                    </template>
+                                                </div>
+                                            </template>
                                         </div>
-                                    </template>
+
+                                        <template x-if="d.source_statements && d.source_statements.length > 0">
+                                            <div class="mb-3">
+                                                <p class="heading" style="color: var(--color-fg-muted);">Source Statements</p>
+                                                <template x-for="(ss, ssIdx) in d.source_statements" :key="ssIdx">
+                                                    <div class="is-size-7 mb-1" style="color: var(--color-fg-muted);">
+                                                        <span class="tag is-small" x-text="ss.coder_id.split('@')[0]"></span>
+                                                        <span class="ml-1" x-text="ss.statement_text"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+
+                                        <div class="calibration-analysis content is-small"
+                                             x-html="$store.calibrationReport.renderMarkdown(d.analysis)">
+                                        </div>
+                                    </div>
                                 </div>
                             </template>
-
-                            <!-- LLM analysis -->
-                            <div class="calibration-analysis content is-small"
-                                 x-html="$store.calibrationReport.renderMarkdown(d.analysis)">
-                            </div>
                         </div>
                     </div>
                 </template>
@@ -219,6 +240,22 @@ window.currentUsername = '';
 
 <script>
 document.addEventListener('alpine:init', () => {
+    const VARIABLE_LABELS = {
+        symptom: 'Symptom',
+        anxiety: 'Anxiety',
+        functioning: 'Functioning',
+        conflict: 'Conflict',
+        distance: 'Distance',
+        cutoff: 'Cutoff',
+        overfunctioning: 'Overfunctioning',
+        underfunctioning: 'Underfunctioning',
+        projection: 'Projection',
+        inside: 'Inside Triangle',
+        outside: 'Outside Triangle',
+        'defined-self': 'Defined Self',
+    };
+    const IMPACT_ORDER = { high: 0, medium: 1, low: 2 };
+
     Alpine.store('calibrationReport', {
         confirmOpen: false,
         drawerOpen: false,
@@ -226,9 +263,64 @@ document.addEventListener('alpine:init', () => {
         generated: false,
         error: null,
         disagreements: [],
+        variableGroups: [],
 
         renderMarkdown(text) {
             return window.renderMarkdown(text);
+        },
+
+        _buildVariableGroups(disagreements) {
+            const groups = {};
+            disagreements.forEach((d, idx) => {
+                d._key = idx;
+                (d.field_disagreements || []).forEach(fd => {
+                    const variable = fd.field;
+                    if (!groups[variable]) {
+                        groups[variable] = {
+                            variable,
+                            label: VARIABLE_LABELS[variable] || variable,
+                            items: [],
+                            maxImpact: 'low',
+                            _expanded: true,
+                        };
+                    }
+                    groups[variable].items.push(d);
+                    if (IMPACT_ORDER[d.impact] < IMPACT_ORDER[groups[variable].maxImpact]) {
+                        groups[variable].maxImpact = d.impact;
+                    }
+                });
+            });
+            // Sort groups by max impact, then alphabetically
+            return Object.values(groups).sort((a, b) => {
+                const impactDiff = IMPACT_ORDER[a.maxImpact] - IMPACT_ORDER[b.maxImpact];
+                if (impactDiff !== 0) return impactDiff;
+                return a.label.localeCompare(b.label);
+            });
+        },
+
+        _applyDisagreements(data) {
+            this.disagreements = (data.disagreements || []).map((d, idx) => ({
+                ...d,
+                _key: idx,
+                _expanded: d.impact === 'high',
+            }));
+            this.variableGroups = this._buildVariableGroups(this.disagreements);
+            this.generated = true;
+        },
+
+        collapseAll() {
+            this.disagreements.forEach(d => d._expanded = false);
+            this.variableGroups.forEach(g => g._expanded = false);
+        },
+
+        loadCached() {
+            fetch('/training/calibration/irr/{{ discussion.id }}')
+            .then(r => r.json())
+            .then(data => {
+                if (data.disagreements && data.disagreements.length > 0) {
+                    this._applyDisagreements(data);
+                }
+            });
         },
 
         generate() {
@@ -245,12 +337,8 @@ document.addEventListener('alpine:init', () => {
                 return response.json();
             })
             .then(data => {
-                this.disagreements = (data.disagreements || []).map(d => ({
-                    ...d,
-                    _expanded: d.impact === 'high'
-                }));
+                this._applyDisagreements(data);
                 this.loading = false;
-                this.generated = true;
             })
             .catch(err => {
                 this.error = err.message;
@@ -258,6 +346,9 @@ document.addEventListener('alpine:init', () => {
             });
         }
     });
+
+    // Load cached report on init
+    Alpine.store('calibrationReport').loadCached();
 });
 </script>
 
@@ -285,6 +376,9 @@ document.addEventListener('alpine:initialized', function() {
 .irr-review-coder {
     min-width: 280px;
     flex: 1 1 0;
+}
+.irr-review-coder .section-header {
+    color: var(--color-fg-default);
 }
 .irr-review-row .statement-preview {
     border-radius: 18px;
@@ -338,6 +432,16 @@ document.addEventListener('alpine:initialized', function() {
 .drawer-enter-start { transform: translateX(100%); }
 .drawer-enter-end { transform: translateX(0); }
 
+/* Variable group headers */
+.calibration-group-header {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.9rem;
+    color: var(--color-fg-default);
+    border-bottom: 1px solid var(--color-border-muted);
+}
+
 /* Calibration cards */
 .calibration-card {
     border: 1px solid var(--color-border-default);
@@ -382,6 +486,10 @@ document.addEventListener('alpine:initialized', function() {
     padding-left: 0.75rem;
     margin-top: 0.5rem;
     color: var(--color-fg-default);
+}
+.calibration-analysis a {
+    color: var(--color-accent-fg);
+    text-decoration: underline;
 }
 .calibration-analysis code {
     background: var(--color-canvas-inset);

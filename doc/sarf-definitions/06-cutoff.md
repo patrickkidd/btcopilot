@@ -207,13 +207,13 @@ FE Ch 6, FE Ch 9, and FTiCP Ch 9 agree:
 
 | # | Search String (5-15 words for Cmd+F) | Concept Extracted |
 |---|--------------------------------------|-------------------|
-| FE9-19 | "Individuals and nuclear families are cut off emotionally...in degrees" | Cutoff exists on continuum; affects chronic anxiety |
-| FE9-20 | "while people can reduce anxiety by cutting off, people can also increase anxiety by cutting off" | Cutoff double-edged; may relieve or increase vulnerability |
-| FE9-21 | "Emotional cutoff...describes the way people manage undifferentiation between generations" | Cutoff = managing (not resolving) intergenerational intensity |
-| FE9-22 | "Declaring one's 'independence' from family is not differentiation of self" | Breaking away ≠ growing away; fusion unresolved |
-| FE9-23 | "If a person gains more emotional objectivity about his family of origin...anxiety...will decrease" | Reduced cutoff → reduced anxiety → reduced symptoms |
-| FE9-24 | "Improving emotional contact with the extended family has potential to significantly reduce" | Extended family contact can dramatically reduce symptoms |
-| FE9-25 | "reduction in symptoms following such an effort can sometimes be dramatic" | Bridging cutoff can produce dramatic symptom relief |
+| <a id="FE9-19"></a>FE9-19 | "Individuals and nuclear families are cut off emotionally...in degrees" | Cutoff exists on continuum; affects chronic anxiety |
+| <a id="FE9-20"></a>FE9-20 | "while people can reduce anxiety by cutting off, people can also increase anxiety by cutting off" | Cutoff double-edged; may relieve or increase vulnerability |
+| <a id="FE9-21"></a>FE9-21 | "Emotional cutoff...describes the way people manage undifferentiation between generations" | Cutoff = managing (not resolving) intergenerational intensity |
+| <a id="FE9-22"></a>FE9-22 | "Declaring one's 'independence' from family is not differentiation of self" | Breaking away ≠ growing away; fusion unresolved |
+| <a id="FE9-23"></a>FE9-23 | "If a person gains more emotional objectivity about his family of origin...anxiety...will decrease" | Reduced cutoff → reduced anxiety → reduced symptoms |
+| <a id="FE9-24"></a>FE9-24 | "Improving emotional contact with the extended family has potential to significantly reduce" | Extended family contact can dramatically reduce symptoms |
+| <a id="FE9-25"></a>FE9-25 | "reduction in symptoms following such an effort can sometimes be dramatic" | Bridging cutoff can produce dramatic symptom relief |
 
 ---
 
@@ -231,10 +231,10 @@ FE Ch 6, FE Ch 9, and FTiCP Ch 9 agree:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE6-100 | "ability to see both sides of a relationship process between two others" | Emotional objectivity (opposite of cutoff reaction) |
-| FE6-133 | "father separated himself from his family when he left for college...no further contact" | Example of cutoff pattern - minimal contact after leaving |
-| FE6-141 | "death of an important family member...most potential to generate anxiety" | Death in cut-off family can trigger delayed response |
-| FE6-142 | "By making contact with the cousin, A...activates the original triangle with her parents" | Bridging cutoff reactivates family emotional system |
-| FE6-144 | "When A makes contact with her father's family, she disturbs the togetherness" | Bridging cutoff disturbs established patterns |
-| FE6-155 | "incorporated her mother's attitudes about her father's family" | Cutoff attitudes transmitted across generations |
-| FE6-161 | "see the workings of the interlocking triangles...help resolve his feelings about the past" | Understanding systems can resolve cutoff emotions |
+| <a id="FE6-100"></a>FE6-100 | "ability to see both sides of a relationship process between two others" | Emotional objectivity (opposite of cutoff reaction) |
+| <a id="FE6-133"></a>FE6-133 | "father separated himself from his family when he left for college...no further contact" | Example of cutoff pattern - minimal contact after leaving |
+| <a id="FE6-141"></a>FE6-141 | "death of an important family member...most potential to generate anxiety" | Death in cut-off family can trigger delayed response |
+| <a id="FE6-142"></a>FE6-142 | "By making contact with the cousin, A...activates the original triangle with her parents" | Bridging cutoff reactivates family emotional system |
+| <a id="FE6-144"></a>FE6-144 | "When A makes contact with her father's family, she disturbs the togetherness" | Bridging cutoff disturbs established patterns |
+| <a id="FE6-155"></a>FE6-155 | "incorporated her mother's attitudes about her father's family" | Cutoff attitudes transmitted across generations |
+| <a id="FE6-161"></a>FE6-161 | "see the workings of the interlocking triangles...help resolve his feelings about the past" | Understanding systems can resolve cutoff emotions |

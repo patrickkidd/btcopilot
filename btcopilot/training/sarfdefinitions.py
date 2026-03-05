@@ -1,5 +1,5 @@
+import re
 import logging
-import os
 import urllib.request
 from pathlib import Path
 
@@ -20,9 +20,13 @@ _SARF_DEF_FILES = {
     "defined-self": "12-definedself.md",
 }
 
+_GITHUB_BLOB_BASE = "https://github.com/patrickkidd/btcopilot/blob/master/doc/sarf-definitions"
 _GITHUB_RAW_BASE = "https://raw.githubusercontent.com/patrickkidd/btcopilot/master/doc/sarf-definitions"
 _LOCAL_DIR = Path(__file__).parent.parent.parent / "doc" / "sarf-definitions"
 _CACHE_DIR = Path(__file__).parent / "data" / "sarf_definitions"
+
+# Passage ID pattern: uppercase letters followed by digits, optionally hyphen-digits
+_PASSAGE_ID_RE = re.compile(r"\| (?:<a id=\"[^\"]+\"></a>)?([A-Z]+\d+-?\d*) \|")
 
 
 def _load_definition(key: str, filename: str) -> str:
@@ -48,9 +52,21 @@ def _load_definition(key: str, filename: str) -> str:
     return text
 
 
+def _extract_passage_ids(text: str, filename: str) -> dict[str, str]:
+    """Extract passage IDs from a definition file and map to GitHub URLs."""
+    urls = {}
+    for match in _PASSAGE_ID_RE.finditer(text):
+        pid = match.group(1)
+        urls[pid] = f"{_GITHUB_BLOB_BASE}/{filename}#{pid}"
+    return urls
+
+
 DEFINITIONS: dict[str, str] = {}
+PASSAGE_URLS: dict[str, str] = {}
+
 for _key, _filename in _SARF_DEF_FILES.items():
     DEFINITIONS[_key] = _load_definition(_key, _filename)
+    PASSAGE_URLS.update(_extract_passage_ids(DEFINITIONS[_key], _filename))
 
 
 def definitions_for_event(event: dict) -> dict[str, str]:
@@ -65,3 +81,23 @@ def definitions_for_event(event: dict) -> dict[str, str]:
         if val in DEFINITIONS:
             result[f"relationship:{val}"] = DEFINITIONS[val]
     return result
+
+
+def linkify_passages(text: str) -> str:
+    """Replace passage ID references in LLM markdown output with clickable GitHub links."""
+    if not text or not PASSAGE_URLS:
+        return text or ""
+
+    # Match passage IDs that aren't already inside markdown links
+    def _replace(match):
+        pid = match.group(0)
+        if pid in PASSAGE_URLS:
+            return f"[{pid}]({PASSAGE_URLS[pid]})"
+        return pid
+
+    # Negative lookbehind for [ and ( to avoid double-linking existing markdown links
+    return re.sub(
+        r"(?<!\[)(?<!\()(?<!\")(?<!id=\")\b([A-Z]+\d+-?\d*)\b(?!\])",
+        lambda m: f"[{m.group(1)}]({PASSAGE_URLS[m.group(1)]})" if m.group(1) in PASSAGE_URLS else m.group(0),
+        text,
+    )

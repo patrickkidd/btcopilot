@@ -40,6 +40,7 @@ New clinical data outputs: store in `btcopilot-sources/`, create symlink, add to
 | Decisions (career, strategy) | [decisions/log.md](decisions/log.md) |
 | Architecture decisions | [adrs/](adrs/) |
 | IRR calibration, coding guidelines | [doc/irr/](doc/irr/) |
+| Calibration system (as-built) | [doc/adrs/calibration.md](doc/adrs/calibration.md) |
 | Synthetic client personas/evals | [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md) |
 | Synthetic client dev log | [doc/log/synthetic-clients/](doc/log/synthetic-clients/) |
 | Psychological foundations | [doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md](doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md) |
