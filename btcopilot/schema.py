@@ -340,6 +340,13 @@ class PDP:
     pair_bonds: list[PairBond] = field(default_factory=list)
 
 
+def get_all_pdp_item_ids(pdp: PDP) -> set[int]:
+    ids = {p.id for p in pdp.people if p.id is not None}
+    ids.update(e.id for e in pdp.events)
+    ids.update(pb.id for pb in pdp.pair_bonds if pb.id is not None)
+    return ids
+
+
 class ClusterPattern(enum.StrEnum):
     AnxietyCascade = "anxiety_cascade"
     TriangleActivation = "triangle_activation"
@@ -910,8 +917,6 @@ class DiagramData:
 
     def _repair_dangling_parents(self, item_ids: list[int]) -> None:
         """Nullify person.parents that reference non-existent PDP pair bonds."""
-        from btcopilot.pdp import get_all_pdp_item_ids
-
         pdp_item_ids = get_all_pdp_item_ids(self.pdp)
         for person in self.pdp.people:
             if (
@@ -925,8 +930,6 @@ class DiagramData:
                 person.parents = None
 
     def _get_transitive_pdp_references(self, item_ids: list[int]) -> set[int]:
-        from btcopilot.pdp import get_all_pdp_item_ids
-
         pdp_item_ids = get_all_pdp_item_ids(self.pdp)
         pdp_people_map = {p.id: p for p in self.pdp.people if p.id is not None}
         pdp_events_map = {e.id: e for e in self.pdp.events}

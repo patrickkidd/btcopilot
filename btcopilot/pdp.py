@@ -26,6 +26,7 @@ from btcopilot.schema import (
     PairBond,
     asdict,
     from_dict,
+    get_all_pdp_item_ids,
 )
 
 _log = logging.getLogger(__name__)
@@ -38,13 +39,6 @@ def _pretty_repr(obj):
         return pretty_repr(obj)
     except ImportError:
         return repr(obj)
-
-
-def get_all_pdp_item_ids(pdp: PDP) -> set[int]:
-    ids = {p.id for p in pdp.people if p.id is not None}
-    ids.update(e.id for e in pdp.events)
-    ids.update(pb.id for pb in pdp.pair_bonds if pb.id is not None)
-    return ids
 
 
 def reassign_delta_ids(pdp: PDP, deltas: PDPDeltas) -> None:

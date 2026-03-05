@@ -101,12 +101,20 @@ btcopilot provides:
 | Pro backend | `btcopilot/pro/` | Desktop app API (pickle over HTTPS) |
 | Personal backend | `btcopilot/personal/` | Mobile app API (JSON), chat-only conversation + endpoint-driven extraction |
 | Training app | `btcopilot/training/` | Domain-expert feedback for AI fine-tuning |
-| Schema | `btcopilot/pro/schema.py` | Core data model shared with Pro/Personal apps |
+| Schema | `btcopilot/schema.py` | Core data model shared with Pro/Personal apps (PUBLIC — see boundary rule below) |
 | Personal DB | `btcopilot/personal/database.py` | JSON-based data schema |
 | Extensions | `btcopilot/extensions/` | Flask extensions (DB, LLM, ChromaDB) |
 | Auth | `btcopilot/auth.py` | User authentication with `current_user` |
 | CLI | `manage.py`, `btcopilot/commands.py` | Flask CLI commands |
 | Pro models | `btcopilot/pro/models/` | SQLAlchemy: User, Diagram, License, Session, Statement/Discussion |
+
+### Public API Boundary (MANDATORY)
+
+`btcopilot.schema` is the ONLY public submodule — it is imported by the Pro and Personal app builds where Flask, SQLAlchemy, and all other server dependencies are unavailable. **schema.py must NEVER import from any other btcopilot module** (pdp, extensions, personal, pro, training, app, auth, llmutil, celery, modelmixin). This includes deferred/lazy imports inside methods.
+
+If schema.py needs a utility function that currently lives in a private module, move that function INTO schema.py. Do not import it.
+
+The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this boundary — run it after any schema.py changes.
 
 ### External Services
 

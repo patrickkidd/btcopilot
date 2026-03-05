@@ -4,7 +4,7 @@
 
 **Status**: Active - update as learnings emerge.
 
-**Last Updated**: 2026-03-04 (T7-20 flash-lite model evaluation + thinking budget discovery)
+**Last Updated**: 2026-03-04 (SARF improvement attempt for gemini-3-flash-preview)
 
 ---
 
@@ -204,6 +204,7 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 12. thinking_budget=1024 on structured extraction: enables model reasoning about event classification. Events F1 +43% (2.5-flash) and +139% (flash-lite). Sweet spot is exactly 1024 — bell curve from 0 to 4096 tested. (2026-03-04, T7-20)
 13. gemini-3.1-flash-lite-preview viability: matches 2.5-flash quality (Events 0.368 vs 0.378) at ~6x lower cost when thinking=1024 is enabled. Without thinking, flash-lite fails completely on event extraction. (2026-03-04, T7-20)
 14. gemini-3-flash-preview with thinking=1024: Aggregate 0.654 (+6.7% vs 2.5-flash), Events 0.397 (+9.1%), 23% faster (74s vs 96s for 6 discussions). Single-run comparison — needs multi-run validation. (2026-03-04, frontier model eval)
+15. SARF Decision Guide (prioritized checklist in Pass 2 prompt): additive guidance asking "is this relationship? symptom? anxiety? functioning?" in priority order. Marginal R +0.033, F +0.029 improvement without regressions. Only additive, non-example guidance works for SARF on gemini-3-flash. (2026-03-04, SARF induction run)
 
 **Things that failed**:
 1. Adding explicit negative examples for SARF variables (caused model to stop using them)
@@ -231,7 +232,10 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 23. gemini-2.5-pro for extraction (2026-03-04) — 2.3x slower than 2.5-flash (216s vs 96s), Events F1 actually 4.4% worse (0.348 vs 0.364). Pro tier adds no extraction quality benefit.
 24. gpt-4o for extraction (2026-03-04) — Events F1 0.276 (below 0.3 threshold), Bonds F1 0.290 (catastrophic), Aggregate 0.552 (10% below prod baseline). Heavy 429 rate limiting. Uses positive IDs and 0-for-null, requiring compatibility shims. No thinking/reasoning capability for structured extraction. **Deprecated model.**
 25. grok-3 for extraction (2026-03-04) — Aggregate 0.607 (competitive) but 279s latency (3.8x slower than gemini-3-flash). SARF scores near-zero across all variables. Only viable as backup if Gemini becomes unavailable. **Deprecated model.**
-26. Current-gen non-Gemini models (2026-03-04) — Tested gpt-5.2, gpt-5-mini, gpt-5-nano, o4-mini, gpt-4.1 (OpenAI) and grok-4-fast-reasoning, grok-4-1-fast-reasoning (xAI). Results: gpt-5-mini had highest Events F1 (0.410) but 460s latency disqualifies. gpt-5.2 ties gemini-3-flash on Events (0.397) but Bonds -37% and 196s. o4-mini baseline-tier quality at 289s. All non-Gemini models have weak Pair Bond extraction (0.444-0.825 vs baseline 0.819). Latency 196-831s vs gemini-3-flash 74s. No non-Gemini model justifies production deployment or prompt engineering investment. See full report: `doc/induction-reports/2026-03-04_15-36-39--model-evaluation-frontier/`
+26. Expanded Bowen theory definitions for Functioning (2026-03-04) — replaced terse 3-line definition with clinically specific solid-self/pseudo-self language. Functioning F1 actually dropped -0.036. More detailed definitions don't help the model distinguish variables.
+27. Positive examples showing correct R coding for overfunctioning/distance (2026-03-04) — 2 new examples demonstrating correct relationship coding. S dropped -0.208, A dropped -0.076. Examples (positive or negative) consistently hurt SARF on gemini-3-flash.
+28. Additive schema descriptions listing all relationship values (2026-03-04) — expanded Event.relationship description in llmutil.py to list all values explicitly. Events F1 dropped -0.054, all SARF metrics worse. Schema description changes (restrictive OR additive) consistently cause under-extraction on gemini-3-flash.
+29. Current-gen non-Gemini models (2026-03-04) — Tested gpt-5.2, gpt-5-mini, gpt-5-nano, o4-mini, gpt-4.1 (OpenAI) and grok-4-fast-reasoning, grok-4-1-fast-reasoning (xAI). Results: gpt-5-mini had highest Events F1 (0.410) but 460s latency disqualifies. gpt-5.2 ties gemini-3-flash on Events (0.397) but Bonds -37% and 196s. o4-mini baseline-tier quality at 289s. All non-Gemini models have weak Pair Bond extraction (0.444-0.825 vs baseline 0.819). Latency 196-831s vs gemini-3-flash 74s. No non-Gemini model justifies production deployment or prompt engineering investment. See full report: `doc/induction-reports/2026-03-04_15-36-39--model-evaluation-frontier/`
 
 **Key insights**:
 - The model is extremely sensitive to SARF-related prompt changes
@@ -254,6 +258,8 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 - All API costs are negligible: $0.004-0.065 per extraction across all tested models. A "premium AI" tier cannot be justified by cost differences — the delta between cheapest and most expensive model is $0.061. Quality (not cost) should drive model selection. (2026-03-04, frontier model eval)
 - Non-Gemini models consistently fail on Pair Bond extraction (Bonds F1 0.444-0.650 vs Gemini 0.803-0.825). Bond extraction is the most schema-sensitive component — it depends heavily on Gemini-specific structured output conventions. Switching providers requires bond-specific prompt adaptation. (2026-03-04, frontier model eval)
 - gpt-5-mini (Events 0.410) outperforms all Gemini models on raw Events F1 despite using Gemini-tuned prompts without adaptation. This suggests OpenAI's reasoning capability can partially compensate for prompt mismatch. However, 460s latency and 1/6 failure rate disqualify it. (2026-03-04, frontier model eval)
+- gemini-3-flash SARF regression is model-level, not prompt-addressable. After 6 iterations (restructuring, examples positive/negative, schema changes additive/restrictive, expanded definitions, decision guides), only a prioritized checklist (SARF Decision Guide) produced marginal improvement without regressions. The model fundamentally interprets interpersonal behavior (distance, overfunctioning) as emotional states (S=up, A=up, F=down) instead of relationship patterns. This appears baked into model reasoning. Future SARF improvement requires: fine-tuning, a dedicated SARF-only pass, or reverting Pass 2 to gemini-2.5-flash. (2026-03-04, SARF induction run)
+- Prompt changes on gemini-3-flash are asymmetrically risky: most changes cause regressions, very few help. The model is more brittle than gemini-2.5-flash for SARF coding. The safe approach is minimal additive guidance with no examples, no restrictive language, and no schema changes. (2026-03-04, SARF induction run)
 
 ---
 
@@ -345,7 +351,7 @@ Focus improvement efforts in this order:
 | Stage 3 | SARF F1 > 0.3 | Variable coding working |
 | Stage 4 | SARF F1 > 0.5 | Production-ready quality |
 
-Current state: **Stage 2 reached** (Events F1 = 0.509). Next target: SARF F1 > 0.3 (Stage 3). Symptom (0.727) and Functioning (0.627) already exceed Stage 4. Relationship (0.311) barely at Stage 3. Anxiety (0.399) at Stage 3.
+Current state (gemini-3-flash-preview): **Stage 1+ reached** (Events F1 = 0.396). SARF regressed from gemini-2.5-flash: S=0.449, A=0.467, R=0.224, F=0.290. Only R and F are below Stage 3. The SARF regression is a model-level behavior difference that prompt engineering cannot fully address (6 iterations tested, 2026-03-04).
 
 ---
 

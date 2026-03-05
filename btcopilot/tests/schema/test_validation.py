@@ -1,7 +1,6 @@
 import pytest
 
 from btcopilot.pdp import (
-    get_all_pdp_item_ids,
     validate_pdp_deltas,
     apply_deltas,
     reassign_delta_ids,
@@ -17,6 +16,7 @@ from btcopilot.schema import (
     VariableShift,
     RelationshipKind,
     PairBond,
+    get_all_pdp_item_ids,
 )
 from btcopilot.llmutil import (
     dataclass_to_json_schema,
