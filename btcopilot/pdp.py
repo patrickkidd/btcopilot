@@ -636,10 +636,13 @@ async def _two_pass_extract(
 
     # Pass 2: Shift Events + SARF (given Pass 1 output)
     pass1_data = json.dumps(asdict(pass1_pdp), indent=2, default=str)
+    committed_shifts = [e for e in diagram_data.events if e.get("kind") == "shift"]
+    committed_shift_json = json.dumps(committed_shifts, indent=2, default=str) if committed_shifts else "None"
     prompt2 = (
         DATA_EXTRACTION_PASS2_PROMPT.format(current_date=current_date)
         + DATA_EXTRACTION_PASS2_CONTEXT.format(
             pass1_data=pass1_data,
+            committed_shift_events=committed_shift_json,
             conversation_history=conversation_history,
         )
     )
@@ -679,6 +682,7 @@ async def extract_full(
     discussion,
     diagram_data: DiagramData,
 ) -> tuple[PDP, PDPDeltas]:
+    diagram_data.pdp = PDP()
     reference_date = (
         discussion.discussion_date
         if discussion.discussion_date
@@ -697,6 +701,7 @@ async def import_text(
     text: str,
     reference_date: date | None = None,
 ) -> tuple[PDP, PDPDeltas]:
+    diagram_data.pdp = PDP()
     if reference_date is None:
         reference_date = datetime.now().date()
     return await _two_pass_extract(
@@ -719,13 +724,21 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
     events_by_id = {item.id: item for item in pdp.events}
     pair_bonds_by_id = {item.id: item for item in pdp.pair_bonds}
 
+    # Positive-ID delta items reference committed diagram items — skip them.
+    # Only negative-ID items are new PDP items to add.
+    def _is_new_pdp_item(item):
+        return item.id is not None and item.id < 0
+
     # Process people deltas
     people_to_update = [
         (item, people_by_id[item.id])
         for item in deltas.people
         if item.id in people_by_id
     ]
-    people_to_add = [item for item in deltas.people if item.id not in people_by_id]
+    people_to_add = [
+        item for item in deltas.people
+        if item.id not in people_by_id and _is_new_pdp_item(item)
+    ]
 
     # Process event deltas
     events_to_update = [
@@ -733,7 +746,10 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         for item in deltas.events
         if item.id in events_by_id
     ]
-    events_to_add = [item for item in deltas.events if item.id not in events_by_id]
+    events_to_add = [
+        item for item in deltas.events
+        if item.id not in events_by_id and _is_new_pdp_item(item)
+    ]
 
     # Process pair_bond deltas
     pair_bonds_to_update = [
@@ -742,7 +758,8 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if item.id in pair_bonds_by_id
     ]
     pair_bonds_to_add = [
-        item for item in deltas.pair_bonds if item.id not in pair_bonds_by_id
+        item for item in deltas.pair_bonds
+        if item.id not in pair_bonds_by_id and _is_new_pdp_item(item)
     ]
 
     # Combine updates for processing
@@ -785,10 +802,17 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         pdp.pair_bonds.append(item)
         upserts_applied.append(item)
 
-    combined_upserts = deltas.people + deltas.events + deltas.pair_bonds
-    assert len(upserts_applied) == len(
-        combined_upserts
-    ), f"Failed to apply all upserts ({len(upserts_applied)} applied, {len(combined_upserts)} expected)"
+    # Count committed-item references that were intentionally skipped
+    committed_refs = [
+        item for item in deltas.people + deltas.events + deltas.pair_bonds
+        if not _is_new_pdp_item(item) and item.id not in people_by_id
+        and item.id not in events_by_id and item.id not in pair_bonds_by_id
+    ]
+    expected = len(deltas.people) + len(deltas.events) + len(deltas.pair_bonds) - len(committed_refs)
+    assert len(upserts_applied) == expected, (
+        f"Failed to apply all upserts ({len(upserts_applied)} applied, {expected} expected, "
+        f"{len(committed_refs)} committed refs skipped)"
+    )
 
     to_delete_ids = deltas.delete
     for idx in reversed(range(len(pdp.people))):

@@ -345,6 +345,9 @@ DATA_EXTRACTION_PASS2_CONTEXT = """
 **Pass 1 data** (people, bonds, and structural events already extracted):
 {pass1_data}
 
+**Committed shift events (do NOT recreate these):**
+{committed_shift_events}
+
 **Conversation to extract from**:
 {conversation_history}
 """

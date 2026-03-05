@@ -1087,7 +1087,6 @@ def extract(discussion_id):
     if not discussion.diagram:
         abort(400)
     diagram_data = discussion.diagram.get_diagram_data()
-    diagram_data.pdp = PDP()
     new_pdp, deltas = asyncio.run(pdp.extract_full(discussion, diagram_data))
     diagram_data.pdp = new_pdp
     discussion.diagram.set_diagram_data(diagram_data)
@@ -1169,7 +1168,7 @@ def clear_extracted_data(discussion_id):
 
         if discussion.diagram:
             database = discussion.diagram.get_diagram_data()
-            database.pdp = PDP(people=[], events=[], pair_bonds=[])
+            database.pdp = PDP()
             discussion.diagram.set_diagram_data(database)
 
         _log.info(

@@ -263,6 +263,7 @@ Ask user to start/restart before using chrome-devtools MCP: `cd dashboard && uv 
 
 ### Testing
 - **All tests**: `uv run pytest -vv tests`
+- **E2e tests** (real LLM calls): `uv run pytest --e2e -m e2e` — requires `GOOGLE_GEMINI_API_KEY` from `theapp/.env`
 - **Async**: `--asyncio-mode=auto` (configured in `btcopilot/tests/pytest.ini`)
 - **Directories**: `tests/` (main), `tests/training/` (training module)
 
