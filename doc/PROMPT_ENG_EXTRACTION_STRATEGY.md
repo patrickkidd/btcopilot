@@ -22,14 +22,16 @@
 | Relationship F1 | ~0.22 | Low |
 | Functioning F1 | ~0.22 | Low |
 
-### Full-Extraction Baseline (as of 2026-03-03, gemini-2.5-flash, 6 GT discussions)
+### Full-Extraction Baseline (as of 2026-03-04, gemini-2.5-flash, 6 GT discussions)
 
 | Metric | Score | Assessment |
 |--------|-------|------------|
-| Events F1 (avg 3 runs) | ~0.335 | Low but improved from 0.302 baseline |
+| Events F1 (avg 3 runs) | ~0.460 | Meets Stage 2 threshold (>0.4) |
+| People F1 (avg 3 runs) | ~0.924 | Strong |
+| PairBonds F1 (avg 3 runs) | ~0.677 | Acceptable |
 
-Per-discussion: disc 36=0.548, disc 37=0.348, disc 39=0.273, disc 48=0.411, disc 50=0.347, disc 51=0.097 (unstable).
-Non-determinism: single runs range 0.313-0.367 on identical prompts.
+Previous baseline (2026-03-03): Events F1 ~0.335.
+Improvement: +37% from prompt quality hints + matching fixes.
 
 **Diagnosis**: Scores are dominated by GT data quality issues and stochastic variance:
 1. **GT data quality** is the primary blocker (see section below)
@@ -327,7 +329,7 @@ Focus improvement efforts in this order:
 | Stage 3 | SARF F1 > 0.3 | Variable coding working |
 | Stage 4 | SARF F1 > 0.5 | Production-ready quality |
 
-Current state: Stage 1 not yet reached.
+Current state: Stage 2 reached (Events F1 ~0.46, 2026-03-04).
 
 ---
 

@@ -145,6 +145,18 @@
       "relationship": null,
       "functioning": null,
       "note": "Pivot to full-extraction mode (extract_full, 6 GT discussions, gemini-2.5-flash, avg 3 runs). V9 prompt: quality hints. Aggregate 0.531->0.551, Events 0.302->0.335, PairBonds 0.698->0.732. SARF not tracked by run_extract_full_f1."
+    },
+    {
+      "date": "2026-03-04",
+      "commit": null,
+      "aggregate": null,
+      "people": 0.924,
+      "events": 0.460,
+      "symptom": null,
+      "anxiety": null,
+      "relationship": null,
+      "functioning": null,
+      "note": "Events F1 0.335->0.460 (+37%). Prompt: scene-detail suppression, description style guidance, event count calibration, birth event constraints. Matching: GT person=None wildcard, GT 'New Event' placeholder auto-pass, partial_ratio + bidirectional substring. 3-run avg over 6 GT discussions."
     }
   ]
 }

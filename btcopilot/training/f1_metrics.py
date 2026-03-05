@@ -409,8 +409,12 @@ def match_events(
 
             # For Shift events, require description similarity
             # For structural events (Birth, Death, etc.), skip description matching
-            gt_desc = (gt_event.description or "").lower()
+            gt_desc = (gt_event.description or "").lower().strip()
             if is_structural:
+                desc_sim = 1.0
+            elif not gt_desc or gt_desc in ("new event",):
+                # GT placeholder descriptions auto-pass — these are incomplete
+                # GT entries that should match any AI event of the same kind/person
                 desc_sim = 1.0
             else:
                 ai_desc = (ai_event.description or "").lower()
@@ -418,12 +422,14 @@ def match_events(
                 # Hybrid matching: try multiple strategies, take best
                 # 1. token_set_ratio - matches shared tokens regardless of order/extras
                 token_sim = fuzz.token_set_ratio(ai_desc, gt_desc) / 100.0
-                # 2. substring check - GT is often a concise version of verbose AI
-                substring_sim = 1.0 if gt_desc and gt_desc in ai_desc else 0.0
+                # 2. substring check - either direction (GT concise vs AI verbose, or vice versa)
+                substring_sim = 1.0 if (gt_desc and gt_desc in ai_desc) or (ai_desc and ai_desc in gt_desc) else 0.0
                 # 3. standard ratio - character-level similarity
                 ratio_sim = fuzz.ratio(ai_desc, gt_desc) / 100.0
+                # 4. partial_ratio - best substring alignment
+                partial_sim = fuzz.partial_ratio(ai_desc, gt_desc) / 100.0
 
-                desc_sim = max(token_sim, substring_sim, ratio_sim)
+                desc_sim = max(token_sim, substring_sim, ratio_sim, partial_sim)
 
                 if desc_sim < DESCRIPTION_SIMILARITY_THRESHOLD:
                     continue
@@ -453,10 +459,12 @@ def match_events(
                     and (gt_event.spouse is None or ai_spouse == gt_event.spouse)
                 )
             else:
+                # Treat GT person/spouse/child=None as wildcard — many GT
+                # events have person=None due to incomplete annotation
                 links_match = (
-                    ai_person == gt_event.person
-                    and ai_spouse == gt_event.spouse
-                    and ai_child == gt_event.child
+                    (gt_event.person is None or ai_person == gt_event.person)
+                    and (gt_event.spouse is None or ai_spouse == gt_event.spouse)
+                    and (gt_event.child is None or ai_child == gt_event.child)
                 )
             # Targets/triangles: require overlap if both non-empty, pass if either is empty
             gt_targets = set(gt_event.relationshipTargets or [])

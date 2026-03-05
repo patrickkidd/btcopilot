@@ -738,6 +738,45 @@ events, pair_bonds, and relationships mentioned throughout the conversation.
 This is NOT incremental — extract everything you find into a single complete
 result.
 
+**QUALITY GUIDANCE FOR FULL-DISCUSSION EXTRACTION:**
+
+1. **Description style**: Use the speaker's OWN words from the transcript.
+   Short phrases, 2-5 words. Match how the person described it, not clinical
+   summaries.
+   GOOD: "Trouble sleeping", "Diagnosed with dementia", "Not speaking to sister"
+   BAD: "Experiencing sleep difficulties due to family stress",
+        "Cognitive decline diagnosis for elderly parent"
+
+2. **Consolidate repeated mentions**: When the same shift is discussed multiple
+   times across the conversation, create ONE event (not one per mention).
+   The person may bring up "trouble sleeping" in statements 3, 7, and 12 —
+   that is ONE sleep event, not three.
+
+3. **Do NOT extract scene details or conversational moments**: Skip things that
+   only describe the conversation itself rather than the family's story.
+   DO NOT EXTRACT: "Came in for help", "Described feeling overwhelmed in session",
+     "Told therapist about family", "Expressed concern about situation",
+     "Reflected on childhood", "Shared feelings about relationship"
+   EXTRACT: actual shifts — "Trouble sleeping", "Fighting with husband",
+     "Stopped talking to brother", "Diagnosed with cancer"
+
+4. **Event count calibration**: A typical 20-30 exchange discussion yields
+   roughly 15-30 events total (including structural events like births,
+   deaths, marriages). If you have more than 35 events, you are almost
+   certainly extracting scene details or duplicating events — go back and
+   consolidate. If fewer than 10, you may be missing relationship patterns
+   or structural events.
+
+5. **Prioritize clinically significant shifts**: Focus on events that represent
+   real changes in functioning, symptoms, anxiety, or relationships — not
+   background context or personality descriptions. A death, a diagnosis, a
+   cutoff, or a move are events. "He's a difficult person" is not.
+
+6. **Birth events**: Only create birth events when a specific birth date or
+   age is mentioned. Do NOT create birth events for every person extracted —
+   only when the transcript contains enough information to estimate when
+   they were born (e.g., "she's 72 years old", "born in 1985").
+
 **Existing Diagram State (avoid duplicates with committed items):**
 
 {diagram_data}

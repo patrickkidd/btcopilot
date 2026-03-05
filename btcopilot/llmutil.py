@@ -137,7 +137,7 @@ PDP_SCHEMA_DESCRIPTIONS = {
     "Event.id": "REQUIRED - NEVER null. MUST be negative integer for new entries (-1, -2, -3, etc.)",
     "Event.kind": "REQUIRED - NEVER null.Type of event: shift (SARF variable change), birth, death, married, etc.",
     "Event.person": "REQUIRED - NEVER null. ID of the main person this event is about",
-    "Event.description": "REQUIRED - NEVER null. Minimal phrase, 3 words ideal, 5 max (e.g., 'Trouble sleeping', 'Diagnosed with dementia')",
+    "Event.description": "REQUIRED - NEVER null. Use speaker's own words, 2-5 word phrase (e.g., 'Trouble sleeping', 'Diagnosed with dementia', 'Not talking to sister')",
     "Event.notes": "Optional additional detail about the event, multi-line text for context not captured in description. May contain opinions, feelings, and other subjective material that adds detail to the factual Event.description. Put opinions in quotes.",
     "Event.dateTime": "REQUIRED - NEVER null. When it happened (ISO format or fuzzy like '2025-03-15')",
     "Event.dateCertainty": "REQUIRED - NEVER null. Certainty of the date: certain, approximate, unknown",
@@ -187,15 +187,25 @@ async def gemini_structured(prompt, response_format, large=False):
 
     model = EXTRACTION_MODEL_LARGE if large else EXTRACTION_MODEL
 
-    response = await _client().aio.models.generate_content(
-        model=model,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.1,
-            max_output_tokens=65536,
-            response_mime_type="application/json",
-            response_schema=response_schema,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
+    config = types.GenerateContentConfig(
+        temperature=0.1,
+        max_output_tokens=65536,
+        response_mime_type="application/json",
+        response_schema=response_schema,
+        thinking_config=types.ThinkingConfig(thinking_budget=0),
+    )
+
+    # Use sync API via executor to avoid aiohttp 3.13 + nest_asyncio
+    # connector assertion failures. The sync httpx-based client is reliable
+    # across all execution contexts (Flask server, CLI scripts, tests).
+    client = _client()
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(
+        None,
+        lambda: client.models.generate_content(
+            model=model,
+            contents=prompt,
+            config=config,
         ),
     )
 
