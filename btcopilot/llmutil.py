@@ -16,6 +16,7 @@ _log = logging.getLogger(__name__)
 EXTRACTION_MODEL = "gemini-3-flash-preview"
 EXTRACTION_MODEL_LARGE = "gemini-3-flash-preview"
 RESPONSE_MODEL = "gemini-3-flash-preview"
+CALIBRATION_MODEL = "gemini-3.1-pro-preview"
 
 
 class OutputTruncatedError(Exception):
@@ -289,3 +290,44 @@ async def gemini_text(prompt=None, **kwargs):
 
 def gemini_text_sync(prompt=None, **kwargs):
     return asyncio.run(gemini_text(prompt, **kwargs))
+
+
+async def gemini_calibration(prompt, system_instruction=None):
+    from google.genai import types
+
+    start_time = time.time()
+    config = types.GenerateContentConfig(
+        temperature=0.2,
+        max_output_tokens=4096,
+        thinking_config=types.ThinkingConfig(thinking_budget=4096),
+    )
+    if system_instruction:
+        config.system_instruction = system_instruction
+
+    client = _client()
+    for attempt in range(GEMINI_MAX_RETRIES):
+        try:
+            response = await client.aio.models.generate_content(
+                model=CALIBRATION_MODEL,
+                contents=prompt,
+                config=config,
+            )
+            break
+        except ServerError as e:
+            if attempt == GEMINI_MAX_RETRIES - 1:
+                raise
+            delay = GEMINI_RETRY_BACKOFF * (2**attempt)
+            _log.warning(
+                f"Gemini ServerError (attempt {attempt + 1}/{GEMINI_MAX_RETRIES}), "
+                f"retrying in {delay}s: {e}"
+            )
+            await asyncio.sleep(delay)
+
+    content = response.text
+    _log.debug(f"gemini_calibration() completed in {time.time() - start_time}s")
+    _log.debug(f"gemini_calibration(): --> \n\n{content}")
+    return content
+
+
+def gemini_calibration_sync(prompt, system_instruction=None):
+    return asyncio.run(gemini_calibration(prompt, system_instruction))

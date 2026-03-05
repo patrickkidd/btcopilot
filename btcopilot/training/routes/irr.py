@@ -16,10 +16,9 @@ from btcopilot.training.irr_metrics import (
 )
 from btcopilot.training.models import Feedback, ReconciliationNote
 from btcopilot.training.utils import get_discussion_view_menu
+from btcopilot.training.calibrationutils import SARF_FIELDS
 
 bp = Blueprint("irr", __name__, url_prefix="/irr")
-
-SARF_FIELDS = ["symptom", "anxiety", "relationship", "functioning"]
 EVENT_FIELDS = ["description", "dateTime", "dateCertainty"]
 PERSON_FIELDS = ["gender", "last_name", "parents"]
 

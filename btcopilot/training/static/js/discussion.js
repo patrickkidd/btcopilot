@@ -1,6 +1,22 @@
 // Discussion page JavaScript - extracted from discussion.html template
 // Server-side configuration is provided via window.discussionConfig
 
+function renderMarkdown(text) {
+    if (!text) return '';
+    return marked.parse(text);
+}
+
+document.addEventListener('alpine:init', () => {
+    Alpine.store('calibration', {
+        open: false,
+        loading: false,
+        error: null,
+        analysis: null,
+        event: null,
+        renderMarkdown,
+    });
+});
+
 const CHILD_CENTRIC_KINDS = new Set(["birth", "adopted"]);
 const PLACEHOLDER_DESCRIPTIONS = new Set(["new event", ""]);
 
@@ -1951,6 +1967,43 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
                 this.hasChanges = false;
                 showNotification('Extraction reset to original', 'is-success');
             }
+        },
+
+        openCalibration(eventIndex) {
+            if (!this.messageId) return;
+            const events = this.extractedData?.events || [];
+            if (eventIndex < 0 || eventIndex >= events.length) return;
+
+            const store = Alpine.store('calibration');
+            store.event = events[eventIndex];
+            store.analysis = null;
+            store.error = null;
+            store.loading = true;
+            store.open = true;
+
+            fetch('/training/calibration/event', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    statement_id: this.messageId,
+                    event_index: eventIndex,
+                    auditor_id: window.selectedAuditor || window.discussionConfig.currentAuditor
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                store.analysis = data.analysis;
+                store.loading = false;
+            })
+            .catch(error => {
+                store.error = error.message;
+                store.loading = false;
+            });
         },
 
         // Update displayed data when selection changes
@@ -3971,7 +4024,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Mark as initialized
             el.setAttribute('data-alpine-initialized', 'true');
 
-            // Initialize Alpine on this element
+            // Clean up partial Alpine state (parent x-data scope may have touched this
+            // element during initial walk despite x-ignore), then initialize fresh
+            Alpine.destroyTree(el);
             Alpine.initTree(el);
 
             initializedCount++;
@@ -4013,11 +4068,13 @@ document.addEventListener('DOMContentLoaded', function() {
     window.initializeAllVisibleSarfEditors = function() {
         document.querySelectorAll('.sarf-editor-lazy:not([data-alpine-initialized])').forEach(el => {
             const rect = el.getBoundingClientRect();
-            if (rect.top < window.innerHeight + 200 && rect.bottom > -200) {
+            if (rect.top < window.innerHeight + 200 && rect.bottom > -200 &&
+                rect.left < window.innerWidth + 200 && rect.right > -200) {
                 initializeSarfEditor(el);
             }
         });
     };
+
 })();
 
 

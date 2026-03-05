@@ -1,0 +1,77 @@
+{# Calibration Modal - single page-level instance, reads from Alpine.store('calibration') #}
+
+<div x-data x-show="$store.calibration.open" x-cloak
+     class="modal" :class="{'is-active': $store.calibration.open}"
+     @keydown.escape.window="$store.calibration.open = false">
+    <div class="modal-background" @click="$store.calibration.open = false"></div>
+    <div class="modal-card" style="width: 90%; max-width: 1200px; max-height: 90vh;">
+        <header class="modal-card-head">
+            <p class="modal-card-title">
+                <span class="icon"><i class="fas fa-balance-scale"></i></span>
+                SARF Calibration
+            </p>
+            <button class="delete" @click="$store.calibration.open = false"></button>
+        </header>
+        <section class="modal-card-body" style="overflow-y: auto;">
+            <!-- Loading state -->
+            <template x-if="$store.calibration.loading">
+                <div class="has-text-centered p-6">
+                    <span class="icon is-large">
+                        <i class="fas fa-spinner fa-pulse fa-2x"></i>
+                    </span>
+                    <p class="mt-3">Analyzing coding against operational definitions...</p>
+                </div>
+            </template>
+
+            <!-- Error state -->
+            <template x-if="$store.calibration.error">
+                <div class="notification is-danger">
+                    <button class="delete" @click="$store.calibration.error = null"></button>
+                    <span x-text="$store.calibration.error"></span>
+                </div>
+            </template>
+
+            <!-- Analysis result -->
+            <template x-if="$store.calibration.analysis && !$store.calibration.loading">
+                <div class="columns">
+                    <!-- Left: current event coding -->
+                    <div class="column is-4">
+                        <div class="box">
+                            <h5 class="title is-6">Current Coding</h5>
+                            <template x-if="$store.calibration.event">
+                                <div class="content is-small">
+                                    <p><strong>Description:</strong> <span x-text="$store.calibration.event.description || '—'"></span></p>
+                                    <p><strong>Kind:</strong> <span x-text="$store.calibration.event.kind || '—'"></span></p>
+                                    <template x-if="$store.calibration.event.symptom">
+                                        <p><strong>Symptom:</strong> <span x-text="$store.calibration.event.symptom"></span></p>
+                                    </template>
+                                    <template x-if="$store.calibration.event.anxiety">
+                                        <p><strong>Anxiety:</strong> <span x-text="$store.calibration.event.anxiety"></span></p>
+                                    </template>
+                                    <template x-if="$store.calibration.event.relationship">
+                                        <p><strong>Relationship:</strong> <span x-text="$store.calibration.event.relationship"></span></p>
+                                    </template>
+                                    <template x-if="$store.calibration.event.functioning">
+                                        <p><strong>Functioning:</strong> <span x-text="$store.calibration.event.functioning"></span></p>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    <!-- Right: LLM analysis -->
+                    <div class="column is-8">
+                        <div class="box">
+                            <h5 class="title is-6">Calibration Analysis</h5>
+                            <div class="content calibration-analysis-content"
+                                 x-html="$store.calibration.renderMarkdown($store.calibration.analysis)">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button" @click="$store.calibration.open = false">Close</button>
+        </footer>
+    </div>
+</div>

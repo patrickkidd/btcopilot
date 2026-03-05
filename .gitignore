@@ -1,5 +1,6 @@
 # Data
 models/*
+btcopilot/training/data/sarf_definitions/
 instance/
 vector_db/
 btcopilot-sources/
