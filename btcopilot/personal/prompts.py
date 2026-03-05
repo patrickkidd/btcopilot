@@ -293,11 +293,16 @@ Extract people, pair bonds, and structural life events from the conversation.
 - Marriage/divorce events need both `person` and `spouse` fields
 - Use conversation context to infer approximate dates when exact dates aren't given
 - Do NOT extract emotional shifts, symptoms, anxiety, or functioning changes — that is Pass 2
+
+**Committed Data**:
+The diagram state below may contain items already committed by the user with
+POSITIVE IDs. Use negative IDs for new items. Reference committed items by
+their positive IDs — do NOT recreate them with new negative IDs.
 """
 
 DATA_EXTRACTION_PASS1_CONTEXT = """
 
-**Existing diagram data** (do not duplicate — only add NEW people/events/bonds):
+**COMMITTED DIAGRAM STATE (positive IDs — reference these, do NOT recreate):**
 {diagram_data}
 
 **Conversation to extract from**:

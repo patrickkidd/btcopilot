@@ -586,6 +586,26 @@ async def _extract_and_validate(
     return new_pdp, pdp_deltas
 
 
+def _committed_state_for_prompt(diagram_data: DiagramData) -> dict:
+    """Extract only committed items for prompt context, with clean serialization."""
+    def _clean_datetimes(items):
+        cleaned = []
+        for item in items:
+            clean = dict(item)
+            for key in ("dateTime", "endDateTime"):
+                v = clean.get(key)
+                if v and hasattr(v, "toString"):
+                    clean[key] = v.toString("yyyy-MM-dd")
+            cleaned.append(clean)
+        return cleaned
+
+    return {
+        "people": diagram_data.people,
+        "events": _clean_datetimes(diagram_data.events),
+        "pair_bonds": diagram_data.pair_bonds,
+    }
+
+
 async def _two_pass_extract(
     diagram_data: DiagramData,
     conversation_history: str,
@@ -602,10 +622,11 @@ async def _two_pass_extract(
     )
 
     # Pass 1: People + PairBonds + Structural Events
+    committed_state = _committed_state_for_prompt(diagram_data)
     prompt1 = (
         DATA_EXTRACTION_PASS1_PROMPT.format(current_date=current_date)
         + DATA_EXTRACTION_PASS1_CONTEXT.format(
-            diagram_data=asdict(diagram_data),
+            diagram_data=json.dumps(committed_state, indent=2, default=str),
             conversation_history=conversation_history,
         )
     )

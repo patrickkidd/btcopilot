@@ -76,6 +76,16 @@ Multi-run averages (2-3 runs each). 6/6 discussions, 0 API errors. Description-f
 
 **Remaining risk**: If a person has 2+ genuinely different shift events within the 730-day date tolerance, they'll match incorrectly. Accepted as rare with current GT dataset. SARF Signature Match (Proposal A from the experiment plan) is available as a future upgrade if this becomes a problem.
 
+### 2b. Committed Data Duplication (Resolved — 2026-03-05)
+
+**Problem**: Re-running extraction on a discussion with committed diagram items produced duplicates — the LLM re-created committed people/events/bonds with new negative IDs instead of referencing them by positive ID.
+
+**Root cause**: Extraction prompts never explained the delta model. The prompt said "avoid duplicates" but didn't teach the LLM: (1) what positive IDs in committed data mean, (2) that it should reference existing items by positive ID, (3) that PDP is cleared before each re-extraction so deltas operate against committed state only.
+
+**Resolution**: Prompt-level fix. Added "COMMITTED DATA — REFERENCE, DON'T RECREATE" section to PASS1 prompt explaining the delta model, plus an example showing correct re-extraction with committed data. Also cleaned up diagram_data serialization to pass only committed items (people, events, pair_bonds) instead of full `asdict(diagram_data)` which included UI settings and noise.
+
+**Wrong approaches tried**: Rule-based post-hoc dedup (name matching unreliable, LLM-based dedup unnecessary if extraction is correct). Post-hoc dedup is wrong-headed — the fix belongs in the prompts.
+
 ### 3. High Model Stochasticity (Critical)
 
 **Problem**: Same prompt produces different outputs across runs.
@@ -265,6 +275,7 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 - Structured output schema is an S/A corruption vector. When the review pass generates full PDPDeltas output, it must regenerate ALL fields. Even with instructions to "preserve" S/A values, the model re-decides them. The "review-then-filter" pattern — ask model to fully re-evaluate, but only apply the corrections you trust programmatically — avoids this regeneration corruption. (2026-03-04, SARF structural experiments)
 - SARF regression is NOT purely model-specific. Hybrid experiment (gemini-2.5-flash for Pass 2) did NOT recover SARF scores. The original 2.5-flash SARF numbers may have been stochastic highs, or the 2-pass architecture itself affects SARF coding differently than the original single-pass. (2026-03-04, SARF structural experiments)
 - Review prompts are more effective than extraction prompts for clinical distinctions. The same "CRITICAL DISTINCTIONS" language (distance ≠ anxiety, overfunctioning ≠ functioning down) failed when added to the extraction prompt but succeeded in the review prompt. At review time, the model has concrete events to evaluate rather than abstractly applying rules during extraction. (2026-03-04, SARF structural experiments)
+- Post-hoc dedup (rule-based or LLM-based) is wrong-headed for committed data duplication. The fix belongs in the prompts — teach the extraction LLM what committed data means and how to produce correct deltas in the first place. Also, serializing only committed items (not full DiagramData with UI settings) reduces prompt noise. (2026-03-05, T7-18)
 
 ---
 

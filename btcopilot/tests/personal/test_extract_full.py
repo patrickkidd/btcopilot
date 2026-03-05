@@ -46,12 +46,14 @@ def test_extract_full_returns_merged_pdp(discussion):
         events=[pass2_pdp.events[1]],
     )
 
+    review_deltas = PDPDeltas(events=[])
+
     with patch(
         "btcopilot.pdp._extract_and_validate",
         AsyncMock(side_effect=[(pass1_pdp, pass1_deltas), (pass2_pdp, pass2_deltas)]),
     ) as mock_extract, patch(
         "btcopilot.pdp.gemini_structured",
-        AsyncMock(return_value=PDPDeltas()),
+        AsyncMock(return_value=review_deltas),
     ):
         from btcopilot.pdp import extract_full
 
