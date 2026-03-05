@@ -1,0 +1,1 @@
+{"type": "run_start", "timestamp": "2025-12-16T21:58:27Z", "gt_hash": "2d2af9fb", "focus": "Person", "focus_metric": "people_f1", "focus_guidance": "Focus on improving person name extraction, deduplication, and parent-child relationships."}

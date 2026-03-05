@@ -10,7 +10,7 @@
 
 ### Current: Gemini 2.5 Flash (extraction) / Gemini 3 Flash Preview (responses)
 
-**Extraction**: gemini-2.5-flash (production), gemini-3.1-flash-lite-preview (validated alternative — see T7-20)
+**Extraction**: gemini-2.5-flash (production), gemini-3-flash-preview (recommended upgrade)
 **Responses**: gemini-3-flash-preview (conversational chat responses)
 **Thinking**: `thinking_budget=1024` (CRITICAL — see T7-20 findings below)
 
@@ -19,12 +19,19 @@
 - Aggregate F1 within 3% of 2.0-flash, better SARF variable scores
 - 64K output token limit supports large imports
 
-**Flash-lite alternative (validated 2026-03-04):**
-- gemini-3.1-flash-lite-preview matches 2.5-flash quality when thinking=1024 (Events F1: 0.368 vs 0.378)
-- ~6x lower cost ($0.25/1M input, $1.50/1M output)
-- Zero API 500 errors with 2-pass split architecture
-- Risk: preview model, may change without notice
-- Recommended for cost optimization after thinking_budget=1024 is deployed
+**Recommended upgrade: gemini-3-flash-preview (validated 2026-03-04):**
+- +6.7% Aggregate F1, +9.1% Events F1 vs 2.5-flash (both with thinking=1024)
+- 23% faster (74s vs 96s for 6 discussions)
+- $0.016/extraction vs $0.012 — negligible cost increase
+- Confirmed best across 14 model configs spanning Google, OpenAI, and xAI
+- Needs multi-run validation (3+ runs) before production deployment
+- See full report: `doc/induction-reports/2026-03-04_15-36-39--model-evaluation-frontier/`
+
+**Non-Google alternatives evaluated (2026-03-04):**
+- gpt-5.2 (OpenAI): Events F1 tied (0.397) but Bonds -37%, 196s latency, $0.065/extraction. Best backup.
+- gpt-5-mini (OpenAI): Highest Events F1 (0.410) but 460s latency, 1/6 failures. Monitor only.
+- o4-mini, gpt-4.1, gpt-5-nano, grok-4-fast, grok-4-1-fast: All below baseline or disqualified on latency.
+- All non-Gemini models require compatibility shims (0→None, positive→negative ID remapping, API param differences).
 
 **Why Gemini 2.0 Flash over GPT-4o-mini:**
 - Larger context window (1M tokens vs 128K)

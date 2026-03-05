@@ -203,6 +203,7 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 11. Description-free event matching (Strategy B): remove Event.description from F1 matching gates — Events F1 +40% with no extraction changes (2026-03-03, T7-18)
 12. thinking_budget=1024 on structured extraction: enables model reasoning about event classification. Events F1 +43% (2.5-flash) and +139% (flash-lite). Sweet spot is exactly 1024 — bell curve from 0 to 4096 tested. (2026-03-04, T7-20)
 13. gemini-3.1-flash-lite-preview viability: matches 2.5-flash quality (Events 0.368 vs 0.378) at ~6x lower cost when thinking=1024 is enabled. Without thinking, flash-lite fails completely on event extraction. (2026-03-04, T7-20)
+14. gemini-3-flash-preview with thinking=1024: Aggregate 0.654 (+6.7% vs 2.5-flash), Events 0.397 (+9.1%), 23% faster (74s vs 96s for 6 discussions). Single-run comparison — needs multi-run validation. (2026-03-04, frontier model eval)
 
 **Things that failed**:
 1. Adding explicit negative examples for SARF variables (caused model to stop using them)
@@ -226,6 +227,11 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 19. Hybrid per-pass model selection (flash-lite P1, 2.5-flash P2) (2026-03-04) — does NOT outperform flash-lite on both passes when thinking=1024 is enabled. The bottleneck is thinking budget, not model capability.
 20. thinking_budget > 1024 on flash-lite (2026-03-04) — 2048 and 4096 both worse than 1024. Model over-thinks and second-guesses, dropping valid events.
 21. Temperature 0.0 on flash-lite (2026-03-04) — negligible difference vs 0.1, confirms earlier temp=0 finding (item #10)
+22. gemini-3-pro-preview (2026-03-04) — requires thinking mode (cannot disable), consistently hits 504 DEADLINE_EXCEEDED (30-35s per pass when it works, often >120s). Completely disqualified for mobile app UX.
+23. gemini-2.5-pro for extraction (2026-03-04) — 2.3x slower than 2.5-flash (216s vs 96s), Events F1 actually 4.4% worse (0.348 vs 0.364). Pro tier adds no extraction quality benefit.
+24. gpt-4o for extraction (2026-03-04) — Events F1 0.276 (below 0.3 threshold), Bonds F1 0.290 (catastrophic), Aggregate 0.552 (10% below prod baseline). Heavy 429 rate limiting. Uses positive IDs and 0-for-null, requiring compatibility shims. No thinking/reasoning capability for structured extraction. **Deprecated model.**
+25. grok-3 for extraction (2026-03-04) — Aggregate 0.607 (competitive) but 279s latency (3.8x slower than gemini-3-flash). SARF scores near-zero across all variables. Only viable as backup if Gemini becomes unavailable. **Deprecated model.**
+26. Current-gen non-Gemini models (2026-03-04) — Tested gpt-5.2, gpt-5-mini, gpt-5-nano, o4-mini, gpt-4.1 (OpenAI) and grok-4-fast-reasoning, grok-4-1-fast-reasoning (xAI). Results: gpt-5-mini had highest Events F1 (0.410) but 460s latency disqualifies. gpt-5.2 ties gemini-3-flash on Events (0.397) but Bonds -37% and 196s. o4-mini baseline-tier quality at 289s. All non-Gemini models have weak Pair Bond extraction (0.444-0.825 vs baseline 0.819). Latency 196-831s vs gemini-3-flash 74s. No non-Gemini model justifies production deployment or prompt engineering investment. See full report: `doc/induction-reports/2026-03-04_15-36-39--model-evaluation-frontier/`
 
 **Key insights**:
 - The model is extremely sensitive to SARF-related prompt changes
@@ -241,6 +247,13 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 - Previous findings can become invalid as APIs evolve. The "thinking is catastrophic" finding from Feb 2026 was corrected in March 2026. Always re-test assumptions when architecture changes. (2026-03-04)
 - LLM non-determinism on extraction runs 10-15% variance on Events F1 across identical configs. Multi-run averaging (3+ runs) is mandatory for reliable comparison. (2026-03-04, confirmed with 3-run data)
 - "Structural events" (birth, death, married, divorced, bonded, separated, adopted, moved) vs "shift events" (kind=shift, SARF-coded) is the correct taxonomy for the two event categories in the 2-pass split. Pass 1 extracts structural events; Pass 2 extracts shift events. (2026-03-04)
+- Gemini 3 Flash is MORE dependent on thinking than 2.5 Flash. Without thinking, 3-flash drops entire event categories (zero events on some discussions). With thinking=1024, 3-flash matches or exceeds 2.5-flash quality at lower latency. (2026-03-04)
+- "Pro" tier models (2.5-pro, 3-pro) consistently fail the latency requirement for mobile app UX. Stick with flash-tier for production extraction. (2026-03-04)
+- Non-Google models (gpt-4o, grok-3) produce structurally different output than Gemini: positive IDs instead of negative, 0 instead of null for optional fields. The prompts are heavily tuned for Gemini conventions. Switching providers would require prompt adaptation + compatibility shims, not just an API swap. (2026-03-04)
+- grok-3 matches gemini-2.5-flash quality (Agg 0.607 vs 0.613) but is 3.8x slower (279s vs 74s). This confirms that extraction quality is largely prompt-driven, not model-driven — a sufficiently capable model with no structured output support can still achieve baseline quality. (2026-03-04)
+- All API costs are negligible: $0.004-0.065 per extraction across all tested models. A "premium AI" tier cannot be justified by cost differences — the delta between cheapest and most expensive model is $0.061. Quality (not cost) should drive model selection. (2026-03-04, frontier model eval)
+- Non-Gemini models consistently fail on Pair Bond extraction (Bonds F1 0.444-0.650 vs Gemini 0.803-0.825). Bond extraction is the most schema-sensitive component — it depends heavily on Gemini-specific structured output conventions. Switching providers requires bond-specific prompt adaptation. (2026-03-04, frontier model eval)
+- gpt-5-mini (Events 0.410) outperforms all Gemini models on raw Events F1 despite using Gemini-tuned prompts without adaptation. This suggests OpenAI's reasoning capability can partially compensate for prompt mismatch. However, 460s latency and 1/6 failure rate disqualify it. (2026-03-04, frontier model eval)
 
 ---
 
