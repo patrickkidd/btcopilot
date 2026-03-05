@@ -191,6 +191,20 @@
       "relationship": 0.220,
       "functioning": 0.198,
       "note": "Model upgrade to gemini-3-flash-preview (thinking=1024). +6.7% Agg, +9.1% Events vs 2.5-flash. SARF regressed -35.9% vs 2.5-flash baseline. Single run."
+    },
+    {
+      "date": "2026-03-04",
+      "commit": "304c9c6",
+      "model": "gemini-3-flash-preview",
+      "aggregate": 0.641,
+      "people": 0.911,
+      "events": 0.379,
+      "pair_bonds": 0.803,
+      "symptom": 0.518,
+      "anxiety": 0.597,
+      "relationship": 0.487,
+      "functioning": 0.291,
+      "note": "3-pass R-review architecture (3-run mean). SARF macro 0.341->0.473 (+39%). R +103% (0.240->0.487). Latency +70%."
     }
   ]
 }
