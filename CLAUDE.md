@@ -31,7 +31,7 @@ New clinical data outputs: store in `btcopilot-sources/`, create symlink, add to
 | PDP extraction, deltas, cumulative logic | [doc/specs/PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md) |
 | SARF coding, GT workflow, approval | [doc/SARF_GROUND_TRUTH_TECHNICAL.md](doc/SARF_GROUND_TRUTH_TECHNICAL.md) |
 | Prompt engineering decisions | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) |
-| Prompt induction workflow | [doc/PROMPT_INDUCTION_CLI.md](doc/PROMPT_INDUCTION_CLI.md) |
+| Prompt optimization process | [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) |
 | Bowen theory concepts | [CONTEXT.md](CONTEXT.md) |
 | Diagram layout/rendering/SVG | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) |
 | F1 metrics, evaluation | [doc/F1_METRICS.md](doc/F1_METRICS.md) |
@@ -179,37 +179,33 @@ All web UI must work in **both light and dark modes**:
 
 ---
 
-## Prompt Induction Workflow
+## Prompt Optimization Workflow
 
 **MANDATORY for ALL changes to extraction prompts**, including:
 - `fdserver/prompts/private_prompts.py` (production prompt overrides)
 - `btcopilot/personal/prompts.py` (default prompts)
 - `btcopilot/extensions/llm.py` (`PDP_FIELD_DESCRIPTIONS`)
 
-**THE PROTOCOL**: [btcopilot/training/prompts/induction_agent.md](btcopilot/training/prompts/induction_agent.md) is the authoritative protocol for ALL prompt engineering work. Follow it completely — no exceptions, no shortcuts, no "I'll document later."
+**Process overview**: [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) — Interactive Claude Code sessions with comprehensive documentation. No CLI automation, no autonomous agents.
 
-**This applies to every prompt change, whether**:
-- Automated CLI-driven induction runs
-- Manual/ad-hoc prompt tuning sessions
-- Full-extraction (`extract_full()`) or per-statement (`pdp.update()`) prompts
-- Quick "let me just try one thing" experiments
+**Documentation protocol**: [btcopilot/training/prompts/induction_agent.md](btcopilot/training/prompts/induction_agent.md) — Authoritative spec for logging format, report structure, iteration rules. Follow its documentation requirements even in interactive sessions.
 
-**Non-negotiable requirements from the protocol**:
+**Non-negotiable requirements**:
 1. Read strategy doc FIRST: [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md)
-2. Create timestamped run folder + JSONL log file in `doc/induction-reports/`
-3. Establish and log baseline F1 before any changes
-4. Log EVERY iteration (kept AND reverted) with F1 scores
+2. Create timestamped run folder + report in `doc/induction-reports/`
+3. Establish baseline F1 before any changes
+4. Log EVERY experiment (kept AND reverted) with F1 scores
 5. Generate final report (`.md`) in the run folder
 6. Update strategy doc with what worked AND what failed
 7. Update [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md)
 8. Append entry to [doc/f1_timeseries.json](doc/f1_timeseries.json) (feeds admin/auditor dashboard chart)
 
-**Log negative results as thoroughly as positive ones** — the goal is to prevent future thrashing by documenting what was tried and why it failed.
+**Log negative results as thoroughly as positive ones** — prevents future thrashing.
 
 | Doc | Purpose |
 |-----|---------|
-| [btcopilot/training/prompts/induction_agent.md](btcopilot/training/prompts/induction_agent.md) | **AUTHORITATIVE** — Full protocol with logging spec, iteration rules, report format |
-| [doc/PROMPT_INDUCTION_CLI.md](doc/PROMPT_INDUCTION_CLI.md) | CLI-driven automated iteration |
+| [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) | Process overview — how sessions work, where prompts live, what to document |
+| [btcopilot/training/prompts/induction_agent.md](btcopilot/training/prompts/induction_agent.md) | Documentation protocol — logging spec, report format, iteration rules |
 | [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md) | Cumulative strategy doc — read before, update after |
 | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) | Decision log — update after every run |
 

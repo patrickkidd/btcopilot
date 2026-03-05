@@ -2,7 +2,7 @@
 
 **Purpose**: Authoritative record of prompt engineering decisions, experiments, and lessons learned for the SARF data extraction system. Prevents regressions by documenting what works, what doesn't, and why.
 
-**Last Updated**: 2026-03-03 (T7-18 split extraction)
+**Last Updated**: 2026-03-04 (T7-20 flash-lite + thinking budget)
 
 ---
 
@@ -10,14 +10,21 @@
 
 ### Current: Gemini 2.5 Flash (extraction) / Gemini 3 Flash Preview (responses)
 
-**Extraction**: gemini-2.5-flash (all extraction — both incremental and large imports)
+**Extraction**: gemini-2.5-flash (production), gemini-3.1-flash-lite-preview (validated alternative — see T7-20)
 **Responses**: gemini-3-flash-preview (conversational chat responses)
+**Thinking**: `thinking_budget=1024` (CRITICAL — see T7-20 findings below)
 
 **Why Gemini 2.5 Flash for extraction:**
 - gemini-2.0-flash deprecated March 31, 2026 and showing server-side drift
 - Aggregate F1 within 3% of 2.0-flash, better SARF variable scores
 - 64K output token limit supports large imports
-- `thinking_config=ThinkingConfig(thinking_budget=0)` explicitly disables thinking for speed/cost
+
+**Flash-lite alternative (validated 2026-03-04):**
+- gemini-3.1-flash-lite-preview matches 2.5-flash quality when thinking=1024 (Events F1: 0.368 vs 0.378)
+- ~6x lower cost ($0.25/1M input, $1.50/1M output)
+- Zero API 500 errors with 2-pass split architecture
+- Risk: preview model, may change without notice
+- Recommended for cost optimization after thinking_budget=1024 is deployed
 
 **Why Gemini 2.0 Flash over GPT-4o-mini:**
 - Larger context window (1M tokens vs 128K)
@@ -335,7 +342,7 @@ See `btcopilot/doc/TODO_GEMINI_SCHEMA.md` for:
 
 **Decision**: Switch all extraction to gemini-2.5-flash. The 3% aggregate gap vs 2.0-flash is within noise, SARF variable scores are better, and 2.0-flash is being deprecated.
 
-**Config notes**: `thinking_config=ThinkingConfig(thinking_budget=0)` explicitly disables thinking mode on 2.5-flash (was a no-op on 2.0-flash). `max_output_tokens=65536` is within 2.5-flash limits.
+**Config notes**: `thinking_config=ThinkingConfig(thinking_budget=1024)` enables thinking for quality (see T7-20 decision below). `max_output_tokens=65536` is within 2.5-flash limits.
 
 ### Feb 2026: Multi-turn prompt format evaluation
 
@@ -381,6 +388,31 @@ Both passes route through `_extract_and_validate()` for retry/validation. Pass 2
 - Per-statement prompt constants (`DATA_EXTRACTION_PROMPT`, `DATA_EXTRACTION_EXAMPLES`, etc.) are NOT used by `extract_full()` — the split prompts are independent
 
 **Lesson**: Task decomposition works. Splitting a complex extraction into two focused passes reduces cognitive load and improves quality on every metric. The key insight from the earlier 9-iteration experiment ("per-statement training dominates full-extraction context") motivated this split — instead of fighting the single-prompt format, we redesigned the pipeline.
+
+### Mar 2026: thinking_budget=1024 + flash-lite model evaluation (T7-20)
+
+**Context**: T7-20 (issue #59) was blocked by HTTP 500 errors from gemini-3.1-flash-lite-preview. After T7-18 split extraction landed, re-evaluated flash-lite viability. Discovered thinking_budget=0 was a critical quality bottleneck for both models.
+
+**Experiments**: 14 runs across 12 configurations testing model (2.5-flash vs flash-lite), thinking budget (0/512/1024/2048/4096), temperature (0.0/0.1), and hybrid per-pass model selection. Multi-run averaging on key configs.
+
+**Results** (multi-run averages, 6 GT discussions):
+
+| Config | Events F1 | Aggregate F1 | Time | Cost |
+|--------|-----------|-------------|------|------|
+| 2.5-flash think=0 (was prod) | 0.265 | 0.545 | 62s | 1x |
+| 2.5-flash think=1024 | **0.378** | **0.609** | 51s | 1x |
+| flash-lite think=0 | 0.154 | 0.589 | 101s | 0.17x |
+| flash-lite think=1024 | **0.368** | **0.600** | 50s | 0.17x |
+
+**Decision**: Deploy thinking_budget=1024 immediately (one-line change). Switch to flash-lite when ready to optimize cost.
+
+**CORRECTION**: Previous finding (Feb 2026) that "thinking+structured_output is catastrophic" is no longer true with the 2-pass split architecture. All 14 runs used thinking=1024 with structured JSON output — zero hangs, ~8s per pass.
+
+**Thinking budget sweet spot** (flash-lite, Events F1): 0→0.154, 512→0.295, **1024→0.368**, 2048→0.298, 4096→0.355. Clear bell curve.
+
+**What failed**: Hybrid models (flash-lite P1, 2.5-flash P2) don't beat homogeneous flash-lite+think. Temperature 0.0 vs 0.1 is noise. Thinking > 1024 causes over-reasoning.
+
+**Report**: `doc/induction-reports/2026-03-04_13-15-00--model-evaluation-flash-lite/`
 
 ### Mar 2026: Description-free event matching (Strategy B)
 

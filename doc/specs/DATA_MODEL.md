@@ -177,6 +177,10 @@ class EventKind(enum.Enum):
     Death = "death"
 ```
 
+**Taxonomy** (used in 2-pass extraction split):
+- **Structural events** (`isStructural()`): All non-shift kinds — birth, death, married, bonded, separated, divorced, adopted, moved. Represent family structure changes. Extracted in Pass 1.
+- **Shift events** (`kind == Shift`): SARF-coded incidents — symptom/anxiety/functioning/relationship changes at a point in time. Extracted in Pass 2.
+
 `isPairBond()` returns True for: Bonded, Married, Birth, Adopted, Moved,
 Separated, Divorced. These require a Marriage (pair bond) in the Qt scene.
 

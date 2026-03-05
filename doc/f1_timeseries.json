@@ -177,6 +177,43 @@
       "relationship": 0.311,
       "functioning": 0.627,
       "note": "2-pass split extraction (extract_full_split) + description-free matching. 6/6 discussions, 100% completion. Events 0.470->0.509, Bonds 0.539->0.832, Agg 0.595->0.669."
+    },
+    {
+      "date": "2026-03-04",
+      "commit": "t7-18-split-extraction",
+      "aggregate": 0.545,
+      "people": 0.920,
+      "events": 0.265,
+      "symptom": null,
+      "anxiety": null,
+      "relationship": null,
+      "functioning": null,
+      "note": "T7-20 baseline: 2.5-flash thinking=0, 2-pass split, avg 2 runs. Establishes controlled baseline for thinking budget experiments."
+    },
+    {
+      "date": "2026-03-04",
+      "commit": "t7-18-split-extraction",
+      "aggregate": 0.609,
+      "people": 0.915,
+      "events": 0.378,
+      "symptom": null,
+      "anxiety": null,
+      "relationship": null,
+      "functioning": null,
+      "note": "T7-20: 2.5-flash thinking=1024, 2-pass split, avg 2 runs. Events +43% from thinking budget alone."
+    },
+    {
+      "date": "2026-03-04",
+      "commit": "t7-18-split-extraction",
+      "model": "gemini-3.1-flash-lite-preview",
+      "aggregate": 0.600,
+      "people": 0.911,
+      "events": 0.368,
+      "symptom": null,
+      "anxiety": null,
+      "relationship": null,
+      "functioning": null,
+      "note": "T7-20: flash-lite thinking=1024, 2-pass split, avg 3 runs. Matches 2.5-flash quality at ~6x lower cost. Zero 500 errors."
     }
   ]
 }

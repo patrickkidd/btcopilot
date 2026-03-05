@@ -4,26 +4,35 @@
 
 **Status**: Active - update as learnings emerge.
 
-**Last Updated**: 2026-03-03 (T7-18 split extraction)
+**Last Updated**: 2026-03-04 (T7-20 flash-lite model evaluation + thinking budget discovery)
 
 ---
 
 ## Current State Summary
 
-### F1 Baseline — Full Extraction, 2-Pass Split (as of 2026-03-03, gemini-2.5-flash, 6 GT discussions)
+### F1 Baseline — Full Extraction, 2-Pass Split (as of 2026-03-04, 6 GT discussions)
+
+**Current production** (gemini-2.5-flash, thinking=0):
 
 | Metric | Score | Assessment |
 |--------|-------|------------|
-| Aggregate F1 | 0.669 | Good — Stage 2 reached |
-| People F1 | 0.909 | Strong |
-| Events F1 | 0.509 | Stage 2 reached (>0.5) |
-| PairBonds F1 | 0.832 | Strong |
-| Symptom F1 | 0.727 | Good |
-| Anxiety F1 | 0.399 | Moderate |
-| Relationship F1 | 0.311 | Low |
-| Functioning F1 | 0.627 | Good |
+| Aggregate F1 | 0.545 | Moderate |
+| People F1 | 0.920 | Strong |
+| Events F1 | 0.265 | Below Stage 1 target |
+| PairBonds F1 | 0.648 | Moderate |
 
-6/6 discussions completed (100%). Avg 2 runs. Description-free event matching (Strategy B).
+**With thinking=1024** (recommended, pending deployment):
+
+| Metric | 2.5-flash | flash-lite | Assessment |
+|--------|-----------|------------|------------|
+| Aggregate F1 | 0.609 | 0.600 | Good |
+| People F1 | 0.915 | 0.911 | Strong |
+| Events F1 | 0.378 | 0.368 | Stage 1+ |
+| PairBonds F1 | 0.626 | 0.650 | Moderate |
+
+Multi-run averages (2-3 runs each). 6/6 discussions, 0 API errors. Description-free event matching.
+
+**Key insight**: thinking_budget=1024 is the single biggest lever (+43% Events F1 on 2.5-flash, +139% on flash-lite). Flash-lite matches 2.5-flash quality at ~6x lower cost. See report: `doc/induction-reports/2026-03-04_13-15-00--model-evaluation-flash-lite/`
 
 ### Previous Baselines (archived)
 
@@ -77,8 +86,10 @@
 
 **Impact**: Cannot distinguish signal from noise during prompt optimization.
 
+**Partial mitigation (2026-03-04)**: thinking_budget=1024 slightly reduces variance by giving the model reasoning steps, but 10-15% Events F1 variance persists across identical configs.
+
 **Potential fixes**:
-- [ ] Reduce temperature via pydantic_ai configuration
+- [x] Reduce temperature — tested 0.0 vs 0.1, negligible difference (2026-03-04)
 - [ ] Run multiple extractions per statement, take consensus
 - [ ] Increase GT dataset size to average out variance
 - [ ] Add deterministic tests that verify specific input→output pairs
@@ -190,6 +201,8 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 9. Minimal intervention approach for full-extraction: quality hints layered on per-statement training, not overrides (2026-03-03)
 10. 2-pass split extraction: Pass 1 (people+bonds+structural) then Pass 2 (shifts+SARF) — Aggregate +12%, Events +8%, PairBonds +54%, 100% completion (2026-03-03, T7-18)
 11. Description-free event matching (Strategy B): remove Event.description from F1 matching gates — Events F1 +40% with no extraction changes (2026-03-03, T7-18)
+12. thinking_budget=1024 on structured extraction: enables model reasoning about event classification. Events F1 +43% (2.5-flash) and +139% (flash-lite). Sweet spot is exactly 1024 — bell curve from 0 to 4096 tested. (2026-03-04, T7-20)
+13. gemini-3.1-flash-lite-preview viability: matches 2.5-flash quality (Events 0.368 vs 0.378) at ~6x lower cost when thinking=1024 is enabled. Without thinking, flash-lite fails completely on event extraction. (2026-03-04, T7-20)
 
 **Things that failed**:
 1. Adding explicit negative examples for SARF variables (caused model to stop using them)
@@ -199,7 +212,7 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 5. Divorce event extraction example (2025-12-18) - no improvement, dates block matching
 6. Adding "away"/"toward" relationship kinds (2025-12-18) - no improvement, model already handles
 7. Verb phrase description style guidance (2025-12-18) - no improvement, dates block matching
-8. thinking_budget=1024 on gemini-2.5-flash (2026-02-14) - CATASTROPHIC latency: 29+ min per case, API hangs. Thinking+structured_output incompatible.
+8. ~~thinking_budget=1024 on gemini-2.5-flash (2026-02-14) - CATASTROPHIC latency: 29+ min per case, API hangs. Thinking+structured_output incompatible.~~ **CORRECTED 2026-03-04**: Thinking+structured_output works fine with 2-pass split. The Feb 2026 failure was specific to the old single-prompt architecture (larger context + output). With the split, thinking=1024 is the #1 quality lever (+43% Events F1). See T7-20 report.
 9. Encouraging more extraction ("empty arrays should be rare") (2026-02-14) - aggregate dropped, reverted
 10. Temperature 0.0 vs 0.1 (2026-02-14) - negligible difference, reverted
 11. DATE_TOLERANCE_DAYS 7→30 (2026-02-14) - no effect because 100% of GT has dateCertainty=None (already uses 270-day tolerance)
@@ -210,6 +223,9 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 16. Explicit birth event instructions at any specificity level (2026-03-03) — Gemini 2.5 Flash birth generation is non-deterministic regardless of prompt
 17. Pre-transcript rule placement for full-extraction (2026-03-03) — less effective than post-transcript (recency bias matters but 1770 lines of examples still dominate)
 18. Raising description similarity threshold from 0.4 to 0.5 (2026-03-03) — eliminates false matches but hurts measured F1 because false TPs were being counted
+19. Hybrid per-pass model selection (flash-lite P1, 2.5-flash P2) (2026-03-04) — does NOT outperform flash-lite on both passes when thinking=1024 is enabled. The bottleneck is thinking budget, not model capability.
+20. thinking_budget > 1024 on flash-lite (2026-03-04) — 2048 and 4096 both worse than 1024. Model over-thinks and second-guesses, dropping valid events.
+21. Temperature 0.0 on flash-lite (2026-03-04) — negligible difference vs 0.1, confirms earlier temp=0 finding (item #10)
 
 **Key insights**:
 - The model is extremely sensitive to SARF-related prompt changes
@@ -221,6 +237,10 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 - Full-extraction requires fundamentally different strategy than per-statement: minimal hints, not overrides (2026-03-03)
 - LLM non-determinism is ~10-15% for full-extraction — multi-run averaging is required for reliable signal (2026-03-03)
 - Task decomposition (2-pass split) is more effective than prompt engineering on a monolithic extraction — reducing cognitive load per LLM call improves quality on every metric (2026-03-03)
+- Thinking budget is a first-class quality lever, not just a speed/cost tradeoff. Without thinking, lite models skip entire extraction categories (zero structural events). With thinking=1024, lite models match full-size models on quality. (2026-03-04)
+- Previous findings can become invalid as APIs evolve. The "thinking is catastrophic" finding from Feb 2026 was corrected in March 2026. Always re-test assumptions when architecture changes. (2026-03-04)
+- LLM non-determinism on extraction runs 10-15% variance on Events F1 across identical configs. Multi-run averaging (3+ runs) is mandatory for reliable comparison. (2026-03-04, confirmed with 3-run data)
+- "Structural events" (birth, death, married, divorced, bonded, separated, adopted, moved) vs "shift events" (kind=shift, SARF-coded) is the correct taxonomy for the two event categories in the 2-pass split. Pass 1 extracts structural events; Pass 2 extracts shift events. (2026-03-04)
 
 ---
 
@@ -395,7 +415,7 @@ Current state: **Stage 2 reached** (Events F1 = 0.509). Next target: SARF F1 > 0
 | File | Purpose |
 |------|---------|
 | [PROMPT_ENGINEERING_CONTEXT.md](PROMPT_ENGINEERING_CONTEXT.md) | Lessons learned, what NOT to include |
-| [PROMPT_INDUCTION_CLI.md](PROMPT_INDUCTION_CLI.md) | Automated induction process |
+| [PROMPT_OPTIMIZATION.md](PROMPT_OPTIMIZATION.md) | Prompt optimization process |
 | [F1_METRICS.md](F1_METRICS.md) | F1 calculation details |
 | [training/prompts/induction_agent.md](../btcopilot/training/prompts/induction_agent.md) | Agent meta-prompt |
 | [personal/prompts.py](../btcopilot/personal/prompts.py) | Extraction prompt defaults (empty stubs) |

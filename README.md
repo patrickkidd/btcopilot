@@ -477,7 +477,7 @@ This fits comfortably within an 8k-token model. For larger datasets, you'd need 
 ## 2025-12-08 - Prompt induction framework
 
 - Added prompt induction framework:
-  [btcopilot/doc/PROMPT_INDUCTION_CLI.md](btcopilot/doc/PROMPT_INDUCTION_CLI.md)
+  [btcopilot/doc/PROMPT_OPTIMIZATION.md](btcopilot/doc/PROMPT_OPTIMIZATION.md)
   Using Claude Code's command line API to run it from a script. Get baseline F1,
   tweak system prompts, run AI extraction, compare baseline. Run 10 iterations
   or until F1 improvement plateaus. Super cool!

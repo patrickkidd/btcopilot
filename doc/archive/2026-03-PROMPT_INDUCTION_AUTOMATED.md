@@ -1,6 +1,6 @@
-# Automated Prompt Induction System - Future Roadmap
+# [ARCHIVED 2026-03] Automated Prompt Induction System - Future Roadmap
 
-**Status**: NOT IMPLEMENTED - Future enhancement after CLI automation proves effective
+**Status**: ARCHIVED — Superseded by [doc/PROMPT_OPTIMIZATION.md](../PROMPT_OPTIMIZATION.md). API automation infrastructure was never built; interactive sessions proved sufficient.
 
 **Alternatives**:
 - **[Manual](../doc/PROMPT_OPTIMIZATION_MANUAL.md)**: Copy-paste approach (current MVP)

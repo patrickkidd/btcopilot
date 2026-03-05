@@ -148,9 +148,7 @@ This will take 5-15 minutes depending on dataset size
 
 ## Related Documentation
 
-- **[CLI Automation Details](../../../doc/PROMPT_INDUCTION_CLI.md)**: Full design doc
-- **[Manual Approach](../../../doc/PROMPT_OPTIMIZATION_MANUAL.md)**: Current MVP process
-- **[API Automation](../../../doc/PROMPT_INDUCTION_AUTOMATED.md)**: Future full automation
+- **[Prompt Optimization Process](../../../doc/PROMPT_OPTIMIZATION.md)**: How prompt optimization sessions work
 - **[F1 Metrics](../../../doc/F1_METRICS.md)**: Understanding evaluation metrics
 
 ## Cost Comparison

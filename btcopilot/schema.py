@@ -216,6 +216,10 @@ class EventKind(enum.Enum):
             self.Death,
         )
 
+    def isStructural(self) -> bool:
+        """Non-shift events: birth, death, married, bonded, separated, divorced, adopted, moved."""
+        return self != self.Shift
+
     def isOffspring(self) -> bool:
         return self in (self.Birth, self.Adopted)
 

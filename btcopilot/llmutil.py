@@ -197,7 +197,7 @@ async def gemini_structured(prompt, response_format, large=False):
         max_output_tokens=65536,
         response_mime_type="application/json",
         response_schema=response_schema,
-        thinking_config=types.ThinkingConfig(thinking_budget=0),
+        thinking_config=types.ThinkingConfig(thinking_budget=1024),
     )
 
     for attempt in range(GEMINI_MAX_RETRIES):
