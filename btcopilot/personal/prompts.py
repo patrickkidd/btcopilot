@@ -749,6 +749,32 @@ result.
 **EXTRACT:** All people mentioned (with names, gender, parent relationships),
 all events with dates and SARF variables, all pair_bonds between couples/parents.
 
+**QUALITY GUIDELINES FOR FULL-DISCUSSION EXTRACTION:**
+
+Over-extraction of events is the #1 error. Be selective — extract only events
+with clear timeframes and clinical significance. A typical discussion yields
+10-20 total events. If you have more than 25 events, remove the least
+significant shift events.
+
+**PAIRBOND EXTRACTION — MANDATORY COMPLETENESS CHECK:**
+
+PairBonds are the MOST UNDER-EXTRACTED entity. After extracting people, you MUST
+create a PairBond for EVERY couple mentioned or implied in the discussion.
+
+Walk through each generation and check:
+1. User's parents → PairBond (person_a=mother, person_b=father)
+2. Maternal grandparents → PairBond (mother's parents)
+3. Paternal grandparents → PairBond (father's parents)
+4. User + spouse/partner (if mentioned) → PairBond
+5. Any aunt+uncle, sibling+spouse, or other couple → PairBond
+
+VERIFICATION: Count your pair_bonds before outputting. A typical 3-generation
+family has 3-6 PairBonds. If you have 0-1 pair_bonds for a multi-generational
+discussion, you are MISSING bonds.
+
+Set Person.parents on CHILDREN (not on the spouses) to reference the PairBond ID.
+Each couple gets exactly ONE PairBond. Never create duplicates for the same pair.
+
 ID ASSIGNMENT REMINDER: People, events, and pair_bonds share ONE ID sequence.
 If you create people at -1 to -10, events must start at -11, not -1.
 Example: 5 people → [-1 to -5], 10 events → [-6 to -15], 1 pair_bond → [-16]
