@@ -14,6 +14,7 @@ from btcopilot.personal.prompts import (
     DATA_EXTRACTION_PASS1_CONTEXT,
     DATA_EXTRACTION_PASS2_PROMPT,
     DATA_EXTRACTION_PASS2_CONTEXT,
+    RELATIONSHIP_REVIEW_PROMPT,
 )
 from btcopilot.schema import (
     DiagramData,
@@ -625,6 +626,24 @@ async def _two_pass_extract(
         prompt2, diagram_data, f"{source}_pass2", large=True,
         base_pdp=pass1_pdp,
     )
+
+    # Pass 3: Relationship review — re-evaluate SARF, apply only R corrections
+    shift_events = [e for e in pass2_pdp.events if e.kind == EventKind.Shift]
+    if shift_events:
+        events_json = json.dumps([asdict(e) for e in shift_events], indent=2, default=str)
+        people_json = json.dumps([asdict(p) for p in pass2_pdp.people], indent=2, default=str)
+        review_prompt = RELATIONSHIP_REVIEW_PROMPT.format(
+            events_json=events_json,
+            people_json=people_json,
+            conversation_history=conversation_history,
+        )
+        review_deltas = await gemini_structured(review_prompt, PDPDeltas, large=True)
+        reviewed = {e.id: e for e in review_deltas.events}
+        for event in pass2_pdp.events:
+            if event.id in reviewed and reviewed[event.id].relationship is not None:
+                event.relationship = reviewed[event.id].relationship
+                event.relationshipTargets = reviewed[event.id].relationshipTargets
+                event.relationshipTriangles = reviewed[event.id].relationshipTriangles
 
     merged_deltas = PDPDeltas(
         people=pass1_deltas.people + pass2_deltas.people,

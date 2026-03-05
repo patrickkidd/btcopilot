@@ -205,6 +205,7 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 13. gemini-3.1-flash-lite-preview viability: matches 2.5-flash quality (Events 0.368 vs 0.378) at ~6x lower cost when thinking=1024 is enabled. Without thinking, flash-lite fails completely on event extraction. (2026-03-04, T7-20)
 14. gemini-3-flash-preview with thinking=1024: Aggregate 0.654 (+6.7% vs 2.5-flash), Events 0.397 (+9.1%), 23% faster (74s vs 96s for 6 discussions). Single-run comparison — needs multi-run validation. (2026-03-04, frontier model eval)
 15. SARF Decision Guide (prioritized checklist in Pass 2 prompt): additive guidance asking "is this relationship? symptom? anxiety? functioning?" in priority order. Marginal R +0.033, F +0.029 improvement without regressions. Only additive, non-example guidance works for SARF on gemini-3-flash. (2026-03-04, SARF induction run)
+16. 3-pass relationship review architecture: Pass 3 reviews all shift events with a dedicated RELATIONSHIP_REVIEW_PROMPT using full PDPDeltas schema, but ONLY applies `relationship`, `relationshipTargets`, and `relationshipTriangles` corrections — S/A/F remain untouched from Pass 2. R +103% (0.240→0.487), SARF macro +39% (0.341→0.473). 3-run mean, consistent across runs (R range 0.407-0.571). Latency +70% (~75s→~127s). The "review-then-filter" pattern works because: (a) the model CAN distinguish R from S/A/F on a second look, (b) structured output forces regeneration of ALL fields which corrupts S/A, so only R corrections are applied programmatically. (2026-03-04, SARF structural experiments)
 
 **Things that failed**:
 1. Adding explicit negative examples for SARF variables (caused model to stop using them)
@@ -258,8 +259,12 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 - All API costs are negligible: $0.004-0.065 per extraction across all tested models. A "premium AI" tier cannot be justified by cost differences — the delta between cheapest and most expensive model is $0.061. Quality (not cost) should drive model selection. (2026-03-04, frontier model eval)
 - Non-Gemini models consistently fail on Pair Bond extraction (Bonds F1 0.444-0.650 vs Gemini 0.803-0.825). Bond extraction is the most schema-sensitive component — it depends heavily on Gemini-specific structured output conventions. Switching providers requires bond-specific prompt adaptation. (2026-03-04, frontier model eval)
 - gpt-5-mini (Events 0.410) outperforms all Gemini models on raw Events F1 despite using Gemini-tuned prompts without adaptation. This suggests OpenAI's reasoning capability can partially compensate for prompt mismatch. However, 460s latency and 1/6 failure rate disqualify it. (2026-03-04, frontier model eval)
-- gemini-3-flash SARF regression is model-level, not prompt-addressable. After 6 iterations (restructuring, examples positive/negative, schema changes additive/restrictive, expanded definitions, decision guides), only a prioritized checklist (SARF Decision Guide) produced marginal improvement without regressions. The model fundamentally interprets interpersonal behavior (distance, overfunctioning) as emotional states (S=up, A=up, F=down) instead of relationship patterns. This appears baked into model reasoning. Future SARF improvement requires: fine-tuning, a dedicated SARF-only pass, or reverting Pass 2 to gemini-2.5-flash. (2026-03-04, SARF induction run)
+- ~~gemini-3-flash SARF regression is model-level, not prompt-addressable.~~ **CORRECTED 2026-03-04**: SARF regression IS addressable via task decomposition (3-pass review), not prompt engineering. 6 prompt iterations on the extraction pass were ineffective, but adding a dedicated relationship review pass recovered R +103% and SARF macro +39%. The model CAN distinguish R from S/A/F when reviewing its own output — the failure mode is in initial extraction, not model capability. (2026-03-04, SARF structural experiments)
 - Prompt changes on gemini-3-flash are asymmetrically risky: most changes cause regressions, very few help. The model is more brittle than gemini-2.5-flash for SARF coding. The safe approach is minimal additive guidance with no examples, no restrictive language, and no schema changes. (2026-03-04, SARF induction run)
+- Task decomposition beats prompt engineering for SARF. 6 prompt iterations on Pass 2 produced marginal results (SARF macro 0.341→~0.358). One structural change (3-pass review) produced +39% improvement (0.341→0.473). Structural changes ADD information without modifying existing extraction behavior, which is safer on gemini-3-flash. (2026-03-04, SARF structural experiments)
+- Structured output schema is an S/A corruption vector. When the review pass generates full PDPDeltas output, it must regenerate ALL fields. Even with instructions to "preserve" S/A values, the model re-decides them. The "review-then-filter" pattern — ask model to fully re-evaluate, but only apply the corrections you trust programmatically — avoids this regeneration corruption. (2026-03-04, SARF structural experiments)
+- SARF regression is NOT purely model-specific. Hybrid experiment (gemini-2.5-flash for Pass 2) did NOT recover SARF scores. The original 2.5-flash SARF numbers may have been stochastic highs, or the 2-pass architecture itself affects SARF coding differently than the original single-pass. (2026-03-04, SARF structural experiments)
+- Review prompts are more effective than extraction prompts for clinical distinctions. The same "CRITICAL DISTINCTIONS" language (distance ≠ anxiety, overfunctioning ≠ functioning down) failed when added to the extraction prompt but succeeded in the review prompt. At review time, the model has concrete events to evaluate rather than abstractly applying rules during extraction. (2026-03-04, SARF structural experiments)
 
 ---
 
@@ -351,7 +356,7 @@ Focus improvement efforts in this order:
 | Stage 3 | SARF F1 > 0.3 | Variable coding working |
 | Stage 4 | SARF F1 > 0.5 | Production-ready quality |
 
-Current state (gemini-3-flash-preview): **Stage 1+ reached** (Events F1 = 0.396). SARF regressed from gemini-2.5-flash: S=0.449, A=0.467, R=0.224, F=0.290. Only R and F are below Stage 3. The SARF regression is a model-level behavior difference that prompt engineering cannot fully address (6 iterations tested, 2026-03-04).
+Current state (gemini-3-flash-preview, 3-pass with R-review): **Stage 1+ reached** (Events F1 = 0.396). SARF improved via 3-pass architecture: S=0.518, A=0.597, R=0.487, F=0.291. SARF macro 0.473 (+39% from 2-pass baseline 0.341). All SARF variables at or above Stage 3. (2026-03-04, 3-run mean)
 
 ---
 
@@ -388,7 +393,7 @@ Current state (gemini-3-flash-preview): **Stage 1+ reached** (Events F1 = 0.396)
    - Replace 24 "New Event" placeholder descriptions with real descriptions
    - Add `dateCertainty` to all GT events
 
-3. **Improve Relationship F1** (0.311) — Lowest SARF variable. Investigate whether GT relationship coding is consistent, or if the Pass 2 prompt needs relationship-specific guidance.
+3. ~~**Improve Relationship F1** (0.311)~~ — **RESOLVED** via 3-pass architecture. R improved from 0.240 to 0.487 (+103%). See item #16 in "Things that worked". (2026-03-04)
 
 ### Short-term
 

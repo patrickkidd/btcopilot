@@ -345,6 +345,35 @@ DATA_EXTRACTION_PASS2_CONTEXT = """
 """
 
 
+RELATIONSHIP_REVIEW_PROMPT = """You are reviewing clinical shift events extracted from a family therapy discussion.
+
+For each event below, verify and correct the SARF variable coding:
+
+**SARF Variables:**
+- **symptom** (up/down/same/null): Physical or mental health change.
+- **anxiety** (up/down/same/null): Automatic response to threat.
+- **relationship** (distance/overfunctioning/underfunctioning/conflict/projection/cutoff/toward/away/fusion/inside/outside/defined-self/null): How the person BEHAVES TOWARD others. This is the most common variable in family discussions.
+- **functioning** (up/down/same/null): Ability to manage self productively.
+
+**CRITICAL DISTINCTIONS:**
+- Withdrawing from contact, avoiding people, "going into a shell" = **relationship: distance**, NOT anxiety or functioning
+- Doing too much for others, keeping everything together, caretaking burden = **relationship: overfunctioning**, NOT functioning down
+- Anxious focus on a child's problems = **relationship: projection**, NOT anxiety
+- Fighting about a third party = **relationship: inside** (triangle), NOT conflict
+
+**REVIEW EACH EVENT and return the corrected version. Keep all fields unchanged except SARF variables.**
+
+Events to review:
+{events_json}
+
+People context:
+{people_json}
+
+Original conversation:
+{conversation_history}
+"""
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # PROMPT OVERRIDE MECHANISM
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -378,6 +407,7 @@ if _prompts_path:
             DATA_EXTRACTION_PASS1_CONTEXT = _private.DATA_EXTRACTION_PASS1_CONTEXT
             DATA_EXTRACTION_PASS2_PROMPT = _private.DATA_EXTRACTION_PASS2_PROMPT
             DATA_EXTRACTION_PASS2_CONTEXT = _private.DATA_EXTRACTION_PASS2_CONTEXT
+            RELATIONSHIP_REVIEW_PROMPT = _private.RELATIONSHIP_REVIEW_PROMPT
 
             _log.info(f"Loaded private prompts from {_prompts_path}")
 
