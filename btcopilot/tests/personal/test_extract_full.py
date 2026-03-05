@@ -49,7 +49,10 @@ def test_extract_full_returns_merged_pdp(discussion):
     with patch(
         "btcopilot.pdp._extract_and_validate",
         AsyncMock(side_effect=[(pass1_pdp, pass1_deltas), (pass2_pdp, pass2_deltas)]),
-    ) as mock_extract:
+    ) as mock_extract, patch(
+        "btcopilot.pdp.gemini_structured",
+        AsyncMock(return_value=PDPDeltas()),
+    ):
         from btcopilot.pdp import extract_full
 
         diagram_data = DiagramData()
