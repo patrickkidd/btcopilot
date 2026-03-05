@@ -46,6 +46,7 @@ New clinical data outputs: store in `btcopilot-sources/`, create symlink, add to
 | Feature/behavior specs | [doc/specs/](doc/specs/) |
 | Prompt extraction strategy | [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md) (self-updating after each induction run) |
 | Deferred Gemini optimizations | [doc/TODO_GEMINI_SCHEMA.md](doc/TODO_GEMINI_SCHEMA.md) |
+| Dev tools (DB sync, scripts) | [doc/TOOLS.md](doc/TOOLS.md) |
 
 Other: [README.md](README.md), [doc/plans/](doc/plans/)
 
