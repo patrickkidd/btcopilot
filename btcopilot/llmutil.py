@@ -298,7 +298,7 @@ async def gemini_calibration(prompt, system_instruction=None):
     start_time = time.time()
     config = types.GenerateContentConfig(
         temperature=0.2,
-        max_output_tokens=4096,
+        max_output_tokens=1024,
     )
     if system_instruction:
         config.system_instruction = system_instruction

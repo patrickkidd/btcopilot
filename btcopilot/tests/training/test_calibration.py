@@ -19,6 +19,7 @@ from btcopilot.training.calibrationutils import (
     compare_cumulative_pdps,
     prioritize_disagreements,
 )
+from btcopilot.training.routes.calibration import _parse_triage, _meeting_order_sort
 
 
 # --- sarfdefinitions ---
@@ -215,3 +216,39 @@ def test_batch_llm_calls_75_prompts():
         results = asyncio.run(batch_llm_calls([f"p{i}" for i in range(75)], "sys"))
     assert len(results) == 75
     assert sleep_mock.call_count == 3
+
+
+# --- _parse_triage ---
+
+
+def test_parse_triage_clear():
+    assert _parse_triage("**Triage:** CLEAR\n**Verdict:** ...") == "clear"
+
+
+def test_parse_triage_discuss():
+    assert _parse_triage("**Triage:** DISCUSS\n**Verdict:** ...") == "discuss"
+
+
+def test_parse_triage_fallback():
+    assert _parse_triage("Some unexpected output\nwithout triage") == "discuss"
+
+
+def test_parse_triage_case_insensitive():
+    assert _parse_triage("**Triage:** Clear\n**Verdict:** ...") == "clear"
+
+
+# --- _meeting_order_sort ---
+
+
+def test_meeting_order_sort():
+    items = [
+        {"triage": "discuss", "impact": "high"},
+        {"triage": "clear", "impact": "low"},
+        {"triage": "discuss", "impact": "low"},
+        {"triage": "clear", "impact": "high"},
+    ]
+    sorted_items = _meeting_order_sort(items)
+    assert sorted_items[0] == {"triage": "clear", "impact": "high"}
+    assert sorted_items[1] == {"triage": "clear", "impact": "low"}
+    assert sorted_items[2] == {"triage": "discuss", "impact": "high"}
+    assert sorted_items[3] == {"triage": "discuss", "impact": "low"}

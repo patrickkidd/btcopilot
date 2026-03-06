@@ -1,8 +1,9 @@
 import json
 import asyncio
 import logging
+from datetime import datetime, timezone
 
-from flask import Blueprint, abort, jsonify, request
+from flask import Blueprint, Response, abort, jsonify, request
 
 import btcopilot
 from btcopilot import pdp as pdp_module
@@ -49,6 +50,22 @@ async def batch_llm_calls(prompts, system_instruction):
             _log.info(f"  Waiting {LLM_BATCH_DELAY}s for rate limit reset...")
             await asyncio.sleep(LLM_BATCH_DELAY)
     return results
+
+
+IMPACT_ORDER = {"high": 0, "medium": 1, "low": 2}
+
+
+def _parse_triage(analysis: str) -> str:
+    first_line = analysis.split("\n", 1)[0].upper()
+    return "clear" if "CLEAR" in first_line else "discuss"
+
+
+def _meeting_order_sort(disagreements: list) -> list:
+    """Sort: clear first, then discuss; within each group by impact desc."""
+    return sorted(disagreements, key=lambda d: (
+        0 if d.get("triage") == "clear" else 1,
+        IMPACT_ORDER.get(d.get("impact"), 2),
+    ))
 
 
 def _get_statement_context(discussion, target_stmt, n_prior=3):
@@ -270,8 +287,6 @@ def irr_report(discussion_id: int):
                 ) or "(No source statements traced)"
 
                 prompt = IRR_REVIEW_USER.format(
-                    discussion_summary=discussion.summary or f"Discussion {discussion_id}",
-                    index=idx + 1,
                     description=disagreement.description,
                     person_name=disagreement.person_name,
                     impact=disagreement.max_impact.value,
@@ -312,8 +327,10 @@ def irr_report(discussion_id: int):
     all_analyses = []
     for (metadata, _), analysis in zip(pending, analyses):
         metadata["analysis"] = linkify_passages(analysis)
+        metadata["triage"] = _parse_triage(analysis)
         all_analyses.append(metadata)
 
+    all_analyses = _meeting_order_sort(all_analyses)
     report = {"disagreements": all_analyses}
 
     # Cache in discussion
@@ -321,3 +338,43 @@ def irr_report(discussion_id: int):
     db.session.commit()
 
     return jsonify(report)
+
+
+@bp.route("/irr/<int:discussion_id>/export", methods=["GET"])
+@minimum_role(btcopilot.ROLE_AUDITOR)
+def export_irr_report(discussion_id: int):
+    discussion = Discussion.query.get_or_404(discussion_id)
+    report = discussion.calibration_report
+    if not report or not report.get("disagreements"):
+        abort(404, "No calibration report cached for this discussion")
+
+    title = discussion.summary or f"Discussion {discussion_id}"
+    lines = [
+        f"# IRR Meeting Prep: {title}",
+        f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
+        "",
+    ]
+
+    clear = [d for d in report["disagreements"] if d.get("triage") == "clear"]
+    discuss = [d for d in report["disagreements"] if d.get("triage") != "clear"]
+
+    for section_title, items in [("Ratify (Clear Cases)", clear), ("Discuss (Ambiguous Cases)", discuss)]:
+        if not items:
+            continue
+        lines.append(f"## {section_title}")
+        lines.append("")
+        for i, d in enumerate(items, 1):
+            lines.append(f"### {i}. {d.get('person_name', '?')}: {d.get('description', '?')}")
+            for fd in d.get("field_disagreements", []):
+                vals = ", ".join(f"{k}={v or 'null'}" for k, v in fd.get("values", {}).items())
+                lines.append(f"- **{fd['field']}**: {vals}")
+            lines.append(d.get("analysis", ""))
+            lines.append("")
+
+    md = "\n".join(lines)
+    filename = f"irr-meeting-prep-{discussion_id}.md"
+    return Response(
+        md,
+        mimetype="text/markdown",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

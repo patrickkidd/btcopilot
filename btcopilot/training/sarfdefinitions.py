@@ -25,8 +25,11 @@ _GITHUB_RAW_BASE = "https://raw.githubusercontent.com/patrickkidd/btcopilot/mast
 _LOCAL_DIR = Path(__file__).parent.parent.parent / "doc" / "sarf-definitions"
 _CACHE_DIR = Path(__file__).parent / "data" / "sarf_definitions"
 
-# Passage ID pattern: uppercase letters followed by digits, optionally hyphen-digits
-_PASSAGE_ID_RE = re.compile(r"\| (?:<a id=\"[^\"]+\"></a>)?([A-Z]+\d+-?\d*) \|")
+# Passage row: | <a id="ID"></a>ID | "quote" | description |
+_PASSAGE_ROW_RE = re.compile(
+    r"\| (?:<a id=\"[^\"]+\"></a>)?([A-Z]+\d+-?\d*) \|"
+    r"\s*([^|]*?)\s*\|"
+)
 
 
 def _load_definition(key: str, filename: str) -> str:
@@ -52,21 +55,28 @@ def _load_definition(key: str, filename: str) -> str:
     return text
 
 
-def _extract_passage_ids(text: str, filename: str) -> dict[str, str]:
-    """Extract passage IDs from a definition file and map to GitHub URLs."""
+def _extract_passages(text: str, filename: str) -> tuple[dict[str, str], dict[str, str]]:
+    """Extract passage IDs → (urls, quotes) from a definition file."""
     urls = {}
-    for match in _PASSAGE_ID_RE.finditer(text):
+    quotes = {}
+    for match in _PASSAGE_ROW_RE.finditer(text):
         pid = match.group(1)
         urls[pid] = f"{_GITHUB_BLOB_BASE}/{filename}#{pid}"
-    return urls
+        quote = match.group(2).strip().strip('"').strip()
+        if quote:
+            quotes[pid] = quote
+    return urls, quotes
 
 
 DEFINITIONS: dict[str, str] = {}
 PASSAGE_URLS: dict[str, str] = {}
+PASSAGE_QUOTES: dict[str, str] = {}
 
 for _key, _filename in _SARF_DEF_FILES.items():
     DEFINITIONS[_key] = _load_definition(_key, _filename)
-    PASSAGE_URLS.update(_extract_passage_ids(DEFINITIONS[_key], _filename))
+    _urls, _quotes = _extract_passages(DEFINITIONS[_key], _filename)
+    PASSAGE_URLS.update(_urls)
+    PASSAGE_QUOTES.update(_quotes)
 
 
 def definitions_for_event(event: dict) -> dict[str, str]:
@@ -83,21 +93,28 @@ def definitions_for_event(event: dict) -> dict[str, str]:
     return result
 
 
+_LINK_OR_ID = re.compile(
+    r"<a\b[^>]*>.*?</a>"     # skip HTML links
+    r"|\[[^\]]*\]\([^\)]*\)" # skip markdown links
+    r"|\b([A-Z]+\d+-?\d*)\b" # capture bare passage IDs
+)
+
+
 def linkify_passages(text: str) -> str:
-    """Replace passage ID references in LLM markdown output with clickable GitHub links."""
+    """Replace passage ID references with clickable links including hover tooltips."""
     if not text or not PASSAGE_URLS:
         return text or ""
 
-    # Match passage IDs that aren't already inside markdown links
-    def _replace(match):
-        pid = match.group(0)
-        if pid in PASSAGE_URLS:
-            return f"[{pid}]({PASSAGE_URLS[pid]})"
-        return pid
+    def _replace_match(m):
+        pid = m.group(1)
+        if pid is None:
+            return m.group(0)
+        if pid not in PASSAGE_URLS:
+            return m.group(0)
+        quote = PASSAGE_QUOTES.get(pid)
+        if quote:
+            escaped = quote.replace('"', '&quot;')
+            return f'<a href="{PASSAGE_URLS[pid]}" title="{pid}: {escaped}" target="_blank">{pid}</a>'
+        return f'<a href="{PASSAGE_URLS[pid]}" target="_blank">{pid}</a>'
 
-    # Negative lookbehind for [ and ( to avoid double-linking existing markdown links
-    return re.sub(
-        r"(?<!\[)(?<!\()(?<!\")(?<!id=\")\b([A-Z]+\d+-?\d*)\b(?!\])",
-        lambda m: f"[{m.group(1)}]({PASSAGE_URLS[m.group(1)]})" if m.group(1) in PASSAGE_URLS else m.group(0),
-        text,
-    )
+    return _LINK_OR_ID.sub(_replace_match, text)

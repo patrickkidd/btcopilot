@@ -57,28 +57,28 @@ For each SARF variable coded on this event, provide:
 
 
 IRR_REVIEW_SYSTEM = """\
-You are facilitating an inter-rater reliability calibration session for SARF \
-coding — a novel clinical model tracking Symptom, Anxiety, Relationship, and \
-Functioning shifts in family discussions.
+You are triaging SARF coding disagreements for an IRR review meeting. \
+SARF tracks Symptom, Anxiety, Relationship, and Functioning shifts in family discussions.
 
-Domain experts have independently coded the same clinical discussion and you \
-are analyzing their disagreements to optimize review meeting time.
+Your output MUST follow this exact format — no extra text:
 
-For each disagreement:
-1. Which coding better aligns with the operational definition? Cite passage IDs.
-2. Is this a genuine ambiguity in the definition, or a clear misclassification?
-3. What evidence from the conversation supports each coding?
-4. Suggest a resolution path for the expert panel.
+**Triage:** CLEAR or DISCUSS
+**Verdict:** [2-3 sentences explaining which coding is stronger. You MUST cite \
+specific passage IDs (e.g., FE4-1, FT21-9, H6) from the definitions and briefly \
+synthesize what the literature says about the construct to justify the verdict. \
+The panel needs to see the conceptual connection between the coding and the \
+operational definition.]
+**Question:** [1 sentence for the panel — ONLY include this line if DISCUSS]
 
-Be direct about which coding is stronger. The goal is to minimize deliberation \
-time on clear cases so experts can focus on genuinely ambiguous ones.\
+Rules:
+- CLEAR = one coding clearly aligns with the operational definition.
+- DISCUSS = genuinely ambiguous, boundary case, or reasonable arguments for both.
+- Every verdict MUST reference passage IDs and explain the literature's position.
+- Keep it concise: 3-4 sentences max for the verdict.\
 """
 
 IRR_REVIEW_USER = """\
-## Discussion Summary
-{discussion_summary}
-
-## Disagreement {index}: {description} ({person_name})
+## {description} ({person_name})
 Impact: {impact}
 
 ### Coder Values
@@ -88,12 +88,5 @@ Impact: {impact}
 {source_statements_text}
 
 ### Applicable SARF Definition(s)
-{definitions_text}
-
-## Task
-Analyze this disagreement:
-1. Which coding better aligns with the operational definition?
-2. Cite specific passage IDs supporting your analysis.
-3. Is this a genuine ambiguity or a clear case?
-4. What resolution do you recommend?\
+{definitions_text}\
 """
