@@ -173,7 +173,7 @@ def test_batch_llm_calls_single_batch():
 
 
 def test_batch_llm_calls_multiple_batches():
-    """50 prompts should fire in 3 batches (24+24+2) with 2 sleeps."""
+    """50 prompts with batch size 20 should fire in 3 batches (20+20+10) with 2 sleeps."""
     from btcopilot.training.routes.calibration import batch_llm_calls
 
     call_count = 0
@@ -183,11 +183,12 @@ def test_batch_llm_calls_multiple_batches():
         return f"result-{call_count}"
 
     with patch("btcopilot.training.routes.calibration.gemini_calibration", fake_calibration), \
+         patch("btcopilot.training.routes.calibration.LLM_BATCH_SIZE", 20), \
          patch("asyncio.sleep", new_callable=AsyncMock) as sleep_mock:
         results = asyncio.run(batch_llm_calls([f"p{i}" for i in range(50)], "sys"))
     assert len(results) == 50
     assert sleep_mock.call_count == 2
-    sleep_mock.assert_called_with(60)
+    sleep_mock.assert_called_with(2)
 
 
 def test_batch_llm_calls_exactly_24():
@@ -205,13 +206,14 @@ def test_batch_llm_calls_exactly_24():
 
 
 def test_batch_llm_calls_75_prompts():
-    """75 prompts (the failing case): 4 batches (24+24+24+3), 3 sleeps."""
+    """75 prompts with batch size 20: 4 batches (20+20+20+15), 3 sleeps."""
     from btcopilot.training.routes.calibration import batch_llm_calls
 
     async def fake_calibration(prompt, system_instruction=None):
         return "ok"
 
     with patch("btcopilot.training.routes.calibration.gemini_calibration", fake_calibration), \
+         patch("btcopilot.training.routes.calibration.LLM_BATCH_SIZE", 20), \
          patch("asyncio.sleep", new_callable=AsyncMock) as sleep_mock:
         results = asyncio.run(batch_llm_calls([f"p{i}" for i in range(75)], "sys"))
     assert len(results) == 75
