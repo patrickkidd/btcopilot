@@ -2,7 +2,7 @@
 // Server-side configuration is provided via window.discussionConfig
 
 const _markedRenderer = new marked.Renderer();
-_markedRenderer.link = function({ href, text }) {
+_markedRenderer.link = function(href, title, text) {
     return `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
 };
 
