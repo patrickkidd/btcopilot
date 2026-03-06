@@ -70,12 +70,13 @@ def _classify_impact(field_name: str, val_a: str | None, val_b: str | None) -> I
     return Impact.Low
 
 
-def _person_name(person_id: int | None, people: list[Person]) -> str:
+def _person_name(person_id: int | None, *people_lists: list[Person]) -> str:
     if person_id is None:
         return "unknown"
-    for p in people:
-        if p.id == person_id:
-            return p.name or "unnamed"
+    for people in people_lists:
+        for p in people:
+            if p.id == person_id:
+                return p.name or "unnamed"
     return f"person:{person_id}"
 
 
@@ -108,6 +109,14 @@ def compare_cumulative_pdps(
         if field_disagreements:
             max_impact = min(field_disagreements, key=lambda fd: _IMPACT_ORDER[fd.impact]).impact
             person_id = resolve_person_id(event_a.person, id_map)
+            if person_id is not None:
+                pname = _person_name(person_id, pdp_b.people, pdp_a.people)
+            elif event_a.person is not None:
+                pname = _person_name(event_a.person, pdp_a.people, pdp_b.people)
+            elif event_b.person is not None:
+                pname = _person_name(event_b.person, pdp_b.people, pdp_a.people)
+            else:
+                pname = "unknown"
             result.disagreements.append(EventDisagreement(
                 event_a=event_a,
                 event_b=event_b,
@@ -115,7 +124,7 @@ def compare_cumulative_pdps(
                 coder_b=coder_b,
                 field_disagreements=field_disagreements,
                 description=event_a.description or event_b.description or "",
-                person_name=_person_name(person_id, pdp_b.people),
+                person_name=pname,
                 max_impact=max_impact,
             ))
 
@@ -168,18 +177,26 @@ def trace_to_statements(
 ) -> list[StatementEvidence]:
     """Find which statements introduced each side of a disagreement.
 
+    Uses each coder's own event description for matching, since coders
+    may word the same event differently.
+
     coder_feedbacks: {coder_id: [{statement_id, statement_text, events: [...]}]}
     """
-    evidence = []
-    desc = disagreement.description.lower().strip() if disagreement.description else ""
+    coder_descs = {
+        disagreement.coder_a: (disagreement.event_a.description or "").lower().strip() if disagreement.event_a else "",
+        disagreement.coder_b: (disagreement.event_b.description or "").lower().strip() if disagreement.event_b else "",
+    }
 
-    for coder_id, stmts in coder_feedbacks.items():
-        if coder_id not in (disagreement.coder_a, disagreement.coder_b):
+    evidence = []
+    for coder_id in (disagreement.coder_a, disagreement.coder_b):
+        desc = coder_descs[coder_id]
+        if not desc:
             continue
+        stmts = coder_feedbacks.get(coder_id, [])
         for stmt_data in stmts:
             for event in stmt_data.get("events", []):
                 event_desc = (event.get("description") or "").lower().strip()
-                if desc and event_desc == desc:
+                if event_desc == desc:
                     evidence.append(StatementEvidence(
                         statement_id=stmt_data["statement_id"],
                         statement_text=stmt_data.get("statement_text", ""),

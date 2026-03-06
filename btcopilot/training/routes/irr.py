@@ -300,7 +300,7 @@ def review(discussion_id: int):
     if not irr:
         abort(404, "No multi-coder data available for this discussion")
 
-    coders = sorted(irr.coders)
+    coders = sorted(irr.coders, key=lambda c: (c.startswith("ai-"), c))
     statements = (
         Statement.query.filter_by(discussion_id=discussion_id)
         .join(Speaker)
@@ -368,7 +368,7 @@ def pairwise_matrix(discussion_id: int):
     if not irr:
         abort(404, "No multi-coder data available")
 
-    coders = sorted(irr.coders)
+    coders = sorted(irr.coders, key=lambda c: (c.startswith("ai-"), c))
     matrix = {}
     for pair in irr.pairwise_metrics:
         matrix[(pair.coder_a, pair.coder_b)] = pair

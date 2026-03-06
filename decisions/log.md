@@ -6,6 +6,31 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ---
 
+## 2026-03
+
+### 2026-03-05: IRR calibration features — coding advisor fix + review drawer redesign
+
+**Component A fix:** Commit `876fd3c` broke per-event coding advisor by dropping `max_output_tokens` from 4096→1024 and removing `thinking_config`. Fix: `deep` parameter on `gemini_calibration()` — `deep=True` (4096 + thinking) for per-event modal, `deep=False` (1024) for IRR batch triage.
+
+**Component B — IRR review drawer:**
+
+Key insight: the unit of IRR review is a **matched cumulative event** across coders, not a per-statement delta. Events are paired by kind + dateTime + person links across the full discussion. Two coders' codes in one card can come from different statements.
+
+Design decisions driven by this:
+- **Scroll-to-source** on coder badge click (traced via exact description match — fragile, arrow only shows when source found)
+- **3-way view toggle**: meeting order (ratify/discuss by impact) → variable → chronological
+- **Per-coder dates** grouped with badges (coders can have different dates for the same matched event due to fuzzy matching)
+- **Card IDs** (`#N`) for meeting/troubleshooting reference
+- **Admin-only generation**, auditors can view but not regenerate
+
+**Terminology:** Considered "coding unit", "incident", "phenomenon" for the unit of analysis. Existing term "shift" already captures the latent/inferred nature. No rename.
+
+**Rate limiting:** 60s batch delay was for Gemini Pro (25 RPM). Now on Flash (~1000+ RPM). Can be removed. Pending confirmation.
+
+**Revisit:** `trace_to_statements()` fragility; triage classification accuracy; rate limit removal.
+
+---
+
 ## 2026-02
 
 ### 2026-02-24: Single-prompt extraction replaces delta-by-delta for Personal app

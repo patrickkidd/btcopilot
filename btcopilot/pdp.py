@@ -8,13 +8,14 @@ import json
 from btcopilot.extensions import ai_log
 from btcopilot.llmutil import gemini_structured
 from btcopilot.personal.models import SpeakerType
+from btcopilot.training.sarfdefinitions import all_condensed_definitions
 from btcopilot.personal.prompts import (
     DATA_EXTRACTION_CORRECTION,
     DATA_EXTRACTION_PASS1_PROMPT,
     DATA_EXTRACTION_PASS1_CONTEXT,
     DATA_EXTRACTION_PASS2_PROMPT,
     DATA_EXTRACTION_PASS2_CONTEXT,
-    RELATIONSHIP_REVIEW_PROMPT,
+    SARF_REVIEW_PROMPT,
 )
 from btcopilot.schema import (
     DiagramData,
@@ -651,12 +652,13 @@ async def _two_pass_extract(
         base_pdp=pass1_pdp,
     )
 
-    # Pass 3: Relationship review — re-evaluate SARF, apply only R corrections
+    # Pass 3: SARF review — re-evaluate all SARF variables against operational definitions
     shift_events = [e for e in pass2_pdp.events if e.kind == EventKind.Shift]
     if shift_events:
         events_json = json.dumps([asdict(e) for e in shift_events], indent=2, default=str)
         people_json = json.dumps([asdict(p) for p in pass2_pdp.people], indent=2, default=str)
-        review_prompt = RELATIONSHIP_REVIEW_PROMPT.format(
+        review_prompt = SARF_REVIEW_PROMPT.format(
+            sarf_definitions=all_condensed_definitions(),
             events_json=events_json,
             people_json=people_json,
             conversation_history=conversation_history,
@@ -664,10 +666,19 @@ async def _two_pass_extract(
         review_deltas = await gemini_structured(review_prompt, PDPDeltas, large=True)
         reviewed = {e.id: e for e in review_deltas.events}
         for event in pass2_pdp.events:
-            if event.id in reviewed and reviewed[event.id].relationship is not None:
-                event.relationship = reviewed[event.id].relationship
-                event.relationshipTargets = reviewed[event.id].relationshipTargets
-                event.relationshipTriangles = reviewed[event.id].relationshipTriangles
+            if event.id not in reviewed:
+                continue
+            rev = reviewed[event.id]
+            if rev.symptom is not None:
+                event.symptom = rev.symptom
+            if rev.anxiety is not None:
+                event.anxiety = rev.anxiety
+            if rev.functioning is not None:
+                event.functioning = rev.functioning
+            if rev.relationship is not None:
+                event.relationship = rev.relationship
+                event.relationshipTargets = rev.relationshipTargets
+                event.relationshipTriangles = rev.relationshipTriangles
 
     merged_deltas = PDPDeltas(
         people=pass1_deltas.people + pass2_deltas.people,

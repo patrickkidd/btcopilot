@@ -28,14 +28,14 @@ from btcopilot.training.calibrationutils import (
 
 _log = logging.getLogger(__name__)
 
-LLM_BATCH_SIZE = 24  # Gemini quota: 25 requests/min/model
-LLM_BATCH_DELAY = 60  # seconds between batches
+LLM_BATCH_SIZE = 200  # Flash: 1000+ RPM; Pro was 25 RPM
+LLM_BATCH_DELAY = 2  # brief pause between batches
 
 bp = Blueprint("calibration", __name__, url_prefix="/calibration")
 
 
 async def batch_llm_calls(prompts, system_instruction):
-    """Run LLM calls in rate-limited batches to stay under Gemini's 25 req/min quota."""
+    """Run LLM calls in batches with brief pauses between them."""
     results = []
     for batch_start in range(0, len(prompts), LLM_BATCH_SIZE):
         batch = prompts[batch_start:batch_start + LLM_BATCH_SIZE]
@@ -178,7 +178,7 @@ def calibrate_event():
     _log.info(f"  Definitions: {list(defs.keys())}")
     _log.info(f"  Calling LLM ({len(prompt)} chars)...")
     analysis = asyncio.run(
-        gemini_calibration(prompt, system_instruction=CODING_ADVISOR_SYSTEM)
+        gemini_calibration(prompt, system_instruction=CODING_ADVISOR_SYSTEM, deep=True)
     )
     _log.info(f"  LLM response: {len(analysis)} chars")
 
@@ -204,7 +204,7 @@ def get_cached_irr_report(discussion_id: int):
 
 
 @bp.route("/irr/<int:discussion_id>", methods=["POST"])
-@minimum_role(btcopilot.ROLE_AUDITOR)
+@minimum_role(btcopilot.ROLE_ADMIN)
 def irr_report(discussion_id: int):
     discussion = Discussion.query.get_or_404(discussion_id)
 
@@ -295,12 +295,19 @@ def irr_report(discussion_id: int):
                     definitions_text=definitions_text,
                 )
 
+                dates = {}
+                if disagreement.event_a and disagreement.event_a.dateTime:
+                    dates[disagreement.coder_a] = disagreement.event_a.dateTime
+                if disagreement.event_b and disagreement.event_b.dateTime:
+                    dates[disagreement.coder_b] = disagreement.event_b.dateTime
+
                 metadata = {
                     "description": disagreement.description,
                     "person_name": disagreement.person_name,
                     "impact": disagreement.max_impact.value,
                     "coder_a": disagreement.coder_a,
                     "coder_b": disagreement.coder_b,
+                    "dates": dates,
                     "field_disagreements": [
                         {"field": fd.field, "values": fd.values, "impact": fd.impact.value}
                         for fd in disagreement.field_disagreements

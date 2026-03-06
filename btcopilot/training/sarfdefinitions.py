@@ -79,6 +79,45 @@ for _key, _filename in _SARF_DEF_FILES.items():
     PASSAGE_QUOTES.update(_quotes)
 
 
+_CONDENSED_SECTIONS = (
+    "## Operational Definition",
+    "## Key Discriminators",
+    "## Observable Speech/Behavior Markers for Classification",
+)
+
+
+def _condense(text: str) -> str:
+    """Extract Operational Definition + Key Discriminators + Observable Markers."""
+    lines = text.splitlines(keepends=True)
+    result = []
+    in_section = False
+    sections_found = 0
+    for line in lines:
+        if line.startswith("## "):
+            if line.strip() in _CONDENSED_SECTIONS:
+                in_section = True
+                sections_found += 1
+            elif in_section:
+                in_section = False
+                if sections_found >= len(_CONDENSED_SECTIONS):
+                    break
+        if in_section:
+            result.append(line)
+    return "".join(result).strip()
+
+
+CONDENSED: dict[str, str] = {
+    key: _condense(text) for key, text in DEFINITIONS.items()
+}
+
+
+def all_condensed_definitions() -> str:
+    parts = []
+    for key, text in CONDENSED.items():
+        parts.append(f"# SARF Variable: {key}\n\n{text}")
+    return "\n\n---\n\n".join(parts)
+
+
 def definitions_for_event(event: dict) -> dict[str, str]:
     """Return applicable SARF definitions keyed by field label."""
     result = {}
