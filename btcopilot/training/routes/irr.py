@@ -19,8 +19,8 @@ from btcopilot.training.utils import get_discussion_view_menu
 from btcopilot.training.calibrationutils import SARF_FIELDS
 
 bp = Blueprint("irr", __name__, url_prefix="/irr")
-EVENT_FIELDS = ["description", "dateTime", "dateCertainty"]
-PERSON_FIELDS = ["gender", "last_name", "parents"]
+EVENT_FIELDS = ("description", "dateTime", "dateCertainty")
+PERSON_FIELDS = ("gender", "last_name", "parents")
 
 
 def _field_coded(obj: dict, field: str) -> bool:
@@ -39,7 +39,7 @@ def _compute_sarf_disagreements(extractions: dict) -> dict:
     if len(extractions) < 2:
         return {}
 
-    compared_fields = ["kind", "person"] + SARF_FIELDS + EVENT_FIELDS
+    compared_fields = ("kind", "person") + SARF_FIELDS + EVENT_FIELDS
     disagreements = {}
 
     # Get max events across all coders

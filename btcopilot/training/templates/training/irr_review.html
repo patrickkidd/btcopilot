@@ -29,15 +29,10 @@ window.currentUsername = '';
                 <button class="button is-primary"
                         :class="{'is-loading': $store.calibrationReport.loading}"
                         :disabled="$store.calibrationReport.loading"
+                        x-show="!$store.calibrationReport.generated"
                         @click="$store.calibrationReport.confirmOpen = true">
                     <span class="icon"><i class="fas fa-balance-scale"></i></span>
-                    <span x-text="$store.calibrationReport.generated ? 'Re-generate' : 'Calibrate'"></span>
-                </button>
-                <button class="button is-light"
-                        x-show="$store.calibrationReport.variableGroups.length > 0"
-                        @click="$store.calibrationReport.collapseAll()">
-                    <span class="icon"><i class="fas fa-compress-alt"></i></span>
-                    <span>Collapse All</span>
+                    <span>Calibrate</span>
                 </button>
                 <button class="button is-light"
                         x-show="$store.calibrationReport.variableGroups.length > 0 || $store.calibrationReport.loading"
@@ -137,7 +132,23 @@ window.currentUsername = '';
         <span class="ml-2 is-size-7" style="color: var(--color-fg-muted);"
               x-show="$store.calibrationReport.disagreements.length > 0"
               x-text="$store.calibrationReport.disagreements.length + ' disagreements'"></span>
-        <button class="delete ml-auto" @click="$store.calibrationReport.drawerOpen = false"></button>
+        <div class="ml-auto is-flex is-align-items-center" style="gap: 0.25rem;">
+            <button class="button is-small is-primary"
+                    x-show="$store.calibrationReport.generated"
+                    :class="{'is-loading': $store.calibrationReport.loading}"
+                    :disabled="$store.calibrationReport.loading"
+                    @click="$store.calibrationReport.confirmOpen = true"
+                    title="Re-generate">
+                <span class="icon is-small"><i class="fas fa-sync-alt"></i></span>
+            </button>
+            <button class="button is-small is-light"
+                    x-show="$store.calibrationReport.variableGroups.length > 0"
+                    @click="$store.calibrationReport.collapseAll()"
+                    title="Collapse All">
+                <span class="icon is-small"><i class="fas fa-compress-alt"></i></span>
+            </button>
+            <button class="delete" @click="$store.calibrationReport.drawerOpen = false"></button>
+        </div>
     </div>
     <div class="calibration-drawer-body">
         <!-- Loading -->
@@ -497,6 +508,10 @@ document.addEventListener('alpine:initialized', function() {
     padding: 0.1em 0.3em;
     border-radius: 3px;
     color: var(--color-fg-default);
+}
+.calibration-drawer .tag.is-small:not(.is-danger):not(.is-warning):not(.is-info) {
+    background: #2a4a6b !important;
+    color: #fff !important;
 }
 </style>
 
