@@ -30,6 +30,7 @@ New clinical data outputs: store in `btcopilot-sources/`, create symlink, add to
 | Data model (schema, enums, validation) | [doc/specs/DATA_MODEL.md](doc/specs/DATA_MODEL.md) |
 | PDP extraction, deltas, cumulative logic | [doc/specs/PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md) |
 | SARF coding, GT workflow, approval | [doc/SARF_GROUND_TRUTH_TECHNICAL.md](doc/SARF_GROUND_TRUTH_TECHNICAL.md) |
+| SARF visual language (badges, colors, dates) | [doc/specs/SARF_VISUAL_SPEC.md](doc/specs/SARF_VISUAL_SPEC.md) |
 | Prompt engineering decisions | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) |
 | Prompt optimization process | [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) |
 | Bowen theory concepts | [CONTEXT.md](CONTEXT.md) |
@@ -143,11 +144,22 @@ The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this b
 
 ## Domain Knowledge
 
-### GT / F1 Data Model
+### Event Field Semantics (MANDATORY — apply everywhere events are displayed or matched)
 
-- Birth/Adopted events: `child` is the primary link (who was born/adopted), `person`/`spouse` are optional parent links. `person=None` on birth events is legitimate.
-- Other events: `person` is the primary link.
-- Structural events (Birth, Death, Married, etc.) skip description matching in F1 — only Shift events use descriptions.
+**Person resolution** — which person an event is "about":
+- Birth/Adopted: `child` is the primary link (who was born/adopted). `person`/`spouse` are optional parent links. `person=None` is legitimate.
+- All other events: `person` is the primary link.
+- When displaying person name for an event, always check `event.kind` first.
+
+**Description** — `EventKind.isSelfDescribing()` (Birth, Adopted, Married, Separated, Divorced, Bonded, Moved, Death):
+- The kind name IS the description; `Event.description` is optional supplementary detail.
+- Display: use `kind.value.capitalize()` as the primary label. Append description only if it adds information beyond the kind name.
+- Placeholder descriptions ("New Event", "Unknown", "") should be treated as empty.
+- Only Shift events require and rely on `Event.description` as their primary label.
+
+**F1 matching**: Structural events skip description matching — only Shift events use descriptions. Events match on kind + date + person links.
+
+**Duplicate people**: `match_people` produces a 1:1 `id_map`. When either side has duplicate people with the same name (e.g., two "Michael" entries), use `_augment_duplicate_person_id_map` for A-side duplicates. For symmetric comparisons (auditor vs auditor), B-side duplicates also need remapping — see `_dedup_b_people` in `compare.py`.
 
 ### IRR Deliberation Records
 

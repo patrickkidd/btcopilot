@@ -35,6 +35,7 @@ from .analysis import bp as analysis_bp
 from .synthetic import bp as synthetic_bp
 from .irr import bp as irr_bp
 from .calibration import bp as calibration_bp
+from .compare import bp as compare_bp
 
 
 _log = logging.getLogger(__name__)
@@ -77,6 +78,7 @@ bp.register_blueprint(analysis_bp)
 bp.register_blueprint(synthetic_bp)
 bp.register_blueprint(irr_bp)
 bp.register_blueprint(calibration_bp)
+bp.register_blueprint(compare_bp)
 
 
 def is_session_expired():

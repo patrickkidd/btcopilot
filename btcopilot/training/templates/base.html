@@ -1087,7 +1087,7 @@
     <!-- Breadcrumb Navigation -->
     {% if breadcrumbs %}
     <nav class="breadcrumb has-arrow-separator" aria-label="breadcrumbs" style="padding: 0.75rem 1.5rem; background-color: var(--color-canvas-subtle); border-bottom: 1px solid var(--color-border-default);">
-        <div class="container">
+        <div class="container is-fluid">
             <ul>
                 {% for breadcrumb in breadcrumbs %}
                 <li{% if loop.last %} class="is-active"{% endif %}>

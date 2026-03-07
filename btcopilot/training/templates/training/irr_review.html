@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}IRR Review - {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
+{% block title %}[IRR Review] {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
 
 {% block content %}
 
@@ -22,7 +22,7 @@ window.currentUsername = '';
     <div class="container" style="max-width: 100%; width: 100%; padding-left: 1rem; padding-right: 1rem;">
         <div class="mb-4 is-flex is-justify-content-space-between is-align-items-center">
             <div>
-                <h1 class="title">{{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
+                <h1 class="title">[IRR Review] {{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
                 <p class="subtitle">IRR Review - {{ coders|length }} coders</p>
             </div>
             <div class="is-flex is-align-items-center" style="gap: 0.5rem;">

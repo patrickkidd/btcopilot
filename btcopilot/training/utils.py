@@ -142,14 +142,49 @@ def _discussion_has_irr(discussion_id):
     )
 
 
+def _discussion_has_f1(discussion_id):
+    from btcopilot.personal.models import Statement
+    from btcopilot.training.models import Feedback
+
+    return (
+        db.session.query(Feedback.id)
+        .join(Statement, Feedback.statement_id == Statement.id)
+        .filter(
+            Statement.discussion_id == discussion_id,
+            Feedback.feedback_type == "extraction",
+            Feedback.approved == True,
+        )
+        .first()
+        is not None
+    )
+
+
+def get_discussion_breadcrumbs(discussion, active_view):
+    """Build standard breadcrumbs for any discussion-level view."""
+    crumbs = [{"title": "Coding", "url": url_for("training.audit.index")}]
+    summary = discussion.summary or f"Discussion {discussion.id}"
+    diagram_name = discussion.diagram.name if discussion.diagram else None
+    if diagram_name and diagram_name != summary:
+        crumbs.append({"title": diagram_name, "url": None})
+    crumbs.append({
+        "title": summary,
+        "url": url_for("training.discussions.audit", discussion_id=discussion.id),
+    })
+    menu, active_title = get_discussion_view_menu(discussion.id, active_view)
+    crumbs.append({"title": active_title, "menu": menu})
+    return crumbs
+
+
 def get_discussion_view_menu(discussion_id, active_view):
     """Build breadcrumb dropdown menu for discussion-level views. Returns (menu, active_title)."""
-    titles = {"coding": "Coding", "f1": "F1 Analysis", "irr": "IRR Analysis", "review": "IRR Review", "matrix": "Pairwise Matrix"}
+    titles = {"coding": "Coding", "f1": "F1 Analysis", "irr": "IRR Analysis", "review": "IRR Review", "matrix": "Pairwise Matrix", "timeline": "Timeline"}
     has_irr = _discussion_has_irr(discussion_id)
+    has_f1 = _discussion_has_f1(discussion_id)
     no_data = " (no data)"
     menu = [
         {"title": "Coding", "url": url_for("training.discussions.audit", discussion_id=discussion_id), "icon": "edit", "active": active_view == "coding"},
-        {"title": "F1 Analysis", "url": url_for("training.analysis.discussion_analysis", discussion_id=discussion_id), "icon": "chart-bar", "active": active_view == "f1"},
+        {"title": "F1 Analysis" + ("" if has_f1 else no_data), "url": url_for("training.analysis.discussion_analysis", discussion_id=discussion_id), "icon": "chart-bar", "active": active_view == "f1", "disabled": not has_f1},
+        {"title": "Timeline" + ("" if has_irr else no_data), "url": url_for("training.compare.timeline", discussion_id=discussion_id), "icon": "exchange-alt", "active": active_view == "timeline", "disabled": not has_irr},
         {"divider": True},
         {"title": "IRR Analysis" + ("" if has_irr else no_data), "url": url_for("training.irr.discussion", discussion_id=discussion_id), "icon": "users", "active": active_view == "irr", "disabled": not has_irr},
         {"title": "IRR Review" + ("" if has_irr else no_data), "url": url_for("training.irr.review", discussion_id=discussion_id), "icon": "comments", "active": active_view == "review", "disabled": not has_irr},

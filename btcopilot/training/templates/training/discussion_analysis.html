@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}F1 Analysis - {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
+{% block title %}[F1 Analysis] {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
 
 {% block content %}
 <section class="section">
     <div class="container is-fluid">
         <div class="mb-4">
-            <h1 class="title">{{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
+            <h1 class="title">[F1 Analysis] {{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
             <p class="subtitle">F1 Analysis - {{ statement_breakdowns|length }} statements</p>
         </div>
 
@@ -218,6 +218,10 @@
         <div id="statements-container">
             {% for item in statement_breakdowns %}
                 {% include 'training/components/statement_analysis_row.html' %}
+            {% else %}
+            <div class="notification is-warning is-light">
+                <p>No F1 analysis data available. This requires both AI extraction (pdp_deltas) and approved ground truth for at least one statement.</p>
+            </div>
             {% endfor %}
         </div>
     </div>

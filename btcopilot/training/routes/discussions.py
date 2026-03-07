@@ -35,7 +35,7 @@ from btcopilot.schema import (
 )
 from btcopilot.personal.models import Discussion, DiscussionStatus, Statement, Speaker, SpeakerType
 from btcopilot.training.models import Feedback
-from btcopilot.training.utils import get_breadcrumbs, get_auditor_id, get_discussion_view_menu
+from btcopilot.training.utils import get_breadcrumbs, get_auditor_id, get_discussion_breadcrumbs
 
 
 _log = logging.getLogger(__name__)
@@ -852,22 +852,7 @@ def audit(discussion_id):
     if expert_statements:
         expert_statements[-1]["is_last_expert"] = True
 
-    menu, active_title = get_discussion_view_menu(discussion_id, "coding")
-    breadcrumbs = get_breadcrumbs("thread")
-    if discussion.diagram:
-        breadcrumbs.append(
-            {
-                "title": discussion.diagram.name or "Untitled Diagram",
-                "url": None,
-            }
-        )
-    breadcrumbs.append(
-        {
-            "title": f"{discussion.summary or 'Untitled Discussion'} (ID: {discussion.id})",
-            "url": url_for("training.discussions.audit", discussion_id=discussion.id),
-        }
-    )
-    breadcrumbs.append({"title": active_title, "menu": menu})
+    breadcrumbs = get_discussion_breadcrumbs(discussion, "coding")
 
     # Get current user for navigation
     current_user = auth.current_user()
