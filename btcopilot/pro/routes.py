@@ -903,7 +903,7 @@ def copilot_chat(conversation_id: int = None):
         for x in args.get("events", [])
     ]
 
-    response = current_app.engine.ask(args["question"], events, conversation_id)
+    response = current_app.engine.ask(args["question"], events)
     return pickle.dumps(
         {
             "conversation_id": conversation_id,

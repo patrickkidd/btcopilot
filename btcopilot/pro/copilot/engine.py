@@ -162,9 +162,7 @@ class Engine:
 
         return ChatPromptTemplate.from_template(kind)
 
-    def ask(
-        self, question: str, events: list[Event] = None, conversation_id: str = None
-    ) -> Response:
+    def ask(self, question: str, events: list[Event] = None) -> Response:
 
         _log.info(f"Query with question: {question}")
 
