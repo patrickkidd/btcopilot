@@ -287,9 +287,8 @@ def _remap_person_refs(deltas: PDPDeltas, person_remap: dict[int, int]) -> None:
     if not person_remap:
         return
 
-    for person in deltas.people:
-        if person.parents is not None and person.parents in person_remap:
-            person.parents = person_remap[person.parents]
+    # Note: person.parents is a PairBond ID, not a Person ID.
+    # It is remapped separately after PairBond de-duplication via pb_remap.
 
     for pb in deltas.pair_bonds:
         if pb.person_a is not None and pb.person_a in person_remap:

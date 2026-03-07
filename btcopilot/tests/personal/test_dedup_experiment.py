@@ -73,9 +73,7 @@ def _check_reference_integrity(deltas: PDPDeltas, diagram: DiagramData) -> bool:
                 return False
     for person in deltas.people:
         if person.parents is not None and person.parents not in valid_pb_ids:
-            # Might reference committed pair bond
-            if person.parents not in valid_pb_ids:
-                return False
+            return False
     for pb in deltas.pair_bonds:
         for ref in [pb.person_a, pb.person_b]:
             if ref is not None and ref not in valid_person_ids:
