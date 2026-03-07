@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from btcopilot.training.f1_metrics import F1Metrics, CumulativeF1Metrics
+from btcopilot.training.f1_metrics import F1Metrics, CumulativeF1Metrics, calculate_f1_from_counts
 from btcopilot.training.eval_harness import (
     build_eval_result,
     format_table,
@@ -31,20 +31,14 @@ def _make_cumulative(
 ) -> CumulativeF1Metrics:
     """Helper to build a CumulativeF1Metrics with known counts."""
 
-    def _f1(tp, fp, fn):
-        p = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-        r = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        f1 = 2 * p * r / (p + r) if (p + r) > 0 else 0.0
-        return F1Metrics(tp=tp, fp=fp, fn=fn, precision=p, recall=r, f1=f1)
-
-    people_m = _f1(people_tp, people_fp, people_fn)
-    events_m = _f1(events_tp, events_fp, events_fn)
-    bonds_m = _f1(bonds_tp, bonds_fp, bonds_fn)
+    people_m = calculate_f1_from_counts(people_tp, people_fp, people_fn)
+    events_m = calculate_f1_from_counts(events_tp, events_fp, events_fn)
+    bonds_m = calculate_f1_from_counts(bonds_tp, bonds_fp, bonds_fn)
 
     total_tp = people_tp + events_tp + bonds_tp
     total_fp = people_fp + events_fp + bonds_fp
     total_fn = people_fn + events_fn + bonds_fn
-    agg = _f1(total_tp, total_fp, total_fn)
+    agg = calculate_f1_from_counts(total_tp, total_fp, total_fn)
 
     return CumulativeF1Metrics(
         discussion_id=disc_id,
@@ -144,10 +138,10 @@ class TestBuildEvalResult:
         assert people_agg.total_tp == 5
         assert people_agg.total_fp == 5
         assert people_agg.total_fn == 5
-        assert abs(people_agg.micro_f1 - 0.5) < 0.001
+        assert people_agg.micro_f1 == pytest.approx(0.5)
 
         # Avg F1: (1.0 + 0.0) / 2 = 0.5 — same in this case
-        assert abs(people_agg.avg_f1 - 0.5) < 0.001
+        assert people_agg.avg_f1 == pytest.approx(0.5)
 
 
 class TestFormatJson:

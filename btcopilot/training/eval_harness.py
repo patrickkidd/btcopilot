@@ -15,6 +15,7 @@ Usage (standalone):
 """
 
 import json
+import logging
 from dataclasses import dataclass, field, asdict
 
 from btcopilot.training.f1_metrics import (
@@ -24,9 +25,13 @@ from btcopilot.training.f1_metrics import (
     calculate_all_cumulative_f1,
 )
 
+_log = logging.getLogger(__name__)
+
 # Targets from MVP_DASHBOARD.md
-TARGET_PEOPLE_F1 = 0.7
-TARGET_EVENTS_F1 = 0.3
+TARGETS = {
+    "People": 0.7,
+    "Events": 0.3,
+}
 
 
 @dataclass
@@ -216,10 +221,9 @@ def format_table(result: EvalResult) -> str:
     lines.append(f"  {'-' * 68}")
     for a in result.aggregate:
         target = ""
-        if a.entity_type == "People":
-            target = f"  {'PASS' if a.avg_f1 > TARGET_PEOPLE_F1 else 'FAIL'} (>{TARGET_PEOPLE_F1})"
-        elif a.entity_type == "Events":
-            target = f"  {'PASS' if a.avg_f1 > TARGET_EVENTS_F1 else 'FAIL'} (>{TARGET_EVENTS_F1})"
+        if a.entity_type in TARGETS:
+            target_f1 = TARGETS[a.entity_type]
+            target = f"  {'PASS' if a.avg_f1 > target_f1 else 'FAIL'} (>{target_f1})"
         lines.append(
             f"  {a.entity_type:<12} {a.avg_f1:>7.3f} {a.micro_f1:>9.3f} {a.micro_precision:>8.3f} "
             f"{a.micro_recall:>8.3f} {a.total_tp:>5} {a.total_fp:>5} {a.total_fn:>5}{target}"
@@ -286,7 +290,8 @@ def run_eval(discussion_ids: list[int] | None = None) -> EvalResult:
             try:
                 m = calculate_cumulative_f1(disc_id)
                 metrics.append(m)
-            except ValueError:
+            except ValueError as e:
+                _log.warning(f"Could not evaluate discussion {disc_id}: {e}")
                 continue
     else:
         system = calculate_all_cumulative_f1(include_synthetic=True)
@@ -329,6 +334,7 @@ def main():
                 "\n--- JSON output (use --json for clean JSON to stdout) ---",
                 file=sys.stderr,
             )
+            print(json.dumps(format_json(result), indent=2), file=sys.stderr)
 
         sys.exit(0)
 
