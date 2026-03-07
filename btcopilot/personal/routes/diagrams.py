@@ -11,7 +11,7 @@ from btcopilot.extensions import db
 from btcopilot.schema import DiagramData, Event, asdict, from_dict
 from btcopilot.pro.models import Diagram, AccessRight
 from btcopilot.personal.models import Discussion, Statement
-from btcopilot.personal import clusters
+from btcopilot.personal import clusters, insights
 
 _log = logging.getLogger(__name__)
 
@@ -227,3 +227,21 @@ def detect_clusters(diagram_id):
         clusters=[asdict(c) for c in result.clusters],
         cacheKey=result.cacheKey,
     )
+
+
+@diagrams_bp.route("/<int:diagram_id>/insights", methods=["POST"])
+def generate_insights(diagram_id):
+    user = auth.current_user()
+
+    diagram = Diagram.query.get(diagram_id)
+    if not diagram:
+        abort(404)
+
+    if diagram.user_id != user.id and not user.has_role(btcopilot.ROLE_ADMIN):
+        abort(403)
+
+    diagram_data = diagram.get_diagram_data()
+
+    result = insights.generate_insights(diagram_data)
+
+    return jsonify(insights=result)
