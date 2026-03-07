@@ -155,67 +155,52 @@ def test_prioritize_disagreements_ordering():
 # --- batch_llm_calls rate limiting ---
 
 
-def test_batch_llm_calls_single_batch():
-    """<=24 prompts should fire in one batch with no sleep."""
+def test_batch_llm_calls_small_prompts_single_batch():
+    """Small prompts fitting in one token budget = 1 batch, no sleep."""
     from btcopilot.training.routes.calibration import batch_llm_calls
 
-    call_count = 0
     async def fake_calibration(prompt, system_instruction=None):
-        nonlocal call_count
-        call_count += 1
-        return f"result-{call_count}"
+        return "ok"
 
+    prompts = ["short prompt"] * 20
     with patch("btcopilot.training.routes.calibration.gemini_calibration", fake_calibration), \
          patch("asyncio.sleep", new_callable=AsyncMock) as sleep_mock:
-        results = asyncio.run(batch_llm_calls([f"p{i}" for i in range(20)], "sys"))
+        results = asyncio.run(batch_llm_calls(prompts, "sys"))
     assert len(results) == 20
     sleep_mock.assert_not_called()
 
 
-def test_batch_llm_calls_multiple_batches():
-    """50 prompts should fire in 3 batches (24+24+2) with 2 sleeps."""
-    from btcopilot.training.routes.calibration import batch_llm_calls
+def test_batch_llm_calls_large_prompts_split():
+    """Large prompts exceeding token budget get split across batches."""
+    from btcopilot.training.routes.calibration import batch_llm_calls, TOKEN_BUDGET, CHARS_PER_TOKEN
 
-    call_count = 0
     async def fake_calibration(prompt, system_instruction=None):
-        nonlocal call_count
-        call_count += 1
-        return f"result-{call_count}"
+        return "ok"
+
+    # Each prompt uses ~half the budget so 2 fit per batch, 5 prompts = 3 batches
+    chars_per_prompt = (TOKEN_BUDGET * CHARS_PER_TOKEN) // 2 - 1000
+    prompts = ["x" * chars_per_prompt for _ in range(5)]
 
     with patch("btcopilot.training.routes.calibration.gemini_calibration", fake_calibration), \
          patch("asyncio.sleep", new_callable=AsyncMock) as sleep_mock:
-        results = asyncio.run(batch_llm_calls([f"p{i}" for i in range(50)], "sys"))
-    assert len(results) == 50
+        results = asyncio.run(batch_llm_calls(prompts, "sys"))
+    assert len(results) == 5
     assert sleep_mock.call_count == 2
-    sleep_mock.assert_called_with(60)
 
 
-def test_batch_llm_calls_exactly_24():
-    """Exactly 24 prompts = 1 batch, no sleep."""
-    from btcopilot.training.routes.calibration import batch_llm_calls
-
-    async def fake_calibration(prompt, system_instruction=None):
-        return "ok"
-
-    with patch("btcopilot.training.routes.calibration.gemini_calibration", fake_calibration), \
-         patch("asyncio.sleep", new_callable=AsyncMock) as sleep_mock:
-        results = asyncio.run(batch_llm_calls([f"p{i}" for i in range(24)], "sys"))
-    assert len(results) == 24
-    sleep_mock.assert_not_called()
-
-
-def test_batch_llm_calls_75_prompts():
-    """75 prompts (the failing case): 4 batches (24+24+24+3), 3 sleeps."""
-    from btcopilot.training.routes.calibration import batch_llm_calls
+def test_batch_llm_calls_single_huge_prompt():
+    """A single prompt exceeding the budget still gets processed."""
+    from btcopilot.training.routes.calibration import batch_llm_calls, TOKEN_BUDGET, CHARS_PER_TOKEN
 
     async def fake_calibration(prompt, system_instruction=None):
         return "ok"
 
+    huge = "x" * (TOKEN_BUDGET * CHARS_PER_TOKEN * 2)
     with patch("btcopilot.training.routes.calibration.gemini_calibration", fake_calibration), \
          patch("asyncio.sleep", new_callable=AsyncMock) as sleep_mock:
-        results = asyncio.run(batch_llm_calls([f"p{i}" for i in range(75)], "sys"))
-    assert len(results) == 75
-    assert sleep_mock.call_count == 3
+        results = asyncio.run(batch_llm_calls([huge, "small"], "sys"))
+    assert len(results) == 2
+    assert sleep_mock.call_count == 1
 
 
 # --- _parse_triage ---

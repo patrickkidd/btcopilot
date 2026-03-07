@@ -354,49 +354,31 @@ DATA_EXTRACTION_PASS2_CONTEXT = """
 
 
 SARF_REVIEW_PROMPT = """\
-You are a clinical research calibration assistant reviewing SARF coding on \
-shift events extracted from a family therapy discussion.
+You are reviewing clinical shift events extracted from a family therapy discussion.
 
-SARF tracks Symptom, Anxiety, Relationship, and Functioning shifts. You have \
-access to operational definitions derived from primary clinical sources \
-(Kerr, Bowen, Havstad). Use these definitions to evaluate and correct each \
-event's SARF variable coding.
+For each event below, verify and correct the SARF variable coding:
 
-For each event, evaluate ALL coded SARF variables against the definitions:
+**SARF Variables:**
+- **symptom** (up/down/same/null): Physical or mental health change.
+- **anxiety** (up/down/same/null): Automatic response to threat.
+- **relationship** (distance/overfunctioning/underfunctioning/conflict/projection/cutoff/toward/away/fusion/inside/outside/defined-self/null): How the person BEHAVES TOWARD others. This is the most common variable in family discussions.
+- **functioning** (up/down/same/null): Ability to manage self productively.
 
-1. **Alignment**: Does the coding match the operational definition and \
-observable markers?
-2. **Boundary check**: Could this be a different SARF variable? Key boundaries:
-   - Distance (withdrawing/avoiding) vs Anxiety-up or Functioning-down
-   - Overfunctioning (doing for others) vs Functioning-down
-   - Projection (anxious focus on child) vs Anxiety-up
-   - Inside/triangle (fighting about third party) vs Conflict
-   - Cutoff (permanent severance) vs Distance (temporary withdrawal)
-   - DefinedSelf (I-position statement) vs Functioning-up
-   - Underfunctioning (giving up responsibility) vs Symptom-up
-3. **Correction**: If misaligned, correct the SARF variable value.
+**CRITICAL DISTINCTIONS:**
+- Withdrawing from contact, avoiding people, "going into a shell" = **relationship: distance**, NOT anxiety or functioning
+- Doing too much for others, keeping everything together, caretaking burden = **relationship: overfunctioning**, NOT functioning down
+- Anxious focus on a child's problems = **relationship: projection**, NOT anxiety
+- Fighting about a third party = **relationship: inside** (triangle), NOT conflict
 
-Return ALL events with corrected SARF variables. Keep all non-SARF fields \
-(id, kind, description, dateTime, person, spouse, child) unchanged.
+**REVIEW EACH EVENT and return the corrected version. Keep all fields unchanged except SARF variables.**
 
----
-
-## SARF Operational Definitions
-
-{sarf_definitions}
-
----
-
-## Events to Review
-
+Events to review:
 {events_json}
 
-## People Context
-
+People context:
 {people_json}
 
-## Original Conversation
-
+Original conversation:
 {conversation_history}
 """
 

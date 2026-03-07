@@ -8,7 +8,6 @@ import json
 from btcopilot.extensions import ai_log
 from btcopilot.llmutil import gemini_structured
 from btcopilot.personal.models import SpeakerType
-from btcopilot.training.sarfdefinitions import all_condensed_definitions
 from btcopilot.personal.prompts import (
     DATA_EXTRACTION_CORRECTION,
     DATA_EXTRACTION_PASS1_PROMPT,
@@ -658,7 +657,6 @@ async def _two_pass_extract(
         events_json = json.dumps([asdict(e) for e in shift_events], indent=2, default=str)
         people_json = json.dumps([asdict(p) for p in pass2_pdp.people], indent=2, default=str)
         review_prompt = SARF_REVIEW_PROMPT.format(
-            sarf_definitions=all_condensed_definitions(),
             events_json=events_json,
             people_json=people_json,
             conversation_history=conversation_history,

@@ -7,7 +7,7 @@ import logging
 from dataclasses import fields, MISSING
 from typing import get_origin, get_args, Union
 
-from google.genai.errors import ServerError
+from google.genai.errors import ClientError, ServerError
 
 from btcopilot.schema import from_dict
 
@@ -305,7 +305,7 @@ async def gemini_calibration(prompt, system_instruction=None, deep=False):
     else:
         config = types.GenerateContentConfig(
             temperature=0.2,
-            max_output_tokens=1024,
+            max_output_tokens=2048,
         )
     if system_instruction:
         config.system_instruction = system_instruction
@@ -319,6 +319,15 @@ async def gemini_calibration(prompt, system_instruction=None, deep=False):
                 config=config,
             )
             break
+        except ClientError as e:
+            if "RESOURCE_EXHAUSTED" not in str(e) or attempt == GEMINI_MAX_RETRIES - 1:
+                raise
+            delay = 30 * (attempt + 1)
+            _log.warning(
+                f"Gemini rate limit (attempt {attempt + 1}/{GEMINI_MAX_RETRIES}), "
+                f"retrying in {delay}s"
+            )
+            await asyncio.sleep(delay)
         except ServerError as e:
             if attempt == GEMINI_MAX_RETRIES - 1:
                 raise

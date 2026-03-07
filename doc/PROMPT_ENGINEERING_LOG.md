@@ -440,3 +440,21 @@ Both passes route through `_extract_and_validate()` for retry/validation. Pass 2
 **Alternatives considered but deferred**:
 - **SARF Signature Match** — match on SARF variable agreement instead of description. More precise than kind+date+person but adds complexity and creates circular dependency (SARF accuracy used for both matching and scoring).
 - **SARF + Description hybrid** — demote description to low-weight tiebreaker. Most complex, still affected by paraphrasing variance.
+
+### Mar 2026: Drop SARF operational definitions from Pass 3 review prompt
+
+**Context**: Commit `fb1b603d` (fdserver) added `all_condensed_definitions()` (~62,886 chars / ~15,700 tokens) to the Pass 3 SARF review prompt. This comprised 98% of the prompt. A/B testing (3 runs each) showed marginal benefit: Aggregate F1 +0.006, SARF macro F1 +0.016 mean. This echoes the Dec 2024 lesson where exhaustive definitions degraded F1.
+
+**Change**: Replaced the definitions-heavy prompt with a compact inline-rules version (~30 lines). Removed `all_condensed_definitions()` call from `pdp.py`, removed import of `sarfdefinitions` from `pdp.py`. Updated both `btcopilot/personal/prompts.py` and `fdserver/prompts/private_prompts.py`.
+
+**Results** (3-run A/B mean, gemini-3-flash-preview, 6 discussions):
+
+| Metric | With definitions | Without | Delta |
+|--------|-----------------|---------|-------|
+| Aggregate F1 | 0.647 | 0.641 | -0.006 |
+| SARF macro F1 | 0.489 | 0.473 | -0.016 |
+| Pass 3 prompt size | ~64K chars | ~1.5K chars | -98% |
+
+**Decision**: Dropped. Cost/benefit strongly favors removal: ~15,700 fewer input tokens per extraction for negligible F1 difference within run-to-run variance. Reduces complexity and cost.
+
+**Note**: `sarfdefinitions.py` and `all_condensed_definitions()` remain available — they are used independently by IRR calibration (Components A/B) via `calibrationprompts.py`.

@@ -28,26 +28,42 @@ from btcopilot.training.calibrationutils import (
 
 _log = logging.getLogger(__name__)
 
-LLM_BATCH_SIZE = 200  # Flash: 1000+ RPM; Pro was 25 RPM
-LLM_BATCH_DELAY = 2  # brief pause between batches
+TOKEN_BUDGET = 800_000  # Stay under 1M input tokens/min quota with margin
+CHARS_PER_TOKEN = 4  # Conservative estimate for English text
+LLM_BATCH_DELAY = 30  # Pause between batches for quota reset
 
 bp = Blueprint("calibration", __name__, url_prefix="/calibration")
 
 
+def _build_token_batches(prompts):
+    """Split prompts into batches that fit within the input token budget."""
+    batches = []
+    batch = []
+    batch_tokens = 0
+    for prompt in prompts:
+        est_tokens = len(prompt) // CHARS_PER_TOKEN
+        if batch and batch_tokens + est_tokens > TOKEN_BUDGET:
+            batches.append(batch)
+            batch = []
+            batch_tokens = 0
+        batch.append(prompt)
+        batch_tokens += est_tokens
+    if batch:
+        batches.append(batch)
+    return batches
+
+
 async def batch_llm_calls(prompts, system_instruction):
-    """Run LLM calls in batches with brief pauses between them."""
+    batches = _build_token_batches(prompts)
     results = []
-    for batch_start in range(0, len(prompts), LLM_BATCH_SIZE):
-        batch = prompts[batch_start:batch_start + LLM_BATCH_SIZE]
-        batch_num = batch_start // LLM_BATCH_SIZE + 1
-        total_batches = (len(prompts) + LLM_BATCH_SIZE - 1) // LLM_BATCH_SIZE
-        _log.info(f"  Batch {batch_num}/{total_batches}: {len(batch)} calls...")
+    for batch_num, batch in enumerate(batches, 1):
+        _log.info(f"  Batch {batch_num}/{len(batches)}: {len(batch)} calls...")
         batch_results = await asyncio.gather(
             *[gemini_calibration(p, system_instruction=system_instruction) for p in batch]
         )
         results.extend(batch_results)
-        if batch_start + LLM_BATCH_SIZE < len(prompts):
-            _log.info(f"  Waiting {LLM_BATCH_DELAY}s for rate limit reset...")
+        if batch_num < len(batches):
+            _log.info(f"  Waiting {LLM_BATCH_DELAY}s for token quota reset...")
             await asyncio.sleep(LLM_BATCH_DELAY)
     return results
 
@@ -323,7 +339,7 @@ def irr_report(discussion_id: int):
                 }
                 pending.append((metadata, prompt))
 
-    _log.info(f"  Total disagreements across all pairs: {len(pending)}. Calling LLM in batches of {LLM_BATCH_SIZE}...")
+    _log.info(f"  Total disagreements across all pairs: {len(pending)}. Calling LLM with token-aware batching...")
     for i, (meta, prompt) in enumerate(pending):
         _log.info(f"    [{i+1}/{len(pending)}] {meta['impact']} | {meta['person_name']}: {meta['description'][:60]} ({len(prompt)} chars)")
 
