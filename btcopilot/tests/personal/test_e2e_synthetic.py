@@ -122,12 +122,15 @@ def test_e2e_chat_then_extract(test_user, diagram_with_discussion):
     assert response.statement is not None
 
     # Step 2: extract_full() populates PDP
-    with patch(
-        "btcopilot.pdp._extract_and_validate",
-        AsyncMock(return_value=(CACHED_PDP, CACHED_DELTAS)),
-    ), patch(
-        "btcopilot.pdp.gemini_structured",
-        AsyncMock(return_value=PDPDeltas()),
+    with (
+        patch(
+            "btcopilot.pdp._extract_and_validate",
+            AsyncMock(return_value=(CACHED_PDP, CACHED_DELTAS)),
+        ),
+        patch(
+            "btcopilot.pdp.gemini_structured",
+            AsyncMock(return_value=PDPDeltas()),
+        ),
     ):
         from btcopilot.pdp import extract_full
 
