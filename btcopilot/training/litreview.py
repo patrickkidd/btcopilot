@@ -5,10 +5,13 @@ definitions from doc/sarf-definitions/ instead of the tuned inline summaries.
 """
 
 import importlib.util
+import logging
 import os
 from pathlib import Path
 
 from btcopilot.training.sarfdefinitions import all_condensed_definitions
+
+logger = logging.getLogger(__name__)
 
 # Load production prompts. In production FDSERVER_PROMPTS_PATH is set and
 # personal.prompts already has the full versions. In dev that env var is
@@ -20,16 +23,23 @@ _fdserver_path = os.environ.get("FDSERVER_PROMPTS_PATH") or str(
     / "private_prompts.py"
 )
 
+PROMPTS_AVAILABLE = False
+_BASE_PASS2_PROMPT = None
+_BASE_SARF_REVIEW = None
+
 if os.path.exists(_fdserver_path):
     _spec = importlib.util.spec_from_file_location("_private_prompts", _fdserver_path)
     _mod = importlib.util.module_from_spec(_spec)
     _spec.loader.exec_module(_mod)
     _BASE_PASS2_PROMPT = _mod.DATA_EXTRACTION_PASS2_PROMPT
     _BASE_SARF_REVIEW = _mod.SARF_REVIEW_PROMPT
+    PROMPTS_AVAILABLE = True
 else:
-    raise FileNotFoundError(
-        f"Cannot find production prompts at {_fdserver_path}. "
-        "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located."
+    logger.warning(
+        "Production prompts not found at %s. "
+        "Litreview features will be unavailable. "
+        "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located.",
+        _fdserver_path,
     )
 
 AUDITOR_ID = "litreview-ai"
@@ -67,6 +77,11 @@ EVENT FIELD RULES
 
 
 def _build_pass2_prompt() -> str:
+    if not PROMPTS_AVAILABLE:
+        raise RuntimeError(
+            "Litreview prompts are unavailable — production prompts not found at import time. "
+            "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located."
+        )
     base = _BASE_PASS2_PROMPT
     start_idx = base.find(_SARF_SECTION_START)
     end_idx = base.find(_SARF_SECTION_END)
@@ -82,7 +97,16 @@ def _build_pass2_prompt() -> str:
     )
 
 
-LITREVIEW_PASS2_PROMPT = _build_pass2_prompt()
+def _check_prompts_available():
+    """Raise RuntimeError if production prompts were not found at import time."""
+    if not PROMPTS_AVAILABLE:
+        raise RuntimeError(
+            "Litreview prompts are unavailable — production prompts not found at import time. "
+            "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located."
+        )
+
+
+LITREVIEW_PASS2_PROMPT = _build_pass2_prompt() if PROMPTS_AVAILABLE else None
 
 
 # ── Pass 3 SARF review prompt ────────────────────────────────────────────────

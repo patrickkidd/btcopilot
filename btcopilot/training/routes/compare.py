@@ -15,6 +15,7 @@ from btcopilot.training.litreview import (
     AUDITOR_ID as LITREVIEW_AUDITOR_ID,
     LITREVIEW_PASS2_PROMPT,
     LITREVIEW_SARF_REVIEW_PROMPT,
+    PROMPTS_AVAILABLE as LITREVIEW_PROMPTS_AVAILABLE,
 )
 from btcopilot.training.utils import get_discussion_breadcrumbs
 from btcopilot.training.f1_metrics import (
@@ -335,6 +336,9 @@ def timeline(discussion_id):
 @bp.route("/litreview/<int:discussion_id>", methods=["POST"])
 @minimum_role(btcopilot.ROLE_ADMIN)
 def run_litreview(discussion_id):
+    if not LITREVIEW_PROMPTS_AVAILABLE:
+        abort(503, "Litreview unavailable: production prompts not found. "
+              "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located.")
     disc = Discussion.query.get_or_404(discussion_id)
 
     last_stmt = (
