@@ -119,11 +119,32 @@
                     </div>
                 </div>
                 <div class="level-right">
-                    <div class="tags level-item">
-                        <span class="tag" style="background: #27ae60; color: white;">{{ timeline.counts.matched }} matched</span>
-                        <span class="tag" style="background: #f0ad4e; color: white;">{{ timeline.counts.disagreements }} disagreements</span>
-                        <span class="tag" style="background: #e74c3c; color: white;">{{ timeline.counts.a_only }} A-only</span>
-                        <span class="tag" style="background: #e74c3c; color: white;">{{ timeline.counts.b_only }} B-only</span>
+                    <div class="level-item">
+                        <div class="tags mb-0">
+                            <span class="tag" style="background: #27ae60; color: white;">{{ timeline.counts.matched }} matched</span>
+                            <span class="tag" style="background: #f0ad4e; color: white;">{{ timeline.counts.disagreements }} disagreements</span>
+                            <span class="tag" style="background: #e74c3c; color: white;">{{ timeline.counts.a_only }} A-only</span>
+                            <span class="tag" style="background: #e74c3c; color: white;">{{ timeline.counts.b_only }} B-only</span>
+                        </div>
+                    </div>
+                    <div class="level-item">
+                        <div class="buttons are-small mb-0">
+                            <button class="button is-info is-outlined"
+                                    @click="runLitreview()"
+                                    :class="{'is-loading': litreviewRunning}"
+                                    :disabled="litreviewRunning">
+                                <span class="icon"><i class="fas fa-flask"></i></span>
+                                <span x-text="litreviewRunning ? 'Running...' : '{{ "Re-run" if litreview_exists else "Run" }} litreview-ai'"></span>
+                            </button>
+                            {% if litreview_exists %}
+                            <a class="button is-light"
+                               href="{{ url_for('training.compare.litreview_prompt', discussion_id=discussion.id) }}"
+                               target="_blank">
+                                <span class="icon"><i class="fas fa-file-alt"></i></span>
+                                <span>View Prompt</span>
+                            </a>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -222,11 +243,28 @@ function timelineComparison() {
     return {
         coderA: '{{ coder_a }}',
         coderB: '{{ coder_b }}',
+        litreviewRunning: false,
         reload() {
             const url = new URL(window.location);
             url.searchParams.set('a', this.coderA);
             url.searchParams.set('b', this.coderB);
             window.location = url;
+        },
+        async runLitreview() {
+            this.litreviewRunning = true;
+            try {
+                const resp = await fetch('{{ url_for("training.compare.run_litreview", discussion_id=discussion.id) }}', {method: 'POST'});
+                if (!resp.ok) throw new Error(await resp.text());
+                const data = await resp.json();
+                alert(`Litreview extraction complete: ${data.people} people, ${data.events} events`);
+                const url = new URL(window.location);
+                url.searchParams.set('b', '{{ litreview_auditor_id }}');
+                window.location = url;
+            } catch (e) {
+                alert('Litreview extraction failed: ' + e.message);
+            } finally {
+                this.litreviewRunning = false;
+            }
         },
     };
 }

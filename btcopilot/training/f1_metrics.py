@@ -265,18 +265,71 @@ def calculate_date_similarity(
         return 0.0
 
 
-def match_people(
-    ai_people: list[Person], gt_people: list[Person]
-) -> tuple[EntityMatchResult, dict[int, int]]:
-    """
-    Match people by name similarity, parent matching, and gender matching.
+def _resolve_parent_names(
+    person: Person,
+    people: list[Person],
+    pair_bonds: list[PairBond],
+) -> set[str]:
+    """Get normalized parent names for a person via their parents PairBond."""
+    if person.parents is None:
+        return set()
+    people_by_id = {p.id: p for p in people}
+    for bond in pair_bonds:
+        if bond.id == person.parents:
+            names = set()
+            for pid in (bond.person_a, bond.person_b):
+                parent = people_by_id.get(pid)
+                if parent and parent.name:
+                    names.add(normalize_name_for_matching(parent.name))
+            return names
+    return set()
 
-    Returns:
-        EntityMatchResult: matched pairs, unmatched AI, unmatched GT
-        dict[int, int]: ID mapping from AI person IDs to GT person IDs
+
+PARENTS_BOOST = 0.1
+
+
+def _parents_score(
+    ai_person: Person,
+    gt_person: Person,
+    ai_people: list[Person],
+    gt_people: list[Person],
+    ai_pair_bonds: list[PairBond],
+    gt_pair_bonds: list[PairBond],
+) -> float:
+    """Score 0.0-1.0 for how well parents match between two person candidates.
+
+    Returns 0.5 (neutral) if either side has no parents data.
+    """
+    ai_parents = _resolve_parent_names(ai_person, ai_people, ai_pair_bonds)
+    gt_parents = _resolve_parent_names(gt_person, gt_people, gt_pair_bonds)
+    if not ai_parents or not gt_parents:
+        return 0.5
+    total = 0.0
+    comparisons = 0
+    for ai_name in ai_parents:
+        for gt_name in gt_parents:
+            total += fuzz.token_set_ratio(ai_name, gt_name) / 100.0
+            comparisons += 1
+    avg = total / comparisons if comparisons else 0.5
+    return avg
+
+
+def match_people(
+    ai_people: list[Person],
+    gt_people: list[Person],
+    ai_pair_bonds: list[PairBond] | None = None,
+    gt_pair_bonds: list[PairBond] | None = None,
+) -> tuple[EntityMatchResult, dict[int, int]]:
+    """Match people by name similarity, gender, and parent names.
+
+    Parent matching acts as a tiebreaker when multiple GT candidates have
+    similar name scores. Requires pair_bonds lists to resolve Person.parents
+    PairBond IDs to parent person names.
     """
     result = EntityMatchResult()
     id_map = {}
+    ai_bonds = ai_pair_bonds or []
+    gt_bonds = gt_pair_bonds or []
 
     gt_remaining = list(gt_people)
     ai_processed = set()
@@ -310,8 +363,18 @@ def match_people(
                 ):
                     gender_match = ai_person.gender == gt_person.gender
 
-            if gender_match and name_sim > best_score:
-                best_score = name_sim
+            if not gender_match:
+                continue
+
+            parent_sim = _parents_score(
+                ai_person, gt_person,
+                ai_people, gt_people,
+                ai_bonds, gt_bonds,
+            )
+            score = name_sim + PARENTS_BOOST * parent_sim
+
+            if score > best_score:
+                best_score = score
                 best_match = gt_person
 
         if best_match:
@@ -806,7 +869,9 @@ def calculate_statement_f1(
 
     metrics = StatementF1Metrics(statement_id=0)
 
-    people_result, id_map = match_people(ai_pdp.people, gt_pdp.people)
+    people_result, id_map = match_people(
+        ai_pdp.people, gt_pdp.people, ai_pdp.pair_bonds, gt_pdp.pair_bonds
+    )
     events_result = match_events(ai_pdp.events, gt_pdp.events, id_map)
     bonds_result = match_pair_bonds(ai_pdp.pair_bonds, gt_pdp.pair_bonds, id_map)
 
@@ -1051,7 +1116,9 @@ def calculate_cumulative_f1(discussion_id: int) -> CumulativeF1Metrics:
         gt_events_count=len(gt_pdp.events),
     )
 
-    people_result, id_map = match_people(ai_pdp.people, gt_pdp.people)
+    people_result, id_map = match_people(
+        ai_pdp.people, gt_pdp.people, ai_pdp.pair_bonds, gt_pdp.pair_bonds
+    )
 
     # Augment id_map: resolve committed ID mismatches from diagram_data
     if discussion.diagram:

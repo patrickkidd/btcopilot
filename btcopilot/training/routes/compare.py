@@ -1,13 +1,21 @@
+import asyncio
 import logging
 
-from flask import Blueprint, render_template, request, abort, url_for
+import nest_asyncio
+from flask import Blueprint, jsonify, render_template, request, abort, url_for
 
 import btcopilot
 from btcopilot import auth, pdp
 from btcopilot.auth import minimum_role
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
+from btcopilot.schema import DiagramData, asdict
 from btcopilot.training.models import Feedback
+from btcopilot.training.litreview import (
+    AUDITOR_ID as LITREVIEW_AUDITOR_ID,
+    LITREVIEW_PASS2_PROMPT,
+    LITREVIEW_SARF_REVIEW_PROMPT,
+)
 from btcopilot.training.utils import get_discussion_breadcrumbs
 from btcopilot.training.f1_metrics import (
     match_people,
@@ -47,6 +55,7 @@ def _auditor_options(discussion_id):
 
 def _event_display_person(event):
     from btcopilot.schema import EventKind
+
     if event.kind in (EventKind.Birth, EventKind.Adopted):
         return event.child or event.person
     return event.person
@@ -97,7 +106,10 @@ def _dedup_b_people(id_map, b_people):
         if not norm:
             continue
         for canon_name, canon_id in b_name_to_canonical.items():
-            if fuzz.token_set_ratio(norm, canon_name) / 100.0 >= NAME_SIMILARITY_THRESHOLD:
+            if (
+                fuzz.token_set_ratio(norm, canon_name) / 100.0
+                >= NAME_SIMILARITY_THRESHOLD
+            ):
                 dedup[p.id] = canon_id
                 break
     return dedup
@@ -139,7 +151,9 @@ def _event_stmt_map(discussion, auditor_id):
 
 
 def _build_timeline(pdp_a, pdp_b, coder_a, coder_b, stmt_map_a=None, stmt_map_b=None):
-    people_result, id_map = match_people(pdp_a.people, pdp_b.people)
+    people_result, id_map = match_people(
+        pdp_a.people, pdp_b.people, pdp_a.pair_bonds, pdp_b.pair_bonds
+    )
     _augment_duplicate_person_id_map(id_map, pdp_a.people, pdp_b.people)
 
     # Normalize B-side duplicate person IDs so match_events can find them
@@ -288,9 +302,21 @@ def timeline(discussion_id):
     stmt_map_a = _event_stmt_map(disc, coder_a)
     stmt_map_b = _event_stmt_map(disc, coder_b)
 
-    timeline_data = _build_timeline(pdp_a, pdp_b, coder_a, coder_b, stmt_map_a, stmt_map_b)
+    timeline_data = _build_timeline(
+        pdp_a, pdp_b, coder_a, coder_b, stmt_map_a, stmt_map_b
+    )
 
     breadcrumbs = get_discussion_breadcrumbs(disc, "timeline")
+
+    # Check if litreview-ai has data for this discussion
+    litreview_fb = (
+        Feedback.query.filter_by(
+            auditor_id=LITREVIEW_AUDITOR_ID, feedback_type="extraction"
+        )
+        .join(Statement)
+        .filter(Statement.discussion_id == discussion_id)
+        .first()
+    )
 
     return render_template(
         "training/timeline.html",
@@ -300,5 +326,92 @@ def timeline(discussion_id):
         coder_b=coder_b,
         timeline=timeline_data,
         breadcrumbs=breadcrumbs,
+        current_user=auth.current_user(),
+        litreview_exists=litreview_fb is not None,
+        litreview_auditor_id=LITREVIEW_AUDITOR_ID,
+    )
+
+
+@bp.route("/litreview/<int:discussion_id>", methods=["POST"])
+@minimum_role(btcopilot.ROLE_ADMIN)
+def run_litreview(discussion_id):
+    disc = Discussion.query.get_or_404(discussion_id)
+
+    last_stmt = (
+        Statement.query.filter_by(discussion_id=discussion_id)
+        .join(Speaker)
+        .filter(Speaker.type == SpeakerType.Subject)
+        .order_by(Statement.order.desc())
+        .first()
+    )
+    if not last_stmt:
+        abort(404, "No subject statements")
+
+    # Clear existing litreview feedback for this discussion
+    stmt_ids = [s.id for s in disc.statements]
+    Feedback.query.filter(
+        Feedback.auditor_id == LITREVIEW_AUDITOR_ID,
+        Feedback.feedback_type == "extraction",
+        Feedback.statement_id.in_(stmt_ids),
+    ).delete(synchronize_session=False)
+    db.session.flush()
+
+    nest_asyncio.apply()
+    diagram_data = DiagramData()
+    ai_pdp, _ = asyncio.run(
+        pdp.extract_full(
+            disc,
+            diagram_data,
+            pass2_prompt=LITREVIEW_PASS2_PROMPT,
+            sarf_review_prompt=LITREVIEW_SARF_REVIEW_PROMPT,
+        )
+    )
+
+    fb = Feedback(
+        statement_id=last_stmt.id,
+        auditor_id=LITREVIEW_AUDITOR_ID,
+        feedback_type="extraction",
+        edited_extraction=asdict(ai_pdp),
+        meta={"prompt": LITREVIEW_PASS2_PROMPT},
+    )
+    db.session.add(fb)
+    db.session.commit()
+
+    return jsonify(
+        {
+            "people": len(ai_pdp.people),
+            "events": len(ai_pdp.events),
+        }
+    )
+
+
+@bp.route("/litreview/<int:discussion_id>/prompt")
+@minimum_role(btcopilot.ROLE_AUDITOR)
+def litreview_prompt(discussion_id):
+    fb = (
+        Feedback.query.filter_by(
+            auditor_id=LITREVIEW_AUDITOR_ID, feedback_type="extraction"
+        )
+        .join(Statement)
+        .filter(Statement.discussion_id == discussion_id)
+        .first()
+    )
+    if not fb or not fb.meta or not fb.meta.get("prompt"):
+        abort(404, "No litreview prompt stored for this discussion")
+
+    return render_template(
+        "training/litreview_prompt.html",
+        discussion_id=discussion_id,
+        prompt=fb.meta["prompt"],
+        breadcrumbs=[
+            {"title": "Coding", "url": url_for("training.audit.index")},
+            {
+                "title": f"Discussion {discussion_id}",
+                "url": url_for(
+                    "training.discussions.audit", discussion_id=discussion_id
+                ),
+            },
+            {"title": "Litreview Prompt"},
+        ],
         current_user=auth.current_user(),
     )

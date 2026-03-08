@@ -85,7 +85,9 @@ def compare_cumulative_pdps(
 ) -> CumulativeComparison:
     result = CumulativeComparison(coder_a=coder_a, coder_b=coder_b)
 
-    people_result, id_map = match_people(pdp_a.people, pdp_b.people)
+    people_result, id_map = match_people(
+        pdp_a.people, pdp_b.people, pdp_a.pair_bonds, pdp_b.pair_bonds
+    )
     _augment_duplicate_person_id_map(id_map, pdp_a.people, pdp_b.people)
     result.people_result = people_result
 

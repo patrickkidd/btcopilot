@@ -95,7 +95,9 @@ def run_extract_full_f1(discussion_id=None, model=None):
         gt_pdp = pdp.cumulative(discussion, last_stmt, auditor_id=auditor_id)
 
         # Match and score
-        people_result, id_map = match_people(ai_pdp.people, gt_pdp.people)
+        people_result, id_map = match_people(
+            ai_pdp.people, gt_pdp.people, ai_pdp.pair_bonds, gt_pdp.pair_bonds
+        )
         events_result = match_events(ai_pdp.events, gt_pdp.events, id_map)
         bonds_result = match_pair_bonds(ai_pdp.pair_bonds, gt_pdp.pair_bonds, id_map)
 

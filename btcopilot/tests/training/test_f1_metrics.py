@@ -71,6 +71,41 @@ def test_match_people_with_parents():
     assert id_map == {-1: -10, -3: -30}
 
 
+def test_match_people_parents_tiebreaker():
+    """Two people with the same name are disambiguated by parent names."""
+    # AI side: two Michaels with different parents
+    ai_mom_a = Person(id=-1, name="Mary", gender=None)
+    ai_dad_a = Person(id=-2, name="John", gender=None)
+    ai_mom_b = Person(id=-3, name="Sue", gender=None)
+    ai_dad_b = Person(id=-4, name="Bob", gender=None)
+    ai_michael_a = Person(id=-5, name="Michael", parents=-10)
+    ai_michael_b = Person(id=-6, name="Michael", parents=-11)
+    ai_people = [ai_mom_a, ai_dad_a, ai_mom_b, ai_dad_b, ai_michael_a, ai_michael_b]
+    ai_bonds = [
+        PairBond(id=-10, person_a=-1, person_b=-2),
+        PairBond(id=-11, person_a=-3, person_b=-4),
+    ]
+
+    # GT side: same structure, different IDs
+    gt_mom_a = Person(id=-101, name="Mary", gender=None)
+    gt_dad_a = Person(id=-102, name="John", gender=None)
+    gt_mom_b = Person(id=-103, name="Sue", gender=None)
+    gt_dad_b = Person(id=-104, name="Bob", gender=None)
+    gt_michael_a = Person(id=-105, name="Michael", parents=-110)
+    gt_michael_b = Person(id=-106, name="Michael", parents=-111)
+    gt_people = [gt_mom_a, gt_dad_a, gt_mom_b, gt_dad_b, gt_michael_a, gt_michael_b]
+    gt_bonds = [
+        PairBond(id=-110, person_a=-101, person_b=-102),
+        PairBond(id=-111, person_a=-103, person_b=-104),
+    ]
+
+    result, id_map = match_people(ai_people, gt_people, ai_bonds, gt_bonds)
+
+    assert len(result.matched_pairs) == 6
+    assert id_map[-5] == -105
+    assert id_map[-6] == -106
+
+
 def test_match_people_below_threshold():
     ai_people = [Person(id=-1, name="John Doe")]
     gt_people = [Person(id=-2, name="Jane Smith")]

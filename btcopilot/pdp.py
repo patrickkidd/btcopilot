@@ -149,9 +149,7 @@ def dedup_pair_bonds(deltas: PDPDeltas) -> None:
         unique.append(pb)
 
     if remap:
-        _log.warning(
-            f"dedup_pair_bonds: removed {len(remap)} duplicate pair bonds"
-        )
+        _log.warning(f"dedup_pair_bonds: removed {len(remap)} duplicate pair bonds")
         deltas.pair_bonds = unique
         for person in deltas.people:
             if person.parents in remap:
@@ -344,9 +342,7 @@ def validate_pdp_deltas(
         existing_pdp_event_ids = {e.id for e in pdp.events}
         event_ids_being_deleted = delete_set & existing_pdp_event_ids
         surviving_events = [
-            e
-            for e in pdp.events
-            if e.id not in event_ids_being_deleted
+            e for e in pdp.events if e.id not in event_ids_being_deleted
         ]
         for event in surviving_events:
             for ref in [event.person, event.spouse, event.child]:
@@ -355,9 +351,7 @@ def validate_pdp_deltas(
                         f"Delete of person {ref} would orphan event {event.id}"
                     )
         existing_pdp_person_ids = {p.id for p in pdp.people if p.id is not None}
-        surviving_people = [
-            p for p in pdp.people if p.id not in delete_set
-        ]
+        surviving_people = [p for p in pdp.people if p.id not in delete_set]
         for person in surviving_people:
             if person.parents is not None and person.parents in delete_set:
                 errors.append(
@@ -464,7 +458,9 @@ def cumulative(discussion, up_to_statement, auditor_id: str | None = None) -> PD
     # Get auditor feedback if requested
     feedback_by_stmt = {}
     if auditor_id and auditor_id != "AI":
-        from btcopilot.training.models import Feedback  # circular: training.routes.prompts imports pdp
+        from btcopilot.training.models import (
+            Feedback,
+        )  # circular: training.routes.prompts imports pdp
 
         feedbacks = Feedback.query.filter(
             Feedback.statement_id.in_([s.id for s in sorted_statements]),
@@ -588,6 +584,7 @@ async def _extract_and_validate(
 
 def _committed_state_for_prompt(diagram_data: DiagramData) -> dict:
     """Extract only committed items for prompt context, with clean serialization."""
+
     def _clean_datetimes(items):
         cleaned = []
         for item in items:
@@ -611,6 +608,8 @@ async def _two_pass_extract(
     conversation_history: str,
     current_date: str,
     source: str,
+    pass2_prompt: str | None = None,
+    sarf_review_prompt: str | None = None,
 ) -> tuple[PDP, PDPDeltas]:
     """Two-pass extraction: people+structure first, then shifts+SARF."""
     _log.info(
@@ -623,40 +622,54 @@ async def _two_pass_extract(
 
     # Pass 1: People + PairBonds + Structural Events
     committed_state = _committed_state_for_prompt(diagram_data)
-    prompt1 = (
-        DATA_EXTRACTION_PASS1_PROMPT.format(current_date=current_date)
-        + DATA_EXTRACTION_PASS1_CONTEXT.format(
-            diagram_data=json.dumps(committed_state, indent=2, default=str),
-            conversation_history=conversation_history,
-        )
+    prompt1 = DATA_EXTRACTION_PASS1_PROMPT.format(
+        current_date=current_date
+    ) + DATA_EXTRACTION_PASS1_CONTEXT.format(
+        diagram_data=json.dumps(committed_state, indent=2, default=str),
+        conversation_history=conversation_history,
     )
     pass1_pdp, pass1_deltas = await _extract_and_validate(
-        prompt1, diagram_data, f"{source}_pass1", large=True,
+        prompt1,
+        diagram_data,
+        f"{source}_pass1",
+        large=True,
     )
 
     # Pass 2: Shift Events + SARF (given Pass 1 output)
     pass1_data = json.dumps(asdict(pass1_pdp), indent=2, default=str)
     committed_shifts = [e for e in diagram_data.events if e.get("kind") == "shift"]
-    committed_shift_json = json.dumps(committed_shifts, indent=2, default=str) if committed_shifts else "None"
-    prompt2 = (
-        DATA_EXTRACTION_PASS2_PROMPT.format(current_date=current_date)
-        + DATA_EXTRACTION_PASS2_CONTEXT.format(
-            pass1_data=pass1_data,
-            committed_shift_events=committed_shift_json,
-            conversation_history=conversation_history,
-        )
+    committed_shift_json = (
+        json.dumps(committed_shifts, indent=2, default=str)
+        if committed_shifts
+        else "None"
+    )
+    _pass2_prompt = pass2_prompt or DATA_EXTRACTION_PASS2_PROMPT
+    prompt2 = _pass2_prompt.format(
+        current_date=current_date
+    ) + DATA_EXTRACTION_PASS2_CONTEXT.format(
+        pass1_data=pass1_data,
+        committed_shift_events=committed_shift_json,
+        conversation_history=conversation_history,
     )
     pass2_pdp, pass2_deltas = await _extract_and_validate(
-        prompt2, diagram_data, f"{source}_pass2", large=True,
+        prompt2,
+        diagram_data,
+        f"{source}_pass2",
+        large=True,
         base_pdp=pass1_pdp,
     )
 
     # Pass 3: SARF review — re-evaluate all SARF variables against operational definitions
     shift_events = [e for e in pass2_pdp.events if e.kind == EventKind.Shift]
     if shift_events:
-        events_json = json.dumps([asdict(e) for e in shift_events], indent=2, default=str)
-        people_json = json.dumps([asdict(p) for p in pass2_pdp.people], indent=2, default=str)
-        review_prompt = SARF_REVIEW_PROMPT.format(
+        events_json = json.dumps(
+            [asdict(e) for e in shift_events], indent=2, default=str
+        )
+        people_json = json.dumps(
+            [asdict(p) for p in pass2_pdp.people], indent=2, default=str
+        )
+        _sarf_review = sarf_review_prompt or SARF_REVIEW_PROMPT
+        review_prompt = _sarf_review.format(
             events_json=events_json,
             people_json=people_json,
             conversation_history=conversation_history,
@@ -690,6 +703,8 @@ async def _two_pass_extract(
 async def extract_full(
     discussion,
     diagram_data: DiagramData,
+    pass2_prompt: str | None = None,
+    sarf_review_prompt: str | None = None,
 ) -> tuple[PDP, PDPDeltas]:
     diagram_data.pdp = PDP()
     reference_date = (
@@ -702,6 +717,8 @@ async def extract_full(
         discussion.conversation_history(),
         reference_date.isoformat(),
         "extract_full",
+        pass2_prompt=pass2_prompt,
+        sarf_review_prompt=sarf_review_prompt,
     )
 
 
@@ -745,7 +762,8 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if item.id in people_by_id
     ]
     people_to_add = [
-        item for item in deltas.people
+        item
+        for item in deltas.people
         if item.id not in people_by_id and _is_new_pdp_item(item)
     ]
 
@@ -756,7 +774,8 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if item.id in events_by_id
     ]
     events_to_add = [
-        item for item in deltas.events
+        item
+        for item in deltas.events
         if item.id not in events_by_id and _is_new_pdp_item(item)
     ]
 
@@ -767,7 +786,8 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if item.id in pair_bonds_by_id
     ]
     pair_bonds_to_add = [
-        item for item in deltas.pair_bonds
+        item
+        for item in deltas.pair_bonds
         if item.id not in pair_bonds_by_id and _is_new_pdp_item(item)
     ]
 
@@ -813,11 +833,19 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
 
     # Count committed-item references that were intentionally skipped
     committed_refs = [
-        item for item in deltas.people + deltas.events + deltas.pair_bonds
-        if not _is_new_pdp_item(item) and item.id not in people_by_id
-        and item.id not in events_by_id and item.id not in pair_bonds_by_id
+        item
+        for item in deltas.people + deltas.events + deltas.pair_bonds
+        if not _is_new_pdp_item(item)
+        and item.id not in people_by_id
+        and item.id not in events_by_id
+        and item.id not in pair_bonds_by_id
     ]
-    expected = len(deltas.people) + len(deltas.events) + len(deltas.pair_bonds) - len(committed_refs)
+    expected = (
+        len(deltas.people)
+        + len(deltas.events)
+        + len(deltas.pair_bonds)
+        - len(committed_refs)
+    )
     assert len(upserts_applied) == expected, (
         f"Failed to apply all upserts ({len(upserts_applied)} applied, {expected} expected, "
         f"{len(committed_refs)} committed refs skipped)"
