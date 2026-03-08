@@ -15,6 +15,7 @@ from btcopilot.training.litreview import (
     AUDITOR_ID as LITREVIEW_AUDITOR_ID,
     LITREVIEW_PASS2_PROMPT,
     LITREVIEW_SARF_REVIEW_PROMPT,
+    PROMPTS_UNAVAILABLE_ERROR,
 )
 from btcopilot.training.utils import get_discussion_breadcrumbs
 from btcopilot.training.f1_metrics import (
@@ -335,6 +336,8 @@ def timeline(discussion_id):
 @bp.route("/litreview/<int:discussion_id>", methods=["POST"])
 @minimum_role(btcopilot.ROLE_ADMIN)
 def run_litreview(discussion_id):
+    if LITREVIEW_PASS2_PROMPT is None:
+        abort(503, PROMPTS_UNAVAILABLE_ERROR)
     disc = Discussion.query.get_or_404(discussion_id)
 
     last_stmt = (
