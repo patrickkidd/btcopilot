@@ -11,11 +11,9 @@ from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.schema import DiagramData, asdict
 from btcopilot.training.models import Feedback
-from btcopilot.training.litreview import (
-    AUDITOR_ID as LITREVIEW_AUDITOR_ID,
-    LITREVIEW_PASS2_PROMPT,
-    LITREVIEW_SARF_REVIEW_PROMPT,
-)
+from btcopilot.training import litreview as _litreview_mod
+
+LITREVIEW_AUDITOR_ID = _litreview_mod.AUDITOR_ID
 from btcopilot.training.utils import get_discussion_breadcrumbs
 from btcopilot.training.f1_metrics import (
     match_people,
@@ -362,8 +360,8 @@ def run_litreview(discussion_id):
         pdp.extract_full(
             disc,
             diagram_data,
-            pass2_prompt=LITREVIEW_PASS2_PROMPT,
-            sarf_review_prompt=LITREVIEW_SARF_REVIEW_PROMPT,
+            pass2_prompt=_litreview_mod.LITREVIEW_PASS2_PROMPT,
+            sarf_review_prompt=_litreview_mod.LITREVIEW_SARF_REVIEW_PROMPT,
         )
     )
 
@@ -372,7 +370,7 @@ def run_litreview(discussion_id):
         auditor_id=LITREVIEW_AUDITOR_ID,
         feedback_type="extraction",
         edited_extraction=asdict(ai_pdp),
-        meta={"prompt": LITREVIEW_PASS2_PROMPT},
+        meta={"prompt": _litreview_mod.LITREVIEW_PASS2_PROMPT},
     )
     db.session.add(fb)
     db.session.commit()

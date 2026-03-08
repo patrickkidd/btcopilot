@@ -27,10 +27,16 @@ if os.path.exists(_fdserver_path):
     _BASE_PASS2_PROMPT = _mod.DATA_EXTRACTION_PASS2_PROMPT
     _BASE_SARF_REVIEW = _mod.SARF_REVIEW_PROMPT
 else:
-    raise FileNotFoundError(
-        f"Cannot find production prompts at {_fdserver_path}. "
-        "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located."
+    import logging as _logging
+
+    _logging.getLogger(__name__).warning(
+        "Cannot find production prompts at %s. "
+        "Litreview functionality will be unavailable. "
+        "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located.",
+        _fdserver_path,
     )
+    _BASE_PASS2_PROMPT = None
+    _BASE_SARF_REVIEW = None
 
 AUDITOR_ID = "litreview-ai"
 
@@ -67,6 +73,11 @@ EVENT FIELD RULES
 
 
 def _build_pass2_prompt() -> str:
+    if _BASE_PASS2_PROMPT is None:
+        raise FileNotFoundError(
+            f"Cannot find production prompts at {_fdserver_path}. "
+            "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located."
+        )
     base = _BASE_PASS2_PROMPT
     start_idx = base.find(_SARF_SECTION_START)
     end_idx = base.find(_SARF_SECTION_END)
@@ -82,12 +93,13 @@ def _build_pass2_prompt() -> str:
     )
 
 
-LITREVIEW_PASS2_PROMPT = _build_pass2_prompt()
-
-
-# ── Pass 3 SARF review prompt ────────────────────────────────────────────────
-
-LITREVIEW_SARF_REVIEW_PROMPT = f"""\
+def _build_sarf_review_prompt() -> str:
+    if _BASE_SARF_REVIEW is None:
+        raise FileNotFoundError(
+            f"Cannot find production prompts at {_fdserver_path}. "
+            "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located."
+        )
+    return f"""\
 You are reviewing clinical shift events extracted from a family therapy discussion.
 
 For each event below, verify and correct the SARF variable coding using the
@@ -106,3 +118,17 @@ People context:
 Original conversation:
 {{conversation_history}}
 """
+
+
+# Lazy module-level attributes — only built when accessed, so the module can be
+# imported without fdserver prompts being available (e.g. Docker CI).
+def __getattr__(name):
+    if name == "LITREVIEW_PASS2_PROMPT":
+        val = _build_pass2_prompt()
+        globals()["LITREVIEW_PASS2_PROMPT"] = val
+        return val
+    if name == "LITREVIEW_SARF_REVIEW_PROMPT":
+        val = _build_sarf_review_prompt()
+        globals()["LITREVIEW_SARF_REVIEW_PROMPT"] = val
+        return val
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

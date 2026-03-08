@@ -21,11 +21,8 @@ from btcopilot.extensions import db
 from btcopilot.schema import DiagramData, PDP, asdict
 from btcopilot.personal.models import Discussion, Statement, SpeakerType
 from btcopilot.training.models import Feedback
-from btcopilot.training.litreview import (
-    AUDITOR_ID,
-    LITREVIEW_PASS2_PROMPT,
-    LITREVIEW_SARF_REVIEW_PROMPT,
-)
+from btcopilot.training import litreview as _litreview_mod
+from btcopilot.training.litreview import AUDITOR_ID
 from btcopilot import pdp
 
 
@@ -98,8 +95,8 @@ def run(discussion_id=None, clear=False):
                 pdp.extract_full(
                     discussion,
                     diagram_data,
-                    pass2_prompt=LITREVIEW_PASS2_PROMPT,
-                    sarf_review_prompt=LITREVIEW_SARF_REVIEW_PROMPT,
+                    pass2_prompt=_litreview_mod.LITREVIEW_PASS2_PROMPT,
+                    sarf_review_prompt=_litreview_mod.LITREVIEW_SARF_REVIEW_PROMPT,
                 )
             )
         except Exception as e:
@@ -113,7 +110,7 @@ def run(discussion_id=None, clear=False):
             auditor_id=AUDITOR_ID,
             feedback_type="extraction",
             edited_extraction=pdp_dict,
-            meta={"prompt": LITREVIEW_PASS2_PROMPT},
+            meta={"prompt": _litreview_mod.LITREVIEW_PASS2_PROMPT},
         )
         db.session.add(fb)
         db.session.commit()
