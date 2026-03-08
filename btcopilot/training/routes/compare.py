@@ -356,6 +356,9 @@ def run_litreview(discussion_id):
     ).delete(synchronize_session=False)
     db.session.flush()
 
+    if LITREVIEW_PASS2_PROMPT is None:
+        abort(503, "Litreview unavailable: production prompts not found")
+
     nest_asyncio.apply()
     diagram_data = DiagramData()
     ai_pdp, _ = asyncio.run(

@@ -5,10 +5,13 @@ definitions from doc/sarf-definitions/ instead of the tuned inline summaries.
 """
 
 import importlib.util
+import logging
 import os
 from pathlib import Path
 
 from btcopilot.training.sarfdefinitions import all_condensed_definitions
+
+_log = logging.getLogger(__name__)
 
 # Load production prompts. In production FDSERVER_PROMPTS_PATH is set and
 # personal.prompts already has the full versions. In dev that env var is
@@ -20,6 +23,9 @@ _fdserver_path = os.environ.get("FDSERVER_PROMPTS_PATH") or str(
     / "private_prompts.py"
 )
 
+_BASE_PASS2_PROMPT: str | None = None
+_BASE_SARF_REVIEW: str | None = None
+
 if os.path.exists(_fdserver_path):
     _spec = importlib.util.spec_from_file_location("_private_prompts", _fdserver_path)
     _mod = importlib.util.module_from_spec(_spec)
@@ -27,9 +33,11 @@ if os.path.exists(_fdserver_path):
     _BASE_PASS2_PROMPT = _mod.DATA_EXTRACTION_PASS2_PROMPT
     _BASE_SARF_REVIEW = _mod.SARF_REVIEW_PROMPT
 else:
-    raise FileNotFoundError(
-        f"Cannot find production prompts at {_fdserver_path}. "
-        "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located."
+    _log.warning(
+        "Cannot find production prompts at %s. "
+        "Lit-review AI coder features will be unavailable. "
+        "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located.",
+        _fdserver_path,
     )
 
 AUDITOR_ID = "litreview-ai"
@@ -66,7 +74,9 @@ EVENT FIELD RULES
 ═══════════════════════════════════════════════════════════════════════════════"""
 
 
-def _build_pass2_prompt() -> str:
+def _build_pass2_prompt() -> str | None:
+    if _BASE_PASS2_PROMPT is None:
+        return None
     base = _BASE_PASS2_PROMPT
     start_idx = base.find(_SARF_SECTION_START)
     end_idx = base.find(_SARF_SECTION_END)
@@ -87,7 +97,7 @@ LITREVIEW_PASS2_PROMPT = _build_pass2_prompt()
 
 # ── Pass 3 SARF review prompt ────────────────────────────────────────────────
 
-LITREVIEW_SARF_REVIEW_PROMPT = f"""\
+LITREVIEW_SARF_REVIEW_PROMPT: str | None = f"""\
 You are reviewing clinical shift events extracted from a family therapy discussion.
 
 For each event below, verify and correct the SARF variable coding using the
