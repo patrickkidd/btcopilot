@@ -347,6 +347,9 @@ def run_litreview(discussion_id):
     if not last_stmt:
         abort(404, "No subject statements")
 
+    if LITREVIEW_PASS2_PROMPT is None or LITREVIEW_SARF_REVIEW_PROMPT is None:
+        abort(503, "Lit-review AI coder is not available: production prompts not found")
+
     # Clear existing litreview feedback for this discussion
     stmt_ids = [s.id for s in disc.statements]
     Feedback.query.filter(

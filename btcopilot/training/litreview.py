@@ -5,10 +5,13 @@ definitions from doc/sarf-definitions/ instead of the tuned inline summaries.
 """
 
 import importlib.util
+import logging
 import os
 from pathlib import Path
 
 from btcopilot.training.sarfdefinitions import all_condensed_definitions
+
+_log = logging.getLogger(__name__)
 
 # Load production prompts. In production FDSERVER_PROMPTS_PATH is set and
 # personal.prompts already has the full versions. In dev that env var is
@@ -20,6 +23,9 @@ _fdserver_path = os.environ.get("FDSERVER_PROMPTS_PATH") or str(
     / "private_prompts.py"
 )
 
+_BASE_PASS2_PROMPT: str | None = None
+_BASE_SARF_REVIEW: str | None = None
+
 if os.path.exists(_fdserver_path):
     _spec = importlib.util.spec_from_file_location("_private_prompts", _fdserver_path)
     _mod = importlib.util.module_from_spec(_spec)
@@ -27,9 +33,11 @@ if os.path.exists(_fdserver_path):
     _BASE_PASS2_PROMPT = _mod.DATA_EXTRACTION_PASS2_PROMPT
     _BASE_SARF_REVIEW = _mod.SARF_REVIEW_PROMPT
 else:
-    raise FileNotFoundError(
-        f"Cannot find production prompts at {_fdserver_path}. "
-        "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located."
+    _log.warning(
+        "Cannot find production prompts at %s. "
+        "Lit-review AI coder will not be available. "
+        "Set FDSERVER_PROMPTS_PATH or ensure fdserver repo is co-located.",
+        _fdserver_path,
     )
 
 AUDITOR_ID = "litreview-ai"
@@ -67,6 +75,12 @@ EVENT FIELD RULES
 
 
 def _build_pass2_prompt() -> str:
+    if _BASE_PASS2_PROMPT is None:
+        raise RuntimeError(
+            "Lit-review AI coder is not available: production prompts were not "
+            "found at import time. Set FDSERVER_PROMPTS_PATH or ensure fdserver "
+            "repo is co-located."
+        )
     base = _BASE_PASS2_PROMPT
     start_idx = base.find(_SARF_SECTION_START)
     end_idx = base.find(_SARF_SECTION_END)
@@ -82,12 +96,8 @@ def _build_pass2_prompt() -> str:
     )
 
 
-LITREVIEW_PASS2_PROMPT = _build_pass2_prompt()
-
-
-# ── Pass 3 SARF review prompt ────────────────────────────────────────────────
-
-LITREVIEW_SARF_REVIEW_PROMPT = f"""\
+def _build_sarf_review_prompt() -> str:
+    return f"""\
 You are reviewing clinical shift events extracted from a family therapy discussion.
 
 For each event below, verify and correct the SARF variable coding using the
@@ -106,3 +116,13 @@ People context:
 Original conversation:
 {{conversation_history}}
 """
+
+
+# Build prompts lazily — only if production prompts are available.
+# Importing this module no longer crashes when fdserver is absent (e.g. Docker CI).
+LITREVIEW_PASS2_PROMPT: str | None = None
+LITREVIEW_SARF_REVIEW_PROMPT: str | None = None
+
+if _BASE_PASS2_PROMPT is not None:
+    LITREVIEW_PASS2_PROMPT = _build_pass2_prompt()
+    LITREVIEW_SARF_REVIEW_PROMPT = _build_sarf_review_prompt()
