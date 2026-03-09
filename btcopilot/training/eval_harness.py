@@ -189,7 +189,7 @@ def format_table(result: EvalResult) -> str:
         f"EXTRACTION EVALUATION — Per-Entity-Type F1 ({result.discussion_count} discussions)"
     )
     lines.append(
-        f"Targets: People F1 > {TARGET_PEOPLE_F1}, Events F1 > {TARGET_EVENTS_F1}"
+        f"Targets: People F1 > {TARGETS['People']}, Events F1 > {TARGETS['Events']}"
     )
     lines.append("=" * 80)
     lines.append("")
