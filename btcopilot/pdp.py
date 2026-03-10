@@ -156,6 +156,29 @@ def dedup_pair_bonds(deltas: PDPDeltas) -> None:
                 person.parents = remap[person.parents]
 
 
+def fix_birth_event_self_references(deltas: PDPDeltas) -> None:
+    """Fix birth/adopted events where person == child (self-reference bug).
+
+    The LLM sometimes sets person=child on birth events, meaning "person births
+    themselves." The correct semantics are: child = who was born, person = parent.
+    When person == child, clear person to None so _create_inferred_birth_items
+    can create proper parent references during commit.
+    """
+    for event in deltas.events:
+        if event.kind not in (EventKind.Birth, EventKind.Adopted):
+            continue
+        if (
+            event.person is not None
+            and event.child is not None
+            and event.person == event.child
+        ):
+            _log.warning(
+                f"fix_birth_event_self_references: Event {event.id} has "
+                f"person==child=={event.person}, clearing person to None"
+            )
+            event.person = None
+
+
 def validate_pdp_deltas(
     pdp: PDP,
     deltas: PDPDeltas,
@@ -554,6 +577,7 @@ async def _extract_and_validate(
 
         reassign_delta_ids(pdp, pdp_deltas)
         dedup_pair_bonds(pdp_deltas)
+        fix_birth_event_self_references(pdp_deltas)
         try:
             validate_pdp_deltas(pdp, pdp_deltas, diagram_data, source)
             if attempt > 0:
