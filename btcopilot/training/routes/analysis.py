@@ -14,7 +14,7 @@ from flask import Blueprint, render_template, request, abort, jsonify, url_for
 import btcopilot
 from btcopilot import auth
 from btcopilot.extensions import db
-from btcopilot.training.utils import get_breadcrumbs, get_discussion_view_menu
+from btcopilot.training.utils import get_breadcrumbs, get_discussion_breadcrumbs
 from btcopilot.auth import minimum_role
 from btcopilot.personal.models import Statement
 from btcopilot.training.models import Feedback
@@ -244,10 +244,7 @@ def discussion_analysis(discussion_id):
                 }
             )
 
-    if not statement_breakdowns:
-        abort(404, "This discussion has no approved ground truth")
-
-    discussion_f1 = _calculate_discussion_f1(statement_breakdowns)
+    discussion_f1 = _calculate_discussion_f1(statement_breakdowns) if statement_breakdowns else None
 
     unique_speakers = (
         Speaker.query.filter(Speaker.discussion_id == discussion_id)
@@ -264,22 +261,7 @@ def discussion_analysis(discussion_id):
         speaker.id: idx + 1 for idx, speaker in enumerate(expert_speakers)
     }
 
-    menu, active_title = get_discussion_view_menu(discussion_id, "f1")
-    breadcrumbs = get_breadcrumbs("thread")
-    if discussion.diagram:
-        breadcrumbs.append(
-            {
-                "title": discussion.diagram.name or "Untitled Diagram",
-                "url": None,
-            }
-        )
-    breadcrumbs.append(
-        {
-            "title": discussion.summary or f"Discussion {discussion_id}",
-            "url": url_for("training.discussions.audit", discussion_id=discussion_id),
-        }
-    )
-    breadcrumbs.append({"title": active_title, "menu": menu})
+    breadcrumbs = get_discussion_breadcrumbs(discussion, "f1")
 
     return render_template(
         "training/discussion_analysis.html",

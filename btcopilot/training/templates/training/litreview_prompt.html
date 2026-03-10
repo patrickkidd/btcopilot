@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Litreview Prompt — Discussion {{ discussion_id }}{% endblock %}
+
+{% block content %}
+<section class="section py-4">
+    <div class="container">
+        <h1 class="title">Litreview AI Prompt — Discussion {{ discussion_id }}</h1>
+        <p class="subtitle is-6 has-text-grey">Pass 2 prompt template (before conversation substitution). {{ prompt|length|int }} characters.</p>
+        <pre style="white-space: pre-wrap; word-wrap: break-word; font-size: 0.75rem;">{{ prompt }}</pre>
+    </div>
+</section>
+{% endblock %}

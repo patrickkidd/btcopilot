@@ -184,14 +184,14 @@ FE Ch 6 (Triangles) is the primary source for inside/outside positions:
 
 | # | Search String (5-15 words for Cmd+F) | Concept Extracted |
 |---|--------------------------------------|-------------------|
-| FE6-5 | "The triangle is the basic molecule of an emotional system" | Triangle = smallest stable relationship unit |
-| FE6-13 | "two people are comfortably close (the insiders) and the third is a less comfortable outsider" | Basic structure: two insiders, one outsider |
-| FE6-15 | "the discomfort is felt far more by one person than the other" | Asymmetric comfort |
-| FE6-17 | "uncomfortable insider (A) can pull the outsider (C) into the situation through complaints" | Outsider recruited by insider |
-| FE6-24 | "conflict has shifted out of the original twosome and into the relationship between B and C" | Position shifts via triangling |
-| FE6-26 | "outside position is the most comfortable and desired" | At high anxiety, outside preferred |
-| FE6-71 | "tension in a two-person relationship will resolve automatically when contained within a three-person system" | Neutral outsider allows resolution |
-| FE6-80 | "Mother's anger at her daughter's husband supports the daughter's use of emotional distance" | Taking sides intensifies; outsider not neutral |
-| FE6-85 | "she had encountered someone who could have remained objective and emotionally detached" | Neutral outsider = therapeutic |
-| FE6-100 | "ability to see both sides of a relationship process between two others" | Outsider neutrality requirement |
-| FE6-108 | "respond to someone's efforts to triangle by saying and doing things that push that person together" | Therapeutic outsider pushes insiders together |
+| <a id="FE6-5"></a>FE6-5 | "The triangle is the basic molecule of an emotional system" | Triangle = smallest stable relationship unit |
+| <a id="FE6-13"></a>FE6-13 | "two people are comfortably close (the insiders) and the third is a less comfortable outsider" | Basic structure: two insiders, one outsider |
+| <a id="FE6-15"></a>FE6-15 | "the discomfort is felt far more by one person than the other" | Asymmetric comfort |
+| <a id="FE6-17"></a>FE6-17 | "uncomfortable insider (A) can pull the outsider (C) into the situation through complaints" | Outsider recruited by insider |
+| <a id="FE6-24"></a>FE6-24 | "conflict has shifted out of the original twosome and into the relationship between B and C" | Position shifts via triangling |
+| <a id="FE6-26"></a>FE6-26 | "outside position is the most comfortable and desired" | At high anxiety, outside preferred |
+| <a id="FE6-71"></a>FE6-71 | "tension in a two-person relationship will resolve automatically when contained within a three-person system" | Neutral outsider allows resolution |
+| <a id="FE6-80"></a>FE6-80 | "Mother's anger at her daughter's husband supports the daughter's use of emotional distance" | Taking sides intensifies; outsider not neutral |
+| <a id="FE6-85"></a>FE6-85 | "she had encountered someone who could have remained objective and emotionally detached" | Neutral outsider = therapeutic |
+| <a id="FE6-100"></a>FE6-100 | "ability to see both sides of a relationship process between two others" | Outsider neutrality requirement |
+| <a id="FE6-108"></a>FE6-108 | "respond to someone's efforts to triangle by saying and doing things that push that person together" | Therapeutic outsider pushes insiders together |

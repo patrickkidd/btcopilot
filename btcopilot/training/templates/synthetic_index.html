@@ -104,16 +104,6 @@
 
                     <div class="field">
                         <div class="control">
-                            <label class="checkbox">
-                                <input type="checkbox" id="include-extraction" name="include_extraction">
-                                Include extraction (slower, creates pdp_deltas)
-                            </label>
-                        </div>
-                        <p class="help">Check to include AI extraction - needed for ground truth coding</p>
-                    </div>
-
-                    <div class="field">
-                        <div class="control">
                             <button type="submit" class="button is-primary" id="generate-btn">
                                 <span class="icon"><i class="fas fa-play"></i></span>
                                 <span>Generate Persona &amp; Discussion</span>
@@ -181,7 +171,6 @@
                             <li><strong>1 Diagram</strong> - Family diagram owned by the selected user</li>
                             <li><strong>1 Discussion</strong> - Conversation thread linked to the diagram</li>
                             <li><strong>N Statements</strong> - One per conversation turn (user message + AI response)</li>
-                            <li><strong>N pdp_deltas</strong> - AI extractions per statement (if extraction enabled)</li>
                         </ul>
                         <p class="is-size-7 has-text-grey mt-3">
                             <span class="icon is-small"><i class="fas fa-info-circle"></i></span>
@@ -364,7 +353,7 @@ document.getElementById('generate-form').addEventListener('submit', async functi
     const ageRange = document.getElementById('age-range').value;
     const username = document.getElementById('user-select').value;
     const maxTurns = document.getElementById('max-turns').value;
-    const includeExtraction = document.getElementById('include-extraction').checked;
+
 
     if (!attachmentStyle) {
         alert('Please select an attachment style');
@@ -410,7 +399,6 @@ document.getElementById('generate-form').addEventListener('submit', async functi
                 persona_id: personaData.persona_id,
                 username: username || null,
                 max_turns: parseInt(maxTurns),
-                skip_extraction: !includeExtraction,
             }),
         });
 
@@ -437,7 +425,7 @@ document.querySelectorAll('.reuse-btn').forEach(function(btn) {
         const personaName = this.dataset.personaName;
         const username = document.getElementById('user-select').value;
         const maxTurns = document.getElementById('max-turns').value;
-        const includeExtraction = document.getElementById('include-extraction').checked;
+    
 
         document.getElementById('generate-btn').disabled = true;
         document.getElementById('progress-container').style.display = 'block';
@@ -456,7 +444,6 @@ document.querySelectorAll('.reuse-btn').forEach(function(btn) {
                     persona_id: parseInt(personaId),
                     username: username || null,
                     max_turns: parseInt(maxTurns),
-                    skip_extraction: !includeExtraction,
                 }),
             });
 

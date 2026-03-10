@@ -1,0 +1,67 @@
+{# Calibration disagreement card — used in both meeting-order and variable views #}
+<div class="calibration-card mb-3" :class="'calibration-card-' + d.impact" :id="'card-' + d._key">
+    <div class="calibration-card-header is-clickable" @click="d._expanded = !d._expanded">
+        <div style="flex: 1; min-width: 0;">
+            <div class="is-flex is-align-items-center" style="gap: 0.35rem; flex-wrap: wrap;">
+                <template x-for="fd in d.field_disagreements" :key="fd.field">
+                    <span class="tag is-small is-dark" x-text="fd.field"></span>
+                </template>
+                <span style="border-left: 1px solid var(--color-fg-subtle); height: 1rem; margin: 0 0.1rem;"></span>
+                <span class="tag is-small" :class="{
+                    'is-danger': d.impact === 'high',
+                    'is-warning': d.impact === 'medium',
+                    'is-info': d.impact === 'low',
+                }" x-text="d.impact"></span>
+                <template x-if="d.triage">
+                    <span class="tag is-small" :class="d.triage === 'clear' ? 'is-success' : 'is-warning'"
+                          x-text="d.triage === 'clear' ? 'ratify' : 'discuss'"></span>
+                </template>
+                <span class="is-size-7" style="color: var(--color-fg-subtle);" x-text="'#' + d._key"></span>
+            </div>
+            <div class="mt-1" style="font-size: 0.8rem; line-height: 1.3;">
+                <strong x-text="d.person_name" style="color: var(--color-fg-default);"></strong>:
+                <span x-text="d.description" class="ml-1" style="color: var(--color-fg-muted);"></span>
+            </div>
+        </div>
+        <span class="icon ml-auto" style="flex-shrink: 0; align-self: flex-start;">
+            <i class="fas" :class="d._expanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+        </span>
+    </div>
+
+    <div x-show="d._expanded" class="calibration-card-body">
+        <div class="mb-3">
+            <template x-for="fd in d.field_disagreements" :key="fd.field">
+                <div class="calibration-field-row">
+                    <strong x-text="fd.field" style="color: var(--color-fg-default);"></strong>:
+                    <template x-for="(val, coder) in fd.values" :key="coder">
+                        <span class="calibration-coder-badge is-clickable"
+                              @click.stop="$store.calibrationReport.scrollToSource(d, coder)"
+                              :title="$store.calibrationReport.sourceTooltip(d, coder)">
+                            <span class="coder-name" x-text="coder.split('@')[0]"></span>
+                            <template x-if="val">
+                                <span class="shift-indicator is-small"
+                                      :class="['up','down','same'].includes(val) ? 'shift-' + val : 'shift-relationship'"
+                                      x-text="val"></span>
+                            </template>
+                            <template x-if="!val">
+                                <span style="color: var(--color-fg-subtle);">null</span>
+                            </template>
+                            <template x-if="d.dates && d.dates[coder]">
+                                <span class="ml-1" style="color: var(--color-fg-subtle); font-size: 0.75em;"
+                                      x-text="$store.calibrationReport.formatDate(d.dates[coder])"></span>
+                            </template>
+                            <span class="icon is-small ml-1" style="color: var(--color-fg-subtle); font-size: 0.6rem;"
+                                  x-show="$store.calibrationReport.hasSource(d, coder)">
+                                <i class="fas fa-arrow-right"></i>
+                            </span>
+                        </span>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <div class="calibration-analysis content is-small"
+             x-html="$store.calibrationReport.renderMarkdown(d.analysis)">
+        </div>
+    </div>
+</div>

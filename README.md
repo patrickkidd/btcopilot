@@ -440,33 +440,100 @@ This fits comfortably within an 8k-token model. For larger datasets, you'd need 
 
 # Development Journal
 
-## 2025-02-10 - Fine-tuned GPT2 model
+## 2026-03-03 - 2-pass split extraction
 
-Trained gpt2 model on Bowen's book, with garbage from titles, page numbers,
-  etc. Took four hours on i9 macbook pro and responses had mediocre sentance
-  structure with too much focus on a few passages.
+*Break hard problems into smaller ones.* Single-prompt extraction plateaued because legacy training examples buried in the prompt were overriding new instructions. Split extraction into two focused passes — first people and family structure, then clinical variable shifts — each with a clean, purpose-built prompt. Aggregate accuracy up 12%, relationship extraction up 54%. Task decomposition beat prompt engineering. **Aggregate F1 crossed the 0.5 MVP milestone (0.669), with Events also clearing 0.5 for the first time.**
+
+## 2026-02-24 - Single-prompt extraction
+
+*Let the conversation finish before analyzing it.* Instead of the AI extracting data from every single message (25+ LLM calls per conversation, massive duplication), the Personal app now waits until the user taps "Build my diagram" and sends the whole conversation in one shot. Accuracy nearly doubled (F1 0.25 → 0.45) with no prompt changes. Event detection crossed the viability threshold (F1 0.09 → 0.29), resolving whether events could ship in MVP.
+
+## 2026-02-14 - Cumulative extraction pivot
+
+*You can't improve what you can't measure.* Grading the AI's work one message at a time introduced so much noise that accuracy scores were stuck at ~0.22 regardless of what we changed. The AI and the human expert often noticed the same fact at different points in the conversation, which the scoring system counted as two errors instead of zero. Switched to grading the *complete result* after an entire conversation — the thing the user actually sees. Accuracy signal became meaningful immediately, GT coding time halved, and we discovered the AI was extracting zero relationship data (prompt had no examples).
+
+## 2025-12-14 - Modeling therapeutic conversation
+
+*I am modeling therapeutic conversation*. I don't know if this has ever been done before. Measuring therapist performance at collecting enough data for clinical evaluation. Requires measuring coach performance statement by statement.
+
+- *The first comprehensive index of technical terms for Bowen theory* using Bowen and Kerr's books. *Every single* passage that might be related to a given term in the SARF model (Anxiety, Symptom, Functioning, conflict, projection, triangles, etc). It isn't the eight concepts but I could easily re-run this on those (and probabyl will) [btcopilot/doc/sarf-definitions/METHODOLOGY.md](btcopilot/doc/sarf-definitions/METHODOLOGY.md). In a nuthsell, this is many passes through the literature back and forth with human and AI. It required a combination of:
+  - Exhaustive knowledge of the source literature (from Stinson, 2020)
+  - Doctoral-level qualitative research methods
+  - AI Context Architect Expertise
+  - Software Architect Expertise
+  Progress tracked here: [btcopilot/doc/sarf-definitions/PROGRESS.md](btcopilot/doc/sarf-definitions/PROGRESS.md)
+- Switched to gemini flash API for cheaper and probably better data extraction. Seeking HIPAA BAA with Google.
+- Improved Synthetic AI client personalities with:
+  - larger hard-coded histories
+  - "levels of depth" to force AI coach to probe deeper or fail to get necessary information.
+  - Improvisation of case content beyond the provided history, so long as it is not contradictory
+  - They started sponateously pushing back when the conversation went on too long, about 60 minutes, wow.
+- Improved AI coach conversational flow with:
+  - Allow feeling content around the problem for ~8 statements before pivoting to filling out data model. Helps the person get some of the presenting problem out, get some emotional buy-in.
+
+*Dev notes*
+- Added mcp server for claude code to manage the web server proces.
+
+## 2025-12-08 - Prompt induction framework
+
+- Added prompt induction framework:
+  [btcopilot/doc/PROMPT_OPTIMIZATION.md](btcopilot/doc/PROMPT_OPTIMIZATION.md)
+  Using Claude Code's command line API to run it from a script. Get baseline F1,
+  tweak system prompts, run AI extraction, compare baseline. Run 10 iterations
+  or until F1 improvement plateaus. Super cool!
+
+## 2025-06-28 - Working data extraction from chat discussion. Using Havstad's SARF data model. Basically trying to build a clinical coach bot.
+- Started trying to extract data from each individual text message. Discovered data points exist across messages.
+- Clarifyed data model:
+  - People: siblings + offspring
+  - Events: variable shifts; Symptom, Anxiety, Relationship, Functioning
+    - Relationship sub-divides into Mechanism & Triangle (negative), Defined self (positive)
+    - Triangle; insides + outside
+    - Mechanism: movers + recipients
+  - Have to figure out what to do with special events w/o apparent variable shifts, e.g. birth, death, marriage, divorce
+- Moved to managing a rolling pool of data points from chat conversation. Much more sophisticated and complicated.
+  - Moved to pending data pool (PDP) model where user confirms inferred / extracted data points.
+  - llm only provides deltas for pending pool to avoid data loss from hallucinations when re-writing the entire pending pool every call.
+  - Division between persistent database and PDP. Deltas are the core atomic component to validate.
+- Plan to build personal mobile app with web-based auditing system to scale model training with human feedback.
+  - Potential to generate database for family research, complete with data model.
+
+## 2025-03-09 - Using Mistral's PDF OCR doc to read pdfs more accurately, and `spacy`'s semantic splitting to passages to start and end with sentances that make a single point.
+
+## 2025-02-19 - Added support for timeline events, released in [Family Diagram v2 Beta](https://alaskafamilysystems.com/family-diagram/family-diagram-phase-2-beta/)!
+
+- You can now include timeseries events in the query! You can ask the model to
+  analyze the timeseries data and draw conclusions from the literature.
+- Added Kerr's Family Evaluation (1988) to sources.
+
+## 2025-02-15 - Automatically testing model's accuracy
+
+I defined a set of [quiz questions with expected correct answers](../btcopilot/tests/data/quizzes.py). The quiz will be improved as time goes on.
+
+Example Passing answer:
+
 ```
-  It is essentially impossible to know the percentage who get married and who do not get divorced. At thi
-s level of differentiation, differentiation does not begin to take place until there is a certain percentage of people who are sufficien tly involved with their families of origin to begin differentiation without emotional participation in the family emotional system.
-do well on tests of differentiation have a reasonable chance of getting a social or professional degree,
-if they keep the effort on their families of origin. Results are less with this approach if the family effort is with a spouse in the 30 to 40 range.
-People in the 50 to 75 range get married within a few generations. There are those who get married within a few generations and continue for life and who terminate marriage within the next five to ten years. Those with very low levels of differentiation have an infinite n umber of satisfying marriages with intact families and those with a high level of fusion who terminate marriage within several generatio
-A typical marriage is one in which the basic level of differentiation is transmitted in marriage, but it is not manifested in children.
-There are marriages in which the basic level is transmitted in children who use various combinations of marriage mechanisms and 385 other outside relationships to raise the basic level of differentiation. There are marriages in which the basic level is transmitted in marriage and where it continues in subsequent marriages, but the transmission is less intense and symptoms are less intense.
-Marriages in which the basic level is transmitted in marriage are called stable marriages and in which there are no symptoms,
-the sympto
-ms are more episodic and it is not as serious and long-term as with less severe emotional illness and less severe emotional illness and less long-term transmission of the problem to a spouse with good levels of differentiation. There are marriages in which the basic level is transmitted in marriage where the basic level is sufficiently submerged in the marriage to be seen only with one or two children to
-be meaningful symptoms but symptoms are less intense and transmission is less serious and
-is much less intense than with severe illness
-and less long-term transmission of the problem to one or two children.
-People in the 65 to 70 range get married within a few generations. There are others who do well with a few children and maintain self in the 30 to 40 range until the problems subside and thereafter it is seen as the "fusion" phenomenon with a child who gets "programmed" t o the family projection process with the parents. The children grow up
-  ```
+**** QUESTION:What are the two positions in a triangle called?
 
-## 2025-02-11 - Langchain and RAG
+**** EXPECTED ANSWER:Inside and outside
 
-Colleague suggested langchain with RAG. Used RAG with cloud-based `groq` llm
-  and chroma vector db produced better answers but sometimes couldn't find any
-  relevant data.
+**** RECEIVED ANSWER: Answer:  In the given context, the two positions in a triangle are not explicitly named. However, they can be inferred as the close twosome and the outsider. The close twosome is the pair that forms the base of the triangle, while the outsider is the third person who is not part of the close relationship but interacts with both members of the twosome.
+Sources: ['21 - On the Differentiation of Self.pdf', '16 - Theory in the Practice of Psychotherapy.pdf', '21 - On the Differentiation of Self.pdf', '21 - On the Differentiation of Self.pdf', '10 - Family Therapy and Family Group Therapy.pdf']
+Vector DB Time: 1.8134565340005793
+LLM Time: 36.359419119005906
+Total Time: 38.17371924100007
+
+INFO     test_model:test_model.py:56 Copilot vector db time: 1.8134565340005793
+INFO     test_model:test_model.py:57 Copilot llm time: 36.359419119005906
+INFO     test_model:test_model.py:58 Copilot total time: 38.17371924100007
+```
+
+## 2025-02-15 - First Copilot UI!
+
+The answers are slow, but they work! Still need to show expandable list of sources with passages.
+  ![BT Copilot Logo](./doc/first_copilot_chat.jpg)
+  - LLM: `mistral`
+  - Embeddings: `sentence-transformers/all-MiniLM-L6-v2`
 
 ## 2025-02-13 - Pre-processed Bowen's book into chapter pdfs
 
@@ -494,85 +561,31 @@ Sources: ['22 - Toward the Differentiation of Self in Ones Family of Origin.pdf'
 
 Sources: ['9 - The Use of Family Theory in Clinical Practice.pdf', '12 - Alcoholism and the Family.pdf', '17 - An Interview with Murray Bowen.pdf', '16 - Theory in the Practice of Psychotherapy.pdf', '16 - Theory in the Practice of Psychotherapy.pdf']
   ```
-## 2025-02-15 - First Copilot UI!
 
-The answers are slow, but they work! Still need to show expandable list of sources with passages.
-  ![BT Copilot Logo](./doc/first_copilot_chat.jpg)
-  - LLM: `mistral`
-  - Embeddings: `sentence-transformers/all-MiniLM-L6-v2`
+## 2025-02-11 - Langchain and RAG
 
-## 2025-02-15 - Automatically testing model's accuracy
+Colleague suggested langchain with RAG. Used RAG with cloud-based `groq` llm
+  and chroma vector db produced better answers but sometimes couldn't find any
+  relevant data.
 
-I defined a set of [quiz questions with expected correct answers](../btcopilot/tests/data/quizzes.py). The quiz will be improved as time goes on.
+## 2025-02-10 - Fine-tuned GPT2 model
 
-Example Passing answer:
-
+Trained gpt2 model on Bowen's book, with garbage from titles, page numbers,
+  etc. Took four hours on i9 macbook pro and responses had mediocre sentance
+  structure with too much focus on a few passages.
 ```
-**** QUESTION:What are the two positions in a triangle called?
-
-**** EXPECTED ANSWER:Inside and outside
-
-**** RECEIVED ANSWER: Answer:  In the given context, the two positions in a triangle are not explicitly named. However, they can be inferred as the close twosome and the outsider. The close twosome is the pair that forms the base of the triangle, while the outsider is the third person who is not part of the close relationship but interacts with both members of the twosome.
-Sources: ['21 - On the Differentiation of Self.pdf', '16 - Theory in the Practice of Psychotherapy.pdf', '21 - On the Differentiation of Self.pdf', '21 - On the Differentiation of Self.pdf', '10 - Family Therapy and Family Group Therapy.pdf']
-Vector DB Time: 1.8134565340005793
-LLM Time: 36.359419119005906
-Total Time: 38.17371924100007
-
-INFO     test_model:test_model.py:56 Copilot vector db time: 1.8134565340005793
-INFO     test_model:test_model.py:57 Copilot llm time: 36.359419119005906
-INFO     test_model:test_model.py:58 Copilot total time: 38.17371924100007
-```
-
-## 2025-02-19 - Added support for timeline events, released in [Family Diagram v2 Beta](https://alaskafamilysystems.com/family-diagram/family-diagram-phase-2-beta/)!
-
-- You can now include timeseries events in the query! You can ask the model to
-  analyze the timeseries data and draw conclusions from the literature.
-- Added Kerr's Family Evaluation (1988) to sources.
-
-## 2025-03-09 - Using Mistral's PDF OCR doc to read pdfs more accurately, and `spacy`'s semantic splitting to passages to start and end with sentances that make a single point.
-
-## 2025-06-28 - Working Bowen theory on data extraction from chat discussion. Using Havstad's SARF data model. Basically trying to build a Bowen theory coach bot. 
-- Started trying to extract data from each individual text message. Discovered data points exist across messages.
-- Clarifyed data model:
-  - People: siblings + offspring
-  - Events: variable shifts; Symptom, Anxiety, Relationship, Functioning
-    - Relationship sub-divides into Mechanism & Triangle (negative), Defined self (positive)
-    - Triangle; insides + outside
-    - Mechanism: movers + recipients
-  - Have to figure out what to do with special events w/o apparent variable shifts, e.g. birth, death, marriage, divorce
-- Moved to managing a rolling pool of data points from chat conversation. Much more sophisticated and complicated.
-  - Moved to pending data pool (PDP) model where user confirms inferred / extracted data points.
-  - llm only provides deltas for pending pool to avoid data loss from hallucinations when re-writing the entire pending pool every call.
-  - Division between persistent database and PDP. Deltas are the core atomic component to validate.
-- Plan to build personal mobile app with web-based auditing system to scale model training with human feedback.
-  - Potential to generate database for family research, complete with data model.
-
-## 2025-12-08
-
-- Added prompt induction framework:
-  [btcopilot/doc/PROMPT_INDUCTION_CLI.md](btcopilot/doc/PROMPT_INDUCTION_CLI.md)
-  Using Claude Code's command line API to run it from a script. Get baseline F1,
-  tweak system prompts, run AI extraction, compare baseline. Run 10 iterations
-  or until F1 improvement plateaus. Super cool! 
-
-## 2025-12-14
-
-*I am modeling therapeutic conversation*. I don't know if this has ever been done before. Measuring therapist performance at collecting enough data for clinical evaluation. Requires measuring coach performance statement by statement.
-
-- *The first comprehensive index of technical terms for Bowen theory* using Bowen and Kerr's books. *Every single* passage that might be related to a given term in the SARF model (Anxiety, Symptom, Functioning, conflict, projection, triangles, etc). It isn't the eight concepts but I could easily re-run this on those (and probabyl will) [btcopilot/doc/sarf-definitions/METHODOLOGY.md](btcopilot/doc/sarf-definitions/METHODOLOGY.md). In a nuthsell, this is many passes through the literature back and forth with human and AI. It required a combination of:
-  - Exhaustive knowledge of the source literature (from Stinson, 2020)
-  - Doctoral-level qualitative research methods
-  - AI Context Architect Expertise
-  - Software Architect Expertise
-  Progress tracked here: [btcopilot/doc/sarf-definitions/PROGRESS.md](btcopilot/doc/sarf-definitions/PROGRESS.md)
-- Switched to gemini flash API for cheaper and probably better data extraction. Seeking HIPAA BAA with Google.  
-- Improved Synthetic AI client personalities with:
-  - larger hard-coded histories
-  - "levels of depth" to force AI coach to probe deeper or fail to get necessary information.
-  - Improvisation of case content beyond the provided history, so long as it is not contradictory
-  - They started sponateously pushing back when the conversation went on too long, about 60 minutes, wow.
-- Improved AI coach conversational flow with:
-  - Allow feeling content around the problem for ~8 statements before pivoting to filling out data model. Helps the person get some of the presenting problem out, get some emotional buy-in.
-
-*Dev notes*
-- Added mcp server for claude code to manage the web server proces.
+  It is essentially impossible to know the percentage who get married and who do not get divorced. At thi
+s level of differentiation, differentiation does not begin to take place until there is a certain percentage of people who are sufficien tly involved with their families of origin to begin differentiation without emotional participation in the family emotional system.
+do well on tests of differentiation have a reasonable chance of getting a social or professional degree,
+if they keep the effort on their families of origin. Results are less with this approach if the family effort is with a spouse in the 30 to 40 range.
+People in the 50 to 75 range get married within a few generations. There are those who get married within a few generations and continue for life and who terminate marriage within the next five to ten years. Those with very low levels of differentiation have an infinite n umber of satisfying marriages with intact families and those with a high level of fusion who terminate marriage within several generatio
+A typical marriage is one in which the basic level of differentiation is transmitted in marriage, but it is not manifested in children.
+There are marriages in which the basic level is transmitted in children who use various combinations of marriage mechanisms and 385 other outside relationships to raise the basic level of differentiation. There are marriages in which the basic level is transmitted in marriage and where it continues in subsequent marriages, but the transmission is less intense and symptoms are less intense.
+Marriages in which the basic level is transmitted in marriage are called stable marriages and in which there are no symptoms,
+the sympto
+ms are more episodic and it is not as serious and long-term as with less severe emotional illness and less severe emotional illness and less long-term transmission of the problem to a spouse with good levels of differentiation. There are marriages in which the basic level is transmitted in marriage where the basic level is sufficiently submerged in the marriage to be seen only with one or two children to
+be meaningful symptoms but symptoms are less intense and transmission is less serious and
+is much less intense than with severe illness
+and less long-term transmission of the problem to one or two children.
+People in the 65 to 70 range get married within a few generations. There are others who do well with a few children and maintain self in the 30 to 40 range until the problems subside and thereafter it is seen as the "fusion" phenomenon with a child who gets "programmed" t o the family projection process with the parents. The children grow up
+  ```

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "components/irr_macros.html" import render_kappa %}
 
-{% block title %}IRR Analysis - {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
+{% block title %}[IRR Analysis] {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
 
 {% macro render_kappa_small(kappa) %}
     {% if kappa is not none and kappa == kappa %}{{ "%.2f"|format(kappa) }}{% else %}-{% endif %}
@@ -11,7 +11,7 @@
 <section class="section">
     <div class="container is-fluid">
         <div class="mb-4">
-            <h1 class="title">{{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
+            <h1 class="title">[IRR Analysis] {{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
             <p class="subtitle">IRR Analysis - {{ discussion_irr.coded_statement_count }} coded statements</p>
         </div>
 

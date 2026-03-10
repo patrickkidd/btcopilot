@@ -30,8 +30,9 @@ New clinical data outputs: store in `btcopilot-sources/`, create symlink, add to
 | Data model (schema, enums, validation) | [doc/specs/DATA_MODEL.md](doc/specs/DATA_MODEL.md) |
 | PDP extraction, deltas, cumulative logic | [doc/specs/PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md) |
 | SARF coding, GT workflow, approval | [doc/SARF_GROUND_TRUTH_TECHNICAL.md](doc/SARF_GROUND_TRUTH_TECHNICAL.md) |
+| SARF visual language (badges, colors, dates) | [doc/specs/SARF_VISUAL_SPEC.md](doc/specs/SARF_VISUAL_SPEC.md) |
 | Prompt engineering decisions | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) |
-| Prompt induction workflow | [doc/PROMPT_INDUCTION_CLI.md](doc/PROMPT_INDUCTION_CLI.md) |
+| Prompt optimization process | [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) |
 | Bowen theory concepts | [CONTEXT.md](CONTEXT.md) |
 | Diagram layout/rendering/SVG | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) |
 | F1 metrics, evaluation | [doc/F1_METRICS.md](doc/F1_METRICS.md) |
@@ -40,6 +41,7 @@ New clinical data outputs: store in `btcopilot-sources/`, create symlink, add to
 | Decisions (career, strategy) | [decisions/log.md](decisions/log.md) |
 | Architecture decisions | [adrs/](adrs/) |
 | IRR calibration, coding guidelines | [doc/irr/](doc/irr/) |
+| Calibration system (as-built) | [doc/adrs/calibration.md](doc/adrs/calibration.md) |
 | Synthetic client personas/evals | [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md) |
 | Synthetic client dev log | [doc/log/synthetic-clients/](doc/log/synthetic-clients/) |
 | Psychological foundations | [doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md](doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md) |
@@ -101,12 +103,20 @@ btcopilot provides:
 | Pro backend | `btcopilot/pro/` | Desktop app API (pickle over HTTPS) |
 | Personal backend | `btcopilot/personal/` | Mobile app API (JSON), chat-only conversation + endpoint-driven extraction |
 | Training app | `btcopilot/training/` | Domain-expert feedback for AI fine-tuning |
-| Schema | `btcopilot/pro/schema.py` | Core data model shared with Pro/Personal apps |
+| Schema | `btcopilot/schema.py` | Core data model shared with Pro/Personal apps (PUBLIC — see boundary rule below) |
 | Personal DB | `btcopilot/personal/database.py` | JSON-based data schema |
 | Extensions | `btcopilot/extensions/` | Flask extensions (DB, LLM, ChromaDB) |
 | Auth | `btcopilot/auth.py` | User authentication with `current_user` |
 | CLI | `manage.py`, `btcopilot/commands.py` | Flask CLI commands |
 | Pro models | `btcopilot/pro/models/` | SQLAlchemy: User, Diagram, License, Session, Statement/Discussion |
+
+### Public API Boundary (MANDATORY)
+
+`btcopilot.schema` is the ONLY public submodule — it is imported by the Pro and Personal app builds where Flask, SQLAlchemy, and all other server dependencies are unavailable. **schema.py must NEVER import from any other btcopilot module** (pdp, extensions, personal, pro, training, app, auth, llmutil, celery, modelmixin). This includes deferred/lazy imports inside methods.
+
+If schema.py needs a utility function that currently lives in a private module, move that function INTO schema.py. Do not import it.
+
+The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this boundary — run it after any schema.py changes.
 
 ### External Services
 
@@ -134,11 +144,22 @@ btcopilot provides:
 
 ## Domain Knowledge
 
-### GT / F1 Data Model
+### Event Field Semantics (MANDATORY — apply everywhere events are displayed or matched)
 
-- Birth/Adopted events: `child` is the primary link (who was born/adopted), `person`/`spouse` are optional parent links. `person=None` on birth events is legitimate.
-- Other events: `person` is the primary link.
-- Structural events (Birth, Death, Married, etc.) skip description matching in F1 — only Shift events use descriptions.
+**Person resolution** — which person an event is "about":
+- Birth/Adopted: `child` is the primary link (who was born/adopted). `person`/`spouse` are optional parent links. `person=None` is legitimate.
+- All other events: `person` is the primary link.
+- When displaying person name for an event, always check `event.kind` first.
+
+**Description** — `EventKind.isSelfDescribing()` (Birth, Adopted, Married, Separated, Divorced, Bonded, Moved, Death):
+- The kind name IS the description; `Event.description` is optional supplementary detail.
+- Display: use `kind.value.capitalize()` as the primary label. Append description only if it adds information beyond the kind name.
+- Placeholder descriptions ("New Event", "Unknown", "") should be treated as empty.
+- Only Shift events require and rely on `Event.description` as their primary label.
+
+**F1 matching**: Structural events skip description matching — only Shift events use descriptions. Events match on kind + date + person links.
+
+**Duplicate people**: `match_people` produces a 1:1 `id_map`. When either side has duplicate people with the same name (e.g., two "Michael" entries), use `_augment_duplicate_person_id_map` for A-side duplicates. For symmetric comparisons (auditor vs auditor), B-side duplicates also need remapping — see `_dedup_b_people` in `compare.py`.
 
 ### IRR Deliberation Records
 
@@ -179,37 +200,33 @@ All web UI must work in **both light and dark modes**:
 
 ---
 
-## Prompt Induction Workflow
+## Prompt Optimization Workflow
 
 **MANDATORY for ALL changes to extraction prompts**, including:
 - `fdserver/prompts/private_prompts.py` (production prompt overrides)
 - `btcopilot/personal/prompts.py` (default prompts)
 - `btcopilot/extensions/llm.py` (`PDP_FIELD_DESCRIPTIONS`)
 
-**THE PROTOCOL**: [btcopilot/training/prompts/induction_agent.md](btcopilot/training/prompts/induction_agent.md) is the authoritative protocol for ALL prompt engineering work. Follow it completely — no exceptions, no shortcuts, no "I'll document later."
+**Process overview**: [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) — Interactive Claude Code sessions with comprehensive documentation. No CLI automation, no autonomous agents.
 
-**This applies to every prompt change, whether**:
-- Automated CLI-driven induction runs
-- Manual/ad-hoc prompt tuning sessions
-- Full-extraction (`extract_full()`) or per-statement (`pdp.update()`) prompts
-- Quick "let me just try one thing" experiments
+**Documentation protocol**: [btcopilot/training/prompts/induction_agent.md](btcopilot/training/prompts/induction_agent.md) — Authoritative spec for logging format, report structure, iteration rules. Follow its documentation requirements even in interactive sessions.
 
-**Non-negotiable requirements from the protocol**:
+**Non-negotiable requirements**:
 1. Read strategy doc FIRST: [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md)
-2. Create timestamped run folder + JSONL log file in `doc/induction-reports/`
-3. Establish and log baseline F1 before any changes
-4. Log EVERY iteration (kept AND reverted) with F1 scores
+2. Create timestamped run folder + report in `doc/induction-reports/`
+3. Establish baseline F1 before any changes
+4. Log EVERY experiment (kept AND reverted) with F1 scores
 5. Generate final report (`.md`) in the run folder
 6. Update strategy doc with what worked AND what failed
 7. Update [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md)
 8. Append entry to [doc/f1_timeseries.json](doc/f1_timeseries.json) (feeds admin/auditor dashboard chart)
 
-**Log negative results as thoroughly as positive ones** — the goal is to prevent future thrashing by documenting what was tried and why it failed.
+**Log negative results as thoroughly as positive ones** — prevents future thrashing.
 
 | Doc | Purpose |
 |-----|---------|
-| [btcopilot/training/prompts/induction_agent.md](btcopilot/training/prompts/induction_agent.md) | **AUTHORITATIVE** — Full protocol with logging spec, iteration rules, report format |
-| [doc/PROMPT_INDUCTION_CLI.md](doc/PROMPT_INDUCTION_CLI.md) | CLI-driven automated iteration |
+| [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) | Process overview — how sessions work, where prompts live, what to document |
+| [btcopilot/training/prompts/induction_agent.md](btcopilot/training/prompts/induction_agent.md) | Documentation protocol — logging spec, report format, iteration rules |
 | [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md) | Cumulative strategy doc — read before, update after |
 | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) | Decision log — update after every run |
 
@@ -259,6 +276,7 @@ Ask user to start/restart before using chrome-devtools MCP: `cd dashboard && uv 
 
 ### Testing
 - **All tests**: `uv run pytest -vv tests`
+- **E2e tests** (real LLM calls): `uv run pytest --e2e -m e2e` — requires `GOOGLE_GEMINI_API_KEY` from `theapp/.env`
 - **Async**: `--asyncio-mode=auto` (configured in `btcopilot/tests/pytest.ini`)
 - **Directories**: `tests/` (main), `tests/training/` (training module)
 

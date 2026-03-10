@@ -155,3 +155,82 @@ def test_diagrams_optimistic_locking_conflict(subscriber):
 
     diagram = Diagram.query.get(diagram.id)
     assert diagram.version == initial_version
+
+
+def test_get_diagram_not_found(subscriber):
+    response = subscriber.get("/personal/diagrams/99999")
+    assert response.status_code == 404
+
+
+def test_get_diagram_forbidden(subscriber, test_user_2):
+    test_user_2.set_free_diagram(pickle.dumps({}))
+    db.session.commit()
+    other_diagram = test_user_2.free_diagram
+
+    response = subscriber.get(f"/personal/diagrams/{other_diagram.id}")
+    assert response.status_code == 403
+
+
+def test_update_diagram_not_found(subscriber):
+    response = subscriber.put(
+        "/personal/diagrams/99999",
+        json={"data": base64.b64encode(pickle.dumps({})).decode("utf-8")},
+    )
+    assert response.status_code == 404
+
+
+def test_update_diagram_forbidden(subscriber, test_user_2):
+    test_user_2.set_free_diagram(pickle.dumps({}))
+    db.session.commit()
+    other_diagram = test_user_2.free_diagram
+
+    response = subscriber.put(
+        f"/personal/diagrams/{other_diagram.id}",
+        json={"data": base64.b64encode(pickle.dumps({})).decode("utf-8")},
+    )
+    assert response.status_code == 403
+
+
+def test_update_diagram_without_data_field(subscriber):
+    """PUT without 'data' or 'expected_version' triggers version conflict (409)."""
+    diagram = subscriber.user.free_diagram
+
+    response = subscriber.put(
+        f"/personal/diagrams/{diagram.id}",
+        json={},
+    )
+    # No expected_version → version check fails → 409
+    assert response.status_code == 409
+    data = response.get_json()
+    assert "version" in data
+    assert "data" in data
+
+
+def test_get_diagram_discussions(subscriber, discussion):
+    """Test GET /diagrams/<id>/discussions returns discussion list."""
+    diagram = subscriber.user.free_diagram
+
+    response = subscriber.get(f"/personal/diagrams/{diagram.id}/discussions")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    # Each discussion should include statements and speakers
+    assert "statements" in data[0]
+    assert "speakers" in data[0]
+
+
+def test_get_diagram_discussions_not_found(subscriber):
+    response = subscriber.get("/personal/diagrams/99999/discussions")
+    assert response.status_code == 404
+
+
+def test_get_diagram_discussions_forbidden(subscriber, test_user_2):
+    test_user_2.set_free_diagram(pickle.dumps({}))
+    db.session.commit()
+    other_diagram = test_user_2.free_diagram
+
+    response = subscriber.get(
+        f"/personal/diagrams/{other_diagram.id}/discussions"
+    )
+    assert response.status_code == 403

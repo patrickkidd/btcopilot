@@ -177,24 +177,6 @@ class StatementF1Metrics:
     # ... (full TP/FP/FN breakdown)
 ```
 
-### SystemF1Metrics
-
-System-wide metrics (aggregated across all approved statements):
-```python
-@dataclass
-class SystemF1Metrics:
-    aggregate_micro_f1: float
-    people_f1: float
-    events_f1: float
-    symptom_macro_f1: float
-    anxiety_macro_f1: float
-    relationship_macro_f1: float
-    functioning_macro_f1: float
-    exact_match_rate: float
-    total_statements: int
-    total_discussions: int
-```
-
 ## Ground Truth Requirements
 
 Only **approved** feedback is used for F1 calculation:
@@ -302,17 +284,12 @@ f"stmt_{statement_id}_{feedback_id}_{hash(approved_feedbacks)}"
 **File**: `btcopilot/btcopilot/training/f1_metrics.py`
 
 ```python
-NAME_SIMILARITY_THRESHOLD = 0.8
-DESCRIPTION_SIMILARITY_THRESHOLD = 0.5
+NAME_SIMILARITY_THRESHOLD = 0.60
 DATE_TOLERANCE_DAYS = 7
-DESCRIPTION_WEIGHT = 0.8
-DATE_WEIGHT = 0.2
+APPROXIMATE_TOLERANCE_DAYS = 730  # ±2 years
 ```
 
-**Tuning**:
-- Lower thresholds: More lenient matching (higher F1, may include false matches)
-- Higher thresholds: Stricter matching (lower F1, fewer false matches)
-- Adjust based on observed F1 patterns with discussion #30 examples
+Events match on kind + date + person links only (description matching removed — paraphrasing variance caused false rejections).
 
 ## Dependencies
 

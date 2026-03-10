@@ -2,7 +2,7 @@
 
 **Purpose**: Authoritative record of prompt engineering decisions, experiments, and lessons learned for the SARF data extraction system. Prevents regressions by documenting what works, what doesn't, and why.
 
-**Last Updated**: 2026-03-03
+**Last Updated**: 2026-03-04 (T7-20 flash-lite + thinking budget)
 
 ---
 
@@ -10,14 +10,28 @@
 
 ### Current: Gemini 2.5 Flash (extraction) / Gemini 3 Flash Preview (responses)
 
-**Extraction**: gemini-2.5-flash (all extraction — both incremental and large imports)
+**Extraction**: gemini-2.5-flash (production), gemini-3-flash-preview (recommended upgrade)
 **Responses**: gemini-3-flash-preview (conversational chat responses)
+**Thinking**: `thinking_budget=1024` (CRITICAL — see T7-20 findings below)
 
 **Why Gemini 2.5 Flash for extraction:**
 - gemini-2.0-flash deprecated March 31, 2026 and showing server-side drift
 - Aggregate F1 within 3% of 2.0-flash, better SARF variable scores
 - 64K output token limit supports large imports
-- `thinking_config=ThinkingConfig(thinking_budget=0)` explicitly disables thinking for speed/cost
+
+**Recommended upgrade: gemini-3-flash-preview (validated 2026-03-04):**
+- +6.7% Aggregate F1, +9.1% Events F1 vs 2.5-flash (both with thinking=1024)
+- 23% faster (74s vs 96s for 6 discussions)
+- $0.016/extraction vs $0.012 — negligible cost increase
+- Confirmed best across 14 model configs spanning Google, OpenAI, and xAI
+- Needs multi-run validation (3+ runs) before production deployment
+- See full report: `doc/induction-reports/2026-03-04_15-36-39--model-evaluation-frontier/`
+
+**Non-Google alternatives evaluated (2026-03-04):**
+- gpt-5.2 (OpenAI): Events F1 tied (0.397) but Bonds -37%, 196s latency, $0.065/extraction. Best backup.
+- gpt-5-mini (OpenAI): Highest Events F1 (0.410) but 460s latency, 1/6 failures. Monitor only.
+- o4-mini, gpt-4.1, gpt-5-nano, grok-4-fast, grok-4-1-fast: All below baseline or disqualified on latency.
+- All non-Gemini models require compatibility shims (0→None, positive→negative ID remapping, API param differences).
 
 **Why Gemini 2.0 Flash over GPT-4o-mini:**
 - Larger context window (1M tokens vs 128K)
@@ -52,6 +66,8 @@
 **Finding**: Gemini documentation suggests few-shot examples early in prompts improve quality.
 
 **Current assembly order** (`btcopilot/pdp.py`):
+
+Per-statement (training app only):
 ```python
 data_extraction_prompt = (
     DATA_EXTRACTION_PROMPT      # 1. Extraction intent + brief overview
@@ -59,6 +75,14 @@ data_extraction_prompt = (
     + DATA_EXTRACTION_RULES     # 3. Detailed schema/rules
     + DATA_EXTRACTION_CONTEXT   # 4. Actual data to process
 )
+```
+
+Full extraction (production, 2-pass):
+```python
+# Pass 1: People + PairBonds + Structural Events
+prompt1 = DATA_EXTRACTION_PASS1_PROMPT + DATA_EXTRACTION_PASS1_CONTEXT
+# Pass 2: Shift Events + SARF (given Pass 1 output)
+prompt2 = DATA_EXTRACTION_PASS2_PROMPT + DATA_EXTRACTION_PASS2_CONTEXT
 ```
 
 ---
@@ -117,15 +141,23 @@ data_extraction_prompt = (
 
 ## Prompt Architecture
 
-### File: `btcopilot/btcopilot/personal/prompts.py`
+### File: `btcopilot/btcopilot/personal/prompts.py` (defaults) / `fdserver/prompts/private_prompts.py` (overrides)
 
-**Constants**:
+**Per-statement constants** (training app only):
 | Constant | Purpose | Template Variables |
 |----------|---------|-------------------|
 | `DATA_EXTRACTION_PROMPT` | Extraction intent + data model overview | `{current_date}` |
 | `DATA_EXTRACTION_EXAMPLES` | Few-shot error pattern examples | None (literal JSON) |
 | `DATA_EXTRACTION_RULES` | Operational extraction guidance | None |
 | `DATA_EXTRACTION_CONTEXT` | Runtime data to process | `{diagram_data}`, `{conversation_history}`, `{user_message}` |
+
+**Full-extraction constants** (production, 2-pass):
+| Constant | Purpose | Template Variables |
+|----------|---------|-------------------|
+| `DATA_EXTRACTION_PASS1_PROMPT` | Pass 1: People + PairBonds + structural events | `{current_date}` |
+| `DATA_EXTRACTION_PASS1_CONTEXT` | Pass 1 runtime data | `{diagram_data}`, `{conversation_history}` |
+| `DATA_EXTRACTION_PASS2_PROMPT` | Pass 2: Shift events + SARF coding | `{current_date}` |
+| `DATA_EXTRACTION_PASS2_CONTEXT` | Pass 2 runtime data | `{pass1_data}`, `{conversation_history}` |
 
 **Why split into multiple constants**:
 1. Examples contain literal JSON with curly braces - keeping them separate avoids escaping issues with `.format()`
@@ -136,9 +168,11 @@ data_extraction_prompt = (
 
 | Metric | Target | Current |
 |--------|--------|---------|
-| Total prompt chars | <50K | ~41K |
-| Lines | <1000 | ~960 |
-| Examples | 5-10 | 9 |
+| Per-statement prompt chars | <50K | ~41K |
+| Per-statement lines | <1000 | ~960 |
+| Per-statement examples | 5-10 | 9 |
+| Pass 1 prompt (full) | — | ~150 lines |
+| Pass 2 prompt (full) | — | ~225 lines |
 
 ---
 
@@ -176,9 +210,10 @@ Based on failed experiments:
 
 ### F1 Score Tracking
 
-- **Test harness**: `uv run python -m btcopilot.training.run_prompts_live`
+- **Full-extraction harness**: `uv run python -m btcopilot.training.run_extract_full_f1` (production 2-pass, 6 GT discussions)
+- **Per-statement harness**: `uv run python -m btcopilot.training.run_prompts_live` (training app, 45 GT cases)
 - **Ground truth**: `instance/gt_export.json` (symlinked from btcopilot-sources)
-- **Metrics tracked**: Aggregate F1, People F1, Events F1, per-variable F1 (symptom, anxiety, relationship, functioning)
+- **Metrics tracked**: Aggregate F1, People F1, Events F1, PairBonds F1, per-variable F1 (symptom, anxiety, relationship, functioning)
 
 ### Gemini Issue Detection
 
@@ -206,8 +241,9 @@ See `btcopilot/doc/TODO_GEMINI_SCHEMA.md` for:
 
 | File | Purpose |
 |------|---------|
-| `btcopilot/btcopilot/personal/prompts.py` | Extraction prompts (modify with care) |
-| `btcopilot/btcopilot/pdp.py` | Prompt assembly + Gemini issue instrumentation |
+| `btcopilot/btcopilot/personal/prompts.py` | Extraction prompt defaults (empty stubs for private prompts) |
+| `fdserver/prompts/private_prompts.py` | Real extraction prompts (PASS1/PASS2 + per-statement) |
+| `btcopilot/btcopilot/pdp.py` | Prompt assembly + extraction pipeline (2-pass + per-statement) |
 | `btcopilot/btcopilot/schema.py` | Dataclass definitions |
 | `btcopilot/doc/TODO_GEMINI_SCHEMA.md` | Deferred Gemini optimizations |
 | `btcopilot/doc/SARF_EXTRACTION_REFERENCE.md` | Exhaustive SARF definitions (reference only) |
@@ -313,7 +349,7 @@ See `btcopilot/doc/TODO_GEMINI_SCHEMA.md` for:
 
 **Decision**: Switch all extraction to gemini-2.5-flash. The 3% aggregate gap vs 2.0-flash is within noise, SARF variable scores are better, and 2.0-flash is being deprecated.
 
-**Config notes**: `thinking_config=ThinkingConfig(thinking_budget=0)` explicitly disables thinking mode on 2.5-flash (was a no-op on 2.0-flash). `max_output_tokens=65536` is within 2.5-flash limits.
+**Config notes**: `thinking_config=ThinkingConfig(thinking_budget=1024)` enables thinking for quality (see T7-20 decision below). `max_output_tokens=65536` is within 2.5-flash limits.
 
 ### Feb 2026: Multi-turn prompt format evaluation
 
@@ -330,3 +366,95 @@ See `btcopilot/doc/TODO_GEMINI_SCHEMA.md` for:
 **Decision**: Keep flat prompt format. Multi-turn causes 20% aggregate regression, more ID collision warnings, and worse people/events extraction. The model loses context about existing diagram_data when conversation history is separated from extraction instructions.
 
 **Lesson**: Structured multi-turn is not automatically better for extraction tasks. The flat prompt keeps all context (instructions, examples, existing data, conversation, new statement) together, which helps the model track IDs and avoid re-extraction.
+
+### Mar 2026: 2-pass split extraction (T7-18)
+
+**Context**: Single-prompt `extract_full()` struggled with Events F1 (~0.47 with description-free matching). Hypothesis: splitting extraction into two focused passes would improve quality by reducing cognitive load per LLM call.
+
+**Architecture**:
+- **Pass 1**: Extract people, PairBonds, and structural events (birth, death, married, etc.) from full transcript
+- **Pass 2**: Given Pass 1 output, extract shift events with SARF variable coding
+
+Both passes route through `_extract_and_validate()` for retry/validation. Pass 2 receives `base_pdp=pass1_pdp` so validation runs against Pass 1's people/events.
+
+**Results** (gemini-2.5-flash, 6 GT discussions, avg 2 runs):
+
+| Metric | Baseline (single-prompt) | Split (2-pass) | Delta |
+|--------|-------------------------|----------------|-------|
+| Aggregate F1 | 0.595 | **0.669** | +12% |
+| People F1 | 0.901 | 0.909 | +1% |
+| Events F1 | 0.470 | **0.509** | +8% |
+| PairBonds F1 | 0.539 | **0.832** | +54% |
+| Completion | 4/6 (67%) | **6/6 (100%)** | fixed |
+
+**Decision**: Replaced single-prompt `extract_full()` with 2-pass. Removed `DATA_FULL_EXTRACTION_CONTEXT`. The old single-prompt path no longer exists.
+
+**Key observations**:
+- PairBonds F1 improved dramatically (+54%) — Pass 1's focused scope catches bonds that were missed in the single all-at-once prompt
+- 100% discussion completion vs 67% — smaller per-pass output avoids token limit failures
+- Per-statement prompt constants (`DATA_EXTRACTION_PROMPT`, `DATA_EXTRACTION_EXAMPLES`, etc.) are NOT used by `extract_full()` — the split prompts are independent
+
+**Lesson**: Task decomposition works. Splitting a complex extraction into two focused passes reduces cognitive load and improves quality on every metric. The key insight from the earlier 9-iteration experiment ("per-statement training dominates full-extraction context") motivated this split — instead of fighting the single-prompt format, we redesigned the pipeline.
+
+### Mar 2026: thinking_budget=1024 + flash-lite model evaluation (T7-20)
+
+**Context**: T7-20 (issue #59) was blocked by HTTP 500 errors from gemini-3.1-flash-lite-preview. After T7-18 split extraction landed, re-evaluated flash-lite viability. Discovered thinking_budget=0 was a critical quality bottleneck for both models.
+
+**Experiments**: 14 runs across 12 configurations testing model (2.5-flash vs flash-lite), thinking budget (0/512/1024/2048/4096), temperature (0.0/0.1), and hybrid per-pass model selection. Multi-run averaging on key configs.
+
+**Results** (multi-run averages, 6 GT discussions):
+
+| Config | Events F1 | Aggregate F1 | Time | Cost |
+|--------|-----------|-------------|------|------|
+| 2.5-flash think=0 (was prod) | 0.265 | 0.545 | 62s | 1x |
+| 2.5-flash think=1024 | **0.378** | **0.609** | 51s | 1x |
+| flash-lite think=0 | 0.154 | 0.589 | 101s | 0.17x |
+| flash-lite think=1024 | **0.368** | **0.600** | 50s | 0.17x |
+
+**Decision**: Deploy thinking_budget=1024 immediately (one-line change). Switch to flash-lite when ready to optimize cost.
+
+**CORRECTION**: Previous finding (Feb 2026) that "thinking+structured_output is catastrophic" is no longer true with the 2-pass split architecture. All 14 runs used thinking=1024 with structured JSON output — zero hangs, ~8s per pass.
+
+**Thinking budget sweet spot** (flash-lite, Events F1): 0→0.154, 512→0.295, **1024→0.368**, 2048→0.298, 4096→0.355. Clear bell curve.
+
+**What failed**: Hybrid models (flash-lite P1, 2.5-flash P2) don't beat homogeneous flash-lite+think. Temperature 0.0 vs 0.1 is noise. Thinking > 1024 causes over-reasoning.
+
+**Report**: `doc/induction-reports/2026-03-04_13-15-00--model-evaluation-flash-lite/`
+
+### Mar 2026: Description-free event matching (Strategy B)
+
+**Context**: Debug analysis of FP events in split extraction revealed many were semantically valid extractions that GT describes differently. `Event.description` is free-text prose — it varies widely between AI and human annotators. Fuzzy string matching at 0.4 threshold was a hard gate rejecting legitimate matches.
+
+**Change**: Removed `description` as both hard gate and soft scoring signal from `match_events()` in `f1_metrics.py`. Events now match on `kind + dateTime + person links` only. Weighted score simplified to `date_sim`.
+
+**Results** (same extraction output, different matching):
+
+| Metric | With description matching | Without (Strategy B) | Delta |
+|--------|--------------------------|---------------------|-------|
+| Events F1 | 0.335 | **0.470** | +40% |
+
+**Decision**: Adopted. Description matching was measuring "do AI and GT use similar words" not "did AI find the right event."
+
+**Risk**: If a person has 2+ genuinely different shift events within the 730-day date tolerance, they'll match incorrectly. Accepted as rare in practice with current GT dataset.
+
+**Alternatives considered but deferred**:
+- **SARF Signature Match** — match on SARF variable agreement instead of description. More precise than kind+date+person but adds complexity and creates circular dependency (SARF accuracy used for both matching and scoring).
+- **SARF + Description hybrid** — demote description to low-weight tiebreaker. Most complex, still affected by paraphrasing variance.
+
+### Mar 2026: Drop SARF operational definitions from Pass 3 review prompt
+
+**Context**: Commit `fb1b603d` (fdserver) added `all_condensed_definitions()` (~62,886 chars / ~15,700 tokens) to the Pass 3 SARF review prompt. This comprised 98% of the prompt. A/B testing (3 runs each) showed marginal benefit: Aggregate F1 +0.006, SARF macro F1 +0.016 mean. This echoes the Dec 2024 lesson where exhaustive definitions degraded F1.
+
+**Change**: Replaced the definitions-heavy prompt with a compact inline-rules version (~30 lines). Removed `all_condensed_definitions()` call from `pdp.py`, removed import of `sarfdefinitions` from `pdp.py`. Updated both `btcopilot/personal/prompts.py` and `fdserver/prompts/private_prompts.py`.
+
+**Results** (3-run A/B mean, gemini-3-flash-preview, 6 discussions):
+
+| Metric | With definitions | Without | Delta |
+|--------|-----------------|---------|-------|
+| Aggregate F1 | 0.647 | 0.641 | -0.006 |
+| SARF macro F1 | 0.489 | 0.473 | -0.016 |
+| Pass 3 prompt size | ~64K chars | ~1.5K chars | -98% |
+
+**Decision**: Dropped. Cost/benefit strongly favors removal: ~15,700 fewer input tokens per extraction for negligible F1 difference within run-to-run variance. Reduces complexity and cost.
+
+**Note**: `sarfdefinitions.py` and `all_condensed_definitions()` remain available — they are used independently by IRR calibration (Components A/B) via `calibrationprompts.py`.

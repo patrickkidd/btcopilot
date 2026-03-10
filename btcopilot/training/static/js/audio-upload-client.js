@@ -221,19 +221,12 @@ class AudioUploadClient {
             if (progressEl) progressEl.value = 100;
             if (statusEl) statusEl.textContent = 'Complete! Processing statements...';
             
-            // Show extraction progress inline
             element.innerHTML = `
                 <div class="notification is-success is-light">
                     <p><strong>Upload successful!</strong></p>
                     <p>Discussion created.</p>
                 </div>
-                <div id="progress-container"></div>
             `;
-            
-            // Initialize extraction progress tracker
-            if (window.extractionProgress) {
-                window.extractionProgress.init(createData.discussion_id, 'progress-container');
-            }
             
         } catch (error) {
             console.error('Upload error:', error);

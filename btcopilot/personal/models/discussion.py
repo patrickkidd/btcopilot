@@ -62,6 +62,8 @@ class Discussion(db.Model, ModelMixin):
         nullable=True,
         comment="FK to synthetic_personas for generated persona linkage",
     )
+    calibration_report = Column(JSON, nullable=True)
+    calibration_advice = Column(JSON, nullable=True)
     user = relationship("User")
     diagram = relationship("Diagram", back_populates="discussions")
     statements = relationship(

@@ -9,12 +9,12 @@ from btcopilot.extensions import ai_log
 from btcopilot.llmutil import gemini_structured
 from btcopilot.personal.models import SpeakerType
 from btcopilot.personal.prompts import (
-    DATA_EXTRACTION_PROMPT,
-    DATA_EXTRACTION_EXAMPLES,
-    DATA_EXTRACTION_CONTEXT,
     DATA_EXTRACTION_CORRECTION,
-    DATA_FULL_EXTRACTION_CONTEXT,
-    DATA_IMPORT_CONTEXT,
+    DATA_EXTRACTION_PASS1_PROMPT,
+    DATA_EXTRACTION_PASS1_CONTEXT,
+    DATA_EXTRACTION_PASS2_PROMPT,
+    DATA_EXTRACTION_PASS2_CONTEXT,
+    SARF_REVIEW_PROMPT,
 )
 from btcopilot.schema import (
     DiagramData,
@@ -27,6 +27,7 @@ from btcopilot.schema import (
     PairBond,
     asdict,
     from_dict,
+    get_all_pdp_item_ids,
 )
 
 _log = logging.getLogger(__name__)
@@ -39,13 +40,6 @@ def _pretty_repr(obj):
         return pretty_repr(obj)
     except ImportError:
         return repr(obj)
-
-
-def get_all_pdp_item_ids(pdp: PDP) -> set[int]:
-    ids = {p.id for p in pdp.people if p.id is not None}
-    ids.update(e.id for e in pdp.events)
-    ids.update(pb.id for pb in pdp.pair_bonds if pb.id is not None)
-    return ids
 
 
 def reassign_delta_ids(pdp: PDP, deltas: PDPDeltas) -> None:
@@ -155,9 +149,7 @@ def dedup_pair_bonds(deltas: PDPDeltas) -> None:
         unique.append(pb)
 
     if remap:
-        _log.warning(
-            f"dedup_pair_bonds: removed {len(remap)} duplicate pair bonds"
-        )
+        _log.warning(f"dedup_pair_bonds: removed {len(remap)} duplicate pair bonds")
         deltas.pair_bonds = unique
         for person in deltas.people:
             if person.parents in remap:
@@ -373,9 +365,7 @@ def validate_pdp_deltas(
         existing_pdp_event_ids = {e.id for e in pdp.events}
         event_ids_being_deleted = delete_set & existing_pdp_event_ids
         surviving_events = [
-            e
-            for e in pdp.events
-            if e.id not in event_ids_being_deleted
+            e for e in pdp.events if e.id not in event_ids_being_deleted
         ]
         for event in surviving_events:
             for ref in [event.person, event.spouse, event.child]:
@@ -384,9 +374,7 @@ def validate_pdp_deltas(
                         f"Delete of person {ref} would orphan event {event.id}"
                     )
         existing_pdp_person_ids = {p.id for p in pdp.people if p.id is not None}
-        surviving_people = [
-            p for p in pdp.people if p.id not in delete_set
-        ]
+        surviving_people = [p for p in pdp.people if p.id not in delete_set]
         for person in surviving_people:
             if person.parents is not None and person.parents in delete_set:
                 errors.append(
@@ -493,7 +481,9 @@ def cumulative(discussion, up_to_statement, auditor_id: str | None = None) -> PD
     # Get auditor feedback if requested
     feedback_by_stmt = {}
     if auditor_id and auditor_id != "AI":
-        from btcopilot.training.models import Feedback  # circular: training.routes.prompts imports pdp
+        from btcopilot.training.models import (
+            Feedback,
+        )  # circular: training.routes.prompts imports pdp
 
         feedbacks = Feedback.query.filter(
             Feedback.statement_id.in_([s.id for s in sorted_statements]),
@@ -566,10 +556,11 @@ async def _extract_and_validate(
     diagram_data: DiagramData,
     source: str,
     large: bool = False,
+    base_pdp: PDP | None = None,
 ) -> tuple[PDP, PDPDeltas]:
     """Submit extraction prompt to LLM, validate, retry up to MAX_EXTRACTION_RETRIES on failure."""
     is_dev = os.getenv("FLASK_CONFIG") == "development"
-    pdp = diagram_data.pdp
+    pdp = base_pdp if base_pdp is not None else diagram_data.pdp
     current_prompt = prompt
     error_history: list[tuple[int, list[str]]] = []
 
@@ -615,35 +606,144 @@ async def _extract_and_validate(
     return new_pdp, pdp_deltas
 
 
-async def extract_full(
-    discussion,
+def _committed_state_for_prompt(diagram_data: DiagramData) -> dict:
+    """Extract only committed items for prompt context, with clean serialization."""
+
+    def _clean_datetimes(items):
+        cleaned = []
+        for item in items:
+            clean = dict(item)
+            for key in ("dateTime", "endDateTime"):
+                v = clean.get(key)
+                if v and hasattr(v, "toString"):
+                    clean[key] = v.toString("yyyy-MM-dd")
+            cleaned.append(clean)
+        return cleaned
+
+    return {
+        "people": diagram_data.people,
+        "events": _clean_datetimes(diagram_data.events),
+        "pair_bonds": diagram_data.pair_bonds,
+    }
+
+
+async def _two_pass_extract(
     diagram_data: DiagramData,
+    conversation_history: str,
+    current_date: str,
+    source: str,
+    pass2_prompt: str | None = None,
+    sarf_review_prompt: str | None = None,
 ) -> tuple[PDP, PDPDeltas]:
-    reference_date = (
-        discussion.discussion_date
-        if discussion.discussion_date
-        else datetime.now().date()
-    )
-
-    conversation_history = discussion.conversation_history()
-
+    """Two-pass extraction: people+structure first, then shifts+SARF."""
     _log.info(
-        f"PDP EXTRACT_FULL INPUTS:\n"
+        f"PDP {source.upper()} INPUTS:\n"
         f"  conversation_history length: {len(conversation_history)}\n"
         f"  diagram_data.pdp.people: {[p.name for p in diagram_data.pdp.people]}\n"
         f"  diagram_data.pdp.events count: {len(diagram_data.pdp.events)}\n"
         f"  diagram_data.people count: {len(diagram_data.people)}\n"
     )
 
-    prompt = (
-        DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
-        + DATA_EXTRACTION_EXAMPLES
-        + DATA_FULL_EXTRACTION_CONTEXT.format(
-            diagram_data=asdict(diagram_data),
+    # Pass 1: People + PairBonds + Structural Events
+    committed_state = _committed_state_for_prompt(diagram_data)
+    prompt1 = DATA_EXTRACTION_PASS1_PROMPT.format(
+        current_date=current_date
+    ) + DATA_EXTRACTION_PASS1_CONTEXT.format(
+        diagram_data=json.dumps(committed_state, indent=2, default=str),
+        conversation_history=conversation_history,
+    )
+    pass1_pdp, pass1_deltas = await _extract_and_validate(
+        prompt1,
+        diagram_data,
+        f"{source}_pass1",
+        large=True,
+    )
+
+    # Pass 2: Shift Events + SARF (given Pass 1 output)
+    pass1_data = json.dumps(asdict(pass1_pdp), indent=2, default=str)
+    committed_shifts = [e for e in diagram_data.events if e.get("kind") == "shift"]
+    committed_shift_json = (
+        json.dumps(committed_shifts, indent=2, default=str)
+        if committed_shifts
+        else "None"
+    )
+    _pass2_prompt = pass2_prompt or DATA_EXTRACTION_PASS2_PROMPT
+    prompt2 = _pass2_prompt.format(
+        current_date=current_date
+    ) + DATA_EXTRACTION_PASS2_CONTEXT.format(
+        pass1_data=pass1_data,
+        committed_shift_events=committed_shift_json,
+        conversation_history=conversation_history,
+    )
+    pass2_pdp, pass2_deltas = await _extract_and_validate(
+        prompt2,
+        diagram_data,
+        f"{source}_pass2",
+        large=True,
+        base_pdp=pass1_pdp,
+    )
+
+    # Pass 3: SARF review — re-evaluate all SARF variables against operational definitions
+    shift_events = [e for e in pass2_pdp.events if e.kind == EventKind.Shift]
+    if shift_events:
+        events_json = json.dumps(
+            [asdict(e) for e in shift_events], indent=2, default=str
+        )
+        people_json = json.dumps(
+            [asdict(p) for p in pass2_pdp.people], indent=2, default=str
+        )
+        _sarf_review = sarf_review_prompt or SARF_REVIEW_PROMPT
+        review_prompt = _sarf_review.format(
+            events_json=events_json,
+            people_json=people_json,
             conversation_history=conversation_history,
         )
+        review_deltas = await gemini_structured(review_prompt, PDPDeltas, large=True)
+        reviewed = {e.id: e for e in review_deltas.events}
+        for event in pass2_pdp.events:
+            if event.id not in reviewed:
+                continue
+            rev = reviewed[event.id]
+            if rev.symptom is not None:
+                event.symptom = rev.symptom
+            if rev.anxiety is not None:
+                event.anxiety = rev.anxiety
+            if rev.functioning is not None:
+                event.functioning = rev.functioning
+            if rev.relationship is not None:
+                event.relationship = rev.relationship
+                event.relationshipTargets = rev.relationshipTargets
+                event.relationshipTriangles = rev.relationshipTriangles
+
+    merged_deltas = PDPDeltas(
+        people=pass1_deltas.people + pass2_deltas.people,
+        events=pass1_deltas.events + pass2_deltas.events,
+        pair_bonds=pass1_deltas.pair_bonds + pass2_deltas.pair_bonds,
+        delete=pass1_deltas.delete + pass2_deltas.delete,
     )
-    return await _extract_and_validate(prompt, diagram_data, "extract_full", large=True)
+    return pass2_pdp, merged_deltas
+
+
+async def extract_full(
+    discussion,
+    diagram_data: DiagramData,
+    pass2_prompt: str | None = None,
+    sarf_review_prompt: str | None = None,
+) -> tuple[PDP, PDPDeltas]:
+    diagram_data.pdp = PDP()
+    reference_date = (
+        discussion.discussion_date
+        if discussion.discussion_date
+        else datetime.now().date()
+    )
+    return await _two_pass_extract(
+        diagram_data,
+        discussion.conversation_history(),
+        reference_date.isoformat(),
+        "extract_full",
+        pass2_prompt=pass2_prompt,
+        sarf_review_prompt=sarf_review_prompt,
+    )
 
 
 async def import_text(
@@ -651,74 +751,15 @@ async def import_text(
     text: str,
     reference_date: date | None = None,
 ) -> tuple[PDP, PDPDeltas]:
+    diagram_data.pdp = PDP()
     if reference_date is None:
         reference_date = datetime.now().date()
-
-    _log.info(
-        f"PDP IMPORT_TEXT INPUTS:\n"
-        f"  text length: {len(text)}\n"
-        f"  diagram_data.pdp.people: {[p.name for p in diagram_data.pdp.people]}\n"
-        f"  diagram_data.pdp.events count: {len(diagram_data.pdp.events)}\n"
-        f"  diagram_data.people count: {len(diagram_data.people)}\n"
+    return await _two_pass_extract(
+        diagram_data,
+        text,
+        reference_date.isoformat(),
+        "import_text",
     )
-
-    prompt = (
-        DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
-        + DATA_EXTRACTION_EXAMPLES
-        + DATA_IMPORT_CONTEXT.format(
-            diagram_data=asdict(diagram_data),
-            text_chunk=text,
-            chunk_num=1,
-            total_chunks=1,
-        )
-    )
-    return await _extract_and_validate(prompt, diagram_data, "import_text", large=True)
-
-
-async def update(
-    discussion,
-    diagram_data: DiagramData,
-    user_message: str,
-    up_to_order: int | None = None,
-) -> tuple[PDP, PDPDeltas]:
-    """
-    Extract PDP deltas from a user message.
-
-    Args:
-        discussion: The Discussion object
-        diagram_data: Current diagram data with PDP context
-        user_message: The statement text to extract from
-        up_to_order: If provided, only include conversation history up to this order.
-                    Used during batch extraction to avoid seeing future statements.
-    """
-    reference_date = (
-        discussion.discussion_date
-        if discussion.discussion_date
-        else datetime.now().date()
-    )
-
-    conversation_history = discussion.conversation_history(up_to_order)
-
-    _log.info(
-        f"PDP UPDATE INPUTS:\n"
-        f"  up_to_order: {up_to_order}\n"
-        f"  user_message length: {len(user_message)}\n"
-        f"  conversation_history length: {len(conversation_history)}\n"
-        f"  diagram_data.pdp.people: {[p.name for p in diagram_data.pdp.people]}\n"
-        f"  diagram_data.pdp.events count: {len(diagram_data.pdp.events)}\n"
-        f"  diagram_data.people count: {len(diagram_data.people)}\n"
-    )
-
-    prompt = (
-        DATA_EXTRACTION_PROMPT.format(current_date=reference_date.isoformat())
-        + DATA_EXTRACTION_EXAMPLES
-        + DATA_EXTRACTION_CONTEXT.format(
-            diagram_data=asdict(diagram_data),
-            conversation_history=conversation_history,
-            user_message=user_message,
-        )
-    )
-    return await _extract_and_validate(prompt, diagram_data, "update")
 
 
 def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
@@ -733,13 +774,22 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
     events_by_id = {item.id: item for item in pdp.events}
     pair_bonds_by_id = {item.id: item for item in pdp.pair_bonds}
 
+    # Positive-ID delta items reference committed diagram items — skip them.
+    # Only negative-ID items are new PDP items to add.
+    def _is_new_pdp_item(item):
+        return item.id is not None and item.id < 0
+
     # Process people deltas
     people_to_update = [
         (item, people_by_id[item.id])
         for item in deltas.people
         if item.id in people_by_id
     ]
-    people_to_add = [item for item in deltas.people if item.id not in people_by_id]
+    people_to_add = [
+        item
+        for item in deltas.people
+        if item.id not in people_by_id and _is_new_pdp_item(item)
+    ]
 
     # Process event deltas
     events_to_update = [
@@ -747,7 +797,11 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         for item in deltas.events
         if item.id in events_by_id
     ]
-    events_to_add = [item for item in deltas.events if item.id not in events_by_id]
+    events_to_add = [
+        item
+        for item in deltas.events
+        if item.id not in events_by_id and _is_new_pdp_item(item)
+    ]
 
     # Process pair_bond deltas
     pair_bonds_to_update = [
@@ -756,7 +810,9 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if item.id in pair_bonds_by_id
     ]
     pair_bonds_to_add = [
-        item for item in deltas.pair_bonds if item.id not in pair_bonds_by_id
+        item
+        for item in deltas.pair_bonds
+        if item.id not in pair_bonds_by_id and _is_new_pdp_item(item)
     ]
 
     # Combine updates for processing
@@ -799,10 +855,25 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         pdp.pair_bonds.append(item)
         upserts_applied.append(item)
 
-    combined_upserts = deltas.people + deltas.events + deltas.pair_bonds
-    assert len(upserts_applied) == len(
-        combined_upserts
-    ), f"Failed to apply all upserts ({len(upserts_applied)} applied, {len(combined_upserts)} expected)"
+    # Count committed-item references that were intentionally skipped
+    committed_refs = [
+        item
+        for item in deltas.people + deltas.events + deltas.pair_bonds
+        if not _is_new_pdp_item(item)
+        and item.id not in people_by_id
+        and item.id not in events_by_id
+        and item.id not in pair_bonds_by_id
+    ]
+    expected = (
+        len(deltas.people)
+        + len(deltas.events)
+        + len(deltas.pair_bonds)
+        - len(committed_refs)
+    )
+    assert len(upserts_applied) == expected, (
+        f"Failed to apply all upserts ({len(upserts_applied)} applied, {expected} expected, "
+        f"{len(committed_refs)} committed refs skipped)"
+    )
 
     to_delete_ids = deltas.delete
     for idx in reversed(range(len(pdp.people))):

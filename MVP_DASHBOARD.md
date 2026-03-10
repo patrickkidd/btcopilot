@@ -74,12 +74,42 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 
 ---
 
+## Goal 4: SARF Accuracy
+
+Systematic improvement of SARF variable extraction F1 using the exhaustive literature review in `doc/sarf-definitions/`. Parallel to Goals 1-3 — not a blocker for shipping, but tracks clinical accuracy work separately.
+
+**Status: Planning complete.** 11 GitHub issues created across 3 waves. Current SARF macro F1: 0.473 (S=0.518, A=0.597, R=0.487, F=0.291). Proven lever: review-then-filter passes (+103% R from Pass 3). Lit review (12 operational definitions, ~400 passages) ready but not yet applied.
+
+**Strategy constraints** (from `doc/PROMPT_ENG_EXTRACTION_STRATEGY.md`): verbose definitions kill F1, examples cause regressions, review passes work, most prompt changes regress on gemini-3-flash.
+
+### Open Tasks
+
+| # | Task | Auto | Wave | Notes |
+|---|------|------|------|-------|
+| T9-1 | SARF Calibration & IRR Review Tool | CC+H | 1 | Training app feature: within-expert review + between-expert IRR tool using frontier LLM. Separate planning session. |
+| T9-2 | Phase 6: Inter-term consistency check | CC+H | 1 | Complete `CROSS-REFERENCES.md` + `GAPS.md`. Resolve 7 boundary confusions. |
+| T9-3 | Symptom review pass | CC | 1 | Add `SYMPTOM_REVIEW_PROMPT`, apply only S corrections. Induction protocol. Target: S > 0.518. |
+| T9-4 | Anxiety review pass | CC | 1 | Add `ANXIETY_REVIEW_PROMPT`, apply only A corrections. Induction protocol. Target: A > 0.597. |
+| T9-5 | Functioning review pass | CC | 1 | Add `FUNCTIONING_REVIEW_PROMPT`, apply only F corrections. Induction protocol. Target: F > 0.291. |
+| T9-6 | R review enhancement | CC | 2 | Expand CRITICAL DISTINCTIONS in R review using Phase 6 output. Depends on T9-2. |
+| T9-7 | Unified review architecture decision | CC | 2 | Evaluate sequential vs unified vs combined review passes. Depends on T9-3/4/5. |
+| T9-8 | Pass 2 Decision Guide boundary tuning | CC | 2 | Add boundary clarifications to SARF Decision Guide. Depends on T9-2. |
+| T9-9 | Pass 2 SARF definitions refinement | CC | 3 | Terse precision replacements (not expansion). Depends on T9-3/4/5 results. |
+| T9-10 | GT expansion | H | 3 | Code 4-6 new discussions with lit-review-validated definitions. Depends on T9-1/2. |
+| T9-11 | SARF definition reference panel | CC | 3 | Training app panel showing lit review definitions during GT coding. Shares T9-1 infra. |
+
+### Done
+
+(none yet)
+
+---
+
 ## Risks
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 | Single-prompt hits context limit on long conversations | Extraction fails or truncates | gemini-2.5-flash has 1M token context; typical discussion is ~30K chars. Monitor. |
-| Events F1 plateaus below 0.4 | Users see wrong events | Prompt-tune on stable single-prompt surface (T7-8). Fallback: hide events, show People/PairBonds only. |
+| Events F1 plateaus below 0.5 | Users see wrong events | Description-free matching + split extraction raised Events 0.335->0.509. |
 | GT coding bottleneck (Patrick only) | Limits measurement iterations | ~60 min/discussion is fast enough for 3-5 GT cases needed for MVP. |
 | Auto-arrange is 2-3 weeks | Delays Goal 3 | Consider simpler generational Y-alignment only. |
 
@@ -89,11 +119,14 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 
 | Metric | Last Measured | Target | Notes |
 |--------|-------------|--------|-------|
-| People F1 (cumulative) | 0.926 (Mar 2026, 6 disc, single-prompt) | > 0.7 | PASS. Fixed matching bugs (parents, User name). |
-| Event F1 (cumulative) | 0.387 (Mar 2026, 6 disc, single-prompt) | > 0.3 | PASS. Fixed date tolerance (270→730d), targets overlap. FP-heavy — prompt tuning in T7-8. |
-| PairBond F1 (cumulative) | 0.590 (Mar 2026, 6 disc, single-prompt) | > 0.5 | PASS. Added PairBond dedup in pipeline. |
+| People F1 (cumulative) | 0.909 (Mar 2026, 6/6 disc, split) | > 0.7 | PASS. |
+| Event F1 (cumulative) | 0.509 (Mar 2026, 6/6 disc, split) | > 0.3 | PASS. Split extraction + description-free matching. |
+| PairBond F1 (cumulative) | 0.832 (Mar 2026, 6/6 disc, split) | > 0.5 | PASS. |
+| Aggregate F1 | 0.669 (Mar 2026, 6/6 disc, split) | > 0.5 | PASS. +0.118 from split+matching. |
 | GT coded discussions | 6 (disc 36/37/39/48/50/51) | 5-8 for MVP | Disc 52 GT pending. |
 | E2E synthetic | Verified 2026-02-24 | Functional | test_e2e_synthetic.py |
+| SARF Macro F1 | 0.473 (Mar 2026, 3-pass, 3-run mean) | > 0.5 (Stage 4) | Goal 4. S=0.518, A=0.597, R=0.487, F=0.291. |
+| Functioning F1 | 0.291 (Mar 2026) | > 0.5 | Goal 4. Weakest variable. |
 
 ---
 
@@ -136,6 +169,7 @@ T2-2, T2-3 (arrange error handling), T2-4, T2-6.
 | 2026-02-24 | All open tasks | T0-4 deferred. T4-2 not needed. E2E pipeline verified. |
 | 2026-02-24 | Architecture pivot | Single-prompt extraction proven. Dashboard rewritten. See decision log 2026-02-24. |
 | 2026-02-26 | T7-1 through T7-4 | Implemented and moved to Done. Extract button + PDP Refresh in Personal app. Chat is chat-only. PDP cleared before re-extraction. All architecture docs updated. |
+| 2026-03-03 | PairBond F1 | Fixed 3 bugs in f1_metrics.py:<br/>- `match_people` parent ID resolution bug (PairBond IDs).<br/>- Added `_augment_committed_id_map` for committed person ID mismatches.<br/>- Added `_augment_duplicate_person_id_map` for AI person deduplication failures.<br/>Result: PairBond F1 0.37→0.52 (pooled).<br/>Also updated `DATA_FULL_EXTRACTION_CONTEXT` prompt. |
 
 ### Deferred (Post-MVP)
 

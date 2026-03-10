@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}IRR Review - {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
+{% block title %}[IRR Review] {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
 
 {% block content %}
 
@@ -13,16 +13,25 @@ window.discussionConfig = {
 };
 window.diagramPeople = [];
 window.diagramEvents = [];
-window.isAdmin = false;
+window.isAdmin = {{ 'true' if current_user and current_user.has_role('admin') else 'false' }};
 window.selectedAuditor = 'AI';
 window.currentUsername = '';
 </script>
 
-<section class="section">
-    <div class="container is-fluid">
-        <div class="mb-4">
-            <h1 class="title">{{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
-            <p class="subtitle">IRR Review - {{ coders|length }} coders</p>
+<section class="section py-4" x-data>
+    <div class="container" style="max-width: 100%; width: 100%; padding-left: 1rem; padding-right: 1rem;">
+        <div class="mb-4 is-flex is-justify-content-space-between is-align-items-center">
+            <div>
+                <h1 class="title">[IRR Review] {{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
+                <p class="subtitle">IRR Review - {{ coders|length }} coders</p>
+            </div>
+            <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
+                <button class="button" :class="$store.calibrationReport.drawerOpen ? 'is-light' : 'is-primary'"
+                        @click="$store.calibrationReport.drawerOpen = !$store.calibrationReport.drawerOpen">
+                    <span class="icon"><i class="fas" :class="$store.calibrationReport.drawerOpen ? 'fa-chevron-right' : 'fa-balance-scale'"></i></span>
+                    <span x-show="!$store.calibrationReport.drawerOpen">Calibrate</span>
+                </button>
+            </div>
         </div>
 
         <div id="statements-container">
@@ -74,7 +83,389 @@ window.currentUsername = '';
     </div>
 </section>
 
+{# Calibration Confirm Modal #}
+<div x-data x-show="$store.calibrationReport.confirmOpen" x-cloak
+     class="modal" :class="{'is-active': $store.calibrationReport.confirmOpen}"
+     style="z-index: 50;">
+    <div class="modal-background" @click="$store.calibrationReport.confirmOpen = false"></div>
+    <div class="modal-card" style="max-width: 480px;">
+        <header class="modal-card-head">
+            <p class="modal-card-title">
+                <span class="icon"><i class="fas fa-exclamation-triangle has-text-warning"></i></span>
+                <span x-text="$store.calibrationReport.generated ? 'Re-generate Calibration Report' : 'Generate Calibration Report'"></span>
+            </p>
+            <button class="delete" @click="$store.calibrationReport.confirmOpen = false"></button>
+        </header>
+        <section class="modal-card-body">
+            <p>This will send one LLM request per coder-pair disagreement to Gemini, which costs money. Discussions with many coders can generate dozens of requests.</p>
+            <p class="mt-3 has-text-weight-bold">Only run this when you are ready for an IRR review meeting.</p>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-primary"
+                    @click="$store.calibrationReport.confirmOpen = false; $store.calibrationReport.generate()">
+                <span x-text="$store.calibrationReport.generated ? 'Re-generate' : 'Generate'"></span>
+            </button>
+            <button class="button" @click="$store.calibrationReport.confirmOpen = false">Cancel</button>
+        </footer>
+    </div>
+</div>
+
+{# Calibration Report Drawer #}
+<div x-data x-show="$store.calibrationReport.drawerOpen" x-cloak
+     class="calibration-drawer"
+     x-transition:enter="drawer-enter"
+     x-transition:enter-start="drawer-enter-start"
+     x-transition:enter-end="drawer-enter-end"
+     x-transition:leave="drawer-leave"
+     x-transition:leave-start="drawer-leave-end"
+     x-transition:leave-end="drawer-enter-start">
+    <div class="calibration-drawer-header">
+        <span class="icon"><i class="fas fa-balance-scale"></i></span>
+        <strong>Calibration Report</strong>
+        <div class="ml-auto is-flex is-align-items-center" style="gap: 0.25rem;">
+            <button class="button is-small is-light"
+                    x-show="$store.calibrationReport.generated"
+                    @click="$store.calibrationReport.toggleViewMode()"
+                    :title="{meeting: 'Switch to variable view', variable: 'Switch to timeline view', timeline: 'Switch to meeting view'}[$store.calibrationReport.viewMode]">
+                <span class="icon is-small">
+                    <i class="fas" :class="{meeting: 'fa-list', variable: 'fa-clock', timeline: 'fa-clipboard-list'}[$store.calibrationReport.viewMode]"></i>
+                </span>
+            </button>
+            <button class="button is-small is-light"
+                    x-show="$store.calibrationReport.disagreements.length > 0"
+                    @click="$store.calibrationReport.collapseAll()"
+                    title="Collapse All">
+                <span class="icon is-small"><i class="fas fa-compress-alt"></i></span>
+            </button>
+            <span x-show="window.isAdmin || $store.calibrationReport.generated"
+                  style="border-left: 1px solid var(--color-fg-subtle); height: 1.5rem; margin: 0 0.15rem;"></span>
+            <button class="button is-small is-primary"
+                    x-show="window.isAdmin"
+                    :class="{'is-loading': $store.calibrationReport.loading}"
+                    :disabled="$store.calibrationReport.loading"
+                    @click="$store.calibrationReport.confirmOpen = true"
+                    :title="$store.calibrationReport.generated ? 'Re-generate' : 'Generate'">
+                <span class="icon is-small"><i class="fas fa-sync-alt"></i></span>
+            </button>
+            <a class="button is-small is-light"
+               x-show="$store.calibrationReport.generated"
+               :href="'/training/calibration/irr/{{ discussion.id }}/export'"
+               download
+               title="Export meeting prep">
+                <span class="icon is-small"><i class="fas fa-download"></i></span>
+            </a>
+            <button class="delete" @click="$store.calibrationReport.drawerOpen = false"></button>
+        </div>
+    </div>
+    <div class="calibration-drawer-body">
+        <!-- Meeting guide -->
+        <template x-if="$store.calibrationReport.generated && !$store.calibrationReport.loading">
+            <div class="calibration-meeting-guide m-3 p-3" x-data="{ guideOpen: false }">
+                <div class="is-clickable is-flex is-align-items-center" @click="guideOpen = !guideOpen">
+                    <span class="icon is-small"><i class="fas" :class="guideOpen ? 'fa-chevron-down' : 'fa-chevron-right'"></i></span>
+                    <strong class="is-size-7 ml-1">Meeting Guide</strong>
+                </div>
+                <div x-show="guideOpen" class="mt-2 is-size-7" style="color: var(--color-fg-muted); line-height: 1.5;">
+                    <p class="mb-2"><strong style="color: var(--color-fg-default);">How to run the meeting:</strong></p>
+                    <p class="mb-2">Work through this list top to bottom.
+                        <span class="tag is-small is-success">ratify</span> items first — read the verdict aloud, confirm agreement, move on.
+                        Then <span class="tag is-small is-warning">discuss</span> items — read the question, deliberate, record the panel's decision.</p>
+                    <p class="mb-1"><strong style="color: var(--color-fg-default);">Categories:</strong></p>
+                    <p class="mb-1"><span class="tag is-small is-success">ratify</span> One coding clearly matches the operational definition. Quick confirm, no debate needed.</p>
+                    <p class="mb-2"><span class="tag is-small is-warning">discuss</span> Genuinely ambiguous — the panel needs to deliberate and decide.</p>
+                    <p class="mb-1"><strong style="color: var(--color-fg-default);">Reading the cards:</strong></p>
+                    <p>Each card is one specific shift event where coders disagree on at least one SARF variable. The event is matched across coders by who it is about, when it happened, and what kind of shift it is — not by which statement the coder coded it on. Click a coder's badge to scroll the main page to the statement where they coded it.</p>
+                </div>
+            </div>
+        </template>
+
+        <!-- Loading -->
+        <template x-if="$store.calibrationReport.loading">
+            <div class="has-text-centered p-5">
+                <span class="icon is-large"><i class="fas fa-spinner fa-pulse fa-2x"></i></span>
+                <p class="mt-3 is-size-7" style="color: var(--color-fg-muted);">Analyzing disagreements...</p>
+            </div>
+        </template>
+
+        <!-- Error -->
+        <template x-if="$store.calibrationReport.error">
+            <div class="notification is-danger m-3">
+                <button class="delete" @click="$store.calibrationReport.error = null"></button>
+                <span x-text="$store.calibrationReport.error"></span>
+            </div>
+        </template>
+
+        <!-- Empty state: no report yet -->
+        <template x-if="!$store.calibrationReport.loading && !$store.calibrationReport.error && !$store.calibrationReport.generated">
+            <div class="notification is-info m-3">
+                <p>No calibration report generated yet.</p>
+                <template x-if="!window.isAdmin">
+                    <p class="mt-2">An admin must generate the report.</p>
+                </template>
+            </div>
+        </template>
+
+        <!-- Empty state: report generated, no disagreements -->
+        <template x-if="!$store.calibrationReport.loading && !$store.calibrationReport.error && $store.calibrationReport.disagreements.length === 0 && $store.calibrationReport.generated">
+            <div class="notification is-success m-3">
+                No disagreements found. All SARF codings align.
+            </div>
+        </template>
+
+        <!-- Results: meeting order view -->
+        <template x-if="$store.calibrationReport.disagreements.length > 0 && $store.calibrationReport.viewMode === 'meeting'">
+            <div class="p-3">
+                <div class="calibration-section-header mb-3">By Meeting Order</div>
+                <template x-for="(group, gIdx) in $store.calibrationReport.triageGroups" :key="group.triage">
+                    <div class="mb-4">
+                        <div class="calibration-group-header is-clickable" @click="group._expanded = !group._expanded">
+                            <span class="icon is-small">
+                                <i class="fas" :class="group._expanded ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                            </span>
+                            <strong x-text="group.label" class="ml-1"></strong>
+                            <span class="tag is-small ml-2" :class="group.triage === 'clear' ? 'is-success' : 'is-warning'"
+                                  x-text="group.items.length"></span>
+                        </div>
+                        <div x-show="group._expanded" class="ml-3 mt-2">
+                            <template x-for="(d, idx) in group.items" :key="d._key">
+                                {% include 'components/calibration_card.html' %}
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <!-- Results: variable group view -->
+        <template x-if="$store.calibrationReport.disagreements.length > 0 && $store.calibrationReport.viewMode === 'variable'">
+            <div class="p-3">
+                <div class="calibration-section-header mb-3">By Variable</div>
+                <template x-for="(group, gIdx) in $store.calibrationReport.variableGroups" :key="group.variable">
+                    <div class="mb-4">
+                        <div class="calibration-group-header is-clickable" @click="group._expanded = !group._expanded">
+                            <span class="icon is-small">
+                                <i class="fas" :class="group._expanded ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                            </span>
+                            <strong x-text="group.label" class="ml-1"></strong>
+                            <span class="tag is-small ml-2" :class="{
+                                'is-danger': group.maxImpact === 'high',
+                                'is-warning': group.maxImpact === 'medium',
+                                'is-info': group.maxImpact === 'low',
+                            }" x-text="group.items.length"></span>
+                        </div>
+                        <div x-show="group._expanded" class="ml-3 mt-2">
+                            <template x-for="(d, idx) in group.items" :key="d._key + '-' + group.variable">
+                                {% include 'components/calibration_card.html' %}
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <!-- Results: timeline view -->
+        <template x-if="$store.calibrationReport.disagreements.length > 0 && $store.calibrationReport.viewMode === 'timeline'">
+            <div class="p-3">
+                <div class="calibration-section-header mb-3">As Timeline</div>
+                <template x-for="(d, idx) in $store.calibrationReport.timeline" :key="'timeline-' + d._key">
+                    {% include 'components/calibration_card.html' %}
+                </template>
+            </div>
+        </template>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    const VARIABLE_LABELS = {
+        symptom: 'Symptom',
+        anxiety: 'Anxiety',
+        functioning: 'Functioning',
+        conflict: 'Conflict',
+        distance: 'Distance',
+        cutoff: 'Cutoff',
+        overfunctioning: 'Overfunctioning',
+        underfunctioning: 'Underfunctioning',
+        projection: 'Projection',
+        inside: 'Inside Triangle',
+        outside: 'Outside Triangle',
+        'defined-self': 'Defined Self',
+    };
+    const IMPACT_ORDER = { high: 0, medium: 1, low: 2 };
+
+    Alpine.store('calibrationReport', {
+        confirmOpen: false,
+        drawerOpen: false,
+        loading: false,
+        generated: false,
+        error: null,
+        disagreements: [],
+        variableGroups: [],
+        triageGroups: [],
+        viewMode: 'meeting',
+
+        renderMarkdown(text) {
+            return window.renderMarkdown(text);
+        },
+
+        formatDate(isoDate) {
+            if (!isoDate) return '';
+            const parts = isoDate.split('T')[0].split('-');
+            if (parts.length === 3) return `${parts[1]}/${parts[2]}/${parts[0]}`;
+            return isoDate;
+        },
+
+        _buildVariableGroups(disagreements) {
+            const groups = {};
+            disagreements.forEach((d, idx) => {
+                d._key = idx;
+                (d.field_disagreements || []).forEach(fd => {
+                    const variable = fd.field;
+                    if (!groups[variable]) {
+                        groups[variable] = {
+                            variable,
+                            label: VARIABLE_LABELS[variable] || variable,
+                            items: [],
+                            maxImpact: 'low',
+                            _expanded: true,
+                        };
+                    }
+                    groups[variable].items.push(d);
+                    if (IMPACT_ORDER[d.impact] < IMPACT_ORDER[groups[variable].maxImpact]) {
+                        groups[variable].maxImpact = d.impact;
+                    }
+                });
+            });
+            // Sort groups by max impact, then alphabetically
+            return Object.values(groups).sort((a, b) => {
+                const impactDiff = IMPACT_ORDER[a.maxImpact] - IMPACT_ORDER[b.maxImpact];
+                if (impactDiff !== 0) return impactDiff;
+                return a.label.localeCompare(b.label);
+            });
+        },
+
+        _buildTriageGroups(disagreements) {
+            const clear = disagreements.filter(d => d.triage === 'clear');
+            const discuss = disagreements.filter(d => d.triage !== 'clear');
+            const groups = [];
+            if (clear.length) groups.push({ triage: 'clear', label: 'Ratify', items: clear, _expanded: true });
+            if (discuss.length) groups.push({ triage: 'discuss', label: 'Discuss', items: discuss, _expanded: true });
+            return groups;
+        },
+
+        _earliestDate(d) {
+            const dates = Object.values(d.dates || {}).filter(Boolean);
+            if (!dates.length) return null;
+            return dates.sort()[0];
+        },
+
+        get timeline() {
+            return [...this.disagreements].sort((a, b) => {
+                const da = this._earliestDate(a);
+                const db = this._earliestDate(b);
+                if (!da && !db) return 0;
+                if (!da) return 1;
+                if (!db) return -1;
+                return da.localeCompare(db);
+            });
+        },
+
+        _applyDisagreements(data) {
+            this.disagreements = (data.disagreements || []).map((d, idx) => ({
+                ...d,
+                _key: idx,
+                _expanded: d.impact === 'high',
+            }));
+            this.variableGroups = this._buildVariableGroups(this.disagreements);
+            this.triageGroups = this._buildTriageGroups(this.disagreements);
+            this.viewMode = 'meeting';
+            this.generated = true;
+        },
+
+        toggleViewMode() {
+            const modes = ['meeting', 'variable', 'timeline'];
+            const idx = modes.indexOf(this.viewMode);
+            this.viewMode = modes[(idx + 1) % modes.length];
+        },
+
+        _findSource(d, coderId) {
+            return (d.source_statements || []).find(s => s.coder_id === coderId);
+        },
+
+        hasSource(d, coderId) {
+            return !!this._findSource(d, coderId);
+        },
+
+        sourceTooltip(d, coderId) {
+            const src = this._findSource(d, coderId);
+            return src ? 'Jump to statement ' + src.statement_id : '';
+        },
+
+        scrollToSource(d, coderId) {
+            const src = this._findSource(d, coderId);
+            if (!src) return;
+            const el = document.getElementById('statement-' + src.statement_id);
+            if (!el) return;
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('calibration-highlight');
+            setTimeout(() => el.classList.remove('calibration-highlight'), 2000);
+        },
+
+        collapseAll() {
+            this.disagreements.forEach(d => d._expanded = false);
+            this.variableGroups.forEach(g => g._expanded = false);
+            this.triageGroups.forEach(g => g._expanded = false);
+        },
+
+        loadCached() {
+            fetch('/training/calibration/irr/{{ discussion.id }}')
+            .then(r => r.json())
+            .then(data => {
+                if (data.disagreements && data.disagreements.length > 0) {
+                    this._applyDisagreements(data);
+                }
+            });
+        },
+
+        generate() {
+            this.loading = true;
+            this.error = null;
+            this.drawerOpen = true;
+
+            fetch('/training/calibration/irr/{{ discussion.id }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                this._applyDisagreements(data);
+                this.loading = false;
+            })
+            .catch(err => {
+                this.error = err.message;
+                this.loading = false;
+            });
+        }
+    });
+
+    // Load cached report on init
+    Alpine.store('calibrationReport').loadCached();
+});
+</script>
+
 <script src="{{ url_for('training.audit.static', filename='js/discussion.js') }}"></script>
+<script>
+// IRR review needs all editors initialized (horizontal scroll hides them from IntersectionObserver).
+// Must run after Alpine has started — DOMContentLoaded fires before Alpine.start() completes.
+document.addEventListener('alpine:initialized', function() {
+    document.querySelectorAll('.sarf-editor-lazy:not([data-alpine-initialized])').forEach(el => {
+        window.initializeSarfEditor(el);
+    });
+});
+</script>
 
 <style>
 .irr-review-flex {
@@ -90,7 +481,9 @@ window.currentUsername = '';
     min-width: 280px;
     flex: 1 1 0;
 }
-
+.irr-review-coder .section-header {
+    color: var(--color-fg-default);
+}
 .irr-review-row .statement-preview {
     border-radius: 18px;
     padding: 8px 12px;
@@ -100,14 +493,159 @@ window.currentUsername = '';
     cursor: pointer;
     transition: all 0.2s ease;
 }
-
 .irr-review-row .statement-link {
     text-decoration: none;
 }
-
 .irr-review-row .analysis-column-divider {
-    border-left: 1px solid var(--color-border-default, rgba(255,255,255,0.1));
+    border-left: 1px solid var(--color-border-default);
     padding-left: 0.75rem;
+}
+
+/* Calibration Drawer */
+.calibration-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 480px;
+    height: 100vh;
+    background: var(--color-canvas-default);
+    border-left: 1px solid var(--color-border-default);
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -4px 0 12px rgba(0,0,0,0.15);
+}
+.calibration-drawer-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border-default);
+    background: var(--color-canvas-subtle);
+    color: var(--color-fg-default);
+    flex-shrink: 0;
+}
+.calibration-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Drawer transitions */
+.drawer-enter { transition: transform 0.2s ease-out; }
+.drawer-leave { transition: transform 0.2s ease-in; }
+.drawer-enter-start { transform: translateX(100%); }
+.drawer-enter-end { transform: translateX(0); }
+
+/* Section header (view mode label) — iOS pre-glass style */
+.calibration-section-header {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--color-fg-default);
+    padding: 0.4rem 0.25rem 0.3rem;
+}
+
+/* Variable group headers */
+.calibration-group-header {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.9rem;
+    color: var(--color-fg-default);
+    border-bottom: 1px solid var(--color-border-muted);
+}
+
+/* Calibration cards */
+.calibration-card {
+    border: 1px solid var(--color-border-default);
+    border-radius: 6px;
+    background: var(--color-canvas-subtle);
+    overflow: hidden;
+}
+.calibration-card-high { border-left: 3px solid var(--color-danger-emphasis); }
+.calibration-card-medium { border-left: 3px solid var(--color-attention-emphasis); }
+.calibration-card-low { border-left: 3px solid var(--color-accent-emphasis); }
+
+.calibration-card-header {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    color: var(--color-fg-default);
+}
+.calibration-card-body {
+    padding: 0.75rem;
+    border-top: 1px solid var(--color-border-muted);
+    font-size: 0.85rem;
+    color: var(--color-fg-muted);
+}
+.calibration-field-row {
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 0.25rem;
+    background: var(--color-canvas-inset);
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+.calibration-field-row code {
+    background: var(--color-canvas-default);
+    border: 1px solid var(--color-border-muted);
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+    font-size: 0.8em;
+    color: var(--color-fg-default);
+}
+.calibration-analysis {
+    border-left: 3px solid var(--color-accent-emphasis);
+    padding-left: 0.75rem;
+    margin-top: 0.5rem;
+    color: var(--color-fg-default);
+}
+.calibration-analysis a {
+    color: var(--color-accent-fg);
+    text-decoration: underline;
+}
+.calibration-analysis code {
+    background: var(--color-canvas-inset);
+    border: 1px solid var(--color-border-muted);
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+    color: var(--color-fg-default);
+}
+.calibration-drawer .tag.is-small:not(.is-danger):not(.is-warning):not(.is-info):not(.is-success) {
+    background: #2a4a6b !important;
+    color: #fff !important;
+}
+.calibration-meeting-guide {
+    background: var(--color-canvas-inset);
+    border-radius: 6px;
+    border: 1px solid var(--color-border-muted);
+}
+.calibration-coder-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0.15rem 0.25rem 0.15rem 0;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: var(--color-canvas-default);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-fg-default);
+}
+.calibration-coder-badge .coder-name {
+    color: var(--color-fg-muted);
+    font-weight: normal;
+}
+.calibration-coder-badge:hover {
+    border-color: var(--color-accent-emphasis);
+}
+
+@keyframes calibration-flash {
+    0%, 100% { box-shadow: none; }
+    50% { box-shadow: 0 0 0 3px var(--color-accent-emphasis); }
+}
+.calibration-highlight {
+    animation: calibration-flash 0.5s ease 2;
 }
 </style>
 

@@ -19,10 +19,7 @@ from btcopilot.training.utils import (
     get_discussion_gt_statuses,
     GTStatus,
 )
-from btcopilot.training.f1_metrics import (
-    calculate_system_f1,
-    calculate_all_cumulative_f1,
-)
+from btcopilot.training.f1_metrics import calculate_all_cumulative_f1
 
 _log = logging.getLogger(__name__)
 
@@ -265,9 +262,6 @@ def index():
     # Get cached feedback statistics
     feedback_stats = get_feedback_statistics()
 
-    # Calculate F1 metrics for approved ground truth (both with and without synthetic)
-    f1_metrics_all = calculate_system_f1(include_synthetic=True)
-    f1_metrics_real = calculate_system_f1(include_synthetic=False)
     cumulative_f1_all = calculate_all_cumulative_f1(include_synthetic=True)
     cumulative_f1_real = calculate_all_cumulative_f1(include_synthetic=False)
 
@@ -281,9 +275,6 @@ def index():
         total_user_count=user_data["total_count"],
         showing_user_count=len(user_data["users"]),
         feedback_stats=feedback_stats,
-        f1_metrics=f1_metrics_all,
-        f1_metrics_all=f1_metrics_all,
-        f1_metrics_real=f1_metrics_real,
         cumulative_f1=cumulative_f1_all,
         cumulative_f1_all=cumulative_f1_all,
         cumulative_f1_real=cumulative_f1_real,
@@ -724,11 +715,6 @@ def approve():
             if other_approved_feedback:
                 message += f" (unapproved {len(other_approved_feedback)} other feedback for this statement)"
 
-        # Invalidate F1 cache for this statement
-        from btcopilot.training.f1_metrics import invalidate_f1_cache
-
-        invalidate_f1_cache(feedback.statement_id)
-
         db.session.commit()
 
         _log.info(
@@ -757,7 +743,6 @@ def bulk_approve_discussion(discussion_id, auditor_id):
 
     from btcopilot.personal.models import Discussion, Statement
     from btcopilot.training.models import Feedback
-    from btcopilot.training.f1_metrics import invalidate_f1_cache
 
     discussion = Discussion.query.get_or_404(discussion_id)
 
@@ -837,8 +822,6 @@ def bulk_approve_discussion(discussion_id, auditor_id):
         feedback.rejection_reason = None
         approved_count += 1
 
-        invalidate_f1_cache(feedback.statement_id)
-
     db.session.commit()
 
     message = f"Bulk approved {approved_count} feedbacks for discussion {discussion_id}"
@@ -866,7 +849,6 @@ def bulk_unapprove_discussion(discussion_id, auditor_id):
 
     from btcopilot.personal.models import Discussion, Statement
     from btcopilot.training.models import Feedback
-    from btcopilot.training.f1_metrics import invalidate_f1_cache
 
     discussion = Discussion.query.get_or_404(discussion_id)
 
@@ -890,7 +872,6 @@ def bulk_unapprove_discussion(discussion_id, auditor_id):
         feedback.approved_at = None
         feedback.exported_at = None
         unapproved_count += 1
-        invalidate_f1_cache(feedback.statement_id)
 
     db.session.commit()
 

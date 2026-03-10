@@ -1,8 +1,8 @@
 """
-Single-prompt F1 validation — runs extract_full() and compares against GT.
+F1 validation — runs extract_full() and compares against GT.
 
 Unlike run_prompts_live.py which re-extracts per-statement, this script calls
-extract_full() once per discussion to get a complete PDP in a single LLM call,
+extract_full() once per discussion to get a complete PDP (2-pass split extraction),
 then compares against the cumulative GT built from approved Feedback.
 
 Usage:
@@ -59,7 +59,7 @@ def run_extract_full_f1(discussion_id=None, model=None):
         print("No discussions with approved GT found.")
         return None
 
-    print(f"Validating single-prompt extraction on {len(disc_ids)} discussion(s)...\n")
+    print(f"Validating extraction on {len(disc_ids)} discussion(s)...\n")
 
     results = []
     run_start = time.time()
@@ -74,7 +74,6 @@ def run_extract_full_f1(discussion_id=None, model=None):
         # Build empty DiagramData for fresh extraction
         diagram_data = DiagramData()
 
-        # Run single-prompt extraction (live LLM call)
         try:
             ai_pdp, _ = asyncio.run(pdp.extract_full(discussion, diagram_data))
         except Exception as e:
@@ -96,7 +95,9 @@ def run_extract_full_f1(discussion_id=None, model=None):
         gt_pdp = pdp.cumulative(discussion, last_stmt, auditor_id=auditor_id)
 
         # Match and score
-        people_result, id_map = match_people(ai_pdp.people, gt_pdp.people)
+        people_result, id_map = match_people(
+            ai_pdp.people, gt_pdp.people, ai_pdp.pair_bonds, gt_pdp.pair_bonds
+        )
         events_result = match_events(ai_pdp.events, gt_pdp.events, id_map)
         bonds_result = match_pair_bonds(ai_pdp.pair_bonds, gt_pdp.pair_bonds, id_map)
 
@@ -171,7 +172,7 @@ def run_extract_full_f1(discussion_id=None, model=None):
 
     print()
     print("=" * 60)
-    print(f"SINGLE-PROMPT F1 ({n} discussions, {total_elapsed:.0f}s)")
+    print(f"F1 ({n} discussions, {total_elapsed:.0f}s)")
     print("=" * 60)
     print(f"People F1:      {avg_people:.3f}  (target > 0.7)")
     print(f"Events F1:      {avg_events:.3f}  (target > 0.3)")
@@ -223,7 +224,7 @@ def run_extract_full_f1(discussion_id=None, model=None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Validate single-prompt extraction F1 against GT"
+        description="Validate extraction F1 against GT"
     )
     parser.add_argument(
         "--discussion",

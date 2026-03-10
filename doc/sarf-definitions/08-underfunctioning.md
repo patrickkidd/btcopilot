@@ -193,10 +193,10 @@ Different sources use different terms:
 
 | # | Search String (5-15 words for Cmd+F) | Concept Extracted |
 |---|--------------------------------------|-------------------|
-| FE2-216 | ""overfunctioning" person shapes the attitudes...underfunctioning one shapes the attitudes" | Reciprocal shaping - each position maintains the other |
-| FE2-219 | "underfunctioning person, on the other hand, feels dependent on the overfunctioning one" | Definition: feels dependent, relies on other to do things |
+| <a id="FE2-216"></a>FE2-216 | ""overfunctioning" person shapes the attitudes...underfunctioning one shapes the attitudes" | Reciprocal shaping - each position maintains the other |
+| <a id="FE2-219"></a>FE2-219 | "underfunctioning person, on the other hand, feels dependent on the overfunctioning one" | Definition: feels dependent, relies on other to do things |
 | FE2-219b | "At the extreme, the underfunctioning one may rely on the overfunctioning one to tell him how to think, feel, and act" | Extreme dependency on other for thinking/feeling/acting |
-| FE2-220 | "underfunctioning person may get sick by withdrawing into a self-absorbed and helpless state" | Symptoms from withdrawal, self-absorption, helplessness |
+| <a id="FE2-220"></a>FE2-220 | "underfunctioning person may get sick by withdrawing into a self-absorbed and helpless state" | Symptoms from withdrawal, self-absorption, helplessness |
 | FE2-220b | "This self-absorption is not the product of selfishness, but of having given up too much self-control" | Self-absorption from loss of self-control, not selfishness |
 | FE2-220c | "underfunctioning person who has been chronically ill may improve his functioning...overfunctioning partner becomes ill or dies" | Pattern reversal possible; underfunctioner can improve dramatically |
 | FE2-224b | "underfunctioning ones derive well-being from being the object of that ministration" | Underfunctioner derives well-being from being helped |
@@ -207,10 +207,10 @@ Different sources use different terms:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE7-7 | "dominant-subordinate or overfunctioning-underfunctioning pattern" | Terms for reciprocal pattern |
-| FE7-8 | "increase in the levels of chronic anxiety can exaggerate this pattern" | Anxiety intensifies pattern |
-| FE7-9 | "person most prone to becoming symptomatic is the one who makes the most adjustments" | Adapting one most at risk |
-| FE7-10 | "one making the most adjustments may be...underfunctioning person...spouse who relies too heavily on the other" | Underfunctioner vulnerable when too dependent |
+| <a id="FE7-7"></a>FE7-7 | "dominant-subordinate or overfunctioning-underfunctioning pattern" | Terms for reciprocal pattern |
+| <a id="FE7-8"></a>FE7-8 | "increase in the levels of chronic anxiety can exaggerate this pattern" | Anxiety intensifies pattern |
+| <a id="FE7-9"></a>FE7-9 | "person most prone to becoming symptomatic is the one who makes the most adjustments" | Adapting one most at risk |
+| <a id="FE7-10"></a>FE7-10 | "one making the most adjustments may be...underfunctioning person...spouse who relies too heavily on the other" | Underfunctioner vulnerable when too dependent |
 
 ---
 
@@ -218,7 +218,7 @@ Different sources use different terms:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE6-55 | "A chronic schizophrenic person, previously bogged down...may put them 'on the back burner'" | Severely underfunctioning person can improve when overfunctioner becomes unavailable |
+| <a id="FE6-55"></a>FE6-55 | "A chronic schizophrenic person, previously bogged down...may put them 'on the back burner'" | Severely underfunctioning person can improve when overfunctioner becomes unavailable |
 
 ---
 

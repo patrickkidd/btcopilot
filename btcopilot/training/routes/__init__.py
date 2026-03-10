@@ -27,7 +27,6 @@ from .audit import bp as audit_bp
 from .admin import bp as admin_bp
 from .stream import bp as stream_bp
 from .speakers import bp as speakers_bp
-from .prompts import bp as prompts_bp
 from .discussions import bp as discussions_bp
 from .feedback import bp as feedback_bp
 from .diagrams import bp as diagrams_bp
@@ -35,6 +34,8 @@ from .auth import bp as auth_bp
 from .analysis import bp as analysis_bp
 from .synthetic import bp as synthetic_bp
 from .irr import bp as irr_bp
+from .calibration import bp as calibration_bp
+from .compare import bp as compare_bp
 
 
 _log = logging.getLogger(__name__)
@@ -69,7 +70,6 @@ bp.register_blueprint(audit_bp)
 bp.register_blueprint(admin_bp)
 bp.register_blueprint(stream_bp)
 bp.register_blueprint(speakers_bp)
-bp.register_blueprint(prompts_bp)
 bp.register_blueprint(discussions_bp)
 bp.register_blueprint(feedback_bp)
 bp.register_blueprint(diagrams_bp)
@@ -77,6 +77,8 @@ bp.register_blueprint(auth_bp)
 bp.register_blueprint(analysis_bp)
 bp.register_blueprint(synthetic_bp)
 bp.register_blueprint(irr_bp)
+bp.register_blueprint(calibration_bp)
+bp.register_blueprint(compare_bp)
 
 
 def is_session_expired():

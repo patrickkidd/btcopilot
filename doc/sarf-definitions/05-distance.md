@@ -217,12 +217,12 @@ Distance and Cutoff are related but distinct:
 
 | # | Search String (5-15 words for Cmd+F) | Concept Extracted |
 |---|--------------------------------------|-------------------|
-| FE3-9 | "periods of closeness and distance are tolerated equally well" | High differentiation = tolerance of both closeness and distance |
-| FE3-10 | "lower the level of differentiation, the more prone people are to becoming addicted" | Low differentiation = addiction to closeness AND urge to flee (distance) |
-| FE3-17 | "chronic urge to flee one another...addiction can feel just as physical" | Distance urge as intense as closeness urge at low differentiation |
-| FE3-20 | "anxiety is bound or expressed...distance, conflict, adapting to preserve harmony" | Distance = one of three anxiety binding mechanisms |
-| FE3-21 | "threats...based on perception of lack of closeness or attachment and lack of separateness" | Anxiety from either too much closeness OR too much distance |
-| FE3-22 | "perception of lack of sufficient separation can trigger feelings of being crowded, trapped" | Too much closeness triggers distance urge |
+| <a id="FE3-9"></a>FE3-9 | "periods of closeness and distance are tolerated equally well" | High differentiation = tolerance of both closeness and distance |
+| <a id="FE3-10"></a>FE3-10 | "lower the level of differentiation, the more prone people are to becoming addicted" | Low differentiation = addiction to closeness AND urge to flee (distance) |
+| <a id="FE3-17"></a>FE3-17 | "chronic urge to flee one another...addiction can feel just as physical" | Distance urge as intense as closeness urge at low differentiation |
+| <a id="FE3-20"></a>FE3-20 | "anxiety is bound or expressed...distance, conflict, adapting to preserve harmony" | Distance = one of three anxiety binding mechanisms |
+| <a id="FE3-21"></a>FE3-21 | "threats...based on perception of lack of closeness or attachment and lack of separateness" | Anxiety from either too much closeness OR too much distance |
+| <a id="FE3-22"></a>FE3-22 | "perception of lack of sufficient separation can trigger feelings of being crowded, trapped" | Too much closeness triggers distance urge |
 
 ---
 
@@ -230,8 +230,8 @@ Distance and Cutoff are related but distinct:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE5-22 | "emotional neediness in one person triggering distance in another" | Neediness triggers distance; pursuit-distance dynamic |
-| FE5-27 | "Anxiety can be reduced in many ways that do not depend on...more of a self" | Distance reduces own anxiety but may raise others' anxiety |
+| <a id="FE5-22"></a>FE5-22 | "emotional neediness in one person triggering distance in another" | Neediness triggers distance; pursuit-distance dynamic |
+| <a id="FE5-27"></a>FE5-27 | "Anxiety can be reduced in many ways that do not depend on...more of a self" | Distance reduces own anxiety but may raise others' anxiety |
 
 ---
 
@@ -239,17 +239,17 @@ Distance and Cutoff are related but distinct:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE6-15 | "the discomfort is felt far more by one person than the other" | Asymmetric discomfort leads uncomfortable one to distance |
-| FE6-26 | "outside position is the most comfortable and desired" | At high stress, distance (outside position) preferred |
-| FE6-29 | "A stable twosome can be destabilized by the addition of a third person" | New addition can disrupt distance equilibrium |
-| FE6-30 | "A stable twosome can be destabilized by the removal of a third person" | Losing third person can disrupt distance equilibrium |
-| FE6-75 | "Mechanisms for binding this anxiety within the twosome, such as conflict, distance, and adapting" | Distance = binding mechanism; anxiety contained |
-| FE6-77 | "discomfort eventually becomes so great...attempts to talk to her husband" | Failed closeness attempt precedes distancing |
-| FE6-78 | "exchanges such as these gradually incline both people to avoid bringing up 'unpleasant' subjects" | Distance established through topic avoidance |
-| FE6-79 | "She begins to talk about her unhappiness to her mother" | Distance from spouse → closeness with other |
-| FE6-80 | "Mother's anger at her daughter's husband supports the daughter's use of emotional distance" | Third party can intensify distancing |
-| FE6-81 | "husband...becomes quite reactive to what is now experienced as 'excessive' distance" | Distance perceived as excessive triggers pursuit/conflict |
-| FE6-82 | "husband starts drinking more" | Substance use as distance mechanism |
+| <a id="FE6-15"></a>FE6-15 | "the discomfort is felt far more by one person than the other" | Asymmetric discomfort leads uncomfortable one to distance |
+| <a id="FE6-26"></a>FE6-26 | "outside position is the most comfortable and desired" | At high stress, distance (outside position) preferred |
+| <a id="FE6-29"></a>FE6-29 | "A stable twosome can be destabilized by the addition of a third person" | New addition can disrupt distance equilibrium |
+| <a id="FE6-30"></a>FE6-30 | "A stable twosome can be destabilized by the removal of a third person" | Losing third person can disrupt distance equilibrium |
+| <a id="FE6-75"></a>FE6-75 | "Mechanisms for binding this anxiety within the twosome, such as conflict, distance, and adapting" | Distance = binding mechanism; anxiety contained |
+| <a id="FE6-77"></a>FE6-77 | "discomfort eventually becomes so great...attempts to talk to her husband" | Failed closeness attempt precedes distancing |
+| <a id="FE6-78"></a>FE6-78 | "exchanges such as these gradually incline both people to avoid bringing up 'unpleasant' subjects" | Distance established through topic avoidance |
+| <a id="FE6-79"></a>FE6-79 | "She begins to talk about her unhappiness to her mother" | Distance from spouse → closeness with other |
+| <a id="FE6-80"></a>FE6-80 | "Mother's anger at her daughter's husband supports the daughter's use of emotional distance" | Third party can intensify distancing |
+| <a id="FE6-81"></a>FE6-81 | "husband...becomes quite reactive to what is now experienced as 'excessive' distance" | Distance perceived as excessive triggers pursuit/conflict |
+| <a id="FE6-82"></a>FE6-82 | "husband starts drinking more" | Substance use as distance mechanism |
 
 ---
 
@@ -257,8 +257,8 @@ Distance and Cutoff are related but distinct:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE9-19 | "Individuals and nuclear families are cut off emotionally...in degrees" | Distance exists on continuum (leads to cutoff) |
-| FE9-22 | "Declaring one's 'independence' from family is not differentiation of self" | Distance ≠ differentiation; breaking away ≠ growing away |
+| <a id="FE9-19"></a>FE9-19 | "Individuals and nuclear families are cut off emotionally...in degrees" | Distance exists on continuum (leads to cutoff) |
+| <a id="FE9-22"></a>FE9-22 | "Declaring one's 'independence' from family is not differentiation of self" | Distance ≠ differentiation; breaking away ≠ growing away |
 
 ---
 

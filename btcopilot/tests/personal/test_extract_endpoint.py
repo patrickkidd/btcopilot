@@ -57,3 +57,21 @@ def test_extract_no_diagram(subscriber):
 
     response = subscriber.post(f"/personal/discussions/{discussion.id}/extract")
     assert response.status_code == 400
+
+
+def test_extract_unauthorized(subscriber, test_user_2):
+    """Extracting from another user's discussion returns 401."""
+    from btcopilot.personal.models import Discussion
+
+    other_discussion = Discussion(
+        user_id=test_user_2.id,
+        diagram_id=test_user_2.free_diagram_id if test_user_2.free_diagram else None,
+        summary="Other user's discussion",
+    )
+    db.session.add(other_discussion)
+    db.session.commit()
+
+    response = subscriber.post(
+        f"/personal/discussions/{other_discussion.id}/extract"
+    )
+    assert response.status_code == 401

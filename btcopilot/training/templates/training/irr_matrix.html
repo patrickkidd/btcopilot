@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "components/irr_macros.html" import render_kappa %}
 
-{% block title %}IRR Matrix - {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
+{% block title %}[Pairwise Matrix] {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
 
 {% macro render_kappa_matrix(coders, matrix, attr) %}
 <table class="table is-bordered is-narrow is-size-7">
@@ -43,7 +43,7 @@
             <div class="level-left">
                 <div class="level-item">
                     <div>
-                        <h1 class="title">Pairwise Coder Matrix</h1>
+                        <h1 class="title">[Pairwise Matrix] {{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
                         <p class="subtitle">{{ discussion.summary or 'Discussion ' ~ discussion.id }}</p>
                     </div>
                 </div>

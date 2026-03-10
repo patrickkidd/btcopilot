@@ -7,8 +7,6 @@ from btcopilot.training.f1_metrics import (
     match_events,
     match_pair_bonds,
     calculate_statement_f1,
-    calculate_system_f1,
-    invalidate_f1_cache,
     normalize_pdp_for_comparison,
     calculate_hierarchical_sarf_f1,
     normalize_name_for_matching,
@@ -71,6 +69,41 @@ def test_match_people_with_parents():
     assert len(result.ai_unmatched) == 0
     assert len(result.gt_unmatched) == 0
     assert id_map == {-1: -10, -3: -30}
+
+
+def test_match_people_parents_tiebreaker():
+    """Two people with the same name are disambiguated by parent names."""
+    # AI side: two Michaels with different parents
+    ai_mom_a = Person(id=-1, name="Mary", gender=None)
+    ai_dad_a = Person(id=-2, name="John", gender=None)
+    ai_mom_b = Person(id=-3, name="Sue", gender=None)
+    ai_dad_b = Person(id=-4, name="Bob", gender=None)
+    ai_michael_a = Person(id=-5, name="Michael", parents=-10)
+    ai_michael_b = Person(id=-6, name="Michael", parents=-11)
+    ai_people = [ai_mom_a, ai_dad_a, ai_mom_b, ai_dad_b, ai_michael_a, ai_michael_b]
+    ai_bonds = [
+        PairBond(id=-10, person_a=-1, person_b=-2),
+        PairBond(id=-11, person_a=-3, person_b=-4),
+    ]
+
+    # GT side: same structure, different IDs
+    gt_mom_a = Person(id=-101, name="Mary", gender=None)
+    gt_dad_a = Person(id=-102, name="John", gender=None)
+    gt_mom_b = Person(id=-103, name="Sue", gender=None)
+    gt_dad_b = Person(id=-104, name="Bob", gender=None)
+    gt_michael_a = Person(id=-105, name="Michael", parents=-110)
+    gt_michael_b = Person(id=-106, name="Michael", parents=-111)
+    gt_people = [gt_mom_a, gt_dad_a, gt_mom_b, gt_dad_b, gt_michael_a, gt_michael_b]
+    gt_bonds = [
+        PairBond(id=-110, person_a=-101, person_b=-102),
+        PairBond(id=-111, person_a=-103, person_b=-104),
+    ]
+
+    result, id_map = match_people(ai_people, gt_people, ai_bonds, gt_bonds)
+
+    assert len(result.matched_pairs) == 6
+    assert id_map[-5] == -105
+    assert id_map[-6] == -106
 
 
 def test_match_people_below_threshold():
@@ -713,83 +746,6 @@ def test_calculate_statement_f1_empty():
 
     assert metrics.aggregate_micro_f1 == 1.0
     assert metrics.exact_match is True
-
-
-def test_calculate_system_f1_no_approved_feedbacks(flask_app, test_user):
-    with flask_app.app_context():
-        metrics = calculate_system_f1()
-
-        assert metrics.total_statements == 0
-        assert metrics.aggregate_micro_f1 == 0.0
-
-
-def test_calculate_system_f1_with_approved_feedbacks(flask_app, test_user):
-    with flask_app.app_context():
-        discussion = Discussion(
-            user_id=test_user.id,
-            summary="Test",
-        )
-        db.session.add(discussion)
-        db.session.commit()
-
-        speaker = Speaker(
-            discussion_id=discussion.id,
-            name="User",
-            type=SpeakerType.Subject,
-        )
-        db.session.add(speaker)
-        db.session.commit()
-
-        stmt = Statement(
-            discussion_id=discussion.id,
-            speaker_id=speaker.id,
-            text="Test",
-            order=0,
-            pdp_deltas={"people": [{"id": -1, "name": "John"}]},
-        )
-        db.session.add(stmt)
-        db.session.commit()
-
-        feedback = Feedback(
-            statement_id=stmt.id,
-            auditor_id=test_user.username,
-            feedback_type="extraction",
-            approved=True,
-            edited_extraction={"people": [{"id": -10, "name": "John"}]},
-        )
-        db.session.add(feedback)
-        db.session.commit()
-
-        metrics = calculate_system_f1()
-
-        assert metrics.total_statements == 1
-        assert metrics.aggregate_micro_f1 == 1.0
-        assert metrics.people_f1 == 1.0
-
-
-def test_invalidate_f1_cache_specific_statement(flask_app):
-    from btcopilot.training.f1_metrics import _f1_cache
-
-    with flask_app.app_context():
-        _f1_cache["stmt_1_2_abc123"] = "test_data"
-        _f1_cache["stmt_2_3_def456"] = "other_data"
-
-        invalidate_f1_cache(statement_id=1)
-
-        assert "stmt_1_2_abc123" not in _f1_cache
-        assert "stmt_2_3_def456" in _f1_cache
-
-
-def test_invalidate_f1_cache_all(flask_app):
-    from btcopilot.training.f1_metrics import _f1_cache
-
-    with flask_app.app_context():
-        _f1_cache["stmt_1_2_abc123"] = "test_data"
-        _f1_cache["stmt_2_3_def456"] = "other_data"
-
-        invalidate_f1_cache()
-
-        assert len(_f1_cache) == 0
 
 
 def test_normalize_pdp_handles_dict_and_pdpdeltas():

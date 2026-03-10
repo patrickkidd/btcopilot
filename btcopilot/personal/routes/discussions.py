@@ -8,7 +8,7 @@ import asyncio
 from btcopilot import auth, pdp
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram
-from btcopilot.schema import PDP, asdict
+from btcopilot.schema import asdict
 from btcopilot.personal import Response, ask
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
 
@@ -212,7 +212,6 @@ def extract(discussion_id: int):
         abort(400, description="Discussion has no diagram attached")
 
     diagram_data = discussion.diagram.get_diagram_data()
-    diagram_data.pdp = PDP()
     new_pdp, deltas = asyncio.run(pdp.extract_full(discussion, diagram_data))
 
     diagram_data.pdp = new_pdp

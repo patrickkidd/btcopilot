@@ -1,6 +1,60 @@
 // Discussion page JavaScript - extracted from discussion.html template
 // Server-side configuration is provided via window.discussionConfig
 
+const _markedRenderer = new marked.Renderer();
+_markedRenderer.link = function(href, title, text) {
+    return `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+};
+
+function renderMarkdown(text) {
+    if (!text) return '';
+    return marked.parse(text, { renderer: _markedRenderer });
+}
+
+document.addEventListener('alpine:init', () => {
+    Alpine.store('calibration', {
+        open: false,
+        loading: false,
+        error: null,
+        analysis: null,
+        event: null,
+        _statementId: null,
+        _eventIndex: null,
+        _auditorId: null,
+        renderMarkdown,
+
+        regenerate() {
+            if (!this._statementId) return;
+            this.loading = true;
+            this.error = null;
+            this.analysis = null;
+
+            fetch('/training/calibration/event', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    statement_id: this._statementId,
+                    event_index: this._eventIndex,
+                    auditor_id: this._auditorId,
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                this.analysis = data.analysis;
+                this.event = data.event || this.event;
+                this.loading = false;
+            })
+            .catch(error => {
+                this.error = error.message;
+                this.loading = false;
+            });
+        },
+    });
+});
+
 const CHILD_CENTRIC_KINDS = new Set(["birth", "adopted"]);
 const PLACEHOLDER_DESCRIPTIONS = new Set(["new event", ""]);
 
@@ -1953,6 +2007,41 @@ function componentExtractedDataWithReview(extractedData, cumulativePdp, thumbsDo
             }
         },
 
+        openCalibration(eventIndex) {
+            if (!this.messageId) return;
+            const events = this.extractedData?.events || [];
+            if (eventIndex < 0 || eventIndex >= events.length) return;
+
+            const store = Alpine.store('calibration');
+            store.event = events[eventIndex];
+            store.analysis = null;
+            store.error = null;
+            store.open = true;
+            store._statementId = this.messageId;
+            store._eventIndex = eventIndex;
+            store._auditorId = window.selectedAuditor || window.discussionConfig.currentAuditor;
+
+            // Try cached first
+            const params = new URLSearchParams({
+                statement_id: this.messageId,
+                event_index: eventIndex,
+                auditor_id: store._auditorId,
+            });
+            store.loading = true;
+            fetch(`/training/calibration/event?${params}`)
+            .then(r => r.json())
+            .then(cached => {
+                if (cached && cached.analysis) {
+                    store.analysis = cached.analysis;
+                    store.event = cached.event || store.event;
+                    store.loading = false;
+                } else {
+                    store.regenerate();
+                }
+            })
+            .catch(() => store.regenerate());
+        },
+
         // Update displayed data when selection changes
         selectFeedback(index, feedback) {
             this.selectedIndex = index;
@@ -2417,11 +2506,6 @@ document.body.addEventListener('sse:message', function(event) {
     }
 });
 
-// Prompt Editor Functions - Global scope
-var currentPromptMessageId = null;
-var defaultPrompts = {};
-var currentCustomPrompts = {};
-
 // Data Editor Functions - Global scope
 var currentEditingData = {};
 var currentMessageId = null;
@@ -2434,285 +2518,6 @@ if (!document.querySelector('link[href*="font-awesome"]')) {
     document.head.appendChild(link);
 }
 
-// Initialize default prompts on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Fetch default prompts from the server
-    fetch('/training/prompts/defaults')
-        .then(response => response.json())
-        .then(data => {
-            defaultPrompts = data;
-        })
-        .catch(error => {
-            console.error('Error loading default prompts:', error);
-            // Fallback defaults
-            defaultPrompts = {
-                'ROLE_COACH_NOT_THERAPIST': 'Default role prompt...',
-                'BOWEN_THEORY_COACHING_IN_A_NUTSHELL': 'Default Bowen theory prompt...',
-                'DATA_MODEL_DEFINITIONS': 'Default data model prompt...'
-            };
-        });
-});
-
-// Prompt Editor Functions
-window.openPromptEditor = function(messageId) {
-    currentPromptMessageId = messageId;
-    
-    // Fetch any existing custom prompts for this message
-    fetch(`/training/prompts/${messageId}`)
-        .then(response => response.json())
-        .then(data => {
-            currentCustomPrompts = data.custom_prompts || {};
-            renderPromptEditor(false);
-            document.getElementById('promptEditorModal').classList.add('is-active');
-        })
-        .catch(error => {
-            console.error('Error loading prompts:', error);
-            currentCustomPrompts = {};
-            renderPromptEditor(false);
-            document.getElementById('promptEditorModal').classList.add('is-active');
-        });
-}
-
-window.viewPromptDiff = function(messageId) {
-    // Fetch the custom prompts for this message and show diff
-    fetch(`/training/prompts/${messageId}`)
-        .then(response => response.json())
-        .then(data => {
-            renderPromptDiff(data.custom_prompts || {});
-            document.getElementById('promptDiffModal').classList.add('is-active');
-        })
-        .catch(error => {
-            console.error('Error loading prompt diff:', error);
-        });
-}
-
-function closePromptEditor() {
-    document.getElementById('promptEditorModal').classList.remove('is-active');
-    currentPromptMessageId = null;
-    currentCustomPrompts = {};
-}
-
-function closePromptDiff() {
-    document.getElementById('promptDiffModal').classList.remove('is-active');
-}
-
-function renderPromptEditor(isDiffView = false) {
-    const container = document.getElementById('promptEditorContent');
-    const title = document.getElementById('promptModalTitle');
-    const saveBtn = document.getElementById('savePromptsBtn');
-    const resetBtn = document.getElementById('resetPromptsBtn');
-    
-    if (isDiffView) {
-        title.textContent = 'Prompt Changes Used';
-        saveBtn.style.display = 'none';
-        resetBtn.style.display = 'none';
-    } else {
-        title.textContent = 'Edit System Prompts';
-        saveBtn.style.display = 'inline-flex';
-        resetBtn.style.display = Object.keys(currentCustomPrompts).length > 0 ? 'inline-flex' : 'none';
-    }
-    
-    const promptKeys = ['ROLE_COACH_NOT_THERAPIST', 'BOWEN_THEORY_COACHING_IN_A_NUTSHELL', 'DATA_MODEL_DEFINITIONS'];
-    const promptTitles = {
-        'ROLE_COACH_NOT_THERAPIST': 'Role: Coach Not Therapist',
-        'BOWEN_THEORY_COACHING_IN_A_NUTSHELL': 'Bowen Theory Coaching',
-        'DATA_MODEL_DEFINITIONS': 'Data Model Definitions'
-    };
-    
-    let html = '<div class="columns is-multiline">';
-    
-    promptKeys.forEach(key => {
-        const defaultValue = defaultPrompts[key] || '';
-        const customValue = currentCustomPrompts[key] || defaultValue;
-        const hasChanges = currentCustomPrompts[key] && currentCustomPrompts[key] !== defaultValue;
-        
-        html += `
-            <div class="column is-full">
-                <div class="card">
-                    <header class="card-header">
-                        <p class="card-header-title">
-                            ${promptTitles[key]}
-                            ${hasChanges ? '<span class="tag is-warning ml-2">Modified</span>' : ''}
-                        </p>
-                    </header>
-                    <div class="card-content">
-                        <div class="field">
-                            <div class="control">
-                                <textarea class="textarea" 
-                                          id="prompt-${key}" 
-                                          rows="15"
-                                          style="font-family: monospace; font-size: 13px;"
-                                          placeholder="Enter custom prompt or leave empty to use default..."
-                                          oninput="autoResizeTextarea(this)"></textarea>
-                            </div>
-                        </div>
-                        ${hasChanges ? `
-                        <div class="field">
-                            <button class="button is-small is-outlined" onclick="resetSinglePrompt('${key}')">
-                                <span class="icon is-small"><i class="fas fa-undo"></i></span>
-                                <span>Reset to Default</span>
-                            </button>
-                        </div>
-                        ` : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    
-    html += '</div>';
-    container.innerHTML = html;
-    
-    // Set textarea values programmatically and auto-resize after DOM is ready
-    setTimeout(() => {
-        promptKeys.forEach(key => {
-            const textarea = document.getElementById(`prompt-${key}`);
-            if (textarea) {
-                const defaultValue = defaultPrompts[key] || '';
-                const customValue = currentCustomPrompts[key] || defaultValue;
-                // Set value programmatically to preserve exact content
-                textarea.value = customValue;
-                autoResizeTextarea(textarea);
-            }
-        });
-    }, 50);
-}
-
-function renderPromptDiff(customPrompts) {
-    const container = document.getElementById('promptDiffContent');
-    const promptKeys = ['ROLE_COACH_NOT_THERAPIST', 'BOWEN_THEORY_COACHING_IN_A_NUTSHELL', 'DATA_MODEL_DEFINITIONS'];
-    const promptTitles = {
-        'ROLE_COACH_NOT_THERAPIST': 'Role: Coach Not Therapist',
-        'BOWEN_THEORY_COACHING_IN_A_NUTSHELL': 'Bowen Theory Coaching',
-        'DATA_MODEL_DEFINITIONS': 'Data Model Definitions'
-    };
-    
-    let html = '<div class="columns is-multiline">';
-    let hasChanges = false;
-    
-    promptKeys.forEach(key => {
-        const defaultValue = defaultPrompts[key] || '';
-        const customValue = customPrompts[key];
-        
-        if (customValue && customValue !== defaultValue) {
-            hasChanges = true;
-            
-            // Create unified diff using jsdiff with full context
-            const defaultLines = defaultValue.split('\n');
-            const customLines = customValue.split('\n');
-            const contextSize = Math.max(defaultLines.length, customLines.length);
-            
-            const diff = Diff.createPatch(
-                `${key}.txt`,
-                defaultValue,
-                customValue,
-                'Original',
-                'Modified',
-                { context: contextSize }
-            );
-            
-            // Generate HTML diff using diff2html
-            const diffHtml = Diff2Html.html(diff, {
-                drawFileList: false,
-                matching: 'lines',
-                outputFormat: 'side-by-side',
-                synchronisedScroll: true,
-                highlight: true,
-                renderNothingWhenEmpty: false
-            });
-            
-            html += `
-                <div class="column is-full">
-                    <div class="card">
-                        <header class="card-header">
-                            <p class="card-header-title">${promptTitles[key]}</p>
-                        </header>
-                        <div class="card-content">
-                            ${diffHtml}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-    });
-    
-    if (!hasChanges) {
-        html += '<div class="column is-full"><div class="notification is-info">No custom prompts were used for this message.</div></div>';
-    }
-    
-    html += '</div>';
-    container.innerHTML = html;
-
-}
-
-function autoResizeTextarea(textarea) {
-    // Reset height to auto to get accurate scrollHeight
-    textarea.style.height = 'auto';
-    // Get the scroll height (actual content height)
-    const scrollHeight = textarea.scrollHeight;
-    // Set minimum height if scrollHeight is 0 or too small
-    const minHeight = 200;
-    const actualHeight = Math.max(scrollHeight, minHeight);
-    // Set height to full content height
-    textarea.style.height = actualHeight + 'px';
-    textarea.style.maxHeight = 'none';
-    textarea.style.overflowY = 'hidden';
-}
-
-function resetSinglePrompt(key) {
-    const textarea = document.getElementById(`prompt-${key}`);
-    if (textarea) {
-        textarea.value = defaultPrompts[key] || '';
-        autoResizeTextarea(textarea);
-        delete currentCustomPrompts[key];
-        renderPromptEditor(false); // Re-render to update UI
-    }
-}
-
-function resetToDefaults() {
-    currentCustomPrompts = {};
-    renderPromptEditor(false);
-}
-
-function saveCustomPrompts() {
-    // Collect current values from textareas
-    const promptKeys = ['ROLE_COACH_NOT_THERAPIST', 'BOWEN_THEORY_COACHING_IN_A_NUTSHELL', 'DATA_MODEL_DEFINITIONS'];
-    const updatedPrompts = {};
-    
-    promptKeys.forEach(key => {
-        const textarea = document.getElementById(`prompt-${key}`);
-        if (textarea && textarea.value !== '') {
-            const defaultValue = defaultPrompts[key] || '';
-            if (textarea.value !== defaultValue) {
-                updatedPrompts[key] = textarea.value;
-            }
-        }
-    });
-    
-    // Save to server
-    fetch(`/training/prompts/${currentPromptMessageId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Auditor-Id': window.discussionConfig.currentAuditor
-        },
-        body: JSON.stringify({ custom_prompts: updatedPrompts })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification('Custom prompts saved successfully!', 'is-success');
-            closePromptEditor();
-            // Refresh the page to show the indicator
-            setTimeout(() => { reloadPreservingParams(); }, 1000);
-        } else {
-            showNotification('Error: ' + (data.error || 'Unknown error'), 'is-danger');
-        }
-    })
-    .catch(error => {
-        showNotification('Network error: ' + error.message, 'is-danger');
-    });
-}
 
 function escapeHtml(text) {
     const div = document.createElement('div');
@@ -3838,7 +3643,7 @@ function updateExtractionButtonState() {
     if (speakerCount >= 2 && allSpeakersMapped) {
         extractionBtn.disabled = false;
         extractionBtn.classList.remove('is-loading');
-        extractionBtn.querySelector('span:last-child').textContent = 'Trigger Background Extraction';
+        extractionBtn.querySelector('span:last-child').textContent = 'Extract Data';
     } else {
         extractionBtn.disabled = true;
         extractionBtn.classList.remove('is-loading');
@@ -3853,47 +3658,33 @@ function updateExtractionButtonState() {
 }
 
 function triggerExtractionForDiscussion(discussionId) {
-    const extractionBtn = document.getElementById('trigger-extraction-btn');
-    const message = `Are you sure you want to trigger background extraction for this discussion?
-
-This will:
-- Set the extracting flag to true for this discussion
-- Run background extraction for all unprocessed statements
-- Automatically set extracting to false when complete
-
-Continue?`;
-
-    if (confirm(message)) {
-        // Show loading state
-        extractionBtn.disabled = true;
-        extractionBtn.classList.add('is-loading');
-        extractionBtn.querySelector('span:last-child').textContent = 'Triggering...';
-        
-        fetch(`/training/discussions/${discussionId}/extract`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Hide button and show progress bar
-                extractionBtn.style.display = 'none';
-                document.getElementById('extraction-progress').style.display = 'block';
-                
-                // Start polling for progress
-                startProgressPolling(discussionId);
-            } else {
-                showNotification('Error triggering extraction: ' + (data.error || 'Unknown error'), 'is-danger');
-                resetExtractionButton();
-            }
-        })
-        .catch(error => {
-            showNotification('Error triggering extraction: ' + error.message, 'is-danger');
-            resetExtractionButton();
-        });
-    }
+    if (!confirm('Run full extraction on this discussion? This replaces any existing extracted data.')) return;
+    const btn = document.getElementById('trigger-extraction-btn');
+    btn.disabled = true;
+    btn.classList.add('is-loading');
+    btn.querySelector('span:last-child').textContent = 'Extracting...';
+    fetch(`/training/discussions/${discussionId}/extract`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`Extraction complete: ${data.people_count} people, ${data.events_count} events, ${data.pair_bonds_count} pair bonds`, 'is-success');
+            reloadPreservingParams();
+        } else {
+            showNotification('Error: ' + (data.error || 'Unknown error'), 'is-danger');
+            btn.disabled = false;
+            btn.classList.remove('is-loading');
+            btn.querySelector('span:last-child').textContent = 'Extract Data';
+        }
+    })
+    .catch(error => {
+        showNotification('Error: ' + error.message, 'is-danger');
+        btn.disabled = false;
+        btn.classList.remove('is-loading');
+        btn.querySelector('span:last-child').textContent = 'Extract Data';
+    });
 }
 
 function clearExtractedData(discussionId) {
@@ -3932,11 +3723,6 @@ This will:
 Continue?`;
 
     if (confirm(message)) {
-        // Stop extraction progress polling immediately
-        if (window.extractionProgress) {
-            window.extractionProgress.stopPolling();
-        }
-
         fetch(`/training/discussions/${discussionId}/clear-extracted`, {
             method: 'POST',
             headers: {
@@ -3949,27 +3735,15 @@ Continue?`;
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Hide progress bar immediately if clearing AI data
-                if (targetAuditor === 'AI' && window.extractionProgress) {
-                    window.extractionProgress.destroy();
-                }
                 alert(`Success: ${data.message}`);
                 reloadPreservingParams(); // Refresh to show cleared data
             } else {
                 alert(`Error: ${data.message || 'Failed to clear extracted data'}`);
-                // Restart polling on error
-                if (window.extractionProgress && window.extractionProgress.discussionId) {
-                    window.extractionProgress.startPolling();
-                }
             }
         })
         .catch(error => {
             console.error('Error clearing extracted data:', error);
             alert('Error: Failed to clear extracted data');
-            // Restart polling on error
-            if (window.extractionProgress && window.extractionProgress.discussionId) {
-                window.extractionProgress.startPolling();
-            }
         });
     }
 }
@@ -4019,109 +3793,12 @@ function saveDiscussionDate(discussionId, dateValue) {
     });
 }
 
-let progressInterval;
-
-function startProgressPolling(discussionId) {
-    // Clear any existing interval
-    if (progressInterval) {
-        clearInterval(progressInterval);
-        progressInterval = null;
-    }
-    
-    // Poll every 2 seconds
-    progressInterval = setInterval(() => {
-        fetch(`/training/discussions/${discussionId}/progress`)
-            .then(response => response.json())
-            .then(data => {
-                updateProgressDisplay(data);
-                
-                // Check if backend set extracting to false (extraction complete)
-                if (!data.extracting) {
-                    clearInterval(progressInterval);
-                    progressInterval = null;
-                    showExtractionComplete();
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching progress:', error);
-                clearInterval(progressInterval);
-                progressInterval = null;
-                resetExtractionButton();
-            });
-    }, 2000);
-}
-
-function updateProgressDisplay(data) {
-    const progressText = document.getElementById('extraction-progress-text');
-    const progressBar = document.getElementById('extraction-progress-bar');
-    
-    const processed = data.processed || 0;
-    const total = data.total || 0;
-    const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
-    
-    if (progressText) {
-        progressText.textContent = `Processing statements... ${processed}/${total} (${percentage}%)`;
-    }
-    
-    if (progressBar) {
-        progressBar.value = percentage;
-    }
-}
-
-function showExtractionComplete() {
-    const progressText = document.getElementById('extraction-progress-text');
-    const progressBar = document.getElementById('extraction-progress-bar');
-    
-    if (progressText) {
-        progressText.textContent = 'Extraction completed successfully!';
-        progressText.classList.add('has-text-success');
-    }
-    
-    if (progressBar) {
-        progressBar.value = 100;
-        progressBar.classList.remove('is-primary');
-        progressBar.classList.add('is-success');
-    }
-    
-    // Refresh page to show extracted data
-    setTimeout(() => {
-        reloadPreservingParams();
-    }, 2000);
-}
-
-function resetExtractionButton() {
-    const extractionBtn = document.getElementById('trigger-extraction-btn');
-    const progressDiv = document.getElementById('extraction-progress');
-    
-    if (extractionBtn) {
-        extractionBtn.style.display = 'inline-flex';
-        extractionBtn.disabled = false;
-        extractionBtn.classList.remove('is-loading');
-        extractionBtn.querySelector('span:last-child').textContent = 'Trigger Background Extraction';
-    }
-    
-    if (progressDiv) {
-        progressDiv.style.display = 'none';
-    }
-}
-
 // Check extraction button state on page load
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         updateExtractionButtonState();
         updateExportButtonState();
         updateExpandCollapseButtons();
-
-        // Only start progress updates if discussion.extracting is explicitly true
-        const isExtracting = window.discussionConfig.isExtracting;
-        if (isExtracting === true) {
-            const extractionBtn = document.getElementById('trigger-extraction-btn');
-            if (extractionBtn) {
-                extractionBtn.style.display = 'none';
-                document.getElementById('extraction-progress').style.display = 'block';
-                startProgressPolling(window.discussionConfig.discussionId);
-            }
-        }
     }, 100);
 });
 
@@ -4383,7 +4060,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Mark as initialized
             el.setAttribute('data-alpine-initialized', 'true');
 
-            // Initialize Alpine on this element
+            // Clean up partial Alpine state (parent x-data scope may have touched this
+            // element during initial walk despite x-ignore), then initialize fresh
+            Alpine.destroyTree(el);
             Alpine.initTree(el);
 
             initializedCount++;
@@ -4425,11 +4104,13 @@ document.addEventListener('DOMContentLoaded', function() {
     window.initializeAllVisibleSarfEditors = function() {
         document.querySelectorAll('.sarf-editor-lazy:not([data-alpine-initialized])').forEach(el => {
             const rect = el.getBoundingClientRect();
-            if (rect.top < window.innerHeight + 200 && rect.bottom > -200) {
+            if (rect.top < window.innerHeight + 200 && rect.bottom > -200 &&
+                rect.left < window.innerWidth + 200 && rect.right > -200) {
                 initializeSarfEditor(el);
             }
         });
     };
+
 })();
 
 
@@ -4474,348 +4155,7 @@ async function copyToClipboard(text) {
     }
 }
 
-/**
- * Copy debug context for a statement - shows modal with selectable text
- * @param {number} statementId - The statement ID to get debug context for
- */
-async function copyDebugContext(statementId) {
-    const button = event.target.closest('button');
-    const originalContent = button.innerHTML;
 
-    try {
-        // Show loading state
-        button.innerHTML = '<span class="icon is-small"><i class="fas fa-spinner fa-spin"></i></span><span>Loading...</span>';
-        button.disabled = true;
-
-        const response = await fetch(`/training/discussions/debug-context/${statementId}`);
-        const data = await response.json();
-
-        if (!response.ok || data.error) {
-            throw new Error(data.error || 'Failed to get debug context');
-        }
-
-        // Build prompt with English preamble asking for help
-        const hasCorrected = data.corrected !== null;
-        let preamble;
-        if (hasCorrected) {
-            preamble = `The AI extraction below differs from the expected (corrected) output. Please analyze the discrepancy and suggest how to fix the extraction prompts in btcopilot/personal/prompts.py to handle this case correctly.
-
-`;
-        } else {
-            preamble = `Please review this AI extraction for the given statement and context. If you see any issues with the extraction, suggest how to fix the prompts in btcopilot/personal/prompts.py.
-
-`;
-        }
-        const jsonContent = preamble + JSON.stringify(data, null, 2);
-        showDebugContextModal(statementId, jsonContent);
-
-        // Restore button
-        button.innerHTML = originalContent;
-        button.disabled = false;
-
-    } catch (error) {
-        console.error('Error getting debug context:', error);
-        alert('Failed to get debug context: ' + error.message);
-        button.innerHTML = originalContent;
-        button.disabled = false;
-    }
-}
-
-/**
- * Show modal with debug context JSON for manual copying
- * @param {number} statementId - Statement ID
- * @param {string} jsonContent - The debug context as JSON string
- */
-function showDebugContextModal(statementId, jsonContent) {
-    const modalId = 'debug-context-modal';
-    let modal = document.getElementById(modalId);
-
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = modalId;
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-background" onclick="closeDebugContextModal()"></div>
-            <div class="modal-card" style="width: 90vw; max-width: 900px;">
-                <header class="modal-card-head">
-                    <p class="modal-card-title">Debug Context (Statement #<span id="debug-stmt-id"></span>)</p>
-                    <button class="delete" onclick="closeDebugContextModal()"></button>
-                </header>
-                <section class="modal-card-body" style="padding: 0;">
-                    <textarea id="debug-context-text" readonly
-                        style="width: 100%; height: 60vh; font-family: monospace; font-size: 12px; padding: 1rem; border: none; resize: none;"></textarea>
-                </section>
-                <footer class="modal-card-foot">
-                    <button class="button is-primary" onclick="selectAllDebugContext()">
-                        <span class="icon"><i class="fas fa-check-double"></i></span>
-                        <span>Select All</span>
-                    </button>
-                    <button id="debug-reextract-btn" class="button is-warning" onclick="reextractFromDebugModal()">
-                        <span class="icon"><i class="fas fa-sync-alt"></i></span>
-                        <span>Re-extract</span>
-                    </button>
-                    <button class="button" onclick="closeDebugContextModal()">Close</button>
-                </footer>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-
-    modal.dataset.statementId = statementId;
-    document.getElementById('debug-stmt-id').textContent = statementId;
-    document.getElementById('debug-context-text').value = jsonContent;
-    modal.classList.add('is-active');
-}
-
-/**
- * Select all text in the debug context textarea
- */
-function selectAllDebugContext() {
-    const textarea = document.getElementById('debug-context-text');
-    if (textarea) {
-        textarea.focus();
-        textarea.select();
-    }
-}
-
-/**
- * Close the debug context modal
- */
-function closeDebugContextModal() {
-    const modal = document.getElementById('debug-context-modal');
-    if (modal) {
-        modal.classList.remove('is-active');
-    }
-}
-
-/**
- * Core re-extraction API call
- * @param {number} statementId - The statement ID to re-extract
- * @returns {Promise<{pdp_deltas: object, original_deltas: object}>}
- */
-async function doReextract(statementId) {
-    const response = await fetch(`/training/discussions/reextract/${statementId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Re-extraction failed');
-    }
-
-    return data;
-}
-
-/**
- * Re-extract a single statement with current prompts (preview mode)
- * Called from toolbar button - updates the delta display in place without saving to database
- * @param {number} statementId - The statement ID to re-extract
- */
-async function reextractStatement(statementId) {
-    const button = event.target.closest('button');
-    const originalContent = button.innerHTML;
-
-    // Find the data cell for this statement
-    const statementRow = document.getElementById(`statement-${statementId}`);
-    const dataCell = statementRow ? statementRow.querySelector('.data-cell') : null;
-
-    try {
-        // Show loading state on button
-        button.innerHTML = '<span class="icon is-small"><i class="fas fa-spinner fa-spin"></i></span><span>Extracting...</span>';
-        button.disabled = true;
-
-        // Add loading overlay to data cell if found
-        if (dataCell) {
-            dataCell.style.opacity = '0.5';
-            dataCell.style.pointerEvents = 'none';
-        }
-
-        const data = await doReextract(statementId);
-        showReextractionResult(statementId, data.pdp_deltas, data.original_deltas);
-
-        // Restore button
-        button.innerHTML = '<span class="icon is-small"><i class="fas fa-check"></i></span><span>Done</span>';
-        button.classList.remove('is-warning');
-        button.classList.add('is-success');
-
-        setTimeout(() => {
-            button.innerHTML = originalContent;
-            button.classList.remove('is-success');
-            button.classList.add('is-warning');
-            button.disabled = false;
-        }, 2000);
-
-    } catch (error) {
-        console.error('Error re-extracting statement:', error);
-        alert('Re-extraction failed: ' + error.message);
-
-        button.innerHTML = originalContent;
-        button.disabled = false;
-
-    } finally {
-        // Restore data cell
-        if (dataCell) {
-            dataCell.style.opacity = '1';
-            dataCell.style.pointerEvents = 'auto';
-        }
-    }
-}
-
-/**
- * Re-extract from the debug context modal
- * Gets statement ID from modal data attribute and triggers re-extraction
- */
-async function reextractFromDebugModal() {
-    const modal = document.getElementById('debug-context-modal');
-    if (!modal) return;
-
-    const statementId = modal.dataset.statementId;
-    if (!statementId) {
-        alert('No statement ID found');
-        return;
-    }
-
-    const button = document.getElementById('debug-reextract-btn');
-    const originalContent = button.innerHTML;
-
-    try {
-        button.innerHTML = '<span class="icon"><i class="fas fa-spinner fa-spin"></i></span><span>Extracting...</span>';
-        button.disabled = true;
-
-        const data = await doReextract(statementId);
-        closeDebugContextModal();
-        showReextractionResult(statementId, data.pdp_deltas, data.original_deltas);
-
-    } catch (error) {
-        console.error('Error re-extracting statement:', error);
-        alert('Re-extraction failed: ' + error.message);
-        button.innerHTML = originalContent;
-        button.disabled = false;
-    }
-}
-
-/**
- * Show re-extraction result in a notification/modal
- * @param {number} statementId - The statement ID
- * @param {object} newDeltas - The new extraction result
- * @param {object} originalDeltas - The original extraction
- */
-function showReextractionResult(statementId, newDeltas, originalDeltas) {
-    // Check if results are different
-    const newJson = JSON.stringify(newDeltas, null, 2);
-    const originalJson = JSON.stringify(originalDeltas, null, 2);
-    const isDifferent = newJson !== originalJson;
-
-    // Create a simple modal to show results
-    const modalId = 'reextract-result-modal';
-    let modal = document.getElementById(modalId);
-
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = modalId;
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-background" onclick="closeReextractionModal()"></div>
-            <div class="modal-card" style="width: 90vw; max-width: 1200px;">
-                <header class="modal-card-head">
-                    <p class="modal-card-title">Re-extraction Result (Statement #<span id="reextract-stmt-id"></span>)</p>
-                    <button class="delete" onclick="closeReextractionModal()"></button>
-                </header>
-                <section class="modal-card-body" style="max-height: 70vh; overflow-y: auto;">
-                    <div id="reextract-result-content"></div>
-                </section>
-                <footer class="modal-card-foot">
-                    <span id="reextract-status-badge" class="tag"></span>
-                    <button id="result-reextract-btn" class="button is-warning" onclick="reextractFromResultModal()">
-                        <span class="icon"><i class="fas fa-sync-alt"></i></span>
-                        <span>Re-extract</span>
-                    </button>
-                    <button class="button" onclick="closeReextractionModal()">Close</button>
-                </footer>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-
-    // Store statement ID on modal for re-extraction button
-    modal.dataset.statementId = statementId;
-
-    // Populate content
-    document.getElementById('reextract-stmt-id').textContent = statementId;
-
-    const statusBadge = document.getElementById('reextract-status-badge');
-    if (isDifferent) {
-        statusBadge.className = 'tag is-warning';
-        statusBadge.textContent = 'Results differ from original';
-    } else {
-        statusBadge.className = 'tag is-success';
-        statusBadge.textContent = 'Results match original';
-    }
-
-    const content = document.getElementById('reextract-result-content');
-    content.innerHTML = `
-        <div class="columns">
-            <div class="column">
-                <h4 class="title is-5">Original Extraction</h4>
-                <pre class="box" style="white-space: pre-wrap; font-size: 0.85rem;">${escapeHtml(originalJson)}</pre>
-            </div>
-            <div class="column">
-                <h4 class="title is-5">New Extraction</h4>
-                <pre class="box" style="white-space: pre-wrap; font-size: 0.85rem;">${escapeHtml(newJson)}</pre>
-            </div>
-        </div>
-    `;
-
-    // Show modal
-    modal.classList.add('is-active');
-}
-
-/**
- * Close the re-extraction result modal
- */
-function closeReextractionModal() {
-    const modal = document.getElementById('reextract-result-modal');
-    if (modal) {
-        modal.classList.remove('is-active');
-    }
-}
-
-/**
- * Re-extract from the result modal
- * Gets statement ID from modal data attribute and triggers re-extraction
- */
-async function reextractFromResultModal() {
-    const modal = document.getElementById('reextract-result-modal');
-    if (!modal) return;
-
-    const statementId = modal.dataset.statementId;
-    if (!statementId) {
-        alert('No statement ID found');
-        return;
-    }
-
-    const button = document.getElementById('result-reextract-btn');
-    const originalContent = button.innerHTML;
-
-    try {
-        button.innerHTML = '<span class="icon"><i class="fas fa-spinner fa-spin"></i></span><span>Extracting...</span>';
-        button.disabled = true;
-
-        const data = await doReextract(statementId);
-        showReextractionResult(statementId, data.pdp_deltas, data.original_deltas);
-
-    } catch (error) {
-        console.error('Error re-extracting statement:', error);
-        alert('Re-extraction failed: ' + error.message);
-    } finally {
-        button.innerHTML = originalContent;
-        button.disabled = false;
-    }
-}
 
 // Store current diagram context for full page navigation
 let currentDiagramContext = null;

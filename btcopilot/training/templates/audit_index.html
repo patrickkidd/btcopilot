@@ -377,37 +377,6 @@ Are you sure you want to delete it?`;
         });
 }
 
-function triggerExtraction(discussionId, username) {
-    const message = `Are you sure you want to trigger background extraction for Discussion #${discussionId} for user "${username}"?
-    
-This will:
-- Set the extracting flag to true
-- Run background extraction for all unprocessed statements
-- Automatically set extracting to false when complete
-
-Continue?`;
-
-    if (confirm(message)) {
-        fetch(`/training/discussions/${discussionId}/extract`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Just reload, no alert needed since the UI will reflect the change
-                location.reload();
-            } else {
-                alert('Error triggering extraction: ' + data.error);
-            }
-        })
-        .catch(error => {
-            alert('Error triggering extraction: ' + error);
-        });
-    }
-}
 
 // JSON Drop Handlers
 function handleJsonDragOver(event) {

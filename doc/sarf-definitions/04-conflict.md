@@ -206,43 +206,43 @@ FE Ch 6 (Triangles), FE Ch 7 (Nuclear Family), FE Ch 5 (Anxiety), and FTiCP Ch 9
 
 | # | Search String (5-15 words for Cmd+F) | Concept Extracted |
 |---|--------------------------------------|-------------------|
-| FE6-5 | "The triangle is the basic molecule of an emotional system" | Triangle = smallest stable relationship unit |
-| FE6-9 | "The major influence on the activity of a triangle is anxiety" | Anxiety drives triangle activity; calm = stable twosome |
-| FE6-13 | "two people are comfortably close (the insiders) and the third is a less comfortable outsider" | Basic triangle structure at low anxiety |
-| FE6-15 | "the discomfort is felt far more by one person than the other" | Asymmetric discomfort in triangles |
-| FE6-17 | "uncomfortable insider (A) can pull the outsider (C) into the situation through complaints" | Triangling via complaints about other insider |
-| FE6-19 | "one uncomfortable or conflictual relationship and two fairly comfortable ones" | Conflict = negative side of triangle; two positive sides |
-| FE6-21 | "as long as an oldest daughter and her father are in conflict, harmony can be preserved" | Conflict in one relationship preserves harmony in others |
-| FE6-24 | "conflict has shifted out of the original twosome and into the relationship between B and C" | Conflict shifts location via triangling |
-| FE6-26 | "outside position is the most comfortable and desired" | At high stress, outsider position preferred |
-| FE6-34 | "Stress triggers anxiety and as it becomes infectious, the triangles become more active" | Anxiety activates triangles; conflict intensifies |
-| FE6-38 | "anxiety spreads to other triangles in an interlocking fashion" | Conflict/anxiety spreads through interlocking triangles |
-| FE6-40 | "tension originally present in one triangle is acted out in another triangle" | Conflict shifts between triangles |
-| FE6-42 | "two therapists attempt to collaborate, they get into a heated debate" | Professional triangling example; conflict spreads |
-| FE6-47 | "anxiety of the therapist and staff has more influence on treatment decisions" | Anxiety-driven conflict can infect helpers |
-| FE6-49 | "polarization between people who are highly sympathetic to the 'plight' of the criminal" | Societal polarization as triangled conflict |
-| FE6-51 | "triangle of two parents and a child in which the child functions as an emotional appendage" | Child in conflict triangle with parents |
-| FE6-71 | "tension in a two-person relationship will resolve automatically when contained within a three-person system" | Detriangling principle; neutral third allows resolution |
-| FE6-73 | "existence of symptoms in a relationship suggests that the relationship is linked to one or more other people" | Symptoms suggest triangling; conflict not resolving |
-| FE6-75 | "Mechanisms for binding this anxiety within the twosome, such as conflict, distance, and adapting" | Conflict = one of three binding mechanisms |
-| FE6-77 | "discomfort eventually becomes so great...attempts to talk to her husband about her unhappiness" | Attempt to address conflict; fails if both reactive |
-| FE6-78 | "exchanges such as these gradually incline both people to avoid bringing up 'unpleasant' subjects" | Failed conflict leads to avoidance/distance |
-| FE6-79 | "She begins to talk about her unhappiness to her mother" | Triangling mother into marital conflict |
-| FE6-80 | "Mother's anger at her daughter's husband supports the daughter's use of emotional distance" | Triangled person intensifies distance, not resolution |
-| FE6-81 | "husband...becomes quite reactive to what is now experienced as 'excessive' distance" | Distance from unresolved conflict triggers new conflict |
-| FE6-82 | "husband starts drinking more...drinking begins to impair the husband's functioning" | Unresolved conflict → symptom in husband |
-| FE6-83 | "symptom focused togetherness, with the underlying relationship dilemmas largely obscured" | Conflict obscured by symptom focus |
-| FE6-85 | "she had encountered someone who could have remained objective and emotionally detached" | Detriangled third prevents symptom development |
-| FE6-92 | "mother and two children triangle" | Anxiety acted out as sibling conflict |
-| FE6-100 | "ability to see both sides of a relationship process between two others" | Neutrality requirement for detriangling |
-| FE6-102 | "rules that one should not take sides in a relationship problem between two others" | Rules don't guarantee seeing both sides |
-| FE6-106 | "It often looks as if one person is causing the other's distress, as if one person is a 'victim'" | Neither causes conflict; both contribute |
-| FE6-108 | "respond to someone's efforts to triangle by saying and doing things that push that person together" | Detriangling pushes pair together, not apart |
-| FE6-110 | "I have always been envious of your relationship" | Detriangling remark conveys neutrality |
-| FE6-117 | "Dad...He thinks you are finally becoming the type of wife he has always wanted" | Detriangling humor disrupts conflict pattern |
-| FE6-121 | "uptight person who is not neutral tries to 'detriangle' himself in a highly anxious family" | Poor detriangling can worsen conflict |
-| FE6-123 | "If you are not with me, then you are against me" | Response to detriangling; attempt to maintain conflict |
-| FE6-127 | "Actions have more impact than words in a detriangling effort" | Behavior changes conflict patterns more than words |
+| <a id="FE6-5"></a>FE6-5 | "The triangle is the basic molecule of an emotional system" | Triangle = smallest stable relationship unit |
+| <a id="FE6-9"></a>FE6-9 | "The major influence on the activity of a triangle is anxiety" | Anxiety drives triangle activity; calm = stable twosome |
+| <a id="FE6-13"></a>FE6-13 | "two people are comfortably close (the insiders) and the third is a less comfortable outsider" | Basic triangle structure at low anxiety |
+| <a id="FE6-15"></a>FE6-15 | "the discomfort is felt far more by one person than the other" | Asymmetric discomfort in triangles |
+| <a id="FE6-17"></a>FE6-17 | "uncomfortable insider (A) can pull the outsider (C) into the situation through complaints" | Triangling via complaints about other insider |
+| <a id="FE6-19"></a>FE6-19 | "one uncomfortable or conflictual relationship and two fairly comfortable ones" | Conflict = negative side of triangle; two positive sides |
+| <a id="FE6-21"></a>FE6-21 | "as long as an oldest daughter and her father are in conflict, harmony can be preserved" | Conflict in one relationship preserves harmony in others |
+| <a id="FE6-24"></a>FE6-24 | "conflict has shifted out of the original twosome and into the relationship between B and C" | Conflict shifts location via triangling |
+| <a id="FE6-26"></a>FE6-26 | "outside position is the most comfortable and desired" | At high stress, outsider position preferred |
+| <a id="FE6-34"></a>FE6-34 | "Stress triggers anxiety and as it becomes infectious, the triangles become more active" | Anxiety activates triangles; conflict intensifies |
+| <a id="FE6-38"></a>FE6-38 | "anxiety spreads to other triangles in an interlocking fashion" | Conflict/anxiety spreads through interlocking triangles |
+| <a id="FE6-40"></a>FE6-40 | "tension originally present in one triangle is acted out in another triangle" | Conflict shifts between triangles |
+| <a id="FE6-42"></a>FE6-42 | "two therapists attempt to collaborate, they get into a heated debate" | Professional triangling example; conflict spreads |
+| <a id="FE6-47"></a>FE6-47 | "anxiety of the therapist and staff has more influence on treatment decisions" | Anxiety-driven conflict can infect helpers |
+| <a id="FE6-49"></a>FE6-49 | "polarization between people who are highly sympathetic to the 'plight' of the criminal" | Societal polarization as triangled conflict |
+| <a id="FE6-51"></a>FE6-51 | "triangle of two parents and a child in which the child functions as an emotional appendage" | Child in conflict triangle with parents |
+| <a id="FE6-71"></a>FE6-71 | "tension in a two-person relationship will resolve automatically when contained within a three-person system" | Detriangling principle; neutral third allows resolution |
+| <a id="FE6-73"></a>FE6-73 | "existence of symptoms in a relationship suggests that the relationship is linked to one or more other people" | Symptoms suggest triangling; conflict not resolving |
+| <a id="FE6-75"></a>FE6-75 | "Mechanisms for binding this anxiety within the twosome, such as conflict, distance, and adapting" | Conflict = one of three binding mechanisms |
+| <a id="FE6-77"></a>FE6-77 | "discomfort eventually becomes so great...attempts to talk to her husband about her unhappiness" | Attempt to address conflict; fails if both reactive |
+| <a id="FE6-78"></a>FE6-78 | "exchanges such as these gradually incline both people to avoid bringing up 'unpleasant' subjects" | Failed conflict leads to avoidance/distance |
+| <a id="FE6-79"></a>FE6-79 | "She begins to talk about her unhappiness to her mother" | Triangling mother into marital conflict |
+| <a id="FE6-80"></a>FE6-80 | "Mother's anger at her daughter's husband supports the daughter's use of emotional distance" | Triangled person intensifies distance, not resolution |
+| <a id="FE6-81"></a>FE6-81 | "husband...becomes quite reactive to what is now experienced as 'excessive' distance" | Distance from unresolved conflict triggers new conflict |
+| <a id="FE6-82"></a>FE6-82 | "husband starts drinking more...drinking begins to impair the husband's functioning" | Unresolved conflict → symptom in husband |
+| <a id="FE6-83"></a>FE6-83 | "symptom focused togetherness, with the underlying relationship dilemmas largely obscured" | Conflict obscured by symptom focus |
+| <a id="FE6-85"></a>FE6-85 | "she had encountered someone who could have remained objective and emotionally detached" | Detriangled third prevents symptom development |
+| <a id="FE6-92"></a>FE6-92 | "mother and two children triangle" | Anxiety acted out as sibling conflict |
+| <a id="FE6-100"></a>FE6-100 | "ability to see both sides of a relationship process between two others" | Neutrality requirement for detriangling |
+| <a id="FE6-102"></a>FE6-102 | "rules that one should not take sides in a relationship problem between two others" | Rules don't guarantee seeing both sides |
+| <a id="FE6-106"></a>FE6-106 | "It often looks as if one person is causing the other's distress, as if one person is a 'victim'" | Neither causes conflict; both contribute |
+| <a id="FE6-108"></a>FE6-108 | "respond to someone's efforts to triangle by saying and doing things that push that person together" | Detriangling pushes pair together, not apart |
+| <a id="FE6-110"></a>FE6-110 | "I have always been envious of your relationship" | Detriangling remark conveys neutrality |
+| <a id="FE6-117"></a>FE6-117 | "Dad...He thinks you are finally becoming the type of wife he has always wanted" | Detriangling humor disrupts conflict pattern |
+| <a id="FE6-121"></a>FE6-121 | "uptight person who is not neutral tries to 'detriangle' himself in a highly anxious family" | Poor detriangling can worsen conflict |
+| <a id="FE6-123"></a>FE6-123 | "If you are not with me, then you are against me" | Response to detriangling; attempt to maintain conflict |
+| <a id="FE6-127"></a>FE6-127 | "Actions have more impact than words in a detriangling effort" | Behavior changes conflict patterns more than words |
 
 ---
 
@@ -264,5 +264,5 @@ FE Ch 6 (Triangles), FE Ch 7 (Nuclear Family), FE Ch 5 (Anxiety), and FTiCP Ch 9
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE5-21 | "cycles of each person's feeling criticized, getting defensive, and counterattacking" | Conflict cycle description |
-| FE5-22 | "emotional neediness in one person triggering distance in another" | Neediness → distance as alternative to conflict |
+| <a id="FE5-21"></a>FE5-21 | "cycles of each person's feeling criticized, getting defensive, and counterattacking" | Conflict cycle description |
+| <a id="FE5-22"></a>FE5-22 | "emotional neediness in one person triggering distance in another" | Neediness → distance as alternative to conflict |

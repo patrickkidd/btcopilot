@@ -17,8 +17,6 @@ from btcopilot.schema import (
     EventKind,
     asdict,
 )
-from btcopilot.training.routes.discussions import extract_next_statement
-
 from btcopilot.tests.training.conftest import flask_json
 
 
@@ -136,57 +134,6 @@ def test_delete_not_found(admin):
     response = admin.delete("/training/discussions/99999")
     assert response.status_code == 404
 
-
-def test_extract_requires_admin(logged_in, discussion):
-    response = logged_in.post(f"/training/discussions/{discussion.id}/extract")
-    assert response.status_code == 403
-
-
-def test_extract_success(mock_celery, admin, discussion):
-    # Initially extracting should be False
-    assert discussion.extracting == False
-
-    response = admin.post(f"/training/discussions/{discussion.id}/extract")
-    assert response.status_code == 200
-    assert response.json["success"] is True
-
-    # Check that extracting flag was set to True
-    db.session.refresh(discussion)
-    assert discussion.extracting == True
-
-    # Verify Celery task was queued
-    mock_celery.send_task.assert_called_once_with(
-        "extract_discussion_statements", args=[discussion.id]
-    )
-
-
-def test_extract_not_found(admin):
-    response = admin.post("/training/discussions/99999/extract")
-    assert response.status_code == 404
-
-
-@pytest.mark.extraction_flow(extractions=[PDPDeltas(events=[], people=[])])
-def test_extracting_flag_reset_on_completion(admin, discussion):
-    # Set up a single unprocessed statement
-    for statement in discussion.statements:
-        if statement.speaker.type == SpeakerType.Subject:
-            statement.pdp_deltas = None
-            break
-
-    # Enable extraction
-    discussion.extracting = True
-    db.session.commit()
-
-    # Run extraction - should process the statement and set extracting to False
-    with admin.application.app_context():
-        result = extract_next_statement()
-
-    # Verify extraction worked
-    assert result is True
-
-    # Refresh the discussion and check that extracting is now False
-    db.session.refresh(discussion)
-    assert discussion.extracting is False
 
 
 def test_clear_extracted_data_subscriber_cannot_access(subscriber, discussion):
@@ -494,189 +441,7 @@ def discussion_with_statements(admin):
     return discussion, statements
 
 
-def trigger_extraction(admin, discussion_id):
-    """Helper to trigger extraction and verify it started"""
-    response = admin.post(f"/training/discussions/{discussion_id}/extract")
-    assert response.status_code == 200
-    return response
 
-
-def run_extraction(admin):
-    """Helper to run extraction in app context"""
-    with admin.application.app_context():
-        return extract_next_statement()
-
-
-def clear_extraction(admin, discussion_id):
-    """Helper to clear AI extracted data"""
-    response = admin.post(
-        f"/training/discussions/{discussion_id}/clear-extracted",
-        json={"auditor_id": "AI"},
-    )
-    assert response.status_code == 200
-    return response
-
-
-def verify_extraction_state(
-    discussion, statements, extracted_indices, not_extracted_indices
-):
-    """Helper to verify which statements were extracted"""
-    db.session.refresh(discussion)
-    for idx in extracted_indices:
-        db.session.refresh(statements[idx])
-        assert statements[idx].pdp_deltas is not None
-    for idx in not_extracted_indices:
-        db.session.refresh(statements[idx])
-        assert statements[idx].pdp_deltas is None
-
-
-@pytest.mark.extraction_flow(
-    extractions=[
-        PDPDeltas(
-            people=[Person(id=-1, name="User")],
-            events=[
-                Event(
-                    id=-1,
-                    kind=EventKind.Shift,
-                    person=-1,
-                    description="Feels anxious",
-                    anxiety=VariableShift.Up,
-                )
-            ],
-        ),
-        PDPDeltas(
-            people=[],
-            events=[
-                Event(
-                    id=-2,
-                    kind=EventKind.Shift,
-                    person=-1,
-                    description="Having difficulty",
-                    functioning=VariableShift.Down,
-                )
-            ],
-        ),
-        PDPDeltas(people=[Person(id=-3, name="New User")], events=[]),
-    ]
-)
-def test_extraction_lifecycle_full(mock_celery, admin, discussion_with_statements):
-    discussion, stmts = discussion_with_statements
-
-    # Trigger and run extraction
-    trigger_extraction(admin, discussion.id)
-    assert run_extraction(admin) is True  # Extract stmt 0
-    assert run_extraction(admin) is True  # Extract stmt 2 (skips expert)
-
-    # Verify extraction completed correctly
-    verify_extraction_state(
-        discussion, stmts, extracted_indices=[0, 2], not_extracted_indices=[1]
-    )
-    assert discussion.extracting is False
-
-    # Clear and verify
-    clear_extraction(admin, discussion.id)
-    verify_extraction_state(
-        discussion, stmts, extracted_indices=[], not_extracted_indices=[0, 1, 2]
-    )
-
-    # Re-trigger and re-extract
-    trigger_extraction(admin, discussion.id)
-    assert run_extraction(admin) is True
-    verify_extraction_state(
-        discussion, stmts, extracted_indices=[0], not_extracted_indices=[1, 2]
-    )
-
-
-def test_clear_during_extraction(mock_celery, admin):
-    # Create discussion with statements
-    discussion = Discussion(user_id=admin.user.id, summary="Clear during test")
-    db.session.add(discussion)
-    db.session.flush()
-
-    speaker = Speaker(
-        discussion_id=discussion.id, name="User", type=SpeakerType.Subject
-    )
-    db.session.add(speaker)
-    db.session.flush()
-
-    statements = [
-        Statement(
-            discussion_id=discussion.id,
-            speaker_id=speaker.id,
-            text=f"Statement {i}",
-            order=i,
-        )
-        for i in range(3)
-    ]
-    db.session.add_all(statements)
-    db.session.commit()
-
-    # Trigger extraction
-    response = admin.post(f"/training/discussions/{discussion.id}/extract")
-    assert response.status_code == 200
-    db.session.refresh(discussion)
-    assert discussion.extracting is True
-
-    # Clear while extraction is "in progress"
-    response = admin.post(
-        f"/training/discussions/{discussion.id}/clear-extracted",
-        json={"auditor_id": "AI"},
-    )
-    assert response.status_code == 200
-
-    # Verify extraction was stopped
-    db.session.refresh(discussion)
-    assert discussion.extracting is False
-
-    # Verify all statements are cleared
-    for stmt in statements:
-        db.session.refresh(stmt)
-        assert stmt.pdp_deltas is None
-
-
-def test_extraction_task_respects_clear_flag(mock_celery, admin):
-    from btcopilot.training.routes.discussions import extract_next_statement
-
-    discussion = Discussion(user_id=admin.user.id, summary="Race test")
-    db.session.add(discussion)
-    db.session.flush()
-
-    speaker = Speaker(
-        discussion_id=discussion.id, name="User", type=SpeakerType.Subject
-    )
-    db.session.add(speaker)
-    db.session.flush()
-
-    statement = Statement(
-        discussion_id=discussion.id,
-        speaker_id=speaker.id,
-        text="Test statement",
-        order=0,
-    )
-    db.session.add(statement)
-    discussion.extracting = True
-    db.session.commit()
-
-    # Simulate race: clear the extracting flag mid-extraction
-    with patch("btcopilot.training.routes.discussions.pdp.update") as mock_update:
-        mock_update.return_value = (None, None)
-
-        # Call extract_next_statement - it will query the statement when extracting=True
-        # But we'll set extracting=False before it commits (simulating the race)
-        def side_effect(*args):
-            # Clear the flag mid-extraction (like the clear endpoint would)
-            discussion.extracting = False
-            db.session.commit()
-            return (None, None)
-
-        mock_update.side_effect = side_effect
-
-        result = extract_next_statement()
-
-    # Verify the task aborted and didn't save results
-    assert result is False
-    db.session.refresh(statement)
-    assert statement.pdp_deltas is None
 
 
 def test_clear_ai_extractions_resets_diagram_pdp(admin, discussion_with_statements):
@@ -737,132 +502,7 @@ def test_clear_ai_extractions_resets_diagram_pdp(admin, discussion_with_statemen
 
 
 @pytest.mark.e2e
-def test_extraction_lifecycle_full_e2e(admin, discussion_with_statements):
-    discussion, stmts = discussion_with_statements
 
-    # Override statement text with more realistic content for LLM
-    stmts[0].text = "I had a fight with my brother yesterday about money"
-    stmts[2].text = "He thinks I owe him $500 but I already paid him back"
-    db.session.commit()
-
-    # Run extraction lifecycle with real LLM
-    trigger_extraction(admin, discussion.id)
-    assert run_extraction(admin) is True  # Extract stmt 0 with LLM
-    assert run_extraction(admin) is True  # Extract stmt 2 with LLM
-
-    # Verify extraction worked (can't assert exact content with LLM)
-    verify_extraction_state(
-        discussion, stmts, extracted_indices=[0, 2], not_extracted_indices=[1]
-    )
-    assert isinstance(stmts[0].pdp_deltas, dict)  # Check structure
-
-    # Clear and re-extract
-    clear_extraction(admin, discussion.id)
-    verify_extraction_state(
-        discussion, stmts, extracted_indices=[], not_extracted_indices=[0, 1, 2]
-    )
-
-    trigger_extraction(admin, discussion.id)
-    assert run_extraction(admin) is True  # Re-extract with LLM
-    db.session.refresh(stmts[0])
-    assert stmts[0].pdp_deltas is not None
-
-
-def test_progress_endpoint_after_clear(admin):
-    # Create discussion with extracted data
-    discussion = Discussion(user_id=admin.user.id, summary="Progress test")
-    db.session.add(discussion)
-    db.session.flush()
-
-    speaker = Speaker(
-        discussion_id=discussion.id, name="User", type=SpeakerType.Subject
-    )
-    db.session.add(speaker)
-    db.session.flush()
-
-    # Add statements with extracted data
-    statements = []
-    for i in range(3):
-        stmt = Statement(
-            discussion_id=discussion.id,
-            speaker_id=speaker.id,
-            text=f"Statement {i}",
-            order=i,
-            pdp_deltas=asdict(
-                PDPDeltas(people=[Person(id=-i, name=f"Person {i}")], events=[])
-            ),
-        )
-        statements.append(stmt)
-        db.session.add(stmt)
-
-    discussion.extracting = False
-    db.session.commit()
-
-    # Check progress before clearing
-    response = admin.get(f"/training/discussions/{discussion.id}/progress")
-    assert response.status_code == 200
-    data = response.json
-    assert data["total"] == 3
-    assert data["processed"] == 3
-    assert data["pending"] == 0
-    assert data["extracting"] is False
-
-    # Clear extracted data
-    response = admin.post(
-        f"/training/discussions/{discussion.id}/clear-extracted",
-        json={"auditor_id": "AI"},
-    )
-    assert response.status_code == 200
-
-    # Force database to reload objects to avoid cache issues
-    db.session.expire_all()
-
-    # Check progress after clearing
-    response = admin.get(f"/training/discussions/{discussion.id}/progress")
-    assert response.status_code == 200
-    data = response.json
-    assert data["total"] == 3
-    assert data["processed"] == 0  # Should be 0 after clearing
-    assert data["pending"] == 3  # All should be pending
-    assert data["extracting"] is False
-
-
-def test_celery_task_queueing(mock_celery, admin, discussion):
-    # Test extraction task queueing
-    response = admin.post(f"/training/discussions/{discussion.id}/extract")
-    assert response.status_code == 200
-
-    # Verify the correct task was queued with correct arguments
-    mock_celery.send_task.assert_called_once_with(
-        "extract_discussion_statements", args=[discussion.id]
-    )
-
-    # Reset mock for additional assertions
-    mock_celery.send_task.reset_mock()
-
-    # Test that task is not queued for non-existent discussion
-    response = admin.post("/training/discussions/99999/extract")
-    assert response.status_code == 404
-
-    # Verify no task was queued for invalid discussion
-    mock_celery.send_task.assert_not_called()
-
-
-def test_celery_task_chaining_mock(mock_celery, flask_app):
-    from btcopilot.training.tasks import extract_next_statement
-    from unittest.mock import patch
-
-    # Mock the extract function to return True (more statements to process)
-    with flask_app.app_context():
-        with patch(
-            "btcopilot.training.tasks._extract_next_statement",
-            return_value=True,
-        ):
-            # Call the task function directly
-            assert extract_next_statement() is True
-            mock_celery.send_task.assert_called_once_with(
-                "extract_next_statement", countdown=1
-            )
 
 
 def test_audit_with_person_mapping(auditor, test_user):
@@ -929,3 +569,100 @@ def test_audit_with_person_mapping(auditor, test_user):
     # Verify the response includes person name mapping
     html_content = response.data.decode("utf-8")
     assert "John Doe" in html_content
+
+
+def test_audit_shows_diagram_pdp_on_last_subject(admin, test_user):
+    """When no per-statement deltas exist, the diagram's PDP from extract_full()
+    should appear as cumulative_pdp on the last subject statement."""
+    diagram = Diagram(user_id=test_user.id, name="Test Diagram")
+    diagram_data = DiagramData(
+        people=[{"id": 1, "name": "User"}, {"id": 2, "name": "Assistant"}],
+        events=[],
+        pdp=PDP(
+            people=[Person(id=-1, name="Mom"), Person(id=-2, name="Dad")],
+            events=[
+                Event(
+                    id=-1,
+                    kind=EventKind.Shift,
+                    person=-1,
+                    description="Mom stressed",
+                    anxiety=VariableShift.Up,
+                )
+            ],
+        ),
+        lastItemId=2,
+    )
+    diagram.set_diagram_data(diagram_data)
+    db.session.add(diagram)
+    db.session.flush()
+
+    discussion = Discussion(
+        user_id=test_user.id, diagram_id=diagram.id, summary="PDP fallback test"
+    )
+    db.session.add(discussion)
+    db.session.flush()
+
+    subject = Speaker(
+        discussion_id=discussion.id, name="Client", type=SpeakerType.Subject
+    )
+    expert = Speaker(
+        discussion_id=discussion.id, name="Coach", type=SpeakerType.Expert
+    )
+    db.session.add_all([subject, expert])
+    db.session.flush()
+
+    # No pdp_deltas on any statement
+    stmts = [
+        Statement(
+            discussion_id=discussion.id,
+            speaker_id=subject.id,
+            text="First message",
+            order=0,
+        ),
+        Statement(
+            discussion_id=discussion.id,
+            speaker_id=expert.id,
+            text="Tell me more",
+            order=1,
+        ),
+        Statement(
+            discussion_id=discussion.id,
+            speaker_id=subject.id,
+            text="Second message",
+            order=2,
+        ),
+    ]
+    db.session.add_all(stmts)
+    db.session.commit()
+
+    response = admin.get(
+        f"/training/discussions/{discussion.id}?selected_auditor=AI"
+    )
+    assert response.status_code == 200
+    html = response.data.decode("utf-8")
+
+    # Diagram PDP people should appear in cumulative column
+    assert "Mom" in html
+    assert "Dad" in html
+    assert "Mom stressed" in html
+
+
+def test_extract_requires_admin(auditor, discussion):
+    response = auditor.post(f"/training/discussions/{discussion.id}/extract")
+    assert response.status_code == 403
+
+
+def test_extract(admin, discussion):
+    result_pdp = PDP(people=[Person(id=1, name="User")])
+    result_deltas = PDPDeltas()
+    with patch(
+        "btcopilot.training.routes.discussions.pdp.extract_full",
+        return_value=(result_pdp, result_deltas),
+    ):
+        response = admin.post(f"/training/discussions/{discussion.id}/extract")
+    assert response.status_code == 200
+    data = response.json
+    assert data["success"] is True
+    assert data["people_count"] == 1
+    assert data["events_count"] == 0
+    assert data["pair_bonds_count"] == 0

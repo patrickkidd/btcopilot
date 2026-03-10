@@ -566,13 +566,13 @@ The prompts are tuned for **Gemini 2.0 Flash** with structured JSON output (via 
 
 ### 4. Update F1 Timeseries Graph
 
-**MANDATORY**: Append a new entry to `btcopilot/doc/f1_timeseries.json` with final F1 scores.
+**Only add an entry to `btcopilot/doc/f1_timeseries.json` when the user commits the changes.** The timeseries tracks committed production state, not experimental results. Experimental F1 scores belong in the induction report and JSONL log only.
 
-This data feeds the admin/auditor dashboard chart. Add an entry with:
+When the user commits, add ONE entry with:
 ```json
 {
   "date": "YYYY-MM-DD",
-  "commit": null,
+  "commit": "<commit hash>",
   "aggregate": 0.XXX,
   "people": 0.XXX,
   "events": 0.XXX,
@@ -584,7 +584,7 @@ This data feeds the admin/auditor dashboard chart. Add an entry with:
 }
 ```
 
-Use `null` for any metric not measured in this run. The commit hash will be filled in after the user commits.
+Use `null` for any metric not measured in this run.
 
 ### 5. Completion
 
@@ -619,7 +619,7 @@ Your induction run is successful if:
 - ✅ Git diff shows precise, targeted changes (not wholesale rewrites)
 - ✅ No test failures or syntax errors during any iteration
 - ✅ Clear recommendations provided in report
-- ✅ `btcopilot/doc/f1_timeseries.json` updated with final scores
+- ✅ `btcopilot/doc/f1_timeseries.json` updated with final scores (only after user commits)
 - ✅ `btcopilot/doc/PROMPT_ENG_EXTRACTION_STRATEGY.md` updated with worked/failed techniques
 
 ## Files You'll Work With
@@ -901,7 +901,7 @@ Start your autonomous induction now.
 8. Log convergence/completion
 9. Generate report (including Strategy Document Updates section)
 10. **Update strategy doc** - Apply proposed edits and log strategy_update
-11. **Update F1 timeseries** - Append entry to `btcopilot/doc/f1_timeseries.json`
+11. **Update F1 timeseries** - Append entry to `btcopilot/doc/f1_timeseries.json` only after user commits changes
 12. Log run_end entry
 13. Report results to user
 

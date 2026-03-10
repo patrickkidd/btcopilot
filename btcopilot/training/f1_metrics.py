@@ -9,10 +9,7 @@ Matching Logic:
           (Aunt, Uncle, Dr., etc.) AND parents match (ignore if null) AND
           gender match (ignore if either is None/Unknown).
           "Aunt Carol" matches "Carol", "Dr. Smith" matches "Smith".
-- Events:
-  - Shift events: kind + description similarity >= 0.4 + date proximity + links match
-    Description uses hybrid matching: max(token_set_ratio, substring, ratio)
-  - Structural events (Birth, Death, Married, etc.): kind + date + links match (skip description)
+- Events: kind + date proximity + person links match (description not used for matching)
 - PairBonds: person_a/person_b match resolved IDs
 - SARF variables: Macro-F1 across matched events (exact enum match)
 - IDs ignored: Match purely by content, not IDs
@@ -48,24 +45,7 @@ from btcopilot.schema import (
     from_dict,
 )
 
-# Structural events don't use description for matching (descriptions are generic like "Born", "Died")
-STRUCTURAL_EVENT_KINDS = frozenset(
-    [
-        EventKind.Birth,
-        EventKind.Death,
-        EventKind.Married,
-        EventKind.Divorced,
-        EventKind.Separated,
-        EventKind.Bonded,
-        EventKind.Moved,
-        EventKind.Adopted,
-    ]
-)
-
 _log = logging.getLogger(__name__)
-
-_f1_cache = {}
-_f1_cache_time = {}
 
 NAME_SIMILARITY_THRESHOLD = 0.60
 
@@ -124,11 +104,8 @@ def normalize_name_for_matching(name: str | None) -> str:
     return " ".join(words)
 
 
-DESCRIPTION_SIMILARITY_THRESHOLD = 0.4
 DATE_TOLERANCE_DAYS = 7
 APPROXIMATE_TOLERANCE_DAYS = 730  # ±2 years (year-level estimates from vague temporal references)
-DESCRIPTION_WEIGHT = 0.8
-DATE_WEIGHT = 0.2
 
 
 @dataclass
@@ -199,25 +176,6 @@ class CumulativeF1Metrics:
     ai_events_count: int = 0
     gt_people_count: int = 0
     gt_events_count: int = 0
-
-
-@dataclass
-class SystemF1Metrics:
-    aggregate_micro_f1: float = 0.0
-    people_f1: float = 0.0
-    events_f1: float = 0.0
-    pair_bonds_f1: float = 0.0
-    symptom_macro_f1: float = 0.0
-    anxiety_macro_f1: float = 0.0
-    relationship_macro_f1: float = 0.0
-    functioning_macro_f1: float = 0.0
-    symptom_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
-    anxiety_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
-    relationship_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
-    functioning_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
-    exact_match_rate: float = 0.0
-    total_statements: int = 0
-    total_discussions: int = 0
 
 
 def parse_date_flexible(date_str: str | None) -> datetime | None:
@@ -307,18 +265,71 @@ def calculate_date_similarity(
         return 0.0
 
 
-def match_people(
-    ai_people: list[Person], gt_people: list[Person]
-) -> tuple[EntityMatchResult, dict[int, int]]:
-    """
-    Match people by name similarity, parent matching, and gender matching.
+def _resolve_parent_names(
+    person: Person,
+    people: list[Person],
+    pair_bonds: list[PairBond],
+) -> set[str]:
+    """Get normalized parent names for a person via their parents PairBond."""
+    if person.parents is None:
+        return set()
+    people_by_id = {p.id: p for p in people}
+    for bond in pair_bonds:
+        if bond.id == person.parents:
+            names = set()
+            for pid in (bond.person_a, bond.person_b):
+                parent = people_by_id.get(pid)
+                if parent and parent.name:
+                    names.add(normalize_name_for_matching(parent.name))
+            return names
+    return set()
 
-    Returns:
-        EntityMatchResult: matched pairs, unmatched AI, unmatched GT
-        dict[int, int]: ID mapping from AI person IDs to GT person IDs
+
+PARENTS_BOOST = 0.1
+
+
+def _parents_score(
+    ai_person: Person,
+    gt_person: Person,
+    ai_people: list[Person],
+    gt_people: list[Person],
+    ai_pair_bonds: list[PairBond],
+    gt_pair_bonds: list[PairBond],
+) -> float:
+    """Score 0.0-1.0 for how well parents match between two person candidates.
+
+    Returns 0.5 (neutral) if either side has no parents data.
+    """
+    ai_parents = _resolve_parent_names(ai_person, ai_people, ai_pair_bonds)
+    gt_parents = _resolve_parent_names(gt_person, gt_people, gt_pair_bonds)
+    if not ai_parents or not gt_parents:
+        return 0.5
+    total = 0.0
+    comparisons = 0
+    for ai_name in ai_parents:
+        for gt_name in gt_parents:
+            total += fuzz.token_set_ratio(ai_name, gt_name) / 100.0
+            comparisons += 1
+    avg = total / comparisons if comparisons else 0.5
+    return avg
+
+
+def match_people(
+    ai_people: list[Person],
+    gt_people: list[Person],
+    ai_pair_bonds: list[PairBond] | None = None,
+    gt_pair_bonds: list[PairBond] | None = None,
+) -> tuple[EntityMatchResult, dict[int, int]]:
+    """Match people by name similarity, gender, and parent names.
+
+    Parent matching acts as a tiebreaker when multiple GT candidates have
+    similar name scores. Requires pair_bonds lists to resolve Person.parents
+    PairBond IDs to parent person names.
     """
     result = EntityMatchResult()
     id_map = {}
+    ai_bonds = ai_pair_bonds or []
+    gt_bonds = gt_pair_bonds or []
 
     gt_remaining = list(gt_people)
     ai_processed = set()
@@ -352,8 +363,18 @@ def match_people(
                 ):
                     gender_match = ai_person.gender == gt_person.gender
 
-            if gender_match and name_sim > best_score:
-                best_score = name_sim
+            if not gender_match:
+                continue
+
+            parent_sim = _parents_score(
+                ai_person, gt_person,
+                ai_people, gt_people,
+                ai_bonds, gt_bonds,
+            )
+            score = name_sim + PARENTS_BOOST * parent_sim
+
+            if score > best_score:
+                best_score = score
                 best_match = gt_person
 
         if best_match:
@@ -382,13 +403,7 @@ def match_events(
     ai_events: list[Event], gt_events: list[Event], id_map: dict[int, int]
 ) -> EntityMatchResult:
     """
-    Match events by kind, links, date, and optionally description.
-
-    Matching criteria:
-    - kind must match exactly
-    - For Shift events: description similarity >= threshold (80% weight) + date (20% weight)
-    - For structural events (Birth, Death, etc.): skip description, match by kind + links + date
-    - links must match after ID resolution
+    Match events by kind, date, and person links (description not used).
 
     Args:
         id_map: Mapping from AI person IDs to GT person IDs
@@ -401,32 +416,10 @@ def match_events(
     for ai_event in ai_events:
         best_match = None
         best_score = 0.0
-        is_structural = ai_event.kind in STRUCTURAL_EVENT_KINDS
 
         for gt_event in gt_remaining:
             if ai_event.kind != gt_event.kind:
                 continue
-
-            # For Shift events, require description similarity
-            # For structural events (Birth, Death, etc.), skip description matching
-            gt_desc = (gt_event.description or "").lower()
-            if is_structural:
-                desc_sim = 1.0
-            else:
-                ai_desc = (ai_event.description or "").lower()
-
-                # Hybrid matching: try multiple strategies, take best
-                # 1. token_set_ratio - matches shared tokens regardless of order/extras
-                token_sim = fuzz.token_set_ratio(ai_desc, gt_desc) / 100.0
-                # 2. substring check - GT is often a concise version of verbose AI
-                substring_sim = 1.0 if gt_desc and gt_desc in ai_desc else 0.0
-                # 3. standard ratio - character-level similarity
-                ratio_sim = fuzz.ratio(ai_desc, gt_desc) / 100.0
-
-                desc_sim = max(token_sim, substring_sim, ratio_sim)
-
-                if desc_sim < DESCRIPTION_SIMILARITY_THRESHOLD:
-                    continue
 
             if not dates_within_tolerance(
                 ai_event.dateTime,
@@ -467,18 +460,14 @@ def match_events(
                 links_match = links_match and bool(set(ai_triangles) & gt_triangles)
 
             if links_match:
-                date_sim = calculate_date_similarity(
+                score = calculate_date_similarity(
                     ai_event.dateTime,
                     gt_event.dateTime,
                     ai_event.dateCertainty,
                     gt_event.dateCertainty,
                 )
-                weighted_score = (DESCRIPTION_WEIGHT * desc_sim) + (
-                    DATE_WEIGHT * date_sim
-                )
-
-                if weighted_score > best_score:
-                    best_score = weighted_score
+                if score > best_score:
+                    best_score = score
                     best_match = gt_event
 
         if best_match:
@@ -880,7 +869,9 @@ def calculate_statement_f1(
 
     metrics = StatementF1Metrics(statement_id=0)
 
-    people_result, id_map = match_people(ai_pdp.people, gt_pdp.people)
+    people_result, id_map = match_people(
+        ai_pdp.people, gt_pdp.people, ai_pdp.pair_bonds, gt_pdp.pair_bonds
+    )
     events_result = match_events(ai_pdp.events, gt_pdp.events, id_map)
     bonds_result = match_pair_bonds(ai_pdp.pair_bonds, gt_pdp.pair_bonds, id_map)
 
@@ -944,6 +935,138 @@ def calculate_statement_f1(
     return metrics
 
 
+def _augment_committed_id_map(
+    id_map: dict[int, int],
+    ai_pdp: PDP,
+    gt_pdp: PDP,
+    discussion,
+) -> None:
+    """
+    Augment id_map with mappings for committed (positive) person IDs.
+
+    When diagram_data has duplicate entries for the same person (e.g., id=1
+    "Sarah" and id=3 "Sarah"), the AI extraction may reference a different
+    committed ID than the GT cumulative PDP uses. This causes false negatives
+    in event and PairBond matching even when the AI correctly identified the
+    right person.
+
+    This function finds committed IDs referenced in AI events/PairBonds that
+    don't appear in GT, and maps them to GT committed IDs by name matching
+    against diagram_data.
+    """
+    if not discussion.diagram:
+        return
+
+    diagram_data = discussion.diagram.get_diagram_data()
+    committed_people = diagram_data.people
+    if not committed_people:
+        return
+
+    # Collect all positive (committed) IDs referenced in AI events and PairBonds
+    ai_committed_ids = set()
+    for event in ai_pdp.events:
+        for field_name in ("person", "spouse", "child"):
+            pid = getattr(event, field_name, None)
+            if pid is not None and pid > 0:
+                ai_committed_ids.add(pid)
+        for field_name in ("relationshipTargets", "relationshipTriangles"):
+            for pid in getattr(event, field_name, []) or []:
+                if pid > 0:
+                    ai_committed_ids.add(pid)
+    for bond in ai_pdp.pair_bonds:
+        if bond.person_a is not None and bond.person_a > 0:
+            ai_committed_ids.add(bond.person_a)
+        if bond.person_b is not None and bond.person_b > 0:
+            ai_committed_ids.add(bond.person_b)
+
+    # Collect all positive IDs in GT people
+    gt_committed_ids = {p.id for p in gt_pdp.people if p.id > 0}
+
+    # Find AI committed IDs that aren't in GT and try to map them
+    for ai_id in ai_committed_ids:
+        if ai_id in id_map or ai_id in gt_committed_ids:
+            continue  # Already mapped or same ID exists in GT
+
+        # Find the name of this committed person in diagram_data
+        ai_name = None
+        for cp in committed_people:
+            cp_id = cp.get("id") if isinstance(cp, dict) else getattr(cp, "id", None)
+            if cp_id == ai_id:
+                ai_name = (
+                    cp.get("name") if isinstance(cp, dict) else getattr(cp, "name", None)
+                )
+                break
+
+        if not ai_name:
+            continue
+
+        # Try to match this name to a GT committed person
+        ai_normalized = normalize_name_for_matching(ai_name)
+        for gt_person in gt_pdp.people:
+            if gt_person.id <= 0 or gt_person.id in id_map.values():
+                continue
+            gt_normalized = normalize_name_for_matching(gt_person.name)
+            sim = fuzz.token_set_ratio(ai_normalized, gt_normalized) / 100.0
+            if sim >= NAME_SIMILARITY_THRESHOLD:
+                id_map[ai_id] = gt_person.id
+                _log.debug(
+                    f"Committed ID map: AI {ai_id} -> GT {gt_person.id}"
+                )
+                break
+
+
+def _augment_duplicate_person_id_map(
+    id_map: dict[int, int],
+    ai_people: list[Person],
+    gt_people: list[Person],
+) -> None:
+    """
+    Augment id_map with mappings for duplicate AI people.
+
+    When the AI extraction creates multiple people with the same name (e.g.,
+    two "Robert" entries with different IDs), match_people only maps one of
+    them (1:1 matching). PairBonds referencing the unmapped duplicate will
+    fail to match even though they conceptually refer to the correct person.
+
+    This function finds unmatched AI people whose names match already-matched
+    GT people, and adds those duplicate mappings to the id_map.
+    """
+    # Build reverse map: GT person ID -> GT person name
+    gt_id_to_name = {p.id: p.name for p in gt_people}
+
+    # Build set of already-matched GT IDs from id_map values
+    matched_gt_ids = set(id_map.values())
+
+    # For each AI person NOT in the id_map, try name matching against
+    # already-matched GT people
+    for ai_person in ai_people:
+        if ai_person.id in id_map:
+            continue  # Already mapped
+
+        ai_normalized = normalize_name_for_matching(ai_person.name)
+        if not ai_normalized:
+            continue
+
+        best_gt_id = None
+        best_score = 0.0
+
+        for gt_id in matched_gt_ids:
+            gt_name = gt_id_to_name.get(gt_id)
+            if not gt_name:
+                continue
+            gt_normalized = normalize_name_for_matching(gt_name)
+            sim = fuzz.token_set_ratio(ai_normalized, gt_normalized) / 100.0
+            if sim >= NAME_SIMILARITY_THRESHOLD and sim > best_score:
+                best_score = sim
+                best_gt_id = gt_id
+
+        if best_gt_id is not None:
+            id_map[ai_person.id] = best_gt_id
+            _log.debug(
+                f"Duplicate person map: AI {ai_person.id} -> GT {best_gt_id}"
+            )
+
+
 def calculate_cumulative_f1(discussion_id: int) -> CumulativeF1Metrics:
     from btcopilot.personal.models import Discussion, Statement
     from btcopilot.training.models import Feedback
@@ -972,6 +1095,17 @@ def calculate_cumulative_f1(discussion_id: int) -> CumulativeF1Metrics:
     ai_pdp = cumulative(discussion, last_stmt)
     gt_pdp = cumulative(discussion, last_stmt, auditor_id=auditor_id)
 
+    # Fall back to diagram PDP when no per-statement deltas exist (extract_full path)
+    if (
+        not ai_pdp.people
+        and not ai_pdp.events
+        and not ai_pdp.pair_bonds
+        and discussion.diagram
+    ):
+        diagram_data = discussion.diagram.get_diagram_data()
+        if diagram_data.pdp.people or diagram_data.pdp.events or diagram_data.pdp.pair_bonds:
+            ai_pdp = diagram_data.pdp
+
     metrics = CumulativeF1Metrics(
         discussion_id=discussion_id,
         discussion_summary=discussion.summary or "",
@@ -982,7 +1116,17 @@ def calculate_cumulative_f1(discussion_id: int) -> CumulativeF1Metrics:
         gt_events_count=len(gt_pdp.events),
     )
 
-    people_result, id_map = match_people(ai_pdp.people, gt_pdp.people)
+    people_result, id_map = match_people(
+        ai_pdp.people, gt_pdp.people, ai_pdp.pair_bonds, gt_pdp.pair_bonds
+    )
+
+    # Augment id_map: resolve committed ID mismatches from diagram_data
+    if discussion.diagram:
+        _augment_committed_id_map(id_map, ai_pdp, gt_pdp, discussion)
+
+    # Augment id_map: resolve duplicate AI people (same name, different IDs)
+    _augment_duplicate_person_id_map(id_map, ai_pdp.people, gt_pdp.people)
+
     events_result = match_events(ai_pdp.events, gt_pdp.events, id_map)
     bonds_result = match_pair_bonds(ai_pdp.pair_bonds, gt_pdp.pair_bonds, id_map)
 
@@ -1090,170 +1234,3 @@ def calculate_all_cumulative_f1(
         system.relationship_macro_f1 = sum(r.relationship_macro_f1 for r in results) / n
         system.functioning_macro_f1 = sum(r.functioning_macro_f1 for r in results) / n
     return system
-
-
-def calculate_system_f1(include_synthetic: bool = True) -> SystemF1Metrics:
-    """
-    Calculate system-wide F1 metrics across all approved ground truth statements.
-
-    Queries database for all approved feedbacks and calculates aggregate metrics.
-
-    Args:
-        include_synthetic: If True, include synthetic discussions in metrics.
-                          If False, exclude discussions where Discussion.synthetic=True.
-    """
-    from btcopilot.training.models import Feedback
-    from btcopilot.personal.models import Statement, Discussion
-
-    metrics = SystemF1Metrics()
-
-    query = Feedback.query.filter(Feedback.approved == True).filter(
-        Feedback.feedback_type == "extraction"
-    )
-
-    if not include_synthetic:
-        query = (
-            query.join(Statement, Feedback.statement_id == Statement.id)
-            .join(Discussion, Statement.discussion_id == Discussion.id)
-            .filter(Discussion.synthetic == False)
-        )
-
-    approved_feedbacks = query.all()
-
-    if not approved_feedbacks:
-        return metrics
-
-    statement_metrics_list = []
-    discussion_ids = set()
-
-    for feedback in approved_feedbacks:
-        statement = Statement.query.get(feedback.statement_id)
-        if not statement or not statement.pdp_deltas:
-            continue
-
-        discussion_ids.add(statement.discussion_id)
-
-        try:
-            stmt_metrics = calculate_statement_f1(
-                statement.pdp_deltas, feedback.edited_extraction
-            )
-            stmt_metrics.statement_id = statement.id
-            statement_metrics_list.append(stmt_metrics)
-        except Exception as e:
-            _log.error(
-                f"Error calculating F1 for statement {statement.id}: {e}", exc_info=True
-            )
-            continue
-
-    if not statement_metrics_list:
-        return metrics
-
-    metrics.total_statements = len(statement_metrics_list)
-    metrics.total_discussions = len(discussion_ids)
-
-    metrics.aggregate_micro_f1 = sum(
-        m.aggregate_micro_f1 for m in statement_metrics_list
-    ) / len(statement_metrics_list)
-    metrics.people_f1 = sum(m.people_f1 for m in statement_metrics_list) / len(
-        statement_metrics_list
-    )
-    metrics.events_f1 = sum(m.events_f1 for m in statement_metrics_list) / len(
-        statement_metrics_list
-    )
-    metrics.pair_bonds_f1 = sum(m.pair_bonds_f1 for m in statement_metrics_list) / len(
-        statement_metrics_list
-    )
-
-    metrics.symptom_macro_f1 = sum(
-        m.symptom_macro_f1 for m in statement_metrics_list
-    ) / len(statement_metrics_list)
-    metrics.anxiety_macro_f1 = sum(
-        m.anxiety_macro_f1 for m in statement_metrics_list
-    ) / len(statement_metrics_list)
-    metrics.relationship_macro_f1 = sum(
-        m.relationship_macro_f1 for m in statement_metrics_list
-    ) / len(statement_metrics_list)
-    metrics.functioning_macro_f1 = sum(
-        m.functioning_macro_f1 for m in statement_metrics_list
-    ) / len(statement_metrics_list)
-
-    metrics.symptom_hierarchical = SARFVariableF1(
-        detection_f1=sum(
-            m.symptom_hierarchical.detection_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        value_match_f1=sum(
-            m.symptom_hierarchical.value_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        people_match_f1=sum(
-            m.symptom_hierarchical.people_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-    )
-    metrics.anxiety_hierarchical = SARFVariableF1(
-        detection_f1=sum(
-            m.anxiety_hierarchical.detection_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        value_match_f1=sum(
-            m.anxiety_hierarchical.value_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        people_match_f1=sum(
-            m.anxiety_hierarchical.people_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-    )
-    metrics.relationship_hierarchical = SARFVariableF1(
-        detection_f1=sum(
-            m.relationship_hierarchical.detection_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        value_match_f1=sum(
-            m.relationship_hierarchical.value_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        people_match_f1=sum(
-            m.relationship_hierarchical.people_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-    )
-    metrics.functioning_hierarchical = SARFVariableF1(
-        detection_f1=sum(
-            m.functioning_hierarchical.detection_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        value_match_f1=sum(
-            m.functioning_hierarchical.value_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-        people_match_f1=sum(
-            m.functioning_hierarchical.people_match_f1 for m in statement_metrics_list
-        )
-        / len(statement_metrics_list),
-    )
-
-    metrics.exact_match_rate = sum(m.exact_match for m in statement_metrics_list) / len(
-        statement_metrics_list
-    )
-
-    return metrics
-
-
-def invalidate_f1_cache(statement_id: int | None = None):
-    """
-    Invalidate F1 cache when feedback is approved/unapproved or edited.
-
-    Args:
-        statement_id: If provided, only invalidate cache for this statement.
-                     If None, invalidate all cache.
-    """
-    if statement_id is None:
-        _f1_cache.clear()
-        _f1_cache_time.clear()
-    else:
-        keys_to_remove = [k for k in _f1_cache if f"stmt_{statement_id}_" in k]
-        for k in keys_to_remove:
-            _f1_cache.pop(k, None)
-            _f1_cache_time.pop(k, None)

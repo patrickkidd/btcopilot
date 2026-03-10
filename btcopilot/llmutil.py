@@ -7,13 +7,16 @@ import logging
 from dataclasses import fields, MISSING
 from typing import get_origin, get_args, Union
 
+from google.genai.errors import ClientError, ServerError
+
 from btcopilot.schema import from_dict
 
 _log = logging.getLogger(__name__)
 
-EXTRACTION_MODEL = "gemini-2.5-flash"
-EXTRACTION_MODEL_LARGE = "gemini-2.5-flash"
+EXTRACTION_MODEL = "gemini-3-flash-preview"
+EXTRACTION_MODEL_LARGE = "gemini-3-flash-preview"
 RESPONSE_MODEL = "gemini-3-flash-preview"
+CALIBRATION_MODEL = "gemini-3-flash-preview"
 
 
 class OutputTruncatedError(Exception):
@@ -162,6 +165,8 @@ PDP_FORCE_REQUIRED = {
 
 
 GEMINI_TIMEOUT_MS = 120_000
+GEMINI_MAX_RETRIES = 3
+GEMINI_RETRY_BACKOFF = 5  # seconds, doubled each retry
 
 
 def _client():
@@ -187,17 +192,32 @@ async def gemini_structured(prompt, response_format, large=False):
 
     model = EXTRACTION_MODEL_LARGE if large else EXTRACTION_MODEL
 
-    response = await _client().aio.models.generate_content(
-        model=model,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.1,
-            max_output_tokens=65536,
-            response_mime_type="application/json",
-            response_schema=response_schema,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-        ),
+    client = _client()
+    config = types.GenerateContentConfig(
+        temperature=0.1,
+        max_output_tokens=65536,
+        response_mime_type="application/json",
+        response_schema=response_schema,
+        thinking_config=types.ThinkingConfig(thinking_budget=1024),
     )
+
+    for attempt in range(GEMINI_MAX_RETRIES):
+        try:
+            response = await client.aio.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=config,
+            )
+            break
+        except ServerError as e:
+            if attempt == GEMINI_MAX_RETRIES - 1:
+                raise
+            delay = GEMINI_RETRY_BACKOFF * (2**attempt)
+            _log.warning(
+                f"Gemini ServerError (attempt {attempt + 1}/{GEMINI_MAX_RETRIES}), "
+                f"retrying in {delay}s: {e}"
+            )
+            await asyncio.sleep(delay)
 
     _log.debug(f"Completed response in {time.time() - start_time} seconds")
     finish_reason = response.candidates[0].finish_reason
@@ -243,11 +263,25 @@ async def gemini_text(prompt=None, **kwargs):
     else:
         contents = prompt
 
-    response = await _client().aio.models.generate_content(
-        model=RESPONSE_MODEL,
-        contents=contents,
-        config=config,
-    )
+    client = _client()
+    for attempt in range(GEMINI_MAX_RETRIES):
+        try:
+            response = await client.aio.models.generate_content(
+                model=RESPONSE_MODEL,
+                contents=contents,
+                config=config,
+            )
+            break
+        except ServerError as e:
+            if attempt == GEMINI_MAX_RETRIES - 1:
+                raise
+            delay = GEMINI_RETRY_BACKOFF * (2**attempt)
+            _log.warning(
+                f"Gemini ServerError (attempt {attempt + 1}/{GEMINI_MAX_RETRIES}), "
+                f"retrying in {delay}s: {e}"
+            )
+            await asyncio.sleep(delay)
+
     content = response.text
     _log.debug(f"Completed response in {time.time() - start_time} seconds")
     _log.debug(f"gemini_text(): --> \n\n{content}")
@@ -256,3 +290,59 @@ async def gemini_text(prompt=None, **kwargs):
 
 def gemini_text_sync(prompt=None, **kwargs):
     return asyncio.run(gemini_text(prompt, **kwargs))
+
+
+async def gemini_calibration(prompt, system_instruction=None, deep=False):
+    from google.genai import types
+
+    start_time = time.time()
+    if deep:
+        config = types.GenerateContentConfig(
+            temperature=0.2,
+            max_output_tokens=4096,
+            thinking_config=types.ThinkingConfig(thinking_budget=4096),
+        )
+    else:
+        config = types.GenerateContentConfig(
+            temperature=0.2,
+            max_output_tokens=2048,
+        )
+    if system_instruction:
+        config.system_instruction = system_instruction
+
+    client = _client()
+    for attempt in range(GEMINI_MAX_RETRIES):
+        try:
+            response = await client.aio.models.generate_content(
+                model=CALIBRATION_MODEL,
+                contents=prompt,
+                config=config,
+            )
+            break
+        except ClientError as e:
+            if "RESOURCE_EXHAUSTED" not in str(e) or attempt == GEMINI_MAX_RETRIES - 1:
+                raise
+            delay = 30 * (attempt + 1)
+            _log.warning(
+                f"Gemini rate limit (attempt {attempt + 1}/{GEMINI_MAX_RETRIES}), "
+                f"retrying in {delay}s"
+            )
+            await asyncio.sleep(delay)
+        except ServerError as e:
+            if attempt == GEMINI_MAX_RETRIES - 1:
+                raise
+            delay = GEMINI_RETRY_BACKOFF * (2**attempt)
+            _log.warning(
+                f"Gemini ServerError (attempt {attempt + 1}/{GEMINI_MAX_RETRIES}), "
+                f"retrying in {delay}s: {e}"
+            )
+            await asyncio.sleep(delay)
+
+    content = response.text
+    _log.debug(f"gemini_calibration() completed in {time.time() - start_time}s")
+    _log.debug(f"gemini_calibration(): --> \n\n{content}")
+    return content
+
+
+def gemini_calibration_sync(prompt, system_instruction=None):
+    return asyncio.run(gemini_calibration(prompt, system_instruction))

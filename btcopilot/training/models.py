@@ -23,6 +23,7 @@ class Feedback(db.Model, ModelMixin):
     thumbs_down = Column(Boolean, default=False)
     comment = Column(Text, nullable=True)
     edited_extraction = Column(JSON, nullable=True)
+    meta = Column(JSON, nullable=True)
 
     # Approval fields for test case generation
     approved = Column(Boolean, default=False)

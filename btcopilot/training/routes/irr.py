@@ -15,13 +15,12 @@ from btcopilot.training.irr_metrics import (
     safe_avg,
 )
 from btcopilot.training.models import Feedback, ReconciliationNote
-from btcopilot.training.utils import get_discussion_view_menu
+from btcopilot.training.utils import get_discussion_breadcrumbs
+from btcopilot.training.calibrationutils import SARF_FIELDS
 
 bp = Blueprint("irr", __name__, url_prefix="/irr")
-
-SARF_FIELDS = ["symptom", "anxiety", "relationship", "functioning"]
-EVENT_FIELDS = ["description", "dateTime", "dateCertainty"]
-PERSON_FIELDS = ["gender", "last_name", "parents"]
+EVENT_FIELDS = ("description", "dateTime", "dateCertainty")
+PERSON_FIELDS = ("gender", "last_name", "parents")
 
 
 def _field_coded(obj: dict, field: str) -> bool:
@@ -40,7 +39,7 @@ def _compute_sarf_disagreements(extractions: dict) -> dict:
     if len(extractions) < 2:
         return {}
 
-    compared_fields = ["kind", "person"] + SARF_FIELDS + EVENT_FIELDS
+    compared_fields = ("kind", "person") + SARF_FIELDS + EVENT_FIELDS
     disagreements = {}
 
     # Get max events across all coders
@@ -268,16 +267,7 @@ def discussion(discussion_id: int):
         speaker.id: idx + 1 for idx, speaker in enumerate(expert_speakers)
     }
 
-    menu, active_title = get_discussion_view_menu(discussion_id, "irr")
-    breadcrumbs = [
-        {"title": "Coding", "url": url_for("training.audit.index")},
-        {"title": "IRR", "url": url_for("training.irr.index")},
-        {
-            "title": disc.summary or f"Discussion {discussion_id}",
-            "url": url_for("training.discussions.audit", discussion_id=discussion_id),
-        },
-        {"title": active_title, "menu": menu},
-    ]
+    breadcrumbs = get_discussion_breadcrumbs(disc, "irr")
 
     return render_template(
         "training/irr_discussion.html",
@@ -301,7 +291,7 @@ def review(discussion_id: int):
     if not irr:
         abort(404, "No multi-coder data available for this discussion")
 
-    coders = sorted(irr.coders)
+    coders = sorted(irr.coders, key=lambda c: (c.startswith("ai-"), c))
     statements = (
         Statement.query.filter_by(discussion_id=discussion_id)
         .join(Speaker)
@@ -337,16 +327,7 @@ def review(discussion_id: int):
         speaker.id: idx + 1 for idx, speaker in enumerate(expert_speakers)
     }
 
-    menu, active_title = get_discussion_view_menu(discussion_id, "review")
-    breadcrumbs = [
-        {"title": "Coding", "url": url_for("training.audit.index")},
-        {"title": "IRR", "url": url_for("training.irr.index")},
-        {
-            "title": disc.summary or f"Discussion {discussion_id}",
-            "url": url_for("training.discussions.audit", discussion_id=discussion_id),
-        },
-        {"title": active_title, "menu": menu},
-    ]
+    breadcrumbs = get_discussion_breadcrumbs(disc, "review")
 
     return render_template(
         "training/irr_review.html",
@@ -369,22 +350,13 @@ def pairwise_matrix(discussion_id: int):
     if not irr:
         abort(404, "No multi-coder data available")
 
-    coders = sorted(irr.coders)
+    coders = sorted(irr.coders, key=lambda c: (c.startswith("ai-"), c))
     matrix = {}
     for pair in irr.pairwise_metrics:
         matrix[(pair.coder_a, pair.coder_b)] = pair
         matrix[(pair.coder_b, pair.coder_a)] = pair
 
-    menu, active_title = get_discussion_view_menu(discussion_id, "matrix")
-    breadcrumbs = [
-        {"title": "Coding", "url": url_for("training.audit.index")},
-        {"title": "IRR", "url": url_for("training.irr.index")},
-        {
-            "title": disc.summary or f"Discussion {discussion_id}",
-            "url": url_for("training.discussions.audit", discussion_id=discussion_id),
-        },
-        {"title": active_title, "menu": menu},
-    ]
+    breadcrumbs = get_discussion_breadcrumbs(disc, "matrix")
 
     return render_template(
         "training/irr_matrix.html",

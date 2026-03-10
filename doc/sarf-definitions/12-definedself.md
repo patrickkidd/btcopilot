@@ -209,10 +209,10 @@ Different sources use different terms:
 
 | # | Search String (5-15 words for Cmd+F) | Concept Extracted |
 |---|--------------------------------------|-------------------|
-| FE4-58 | "two people with basic levels of 35 who marry might...one spouse's functional level rises" | Functional vs basic self distinction |
-| FE4-60 | "The higher the basic level, the more consistently high the functional level" | Solid self = consistent |
-| FE4-82 | "pseudo-self of each partner merges into the relationship" | Pseudo-self can be traded; solid self cannot |
-| FE4-110 | "Fixers try to 'correct' the situation" | Non-defined self = trying to change other |
+| <a id="FE4-58"></a>FE4-58 | "two people with basic levels of 35 who marry might...one spouse's functional level rises" | Functional vs basic self distinction |
+| <a id="FE4-60"></a>FE4-60 | "The higher the basic level, the more consistently high the functional level" | Solid self = consistent |
+| <a id="FE4-82"></a>FE4-82 | "pseudo-self of each partner merges into the relationship" | Pseudo-self can be traded; solid self cannot |
+| <a id="FE4-110"></a>FE4-110 | "Fixers try to 'correct' the situation" | Non-defined self = trying to change other |
 
 ---
 
@@ -220,12 +220,12 @@ Different sources use different terms:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE5-21 | "cycles of each person's feeling criticized, getting defensive, and counterattacking" | Non-defined self = defensive cycles |
-| FE5-25 | "actions are taken to relieve the anxiety of the moment rather than...long-term view" | Pseudo-self changes to relieve anxiety |
-| FE5-31 | "learning depends on having the courage to engage emotionally intense situations" | Defined self engages intensity |
-| FE5-32 | "anxiety of progression rather than regression" | Differentiation anxiety = progression; tolerable |
-| FE5-33 | "recognizing the difference between feeling and thinking responses" | Core skill: distinguish feeling from thinking |
-| FE5-34 | "Functioning based on principle requires a tolerance of anxiety" | Principle-based = anxiety tolerance required |
+| <a id="FE5-21"></a>FE5-21 | "cycles of each person's feeling criticized, getting defensive, and counterattacking" | Non-defined self = defensive cycles |
+| <a id="FE5-25"></a>FE5-25 | "actions are taken to relieve the anxiety of the moment rather than...long-term view" | Pseudo-self changes to relieve anxiety |
+| <a id="FE5-31"></a>FE5-31 | "learning depends on having the courage to engage emotionally intense situations" | Defined self engages intensity |
+| <a id="FE5-32"></a>FE5-32 | "anxiety of progression rather than regression" | Differentiation anxiety = progression; tolerable |
+| <a id="FE5-33"></a>FE5-33 | "recognizing the difference between feeling and thinking responses" | Core skill: distinguish feeling from thinking |
+| <a id="FE5-34"></a>FE5-34 | "Functioning based on principle requires a tolerance of anxiety" | Principle-based = anxiety tolerance required |
 
 ---
 
@@ -233,10 +233,10 @@ Different sources use different terms:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE6-100 | "ability to see both sides of a relationship process between two others" | Defined self can see both sides; not triangled |
-| FE6-108 | "respond to someone's efforts to triangle by saying and doing things that push that person together" | Defined self action: push pair together, not take sides |
-| FE6-117 | "Dad...He thinks you are finally becoming the type of wife he has always wanted" | Humorous defined self deflects triangling |
-| FE6-127 | "Actions have more impact than words in a detriangling effort" | Actions must match defined self words |
+| <a id="FE6-100"></a>FE6-100 | "ability to see both sides of a relationship process between two others" | Defined self can see both sides; not triangled |
+| <a id="FE6-108"></a>FE6-108 | "respond to someone's efforts to triangle by saying and doing things that push that person together" | Defined self action: push pair together, not take sides |
+| <a id="FE6-117"></a>FE6-117 | "Dad...He thinks you are finally becoming the type of wife he has always wanted" | Humorous defined self deflects triangling |
+| <a id="FE6-127"></a>FE6-127 | "Actions have more impact than words in a detriangling effort" | Actions must match defined self words |
 
 ---
 
@@ -244,8 +244,8 @@ Different sources use different terms:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE3-8 | "Two very well differentiated people are not easily threatened" | High differentiation = not threatened by other's position |
-| FE3-9 | "periods of closeness and distance are tolerated equally well" | Defined self tolerates range of connection |
+| <a id="FE3-8"></a>FE3-8 | "Two very well differentiated people are not easily threatened" | High differentiation = not threatened by other's position |
+| <a id="FE3-9"></a>FE3-9 | "periods of closeness and distance are tolerated equally well" | Defined self tolerates range of connection |
 
 ---
 
@@ -253,5 +253,5 @@ Different sources use different terms:
 
 | # | Search String | Concept Extracted |
 |---|---------------|-------------------|
-| FE9-22 | "Declaring one's 'independence' from family is not differentiation of self" | Defined self ≠ withdrawal/cutoff; maintains contact |
-| FE9-23 | "If a person gains more emotional objectivity about his family of origin" | Emotional objectivity = component of defined self |
+| <a id="FE9-22"></a>FE9-22 | "Declaring one's 'independence' from family is not differentiation of self" | Defined self ≠ withdrawal/cutoff; maintains contact |
+| <a id="FE9-23"></a>FE9-23 | "If a person gains more emotional objectivity about his family of origin" | Emotional objectivity = component of defined self |

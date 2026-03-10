@@ -147,7 +147,10 @@ def calculate_pairwise_irr(
     coder_a_id: str,
     coder_b_id: str,
 ) -> CoderPairMetrics:
-    people_result, id_map = match_people(extraction_a.people, extraction_b.people)
+    people_result, id_map = match_people(
+        extraction_a.people, extraction_b.people,
+        extraction_a.pair_bonds, extraction_b.pair_bonds,
+    )
     events_result = match_events(extraction_a.events, extraction_b.events, id_map)
     bonds_result = match_pair_bonds(extraction_a.pair_bonds, extraction_b.pair_bonds, id_map)
 

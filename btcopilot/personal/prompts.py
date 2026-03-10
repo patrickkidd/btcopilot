@@ -733,53 +733,133 @@ Error history (do NOT reintroduce ANY of these errors):
 Fix ALL errors and return the complete corrected deltas.
 """
 
-DATA_FULL_EXTRACTION_CONTEXT = """
 
-**FULL DISCUSSION EXTRACTION MODE:**
+# ═══════════════════════════════════════════════════════════════════════════════
+# SPLIT EXTRACTION PROMPTS (2-pass: structure first, then shifts+SARF)
+# ═══════════════════════════════════════════════════════════════════════════════
 
-You are analyzing an ENTIRE discussion transcript below. Extract ALL people,
-events, pair_bonds, and relationships mentioned throughout the conversation.
-This is NOT incremental — extract everything you find into a single complete
-result.
+DATA_EXTRACTION_PASS1_PROMPT = """
+You are a structured data extractor for a family diagram application.
+Today's date is {current_date}.
 
-**Existing Diagram State (avoid duplicates with committed items):**
+Extract people, pair bonds, and structural life events from the conversation.
 
-{diagram_data}
+**Output format**: Return a JSON object with `people`, `events`, and `pair_bonds` arrays.
 
-**FULL DISCUSSION TRANSCRIPT:**
+**People**: Each person mentioned by name.
+- `id`: unique integer (start at 1, increment)
+- `name`: first name
+- `last_name`: last name if mentioned
+- `gender`: "male" or "female" if clear from context
 
-{conversation_history}
+**Pair Bonds**: Marriages and committed relationships.
+- `person_a`: id of one partner
+- `person_b`: id of the other partner
 
-**EXTRACT:** All people mentioned (with names, gender, parent relationships),
-all events with dates and SARF variables, all pair_bonds between couples/parents.
+**Events**: Structural life events only (NOT emotional shifts — those come later).
+- `id`: unique integer (start at 1, increment)
+- `kind`: one of: "birth", "adopted", "married", "bonded", "separated", "divorced", "moved", "death"
+- `person`: id of the person this event belongs to
+- `spouse`: id of spouse (for married/bonded/separated/divorced)
+- `child`: id of child (for birth/adopted — the event goes on a PARENT, child references the offspring)
+- `description`: brief factual description
+- `dateTime`: ISO date string if mentioned or inferable (YYYY-MM-DD)
+- `dateCertainty`: "certain" if a specific date/month/year was stated, "approximate" otherwise
+- `notes`: additional context from the conversation
 
-ID ASSIGNMENT REMINDER: People, events, and pair_bonds share ONE ID sequence.
-If you create people at -1 to -10, events must start at -11, not -1.
-Example: 5 people → [-1 to -5], 10 events → [-6 to -15], 1 pair_bond → [-16]
+**Rules**:
+- Every person mentioned by name gets a Person entry
+- Birth events go on PARENTS, not the child. The `child` field references who was born.
+- Marriage/divorce events need both `person` and `spouse` fields
+- Use conversation context to infer approximate dates when exact dates aren't given
+- Do NOT extract emotional shifts, symptoms, anxiety, or functioning changes — that is Pass 2
 
+**Committed Data**:
+The diagram state below may contain items already committed by the user with
+POSITIVE IDs. Use negative IDs for new items. Reference committed items by
+their positive IDs — do NOT recreate them with new negative IDs.
 """
 
-DATA_IMPORT_CONTEXT = """
+DATA_EXTRACTION_PASS1_CONTEXT = """
 
-**BULK IMPORT MODE - Extract ALL data from this text chunk:**
-
-You are importing a journal or document. Extract ALL people, events, and
-relationships mentioned in the text below. This is NOT incremental - extract
-everything you find.
-
-**Existing Diagram State (avoid duplicates with these):**
-
+**COMMITTED DIAGRAM STATE (positive IDs — reference these, do NOT recreate):**
 {diagram_data}
 
-**TEXT TO EXTRACT FROM (this is chunk {chunk_num} of {total_chunks}):**
+**Conversation to extract from**:
+{conversation_history}
+"""
 
-{text_chunk}
+DATA_EXTRACTION_PASS2_PROMPT = """
+You are a structured data extractor for a family diagram application.
+Today's date is {current_date}.
 
-**EXTRACT:** All people mentioned, all events with dates, all relationships.
+You are given the output of Pass 1 (people, pair bonds, structural events). Your job is to
+extract **shift events** — moments where a person's symptoms, anxiety, functioning, or
+relationship patterns changed.
 
-ID ASSIGNMENT REMINDER: People, events, and pair_bonds share ONE ID sequence.
-If you create people at -1 to -10, events must start at -11, not -1.
+**Output format**: Return a JSON object with `people`, `events`, and `pair_bonds` arrays.
+- `people` and `pair_bonds` should be empty arrays (already extracted in Pass 1)
+- `events` should contain ONLY shift events
 
+**Shift Events**:
+- `id`: unique integer (continue from the highest id in pass1_data)
+- `kind`: always "shift"
+- `person`: id of the person experiencing the shift
+- `description`: what changed, in factual terms
+- `dateTime`: ISO date if mentioned or inferable
+- `dateCertainty`: "certain" or "approximate"
+- `notes`: relevant context from the conversation
+- `symptom`: "up", "down", or "same" — did physical/emotional symptoms increase, decrease, or stay the same?
+- `anxiety`: "up", "down", or "same" — did anxiety increase, decrease, or stay the same?
+- `functioning`: "up", "down", or "same" — did ability to function (work, daily tasks, relationships) go up, down, or stay the same?
+
+**Rules**:
+- Only extract shifts that are clearly described or strongly implied in the conversation
+- A shift needs at least one of: symptom, anxiety, or functioning
+- Tie shifts to specific timeframes when possible (e.g., "after grandma died", "when I lost my job")
+- Reference people by their Pass 1 ids
+"""
+
+DATA_EXTRACTION_PASS2_CONTEXT = """
+
+**Pass 1 data** (people, bonds, and structural events already extracted):
+{pass1_data}
+
+**Committed shift events (do NOT recreate these):**
+{committed_shift_events}
+
+**Conversation to extract from**:
+{conversation_history}
+"""
+
+
+SARF_REVIEW_PROMPT = """\
+You are reviewing clinical shift events extracted from a family therapy discussion.
+
+For each event below, verify and correct the SARF variable coding:
+
+**SARF Variables:**
+- **symptom** (up/down/same/null): Physical or mental health change.
+- **anxiety** (up/down/same/null): Automatic response to threat.
+- **relationship** (distance/overfunctioning/underfunctioning/conflict/projection/cutoff/toward/away/fusion/inside/outside/defined-self/null): How the person BEHAVES TOWARD others. This is the most common variable in family discussions.
+- **functioning** (up/down/same/null): Ability to manage self productively.
+
+**CRITICAL DISTINCTIONS:**
+- Withdrawing from contact, avoiding people, "going into a shell" = **relationship: distance**, NOT anxiety or functioning
+- Doing too much for others, keeping everything together, caretaking burden = **relationship: overfunctioning**, NOT functioning down
+- Anxious focus on a child's problems = **relationship: projection**, NOT anxiety
+- Fighting about a third party = **relationship: inside** (triangle), NOT conflict
+
+**REVIEW EACH EVENT and return the corrected version. Keep all fields unchanged except SARF variables.**
+
+Events to review:
+{events_json}
+
+People context:
+{people_json}
+
+Original conversation:
+{conversation_history}
 """
 
 
@@ -811,12 +891,12 @@ if _prompts_path:
             # Override all prompt variables from private file
             SUMMARIZE_MESSAGES_PROMPT = _private.SUMMARIZE_MESSAGES_PROMPT
             CONVERSATION_FLOW_PROMPT = _private.CONVERSATION_FLOW_PROMPT
-            DATA_EXTRACTION_PROMPT = _private.DATA_EXTRACTION_PROMPT
-            DATA_EXTRACTION_EXAMPLES = _private.DATA_EXTRACTION_EXAMPLES
-            DATA_EXTRACTION_CONTEXT = _private.DATA_EXTRACTION_CONTEXT
             DATA_EXTRACTION_CORRECTION = _private.DATA_EXTRACTION_CORRECTION
-            DATA_FULL_EXTRACTION_CONTEXT = _private.DATA_FULL_EXTRACTION_CONTEXT
-            DATA_IMPORT_CONTEXT = _private.DATA_IMPORT_CONTEXT
+            DATA_EXTRACTION_PASS1_PROMPT = _private.DATA_EXTRACTION_PASS1_PROMPT
+            DATA_EXTRACTION_PASS1_CONTEXT = _private.DATA_EXTRACTION_PASS1_CONTEXT
+            DATA_EXTRACTION_PASS2_PROMPT = _private.DATA_EXTRACTION_PASS2_PROMPT
+            DATA_EXTRACTION_PASS2_CONTEXT = _private.DATA_EXTRACTION_PASS2_CONTEXT
+            SARF_REVIEW_PROMPT = _private.SARF_REVIEW_PROMPT
 
             _log.info(f"Loaded private prompts from {_prompts_path}")
 

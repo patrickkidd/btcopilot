@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}[Timeline] {{ discussion.summary or 'Discussion ' ~ discussion.id }}{% endblock %}
+
+{# SARF badge class per SARF_VISUAL_SPEC.md #}
+{% macro sarf_class(field, val) -%}
+    {%- if field == 'functioning' and val in ('up','down') -%}
+        shift-functioning-{{ val }}
+    {%- elif val in ('up','down','same') -%}
+        shift-{{ val }}
+    {%- elif val -%}
+        shift-relationship
+    {%- endif -%}
+{%- endmacro %}
+
+{# Format ISO date yyyy-mm-dd as mm/dd/yyyy #}
+{% macro fmt_date(d) -%}
+    {%- if d and d|length >= 10 -%}
+        {{ d[5:7] }}/{{ d[8:10] }}/{{ d[:4] }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# Single SARF badge #}
+{% macro sarf_badge(field, val) -%}
+    <span class="shift-indicator is-small {{ sarf_class(field, val) }}">{{ field[0]|upper }}:{{ val }}</span>
+{%- endmacro %}
+
+{# Single SARF badge with red border to flag disagreement #}
+{% macro sarf_badge_diff(field, val) -%}
+    <span class="shift-indicator is-small {{ sarf_class(field, val) }}" style="border: 2px solid var(--color-danger-emphasis);">{{ field[0]|upper }}:{{ val or '-' }}</span>
+{%- endmacro %}
+
+{% block content %}
+
+<style>
+.diff-grid {
+    display: grid;
+    grid-template-columns: 1fr 2rem 1fr;
+    font-size: 0.8rem;
+    border: 1px solid var(--color-border-default);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.diff-header {
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    background: var(--color-canvas-subtle);
+    border-bottom: 1px solid var(--color-border-default);
+}
+.diff-gutter-header {
+    background: var(--color-canvas-subtle);
+    border-bottom: 1px solid var(--color-border-default);
+}
+.diff-cell {
+    padding: 0.4rem 0.75rem;
+    border-bottom: 1px solid var(--color-border-muted);
+    min-height: 2.2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.diff-gutter {
+    border-bottom: 1px solid var(--color-border-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-fg-muted);
+    font-size: 0.75rem;
+    border-left: 1px solid var(--color-border-default);
+    border-right: 1px solid var(--color-border-default);
+}
+.diff-cell-empty {
+    color: var(--color-fg-muted);
+    font-style: italic;
+}
+.diff-row-a-only.diff-cell-a { background: rgba(248, 81, 73, 0.15); }
+.diff-row-b-only.diff-cell-b { background: rgba(63, 185, 80, 0.15); }
+.diff-row-disagree.diff-cell-a,
+.diff-row-disagree.diff-cell-b { background: rgba(210, 153, 34, 0.15); }
+{# Per SARF_VISUAL_SPEC.md — stoplight: red=bad, yellow=same, green=good #}
+.shift-up { background-color: #e74c3c; color: white; }
+.shift-down { background-color: #27ae60; color: white; }
+.shift-same { background-color: #f0ad4e; color: white; }
+.shift-functioning-up { background-color: #27ae60; color: white; }
+.shift-functioning-down { background-color: #e74c3c; color: white; }
+.shift-indicator { display: inline-block; }
+.diff-person { font-weight: 600; }
+.diff-date { color: var(--color-fg-muted); margin-right: 0.5rem; }
+.diff-sarf { margin-top: 0.2rem; display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.diff-fields { display: grid; grid-template-columns: 5.5rem 8rem 1fr; gap: 0 0.5rem; align-items: baseline; }
+.diff-cell[data-stmt] { cursor: pointer; }
+</style>
+
+<section class="section py-4">
+    <div class="container" style="max-width: 100%; width: 100%; padding-left: 1rem; padding-right: 1rem;"
+         x-data="timelineComparison()">
+        <div class="mb-4">
+            <h1 class="title">[Timeline] {{ discussion.summary or 'Discussion ' ~ discussion.id }}</h1>
+            <div class="level is-mobile mb-0">
+                <div class="level-left">
+                    <div class="level-item">
+                        <div class="select is-small">
+                            <select x-model="coderA" @change="reload()">
+                                {% for opt in auditor_options %}
+                                <option value="{{ opt.id }}">{{ opt.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="level-item"><span class="has-text-grey">vs</span></div>
+                    <div class="level-item">
+                        <div class="select is-small">
+                            <select x-model="coderB" @change="reload()">
+                                {% for opt in auditor_options %}
+                                <option value="{{ opt.id }}">{{ opt.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="level-right">
+                    <div class="level-item">
+                        <div class="tags mb-0">
+                            <span class="tag" style="background: #27ae60; color: white;">{{ timeline.counts.matched }} matched</span>
+                            <span class="tag" style="background: #f0ad4e; color: white;">{{ timeline.counts.disagreements }} disagreements</span>
+                            <span class="tag" style="background: #e74c3c; color: white;">{{ timeline.counts.a_only }} A-only</span>
+                            <span class="tag" style="background: #e74c3c; color: white;">{{ timeline.counts.b_only }} B-only</span>
+                        </div>
+                    </div>
+                    <div class="level-item">
+                        <div class="buttons are-small mb-0">
+                            <button class="button is-info is-outlined"
+                                    @click="runLitreview()"
+                                    :class="{'is-loading': litreviewRunning}"
+                                    :disabled="litreviewRunning">
+                                <span class="icon"><i class="fas fa-flask"></i></span>
+                                <span x-text="litreviewRunning ? 'Running...' : '{{ "Re-run" if litreview_exists else "Run" }} litreview-ai'"></span>
+                            </button>
+                            {% if litreview_exists %}
+                            <a class="button is-light"
+                               href="{{ url_for('training.compare.litreview_prompt', discussion_id=discussion.id) }}"
+                               target="_blank">
+                                <span class="icon"><i class="fas fa-file-alt"></i></span>
+                                <span>View Prompt</span>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if timeline.rows %}
+        <div class="diff-grid">
+            <div class="diff-header">Source A: {{ coder_a.split('@')[0] if '@' in coder_a else coder_a }}</div>
+            <div class="diff-gutter-header"></div>
+            <div class="diff-header">Source B: {{ coder_b.split('@')[0] if '@' in coder_b else coder_b }}</div>
+
+            {% for row in timeline.rows %}
+            {% set row_class = 'diff-row-a-only' if row.status == 'a_only' else 'diff-row-b-only' if row.status == 'b_only' else 'diff-row-disagree' if row.has_disagreement else '' %}
+
+            {# Left panel #}
+            <div class="diff-cell diff-cell-a {{ row_class }}"{% if row.stmt_a %} data-stmt="{{ url_for('training.discussions.audit', discussion_id=discussion.id) }}#statement-{{ row.stmt_a }}"{% endif %}>
+                {% if row.a %}
+                <div class="diff-fields">
+                    <span class="diff-date">{{ fmt_date(row.date) }}</span>
+                    <span class="diff-person">{{ row.person_name }}</span>
+                    <span>{{ row.a.description }}</span>
+                </div>
+                {% if row.status == 'matched' and row.sarf_diffs %}
+                <div class="diff-sarf">
+                    {% for s in row.sarf_diffs %}{% if s.differs %}{{ sarf_badge_diff(s.field, s.val_a) }}{% elif s.val_a %}{{ sarf_badge(s.field, s.val_a) }}{% endif %}{% endfor %}
+                </div>
+                {% elif row.a.sarf %}
+                <div class="diff-sarf">
+                    {% for s in row.a.sarf %}{{ sarf_badge(s.field, s.val) }}{% endfor %}
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="diff-cell-empty">&mdash;</div>
+                {% endif %}
+            </div>
+
+            {# Gutter #}
+            <div class="diff-gutter {{ row_class }}">
+                {% if row.status == 'a_only' %}&larr;{% elif row.status == 'b_only' %}&rarr;{% elif row.has_disagreement %}&ne;{% endif %}
+            </div>
+
+            {# Right panel #}
+            <div class="diff-cell diff-cell-b {{ row_class }}"{% if row.stmt_b %} data-stmt="{{ url_for('training.discussions.audit', discussion_id=discussion.id) }}#statement-{{ row.stmt_b }}"{% endif %}>
+                {% if row.b %}
+                <div class="diff-fields">
+                    <span class="diff-date">{{ fmt_date(row.date) }}</span>
+                    <span class="diff-person">{{ row.person_name }}</span>
+                    <span>{{ row.b.description }}</span>
+                </div>
+                {% if row.status == 'matched' and row.sarf_diffs %}
+                <div class="diff-sarf">
+                    {% for s in row.sarf_diffs %}{% if s.differs %}{{ sarf_badge_diff(s.field, s.val_b) }}{% elif s.val_b %}{{ sarf_badge(s.field, s.val_b) }}{% endif %}{% endfor %}
+                </div>
+                {% elif row.b.sarf %}
+                <div class="diff-sarf">
+                    {% for s in row.b.sarf %}{{ sarf_badge(s.field, s.val) }}{% endfor %}
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="diff-cell-empty">&mdash;</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {# Unmatched people #}
+        {% if timeline.people_a_only or timeline.people_b_only %}
+        <div class="box mb-4 mt-4">
+            <strong>Unmatched People</strong>
+            <div class="mt-3 columns">
+                {% if timeline.people_a_only %}
+                <div class="column">
+                    <p class="heading">Only in Source A</p>
+                    {% for p in timeline.people_a_only %}
+                    <span class="tag" style="background: var(--color-canvas-subtle); color: var(--color-fg-default); border: 1px solid var(--color-border-default);">{{ p.name }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if timeline.people_b_only %}
+                <div class="column">
+                    <p class="heading">Only in Source B</p>
+                    {% for p in timeline.people_b_only %}
+                    <span class="tag" style="background: var(--color-canvas-subtle); color: var(--color-fg-default); border: 1px solid var(--color-border-default);">{{ p.name }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<script>
+function timelineComparison() {
+    return {
+        coderA: '{{ coder_a }}',
+        coderB: '{{ coder_b }}',
+        litreviewRunning: false,
+        reload() {
+            const url = new URL(window.location);
+            url.searchParams.set('a', this.coderA);
+            url.searchParams.set('b', this.coderB);
+            window.location = url;
+        },
+        async runLitreview() {
+            this.litreviewRunning = true;
+            try {
+                const resp = await fetch('{{ url_for("training.compare.run_litreview", discussion_id=discussion.id) }}', {method: 'POST'});
+                if (!resp.ok) throw new Error(await resp.text());
+                const data = await resp.json();
+                alert(`Litreview extraction complete: ${data.people} people, ${data.events} events`);
+                const url = new URL(window.location);
+                url.searchParams.set('b', '{{ litreview_auditor_id }}');
+                window.location = url;
+            } catch (e) {
+                alert('Litreview extraction failed: ' + e.message);
+            } finally {
+                this.litreviewRunning = false;
+            }
+        },
+    };
+}
+document.querySelector('.diff-grid')?.addEventListener('click', function(e) {
+    const cell = e.target.closest('.diff-cell[data-stmt]');
+    if (cell) window.open(cell.dataset.stmt, '_blank');
+});
+</script>
+{% endblock %}
