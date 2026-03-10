@@ -1,3 +1,5 @@
+> **Archived 2026-03-10.** Deferred post-MVP. IRR technical spec preserved for future reference. Kept for historical reference.
+
 # IRR Analysis - Technical Documentation
 
 As-built documentation for the Inter-Rater Reliability analysis feature.

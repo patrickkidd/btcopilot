@@ -1,3 +1,5 @@
+> **Archived 2026-03-10.** Strategic decision made (AGPL-3.0). Analysis preserved as decision record. Kept for historical reference.
+
 # Open Source License Recommendation for btcopilot
 
 ## Recommended License: AGPL-3.0 (GNU Affero General Public License)

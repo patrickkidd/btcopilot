@@ -1,6 +1,6 @@
-# [ARCHIVED 2026-03] Automated Prompt Induction System - Future Roadmap
+> **Archived 2026-03.** Superseded by [doc/PROMPT_OPTIMIZATION.md](../PROMPT_OPTIMIZATION.md). API automation infrastructure was never built; interactive sessions proved sufficient. Kept for historical reference.
 
-**Status**: ARCHIVED — Superseded by [doc/PROMPT_OPTIMIZATION.md](../PROMPT_OPTIMIZATION.md). API automation infrastructure was never built; interactive sessions proved sufficient.
+# Automated Prompt Induction System - Future Roadmap
 
 **Alternatives**:
 - **[Manual](../doc/PROMPT_OPTIMIZATION_MANUAL.md)**: Copy-paste approach (current MVP)

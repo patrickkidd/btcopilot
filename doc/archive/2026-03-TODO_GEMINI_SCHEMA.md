@@ -1,3 +1,5 @@
+> **Archived 2026-03-10.** Deferred optimization. Research complete, implementation not prioritized. Kept for historical reference.
+
 # Gemini 2.0 Flash Schema Optimization
 
 **Status**: Research complete, implementation deferred

@@ -47,7 +47,10 @@ New clinical data outputs: store in `btcopilot-sources/`, create symlink, add to
 | Psychological foundations | [doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md](doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md) |
 | Feature/behavior specs | [doc/specs/](doc/specs/) |
 | Prompt extraction strategy | [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md) (self-updating after each induction run) |
-| Deferred Gemini optimizations | [doc/TODO_GEMINI_SCHEMA.md](doc/TODO_GEMINI_SCHEMA.md) |
+| Bowen theory formal spec | [doc/specs/BOWEN_THEORY.md](doc/specs/BOWEN_THEORY.md) |
+| F1 dashboard (operational tracking) | [doc/F1_DASHBOARD.md](doc/F1_DASHBOARD.md) |
+| Diagram layout algorithm | [doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md](doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md) |
+| Audio upload (AssemblyAI, Celery) | [doc/AUDIO_UPLOAD_FLOW.md](doc/AUDIO_UPLOAD_FLOW.md) |
 
 Other: [README.md](README.md), [doc/plans/](doc/plans/)
 

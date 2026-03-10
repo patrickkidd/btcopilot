@@ -1,6 +1,6 @@
-# [ARCHIVED 2026-03] Manual Prompt Optimization - Quick Start Guide
+> **Archived 2026-03.** Superseded by [doc/PROMPT_OPTIMIZATION.md](../PROMPT_OPTIMIZATION.md). Never adopted; interactive Claude Code sessions proved more effective. Kept for historical reference.
 
-**Status**: ARCHIVED — Superseded by [doc/PROMPT_OPTIMIZATION.md](../PROMPT_OPTIMIZATION.md). Never adopted; interactive Claude Code sessions proved more effective.
+# Manual Prompt Optimization - Quick Start Guide
 
 **Alternatives**:
 - **[CLI Automation](PROMPT_INDUCTION_CLI.md)**: Automated iteration using Claude Code CLI ($0 cost, 10 min runtime)

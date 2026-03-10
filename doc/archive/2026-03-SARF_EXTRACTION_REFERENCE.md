@@ -1,3 +1,5 @@
+> **Archived 2026-03-10.** Superseded by [sarf-definitions/](../sarf-definitions/). Kept for historical reference.
+
 # SARF Variable Definitions (Reference for Classification)
 
 **Status**: Extracted from prompts.py Dec 2024 - too verbose for extraction prompt.

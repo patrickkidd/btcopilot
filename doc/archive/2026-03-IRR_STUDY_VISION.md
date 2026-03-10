@@ -1,3 +1,5 @@
+> **Archived 2026-03-10.** Deferred post-MVP. IRR study design preserved for future reference. Kept for historical reference.
+
 # IRR Study Vision
 
 Inter-Rater Reliability study for SARF coding validation.

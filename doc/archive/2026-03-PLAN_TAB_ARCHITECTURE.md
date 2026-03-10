@@ -1,3 +1,5 @@
+> **Archived 2026-03-10.** Deferred post-MVP. Plan tab feature not yet prioritized. Kept for historical reference.
+
 # Plan Tab Architecture: Applying Universal Context Graph Principles
 
 ## Reference

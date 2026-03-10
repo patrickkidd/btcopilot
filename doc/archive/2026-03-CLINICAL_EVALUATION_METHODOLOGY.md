@@ -1,3 +1,5 @@
+> **Archived 2026-03-10.** Deferred. Discovery phase incomplete (domain expert interview required). Kept for historical reference.
+
 # Clinical Evaluation Methodology for Personal App
 
 **Status**: Discovery Phase - Literature Review Complete, Domain Expert Interview Required

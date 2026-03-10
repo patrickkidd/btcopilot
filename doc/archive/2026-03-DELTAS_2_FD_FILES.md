@@ -1,3 +1,5 @@
+> **Archived 2026-03-10.** Proto API design notes. Implementation status unclear; preserved for reference. Kept for historical reference.
+
 I need to get btcopilot to store the PDP in the diagram files used by FD.
 Diagram files are currently stored as python pickle bytes in the sqlalchemy
 model column btcopilot.pro.models.Diagram.data. I have started a proto

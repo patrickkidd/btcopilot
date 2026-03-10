@@ -1,3 +1,5 @@
+> **Archived 2026-03-10.** Educational Bowen theory vignettes. Not referenced by code or other docs. Kept for historical reference.
+
 Based on the theoretical literature provided, here are specific names and vignettes that illustrate the concepts discussed:
 
 ### Vignette 1: The Johnson Family

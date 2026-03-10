@@ -1,6 +1,6 @@
-# [ARCHIVED 2026-03] CLI-Driven Automated Prompt Induction
+> **Archived 2026-03.** Superseded by [doc/PROMPT_OPTIMIZATION.md](../PROMPT_OPTIMIZATION.md). CLI autonomous strategy was never adopted; interactive sessions proved more effective. Kept for historical reference.
 
-**Status**: ARCHIVED — Superseded by [doc/PROMPT_OPTIMIZATION.md](../PROMPT_OPTIMIZATION.md). CLI autonomous strategy was never adopted; interactive sessions proved more effective.
+# CLI-Driven Automated Prompt Induction
 
 **Bridges**: Manual approach (PROMPT_OPTIMIZATION_MANUAL.md) + API automation (PROMPT_INDUCTION_AUTOMATED.md)
 
