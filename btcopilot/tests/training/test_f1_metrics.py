@@ -6,12 +6,14 @@ from btcopilot.training.f1_metrics import (
     match_people,
     match_events,
     match_pair_bonds,
+    split_events_by_structural,
     calculate_statement_f1,
     normalize_pdp_for_comparison,
     calculate_hierarchical_sarf_f1,
     normalize_name_for_matching,
     dates_within_tolerance,
     calculate_date_similarity,
+    EntityMatchResult,
     F1Metrics,
     SARFVariableF1,
 )
@@ -1033,3 +1035,93 @@ def test_calculate_statement_f1_includes_hierarchical_metrics():
     assert isinstance(metrics.symptom_hierarchical, SARFVariableF1)
     assert metrics.symptom_hierarchical.detection_f1 == 1.0
     assert metrics.symptom_hierarchical.value_match_f1 == 1.0
+
+
+def test_split_events_by_structural():
+    birth = Event(id=-1, kind=EventKind.Birth, dateTime=datetime(2024, 1, 1), child=-10)
+    death = Event(id=-2, kind=EventKind.Death, dateTime=datetime(2024, 6, 1), person=-20)
+    shift = Event(id=-3, kind=EventKind.Shift, description="Therapy", dateTime=datetime(2024, 3, 1), person=-30)
+    gt_birth = Event(id=-11, kind=EventKind.Birth, dateTime=datetime(2024, 1, 1), child=-10)
+    gt_shift = Event(id=-13, kind=EventKind.Shift, description="Therapy", dateTime=datetime(2024, 3, 1), person=-30)
+
+    result = EntityMatchResult(
+        matched_pairs=[(birth, gt_birth), (shift, gt_shift)],
+        ai_unmatched=[],
+        gt_unmatched=[death],
+    )
+
+    structural, shift_result = split_events_by_structural(result)
+
+    assert len(structural.matched_pairs) == 1
+    assert structural.matched_pairs[0][0].kind == EventKind.Birth
+    assert len(structural.gt_unmatched) == 1
+    assert structural.gt_unmatched[0].kind == EventKind.Death
+    assert len(structural.ai_unmatched) == 0
+
+    assert len(shift_result.matched_pairs) == 1
+    assert shift_result.matched_pairs[0][0].kind == EventKind.Shift
+    assert len(shift_result.ai_unmatched) == 0
+    assert len(shift_result.gt_unmatched) == 0
+
+
+def test_calculate_statement_f1_structural_and_shift():
+    ai_deltas = PDPDeltas(
+        people=[Person(id=-1, name="John")],
+        events=[
+            Event(id=-2, kind=EventKind.Birth, dateTime=datetime(1990, 5, 1), child=-1),
+            Event(
+                id=-3, kind=EventKind.Shift, description="Therapy",
+                dateTime=datetime(2024, 1, 1), person=-1,
+                symptom=VariableShift.Up,
+            ),
+        ],
+    )
+    gt_deltas = PDPDeltas(
+        people=[Person(id=-10, name="John")],
+        events=[
+            Event(id=-20, kind=EventKind.Birth, dateTime=datetime(1990, 5, 1), child=-10),
+            Event(
+                id=-30, kind=EventKind.Shift, description="Therapy",
+                dateTime=datetime(2024, 1, 1), person=-10,
+                symptom=VariableShift.Up,
+            ),
+        ],
+    )
+
+    metrics = calculate_statement_f1(ai_deltas, gt_deltas)
+
+    assert metrics.events_f1 == 1.0
+    assert metrics.structural_events_f1 == 1.0
+    assert metrics.shift_events_f1 == 1.0
+    assert metrics.structural_events_metrics.tp == 1
+    assert metrics.shift_events_metrics.tp == 1
+
+
+def test_calculate_statement_f1_structural_missed():
+    """AI misses a Birth event but gets the Shift event."""
+    ai_deltas = PDPDeltas(
+        people=[Person(id=-1, name="John")],
+        events=[
+            Event(
+                id=-3, kind=EventKind.Shift, description="Therapy",
+                dateTime=datetime(2024, 1, 1), person=-1,
+            ),
+        ],
+    )
+    gt_deltas = PDPDeltas(
+        people=[Person(id=-10, name="John")],
+        events=[
+            Event(id=-20, kind=EventKind.Birth, dateTime=datetime(1990, 5, 1), child=-10),
+            Event(
+                id=-30, kind=EventKind.Shift, description="Therapy",
+                dateTime=datetime(2024, 1, 1), person=-10,
+            ),
+        ],
+    )
+
+    metrics = calculate_statement_f1(ai_deltas, gt_deltas)
+
+    assert metrics.shift_events_f1 == 1.0
+    assert metrics.structural_events_f1 == 0.0
+    assert metrics.structural_events_metrics.fn == 1
+    assert metrics.structural_events_metrics.tp == 0

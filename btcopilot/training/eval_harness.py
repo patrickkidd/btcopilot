@@ -114,6 +114,18 @@ def _cumulative_to_discussion_result(m: CumulativeF1Metrics) -> DiscussionEvalRe
                 "Events", m.events_metrics, m.ai_events_count, m.gt_events_count
             ),
             _metrics_to_breakdown(
+                "Structural",
+                m.structural_events_metrics,
+                m.structural_events_metrics.tp + m.structural_events_metrics.fp,
+                m.structural_events_metrics.tp + m.structural_events_metrics.fn,
+            ),
+            _metrics_to_breakdown(
+                "Shift",
+                m.shift_events_metrics,
+                m.shift_events_metrics.tp + m.shift_events_metrics.fp,
+                m.shift_events_metrics.tp + m.shift_events_metrics.fn,
+            ),
+            _metrics_to_breakdown(
                 "PairBonds",
                 m.pair_bonds_metrics,
                 m.pair_bonds_metrics.tp + m.pair_bonds_metrics.fp,
@@ -144,7 +156,7 @@ def build_eval_result(cumulative_metrics: list[CumulativeF1Metrics]) -> EvalResu
         return EvalResult()
 
     # Build aggregate per entity type
-    entity_names = ["People", "Events", "PairBonds"]
+    entity_names = ["People", "Events", "Structural", "Shift", "PairBonds"]
     aggregates = []
     for i, name in enumerate(entity_names):
         total_tp = sum(d.entity_types[i].tp for d in per_disc)

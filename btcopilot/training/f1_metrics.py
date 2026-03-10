@@ -49,6 +49,17 @@ _log = logging.getLogger(__name__)
 
 NAME_SIMILARITY_THRESHOLD = 0.60
 
+# Structural event kinds to track individually (excludes Moved, which is deprecated)
+STRUCTURAL_KINDS = [
+    EventKind.Birth,
+    EventKind.Death,
+    EventKind.Married,
+    EventKind.Bonded,
+    EventKind.Separated,
+    EventKind.Divorced,
+    EventKind.Adopted,
+]
+
 TITLE_PREFIXES = frozenset(
     [
         "aunt",
@@ -105,7 +116,9 @@ def normalize_name_for_matching(name: str | None) -> str:
 
 
 DATE_TOLERANCE_DAYS = 7
-APPROXIMATE_TOLERANCE_DAYS = 730  # ±2 years (year-level estimates from vague temporal references)
+APPROXIMATE_TOLERANCE_DAYS = (
+    730  # ±2 years (year-level estimates from vague temporal references)
+)
 
 
 @dataclass
@@ -147,12 +160,16 @@ class StatementF1Metrics:
     anxiety_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
     relationship_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
     functioning_hierarchical: SARFVariableF1 = field(default_factory=SARFVariableF1)
+    structural_events_f1: float = 0.0
+    shift_events_f1: float = 0.0
     exact_match: bool = False
     aggregate_tp: int = 0
     aggregate_fp: int = 0
     aggregate_fn: int = 0
     people_metrics: F1Metrics = field(default_factory=F1Metrics)
     events_metrics: F1Metrics = field(default_factory=F1Metrics)
+    structural_events_metrics: F1Metrics = field(default_factory=F1Metrics)
+    shift_events_metrics: F1Metrics = field(default_factory=F1Metrics)
     pair_bonds_metrics: F1Metrics = field(default_factory=F1Metrics)
 
 
@@ -165,13 +182,19 @@ class CumulativeF1Metrics:
     people_f1: float = 0.0
     events_f1: float = 0.0
     pair_bonds_f1: float = 0.0
+    structural_events_f1: float = 0.0
+    shift_events_f1: float = 0.0
     people_metrics: F1Metrics = field(default_factory=F1Metrics)
     events_metrics: F1Metrics = field(default_factory=F1Metrics)
+    structural_events_metrics: F1Metrics = field(default_factory=F1Metrics)
+    structural_kind_metrics: dict[str, F1Metrics] = field(default_factory=dict)
+    shift_events_metrics: F1Metrics = field(default_factory=F1Metrics)
     pair_bonds_metrics: F1Metrics = field(default_factory=F1Metrics)
     symptom_macro_f1: float = 0.0
     anxiety_macro_f1: float = 0.0
     relationship_macro_f1: float = 0.0
     functioning_macro_f1: float = 0.0
+    sarf_counts: dict[str, int] = field(default_factory=dict)
     ai_people_count: int = 0
     ai_events_count: int = 0
     gt_people_count: int = 0
@@ -347,8 +370,7 @@ def match_people(
                 name_sim = 1.0
             else:
                 name_sim = (
-                    fuzz.token_set_ratio(ai_name_normalized, gt_name_normalized)
-                    / 100.0
+                    fuzz.token_set_ratio(ai_name_normalized, gt_name_normalized) / 100.0
                 )
 
             if name_sim < NAME_SIMILARITY_THRESHOLD:
@@ -367,9 +389,12 @@ def match_people(
                 continue
 
             parent_sim = _parents_score(
-                ai_person, gt_person,
-                ai_people, gt_people,
-                ai_bonds, gt_bonds,
+                ai_person,
+                gt_person,
+                ai_people,
+                gt_people,
+                ai_bonds,
+                gt_bonds,
             )
             score = name_sim + PARENTS_BOOST * parent_sim
 
@@ -481,6 +506,48 @@ def match_events(
     return result
 
 
+def split_events_by_structural(
+    result: EntityMatchResult,
+) -> tuple[EntityMatchResult, EntityMatchResult]:
+    structural = EntityMatchResult()
+    shift = EntityMatchResult()
+    for ai_event, gt_event in result.matched_pairs:
+        if gt_event.kind.isStructural():
+            structural.matched_pairs.append((ai_event, gt_event))
+        else:
+            shift.matched_pairs.append((ai_event, gt_event))
+    for event in result.ai_unmatched:
+        if event.kind.isStructural():
+            structural.ai_unmatched.append(event)
+        else:
+            shift.ai_unmatched.append(event)
+    for event in result.gt_unmatched:
+        if event.kind.isStructural():
+            structural.gt_unmatched.append(event)
+        else:
+            shift.gt_unmatched.append(event)
+    return structural, shift
+
+
+def split_structural_by_kind(
+    structural: EntityMatchResult,
+) -> dict[str, EntityMatchResult]:
+    results = {kind.value: EntityMatchResult() for kind in STRUCTURAL_KINDS}
+    for ai_event, gt_event in structural.matched_pairs:
+        key = gt_event.kind.value
+        if key in results:
+            results[key].matched_pairs.append((ai_event, gt_event))
+    for event in structural.ai_unmatched:
+        key = event.kind.value
+        if key in results:
+            results[key].ai_unmatched.append(event)
+    for event in structural.gt_unmatched:
+        key = event.kind.value
+        if key in results:
+            results[key].gt_unmatched.append(event)
+    return results
+
+
 def match_pair_bonds(
     ai_bonds: list[PairBond], gt_bonds: list[PairBond], id_map: dict[int, int]
 ) -> EntityMatchResult:
@@ -541,18 +608,15 @@ def calculate_f1_from_counts(tp: int, fp: int, fn: int) -> F1Metrics:
 
 def calculate_sarf_macro_f1(
     matched_event_pairs: list[tuple[Event, Event]],
-) -> dict[str, float]:
-    """
-    Calculate macro-F1 for SARF variables across matched events.
-
-    For each SARF variable, calculate F1 and then average (macro-average).
-    """
+) -> tuple[dict[str, float], dict[str, int]]:
     sarf_vars = ["symptom", "anxiety", "relationship", "functioning"]
     f1_scores = {}
+    counts = {}
 
     for var_name in sarf_vars:
         ai_values = []
         gt_values = []
+        n_coded = 0
 
         for ai_event, gt_event in matched_event_pairs:
             ai_val = getattr(ai_event, var_name)
@@ -563,6 +627,10 @@ def calculate_sarf_macro_f1(
 
             ai_values.append(ai_str)
             gt_values.append(gt_str)
+            if ai_val is not None or gt_val is not None:
+                n_coded += 1
+
+        counts[var_name] = n_coded
 
         if not ai_values:
             f1_scores[var_name] = 0.0
@@ -574,7 +642,7 @@ def calculate_sarf_macro_f1(
         except (ValueError, ZeroDivisionError):
             f1_scores[var_name] = 0.0
 
-    return f1_scores
+    return f1_scores, counts
 
 
 def calculate_hierarchical_sarf_f1(
@@ -873,6 +941,7 @@ def calculate_statement_f1(
         ai_pdp.people, gt_pdp.people, ai_pdp.pair_bonds, gt_pdp.pair_bonds
     )
     events_result = match_events(ai_pdp.events, gt_pdp.events, id_map)
+    structural_result, shift_result = split_events_by_structural(events_result)
     bonds_result = match_pair_bonds(ai_pdp.pair_bonds, gt_pdp.pair_bonds, id_map)
 
     people_tp = len(people_result.matched_pairs)
@@ -889,10 +958,22 @@ def calculate_statement_f1(
 
     metrics.people_metrics = calculate_f1_from_counts(people_tp, people_fp, people_fn)
     metrics.events_metrics = calculate_f1_from_counts(events_tp, events_fp, events_fn)
+    metrics.structural_events_metrics = calculate_f1_from_counts(
+        len(structural_result.matched_pairs),
+        len(structural_result.ai_unmatched),
+        len(structural_result.gt_unmatched),
+    )
+    metrics.shift_events_metrics = calculate_f1_from_counts(
+        len(shift_result.matched_pairs),
+        len(shift_result.ai_unmatched),
+        len(shift_result.gt_unmatched),
+    )
     metrics.pair_bonds_metrics = calculate_f1_from_counts(bonds_tp, bonds_fp, bonds_fn)
 
     metrics.people_f1 = metrics.people_metrics.f1
     metrics.events_f1 = metrics.events_metrics.f1
+    metrics.structural_events_f1 = metrics.structural_events_metrics.f1
+    metrics.shift_events_f1 = metrics.shift_events_metrics.f1
     metrics.pair_bonds_f1 = metrics.pair_bonds_metrics.f1
 
     aggregate_tp = people_tp + events_tp + bonds_tp
@@ -908,7 +989,7 @@ def calculate_statement_f1(
     metrics.aggregate_fn = aggregate_fn
 
     if events_result.matched_pairs:
-        sarf_f1s = calculate_sarf_macro_f1(events_result.matched_pairs)
+        sarf_f1s, _ = calculate_sarf_macro_f1(events_result.matched_pairs)
         metrics.symptom_macro_f1 = sarf_f1s.get("symptom", 0.0)
         metrics.anxiety_macro_f1 = sarf_f1s.get("anxiety", 0.0)
         metrics.relationship_macro_f1 = sarf_f1s.get("relationship", 0.0)
@@ -993,7 +1074,9 @@ def _augment_committed_id_map(
             cp_id = cp.get("id") if isinstance(cp, dict) else getattr(cp, "id", None)
             if cp_id == ai_id:
                 ai_name = (
-                    cp.get("name") if isinstance(cp, dict) else getattr(cp, "name", None)
+                    cp.get("name")
+                    if isinstance(cp, dict)
+                    else getattr(cp, "name", None)
                 )
                 break
 
@@ -1009,9 +1092,7 @@ def _augment_committed_id_map(
             sim = fuzz.token_set_ratio(ai_normalized, gt_normalized) / 100.0
             if sim >= NAME_SIMILARITY_THRESHOLD:
                 id_map[ai_id] = gt_person.id
-                _log.debug(
-                    f"Committed ID map: AI {ai_id} -> GT {gt_person.id}"
-                )
+                _log.debug(f"Committed ID map: AI {ai_id} -> GT {gt_person.id}")
                 break
 
 
@@ -1062,9 +1143,7 @@ def _augment_duplicate_person_id_map(
 
         if best_gt_id is not None:
             id_map[ai_person.id] = best_gt_id
-            _log.debug(
-                f"Duplicate person map: AI {ai_person.id} -> GT {best_gt_id}"
-            )
+            _log.debug(f"Duplicate person map: AI {ai_person.id} -> GT {best_gt_id}")
 
 
 def calculate_cumulative_f1(discussion_id: int) -> CumulativeF1Metrics:
@@ -1103,7 +1182,11 @@ def calculate_cumulative_f1(discussion_id: int) -> CumulativeF1Metrics:
         and discussion.diagram
     ):
         diagram_data = discussion.diagram.get_diagram_data()
-        if diagram_data.pdp.people or diagram_data.pdp.events or diagram_data.pdp.pair_bonds:
+        if (
+            diagram_data.pdp.people
+            or diagram_data.pdp.events
+            or diagram_data.pdp.pair_bonds
+        ):
             ai_pdp = diagram_data.pdp
 
     metrics = CumulativeF1Metrics(
@@ -1128,6 +1211,8 @@ def calculate_cumulative_f1(discussion_id: int) -> CumulativeF1Metrics:
     _augment_duplicate_person_id_map(id_map, ai_pdp.people, gt_pdp.people)
 
     events_result = match_events(ai_pdp.events, gt_pdp.events, id_map)
+    structural_result, shift_result = split_events_by_structural(events_result)
+    per_kind = split_structural_by_kind(structural_result)
     bonds_result = match_pair_bonds(ai_pdp.pair_bonds, gt_pdp.pair_bonds, id_map)
 
     metrics.people_metrics = calculate_f1_from_counts(
@@ -1140,6 +1225,24 @@ def calculate_cumulative_f1(discussion_id: int) -> CumulativeF1Metrics:
         len(events_result.ai_unmatched),
         len(events_result.gt_unmatched),
     )
+    metrics.structural_events_metrics = calculate_f1_from_counts(
+        len(structural_result.matched_pairs),
+        len(structural_result.ai_unmatched),
+        len(structural_result.gt_unmatched),
+    )
+    metrics.structural_kind_metrics = {
+        kind: calculate_f1_from_counts(
+            len(per_kind[kind].matched_pairs),
+            len(per_kind[kind].ai_unmatched),
+            len(per_kind[kind].gt_unmatched),
+        )
+        for kind in per_kind
+    }
+    metrics.shift_events_metrics = calculate_f1_from_counts(
+        len(shift_result.matched_pairs),
+        len(shift_result.ai_unmatched),
+        len(shift_result.gt_unmatched),
+    )
     metrics.pair_bonds_metrics = calculate_f1_from_counts(
         len(bonds_result.matched_pairs),
         len(bonds_result.ai_unmatched),
@@ -1148,6 +1251,8 @@ def calculate_cumulative_f1(discussion_id: int) -> CumulativeF1Metrics:
 
     metrics.people_f1 = metrics.people_metrics.f1
     metrics.events_f1 = metrics.events_metrics.f1
+    metrics.structural_events_f1 = metrics.structural_events_metrics.f1
+    metrics.shift_events_f1 = metrics.shift_events_metrics.f1
     metrics.pair_bonds_f1 = metrics.pair_bonds_metrics.f1
 
     total_tp = (
@@ -1170,7 +1275,8 @@ def calculate_cumulative_f1(discussion_id: int) -> CumulativeF1Metrics:
     ).f1
 
     if events_result.matched_pairs:
-        sarf_f1s = calculate_sarf_macro_f1(events_result.matched_pairs)
+        sarf_f1s, sarf_counts = calculate_sarf_macro_f1(events_result.matched_pairs)
+        metrics.sarf_counts = sarf_counts
         metrics.symptom_macro_f1 = sarf_f1s.get("symptom", 0.0)
         metrics.anxiety_macro_f1 = sarf_f1s.get("anxiety", 0.0)
         metrics.relationship_macro_f1 = sarf_f1s.get("relationship", 0.0)
@@ -1184,11 +1290,20 @@ class SystemCumulativeF1:
     aggregate_micro_f1: float = 0.0
     people_f1: float = 0.0
     events_f1: float = 0.0
+    structural_events_f1: float = 0.0
+    structural_events_n: int = 0
+    structural_kind_f1: dict[str, tuple[float, int]] = field(default_factory=dict)
+    shift_events_f1: float = 0.0
+    shift_events_n: int = 0
     pair_bonds_f1: float = 0.0
     symptom_macro_f1: float = 0.0
     anxiety_macro_f1: float = 0.0
     relationship_macro_f1: float = 0.0
     functioning_macro_f1: float = 0.0
+    sarf_counts: dict[str, int] = field(default_factory=dict)
+    people_entity_count: int = 0
+    events_entity_count: int = 0
+    pair_bonds_entity_count: int = 0
     total_discussions: int = 0
     per_discussion: list = field(default_factory=list)
 
@@ -1205,13 +1320,11 @@ def calculate_all_cumulative_f1(
         .filter(Feedback.feedback_type == "extraction")
     )
     if not include_synthetic:
-        query = query.join(
-            Discussion, Statement.discussion_id == Discussion.id
-        ).filter(Discussion.synthetic == False)
+        query = query.join(Discussion, Statement.discussion_id == Discussion.id).filter(
+            Discussion.synthetic == False
+        )
 
-    discussion_ids = (
-        query.with_entities(Statement.discussion_id).distinct().all()
-    )
+    discussion_ids = query.with_entities(Statement.discussion_id).distinct().all()
 
     results = []
     for (disc_id,) in discussion_ids:
@@ -1228,9 +1341,62 @@ def calculate_all_cumulative_f1(
         system.aggregate_micro_f1 = sum(r.aggregate_micro_f1 for r in results) / n
         system.people_f1 = sum(r.people_f1 for r in results) / n
         system.events_f1 = sum(r.events_f1 for r in results) / n
+        # Skip discussions with zero events in both AI and GT to avoid 1.0 inflation
+        structural_results = [
+            r
+            for r in results
+            if r.structural_events_metrics.tp
+            + r.structural_events_metrics.fp
+            + r.structural_events_metrics.fn
+            > 0
+        ]
+        if structural_results:
+            system.structural_events_n = len(structural_results)
+            system.structural_events_f1 = sum(
+                r.structural_events_f1 for r in structural_results
+            ) / system.structural_events_n
+        # Per-kind structural F1 with skip-zero averaging
+        for kind in STRUCTURAL_KINDS:
+            key = kind.value
+            kind_results = [
+                r
+                for r in results
+                if key in r.structural_kind_metrics
+                and (
+                    r.structural_kind_metrics[key].tp
+                    + r.structural_kind_metrics[key].fp
+                    + r.structural_kind_metrics[key].fn
+                )
+                > 0
+            ]
+            if kind_results:
+                n_kind = len(kind_results)
+                system.structural_kind_f1[key] = (
+                    sum(r.structural_kind_metrics[key].f1 for r in kind_results) / n_kind,
+                    n_kind,
+                )
+        shift_results = [
+            r
+            for r in results
+            if r.shift_events_metrics.tp
+            + r.shift_events_metrics.fp
+            + r.shift_events_metrics.fn
+            > 0
+        ]
+        if shift_results:
+            system.shift_events_n = len(shift_results)
+            system.shift_events_f1 = sum(
+                r.shift_events_f1 for r in shift_results
+            ) / system.shift_events_n
         system.pair_bonds_f1 = sum(r.pair_bonds_f1 for r in results) / n
         system.symptom_macro_f1 = sum(r.symptom_macro_f1 for r in results) / n
         system.anxiety_macro_f1 = sum(r.anxiety_macro_f1 for r in results) / n
         system.relationship_macro_f1 = sum(r.relationship_macro_f1 for r in results) / n
         system.functioning_macro_f1 = sum(r.functioning_macro_f1 for r in results) / n
+        for var in ["symptom", "anxiety", "relationship", "functioning"]:
+            system.sarf_counts[var] = sum(r.sarf_counts.get(var, 0) for r in results)
+        for r in results:
+            system.people_entity_count += r.people_metrics.tp + r.people_metrics.fp + r.people_metrics.fn
+            system.events_entity_count += r.events_metrics.tp + r.events_metrics.fp + r.events_metrics.fn
+            system.pair_bonds_entity_count += r.pair_bonds_metrics.tp + r.pair_bonds_metrics.fp + r.pair_bonds_metrics.fn
     return system

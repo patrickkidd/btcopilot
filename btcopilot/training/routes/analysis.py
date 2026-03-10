@@ -45,6 +45,14 @@ def _calculate_discussion_f1(statement_breakdowns):
             sb["breakdown"].f1_metrics.events_f1 for sb in statement_breakdowns
         )
         / len(statement_breakdowns),
+        "structural_events_f1": sum(
+            sb["breakdown"].f1_metrics.structural_events_f1 for sb in statement_breakdowns
+        )
+        / len(statement_breakdowns),
+        "shift_events_f1": sum(
+            sb["breakdown"].f1_metrics.shift_events_f1 for sb in statement_breakdowns
+        )
+        / len(statement_breakdowns),
         "pair_bonds_f1": sum(
             sb["breakdown"].f1_metrics.pair_bonds_f1 for sb in statement_breakdowns
         )

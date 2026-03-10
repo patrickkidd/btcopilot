@@ -47,6 +47,7 @@
                     <p class="heading">People</p>
                     <p class="title is-3" id="cumf1-people">{{ "%.3f"|format(cumulative_f1.people_f1) }}</p>
                     <p class="subtitle is-6">Detection F1</p>
+                    <p class="is-size-7 has-text-grey" id="cumf1-people-n">n={{ cumulative_f1.people_entity_count }} entities</p>
                 </div>
             </div>
             <div class="column is-3">
@@ -54,6 +55,12 @@
                     <p class="heading">Events</p>
                     <p class="title is-3" id="cumf1-events">{{ "%.3f"|format(cumulative_f1.events_f1) }}</p>
                     <p class="subtitle is-6">Detection F1</p>
+                    <p class="is-size-7 has-text-grey" id="cumf1-events-n">n={{ cumulative_f1.events_entity_count }} entities</p>
+                    <p class="is-size-7 has-text-grey">
+                        Structural <strong id="cumf1-structural">{{ "%.3f"|format(cumulative_f1.structural_events_f1) }}</strong> <span id="cumf1-structural-n">(n={{ cumulative_f1.structural_events_n }})</span>
+                        &middot;
+                        Shift <strong id="cumf1-shift">{{ "%.3f"|format(cumulative_f1.shift_events_f1) }}</strong> <span id="cumf1-shift-n">(n={{ cumulative_f1.shift_events_n }})</span>
+                    </p>
                 </div>
             </div>
             <div class="column is-3">
@@ -61,9 +68,29 @@
                     <p class="heading">Pair Bonds</p>
                     <p class="title is-3" id="cumf1-pair-bonds">{{ "%.3f"|format(cumulative_f1.pair_bonds_f1) }}</p>
                     <p class="subtitle is-6">Detection F1</p>
+                    <p class="is-size-7 has-text-grey" id="cumf1-pair-bonds-n">n={{ cumulative_f1.pair_bonds_entity_count }} entities</p>
                 </div>
             </div>
         </div>
+
+        {% if cumulative_f1.structural_kind_f1 %}
+        <div class="content">
+            <h4 class="title is-5">Structural Event Types (F1)</h4>
+            <div class="columns is-multiline" id="cumf1-structural-kinds">
+                {% for kind in ['birth', 'death', 'married', 'bonded', 'separated', 'divorced', 'adopted'] %}
+                {% if kind in cumulative_f1.structural_kind_f1 %}
+                <div class="column">
+                    <div class="notification is-light has-text-centered" style="padding: 0.75rem;">
+                        <p class="heading">{{ kind|capitalize }}</p>
+                        <p class="title is-5" id="cumf1-kind-{{ kind }}">{{ "%.3f"|format(cumulative_f1.structural_kind_f1[kind][0]) }}</p>
+                        <p class="is-size-7 has-text-grey" id="cumf1-kind-n-{{ kind }}">n={{ cumulative_f1.structural_kind_f1[kind][1] }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
 
         <div class="content">
             <h4 class="title is-5">SARF Variable Coding (Macro-F1)</h4>
@@ -72,24 +99,28 @@
                     <div class="notification is-warning is-light has-text-centered">
                         <p class="heading">Symptom</p>
                         <p class="title is-4" id="cumf1-symptom">{{ "%.3f"|format(cumulative_f1.symptom_macro_f1) }}</p>
+                        <p class="is-size-7 has-text-grey" id="cumf1-symptom-n">n={{ cumulative_f1.sarf_counts.get('symptom', 0) }} events</p>
                     </div>
                 </div>
                 <div class="column is-3">
                     <div class="notification is-warning is-light has-text-centered">
                         <p class="heading">Anxiety</p>
                         <p class="title is-4" id="cumf1-anxiety">{{ "%.3f"|format(cumulative_f1.anxiety_macro_f1) }}</p>
+                        <p class="is-size-7 has-text-grey" id="cumf1-anxiety-n">n={{ cumulative_f1.sarf_counts.get('anxiety', 0) }} events</p>
                     </div>
                 </div>
                 <div class="column is-3">
                     <div class="notification is-warning is-light has-text-centered">
                         <p class="heading">Relationship</p>
                         <p class="title is-4" id="cumf1-relationship">{{ "%.3f"|format(cumulative_f1.relationship_macro_f1) }}</p>
+                        <p class="is-size-7 has-text-grey" id="cumf1-relationship-n">n={{ cumulative_f1.sarf_counts.get('relationship', 0) }} events</p>
                     </div>
                 </div>
                 <div class="column is-3">
                     <div class="notification is-warning is-light has-text-centered">
                         <p class="heading">Functioning</p>
                         <p class="title is-4" id="cumf1-functioning">{{ "%.3f"|format(cumulative_f1.functioning_macro_f1) }}</p>
+                        <p class="is-size-7 has-text-grey" id="cumf1-functioning-n">n={{ cumulative_f1.sarf_counts.get('functioning', 0) }} events</p>
                     </div>
                 </div>
             </div>
@@ -106,6 +137,8 @@
                             <th class="has-text-centered">F1</th>
                             <th class="has-text-centered">People</th>
                             <th class="has-text-centered">Events</th>
+                            <th class="has-text-centered">Structural</th>
+                            <th class="has-text-centered">Shift</th>
                             <th class="has-text-centered">PairBonds</th>
                             <th class="has-text-centered">AI People</th>
                             <th class="has-text-centered">GT People</th>
@@ -120,6 +153,8 @@
                             <td class="has-text-centered">{{ "%.3f"|format(d.aggregate_micro_f1) }}</td>
                             <td class="has-text-centered">{{ "%.3f"|format(d.people_f1) }}</td>
                             <td class="has-text-centered">{{ "%.3f"|format(d.events_f1) }}</td>
+                            <td class="has-text-centered">{{ "%.3f"|format(d.structural_events_f1) }}</td>
+                            <td class="has-text-centered">{{ "%.3f"|format(d.shift_events_f1) }}</td>
                             <td class="has-text-centered">{{ "%.3f"|format(d.pair_bonds_f1) }}</td>
                             <td class="has-text-centered">{{ d.ai_people_count }}</td>
                             <td class="has-text-centered">{{ d.gt_people_count }}</td>
@@ -156,23 +191,41 @@ const cumF1All = {
     total_discussions: {{ cumulative_f1_all.total_discussions }},
     aggregate_micro_f1: {{ cumulative_f1_all.aggregate_micro_f1 }},
     people_f1: {{ cumulative_f1_all.people_f1 }},
+    people_entity_count: {{ cumulative_f1_all.people_entity_count }},
     events_f1: {{ cumulative_f1_all.events_f1 }},
+    events_entity_count: {{ cumulative_f1_all.events_entity_count }},
+    structural_events_f1: {{ cumulative_f1_all.structural_events_f1 }},
+    structural_events_n: {{ cumulative_f1_all.structural_events_n }},
+    shift_events_f1: {{ cumulative_f1_all.shift_events_f1 }},
+    shift_events_n: {{ cumulative_f1_all.shift_events_n }},
     pair_bonds_f1: {{ cumulative_f1_all.pair_bonds_f1 }},
+    pair_bonds_entity_count: {{ cumulative_f1_all.pair_bonds_entity_count }},
     symptom_macro_f1: {{ cumulative_f1_all.symptom_macro_f1 }},
     anxiety_macro_f1: {{ cumulative_f1_all.anxiety_macro_f1 }},
     relationship_macro_f1: {{ cumulative_f1_all.relationship_macro_f1 }},
-    functioning_macro_f1: {{ cumulative_f1_all.functioning_macro_f1 }}
+    functioning_macro_f1: {{ cumulative_f1_all.functioning_macro_f1 }},
+    sarf_counts: {{ cumulative_f1_all.sarf_counts | tojson }},
+    structural_kind_f1: {{ cumulative_f1_all.structural_kind_f1 | tojson }}
 };
 const cumF1Real = {
     total_discussions: {{ cumulative_f1_real.total_discussions }},
     aggregate_micro_f1: {{ cumulative_f1_real.aggregate_micro_f1 }},
     people_f1: {{ cumulative_f1_real.people_f1 }},
+    people_entity_count: {{ cumulative_f1_real.people_entity_count }},
     events_f1: {{ cumulative_f1_real.events_f1 }},
+    events_entity_count: {{ cumulative_f1_real.events_entity_count }},
+    structural_events_f1: {{ cumulative_f1_real.structural_events_f1 }},
+    structural_events_n: {{ cumulative_f1_real.structural_events_n }},
+    shift_events_f1: {{ cumulative_f1_real.shift_events_f1 }},
+    shift_events_n: {{ cumulative_f1_real.shift_events_n }},
     pair_bonds_f1: {{ cumulative_f1_real.pair_bonds_f1 }},
+    pair_bonds_entity_count: {{ cumulative_f1_real.pair_bonds_entity_count }},
     symptom_macro_f1: {{ cumulative_f1_real.symptom_macro_f1 }},
     anxiety_macro_f1: {{ cumulative_f1_real.anxiety_macro_f1 }},
     relationship_macro_f1: {{ cumulative_f1_real.relationship_macro_f1 }},
-    functioning_macro_f1: {{ cumulative_f1_real.functioning_macro_f1 }}
+    functioning_macro_f1: {{ cumulative_f1_real.functioning_macro_f1 }},
+    sarf_counts: {{ cumulative_f1_real.sarf_counts | tojson }},
+    structural_kind_f1: {{ cumulative_f1_real.structural_kind_f1 | tojson }}
 };
 
 function showCumF1(source) {
@@ -183,12 +236,30 @@ function showCumF1(source) {
         `Comparing end-of-discussion cumulative PDPs across ${m.total_discussions} discussions`;
     document.getElementById('cumf1-overall').textContent = m.aggregate_micro_f1.toFixed(3);
     document.getElementById('cumf1-people').textContent = m.people_f1.toFixed(3);
+    document.getElementById('cumf1-people-n').textContent = `n=${m.people_entity_count} entities`;
     document.getElementById('cumf1-events').textContent = m.events_f1.toFixed(3);
+    document.getElementById('cumf1-events-n').textContent = `n=${m.events_entity_count} entities`;
+    document.getElementById('cumf1-structural').textContent = m.structural_events_f1.toFixed(3);
+    document.getElementById('cumf1-structural-n').textContent = `(n=${m.structural_events_n})`;
+    document.getElementById('cumf1-shift').textContent = m.shift_events_f1.toFixed(3);
+    document.getElementById('cumf1-shift-n').textContent = `(n=${m.shift_events_n})`;
     document.getElementById('cumf1-pair-bonds').textContent = m.pair_bonds_f1.toFixed(3);
+    document.getElementById('cumf1-pair-bonds-n').textContent = `n=${m.pair_bonds_entity_count} entities`;
     document.getElementById('cumf1-symptom').textContent = m.symptom_macro_f1.toFixed(3);
+    document.getElementById('cumf1-symptom-n').textContent = `n=${m.sarf_counts.symptom || 0} events`;
     document.getElementById('cumf1-anxiety').textContent = m.anxiety_macro_f1.toFixed(3);
+    document.getElementById('cumf1-anxiety-n').textContent = `n=${m.sarf_counts.anxiety || 0} events`;
     document.getElementById('cumf1-relationship').textContent = m.relationship_macro_f1.toFixed(3);
+    document.getElementById('cumf1-relationship-n').textContent = `n=${m.sarf_counts.relationship || 0} events`;
     document.getElementById('cumf1-functioning').textContent = m.functioning_macro_f1.toFixed(3);
+    document.getElementById('cumf1-functioning-n').textContent = `n=${m.sarf_counts.functioning || 0} events`;
+    for (const kind of Object.keys(m.structural_kind_f1)) {
+        const [f1, n] = m.structural_kind_f1[kind];
+        const el = document.getElementById('cumf1-kind-' + kind);
+        if (el) el.textContent = f1.toFixed(3);
+        const nEl = document.getElementById('cumf1-kind-n-' + kind);
+        if (nEl) nEl.textContent = `n=${n}`;
+    }
 }
 </script>
 {% endif %}

@@ -12,6 +12,7 @@ from btcopilot.training.f1_metrics import (
     match_people,
     match_events,
     match_pair_bonds,
+    split_events_by_structural,
     calculate_f1_from_counts,
     F1Metrics,
 )
@@ -27,6 +28,8 @@ class CoderPairMetrics:
     coder_b: str
     people_f1: float = 0.0
     events_f1: float = 0.0
+    structural_events_f1: float = 0.0
+    shift_events_f1: float = 0.0
     pair_bonds_f1: float = 0.0
     aggregate_f1: float = 0.0
     symptom_kappa: float | None = None
@@ -44,6 +47,8 @@ class StatementIRRMetrics:
     coder_pairs: list[CoderPairMetrics] = field(default_factory=list)
     avg_people_f1: float | None = None
     avg_events_f1: float | None = None
+    avg_structural_events_f1: float | None = None
+    avg_shift_events_f1: float | None = None
     avg_aggregate_f1: float | None = None
     avg_symptom_kappa: float | None = None
     avg_anxiety_kappa: float | None = None
@@ -63,6 +68,8 @@ class DiscussionIRRMetrics:
     fleiss_relationship: float | None = None
     fleiss_functioning: float | None = None
     avg_events_f1: float | None = None
+    avg_structural_events_f1: float | None = None
+    avg_shift_events_f1: float | None = None
     avg_aggregate_f1: float | None = None
     avg_symptom_kappa: float | None = None
     avg_anxiety_kappa: float | None = None
@@ -152,6 +159,7 @@ def calculate_pairwise_irr(
         extraction_a.pair_bonds, extraction_b.pair_bonds,
     )
     events_result = match_events(extraction_a.events, extraction_b.events, id_map)
+    structural_result, shift_result = split_events_by_structural(events_result)
     bonds_result = match_pair_bonds(extraction_a.pair_bonds, extraction_b.pair_bonds, id_map)
 
     people_tp = len(people_result.matched_pairs)
@@ -168,6 +176,16 @@ def calculate_pairwise_irr(
 
     people_f1 = calculate_f1_from_counts(people_tp, people_fp, people_fn).f1
     events_f1 = calculate_f1_from_counts(events_tp, events_fp, events_fn).f1
+    structural_events_f1 = calculate_f1_from_counts(
+        len(structural_result.matched_pairs),
+        len(structural_result.ai_unmatched),
+        len(structural_result.gt_unmatched),
+    ).f1
+    shift_events_f1 = calculate_f1_from_counts(
+        len(shift_result.matched_pairs),
+        len(shift_result.ai_unmatched),
+        len(shift_result.gt_unmatched),
+    ).f1
     bonds_f1 = calculate_f1_from_counts(bonds_tp, bonds_fp, bonds_fn).f1
 
     total_tp = people_tp + events_tp + bonds_tp
@@ -188,6 +206,8 @@ def calculate_pairwise_irr(
         coder_b=coder_b_id,
         people_f1=people_f1,
         events_f1=events_f1,
+        structural_events_f1=structural_events_f1,
+        shift_events_f1=shift_events_f1,
         pair_bonds_f1=bonds_f1,
         aggregate_f1=aggregate_f1,
         symptom_kappa=symptom_kappa,
@@ -229,6 +249,8 @@ def calculate_statement_irr(statement_id: int) -> StatementIRRMetrics | None:
         coder_pairs=coder_pairs,
         avg_people_f1=safe_avg([cp.people_f1 for cp in coder_pairs]),
         avg_events_f1=safe_avg([cp.events_f1 for cp in coder_pairs]),
+        avg_structural_events_f1=safe_avg([cp.structural_events_f1 for cp in coder_pairs]),
+        avg_shift_events_f1=safe_avg([cp.shift_events_f1 for cp in coder_pairs]),
         avg_aggregate_f1=safe_avg([cp.aggregate_f1 for cp in coder_pairs]),
         avg_symptom_kappa=safe_avg([cp.symptom_kappa for cp in coder_pairs]),
         avg_anxiety_kappa=safe_avg([cp.anxiety_kappa for cp in coder_pairs]),
@@ -270,6 +292,8 @@ def calculate_discussion_irr(discussion_id: int) -> DiscussionIRRMetrics | None:
             coder_b=pairs[0].coder_b,
             people_f1=safe_avg([p.people_f1 for p in pairs]) or 0.0,
             events_f1=safe_avg([p.events_f1 for p in pairs]) or 0.0,
+            structural_events_f1=safe_avg([p.structural_events_f1 for p in pairs]) or 0.0,
+            shift_events_f1=safe_avg([p.shift_events_f1 for p in pairs]) or 0.0,
             pair_bonds_f1=safe_avg([p.pair_bonds_f1 for p in pairs]) or 0.0,
             aggregate_f1=safe_avg([p.aggregate_f1 for p in pairs]) or 0.0,
             symptom_kappa=safe_avg([p.symptom_kappa for p in pairs]),
@@ -289,6 +313,8 @@ def calculate_discussion_irr(discussion_id: int) -> DiscussionIRRMetrics | None:
         coded_statement_count=len(statement_metrics),
         pairwise_metrics=pairwise,
         avg_events_f1=safe_avg([p.events_f1 for p in pairwise]),
+        avg_structural_events_f1=safe_avg([p.structural_events_f1 for p in pairwise]),
+        avg_shift_events_f1=safe_avg([p.shift_events_f1 for p in pairwise]),
         avg_aggregate_f1=safe_avg([p.aggregate_f1 for p in pairwise]),
         avg_symptom_kappa=safe_avg([p.symptom_kappa for p in pairwise]),
         avg_anxiety_kappa=safe_avg([p.anxiety_kappa for p in pairwise]),

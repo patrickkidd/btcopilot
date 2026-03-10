@@ -73,15 +73,15 @@ class TestBuildEvalResult:
 
         assert result.discussion_count == 1
         assert len(result.per_discussion) == 1
-        assert len(result.aggregate) == 3
+        assert len(result.aggregate) == 5
 
         disc = result.per_discussion[0]
         assert disc.discussion_id == 50
-        assert len(disc.entity_types) == 3
+        assert len(disc.entity_types) == 5
 
         # Verify entity type names
         names = [e.entity_type for e in disc.entity_types]
-        assert names == ["People", "Events", "PairBonds"]
+        assert names == ["People", "Events", "Structural", "Shift", "PairBonds"]
 
     def test_multiple_discussions(self):
         metrics = [
@@ -163,7 +163,7 @@ class TestFormatJson:
         result = build_eval_result([m])
         output = format_json(result)
 
-        assert len(output["aggregate"]) == 3
+        assert len(output["aggregate"]) == 5
         for agg in output["aggregate"]:
             assert "entity_type" in agg
             assert "avg_f1" in agg
@@ -175,7 +175,7 @@ class TestFormatJson:
             assert "total_fn" in agg
 
         entity_types = [a["entity_type"] for a in output["aggregate"]]
-        assert entity_types == ["People", "Events", "PairBonds"]
+        assert entity_types == ["People", "Events", "Structural", "Shift", "PairBonds"]
 
     def test_json_per_discussion_schema(self):
         m = _make_cumulative(50)
@@ -189,7 +189,7 @@ class TestFormatJson:
         assert "auditor_id" in disc
         assert "aggregate_f1" in disc
         assert "entity_types" in disc
-        assert len(disc["entity_types"]) == 3
+        assert len(disc["entity_types"]) == 5
 
         for et in disc["entity_types"]:
             assert "entity_type" in et

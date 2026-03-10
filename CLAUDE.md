@@ -159,7 +159,7 @@ The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this b
 
 **F1 matching**: Structural events skip description matching — only Shift events use descriptions. Events match on kind + date + person links.
 
-**Duplicate people**: `match_people` produces a 1:1 `id_map`. When either side has duplicate people with the same name (e.g., two "Michael" entries), use `_augment_duplicate_person_id_map` for A-side duplicates. For symmetric comparisons (auditor vs auditor), B-side duplicates also need remapping — see `_dedup_b_people` in `compare.py`.
+**Duplicate people**: `match_people` produces a 1:1 `id_map`. Same-named people are disambiguated by parent name similarity (resolves `Person.parents` PairBond → parent names → fuzzy match, weight `PARENTS_BOOST=0.1`). When either side still has duplicate people after matching (e.g., two "Michael" entries), use `_augment_duplicate_person_id_map` for A-side duplicates. For symmetric comparisons (auditor vs auditor), B-side duplicates also need remapping — see `_dedup_b_people` in `compare.py`.
 
 ### IRR Deliberation Records
 

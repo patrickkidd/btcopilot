@@ -82,6 +82,11 @@
                     <div class="notification is-info is-light has-text-centered">
                         <p class="heading">Events</p>
                         <p class="title is-4">{{ "%.3f"|format(discussion_f1.events_f1) }}</p>
+                        <p class="is-size-7 has-text-grey">
+                            Structural {{ "%.3f"|format(discussion_f1.structural_events_f1) }}
+                            &middot;
+                            Shift {{ "%.3f"|format(discussion_f1.shift_events_f1) }}
+                        </p>
                     </div>
                 </div>
                 <div class="column is-3">

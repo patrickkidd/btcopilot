@@ -70,6 +70,8 @@ class Person:
 
 **Parents**: Single PairBond ID (not a list). A person has exactly one pair of
 biological parents. The PairBond must exist before the Person can reference it.
+Used by F1 people matching as a tiebreaker — resolves PairBond → parent person
+names → fuzzy-matches against GT parent names. See [F1_METRICS.md](../F1_METRICS.md#people-matching).
 
 **PDPDeltas can reference positive IDs** to update committed items (e.g.
 setting `parents` on the speaker after learning who their parents are).

@@ -124,7 +124,7 @@ def run_extract_full_f1(discussion_id=None, model=None):
 
         sarf = {}
         if events_result.matched_pairs:
-            sarf = calculate_sarf_macro_f1(events_result.matched_pairs)
+            sarf, _ = calculate_sarf_macro_f1(events_result.matched_pairs)
 
         elapsed = time.time() - disc_start
         result = {

@@ -18,19 +18,25 @@ F1 scores require matching entities between AI and ground truth extractions. Ent
 
 ### People Matching
 
-**Criteria**:
-- Name similarity > 0.8 (rapidfuzz ratio on `name` + `last_name`)
-- Parent links match after ID resolution (null parents ignored)
-- IDs ignored (handles AI negative IDs vs GT negative IDs)
+**Criteria** (in order of weight):
+1. **Name similarity** ≥ 0.60 (`NAME_SIMILARITY_THRESHOLD`, rapidfuzz `token_set_ratio` after title stripping)
+2. **Gender match** — must agree if both sides are set and neither is `Unknown`; skipped if either is `None`/`Unknown`
+3. **Parent name similarity** (tiebreaker, weight `PARENTS_BOOST = 0.1`) — resolves each person's `Person.parents` PairBond ID → looks up `person_a`/`person_b` names → fuzzy-matches the two parent name sets. Returns 0.5 (neutral) when either side lacks parents data, so it only affects scoring when both sides have parents populated.
 
-**Example**:
+**Score**: `name_sim + 0.1 × parent_sim`. Parent matching disambiguates same-named people (e.g., two "Michael"s with different parents) without affecting matches where names differ enough to be unambiguous.
+
+**Title stripping**: "Aunt Carol" → "carol", "Dr. Smith" → "smith", "Grandma Jones" → "jones". See `TITLE_PREFIXES` in `f1_metrics.py`.
+
+**Example** (disambiguation):
 ```python
-AI:  Person(id=-1, name="John", last_name="Smith", parent_a=-2)
-GT:  Person(id=-5, name="Jon", last_name="Smith", parent_a=-8)
+AI:  Person(id=-3, name="Michael", parents=-17)  # PairBond -17 = Carol + Richard
+GT:  Person(id=-5, name="Michael", parents=-100) # PairBond -100 = Carol + Richard
+GT:  Person(id=-3, name="Michael", parents=None)  # different Michael, no parents
 ```
-- Name similarity: 0.95 (fuzzy match "John Smith" vs "Jon Smith") ✓
-- Parent links: Resolve -2 → matched GT person, -8 → same matched GT person ✓
-- **Match**: YES
+- Name similarity to both GTs: 1.0 (exact match)
+- Parent score for GT -5: ~1.0 (Carol+Richard match)
+- Parent score for GT -3: 0.5 (neutral, no parents)
+- AI Michael matches GT -5 (score 1.1 vs 1.05) ✓
 
 ### Event Matching
 
@@ -285,6 +291,7 @@ f"stmt_{statement_id}_{feedback_id}_{hash(approved_feedbacks)}"
 
 ```python
 NAME_SIMILARITY_THRESHOLD = 0.60
+PARENTS_BOOST = 0.1              # Weight of parent-name similarity in people matching score
 DATE_TOLERANCE_DAYS = 7
 APPROXIMATE_TOLERANCE_DAYS = 730  # ±2 years
 ```
@@ -333,7 +340,7 @@ Per-statement F1 compares AI vs GT at each individual statement. This has weakne
 
 ### Key Finding: Pair Bonds
 
-AI currently extracts **zero pair bonds** across all discussions. Per-statement F1 shows ~0.778 because most statements have 0 AI + 0 GT pair bonds → `calculate_f1_from_counts(0, 0, 0)` returns 1.0. Cumulative F1 correctly shows 0.000 since GT accumulates 3-5 pair bonds while AI stays at zero. This is a real AI capability gap for prompt improvement.
+Per-statement F1 can inflate PairBonds scores because most individual statements have 0 AI + 0 GT pair bonds → `calculate_f1_from_counts(0, 0, 0)` returns 1.0. Cumulative F1 is the reliable measure. As of 2026-03-09, cumulative PairBonds F1 averages 0.762 across 6 GT discussions (via `validate_t7_f1.py --all-synthetic`).
 
 ## Known Limitations
 
