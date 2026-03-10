@@ -1351,10 +1351,13 @@ def calculate_all_cumulative_f1(
             > 0
         ]
         if structural_results:
-            system.structural_events_n = len(structural_results)
+            system.structural_events_n = sum(
+                r.structural_events_metrics.tp + r.structural_events_metrics.fp + r.structural_events_metrics.fn
+                for r in structural_results
+            )
             system.structural_events_f1 = sum(
                 r.structural_events_f1 for r in structural_results
-            ) / system.structural_events_n
+            ) / len(structural_results)
         # Per-kind structural F1 with skip-zero averaging
         for kind in STRUCTURAL_KINDS:
             key = kind.value
@@ -1370,10 +1373,13 @@ def calculate_all_cumulative_f1(
                 > 0
             ]
             if kind_results:
-                n_kind = len(kind_results)
+                entity_count = sum(
+                    r.structural_kind_metrics[key].tp + r.structural_kind_metrics[key].fp + r.structural_kind_metrics[key].fn
+                    for r in kind_results
+                )
                 system.structural_kind_f1[key] = (
-                    sum(r.structural_kind_metrics[key].f1 for r in kind_results) / n_kind,
-                    n_kind,
+                    sum(r.structural_kind_metrics[key].f1 for r in kind_results) / len(kind_results),
+                    entity_count,
                 )
         shift_results = [
             r
@@ -1384,10 +1390,13 @@ def calculate_all_cumulative_f1(
             > 0
         ]
         if shift_results:
-            system.shift_events_n = len(shift_results)
+            system.shift_events_n = sum(
+                r.shift_events_metrics.tp + r.shift_events_metrics.fp + r.shift_events_metrics.fn
+                for r in shift_results
+            )
             system.shift_events_f1 = sum(
                 r.shift_events_f1 for r in shift_results
-            ) / system.shift_events_n
+            ) / len(shift_results)
         system.pair_bonds_f1 = sum(r.pair_bonds_f1 for r in results) / n
         system.symptom_macro_f1 = sum(r.symptom_macro_f1 for r in results) / n
         system.anxiety_macro_f1 = sum(r.anxiety_macro_f1 for r in results) / n
