@@ -12,6 +12,8 @@
 import sys
 import re
 import pickle
+
+from btcopilot.pro.safe_pickle import safe_loads
 import ast
 import datetime
 import uuid
@@ -201,7 +203,7 @@ def diagrams(id=None):
             #     _log.debug(f"    Diagram[{diagram['id']}].updated_at: {diagram['updated_at']}")
             return pickle.dumps(data)
         elif request.method == "POST":  # create
-            args = pickle.loads(request.data)
+            args = safe_loads(request.data)
             diagram = Diagram(
                 user_id=g.user.id,
                 name=args["name"],
@@ -233,7 +235,7 @@ def diagrams(id=None):
         elif request.method in ("PATCH", "PUT"):  # update
             if not diagram.check_write_access(g.user):
                 return ("Access Denied", 401)
-            data = pickle.loads(request.data)
+            data = safe_loads(request.data)
             expected_version = data.get("expected_version")
 
             # Support either sending a pickled dict of db model attributes or the pickled scene data.
@@ -281,7 +283,7 @@ def diagrams(id=None):
 @bp.route("/users/status", methods=("POST",))
 @encrypted
 def users_status():
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     user = User.query.filter_by(username=args["username"].lower()).first()
     if user:
         data = {"status": user.status, "id": user.id}
@@ -304,7 +306,7 @@ def users_status():
 @bp.route("/users", methods=("POST",))
 @encrypted
 def users_create():
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
     if not re.search(regex, args["username"].lower()):
         return ("Bad Request", 400)
@@ -355,7 +357,7 @@ def users_email_code(user_id):
 @bp.route("/users/<int:user_id>/confirm", methods=("POST",))
 @encrypted
 def users_confirm(user_id):
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     user = User.query.get(user_id)
     g.user = user
     if not user:
@@ -372,7 +374,7 @@ def users_confirm(user_id):
 @bp.route("/users/<int:user_id>", methods=("POST",))
 @encrypted
 def users_update(user_id):
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     user = User.query.get(user_id)
     g.user = user
     if not user:
@@ -407,7 +409,7 @@ def users_free_diagram(user_id):
         return ("Not Found", 404)
     if g.user.id != user.id:
         return ("Unauthorized", 401)
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     session = Session.query.filter_by(token=args["session"]).first()
     if not session:
         return ("Unauthorized", 401)
@@ -448,7 +450,7 @@ def users_free_diagram(user_id):
 @encrypted
 def sessions_init():
     """Called when the MainWindow starts up."""
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     if args.get("token"):
         session = Session.query.filter_by(token=args.get("token")).first()
         if not session:
@@ -484,7 +486,7 @@ def sessions_init():
 def sessions_login():
     import os
 
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     password = args.get("password")
     username = args.get("username")
 
@@ -564,7 +566,7 @@ def sessions_web_auth_token():
 @bp.route("/policies", methods=("GET",))
 @encrypted
 def policies_policies():
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     session = Session.query.filter_by(token=args["session"]).first()
     if not session:
         return ("Unauthorized", 401)
@@ -581,7 +583,7 @@ def policies_policies():
 @bp.route("/licenses", methods=("POST",))
 @encrypted
 def licenses_purchase():
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     session = Session.query.filter_by(token=args["session"]).first()
     if not session:
         return ("Unauthorized", 401)
@@ -663,7 +665,7 @@ def licenses_purchase():
 @encrypted
 @deprecated
 def licenses_verify():
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     ret = {"licenses": []}
     for entry in args["licenses"]:
         license = License.query.filter_by(key=entry["key"]).first()
@@ -677,7 +679,7 @@ def licenses_verify():
 @bp.route("/licenses/<key>", methods=("GET",))
 @encrypted
 def licenses_get(key):
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     session = Session.query.filter_by(token=args["session"]).first()
     if not session:
         return ("Unauthorized", 401)
@@ -697,7 +699,7 @@ def licenses_get(key):
 @bp.route("/licenses/<key>/cancel", methods=("POST",))
 @encrypted
 def licenses_cancel(key):
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     session = Session.query.filter_by(token=args["session"]).first()
     if not session:
         return ("Unauthorized", 401)
@@ -727,7 +729,7 @@ def licenses_cancel(key):
 @bp.route("/licenses/<key>/import", methods=("POST",))
 @encrypted
 def licenses_import(key):
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     session = Session.query.filter_by(token=args["session"]).first()
     if not session:
         return ("Unauthorized", 401)
@@ -767,7 +769,7 @@ def licenses_import(key):
 @bp.route("/machines/<code>", methods=("GET", "POST", "DELETE"))
 @encrypted
 def machines_machine(code):
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     session = Session.query.filter_by(token=args["session"]).first()
     if not session:
         return ("Unauthorized", 401)
@@ -799,7 +801,7 @@ def machines_machine(code):
 @bp.route("/activations", methods=("POST",))
 @encrypted
 def activations_create():
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     session = Session.query.filter_by(token=args["session"]).first()
     if not session:
         return ("Unauthorized", 401)
@@ -832,7 +834,7 @@ def activations_create():
 @bp.route("/activations/<id>", methods=("DELETE",))
 @encrypted
 def activations_activation(id):
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     session = Session.query.filter_by(token=args["session"]).first()
     if not session:
         return ("Unauthorized", 401)
@@ -856,7 +858,7 @@ def activations_activation(id):
 @bp.route("/access_rights/<int:id>", methods=("PATCH", "DELETE"))
 @encrypted
 def access_right(id=None):
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     session = Session.query.filter_by(token=args["session"]).first()
     if not session:
         return ("Unauthorized", 401)
@@ -885,7 +887,7 @@ def access_right(id=None):
 def copilot_chat(conversation_id: int = None):
     from btcopilot.pro.copilot import Event
 
-    args = pickle.loads(request.data)
+    args = safe_loads(request.data)
     session = Session.query.filter_by(token=args["session"]).first()
     if not session:
         return ("Unauthorized", 401)
