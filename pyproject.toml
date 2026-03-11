@@ -49,6 +49,7 @@ app = [
     "pymupdf4llm",
 
     # personal
+    "anthropic",
     "pydantic_ai",
     "google-genai",
 

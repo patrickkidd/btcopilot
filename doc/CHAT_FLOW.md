@@ -44,6 +44,28 @@ Chat-only function:
 
 Uses Flask `g.custom_prompts` to override `CONVERSATION_FLOW_PROMPT` if set.
 
+## Model Configuration
+
+The chat response model is configurable via the `BTCOPILOT_RESPONSE_MODEL`
+environment variable. This enables A/B testing between models.
+
+| Model | Env Value | Use Case |
+|-------|-----------|----------|
+| Claude Opus 4.6 | `claude-opus-4-0-20250514` (default) | Chat responses — superior conversational quality |
+| Gemini Flash | `gemini-3-flash-preview` | Legacy / fallback |
+
+**Tiered model strategy:**
+- **Chat/responses:** Claude Opus 4.6 (configurable) — via `response_text_sync()` in llmutil.py
+- **Extraction:** Gemini Flash (hardcoded — optimized prompts, structured output)
+- **Calibration:** Gemini Flash (hardcoded)
+- **RAG:** Gemini Flash (hardcoded)
+
+The backend (Anthropic vs Google) is auto-detected from the model name prefix.
+Set `ANTHROPIC_API_KEY` in the environment when using Claude models.
+
+All code that generates user-facing text responses should use `response_text_sync()`
+(not `gemini_text_sync()` directly) to respect the configured model.
+
 ## Prompt Engineering
 
 ### Chat Prompts

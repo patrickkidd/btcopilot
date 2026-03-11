@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from flask import g
 
 from btcopilot.extensions import db, ai_log
-from btcopilot.llmutil import gemini_text_sync
+from btcopilot.llmutil import response_text_sync
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.prompts import CONVERSATION_FLOW_PROMPT
 
@@ -56,7 +56,7 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
 
 
 def _generate_response(system_instruction: str, turns: list[tuple[str, str]]) -> str:
-    ai_response = gemini_text_sync(
+    ai_response = response_text_sync(
         system_instruction=system_instruction,
         turns=turns,
         temperature=0.45,
