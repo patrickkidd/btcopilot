@@ -19,11 +19,11 @@ CALIBRATION_MODEL = "gemini-3-flash-preview"
 
 # Chat/response model: configurable via env var for A/B testing.
 # Set BTCOPILOT_RESPONSE_MODEL to override. Supported values:
-#   "claude-opus-4-0-20250514" (default) — Anthropic Claude Opus 4.6
+#   "claude-opus-4-6" (default) — Anthropic Claude Opus 4.6
 #   "gemini-3-flash-preview" — Google Gemini Flash (legacy)
 #   Any valid Anthropic or Gemini model identifier.
 # The backend is auto-detected from the model name prefix.
-RESPONSE_MODEL = os.environ.get("BTCOPILOT_RESPONSE_MODEL", "claude-opus-4-0-20250514")
+RESPONSE_MODEL = os.environ.get("BTCOPILOT_RESPONSE_MODEL", "claude-opus-4-6")
 GEMINI_RESPONSE_MODEL = "gemini-3-flash-preview"
 
 CLAUDE_THINKING_BUDGET = 4096

@@ -16,7 +16,7 @@ from btcopilot.llmutil import (
 
 
 def test_is_claude_model_positive():
-    assert _is_claude_model("claude-opus-4-0-20250514")
+    assert _is_claude_model("claude-opus-4-6")
     assert _is_claude_model("claude-sonnet-4-20250514")
     assert _is_claude_model("claude-3-opus-20240229")
 
@@ -146,7 +146,7 @@ def test_claude_text_sync():
 
 def test_response_text_sync_routes_to_claude():
     """response_text_sync routes to Claude when RESPONSE_MODEL starts with claude-."""
-    with patch("btcopilot.llmutil.RESPONSE_MODEL", "claude-opus-4-0-20250514"), \
+    with patch("btcopilot.llmutil.RESPONSE_MODEL", "claude-opus-4-6"), \
          patch("btcopilot.llmutil._is_claude_model", return_value=True), \
          patch("btcopilot.llmutil.claude_text", new_callable=AsyncMock, return_value="Claude reply") as mock_claude, \
          patch("btcopilot.llmutil.gemini_text", new_callable=AsyncMock) as mock_gemini:

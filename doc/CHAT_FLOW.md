@@ -51,7 +51,7 @@ environment variable. This enables A/B testing between models.
 
 | Model | Env Value | Use Case |
 |-------|-----------|----------|
-| Claude Opus 4.6 | `claude-opus-4-0-20250514` (default) | Chat responses — superior conversational quality |
+| Claude Opus 4.6 | `claude-opus-4-6` (default) | Chat responses — superior conversational quality |
 | Gemini Flash | `gemini-3-flash-preview` | Legacy / fallback |
 
 **Tiered model strategy:**
