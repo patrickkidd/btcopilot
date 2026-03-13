@@ -91,12 +91,11 @@ Process: make change → create `doc/log/synthetic-clients/YYYY-MM-DD_HH-MM--des
 btcopilot provides:
 - Backend for Pro/Personal apps
 - AI/ML interface for SARF research
-- PDP (Pending Data Pool) extraction — two modes:
-  - **Single-prompt** (Personal app): `pdp.extract_full()` via
-    `POST /personal/discussions/<id>/extract`. Full conversation → one LLM call
-    → complete PDP. Chat is chat-only.
-  - **Per-statement** (Training app): `pdp.update()` per statement for GT
-    coding workflows.
+- PDP (Pending Data Pool) extraction — **one mode only**: `pdp.extract_full()`
+  - Full conversation → two-pass LLM call → complete PDP. Used by both apps.
+  - **Personal app**: `POST /personal/discussions/<id>/extract` → stores result in `diagram_data.pdp` via `set_diagram_data`.
+  - **Training app**: `POST /training/discussions/<id>/extract` → same. Result stored in `discussion.diagram.set_diagram_data(diagram_data)`. The discussion view then surfaces the full PDP as `cumulative_pdp` on the last subject statement for display in the SARF editor.
+  - `pdp.update()` (per-statement extraction) **no longer exists**. Do not reference it.
 
 ### Core Structure
 

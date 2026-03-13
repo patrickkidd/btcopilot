@@ -24,6 +24,9 @@ CALIBRATION_MODEL = "gemini-3-flash-preview"
 #   Any valid Anthropic or Gemini model identifier.
 # The backend is auto-detected from the model name prefix.
 RESPONSE_MODEL = os.environ.get("BTCOPILOT_RESPONSE_MODEL", "claude-opus-4-0-20250514")
+GEMINI_RESPONSE_MODEL = "gemini-3-flash-preview"
+
+CLAUDE_THINKING_BUDGET = 4096
 
 
 def _is_claude_model(model: str) -> bool:
@@ -248,13 +251,15 @@ async def claude_text(prompt=None, **kwargs):
     Accepts the same interface as gemini_text():
       - system_instruction: str — system prompt
       - turns: list of (role, text) tuples — "user"/"model" mapped to "user"/"assistant"
-      - temperature: float (default 0.45)
-      - max_output_tokens: int (default 2048)
+      - temperature: float (ignored when thinking is enabled — API forces 1.0)
+      - max_output_tokens: int (default 8192, covers thinking + response)
       - prompt: str — simple single-turn prompt (alternative to turns)
+
+    Extended thinking is enabled by default (budget: CLAUDE_THINKING_BUDGET).
+    This forces temperature=1.0 per Anthropic API constraints.
     """
     start_time = time.time()
-    temperature = kwargs.get("temperature", 0.45)
-    max_output_tokens = kwargs.get("max_output_tokens", 2048)
+    max_output_tokens = kwargs.get("max_output_tokens", 8192)
     system_instruction = kwargs.get("system_instruction")
 
     messages = _prepare_claude_messages(
@@ -265,15 +270,20 @@ async def claude_text(prompt=None, **kwargs):
     api_kwargs = {
         "model": RESPONSE_MODEL,
         "max_tokens": max_output_tokens,
-        "temperature": temperature,
         "messages": messages,
+        "thinking": {
+            "type": "enabled",
+            "budget_tokens": CLAUDE_THINKING_BUDGET,
+        },
     }
     if system_instruction:
         api_kwargs["system"] = system_instruction
 
     response = await client.messages.create(**api_kwargs)
 
-    content = response.content[0].text
+    content = "".join(
+        block.text for block in response.content if block.type == "text"
+    )
     _log.debug(f"Completed Claude response in {time.time() - start_time} seconds")
     _log.debug(f"claude_text(): --> \n\n{content}")
     return content
@@ -394,7 +404,7 @@ async def gemini_text(prompt=None, **kwargs):
     for attempt in range(GEMINI_MAX_RETRIES):
         try:
             response = await client.aio.models.generate_content(
-                model=RESPONSE_MODEL,
+                model=GEMINI_RESPONSE_MODEL,
                 contents=contents,
                 config=config,
             )
