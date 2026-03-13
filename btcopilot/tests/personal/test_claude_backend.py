@@ -71,11 +71,15 @@ def test_prepare_messages_no_args_raises():
 
 
 def _make_mock_response(text="Hello there"):
-    """Create a mock Anthropic API response."""
-    content_block = MagicMock()
-    content_block.text = text
+    """Create a mock Anthropic API response with thinking + text blocks."""
+    thinking_block = MagicMock()
+    thinking_block.type = "thinking"
+    thinking_block.thinking = "internal reasoning"
+    text_block = MagicMock()
+    text_block.type = "text"
+    text_block.text = text
     response = MagicMock()
-    response.content = [content_block]
+    response.content = [thinking_block, text_block]
     return response
 
 
