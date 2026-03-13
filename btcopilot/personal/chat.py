@@ -6,7 +6,7 @@ from flask import g
 from btcopilot.extensions import db, ai_log
 from btcopilot.llmutil import response_text_sync
 from btcopilot.personal.models import Discussion, Statement
-from btcopilot.personal.prompts import CONVERSATION_FLOW_PROMPT
+from btcopilot.personal.prompts import get_conversation_flow_prompt
 
 
 _log = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
     ai_log.info(f"User statement: {user_statement}")
 
     # Build structured conversation turns before adding new statement to session
-    system_instruction = CONVERSATION_FLOW_PROMPT
+    system_instruction = get_conversation_flow_prompt()
     if hasattr(g, "custom_prompts"):
         system_instruction = g.custom_prompts.get(
             "CONVERSATION_FLOW_PROMPT", system_instruction
