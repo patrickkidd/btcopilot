@@ -15,8 +15,20 @@ _log = logging.getLogger(__name__)
 
 EXTRACTION_MODEL = "gemini-3-flash-preview"
 EXTRACTION_MODEL_LARGE = "gemini-3-flash-preview"
-RESPONSE_MODEL = "gemini-3-flash-preview"
 CALIBRATION_MODEL = "gemini-3-flash-preview"
+
+# Chat/response model: configurable via env var for A/B testing.
+# Set BTCOPILOT_RESPONSE_MODEL to override. Supported values:
+#   "claude-opus-4-0-20250514" (default) — Anthropic Claude Opus 4.6
+#   "gemini-3-flash-preview" — Google Gemini Flash (legacy)
+#   Any valid Anthropic or Gemini model identifier.
+# The backend is auto-detected from the model name prefix.
+RESPONSE_MODEL = os.environ.get("BTCOPILOT_RESPONSE_MODEL", "claude-opus-4-0-20250514")
+
+
+def _is_claude_model(model: str) -> bool:
+    """Return True if the model identifier is a Claude/Anthropic model."""
+    return model.startswith("claude-")
 
 
 class OutputTruncatedError(Exception):
@@ -177,6 +189,121 @@ def _client():
         api_key=os.environ["GOOGLE_GEMINI_API_KEY"],
         http_options=types.HttpOptions(timeout=GEMINI_TIMEOUT_MS),
     )
+
+
+# --- Anthropic client ---
+
+
+ANTHROPIC_TIMEOUT = 120  # seconds
+ANTHROPIC_MAX_RETRIES = 3
+
+
+def _anthropic_client():
+    import anthropic
+
+    return anthropic.AsyncAnthropic(
+        api_key=os.environ["ANTHROPIC_API_KEY"],
+        timeout=ANTHROPIC_TIMEOUT,
+        max_retries=ANTHROPIC_MAX_RETRIES,
+    )
+
+
+def _prepare_claude_messages(prompt=None, turns=None):
+    """Build Anthropic-compatible messages from prompt or turns.
+
+    Handles:
+      - Mapping Gemini role "model" to Anthropic "assistant"
+      - Prepending a user turn if conversation starts with assistant
+      - Merging consecutive same-role messages (Anthropic requires alternating)
+
+    Returns list of {"role": str, "content": str} dicts.
+    """
+    if turns:
+        messages = []
+        for role, text in turns:
+            api_role = "assistant" if role == "model" else "user"
+            messages.append({"role": api_role, "content": text})
+    elif prompt:
+        messages = [{"role": "user", "content": prompt}]
+    else:
+        raise ValueError("Requires either 'prompt' or 'turns'")
+
+    # Anthropic requires messages to start with "user" role.
+    if messages and messages[0]["role"] == "assistant":
+        messages.insert(0, {"role": "user", "content": "Hello"})
+
+    # Anthropic requires strictly alternating user/assistant messages.
+    merged = []
+    for msg in messages:
+        if merged and merged[-1]["role"] == msg["role"]:
+            merged[-1]["content"] += "\n\n" + msg["content"]
+        else:
+            merged.append(msg)
+    return merged
+
+
+async def claude_text(prompt=None, **kwargs):
+    """Generate unstructured text using Claude (Anthropic API).
+
+    Accepts the same interface as gemini_text():
+      - system_instruction: str — system prompt
+      - turns: list of (role, text) tuples — "user"/"model" mapped to "user"/"assistant"
+      - temperature: float (default 0.45)
+      - max_output_tokens: int (default 2048)
+      - prompt: str — simple single-turn prompt (alternative to turns)
+    """
+    start_time = time.time()
+    temperature = kwargs.get("temperature", 0.45)
+    max_output_tokens = kwargs.get("max_output_tokens", 2048)
+    system_instruction = kwargs.get("system_instruction")
+
+    messages = _prepare_claude_messages(
+        prompt=prompt, turns=kwargs.get("turns")
+    )
+
+    client = _anthropic_client()
+    api_kwargs = {
+        "model": RESPONSE_MODEL,
+        "max_tokens": max_output_tokens,
+        "temperature": temperature,
+        "messages": messages,
+    }
+    if system_instruction:
+        api_kwargs["system"] = system_instruction
+
+    response = await client.messages.create(**api_kwargs)
+
+    content = response.content[0].text
+    _log.debug(f"Completed Claude response in {time.time() - start_time} seconds")
+    _log.debug(f"claude_text(): --> \n\n{content}")
+    return content
+
+
+def claude_text_sync(prompt=None, **kwargs):
+    return asyncio.run(claude_text(prompt, **kwargs))
+
+
+# --- Unified response text API (routes to Claude or Gemini based on RESPONSE_MODEL) ---
+
+
+async def response_text(prompt=None, **kwargs):
+    """Generate text using the configured RESPONSE_MODEL.
+
+    Auto-routes to Claude or Gemini based on model name. Same interface as
+    gemini_text() / claude_text(). Use this instead of calling either directly
+    for any code that should respect the RESPONSE_MODEL setting.
+    """
+    if _is_claude_model(RESPONSE_MODEL):
+        _log.info(f"response_text using Claude: {RESPONSE_MODEL}")
+        return await claude_text(prompt, **kwargs)
+    else:
+        _log.info(f"response_text using Gemini: {RESPONSE_MODEL}")
+        return await gemini_text(prompt, **kwargs)
+
+
+def response_text_sync(prompt=None, **kwargs):
+    """Sync wrapper for response_text()."""
+    return asyncio.run(response_text(prompt, **kwargs))
 
 
 # --- Public API ---
