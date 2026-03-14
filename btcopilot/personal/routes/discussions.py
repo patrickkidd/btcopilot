@@ -59,7 +59,7 @@ def create():
     data = request.get_json(silent=True) or {}
     discussion = _create_discussion(data)
     if "statement" in data:
-        response: Response = ask(discussion, data["statement"])
+        response: Response = ask(discussion, data["statement"], model=data.get("model"))
     db.session.commit()
     db.session.merge(discussion)
 
@@ -115,7 +115,8 @@ def chat(discussion_id: int):
             user_speaker.person_id = user_person_id
 
     statement = request.json["statement"]
-    response: Response = ask(discussion, statement)
+    model = request.json.get("model")
+    response: Response = ask(discussion, statement, model=model)
 
     # Notify audit system of new statements (both user and AI)
     # from btcopilot.training.sse import sse_manager

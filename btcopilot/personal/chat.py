@@ -17,7 +17,9 @@ class Response:
     statement: str
 
 
-def ask(discussion: Discussion, user_statement: str) -> Response:
+def ask(
+    discussion: Discussion, user_statement: str, model: str | None = None
+) -> Response:
 
     ai_log.info(f"User statement: {user_statement}")
 
@@ -42,7 +44,7 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
     )
     db.session.add(statement)
 
-    ai_response = _generate_response(system_instruction, turns)
+    ai_response = _generate_response(system_instruction, turns, model=model)
     ai_log.info(f"AI response: {ai_response}")
 
     ai_statement = Statement(
@@ -55,10 +57,13 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
     return Response(statement=ai_response)
 
 
-def _generate_response(system_instruction: str, turns: list[tuple[str, str]]) -> str:
+def _generate_response(
+    system_instruction: str, turns: list[tuple[str, str]], model: str | None = None
+) -> str:
     ai_response = response_text_sync(
         system_instruction=system_instruction,
         turns=turns,
         temperature=0.45,
+        model=model,
     )
     return ai_response.strip()
