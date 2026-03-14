@@ -17,7 +17,9 @@ class Response:
     statement: str
 
 
-def ask(discussion: Discussion, user_statement: str, model: str | None = None) -> Response:
+def ask(
+    discussion: Discussion, user_statement: str, model: str | None = None
+) -> Response:
 
     ai_log.info(f"User statement: {user_statement}")
 
@@ -56,16 +58,12 @@ def ask(discussion: Discussion, user_statement: str, model: str | None = None) -
 
 
 def _generate_response(
-    system_instruction: str,
-    turns: list[tuple[str, str]],
-    model: str | None = None,
+    system_instruction: str, turns: list[tuple[str, str]], model: str | None = None
 ) -> str:
-    kwargs = {
-        "system_instruction": system_instruction,
-        "turns": turns,
-        "temperature": 0.45,
-    }
-    if model:
-        kwargs["model"] = model
-    ai_response = response_text_sync(**kwargs)
+    ai_response = response_text_sync(
+        system_instruction=system_instruction,
+        turns=turns,
+        temperature=0.45,
+        model=model,
+    )
     return ai_response.strip()

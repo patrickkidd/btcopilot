@@ -44,7 +44,9 @@ def test_prepare_messages_from_prompt():
 
 
 def test_prepare_messages_prepends_user_if_starts_with_assistant():
-    messages = _prepare_claude_messages(turns=[("model", "Welcome!"), ("user", "Thanks")])
+    messages = _prepare_claude_messages(
+        turns=[("model", "Welcome!"), ("user", "Thanks")]
+    )
     assert messages[0]["role"] == "user"
     assert messages[0]["content"] == "Hello"
     assert messages[1]["role"] == "assistant"
@@ -146,10 +148,16 @@ def test_claude_text_sync():
 
 def test_response_text_sync_routes_to_claude():
     """response_text_sync routes to Claude when RESPONSE_MODEL starts with claude-."""
-    with patch("btcopilot.llmutil.RESPONSE_MODEL", "claude-opus-4-6"), \
-         patch("btcopilot.llmutil._is_claude_model", return_value=True), \
-         patch("btcopilot.llmutil.claude_text", new_callable=AsyncMock, return_value="Claude reply") as mock_claude, \
-         patch("btcopilot.llmutil.gemini_text", new_callable=AsyncMock) as mock_gemini:
+    with (
+        patch("btcopilot.llmutil.RESPONSE_MODEL", "claude-opus-4-6"),
+        patch("btcopilot.llmutil._is_claude_model", return_value=True),
+        patch(
+            "btcopilot.llmutil.claude_text",
+            new_callable=AsyncMock,
+            return_value="Claude reply",
+        ) as mock_claude,
+        patch("btcopilot.llmutil.gemini_text", new_callable=AsyncMock) as mock_gemini,
+    ):
         result = response_text_sync(prompt="Hello")
         assert result == "Claude reply"
         mock_claude.assert_called_once()
@@ -158,10 +166,16 @@ def test_response_text_sync_routes_to_claude():
 
 def test_response_text_sync_routes_to_gemini():
     """response_text_sync routes to Gemini when RESPONSE_MODEL is not Claude."""
-    with patch("btcopilot.llmutil.RESPONSE_MODEL", "gemini-3-flash-preview"), \
-         patch("btcopilot.llmutil._is_claude_model", return_value=False), \
-         patch("btcopilot.llmutil.gemini_text", new_callable=AsyncMock, return_value="Gemini reply") as mock_gemini, \
-         patch("btcopilot.llmutil.claude_text", new_callable=AsyncMock) as mock_claude:
+    with (
+        patch("btcopilot.llmutil.RESPONSE_MODEL", "gemini-3-flash-preview"),
+        patch("btcopilot.llmutil._is_claude_model", return_value=False),
+        patch(
+            "btcopilot.llmutil.gemini_text",
+            new_callable=AsyncMock,
+            return_value="Gemini reply",
+        ) as mock_gemini,
+        patch("btcopilot.llmutil.claude_text", new_callable=AsyncMock) as mock_claude,
+    ):
         result = response_text_sync(prompt="Hello")
         assert result == "Gemini reply"
         mock_gemini.assert_called_once()
@@ -188,21 +202,29 @@ def test_chat_flow_mock_still_works(test_user):
 
 def test_chat_generate_response_uses_response_text_sync():
     """_generate_response in chat.py uses the unified response_text_sync."""
-    with patch("btcopilot.personal.chat.response_text_sync", return_value="Routed reply") as mock:
+    with patch(
+        "btcopilot.personal.chat.response_text_sync", return_value="Routed reply"
+    ) as mock:
         from btcopilot.personal.chat import _generate_response
+
         result = _generate_response("system prompt", [("user", "Hello")])
         assert result == "Routed reply"
         mock.assert_called_once_with(
             system_instruction="system prompt",
             turns=[("user", "Hello")],
             temperature=0.45,
+            model=None,
         )
 
 
 def test_discussion_update_summary_uses_response_text_sync():
     """Discussion.update_summary uses the unified response_text_sync."""
-    with patch("btcopilot.personal.models.discussion.response_text_sync", return_value="  Summary text  ") as mock:
+    with patch(
+        "btcopilot.personal.models.discussion.response_text_sync",
+        return_value="  Summary text  ",
+    ) as mock:
         from btcopilot.personal.models.discussion import Discussion
+
         d = MagicMock(spec=Discussion)
         d.conversation_history.return_value = "User: Hello\nExpert: Hi"
         # Call the unbound method with the mock instance

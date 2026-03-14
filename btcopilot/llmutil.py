@@ -28,6 +28,25 @@ GEMINI_RESPONSE_MODEL = "gemini-3-flash-preview"
 
 CLAUDE_THINKING_BUDGET = 4096
 
+# Client-facing model aliases → actual API model IDs.
+# The Personal app sends these aliases; the backend resolves them here.
+MODEL_ALIASES = {
+    "opus-4.6": "claude-opus-4-6",
+    "gemini-2.5-flash": "gemini-2.5-flash",
+}
+
+DEFAULT_RESPONSE_MODEL_ALIAS = "opus-4.6"
+
+
+def resolve_model(alias: str | None) -> str:
+    """Resolve a client-facing model alias to an API model ID.
+
+    Falls back to RESPONSE_MODEL if alias is None or unknown.
+    """
+    if alias and alias in MODEL_ALIASES:
+        return MODEL_ALIASES[alias]
+    return RESPONSE_MODEL
+
 
 def _is_claude_model(model: str) -> bool:
     """Return True if the model identifier is a Claude/Anthropic model."""
@@ -264,13 +283,12 @@ async def claude_text(prompt=None, **kwargs):
     max_output_tokens = kwargs.get("max_output_tokens", 8192)
     system_instruction = kwargs.get("system_instruction")
 
-    messages = _prepare_claude_messages(
-        prompt=prompt, turns=kwargs.get("turns")
-    )
+    messages = _prepare_claude_messages(prompt=prompt, turns=kwargs.get("turns"))
 
+    resolved_model = kwargs.get("model", RESPONSE_MODEL)
     client = _anthropic_client()
     api_kwargs = {
-        "model": model,
+        "model": resolved_model,
         "max_tokens": max_output_tokens,
         "messages": messages,
         "thinking": {
@@ -283,9 +301,7 @@ async def claude_text(prompt=None, **kwargs):
 
     response = await client.messages.create(**api_kwargs)
 
-    content = "".join(
-        block.text for block in response.content if block.type == "text"
-    )
+    content = "".join(block.text for block in response.content if block.type == "text")
     _log.debug(f"Completed Claude response in {time.time() - start_time} seconds")
     _log.debug(f"claude_text(): --> \n\n{content}")
     return content
@@ -298,25 +314,27 @@ def claude_text_sync(prompt=None, **kwargs):
 # --- Unified response text API (routes to Claude or Gemini based on model) ---
 
 
-async def response_text(prompt=None, **kwargs):
-    """Generate text using the specified or configured model.
+async def response_text(prompt=None, model=None, **kwargs):
+    """Generate text using the configured RESPONSE_MODEL or an override.
 
-    Accepts a 'model' kwarg to override the default RESPONSE_MODEL, enabling
-    per-request model selection (e.g., user chooses model from the app).
-    Auto-routes to Claude or Gemini based on model name prefix.
+    Auto-routes to Claude or Gemini based on model name. Same interface as
+    gemini_text() / claude_text(). Use this instead of calling either directly
+    for any code that should respect the RESPONSE_MODEL setting.
+
+    model: optional client-facing alias (e.g. "opus-4.6") or raw API model ID.
     """
-    model = kwargs.get("model", RESPONSE_MODEL)
-    if _is_claude_model(model):
-        _log.info(f"response_text using Claude: {model}")
-        return await claude_text(prompt, **kwargs)
+    resolved = resolve_model(model) if model else RESPONSE_MODEL
+    if _is_claude_model(resolved):
+        _log.info(f"response_text using Claude: {resolved}")
+        return await claude_text(prompt, model=resolved, **kwargs)
     else:
-        _log.info(f"response_text using Gemini: {model}")
-        return await gemini_text(prompt, **kwargs)
+        _log.info(f"response_text using Gemini: {resolved}")
+        return await gemini_text(prompt, model=resolved, **kwargs)
 
 
-def response_text_sync(prompt=None, **kwargs):
+def response_text_sync(prompt=None, model=None, **kwargs):
     """Sync wrapper for response_text()."""
-    return asyncio.run(response_text(prompt, **kwargs))
+    return asyncio.run(response_text(prompt, model=model, **kwargs))
 
 
 # --- Public API ---
@@ -407,8 +425,9 @@ async def gemini_text(prompt=None, **kwargs):
     client = _client()
     for attempt in range(GEMINI_MAX_RETRIES):
         try:
+            resolved_model = kwargs.get("model", GEMINI_RESPONSE_MODEL)
             response = await client.aio.models.generate_content(
-                model=model,
+                model=resolved_model,
                 contents=contents,
                 config=config,
             )
