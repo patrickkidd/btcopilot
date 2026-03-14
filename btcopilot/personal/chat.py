@@ -17,12 +17,12 @@ class Response:
     statement: str
 
 
-def ask(discussion: Discussion, user_statement: str) -> Response:
+def ask(discussion: Discussion, user_statement: str, model: str | None = None) -> Response:
 
     ai_log.info(f"User statement: {user_statement}")
 
     # Build structured conversation turns before adding new statement to session
-    system_instruction = get_conversation_flow_prompt()
+    system_instruction = get_conversation_flow_prompt(model)
     if hasattr(g, "custom_prompts"):
         system_instruction = g.custom_prompts.get(
             "CONVERSATION_FLOW_PROMPT", system_instruction
@@ -42,7 +42,7 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
     )
     db.session.add(statement)
 
-    ai_response = _generate_response(system_instruction, turns)
+    ai_response = _generate_response(system_instruction, turns, model=model)
     ai_log.info(f"AI response: {ai_response}")
 
     ai_statement = Statement(
@@ -55,10 +55,17 @@ def ask(discussion: Discussion, user_statement: str) -> Response:
     return Response(statement=ai_response)
 
 
-def _generate_response(system_instruction: str, turns: list[tuple[str, str]]) -> str:
-    ai_response = response_text_sync(
-        system_instruction=system_instruction,
-        turns=turns,
-        temperature=0.45,
-    )
+def _generate_response(
+    system_instruction: str,
+    turns: list[tuple[str, str]],
+    model: str | None = None,
+) -> str:
+    kwargs = {
+        "system_instruction": system_instruction,
+        "turns": turns,
+        "temperature": 0.45,
+    }
+    if model:
+        kwargs["model"] = model
+    ai_response = response_text_sync(**kwargs)
     return ai_response.strip()

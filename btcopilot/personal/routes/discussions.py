@@ -115,7 +115,8 @@ def chat(discussion_id: int):
             user_speaker.person_id = user_person_id
 
     statement = request.json["statement"]
-    response: Response = ask(discussion, statement)
+    model = request.json.get("model")  # Optional per-request model override
+    response: Response = ask(discussion, statement, model=model)
 
     # Notify audit system of new statements (both user and AI)
     # from btcopilot.training.sse import sse_manager

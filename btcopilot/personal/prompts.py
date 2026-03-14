@@ -992,6 +992,22 @@ if _prompts_path:
             DATA_EXTRACTION_PASS2_CONTEXT = _private.DATA_EXTRACTION_PASS2_CONTEXT
             SARF_REVIEW_PROMPT = _private.SARF_REVIEW_PROMPT
 
+            # Per-model conversation prompt overrides (Option B).
+            # If the private file defines model-specific pieces, use them
+            # in get_conversation_flow_prompt() instead of the defaults.
+            if hasattr(_private, "_CONVERSATION_FLOW_CORE"):
+                _CONVERSATION_FLOW_CORE = _private._CONVERSATION_FLOW_CORE
+            if hasattr(_private, "_CONVERSATION_FLOW_OPUS"):
+                _CONVERSATION_FLOW_OPUS = _private._CONVERSATION_FLOW_OPUS
+            if hasattr(_private, "_CONVERSATION_FLOW_GEMINI"):
+                _CONVERSATION_FLOW_GEMINI = _private._CONVERSATION_FLOW_GEMINI
+
+            # Rebuild the default so the override-detection in
+            # get_conversation_flow_prompt() stays accurate.
+            _CONVERSATION_FLOW_DEFAULT = (
+                _CONVERSATION_FLOW_CORE + "\n" + _CONVERSATION_FLOW_GEMINI
+            )
+
             _log.info(f"Loaded private prompts from {_prompts_path}")
 
         except Exception as _e:

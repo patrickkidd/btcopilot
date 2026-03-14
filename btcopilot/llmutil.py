@@ -249,6 +249,7 @@ async def claude_text(prompt=None, **kwargs):
     """Generate unstructured text using Claude (Anthropic API).
 
     Accepts the same interface as gemini_text():
+      - model: str — Claude model identifier (default: RESPONSE_MODEL)
       - system_instruction: str — system prompt
       - turns: list of (role, text) tuples — "user"/"model" mapped to "user"/"assistant"
       - temperature: float (ignored when thinking is enabled — API forces 1.0)
@@ -259,6 +260,7 @@ async def claude_text(prompt=None, **kwargs):
     This forces temperature=1.0 per Anthropic API constraints.
     """
     start_time = time.time()
+    model = kwargs.get("model", RESPONSE_MODEL)
     max_output_tokens = kwargs.get("max_output_tokens", 8192)
     system_instruction = kwargs.get("system_instruction")
 
@@ -268,7 +270,7 @@ async def claude_text(prompt=None, **kwargs):
 
     client = _anthropic_client()
     api_kwargs = {
-        "model": RESPONSE_MODEL,
+        "model": model,
         "max_tokens": max_output_tokens,
         "messages": messages,
         "thinking": {
@@ -293,21 +295,22 @@ def claude_text_sync(prompt=None, **kwargs):
     return asyncio.run(claude_text(prompt, **kwargs))
 
 
-# --- Unified response text API (routes to Claude or Gemini based on RESPONSE_MODEL) ---
+# --- Unified response text API (routes to Claude or Gemini based on model) ---
 
 
 async def response_text(prompt=None, **kwargs):
-    """Generate text using the configured RESPONSE_MODEL.
+    """Generate text using the specified or configured model.
 
-    Auto-routes to Claude or Gemini based on model name. Same interface as
-    gemini_text() / claude_text(). Use this instead of calling either directly
-    for any code that should respect the RESPONSE_MODEL setting.
+    Accepts a 'model' kwarg to override the default RESPONSE_MODEL, enabling
+    per-request model selection (e.g., user chooses model from the app).
+    Auto-routes to Claude or Gemini based on model name prefix.
     """
-    if _is_claude_model(RESPONSE_MODEL):
-        _log.info(f"response_text using Claude: {RESPONSE_MODEL}")
+    model = kwargs.get("model", RESPONSE_MODEL)
+    if _is_claude_model(model):
+        _log.info(f"response_text using Claude: {model}")
         return await claude_text(prompt, **kwargs)
     else:
-        _log.info(f"response_text using Gemini: {RESPONSE_MODEL}")
+        _log.info(f"response_text using Gemini: {model}")
         return await gemini_text(prompt, **kwargs)
 
 
@@ -380,6 +383,7 @@ async def gemini_text(prompt=None, **kwargs):
     from google.genai import types
 
     start_time = time.time()
+    model = kwargs.get("model", GEMINI_RESPONSE_MODEL)
     temperature = kwargs.get("temperature", 0.45)
 
     max_output_tokens = kwargs.get("max_output_tokens", 2048)
@@ -404,7 +408,7 @@ async def gemini_text(prompt=None, **kwargs):
     for attempt in range(GEMINI_MAX_RETRIES):
         try:
             response = await client.aio.models.generate_content(
-                model=GEMINI_RESPONSE_MODEL,
+                model=model,
                 contents=contents,
                 config=config,
             )
