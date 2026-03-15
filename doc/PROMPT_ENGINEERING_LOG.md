@@ -143,7 +143,14 @@ prompt2 = DATA_EXTRACTION_PASS2_PROMPT + DATA_EXTRACTION_PASS2_CONTEXT
 
 ### File: `btcopilot/btcopilot/personal/prompts.py` (defaults) / `fdserver/prompts/private_prompts.py` (overrides)
 
-**Per-statement constants** (training app only):
+**Conversation flow** (multi-model, assembled at runtime):
+| Constant | Purpose | Location |
+|----------|---------|----------|
+| `_CONVERSATION_FLOW_CORE` | Domain knowledge, phases, data checklist | btcopilot (shared) |
+| `_CONVERSATION_FLOW_OPUS` | Response style for Claude Opus | fdserver (stub in btcopilot) |
+| `_CONVERSATION_FLOW_GEMINI` | Response style for Gemini Flash | btcopilot |
+
+**Per-statement extraction** (training app only):
 | Constant | Purpose | Template Variables |
 |----------|---------|-------------------|
 | `DATA_EXTRACTION_PROMPT` | Extraction intent + data model overview | `{current_date}` |
@@ -458,3 +465,22 @@ Both passes route through `_extract_and_validate()` for retry/validation. Pass 2
 **Decision**: Dropped. Cost/benefit strongly favors removal: ~15,700 fewer input tokens per extraction for negligible F1 difference within run-to-run variance. Reduces complexity and cost.
 
 **Note**: `sarfdefinitions.py` and `all_condensed_definitions()` remain available — they are used independently by IRR calibration (Components A/B) via `calibrationprompts.py`.
+
+### Mar 2026: Multi-model conversation prompt architecture
+
+**Context**: After switching chat responses from Gemini Flash to Claude Opus 4.6, output degraded to terse single-line questions. The monolithic `CONVERSATION_FLOW_PROMPT` was tuned for Gemini's natural verbosity — its brevity constraints ("Keep responses brief", "One question per turn") are counterproductive for Opus, which is already terse by nature.
+
+**Architecture change**: Split `CONVERSATION_FLOW_PROMPT` into:
+- `_CONVERSATION_FLOW_CORE` — shared domain knowledge, phases, data checklist (btcopilot, open)
+- `_CONVERSATION_FLOW_OPUS` — response style tuned for Claude Opus (fdserver, private IP)
+- `_CONVERSATION_FLOW_GEMINI` — response style preserving existing Gemini behavior (btcopilot, open)
+
+`get_conversation_flow_prompt(model)` assembles core + appropriate addendum at runtime. Override mechanism uses `hasattr` so fdserver only defines pieces it wants to override.
+
+**Opus addendum design**: Combines stronger persona framing ("experienced consultant fascinated by family patterns") with response type rotation guidance (question/observation/bridging/normalizing turns), length calibration (2-4 sentences), and concrete good/bad response examples. The few-shot examples are the most reliable prompt intervention per prior extraction prompt findings.
+
+**IP migration**: Tuned prompt content moved from btcopilot to fdserver. btcopilot retains only architectural stubs.
+
+**Key insight**: Gemini and Opus have opposite natural tendencies. Constraints that guard Gemini from verbosity cause Opus to produce one-liners. Per-model addenda resolve this without compromising either model.
+
+**Status**: Initial architecture deployed. No conversational quality metrics exist yet — next step is building a rubric-based evaluation framework to baseline and iterate the Opus addendum. See plan at `btcopilot/plans/opus-conversational-prompts.md`.

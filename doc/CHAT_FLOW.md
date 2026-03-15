@@ -38,11 +38,11 @@ Endpoint-driven single-prompt extraction. See [PDP_DATA_FLOW.md](specs/PDP_DATA_
 
 Chat-only function:
 1. Builds conversation turns from discussion history
-2. Calls LLM with `CONVERSATION_FLOW_PROMPT`
+2. Calls LLM with assembled prompt from `get_conversation_flow_prompt(model)`
 3. Creates Statement records for both user and AI
 4. Returns AI response text
 
-Uses Flask `g.custom_prompts` to override `CONVERSATION_FLOW_PROMPT` if set.
+Uses Flask `g.custom_prompts` to override the assembled prompt if set.
 
 ## Model Configuration
 
@@ -66,29 +66,49 @@ Set `ANTHROPIC_API_KEY` in the environment when using Claude models.
 All code that generates user-facing text responses should use `response_text_sync()`
 (not `gemini_text_sync()` directly) to respect the configured model.
 
-## Prompt Engineering
+## Prompt Architecture
 
-### Chat Prompts
+### Multi-Model Conversation Prompts
 
-`CONVERSATION_FLOW_PROMPT` in `btcopilot/personal/prompts.py` (overridden by
-fdserver in production) drives the coaching conversation. Key elements:
-- Consultant role, not therapist
-- Bowen Theory data collection stack
-- One question at a time, place events in time
-- Temperature 0.45
+The conversation flow prompt is split into shared core + model-specific addenda:
+
+| Piece | Variable | Purpose | Location |
+|-------|----------|---------|----------|
+| Core | `_CONVERSATION_FLOW_CORE` | Domain knowledge, phases, data checklist, red flags | btcopilot (open) |
+| Opus addendum | `_CONVERSATION_FLOW_OPUS` | Response style tuned for Claude Opus | fdserver (private IP) |
+| Gemini addendum | `_CONVERSATION_FLOW_GEMINI` | Response style tuned for Gemini Flash | btcopilot (open) |
+
+At runtime, `get_conversation_flow_prompt(model)` assembles core + the
+appropriate addendum based on the active `RESPONSE_MODEL`. The model is
+auto-detected from the `BTCOPILOT_RESPONSE_MODEL` env var.
+
+**Why per-model addenda**: Opus and Gemini have opposite natural tendencies.
+Gemini tends verbose (needs brevity constraints). Opus tends terse (needs
+encouragement to produce 2-4 sentence responses with conversational texture).
+Shared constraints that work for one model harm the other.
+
+### Override Mechanism
+
+fdserver's `private_prompts.py` can override any piece individually via
+`FDSERVER_PROMPTS_PATH`. The override loop uses `hasattr` — fdserver only
+needs to define the pieces it wants to override. Undefined pieces fall back
+to btcopilot defaults.
+
+**Tuned prompt content is production IP in fdserver.** btcopilot contains
+only architectural stubs.
+
+### Modifying Prompts
+
+**For conversational style**: Override `_CONVERSATION_FLOW_OPUS` or
+`_CONVERSATION_FLOW_GEMINI` in fdserver's `private_prompts.py`.
+**For domain/phases/checklist**: Modify `_CONVERSATION_FLOW_CORE` in
+btcopilot's `prompts.py` (shared across models).
+**For extraction quality**: See [PROMPT_ENGINEERING_LOG.md](PROMPT_ENGINEERING_LOG.md).
 
 ### Extraction Prompts
 
 Extraction prompts are separate from chat prompts. See
 [PDP_DATA_FLOW.md](specs/PDP_DATA_FLOW.md) for extraction prompt rules.
-
-### Modifying Prompts
-
-**For chat quality**: Modify `CONVERSATION_FLOW_PROMPT`.
-**For extraction quality**: Modify `DATA_FULL_EXTRACTION_CONTEXT` and related
-constants. See [PROMPT_ENGINEERING_LOG.md](PROMPT_ENGINEERING_LOG.md).
-
-Real prompts are in fdserver (production overrides btcopilot defaults).
 
 ## Related Files
 
