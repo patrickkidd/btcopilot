@@ -22,6 +22,7 @@ from btcopilot.tests.personal.synthetic import (
     ConversationSimulator,
     QualityEvaluator,
     CoverageEvaluator,
+    ResponseType,
     run_synthetic_tests,
     Turn,
     ConversationResult,
@@ -153,6 +154,55 @@ def test_counts_questions():
     ]
     result = evaluator.evaluate(ConversationResult(turns=turns, persona=persona))
     assert result.questionsPerTurn[0] == 3
+
+
+def test_words_per_response():
+    evaluator = QualityEvaluator()
+    persona = Persona(name="Test", background="Test.", attachmentStyle=AttachmentStyle.Secure)
+    turns = [
+        Turn(speaker="user", text="I'm stressed"),
+        Turn(speaker="ai", text="When did that start?"),
+        Turn(speaker="user", text="Last month"),
+        Turn(speaker="ai", text="That's a tough stretch. What was going on in your family around that time? Any big changes?"),
+    ]
+    result = evaluator.evaluate(ConversationResult(turns=turns, persona=persona))
+    assert len(result.wordsPerResponse) == 2
+    assert result.wordsPerResponse[0] < result.wordsPerResponse[1]
+    assert result.avgWords > 0
+    assert result.medianWords > 0
+
+
+def test_question_only_ratio():
+    evaluator = QualityEvaluator()
+    persona = Persona(name="Test", background="Test.", attachmentStyle=AttachmentStyle.Secure)
+    turns = [
+        Turn(speaker="user", text="I'm stressed"),
+        Turn(speaker="ai", text="What's going on?"),
+        Turn(speaker="user", text="Work stuff"),
+        Turn(speaker="ai", text="That's rough. How long has this been going on?"),
+        Turn(speaker="user", text="A while"),
+        Turn(speaker="ai", text="When did it start?"),
+    ]
+    result = evaluator.evaluate(ConversationResult(turns=turns, persona=persona))
+    # 2 of 3 are question-only
+    assert result.questionOnlyRatio > 0.5
+
+
+def test_response_type_classification():
+    evaluator = QualityEvaluator()
+    persona = Persona(name="Test", background="Test.", attachmentStyle=AttachmentStyle.Secure)
+    turns = [
+        Turn(speaker="user", text="My dad moved out"),
+        Turn(speaker="ai", text="That gives me a good picture of your parents. Let me ask about your siblings."),
+        Turn(speaker="user", text="I have a brother"),
+        Turn(speaker="ai", text="A lot of families go through that kind of shift. How did your brother handle it?"),
+        Turn(speaker="user", text="He was fine"),
+        Turn(speaker="ai", text="That's interesting — your mom moved the same year your grandfather got sick."),
+    ]
+    result = evaluator.evaluate(ConversationResult(turns=turns, persona=persona))
+    assert ResponseType.Bridge in result.responseTypes
+    assert ResponseType.Normalization in result.responseTypes or ResponseType.Mixed in result.responseTypes
+    assert result.responseTypeEntropy > 0
 
 
 def test_detects_echoing():
@@ -556,6 +606,69 @@ def test_persist_synthetic_conversation(test_user):
     db.session.flush()
     db.session.delete(db.session.get(Diagram, diagram_id))
     db.session.commit()
+
+
+@pytest.mark.e2e
+def test_opus_vs_gemini_baseline(test_user):
+    """Run matched conversations with Opus and Gemini, print metrics side by side."""
+    from functools import partial
+
+    logging.getLogger("btcopilot").setLevel(logging.INFO)
+
+    personas = [
+        Persona(
+            name="BaselineA",
+            background=DEPRECATED_PERSONAS[0].background,
+            attachmentStyle=AttachmentStyle.DismissiveAvoidant,
+            traits=[PersonaTrait.Evasive],
+            presenting_problem=DEPRECATED_PERSONAS[0].presenting_problem,
+            dataPoints=DEPRECATED_PERSONAS[0].dataPoints,
+        ),
+        Persona(
+            name="BaselineB",
+            background=DEPRECATED_PERSONAS[1].background,
+            attachmentStyle=AttachmentStyle.AnxiousPreoccupied,
+            traits=[PersonaTrait.Oversharing, PersonaTrait.Tangential],
+            presenting_problem=DEPRECATED_PERSONAS[1].presenting_problem,
+            dataPoints=DEPRECATED_PERSONAS[1].dataPoints,
+        ),
+    ]
+
+    evaluator = QualityEvaluator()
+    models = {
+        "opus": "claude-opus-4-6",
+        "gemini": "gemini-2.5-flash",
+    }
+    all_results = {}
+
+    for model_name, model_id in models.items():
+        model_results = []
+        ask_with_model = partial(ask, model=model_id)
+        for persona in personas:
+            sim = ConversationSimulator(max_turns=12)
+            result = sim.run(persona, ask_with_model)
+            result.quality = evaluator.evaluate(result)
+            model_results.append(result)
+
+            _log.info(f"\n{'='*60}")
+            _log.info(f"[{model_name.upper()}] Conversation with {persona.name}")
+            _log.info(f"{'='*60}")
+            for i, turn in enumerate(result.turns):
+                speaker = "USER" if turn.speaker == "user" else "AI"
+                _log.info(f"\n[{i+1}] {speaker}:\n{turn.text}")
+            _log.info(f"\n{result.quality.summary()}")
+
+        all_results[model_name] = model_results
+
+    # Print comparison
+    _log.info(f"\n\n{'='*60}")
+    _log.info("OPUS vs GEMINI COMPARISON")
+    _log.info(f"{'='*60}")
+    for model_name, results in all_results.items():
+        _log.info(f"\n--- {model_name.upper()} ---")
+        for r in results:
+            q = r.quality
+            _log.info(f"  {r.persona.name}: {q.summary()}")
 
 
 @pytest.mark.e2e

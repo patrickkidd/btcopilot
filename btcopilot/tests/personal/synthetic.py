@@ -8,10 +8,12 @@ Components:
 """
 
 import json
+import math
 import re
 import enum
 import logging
 import pickle
+from collections import Counter
 from dataclasses import dataclass, field
 
 from btcopilot.extensions import db
@@ -999,6 +1001,14 @@ class PatternMatch:
     text: str
 
 
+class ResponseType(enum.StrEnum):
+    Question = "question"
+    Observation = "observation"
+    Bridge = "bridge"
+    Normalization = "normalization"
+    Mixed = "mixed"
+
+
 @dataclass
 class QualityResult:
     patterns: list[PatternMatch]
@@ -1006,18 +1016,68 @@ class QualityResult:
     questionsPerTurn: list[int]
     verbatimEchoRate: float
     score: float  # 0-1, higher is better
+    # New conversational quality metrics
+    wordsPerResponse: list[int] = field(default_factory=list)
+    questionOnlyRatio: float = 0.0
+    responseTypes: list[ResponseType] = field(default_factory=list)
+    responseTypeEntropy: float = 0.0
+    starterEntropy: float = 0.0
 
     @property
     def passed(self) -> bool:
         return self.score >= 0.7
 
+    @property
+    def avgWords(self) -> float:
+        return sum(self.wordsPerResponse) / max(len(self.wordsPerResponse), 1)
+
+    @property
+    def medianWords(self) -> float:
+        if not self.wordsPerResponse:
+            return 0.0
+        s = sorted(self.wordsPerResponse)
+        n = len(s)
+        if n % 2 == 1:
+            return float(s[n // 2])
+        return (s[n // 2 - 1] + s[n // 2]) / 2.0
+
+    @property
+    def wordStdDev(self) -> float:
+        if len(self.wordsPerResponse) < 2:
+            return 0.0
+        mean = self.avgWords
+        variance = sum((w - mean) ** 2 for w in self.wordsPerResponse) / len(self.wordsPerResponse)
+        return variance ** 0.5
+
+    def summary(self) -> str:
+        type_dist = Counter(self.responseTypes)
+        type_str = ", ".join(f"{t.value}={c}" for t, c in type_dist.most_common())
+        lines = [
+            f"Quality Score: {self.score:.2f} ({'PASS' if self.passed else 'FAIL'})",
+            f"  Words/response: mean={self.avgWords:.0f}, median={self.medianWords:.0f}, std={self.wordStdDev:.0f}, range=[{min(self.wordsPerResponse, default=0)}-{max(self.wordsPerResponse, default=0)}]",
+            f"  Question-only ratio: {self.questionOnlyRatio:.0%}",
+            f"  Response types: {type_str}",
+            f"  Response type entropy: {self.responseTypeEntropy:.2f} (max={math.log2(max(len(ResponseType), 1)):.2f})",
+            f"  Starter entropy: {self.starterEntropy:.2f}",
+            f"  Echo rate: {self.verbatimEchoRate:.2f}",
+            f"  Patterns: {len(self.patterns)} ({', '.join(p.category for p in self.patterns[:5])})" if self.patterns else "  Patterns: 0",
+            f"  Repetitive starters: {dict(self.repetitiveStarters)}" if self.repetitiveStarters else "  Repetitive starters: none",
+        ]
+        return "\n".join(lines)
+
 
 class QualityEvaluator:
     def evaluate(self, result: ConversationResult) -> QualityResult:
+        ai_turns = [t for t in result.turns if t.speaker == "ai"]
         patterns = self._detect_patterns(result.turns)
         starters = self._count_starters(result.turns)
         questions = self._count_questions(result.turns)
         echo_rate = self._calculate_echo_rate(result.turns)
+        words = self._words_per_response(ai_turns)
+        qo_ratio = self._question_only_ratio(ai_turns)
+        resp_types = self._classify_response_types(ai_turns)
+        type_entropy = self._entropy(Counter(resp_types))
+        starter_entropy = self._starter_entropy(ai_turns)
         score = self._calculate_score(patterns, starters, questions, echo_rate)
 
         return QualityResult(
@@ -1026,6 +1086,11 @@ class QualityEvaluator:
             questionsPerTurn=questions,
             verbatimEchoRate=echo_rate,
             score=score,
+            wordsPerResponse=words,
+            questionOnlyRatio=qo_ratio,
+            responseTypes=resp_types,
+            responseTypeEntropy=type_entropy,
+            starterEntropy=starter_entropy,
         )
 
     def _detect_patterns(self, turns: list[Turn]) -> list[PatternMatch]:
@@ -1088,6 +1153,77 @@ class QualityEvaluator:
                 echo_count += 1
 
         return echo_count / max(comparisons, 1)
+
+    def _words_per_response(self, ai_turns: list[Turn]) -> list[int]:
+        return [len(t.text.split()) for t in ai_turns]
+
+    def _question_only_ratio(self, ai_turns: list[Turn]) -> float:
+        if not ai_turns:
+            return 0.0
+        qo_count = 0
+        for t in ai_turns:
+            text = t.text.strip()
+            sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if s.strip()]
+            if not sentences:
+                continue
+            # "Question-only" = entire response is one question with no framing
+            if len(sentences) == 1 and text.rstrip().endswith("?"):
+                qo_count += 1
+        return qo_count / len(ai_turns)
+
+    def _classify_response_types(self, ai_turns: list[Turn]) -> list[ResponseType]:
+        bridge_re = re.compile(
+            r"(?:that gives me|let me ask|now let'?s|moving on|shifting to|turning to)",
+            re.IGNORECASE,
+        )
+        norm_re = re.compile(
+            r"(?:a lot of (?:families|people)|that'?s (?:common|normal|typical)|many families|it'?s not unusual)",
+            re.IGNORECASE,
+        )
+        obs_re = re.compile(
+            r"(?:that'?s interesting|i notice|pattern|connection|same (?:year|time)|coincide)",
+            re.IGNORECASE,
+        )
+
+        types = []
+        for t in ai_turns:
+            text = t.text.strip()
+            has_question = "?" in text
+            has_bridge = bool(bridge_re.search(text))
+            has_norm = bool(norm_re.search(text))
+            has_obs = bool(obs_re.search(text))
+
+            flags = sum([has_question, has_bridge, has_norm, has_obs])
+            if flags > 1:
+                types.append(ResponseType.Mixed)
+            elif has_bridge:
+                types.append(ResponseType.Bridge)
+            elif has_norm:
+                types.append(ResponseType.Normalization)
+            elif has_obs:
+                types.append(ResponseType.Observation)
+            else:
+                types.append(ResponseType.Question)
+        return types
+
+    def _entropy(self, counts: Counter) -> float:
+        total = sum(counts.values())
+        if total == 0:
+            return 0.0
+        entropy = 0.0
+        for c in counts.values():
+            if c > 0:
+                p = c / total
+                entropy -= p * math.log2(p)
+        return entropy
+
+    def _starter_entropy(self, ai_turns: list[Turn]) -> float:
+        starters = []
+        for t in ai_turns:
+            words = t.text.strip().split()[:3]
+            if words:
+                starters.append(" ".join(words).lower())
+        return self._entropy(Counter(starters))
 
     def _calculate_score(
         self,
