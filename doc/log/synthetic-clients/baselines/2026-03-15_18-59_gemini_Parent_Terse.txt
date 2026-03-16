@@ -1,0 +1,159 @@
+Model: gemini-2.5-flash
+Persona: Parent_Terse
+Turns: 40
+Date: 2026-03-15_18-59
+
+
+[1] USER:
+My oldest is 14 and starting to pull away. I know it's developmentally normal but it's getting to me more than I expected.
+
+[2] AI:
+Thanks for sharing that. When did you first start noticing your oldest pulling away?
+
+[3] USER:
+13), the contrast to how he used to
+
+[4] AI:
+Okay, so your oldest is 14 and your younger child is 13. What's your oldest child's name? And how is your 13-year-old reacting to their older sibling pulling away?
+
+[5] USER:
+Ethan is 14.
+
+[6] AI:
+Thanks, Ethan is 14. What's your 13-year-old's name, and how are they reacting to Ethan pulling away?
+
+[7] USER:
+I don't have a thirteen
+
+[8] AI:
+My apologies, I misread that.
+
+So, your oldest, Ethan, is 14. Do you have any other children?
+
+[9] USER:
+Olivia is
+
+[10] AI:
+Thanks. So you have Ethan, 14, and Olivia. How old is Olivia?
+
+[11] USER:
+Olivia is 11.
+
+[12] AI:
+Thanks. So you have Ethan, 14, and Olivia, 11.
+
+How is Olivia reacting to Ethan pulling away? And when did you first start noticing Ethan pulling away?
+
+[13] USER:
+Ethan:* It started last year, right around his birthday.
+
+[14] AI:
+Okay, so it started around Ethan's 13th birthday last year.
+
+How is Olivia reacting to Ethan pulling away? And what exactly does "pulling away" look like with Ethan? Can you give me some examples?
+
+[15] USER:
+Draft 1 (Mental Outline):* Olivia doesn't seem to care
+
+[16] AI:
+Okay, so Olivia doesn't seem to be reacting much.
+
+What exactly does "pulling away" look like with Ethan? Can you give me some examples of what you're noticing? And how is this affecting you?
+
+[17] USER:
+Ethan used to be my shadow, honestly
+
+[18] AI:
+Thanks for sharing that he used to be your shadow. What does "pulling away" look like *now*? Can you give me some specific examples of what you're noticing with Ethan?
+
+And how is this affecting you? What are your biggest challenges or uncertainties about this situation?
+
+[19] USER:
+It’s the closed door.
+
+[20] AI:
+Okay, the closed door. How often is it closed, and what's the hardest part about that for you?
+
+[21] USER:
+It’s closed pretty much the second he gets home from school.
+
+[22] AI:
+And what's the hardest part about that for you?
+
+[23] USER:
+It’s just the silence.
+
+[24] AI:
+What do you miss most about how things used to be with Ethan before he started pulling away?
+
+[25] USER:
+Everything.
+
+[26] AI:
+It sounds like you're really feeling the loss of that connection with him.
+
+Beyond the closed door and the silence, are there other ways you're noticing Ethan pulling away? For example, with family activities, conversations, or school?
+
+And have you tried anything to reconnect with him, or to address the closed door?
+
+[27] USER:
+Family dinners are the worst part now.
+
+[28] AI:
+What happens at family dinners that makes them the worst part now? Can you describe a typical dinner?
+
+[29] USER:
+Ben is usually talking about soccer or school,
+
+[30] AI:
+Thanks. You mentioned your oldest son is Ethan. Is Ben a different person, or are you referring to Ethan?
+
+[31] USER:
+Ben is my youngest, he's eight.
+
+[32] AI:
+Thanks for clarifying. So you have Ethan (14), Olivia (11), and Ben (8).
+
+You mentioned family dinners are the worst part now. What happens at family dinners with Ethan, Olivia, and Ben that makes them difficult? Can you describe a typical dinner?
+
+[33] USER:
+Ethan just sits there.
+
+[34] AI:
+Ethan just sits there. What does that look like? Is he quiet, on his phone, or something else? And how do you and your other children react when he just sits there?
+
+[35] USER:
+He doesn't use his phone at
+
+[36] AI:
+Okay, so he's not on his phone. When he "just sits there," what does that look like? Is he quiet, disengaged, or something else? And how do you, Olivia, and Ben typically react when Ethan behaves this way at dinner?
+
+[37] USER:
+He stares at his plate like it’
+
+[38] AI:
+He stares at his plate like it's boring. How do you usually react when Ethan does that at dinner? And how do Olivia and Ben react?
+
+[39] USER:
+I try
+
+[40] AI:
+You try to do what? What do you usually say or do when Ethan stares at his plate during dinner?
+
+And how do Olivia and Ben react when Ethan does that?
+
+
+========================================
+METRICS
+========================================
+Quality Score: 0.66 (FAIL)
+  Words/response: mean=27, median=26, std=12, range=[9-52]
+  Question-only ratio: 10%
+  Response types: question=19, mixed=1
+  Response type entropy: 0.29 (max=2.32)
+  Starter entropy: 4.12
+  Echo rate: 0.30
+  Patterns: 2 (therapist_cliche, echo_opener)
+  Repetitive starters: {'thanks': 3}
+Coverage: 18%
+Missed: ['mother', 'father', 'parents_status', 'siblings', 'maternal_grandparents', 'paternal_grandparents', 'aunts_uncles', 'spouse', 'nodal_events']

@@ -1,0 +1,143 @@
+Model: claude-opus-4-6
+Persona: Marcus_Oversharing
+Turns: 40
+Date: 2026-03-15_19-01
+
+
+[1] USER:
+So I just went through a breakup — well, she broke up with me technically — and I've been kind of a mess. Jennifer, we were together two years, and she wanted to get engaged but I just... I don't know. My sister says I have commitment issues, which, okay, maybe, but it's more complicated than that. Sorry, I'm already rambling.
+
+[2] AI:
+No need to apologize — this is exactly the kind of thing worth unpacking. So Jennifer ended it because you weren't ready to get engaged after two years. When did the breakup actually happen?
+
+[3] USER:
+It was three months ago, so back in August.
+
+[4] AI:
+August — so pretty fresh still. When you say you've been "a mess," what does that actually look like day to day? Are we talking not sleeping, can't focus at work, withdrawing from people — what's hitting you hardest?
+
+[5] USER:
+I'
+
+[6] AI:
+Looks like that got cut off — go ahead and finish your thought.
+
+[7] USER:
+I'm barely
+
+[8] AI:
+Take your time — looks like it cut off again. What were you starting to say?
+
+[9] USER:
+Work is where it shows up the most,
+
+[10] AI:
+What's happening at work — are you having trouble concentrating, calling out, or just going through the motions?
+
+[11] USER:
+Concentrating on code is basically impossible
+
+[12] AI:
+That's concrete — coding requires a lot of sustained focus, so when your head's not in it, it's obvious fast. Were you doing fine at work before August, or was concentration already slipping before the breakup?
+
+[13] USER:
+Actually, looking back, it wasn’t just August.
+
+[14] AI:
+That's worth paying attention to. How far back would you say it goes?
+
+[15] USER:
+Honestly, it started when my grandfather Frank died back
+
+[16] AI:
+Go ahead — your grandfather Frank died back when?
+
+[17] USER:
+October 2021.
+
+[18] AI:
+So the concentration issues go back almost four years — well before Jennifer. What happened with your grandfather Frank? Was his death sudden, or had he been sick for a while?
+
+[19] USER:
+It was incredibly sudden.
+
+[20] AI:
+A sudden death hits differently — there's no time to prepare. What happened to him, if you don't mind my asking?
+
+[21] USER:
+Pneumonia just took him out in
+
+[22] AI:
+Take your time — pneumonia took him out in how long? Days? A week?
+
+[23] USER:
+Two weeks.
+
+[24] AI:
+Two weeks — so he probably seemed fine and then was just gone. That's a lot. How old was Frank, and were you two close?
+
+[25] USER:
+Frank was 82.
+
+[26] AI:
+And were you and Frank close? Some people are tight with their grandparents, others not so much — what was your relationship like with him?
+
+[27] USER:
+We were close enough, I guess, but it’s more
+
+[28] AI:
+Go ahead — it's more what?
+
+[29] USER:
+It was more about what happened to my mom after
+
+[30] AI:
+What happened with your mom after Frank died?
+
+[31] USER:
+Mom just completely collapsed.
+
+[32] AI:
+That's a big word — "collapsed." What did that actually look like for her? Are we talking she couldn't get out of bed, stopped functioning, or more emotionally shut down?
+
+[33] USER:
+She was a nurse, you know?
+
+[34] AI:
+A nurse who lost her father to pneumonia — that had to carry extra weight for her. Did she feel like she should have caught it sooner, or done something differently?
+
+[35] USER:
+She definitely blamed herself.
+
+[36] AI:
+That's a heavy thing to carry — a nurse losing her dad to the very kind of thing she's trained to catch. Did she say that out loud, or was it more something the family could just see in her?
+
+[37] USER:
+It was both, honestly.
+
+[38] AI:
+So she was saying it out loud AND the family could see it weighing on her. How long did that go on — was it weeks, months? Is she still carrying that?
+
+[39] USER:
+Still, to be honest.
+
+[40] AI:
+Almost four years she's been carrying that. So your concentration problems started right around the time your mom fell apart — not around the breakup. That's a pretty important connection. 
+
+What was going on between you and your mom during that period? Were you the one trying to hold her together, or was someone else stepping in?
+
+
+========================================
+METRICS
+========================================
+Quality Score: 0.77 (PASS)
+  Words/response: mean=25, median=25, std=13, range=[6-57]
+  Question-only ratio: 20%
+  Response types: question=19, mixed=1
+  Response type entropy: 0.29 (max=2.32)
+  Starter entropy: 4.12
+  Echo rate: 0.10
+  Patterns: 2 (echo_opener, echo_opener)
+  Repetitive starters: none
+Coverage: 64%
+Missed: ['siblings', 'paternal_grandparents', 'aunts_uncles', 'children']

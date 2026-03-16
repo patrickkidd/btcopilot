@@ -1,0 +1,143 @@
+Model: claude-opus-4-6
+Persona: Sarah_Evasive
+Turns: 40
+Date: 2026-03-15_19-01
+
+
+[1] USER:
+I haven't been sleeping well. My doctor said it might be stress but I don't know.
+
+[2] AI:
+How long has this been going on — are we talking weeks, months, longer?
+
+[3] USER:
+Six months, give or take.
+
+[4] AI:
+Six months is a solid chunk of time. Did it come on gradually, or was there a point where you went from sleeping fine to suddenly not?
+
+[5] USER:
+It was pretty sudden, actually.
+
+[6] AI:
+That's useful to know — sudden onset usually means something shifted. Do you remember what was going on in your life around the time it started? Anything change at work, at home, in your relationships?
+
+[7] USER:
+My mom got
+
+[8] AI:
+Go ahead — your mom got...?
+
+[9] USER:
+She got a diagnosis.
+
+[10] AI:
+That's a big deal. What was the diagnosis?
+
+[11] USER:
+Early-stage dementia.
+
+[12] AI:
+Early-stage dementia, six months ago — and that's right when the sleep problems started. That's not a coincidence most people would catch, but the timing lines up pretty clearly.
+
+How did you find out about the diagnosis — were you there, or did someone call you?
+
+[13] USER:
+I was the one who took her to the neurologist.
+
+[14] AI:
+So you were right there in the room for it. That hits different than getting a phone call. Were you the one who noticed something was off with her, or did she bring it up herself?
+
+[15] USER:
+I'
+
+[16] AI:
+Go ahead, take your time.
+
+[17] USER:
+Actually, it started with these little things that just
+
+[18] AI:
+Little things like what? I'm listening.
+
+[19] USER:
+She’
+
+[20] AI:
+Take your time — no rush.
+
+[21] USER:
+Carol started forgetting things that she never would have missed before.
+
+[22] AI:
+Carol — that's your mom. What kinds of things was she forgetting? Like appointments, names, things she'd said earlier that day?
+
+[23] USER:
+157 words):* Start with a date or fact.
+
+[24] AI:
+Sorry, I didn't quite catch that — we were talking about Carol and the things she started forgetting. Were these everyday things, like where she put her keys, or bigger stuff like missing appointments or repeating conversations?
+
+[25] USER:
+It was around Christmas when
+
+[26] AI:
+Go on — what happened around Christmas?
+
+[27] USER:
+December 24th was when it really clicked that something was wrong.
+
+[28] AI:
+Christmas Eve — that's a day you remember exactly. What happened that made it click?
+
+[29] USER:
+Dinner was supposed to be at six, but my mom didn't show up
+
+[30] AI:
+Where was dinner — your place? And did you go looking for her, or did she eventually show up?
+
+[31] USER:
+My house was full of people—David’s
+
+[32] AI:
+David — is that your husband? Go ahead, your house was full of people...
+
+[33] USER:
+David'
+
+[34] AI:
+Take your time — you were saying David's...
+
+[35] USER:
+David’s brother and
+
+[36] AI:
+David's brother and — who else was there? Take your time, I'm following you.
+
+[37] USER:
+David’s
+
+[38] AI:
+Go ahead — David's...
+
+[39] USER:
+David’s family
+
+[40] AI:
+OK, so David's family is there, it's Christmas Eve, dinner's at six, and Carol hasn't shown up. What happened — did you call her?
+
+
+========================================
+METRICS
+========================================
+Quality Score: 0.87 (PASS)
+  Words/response: mean=18, median=14, std=12, range=[4-46]
+  Question-only ratio: 15%
+  Response types: question=19, mixed=1
+  Response type entropy: 0.29 (max=2.32)
+  Starter entropy: 4.12
+  Echo rate: 0.10
+  Patterns: 1 (echo_opener)
+  Repetitive starters: none
+Coverage: 36%
+Missed: ['father', 'parents_status', 'maternal_grandparents', 'paternal_grandparents', 'aunts_uncles', 'children', 'nodal_events']

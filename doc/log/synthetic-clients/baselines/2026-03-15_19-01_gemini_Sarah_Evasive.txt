@@ -1,0 +1,141 @@
+Model: gemini-2.5-flash
+Persona: Sarah_Evasive
+Turns: 40
+Date: 2026-03-15_19-01
+
+
+[1] USER:
+I haven't been sleeping well. My doctor said it might be stress but I don't know.
+
+[2] AI:
+When did you start having trouble sleeping?
+
+[3] USER:
+It started
+
+[4] AI:
+Okay, when did it start?
+
+[5] USER:
+About six
+
+[6] AI:
+About six months ago?
+
+[7] USER:
+Yeah, about
+
+[8] AI:
+Was the onset gradual or sudden?
+
+[9] USER:
+It happened pretty fast, actually.
+
+[10] AI:
+Is it just you, or are others in your household also having trouble sleeping or being affected by your sleep issues?
+
+[11] USER:
+David sleeps through anything, honestly.
+
+[12] AI:
+Is David your partner? How are you feeling about not sleeping well?
+
+[13] USER:
+David is my husband.
+
+[14] AI:
+How has not sleeping well been affecting you?
+
+[15] USER:
+I’m just exhausted
+
+[16] AI:
+I can imagine. What have you tried so far to help with your sleep?
+
+[17] USER:
+The doctor gave me some pills, but
+
+[18] AI:
+Did the pills help?
+
+[19] USER:
+They work for a few hours, I guess, but I still end up staring
+
+[20] AI:
+So the pills help a little, but the problem is still there. Has your sleep gotten better or worse overall since it started six months ago?
+
+[21] USER:
+It’s definitely gotten worse lately.
+
+[22] AI:
+When you say "worse lately," has anything specific happened recently that might be contributing to that?
+
+[23] USER:
+My mom’s situation has just become a lot more to handle.
+
+[24] AI:
+What's going on with your mom?
+
+[25] USER:
+Carol was diagnosed with dementia about six months
+
+[26] AI:
+Okay, so your mom, Carol, was diagnosed with dementia around the same time your sleep problems started. What's been "a lot more to handle" about her situation lately?
+
+[27] USER:
+Everything just feels like it’s falling on me.
+
+[28] AI:
+What specific responsibilities or tasks related to your mom's dementia are falling on you?
+
+[29] USER:
+I'm over there at least three times a week, sometimes more
+
+[30] AI:
+What are you doing for your mom during these visits?
+
+[31] USER:
+It’s mostly just the day-to-
+
+[32] AI:
+What does "day-to-day" involve for your mom, Carol?
+
+[33] USER:
+Groceries are the big thing, making
+
+[34] AI:
+So you're handling groceries and making sure she eats. What does "making sure she eats" involve? Are you cooking for her, or just reminding her?
+
+[35] USER:
+I usually have to go through the fridge first because she'll leave
+
+[36] AI:
+So you're managing her groceries and checking the fridge for spoiled food. What other day-to-day tasks are you handling for your mom, Carol?
+
+[37] USER:
+Bills are another thing
+
+[38] AI:
+So you're also managing her bills. What does that involve? Are you just reminding her, or are you handling them completely?
+
+[39] USER:
+Everything is in my name now for her utilities because
+
+[40] AI:
+So you've taken over managing her utilities. Are there other bills or financial matters you're handling for your mom, Carol?
+
+
+========================================
+METRICS
+========================================
+Quality Score: 0.47 (FAIL)
+  Words/response: mean=14, median=13, std=8, range=[4-28]
+  Question-only ratio: 60%
+  Response types: question=19, mixed=1
+  Response type entropy: 0.29 (max=2.32)
+  Starter entropy: 4.32
+  Echo rate: 0.10
+  Patterns: 5 (echo_opener, echo_opener, echo_opener, echo_opener, echo_opener)
+  Repetitive starters: none
+Coverage: 36%
+Missed: ['father', 'parents_status', 'siblings', 'maternal_grandparents', 'paternal_grandparents', 'children', 'nodal_events']

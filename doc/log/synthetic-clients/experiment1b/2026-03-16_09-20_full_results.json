@@ -1,0 +1,1163 @@
+[
+  {
+    "meta": {
+      "model_name": "opus",
+      "model_id": "claude-opus-4-6",
+      "persona": "Sarah",
+      "timestamp": "2026-03-16_09-22",
+      "max_turns": 20
+    },
+    "turns": [
+      {
+        "speaker": "user",
+        "text": "I haven't been sleeping well. My doctor said it might be stress but I don't know."
+      },
+      {
+        "speaker": "ai",
+        "text": "How long has this been going on \u2014 are we talking weeks, months, longer?"
+      },
+      {
+        "speaker": "user",
+        "text": "It's been about."
+      },
+      {
+        "speaker": "ai",
+        "text": "Go ahead \u2014 about how long?"
+      },
+      {
+        "speaker": "user",
+        "text": "Six months, I guess."
+      },
+      {
+        "speaker": "ai",
+        "text": "Six months is a while to be running on bad sleep. Did it come on gradually, or was there a point where you noticed \u2014 \"OK, something's different now\"?"
+      },
+      {
+        "speaker": "user",
+        "text": "It happened pretty fast."
+      },
+      {
+        "speaker": "ai",
+        "text": "So about six months ago, something shifted and sleep just went sideways. What's the actual experience like \u2014 trouble falling asleep, waking up in the middle of the night, both?"
+      },
+      {
+        "speaker": "user",
+        "text": "I fall asleep fine, usually right after I put the kids to bed or finish."
+      },
+      {
+        "speaker": "ai",
+        "text": "So you're exhausted by bedtime \u2014 but then what happens? Are you waking up at 3 AM with your mind going, or just not getting restful sleep?"
+      },
+      {
+        "speaker": "user",
+        "text": "It's."
+      },
+      {
+        "speaker": "ai",
+        "text": "Take your time."
+      },
+      {
+        "speaker": "user",
+        "text": "The clock says 3:14 and I just know I'm."
+      },
+      {
+        "speaker": "ai",
+        "text": "3:14 AM, wide awake \u2014 and then what? Is your mind racing, or is it more like you're just up and can't get back down?"
+      },
+      {
+        "speaker": "user",
+        "text": "My mind just goes."
+      },
+      {
+        "speaker": "ai",
+        "text": "What's it going to at 3 AM \u2014 is it a specific thing you're chewing on, or more like everything at once?"
+      },
+      {
+        "speaker": "user",
+        "text": "Everything hits me at."
+      },
+      {
+        "speaker": "ai",
+        "text": "Yeah \u2014 the middle of the night has a way of making everything feel urgent at once. During the day, can you keep it at bay, or is it leaking into your waking hours too?"
+      },
+      {
+        "speaker": "user",
+        "text": "Work is usually a good distraction because the kids in my classroom don't."
+      },
+      {
+        "speaker": "ai",
+        "text": "Right \u2014 thirty kids needing your attention doesn't leave much room for your own thoughts. So the daytime is manageable, but once the house gets quiet and you wake up at 3 AM, there's nothing to block it out. \n\nWhat about weekends or breaks \u2014 does it get worse when you don't have that structure?"
+      },
+      {
+        "speaker": "user",
+        "text": "Weekends are actually much."
+      },
+      {
+        "speaker": "ai",
+        "text": "Much worse? Go ahead."
+      },
+      {
+        "speaker": "user",
+        "text": "Saturday and Sunday are when I usually have."
+      },
+      {
+        "speaker": "ai",
+        "text": "Saturdays and Sundays \u2014 what happens on those days?"
+      },
+      {
+        "speaker": "user",
+        "text": "Saturdays are when I usually have to head over to my mom."
+      },
+      {
+        "speaker": "ai",
+        "text": "What's going on with your mom that you're heading over there on Saturdays?"
+      },
+      {
+        "speaker": "user",
+        "text": "She was diagnosed with dementia about six."
+      },
+      {
+        "speaker": "ai",
+        "text": "About six months ago \u2014 same timeframe the sleep fell apart. That's not a coincidence worth ignoring.\n\nWhat kind of dementia, and how far along is she?"
+      },
+      {
+        "speaker": "user",
+        "text": "It's early-."
+      },
+      {
+        "speaker": "ai",
+        "text": "Early-stage \u2014 so she's still functioning but things are starting to slip. What does your Saturday over there usually look like? Are you helping with practical stuff, or is it more about keeping an eye on her?"
+      },
+      {
+        "speaker": "user",
+        "text": "It's a lot of both, honestly."
+      },
+      {
+        "speaker": "ai",
+        "text": "So you're managing a classroom all week, then spending Saturdays being your mom's support system. That's a lot of sustained \"on\" time with very little room for yourself.\n\nIs anyone else helping with your mom, or is this mostly falling on you?"
+      },
+      {
+        "speaker": "user",
+        "text": "Michael lives right here in the same."
+      },
+      {
+        "speaker": "ai",
+        "text": "Michael \u2014 is that a brother?"
+      },
+      {
+        "speaker": "user",
+        "text": "Yes, he's my younger brother."
+      },
+      {
+        "speaker": "ai",
+        "text": "And he lives close to your mom \u2014 is he stepping up, or is the Saturday duty landing mostly on you?"
+      },
+      {
+        "speaker": "user",
+        "text": "Michael visits when he can, I guess."
+      },
+      {
+        "speaker": "ai",
+        "text": "That \"I guess\" says a lot. So he's right there in the same town, but the regular Saturday commitment is yours. How do you feel about that split \u2014 or is that something you two haven't really talked about directly?"
+      },
+      {
+        "speaker": "user",
+        "text": "Talking about it doesn't really change."
+      },
+      {
+        "speaker": "ai",
+        "text": "So you have tried talking to him about it. What happened?"
+      }
+    ],
+    "metrics": {
+      "turn_count": 40,
+      "avg_words": 22.8,
+      "question_only_ratio": 0.35,
+      "response_type_entropy": 0.9927744539878083,
+      "quality_score": 0.6,
+      "response_type_counts": {
+        "question": 11,
+        "mixed": 9
+      }
+    },
+    "coverage": {
+      "rate": 0.36363636363636365,
+      "missed": [
+        "father",
+        "parents_status",
+        "maternal_grandparents",
+        "paternal_grandparents",
+        "aunts_uncles",
+        "spouse",
+        "nodal_events"
+      ]
+    }
+  },
+  {
+    "meta": {
+      "model_name": "opus",
+      "model_id": "claude-opus-4-6",
+      "persona": "Marcus",
+      "timestamp": "2026-03-16_09-25",
+      "max_turns": 20
+    },
+    "turns": [
+      {
+        "speaker": "user",
+        "text": "So I just went through a breakup \u2014 well, she broke up with me technically \u2014 and I've been kind of a mess. Jennifer, we were together two years, and she wanted to get engaged but I just... I don't know. My sister says I have commitment issues, which, okay, maybe, but it's more complicated than that. Sorry, I'm already rambling."
+      },
+      {
+        "speaker": "ai",
+        "text": "No need to apologize \u2014 rambling is actually useful here. You're giving me a lot to work with already.\n\nSo Jennifer ended things because she wanted to get engaged and you weren't moving in that direction. When did the breakup happen?"
+      },
+      {
+        "speaker": "user",
+        "text": "It was about three months."
+      },
+      {
+        "speaker": "ai",
+        "text": "Three months ago. And when you say you've been \"a mess\" \u2014 what does that actually look like day to day? Are we talking trouble sleeping, can't focus at work, withdrawing from people? What's hitting you hardest?"
+      },
+      {
+        "speaker": "user",
+        "text": "Work is the hardest part because I."
+      },
+      {
+        "speaker": "ai",
+        "text": "Go ahead \u2014 you were saying work is the hardest part because...?"
+      },
+      {
+        "speaker": "user",
+        "text": "I can't seem."
+      },
+      {
+        "speaker": "ai",
+        "text": "Take your time. What's going on with work?"
+      },
+      {
+        "speaker": "user",
+        "text": "Concentrating is impossible."
+      },
+      {
+        "speaker": "ai",
+        "text": "That's really common after a breakup like this \u2014 your brain's chewing on something big and there's not much left over for everything else. Were you having any trouble concentrating before the breakup, or did this start right when things ended with Jennifer?"
+      },
+      {
+        "speaker": "user",
+        "text": "Jennifer was the main thing for a while, but."
+      },
+      {
+        "speaker": "ai",
+        "text": "But there's something else going on too?"
+      },
+      {
+        "speaker": "user",
+        "text": "Adding details/rambling/oversharing):* My mom has."
+      },
+      {
+        "speaker": "ai",
+        "text": "Go ahead \u2014 what's going on with your mom?"
+      },
+      {
+        "speaker": "user",
+        "text": "My mom has been calling me basically every single day since Jennifer and I split up."
+      },
+      {
+        "speaker": "ai",
+        "text": "Every day \u2014 that's a lot. What are those calls like? Is she checking on you, giving advice, talking about Jennifer specifically?"
+      },
+      {
+        "speaker": "user",
+        "text": "She starts out asking how I\u2019m doing, but it usually turns."
+      },
+      {
+        "speaker": "ai",
+        "text": "Turns into what?"
+      },
+      {
+        "speaker": "user",
+        "text": "It usually turns into her talking about how much she misses my grandmother,."
+      },
+      {
+        "speaker": "ai",
+        "text": "When did your grandmother pass away?"
+      },
+      {
+        "speaker": "user",
+        "text": "Helen died."
+      },
+      {
+        "speaker": "ai",
+        "text": "Helen \u2014 that was your grandmother's name. When did she die?"
+      },
+      {
+        "speaker": "user",
+        "text": "June 2022 was."
+      },
+      {
+        "speaker": "ai",
+        "text": "June 2022 \u2014 so about two years ago. That's your mom's mother?"
+      },
+      {
+        "speaker": "user",
+        "text": "Yeah, that was Mom's mother."
+      },
+      {
+        "speaker": "ai",
+        "text": "So your mom calls to check on you after the breakup, but it keeps circling back to losing Helen two years ago. That's interesting \u2014 like your breakup opened something back up for her.\n\nWhat was your mom's relationship with Helen like?"
+      },
+      {
+        "speaker": "user",
+        "text": "It was."
+      },
+      {
+        "speaker": "ai",
+        "text": "Go ahead \u2014 what was it like between them?"
+      },
+      {
+        "speaker": "user",
+        "text": "Intense is probably the best word for it."
+      },
+      {
+        "speaker": "ai",
+        "text": "Intense how? Were they really close, or was it more conflictual \u2014 or both?"
+      },
+      {
+        "speaker": "user",
+        "text": "Mom was basically Helen's shadow for those last."
+      },
+      {
+        "speaker": "ai",
+        "text": "For those last \u2014 months? Years? How long was your mom caring for Helen before she passed?"
+      },
+      {
+        "speaker": "user",
+        "text": "The last year was the worst part."
+      },
+      {
+        "speaker": "ai",
+        "text": "So that last year before Helen died \u2014 what was going on? Was Helen sick, declining physically, or was it something else?"
+      },
+      {
+        "speaker": "user",
+        "text": "Helen had Alzheimer."
+      },
+      {
+        "speaker": "ai",
+        "text": "Alzheimer's \u2014 that's a brutal one for the whole family, especially the person doing the caregiving. Your mom was basically her shadow that last year \u2014 was she the primary caregiver, or were other family members helping out too?"
+      },
+      {
+        "speaker": "user",
+        "text": "of response:* Period, question mark,."
+      },
+      {
+        "speaker": "ai",
+        "text": "I lost you there \u2014 it sounds like something got cut off. Were you still telling me about who was helping care for Helen, or were you going in a different direction?"
+      },
+      {
+        "speaker": "user",
+        "text": "My mom was."
+      },
+      {
+        "speaker": "ai",
+        "text": "Go ahead \u2014 your mom was...?"
+      }
+    ],
+    "metrics": {
+      "turn_count": 40,
+      "avg_words": 19.6,
+      "question_only_ratio": 0.35,
+      "response_type_entropy": 0.9709505944546686,
+      "quality_score": 0.6699999999999999,
+      "response_type_counts": {
+        "mixed": 8,
+        "question": 12
+      }
+    },
+    "coverage": {
+      "rate": 0.45454545454545453,
+      "missed": [
+        "father",
+        "parents_status",
+        "siblings",
+        "paternal_grandparents",
+        "aunts_uncles",
+        "children"
+      ]
+    }
+  },
+  {
+    "meta": {
+      "model_name": "opus",
+      "model_id": "claude-opus-4-6",
+      "persona": "Jennifer",
+      "timestamp": "2026-03-16_09-28",
+      "max_turns": 20
+    },
+    "turns": [
+      {
+        "speaker": "user",
+        "text": "My oldest is 14 and starting to pull away. I know it's developmentally normal but it's getting to me more than I expected."
+      },
+      {
+        "speaker": "ai",
+        "text": "That's a really honest thing to notice \u2014 the gap between knowing something is normal and actually feeling OK about it. What does \"pulling away\" look like day to day? Is it more that they're withdrawing into their room, pushing back on you directly, or something else?"
+      },
+      {
+        "speaker": "user",
+        "text": "It's mostly just."
+      },
+      {
+        "speaker": "ai",
+        "text": "Looks like that got cut off \u2014 go ahead and finish that thought."
+      },
+      {
+        "speaker": "user",
+        "text": "He\u2019s just."
+      },
+      {
+        "speaker": "ai",
+        "text": "Take your time \u2014 no rush here."
+      },
+      {
+        "speaker": "user",
+        "text": "Ethan is."
+      },
+      {
+        "speaker": "ai",
+        "text": "Sounds like it's hard to find the words for what's going on with Ethan. That happens \u2014 sometimes the thing that's bothering you most is the hardest to pin down.\n\nTry it however it comes out. What's Ethan doing that's got you worried?"
+      },
+      {
+        "speaker": "user",
+        "text": "Sorry, I think I was struggling to get it."
+      },
+      {
+        "speaker": "ai",
+        "text": "No need to apologize \u2014 take your time with it. Sometimes it helps to think of a specific moment. Like, was there a recent time with Ethan where you thought, \"this is what I'm talking about\"?"
+      },
+      {
+        "speaker": "user",
+        "text": "Last Tuesday stands out."
+      },
+      {
+        "speaker": "ai",
+        "text": "What happened last Tuesday?"
+      },
+      {
+        "speaker": "user",
+        "text": "I had just finished a long day at the clinic and I was really."
+      },
+      {
+        "speaker": "ai",
+        "text": "Go ahead \u2014 you'd had a long day at the clinic and you were...?"
+      },
+      {
+        "speaker": "user",
+        "text": "I was actually looking forward to dinner because it was the first night in a week."
+      },
+      {
+        "speaker": "ai",
+        "text": "First night in a week where everyone was home together? What happened at dinner?"
+      },
+      {
+        "speaker": "user",
+        "text": "I made."
+      },
+      {
+        "speaker": "ai",
+        "text": "Go ahead \u2014 you made...?"
+      },
+      {
+        "speaker": "user",
+        "text": "I made his favorite,."
+      },
+      {
+        "speaker": "ai",
+        "text": "His favorite \u2014 so you put some thought into it. What happened when you all sat down?"
+      },
+      {
+        "speaker": "user",
+        "text": "I made lasagna."
+      },
+      {
+        "speaker": "ai",
+        "text": "Nice \u2014 lasagna's no small effort after a long day. So you sit down to dinner, everyone's finally there. What happened?"
+      },
+      {
+        "speaker": "user",
+        "text": "He barely looked up."
+      },
+      {
+        "speaker": "ai",
+        "text": "After you'd made his favorite meal and everything. What did he do \u2014 was he on his phone, just quiet, or what?"
+      },
+      {
+        "speaker": "user",
+        "text": "He wasn't even on his phone, which almost made it worse."
+      },
+      {
+        "speaker": "ai",
+        "text": "Yeah, that's almost harder to make sense of \u2014 if it were the phone, at least you'd know where his attention was. He was just... somewhere else. What was the rest of dinner like? Did anyone else notice, or was it just you picking up on it?"
+      },
+      {
+        "speaker": "user",
+        "text": "Michael was mostly focused on Ben."
+      },
+      {
+        "speaker": "ai",
+        "text": "So Michael's your husband? And Ben \u2014 is that a younger kid? I'm just getting the picture of who's at the table."
+      },
+      {
+        "speaker": "user",
+        "text": "Michael is my husband, yes. We've been married sixteen years."
+      },
+      {
+        "speaker": "ai",
+        "text": "Sixteen years \u2014 so you two have been at this a while. And Ben \u2014 is he another one of your kids? How old is he?"
+      },
+      {
+        "speaker": "user",
+        "text": "Ben is eight, so he\u2019s the baby of the family."
+      },
+      {
+        "speaker": "ai",
+        "text": "Six-year gap between Ethan and Ben \u2014 that's a pretty different stage of life for each of them. Are those your only two, or is there anyone in between?"
+      },
+      {
+        "speaker": "user",
+        "text": "Olivia is in the middle\u2014she\u2019s eleven."
+      },
+      {
+        "speaker": "ai",
+        "text": "Three kids \u2014 Ethan at 14, Olivia at 11, Ben at 8. That's a full table.\n\nSo back to Tuesday \u2014 Michael's focused on Ben, Ethan's checked out but not on his phone. Where were Olivia and you in all of this? Did you say anything to Ethan, or just sit with it?"
+      },
+      {
+        "speaker": "user",
+        "text": "Olivia was mostly telling us about her dance rehearsal."
+      },
+      {
+        "speaker": "ai",
+        "text": "So Olivia's filling the air, Ben's got Michael's attention, and Ethan's just... quiet in the middle of all that. Did you try to pull him in at any point, or did the dinner just kind of move around him?"
+      },
+      {
+        "speaker": "user",
+        "text": "I tried to ask him about his history project since I knew he had."
+      },
+      {
+        "speaker": "ai",
+        "text": "You knew he had something going on with it \u2014 a deadline, a presentation? What did he say when you asked?"
+      },
+      {
+        "speaker": "user",
+        "text": "He shrugged and said it was fine, but he wouldn't look at."
+      },
+      {
+        "speaker": "ai",
+        "text": "Wouldn't look at you. That's the part that stings, isn't it \u2014 not the shrug, not the \"fine,\" but the not looking at you.\n\nWhat did you do after that?"
+      }
+    ],
+    "metrics": {
+      "turn_count": 40,
+      "avg_words": 25.5,
+      "question_only_ratio": 0.15,
+      "response_type_entropy": 1.2361602543738117,
+      "quality_score": 0.77,
+      "response_type_counts": {
+        "mixed": 13,
+        "observation": 2,
+        "question": 5
+      }
+    },
+    "coverage": {
+      "rate": 0.36363636363636365,
+      "missed": [
+        "father",
+        "parents_status",
+        "siblings",
+        "maternal_grandparents",
+        "paternal_grandparents",
+        "aunts_uncles",
+        "nodal_events"
+      ]
+    }
+  },
+  {
+    "meta": {
+      "model_name": "gemini",
+      "model_id": "gemini-3-flash-preview",
+      "persona": "Sarah",
+      "timestamp": "2026-03-16_09-30",
+      "max_turns": 20
+    },
+    "turns": [
+      {
+        "speaker": "user",
+        "text": "I haven't been sleeping well. My doctor said it might be stress but I don't know."
+      },
+      {
+        "speaker": "ai",
+        "text": "How long has the sleep trouble been going on?"
+      },
+      {
+        "speaker": "user",
+        "text": "It started about six months."
+      },
+      {
+        "speaker": "ai",
+        "text": "Six months is a pretty specific window. Did it come on gradually, or was there a point where you noticed \u2014 \"I'm not sleeping like I used to\"?"
+      },
+      {
+        "speaker": "user",
+        "text": "It was pretty sudden."
+      },
+      {
+        "speaker": "ai",
+        "text": "What was happening in your life around that time \u2014 anything shift at work, at home, in the family?"
+      },
+      {
+        "speaker": "user",
+        "text": "My mom."
+      },
+      {
+        "speaker": "ai",
+        "text": "What happened with your mom?"
+      },
+      {
+        "speaker": "user",
+        "text": "She got a diagnosis."
+      },
+      {
+        "speaker": "ai",
+        "text": "What was the diagnosis?"
+      },
+      {
+        "speaker": "user",
+        "text": "Early-stage dementia."
+      },
+      {
+        "speaker": "ai",
+        "text": "So your mom gets diagnosed with early-stage dementia, and within that same window your sleep falls apart. That's worth paying attention to.\n\nHow old is your mom, and what's her name?"
+      },
+      {
+        "speaker": "user",
+        "text": "Carol is 68. Her name is Carol."
+      },
+      {
+        "speaker": "ai",
+        "text": "How did you find out about the diagnosis \u2014 were you there, or did someone call you?"
+      },
+      {
+        "speaker": "user",
+        "text": "I took her to the appointment."
+      },
+      {
+        "speaker": "ai",
+        "text": "So you were right there in the room when you heard it. Who else knows about the diagnosis \u2014 does your dad know, siblings?"
+      },
+      {
+        "speaker": "user",
+        "text": "Michael knows, but he doesn't really."
+      },
+      {
+        "speaker": "ai",
+        "text": "Who's Michael \u2014 your dad, a brother, your husband?"
+      },
+      {
+        "speaker": "user",
+        "text": "Michael is my."
+      },
+      {
+        "speaker": "ai",
+        "text": "Take your time \u2014 Michael is your\u2026?"
+      },
+      {
+        "speaker": "user",
+        "text": "Michael is my younger brother."
+      },
+      {
+        "speaker": "ai",
+        "text": "You started to say Michael doesn't really \u2014 doesn't really what? Engage with it? Believe it?"
+      },
+      {
+        "speaker": "user",
+        "text": "Michael doesn't really show up."
+      },
+      {
+        "speaker": "ai",
+        "text": "So the weight of this is landing mostly on you.\n\nHow old is Michael?"
+      },
+      {
+        "speaker": "user",
+        "text": "He's 38."
+      },
+      {
+        "speaker": "ai",
+        "text": "And that makes you \u2014 early 40s, or around there?\n\nAnd what about your dad \u2014 is he in the picture?"
+      },
+      {
+        "speaker": "user",
+        "text": "I\u2019m 42."
+      },
+      {
+        "speaker": "ai",
+        "text": "Got it \u2014 42. And your dad \u2014 is he around?"
+      },
+      {
+        "speaker": "user",
+        "text": "He lives in Florida."
+      },
+      {
+        "speaker": "ai",
+        "text": "What's his name, and are your parents still together or divorced?"
+      },
+      {
+        "speaker": "user",
+        "text": "Richard is my."
+      },
+      {
+        "speaker": "ai",
+        "text": "Richard is your\u2026?"
+      },
+      {
+        "speaker": "user",
+        "text": "Richard is my father."
+      },
+      {
+        "speaker": "ai",
+        "text": "Got it. Are Richard and Carol still married, or did they split up?"
+      },
+      {
+        "speaker": "user",
+        "text": "They divorced a long time."
+      },
+      {
+        "speaker": "ai",
+        "text": "How old were you when they divorced?"
+      },
+      {
+        "speaker": "user",
+        "text": "I was 15."
+      },
+      {
+        "speaker": "ai",
+        "text": "Fifteen is a rough age for that. Did you stay with your mom, or how did the living situation shake out?"
+      },
+      {
+        "speaker": "user",
+        "text": "I stayed with my mom in the house."
+      },
+      {
+        "speaker": "ai",
+        "text": "Does Richard know about Carol's diagnosis?"
+      }
+    ],
+    "metrics": {
+      "turn_count": 40,
+      "avg_words": 13.8,
+      "question_only_ratio": 0.55,
+      "response_type_entropy": 0.8812908992306927,
+      "quality_score": 0.6699999999999999,
+      "response_type_counts": {
+        "question": 14,
+        "mixed": 6
+      }
+    },
+    "coverage": {
+      "rate": 0.5454545454545454,
+      "missed": [
+        "maternal_grandparents",
+        "paternal_grandparents",
+        "aunts_uncles",
+        "children",
+        "nodal_events"
+      ]
+    }
+  },
+  {
+    "meta": {
+      "model_name": "gemini",
+      "model_id": "gemini-3-flash-preview",
+      "persona": "Marcus",
+      "timestamp": "2026-03-16_09-33",
+      "max_turns": 20
+    },
+    "turns": [
+      {
+        "speaker": "user",
+        "text": "So I just went through a breakup \u2014 well, she broke up with me technically \u2014 and I've been kind of a mess. Jennifer, we were together two years, and she wanted to get engaged but I just... I don't know. My sister says I have commitment issues, which, okay, maybe, but it's more complicated than that. Sorry, I'm already rambling."
+      },
+      {
+        "speaker": "ai",
+        "text": "No need to apologize \u2014 that's a lot to be sitting with. When did the breakup happen?"
+      },
+      {
+        "speaker": "user",
+        "text": "It was about three months ago."
+      },
+      {
+        "speaker": "ai",
+        "text": "And how have you been a mess exactly \u2014 trouble sleeping, can't focus, withdrawing from people? What does \"a mess\" look like for you?"
+      },
+      {
+        "speaker": "user",
+        "text": "I'."
+      },
+      {
+        "speaker": "ai",
+        "text": "Looks like that got cut off \u2014 go ahead."
+      },
+      {
+        "speaker": "user",
+        "text": "Everything just feels heavy right now."
+      },
+      {
+        "speaker": "ai",
+        "text": "What does heavy look like day-to-day \u2014 are you dragging at work, staying home more, not returning calls?"
+      },
+      {
+        "speaker": "user",
+        "text": "Focusing on my code has been impossible lately."
+      },
+      {
+        "speaker": "ai",
+        "text": "Were you able to focus fine before the breakup, or was this already creeping in?"
+      },
+      {
+        "speaker": "user",
+        "text": "Honestly, looking back, I think the focus issues started way before the."
+      },
+      {
+        "speaker": "ai",
+        "text": "Looks like that got cut off again \u2014 way before the what?"
+      },
+      {
+        "speaker": "user",
+        "text": "Grandparents were definitely the start of it."
+      },
+      {
+        "speaker": "ai",
+        "text": "Which grandparents \u2014 your mom's side or your dad's?"
+      },
+      {
+        "speaker": "user",
+        "text": "My mom's parents, Frank and Helen."
+      },
+      {
+        "speaker": "ai",
+        "text": "What happened with Frank and Helen?"
+      },
+      {
+        "speaker": "user",
+        "text": "Frank died really suddenly."
+      },
+      {
+        "speaker": "ai",
+        "text": "When did Frank die?"
+      },
+      {
+        "speaker": "user",
+        "text": "October 2021 was when he passed."
+      },
+      {
+        "speaker": "ai",
+        "text": "And you said the focus problems started around that time \u2014 so about three and a half years ago, not three months ago with the breakup. That's a big difference. What happened with Frank \u2014 how did he die?"
+      },
+      {
+        "speaker": "user",
+        "text": "Frank died from pneumonia, which sounds."
+      },
+      {
+        "speaker": "ai",
+        "text": "Sounds like you got cut off again \u2014 Frank died from pneumonia, which sounds...?"
+      },
+      {
+        "speaker": "user",
+        "text": "It sounds crazy because."
+      },
+      {
+        "speaker": "ai",
+        "text": "Take your time \u2014 Frank died from pneumonia, which sounds crazy because...?"
+      },
+      {
+        "speaker": "user",
+        "text": "It sounds crazy because he was actually the healthy one."
+      },
+      {
+        "speaker": "ai",
+        "text": "So Helen was the one everyone was worried about. What was going on with her health-wise?"
+      },
+      {
+        "speaker": "user",
+        "text": "Helen had Alzheimer's since 2."
+      },
+      {
+        "speaker": "ai",
+        "text": "Looks like it cut off \u2014 Helen had Alzheimer's since when?"
+      },
+      {
+        "speaker": "user",
+        "text": "She was diagnosed back in 20."
+      },
+      {
+        "speaker": "ai",
+        "text": "Since 20 \u2014 what year? Take your time, seems like your messages keep getting clipped."
+      },
+      {
+        "speaker": "user",
+        "text": "It was 2019 when we first noticed things were off with."
+      },
+      {
+        "speaker": "ai",
+        "text": "With Helen \u2014 got it. So Helen gets an Alzheimer's diagnosis in 2019, Frank is the healthy one taking care of her, and then Frank is the one who dies suddenly from pneumonia in October 2021. That must have thrown everyone \u2014 who was going to take care of Helen?"
+      },
+      {
+        "speaker": "user",
+        "text": "My mom ended up doing almost everything for."
+      },
+      {
+        "speaker": "ai",
+        "text": "For Helen \u2014 your mom became the primary caregiver. What's your mom's name, and was she the only one stepping up, or were there other siblings who could have helped?"
+      },
+      {
+        "speaker": "user",
+        "text": "Patricia is my mom's name."
+      },
+      {
+        "speaker": "ai",
+        "text": "Did Patricia have brothers or sisters who could have shared the load with Helen?"
+      },
+      {
+        "speaker": "user",
+        "text": "Mom has two sisters, Beth and Carol, and then there\u2019."
+      },
+      {
+        "speaker": "ai",
+        "text": "And then there's \u2014 who else? Seems like you were about to mention someone."
+      },
+      {
+        "speaker": "user",
+        "text": "Uncle Jim is the one I was thinking."
+      },
+      {
+        "speaker": "ai",
+        "text": "So Patricia has three siblings \u2014 Beth, Carol, and Jim. When Frank died and someone had to step up for Helen, did Beth, Carol, and Jim pitch in, or did it mostly fall on your mom?"
+      }
+    ],
+    "metrics": {
+      "turn_count": 40,
+      "avg_words": 18.25,
+      "question_only_ratio": 0.5,
+      "response_type_entropy": 1.2192407046368487,
+      "quality_score": 0.77,
+      "response_type_counts": {
+        "mixed": 8,
+        "question": 11,
+        "observation": 1
+      }
+    },
+    "coverage": {
+      "rate": 0.6363636363636364,
+      "missed": [
+        "paternal_grandparents",
+        "aunts_uncles",
+        "spouse",
+        "children"
+      ]
+    }
+  },
+  {
+    "meta": {
+      "model_name": "gemini",
+      "model_id": "gemini-3-flash-preview",
+      "persona": "Jennifer",
+      "timestamp": "2026-03-16_09-36",
+      "max_turns": 20
+    },
+    "turns": [
+      {
+        "speaker": "user",
+        "text": "My oldest is 14 and starting to pull away. I know it's developmentally normal but it's getting to me more than I expected."
+      },
+      {
+        "speaker": "ai",
+        "text": "What does \"pulling away\" look like day to day? What's actually changed?"
+      },
+      {
+        "speaker": "user",
+        "text": "Ethan used."
+      },
+      {
+        "speaker": "ai",
+        "text": "Looks like that got cut off \u2014 what were you starting to say about Ethan?"
+      },
+      {
+        "speaker": "user",
+        "text": "He used to be so talkative, especially in the car."
+      },
+      {
+        "speaker": "ai",
+        "text": "And now the car rides are quiet. When did you start noticing the shift?"
+      },
+      {
+        "speaker": "user",
+        "text": "It probably started toward the end of last school year."
+      },
+      {
+        "speaker": "ai",
+        "text": "So roughly spring of this year. Was it gradual, or was there a moment where you thought, \"something's different\"?"
+      },
+      {
+        "speaker": "user",
+        "text": "It felt gradual at first, just a few more."
+      },
+      {
+        "speaker": "ai",
+        "text": "Looks like that got cut off again \u2014 a few more what?"
+      },
+      {
+        "speaker": "user",
+        "text": "A few more \"not nows\" or \"."
+      },
+      {
+        "speaker": "ai",
+        "text": "A few more \"not nows\" or one-word answers \u2014 that kind of thing?"
+      },
+      {
+        "speaker": "user",
+        "text": "Exactly."
+      },
+      {
+        "speaker": "ai",
+        "text": "Has it stayed at that level, or has it gotten worse over the summer?"
+      },
+      {
+        "speaker": "user",
+        "text": "It definitely feels more intense now that school is back."
+      },
+      {
+        "speaker": "ai",
+        "text": "What's different now that school's back? Is he more withdrawn at home, or is something happening at school too?"
+      },
+      {
+        "speaker": "user",
+        "text": "He's staying in his room a lot more once he gets home from soccer."
+      },
+      {
+        "speaker": "ai",
+        "text": "Is he still engaged with soccer itself, or is that feeling like it's just going through the motions too?"
+      },
+      {
+        "speaker": "user",
+        "text": "Soccer seems to be the one thing he still cares about, honestly."
+      },
+      {
+        "speaker": "ai",
+        "text": "So soccer's the lifeline. That's worth noting \u2014 he's not shutting everything down, just home life.\n\nHow's your relationship with him outside of those quiet moments? Like if you initiate something specific \u2014 dinner out, watching a game together \u2014 does he engage, or is it the same wall?"
+      },
+      {
+        "speaker": "user",
+        "text": "It depends on the day."
+      },
+      {
+        "speaker": "ai",
+        "text": "Some days he lets you in, some days he doesn't. \n\nYou mentioned at the start that this is getting to you more than you expected. What do you mean by that \u2014 what's catching you off guard about your own reaction?"
+      },
+      {
+        "speaker": "user",
+        "text": "I thought I."
+      },
+      {
+        "speaker": "ai",
+        "text": "Looks like that got cut off \u2014 what were you starting to say?"
+      },
+      {
+        "speaker": "user",
+        "text": "I thought I would be more prepared for the silence, especially since."
+      },
+      {
+        "speaker": "ai",
+        "text": "Especially since \u2014 what? That feels like it's heading somewhere important."
+      },
+      {
+        "speaker": "user",
+        "text": "I deal with this at the office every single day."
+      },
+      {
+        "speaker": "ai",
+        "text": "What do you do for work?"
+      },
+      {
+        "speaker": "user",
+        "text": "I'm a pediatrician in a private practice."
+      },
+      {
+        "speaker": "ai",
+        "text": "So you literally coach other parents through this exact phase \u2014 and yet it's landing differently when it's your own kid. What's different about being on this side of it?"
+      },
+      {
+        "speaker": "user",
+        "text": "In the exam room, I have a chart and a timeline, and I can."
+      },
+      {
+        "speaker": "ai",
+        "text": "You can see the whole picture. At home, you're just in it."
+      },
+      {
+        "speaker": "user",
+        "text": "At work, I'm the one with the answers."
+      },
+      {
+        "speaker": "ai",
+        "text": "And at home with Ethan, you're not. That's a different seat to be in.\n\nWho else is in the house? Is there another parent navigating this with you?"
+      },
+      {
+        "speaker": "user",
+        "text": "Michael is there, of course."
+      },
+      {
+        "speaker": "ai",
+        "text": "How's Michael experiencing Ethan's shift? Is he noticing the same thing you are?"
+      },
+      {
+        "speaker": "user",
+        "text": "deep territory/emotional arc."
+      },
+      {
+        "speaker": "ai",
+        "text": "I want to make sure I'm following you \u2014 were you answering my question about Michael, or was that more of a side thought?\n\nI'd asked how Michael is experiencing Ethan pulling away. Is he seeing what you're seeing, or is he reading it differently?"
+      },
+      {
+        "speaker": "user",
+        "text": "Michael seems much."
+      },
+      {
+        "speaker": "ai",
+        "text": "Much less bothered by it? Much more relaxed about it? Where were you heading with that?"
+      }
+    ],
+    "metrics": {
+      "turn_count": 40,
+      "avg_words": 20.05,
+      "question_only_ratio": 0.35,
+      "response_type_entropy": 1.2192407046368487,
+      "quality_score": 0.6349999999999999,
+      "response_type_counts": {
+        "question": 11,
+        "mixed": 8,
+        "observation": 1
+      }
+    },
+    "coverage": {
+      "rate": 0.36363636363636365,
+      "missed": [
+        "father",
+        "parents_status",
+        "siblings",
+        "maternal_grandparents",
+        "paternal_grandparents",
+        "aunts_uncles",
+        "nodal_events"
+      ]
+    }
+  }
+]

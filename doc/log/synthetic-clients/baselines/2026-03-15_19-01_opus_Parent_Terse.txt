@@ -1,0 +1,151 @@
+Model: claude-opus-4-6
+Persona: Parent_Terse
+Turns: 40
+Date: 2026-03-15_19-01
+
+
+[1] USER:
+My oldest is 14 and starting to pull away. I know it's developmentally normal but it's getting to me more than I expected.
+
+[2] AI:
+What does "pulling away" look like day to day? Is it more like they're shutting you out of conversations, spending all their time in their room, pushing back on rules — or something else?
+
+[3] USER:
+Ethan is just... quiet.
+
+[4] AI:
+What kind of quiet? Like he used to talk to you and now he doesn't, or more that he's withdrawn from the whole family — meals, hanging out, all of it?
+
+[5] USER:
+It’s mostly with
+
+[6] AI:
+Looks like you got cut off — it's mostly with who?
+
+[7] USER:
+It’s
+
+[8] AI:
+No rush — take your time. It's mostly with...?
+
+[9] USER:
+Me. It’s mostly with me.
+
+[10] AI:
+That's a different thing than pulling away from everyone. So Ethan's still talking to other people in the house — just not you. When did you start noticing the shift?
+
+[11] USER:
+Probably within the last year, around the
+
+[12] AI:
+Take your time — around the what?
+
+[13] USER:
+Time the practice expanded, actually.
+
+[14] AI:
+So your work got busier right around the time Ethan got quieter with you. What kind of practice, and what did the expansion look like — longer hours, more travel, that kind of thing?
+
+[15] USER:
+Pediatrics.
+
+[16] AI:
+There's something to that — spending your days taking care of other people's kids while your own is going quiet on you. What did the expansion actually mean for your schedule? Were you home less, or just more distracted when you were home?
+
+[17] USER:
+of thought*: Don't trail off mid-sentence.
+
+[18] AI:
+Got it — back to where we were.
+
+So the pediatrics practice expanded about a year ago, right around when Ethan started going quiet with you specifically. What did that actually look like at home — were you gone more, or just more preoccupied when you were there?
+
+[19] USER:
+Both, really.
+
+[20] AI:
+That's a tough combination — less time at home, and when you are there, not fully there. Has Ethan said anything about it directly, or is it more that he just stopped initiating with you?
+
+And who else is in the house — is there a spouse or partner who's seeing this too?
+
+[21] USER:
+My husband Michael sees it
+
+[22] AI:
+What's Michael's take on it — does he see it as a phase, or is he worried too?
+
+[23] USER:
+Michael thinks I’m overthinking it.
+
+[24] AI:
+That's a pretty common split — one parent's worried, the other says it's fine. Is Michael closer to Ethan right now? Like, is Ethan talking to him the way he used to talk to you?
+
+[25] USER:
+They seem fine.
+
+[26] AI:
+So Ethan's not withdrawing from the family — he's withdrawing from you. And Michael and Ethan's relationship is solid, which probably makes it sting more.
+
+Have you tried anything to reconnect with Ethan — like making time together, bringing it up with him directly — or have you mostly been watching it happen?
+
+[27] USER:
+I've tried
+
+[28] AI:
+Go ahead — what have you tried?
+
+[29] USER:
+Everything feels like a interrogation when I do it.
+
+[30] AI:
+That's really common with 14-year-olds — the more you reach for them, the more they pull back. What does a typical attempt look like? Like, are you asking him about school, trying to get him to do something together, or something else?
+
+[31] USER:
+School is the big one.
+
+[32] AI:
+Right — so you ask about school and he shuts down because it feels like you're grilling him. What does he actually do — one-word answers, leaves the room, gets irritated?
+
+[33] USER:
+He gives me
+
+[34] AI:
+Go ahead — what does he give you?
+
+[35] USER:
+Nothing.
+
+[36] AI:
+Nothing. Just shuts you out completely.
+
+So you're a pediatrician — you talk to teenagers all day for a living — and your own kid won't give you anything. That's got to hit differently than if you were in some other line of work.
+
+What made you decide to reach out about this now? Has something gotten worse recently, or has it just been building?
+
+[37] USER:
+Ben had a game last Friday.
+
+[38] AI:
+Who's Ben?
+
+[39] USER:
+Ben is
+
+[40] AI:
+Go ahead — who's Ben?
+
+
+========================================
+METRICS
+========================================
+Quality Score: 0.77 (PASS)
+  Words/response: mean=28, median=31, std=18, range=[2-65]
+  Question-only ratio: 35%
+  Response types: question=20
+  Response type entropy: 0.00 (max=2.32)
+  Starter entropy: 4.08
+  Echo rate: 0.10
+  Patterns: 2 (echo_opener, echo_opener)
+  Repetitive starters: none
+Coverage: 27%
+Missed: ['mother', 'father', 'parents_status', 'siblings', 'maternal_grandparents', 'paternal_grandparents', 'aunts_uncles', 'nodal_events']

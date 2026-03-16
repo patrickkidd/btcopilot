@@ -1,0 +1,155 @@
+Model: claude-opus-4-6
+Persona: Parent_Terse
+Turns: 40
+Date: 2026-03-15_19-33
+
+
+[1] USER:
+My oldest is 14 and starting to pull away. I know it's developmentally normal but it's getting to me more than I expected.
+
+[2] AI:
+What does "pulling away" actually look like day to day? Like, is this more shutting down conversations, spending all their time in their room, attitude — or something else?
+
+[3] USER:
+It’s the closed door. That’s the biggest thing.
+
+[4] AI:
+The literal closed door — that's a vivid image. How long has this been going on? Like, is this the last few weeks, or has it been building over months?
+
+[5] USER:
+It’s been
+
+[6] AI:
+Go ahead — it's been...?
+
+[7] USER:
+A year, maybe a little longer.
+
+[8] AI:
+So roughly since they were 13 — right around the start of high school, or was it before that? And is this your son or daughter?
+
+[9] USER:
+Ethan's 14 now, so
+
+[10] AI:
+So Ethan was around 13 when you started noticing the shift. That's a pretty classic age for it, but a year is a long time to be on the other side of that closed door.
+
+Is it just the withdrawal, or has his behavior changed in other ways too — grades, friends, mood?
+
+[11] USER:
+His grades are fine.
+
+[12] AI:
+Good — that's one less thing to worry about. What about his social life? Is he still connecting with friends, or has he pulled back from them too?
+
+[13] USER:
+He’s still got his group.
+
+[14] AI:
+So he's still connected out there — it's more that he's pulled back from you specifically. Is it just you, or is he like this with everyone at home? Who else is in the house?
+
+[15] USER:
+Michael and the other two
+
+[16] AI:
+So Michael's your husband? And two more kids besides Ethan — what are their names and ages?
+
+[17] USER:
+Olivia is eleven and Ben is eight.
+
+[18] AI:
+Three kids — that's a full house. So is Ethan like this with everyone, or does he still engage with Michael and the younger two?
+
+[19] USER:
+He's
+
+[20] AI:
+Go ahead — he's...?
+
+[21] USER:
+Actually, he still talks to Michael.
+
+[22] AI:
+That's an important distinction. So it's not a general teenage shutdown — it's specifically you he's closed the door on. That hits different than just "my kid's a teenager now."
+
+Has something shifted between you and Ethan specifically, or did it just gradually happen without any clear moment?
+
+[23] USER:
+It wasn't a single moment
+
+[24] AI:
+A slow fade is almost harder to pin down than a blowup. You can't point to one thing and say "that's when it changed."
+
+What was your relationship with Ethan like before — when he was 11, 12? Were you two close?
+
+[25] USER:
+We were very close.
+
+[26] AI:
+That makes the closed door sting even more. When you say very close — what did that look like? Were you the one he came to with things, the one he wanted to hang out with?
+
+[27] USER:
+Ethan used to tell me everything, especially
+
+[28] AI:
+Especially...?
+
+[29] USER:
+Everything. He used to tell me everything.
+
+[30] AI:
+Going from "everything" to a closed door — that's a real loss, even if he's still right there in the house.
+
+You said this started about a year ago, when he was around 13. What was going on in your family around that time? Any big changes — moves, job shifts, anything with you and Michael, health stuff — or did life feel pretty stable?
+
+[31] USER:
+My practice expanded about two years ago,
+
+[32] AI:
+Your practice — so you're a doctor, therapist, something like that? And what did the expansion look like — longer hours, more travel, bigger caseload?
+
+[33] USER:
+Pediatrics.
+
+[34] AI:
+A pediatrician whose own kid won't talk to her — that's its own kind of irony, isn't it.
+
+So the practice expanded about two years ago. What did that actually mean for your day-to-day at home? Were you around less, home later, that kind of thing?
+
+[35] USER:
+The hours increased
+
+[36] AI:
+How much are we talking? Like, missing dinners that you used to be home for, weekends getting eaten up — what shifted concretely?
+
+[37] USER:
+Missing dinners became the norm, honestly.
+
+[38] AI:
+So the practice expands about two years ago, dinners start getting missed — and about a year later, Ethan's door starts closing. That timeline's worth paying attention to.
+
+How did Michael handle the shift in your hours? Was he picking up the slack at home, or was that a source of tension?
+
+[39] USER:
+Michael’s been great, really.
+
+[40] AI:
+So Michael stepped in as the more present parent at home right around the time Ethan was entering that critical stretch — 12, 13. And now Ethan talks to Michael but not to you.
+
+I'm not saying that's the whole picture, but the pieces fit together in a way that's worth noticing. Did Michael and Ethan get closer during that stretch, or were they already tight?
+
+
+========================================
+METRICS
+========================================
+Quality Score: 0.40 (FAIL)
+  Words/response: mean=33, median=30, std=18, range=[1-66]
+  Question-only ratio: 15%
+  Response types: mixed=12, question=8
+  Response type entropy: 0.97 (max=2.32)
+  Starter entropy: 4.22
+  Echo rate: 0.00
+  Patterns: 6 (echo_opener, echo_opener, echo_opener, echo_opener, echo_opener)
+  Repetitive starters: none
+Coverage: 45%
+Missed: ['father', 'parents_status', 'siblings', 'maternal_grandparents', 'paternal_grandparents', 'aunts_uncles']

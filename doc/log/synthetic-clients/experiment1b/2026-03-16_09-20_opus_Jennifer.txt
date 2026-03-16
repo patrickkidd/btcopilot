@@ -1,0 +1,141 @@
+Model: opus
+Persona: Jennifer
+Turns: 40
+Date: 2026-03-16_09-20
+
+[1] USER:
+My oldest is 14 and starting to pull away. I know it's developmentally normal but it's getting to me more than I expected.
+
+[2] AI:
+That's a really honest thing to notice — the gap between knowing something is normal and actually feeling OK about it. What does "pulling away" look like day to day? Is it more that they're withdrawing into their room, pushing back on you directly, or something else?
+
+[3] USER:
+It's mostly just.
+
+[4] AI:
+Looks like that got cut off — go ahead and finish that thought.
+
+[5] USER:
+He’s just.
+
+[6] AI:
+Take your time — no rush here.
+
+[7] USER:
+Ethan is.
+
+[8] AI:
+Sounds like it's hard to find the words for what's going on with Ethan. That happens — sometimes the thing that's bothering you most is the hardest to pin down.
+
+Try it however it comes out. What's Ethan doing that's got you worried?
+
+[9] USER:
+Sorry, I think I was struggling to get it.
+
+[10] AI:
+No need to apologize — take your time with it. Sometimes it helps to think of a specific moment. Like, was there a recent time with Ethan where you thought, "this is what I'm talking about"?
+
+[11] USER:
+Last Tuesday stands out.
+
+[12] AI:
+What happened last Tuesday?
+
+[13] USER:
+I had just finished a long day at the clinic and I was really.
+
+[14] AI:
+Go ahead — you'd had a long day at the clinic and you were...?
+
+[15] USER:
+I was actually looking forward to dinner because it was the first night in a week.
+
+[16] AI:
+First night in a week where everyone was home together? What happened at dinner?
+
+[17] USER:
+I made.
+
+[18] AI:
+Go ahead — you made...?
+
+[19] USER:
+I made his favorite,.
+
+[20] AI:
+His favorite — so you put some thought into it. What happened when you all sat down?
+
+[21] USER:
+I made lasagna.
+
+[22] AI:
+Nice — lasagna's no small effort after a long day. So you sit down to dinner, everyone's finally there. What happened?
+
+[23] USER:
+He barely looked up.
+
+[24] AI:
+After you'd made his favorite meal and everything. What did he do — was he on his phone, just quiet, or what?
+
+[25] USER:
+He wasn't even on his phone, which almost made it worse.
+
+[26] AI:
+Yeah, that's almost harder to make sense of — if it were the phone, at least you'd know where his attention was. He was just... somewhere else. What was the rest of dinner like? Did anyone else notice, or was it just you picking up on it?
+
+[27] USER:
+Michael was mostly focused on Ben.
+
+[28] AI:
+So Michael's your husband? And Ben — is that a younger kid? I'm just getting the picture of who's at the table.
+
+[29] USER:
+Michael is my husband, yes. We've been married sixteen years.
+
+[30] AI:
+Sixteen years — so you two have been at this a while. And Ben — is he another one of your kids? How old is he?
+
+[31] USER:
+Ben is eight, so he’s the baby of the family.
+
+[32] AI:
+Six-year gap between Ethan and Ben — that's a pretty different stage of life for each of them. Are those your only two, or is there anyone in between?
+
+[33] USER:
+Olivia is in the middle—she’s eleven.
+
+[34] AI:
+Three kids — Ethan at 14, Olivia at 11, Ben at 8. That's a full table.
+
+So back to Tuesday — Michael's focused on Ben, Ethan's checked out but not on his phone. Where were Olivia and you in all of this? Did you say anything to Ethan, or just sit with it?
+
+[35] USER:
+Olivia was mostly telling us about her dance rehearsal.
+
+[36] AI:
+So Olivia's filling the air, Ben's got Michael's attention, and Ethan's just... quiet in the middle of all that. Did you try to pull him in at any point, or did the dinner just kind of move around him?
+
+[37] USER:
+I tried to ask him about his history project since I knew he had.
+
+[38] AI:
+You knew he had something going on with it — a deadline, a presentation? What did he say when you asked?
+
+[39] USER:
+He shrugged and said it was fine, but he wouldn't look at.
+
+[40] AI:
+Wouldn't look at you. That's the part that stings, isn't it — not the shrug, not the "fine," but the not looking at you.
+
+What did you do after that?
+
+========================================
+METRICS
+========================================
+Quality Score: 0.77
+  QO ratio: 15%
+  Entropy: 1.24
+  Avg words: 25.5
+  Types: {'mixed': 13, 'observation': 2, 'question': 5}
+Coverage: 36%
+Missed: ['father', 'parents_status', 'siblings', 'maternal_grandparents', 'paternal_grandparents', 'aunts_uncles', 'nodal_events']

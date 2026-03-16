@@ -70,17 +70,16 @@ All code that generates user-facing text responses should use `response_text_syn
 
 ### Multi-Model Conversation Prompts
 
-The conversation flow prompt is split into shared core + model-specific addenda:
+The conversation flow prompt is assembled by a callable override:
 
-| Piece | Variable | Purpose | Location |
-|-------|----------|---------|----------|
-| Core | `_CONVERSATION_FLOW_CORE` | Domain knowledge, phases, data checklist, red flags | btcopilot (open) |
-| Opus addendum | `_CONVERSATION_FLOW_OPUS` | Response style tuned for Claude Opus | fdserver (private IP) |
-| Gemini addendum | `_CONVERSATION_FLOW_GEMINI` | Response style tuned for Gemini Flash | btcopilot (open) |
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `get_conversation_flow_prompt(model)` stub | `btcopilot/personal/prompts.py` | Returns minimal default; overridden by fdserver |
+| `get_conversation_flow_prompt(model)` impl | `fdserver/prompts/private_prompts.py` | Full assembly: core + model-specific addendum |
 
-At runtime, `get_conversation_flow_prompt(model)` assembles core + the
-appropriate addendum based on the active `RESPONSE_MODEL`. The model is
-auto-detected from the `BTCOPILOT_RESPONSE_MODEL` env var.
+fdserver internally maintains `_CONVERSATION_FLOW_CORE`, `_CONVERSATION_FLOW_OPUS`,
+and `_CONVERSATION_FLOW_GEMINI` as module-level strings, but these are not exported.
+The callable has full control over per-model assembly.
 
 **Why per-model addenda**: Opus and Gemini have opposite natural tendencies.
 Gemini tends verbose (needs brevity constraints). Opus tends terse (needs
@@ -89,20 +88,21 @@ Shared constraints that work for one model harm the other.
 
 ### Override Mechanism
 
-fdserver's `private_prompts.py` can override any piece individually via
-`FDSERVER_PROMPTS_PATH`. The override loop uses `hasattr` — fdserver only
-needs to define the pieces it wants to override. Undefined pieces fall back
-to btcopilot defaults.
+btcopilot's `prompts.py` defines stub callables and constants. fdserver's
+`private_prompts.py` provides production implementations via the
+`FDSERVER_PROMPTS_PATH` override loop.
+
+- **Conversation flow**: callable override (`get_conversation_flow_prompt`)
+- **Other prompts** (extraction, SARF, etc.): constant overrides (legacy mechanism)
 
 **Tuned prompt content is production IP in fdserver.** btcopilot contains
 only architectural stubs.
 
 ### Modifying Prompts
 
-**For conversational style**: Override `_CONVERSATION_FLOW_OPUS` or
-`_CONVERSATION_FLOW_GEMINI` in fdserver's `private_prompts.py`.
-**For domain/phases/checklist**: Modify `_CONVERSATION_FLOW_CORE` in
-btcopilot's `prompts.py` (shared across models).
+**For conversation prompts**: Edit `get_conversation_flow_prompt()` in
+fdserver's `private_prompts.py`. Full per-model control — Opus and Gemini
+can have entirely different prompt structures.
 **For extraction quality**: See [PROMPT_ENGINEERING_LOG.md](PROMPT_ENGINEERING_LOG.md).
 
 ### Extraction Prompts

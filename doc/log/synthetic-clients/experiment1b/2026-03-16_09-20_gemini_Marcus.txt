@@ -1,0 +1,135 @@
+Model: gemini
+Persona: Marcus
+Turns: 40
+Date: 2026-03-16_09-20
+
+[1] USER:
+So I just went through a breakup — well, she broke up with me technically — and I've been kind of a mess. Jennifer, we were together two years, and she wanted to get engaged but I just... I don't know. My sister says I have commitment issues, which, okay, maybe, but it's more complicated than that. Sorry, I'm already rambling.
+
+[2] AI:
+No need to apologize — that's a lot to be sitting with. When did the breakup happen?
+
+[3] USER:
+It was about three months ago.
+
+[4] AI:
+And how have you been a mess exactly — trouble sleeping, can't focus, withdrawing from people? What does "a mess" look like for you?
+
+[5] USER:
+I'.
+
+[6] AI:
+Looks like that got cut off — go ahead.
+
+[7] USER:
+Everything just feels heavy right now.
+
+[8] AI:
+What does heavy look like day-to-day — are you dragging at work, staying home more, not returning calls?
+
+[9] USER:
+Focusing on my code has been impossible lately.
+
+[10] AI:
+Were you able to focus fine before the breakup, or was this already creeping in?
+
+[11] USER:
+Honestly, looking back, I think the focus issues started way before the.
+
+[12] AI:
+Looks like that got cut off again — way before the what?
+
+[13] USER:
+Grandparents were definitely the start of it.
+
+[14] AI:
+Which grandparents — your mom's side or your dad's?
+
+[15] USER:
+My mom's parents, Frank and Helen.
+
+[16] AI:
+What happened with Frank and Helen?
+
+[17] USER:
+Frank died really suddenly.
+
+[18] AI:
+When did Frank die?
+
+[19] USER:
+October 2021 was when he passed.
+
+[20] AI:
+And you said the focus problems started around that time — so about three and a half years ago, not three months ago with the breakup. That's a big difference. What happened with Frank — how did he die?
+
+[21] USER:
+Frank died from pneumonia, which sounds.
+
+[22] AI:
+Sounds like you got cut off again — Frank died from pneumonia, which sounds...?
+
+[23] USER:
+It sounds crazy because.
+
+[24] AI:
+Take your time — Frank died from pneumonia, which sounds crazy because...?
+
+[25] USER:
+It sounds crazy because he was actually the healthy one.
+
+[26] AI:
+So Helen was the one everyone was worried about. What was going on with her health-wise?
+
+[27] USER:
+Helen had Alzheimer's since 2.
+
+[28] AI:
+Looks like it cut off — Helen had Alzheimer's since when?
+
+[29] USER:
+She was diagnosed back in 20.
+
+[30] AI:
+Since 20 — what year? Take your time, seems like your messages keep getting clipped.
+
+[31] USER:
+It was 2019 when we first noticed things were off with.
+
+[32] AI:
+With Helen — got it. So Helen gets an Alzheimer's diagnosis in 2019, Frank is the healthy one taking care of her, and then Frank is the one who dies suddenly from pneumonia in October 2021. That must have thrown everyone — who was going to take care of Helen?
+
+[33] USER:
+My mom ended up doing almost everything for.
+
+[34] AI:
+For Helen — your mom became the primary caregiver. What's your mom's name, and was she the only one stepping up, or were there other siblings who could have helped?
+
+[35] USER:
+Patricia is my mom's name.
+
+[36] AI:
+Did Patricia have brothers or sisters who could have shared the load with Helen?
+
+[37] USER:
+Mom has two sisters, Beth and Carol, and then there’.
+
+[38] AI:
+And then there's — who else? Seems like you were about to mention someone.
+
+[39] USER:
+Uncle Jim is the one I was thinking.
+
+[40] AI:
+So Patricia has three siblings — Beth, Carol, and Jim. When Frank died and someone had to step up for Helen, did Beth, Carol, and Jim pitch in, or did it mostly fall on your mom?
+
+========================================
+METRICS
+========================================
+Quality Score: 0.77
+  QO ratio: 50%
+  Entropy: 1.22
+  Avg words: 18.2
+  Types: {'mixed': 8, 'question': 11, 'observation': 1}
+Coverage: 64%
+Missed: ['paternal_grandparents', 'aunts_uncles', 'spouse', 'children']

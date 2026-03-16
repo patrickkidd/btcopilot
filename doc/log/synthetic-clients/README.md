@@ -13,6 +13,7 @@ Chronological record of changes to the synthetic conversation system. Intended f
 | 2026-02-18 | [05-14--evaluator-and-structural-enforcement](2026-02-18_05-14--evaluator-and-structural-enforcement.md) | Built ClientRealismEvaluator; discovered structural token limits beat prompt guidance for length control |
 | 2026-02-18 | [16-42--cutoff-fix-and-prompt-refinement](2026-02-18_16-42--cutoff-fix-and-prompt-refinement.md) | Fixed mid-sentence truncation; evaluated Evan (discussion 55); refined anti-patterns for self-insight, rhetorical questions, verbal tics |
 | 2026-03-14 | [18-30--quality-evaluator-conversational-metrics](2026-03-14_18-30--quality-evaluator-conversational-metrics.md) | Added 5 computable metrics to QualityEvaluator (words/response, question-only ratio, response types, entropy); Opus vs Gemini baseline comparison |
+| 2026-03-15 | [19-00--opus-conversational-prompt-tuning](2026-03-15_19-00--opus-conversational-prompt-tuning.md) | Core prompt rewrites (terminal directive, exchange counts, pivot logic); thinking budget experiment (rejected); classifier fix; callable override refactor |
 
 ## MANDATORY Logging Rules
 

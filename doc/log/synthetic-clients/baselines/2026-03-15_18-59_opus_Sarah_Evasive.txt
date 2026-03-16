@@ -1,0 +1,141 @@
+Model: claude-opus-4-6
+Persona: Sarah_Evasive
+Turns: 40
+Date: 2026-03-15_18-59
+
+
+[1] USER:
+I haven't been sleeping well. My doctor said it might be stress but I don't know.
+
+[2] AI:
+How long has this been going on — are we talking weeks, months, longer?
+
+[3] USER:
+It’s been about six months, I guess. Give or take.
+
+[4] AI:
+Six months is a while to be running on bad sleep. Did it come on gradually, or was there a point where you noticed — "OK, something shifted"?
+
+[5] USER:
+It happened
+
+[6] AI:
+So it was more sudden — something flipped. Do you remember what was going on in your life around the time it started? Anything change — at work, at home, with anyone close to you?
+
+[7] USER:
+Work was getting pretty busy around then, with the
+
+[8] AI:
+Looks like that got cut off — go ahead, what was happening with work?
+
+[9] USER:
+Teaching is always a
+
+[10] AI:
+Looks like that got cut off again — take your time. You were saying teaching is always a...?
+
+[11] USER:
+A lot to manage, especially with the testing cycles
+
+[12] AI:
+Yeah, teaching has a rhythm that can grind you down — especially around testing. So the sleep trouble started roughly when things ramped up at work about six months ago. Is it trouble falling asleep, staying asleep, or both?
+
+[13] USER:
+I usually fall asleep okay
+
+[14] AI:
+So you're waking up during the night, or waking up too early and can't get back to sleep?
+
+[15] USER:
+I wake up around
+
+[16] AI:
+Go ahead — you wake up around what time?
+
+[17] USER:
+Three in the morning, usually.
+
+[18] AI:
+3 AM wake-ups are rough — you're not getting enough sleep to feel rested, but it's too early to just get up. When you wake at 3, what's happening? Is your mind racing, or do you just pop awake for no clear reason?
+
+[19] USER:
+Everything just starts spinning.
+
+[20] AI:
+What's spinning — is it work stuff, or is it more of a general everything-at-once kind of feeling?
+
+[21] USER:
+David thinks I’m overdoing it, but
+
+[22] AI:
+Who's David — is that your husband, partner?
+
+[23] USER:
+David is my husband.
+
+[24] AI:
+Got it. So David thinks you're overdoing it — what does he mean by that? Is he talking about work, or something broader?
+
+[25] USER:
+He thinks I spend too much time at my
+
+[26] AI:
+Go ahead — he thinks you spend too much time at...?
+
+[27] USER:
+Mom’s house.
+
+[28] AI:
+That's interesting — so it's not just about work. How often are you over at your mom's? And what's pulling you there — is she needing help with something, or is it more that you two are close?
+
+[29] USER:
+I'
+
+[30] AI:
+Go ahead — take your time.
+
+[31] USER:
+Michael only goes over
+
+[32] AI:
+Who's Michael — is that a brother?
+
+[33] USER:
+My brother Michael lives right
+
+[34] AI:
+Right near your mom? Go ahead, finish that thought — I want to hear this.
+
+[35] USER:
+Michael lives in the same city as us, just a few minutes away from
+
+[36] AI:
+From your mom — so he's close by. Does he help out with her much, or does most of that fall on you?
+
+[37] USER:
+Hardly ever, to be honest.
+
+[38] AI:
+That's a sore spot for a lot of families — one sibling picks up most of the load and the other one doesn't. What's going on with your mom that she needs the help? Is it a health thing, or more just... she's on her own?
+
+[39] USER:
+Carol was diagnosed with early-stage
+
+[40] AI:
+Carol — that's your mom's name? Go ahead, what was she diagnosed with?
+
+
+========================================
+METRICS
+========================================
+Quality Score: 0.74 (PASS)
+  Words/response: mean=21, median=18, std=12, range=[6-46]
+  Question-only ratio: 40%
+  Response types: question=18, mixed=2
+  Response type entropy: 0.47 (max=2.32)
+  Starter entropy: 3.98
+  Echo rate: 0.20
+  Patterns: 2 (echo_opener, echo_opener)
+  Repetitive starters: {'looks like that got cut': 2}
+Coverage: 36%
+Missed: ['father', 'parents_status', 'maternal_grandparents', 'paternal_grandparents', 'aunts_uncles', 'children', 'nodal_events']

@@ -1,0 +1,141 @@
+Model: gemini-2.5-flash
+Persona: Parent_Terse
+Turns: 40
+Date: 2026-03-15_19-01
+
+
+[1] USER:
+My oldest is 14 and starting to pull away. I know it's developmentally normal but it's getting to me more than I expected.
+
+[2] AI:
+Thanks for sharing that. When did you first start noticing your oldest pulling away?
+
+[3] USER:
+It’s been gradual, but I
+
+[4] AI:
+Please go on. What have you noticed?
+
+[5] USER:
+Ethan was always my shadow, really.
+
+[6] AI:
+That sounds like a big shift. When did you start noticing him pulling away more significantly?
+
+[7] USER:
+Last year, mostly.
+
+[8] AI:
+What did that look like last year? What specific changes did you notice in Ethan's behavior or your interactions with him?
+
+[9] USER:
+He stopped coming into the
+
+[10] AI:
+He stopped coming into the...? Please tell me more about that.
+
+[11] USER:
+Kitchen in the morning.
+
+[12] AI:
+Before, he always came into the kitchen in the morning? What was that routine like, and what changed last year?
+
+[13] USER:
+We used to have this rhythm where he
+
+[14] AI:
+Please tell me more about that rhythm you had, and what changed last year.
+
+[15] USER:
+He’d sit at the kitchen island while I made my coffee and just...
+
+[16] AI:
+He'd sit at the kitchen island while you made coffee. What changed about that routine last year?
+
+[17] USER:
+Usually he’d be there before I even got the beans in the grinder
+
+[18] AI:
+And now he doesn't? What does he do instead in the mornings?
+
+[19] USER:
+Ethan stays in his room until the very last second.
+
+[20] AI:
+And how has that shift affected you?
+
+[21] USER:
+Honestly, it feels like I’
+
+[22] AI:
+You feel like you're...? Please finish that thought.
+
+[23] USER:
+Missing a part of my
+
+[24] AI:
+You feel like you're missing a part of yourself? Please tell me more about that feeling.
+
+[25] USER:
+It’s more
+
+[26] AI:
+What is it more like?
+
+[27] USER:
+The morning used to be our time before the other
+
+[28] AI:
+The morning used to be your time before the other children woke up? What was special about that time with Ethan?
+
+[29] USER:
+Just quiet.
+
+[30] AI:
+The quiet time with Ethan in the mornings was special. How has the absence of that quiet time affected your mornings or your overall day?
+
+[31] USER:
+Everything feels rushed now.
+
+[32] AI:
+OK, I have a good picture of what's going on. Now let me get some background on your family - this will help put things in context. What's your mom's name and how old is she?
+
+[33] USER:
+My mom is Barbara.
+
+[34] AI:
+And how old is Barbara?
+
+[35] USER:
+She’s 72.
+
+[36] AI:
+And your father's name and age?
+
+[37] USER:
+Richard is
+
+[38] AI:
+Richard. And how old is Richard?
+
+[39] USER:
+Dad is 74 now.
+
+[40] AI:
+Are your parents still together?
+
+
+========================================
+METRICS
+========================================
+Quality Score: 0.53 (FAIL)
+  Words/response: mean=14, median=13, std=8, range=[5-36]
+  Question-only ratio: 25%
+  Response types: question=20
+  Response type entropy: 0.00 (max=2.32)
+  Starter entropy: 4.22
+  Echo rate: 0.25
+  Patterns: 4 (therapist_cliche, vague_prompt, vague_prompt, vague_prompt)
+  Repetitive starters: none
+Coverage: 36%
+Missed: ['parents_status', 'siblings', 'maternal_grandparents', 'paternal_grandparents', 'aunts_uncles', 'spouse', 'nodal_events']

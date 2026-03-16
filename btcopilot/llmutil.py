@@ -275,8 +275,9 @@ async def claude_text(prompt=None, **kwargs):
       - max_output_tokens: int (default 8192, covers thinking + response)
       - prompt: str — simple single-turn prompt (alternative to turns)
 
-    Extended thinking is enabled by default (budget: CLAUDE_THINKING_BUDGET).
-    This forces temperature=1.0 per Anthropic API constraints.
+    When CLAUDE_THINKING_BUDGET > 0, extended thinking is enabled (forces
+    temperature=1.0 per Anthropic API). When 0, thinking is disabled and
+    temperature from kwargs is respected.
     """
     start_time = time.time()
     model = kwargs.get("model", RESPONSE_MODEL)
@@ -291,11 +292,15 @@ async def claude_text(prompt=None, **kwargs):
         "model": resolved_model,
         "max_tokens": max_output_tokens,
         "messages": messages,
-        "thinking": {
+    }
+    if CLAUDE_THINKING_BUDGET > 0:
+        api_kwargs["thinking"] = {
             "type": "enabled",
             "budget_tokens": CLAUDE_THINKING_BUDGET,
-        },
-    }
+        }
+    else:
+        temperature = kwargs.get("temperature", 0.45)
+        api_kwargs["temperature"] = temperature
     if system_instruction:
         api_kwargs["system"] = system_instruction
 

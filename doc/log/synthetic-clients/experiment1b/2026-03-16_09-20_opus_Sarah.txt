@@ -1,0 +1,141 @@
+Model: opus
+Persona: Sarah
+Turns: 40
+Date: 2026-03-16_09-20
+
+[1] USER:
+I haven't been sleeping well. My doctor said it might be stress but I don't know.
+
+[2] AI:
+How long has this been going on — are we talking weeks, months, longer?
+
+[3] USER:
+It's been about.
+
+[4] AI:
+Go ahead — about how long?
+
+[5] USER:
+Six months, I guess.
+
+[6] AI:
+Six months is a while to be running on bad sleep. Did it come on gradually, or was there a point where you noticed — "OK, something's different now"?
+
+[7] USER:
+It happened pretty fast.
+
+[8] AI:
+So about six months ago, something shifted and sleep just went sideways. What's the actual experience like — trouble falling asleep, waking up in the middle of the night, both?
+
+[9] USER:
+I fall asleep fine, usually right after I put the kids to bed or finish.
+
+[10] AI:
+So you're exhausted by bedtime — but then what happens? Are you waking up at 3 AM with your mind going, or just not getting restful sleep?
+
+[11] USER:
+It's.
+
+[12] AI:
+Take your time.
+
+[13] USER:
+The clock says 3:14 and I just know I'm.
+
+[14] AI:
+3:14 AM, wide awake — and then what? Is your mind racing, or is it more like you're just up and can't get back down?
+
+[15] USER:
+My mind just goes.
+
+[16] AI:
+What's it going to at 3 AM — is it a specific thing you're chewing on, or more like everything at once?
+
+[17] USER:
+Everything hits me at.
+
+[18] AI:
+Yeah — the middle of the night has a way of making everything feel urgent at once. During the day, can you keep it at bay, or is it leaking into your waking hours too?
+
+[19] USER:
+Work is usually a good distraction because the kids in my classroom don't.
+
+[20] AI:
+Right — thirty kids needing your attention doesn't leave much room for your own thoughts. So the daytime is manageable, but once the house gets quiet and you wake up at 3 AM, there's nothing to block it out. 
+
+What about weekends or breaks — does it get worse when you don't have that structure?
+
+[21] USER:
+Weekends are actually much.
+
+[22] AI:
+Much worse? Go ahead.
+
+[23] USER:
+Saturday and Sunday are when I usually have.
+
+[24] AI:
+Saturdays and Sundays — what happens on those days?
+
+[25] USER:
+Saturdays are when I usually have to head over to my mom.
+
+[26] AI:
+What's going on with your mom that you're heading over there on Saturdays?
+
+[27] USER:
+She was diagnosed with dementia about six.
+
+[28] AI:
+About six months ago — same timeframe the sleep fell apart. That's not a coincidence worth ignoring.
+
+What kind of dementia, and how far along is she?
+
+[29] USER:
+It's early-.
+
+[30] AI:
+Early-stage — so she's still functioning but things are starting to slip. What does your Saturday over there usually look like? Are you helping with practical stuff, or is it more about keeping an eye on her?
+
+[31] USER:
+It's a lot of both, honestly.
+
+[32] AI:
+So you're managing a classroom all week, then spending Saturdays being your mom's support system. That's a lot of sustained "on" time with very little room for yourself.
+
+Is anyone else helping with your mom, or is this mostly falling on you?
+
+[33] USER:
+Michael lives right here in the same.
+
+[34] AI:
+Michael — is that a brother?
+
+[35] USER:
+Yes, he's my younger brother.
+
+[36] AI:
+And he lives close to your mom — is he stepping up, or is the Saturday duty landing mostly on you?
+
+[37] USER:
+Michael visits when he can, I guess.
+
+[38] AI:
+That "I guess" says a lot. So he's right there in the same town, but the regular Saturday commitment is yours. How do you feel about that split — or is that something you two haven't really talked about directly?
+
+[39] USER:
+Talking about it doesn't really change.
+
+[40] AI:
+So you have tried talking to him about it. What happened?
+
+========================================
+METRICS
+========================================
+Quality Score: 0.60
+  QO ratio: 35%
+  Entropy: 0.99
+  Avg words: 22.8
+  Types: {'question': 11, 'mixed': 9}
+Coverage: 36%
+Missed: ['father', 'parents_status', 'maternal_grandparents', 'paternal_grandparents', 'aunts_uncles', 'spouse', 'nodal_events']

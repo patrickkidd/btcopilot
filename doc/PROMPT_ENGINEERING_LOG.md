@@ -2,7 +2,32 @@
 
 **Purpose**: Authoritative record of prompt engineering decisions, experiments, and lessons learned for the SARF data extraction system. Prevents regressions by documenting what works, what doesn't, and why.
 
-**Last Updated**: 2026-03-04 (T7-20 flash-lite + thinking budget)
+**Last Updated**: 2026-03-15 (conversation flow prompt tuning)
+
+---
+
+## Conversation Flow Prompts (2026-03-15)
+
+### Core Prompt Rewrites — Terminal Directive, Exchange Counts, Pivot Logic
+
+**Problem**: Opus conversations were mostly bare questions with early topic pivots. Root causes: terminal directive hardcoded question-asking, phase exchange counts created artificial urgency, "8+ statements" red flag punished staying with a topic.
+
+**Changes (all shipped)**:
+- Replaced "Ask for the next missing data point" with menu of response types (observation, bridge, normalization, question)
+- Removed exchange counts from all phase headers
+- Rewrote pivot section: removed scripted pivot line, removed "8+" red flag, added "keeps asking questions without observations" red flag
+
+**Results**: Response type entropy improved from near-zero to ~1.0 across all personas. Gemini also improved (no regression from shared core changes). See `doc/log/synthetic-clients/2026-03-15_19-00--opus-conversational-prompt-tuning.md` for full metrics.
+
+### Thinking Budget = 0 (REJECTED)
+
+Disabling extended thinking caused sentence completion (AI fabricates user's words), context loss, and loss of strategic pivot ability. Coverage collapsed on oversharing persona (64% → 27%). Thinking budget stays at 4096.
+
+**Lesson**: Extended thinking is essential for strategic state tracking in multi-turn conversations. The "checklist auditing" behavior it enables is a feature for data collection, not a bug — the problem was the terminal directive channeling all that planning into bare questions.
+
+### Architecture: Callable Override
+
+Conversation flow prompts now use a callable override (`get_conversation_flow_prompt(model)`) instead of constant overrides. fdserver has full per-model assembly control.
 
 ---
 

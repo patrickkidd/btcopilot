@@ -1,0 +1,145 @@
+Model: claude-opus-4-6
+Persona: Sarah_Evasive
+Turns: 40
+Date: 2026-03-15_19-33
+
+
+[1] USER:
+I haven't been sleeping well. My doctor said it might be stress but I don't know.
+
+[2] AI:
+How long has this been going on — are we talking weeks, months, longer?
+
+[3] USER:
+It’s been about
+
+[4] AI:
+Go ahead — about how long?
+
+[5] USER:
+Six months, maybe
+
+[6] AI:
+Six months is a while to be running on bad sleep. Did it come on gradually, or was there a point where you noticed — "OK, something shifted"?
+
+[7] USER:
+It was
+
+[8] AI:
+Take your time — you were saying?
+
+[9] USER:
+Right around the end of the last school semester, things just started feeling...
+
+[10] AI:
+Things started feeling — what? Off? Heavier? You don't have to find the perfect word, just whatever fits.
+
+And when you say end of the semester — are you a student, or were you teaching? Just want to make sure I've got the picture right.
+
+[11] USER:
+Teaching.
+
+[12] AI:
+Got it — so you're a teacher, and around the end of last semester, about six months ago, sleep started going sideways. What does that actually look like for you — trouble falling asleep, waking up in the middle of the night, or just not feeling rested even when you do sleep?
+
+[13] USER:
+3:00 AM seems to be the time.
+
+[14] AI:
+So you fall asleep OK, but then 3 AM hits and you're up. When that happens, can you get back to sleep, or are you pretty much done for the night?
+
+[15] USER:
+Usually I’m just done.
+
+[16] AI:
+That's rough — so you're running on maybe four or five hours most nights. Has it stayed about the same over these six months, or has it gotten worse?
+
+[17] USER:
+Consistent isn't the right word, because
+
+[18] AI:
+Go ahead — consistent isn't the right word because...?
+
+[19] USER:
+Some weeks I might get a decent stretch of five or six hours, and then
+
+[20] AI:
+And then other weeks it's back to the 3 AM wall. Is there anything you've noticed about what makes the difference — like what's going on during the good weeks versus the bad ones?
+
+[21] USER:
+My mom was diagnosed with early-stage dementia about six months ago,
+
+[22] AI:
+That's a big piece of the puzzle — your mom's diagnosis and your sleep problems started at almost exactly the same time. 
+
+What was that like when you got the news? And how old is your mom?
+
+[23] USER:
+She’s 68.
+
+[24] AI:
+Sixty-eight is young for that diagnosis. How did it come to light — did she start showing signs that worried someone, or was it caught during a routine visit?
+
+[25] USER:
+I noticed things were off
+
+[26] AI:
+What were you picking up on — what kinds of things were off?
+
+[27] USER:
+It was mostly little things at first, like her
+
+[28] AI:
+Go ahead — little things like what?
+
+[29] USER:
+Forgetting
+
+[30] AI:
+Forgetting things she'd normally never forget — like names, appointments, that kind of thing?
+
+[31] USER:
+Appointments, sure, but it was more like she’d lose the thread
+
+[32] AI:
+Lose the thread mid-conversation — like she'd start a sentence and not know where she was going with it?
+
+[33] USER:
+Exactly, and then she
+
+[34] AI:
+Go ahead — and then she what?
+
+[35] USER:
+She would just get this blank look on her face
+
+[36] AI:
+That's unsettling to watch, especially in your own mother — someone you've known your whole life to be sharp. Were you the first one in the family to notice, or were other people seeing it too?
+
+[37] USER:
+My brother Michael lives right here in the city, but I don't
+
+[38] AI:
+You don't — what? Talk much? See eye to eye on this?
+
+[39] USER:
+Michael?
+
+[40] AI:
+You just mentioned him — you said "My brother Michael lives right here in the city, but I don't..." and then trailed off. What were you going to say?
+
+
+========================================
+METRICS
+========================================
+Quality Score: 0.85 (PASS)
+  Words/response: mean=23, median=24, std=14, range=[6-52]
+  Question-only ratio: 45%
+  Response types: question=10, mixed=10
+  Response type entropy: 1.00 (max=2.32)
+  Starter entropy: 3.92
+  Echo rate: 0.15
+  Patterns: 1 (echo_opener)
+  Repetitive starters: none
+Coverage: 27%
+Missed: ['father', 'parents_status', 'maternal_grandparents', 'paternal_grandparents', 'aunts_uncles', 'spouse', 'children', 'nodal_events']

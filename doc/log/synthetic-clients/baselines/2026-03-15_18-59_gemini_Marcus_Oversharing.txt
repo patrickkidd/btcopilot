@@ -1,0 +1,141 @@
+Model: gemini-2.5-flash
+Persona: Marcus_Oversharing
+Turns: 40
+Date: 2026-03-15_18-59
+
+
+[1] USER:
+So I just went through a breakup — well, she broke up with me technically — and I've been kind of a mess. Jennifer, we were together two years, and she wanted to get engaged but I just... I don't know. My sister says I have commitment issues, which, okay, maybe, but it's more complicated than that. Sorry, I'm already rambling.
+
+[2] AI:
+Thanks for sharing. It sounds like a really tough time. When did the breakup with Jennifer happen?
+
+[3] USER:
+It was about three months ago,
+
+[4] AI:
+You mentioned it's more complicated than just commitment issues. Can you tell me more about that?
+
+[5] USER:
+Jennifer said I was "emotionally
+
+[6] AI:
+"Emotionally what?"
+
+[7] USER:
+Unavailable.
+
+[8] AI:
+Jennifer said you were "emotionally..."?
+
+[9] USER:
+Unavailable.
+
+[10] AI:
+Okay, she said you were emotionally unavailable. What did that look like in your relationship?
+
+[11] USER:
+She’d get really frustrated because I’d just sort of shut down when
+
+[12] AI:
+You'd shut down when...?
+
+[13] USER:
+Things got too real, I guess.
+
+[14] AI:
+What did "too real" feel like for you? Can you describe it?
+
+[15] USER:
+It’s like this heavy, suffocating feeling in my chest,
+
+[16] AI:
+When does that heavy, suffocating feeling in your chest typically happen?
+
+[17] USER:
+It started happening whenever Jennifer would bring up the future
+
+[18] AI:
+How did you respond to Jennifer when you felt that heavy, suffocating feeling?
+
+[19] USER:
+I usually just looked for an exit, honestly.
+
+[20] AI:
+What did "looking for an exit" usually involve? Did you physically leave, change the subject, or something else?
+
+[21] USER:
+I’d usually just make a joke or suddenly remember I had a deployment at
+
+[22] AI:
+A deployment? Was that a literal deployment, or a way of saying you needed to step away from the conversation?
+
+[23] USER:
+Deployment is a work thing—pushing code to
+
+[24] AI:
+Thanks for clarifying. So, when did you first notice this heavy, suffocating feeling, or this tendency to shut down when things got "too real"? Was it only with Jennifer, or have you experienced it in other relationships or situations?
+
+[25] USER:
+Sarah—that was the girl before Jennifer—she used to say
+
+[26] AI:
+What did Sarah used to say?
+
+[27] USER:
+Sarah was...
+
+[28] AI:
+Sarah used to say what?
+
+[29] USER:
+Sarah said I was "halfway out the door" even when we were
+
+[30] AI:
+So Sarah said you were "halfway out the door" even when you were with her. How long ago was your relationship with Sarah?
+
+[31] USER:
+That was back in 2019, right around the time
+
+[32] AI:
+Right around the time of what? What else was going on in 2019?
+
+[33] USER:
+Amanda moved to Seattle that year, and honestly, everything in my family
+
+[34] AI:
+Okay, so Amanda moved to Seattle in 2019, and that's when things started shifting in your family. Who is Amanda?
+
+[35] USER:
+Amanda is my
+
+[36] AI:
+Amanda is your...?
+
+[37] USER:
+Physical:* I started getting these headaches back then.
+
+[38] AI:
+Okay, so headaches started around 2019 as well. And you mentioned Amanda moved to Seattle that year, and everything in your family started shifting. Who is Amanda in relation to you?
+
+[39] USER:
+Amanda is my older sister, she’s 32 and lives
+
+[40] AI:
+Okay, so Amanda, your older sister, is 32 and lives in Seattle. Do you have any other brothers or sisters?
+
+
+========================================
+METRICS
+========================================
+Quality Score: 0.62 (FAIL)
+  Words/response: mean=15, median=14, std=9, range=[2-39]
+  Question-only ratio: 35%
+  Response types: question=20
+  Response type entropy: 0.00 (max=2.32)
+  Starter entropy: 4.32
+  Echo rate: 0.25
+  Patterns: 3 (therapist_cliche, vague_prompt, echo_opener)
+  Repetitive starters: none
+Coverage: 36%
+Missed: ['mother', 'father', 'parents_status', 'maternal_grandparents', 'paternal_grandparents', 'aunts_uncles', 'children']

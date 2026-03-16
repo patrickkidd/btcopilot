@@ -1,0 +1,143 @@
+Model: claude-opus-4-6
+Persona: Parent_Terse
+Turns: 40
+Date: 2026-03-15_19-17
+
+
+[1] USER:
+My oldest is 14 and starting to pull away. I know it's developmentally normal but it's getting to me more than I expected.
+
+[2] AI:
+That's a really common thing parents say — "I know it's normal, but..." The "but" is usually where the real stuff is. What does "pulling away" actually look like day to day? Like, is this more shutting down conversations, spending all their time in their room, pushing back on rules — what are you seeing?
+
+[3] USER:
+Ethan mostly stays in his
+
+[4] AI:
+Looks like your message got cut off — Ethan mostly stays in his...? Go ahead and finish that thought.
+
+[5] USER:
+Room.
+
+[6] AI:
+Got it. So Ethan's mostly in his room. Is this a recent shift — like the last few months — or has it been building gradually over the past year or so? And when he does come out, what's the vibe? Is he irritable, just quiet, or does he seem fine and then disappears again?
+
+[7] USER:
+It’s been building for about a year
+
+[8] AI:
+So roughly since he was 13. When he does come out of his room, what's he like? Irritable, quiet, seems fine — what do you get from him?
+
+[9] USER:
+He’s mostly just quiet.
+
+[10] AI:
+Quiet but not hostile — that's worth noting. Is he still doing OK at school, keeping up with friends, activities? Or has the pulling back extended beyond just home?
+
+[11] USER:
+He’s
+
+[12] AI:
+Looks like that got cut off again — go ahead, I'm listening.
+
+[13] USER:
+Grades are fine, actually.
+
+[14] AI:
+Good — so he's functioning well at school. What about friends and activities? Is he still connected socially, or has he pulled back from that too?
+
+[15] USER:
+Soccer is still his thing, and he has a solid group of friends he hangs
+
+[16] AI:
+Sounds like that got cut off — he has a solid group of friends he hangs...? Take your time.
+
+[17] USER:
+Out with on the weekends.
+
+[18] AI:
+So grades are fine, soccer's going strong, he's got friends — the pulling away is really specific to home. That's actually a useful distinction. 
+
+What's it like between you and Ethan when you do interact? Like at dinner, or driving him to soccer — is there tension, or is it more like he's just... not giving you much?
+
+[19] USER:
+Dinner is the worst part of the day lately.
+
+[20] AI:
+What happens at dinner? Walk me through what a typical one looks like right now.
+
+[21] USER:
+Michael tries to keep things light, talking
+
+[22] AI:
+Looks like that got cut off — Michael tries to keep things light, talking...? Go ahead.
+
+[23] USER:
+of thought:* Connect it back to the feeling of being rejected or the
+
+[24] AI:
+I think something got mixed up there — looks like that wasn't what you meant to send. You were telling me about dinner, and Michael tries to keep things light. What happens from there?
+
+[25] USER:
+He talks about
+
+[26] AI:
+Take your time — Michael talks about...?
+
+[27] USER:
+He talks about his day at the bank or something funny Ben did at
+
+[28] AI:
+Sounds like that got cut off again — Michael talks about his day at the bank or something funny Ben did at... school? Practice? Go ahead and finish that thought.
+
+[29] USER:
+School.
+
+[30] AI:
+OK so Michael's trying to keep things light — talking about work, something funny Ben did. And Ethan — what's he doing during all this? One-word answers, on his phone, just eating and leaving?
+
+[31] USER:
+Ethan just
+
+[32] AI:
+Go ahead — Ethan just...?
+
+[33] USER:
+Stares at his plate
+
+[34] AI:
+That's a vivid picture — Michael working to fill the silence, Ben being Ben, and Ethan just checked out staring at his plate. And where are you in all of this? What are you doing while this is happening?
+
+[35] USER:
+I try to get him to talk
+
+[36] AI:
+And how does that go? Like, what do you ask him and what do you get back?
+
+[37] USER:
+Asking about his
+
+[38] AI:
+Go ahead — asking about his...?
+
+[39] USER:
+Day.
+
+[40] AI:
+And he gives you what — "fine," "nothing," shrugs? What do you actually get back from him?
+
+
+========================================
+METRICS
+========================================
+Quality Score: 0.73 (PASS)
+  Words/response: mean=26, median=22, std=16, range=[5-58]
+  Question-only ratio: 15%
+  Response types: question=20
+  Response type entropy: 0.00 (max=2.32)
+  Starter entropy: 4.02
+  Echo rate: 0.25
+  Patterns: 2 (echo_opener, echo_opener)
+  Repetitive starters: {'looks like that got cut': 2, 'sounds like that got cut': 2}
+Coverage: 27%
+Missed: ['mother', 'father', 'parents_status', 'siblings', 'maternal_grandparents', 'paternal_grandparents', 'aunts_uncles', 'nodal_events']

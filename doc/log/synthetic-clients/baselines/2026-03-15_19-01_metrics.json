@@ -1,0 +1,87 @@
+{
+  "opus": [
+    {
+      "persona": "Sarah_Evasive",
+      "model": "opus",
+      "turns": 40,
+      "avg_words": 17.6,
+      "question_only_ratio": 0.15,
+      "response_type_entropy": 0.28639695711595625,
+      "quality_score": 0.87,
+      "coverage": 0.36363636363636365,
+      "response_types": {
+        "question": 19,
+        "mixed": 1
+      }
+    },
+    {
+      "persona": "Marcus_Oversharing",
+      "model": "opus",
+      "turns": 40,
+      "avg_words": 24.9,
+      "question_only_ratio": 0.2,
+      "response_type_entropy": 0.28639695711595625,
+      "quality_score": 0.77,
+      "coverage": 0.6363636363636364,
+      "response_types": {
+        "question": 19,
+        "mixed": 1
+      }
+    },
+    {
+      "persona": "Parent_Terse",
+      "model": "opus",
+      "turns": 40,
+      "avg_words": 28.3,
+      "question_only_ratio": 0.35,
+      "response_type_entropy": 0.0,
+      "quality_score": 0.77,
+      "coverage": 0.2727272727272727,
+      "response_types": {
+        "question": 20
+      }
+    }
+  ],
+  "gemini": [
+    {
+      "persona": "Sarah_Evasive",
+      "model": "gemini",
+      "turns": 40,
+      "avg_words": 13.9,
+      "question_only_ratio": 0.6,
+      "response_type_entropy": 0.28639695711595625,
+      "quality_score": 0.47,
+      "coverage": 0.36363636363636365,
+      "response_types": {
+        "question": 19,
+        "mixed": 1
+      }
+    },
+    {
+      "persona": "Marcus_Oversharing",
+      "model": "gemini",
+      "turns": 40,
+      "avg_words": 19.0,
+      "question_only_ratio": 0.2,
+      "response_type_entropy": 0.0,
+      "quality_score": 0.75,
+      "coverage": 0.36363636363636365,
+      "response_types": {
+        "question": 20
+      }
+    },
+    {
+      "persona": "Parent_Terse",
+      "model": "gemini",
+      "turns": 40,
+      "avg_words": 13.6,
+      "question_only_ratio": 0.25,
+      "response_type_entropy": 0.0,
+      "quality_score": 0.525,
+      "coverage": 0.36363636363636365,
+      "response_types": {
+        "question": 20
+      }
+    }
+  ]
+}

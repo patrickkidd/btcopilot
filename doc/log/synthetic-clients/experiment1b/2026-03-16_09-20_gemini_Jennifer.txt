@@ -1,0 +1,143 @@
+Model: gemini
+Persona: Jennifer
+Turns: 40
+Date: 2026-03-16_09-20
+
+[1] USER:
+My oldest is 14 and starting to pull away. I know it's developmentally normal but it's getting to me more than I expected.
+
+[2] AI:
+What does "pulling away" look like day to day? What's actually changed?
+
+[3] USER:
+Ethan used.
+
+[4] AI:
+Looks like that got cut off — what were you starting to say about Ethan?
+
+[5] USER:
+He used to be so talkative, especially in the car.
+
+[6] AI:
+And now the car rides are quiet. When did you start noticing the shift?
+
+[7] USER:
+It probably started toward the end of last school year.
+
+[8] AI:
+So roughly spring of this year. Was it gradual, or was there a moment where you thought, "something's different"?
+
+[9] USER:
+It felt gradual at first, just a few more.
+
+[10] AI:
+Looks like that got cut off again — a few more what?
+
+[11] USER:
+A few more "not nows" or ".
+
+[12] AI:
+A few more "not nows" or one-word answers — that kind of thing?
+
+[13] USER:
+Exactly.
+
+[14] AI:
+Has it stayed at that level, or has it gotten worse over the summer?
+
+[15] USER:
+It definitely feels more intense now that school is back.
+
+[16] AI:
+What's different now that school's back? Is he more withdrawn at home, or is something happening at school too?
+
+[17] USER:
+He's staying in his room a lot more once he gets home from soccer.
+
+[18] AI:
+Is he still engaged with soccer itself, or is that feeling like it's just going through the motions too?
+
+[19] USER:
+Soccer seems to be the one thing he still cares about, honestly.
+
+[20] AI:
+So soccer's the lifeline. That's worth noting — he's not shutting everything down, just home life.
+
+How's your relationship with him outside of those quiet moments? Like if you initiate something specific — dinner out, watching a game together — does he engage, or is it the same wall?
+
+[21] USER:
+It depends on the day.
+
+[22] AI:
+Some days he lets you in, some days he doesn't. 
+
+You mentioned at the start that this is getting to you more than you expected. What do you mean by that — what's catching you off guard about your own reaction?
+
+[23] USER:
+I thought I.
+
+[24] AI:
+Looks like that got cut off — what were you starting to say?
+
+[25] USER:
+I thought I would be more prepared for the silence, especially since.
+
+[26] AI:
+Especially since — what? That feels like it's heading somewhere important.
+
+[27] USER:
+I deal with this at the office every single day.
+
+[28] AI:
+What do you do for work?
+
+[29] USER:
+I'm a pediatrician in a private practice.
+
+[30] AI:
+So you literally coach other parents through this exact phase — and yet it's landing differently when it's your own kid. What's different about being on this side of it?
+
+[31] USER:
+In the exam room, I have a chart and a timeline, and I can.
+
+[32] AI:
+You can see the whole picture. At home, you're just in it.
+
+[33] USER:
+At work, I'm the one with the answers.
+
+[34] AI:
+And at home with Ethan, you're not. That's a different seat to be in.
+
+Who else is in the house? Is there another parent navigating this with you?
+
+[35] USER:
+Michael is there, of course.
+
+[36] AI:
+How's Michael experiencing Ethan's shift? Is he noticing the same thing you are?
+
+[37] USER:
+deep territory/emotional arc.
+
+[38] AI:
+I want to make sure I'm following you — were you answering my question about Michael, or was that more of a side thought?
+
+I'd asked how Michael is experiencing Ethan pulling away. Is he seeing what you're seeing, or is he reading it differently?
+
+[39] USER:
+Michael seems much.
+
+[40] AI:
+Much less bothered by it? Much more relaxed about it? Where were you heading with that?
+
+========================================
+METRICS
+========================================
+Quality Score: 0.63
+  QO ratio: 35%
+  Entropy: 1.22
+  Avg words: 20.1
+  Types: {'question': 11, 'mixed': 8, 'observation': 1}
+Coverage: 36%
+Missed: ['father', 'parents_status', 'siblings', 'maternal_grandparents', 'paternal_grandparents', 'aunts_uncles', 'nodal_events']

@@ -70,6 +70,9 @@ class DataPoint:
 # Budget: ~2050 chars total instructions (backgrounds can be up to 5.5K within 8K limit)
 
 _ANTI_PATTERNS = (
+    "NEVER end a response mid-phrase or mid-sentence. Every response must end with a period, question mark, "
+    "or exclamation point. Evasiveness means short COMPLETE sentences: 'I don't know.' 'It's complicated.' "
+    "'I'd rather not get into that.' — NOT fragments like 'I just...' or 'It was kind of'.\n"
     "Don't deliver backstory in organized paragraphs — details come out across multiple turns.\n"
     "Don't use therapy-speak ('my anxiety stems from', 'I realize I have a pattern of', 'I've been processing').\n"
     "Don't answer emotional questions with self-aware analysis — describe experiences, not diagnoses. "
@@ -87,14 +90,15 @@ _ANTI_PATTERNS = (
 
 _CONVERSATIONAL_REALISM = (
     "Early on, you may ask what the coach needs: 'How does this work?' or express surprise: 'My grandparents? Why?'\n"
-    "Correct yourself mid-thought. Trail off on hard topics. Lose the thread: 'Sorry, what were you asking?'\n"
+    "Correct yourself — finish your sentence, then walk it back: 'Wait, actually that's not quite right.'\n"
+    "Lose the thread: 'Sorry, what were you asking?'\n"
     "Circle back to earlier topics. Use hedging: 'I think,' 'probably,' 'as far as I know.'\n"
     "Sometimes answer what's on your mind rather than what was asked."
 )
 
 _RESPONSE_LENGTH = (
     "Factual questions = short: 'She's 68.' 'Two brothers.'\n"
-    "Emotional territory = longer, messier — rambling, trailing off, but still conversational.\n"
+    "Emotional territory = longer, messier — rambling, circling back, but still conversational.\n"
     "Caught off guard = short: 'I don't know' / 'That's complicated.'\n"
     "Vary your length turn to turn. A long vulnerable answer should be followed by something shorter — "
     "you said a lot and need the coach to respond. Two long answers in a row feels like a monologue, not a conversation.\n"
@@ -666,17 +670,21 @@ Start differently - with a fact, a name, a date, an emotion, or a question."""
 {arc_section}
 {opener_warning}
 
-**Length: ~{word_target} words.** Finish your thought completely — do not trail off mid-sentence.
+**Length: ~{word_target} words.**
+
+**ABSOLUTE RULE — COMPLETE SENTENCES ONLY:** Every response MUST end with a period, question mark, or exclamation point. NEVER end mid-phrase. If you want to be guarded or evasive, use a complete but minimal sentence: "I don't know." / "It's complicated." / "I'd rather not get into that." / "Maybe." — NOT a fragment like "I just..." or "It was kind of".
 
 **Conversation so far:**
 {history_text}
 
 **Your response:**"""
 
-    response = gemini_text_sync(
-        prompt, temperature=0.75, max_output_tokens=token_ceiling
+    result = _trim_to_sentence(
+        gemini_text_sync(prompt, temperature=0.75, max_output_tokens=token_ceiling).strip()
     )
-    return _trim_to_sentence(response.strip())
+    if result and result[-1] not in ".!?…":
+        result += "."
+    return result
 
 
 class ConversationSimulator:
@@ -1163,7 +1171,7 @@ class QualityEvaluator:
         qo_count = 0
         for t in ai_turns:
             text = t.text.strip()
-            sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if s.strip()]
+            sentences = [s.strip() for s in self._SENTENCE_SPLIT_RE.split(text) if s.strip()]
             if not sentences:
                 continue
             # "Question-only" = entire response is one question with no framing
@@ -1171,36 +1179,39 @@ class QualityEvaluator:
                 qo_count += 1
         return qo_count / len(ai_turns)
 
-    def _classify_response_types(self, ai_turns: list[Turn]) -> list[ResponseType]:
-        bridge_re = re.compile(
-            r"(?:that gives me|let me ask|now let'?s|moving on|shifting to|turning to)",
-            re.IGNORECASE,
-        )
-        norm_re = re.compile(
-            r"(?:a lot of (?:families|people)|that'?s (?:common|normal|typical)|many families|it'?s not unusual)",
-            re.IGNORECASE,
-        )
-        obs_re = re.compile(
-            r"(?:that'?s interesting|i notice|pattern|connection|same (?:year|time)|coincide)",
-            re.IGNORECASE,
-        )
+    _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+(?=[A-Z])")
+    _BRIDGE_RE = re.compile(
+        r"(?:that gives me|let me ask|now let'?s|moving on|shifting to|turning to)",
+        re.IGNORECASE,
+    )
+    _NORM_RE = re.compile(
+        r"(?:a lot of (?:families|people)|that'?s (?:common|normal|typical)|many families|it'?s not unusual)",
+        re.IGNORECASE,
+    )
 
+    def _classify_response_types(self, ai_turns: list[Turn]) -> list[ResponseType]:
         types = []
         for t in ai_turns:
             text = t.text.strip()
-            has_question = "?" in text
-            has_bridge = bool(bridge_re.search(text))
-            has_norm = bool(norm_re.search(text))
-            has_obs = bool(obs_re.search(text))
+            sentences = self._SENTENCE_SPLIT_RE.split(text)
+            questions = [s for s in sentences if s.rstrip().endswith("?")]
+            declaratives = [s for s in sentences if not s.rstrip().endswith("?")]
+            has_bridge = bool(self._BRIDGE_RE.search(text))
+            has_norm = bool(self._NORM_RE.search(text))
+            # Substantive declarative = 4+ words, not just "Go ahead" / "OK"
+            substantive_decl = [s for s in declaratives if len(s.split()) >= 4]
 
-            flags = sum([has_question, has_bridge, has_norm, has_obs])
-            if flags > 1:
+            if has_bridge and questions:
                 types.append(ResponseType.Mixed)
             elif has_bridge:
                 types.append(ResponseType.Bridge)
+            elif has_norm and questions:
+                types.append(ResponseType.Mixed)
             elif has_norm:
                 types.append(ResponseType.Normalization)
-            elif has_obs:
+            elif substantive_decl and questions:
+                types.append(ResponseType.Mixed)
+            elif not questions and substantive_decl:
                 types.append(ResponseType.Observation)
             else:
                 types.append(ResponseType.Question)

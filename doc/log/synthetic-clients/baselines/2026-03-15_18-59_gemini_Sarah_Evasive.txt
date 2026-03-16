@@ -1,0 +1,149 @@
+Model: gemini-2.5-flash
+Persona: Sarah_Evasive
+Turns: 40
+Date: 2026-03-15_18-59
+
+
+[1] USER:
+I haven't been sleeping well. My doctor said it might be stress but I don't know.
+
+[2] AI:
+I'm sorry to hear you haven't been sleeping well. When did this start, and was it a sudden change or more gradual?
+
+[3] USER:
+It’s been
+
+[4] AI:
+You said "It's been". How long has it been since you started having trouble sleeping?
+
+[5] USER:
+About six months now.
+
+[6] AI:
+Was the change in your sleep sudden or did it gradually get worse over time? And is it just your sleep that's been affected, or are there other things going on for you?
+
+[7] USER:
+It was pretty
+
+[8] AI:
+You were saying it was pretty...? Can you tell me if the change in your sleep was sudden or gradual? And are there other things going on for you besides the sleep trouble?
+
+[9] USER:
+Suddenly, I guess.
+
+[10] AI:
+Okay, it started suddenly about six months ago. Besides the sleep trouble, are there other things going on for you? And who else in your life is affected by your difficulty sleeping?
+
+[11] USER:
+David’
+
+[12] AI:
+Who is David in relation to you? And how has your difficulty sleeping affected him?
+
+[13] USER:
+My husband, David, we’ve been married fourteen years now.
+
+[14] AI:
+Thanks for clarifying, David is your husband. How has your difficulty sleeping affected him, and how are you both feeling about it?
+
+[15] USER:
+Sarah-style:* Mention the arguments, maybe
+
+[16] AI:
+Okay, so your husband David is affected. You mentioned "arguments, maybe." Can you tell me more about that? How has your sleep trouble affected your relationship, and how are you both feeling about what's happening?
+
+[17] USER:
+David gets frustrated because I’m
+
+[18] AI:
+David gets frustrated because you're...? Please tell me more about that. How does his frustration show up, and how are you feeling about it?
+
+[19] USER:
+He gets frustrated because I’m
+
+[20] AI:
+He gets frustrated because you're...? Please finish that thought for me. And how does his frustration show up? How are you feeling about all of this?
+
+[21] USER:
+It’s hard for him because I’m just not around as much lately
+
+[22] AI:
+So David gets frustrated because you're not around as much. How does that feel for you when he gets frustrated? And what does "not around as much" look like in your daily life?
+
+[23] USER:
+Lately, I'm spending most of my
+
+[24] AI:
+You're spending most of your...? Please finish that thought for me. And how do you feel when David gets frustrated?
+
+[25] USER:
+Mom's place is where I end up most evenings after work, or at
+
+[26] AI:
+Okay, so you're spending most evenings at your mom's place after work. What's happening at your mom's that draws you there so often? And how do you feel when David gets frustrated about you not being around?
+
+[27] USER:
+Michael is supposed to be helping, but he’
+
+[28] AI:
+Okay, so Michael is involved. Who is Michael in relation to you? And what is he supposed to be helping with at your mom's place?
+
+[29] USER:
+Michael is my younger brother, and honestly, it
+
+[30] AI:
+Okay, Michael is your younger brother. You said "honestly, it..." Can you tell me more about what's going on with him and what he's supposed to be helping with at your mom's? And how do you feel when David gets frustrated about you not being around?
+
+[31] USER:
+He just doesn't see it the way I do, or
+
+[32] AI:
+Okay, Michael doesn't see "it" the way you do. What is "it" that he's not seeing? And what is he supposed to be helping with at your mom's? Also, how do you feel when David gets frustrated about you not being around?
+
+[33] USER:
+The dementia diagnosis changed
+
+[34] AI:
+Okay, so the "it" is your mom's dementia diagnosis. That's a significant change for a family.
+
+When was your mom diagnosed with dementia? And what exactly is Michael supposed to be helping with at your mom's place, and how does his view of the situation differ from yours?
+
+[35] USER:
+Six months ago was the official word from the doctor, though I think I knew
+
+[36] AI:
+Okay, so the official dementia diagnosis for your mom came through six months ago, which is also when your sleep problems started. You mentioned you "knew" before the official word. What was that like for you leading up to the diagnosis?
+
+And circling back to Michael, what exactly is he supposed to be helping with at your mom's place, and how does his view of the situation differ from yours?
+
+[37] USER:
+Michael should be helping with
+
+[38] AI:
+Okay, Michael should be helping with...? Please tell me what he's supposed to be helping with.
+
+And how does his view of the situation differ from yours? Also, how do you feel when David gets frustrated about you not being around?
+
+[39] USER:
+Everything at Mom’s house is just... it’s a lot.
+
+[40] AI:
+It sounds like you're carrying a heavy load with your mom's situation. Can you tell me more about what "a lot" means? What specific things at your mom's house are you managing?
+
+And what is Michael supposed to be helping with, and how does his view of the situation differ from yours? Also, how do you feel when David gets frustrated about you not being around?
+
+
+========================================
+METRICS
+========================================
+Quality Score: 0.22 (FAIL)
+  Words/response: mean=34, median=33, std=15, range=[15-70]
+  Question-only ratio: 0%
+  Response types: question=20
+  Response type entropy: 0.00 (max=2.32)
+  Starter entropy: 4.22
+  Echo rate: 0.25
+  Patterns: 7 (vague_prompt, vague_prompt, echo_opener, vague_prompt, therapist_cliche)
+  Repetitive starters: none
+Coverage: 36%
+Missed: ['father', 'parents_status', 'maternal_grandparents', 'paternal_grandparents', 'aunts_uncles', 'children', 'nodal_events']

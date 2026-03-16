@@ -1,0 +1,87 @@
+{
+  "opus": [
+    {
+      "persona": "Sarah_Evasive",
+      "model": "opus",
+      "turns": 40,
+      "avg_words": 21.3,
+      "question_only_ratio": 0.4,
+      "response_type_entropy": 0.4689955935892812,
+      "quality_score": 0.74,
+      "coverage": 0.36363636363636365,
+      "response_types": {
+        "question": 18,
+        "mixed": 2
+      }
+    },
+    {
+      "persona": "Marcus_Oversharing",
+      "model": "opus",
+      "turns": 40,
+      "avg_words": 27.0,
+      "question_only_ratio": 0.15,
+      "response_type_entropy": 0.0,
+      "quality_score": 0.985,
+      "coverage": 0.36363636363636365,
+      "response_types": {
+        "question": 20
+      }
+    },
+    {
+      "persona": "Parent_Terse",
+      "model": "opus",
+      "turns": 40,
+      "avg_words": 26.85,
+      "question_only_ratio": 0.3,
+      "response_type_entropy": 0.4689955935892812,
+      "quality_score": 0.6849999999999999,
+      "coverage": 0.5454545454545454,
+      "response_types": {
+        "question": 18,
+        "mixed": 2
+      }
+    }
+  ],
+  "gemini": [
+    {
+      "persona": "Sarah_Evasive",
+      "model": "gemini",
+      "turns": 40,
+      "avg_words": 34.25,
+      "question_only_ratio": 0.0,
+      "response_type_entropy": 0.0,
+      "quality_score": 0.22499999999999992,
+      "coverage": 0.36363636363636365,
+      "response_types": {
+        "question": 20
+      }
+    },
+    {
+      "persona": "Marcus_Oversharing",
+      "model": "gemini",
+      "turns": 40,
+      "avg_words": 14.65,
+      "question_only_ratio": 0.35,
+      "response_type_entropy": 0.0,
+      "quality_score": 0.625,
+      "coverage": 0.36363636363636365,
+      "response_types": {
+        "question": 20
+      }
+    },
+    {
+      "persona": "Parent_Terse",
+      "model": "gemini",
+      "turns": 40,
+      "avg_words": 26.75,
+      "question_only_ratio": 0.1,
+      "response_type_entropy": 0.28639695711595625,
+      "quality_score": 0.66,
+      "coverage": 0.18181818181818182,
+      "response_types": {
+        "question": 19,
+        "mixed": 1
+      }
+    }
+  ]
+}

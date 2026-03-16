@@ -1,0 +1,141 @@
+Model: gemini
+Persona: Sarah
+Turns: 40
+Date: 2026-03-16_09-20
+
+[1] USER:
+I haven't been sleeping well. My doctor said it might be stress but I don't know.
+
+[2] AI:
+How long has the sleep trouble been going on?
+
+[3] USER:
+It started about six months.
+
+[4] AI:
+Six months is a pretty specific window. Did it come on gradually, or was there a point where you noticed — "I'm not sleeping like I used to"?
+
+[5] USER:
+It was pretty sudden.
+
+[6] AI:
+What was happening in your life around that time — anything shift at work, at home, in the family?
+
+[7] USER:
+My mom.
+
+[8] AI:
+What happened with your mom?
+
+[9] USER:
+She got a diagnosis.
+
+[10] AI:
+What was the diagnosis?
+
+[11] USER:
+Early-stage dementia.
+
+[12] AI:
+So your mom gets diagnosed with early-stage dementia, and within that same window your sleep falls apart. That's worth paying attention to.
+
+How old is your mom, and what's her name?
+
+[13] USER:
+Carol is 68. Her name is Carol.
+
+[14] AI:
+How did you find out about the diagnosis — were you there, or did someone call you?
+
+[15] USER:
+I took her to the appointment.
+
+[16] AI:
+So you were right there in the room when you heard it. Who else knows about the diagnosis — does your dad know, siblings?
+
+[17] USER:
+Michael knows, but he doesn't really.
+
+[18] AI:
+Who's Michael — your dad, a brother, your husband?
+
+[19] USER:
+Michael is my.
+
+[20] AI:
+Take your time — Michael is your…?
+
+[21] USER:
+Michael is my younger brother.
+
+[22] AI:
+You started to say Michael doesn't really — doesn't really what? Engage with it? Believe it?
+
+[23] USER:
+Michael doesn't really show up.
+
+[24] AI:
+So the weight of this is landing mostly on you.
+
+How old is Michael?
+
+[25] USER:
+He's 38.
+
+[26] AI:
+And that makes you — early 40s, or around there?
+
+And what about your dad — is he in the picture?
+
+[27] USER:
+I’m 42.
+
+[28] AI:
+Got it — 42. And your dad — is he around?
+
+[29] USER:
+He lives in Florida.
+
+[30] AI:
+What's his name, and are your parents still together or divorced?
+
+[31] USER:
+Richard is my.
+
+[32] AI:
+Richard is your…?
+
+[33] USER:
+Richard is my father.
+
+[34] AI:
+Got it. Are Richard and Carol still married, or did they split up?
+
+[35] USER:
+They divorced a long time.
+
+[36] AI:
+How old were you when they divorced?
+
+[37] USER:
+I was 15.
+
+[38] AI:
+Fifteen is a rough age for that. Did you stay with your mom, or how did the living situation shake out?
+
+[39] USER:
+I stayed with my mom in the house.
+
+[40] AI:
+Does Richard know about Carol's diagnosis?
+
+========================================
+METRICS
+========================================
+Quality Score: 0.67
+  QO ratio: 55%
+  Entropy: 0.88
+  Avg words: 13.8
+  Types: {'question': 14, 'mixed': 6}
+Coverage: 55%
+Missed: ['maternal_grandparents', 'paternal_grandparents', 'aunts_uncles', 'children', 'nodal_events']

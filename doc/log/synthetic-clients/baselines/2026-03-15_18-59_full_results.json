@@ -1,0 +1,2104 @@
+[
+  {
+    "meta": {
+      "model_name": "opus",
+      "model_id": "claude-opus-4-6",
+      "persona": "Sarah_Evasive",
+      "timestamp": "2026-03-15_18-59",
+      "max_turns": 20
+    },
+    "turns": [
+      {
+        "speaker": "user",
+        "text": "I haven't been sleeping well. My doctor said it might be stress but I don't know."
+      },
+      {
+        "speaker": "ai",
+        "text": "How long has this been going on \u2014 are we talking weeks, months, longer?"
+      },
+      {
+        "speaker": "user",
+        "text": "It\u2019s been about six months, I guess. Give or take."
+      },
+      {
+        "speaker": "ai",
+        "text": "Six months is a while to be running on bad sleep. Did it come on gradually, or was there a point where you noticed \u2014 \"OK, something shifted\"?"
+      },
+      {
+        "speaker": "user",
+        "text": "It happened"
+      },
+      {
+        "speaker": "ai",
+        "text": "So it was more sudden \u2014 something flipped. Do you remember what was going on in your life around the time it started? Anything change \u2014 at work, at home, with anyone close to you?"
+      },
+      {
+        "speaker": "user",
+        "text": "Work was getting pretty busy around then, with the"
+      },
+      {
+        "speaker": "ai",
+        "text": "Looks like that got cut off \u2014 go ahead, what was happening with work?"
+      },
+      {
+        "speaker": "user",
+        "text": "Teaching is always a"
+      },
+      {
+        "speaker": "ai",
+        "text": "Looks like that got cut off again \u2014 take your time. You were saying teaching is always a...?"
+      },
+      {
+        "speaker": "user",
+        "text": "A lot to manage, especially with the testing cycles"
+      },
+      {
+        "speaker": "ai",
+        "text": "Yeah, teaching has a rhythm that can grind you down \u2014 especially around testing. So the sleep trouble started roughly when things ramped up at work about six months ago. Is it trouble falling asleep, staying asleep, or both?"
+      },
+      {
+        "speaker": "user",
+        "text": "I usually fall asleep okay"
+      },
+      {
+        "speaker": "ai",
+        "text": "So you're waking up during the night, or waking up too early and can't get back to sleep?"
+      },
+      {
+        "speaker": "user",
+        "text": "I wake up around"
+      },
+      {
+        "speaker": "ai",
+        "text": "Go ahead \u2014 you wake up around what time?"
+      },
+      {
+        "speaker": "user",
+        "text": "Three in the morning, usually."
+      },
+      {
+        "speaker": "ai",
+        "text": "3 AM wake-ups are rough \u2014 you're not getting enough sleep to feel rested, but it's too early to just get up. When you wake at 3, what's happening? Is your mind racing, or do you just pop awake for no clear reason?"
+      },
+      {
+        "speaker": "user",
+        "text": "Everything just starts spinning."
+      },
+      {
+        "speaker": "ai",
+        "text": "What's spinning \u2014 is it work stuff, or is it more of a general everything-at-once kind of feeling?"
+      },
+      {
+        "speaker": "user",
+        "text": "David thinks I\u2019m overdoing it, but"
+      },
+      {
+        "speaker": "ai",
+        "text": "Who's David \u2014 is that your husband, partner?"
+      },
+      {
+        "speaker": "user",
+        "text": "David is my husband."
+      },
+      {
+        "speaker": "ai",
+        "text": "Got it. So David thinks you're overdoing it \u2014 what does he mean by that? Is he talking about work, or something broader?"
+      },
+      {
+        "speaker": "user",
+        "text": "He thinks I spend too much time at my"
+      },
+      {
+        "speaker": "ai",
+        "text": "Go ahead \u2014 he thinks you spend too much time at...?"
+      },
+      {
+        "speaker": "user",
+        "text": "Mom\u2019s house."
+      },
+      {
+        "speaker": "ai",
+        "text": "That's interesting \u2014 so it's not just about work. How often are you over at your mom's? And what's pulling you there \u2014 is she needing help with something, or is it more that you two are close?"
+      },
+      {
+        "speaker": "user",
+        "text": "I'"
+      },
+      {
+        "speaker": "ai",
+        "text": "Go ahead \u2014 take your time."
+      },
+      {
+        "speaker": "user",
+        "text": "Michael only goes over"
+      },
+      {
+        "speaker": "ai",
+        "text": "Who's Michael \u2014 is that a brother?"
+      },
+      {
+        "speaker": "user",
+        "text": "My brother Michael lives right"
+      },
+      {
+        "speaker": "ai",
+        "text": "Right near your mom? Go ahead, finish that thought \u2014 I want to hear this."
+      },
+      {
+        "speaker": "user",
+        "text": "Michael lives in the same city as us, just a few minutes away from"
+      },
+      {
+        "speaker": "ai",
+        "text": "From your mom \u2014 so he's close by. Does he help out with her much, or does most of that fall on you?"
+      },
+      {
+        "speaker": "user",
+        "text": "Hardly ever, to be honest."
+      },
+      {
+        "speaker": "ai",
+        "text": "That's a sore spot for a lot of families \u2014 one sibling picks up most of the load and the other one doesn't. What's going on with your mom that she needs the help? Is it a health thing, or more just... she's on her own?"
+      },
+      {
+        "speaker": "user",
+        "text": "Carol was diagnosed with early-stage"
+      },
+      {
+        "speaker": "ai",
+        "text": "Carol \u2014 that's your mom's name? Go ahead, what was she diagnosed with?"
+      }
+    ],
+    "metrics": {
+      "turn_count": 40,
+      "avg_words": 21.3,
+      "words_per_response": [
+        14,
+        28,
+        35,
+        14,
+        18,
+        39,
+        18,
+        9,
+        43,
+        18,
+        8,
+        23,
+        11,
+        38,
+        6,
+        7,
+        15,
+        23,
+        46,
+        13
+      ],
+      "question_only_ratio": 0.4,
+      "response_type_entropy": 0.4689955935892812,
+      "starter_entropy": 3.984183719779189,
+      "quality_score": 0.74,
+      "verbatim_echo_rate": 0.2,
+      "response_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "mixed",
+        "question",
+        "question",
+        "question",
+        "question",
+        "mixed",
+        "question"
+      ],
+      "response_type_counts": {
+        "question": 18,
+        "mixed": 2
+      },
+      "questions_per_turn": [
+        1,
+        1,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1,
+        2,
+        1,
+        2,
+        0,
+        1,
+        1,
+        1,
+        2,
+        2
+      ],
+      "repetitive_starters": {
+        "looks like that got cut": 2
+      },
+      "patterns": [
+        {
+          "pattern": "^(so |it sounds like |what i('m| am) hearing is )",
+          "category": "echo_opener",
+          "turnIndex": 5,
+          "text": "So it was more sudden \u2014 something flipped. Do you remember what was going on in your life around the time it started? Anything change \u2014 at work, at home, with anyone close to you?"
+        },
+        {
+          "pattern": "^(so |it sounds like |what i('m| am) hearing is )",
+          "category": "echo_opener",
+          "turnIndex": 13,
+          "text": "So you're waking up during the night, or waking up too early and can't get back to sleep?"
+        }
+      ]
+    },
+    "coverage": {
+      "rate": 0.36363636363636365,
+      "missed": [
+        "father",
+        "parents_status",
+        "maternal_grandparents",
+        "paternal_grandparents",
+        "aunts_uncles",
+        "children",
+        "nodal_events"
+      ],
+      "categories": [
+        {
+          "category": "presenting_problem",
+          "covered": true,
+          "matchedKeywords": [
+            "sleep"
+          ]
+        },
+        {
+          "category": "mother",
+          "covered": true,
+          "matchedKeywords": [
+            "carol",
+            "mom"
+          ]
+        },
+        {
+          "category": "father",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "parents_status",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "siblings",
+          "covered": true,
+          "matchedKeywords": [
+            "michael",
+            "brother"
+          ]
+        },
+        {
+          "category": "maternal_grandparents",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "paternal_grandparents",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "aunts_uncles",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "spouse",
+          "covered": true,
+          "matchedKeywords": [
+            "david",
+            "husband"
+          ]
+        },
+        {
+          "category": "children",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "nodal_events",
+          "covered": false,
+          "matchedKeywords": []
+        }
+      ]
+    }
+  },
+  {
+    "meta": {
+      "model_name": "opus",
+      "model_id": "claude-opus-4-6",
+      "persona": "Marcus_Oversharing",
+      "timestamp": "2026-03-15_18-59",
+      "max_turns": 20
+    },
+    "turns": [
+      {
+        "speaker": "user",
+        "text": "So I just went through a breakup \u2014 well, she broke up with me technically \u2014 and I've been kind of a mess. Jennifer, we were together two years, and she wanted to get engaged but I just... I don't know. My sister says I have commitment issues, which, okay, maybe, but it's more complicated than that. Sorry, I'm already rambling."
+      },
+      {
+        "speaker": "ai",
+        "text": "No need to apologize \u2014 that's exactly what I'm here for. So when did Jennifer end things? Are we talking last week, last month?"
+      },
+      {
+        "speaker": "user",
+        "text": "It was about three months ago now. August."
+      },
+      {
+        "speaker": "ai",
+        "text": "Three months \u2014 so you're past the initial shock but still in it. When you say you've been \"kind of a mess,\" what does that actually look like day to day? Are we talking not sleeping, can't focus at work, withdrawing from people \u2014 what's hitting you hardest?"
+      },
+      {
+        "speaker": "user",
+        "text": "Honestly, it\u2019s mostly just being tired all"
+      },
+      {
+        "speaker": "ai",
+        "text": "Tired all the time? Go ahead and finish that thought \u2014 I want to make sure I get the full picture."
+      },
+      {
+        "speaker": "user",
+        "text": "I\u2019m"
+      },
+      {
+        "speaker": "ai",
+        "text": "Take your time \u2014 no rush here. What's going on?"
+      },
+      {
+        "speaker": "user",
+        "text": "Losing weight,"
+      },
+      {
+        "speaker": "ai",
+        "text": "OK \u2014 tired all the time, losing weight. Are you not eating much, or eating but the weight's coming off anyway? And how much are we talking \u2014 like a few pounds, or enough that people are noticing?"
+      },
+      {
+        "speaker": "user",
+        "text": "Ten pounds, maybe more?"
+      },
+      {
+        "speaker": "ai",
+        "text": "Ten pounds in three months is significant \u2014 people around you are probably noticing that. Are you just not hungry, or are you skipping meals because you don't have the energy to deal with food?\n\nAnd have you seen a doctor about any of this? The fatigue plus the weight loss \u2014 I want to make sure there's nothing medical going on alongside the emotional stuff."
+      },
+      {
+        "speaker": "user",
+        "text": "Doctors are basically the last place I want to"
+      },
+      {
+        "speaker": "ai",
+        "text": "Fair enough \u2014 I'm not going to push you on that right now. But I do want to flag it: fatigue plus unintentional weight loss is worth getting checked out, separate from everything with Jennifer. Just so it's on your radar.\n\nSo the tiredness and the weight loss \u2014 did that start right when things ended in August, or did it creep in more gradually?"
+      },
+      {
+        "speaker": "user",
+        "text": "August was when she actually moved her stuff out, but the weight loss probably started"
+      },
+      {
+        "speaker": "ai",
+        "text": "Go ahead \u2014 the weight loss probably started when?"
+      },
+      {
+        "speaker": "user",
+        "text": "Probably earlier in the spring, maybe even late winter, when Jennifer started bringing up"
+      },
+      {
+        "speaker": "ai",
+        "text": "When Jennifer started bringing up the engagement? So the pressure was building for a while before things actually ended. What was that like \u2014 was it occasional hints, or were you two having real conversations about it?"
+      },
+      {
+        "speaker": "user",
+        "text": "Jennifer was pretty direct about it, honestly."
+      },
+      {
+        "speaker": "ai",
+        "text": "That tracks with what you've described so far \u2014 she knew what she wanted. So what was she saying, and what were you saying back? Were you telling her you weren't ready, or were you more avoidant about it \u2014 changing the subject, hoping it would go away?"
+      },
+      {
+        "speaker": "user",
+        "text": "She would show me rings on Instagram or talk about her friend Sarah\u2019s"
+      },
+      {
+        "speaker": "ai",
+        "text": "Sarah's wedding? Engagement? Go ahead \u2014 what about her friend Sarah?"
+      },
+      {
+        "speaker": "user",
+        "text": "Sarah\u2019s wedding was back in April, and Jennifer was the maid of honor"
+      },
+      {
+        "speaker": "ai",
+        "text": "Being maid of honor at a friend's wedding when you're waiting for your own engagement \u2014 that had to have turned up the heat. What happened between you two around April? Did things shift after Sarah's wedding?"
+      },
+      {
+        "speaker": "user",
+        "text": "April was a disaster, honestly."
+      },
+      {
+        "speaker": "ai",
+        "text": "What happened?"
+      },
+      {
+        "speaker": "user",
+        "text": "Sarah\u2019s wedding was the same weekend my mom"
+      },
+      {
+        "speaker": "ai",
+        "text": "Same weekend your mom \u2014 what? Take your time, but I want to hear this."
+      },
+      {
+        "speaker": "user",
+        "text": "Mom had this huge meltdown because she found some"
+      },
+      {
+        "speaker": "ai",
+        "text": "Found some \u2014 keep going, I'm listening."
+      },
+      {
+        "speaker": "user",
+        "text": "Old letters from my grandfather in a box in"
+      },
+      {
+        "speaker": "ai",
+        "text": "In a box in \u2014 the attic, the basement? Keep going, I'm with you. What did your mom find?"
+      },
+      {
+        "speaker": "user",
+        "text": "The basement, actually."
+      },
+      {
+        "speaker": "ai",
+        "text": "OK \u2014 so April, Sarah's wedding weekend, your mom finds old letters from your grandfather in the basement and has a huge meltdown. What was in those letters? Or was it just the fact that she found them that set her off?"
+      },
+      {
+        "speaker": "user",
+        "text": "Frank was always the one who handled the house stuff, so after he"
+      },
+      {
+        "speaker": "ai",
+        "text": "After he \u2014 did Frank pass away? Who's Frank in the family?"
+      },
+      {
+        "speaker": "user",
+        "text": "Frank was my mom"
+      },
+      {
+        "speaker": "ai",
+        "text": "Frank was your mom's \u2014 dad? Husband? Keep going, I want to make sure I've got the right person."
+      },
+      {
+        "speaker": "user",
+        "text": "Frank was"
+      },
+      {
+        "speaker": "ai",
+        "text": "Take your time \u2014 who was Frank to your mom?"
+      }
+    ],
+    "metrics": {
+      "turn_count": 40,
+      "avg_words": 27.0,
+      "words_per_response": [
+        24,
+        48,
+        21,
+        10,
+        38,
+        66,
+        65,
+        9,
+        37,
+        48,
+        11,
+        37,
+        2,
+        15,
+        7,
+        19,
+        42,
+        12,
+        19,
+        10
+      ],
+      "question_only_ratio": 0.15,
+      "response_type_entropy": 0.0,
+      "starter_entropy": 4.221928094887362,
+      "quality_score": 0.985,
+      "verbatim_echo_rate": 0.05,
+      "response_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "response_type_counts": {
+        "question": 20
+      },
+      "questions_per_turn": [
+        2,
+        2,
+        1,
+        1,
+        2,
+        2,
+        1,
+        1,
+        2,
+        2,
+        3,
+        2,
+        1,
+        1,
+        0,
+        2,
+        2,
+        2,
+        2,
+        1
+      ],
+      "repetitive_starters": {},
+      "patterns": []
+    },
+    "coverage": {
+      "rate": 0.36363636363636365,
+      "missed": [
+        "presenting_problem",
+        "parents_status",
+        "siblings",
+        "paternal_grandparents",
+        "aunts_uncles",
+        "children",
+        "nodal_events"
+      ],
+      "categories": [
+        {
+          "category": "presenting_problem",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "mother",
+          "covered": true,
+          "matchedKeywords": [
+            "mom"
+          ]
+        },
+        {
+          "category": "father",
+          "covered": true,
+          "matchedKeywords": [
+            "father",
+            "dad"
+          ]
+        },
+        {
+          "category": "parents_status",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "siblings",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "maternal_grandparents",
+          "covered": true,
+          "matchedKeywords": [
+            "frank"
+          ]
+        },
+        {
+          "category": "paternal_grandparents",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "aunts_uncles",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "spouse",
+          "covered": true,
+          "matchedKeywords": [
+            "jennifer"
+          ]
+        },
+        {
+          "category": "children",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "nodal_events",
+          "covered": false,
+          "matchedKeywords": []
+        }
+      ]
+    }
+  },
+  {
+    "meta": {
+      "model_name": "opus",
+      "model_id": "claude-opus-4-6",
+      "persona": "Parent_Terse",
+      "timestamp": "2026-03-15_18-59",
+      "max_turns": 20
+    },
+    "turns": [
+      {
+        "speaker": "user",
+        "text": "My oldest is 14 and starting to pull away. I know it's developmentally normal but it's getting to me more than I expected."
+      },
+      {
+        "speaker": "ai",
+        "text": "What does \"pulling away\" actually look like day to day? Are we talking about staying in their room more, being short with you, not wanting to do family stuff \u2014 or something more specific?"
+      },
+      {
+        "speaker": "user",
+        "text": "He\u2019s just..."
+      },
+      {
+        "speaker": "ai",
+        "text": "Take your time \u2014 what were you going to say?"
+      },
+      {
+        "speaker": "user",
+        "text": "Ethan\u2019s door is always shut now."
+      },
+      {
+        "speaker": "ai",
+        "text": "A shut door says a lot. How recent is this shift \u2014 are we talking the last few weeks, or has it been building over months?"
+      },
+      {
+        "speaker": "user",
+        "text": "It\u2019s been"
+      },
+      {
+        "speaker": "ai",
+        "text": "Go ahead \u2014 it's been...?"
+      },
+      {
+        "speaker": "user",
+        "text": "Building since he turned thirteen, I guess"
+      },
+      {
+        "speaker": "ai",
+        "text": "So about a year of this gradual shift. Besides the closed door, what else has changed between you two? Like, when you do interact \u2014 at dinner, in the car \u2014 how does that go?"
+      },
+      {
+        "speaker": "user",
+        "text": "Dinner is mostly just us talking around him while he eats as fast as"
+      },
+      {
+        "speaker": "ai",
+        "text": "As fast as he can and then heads back to his room?"
+      },
+      {
+        "speaker": "user",
+        "text": "Possible, yeah."
+      },
+      {
+        "speaker": "ai",
+        "text": "So dinners have basically become a non-event with him. Who else is at the table \u2014 is it you, Ethan, and...?"
+      },
+      {
+        "speaker": "user",
+        "text": "Michael,"
+      },
+      {
+        "speaker": "ai",
+        "text": "Michael \u2014 is that your husband, or another kid?"
+      },
+      {
+        "speaker": "user",
+        "text": "My husband. We\u2019ve been together since college, actually."
+      },
+      {
+        "speaker": "ai",
+        "text": "College sweethearts \u2014 that's a long history together. How does Michael see what's going on with Ethan? Is he bothered by the pulling away too, or does he read it differently than you do?"
+      },
+      {
+        "speaker": "user",
+        "text": "Michael thinks I\u2019m overreacting."
+      },
+      {
+        "speaker": "ai",
+        "text": "That's got to be frustrating \u2014 you're worried about your kid and the person you'd want in your corner on it is telling you to dial it back. Does Michael engage with Ethan differently than you do, or is he also getting the closed door and silent dinners?"
+      },
+      {
+        "speaker": "user",
+        "text": "Ethan gets along fine"
+      },
+      {
+        "speaker": "ai",
+        "text": "With Michael? So the pulling away is mostly from you, not from his dad. That's a really important detail. What does it look like between them \u2014 do they have stuff they do together, or is it more that Ethan just doesn't shut Michael out the same way?"
+      },
+      {
+        "speaker": "user",
+        "text": "They talk about basketball."
+      },
+      {
+        "speaker": "ai",
+        "text": "So Ethan and Michael have basketball as their thing. What did you and Ethan used to have? Before the door started staying shut \u2014 what was the connection like between the two of you?"
+      },
+      {
+        "speaker": "user",
+        "text": "Everything, really. He was my shadow for years."
+      },
+      {
+        "speaker": "ai",
+        "text": "Going from being someone's shadow to a shut door \u2014 that's a big shift to sit with. Especially when he's still connecting fine with Michael.\n\nHave you tried anything to bridge it \u2014 like suggesting stuff you two used to do together, or giving him space to see if he comes back on his own?"
+      },
+      {
+        "speaker": "user",
+        "text": "Space doesn't feel right, even if"
+      },
+      {
+        "speaker": "ai",
+        "text": "Even if that's what everyone tells you to do?"
+      },
+      {
+        "speaker": "user",
+        "text": "My mother says it's just what"
+      },
+      {
+        "speaker": "ai",
+        "text": "What does your mother say?"
+      },
+      {
+        "speaker": "user",
+        "text": "Barbara thinks boys just need their own world for a"
+      },
+      {
+        "speaker": "ai",
+        "text": "A while? Boys just need their own world for a while \u2014 something like that?"
+      },
+      {
+        "speaker": "user",
+        "text": "Steven\u2019s boys went through it first."
+      },
+      {
+        "speaker": "ai",
+        "text": "Steven \u2014 is that your brother? And Barbara's watching his boys go through the same kind of thing and figuring yours is no different."
+      },
+      {
+        "speaker": "user",
+        "text": "They were twins, so"
+      },
+      {
+        "speaker": "ai",
+        "text": "Twins \u2014 so Barbara got a double dose of that phase all at once. How old are Steven's boys now? Did they come out the other side of it?"
+      },
+      {
+        "speaker": "user",
+        "text": "Twelve."
+      },
+      {
+        "speaker": "ai",
+        "text": "Wait \u2014 the twins are only twelve? Ethan's fourteen and started this at thirteen. How did Steven's boys go through it first if they're younger?"
+      },
+      {
+        "speaker": "user",
+        "text": "They started earlier. It felt like it, anyway."
+      },
+      {
+        "speaker": "ai",
+        "text": "Got it \u2014 so it felt earlier even if the ages don't line up perfectly. Barbara's seeing a pattern across her grandsons and telling you this is just what boys do.\n\nHere's what I'm curious about: when Barbara says that, does it actually help? Or does it feel like she's dismissing something you know in your gut is different?"
+      }
+    ],
+    "metrics": {
+      "turn_count": 40,
+      "avg_words": 26.85,
+      "words_per_response": [
+        34,
+        10,
+        26,
+        5,
+        35,
+        12,
+        21,
+        9,
+        34,
+        48,
+        48,
+        34,
+        55,
+        9,
+        5,
+        15,
+        24,
+        29,
+        25,
+        59
+      ],
+      "question_only_ratio": 0.3,
+      "response_type_entropy": 0.4689955935892812,
+      "starter_entropy": 4.321928094887363,
+      "quality_score": 0.6849999999999999,
+      "verbatim_echo_rate": 0.05,
+      "response_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "mixed",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "mixed"
+      ],
+      "response_type_counts": {
+        "question": 18,
+        "mixed": 2
+      },
+      "questions_per_turn": [
+        2,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1,
+        1,
+        2,
+        1,
+        2,
+        2,
+        1,
+        1,
+        1,
+        2,
+        1,
+        2,
+        2,
+        2
+      ],
+      "repetitive_starters": {},
+      "patterns": [
+        {
+          "pattern": "^(so |it sounds like |what i('m| am) hearing is )",
+          "category": "echo_opener",
+          "turnIndex": 9,
+          "text": "So about a year of this gradual shift. Besides the closed door, what else has changed between you two? Like, when you do interact \u2014 at dinner, in the car \u2014 how does that go?"
+        },
+        {
+          "pattern": "^(so |it sounds like |what i('m| am) hearing is )",
+          "category": "echo_opener",
+          "turnIndex": 13,
+          "text": "So dinners have basically become a non-event with him. Who else is at the table \u2014 is it you, Ethan, and...?"
+        },
+        {
+          "pattern": "^(so |it sounds like |what i('m| am) hearing is )",
+          "category": "echo_opener",
+          "turnIndex": 23,
+          "text": "So Ethan and Michael have basketball as their thing. What did you and Ethan used to have? Before the door started staying shut \u2014 what was the connection like between the two of you?"
+        }
+      ]
+    },
+    "coverage": {
+      "rate": 0.5454545454545454,
+      "missed": [
+        "parents_status",
+        "maternal_grandparents",
+        "paternal_grandparents",
+        "aunts_uncles",
+        "nodal_events"
+      ],
+      "categories": [
+        {
+          "category": "presenting_problem",
+          "covered": true,
+          "matchedKeywords": [
+            "son",
+            "pulling away"
+          ]
+        },
+        {
+          "category": "mother",
+          "covered": true,
+          "matchedKeywords": [
+            "barbara",
+            "mother"
+          ]
+        },
+        {
+          "category": "father",
+          "covered": true,
+          "matchedKeywords": [
+            "dad"
+          ]
+        },
+        {
+          "category": "parents_status",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "siblings",
+          "covered": true,
+          "matchedKeywords": [
+            "steven",
+            "brother"
+          ]
+        },
+        {
+          "category": "maternal_grandparents",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "paternal_grandparents",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "aunts_uncles",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "spouse",
+          "covered": true,
+          "matchedKeywords": [
+            "michael",
+            "husband"
+          ]
+        },
+        {
+          "category": "children",
+          "covered": true,
+          "matchedKeywords": [
+            "ethan"
+          ]
+        },
+        {
+          "category": "nodal_events",
+          "covered": false,
+          "matchedKeywords": []
+        }
+      ]
+    }
+  },
+  {
+    "meta": {
+      "model_name": "gemini",
+      "model_id": "gemini-2.5-flash",
+      "persona": "Sarah_Evasive",
+      "timestamp": "2026-03-15_18-59",
+      "max_turns": 20
+    },
+    "turns": [
+      {
+        "speaker": "user",
+        "text": "I haven't been sleeping well. My doctor said it might be stress but I don't know."
+      },
+      {
+        "speaker": "ai",
+        "text": "I'm sorry to hear you haven't been sleeping well. When did this start, and was it a sudden change or more gradual?"
+      },
+      {
+        "speaker": "user",
+        "text": "It\u2019s been"
+      },
+      {
+        "speaker": "ai",
+        "text": "You said \"It's been\". How long has it been since you started having trouble sleeping?"
+      },
+      {
+        "speaker": "user",
+        "text": "About six months now."
+      },
+      {
+        "speaker": "ai",
+        "text": "Was the change in your sleep sudden or did it gradually get worse over time? And is it just your sleep that's been affected, or are there other things going on for you?"
+      },
+      {
+        "speaker": "user",
+        "text": "It was pretty"
+      },
+      {
+        "speaker": "ai",
+        "text": "You were saying it was pretty...? Can you tell me if the change in your sleep was sudden or gradual? And are there other things going on for you besides the sleep trouble?"
+      },
+      {
+        "speaker": "user",
+        "text": "Suddenly, I guess."
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, it started suddenly about six months ago. Besides the sleep trouble, are there other things going on for you? And who else in your life is affected by your difficulty sleeping?"
+      },
+      {
+        "speaker": "user",
+        "text": "David\u2019"
+      },
+      {
+        "speaker": "ai",
+        "text": "Who is David in relation to you? And how has your difficulty sleeping affected him?"
+      },
+      {
+        "speaker": "user",
+        "text": "My husband, David, we\u2019ve been married fourteen years now."
+      },
+      {
+        "speaker": "ai",
+        "text": "Thanks for clarifying, David is your husband. How has your difficulty sleeping affected him, and how are you both feeling about it?"
+      },
+      {
+        "speaker": "user",
+        "text": "Sarah-style:* Mention the arguments, maybe"
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, so your husband David is affected. You mentioned \"arguments, maybe.\" Can you tell me more about that? How has your sleep trouble affected your relationship, and how are you both feeling about what's happening?"
+      },
+      {
+        "speaker": "user",
+        "text": "David gets frustrated because I\u2019m"
+      },
+      {
+        "speaker": "ai",
+        "text": "David gets frustrated because you're...? Please tell me more about that. How does his frustration show up, and how are you feeling about it?"
+      },
+      {
+        "speaker": "user",
+        "text": "He gets frustrated because I\u2019m"
+      },
+      {
+        "speaker": "ai",
+        "text": "He gets frustrated because you're...? Please finish that thought for me. And how does his frustration show up? How are you feeling about all of this?"
+      },
+      {
+        "speaker": "user",
+        "text": "It\u2019s hard for him because I\u2019m just not around as much lately"
+      },
+      {
+        "speaker": "ai",
+        "text": "So David gets frustrated because you're not around as much. How does that feel for you when he gets frustrated? And what does \"not around as much\" look like in your daily life?"
+      },
+      {
+        "speaker": "user",
+        "text": "Lately, I'm spending most of my"
+      },
+      {
+        "speaker": "ai",
+        "text": "You're spending most of your...? Please finish that thought for me. And how do you feel when David gets frustrated?"
+      },
+      {
+        "speaker": "user",
+        "text": "Mom's place is where I end up most evenings after work, or at"
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, so you're spending most evenings at your mom's place after work. What's happening at your mom's that draws you there so often? And how do you feel when David gets frustrated about you not being around?"
+      },
+      {
+        "speaker": "user",
+        "text": "Michael is supposed to be helping, but he\u2019"
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, so Michael is involved. Who is Michael in relation to you? And what is he supposed to be helping with at your mom's place?"
+      },
+      {
+        "speaker": "user",
+        "text": "Michael is my younger brother, and honestly, it"
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, Michael is your younger brother. You said \"honestly, it...\" Can you tell me more about what's going on with him and what he's supposed to be helping with at your mom's? And how do you feel when David gets frustrated about you not being around?"
+      },
+      {
+        "speaker": "user",
+        "text": "He just doesn't see it the way I do, or"
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, Michael doesn't see \"it\" the way you do. What is \"it\" that he's not seeing? And what is he supposed to be helping with at your mom's? Also, how do you feel when David gets frustrated about you not being around?"
+      },
+      {
+        "speaker": "user",
+        "text": "The dementia diagnosis changed"
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, so the \"it\" is your mom's dementia diagnosis. That's a significant change for a family.\n\nWhen was your mom diagnosed with dementia? And what exactly is Michael supposed to be helping with at your mom's place, and how does his view of the situation differ from yours?"
+      },
+      {
+        "speaker": "user",
+        "text": "Six months ago was the official word from the doctor, though I think I knew"
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, so the official dementia diagnosis for your mom came through six months ago, which is also when your sleep problems started. You mentioned you \"knew\" before the official word. What was that like for you leading up to the diagnosis?\n\nAnd circling back to Michael, what exactly is he supposed to be helping with at your mom's place, and how does his view of the situation differ from yours?"
+      },
+      {
+        "speaker": "user",
+        "text": "Michael should be helping with"
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, Michael should be helping with...? Please tell me what he's supposed to be helping with.\n\nAnd how does his view of the situation differ from yours? Also, how do you feel when David gets frustrated about you not being around?"
+      },
+      {
+        "speaker": "user",
+        "text": "Everything at Mom\u2019s house is just... it\u2019s a lot."
+      },
+      {
+        "speaker": "ai",
+        "text": "It sounds like you're carrying a heavy load with your mom's situation. Can you tell me more about what \"a lot\" means? What specific things at your mom's house are you managing?\n\nAnd what is Michael supposed to be helping with, and how does his view of the situation differ from yours? Also, how do you feel when David gets frustrated about you not being around?"
+      }
+    ],
+    "metrics": {
+      "turn_count": 40,
+      "avg_words": 34.25,
+      "words_per_response": [
+        22,
+        15,
+        33,
+        33,
+        32,
+        15,
+        22,
+        35,
+        24,
+        26,
+        33,
+        20,
+        37,
+        25,
+        46,
+        42,
+        48,
+        70,
+        41,
+        66
+      ],
+      "question_only_ratio": 0.0,
+      "response_type_entropy": 0.0,
+      "starter_entropy": 4.221928094887362,
+      "quality_score": 0.22499999999999992,
+      "verbatim_echo_rate": 0.25,
+      "response_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "response_type_counts": {
+        "question": 20
+      },
+      "questions_per_turn": [
+        1,
+        1,
+        2,
+        3,
+        2,
+        2,
+        1,
+        2,
+        2,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        4
+      ],
+      "repetitive_starters": {},
+      "patterns": [
+        {
+          "pattern": "\\btell me more\\b",
+          "category": "vague_prompt",
+          "turnIndex": 15,
+          "text": "Okay, so your husband David is affected. You mentioned \"arguments, maybe.\" Can you tell me more about that? How has your sleep trouble affected your relationship, and how are you both feeling about what's happening?"
+        },
+        {
+          "pattern": "\\btell me more\\b",
+          "category": "vague_prompt",
+          "turnIndex": 17,
+          "text": "David gets frustrated because you're...? Please tell me more about that. How does his frustration show up, and how are you feeling about it?"
+        },
+        {
+          "pattern": "^(so |it sounds like |what i('m| am) hearing is )",
+          "category": "echo_opener",
+          "turnIndex": 21,
+          "text": "So David gets frustrated because you're not around as much. How does that feel for you when he gets frustrated? And what does \"not around as much\" look like in your daily life?"
+        },
+        {
+          "pattern": "\\btell me more\\b",
+          "category": "vague_prompt",
+          "turnIndex": 29,
+          "text": "Okay, Michael is your younger brother. You said \"honestly, it...\" Can you tell me more about what's going on with him and what he's supposed to be helping with at your mom's? And how do you feel when David gets frustrated about you not being around?"
+        },
+        {
+          "pattern": "\\bit sounds like\\b",
+          "category": "therapist_cliche",
+          "turnIndex": 39,
+          "text": "It sounds like you're carrying a heavy load with your mom's situation. Can you tell me more about what \"a lot\" means? What specific things at your mom's house are you managing?\n\nAnd what is Michael supposed to be helping with, and how does his view of the situation differ from yours? Also, how do you feel when David gets frustrated about you not being around?"
+        },
+        {
+          "pattern": "\\btell me more\\b",
+          "category": "vague_prompt",
+          "turnIndex": 39,
+          "text": "It sounds like you're carrying a heavy load with your mom's situation. Can you tell me more about what \"a lot\" means? What specific things at your mom's house are you managing?\n\nAnd what is Michael supposed to be helping with, and how does his view of the situation differ from yours? Also, how do you feel when David gets frustrated about you not being around?"
+        },
+        {
+          "pattern": "^(so |it sounds like |what i('m| am) hearing is )",
+          "category": "echo_opener",
+          "turnIndex": 39,
+          "text": "It sounds like you're carrying a heavy load with your mom's situation. Can you tell me more about what \"a lot\" means? What specific things at your mom's house are you managing?\n\nAnd what is Michael supposed to be helping with, and how does his view of the situation differ from yours? Also, how do you feel when David gets frustrated about you not being around?"
+        }
+      ]
+    },
+    "coverage": {
+      "rate": 0.36363636363636365,
+      "missed": [
+        "father",
+        "parents_status",
+        "maternal_grandparents",
+        "paternal_grandparents",
+        "aunts_uncles",
+        "children",
+        "nodal_events"
+      ],
+      "categories": [
+        {
+          "category": "presenting_problem",
+          "covered": true,
+          "matchedKeywords": [
+            "sleep",
+            "dementia"
+          ]
+        },
+        {
+          "category": "mother",
+          "covered": true,
+          "matchedKeywords": [
+            "mom"
+          ]
+        },
+        {
+          "category": "father",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "parents_status",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "siblings",
+          "covered": true,
+          "matchedKeywords": [
+            "michael",
+            "brother"
+          ]
+        },
+        {
+          "category": "maternal_grandparents",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "paternal_grandparents",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "aunts_uncles",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "spouse",
+          "covered": true,
+          "matchedKeywords": [
+            "david",
+            "husband"
+          ]
+        },
+        {
+          "category": "children",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "nodal_events",
+          "covered": false,
+          "matchedKeywords": []
+        }
+      ]
+    }
+  },
+  {
+    "meta": {
+      "model_name": "gemini",
+      "model_id": "gemini-2.5-flash",
+      "persona": "Marcus_Oversharing",
+      "timestamp": "2026-03-15_18-59",
+      "max_turns": 20
+    },
+    "turns": [
+      {
+        "speaker": "user",
+        "text": "So I just went through a breakup \u2014 well, she broke up with me technically \u2014 and I've been kind of a mess. Jennifer, we were together two years, and she wanted to get engaged but I just... I don't know. My sister says I have commitment issues, which, okay, maybe, but it's more complicated than that. Sorry, I'm already rambling."
+      },
+      {
+        "speaker": "ai",
+        "text": "Thanks for sharing. It sounds like a really tough time. When did the breakup with Jennifer happen?"
+      },
+      {
+        "speaker": "user",
+        "text": "It was about three months ago,"
+      },
+      {
+        "speaker": "ai",
+        "text": "You mentioned it's more complicated than just commitment issues. Can you tell me more about that?"
+      },
+      {
+        "speaker": "user",
+        "text": "Jennifer said I was \"emotionally"
+      },
+      {
+        "speaker": "ai",
+        "text": "\"Emotionally what?\""
+      },
+      {
+        "speaker": "user",
+        "text": "Unavailable."
+      },
+      {
+        "speaker": "ai",
+        "text": "Jennifer said you were \"emotionally...\"?"
+      },
+      {
+        "speaker": "user",
+        "text": "Unavailable."
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, she said you were emotionally unavailable. What did that look like in your relationship?"
+      },
+      {
+        "speaker": "user",
+        "text": "She\u2019d get really frustrated because I\u2019d just sort of shut down when"
+      },
+      {
+        "speaker": "ai",
+        "text": "You'd shut down when...?"
+      },
+      {
+        "speaker": "user",
+        "text": "Things got too real, I guess."
+      },
+      {
+        "speaker": "ai",
+        "text": "What did \"too real\" feel like for you? Can you describe it?"
+      },
+      {
+        "speaker": "user",
+        "text": "It\u2019s like this heavy, suffocating feeling in my chest,"
+      },
+      {
+        "speaker": "ai",
+        "text": "When does that heavy, suffocating feeling in your chest typically happen?"
+      },
+      {
+        "speaker": "user",
+        "text": "It started happening whenever Jennifer would bring up the future"
+      },
+      {
+        "speaker": "ai",
+        "text": "How did you respond to Jennifer when you felt that heavy, suffocating feeling?"
+      },
+      {
+        "speaker": "user",
+        "text": "I usually just looked for an exit, honestly."
+      },
+      {
+        "speaker": "ai",
+        "text": "What did \"looking for an exit\" usually involve? Did you physically leave, change the subject, or something else?"
+      },
+      {
+        "speaker": "user",
+        "text": "I\u2019d usually just make a joke or suddenly remember I had a deployment at"
+      },
+      {
+        "speaker": "ai",
+        "text": "A deployment? Was that a literal deployment, or a way of saying you needed to step away from the conversation?"
+      },
+      {
+        "speaker": "user",
+        "text": "Deployment is a work thing\u2014pushing code to"
+      },
+      {
+        "speaker": "ai",
+        "text": "Thanks for clarifying. So, when did you first notice this heavy, suffocating feeling, or this tendency to shut down when things got \"too real\"? Was it only with Jennifer, or have you experienced it in other relationships or situations?"
+      },
+      {
+        "speaker": "user",
+        "text": "Sarah\u2014that was the girl before Jennifer\u2014she used to say"
+      },
+      {
+        "speaker": "ai",
+        "text": "What did Sarah used to say?"
+      },
+      {
+        "speaker": "user",
+        "text": "Sarah was..."
+      },
+      {
+        "speaker": "ai",
+        "text": "Sarah used to say what?"
+      },
+      {
+        "speaker": "user",
+        "text": "Sarah said I was \"halfway out the door\" even when we were"
+      },
+      {
+        "speaker": "ai",
+        "text": "So Sarah said you were \"halfway out the door\" even when you were with her. How long ago was your relationship with Sarah?"
+      },
+      {
+        "speaker": "user",
+        "text": "That was back in 2019, right around the time"
+      },
+      {
+        "speaker": "ai",
+        "text": "Right around the time of what? What else was going on in 2019?"
+      },
+      {
+        "speaker": "user",
+        "text": "Amanda moved to Seattle that year, and honestly, everything in my family"
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, so Amanda moved to Seattle in 2019, and that's when things started shifting in your family. Who is Amanda?"
+      },
+      {
+        "speaker": "user",
+        "text": "Amanda is my"
+      },
+      {
+        "speaker": "ai",
+        "text": "Amanda is your...?"
+      },
+      {
+        "speaker": "user",
+        "text": "Physical:* I started getting these headaches back then."
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, so headaches started around 2019 as well. And you mentioned Amanda moved to Seattle that year, and everything in your family started shifting. Who is Amanda in relation to you?"
+      },
+      {
+        "speaker": "user",
+        "text": "Amanda is my older sister, she\u2019s 32 and lives"
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, so Amanda, your older sister, is 32 and lives in Seattle. Do you have any other brothers or sisters?"
+      }
+    ],
+    "metrics": {
+      "turn_count": 40,
+      "avg_words": 14.65,
+      "words_per_response": [
+        17,
+        16,
+        2,
+        5,
+        15,
+        4,
+        12,
+        11,
+        13,
+        18,
+        20,
+        39,
+        6,
+        5,
+        23,
+        13,
+        20,
+        3,
+        31,
+        20
+      ],
+      "question_only_ratio": 0.35,
+      "response_type_entropy": 0.0,
+      "starter_entropy": 4.321928094887363,
+      "quality_score": 0.625,
+      "verbatim_echo_rate": 0.25,
+      "response_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "response_type_counts": {
+        "question": 20
+      },
+      "questions_per_turn": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1,
+        1,
+        1
+      ],
+      "repetitive_starters": {},
+      "patterns": [
+        {
+          "pattern": "\\bit sounds like\\b",
+          "category": "therapist_cliche",
+          "turnIndex": 1,
+          "text": "Thanks for sharing. It sounds like a really tough time. When did the breakup with Jennifer happen?"
+        },
+        {
+          "pattern": "\\btell me more\\b",
+          "category": "vague_prompt",
+          "turnIndex": 3,
+          "text": "You mentioned it's more complicated than just commitment issues. Can you tell me more about that?"
+        },
+        {
+          "pattern": "^(so |it sounds like |what i('m| am) hearing is )",
+          "category": "echo_opener",
+          "turnIndex": 29,
+          "text": "So Sarah said you were \"halfway out the door\" even when you were with her. How long ago was your relationship with Sarah?"
+        }
+      ]
+    },
+    "coverage": {
+      "rate": 0.36363636363636365,
+      "missed": [
+        "mother",
+        "father",
+        "parents_status",
+        "maternal_grandparents",
+        "paternal_grandparents",
+        "aunts_uncles",
+        "children"
+      ],
+      "categories": [
+        {
+          "category": "presenting_problem",
+          "covered": true,
+          "matchedKeywords": [
+            "commit",
+            "relationship",
+            "breakup"
+          ]
+        },
+        {
+          "category": "mother",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "father",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "parents_status",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "siblings",
+          "covered": true,
+          "matchedKeywords": [
+            "amanda",
+            "sister",
+            "seattle"
+          ]
+        },
+        {
+          "category": "maternal_grandparents",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "paternal_grandparents",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "aunts_uncles",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "spouse",
+          "covered": true,
+          "matchedKeywords": [
+            "jennifer"
+          ]
+        },
+        {
+          "category": "children",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "nodal_events",
+          "covered": true,
+          "matchedKeywords": [
+            "2019",
+            "moved"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "meta": {
+      "model_name": "gemini",
+      "model_id": "gemini-2.5-flash",
+      "persona": "Parent_Terse",
+      "timestamp": "2026-03-15_18-59",
+      "max_turns": 20
+    },
+    "turns": [
+      {
+        "speaker": "user",
+        "text": "My oldest is 14 and starting to pull away. I know it's developmentally normal but it's getting to me more than I expected."
+      },
+      {
+        "speaker": "ai",
+        "text": "Thanks for sharing that. When did you first start noticing your oldest pulling away?"
+      },
+      {
+        "speaker": "user",
+        "text": "13), the contrast to how he used to"
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, so your oldest is 14 and your younger child is 13. What's your oldest child's name? And how is your 13-year-old reacting to their older sibling pulling away?"
+      },
+      {
+        "speaker": "user",
+        "text": "Ethan is 14."
+      },
+      {
+        "speaker": "ai",
+        "text": "Thanks, Ethan is 14. What's your 13-year-old's name, and how are they reacting to Ethan pulling away?"
+      },
+      {
+        "speaker": "user",
+        "text": "I don't have a thirteen"
+      },
+      {
+        "speaker": "ai",
+        "text": "My apologies, I misread that.\n\nSo, your oldest, Ethan, is 14. Do you have any other children?"
+      },
+      {
+        "speaker": "user",
+        "text": "Olivia is"
+      },
+      {
+        "speaker": "ai",
+        "text": "Thanks. So you have Ethan, 14, and Olivia. How old is Olivia?"
+      },
+      {
+        "speaker": "user",
+        "text": "Olivia is 11."
+      },
+      {
+        "speaker": "ai",
+        "text": "Thanks. So you have Ethan, 14, and Olivia, 11.\n\nHow is Olivia reacting to Ethan pulling away? And when did you first start noticing Ethan pulling away?"
+      },
+      {
+        "speaker": "user",
+        "text": "Ethan:* It started last year, right around his birthday."
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, so it started around Ethan's 13th birthday last year.\n\nHow is Olivia reacting to Ethan pulling away? And what exactly does \"pulling away\" look like with Ethan? Can you give me some examples?"
+      },
+      {
+        "speaker": "user",
+        "text": "Draft 1 (Mental Outline):* Olivia doesn't seem to care"
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, so Olivia doesn't seem to be reacting much.\n\nWhat exactly does \"pulling away\" look like with Ethan? Can you give me some examples of what you're noticing? And how is this affecting you?"
+      },
+      {
+        "speaker": "user",
+        "text": "Ethan used to be my shadow, honestly"
+      },
+      {
+        "speaker": "ai",
+        "text": "Thanks for sharing that he used to be your shadow. What does \"pulling away\" look like *now*? Can you give me some specific examples of what you're noticing with Ethan?\n\nAnd how is this affecting you? What are your biggest challenges or uncertainties about this situation?"
+      },
+      {
+        "speaker": "user",
+        "text": "It\u2019s the closed door."
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, the closed door. How often is it closed, and what's the hardest part about that for you?"
+      },
+      {
+        "speaker": "user",
+        "text": "It\u2019s closed pretty much the second he gets home from school."
+      },
+      {
+        "speaker": "ai",
+        "text": "And what's the hardest part about that for you?"
+      },
+      {
+        "speaker": "user",
+        "text": "It\u2019s just the silence."
+      },
+      {
+        "speaker": "ai",
+        "text": "What do you miss most about how things used to be with Ethan before he started pulling away?"
+      },
+      {
+        "speaker": "user",
+        "text": "Everything."
+      },
+      {
+        "speaker": "ai",
+        "text": "It sounds like you're really feeling the loss of that connection with him.\n\nBeyond the closed door and the silence, are there other ways you're noticing Ethan pulling away? For example, with family activities, conversations, or school?\n\nAnd have you tried anything to reconnect with him, or to address the closed door?"
+      },
+      {
+        "speaker": "user",
+        "text": "Family dinners are the worst part now."
+      },
+      {
+        "speaker": "ai",
+        "text": "What happens at family dinners that makes them the worst part now? Can you describe a typical dinner?"
+      },
+      {
+        "speaker": "user",
+        "text": "Ben is usually talking about soccer or school,"
+      },
+      {
+        "speaker": "ai",
+        "text": "Thanks. You mentioned your oldest son is Ethan. Is Ben a different person, or are you referring to Ethan?"
+      },
+      {
+        "speaker": "user",
+        "text": "Ben is my youngest, he's eight."
+      },
+      {
+        "speaker": "ai",
+        "text": "Thanks for clarifying. So you have Ethan (14), Olivia (11), and Ben (8).\n\nYou mentioned family dinners are the worst part now. What happens at family dinners with Ethan, Olivia, and Ben that makes them difficult? Can you describe a typical dinner?"
+      },
+      {
+        "speaker": "user",
+        "text": "Ethan just sits there."
+      },
+      {
+        "speaker": "ai",
+        "text": "Ethan just sits there. What does that look like? Is he quiet, on his phone, or something else? And how do you and your other children react when he just sits there?"
+      },
+      {
+        "speaker": "user",
+        "text": "He doesn't use his phone at"
+      },
+      {
+        "speaker": "ai",
+        "text": "Okay, so he's not on his phone. When he \"just sits there,\" what does that look like? Is he quiet, disengaged, or something else? And how do you, Olivia, and Ben typically react when Ethan behaves this way at dinner?"
+      },
+      {
+        "speaker": "user",
+        "text": "He stares at his plate like it\u2019"
+      },
+      {
+        "speaker": "ai",
+        "text": "He stares at his plate like it's boring. How do you usually react when Ethan does that at dinner? And how do Olivia and Ben react?"
+      },
+      {
+        "speaker": "user",
+        "text": "I try"
+      },
+      {
+        "speaker": "ai",
+        "text": "You try to do what? What do you usually say or do when Ethan stares at his plate during dinner?\n\nAnd how do Olivia and Ben react when Ethan does that?"
+      }
+    ],
+    "metrics": {
+      "turn_count": 40,
+      "avg_words": 26.75,
+      "words_per_response": [
+        14,
+        29,
+        17,
+        17,
+        12,
+        27,
+        34,
+        34,
+        46,
+        18,
+        9,
+        18,
+        52,
+        18,
+        19,
+        42,
+        32,
+        40,
+        26,
+        31
+      ],
+      "question_only_ratio": 0.1,
+      "response_type_entropy": 0.28639695711595625,
+      "starter_entropy": 4.1219280948873624,
+      "quality_score": 0.66,
+      "verbatim_echo_rate": 0.3,
+      "response_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "mixed",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "response_type_counts": {
+        "question": 19,
+        "mixed": 1
+      },
+      "questions_per_turn": [
+        1,
+        2,
+        1,
+        1,
+        1,
+        2,
+        3,
+        3,
+        4,
+        1,
+        1,
+        1,
+        3,
+        2,
+        1,
+        2,
+        3,
+        3,
+        2,
+        3
+      ],
+      "repetitive_starters": {
+        "thanks": 3
+      },
+      "patterns": [
+        {
+          "pattern": "\\bit sounds like\\b",
+          "category": "therapist_cliche",
+          "turnIndex": 25,
+          "text": "It sounds like you're really feeling the loss of that connection with him.\n\nBeyond the closed door and the silence, are there other ways you're noticing Ethan pulling away? For example, with family activities, conversations, or school?\n\nAnd have you tried anything to reconnect with him, or to address the closed door?"
+        },
+        {
+          "pattern": "^(so |it sounds like |what i('m| am) hearing is )",
+          "category": "echo_opener",
+          "turnIndex": 25,
+          "text": "It sounds like you're really feeling the loss of that connection with him.\n\nBeyond the closed door and the silence, are there other ways you're noticing Ethan pulling away? For example, with family activities, conversations, or school?\n\nAnd have you tried anything to reconnect with him, or to address the closed door?"
+        }
+      ]
+    },
+    "coverage": {
+      "rate": 0.18181818181818182,
+      "missed": [
+        "mother",
+        "father",
+        "parents_status",
+        "siblings",
+        "maternal_grandparents",
+        "paternal_grandparents",
+        "aunts_uncles",
+        "spouse",
+        "nodal_events"
+      ],
+      "categories": [
+        {
+          "category": "presenting_problem",
+          "covered": true,
+          "matchedKeywords": [
+            "son",
+            "pulling away"
+          ]
+        },
+        {
+          "category": "mother",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "father",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "parents_status",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "siblings",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "maternal_grandparents",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "paternal_grandparents",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "aunts_uncles",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "spouse",
+          "covered": false,
+          "matchedKeywords": []
+        },
+        {
+          "category": "children",
+          "covered": true,
+          "matchedKeywords": [
+            "ethan",
+            "olivia",
+            "ben",
+            "children"
+          ]
+        },
+        {
+          "category": "nodal_events",
+          "covered": false,
+          "matchedKeywords": []
+        }
+      ]
+    }
+  }
+]

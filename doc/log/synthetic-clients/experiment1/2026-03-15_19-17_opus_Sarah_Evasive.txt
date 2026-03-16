@@ -1,0 +1,145 @@
+Model: claude-opus-4-6
+Persona: Sarah_Evasive
+Turns: 40
+Date: 2026-03-15_19-17
+
+
+[1] USER:
+I haven't been sleeping well. My doctor said it might be stress but I don't know.
+
+[2] AI:
+Sleep trouble is one of those things that can creep up on you. How long has this been going on — are we talking weeks, months, longer?
+
+[3] USER:
+It’s been about six months
+
+[4] AI:
+Six months is a while to be running on bad sleep. Did it come on gradually, or was there a point where you noticed — "OK, something shifted"?
+
+[5] USER:
+It happened around the time we got the
+
+[6] AI:
+Go ahead — around the time you got the...?
+
+[7] USER:
+The diagnosis for my mother. It was official about six months ago.
+
+[8] AI:
+That's a big deal — and the timing lines up exactly with when the sleep trouble started. What was the diagnosis?
+
+[9] USER:
+Early-stage
+
+[10] AI:
+Take your time. Early-stage what?
+
+[11] USER:
+Dementia.
+
+[12] AI:
+That's a heavy one. And it landed right when your sleep fell apart — that's not a coincidence.
+
+Tell me what happened when the diagnosis came through. Who was there, and how did the family react?
+
+[13] USER:
+I was the one at the neurologist's office with her.
+
+[14] AI:
+So you were the one who heard it firsthand. Was anyone else with you, or was it just you and your mom?
+
+[15] USER:
+Just me
+
+[16] AI:
+So you were the one holding that information first. What did you do after the appointment — did you call someone, or did you sit with it for a while?
+
+[17] USER:
+David was at work, and the kids were at
+
+[18] AI:
+School? Take your time — David is your husband?
+
+[19] USER:
+Yeah, David is my husband.
+
+[20] AI:
+So you're sitting with this diagnosis, alone with your mom, and the two people you'd normally turn to aren't available. What did you do with it — did you tell David that night, or did you carry it for a while?
+
+[21] USER:
+Michael was supposed to come, but he had some
+
+[22] AI:
+Who's Michael?
+
+[23] USER:
+Michael is my younger brother.
+
+[24] AI:
+So Michael was supposed to be at the appointment but didn't make it. What happened — did he bail last minute, or was there something going on?
+
+[25] USER:
+Michael had some last-minute meeting he couldn't move, or at
+
+[26] AI:
+Or at least that's what he said?
+
+[27] USER:
+That’s what he told me
+
+[28] AI:
+There's something in how you said that. Is Michael the type to show up for things like this, or has there been a pattern of you being the one who's there?
+
+[29] USER:
+Usually, it
+
+[30] AI:
+Go ahead — usually it's...?
+
+[31] USER:
+I tend to be the one who handles the details.
+
+[32] AI:
+The one who handles the details — meaning the appointments, the logistics, the hard conversations. And Michael tends to... not.
+
+Has it always been that way between you two, or did it shift at some point?
+
+[33] USER:
+Ever since the divorce,
+
+[34] AI:
+Your parents' divorce? When was that?
+
+[35] USER:
+Nineteen ninety-seven was when everything
+
+[36] AI:
+When everything — what? What happened in '97?
+
+[37] USER:
+My father just left.
+
+[38] AI:
+Just left — as in, suddenly? How old were you and Michael when that happened?
+
+[39] USER:
+I was fifteen, so I was right in the middle of high school, and
+
+[40] AI:
+And Michael would've been — how much younger is he?
+
+
+========================================
+METRICS
+========================================
+Quality Score: 0.57 (FAIL)
+  Words/response: mean=19, median=18, std=12, range=[2-41]
+  Question-only ratio: 25%
+  Response types: question=18, mixed=2
+  Response type entropy: 0.47 (max=2.32)
+  Starter entropy: 4.12
+  Echo rate: 0.10
+  Patterns: 4 (echo_opener, echo_opener, echo_opener, echo_opener)
+  Repetitive starters: {'so you were the one': 2}
+Coverage: 45%
+Missed: ['father', 'maternal_grandparents', 'paternal_grandparents', 'aunts_uncles', 'children', 'nodal_events']

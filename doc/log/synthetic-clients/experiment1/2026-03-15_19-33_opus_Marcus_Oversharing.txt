@@ -1,0 +1,151 @@
+Model: claude-opus-4-6
+Persona: Marcus_Oversharing
+Turns: 40
+Date: 2026-03-15_19-33
+
+
+[1] USER:
+So I just went through a breakup — well, she broke up with me technically — and I've been kind of a mess. Jennifer, we were together two years, and she wanted to get engaged but I just... I don't know. My sister says I have commitment issues, which, okay, maybe, but it's more complicated than that. Sorry, I'm already rambling.
+
+[2] AI:
+No need to apologize — that's exactly what I want to hear. Two years is real. When did she end things?
+
+[3] USER:
+It was about three months ago, right around the end of October
+
+[4] AI:
+Three months ago — so you're still pretty deep in it. Was it a sudden thing, like one conversation and it was over? Or had things been building for a while?
+
+[5] USER:
+Jennifer kept bringing up the future, like where we
+
+[6] AI:
+Sounds like you got cut off — where were you going with that? Jennifer kept bringing up the future, like where you...?
+
+[7] USER:
+We would live or when
+
+[8] AI:
+When you'd get engaged, get married — that kind of thing? And how were you responding when she'd bring it up?
+
+[9] USER:
+Usually I’d just change the subject or tell her I wasn’t
+
+[10] AI:
+Wasn't ready? Wasn't sure? What were you telling her?
+
+[11] USER:
+I just told her
+
+[12] AI:
+Take your time — what did you tell her?
+
+[13] USER:
+I told her I wasn't ready for
+
+[14] AI:
+For that level of commitment yet. That's what you'd say — "not ready yet"?
+
+And I'm curious — when she'd push on it, what was going on inside you? Were you anxious, annoyed, shut down? What would actually happen for you in those moments?
+
+[15] USER:
+Honestly, I just felt trapped.
+
+[16] AI:
+Trapped is a specific feeling — not angry, not indifferent, but *trapped*. Like the walls closing in. Did that feeling show up early in the relationship, or only once she started talking about the future?
+
+[17] USER:
+It wasn’t there at the start.
+
+[18] AI:
+So something shifted. Do you remember roughly when it started — like six months in, a year in? Was there a specific conversation or moment where you first noticed that feeling?
+
+[19] USER:
+It was probably around the end of
+
+[20] AI:
+Around the end of — the first year? Summer? When was it?
+
+[21] USER:
+October 2021, actually. That was right at the start?
+
+[22] AI:
+Wait — if you two were together for two years and broke up end of October 2024, the relationship started around late 2022. So October 2021 is *before* Jennifer. That trapped feeling predates her.
+
+What was happening in October 2021?
+
+[23] USER:
+Frank died that month. My grandfather.
+
+[24] AI:
+Frank — your grandfather. That's a big one. And the trapped feeling started right around then, before Jennifer was ever in the picture.
+
+Was Frank on your mom's side or your dad's side?
+
+[25] USER:
+He was my
+
+[26] AI:
+Go ahead — he was your...?
+
+[27] USER:
+He was my mom
+
+[28] AI:
+Your mom's dad. So Frank was your maternal grandfather.
+
+What happened with Frank — was it sudden, or had he been sick for a while?
+
+[29] USER:
+Pneumonia.
+
+[30] AI:
+Pneumonia — so relatively quick then. Was he in the hospital long, or did it come on fast?
+
+[31] USER:
+It happened so fast.
+
+[32] AI:
+That's a lot — someone's here one week and gone the next. Were you close with Frank?
+
+[33] USER:
+October 2021 was a total blur, honestly.
+
+[34] AI:
+A blur — that tracks when someone dies that fast. You don't even get to brace for it.
+
+What was going on in your life at that point — were you working, in school? And were you close with Frank, or was it more the impact on your mom that hit you?
+
+[35] USER:
+Mom’
+
+[36] AI:
+Your mom's — go ahead, take your time.
+
+[37] USER:
+2021).
+
+[38] AI:
+It seems like your messages keep getting clipped. No rush — try again. You were saying something about your mom and 2021. What happened with her when Frank died?
+
+[39] USER:
+Patricia—that’s my mom—she just completely collapsed when it
+
+[40] AI:
+Patricia completely collapsed when Frank died. What did that look like — was she unable to function, not getting out of bed? Did she withdraw from the family?
+
+
+========================================
+METRICS
+========================================
+Quality Score: 0.85 (PASS)
+  Words/response: mean=25, median=24, std=12, range=[6-52]
+  Question-only ratio: 10%
+  Response types: mixed=12, question=7, observation=1
+  Response type entropy: 1.19 (max=2.32)
+  Starter entropy: 4.32
+  Echo rate: 0.15
+  Patterns: 1 (echo_opener)
+  Repetitive starters: none
+Coverage: 64%
+Missed: ['siblings', 'paternal_grandparents', 'aunts_uncles', 'children']

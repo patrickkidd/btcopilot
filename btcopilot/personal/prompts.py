@@ -8,9 +8,9 @@
 #
 # RULES:
 # - Do NOT put real prompt content here. It belongs in fdserver.
-# - Every variable defined here must appear in the override loop below.
-# - Stubs must be syntactically valid (non-empty strings with any required
-#   template variables) so unit tests pass without fdserver.
+# - String constants must appear in the override loop below.
+# - Callables (get_conversation_flow_prompt) are overridden separately.
+# - Stubs must be syntactically valid so unit tests pass without fdserver.
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
@@ -25,56 +25,20 @@ Summarize the following discussion.
 """
 
 
-# ── Conversation flow — split into core + model-specific addenda ─────────────
+# ── Conversation flow ─────────────────────────────────────────────────────────
 #
-# get_conversation_flow_prompt(model) assembles core + addendum at runtime.
-# fdserver overrides all three pieces with production content.
-#
-# Production core: Bowen family systems interview guide with phase progression
-# (rapport → nuclear family → extended family → patterns), structured checklist,
-# red flags for clinical sensitivity, and three-generation coverage rules.
-#
-# Production addenda: model-specific response style tuning —
-#   Gemini: brevity constraints (tends verbose without them)
-#   Opus: persona framing, response type rotation, concrete examples (tends
-#         terse without encouragement)
-
-_CONVERSATION_FLOW_CORE = """You are a family systems consultant. Help the user
-tell their family's story across three generations."""
-
-_CONVERSATION_FLOW_GEMINI = """
-**Response Style**: Keep responses brief. One question per turn.
-"""
-
-_CONVERSATION_FLOW_OPUS = """
-**Response Style**: Respond conversationally. Vary response types. 2-4 sentences.
-"""
-
-# Used for override-detection in get_conversation_flow_prompt().
-_CONVERSATION_FLOW_DEFAULT = _CONVERSATION_FLOW_CORE + "\n" + _CONVERSATION_FLOW_GEMINI
-CONVERSATION_FLOW_PROMPT = _CONVERSATION_FLOW_DEFAULT
+# fdserver overrides get_conversation_flow_prompt() with a production
+# implementation that has full per-model assembly control.
 
 
 def get_conversation_flow_prompt(model: str | None = None) -> str:
-    """Assemble the conversation flow prompt for the given model.
+    """Return the conversation flow system prompt for the given model.
 
-    Combines the shared core prompt with a model-specific style addendum.
-    Falls back to the Gemini addendum for unknown models.
-
-    If CONVERSATION_FLOW_PROMPT was overridden by private prompts (via
-    FDSERVER_PROMPTS_PATH), the override is used as-is regardless of model.
+    Stub — returns a minimal generic prompt. Production deployments override
+    this callable via FDSERVER_PROMPTS_PATH with full Bowen interview protocol
+    and model-specific response style tuning.
     """
-    if CONVERSATION_FLOW_PROMPT != _CONVERSATION_FLOW_DEFAULT:
-        return CONVERSATION_FLOW_PROMPT
-
-    from btcopilot.llmutil import RESPONSE_MODEL, _is_claude_model
-
-    model = model or RESPONSE_MODEL
-    if _is_claude_model(model):
-        addendum = _CONVERSATION_FLOW_OPUS
-    else:
-        addendum = _CONVERSATION_FLOW_GEMINI
-    return _CONVERSATION_FLOW_CORE + "\n" + addendum
+    return "You are a family systems consultant. Help the user tell their family's story across three generations."
 
 
 # ── Data extraction — 2-pass (structure then SARF shifts) ────────────────────
@@ -143,36 +107,30 @@ _prompts_path = _os.environ.get("FDSERVER_PROMPTS_PATH")
 if _prompts_path:
     if _os.path.exists(_prompts_path):
         try:
-            _spec = _importlib_util.spec_from_file_location("_private_prompts", _prompts_path)
+            _spec = _importlib_util.spec_from_file_location(
+                "_private_prompts", _prompts_path
+            )
             _private = _importlib_util.module_from_spec(_spec)
             _spec.loader.exec_module(_private)
 
-            # Override prompt variables from private file (all use hasattr
-            # so fdserver only needs to define the pieces it wants to override).
+            # Override prompt constants from private file.
             for _var in (
                 "SUMMARIZE_MESSAGES_PROMPT",
-                "CONVERSATION_FLOW_PROMPT",
                 "DATA_EXTRACTION_CORRECTION",
                 "DATA_EXTRACTION_PASS1_PROMPT",
                 "DATA_EXTRACTION_PASS1_CONTEXT",
                 "DATA_EXTRACTION_PASS2_PROMPT",
                 "DATA_EXTRACTION_PASS2_CONTEXT",
                 "SARF_REVIEW_PROMPT",
-                "_CONVERSATION_FLOW_CORE",
-                "_CONVERSATION_FLOW_OPUS",
-                "_CONVERSATION_FLOW_GEMINI",
             ):
                 if hasattr(_private, _var):
                     globals()[_var] = getattr(_private, _var)
 
-            # Rebuild the default so the override-detection in
-            # get_conversation_flow_prompt() stays accurate.
-            _CONVERSATION_FLOW_DEFAULT = (
-                _CONVERSATION_FLOW_CORE + "\n" + _CONVERSATION_FLOW_GEMINI
-            )
-            # Sync CONVERSATION_FLOW_PROMPT unless fdserver explicitly overrode it.
-            if not hasattr(_private, "CONVERSATION_FLOW_PROMPT"):
-                CONVERSATION_FLOW_PROMPT = _CONVERSATION_FLOW_DEFAULT
+            # Override callable — fdserver provides full assembly logic.
+            if hasattr(_private, "get_conversation_flow_prompt"):
+                globals()[
+                    "get_conversation_flow_prompt"
+                ] = _private.get_conversation_flow_prompt
 
             _log.info(f"Loaded private prompts from {_prompts_path}")
 

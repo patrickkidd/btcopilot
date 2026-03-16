@@ -1,0 +1,139 @@
+Model: opus
+Persona: Marcus
+Turns: 40
+Date: 2026-03-16_09-20
+
+[1] USER:
+So I just went through a breakup — well, she broke up with me technically — and I've been kind of a mess. Jennifer, we were together two years, and she wanted to get engaged but I just... I don't know. My sister says I have commitment issues, which, okay, maybe, but it's more complicated than that. Sorry, I'm already rambling.
+
+[2] AI:
+No need to apologize — rambling is actually useful here. You're giving me a lot to work with already.
+
+So Jennifer ended things because she wanted to get engaged and you weren't moving in that direction. When did the breakup happen?
+
+[3] USER:
+It was about three months.
+
+[4] AI:
+Three months ago. And when you say you've been "a mess" — what does that actually look like day to day? Are we talking trouble sleeping, can't focus at work, withdrawing from people? What's hitting you hardest?
+
+[5] USER:
+Work is the hardest part because I.
+
+[6] AI:
+Go ahead — you were saying work is the hardest part because...?
+
+[7] USER:
+I can't seem.
+
+[8] AI:
+Take your time. What's going on with work?
+
+[9] USER:
+Concentrating is impossible.
+
+[10] AI:
+That's really common after a breakup like this — your brain's chewing on something big and there's not much left over for everything else. Were you having any trouble concentrating before the breakup, or did this start right when things ended with Jennifer?
+
+[11] USER:
+Jennifer was the main thing for a while, but.
+
+[12] AI:
+But there's something else going on too?
+
+[13] USER:
+Adding details/rambling/oversharing):* My mom has.
+
+[14] AI:
+Go ahead — what's going on with your mom?
+
+[15] USER:
+My mom has been calling me basically every single day since Jennifer and I split up.
+
+[16] AI:
+Every day — that's a lot. What are those calls like? Is she checking on you, giving advice, talking about Jennifer specifically?
+
+[17] USER:
+She starts out asking how I’m doing, but it usually turns.
+
+[18] AI:
+Turns into what?
+
+[19] USER:
+It usually turns into her talking about how much she misses my grandmother,.
+
+[20] AI:
+When did your grandmother pass away?
+
+[21] USER:
+Helen died.
+
+[22] AI:
+Helen — that was your grandmother's name. When did she die?
+
+[23] USER:
+June 2022 was.
+
+[24] AI:
+June 2022 — so about two years ago. That's your mom's mother?
+
+[25] USER:
+Yeah, that was Mom's mother.
+
+[26] AI:
+So your mom calls to check on you after the breakup, but it keeps circling back to losing Helen two years ago. That's interesting — like your breakup opened something back up for her.
+
+What was your mom's relationship with Helen like?
+
+[27] USER:
+It was.
+
+[28] AI:
+Go ahead — what was it like between them?
+
+[29] USER:
+Intense is probably the best word for it.
+
+[30] AI:
+Intense how? Were they really close, or was it more conflictual — or both?
+
+[31] USER:
+Mom was basically Helen's shadow for those last.
+
+[32] AI:
+For those last — months? Years? How long was your mom caring for Helen before she passed?
+
+[33] USER:
+The last year was the worst part.
+
+[34] AI:
+So that last year before Helen died — what was going on? Was Helen sick, declining physically, or was it something else?
+
+[35] USER:
+Helen had Alzheimer.
+
+[36] AI:
+Alzheimer's — that's a brutal one for the whole family, especially the person doing the caregiving. Your mom was basically her shadow that last year — was she the primary caregiver, or were other family members helping out too?
+
+[37] USER:
+of response:* Period, question mark,.
+
+[38] AI:
+I lost you there — it sounds like something got cut off. Were you still telling me about who was helping care for Helen, or were you going in a different direction?
+
+[39] USER:
+My mom was.
+
+[40] AI:
+Go ahead — your mom was...?
+
+========================================
+METRICS
+========================================
+Quality Score: 0.67
+  QO ratio: 35%
+  Entropy: 0.97
+  Avg words: 19.6
+  Types: {'mixed': 8, 'question': 12}
+Coverage: 45%
+Missed: ['father', 'parents_status', 'siblings', 'paternal_grandparents', 'aunts_uncles', 'children']
