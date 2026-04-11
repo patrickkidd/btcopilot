@@ -81,10 +81,12 @@ fdserver internally maintains `_CONVERSATION_FLOW_CORE`, `_CONVERSATION_FLOW_OPU
 and `_CONVERSATION_FLOW_GEMINI` as module-level strings, but these are not exported.
 The callable has full control over per-model assembly.
 
-**Why per-model addenda**: Opus and Gemini have opposite natural tendencies.
-Gemini tends verbose (needs brevity constraints). Opus tends terse (needs
-encouragement to produce 2-4 sentence responses with conversational texture).
-Shared constraints that work for one model harm the other.
+**Why per-model addenda**: Opus and Gemini have different natural tendencies.
+Opus tends verbose and structured (bullet lists, multiple questions per turn,
+brochure-like tone) without strong constraints. Gemini tends brief but needs
+explicit quality guidance. Shared constraints that work for one model harm the
+other. See `btcopilot/doc/plans/CONVERSATIONAL_MODEL_QUALITY.md` for validation
+status per model.
 
 ### Override Mechanism
 

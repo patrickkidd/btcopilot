@@ -1,0 +1,63 @@
+Persona: Sarah
+Model: gemini-2.5-flash
+Date: 2026-04-11_10-18
+
+[1] USER:
+I haven't been sleeping well. My doctor said it might be stress but I don't know.
+
+[2] AI:
+When did your sleep problems start? Was it a sudden change or did it gradually get worse?
+
+[3] USER:
+It's hard to put into words what I mean.
+
+[4] AI:
+Can you remember a specific time or event when you first noticed your sleep was different?
+
+[5] USER:
+It started happening again about six months ago.
+
+[6] AI:
+You mentioned "again." Did this happen before, and if so, when was that, and what was going on in your life then?
+
+[7] USER:
+It's not something I think about much, honestly.
+
+[8] AI:
+Okay, let's focus on the last six months. Who else in your life is affected by your sleep problems, or by the stress your doctor mentioned?
+
+[9] USER:
+David is the one who notices it the most.
+
+[10] AI:
+Who is David to you? How does he notice your sleep isn't well, and what does he say about it?
+
+[11] USER:
+I couldn't really tell you why it happened that way.
+
+[12] AI:
+Okay. Let's stick to the facts about David. Who is David to you? And what does he specifically say or do that shows he notices your sleep isn't well?
+
+[13] USER:
+I guess it just never really came up before.
+
+[14] AI:
+Who is David? What does he say or do when he notices your sleep isn't well?
+
+[15] USER:
+I couldn't really tell you why it happened that way.
+
+[16] AI:
+Who is David in relation to you?
+
+[17] USER:
+I don't really have a lot to say about that.
+
+[18] AI:
+Okay. Let's shift. What have you tried so far to help with your sleep? Has it gotten better or worse over these last six months?
+
+[19] USER:
+I couldn't really tell you why it happened that way.
+
+[20] AI:
+Okay. What have you tried so far to help with your sleep? Has it gotten better or worse over these last six months, and what are your biggest challenges or uncertainties about the situation?

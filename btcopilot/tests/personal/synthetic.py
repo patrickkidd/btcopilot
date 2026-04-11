@@ -600,16 +600,56 @@ _MODE_WEIGHTS = {
 
 _SENTENCE_ENDINGS = re.compile(r'[.!?…]["\')\]]*\s')
 
+_EVASIVE_FALLBACKS = {
+    AttachmentStyle.DismissiveAvoidant: [
+        "It's not something I think about much, honestly.",
+        "I don't really have a lot to say about that.",
+        "I guess it just never really came up before.",
+        "I couldn't really tell you why it happened that way.",
+        "It's hard to put into words what I mean.",
+    ],
+    AttachmentStyle.AnxiousPreoccupied: [
+        "I just — I'm not even sure where to start.",
+        "There's so much going on, I don't know what's relevant.",
+        "I keep worrying that I'm not explaining this right.",
+        "It's complicated and I really don't want to get it wrong.",
+        "I keep going back and forth on how to say this.",
+    ],
+    AttachmentStyle.FearfulAvoidant: [
+        "I'm not sure I really want to go there right now.",
+        "That's something I don't know how to answer.",
+        "I'd rather not get into that if that's okay.",
+        "It's hard to talk about, I'll be honest about that.",
+        "I'm not really sure what to say about that.",
+    ],
+    AttachmentStyle.Secure: [
+        "That's a fair question, let me think about it.",
+        "I'm not entirely sure how to answer that one.",
+        "It's a lot more complex than it probably sounds.",
+        "I'd have to think about that one more carefully.",
+        "I honestly don't have a clear answer right now.",
+    ],
+}
+_used_fallbacks: set[str] = set()
+
+_TERMINAL_PUNCT = re.compile(r'[.!?…]["\')\]]*$')
+
 
 def _trim_to_sentence(text: str) -> str:
+    """Return text up through the last complete sentence.
+
+    Safety net only — with thinking disabled, Gemini should produce complete
+    sentences natively. This handles rare edge cases where output is truncated.
+    """
     if not text:
         return text
-    if text[-1] in ".!?…" or text.endswith('..."') or text.endswith("...'"):
+    if _TERMINAL_PUNCT.search(text):
         return text
+    # No terminal punctuation — find the last complete sentence boundary.
     matches = list(_SENTENCE_ENDINGS.finditer(text))
     if matches:
         return text[: matches[-1].end()].strip()
-    return text
+    return ""
 
 
 def simulate_user_response(
@@ -670,54 +710,44 @@ Start differently - with a fact, a name, a date, an emotion, or a question."""
 {arc_section}
 {opener_warning}
 
-**Length: ~{word_target} words.**
-
-**ABSOLUTE RULE — COMPLETE SENTENCES, MINIMUM 6 WORDS:** Every response must be at least 6 words and end with a period, question mark, or exclamation point. Never stop mid-thought. Evasiveness = a complete but minimal sentence: "I'm not really sure." / "It's hard to explain." / "I'd rather not get into that." / "Maybe, I don't know." — NEVER a stub like "It's." or "I just." or "Everything hits me at." These are incomplete thoughts, not evasion.
+**Length: ~{word_target} words. End every sentence with a period, question mark, or exclamation point.**
 
 **Conversation so far:**
 {history_text}
 
-**Your response:**"""
+**Your response (in character, no stage directions or meta-commentary):**"""
 
-    result = _trim_to_sentence(
-        gemini_text_sync(prompt, temperature=0.75, max_output_tokens=token_ceiling).strip()
-    )
-    if result and result[-1] not in ".!?…":
-        result += "."
+    def _generate_and_trim():
+        raw = gemini_text_sync(
+            prompt, temperature=0.75, max_output_tokens=token_ceiling, thinking_budget=0
+        )
+        if not raw:
+            return ""
+        text = raw.strip()
+        # Strip prompt leaks — Gemini sometimes echoes instruction fragments
+        text = re.sub(r"\*+[^*]+\*+:?\s*", "", text)  # **bold instructions**
+        text = re.sub(r"^\([^)]+\)\s*", "", text)  # (stage directions)
+        text = re.sub(r"^[A-Z][a-z]+:\s*", "", text)  # Label: prefixes
+        text = text.strip()
+        if not text:
+            return ""
+        return _trim_to_sentence(text)
+
+    result = _generate_and_trim()
     if len(result.split()) < 8:
-        _EVASIVE_FALLBACKS = {
-            AttachmentStyle.DismissiveAvoidant: [
-                "It's not something I think about much, honestly.",
-                "I don't really have a lot to say about that.",
-                "I guess it just never really came up before.",
-                "I couldn't really tell you why it happened that way.",
-                "It's hard to put into words what I mean.",
-            ],
-            AttachmentStyle.AnxiousPreoccupied: [
-                "I just — I'm not even sure where to start.",
-                "There's so much going on, I don't know what's relevant.",
-                "I keep worrying that I'm not explaining this right.",
-                "It's complicated and I really don't want to get it wrong.",
-                "I keep going back and forth on how to say this.",
-            ],
-            AttachmentStyle.FearfulAvoidant: [
-                "I'm not sure I really want to go there right now.",
-                "That's something I don't know how to answer.",
-                "I'd rather not get into that if that's okay.",
-                "It's hard to talk about, I'll be honest about that.",
-                "I'm not really sure what to say about that.",
-            ],
-            AttachmentStyle.Secure: [
-                "That's a fair question, let me think about it.",
-                "I'm not entirely sure how to answer that one.",
-                "It's a lot more complex than it probably sounds.",
-                "I'd have to think about that one more carefully.",
-                "I honestly don't have a clear answer right now.",
-            ],
-        }
+        # Retry once before falling back — Gemini sometimes succeeds on second attempt
+        result = _generate_and_trim()
+
+    if len(result.split()) < 8:
         style = persona.attachmentStyle
         fallbacks = _EVASIVE_FALLBACKS.get(style, _EVASIVE_FALLBACKS[AttachmentStyle.Secure])
-        result = random.choice(fallbacks)
+        # Avoid repeating recently used fallbacks
+        unused = [f for f in fallbacks if f not in _used_fallbacks]
+        if not unused:
+            _used_fallbacks.clear()
+            unused = fallbacks
+        result = random.choice(unused)
+        _used_fallbacks.add(result)
     return result
 
 
@@ -981,7 +1011,7 @@ def generate_persona(traits, attachment_style, sex, age):
 Return JSON:
 {{"name": "...", "background": "...", "presenting_problem": "...", "data_points": [{{"category": "...", "keywords": [...]}}]}}"""
 
-    response = gemini_text_sync(prompt, temperature=0.8)
+    response = gemini_text_sync(prompt, temperature=0.8, max_output_tokens=8192)
 
     # Parse JSON, stripping markdown code fences if present
     text = response.strip()

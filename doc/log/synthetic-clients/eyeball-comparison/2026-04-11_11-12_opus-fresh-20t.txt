@@ -1,0 +1,153 @@
+Persona: Melissa (anxious_preoccupied)
+Traits: ['oversharing', 'tangential']
+Model: claude-opus-4-6
+Date: 2026-04-11_11-12
+
+[1] USER (w=322):
+I just—I don’t even know where to start, honestly, because everything feels like it's on fire, but not like a real fire, more like that slow-burn thing where you’re just smelling smoke all day? My husband, Mark—he’s a Saint, really, or at least that’s what my mother says, but he stayed late at the office again Tuesday—or was it Wednesday? No, Tuesday, because that was the night Leo had soccer, and I forgot his cleats, which is just so me, I’m so scattered lately. Anyway, Mark didn't text back for three hours and I just *knew* he was finally fed up with me. I sent him fifteen texts—okay, maybe twenty—asking if we were okay, and then I started apologizing for things I did in 2012. I just feel this pit in my stomach, like a literal physical rock, and I can't stop talking to fill the silence because if I stop talking, I might have to actually think about why I can't keep a job. My last boss, Mr. Henderson—he was nice, but so strict about the filing, and I just think filing is so... arbitrary? I’m a people person! I love talking to the clients, maybe too much? He said I was 'distracting the office flow.' Is that a code for 'everyone hates you'? Because I’ve been feeling like my friends have a group chat without me. Oh! I should tell you about my sister Tiffany first, though, because she called from the facility again and she needs money for the commissary, but Mark says no, and now I’m caught in the middle again and I just want everyone to be happy, you know? I’m a helper! I’m a 'yes' person. But I’m just so tired and my heart won't stop racing and I think I might be dying, or maybe I just need a hobby? I tried knitting but I lost the needles in the couch cushions after two days.
+
+[2] AI (w=78):
+OK, I'm getting the picture — there's a lot of smoke in a lot of rooms right now. Let me slow us down and pull on one thread at a time so we don't lose anything.
+
+The racing heart, the pit in your stomach, the scattered feeling — when did all that start? Was there a version of you six months ago, a year ago, that wasn't running at this speed, or has it always been like this?
+
+[3] USER (w=11):
+It's complicated and I really don't want to get it wrong.
+
+[4] AI (w=63):
+You're not going to get it wrong. There's no test here — I'm just trying to understand what's been happening. If you get a date wrong or mix something up, we can fix it later. Just tell me what you remember.
+
+So that racing, scattered feeling — has it always been part of your life, or did it ramp up at some point?
+
+[5] USER (w=11):
+I keep going back and forth on how to say this.
+
+[6] AI (w=12):
+Say it however it comes out. We can sort through it together.
+
+[7] USER (w=10):
+I just — I'm not even sure where to start.
+
+[8] AI (w=53):
+You actually already told me a lot — more than you might realize. So let me pick a starting point for you.
+
+You mentioned your heart racing and that pit in your stomach. Can you put a rough timeframe on when that became a regular thing? Like, are we talking weeks, months, years?
+
+[9] USER (w=9):
+I keep worrying that I'm not explaining this right.
+
+[10] AI (w=37):
+You're explaining it fine — I'm tracking with you. But let me make this easier. I'll ask something specific and you just answer what comes to mind.
+
+That pit-in-your-stomach feeling — was it there a year ago?
+
+[11] USER (w=10):
+There's so much going on, I don't know what's relevant.
+
+[12] AI (w=33):
+That's my job — figuring out what's relevant. You just tell me what happened and I'll connect the dots.
+
+So let's keep it simple: one year ago today, were you feeling this way?
+
+[13] USER (w=11):
+It's complicated and I really don't want to get it wrong.
+
+[14] AI (w=63):
+You're not going to get it wrong. There's no test here — I'm just trying to understand what's been happening. If you get a date wrong or mix something up, we can fix it later. Just tell me what you remember.
+
+So that racing, scattered feeling — has it always been part of your life, or did it ramp up at some point?
+
+[15] USER (w=9):
+I keep worrying that I'm not explaining this right.
+
+[16] AI (w=77):
+Hey — you're doing fine. Honestly, the way you described everything in that first message? I got more useful information from that than you think. You gave me names, situations, timelines — that's exactly what I need.
+
+So let me just work with what you already told me and check a few things. You mentioned you can't keep a job, and your last boss Mr. Henderson let you go. When did that happen — roughly what month?
+
+[17] USER (w=8):
+Mr. Henderson let me go back in April.
+
+[18] AI (w=29):
+OK, April. So that's about two months ago. Was the racing heart and that pit-in-your-stomach feeling already happening before April, or did losing the job kick it into gear?
+
+[19] USER (w=10):
+I just — I'm not even sure where to start.
+
+[20] AI (w=56):
+You already started — you told me Mr. Henderson let you go in April. That's a real anchor point. So let me ask it this way:
+
+Before April, before the job ended — were you and Mark doing okay? Like, was the thing with the texts and the apologizing already happening, or did that come after?
+
+[21] USER (w=13):
+Mark and I have been like this for a long time, I think.
+
+[22] AI (w=8):
+How long have you and Mark been married?
+
+[23] USER (w=11):
+I keep going back and forth on how to say this.
+
+[24] AI (w=51):
+You've been going back and forth for a few turns now, and that's okay — but I wonder if the thing that's hard to say is actually the thing that matters most here.
+
+So forget about saying it right. Just say it wrong. How long have you and Mark been together?
+
+[25] USER (w=10):
+There's so much going on, I don't know what's relevant.
+
+[26] AI (w=77):
+I notice you keep circling back to that same worry — that you'll say the wrong thing, or you don't know where to start. That's actually telling me something useful all by itself. That feeling of being frozen, like every direction is the wrong one? That's part of what's going on with you right now.
+
+So let me make this as easy as possible. Just a number — how many years have you and Mark been married?
+
+[27] USER (w=8):
+Eleven years in October, though sometimes it feels.
+
+[28] AI (w=30):
+Eleven years — that's a real stretch of time together. And you trailed off there. "Sometimes it feels..." like what? Longer? Like you're roommates? Like you're holding it together alone?
+
+[29] USER (w=10):
+I just — I'm not even sure where to start.
+
+[30] AI (w=65):
+You've said that a few times now, and I want to be straight with you — I think you *do* know where to start, but something's making it hard to land on it.
+
+So I'm not going to ask you to pick. I'm going to pick. You mentioned your sister Tiffany calling from "the facility" and needing money. What kind of facility is Tiffany in?
+
+[31] USER (w=11):
+I keep going back and forth on how to say this.
+
+[32] AI (w=22):
+Tiffany. Your sister. You said she's in a facility. Is it rehab, jail, a hospital — which one?
+
+Just that one word.
+
+[33] USER (w=11):
+Rehab. It’s her third time being there, which just feels like.
+
+[34] AI (w=21):
+Third time in rehab — that's heavy for the whole family, not just Tiffany. When did she go in this time?
+
+[35] USER (w=9):
+She went in right after Easter, so maybe April.
+
+[36] AI (w=61):
+So April was a rough month — you lost your job *and* Tiffany went into rehab, both around the same time. That's a lot of ground shifting under your feet at once.
+
+Was Tiffany's situation part of what was going on when Mr. Henderson said you were "distracting the office flow"? Like, were you dealing with Tiffany stuff during work hours?
+
+[37] USER (w=9):
+thought
+'s Internal State:* She's feeling defensive but also.
+
+[38] AI (w=56):
+You got quiet there. I'm not asking to blame you for the job — I'm asking because when a sister goes into rehab for the third time, that takes up a lot of mental space. It would for anyone. Were you fielding calls from Tiffany, or from your parents about Tiffany, while you were at work?
+
+[39] USER (w=11):
+It's complicated and I really don't want to get it wrong.
+
+[40] AI (w=34):
+I'm going to let you off the hook on getting it right, because you don't need to. Here's a yes or no question:
+
+Were you getting calls about Tiffany while you were at work?

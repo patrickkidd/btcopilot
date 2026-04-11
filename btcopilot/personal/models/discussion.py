@@ -67,10 +67,16 @@ class Discussion(db.Model, ModelMixin):
     user = relationship("User")
     diagram = relationship("Diagram", back_populates="discussions")
     statements = relationship(
-        "Statement", back_populates="discussion", order_by="Statement.order"
+        "Statement",
+        back_populates="discussion",
+        order_by="Statement.order",
+        cascade="all, delete-orphan",
     )
     speakers = relationship(
-        "Speaker", foreign_keys="Speaker.discussion_id", back_populates="discussion"
+        "Speaker",
+        foreign_keys="Speaker.discussion_id",
+        back_populates="discussion",
+        cascade="all, delete-orphan",
     )
 
     chat_user_speaker_id = Column(
