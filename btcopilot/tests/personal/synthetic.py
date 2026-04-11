@@ -672,7 +672,7 @@ Start differently - with a fact, a name, a date, an emotion, or a question."""
 
 **Length: ~{word_target} words.**
 
-**ABSOLUTE RULE — COMPLETE SENTENCES ONLY:** Every response MUST end with a period, question mark, or exclamation point. NEVER end mid-phrase. If you want to be guarded or evasive, use a complete but minimal sentence: "I don't know." / "It's complicated." / "I'd rather not get into that." / "Maybe." — NOT a fragment like "I just..." or "It was kind of".
+**ABSOLUTE RULE — COMPLETE SENTENCES, MINIMUM 6 WORDS:** Every response must be at least 6 words and end with a period, question mark, or exclamation point. Never stop mid-thought. Evasiveness = a complete but minimal sentence: "I'm not really sure." / "It's hard to explain." / "I'd rather not get into that." / "Maybe, I don't know." — NEVER a stub like "It's." or "I just." or "Everything hits me at." These are incomplete thoughts, not evasion.
 
 **Conversation so far:**
 {history_text}
@@ -684,6 +684,40 @@ Start differently - with a fact, a name, a date, an emotion, or a question."""
     )
     if result and result[-1] not in ".!?…":
         result += "."
+    if len(result.split()) < 8:
+        _EVASIVE_FALLBACKS = {
+            AttachmentStyle.DismissiveAvoidant: [
+                "It's not something I think about much, honestly.",
+                "I don't really have a lot to say about that.",
+                "I guess it just never really came up before.",
+                "I couldn't really tell you why it happened that way.",
+                "It's hard to put into words what I mean.",
+            ],
+            AttachmentStyle.AnxiousPreoccupied: [
+                "I just — I'm not even sure where to start.",
+                "There's so much going on, I don't know what's relevant.",
+                "I keep worrying that I'm not explaining this right.",
+                "It's complicated and I really don't want to get it wrong.",
+                "I keep going back and forth on how to say this.",
+            ],
+            AttachmentStyle.FearfulAvoidant: [
+                "I'm not sure I really want to go there right now.",
+                "That's something I don't know how to answer.",
+                "I'd rather not get into that if that's okay.",
+                "It's hard to talk about, I'll be honest about that.",
+                "I'm not really sure what to say about that.",
+            ],
+            AttachmentStyle.Secure: [
+                "That's a fair question, let me think about it.",
+                "I'm not entirely sure how to answer that one.",
+                "It's a lot more complex than it probably sounds.",
+                "I'd have to think about that one more carefully.",
+                "I honestly don't have a clear answer right now.",
+            ],
+        }
+        style = persona.attachmentStyle
+        fallbacks = _EVASIVE_FALLBACKS.get(style, _EVASIVE_FALLBACKS[AttachmentStyle.Secure])
+        result = random.choice(fallbacks)
     return result
 
 
