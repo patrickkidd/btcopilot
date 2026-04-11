@@ -50,8 +50,9 @@
 |---|------|------|-----------|-------|
 | 1 | 2026-02-16 | Sarah | Patrick, Kathy, Guillermo, Laura | [deliberation](meetings/2026-02-16-sarah-round1-calibration-deliberation.md) / [notes](meetings/2026-02-16-sarah-round1-calibration-notes.md) |
 | 2 | 2026-02-23 | Sarah | Patrick, Kathy, Guillermo (Laura traveling) | [deliberation](meetings/2026-02-23-sarah-round1-calibration-meeting2-deliberation.md) / [notes](meetings/2026-02-23-sarah-round1-calibration-meeting2-notes.md) |
-| 3 | 2026-03-30 | Arthur | Patrick, Kathy, Guillermo, Laura | [deliberation](meetings/2026-03-30-arthur-round1-calibration-deliberation.md) / [notes](meetings/2026-03-30-arthur-round1-calibration-notes.md) |
-| 4 | 2026-04-13 | Arthur (cont.) | TBD | |
+| 3 | 2026-03-16 | Sarah (tools review) | Patrick, Kathy, Guillermo, Laura | [deliberation](meetings/2026-03-16-sarah-round1-calibration-meeting3-deliberation.md) / [notes](meetings/2026-03-16-sarah-round1-calibration-meeting3-notes.md) |
+| 4 | 2026-03-30 | Arthur | Patrick, Kathy, Guillermo, Laura | [deliberation](meetings/2026-03-30-arthur-round1-calibration-deliberation.md) / [notes](meetings/2026-03-30-arthur-round1-calibration-notes.md) |
+| 5 | 2026-04-13 | Arthur (cont.) | TBD | |
 
 ## Session Log
 
@@ -60,4 +61,5 @@
 | 2026-02 | All 4 coders completed independent coding of Sarah case |
 | 2026-02-16 | Meeting 1: reviewed statements 1-4, established initial coding rules, identified core methodological tensions (mechanism attribution, granularity vs end-state) |
 | 2026-02-23 | Meeting 2: reviewed statements 1844-1846, strengthened over-functioning consensus, established deduplication/parent-adding/moved-vs-distance rules |
-| 2026-03-30 | Meeting 3: Arthur case started, reviewed statements 1-6, established functioning down definition ("unsure of oneself"), spouse pair bond rule, date conventions. Key open questions: conflict vs distance definitions, defined self scope, symptom vs anxiety |
+| 2026-03-16 | Meeting 3: Sarah tools review — introduced AI calibration and lit review tools, established cumulative timeline as primary comparison unit, blind coding protocol, Laura aligned on deduplication rule |
+| 2026-03-30 | Meeting 4: Arthur case started, reviewed statements 1-6, established functioning down definition ("unsure of oneself"), spouse pair bond rule, date conventions. Key open questions: conflict vs distance definitions, defined self scope, symptom vs anxiety |

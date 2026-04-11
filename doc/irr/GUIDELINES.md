@@ -84,4 +84,4 @@ The "same" value (for symptom, anxiety, functioning) represents a second data po
 |------|---------|---------|
 | 2026-02-16 | Meeting 1 | Initial rules from Sarah Round 1 calibration |
 | 2026-02-23 | Meeting 2 | Added: moved vs distance, preemptive parent addition, person field directionality, deduplication clarification, "same" value usage |
-| 2026-03-30 | Meeting 3 (Arthur) | Added: spouse pair bond rule, functioning down indicators, anxiety-functioning reciprocity, date placeholder convention |
+| 2026-03-30 | Meeting 4 (Arthur) | Added: spouse pair bond rule, functioning down indicators, anxiety-functioning reciprocity, date placeholder convention |
