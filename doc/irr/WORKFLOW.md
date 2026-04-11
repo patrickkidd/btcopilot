@@ -18,6 +18,7 @@ Examples:
 | Raw transcript | — | Irreplaceable ground truth, always committed |
 | Deliberation record | `DELIBERATION_TEMPLATE.md` | Lossless structured transformation of the transcript |
 | Meeting notes | `TEMPLATE.md` | Conclusions-only quick reference |
+| Results snapshot | — | Point-in-time aggregation in `results/YYYY-MM-DD-irr-results.md`. **One per meeting, never edit previous snapshots.** |
 
 ## Deliberation Record: Purpose and Quality Standard
 
@@ -90,8 +91,9 @@ Claude Code will:
 - Create **deliberation record** (per-statement: positions, reasoning, arguments, position evolution, resolution, ambiguity signals, rules). Refer to statements by their database ID (e.g. "Statement 1844"), not by ordinal index (e.g. "Statement 1"). Must include ALL arguments, heuristics, anecdotes, references, process observations, and meta-discussions from the transcript. See the exhaustiveness rule above.
 - Create **meeting notes** (conclusions only: disagreement tables, resolutions, rules, action items)
 - Update GUIDELINES.md with new rules
-- Update PROGRESS.md
-- Create a new **results snapshot** in `results/` (see below)
+- Update PROGRESS.md (meeting log + session log)
+- Update README.md (meetings table + results snapshots table)
+- Create a new **results snapshot** in `results/` (see Step 4)
 
 ### 3. Review the output
 
@@ -102,15 +104,33 @@ Check:
 - `GUIDELINES.md` — rules captured correctly?
 - `PROGRESS.md` — status updated?
 
-### 4. Create results snapshot
+### 4. Create results snapshot (MANDATORY — do not defer or skip)
 
 Create a new timestamped results snapshot: `results/YYYY-MM-DD-irr-results.md`
 
-Each snapshot is a full point-in-time aggregation of all IRR products: study maturity, measurement approach status, quantitative metrics, coding rules registry, unresolved ambiguities, coder status, and product pipeline. New file each time — never edit a previous snapshot.
+**Results snapshots are cumulative.** Each snapshot is a full point-in-time aggregation of ALL prior IRR products: study maturity, measurement approach status, quantitative metrics, coding rules registry (all rules from all meetings up to this point), unresolved ambiguities (updated with current status), coder status (cumulative attendance and cases), and product pipeline. The snapshot must be self-contained — a reader should be able to understand the full state of the study from this file alone without reading previous snapshots.
 
-Update the README.md Results Snapshots table to link to the new snapshot.
+**Rules:**
+- New file each time — never edit a previous snapshot
+- Must incorporate all findings from the current meeting AND all prior meetings
+- If processing meetings out of chronological order, create the missing snapshot first, then verify the later snapshot is consistent with it
+- Update the README.md Results Snapshots table to link to the new snapshot
 
-### 5. Commit
+### 5. Verify completeness (MANDATORY)
+
+Before committing, verify every artifact exists. **All 7 must be present or the processing is incomplete:**
+
+| # | Artifact | Location | Check |
+|---|----------|----------|-------|
+| 1 | Raw transcript | `meetings/YYYY-MM-DD-*-transcript.*` | File exists |
+| 2 | Deliberation record | `meetings/YYYY-MM-DD-*-deliberation.md` | File exists, exhaustiveness audit done |
+| 3 | Meeting notes | `meetings/YYYY-MM-DD-*-notes.md` | File exists |
+| 4 | Results snapshot | `results/YYYY-MM-DD-irr-results.md` | File exists, cumulative, self-contained |
+| 5 | GUIDELINES.md | Updated revision history row | New rules added if any |
+| 6 | PROGRESS.md | Meeting log + session log rows | Meeting entry added |
+| 7 | README.md | Meetings table + results table rows | Both tables updated |
+
+### 6. Commit
 
 Commit all artifacts: transcript, deliberation record, meeting notes, results snapshot, and updated GUIDELINES.md / PROGRESS.md / README.md.
 

@@ -46,7 +46,7 @@ Unchanged. No re-coding round has occurred.
 |---|------|--------|-----------|------------|---------------------|
 | 1 | One shift per event, one event per atomic shift | Meeting 1, Statement 3 | Unanimous | High | No |
 | 2 | Two separate shifts for different people in one statement | Meeting 1, Statement 1 | Unanimous | High | No |
-| 3 | Deduplication: same timestamp + person + shift = duplicate; no re-entry for re-mentions | Meeting 1 + Meeting 2 (reinforced) | Unanimous | High | No |
+| 3 | Deduplication: same timestamp + person + shift = duplicate; no re-entry for re-mentions | Meeting 1 + Meeting 2 (reinforced) + Meeting 3 (Laura aligned) | Unanimous | High | No |
 | 4 | First sibling naming → add common parent pair bond | Meeting 1, Statement 3 | Unanimous | High | No |
 | 5 | Semantic similarity between description tense and timestamp | Meeting 1, Statement 4 | Unanimous | Moderate | No |
 | 6 | Don't change reviewed case data | Meeting 1, process | Unanimous | High | No |
@@ -124,7 +124,7 @@ Unchanged.
 
 | Coder | Cases coded | Meetings attended | Notes |
 |-------|-------------|-------------------|-------|
-| Patrick | Sarah, Marcus, Jennifer, Arthur | 3 | Adopted "unsure of oneself" for functioning down. Still uncertain on symptom vs. anxiety, conflict vs. distance. |
+| Patrick | Sarah, Marcus, Jennifer, Arthur, Dominic, Cassandra | 4 | Adopted "unsure of oneself" for functioning down. Still uncertain on symptom vs. anxiety, conflict vs. distance. |
 | Laura | Sarah, Marcus, Jennifer, Arthur | 3 (absent Meeting 2) | Strong positions on defined self and conflict vs. distance. Driving theoretical rigor. Aligned on deduplication rule in Meeting 3. Bookmarked Bowen literature search. |
 | Kathy | Sarah, Marcus, Jennifer, Arthur | 4 | Continuing to over-enter (multiple entries per shift). Defaulting to anxiety over symptom. Correctly adding parents/dates. Advocated blind coding protocol. |
 | Guillermo | Sarah, Marcus, Jennifer, Arthur | 4 | Transitioning from verbatim description to clinical interpretation. Initially coding toward/away, adjusting to mechanism-specific codes. |
