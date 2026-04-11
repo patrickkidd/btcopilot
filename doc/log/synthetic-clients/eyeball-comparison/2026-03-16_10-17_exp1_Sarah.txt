@@ -1,0 +1,64 @@
+Persona: Sarah
+Date: 2026-03-16_10-17
+
+[1] USER:
+I haven't been sleeping well. My doctor said it might be stress but I don't know.
+
+[2] AI:
+How long has this been going on — are we talking weeks, months, longer?
+
+[3] USER:
+It has been about six months now since everything started.
+
+[4] AI:
+Six months is a while to be running on bad sleep. When you say "everything" — is it just the sleep, or did other things start around that time too?
+
+[5] USER:
+Well, my mother got a diagnosis about six months.
+
+[6] AI:
+That's a big deal. What was the diagnosis?
+
+[7] USER:
+It's hard to put into words what I mean.
+
+[8] AI:
+Take your time. You can start with whatever piece of it feels easiest to say — the diagnosis itself, or how it hit you, or what's been different since. Any starting point works.
+
+[9] USER:
+Dementia is the word the doctors used for.
+
+[10] AI:
+That's a heavy word to hear about your mother. And your sleep fell apart right around the same time — that timing matters.
+
+Was the diagnosis sudden, like she went in for something and they found it? Or had you been noticing changes in her for a while before it became official?
+
+[11] USER:
+I guess it just never really came up before.
+
+[12] AI:
+So it caught the family off guard. Was there a specific moment that made someone say "we need to get her checked out" — like an incident, or something she said or did that was different?
+
+[13] USER:
+My mother started leaving the stove on after she finished cooking her dinner.
+
+[14] AI:
+That's the kind of thing that gets everyone's attention fast. Who noticed it first — were you nearby, or did someone else in the family raise the alarm?
+
+[15] USER:
+I couldn't really tell you why it happened that way.
+
+[16] AI:
+Fair enough — sometimes these things just unfold the way they unfold. Let me ask it differently: who's been involved in taking care of your mom since the diagnosis? Is that mostly falling on you, or are there other family members in the picture?
+
+[17] USER:
+Michael lives right here in the same city, but he has his own.
+
+[18] AI:
+Who's Michael — is that a brother?
+
+[19] USER:
+I don't really have a lot to say about that.
+
+[20] AI:
+OK, noted. Let me come back to the bigger picture then — with your mom's diagnosis six months ago and your sleep going sideways around the same time, what does a typical night look like for you now? Are you having trouble falling asleep, waking up in the middle of the night, or both?

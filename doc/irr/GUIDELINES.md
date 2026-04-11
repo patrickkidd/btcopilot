@@ -40,6 +40,10 @@ The data model supports multiple recipients on a single relationship shift. When
 
 ### When to code "up" vs "down" vs "same"
 
+**Functioning down indicators:** "Unsure of oneself" — frozen/paralyzed, not knowing what to do. Impaired attention ("difficult to focus on anything else"). Clarity of thought disrupted, thinking system getting overridden. Signal-to-noise ratio in thinking degraded.
+
+**Anxiety-functioning reciprocity:** Anxiety up and functioning down can co-occur and often do. They are different variables with a reciprocal relationship (anxiety up → functioning down, anxiety down → functioning up). Code both when evidence supports both — they are not redundant.
+
 ## Geographic Moves
 
 ### Moved vs Distance
@@ -47,6 +51,10 @@ The data model supports multiple recipients on a single relationship shift. When
 When a person has relocated geographically (e.g., "Dad's in Florida"), code "moved" — not "distance." Geographic distance does not imply emotional distance (the Bowen mechanism). Only code emotional distance when there is evidence of anxiety-driven avoidance of content, not merely physical separation. Divorce + geographic relocation alone is insufficient evidence for emotional distance.
 
 ## Structural Data
+
+### Preemptively add spouse pair bond
+
+When a spouse is first mentioned (e.g., "my wife"), add a marriage event to establish the structural pair bond. Same principle as the parent-adding rule below. The pair bond is required for the data model to represent the spousal relationship.
 
 ### Preemptively add parents
 
@@ -57,6 +65,10 @@ When a family member is first mentioned, add both parents (even unnamed — use 
 The "person" field in a shift entry is the one performing the action (the distancer, the over-functioner, etc.). Recipients go in the recipient fields. Do not put the speaker/client in the person field by default — put whoever is described as doing the action.
 
 ## Edge Cases
+
+### Date placeholders
+
+When only a year is known, use January 1st of that year as the placeholder date. When the month is also known, use month-01 (e.g., 2010-06-01 for "June 2010"). Backdate from the discussion date based on the statement's timeline. The discussion date must be set before coding begins.
 
 ### New shift vs reiteration
 
@@ -72,3 +84,4 @@ The "same" value (for symptom, anxiety, functioning) represents a second data po
 |------|---------|---------|
 | 2026-02-16 | Meeting 1 | Initial rules from Sarah Round 1 calibration |
 | 2026-02-23 | Meeting 2 | Added: moved vs distance, preemptive parent addition, person field directionality, deduplication clarification, "same" value usage |
+| 2026-03-30 | Meeting 3 (Arthur) | Added: spouse pair bond rule, functioning down indicators, anxiety-functioning reciprocity, date placeholder convention |

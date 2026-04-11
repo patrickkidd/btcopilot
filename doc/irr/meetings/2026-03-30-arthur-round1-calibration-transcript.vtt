@@ -1,0 +1,2069 @@
+WEBVTT
+
+00:05:36.000 --> 00:05:39.000
+If it's just the app and not the…
+
+00:05:39.000 --> 00:05:47.000
+back the deep knowledge of theory, it's… it's not going to be the same when people are using it.
+
+00:05:47.000 --> 00:05:57.000
+Yeah, that's true, and I think that actually, I mean, even more to that point, if if those you need you need the older generation to say, yeah, this is in line.
+
+00:05:57.000 --> 00:05:59.000
+Right.
+
+00:05:59.000 --> 00:06:07.000
+Because otherwise, it's just sitting there by itself, and it's hard to sell itself without all the cultural and… theoretical context and stuff.
+
+00:06:07.000 --> 00:06:08.000
+Mm-hmm.
+
+00:06:08.000 --> 00:06:12.000
+Maybe that's what you're saying already. Hi, Laura.
+
+00:06:12.000 --> 00:06:16.000
+Good, uh, afternoon, I guess, huh?
+
+00:06:16.000 --> 00:06:17.000
+Just barely, yeah.
+
+00:06:17.000 --> 00:06:18.000
+Almost. Bear with me.
+
+00:06:18.000 --> 00:06:21.000
+Sure, anyway.
+
+00:06:21.000 --> 00:06:22.000
+This afternoon.
+
+00:06:22.000 --> 00:06:25.000
+And on the East Coast, like, yeah, good afternoon, Guillermo.
+
+00:06:25.000 --> 00:06:27.000
+Hi, Kathy!
+
+00:06:27.000 --> 00:06:33.000
+Hi, Laura.
+
+00:06:33.000 --> 00:06:34.000
+Let's do it.
+
+00:06:34.000 --> 00:06:41.000
+Okay… Well… We have a straightforward… we're just back in the stream here.
+
+00:06:41.000 --> 00:06:52.000
+Talking, and this is recorded, and I've got that… I've got a little workflow set up so that… Whatever we say will just be codified.
+
+00:06:52.000 --> 00:07:10.000
+into the, you know, log of the previous meetings, and with the IRR takeaways and things like that. So that, I mean, hopefully, and I what that should mean is that we just talk about this thing and just go through it and know that we're going to have more cases after this.
+
+00:07:10.000 --> 00:07:21.000
+And uh… Instead of it, instead of us only talking about it with no record or no way to compile all the records into conclusions.
+
+00:07:21.000 --> 00:07:27.000
+you know, then we develop an implicit… agreement that we can't explain.
+
+00:07:27.000 --> 00:07:42.000
+But if we have the AI doing the record keeping in the background, then hopefully we can actually make it explicit so that we can build things on it, and then also teach it, and that kind of stuff, so… But point being that hopefully we could just talk about this and just have fun with it.
+
+00:07:42.000 --> 00:08:04.000
+And be productive at the same time, so… Okay. Oh, also, you know, we've all. So this is the second case that we're looking at, and this one has the better, the like improved conversational flow, right? And I'm sure you guys picked up on that. It's much. There's a lot more subtleties.
+
+00:08:04.000 --> 00:08:27.000
+It's pretty awesome. It's pretty fun. Um… And because of that, what was I gonna say? Um… and I think we're probably still just figuring out a lot of the basic coding.
+
+00:08:27.000 --> 00:08:28.000
+Yeah.
+
+00:08:28.000 --> 00:08:44.000
+rules, there's probably going to be a lot of mess in this one. But the idea is that we're getting the hope is that we're getting faster at this. It's getting cheaper energy-wise, time-wise to do more cases.
+
+00:08:44.000 --> 00:08:45.000
+Sounds good, sounds good.
+
+00:08:45.000 --> 00:08:49.000
+So we can just talk about this, and we don't have to get too hung up on it, and just knowing that we'll just be doing more, and uh… and we'll just keep going, so… Yeah.
+
+00:08:49.000 --> 00:09:03.000
+Now, I don't have a ref… I don't… I actually did this, like, what, a month ago, so I don't even remember this case, but part of the reason that we're doing it statement by statement is so that we can just show up without any memory of the case and just kind of re-run it and talk about it.
+
+00:09:03.000 --> 00:09:04.000
+Well, don't look at mine on this one. It takes me usually, like, a couple of statements to get in the flow.
+
+00:09:04.000 --> 00:09:10.000
+You know? Um…
+
+00:09:10.000 --> 00:09:15.000
+Nice. We're… yeah, yeah, there's a lot of that going on. Okay.
+
+00:09:15.000 --> 00:09:24.000
+Um, alright, so the first one, first statement is, my wife suggested I speak with someone. I suppose things have been somewhat unsettled lately.
+
+00:09:24.000 --> 00:09:35.000
+Though I'm managing the workload well enough. And then I'm thinking, what workload? Blah, blah, what are you talking about? Okay, let's see here.
+
+00:09:35.000 --> 00:09:46.000
+So we've got, uh… I don't know how to do this again, just kind of go through it. Obviously, the people stuff is kind of straightforward, although, um, Guillermo, you had a coach therapist here, and that's already added to the diagram, so you don't ever need to do that.
+
+00:09:46.000 --> 00:09:49.000
+Yeah, I realize that, yeah.
+
+00:09:49.000 --> 00:10:00.000
+Right? And then Kathleen, you added Arthur. As a new person, which is why it's a negative one, and that… it's the same thing. The user's always added in.
+
+00:10:00.000 --> 00:10:04.000
+Um, so you don't have to add a new person for it.
+
+00:10:04.000 --> 00:10:21.000
+And then, um, if you… but if you want to, like, change the name, because sometimes they start out as user, I actually can't remember how that works right now. If you want to change the name to Arthur or whatever, then you just edit the existing person. So that means that the ID becomes positive. It would be 1 in that case, and… But anyway…
+
+00:10:21.000 --> 00:10:33.000
+So you just edit user.
+
+00:10:33.000 --> 00:10:34.000
+Okay.
+
+00:10:34.000 --> 00:10:35.000
+Uh, yeah, it's Australia. It's, um… instead of picking… This button to add a new person, you do edit existing person and just pick the user.
+
+00:10:35.000 --> 00:10:40.000
+Got it.
+
+00:10:40.000 --> 00:10:41.000
+Yeah.
+
+00:10:41.000 --> 00:10:47.000
+Let's see how it's positive one. For the ID. That means that they're already in the diagram, and that's just the way these always start. There's always a coach and a user.
+
+00:10:47.000 --> 00:10:57.000
+So anyway. Okay. Let's see here, Guillermo wife sent A to therapist. Nice.
+
+00:10:57.000 --> 00:11:14.000
+What a wife. Outside, you've got an outside Kathleen's got… Symptom up, somewhat unsettled, just basically repeating what he said, Laura Hofstad's got defined self on the wife, which none of us had, and I put nothing.
+
+00:11:14.000 --> 00:11:25.000
+And I'll tell you that I put nothing just thinking, I thought I could put something there. Oh, no, wait. Actually, I put a symptom up.
+
+00:11:25.000 --> 00:11:26.000
+So it's not refreshed, yeah.
+
+00:11:26.000 --> 00:11:30.000
+I'm sorry. Let me refresh this page.
+
+00:11:30.000 --> 00:11:32.000
+We all put something different.
+
+00:11:32.000 --> 00:11:33.000
+There you go.
+
+00:11:33.000 --> 00:11:39.000
+I think I actually. Totally. And that's that's okay.
+
+00:11:39.000 --> 00:11:40.000
+That's similar.
+
+00:11:40.000 --> 00:11:46.000
+But, Kathy, you put anxiety up, I put symptom up, and I kind of… I thought that this is one of these where it's like, oh, well, the symptom kind of is anxiety and I've never known what to do with that.
+
+00:11:46.000 --> 00:11:47.000
+Yeah.
+
+00:11:47.000 --> 00:11:55.000
+I didn't use… I hardly use Symptom at all during this whole thing, because I just used anxiety, because nobody was…
+
+00:11:55.000 --> 00:11:59.000
+clinical or something.
+
+00:11:59.000 --> 00:12:00.000
+Yeah.
+
+00:12:00.000 --> 00:12:06.000
+Hmm. Yeah. Yeah, I've been thinking about the presenting problem as symptom.
+
+00:12:06.000 --> 00:12:07.000
+Uh-huh.
+
+00:12:07.000 --> 00:12:16.000
+But I don't know if that, you know, that's just what I… I'm running with, so… And then Guillermo, you've got an outside. So we've got defined self and outside.
+
+00:12:16.000 --> 00:12:20.000
+Hmm.
+
+00:12:20.000 --> 00:12:21.000
+How did you decide?
+
+00:12:21.000 --> 00:12:22.000
+I like anxiety up more.
+
+00:12:22.000 --> 00:12:23.000
+What do you guys think about those? Hmm?
+
+00:12:23.000 --> 00:12:27.000
+Who's outside?
+
+00:12:27.000 --> 00:12:28.000
+Yeah, I can. So, that means…
+
+00:12:28.000 --> 00:12:30.000
+Can you see what's on the screen, Laura?
+
+00:12:30.000 --> 00:12:35.000
+that, uh, the person is the client,
+
+00:12:35.000 --> 00:12:39.000
+So that means Arthur is in the outside position.
+
+00:12:39.000 --> 00:12:41.000
+Is that what you meant, Guillermo?
+
+00:12:41.000 --> 00:12:45.000
+Yeah, I don't know, I just meant that his wife
+
+00:12:45.000 --> 00:12:50.000
+It seemed like a scenario where the wife sent him to the therapist, so I kind of put, uh…
+
+00:12:50.000 --> 00:12:53.000
+I could see how you got to define self, too, but…
+
+00:12:53.000 --> 00:13:01.000
+I like anxiety up, honestly, as I'm re-looking at it.
+
+00:13:01.000 --> 00:13:07.000
+Yeah. And just to reiterate, outside here means that you and the other way to say that is you are saying.
+
+00:13:07.000 --> 00:13:13.000
+Arthur is triangling with the coach against his wife. With… so putting her on the outside.
+
+00:13:13.000 --> 00:13:14.000
+Yeah, I… yeah, I would have gotten it backwards, but… I don't like what I did, so…
+
+00:13:14.000 --> 00:13:18.000
+Here.
+
+00:13:18.000 --> 00:13:19.000
+I would do it differently.
+
+00:13:19.000 --> 00:13:20.000
+I suppose you… I suppose you could have put, um, wife anxiety up, client anxiety up.
+
+00:13:20.000 --> 00:13:24.000
+Yeah.
+
+00:13:24.000 --> 00:13:26.000
+Yeah.
+
+00:13:26.000 --> 00:13:30.000
+How did you decide on Defined Self, Laura?
+
+00:13:30.000 --> 00:13:35.000
+Oh, there's so many clinical examples I've had of wives sending their husbands.
+
+00:13:35.000 --> 00:13:37.000
+And, um…
+
+00:13:37.000 --> 00:13:39.000
+And the way I
+
+00:13:39.000 --> 00:13:44.000
+see it the way it usually happens that she gets to a point and says,
+
+00:13:44.000 --> 00:13:46.000
+You gotta go, or else something.
+
+00:13:46.000 --> 00:13:48.000
+And, um…
+
+00:13:48.000 --> 00:13:49.000
+Uh-huh, I see.
+
+00:13:49.000 --> 00:13:52.000
+So, I don't think you have…
+
+00:13:52.000 --> 00:13:57.000
+you know, I… I… so, I forget the statement already, but…
+
+00:13:57.000 --> 00:14:02.000
+I didn't think I had anything to code her on.
+
+00:14:02.000 --> 00:14:04.000
+Other than cheese.
+
+00:14:04.000 --> 00:14:10.000
+She's… she's, you know, the AI puts it that she suggested, so…
+
+00:14:10.000 --> 00:14:17.000
+I've rarely seen a man go just based on a suggestion.
+
+00:14:17.000 --> 00:14:19.000
+So, um…
+
+00:14:19.000 --> 00:14:27.000
+Anyway, uh, it's usually when the wife has kind of had her fill, and she goes, you know, do something or else.
+
+00:14:27.000 --> 00:14:31.000
+So, it was maybe not based as much on
+
+00:14:31.000 --> 00:14:36.000
+what's in there. But, uh, it's the life saying what she thinks to her husband.
+
+00:14:36.000 --> 00:14:37.000
+Uh-huh.
+
+00:14:37.000 --> 00:14:42.000
+You should go.
+
+00:14:42.000 --> 00:14:47.000
+Mm-hmm.
+
+00:14:47.000 --> 00:14:48.000
+I would stand by that, basically.
+
+00:14:48.000 --> 00:14:53.000
+Let's keep going. Oh, you have a strong opinion about it, huh?
+
+00:14:53.000 --> 00:14:55.000
+Uh-huh.
+
+00:14:55.000 --> 00:14:56.000
+Yeah.
+
+00:14:56.000 --> 00:15:05.000
+Interesting. I'm I'm undecided. I like the I like the idea of the presenting problem as a symptom.
+
+00:15:05.000 --> 00:15:11.000
+Um, but even though it's not exactly correct. It's because problem and symptom become.
+
+00:15:11.000 --> 00:15:18.000
+become kind of synonyms. Sometimes, even if it's not a clinical symptom.
+
+00:15:18.000 --> 00:15:34.000
+uh… define… and I'm not sure about defined self, because I think it depends on… How she said it, what her motivation was, if she was, you know, real… driven by emotion versus, you know, defining what she thought.
+
+00:15:34.000 --> 00:15:41.000
+Like, I wouldn't… I just… from a single statement, I'm… I feel a little conservative.
+
+00:15:41.000 --> 00:15:45.000
+about making assumptions, but at the same time, it doesn't matter, because you can correct it as you go.
+
+00:15:45.000 --> 00:15:48.000
+You know, the one thing I would say about that is…
+
+00:15:48.000 --> 00:15:53.000
+You know, there's, like, 27 variables in differentiation.
+
+00:15:53.000 --> 00:15:58.000
+So, defining self is not necessarily unemotional.
+
+00:15:58.000 --> 00:16:01.000
+In my opinion.
+
+00:16:01.000 --> 00:16:02.000
+Um…
+
+00:16:02.000 --> 00:16:03.000
+Uh-huh.
+
+00:16:03.000 --> 00:16:08.000
+It's… it's a variable in differentiation, and it can be done
+
+00:16:08.000 --> 00:16:14.000
+you know, at a higher or lower level of functioning.
+
+00:16:14.000 --> 00:16:15.000
+Uh, that's how I think about it.
+
+00:16:15.000 --> 00:16:19.000
+Hmm.
+
+00:16:19.000 --> 00:16:22.000
+And you have said list of 27 variables to present to the court.
+
+00:16:22.000 --> 00:16:28.000
+Well, that's something that… Oh, and I told one time, he said, there's 27 variables.
+
+00:16:28.000 --> 00:16:29.000
+And people said, okay, so what are they? And he said,
+
+00:16:29.000 --> 00:16:31.000
+Just kidding. Yeah.
+
+00:16:31.000 --> 00:16:33.000
+We figured that out yourself.
+
+00:16:33.000 --> 00:16:39.000
+Oh, it was terrible. Because that would be a really great list to have, but…
+
+00:16:39.000 --> 00:16:46.000
+I've made it with my groups at various times, you know, where we've listed out all the variables and differentiation.
+
+00:16:46.000 --> 00:16:48.000
+That we could think of.
+
+00:16:48.000 --> 00:16:49.000
+Hmm.
+
+00:16:49.000 --> 00:16:55.000
+But defining self does not encompass the totality of differentiation of self.
+
+00:16:55.000 --> 00:16:57.000
+By any means.
+
+00:16:57.000 --> 00:16:58.000
+So…
+
+00:16:58.000 --> 00:16:59.000
+it's an effort, you know?
+
+00:16:59.000 --> 00:17:06.000
+Yeah, it's… I like it. It's… I mean, it works well.
+
+00:17:06.000 --> 00:17:12.000
+to a starved because it's a move.
+
+00:17:12.000 --> 00:17:14.000
+Yeah, I hear that.
+
+00:17:14.000 --> 00:17:20.000
+There's an action that one takes in response to the other.
+
+00:17:20.000 --> 00:17:25.000
+However, reactively or thoughtfully, whatever that mix is.
+
+00:17:25.000 --> 00:17:28.000
+So, anyway, um…
+
+00:17:28.000 --> 00:17:31.000
+But, um, your thing…
+
+00:17:31.000 --> 00:17:49.000
+Patrick, is where is that in the literature?
+
+00:17:49.000 --> 00:17:50.000
+Yeah.
+
+00:17:50.000 --> 00:17:58.000
+Kind of. I… I'm curious about. I have a lot to clarify personally about defined self, and what you're saying is pretty interesting along that… along those lines. So, I mean, for this statement, I… I'm just kind of staying open-minded about it, um, because I know I'm kind of unclear about a lot of things about defined self.
+
+00:17:58.000 --> 00:17:59.000
+I guess we can ask the AI what's in the literature.
+
+00:17:59.000 --> 00:18:03.000
+So…
+
+00:18:03.000 --> 00:18:11.000
+Yeah, absolutely. Actually… Yeah, let me put a mental bookmark in there. If I remember it before the meeting's over.
+
+00:18:11.000 --> 00:18:12.000
+Okay.
+
+00:18:12.000 --> 00:18:16.000
+Of course, we'll never have enough time, but… but that's a really good idea. Let's keep on with the flow.
+
+00:18:16.000 --> 00:18:24.000
+So the… so the… the symptom versus problem that still were kind of open on that, do we…
+
+00:18:24.000 --> 00:18:25.000
+you know…
+
+00:18:25.000 --> 00:18:30.000
+I am personally open on it. Yeah, it's just the way I've been liking it so far, but I'm not… I'm not sure about that.
+
+00:18:30.000 --> 00:18:35.000
+Let me just ask, I put getting married as an event in that first one.
+
+00:18:35.000 --> 00:18:39.000
+Just to get Elena in there as the pair bond.
+
+00:18:39.000 --> 00:18:47.000
+He refers to his wife.
+
+00:18:47.000 --> 00:18:48.000
+Uh-huh.
+
+00:18:48.000 --> 00:18:50.000
+Actually, I think that's correct. I don't even think that's a matter of opinion right now. I think that that's… that's a mistake that the three of us made.
+
+00:18:50.000 --> 00:18:52.000
+Okay.
+
+00:18:52.000 --> 00:18:53.000
+Yeah.
+
+00:18:53.000 --> 00:18:57.000
+Yeah, because he did say his wife. So, it's the same thing with the parents.
+
+00:18:57.000 --> 00:19:09.000
+If somebody says, my mom, then the rule that we've got so far is that you code the mother, the father, and then set it up just. And so same thing here, because it's a structural. You have this little structural picture, so you should put it in there.
+
+00:19:09.000 --> 00:19:12.000
+There's no immaculate Conception, huh?
+
+00:19:12.000 --> 00:19:17.000
+Not yet. Not yet.
+
+00:19:17.000 --> 00:19:25.000
+So, it's like none of us coded that fully, you know? It's like, I left out the symptom,
+
+00:19:25.000 --> 00:19:29.000
+or anxiety for, you know, up.
+
+00:19:29.000 --> 00:19:31.000
+And we left out the marriage.
+
+00:19:31.000 --> 00:19:35.000
+Yeah.
+
+00:19:35.000 --> 00:19:42.000
+But let's, uh… let's keep everything we've said, and then move on, just so we can get it, because we have a lot of statements here, and it'll probably take a while.
+
+00:19:42.000 --> 00:19:43.000
+Okay.
+
+00:19:43.000 --> 00:19:55.000
+I'm trying to find the balance between detail and moving quickly, but… So let me know if you have a different opinion about that. Okay.
+
+00:19:55.000 --> 00:20:11.000
+Elena tends… and all this is going to be cataloged in the notes, too, so there's, you know, we don't have to necessarily nail everything down on a call, because there's a whole second pass of kind of like literature synthesis based on all the transcript of the meetings that's AI-based, and we… there'll be another opportunity to pick this stuff up.
+
+00:20:11.000 --> 00:20:12.000
+Okay.
+
+00:20:12.000 --> 00:20:27.000
+I'm not sure how that's gonna look yet, but… All right. Elena tends to worry, and I don't know what was asked. Maybe I should put the other statements in here in a future version. Elena tends to worry if I'm not home by dinner, which has been happening.
+
+00:20:27.000 --> 00:20:36.000
+more frequently since the Q3 roadmap kicked off, I'm the senior architect, so the structural integrity of the entire… this guy's talking like me. This is, like, my job.
+
+00:20:36.000 --> 00:20:50.000
+Of the entire platform, rest on my desk. If I leave at 5 and something breaks, it's my reputation on the line. She calls it avoidance. She calls it avoidance. But it's really just professional necessity. Lately, I've found the house feels a bit loud.
+
+00:20:50.000 --> 00:21:03.000
+Even when it's silent, it's hard to explain, I just prefer the office lighting. It's consistent. I'm not sure what else she expects from me. God, what a statement.
+
+00:21:03.000 --> 00:21:04.000
+Pretty good.
+
+00:21:04.000 --> 00:21:05.000
+Yeah.
+
+00:21:05.000 --> 00:21:09.000
+from AI, you know? I mean, I had to think about that.
+
+00:21:09.000 --> 00:21:22.000
+Okay, so we've got these. Person Deltas in here from all of… oh, Elena, it's all of us correcting the name on the wife, that's correct. So we all got that right.
+
+00:21:22.000 --> 00:21:25.000
+And then what do we have here, Galena? You said.
+
+00:21:25.000 --> 00:21:35.000
+So Elena moving a toward move to client worries if A isn't home by dinner. It's interesting, that's from Guillermo.
+
+00:21:35.000 --> 00:21:42.000
+And then client moving away, so her moving toward… that's kind of captures an interesting thing.
+
+00:21:42.000 --> 00:21:52.000
+structural integrity of the entire platform exists rests on my desk. Anxiety up. So you're inferring anxiety from that.
+
+00:21:52.000 --> 00:22:01.000
+Kathy, you put anxiety for the same thing. for… about the job performance.
+
+00:22:01.000 --> 00:22:11.000
+wife, anxiety up, conflict, to Arthur. conflict.
+
+00:22:11.000 --> 00:22:19.000
+And then also some other things. anxiety up for client distance.
+
+00:22:19.000 --> 00:22:24.000
+Client anxiety, same. Okay, so these two are kind of redundant, I think, right?
+
+00:22:24.000 --> 00:22:27.000
+Yeah, I tend to do that, just…
+
+00:22:27.000 --> 00:22:34.000
+If I see another data point of the same thing, whether… that's what I… the way I've been doing it.
+
+00:22:34.000 --> 00:22:41.000
+Yeah, so I… so I think basic coding rules, you know, that's one shift. They're both on the same time.
+
+00:22:41.000 --> 00:22:47.000
+You've already got the distance in there, so basically just one of them needs to get deleted, I think.
+
+00:22:47.000 --> 00:23:04.000
+and the description, not sure what Elena expects of me. So you're saying he's moving away lately. House seems a bit like, yeah. So so here I wonder if what you were thinking is that there's two different aspects of the distance or 2 different kind of data points that point to distance.
+
+00:23:04.000 --> 00:23:05.000
+Right.
+
+00:23:05.000 --> 00:23:17.000
+Where the coding rules are gonna say, whenever there is a shift, just capture that as one shift, and then you can put those both in the description if you want.
+
+00:23:17.000 --> 00:23:18.000
+So combined… combine those details into one.
+
+00:23:18.000 --> 00:23:25.000
+You know, does that make sense?
+
+00:23:25.000 --> 00:23:26.000
+Yeah.
+
+00:23:26.000 --> 00:23:29.000
+Right, because it's one distance shift that you're… that you're coding, and that's all the matters, really.
+
+00:23:29.000 --> 00:23:38.000
+So… Okay, I've got. And then, uh, Laura, you put the conflict in there as well.
+
+00:23:38.000 --> 00:23:46.000
+and I have anxiety up. for her, worries, which… Synonym for anxiety, probably.
+
+00:23:46.000 --> 00:23:48.000
+Mm-hmm.
+
+00:23:48.000 --> 00:23:56.000
+So… anxiety up was on the client side with Kathy. I'm just looking for, kind of, similarities and differences.
+
+00:23:56.000 --> 00:24:03.000
+And then you, yeah, so, okay, so we can all agree on the anxiety up for, uh, for her except for Laura, sounds like.
+
+00:24:03.000 --> 00:24:05.000
+And Laura, you just put the conflict in there.
+
+00:24:05.000 --> 00:24:09.000
+Yeah.
+
+00:24:09.000 --> 00:24:10.000
+time difference.
+
+00:24:10.000 --> 00:24:13.000
+Um, can you make a statement again? I mean…
+
+00:24:13.000 --> 00:24:18.000
+Oh, yeah, I guess he said she worries if I'm not home. What's the statement that people are…
+
+00:24:18.000 --> 00:24:21.000
+coding for anxiety for Elena, right?
+
+00:24:21.000 --> 00:24:24.000
+Yeah.
+
+00:24:24.000 --> 00:24:27.000
+Uh, yeah.
+
+00:24:27.000 --> 00:24:31.000
+You know, I guess my confusion about that…
+
+00:24:31.000 --> 00:24:37.000
+It had to do with… I mean, this sounds… it's a chronic pattern, right? Or is this…
+
+00:24:37.000 --> 00:24:39.000
+Well, it doesn't really say.
+
+00:24:39.000 --> 00:24:44.000
+Um…
+
+00:24:44.000 --> 00:24:45.000
+Yeah, I…
+
+00:24:45.000 --> 00:24:50.000
+Well, it kind of does if it's driven her to, you know, tell him to go to therapy.
+
+00:24:50.000 --> 00:24:55.000
+Yeah, Elena tends to worry if I'm not home by dinner.
+
+00:24:55.000 --> 00:25:04.000
+Um, I have to say, I coded this one through the, again, my own experience. This was a common fight between my parents.
+
+00:25:04.000 --> 00:25:07.000
+And…
+
+00:25:07.000 --> 00:25:12.000
+And it wasn't that my mother worried, it was that she was aggravated.
+
+00:25:12.000 --> 00:25:14.000
+So I… so…
+
+00:25:14.000 --> 00:25:17.000
+I tended to not…
+
+00:25:17.000 --> 00:25:23.000
+I mean, so do we take what people say at face value? The husband's saying,
+
+00:25:23.000 --> 00:25:29.000
+Life tends to worry if I'm not home by dinner.
+
+00:25:29.000 --> 00:25:34.000
+So I, you know, I guess I reinterpreted that.
+
+00:25:34.000 --> 00:25:41.000
+In terms of my own projection onto it, so…
+
+00:25:41.000 --> 00:26:02.000
+Anyway, I just tended to be skeptical about what he says about why she's doing anything, so…
+
+00:26:02.000 --> 00:26:03.000
+Yeah.
+
+00:26:03.000 --> 00:26:16.000
+Yeah, you know, I think there's two different approaches to that, and I'm not sure which one's best. One is to be… conservative, like you're saying. Um, it's like, okay, where's the evidence? It's his opinion, or I don't even know what he means. And then the other one, the other approach is just model things as they're said, and then refine them as data comes in. And I don't really know which one to take, I just watch the bifurcation in my head.
+
+00:26:16.000 --> 00:26:17.000
+Right.
+
+00:26:17.000 --> 00:26:28.000
+And I remember when I was seeing clients, I was… I was kind of doing all of this as I was writing notes, and I was trying to think of it in a structured way and think, okay, I don't have evidence for that.
+
+00:26:28.000 --> 00:26:47.000
+Bookmark to ask a question to clarify, or… or just kind of go with it, and… and I'm… I think of the notes as a sculpture that I'm just, okay, I… you know, I took off too much no's, now I gotta put some clay back on and kind of mold it, or I'm gonna work on the ear now, or, you know, it's like a constant evolution.
+
+00:26:47.000 --> 00:26:49.000
+I go back and forth when I'm coding these, is what I'm saying. I'm not sure what to do.
+
+00:26:49.000 --> 00:26:50.000
+Yeah.
+
+00:26:50.000 --> 00:26:53.000
+So, if this is simulating, you know, a
+
+00:26:53.000 --> 00:26:56.000
+a client interview, um…
+
+00:26:56.000 --> 00:27:02.000
+After… yeah, when things become more clear down the road,
+
+00:27:02.000 --> 00:27:05.000
+Um, the clinician would, you know,
+
+00:27:05.000 --> 00:27:12.000
+clarify their view of that early statement, and I assume with the app,
+
+00:27:12.000 --> 00:27:16.000
+if we're trying to simulate reality,
+
+00:27:16.000 --> 00:27:21.000
+I assume with the app, if it becomes clear farther down,
+
+00:27:21.000 --> 00:27:27.000
+You know, do you go up and change the first entry once you have decided that's what it was or it wasn't?
+
+00:27:27.000 --> 00:27:32.000
+I think…
+
+00:27:32.000 --> 00:27:36.000
+Yeah.
+
+00:27:36.000 --> 00:27:37.000
+Mm-hmm.
+
+00:27:37.000 --> 00:27:44.000
+Well, technically, so the way that it's a stream of deltas, which is kind of technical, right? But you would never go back and change something. You would always just add another delta to make the change, even if it… and so if you wanted to change something you'd coded before, maybe you got the date wrong.
+
+00:27:44.000 --> 00:27:48.000
+You would just add a delta for that event and change the date.
+
+00:27:48.000 --> 00:27:49.000
+Yeah, that way you keep the history.
+
+00:27:49.000 --> 00:27:50.000
+So, in this case, if you decided that it…
+
+00:27:50.000 --> 00:27:52.000
+Does that make sense?
+
+00:27:52.000 --> 00:28:00.000
+it wasn't worry, or it was worry. You would add that delta downstream.
+
+00:28:00.000 --> 00:28:01.000
+Yeah.
+
+00:28:01.000 --> 00:28:19.000
+Exactly. There is a personality type on or not. It's like a… It's not… that's not technically the right way to say it, but there's a persona or whatever for the synthetic clients in here that I haven't used much yet that gets details wrong.
+
+00:28:19.000 --> 00:28:32.000
+Right? It mixes up dates. That's the first one. And details, and so you need a way to say, like, oh, she's not actually worried. In fact, I have no idea why I said that, right? And then you would just add a delta to delete that entry.
+
+00:28:32.000 --> 00:28:46.000
+Or, if you got more clarification, like… Oh, by worried, I mean that, you know, every day at 2 o'clock, as soon as she comes home from school, from teaching, she tells me X. And then you can fill it in, you can change worried to something else.
+
+00:28:46.000 --> 00:28:56.000
+That's more detailed. Anyway, I just wanted to clarify the technical rule there for how to use the deltas, but I think that you were getting to something that was.
+
+00:28:56.000 --> 00:29:04.000
+more… that was bigger, broader, right? When you're a client, or when you're a professional, you're… I can't remember what you said.
+
+00:29:04.000 --> 00:29:12.000
+that you're not… you don't have to commit early in, like, on this, we're committing early in that something is or it isn't.
+
+00:29:12.000 --> 00:29:14.000
+Yeah, you just… I think you're just…
+
+00:29:14.000 --> 00:29:19.000
+making the bestervation you can, given the data that you have, or the best of…
+
+00:29:19.000 --> 00:29:22.000
+assumption.
+
+00:29:22.000 --> 00:29:24.000
+I had the phrase best assumption in my head, actually, just now.
+
+00:29:24.000 --> 00:29:27.000
+Yeah. Well, Pat?
+
+00:29:27.000 --> 00:29:28.000
+So I… yeah.
+
+00:29:28.000 --> 00:29:29.000
+I think that's right.
+
+00:29:29.000 --> 00:29:36.000
+Yeah, no, I was just thinking, I just kind of do what you do, Patrick. That's why I did tour it in a way, because I was like, it could be conflict, might not be…
+
+00:29:36.000 --> 00:29:40.000
+But it seems like a reciprocal pattern, so…
+
+00:29:40.000 --> 00:29:45.000
+So, I mean, this all com… you know, I'm thinking about a point…
+
+00:29:45.000 --> 00:29:48.000
+Patrick, that you made earlier, that it may end up being…
+
+00:29:48.000 --> 00:29:58.000
+that are a specific agreement on a particular statement is going to be less important than something about the overall.
+
+00:29:58.000 --> 00:29:59.000
+And, um…
+
+00:29:59.000 --> 00:30:00.000
+Definitely.
+
+00:30:00.000 --> 00:30:05.000
+And I'd just like to say something about the, uh, best assumption
+
+00:30:05.000 --> 00:30:10.000
+In this instance that I thought was just conflict,
+
+00:30:10.000 --> 00:30:15.000
+is that in conflict, there's, as he said, she said,
+
+00:30:15.000 --> 00:30:17.000
+And it would tend to put
+
+00:30:17.000 --> 00:30:21.000
+less weight on what they're saying.
+
+00:30:21.000 --> 00:30:28.000
+and more weight that there is a difference in their conflict.
+
+00:30:28.000 --> 00:30:34.000
+So, that he's saying she's worried, and that she's saying he's avoiding.
+
+00:30:34.000 --> 00:30:37.000
+That's the fight.
+
+00:30:37.000 --> 00:30:40.000
+And I… so…
+
+00:30:40.000 --> 00:30:43.000
+I think the best assumption…
+
+00:30:43.000 --> 00:30:45.000
+is conflict.
+
+00:30:45.000 --> 00:30:47.000
+Without.
+
+00:30:47.000 --> 00:30:48.000
+Mm-hmm.
+
+00:30:48.000 --> 00:30:51.000
+Attempting to characterize what each of them
+
+00:30:51.000 --> 00:30:57.000
+is… is doing, or anything about them other than that.
+
+00:30:57.000 --> 00:30:59.000
+That makes sense.
+
+00:30:59.000 --> 00:31:09.000
+So, running with what you're saying, Laura, would you say that it would be conflict as opposed to distance if both were actually verbalizing their opinion to each other?
+
+00:31:09.000 --> 00:31:15.000
+Does it have to come to that? Because… or can you have one person who's a NAG and the other person who's always running away?
+
+00:31:15.000 --> 00:31:19.000
+Yeah, I mean, that's the pursuing distancing thing.
+
+00:31:19.000 --> 00:31:20.000
+Um, so, I don't think…
+
+00:31:20.000 --> 00:31:22.000
+Yeah.
+
+00:31:22.000 --> 00:31:26.000
+They're necessary… they're not the same. The fight is attacked
+
+00:31:26.000 --> 00:31:31.000
+defend, attack, counterattack.
+
+00:31:31.000 --> 00:31:32.000
+I mean…
+
+00:31:32.000 --> 00:31:38.000
+Yeah, it's like standing, because that mechanism that holds things together is standing your ground, right?
+
+00:31:38.000 --> 00:31:46.000
+and and both moving and putting energy toward each other, and it comes out explicitly somehow, is the way I always thought of it.
+
+00:31:46.000 --> 00:31:48.000
+You mean for conflict?
+
+00:31:48.000 --> 00:31:49.000
+Yeah.
+
+00:31:49.000 --> 00:31:55.000
+For conflict. Right. Because that's not the same thing as one person never standing their ground and just… falling away.
+
+00:31:55.000 --> 00:31:58.000
+Yeah, I know, it's different.
+
+00:31:58.000 --> 00:32:05.000
+Right. I mean, with conflict, you can learn a lot about what's on the other person's mind.
+
+00:32:05.000 --> 00:32:09.000
+Well, yeah, you can learn what's in their mind, or just…
+
+00:32:09.000 --> 00:32:12.000
+what mood they're in. It's not even what, you know…
+
+00:32:12.000 --> 00:32:18.000
+It's just the fight.
+
+00:32:18.000 --> 00:32:30.000
+The reason I was asking that is because I'm not seeing… we're dwelling on this statement a little bit, but I'm not… I don't know that there's evidence that he's actually standing his ground or, you know…
+
+00:32:30.000 --> 00:32:38.000
+It seems like… well, he hasn't said anything to lead me to believe that he's doing that, that he's engaging, it's more like he's disengaging in response.
+
+00:32:38.000 --> 00:32:43.000
+Well, he sang, it's really just professional necessity.
+
+00:32:43.000 --> 00:32:47.000
+You know, she calls it avoidance.
+
+00:32:47.000 --> 00:32:49.000
+Quote, in quotes.
+
+00:32:49.000 --> 00:32:56.000
+So, yeah, so whether she… he's arguing with her or not… I mean, he's obviously giving in and coming to therapy.
+
+00:32:56.000 --> 00:33:01.000
+But…
+
+00:33:01.000 --> 00:33:12.000
+Yeah, again, so, you know, having lived in the middle of this fight, I think it's a fight.
+
+00:33:12.000 --> 00:33:20.000
+Where she's… she wants them home for dinner, and he doesn't want to be there.
+
+00:33:20.000 --> 00:33:24.000
+Um…
+
+00:33:24.000 --> 00:33:29.000
+Yeah, okay, so I guess this goes in the notes for further…
+
+00:33:29.000 --> 00:33:30.000
+Yeah.
+
+00:33:30.000 --> 00:33:43.000
+That's right. Yeah, because all… because I like the distance position, but if you… if the conflict position is still there, it'll show up in the notes as a disagreement, too. And those get cataloged.
+
+00:33:43.000 --> 00:33:44.000
+Yeah, I guess in not calling it distance,
+
+00:33:44.000 --> 00:33:47.000
+And then that's part of the process, right? So…
+
+00:33:47.000 --> 00:33:50.000
+I had in mind the reality.
+
+00:33:50.000 --> 00:33:54.000
+You know, so I was thinking of, uh, my own father.
+
+00:33:54.000 --> 00:33:57.000
+And the fact that…
+
+00:33:57.000 --> 00:34:03.000
+there was work that had to get done.
+
+00:34:03.000 --> 00:34:06.000
+You mean that was the content of his argument?
+
+00:34:06.000 --> 00:34:07.000
+Yeah, that was his position, who was…
+
+00:34:07.000 --> 00:34:09.000
+right?
+
+00:34:09.000 --> 00:34:13.000
+Sorry, but I… you know, this call came in and I had to deal with it.
+
+00:34:13.000 --> 00:34:16.000
+You know. Um…
+
+00:34:16.000 --> 00:34:21.000
+So, whether that's… I was holding my…
+
+00:34:21.000 --> 00:34:27.000
+judgment as to whether to call it distance at that point.
+
+00:34:27.000 --> 00:34:33.000
+I don't know if it's distance or reality.
+
+00:34:33.000 --> 00:34:42.000
+So if he never says that to her, you would code it as distance. And if it turns out we learn that he says it to Elena, then it would be conflict in your mind?
+
+00:34:42.000 --> 00:34:45.000
+No, no, I would just…
+
+00:34:45.000 --> 00:34:51.000
+Uh, I don't know that I would judge it based on what he said or what he didn't do.
+
+00:34:51.000 --> 00:34:52.000
+Hmm.
+
+00:34:52.000 --> 00:34:58.000
+You know, I mean, I think eventually it comes out in the wash that he's a big distancer and there's a big distancing thing in this family.
+
+00:34:58.000 --> 00:35:00.000
+Um, but…
+
+00:35:00.000 --> 00:35:09.000
+Um, it would be based more on what seems to be the case about the reality of the situation.
+
+00:35:09.000 --> 00:35:19.000
+There you have two people asserting a certain position, and neither one is going to give in to the other.
+
+00:35:19.000 --> 00:35:32.000
+you're avoiding, no, I'm not, I've got work to do.
+
+00:35:32.000 --> 00:35:33.000
+So that doesn't…
+
+00:35:33.000 --> 00:35:39.000
+Well, good thing to bookmark, probably, huh? Yeah, interesting points.
+
+00:35:39.000 --> 00:35:46.000
+I'm curious what the lit review would say, too. I need to add a… I need to have the button on this page that compares… that does what we're doing right now.
+
+00:35:46.000 --> 00:35:50.000
+That'd be good.
+
+00:35:50.000 --> 00:35:53.000
+that does the AI search for…
+
+00:35:53.000 --> 00:35:54.000
+conflict versus distance, or…?
+
+00:35:54.000 --> 00:35:56.000
+Actually, that's the…
+
+00:35:56.000 --> 00:36:01.000
+2 things. It it does the same comparison that we're doing and gives us the CliffsNotes of what we're looking at.
+
+00:36:01.000 --> 00:36:02.000
+Oh, yeah.
+
+00:36:02.000 --> 00:36:08.000
+right? Because it's kind of a pain for me to do that, and it's hard for me to keep it all in my head.
+
+00:36:08.000 --> 00:36:18.000
+Uh, because there's so many things here. But then also, where there's disagreements to link those to the lit review somehow, and just give us more food for thought in the discussion.
+
+00:36:18.000 --> 00:36:19.000
+Yeah.
+
+00:36:19.000 --> 00:36:20.000
+like this. It would be really interesting to see.
+
+00:36:20.000 --> 00:36:21.000
+Yeah.
+
+00:36:21.000 --> 00:36:24.000
+Yeah.
+
+00:36:24.000 --> 00:36:25.000
+Yeah.
+
+00:36:25.000 --> 00:36:31.000
+Okay, we should probably move on, though. I think this is productive. I mean, we don't have to go faster.
+
+00:36:31.000 --> 00:36:39.000
+I, you know, averaging 12 minutes per statement, I feel like I need to go faster, but we don't have to.
+
+00:36:39.000 --> 00:36:44.000
+Um, yeah, and then, Kathy, you've got a lot more here. I wonder if this is the same kind of double coding.
+
+00:36:44.000 --> 00:36:55.000
+Probably.
+
+00:36:55.000 --> 00:36:56.000
+Yeah.
+
+00:36:56.000 --> 00:36:57.000
+If something breaks, senior architect responsible for remote roadmap, and then this one, this looks like sort of a note, like a process note. Right? Because there's no shift.
+
+00:36:57.000 --> 00:37:09.000
+Right.
+
+00:37:09.000 --> 00:37:10.000
+Right.
+
+00:37:10.000 --> 00:37:18.000
+If something breaks, and then you've got anxiety up… So these probably the way I'm looking at it, these probably could be… deduplicated, as we say, coalesced together, um… Worried, and then this is different, because this is a ship for her.
+
+00:37:18.000 --> 00:37:25.000
+And then you're coding his kind of you know his really interesting thing about the house being loud.
+
+00:37:25.000 --> 00:37:35.000
+Uh, not sure what Elena expects it. Yeah, and then these two are probably… I bet these… Probably could be condensed into one shift.
+
+00:37:35.000 --> 00:37:44.000
+Because, one, the reason I'm pointing all this out is because, technically speaking, we'll end up with too many deltas with too much detail to be able to really make sense of it at the end of it.
+
+00:37:44.000 --> 00:37:46.000
+I see.
+
+00:37:46.000 --> 00:37:54.000
+So even the AI. Okay. It started a few months ago, I think, maybe late summer. It isn't a literal sound, obviously, he's talking about the silent.
+
+00:37:54.000 --> 00:38:01.000
+What did other people do on that last one, then?
+
+00:38:01.000 --> 00:38:02.000
+That's the one we were just, uh, doing.
+
+00:38:02.000 --> 00:38:06.000
+On the previous statement. Yeah, that's what we were just talking about, sorry.
+
+00:38:06.000 --> 00:38:08.000
+Oh, I see. Okay, got it.
+
+00:38:08.000 --> 00:38:09.000
+Yeah.
+
+00:38:09.000 --> 00:38:12.000
+The second statement. Yeah, just making a follow up comment.
+
+00:38:12.000 --> 00:38:28.000
+Okay, uh, it started a few months ago, I think, maybe it was late summer. It isn't a literal sound. Obviously, it's more of a pressure. So it's a feeling. It's the way I look at that. Elena won't be in the kitchen or the living room, and even if she isn't saying anything, I can feel the weight of what she isn't saying.
+
+00:38:28.000 --> 00:38:42.000
+makes me it difficult to focus on anything else. At the office. The expectations are clearly defined in the Jira, by the way, this this is all written as if you're a software engineer. Jira is what we use to track tasks to task manager.
+
+00:38:42.000 --> 00:38:57.000
+I mean, when I saw this, I was thinking, oh man, come on. I don't have to be so… Anyway, at home, the requirements are much more ambiguous. I find myself… requirements, he's talking like a… I wrote this.
+
+00:38:57.000 --> 00:39:01.000
+Requirements are much more… they're not in the requirements document.
+
+00:39:01.000 --> 00:39:09.000
+much more ambiguous, I find myself standing in the hallway just wondering what I'm supposed to be doing. It's exhausting.
+
+00:39:09.000 --> 00:39:19.000
+Kirima put anxiety same. I've got, uh, Laura said anxiety up feels pressure, relationship distance.
+
+00:39:19.000 --> 00:39:24.000
+Person one, I guess, here is just a bug in the UI. That's Elena, I assume.
+
+00:39:24.000 --> 00:39:28.000
+I… yeah, I don't know why that ended up in there.
+
+00:39:28.000 --> 00:39:33.000
+That's a bug. But that should be Elena, right? Because client is Arthur.
+
+00:39:33.000 --> 00:39:35.000
+Right.
+
+00:39:35.000 --> 00:39:41.000
+functioning down. Now, you're saying functioning down from this.
+
+00:39:41.000 --> 00:39:42.000
+How functioning down?
+
+00:39:42.000 --> 00:39:46.000
+Oh, well, you know, it came from, he's standing in the hallway, and he doesn't know what to do with himself.
+
+00:39:46.000 --> 00:39:53.000
+Yeah. I agree.
+
+00:39:53.000 --> 00:40:00.000
+And what operational definition do you kind of is implicit there, do you think? How do you define?
+
+00:40:00.000 --> 00:40:01.000
+Well, uh, kind of being…
+
+00:40:01.000 --> 00:40:03.000
+that.
+
+00:40:03.000 --> 00:40:08.000
+Frozen. Um…
+
+00:40:08.000 --> 00:40:12.000
+You know, it's kind of a functional statement.
+
+00:40:12.000 --> 00:40:15.000
+of, um…
+
+00:40:15.000 --> 00:40:18.000
+not knowing what to do, that seems like…
+
+00:40:18.000 --> 00:40:23.000
+pretty clear to me a functioning statement.
+
+00:40:23.000 --> 00:40:28.000
+I'm standing in the hallway, and I don't know what to do with myself.
+
+00:40:28.000 --> 00:40:33.000
+I mean, you know, you could call it…
+
+00:40:33.000 --> 00:40:41.000
+a symptom of anxiety, I guess, of being frozen.
+
+00:40:41.000 --> 00:40:46.000
+Yeah, but just being unsure of oneself.
+
+00:40:46.000 --> 00:40:48.000
+And what are you saying there?
+
+00:40:48.000 --> 00:40:52.000
+I don't know what to do.
+
+00:40:52.000 --> 00:41:00.000
+Unsure of oneself rings… rings, like, over semantic overlap to me.
+
+00:41:00.000 --> 00:41:04.000
+That's that's pretty interesting, sure of oneself. Yeah.
+
+00:41:04.000 --> 00:41:09.000
+I… I think of it as, um…
+
+00:41:09.000 --> 00:41:14.000
+I mean, judging just from life experience, not only this is… is the…
+
+00:41:14.000 --> 00:41:16.000
+what coincides with
+
+00:41:16.000 --> 00:41:25.000
+with an anxiety reaction is, um, the anxiety reaction sort of flooding the head, and then
+
+00:41:25.000 --> 00:41:35.000
+Um, interfering with, um, what… what one would otherwise be doing, and instead not doing anything.
+
+00:41:35.000 --> 00:41:37.000
+I think that's…
+
+00:41:37.000 --> 00:41:40.000
+kind of a consistent theme of anxiety.
+
+00:41:40.000 --> 00:41:48.000
+Um, in SARF, it was, you know, anxiety up, functioning down, anxiety down, functioning up.
+
+00:41:48.000 --> 00:41:50.000
+So it's like a…
+
+00:41:50.000 --> 00:41:54.000
+a, um…
+
+00:41:54.000 --> 00:42:00.000
+kind of ubiquitous, the two go together thing, I think, sometimes.
+
+00:42:00.000 --> 00:42:05.000
+kind of… there's a reciprocal relationship between anxiety and functioning.
+
+00:42:05.000 --> 00:42:06.000
+Yeah.
+
+00:42:06.000 --> 00:42:07.000
+And in that one, there's a clear…
+
+00:42:07.000 --> 00:42:21.000
+statement of each.
+
+00:42:21.000 --> 00:42:31.000
+And I've got this definition that I always use for the conditions for anxiety that are, and maybe it's conditions for anxiety when functioning is not sufficient.
+
+00:42:31.000 --> 00:42:38.000
+And it's uncertainty and urgency. Um… It's making me think about this.
+
+00:42:38.000 --> 00:42:40.000
+He's describing uncertainty, isn't he?
+
+00:42:40.000 --> 00:42:41.000
+Yeah, that works.
+
+00:42:41.000 --> 00:42:59.000
+The big… It's describing the uncertainty aspect. That's right. And then Laura said, unsure of oneself, which… is, I think, the part of… because it… in my head, functioning… higher functioning is supposed to make it so that when there's more uncertainty and urgency, you don't lose your cool as much.
+
+00:42:59.000 --> 00:43:05.000
+And you can keep moving, and you can… you don't get… you don't break down and crumble.
+
+00:43:05.000 --> 00:43:26.000
+And, um… I and I had thought that the goal when uncertainty and urgency are up, and you're… you've got your biological reaction to that, that's anxiety, and then the goal is to target the uncertainty part, get the thinking online. But a part of that, I think this is making me realize that when you're sure of yourself.
+
+00:43:26.000 --> 00:43:38.000
+That cuts out a lot of the uncertainty when it's a relationship thing, especially. It's like, you're sure of who you are, what you do, where you stand, what you think, and even what you're feeling.
+
+00:43:38.000 --> 00:43:45.000
+It cuts down the uncertainty a lot, because a lot of the uncertainty in a relationship dynamic is about who I am versus who the other person is.
+
+00:43:45.000 --> 00:43:50.000
+Yeah, I mean, that's why, you know, it seems like the, you know, the main
+
+00:43:50.000 --> 00:43:56.000
+initial task in therapy is to help people function up, to begin to
+
+00:43:56.000 --> 00:44:00.000
+think in those situations.
+
+00:44:00.000 --> 00:44:04.000
+To think… to get the PFC online. So, yeah.
+
+00:44:04.000 --> 00:44:07.000
+Now would be a functional.
+
+00:44:07.000 --> 00:44:09.000
+Shift up.
+
+00:44:09.000 --> 00:44:16.000
+functioning shift up.
+
+00:44:16.000 --> 00:44:19.000
+I like the definition, unsure of oneself as justification.
+
+00:44:19.000 --> 00:44:20.000
+Yeah.
+
+00:44:20.000 --> 00:44:26.000
+For functioning down. That makes sense to me. And anxiety can go up at the same time.
+
+00:44:26.000 --> 00:44:28.000
+Yeah.
+
+00:44:28.000 --> 00:44:38.000
+Um, they're not the same thing. But, uh, sometimes you would assume that with higher functioning the anxiety wouldn't go up as much, I guess.
+
+00:44:38.000 --> 00:44:45.000
+Yeah, well, I mean, yeah, but that's certainly an empirical question. I mean, you can…
+
+00:44:45.000 --> 00:44:50.000
+That would be how… how that works. You'd want to see in…
+
+00:44:50.000 --> 00:44:51.000
+as it actually works. I'm trying to think about…
+
+00:44:51.000 --> 00:44:53.000
+Right.
+
+00:44:53.000 --> 00:44:56.000
+So the evidence for anxiety…
+
+00:44:56.000 --> 00:45:00.000
+would be, you know, feels pressure.
+
+00:45:00.000 --> 00:45:08.000
+You know, I take that as a… you know, so I… I always go for anxiety, too, reaction to a real or imaginary.
+
+00:45:08.000 --> 00:45:10.000
+threat.
+
+00:45:10.000 --> 00:45:11.000
+And feeling pressure from one's spouse.
+
+00:45:11.000 --> 00:45:18.000
+Mm-hmm.
+
+00:45:18.000 --> 00:45:22.000
+And being exhausted.
+
+00:45:22.000 --> 00:45:27.000
+I guess exhausted is more a symptom.
+
+00:45:27.000 --> 00:45:31.000
+But feeling pressure.
+
+00:45:31.000 --> 00:45:34.000
+you know…
+
+00:45:34.000 --> 00:45:36.000
+Seems like a…
+
+00:45:36.000 --> 00:45:41.000
+real or imagined threat.
+
+00:45:41.000 --> 00:45:44.000
+I would… I would put it as anxiety too, Laura.
+
+00:45:44.000 --> 00:45:47.000
+Feeling pressure?
+
+00:45:47.000 --> 00:45:52.000
+Do you think it fits with, um, a real or imagined threat?
+
+00:45:52.000 --> 00:45:56.000
+I think, yeah.
+
+00:45:56.000 --> 00:45:58.000
+I would also put the… the…
+
+00:45:58.000 --> 00:46:03.000
+The difficult to focus on anything as a sign of lower functioning.
+
+00:46:03.000 --> 00:46:06.000
+A decrease in functioning.
+
+00:46:06.000 --> 00:46:07.000
+That's a good way to put it.
+
+00:46:07.000 --> 00:46:09.000
+Hmm.
+
+00:46:09.000 --> 00:46:22.000
+attention, and I can't remember what… there's a word… a more objective word for clarity of thought, but the ability to attend and then, you know, having really good signal-to-noise ratio, something like that, when you're thinking. You're not getting cluttered up. I'd call that functioning.
+
+00:46:22.000 --> 00:46:24.000
+Mm-hmm. Yeah.
+
+00:46:24.000 --> 00:46:27.000
+Yeah, not getting cluttered.
+
+00:46:27.000 --> 00:46:28.000
+Yeah.
+
+00:46:28.000 --> 00:46:32.000
+Because otherwise it's the thinking system getting overridden.
+
+00:46:32.000 --> 00:46:52.000
+Okay, let's see. Just trying to move on a little bit. And then I put the distance in there. I actually, I don't think that that matches exactly from… With the statement that I put in, because the statement can feel the weight of what she isn't saying. I don't know. I could go distance coming from either direction on that one, but…
+
+00:46:52.000 --> 00:46:54.000
+Sounds like a… sounds like a song lyric.
+
+00:46:54.000 --> 00:46:57.000
+I would have flipped them around.
+
+00:46:57.000 --> 00:47:00.000
+You know, I would say that's the… the…
+
+00:47:00.000 --> 00:47:04.000
+the conflict part, um…
+
+00:47:04.000 --> 00:47:05.000
+Yeah.
+
+00:47:05.000 --> 00:47:08.000
+You know, just… it's kind of going back to the point of, do people have to
+
+00:47:08.000 --> 00:47:10.000
+declare themselves.
+
+00:47:10.000 --> 00:47:14.000
+And their positions with one another for it to be a conflict.
+
+00:47:14.000 --> 00:47:17.000
+There can be a Cold War.
+
+00:47:17.000 --> 00:47:18.000
+Eh, that's it.
+
+00:47:18.000 --> 00:47:20.000
+Where…
+
+00:47:20.000 --> 00:47:24.000
+I just called that distance from both sides, I guess.
+
+00:47:24.000 --> 00:47:27.000
+I'm not sure about this, but that's always the way I thought about it, you know?
+
+00:47:27.000 --> 00:47:35.000
+Well, I think, also, wouldn't, um… my understanding is that conflict and distance kind of go together, so distance would be…
+
+00:47:35.000 --> 00:47:38.000
+a position in a conflict.
+
+00:47:38.000 --> 00:47:41.000
+To some degree. That would be the Cold War.
+
+00:47:41.000 --> 00:47:44.000
+Like, distance is the… is the outcome.
+
+00:47:44.000 --> 00:47:48.000
+of conflict, unresolved conflict, and distancing out of it.
+
+00:47:48.000 --> 00:48:00.000
+Well, I think distance is more avoidance. It would be, you know, you hear, like, conflict avoidance. I think conflict and distance are two different mechanisms.
+
+00:48:00.000 --> 00:48:01.000
+Okay.
+
+00:48:01.000 --> 00:48:03.000
+Um…
+
+00:48:03.000 --> 00:48:06.000
+You know, but I… I sympathize with getting…
+
+00:48:06.000 --> 00:48:09.000
+them mixed up, because…
+
+00:48:09.000 --> 00:48:16.000
+Um, but, uh, you know, I think that the essence of conflict
+
+00:48:16.000 --> 00:48:20.000
+is a difference, and no one…
+
+00:48:20.000 --> 00:48:22.000
+giving in to the other.
+
+00:48:22.000 --> 00:48:31.000
+I got it digging in one's heels isn't necessarily distancing, even if you're being quiet, isn't necessarily distancing.
+
+00:48:31.000 --> 00:48:32.000
+Gotcha, got you, gotcha.
+
+00:48:32.000 --> 00:48:35.000
+Right. Remember the old term, passive resistance?
+
+00:48:35.000 --> 00:48:36.000
+Yeah.
+
+00:48:36.000 --> 00:48:38.000
+It's resistant.
+
+00:48:38.000 --> 00:48:40.000
+It's resistance to one another.
+
+00:48:40.000 --> 00:48:43.000
+It's a, uh, stonewalling is the term they use a lot.
+
+00:48:43.000 --> 00:48:46.000
+Right, right.
+
+00:48:46.000 --> 00:48:49.000
+Whereas distance would be, um…
+
+00:48:49.000 --> 00:48:52.000
+just kind of like, I'm just not going to deal with it.
+
+00:48:52.000 --> 00:48:54.000
+Gotcha. Yeah, that makes… that's…
+
+00:48:54.000 --> 00:49:00.000
+That's helpful.
+
+00:49:00.000 --> 00:49:28.000
+There's, I pulled this up. This is an old… This is a… this is back in the primordial beginnings of a lot of this stuff from a bunch of years ago. I was just trying to start defining terms for it was toward way back then, but but I do have these passages from Bowen's book.
+
+00:49:28.000 --> 00:49:29.000
+Okay.
+
+00:49:29.000 --> 00:49:32.000
+that had… it was kind of like the lit review thing. It was like, here's a basis for some of these definitions. And I just remember there was one passage where he enumerated the mechanisms kind of in short form here. Let me see if I can find it.
+
+00:49:32.000 --> 00:49:49.000
+It's only… it's one or the other of these. Uh, yeah. The two spouses begin a marriage with lifestyle patterns and levels of differentiation developed in their families of origin. Mating, marriage and reproduction are governed to a significant degree by emotional forces. The way that spouses handle them in dating, courtship and in timing.
+
+00:49:49.000 --> 00:49:53.000
+And planning the marriage provides one of the best views of level of differentiation.
+
+00:49:53.000 --> 00:50:01.000
+Okay, he starts off with distance. Most spouses have the closest blah blah blah lower.
+
+00:50:01.000 --> 00:50:04.000
+Dominant decision maker. I hope this is it.
+
+00:50:04.000 --> 00:50:09.000
+Other than the last paragraph, other than emotional distance,
+
+00:50:09.000 --> 00:50:16.000
+Yeah, right, because he talks about distance a little bit more and then kind of lists off the other ones. Fusion.
+
+00:50:16.000 --> 00:50:23.000
+Most universal mechanism is emotional distance from emotional distance from each other. It's present in all marriages.
+
+00:50:23.000 --> 00:50:26.000
+Other than… okay, maybe he doesn't go into detail. There are three major areas.
+
+00:50:26.000 --> 00:50:31.000
+He does someplace, I know that.
+
+00:50:31.000 --> 00:50:40.000
+Yeah, I remember you sent him saying the first thing that usually is tried is distance, and then you kind of move through the other ones in order, or something like that.
+
+00:50:40.000 --> 00:50:52.000
+Well, I could look for that offline. I thought I could. I would be worth a shot.
+
+00:50:52.000 --> 00:50:55.000
+Yeah, interesting stuff.
+
+00:50:55.000 --> 00:51:01.000
+You know, what I'm gonna do is I'm gonna pull up his book on my Kindle.
+
+00:51:01.000 --> 00:51:02.000
+Because you can…
+
+00:51:02.000 --> 00:51:11.000
+Mm-hmm. So, uh, so Kathy had functioning down as well, and Guilleramu and I didn't. That's probably important to note.
+
+00:51:11.000 --> 00:51:12.000
+And again, I split them into two.
+
+00:51:12.000 --> 00:51:16.000
+Which is cool. Right. Right.
+
+00:51:16.000 --> 00:51:17.000
+But, you know, we're more or less, uh, kind of, in general, on the same page, because, like, my away…
+
+00:51:17.000 --> 00:51:22.000
+Yeah.
+
+00:51:22.000 --> 00:51:26.000
+from previously could be marked as distance too, and…
+
+00:51:26.000 --> 00:51:27.000
+Yeah.
+
+00:51:27.000 --> 00:51:31.000
+A lot of people had anxiety, I think we all had anxiety up, or Patrick, you might have had a symptom up.
+
+00:51:31.000 --> 00:51:32.000
+Hmm.
+
+00:51:32.000 --> 00:51:41.000
+previously. You know, I put anxiety to the same, because to me, it was just a reiteration of what was said pre… a clarification of what was said previously.
+
+00:51:41.000 --> 00:51:46.000
+I don't know. I feel like we're riding the same wave.
+
+00:51:46.000 --> 00:51:49.000
+The thing that's helpful to me here is, I think I'm…
+
+00:51:49.000 --> 00:51:58.000
+I'm unsure of how much I need to help AI, like, I'm doing a lot of verbatim instead of
+
+00:51:58.000 --> 00:52:04.000
+of doing my own interpretations of it. I think I've been biased against doing that, so I see that
+
+00:52:04.000 --> 00:52:05.000
+Yeah.
+
+00:52:05.000 --> 00:52:14.000
+That… that is what you're doing, is doing some kind of an interpretation of that… of that transcription.
+
+00:52:14.000 --> 00:52:24.000
+A little bit, yeah. Yeah, I mean, it's… it's definitely your… your position… your, um, your contribution as a domain expert is to code from your perspective.
+
+00:52:24.000 --> 00:52:32.000
+your opinion. Your your professional opinion. And so it's important to do that so that if we, as opposed to trying to do certain things for AI.
+
+00:52:32.000 --> 00:52:33.000
+Hmm.
+
+00:52:33.000 --> 00:52:44.000
+Because the AI will learn the best. about reality by our diversity of opinions. And of course, if we end up agreeing, that's helpful.
+
+00:52:44.000 --> 00:52:45.000
+so…
+
+00:52:45.000 --> 00:52:50.000
+Yeah, I think I was defaulting to the weight study, where all we did was underline
+
+00:52:50.000 --> 00:52:52.000
+what was literally said.
+
+00:52:52.000 --> 00:52:53.000
+deem it as relevant, yeah.
+
+00:52:53.000 --> 00:53:00.000
+Mm-hmm. Every single instance. Yeah. Right. Yeah. And here it's more like you're trying to identify a singular singularity.
+
+00:53:00.000 --> 00:53:03.000
+Mm-hmm.
+
+00:53:03.000 --> 00:53:04.000
+It's almost like you're… you're… you're…
+
+00:53:04.000 --> 00:53:06.000
+Well, that's good. That'll improve, though.
+
+00:53:06.000 --> 00:53:09.000
+you're establishing some kind of summary statement for the…
+
+00:53:09.000 --> 00:53:13.000
+For the SAR variables that you enter.
+
+00:53:13.000 --> 00:53:14.000
+Yeah.
+
+00:53:14.000 --> 00:53:17.000
+Exactly. Summary statement is a good way to put that.
+
+00:53:17.000 --> 00:53:33.000
+Okay, just moving along, uh, the next one, let's see here, what was the what? I need to insert these. When you're standing in that hallway wondering what to do, what has the interaction with Elena been like leading up to that moment? Usually nothing.
+
+00:53:33.000 --> 00:53:41.000
+We might have had a brief exchange about the grocery list or her day at the firm. Then, silence.
+
+00:53:41.000 --> 00:53:49.000
+And then we've got the distance in here. We've basically got the distance idea down, right, already in previous, and we probably don't need to discuss that one.
+
+00:53:49.000 --> 00:54:01.000
+And then Kathy… Kathleen, you… put the… You did another note thing, so we've already covered that. And then, um… And then we had nothing.
+
+00:54:01.000 --> 00:54:11.000
+I think that's probably pretty clear. Okay. And then what's the next question? How long have you and Elena been married? And do you have any children?
+
+00:54:11.000 --> 00:54:24.000
+Good for AI, for doing the timeline thing. 16 years this past June, no children, just the two of us and the dog, usually. And so we're all doing the structural thing, and we all gotta do exactly the same.
+
+00:54:24.000 --> 00:54:27.000
+Oh, we even did 2010.
+
+00:54:27.000 --> 00:54:28.000
+Everybody got the year, though.
+
+00:54:28.000 --> 00:54:29.000
+Oh, there are some difference with the dates.
+
+00:54:29.000 --> 00:54:30.000
+Yeah. Yeah, which is…
+
+00:54:30.000 --> 00:54:32.000
+Oh. That's cool.
+
+00:54:32.000 --> 00:54:40.000
+You know what I started to do, I was inconsistent with it. You know, when you're… you've got a year.
+
+00:54:40.000 --> 00:54:42.000
+to use…
+
+00:54:42.000 --> 00:54:44.000
+January 1st of that year.
+
+00:54:44.000 --> 00:54:53.000
+Or sometimes, when I got lazier towards the end, I quit changing it to January 1st and just left it to…
+
+00:54:53.000 --> 00:54:57.000
+29 yesterday when I was coding, you know.
+
+00:54:57.000 --> 00:54:58.000
+And then put the year, so it was the one or the other.
+
+00:54:58.000 --> 00:55:01.000
+Mm-hmm.
+
+00:55:01.000 --> 00:55:06.000
+And maybe, is it important to have a convention for that?
+
+00:55:06.000 --> 00:55:17.000
+Well, it goes. I think this is close enough to a rule so far that it goes back to, well, first of all, you've got the date of the discussion.
+
+00:55:17.000 --> 00:55:19.000
+So that's an assumption baked in. And that's whoops.
+
+00:55:19.000 --> 00:55:20.000
+But the one thing I found, though, is that, you know, one… one… you know, if I'm coding
+
+00:55:20.000 --> 00:55:25.000
+Wrong page to be scrolling.
+
+00:55:25.000 --> 00:55:28.000
+Part of it on 326.
+
+00:55:28.000 --> 00:55:40.000
+And then the rest of it on 329, there's two different…
+
+00:55:40.000 --> 00:55:41.000
+Oh, okay.
+
+00:55:41.000 --> 00:55:46.000
+That's a… so that's what I was getting at… about to get to, is that, um, it's supposed to be set. I failed to set it here. And so it just until I actually type it in, and I just did that before the meeting.
+
+00:55:46.000 --> 00:55:50.000
+Okay.
+
+00:55:50.000 --> 00:55:51.000
+Right.
+
+00:55:51.000 --> 00:56:03.000
+It's it the it shows a default. And that's always the current day, and that's just a thing. So I need to remember to do that in the future. And then the answer to the question is, you backdate it based on your best assumption from today. Right?
+
+00:56:03.000 --> 00:56:11.000
+So this one would be 601. The 01 is like the placeholder. But you know it was June.
+
+00:56:11.000 --> 00:56:14.000
+Uh, 2010, which would have been 16 years ago from the discussion date.
+
+00:56:14.000 --> 00:56:19.000
+Okay.
+
+00:56:19.000 --> 00:56:20.000
+Makes sense.
+
+00:56:20.000 --> 00:56:30.000
+So anyway, that's a. It's pretty straightforward at this point. And then the next question is, let's see here. I have a good picture of what's going on at home.
+
+00:56:30.000 --> 00:56:43.000
+Okay, good for you. Now, let me get some background on this family. This will yeah so you know what's interesting? Just a side comment is I actually have it in the AI instructions to make a pivot.
+
+00:56:43.000 --> 00:56:44.000
+Uh-huh.
+
+00:56:44.000 --> 00:56:52.000
+At some point. And I had to do that because I found myself doing that back at the Bowen Center. But it has to be a little bit rigid because.
+
+00:56:52.000 --> 00:56:56.000
+It's just hard to get it to do it at all otherwise, because it does have to start getting all the data.
+
+00:56:56.000 --> 00:56:57.000
+Yeah.
+
+00:56:57.000 --> 00:57:08.000
+So, it's just interesting to watch when it does it, because sometimes it waits a while, and sometimes it does it early, like this one. So but I just want to let you know that there is instructions to make a pivot.
+
+00:57:08.000 --> 00:57:24.000
+So Sylvia, she turned 69 in April. She's… Uh, wait, what was this again? What's your mom's name and how is she? Sylvia. She turned 69 in April, she's a retired librarian, still spends most of her time reading.
+
+00:57:24.000 --> 00:57:34.000
+So the structural stuff with people is usually kind of straightforward, but… Laura, you… you added the father and mother, which we did decide was a rule.
+
+00:57:34.000 --> 00:57:36.000
+Yeah, I gotta remember to do that.
+
+00:57:36.000 --> 00:57:45.000
+That's cool. Yeah. And then you add a birth date, because we do have… and we should have done that, Laura, you and I did not do that.
+
+00:57:45.000 --> 00:57:48.000
+I didn't do it. Oh, no, I did on the bottom, yeah.
+
+00:57:48.000 --> 00:57:52.000
+You… you're… you did it, and Kathy did it.
+
+00:57:52.000 --> 00:57:59.000
+Um, yeah. Although you've got a shift… oh, and you had the retired one. Yeah, that's that's probably good to put in there.
+
+00:57:59.000 --> 00:58:01.000
+Yeah.
+
+00:58:01.000 --> 00:58:04.000
+Yep.
+
+00:58:04.000 --> 00:58:09.000
+Yep.
+
+00:58:09.000 --> 00:58:10.000
+I would have been perfect.
+
+00:58:10.000 --> 00:58:14.000
+Right? Okay, so if Guillermo, if you had added the parent, hit the father and then set up the parents, it would be… Would have been perfect.
+
+00:58:14.000 --> 00:58:20.000
+Okay. Um, and we've got 4 min.
+
+00:58:20.000 --> 00:58:31.000
+I could keep going. Do you guys wanna… well, let's take 4 minutes just before we finish, and maybe think about changes to the process.
+
+00:58:31.000 --> 00:58:33.000
+Okay.
+
+00:58:33.000 --> 00:58:44.000
+or improvements. I don't know if you guys have any suggestions. I was thinking that we could… One thing I could do to the system is add in another column here that evaluates the statements.
+
+00:58:44.000 --> 00:58:50.000
+Uh, for similarities and differences. And then maybe some lit review.
+
+00:58:50.000 --> 00:58:51.000
+Yeah.
+
+00:58:51.000 --> 00:58:52.000
+I think that'd be interesting, Patrick.
+
+00:58:52.000 --> 00:58:55.000
+associations.
+
+00:58:55.000 --> 00:59:08.000
+Another thing I was thinking, and I don't know how to do this yet, but we have this transcript, and the text of what we're saying is all that we'll be included in the analysis, but it would also be interesting if I could figure out how to.
+
+00:59:08.000 --> 00:59:16.000
+When it does the post-meeting analysis to include the actual statements that we were.
+
+00:59:16.000 --> 00:59:17.000
+Uh-huh.
+
+00:59:17.000 --> 00:59:22.000
+talking about. So I have to figure that out. Anyway.
+
+00:59:22.000 --> 00:59:30.000
+Yeah. Any other ideas?
+
+00:59:30.000 --> 00:59:32.000
+About the workflow as well, I mean, just how we're talking about it.
+
+00:59:32.000 --> 00:59:37.000
+curricula. Um…
+
+00:59:37.000 --> 00:59:40.000
+Patrick, does the, uh…
+
+00:59:40.000 --> 00:59:43.000
+Well, I know, no, never mind.
+
+00:59:43.000 --> 00:59:47.000
+I don't have any good ideas yet.
+
+00:59:47.000 --> 00:59:52.000
+about doing anything different.
+
+00:59:52.000 --> 01:00:00.000
+How about the cadence of moving to the next statement versus sticking and talking? What do you guys feel about that?
+
+01:00:00.000 --> 01:00:02.000
+Um…
+
+01:00:02.000 --> 01:00:07.000
+I think some of the discussion is important for
+
+01:00:07.000 --> 01:00:09.000
+Um…
+
+01:00:09.000 --> 01:00:17.000
+developing a common understanding of the concepts.
+
+01:00:17.000 --> 01:00:18.000
+Mm-hmm.
+
+01:00:18.000 --> 01:00:21.000
+And that, um…
+
+01:00:21.000 --> 01:00:22.000
+Mm-hmm.
+
+01:00:22.000 --> 01:00:30.000
+So, yeah, I don't know, there's a balance, and I don't know how to define what that is about…
+
+01:00:30.000 --> 01:00:34.000
+you know, discussing something to come to some…
+
+01:00:34.000 --> 01:00:37.000
+you know, consensus.
+
+01:00:37.000 --> 01:00:42.000
+as much as possible, and then… or to decide we can't really…
+
+01:00:42.000 --> 01:00:44.000
+come to a consensus at this point.
+
+01:00:44.000 --> 01:00:48.000
+And move on.
+
+01:00:48.000 --> 01:00:56.000
+I mean, I agree, I think if we had a rule to come to a consensus, we may be inaccurate sometimes by doing that.
+
+01:00:56.000 --> 01:00:59.000
+By forcing the issue to agree.
+
+01:00:59.000 --> 01:01:00.000
+Yeah.
+
+01:01:00.000 --> 01:01:08.000
+Well, I don't think… I think if we… Patrick's recording everything, and we have the transcripts, I don't think we need a consensus. Maybe… I think the disagreement might be helpful.
+
+01:01:08.000 --> 01:01:19.000
+That's right. That's right, because it's actually, um, the prompt that I have for the post-meeting analysis, specifically catalogs, agreements, and disagreements.
+
+01:01:19.000 --> 01:01:23.000
+And having them and letting them sit there is just as productive, because it's all recorded.
+
+01:01:23.000 --> 01:01:28.000
+You know what? I had a… what if, Patrick, we do maybe a few meetings?
+
+01:01:28.000 --> 01:01:32.000
+And we have a time limit for the discussion.
+
+01:01:32.000 --> 01:01:41.000
+And then we have one meeting where we take the AI transcript, and we look over our agreements and disagreements, and kind of revisit.
+
+01:01:41.000 --> 01:01:42.000
+Yeah.
+
+01:01:42.000 --> 01:01:50.000
+I made a meeting. We could also, um, bookmark really rich codes, like the functioning one. I thought.
+
+01:01:50.000 --> 01:01:55.000
+Yeah, I like that.
+
+01:01:55.000 --> 01:01:56.000
+Mm-hmm.
+
+01:01:56.000 --> 01:02:05.000
+And we could keep a list. and return to them. I mean, I thought that the conversation… and when we were talking about the functioning one, I was thinking, oh man, this exercise is really productive.
+
+01:02:05.000 --> 01:02:07.000
+Yeah?
+
+01:02:07.000 --> 01:02:19.000
+But at the same time, I don't want to spend the whole meeting on two statements. I don't know. Because we're going to… I mean, it was only a couple statements, and we ran into rich ones. It's like, how many more rich ones are there waiting if you just keep going, you might just keep running into them, you know?
+
+01:02:19.000 --> 01:02:30.000
+So how would you do that, Patrick, right after we finish, would you go through and bookmark the things that were significant in that way? Because that seems like a good idea.
+
+01:02:30.000 --> 01:02:43.000
+I might take notes during, and then just include it in the prompt, because I have an AI prompt that I kick off the workflow to do the post-meeting analysis, and I could just include the notes in there.
+
+01:02:43.000 --> 01:02:44.000
+and then it'll get tracked that way. But then we have to come back.
+
+01:02:44.000 --> 01:02:49.000
+But it… yeah, it's in there anyway, whether you make a note.
+
+01:02:49.000 --> 01:02:51.000
+or not, right?
+
+01:02:51.000 --> 01:02:56.000
+It may not actually point them out unless I tell it.
+
+01:02:56.000 --> 01:02:59.000
+It'll just be buried in there.
+
+01:02:59.000 --> 01:03:06.000
+Yeah, and it may make an assumption about what is a rich conversation versus that's different than ours. I'm not sure.
+
+01:03:06.000 --> 01:03:09.000
+Hey guys, I gotta go, uh, run to work.
+
+01:03:09.000 --> 01:03:11.000
+So we meet in two weeks at the same time.
+
+01:03:11.000 --> 01:03:12.000
+Like…
+
+01:03:12.000 --> 01:03:13.000
+Right. Yeah.
+
+01:03:13.000 --> 01:03:18.000
+Next week, right? Patrick? Next Monday?
+
+01:03:18.000 --> 01:03:21.000
+Or is it two weeks? Two weeks?
+
+01:03:21.000 --> 01:03:22.000
+Okay, thanks.
+
+01:03:22.000 --> 01:03:24.000
+Uh, we have the, um… it's not next week, it's two weeks from now, it's on the 13th, that's right. And then App Seminar is this Friday.
+
+01:03:24.000 --> 01:03:26.000
+I'll be there.
+
+01:03:26.000 --> 01:03:27.000
+See you then. Bye, Guiller.
+
+01:03:27.000 --> 01:03:32.000
+Bye, guys.
+

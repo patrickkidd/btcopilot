@@ -183,6 +183,10 @@ The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this b
 - Always proactively run the `code-style-enforcer` sub-agent for all source code changes (not markdown)
 - When a stack trace is pasted, add a test to reproduce the error if one doesn't exist
 - DB is in production — new schema changes need Alembic migrations
+- Keep Flask endpoints oriented around updating entries in database tables, not
+  just adding a new endpoint for every application verb
+- Assume that exceptions are already handled in the blueprint and jsonify() is
+  called with an error string and 5xx code
 
 ### UI/CSS Styling
 
