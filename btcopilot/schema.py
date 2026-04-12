@@ -400,10 +400,9 @@ class DiagramData:
     alias: str | None = None
     version: str | None = None
     versionCompat: str | None = None
-    # Clusters (LLM-detected event clusters)
+    # Personal-app-owned fields
     clusters: list[dict] = field(default_factory=list)
     clusterCacheKey: str | None = None
-    # PDP (negative-id staging)
     pdp: PDP = field(default_factory=PDP)
     lastItemId: int = field(default=0)
     # Scene UI/display properties (for canonical diagram mutation support)
