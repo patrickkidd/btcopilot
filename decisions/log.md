@@ -6,6 +6,78 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ---
 
+## 2026-04
+
+### 2026-04-12: Auto-accept extraction — skip PDP approval step for MVP 1
+
+**Context:** During MVP consolidation, Patrick identified that the PDP drawer approval step (review/accept/reject individual extraction items) adds friction that beta users won't understand. The LLM-based deduplication (T7-9 positive-ID filtering, 12 tests) makes re-extraction mostly idempotent, reducing the need for human review.
+
+**Options considered:**
+1. Keep PDP approval step, fix the 4 PDP drawer bugs (#128, #130, #132, #133)
+2. Skip PDP approval entirely — extract + commit + cluster detect in one shot
+3. Simplified approval (Accept All only, no per-item review)
+
+**Decision:** Option 2 — New single backend endpoint performs extract_full() + commit_pdp_items() + ClusterModel.detect() in one atomic DB transaction. "Build my diagram" button calls this directly. PDP drawer code preserved but not wired up.
+
+**Reasoning:**
+- Users won't understand what PDP items are or why they need to approve them at this stage
+- Atomic transaction prevents data corruption on partial failure
+- 4 PDP drawer bugs (#128, #130, #132, #133) become irrelevant, removing them from MVP 1 critical path
+- F1 of 0.616 means ~38% of items are wrong/missing — acceptable for beta since users can re-extract
+- T7-9 dedup ensures re-extraction doesn't create duplicates of committed items
+- Timeline (Learn tab) is the primary content view, not the PDP — same content, easier to digest
+
+**Trade-offs accepted:**
+- No human review of extraction output before committing to diagram
+- PDP drawer investment is dormant (could be revived later for power users)
+- Backend endpoint must be strictly transactional — any failure rolls back everything
+
+**Revisit trigger:** If beta users express desire to review/edit extraction results before committing, or if extraction quality (F1) drops below acceptable levels on real conversations.
+
+### 2026-04-12: MVP Dashboard consolidation — milestone-based source of truth
+
+**Context:** After Patrick stepped away for several weeks, the MVP tracking was split across three contradictory sources: MVP_DASHBOARD.md (stale since March), GitHub Issues (some incorrectly closed by OpenClaw automation), and GitHub Project Board (human-only tasks marked Done, reverted code marked Done). No single source could be trusted.
+
+**Decision:** Restructure MVP_DASHBOARD.md from goal-based to milestone-based, aligned to GitHub milestone descriptions (which are the correct definitions). GitHub project board flagged as unreliable — do not trust its status fields. Dashboard + GitHub issues are the source of truth.
+
+**Key findings during consolidation:**
+- T3-7 (timeline→diagram highlight): Closed on GitHub, Done on project board — zero code exists. Moved to Jira nice-to-have.
+- T7-11 (rules-based dedup): Done on project board — was implemented then reverted. Dead; replaced by T7-9 LLM-based approach.
+- T7-9 (idempotent re-extraction): Open on dashboard — actually complete with 12 tests. Dashboard never updated.
+- T8-1 (beta test): Closed on GitHub — partial. Patrick tested on iOS, captured friction, but bugs not fixed.
+- T7-5, T5-1, T5-2 (human GT tasks): Done on project board — human-only tasks that OpenClaw couldn't have done. Patrick confirmed he coded GT for 6 discussions (meets target).
+- SARF accuracy (Goal 4): Removed from developer burndown — human tester scope, Patrick mobilizing testers.
+- Gemini coaching validation: Deferred — Opus is excellent, no one will use Gemini until later.
+
+**Revisit trigger:** If tracking drifts again. Consider automated dashboard generation from GitHub issues/milestones.
+
+### 2026-04-11: FR-2 fix — Pro app applyChange uses explicit field merge
+
+**Context:** Pro app's `applyChange` in `ServerFileManagerModel.setData()` was replacing the entire DiagramData on 409 conflict retry, destroying Personal-app-owned fields (pdp, clusters, clusterCacheKey). This was the FR-2 violation tracked as T0-4 / GH #82.
+
+**Options considered:**
+1. Skip-list approach — replace everything except a blacklist of Personal-owned keys
+2. Explicit field assignment — only write Scene-owned fields, same pattern as PersonalAppController.saveDiagram()
+3. Full merge strategy with per-field conflict resolution
+
+**Decision:** Option 2 — Explicit field assignments for Scene-owned fields only in applyChange. Matches the existing PersonalAppController.saveDiagram() pattern. No metadata, no skip lists.
+
+**Reasoning:**
+- Skip-list is fragile — new fields default to "replace" and silently break Personal data
+- Explicit assignment is self-documenting — only the fields listed are overwritten
+- Matches existing pattern in PersonalAppController, reducing conceptual overhead
+- Full merge is overengineered for the actual conflict surface
+
+**Trade-off accepted:** Hardcoded field list in applyChange must be updated when DiagramData fields change. Rule added to top-level CLAUDE.md.
+
+**Pre-existing gap noted:** Server save path (getDiagramData → asdict) already strips unknown/legacy keys from blob. File save path preserves them via _readChunk. Not addressed — low risk for MVP.
+
+**Also fixed:** hideSARFGraphics was missing from Scene.diagramData().
+
+**Revisit trigger:** If DiagramData fields change and the explicit field list falls out of sync, or if a third client type (beyond Pro and Personal) needs its own merge strategy.
+
+---
+
 ## 2026-03
 
 ### 2026-03-05: IRR calibration features — coding advisor fix + review drawer redesign

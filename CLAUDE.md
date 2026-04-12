@@ -38,8 +38,8 @@ New clinical data outputs: store in `btcopilot-sources/`, create symlink, add to
 | F1 metrics, evaluation | [doc/F1_METRICS.md](doc/F1_METRICS.md) |
 | Chat flow, personal app AI | [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md) |
 | Client-server data sync | [familydiagram DATA_SYNC_FLOW.md](../familydiagram/doc/specs/DATA_SYNC_FLOW.md) |
-| Decisions (career, strategy) | [decisions/log.md](decisions/log.md) |
-| Architecture decisions | [adrs/](adrs/) |
+| Decisions (career, strategy) | [decisions/log.md](decisions/log.md) — see top-level CLAUDE.md "Documentation Routing > Decisions" for triggers and rules |
+| Architecture decisions (backend) | [adrs/](adrs/) — durable patterns only, not point-in-time choices (those go in decisions/log.md) |
 | IRR calibration, coding guidelines | [doc/irr/](doc/irr/) |
 | Calibration system (as-built) | [doc/adrs/calibration.md](doc/adrs/calibration.md) |
 | Synthetic client personas/evals | [doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md](doc/specs/SYNTHETIC_CLIENT_PROMPT_SPEC.md) |
@@ -58,22 +58,18 @@ Other: [README.md](README.md), [doc/plans/](doc/plans/)
 
 ### MVP Dashboard Maintenance (MANDATORY)
 
-[MVP_DASHBOARD.md](MVP_DASHBOARD.md) is the primary dev punchlist. Each task links to a detailed analysis in [doc/analyses/](doc/analyses/) — read the linked analysis before re-investigating whether a bug still exists. The dashboard must be a reliable cold-start reference for new sessions.
+[MVP_DASHBOARD.md](MVP_DASHBOARD.md) is the **single source of truth** for all milestone/task/bug status. See top-level CLAUDE.md "Documentation Routing > State tracking" for the canonical rule.
 
 After completing or reviewing any MVP task:
-1. Update the task's row in the tier table (strikethrough if done, add DONE date/notes)
-2. Update [REVIEW.md](doc/log/mvp_dashboard/REVIEW.md) with approval/rejection decision
-3. Update the "Current State Summary" table if the subsystem status changed
-4. Update the sprint plan status if sprint-level progress changed
+1. Update the task's row (strikethrough if done, add DONE date/notes)
+2. Move to the Done table for that milestone
 
 After new bugs are discovered during testing:
-1. Create a T*.md in `doc/log/mvp_dashboard/`
-2. Add a row to the appropriate tier table in MVP_DASHBOARD.md
-3. Update "Current State Summary" if it affects subsystem status
+1. Add a row to the Open table under the appropriate milestone in MVP_DASHBOARD.md
 
-Additional rules:
-- **Anti-staleness**: Never trust dashboard task statuses at face value. Verify against actual code before working on a task. Add findings to the Spot-Check Log.
-- **No hardcoded F1 values**: F1 numbers are computed on-demand by admin/audit routes. Dashboard should reference measurement date and conditions, not bare numbers.
+Rules:
+- **Anti-staleness**: Never trust dashboard task statuses at face value. Verify against actual code before working on a task.
+- **No hardcoded F1 values**: F1 numbers are computed on-demand. Dashboard should reference measurement date and conditions, not bare numbers.
 - **Task status must match code reality**: If implementation already exists, mark it done regardless of when it was implemented.
 
 ### Synthetic Client Dev Log (MANDATORY)

@@ -1,106 +1,163 @@
 # MVP Dashboard
 
-## How to Use This Document
+**Last consolidated:** 2026-04-12  
+**Source of truth:** This file + GitHub milestones. GitHub project board is unreliable (OpenClaw marked items Done without verification).
 
-Primary development punchlist. Goals → open tasks → reference material.
-
-**Task workflow:** Pick the next open task under the highest-priority goal. Mark done when verified.
-
-**Legend:** CC = Claude Code. CC+H = CC implements, human reviews. H = Human only.
+**How to use:** Milestones are ordered. Pick the next open task under the highest-priority milestone. Mark done with date when verified in code or app.
 
 ---
 
-## Goal 1: Single-Prompt Extraction E2E
+## MVP 1: Extraction E2E
 
-Full conversation → single LLM call → complete PDP → accept all → view diagram+timeline.
+> Hand Personal app to a human tester → chat → tap extract → view diagram+timeline with clusters.
+> **Done condition:** One real human completes the full flow without showstopper friction.
 
-**Status: Backend + UI implemented.** Single-prompt extraction (`pdp.extract_full()`) and extract endpoint live. Chat is chat-only. Personal app has extract button + PDP "Refresh" button. PDP cleared before each re-extraction for idempotency. Need to validate on fresh GT and prompt-tune.
+**Status: ~90% complete.** Core extraction pipeline, chat, timeline, clusters all working. Auto-accept endpoint needed (2026-04-12 decision: skip PDP approval step). Two Learn tab bugs remain.
 
-### Open Tasks
+**Flow (revised 2026-04-12):** chat → tap "Build my diagram" → single BE endpoint: extract_full() + commit_pdp_items() + cluster detect (atomic DB transaction) → view diagram+timeline. PDP drawer bypassed (code preserved, not wired up).
 
-| # | Task | Auto | Effort | Notes |
-|---|------|------|--------|-------|
-| T7-5 | Code GT for fresh discussions | H | ~3 hr | Patrick codes People/Events/PairBonds in SARF editor. ~60 min each. Synthetic discussions already generated in prod. |
-| T7-7 | Validate single-prompt F1 on fresh GT | CC | ~30 min | Run `calculate_cumulative_f1()` on T7-5 discussions. Target: People > 0.7, Events > 0.3. |
-| T7-8 | Prompt-tune on single-prompt path | CC+H | ~2 hr | Iterate on `fdserver/prompts/private_prompts.py` using fresh GT from T7-5. Stable surface — one call, low variance. |
-| T7-9 | Validate idempotent re-extraction (no duplication after accept) | CC | ~1 hr | Chat → extract → accept all → extract again → verify no duplicate people/events vs committed items. Tests LLM-based dedup in `DATA_FULL_EXTRACTION_CONTEXT`. |
-| ~~T7-10~~ | ~~Fix birth event self-reference bug~~ | CC+H | ~2 hr | ~~DONE 2026-03-03. Fixed prompt (EVENT.PERSON ASSIGNMENT + Example 1) and added `fix_birth_event_self_references()` post-processing defense in `pdp.py`. 7 new tests in `test_pdp.py`.~~ |
-| T7-11 | Fix extraction dedup against committed items | CC+H | ~2 hr | `extract_full` re-extracts people/events already committed in `diagram_data`. LLM prompt says "avoid duplicates with committed items" but isn't working. May need rules-based post-filter in `_extract_and_validate` or `apply_deltas` to strip entries matching committed IDs/names, not just prompt reliance. |
-| T5-1 | Fix 18 GT events with person=None | H | ~3 hr | SARF editor. Existing disc 48 GT cleanup. |
-| T5-2 | Fix 24 GT events with placeholder descriptions | H | ~4 hr | Read transcripts, write correct descriptions. |
+### Open
+
+| # | Task | Owner | Effort | Details |
+|---|------|-------|--------|---------|
+| NEW | E2E Personal app test harness | Patrick (parallel) | In progress | familydiagram-testing MCP. Enables Claude Code to walk through app and verify. Prerequisite for all implementation. |
+| NEW | Auto-accept BE endpoint | CC | ~2-4 hr | New endpoint: extract_full() + commit_pdp_items() + cluster detect in one atomic DB transaction. Frontend calls this, hides PDP badge/drawer. |
+| #129 | Cluster date range missing end year | CC | ~15 min | ~~LearnView.qml:598 formatDateRange() missing eYear.~~ **FIX WRITTEN** (2026-04-12, not yet committed). |
+| #131 | Cluster titles truncated in focused state | CC | Low | LearnView.qml elide without conditional width on isFocused. Nice-to-have. |
+| T8-1 | Beta test redo | Patrick | ~1 hr | After auto-accept + bug fixes. One human completes full flow. GH #81 incorrectly closed by OpenClaw. |
 
 ### Done
 
-T0-1, T0-2, T0-3, T0-5 (crash blockers), T1-1 through T1-5 (extraction quality), T4-1 through T4-5 (synthetic pipeline), T5-4 through T5-6 (F1 infrastructure), T6-2 (cumulative F1 baseline established 2026-02-24), T7-1 (`extract_full()` implemented), T7-2 (extract endpoint), T7-3 (chat-only, extraction removed), T7-4 (extract button + PDP Refresh button in Personal app).
+| Item | Date | Evidence |
+|------|------|----------|
+| T7-1: extract_full() pipeline | 2026-02-26 | pdp.py, tests pass |
+| T7-2: POST /extract endpoint | 2026-02-26 | personal/routes/discussions.py |
+| T7-3: Chat is chat-only | 2026-02-26 | chat.py, no extraction in ask() |
+| T7-4: "Build my diagram" button | 2026-02-26 | PersonalAppController.py, GH #79 |
+| T7-9: Idempotent re-extraction | 2026-03 | 12 tests (6 unit, 6 e2e). Positive-ID filtering in apply_deltas(). |
+| T7-10: Birth event self-reference fix | 2026-03-03 | fix_birth_event_self_references() in pdp.py, 7 tests |
+| T3-8: Auto-detect clusters on accept | 2026-03-05 | GH #85. personalappcontroller.py triggers ClusterModel.detect() |
+| T7-13: Timeline zoom/overflow | 2026-03-11 | GH #87 closed |
+| T3-1 through T3-6 | 2026-02 | Cluster overlap, selection, zoom, SARF format, Client/Coach labels, scroll-to-bottom |
+| T0-1, T0-2, T0-3, T0-5 | 2026-02 | Crash blockers |
+| T1-1 through T1-5 | 2026-02 | Extraction quality |
+| T4-1 through T4-5 | 2026-02 | Synthetic pipeline |
+| T5-4 through T5-6 | 2026-02 | F1 infrastructure |
+| T6-2: Cumulative F1 baseline | 2026-02-24 | calculate_cumulative_f1() |
+| GH #99: Remove per-statement extraction | 2026-03-05 | pdp.update() deleted, prompts consolidated |
+| GH #94: 2-pass split extraction | 2026-03-04 | Pass 1 people/pairbonds, Pass 2 events |
+| GH #90: Prompt induction infra | 2026-03-11 | Prod DB + extraction/f1 setup |
+| GH #85: Auto-detect clusters | 2026-03-05 | personalappcontroller.py |
+| GH #101/#124: iOS build + simulator test | 2026-03-11 | build.sh ios works, Patrick tested, found bugs #128-133 |
+| GT coded (6 discussions) | 2026-03 | Discussions 36/37/39/48/50/51 verified in gt_export.json |
+| F1 above all targets | 2026-04-12 verified | People 0.900, Events 0.411, PairBonds 0.762, Aggregate 0.616 |
+
+### Dead / Superseded
+
+| Item | Reason |
+|------|--------|
+| T7-11: Rules-based dedup | Implemented (PR #88), too rigid, reverted (PR #108). LLM-based dedup via T7-9 positive-ID filtering is the chosen approach. |
+| T7-5/T7-7/T7-8 as blocking tasks | Satisfied. GT coded for 6 discussions (target 5-8), F1 above targets. |
+| T5-1/T5-2 GT cleanup | Partially addressed by Patrick. 6 coded discussions meet target. |
+| T3-7: Timeline→diagram highlight | Not implemented. Moved to Jira UI epic (nice-to-have, Pro app). |
+| PDP approval flow | Bypassed by auto-accept decision (2026-04-12). PDP drawer code preserved but dormant. |
+| Delta-by-delta extraction | Architecture pivot 2026-02-24. Single-prompt 2x better F1. |
+| Gemini coaching eyeball test | Deferred. Opus is excellent, no one will use Gemini until later. |
+
+### PDP Drawer Bugs (dormant — bypassed by auto-accept)
+
+These exist but are not blocking MVP 1 since the PDP drawer is bypassed.
+
+| # | Title | File | Details |
+|---|-------|------|---------|
+| #128 | Badge count doesn't decrement | PersonalContainer.qml | pdpCount binding only updates on full PDP refresh |
+| #130 | Sheet stays open across tabs | PDPSheet.qml | Drawer parented to Overlay.overlay |
+| #132 | Time field shown by default | EventForm.qml | startTimePicker always visible, needs hideTime |
+| #133 | No dismiss gesture | PDPSheet.qml | dragMargin: 0 disables swipe-down |
 
 ---
 
-## Goal 2: Human Beta
+## MVP 2: Pro App Viewing
 
-Hand Personal app to human → chat → tap extract button → accept PDP → view diagram+timeline with clusters.
+> Open Personal-app-generated diagrams in the Pro app with correct layout.
+> **Done condition:** Pro app opens a Personal-generated diagram with correct auto-layout, no data corruption, no FR-2 violation.
 
-**Status: Blocked on Goal 1 validation.** Chat, PDP drawer, timeline, extract button all functional. Needs GT validation (T7-5/T7-7) and prompt tuning (T7-8) before beta handoff.
+**Status: ~10% complete.** T0-4 in progress (Patrick). Auto-arrange is the long pole.
 
-### Open Tasks
+**Note:** Pro app is basically done and out of scope for MVP 1. Only comes into picture for this milestone.
 
-| # | Task | Auto | Effort | Notes |
-|---|------|------|--------|-------|
-| T3-7 | Click event in timeline → highlight people in diagram | CC+H | ~3 hr | Signal plumbing between LearnView and scene. [Analysis](doc/analyses/2026-02-20_personal_app_beta_readiness.md) |
-| T8-1 | Beta test with 1 human user | H | ~2 hr | Patrick or trusted tester runs full flow: chat → build diagram → review → accept. Notes friction points. |
+### Open
+
+| # | Task | Owner | Effort | Details |
+|---|------|-------|--------|---------|
+| T0-4 | FR-2 fix (concurrent write corruption) | Patrick (in progress) | ~4 hr | applyChange overwrites Personal data on conflict retry. Pro must merge scene fields, not replace. GH #82. Analysis: doc/analyses/2026-02-20_diagram_viewing_and_sync.md. |
+| T2-1 | Deterministic auto-arrange | CC+H | 2-3 wk | Replace Gemini with graph algorithm. GH #83. Analysis: doc/analyses/2026-02-20_auto_arrange.md. Simplified MVP option: generational Y-alignment (~1 week, ~70% value). |
+| T2-5 | Baseline view fix | CC+H | ~2 hr | GH #84. Root cause unknown, needs investigation. |
 
 ### Done
 
-T3-1 through T3-6 (cluster overlap, selection, zoom, SARF format, Client/Coach labels, scroll-to-bottom).
+| Item | Date | Evidence |
+|------|------|----------|
+| T2-2, T2-3: Arrange error handling | 2026-02 | |
+| T2-4, T2-6 | 2026-02 | |
+
+### Likely blockers (from analysis docs, need verification)
+
+| Item | Source | Status |
+|------|--------|--------|
+| Pickle TypeError on version conflict | Analysis: diagram_viewing, TODO.md stack trace | Unknown if fixed. server_types.py:295. |
+| _log not defined on view deletion | Analysis: bugs_inventory, TODO.md | Not fixed → Jira UI epic. |
+| Views: can't add people then activate | TODO.md | Not fixed → Jira UI epic. |
 
 ---
 
-## Goal 3: Pro App Viewing
+## MVP 3: SARF Accuracy
 
-Open Personal-app-generated diagrams in the Pro app with correct layout.
+> Systematic SARF extraction F1 improvement using lit review definitions.
 
-**Status: Blocked on Goal 2.** Avoid risky Pro app changes until Goals 1+2 validated.
-
-### Open Tasks
-
-| # | Task | Auto | Effort | Notes |
-|---|------|------|--------|-------|
-| T0-4 | Fix FR-2 violation (applyChange overwrites Personal data) | CC+H | ~4 hr | Only fires on concurrent Pro+Personal writes. [Analysis](doc/analyses/2026-02-20_diagram_viewing_and_sync.md) |
-| T2-1 | Implement deterministic auto-arrange algorithm | CC+H | ~2-3 wk | Replace Gemini with graph algorithm. [Analysis](doc/analyses/2026-02-20_auto_arrange.md) |
-| T2-5 | Fix baseline view in new diagrams | CC+H | ~2 hr | Root cause unknown, needs investigation. |
-
-### Done
-
-T2-2, T2-3 (arrange error handling), T2-4, T2-6.
-
----
-
-## Goal 4: SARF Accuracy
-
-Systematic improvement of SARF variable extraction F1 using the exhaustive literature review in `doc/sarf-definitions/`. Parallel to Goals 1-3 — not a blocker for shipping, but tracks clinical accuracy work separately.
-
-**Status: Planning complete.** 11 GitHub issues created across 3 waves. Current SARF macro F1: 0.473 (S=0.518, A=0.597, R=0.487, F=0.291). Proven lever: review-then-filter passes (+103% R from Pass 3). Lit review (12 operational definitions, ~400 passages) ready but not yet applied.
+**Status: 0% complete. Not developer burndown.** Patrick is mobilizing human testers. Tracked separately.
 
 **Strategy constraints** (from `doc/PROMPT_ENG_EXTRACTION_STRATEGY.md`): verbose definitions kill F1, examples cause regressions, review passes work, most prompt changes regress on gemini-3-flash.
 
-### Open Tasks
+### Open (human tester scope)
 
-| # | Task | Auto | Wave | Notes |
-|---|------|------|------|-------|
-| T9-1 | SARF Calibration & IRR Review Tool | CC+H | 1 | Training app feature: within-expert review + between-expert IRR tool using frontier LLM. Separate planning session. |
-| T9-2 | Phase 6: Inter-term consistency check | CC+H | 1 | Complete `CROSS-REFERENCES.md` + `GAPS.md`. Resolve 7 boundary confusions. |
-| T9-3 | Symptom review pass | CC | 1 | Add `SYMPTOM_REVIEW_PROMPT`, apply only S corrections. Induction protocol. Target: S > 0.518. |
-| T9-4 | Anxiety review pass | CC | 1 | Add `ANXIETY_REVIEW_PROMPT`, apply only A corrections. Induction protocol. Target: A > 0.597. |
-| T9-5 | Functioning review pass | CC | 1 | Add `FUNCTIONING_REVIEW_PROMPT`, apply only F corrections. Induction protocol. Target: F > 0.291. |
-| T9-6 | R review enhancement | CC | 2 | Expand CRITICAL DISTINCTIONS in R review using Phase 6 output. Depends on T9-2. |
-| T9-7 | Unified review architecture decision | CC | 2 | Evaluate sequential vs unified vs combined review passes. Depends on T9-3/4/5. |
-| T9-8 | Pass 2 Decision Guide boundary tuning | CC | 2 | Add boundary clarifications to SARF Decision Guide. Depends on T9-2. |
-| T9-9 | Pass 2 SARF definitions refinement | CC | 3 | Terse precision replacements (not expansion). Depends on T9-3/4/5 results. |
-| T9-10 | GT expansion | H | 3 | Code 4-6 new discussions with lit-review-validated definitions. Depends on T9-1/2. |
-| T9-11 | SARF definition reference panel | CC | 3 | Training app panel showing lit review definitions during GT coding. Shares T9-1 infra. |
+| # | Task | GH Issue | Wave | Notes |
+|---|------|----------|------|-------|
+| T9-1 | SARF Calibration & IRR Review Tool | #103 | 1 | Training app feature. Requires planning session. |
+| T9-2 | Inter-term consistency check | #104 (epic) | 1 | Complete CROSS-REFERENCES.md + GAPS.md |
+| T9-3 | Symptom review pass | #104 (epic) | 1 | Target: S > 0.518 |
+| T9-4 | Anxiety review pass | #104 (epic) | 1 | Target: A > 0.597 |
+| T9-5 | Functioning review pass | #104 (epic) | 1 | Target: F > 0.291 (weakest) |
+| T9-6 | R review enhancement | #105 (epic) | 2 | Depends on T9-2 |
+| T9-7 | Unified review architecture | #105 (epic) | 2 | Depends on T9-3/4/5 |
+| T9-8 | Decision Guide boundary tuning | #105 (epic) | 2 | Depends on T9-2 |
+| T9-9 | SARF definitions refinement | #106 (epic) | 3 | Depends on T9-3/4/5 |
+| T9-10 | GT expansion | #106 (epic) | 3 | Human. Depends on T9-1/2. |
+| T9-11 | Definition reference panel | #106 (epic) | 3 | Training app. Shares T9-1 infra. |
+| — | Further improve SARF F1 | (project board only) | — | No GH issue. General improvement tracking. |
 
-### Done
+Individual GH issues #107-116 were closed and rolled into wave epics #104/#105/#106.
 
-(none yet)
+---
+
+## Metrics
+
+| Metric | Value | Measured | Target | Status |
+|--------|-------|----------|--------|--------|
+| People F1 | 0.900 | 2026-04-12 verified | > 0.7 | PASS |
+| Events F1 | 0.411 | 2026-04-12 verified | > 0.3 | PASS |
+| PairBonds F1 | 0.762 | 2026-04-12 verified | > 0.5 | PASS |
+| Aggregate Micro-F1 | 0.616 | 2026-04-12 verified | > 0.5 | PASS |
+| Structural Events F1 | 0.413 | 2026-04-12 | — | Birth=0.204, Death=0.800, Married=0.333 |
+| Shift Events F1 | 0.419 | 2026-04-12 | — | |
+| SARF Macro F1 | 0.602 | 2026-04-12 | > 0.5 | PASS (S=0.757, A=0.640, R=0.487, F=0.524) |
+| GT coded discussions | 6 | 2026-04-12 | 5-8 | PASS (disc 36/37/39/48/50/51) |
+
+Per-discussion: 36=0.698, 37=0.487, 39=0.612, 48=0.642, 50=0.561, 51=0.697.
+
+**Note:** All 6 GT discussions flagged `synthetic=True`. Audit dashboard shows 0 (filters synthetic). Admin dashboard shows correctly via toggle.
+
+**Note:** Previous dashboard (Mar 2026) reported higher F1 (Events 0.509, PairBonds 0.832). Different measurement conditions or extraction run. Current values verified from gt_export.json on 2026-04-12.
 
 ---
 
@@ -108,41 +165,73 @@ Systematic improvement of SARF variable extraction F1 using the exhaustive liter
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Single-prompt hits context limit on long conversations | Extraction fails or truncates | gemini-2.5-flash has 1M token context; typical discussion is ~30K chars. Monitor. |
-| Events F1 plateaus below 0.5 | Users see wrong events | Description-free matching + split extraction raised Events 0.335->0.509. |
-| GT coding bottleneck (Patrick only) | Limits measurement iterations | ~60 min/discussion is fast enough for 3-5 GT cases needed for MVP. |
-| Auto-arrange is 2-3 weeks | Delays Goal 3 | Consider simpler generational Y-alignment only. |
+| Auto-accept with no human review | ~38% of items wrong/missing (F1=0.616) | T7-9 dedup working (12 tests). Users can re-extract. Acceptable for beta. |
+| Single-prompt context limit | Extraction fails on long conversations | gemini-2.5-flash 1M tokens; typical ~30K chars. Monitor. |
+| Auto-arrange is 2-3 weeks | Delays MVP 2 | Simpler generational Y-alignment (~1 week, ~70% value). |
+| Atomic transaction endpoint | Data corruption if not transactional | Design requirement — extract + commit + cluster in single DB transaction. |
 
 ---
 
-## Metrics
+## Architecture Decisions (from decisions/log.md)
 
-| Metric | Last Measured | Target | Notes |
-|--------|-------------|--------|-------|
-| People F1 (cumulative) | 0.909 (Mar 2026, 6/6 disc, split) | > 0.7 | PASS. |
-| Event F1 (cumulative) | 0.509 (Mar 2026, 6/6 disc, split) | > 0.3 | PASS. Split extraction + description-free matching. |
-| PairBond F1 (cumulative) | 0.832 (Mar 2026, 6/6 disc, split) | > 0.5 | PASS. |
-| Aggregate F1 | 0.669 (Mar 2026, 6/6 disc, split) | > 0.5 | PASS. +0.118 from split+matching. |
-| GT coded discussions | 6 (disc 36/37/39/48/50/51) | 5-8 for MVP | Disc 52 GT pending. |
-| E2E synthetic | Verified 2026-02-24 | Functional | test_e2e_synthetic.py |
-| SARF Macro F1 | 0.473 (Mar 2026, 3-pass, 3-run mean) | > 0.5 (Stage 4) | Goal 4. S=0.518, A=0.597, R=0.487, F=0.291. |
-| Functioning F1 | 0.291 (Mar 2026) | > 0.5 | Goal 4. Weakest variable. |
+| Date | Decision | Key Detail |
+|------|----------|------------|
+| 2026-04-12 | Auto-accept extraction, bypass PDP drawer | Users won't understand approval step. Atomic BE endpoint. PDP code preserved. |
+| 2026-02-24 | Single-prompt extraction replaces delta-by-delta | 2x F1 improvement. User-initiated "Build my diagram" button. |
+| 2026-02-24 | Patrick is sole GT source for MVP | IRR study deferred. ~60 min/discussion. Target 3-5 (achieved 6). |
+| 2026-02-14 | PairBonds are first-class entities | Explicitly extracted by AI. F1 went 0.0→0.762 after prompt examples added. |
+
+---
+
+## Completed Historical Work (project board / closed issues)
+
+Items completed during the OpenClaw automation period (Feb-Mar 2026). Preserved for context.
+
+| Item | Source | Date |
+|------|--------|------|
+| T7-19: Gemini thinking budget experiment | Project board | 2026-03 |
+| T7-20: Baseline F1 with gemini-3.1-flash-lite | Project board | 2026-03 |
+| Add per-entity-type F1 breakdown to eval harness | Project board | 2026-03 |
+| Batch dead-code cleanup (#44, #47, #48, #49) | Project board | 2026-03 |
+| Generate F1 extraction quality report | Project board | 2026-03 |
+| Fix Master CI stuck in pending | Project board | 2026-03 |
+| Add integration tests for db-sync-capability | Project board | 2026-03 |
+| Improve Events extraction F1 0.29→0.4+ | Project board | 2026-03 |
+| Improve SARF extraction F1 for gemini-3-flash | Project board | 2026-03 |
+| Add DB performance indexes | Project board | 2026-03 |
+| Fix pro app crash: remove personal objects from pickle | Project board | 2026-03 |
+| #75: Update test suite to new Scene API | GH closed | 2026-02-26 |
+| #76: Data sync reliability | GH closed | 2026-02-26 |
+| #77: QML UI polish and stability | GH closed | 2026-02-26 |
+| #78: Dev environment setup (x2) | GH closed | 2026-03-05 |
+| #89: Prompt induction setup (duplicate) | GH closed | 2026-03-03 |
+| #92: T7-17 simplified prompt experiment | GH closed | 2026-03-03 |
+| #93: T7-18 prompt architecture review | GH closed | 2026-03-03 |
+
+---
+
+## Deferred (Post-MVP)
+
+| Item | Source | Notes |
+|------|--------|-------|
+| PlanView content (GH #100) | Patrick 2026-03-11 | "deferred to post MVP" |
+| Gemini coaching validation | 2026-04-12 | Opus is excellent. Gemini later. |
+| TestFlight distribution | GH #101 Phase 3 | Simulator works. TestFlight not set up. |
+| T3-7: Timeline→diagram highlight | Jira UI epic | Nice-to-have, Pro app |
+| Coaching style settings visual verification | doc/plans/CONVERSATIONAL_MODEL_QUALITY.md | Settings implemented, not visually verified |
+| SARF variable editing | Old dashboard | |
+| IRR study (Guillermo/Kathy) | Decision log 2026-02-24 | |
+| Fine-tuning | Old dashboard | |
+| Per-statement F1 diagnostics | Old dashboard | |
+| Conversation flow versioning | Old dashboard | |
+| PDF export | Old dashboard | |
+| Pattern intelligence | Old dashboard | |
+| Add Notes to PDP | btcopilot/doc/plans/ADD_NOTES_TO_PDP.md | |
+| Per-statement delta extraction for training app | Old dashboard | |
 
 ---
 
 ## Reference
-
-### Analyses (2026-02-20)
-
-| Analysis | Covers |
-|----------|--------|
-| [PDP Extraction & Delta Acceptance](doc/analyses/2026-02-20_pdp_extraction_and_delta_acceptance.md) | Extraction pipeline, validation, commit flow, F1 |
-| [Synthetic Pipeline](doc/analyses/2026-02-20_synthetic_pipeline.md) | Celery tasks, error handling, evaluators |
-| [Personal App Beta Readiness](doc/analyses/2026-02-20_personal_app_beta_readiness.md) | Chat UX, PDP drawer, timeline, PlanView |
-| [Auto-Arrange](doc/analyses/2026-02-20_auto_arrange.md) | Layout algorithm, Gemini approach |
-| [Diagram Viewing & Sync](doc/analyses/2026-02-20_diagram_viewing_and_sync.md) | Scene loading, version conflicts, FR-2 |
-| [Server API & Data Model](doc/analyses/2026-02-20_server_api_and_data_model.md) | Endpoints, validation, sync |
-| [Bugs & TODOs Inventory](doc/analyses/2026-02-20_bugs_and_todos_inventory.md) | Complete bug list, skipped tests |
 
 ### Key Files
 
@@ -157,20 +246,33 @@ Systematic improvement of SARF variable extraction F1 using the exhaustive liter
 | F1 metrics | `btcopilot/training/f1_metrics.py` |
 | Synthetic generation | `btcopilot/tests/personal/synthetic.py` |
 | E2E pipeline test | `btcopilot/tests/personal/test_e2e_synthetic.py` |
+| Idempotent re-extraction tests | `btcopilot/tests/personal/test_reextract_commit.py`, `test_committed_reextract_e2e.py` |
 | Personal app QML | `familydiagram/pkdiagram/resources/qml/Personal/` |
+| PersonalAppController | `familydiagram/pkdiagram/personal/personalappcontroller.py` |
 | Decision log | `btcopilot/decisions/log.md` |
-| Hand-written notes | [TODO.md](../../TODO.md) |
+| Consolidation plan (full raw data) | `btcopilot/doc/plans/MVP_CONSOLIDATION.md` |
 
-### Verification Log
+### Analyses (2026-02-20)
 
-| Date | Checked | Findings |
-|------|---------|----------|
-| 2026-02-20 | T0-*, T2-1, T4-* | T0-3 STALE. T4 descriptions refined. |
-| 2026-02-24 | All open tasks | T0-4 deferred. T4-2 not needed. E2E pipeline verified. |
-| 2026-02-24 | Architecture pivot | Single-prompt extraction proven. Dashboard rewritten. See decision log 2026-02-24. |
-| 2026-02-26 | T7-1 through T7-4 | Implemented and moved to Done. Extract button + PDP Refresh in Personal app. Chat is chat-only. PDP cleared before re-extraction. All architecture docs updated. |
-| 2026-03-03 | PairBond F1 | Fixed 3 bugs in f1_metrics.py:<br/>- `match_people` parent ID resolution bug (PairBond IDs).<br/>- Added `_augment_committed_id_map` for committed person ID mismatches.<br/>- Added `_augment_duplicate_person_id_map` for AI person deduplication failures.<br/>Result: PairBond F1 0.37→0.52 (pooled).<br/>Also updated `DATA_FULL_EXTRACTION_CONTEXT` prompt. |
+| Analysis | Covers |
+|----------|--------|
+| [PDP Extraction & Delta Acceptance](doc/analyses/2026-02-20_pdp_extraction_and_delta_acceptance.md) | Extraction pipeline, validation, commit flow, F1 |
+| [Synthetic Pipeline](doc/analyses/2026-02-20_synthetic_pipeline.md) | Celery tasks, error handling, evaluators |
+| [Personal App Beta Readiness](doc/analyses/2026-02-20_personal_app_beta_readiness.md) | Chat UX, PDP drawer, timeline, PlanView |
+| [Auto-Arrange](doc/analyses/2026-02-20_auto_arrange.md) | Layout algorithm, Gemini approach |
+| [Diagram Viewing & Sync](doc/analyses/2026-02-20_diagram_viewing_and_sync.md) | Scene loading, version conflicts, FR-2 |
+| [Server API & Data Model](doc/analyses/2026-02-20_server_api_and_data_model.md) | Endpoints, validation, sync |
+| [Bugs & TODOs Inventory](doc/analyses/2026-02-20_bugs_and_todos_inventory.md) | Complete bug list, skipped tests |
 
-### Deferred (Post-MVP)
+### GitHub State (as of 2026-04-12)
 
-PlanView content, SARF variable editing, IRR study (Guillermo/Kathy), fine-tuning, per-statement F1 diagnostics, conversation flow versioning, LLM model selection, PDF export, pattern intelligence, Add Notes to PDP (`btcopilot/doc/plans/ADD_NOTES_TO_PDP.md`), per-statement delta extraction for training app.
+**Issues to fix:**
+- #80 (T3-7): Incorrectly closed by OpenClaw. Not implemented. → Jira
+- #81 (T8-1): Incorrectly closed by OpenClaw. Partial — needs redo.
+- #82, #83: Assigned to old MVP 3 milestone on GitHub, belong to MVP 2.
+- #100: Should be closed (deferred by Patrick).
+- MVP 1 milestone description: Remove T3-7 from done-condition. Update flow to reflect auto-accept.
+- MVP 2 milestone title: "Human Beta" is misleading — this is Pro viewing.
+- Old MVP 3 milestone: Close (collapsed into MVP 2). Old MVP 4 renamed to MVP 3.
+
+**Project board trust level: LOW.** OpenClaw marked human-only tasks Done, reverted code as Done. Use this dashboard + GitHub issues as source of truth, not the project board.
