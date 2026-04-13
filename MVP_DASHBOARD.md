@@ -90,7 +90,7 @@ These exist but are not blocking MVP 1 since the PDP drawer is bypassed.
 
 | # | Task | Owner | Effort | Details |
 |---|------|-------|--------|---------|
-| T0-4 | FR-2 fix (concurrent write corruption) | Patrick (in progress) | ~4 hr | applyChange overwrites Personal data on conflict retry. Pro must merge scene fields, not replace. GH #82. Analysis: doc/analyses/2026-02-20_diagram_viewing_and_sync.md. |
+| T0-4 | FR-2 fix (concurrent write corruption) | Patrick | ~4 hr | Code complete on branches `familydiagram:fix/t0-4-fr2-applychange-merge`, `btcopilot:fix/t0-4-fr2-schema-cleanup`. 5 tests pass. **Pending Patrick manual test before merge.** GH #82. |
 | T2-1 | Deterministic auto-arrange | CC+H | 2-3 wk | Replace Gemini with graph algorithm. GH #83. Analysis: doc/analyses/2026-02-20_auto_arrange.md. Simplified MVP option: generational Y-alignment (~1 week, ~70% value). |
 | T2-5 | Baseline view fix | CC+H | ~2 hr | GH #84. Root cause unknown, needs investigation. |
 
