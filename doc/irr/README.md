@@ -30,7 +30,8 @@ Calibration meetings and coding guidelines for SARF inter-rater reliability.
 | 2 | 2026-02-23 | Sarah (stmts 1844-1846) | Patrick, Kathy, Guillermo | [deliberation](meetings/2026-02-23-sarah-round1-calibration-meeting2-deliberation.md) | [notes](meetings/2026-02-23-sarah-round1-calibration-meeting2-notes.md) | [transcript](meetings/2026-02-23-sarah-round1-calibration-meeting2-transcript.txt) |
 | 3 | 2026-03-16 | Sarah (tools review) | Patrick, Kathy, Guillermo, Laura | [deliberation](meetings/2026-03-16-sarah-round1-calibration-meeting3-deliberation.md) | [notes](meetings/2026-03-16-sarah-round1-calibration-meeting3-notes.md) | [transcript](meetings/2026-03-16-sarah-round1-calibration-meeting3-transcript.vtt) |
 | 4 | 2026-03-30 | Arthur (stmts 1-6) | Patrick, Kathy, Guillermo, Laura | [deliberation](meetings/2026-03-30-arthur-round1-calibration-deliberation.md) | [notes](meetings/2026-03-30-arthur-round1-calibration-notes.md) | [transcript](meetings/2026-03-30-arthur-round1-calibration-transcript.vtt) |
-| 5 | 2026-04-13 | Arthur (cont.) | TBD | — | — | — |
+| 5 | 2026-04-13 | Arthur (stmts 7-8, 2192 partial) | Patrick, Kathy, Laura | [deliberation](meetings/2026-04-13-arthur-round1-calibration-meeting5-deliberation.md) | [notes](meetings/2026-04-13-arthur-round1-calibration-meeting5-notes.md) | [transcript](meetings/2026-04-13-arthur-round1-calibration-meeting5-transcript.vtt) |
+| 6 | 2026-04-27 | Arthur (cont.) | TBD | — | — | — |
 
 ## Results Snapshots
 
@@ -40,6 +41,7 @@ Calibration meetings and coding guidelines for SARF inter-rater reliability.
 | 2026-02-23 | [results](results/2026-02-23-irr-results.md) |
 | 2026-03-16 | [results](results/2026-03-16-irr-results.md) |
 | 2026-03-30 | [results](results/2026-03-30-irr-results.md) |
+| 2026-04-13 | [results](results/2026-04-13-irr-results.md) |
 
 ## Current Case
 

@@ -1,0 +1,2963 @@
+WEBVTT
+
+00:01:23.000 --> 00:01:26.000
+Hey, Laura. I can't hear.
+
+00:01:26.000 --> 00:01:31.000
+Hi, Patrick. Hi, Laura.
+
+00:01:31.000 --> 00:01:33.000
+Is my volume okay? Can you guys hear me? Okay.
+
+00:01:33.000 --> 00:01:35.000
+Uh-huh.
+
+00:01:35.000 --> 00:01:36.000
+can.
+
+00:01:36.000 --> 00:01:45.000
+Okay, good.
+
+00:01:45.000 --> 00:01:46.000
+So many projects.
+
+00:01:46.000 --> 00:01:53.000
+I was, uh, driving this morning, and I listened to your pod… the podcast.
+
+00:01:53.000 --> 00:01:54.000
+Oh, cool. What'd you think?
+
+00:01:54.000 --> 00:01:59.000
+Yeah. Yeah, it was a good warm-up for the meeting. Yeah, I, uh… it gave me some more, you know,
+
+00:01:59.000 --> 00:02:04.000
+info on this whole project and the whole AI discussion, yeah, it was good.
+
+00:02:04.000 --> 00:02:19.000
+asked some good questions, and yeah, I enjoyed it, and it was good.
+
+00:02:19.000 --> 00:02:20.000
+Yeah.
+
+00:02:20.000 --> 00:02:23.000
+Yeah, it was fun. I thought it was, uh… I listened to it with Connie, my wife, and… you know, it lets me listen from a different perspective, kind of, through osmosis or whatever.
+
+00:02:23.000 --> 00:02:34.000
+And I thought, man, this thing is too complicated. It's got too much lingo. Like, I don't think anybody is going to know it. I don't think the general public would know what we're talking about.
+
+00:02:34.000 --> 00:02:39.000
+I can't hear you, Laura.
+
+00:02:39.000 --> 00:02:43.000
+I… I'm guessing it'll get simpler over time.
+
+00:02:43.000 --> 00:02:50.000
+I mean, the ability to speak about it more simply.
+
+00:02:50.000 --> 00:02:51.000
+Yeah, I don't think you can force it, but I think it happens.
+
+00:02:51.000 --> 00:02:59.000
+Yeah. Hopefully.
+
+00:02:59.000 --> 00:03:00.000
+I think it happens.
+
+00:03:00.000 --> 00:03:03.000
+Do you think it's happened? Oh.
+
+00:03:03.000 --> 00:03:06.000
+Over. Yeah.
+
+00:03:06.000 --> 00:03:07.000
+That's my constant, uh…
+
+00:03:07.000 --> 00:03:08.000
+Yeah, we'll see.
+
+00:03:08.000 --> 00:03:13.000
+constant challenge with just speaking about theory, period, to…
+
+00:03:13.000 --> 00:03:16.000
+Not so much clients, but just, you know…
+
+00:03:16.000 --> 00:03:19.000
+other people.
+
+00:03:19.000 --> 00:03:21.000
+Yeah.
+
+00:03:21.000 --> 00:03:24.000
+Yep.
+
+00:03:24.000 --> 00:03:28.000
+Yeah, it's a real good challenger rule, even to just not use any lingo.
+
+00:03:28.000 --> 00:03:30.000
+Yeah,
+
+00:03:30.000 --> 00:03:31.000
+Yep.
+
+00:03:31.000 --> 00:03:32.000
+Yeah.
+
+00:03:32.000 --> 00:03:39.000
+you know when you're talking about something. And here we are trying to converge on lingo.
+
+00:03:39.000 --> 00:03:40.000
+Yeah.
+
+00:03:40.000 --> 00:03:46.000
+By the way, in this working group. But that's a different different topic.
+
+00:03:46.000 --> 00:03:49.000
+I'm just waiting for Guillermo. And, uh…
+
+00:03:49.000 --> 00:03:57.000
+But while we're waiting, do you want to, um, that email I sent you yesterday with the question about your email?
+
+00:03:57.000 --> 00:04:07.000
+Yes, sure. Um… Let's see here…
+
+00:04:07.000 --> 00:04:08.000
+I'm doing so many things, I basically…
+
+00:04:08.000 --> 00:04:14.000
+Laura, I'm talking about that email Patrick sent about the test flight, uh, update, play with it, and…
+
+00:04:14.000 --> 00:04:19.000
+And a button that says extra, and I just…
+
+00:04:19.000 --> 00:04:20.000
+could find it.
+
+00:04:20.000 --> 00:04:23.000
+Okay, so the button… the button is in the app.
+
+00:04:23.000 --> 00:04:29.000
+Um, are you… are you… can you run the… the app on your phone? Have you got… have you gone to TestFlight?
+
+00:04:29.000 --> 00:04:39.000
+No. No.
+
+00:04:39.000 --> 00:04:40.000
+Oh, really? Yeah, no, that's…
+
+00:04:40.000 --> 00:04:41.000
+Have you installed TestFlight? downloaded the… okay, the first thing you have to do is go to TestFlight, and I can't remember if… I know that I've walked Laura and Guillermo through it, I can't remember if I walked you through it.
+
+00:04:41.000 --> 00:04:47.000
+I've not… I can't think of hearing that term before.
+
+00:04:47.000 --> 00:04:53.000
+That explains it.
+
+00:04:53.000 --> 00:04:54.000
+Yeah.
+
+00:04:54.000 --> 00:05:01.000
+Okay, well, that's alright. Yeah. I I have so many things going on in parallel that I I basically have 0 short term memory. I have everything documented.
+
+00:05:01.000 --> 00:05:14.000
+And that's one thing that fell through the cracks, so… I'll show you… I'll check and see if you're actually even registered here, but the first thing you need to do is download the TestFlight app in the App Store.
+
+00:05:14.000 --> 00:05:21.000
+So that's an Apple app. It's like another app store. You download the app store… you download the TestFlight app.
+
+00:05:21.000 --> 00:05:30.000
+So that in there, it'll show you all the betas that you're registered. You'll only be registered for mine, and it'll let you download or install the… any updates to the… to my app.
+
+00:05:30.000 --> 00:05:35.000
+And that's… and then that's being used instead of…
+
+00:05:35.000 --> 00:05:37.000
+How's that being used?
+
+00:05:37.000 --> 00:05:45.000
+Well, so the test flight is like the apple. It's like the app store for betas.
+
+00:05:45.000 --> 00:05:53.000
+That's the way to think about it. And it's how you get the beta version of this personal app.
+
+00:05:53.000 --> 00:05:54.000
+On the phone.
+
+00:05:54.000 --> 00:05:57.000
+On your phone. Because it's all got to go through Apple's system, right?
+
+00:05:57.000 --> 00:06:03.000
+Um, so I'm just checking to see if I've got you on here.
+
+00:06:03.000 --> 00:06:14.000
+I think Guillermo probably forgot. Let me text him.
+
+00:06:14.000 --> 00:06:19.000
+see here… Where do I do this?
+
+00:06:19.000 --> 00:06:30.000
+distribution. Trust safety. There's a place where there's users.
+
+00:06:30.000 --> 00:06:35.000
+Users and access. There we go.
+
+00:06:35.000 --> 00:06:38.000
+kids. Yeah, I don't even have you in here. All right.
+
+00:06:38.000 --> 00:06:39.000
+Okay.
+
+00:06:39.000 --> 00:06:45.000
+Kathy. Jablonski.
+
+00:06:45.000 --> 00:06:51.000
+Kathleen Jablonski.mft at gmail.
+
+00:06:51.000 --> 00:06:52.000
+You know? Yeah.
+
+00:06:52.000 --> 00:06:54.000
+Oh, I never write an email address. I always copy. I'll make a mistake.
+
+00:06:54.000 --> 00:06:56.000
+Yeah.
+
+00:06:56.000 --> 00:07:01.000
+And then… I think that's it. And then it's just that one.
+
+00:07:01.000 --> 00:07:04.000
+Okay.
+
+00:07:04.000 --> 00:07:05.000
+Okay.
+
+00:07:05.000 --> 00:07:14.000
+So you should get an email, um, invitation. But the long and short of it is you're gonna… hopefully it'll be in the invitation, but you're gonna go to the app store on your phone. Type in test flight.
+
+00:07:14.000 --> 00:07:19.000
+Yeah. Mm-hmm.
+
+00:07:19.000 --> 00:07:20.000
+Mm-hmm.
+
+00:07:20.000 --> 00:07:28.000
+install that. Then you, once it's installed, you go in there, and as long as you've accepted your invitation that you should get an email for, it'll show family diagram in there.
+
+00:07:28.000 --> 00:07:35.000
+Um, and you can install it from there, and then you get another app that's the Family Diagram app.
+
+00:07:35.000 --> 00:07:44.000
+and then it's between it's just you and me talking and helping you figure out what to do, but it should be kind of self-explanatory.
+
+00:07:44.000 --> 00:07:49.000
+So anyway. Um, yeah, and then once you get in there, it's gonna be… you're gonna…
+
+00:07:49.000 --> 00:07:56.000
+But it's not for entering data like we are on here, using the co-pilot. It's not for that.
+
+00:07:56.000 --> 00:07:57.000
+Yeah.
+
+00:07:57.000 --> 00:08:00.000
+Not at all. This is the personal app. So you're just supposed to chat with it.
+
+00:08:00.000 --> 00:08:01.000
+Okay.
+
+00:08:01.000 --> 00:08:08.000
+and then hit this little blue button up in the upper right, and it's supposed to extract the timeline and.
+
+00:08:08.000 --> 00:08:16.000
+and show you some graphs. And it's supposed to be usable.
+
+00:08:16.000 --> 00:08:17.000
+Oh.
+
+00:08:17.000 --> 00:08:24.000
+by normal people. So, like, I sent these screenshots to Laura.
+
+00:08:24.000 --> 00:08:27.000
+You can chat. with the AI here.
+
+00:08:27.000 --> 00:08:29.000
+Okay.
+
+00:08:29.000 --> 00:08:35.000
+and then it'll… extract timeline and… vignettes, basically like this.
+
+00:08:35.000 --> 00:08:42.000
+So it's the… it's the family diagram ChatGPT.
+
+00:08:42.000 --> 00:08:43.000
+Mm-hmm.
+
+00:08:43.000 --> 00:08:44.000
+Yeah. Are you able to see the screenshots? Yeah.
+
+00:08:44.000 --> 00:08:47.000
+Okay.
+
+00:08:47.000 --> 00:08:52.000
+That's the end goal for all this stuff is to get that thing.
+
+00:08:52.000 --> 00:08:53.000
+Let me see.
+
+00:08:53.000 --> 00:08:57.000
+to work. Okay. Well, I don't know where Guillermo is.
+
+00:08:57.000 --> 00:09:04.000
+But we should probably get going. And I need to record.
+
+00:09:04.000 --> 00:09:10.000
+It's most important thing. Oh, it is recording.
+
+00:09:10.000 --> 00:09:18.000
+Yes, it is recording hopefully to the cloud. That's crucial. How do I tell if it's recording to the cloud? It is okay.
+
+00:09:18.000 --> 00:09:30.000
+Um… Oh, did any of you? Did either of you go look at the, uh, the link I sent? Not that I expected you to, but the link with the.
+
+00:09:30.000 --> 00:09:31.000
+Results. of these meetings.
+
+00:09:31.000 --> 00:09:37.000
+Yeah, I'm trying to find… I was trying to find it again. That's the one that… that says…
+
+00:09:37.000 --> 00:09:39.000
+You know, these are the, uh…
+
+00:09:39.000 --> 00:09:42.000
+the controversies, and these are the…
+
+00:09:42.000 --> 00:09:46.000
+Um, unresolved and resolved issues.
+
+00:09:46.000 --> 00:09:48.000
+That one? Yeah.
+
+00:09:48.000 --> 00:09:49.000
+Yeah, so, um…
+
+00:09:49.000 --> 00:09:50.000
+That's right.
+
+00:09:50.000 --> 00:09:58.000
+I was, you know, meant to go back through my email to find that again. I did look at it a couple times.
+
+00:09:58.000 --> 00:09:59.000
+Yeah.
+
+00:09:59.000 --> 00:10:01.000
+was really useful.
+
+00:10:01.000 --> 00:10:02.000
+Um…
+
+00:10:02.000 --> 00:10:04.000
+I know. It's so cool.
+
+00:10:04.000 --> 00:10:07.000
+So, but then I'm finding it again was my main…
+
+00:10:07.000 --> 00:10:10.000
+problem in the email.
+
+00:10:10.000 --> 00:10:12.000
+So…
+
+00:10:12.000 --> 00:10:13.000
+Yeah, I looked at it in kind of a similar way, thinking,
+
+00:10:13.000 --> 00:10:18.000
+Right.
+
+00:10:18.000 --> 00:10:25.000
+when we get… it's kind of like after we discuss one of these cases, it's for looking at the…
+
+00:10:25.000 --> 00:10:34.000
+summaries about it and whatnot.
+
+00:10:34.000 --> 00:10:35.000
+Yeah.
+
+00:10:35.000 --> 00:10:47.000
+Yeah, because the whole point of the IRR meetings is to track similarities and differences, and and our in in our opinions, right? And then the meeting is about.
+
+00:10:47.000 --> 00:10:48.000
+Yeah.
+
+00:10:48.000 --> 00:10:57.000
+Just what's the word? Justification. calibration. We're basically, over time, we're supposed to converge on rules, and rules become the manual that you use to train people, theoretically, you use people to train people in the future to do it as reliably as us blindly.
+
+00:10:57.000 --> 00:11:03.000
+Um, and so this is just tracking each piece, each point.
+
+00:11:03.000 --> 00:11:04.000
+Uh-huh.
+
+00:11:04.000 --> 00:11:09.000
+along with. whether or not we're agreeing, and it's got like outstanding issues and.
+
+00:11:09.000 --> 00:11:11.000
+Cool.
+
+00:11:11.000 --> 00:11:21.000
+That's so cool. I mean, it's… all of this is meant to be raw data, so it's not like you're supposed to go through and necessarily read this. You can. It's really useful, but it's too much.
+
+00:11:21.000 --> 00:11:36.000
+The point is to capture all of this as raw data, because then as we go, every time I put up a transcript, the I use Claude code with a methodology that I already created and I reuse, right? And I give it the transcript and I say.
+
+00:11:36.000 --> 00:11:45.000
+Follow these rules for this transcript, and it goes through all of the previous raw data and makes a new snapshot. That's the cumulative result.
+
+00:11:45.000 --> 00:12:01.000
+and that's what's in, for example, this file. This is results snapshot from 330. That's 2 weeks ago after our last meeting, and we had some substantive.
+
+00:12:01.000 --> 00:12:02.000
+Yeah.
+
+00:12:02.000 --> 00:12:16.000
+conceptual conversations, right? coding conversations, and so it captured all of those. It's got the full log, and then if we go in, you can drill in like conflict versus difference and it's got Laura's opinion, it's got my opinion.
+
+00:12:16.000 --> 00:12:24.000
+So it'll just keep doing this, and uh… And then, in the end, we'll have a very long list of.
+
+00:12:24.000 --> 00:12:32.000
+of rules, and that are kind of organized by how much agreement we had on them.
+
+00:12:32.000 --> 00:12:36.000
+Versus some of them will be still kind of loose and up for debate.
+
+00:12:36.000 --> 00:12:41.000
+and eventually we have to do something with all that. But.
+
+00:12:41.000 --> 00:12:43.000
+Mm-hmm. Okay.
+
+00:12:43.000 --> 00:12:46.000
+So it's kind of cool to look at a little.
+
+00:12:46.000 --> 00:12:47.000
+Yeah.
+
+00:12:47.000 --> 00:12:50.000
+In the meantime. But.
+
+00:12:50.000 --> 00:12:55.000
+Alright, so Arthur.
+
+00:12:55.000 --> 00:13:05.000
+I meant to add in the new a new column. I started working on it, then I got sidetracked where on this page here.
+
+00:13:05.000 --> 00:13:15.000
+We have each of our codes, right? And I wanted to add another column that sort of summarized all the… all of what we're seeing per statement here.
+
+00:13:15.000 --> 00:13:23.000
+Um, I haven't done that yet, but… Figured we could just figure out where we left off.
+
+00:13:23.000 --> 00:13:34.000
+Let me keep going. Actually, that should be in the results. Or is it the results or the meeting summary? There's a meeting summary in here. There we go. Meeting.
+
+00:13:34.000 --> 00:13:40.000
+330 Arthur round to calibration notes.
+
+00:13:40.000 --> 00:13:48.000
+disagreements, discussion, statement, 2 statement 3. So we got through to statement 3.
+
+00:13:48.000 --> 00:13:53.000
+Oh, wait. Steven's 4 to 6. Maybe we got through to statement 6.
+
+00:13:53.000 --> 00:13:58.000
+That sounds about right.
+
+00:13:58.000 --> 00:14:04.000
+Laura and Kathy correctly added parents. Yeah, which is a rule. It's not up for debate.
+
+00:14:04.000 --> 00:14:13.000
+Um… marriage, junior, no children are correct on structure. Yeah, we started kind of agreeing a little bit.
+
+00:14:13.000 --> 00:14:17.000
+on simple stuff for. Okay.
+
+00:14:17.000 --> 00:14:27.000
+next meeting is today. Continue case statement 7 plus. So it tells us at the end. Nice.
+
+00:14:27.000 --> 00:14:28.000
+Could you just tell me, um,
+
+00:14:28.000 --> 00:14:29.000
+All right. Well, let's see if that works.
+
+00:14:29.000 --> 00:14:45.000
+You know, in the BT Copilot, how do you get to those summaries that you sent out?
+
+00:14:45.000 --> 00:14:46.000
+It's in there someplace in BT Copilot.
+
+00:14:46.000 --> 00:14:51.000
+6, 7. Uh, it's not totally straightforward, but… um…
+
+00:14:51.000 --> 00:14:52.000
+Okay.
+
+00:14:52.000 --> 00:14:56.000
+I'll yeah, it's in there. It's just there isn't a quick way to get there quickly. But it's in dock.
+
+00:14:56.000 --> 00:14:58.000
+So this is the 1st place you go doc.
+
+00:14:58.000 --> 00:14:59.000
+Doc.
+
+00:14:59.000 --> 00:15:02.000
+Can you see what I'm sharing here? The folder?
+
+00:15:02.000 --> 00:15:05.000
+Let's see, no.
+
+00:15:05.000 --> 00:15:09.000
+The 1st thing you see when you go to the repository page is all these files and folders, right?
+
+00:15:09.000 --> 00:15:17.000
+Okay, where's the repository page?
+
+00:15:17.000 --> 00:15:19.000
+I'll send this to you. Bookmark this for sure.
+
+00:15:19.000 --> 00:15:20.000
+Okay, yeah.
+
+00:15:20.000 --> 00:15:23.000
+Did you send it to me, too?
+
+00:15:23.000 --> 00:15:28.000
+Yeah. I'll send a text thread here.
+
+00:15:28.000 --> 00:15:30.000
+Okay.
+
+00:15:30.000 --> 00:15:36.000
+because it's a small group. So Laura.
+
+00:15:36.000 --> 00:15:44.000
+Bob star, Kathy.
+
+00:15:44.000 --> 00:15:47.000
+bookmark that. That's the home page.
+
+00:15:47.000 --> 00:15:50.000
+Okay.
+
+00:15:50.000 --> 00:15:51.000
+Okay.
+
+00:15:51.000 --> 00:15:56.000
+That's the entire project laid out. And then.
+
+00:15:56.000 --> 00:16:01.000
+The… I need to have a link on there. Yeah, that's not going to help. So then it's in doc.
+
+00:16:01.000 --> 00:16:08.000
+Okay.
+
+00:16:08.000 --> 00:16:09.000
+Okay.
+
+00:16:09.000 --> 00:16:10.000
+Well, I'll tell you what. I'm just gonna send you a link to the readme for this because that's… That's what you want.
+
+00:16:10.000 --> 00:16:14.000
+Yeah.
+
+00:16:14.000 --> 00:16:24.000
+The second one is just for the Irr. The first one is for the whole project. And this is like this is meant to be the index. This says what we're doing, and it's got results in meetings in here.
+
+00:16:24.000 --> 00:16:26.000
+Okay.
+
+00:16:26.000 --> 00:16:28.000
+So per meeting artifacts is what I was just looking at.
+
+00:16:28.000 --> 00:16:30.000
+Okay.
+
+00:16:30.000 --> 00:16:39.000
+And I just went down 330 Arthur calibration notes versus transcript right? And I clicked on that.
+
+00:16:39.000 --> 00:16:46.000
+And that's… that's the raw data for the meeting. But if you wanted to get just the results, you would go.
+
+00:16:46.000 --> 00:16:49.000
+You can go right here. Results timestamped results snapshots.
+
+00:16:49.000 --> 00:16:51.000
+Okay.
+
+00:16:51.000 --> 00:16:52.000
+So there's a ton of information in there. Just click around and check it out.
+
+00:16:52.000 --> 00:16:55.000
+Yeah. Yeah, okay.
+
+00:16:55.000 --> 00:16:56.000
+All right, sorry to interrupt there. Okay.
+
+00:16:56.000 --> 00:16:58.000
+All right. Okay.
+
+00:16:58.000 --> 00:17:02.000
+So we're gonna get back to Arthur, right?
+
+00:17:02.000 --> 00:17:14.000
+Right. It's hard to start this up with context. It's almost like I need to have the workflow put out a primer where we left off and what to think about.
+
+00:17:14.000 --> 00:17:15.000
+Okay.
+
+00:17:15.000 --> 00:17:20.000
+Okay. Claire is my younger sister. Now, what was the question here?
+
+00:17:20.000 --> 00:17:36.000
+That's right. I need to add in the. Do you have any brothers or sisters, or are you an only child? Claire is my younger sister. She's 38. She's a primary school teacher, which suits her, I suppose she's married with 3 kids to my parents' house is usually overflowing with noise and plastic. Okay.
+
+00:17:36.000 --> 00:17:37.000
+Right.
+
+00:17:37.000 --> 00:17:41.000
+So that's structural stuff, just people. Probably not much to discuss there, and we all probably got involved about the same.
+
+00:17:41.000 --> 00:17:43.000
+Except everybody just put the…
+
+00:17:43.000 --> 00:17:50.000
+who she is, and stuff, I put… I put an event for She School Teacher.
+
+00:17:50.000 --> 00:17:55.000
+Oh, you did put an event. And Guillermo did, too, actually.
+
+00:17:55.000 --> 00:18:05.000
+Right, yeah, so that… that wouldn't necessarily be a shift, because you're kind of in that, like we were talking about last time, in that note-taking mode.
+
+00:18:05.000 --> 00:18:07.000
+Okay, okay.
+
+00:18:07.000 --> 00:18:08.000
+Right, I'd just like to actually make a comment about that.
+
+00:18:08.000 --> 00:18:12.000
+So that I think that would not.
+
+00:18:12.000 --> 00:18:15.000
+Um, I think this is a longer-term
+
+00:18:15.000 --> 00:18:19.000
+question, but those kind of…
+
+00:18:19.000 --> 00:18:22.000
+Functional facts,
+
+00:18:22.000 --> 00:18:25.000
+Uh, like occupation…
+
+00:18:25.000 --> 00:18:28.000
+Um, education,
+
+00:18:28.000 --> 00:18:34.000
+health. Those, you know, we're specifically defined by
+
+00:18:34.000 --> 00:18:38.000
+Bowen as, you know, markers of…
+
+00:18:38.000 --> 00:18:40.000
+of functioning.
+
+00:18:40.000 --> 00:18:46.000
+And particularly important in trying to track
+
+00:18:46.000 --> 00:18:48.000
+multi-generational functioning.
+
+00:18:48.000 --> 00:18:54.000
+Um, across the generations, those are the kind of markers that, uh,
+
+00:18:54.000 --> 00:18:57.000
+people leave, where you can…
+
+00:18:57.000 --> 00:19:03.000
+Um, you know, assess how well they have or haven't done.
+
+00:19:03.000 --> 00:19:05.000
+Um, so…
+
+00:19:05.000 --> 00:19:10.000
+there's not really a place for those in this.
+
+00:19:10.000 --> 00:19:12.000
+Um…
+
+00:19:12.000 --> 00:19:15.000
+And, you know, I think…
+
+00:19:15.000 --> 00:19:19.000
+I'm guessing that's why there's a temptation to…
+
+00:19:19.000 --> 00:19:25.000
+You know, try and treat them as events in order to get them in there, because we're all so used to…
+
+00:19:25.000 --> 00:19:33.000
+Uh, taking note of those things.
+
+00:19:33.000 --> 00:19:43.000
+Yeah, that's true. The thing that we don't have in this coding system is event notes and person notes.
+
+00:19:43.000 --> 00:19:44.000
+Oh, right. Wow.
+
+00:19:44.000 --> 00:19:46.000
+which are just static. notes, right?
+
+00:19:46.000 --> 00:19:55.000
+It's things that don't fit really well on the timeline, even though you could say she started teaching at this date or that date, it's… you're making a point that, yeah, that's right.
+
+00:19:55.000 --> 00:20:10.000
+You at least need to keep track of those somewhere, and I was… I don't know how to make it work in here, but… That is why the note fields are there, and I think the note fields are crucial.
+
+00:20:10.000 --> 00:20:13.000
+So there's got to be a way to get something in the note fields from here.
+
+00:20:13.000 --> 00:20:15.000
+You're talking about in the app?
+
+00:20:15.000 --> 00:20:21.000
+In the family diagram, the notes not in this co-pilot.
+
+00:20:21.000 --> 00:20:25.000
+Well, it's all the same. I mean, I just mean that.
+
+00:20:25.000 --> 00:20:35.000
+Yeah, I remember that's if you want to think about it that way, yeah, like a person has a notes field in the app, right? And an event in the app has a notes field. So there's two different notes fields.
+
+00:20:35.000 --> 00:20:41.000
+And that's where you capture this kind of. Non.
+
+00:20:41.000 --> 00:20:43.000
+time-based stuff. They're just kind of like.
+
+00:20:43.000 --> 00:20:50.000
+So, different than the description, because the description goes with a shift.
+
+00:20:50.000 --> 00:20:55.000
+Yeah, description really is. Yeah, that's right. It's a note, and that needs to become title or something like that.
+
+00:20:55.000 --> 00:20:58.000
+You know what, I'm thinking…
+
+00:20:58.000 --> 00:21:01.000
+you know, under the functioning
+
+00:21:01.000 --> 00:21:04.000
+Um, variable.
+
+00:21:04.000 --> 00:21:07.000
+There could be, you know, baseline, a…
+
+00:21:07.000 --> 00:21:10.000
+a baseline marker
+
+00:21:10.000 --> 00:21:14.000
+tab that…
+
+00:21:14.000 --> 00:21:19.000
+It just has to do with that list of things, you know, health, occupation.
+
+00:21:19.000 --> 00:21:22.000
+Um…
+
+00:21:22.000 --> 00:21:26.000
+I forget what the health, education, occupation… I guess those are the…
+
+00:21:26.000 --> 00:21:30.000
+Would it be… would it be location?
+
+00:21:30.000 --> 00:21:31.000
+Well, look, look…
+
+00:21:31.000 --> 00:21:34.000
+We're… we're different family members, how far apart they are from each other and whatnot.
+
+00:21:34.000 --> 00:21:35.000
+where they live,
+
+00:21:35.000 --> 00:21:37.000
+where they live.
+
+00:21:37.000 --> 00:21:40.000
+Yeah, that would be…
+
+00:21:40.000 --> 00:21:42.000
+Not necessarily under…
+
+00:21:42.000 --> 00:21:47.000
+functioning, but anyway, something like that, Patrick.
+
+00:21:47.000 --> 00:21:52.000
+Um, I mean, I'm not saying do this now, but over time, I could see
+
+00:21:52.000 --> 00:21:56.000
+Um, that…
+
+00:21:56.000 --> 00:22:03.000
+you know, a way of collecting that information into the data itself.
+
+00:22:03.000 --> 00:22:08.000
+Um, could be possible that way.
+
+00:22:08.000 --> 00:22:10.000
+Say it one more time. You said tabs under functioning.
+
+00:22:10.000 --> 00:22:16.000
+So, yeah, so you have, under what, you're able to select for functioning.
+
+00:22:16.000 --> 00:22:19.000
+And there would be a tab for…
+
+00:22:19.000 --> 00:22:24.000
+So, right now, it's, you know, up, down, same.
+
+00:22:24.000 --> 00:22:27.000
+And then a…
+
+00:22:27.000 --> 00:22:33.000
+another category under functioning for lifetime markers.
+
+00:22:33.000 --> 00:22:35.000
+Um, occupation.
+
+00:22:35.000 --> 00:22:38.000
+Education.
+
+00:22:38.000 --> 00:22:41.000
+um, health,
+
+00:22:41.000 --> 00:22:42.000
+Yeah, it…
+
+00:22:42.000 --> 00:22:43.000
+categories of functioning.
+
+00:22:43.000 --> 00:22:52.000
+Yeah, geographical location, and just that, you know, limited list that we use.
+
+00:22:52.000 --> 00:22:58.000
+Mm-hmm.
+
+00:22:58.000 --> 00:22:59.000
+Yeah. Right.
+
+00:22:59.000 --> 00:23:03.000
+Yeah, like we do for a relationship.
+
+00:23:03.000 --> 00:23:09.000
+when it's. If it's under an SARF shift.
+
+00:23:09.000 --> 00:23:14.000
+Right.
+
+00:23:14.000 --> 00:23:15.000
+Uh-huh.
+
+00:23:15.000 --> 00:23:16.000
+That implies something's changed.
+
+00:23:16.000 --> 00:23:20.000
+It would be… yeah, I don't know, maybe it does not fit their…
+
+00:23:20.000 --> 00:23:23.000
+Well, um…
+
+00:23:23.000 --> 00:23:24.000
+But…
+
+00:23:24.000 --> 00:23:30.000
+Unless it's… unless it's, you know, like in the school teacher case, and it's like began school teaching.
+
+00:23:30.000 --> 00:23:34.000
+Yeah, if you had… I mean, if they're lifetime markers,
+
+00:23:34.000 --> 00:23:37.000
+you know, they would be basically…
+
+00:23:37.000 --> 00:23:40.000
+you know, over the, you know, they might not be…
+
+00:23:40.000 --> 00:23:49.000
+you know, maybe there's a timestamp way of managing that for lifetime markers, where you don't really know.
+
+00:23:49.000 --> 00:23:56.000
+Um, exactly when it started, or when it ended, but there is a lifetime assumption
+
+00:23:56.000 --> 00:23:57.000
+of, you know,
+
+00:23:57.000 --> 00:23:58.000
+Mm-hmm.
+
+00:23:58.000 --> 00:24:03.000
+It's almost like it belongs with, like, birth and death.
+
+00:24:03.000 --> 00:24:08.000
+And then somewhere in there, just their description of their…
+
+00:24:08.000 --> 00:24:10.000
+functional markers.
+
+00:24:10.000 --> 00:24:13.000
+Now, maybe it belongs there.
+
+00:24:13.000 --> 00:24:17.000
+Maybe it belongs there.
+
+00:24:17.000 --> 00:24:25.000
+But Laura, you're… You're, it sounds like part of what you're getting at.
+
+00:24:25.000 --> 00:24:26.000
+Yeah.
+
+00:24:26.000 --> 00:24:30.000
+is that it is almost like a checklist. It's like certain things that are fulfilled, like sacraments and functioning.
+
+00:24:30.000 --> 00:24:37.000
+Yeah.
+
+00:24:37.000 --> 00:24:38.000
+Right.
+
+00:24:38.000 --> 00:24:39.000
+You know, it's like, oh, you need to… this is a milestone. Get a job and do well in it or whatever.
+
+00:24:39.000 --> 00:24:41.000
+Right.
+
+00:24:41.000 --> 00:24:42.000
+uh. Yeah.
+
+00:24:42.000 --> 00:24:48.000
+I mean, I would say… yeah, the way… the way it's used now is, if there's a…
+
+00:24:48.000 --> 00:24:56.000
+You know, a family member who's more, let's say, more the object of projection, and they have a…
+
+00:24:56.000 --> 00:25:06.000
+Um, you know, they… the things that would be entered as events, you know, went into rehab or something, and then under those markers, their description of…
+
+00:25:06.000 --> 00:25:10.000
+you know, dropped out of high school, um, you know,
+
+00:25:10.000 --> 00:25:15.000
+those kinds of things that… that add…
+
+00:25:15.000 --> 00:25:18.000
+add, um, content to…
+
+00:25:18.000 --> 00:25:21.000
+the, you know…
+
+00:25:21.000 --> 00:25:26.000
+the symptomology of the projected on one or something, or everybody in the…
+
+00:25:26.000 --> 00:25:33.000
+everybody in the family is a doctor, and then somebody's unemployed, those kinds of things that seems like it would
+
+00:25:33.000 --> 00:25:37.000
+it would be rich content.
+
+00:25:37.000 --> 00:25:40.000
+Just like it is for…
+
+00:25:40.000 --> 00:25:46.000
+a family diagram on paper in the office.
+
+00:25:46.000 --> 00:25:53.000
+It's very much part of the methodology of the family diagram.
+
+00:25:53.000 --> 00:25:54.000
+Yeah.
+
+00:25:54.000 --> 00:26:01.000
+the original methodology. Yeah, that's right. And you you write it as notes next to the people all over the place, and then you get this holistic snapshot.
+
+00:26:01.000 --> 00:26:02.000
+Right, right.
+
+00:26:02.000 --> 00:26:03.000
+Yeah.
+
+00:26:03.000 --> 00:26:11.000
+And so, for it to be included as part of the data model, it seems like that would be of value.
+
+00:26:11.000 --> 00:26:13.000
+Um…
+
+00:26:13.000 --> 00:26:19.000
+Uh, for people who are, you know, almost more for people doing multi-generational
+
+00:26:19.000 --> 00:26:22.000
+Looking at the multi-generational process.
+
+00:26:22.000 --> 00:26:32.000
+We're, you know, in the previous generations, that's a level of information that you have.
+
+00:26:32.000 --> 00:26:38.000
+Well, this is recorded in the transcript, so we won't lose this one. This is a good topic.
+
+00:26:38.000 --> 00:26:43.000
+Sorry, it seems like we keep getting… there's so many topics, anyway. Okay.
+
+00:26:43.000 --> 00:27:00.000
+Yeah, let's move on to the next statement, just to keep moving, but… but I mean, I think this stuff is really important, and I can already see that we're going to end up with a huge heap of these open questions, but… Um, but they'll be recorded and organizable.
+
+00:27:00.000 --> 00:27:01.000
+Yeah.
+
+00:27:01.000 --> 00:27:02.000
+And we'll finish, we'll finish Arthur sometime in July.
+
+00:27:02.000 --> 00:27:08.000
+You know? Sure.
+
+00:27:08.000 --> 00:27:09.000
+Okay.
+
+00:27:09.000 --> 00:27:15.000
+I think it's fine. So… And Guillermo's doing a bit of the same.
+
+00:27:15.000 --> 00:27:22.000
+you know, he did the same thing that you did, Kathy. He cataloged that.
+
+00:27:22.000 --> 00:27:24.000
+Mm-hmm.
+
+00:27:24.000 --> 00:27:33.000
+Right.
+
+00:27:33.000 --> 00:27:34.000
+finding a place to put it, yeah.
+
+00:27:34.000 --> 00:27:41.000
+cataloged her as a school teacher. as a shift event. And so we're it sounds like we're not really sure how to resolve that against whether it's a shift or whether it's, you know, just a characteristic of a person or an achievement. But it's an open question. How do you keep track of this stuff? Because.
+
+00:27:41.000 --> 00:27:42.000
+Yeah.
+
+00:27:42.000 --> 00:27:44.000
+We agree that it's important. It's important to know that someone.
+
+00:27:44.000 --> 00:27:48.000
+was able to, you know, function as a school teacher for a long time, as opposed to nothing.
+
+00:27:48.000 --> 00:27:49.000
+Right.
+
+00:27:49.000 --> 00:27:55.000
+Example. Okay. So there you go, AI. I just gave it to you.
+
+00:27:55.000 --> 00:28:02.000
+Uh, alright, she lives… what's the next one? Where does Claire live?
+
+00:28:02.000 --> 00:28:17.000
+Does she have any family? She lives about 20 minutes from our parents in a newer development. Her life is quite full. The kids are 6, 8, 10, so she's always managing some schedule. My mother seems to find it all very fulfilling.
+
+00:28:17.000 --> 00:28:22.000
+Guillermo put nothing. Laura put nothing. Um… There's 20 minutes.
+
+00:28:22.000 --> 00:28:26.000
+Who's the male? What did I put?
+
+00:28:26.000 --> 00:28:31.000
+Claire's a husband, oh, I put her… went…
+
+00:28:31.000 --> 00:28:32.000
+I put…
+
+00:28:32.000 --> 00:28:37.000
+Claire's husband. Yeah, I mean, you've got the kids in there, right? So you gotta. That's when you coded the pair bond as they looks like.
+
+00:28:37.000 --> 00:28:40.000
+Yeah, but living 20 minutes away…
+
+00:28:40.000 --> 00:28:46.000
+Um… the tort is the husband, is it? I don't know what I did there.
+
+00:28:46.000 --> 00:28:49.000
+I think I was just, um…
+
+00:28:49.000 --> 00:28:51.000
+noting…
+
+00:28:51.000 --> 00:28:57.000
+Yeah, I think it was… it was similar to School Teacher, just noting that functional fact that she lives…
+
+00:28:57.000 --> 00:29:05.000
+She doesn't live in another state, she lives not next door, but 20 minutes away from her parents.
+
+00:29:05.000 --> 00:29:12.000
+Right. And I'm looking to see… I bet person 80 is… the mother or something looking for.
+
+00:29:12.000 --> 00:29:16.000
+Yeah, yeah.
+
+00:29:16.000 --> 00:29:30.000
+That looks like a bug. Oh, wait, I have to look under yours.
+
+00:29:30.000 --> 00:29:31.000
+It lives 10.
+
+00:29:31.000 --> 00:29:32.000
+plenty of bugs in this thing. Uh, person 80 is mom for you and your in your thing. So you.
+
+00:29:32.000 --> 00:29:35.000
+And I put in the entry, I put…
+
+00:29:35.000 --> 00:29:42.000
+there… I meant to put the pair bond, yeah, lives away 20 minutes from her parents, so…
+
+00:29:42.000 --> 00:29:43.000
+Um, yeah, I don't know that I would do that as a tort again.
+
+00:29:43.000 --> 00:29:48.000
+Mm-hmm.
+
+00:29:48.000 --> 00:29:52.000
+Not necessarily the reason that she lives there, but…
+
+00:29:52.000 --> 00:29:56.000
+No, maybe that's… no, maybe that was my judgment call, yeah.
+
+00:29:56.000 --> 00:30:00.000
+Okay. So, Laura, you didn't put… you didn't put anything?
+
+00:30:00.000 --> 00:30:01.000
+I guess not, um…
+
+00:30:01.000 --> 00:30:03.000
+Okay.
+
+00:30:03.000 --> 00:30:06.000
+you know, I… I… I'm…
+
+00:30:06.000 --> 00:30:11.000
+Not remembering what comes next, but it's probably relevant to that.
+
+00:30:11.000 --> 00:30:13.000
+triangle between the mother and the…
+
+00:30:13.000 --> 00:30:16.000
+her children.
+
+00:30:16.000 --> 00:30:21.000
+In terms of, you know, when family's close and the other one's more distant.
+
+00:30:21.000 --> 00:30:26.000
+Right.
+
+00:30:26.000 --> 00:30:31.000
+which I bet. you know, the toward the intuition about adding it toward had something to do with that.
+
+00:30:31.000 --> 00:30:37.000
+Mm-hmm. Right, yeah, it did.
+
+00:30:37.000 --> 00:30:38.000
+Mm-hmm.
+
+00:30:38.000 --> 00:30:58.000
+all I did was the structural stuff. Oh, and by the way, Laura, I texted you this, I think, yesterday. Kathy, I… uh, I just got… The latest kind of clarity or idea that I'm getting about how these events are divided is between structural and shifts. Structural and SARF.
+
+00:30:58.000 --> 00:31:02.000
+They're all shifts, actually. Structural is people.
+
+00:31:02.000 --> 00:31:12.000
+It's the literal diagram. It's the who's related to who, how, and I started looking, and all of the.
+
+00:31:12.000 --> 00:31:22.000
+Uh-oh. Where did the plus button go? Oh, that's a read only right. Let's do let's do this.
+
+00:31:22.000 --> 00:31:30.000
+This list is SARF shift and then everything else is structural.
+
+00:31:30.000 --> 00:31:34.000
+It changes the structure of the family, and sa rfs are function.
+
+00:31:34.000 --> 00:31:38.000
+Yeah.
+
+00:31:38.000 --> 00:31:39.000
+Yeah.
+
+00:31:39.000 --> 00:31:40.000
+function structure and function. Really interesting.
+
+00:31:40.000 --> 00:31:41.000
+That's what occurred to you, structure and function?
+
+00:31:41.000 --> 00:31:59.000
+Starting with birth. Well, I've been, it seems like kind of a nitpicky detail, this kind of stuff, but it when I've been. I've been trying to just really have a coherent data model that because once you have the data model is the core of everything. It.
+
+00:31:59.000 --> 00:32:13.000
+Allows you to align all of the different apps and everything can scale so much easier, and… And when I and I'm constantly been trying to get that to be more coherent, and I realized that.
+
+00:32:13.000 --> 00:32:26.000
+these, I think that the Sarf shifts this event type is our functional shifts in the organism, and then these are all structural in the organism. It's how it's when people show up.
+
+00:32:26.000 --> 00:32:31.000
+As births, when they go away as deaths and in between, it's how they form pair bonds.
+
+00:32:31.000 --> 00:32:39.000
+with unrelated people. and then they have offspring, and then it just keeps going and going.
+
+00:32:39.000 --> 00:32:40.000
+Would there… would there be a place in there for functional facts?
+
+00:32:40.000 --> 00:32:43.000
+So I think that's.
+
+00:32:43.000 --> 00:32:45.000
+what we were talking about prior?
+
+00:32:45.000 --> 00:32:50.000
+Yeah, function. Those are those would be that a person had an opinion at a certain point in time.
+
+00:32:50.000 --> 00:32:52.000
+Well, how about where they lived, or…
+
+00:32:52.000 --> 00:32:53.000
+that they had diabetes or something.
+
+00:32:53.000 --> 00:32:56.000
+something like that.
+
+00:32:56.000 --> 00:33:02.000
+the other… our last topic is what I'm talking about, those descriptors.
+
+00:33:02.000 --> 00:33:05.000
+Those are, I guess…
+
+00:33:05.000 --> 00:33:09.000
+You know, like you say, they come in as, you know,
+
+00:33:09.000 --> 00:33:11.000
+symptoms.
+
+00:33:11.000 --> 00:33:14.000
+They have diabetes.
+
+00:33:14.000 --> 00:33:17.000
+Uh, for the specific person, but…
+
+00:33:17.000 --> 00:33:18.000
+Um…
+
+00:33:18.000 --> 00:33:19.000
+Right.
+
+00:33:19.000 --> 00:33:20.000
+or let's say high school, college,
+
+00:33:20.000 --> 00:33:23.000
+occupation, those things.
+
+00:33:23.000 --> 00:33:26.000
+Yeah.
+
+00:33:26.000 --> 00:33:29.000
+So, again, I think…
+
+00:33:29.000 --> 00:33:34.000
+I mean, I think we can do without those for our purposes at the moment.
+
+00:33:34.000 --> 00:33:36.000
+Yeah. Yeah.
+
+00:33:36.000 --> 00:33:40.000
+I think in the long run,
+
+00:33:40.000 --> 00:33:42.000
+I'm just saying the same thing again, really.
+
+00:33:42.000 --> 00:33:50.000
+that those… those markers of baseline functioning over a lifetime.
+
+00:33:50.000 --> 00:33:58.000
+Um, are… is useful to have a way to get that into the data model.
+
+00:33:58.000 --> 00:34:02.000
+Baseline baseline. I heard you say that before, but it didn't register right.
+
+00:34:02.000 --> 00:34:03.000
+Yeah.
+
+00:34:03.000 --> 00:34:10.000
+When you're writing the different things on the paper diagram for all the different people, you're getting an idea of the baseline, usually.
+
+00:34:10.000 --> 00:34:12.000
+Yeah, yeah.
+
+00:34:12.000 --> 00:34:20.000
+Sometimes you write an episode on there, but really it's.
+
+00:34:20.000 --> 00:34:21.000
+I'm listening, I'm just gonna disappear from the screen for a second.
+
+00:34:21.000 --> 00:34:24.000
+Yeah. God, the baseline is so important.
+
+00:34:24.000 --> 00:34:35.000
+Okay. Oh, just on this event type thing again, I the I think one of the reasons that's that distinction between structure and function is important is because.
+
+00:34:35.000 --> 00:34:46.000
+because structural events, structural shifts are not. Srf shifts.
+
+00:34:46.000 --> 00:34:47.000
+Right.
+
+00:34:47.000 --> 00:34:51.000
+A birth is not an SARF shift. and neither is is getting married.
+
+00:34:51.000 --> 00:35:05.000
+or divorced, or death. it's I mean, there's, I guess the the parabon ones. There's some contained in their relationship shifts, but the point is that you track those, and then there can be SARF shifts that occur as in response to those.
+
+00:35:05.000 --> 00:35:10.000
+Yes.
+
+00:35:10.000 --> 00:35:11.000
+Yeah.
+
+00:35:11.000 --> 00:35:21.000
+And that's… that's a clarity that I got. And then in our coding it shows up. I've been kind of implying that there are. There are fairly clear rules.
+
+00:35:21.000 --> 00:35:30.000
+for coding for structural events. We decided as soon as you know that there's kids, you add you add both parents, for example.
+
+00:35:30.000 --> 00:35:41.000
+It's not like we're really deliberating on that. But the SARF coding has requires a lot more debate, and that's where all the substance for the the IRR process is.
+
+00:35:41.000 --> 00:35:42.000
+Anyway.
+
+00:35:42.000 --> 00:35:48.000
+You know, I think I have run into, so what, you know, what you have to do with the structural
+
+00:35:48.000 --> 00:35:51.000
+Um, chefs.
+
+00:35:51.000 --> 00:35:54.000
+Is it okay to call them structural shifts?
+
+00:35:54.000 --> 00:35:58.000
+with birth, death, they are structural shifts, and that.
+
+00:35:58.000 --> 00:36:00.000
+And the family configuration, who…
+
+00:36:00.000 --> 00:36:03.000
+how it's populated.
+
+00:36:03.000 --> 00:36:07.000
+That then, in order to…
+
+00:36:07.000 --> 00:36:11.000
+code for SARF, you have to add
+
+00:36:11.000 --> 00:36:17.000
+that event, again, I'm not talking here, but in
+
+00:36:17.000 --> 00:36:20.000
+in the professional diagram.
+
+00:36:20.000 --> 00:36:24.000
+You have to add another event.
+
+00:36:24.000 --> 00:36:28.000
+You know, as an SARF…
+
+00:36:28.000 --> 00:36:33.000
+event.
+
+00:36:33.000 --> 00:36:34.000
+Rather than being able to…
+
+00:36:34.000 --> 00:36:36.000
+Correct.
+
+00:36:36.000 --> 00:36:42.000
+um, code S-A-R-F.
+
+00:36:42.000 --> 00:36:49.000
+rather than just being able to have one entry for that structural event.
+
+00:36:49.000 --> 00:36:50.000
+And then be able to code SARF for it.
+
+00:36:50.000 --> 00:36:54.000
+Right.
+
+00:36:54.000 --> 00:37:03.000
+and I and that is part of what went into the thought process of designing the add data point form the way it is. You can only pick one.
+
+00:37:03.000 --> 00:37:04.000
+Yeah.
+
+00:37:04.000 --> 00:37:05.000
+Yeah.
+
+00:37:05.000 --> 00:37:10.000
+When you add event, it's… it's either a shift or a birth or adopted or abundant. It's not bonded and a relationship shift.
+
+00:37:10.000 --> 00:37:13.000
+Yeah. Right.
+
+00:37:13.000 --> 00:37:18.000
+It's not death and a relationship shift, but you track.
+
+00:37:18.000 --> 00:37:27.000
+the SARF shift maybe immediately after, maybe, maybe it was one second after, maybe it was practically instantaneous, and maybe it was a day later, but you track those as separate data points.
+
+00:37:27.000 --> 00:37:29.000
+Right.
+
+00:37:29.000 --> 00:37:42.000
+Because the whole point is when there are. triggering events like structural shifts or acts of God, or whatever. How does the organism respond, and how the organism responds as SRF shifts?
+
+00:37:42.000 --> 00:37:48.000
+Right.
+
+00:37:48.000 --> 00:37:49.000
+Yep.
+
+00:37:49.000 --> 00:37:51.000
+And does it do it better or worse? Anyway.
+
+00:37:51.000 --> 00:37:55.000
+I mean, this is huge stuff. Bowen would have loved this stuff.
+
+00:37:55.000 --> 00:37:56.000
+You know?
+
+00:37:56.000 --> 00:38:01.000
+Yeah, you know, it's a kind of a question I ask myself.
+
+00:38:01.000 --> 00:38:05.000
+It's almost, I think, you know, would he…
+
+00:38:05.000 --> 00:38:15.000
+Yeah, I think he would have seen this and appreciated it.
+
+00:38:15.000 --> 00:38:16.000
+Well,
+
+00:38:16.000 --> 00:38:17.000
+Let that be the measure of our success.
+
+00:38:17.000 --> 00:38:20.000
+I just happened to be reading in the… in the Family Systems Journal,
+
+00:38:20.000 --> 00:38:22.000
+2022.
+
+00:38:22.000 --> 00:38:24.000
+article that was a, uh…
+
+00:38:24.000 --> 00:38:29.000
+Catherine Rackauer or something went through Bowen's step to developing the different…
+
+00:38:29.000 --> 00:38:42.000
+concept of differentiation, and it was back before Menninger's, and what he did with transference and just questioning Freud, and how experimental he was in
+
+00:38:42.000 --> 00:38:46.000
+how he did it, and, um, just very…
+
+00:38:46.000 --> 00:38:51.000
+very… to answer questions, just try different things. And, um…
+
+00:38:51.000 --> 00:38:54.000
+So, yeah, I think… I think I imagine he would.
+
+00:38:54.000 --> 00:38:57.000
+you know, as a sidebar, right at the end of that,
+
+00:38:57.000 --> 00:39:02.000
+that art… that paper, there's a comment that he made
+
+00:39:02.000 --> 00:39:06.000
+from a Pennsylvania lecture in…
+
+00:39:06.000 --> 00:39:12.000
+It says the year. He mentioned. There's 30 variables to differentiate.
+
+00:39:12.000 --> 00:39:20.000
+which came up last time in our conversation, and she said, I'd like to know what they are. I think they're in the archives.
+
+00:39:20.000 --> 00:39:22.000
+Yeah, I think they are.
+
+00:39:22.000 --> 00:39:27.000
+There is a well-known sheet of paper floating around.
+
+00:39:27.000 --> 00:39:33.000
+that some people have seen, I think.
+
+00:39:33.000 --> 00:39:34.000
+Anyway…
+
+00:39:34.000 --> 00:39:35.000
+We'll find them. We'll find them through this.
+
+00:39:35.000 --> 00:39:38.000
+We… we can define them ourselves. He said, do we?
+
+00:39:38.000 --> 00:39:39.000
+We can… we can do that, so…
+
+00:39:39.000 --> 00:39:49.000
+That's right. I guarantee you, whatever it was, it was pretty speculative.
+
+00:39:49.000 --> 00:39:50.000
+Yeah.
+
+00:39:50.000 --> 00:39:53.000
+You know, it just… a list like that that's that big, it's just very hard to put together when it… without… hard to find it. That's all.
+
+00:39:53.000 --> 00:39:54.000
+I'm seeing on this entry, I have these redundancies that…
+
+00:39:54.000 --> 00:39:58.000
+But.
+
+00:39:58.000 --> 00:40:03.000
+You don't have… you were able to enter the birth and the…
+
+00:40:03.000 --> 00:40:06.000
+And the relationship in one go, and I have…
+
+00:40:06.000 --> 00:40:12.000
+my… the… my, uh, the three kids entered
+
+00:40:12.000 --> 00:40:15.000
+in different ways.
+
+00:40:15.000 --> 00:40:20.000
+Oh, that the pair… did you see that?
+
+00:40:20.000 --> 00:40:22.000
+Let's see…
+
+00:40:22.000 --> 00:40:28.000
+You both have it just… the three kids entered in one thing, and I have two different…
+
+00:40:28.000 --> 00:40:32.000
+pairs of three.
+
+00:40:32.000 --> 00:40:33.000
+go up…
+
+00:40:33.000 --> 00:40:34.000
+You mean like here?
+
+00:40:34.000 --> 00:40:39.000
+So, up here at the very top, it's just Leo, Maya, Sam on mine.
+
+00:40:39.000 --> 00:40:40.000
+And I do that… them as…
+
+00:40:40.000 --> 00:40:42.000
+Yeah.
+
+00:40:42.000 --> 00:40:45.000
+who their parents are,
+
+00:40:45.000 --> 00:40:51.000
+And then I… and then I enter them again with birthdate, so obviously that's…
+
+00:40:51.000 --> 00:40:52.000
+Oh.
+
+00:40:52.000 --> 00:40:54.000
+That's it. I could be more of it.
+
+00:40:54.000 --> 00:41:09.000
+The eldest son is Leo, then Maya, then the youngest son is Sam. To be honest, I couldn't tell you much more about their specific interests lately, other than they seem to require a bunch of attention. Yeah, I mean, she's not mentioning birth dates, but she's just mentioning… or he is just mentioning that they are children.
+
+00:41:09.000 --> 00:41:11.000
+that I wanted… I wanted to… yeah, I wanted to bring that up, because I skipped ahead to one…
+
+00:41:11.000 --> 00:41:15.000
+Yeah, so…
+
+00:41:15.000 --> 00:41:17.000
+Or two more conversations down to extract that, and wondered if…
+
+00:41:17.000 --> 00:41:20.000
+Yeah. Right.
+
+00:41:20.000 --> 00:41:24.000
+If that's capitia to extract that, so we can do it.
+
+00:41:24.000 --> 00:41:25.000
+Anyway…
+
+00:41:25.000 --> 00:41:28.000
+I would say that there's no there's no evidence about how old they are.
+
+00:41:28.000 --> 00:41:30.000
+Okay, okay.
+
+00:41:30.000 --> 00:41:42.000
+In here, it just puts them in order, but it doesn't really give enough for a birth date. But the fact that they are… you can see in the other ones, in, like, Laura's here, it just… it does have the parents set correctly, and that's really what matters at this stage.
+
+00:41:42.000 --> 00:41:49.000
+Mm-hmm, mm-hmm.
+
+00:41:49.000 --> 00:41:53.000
+Mm-hmm.
+
+00:41:53.000 --> 00:41:54.000
+Yeah.
+
+00:41:54.000 --> 00:41:57.000
+So, maybe in in the next one. If she started, you know, if they start talking about ages, you can extrapolate that from the date of the discussion, backdate it.
+
+00:41:57.000 --> 00:42:00.000
+All right. What else do we have in here? Oh, boy, over functioning.
+
+00:42:00.000 --> 00:42:08.000
+Okay, so that's a general principle of you don't go back up and change one above.
+
+00:42:08.000 --> 00:42:09.000
+Yeah.
+
+00:42:09.000 --> 00:42:11.000
+Right? It's a rule. Not just the principal. Yeah.
+
+00:42:11.000 --> 00:42:14.000
+Right, that's a rule.
+
+00:42:14.000 --> 00:42:19.000
+That's a coding rule dictated just by the whole Delta concept.
+
+00:42:19.000 --> 00:42:24.000
+That's how it works. So.
+
+00:42:24.000 --> 00:42:32.000
+All right. It looks like we have some Sarf stuff going on here. And it's toward an over functioning. Who'd have thought seems to be a theme.
+
+00:42:32.000 --> 00:42:35.000
+Okay, this is…
+
+00:42:35.000 --> 00:42:54.000
+So what it says? It says, these are the kids. To be honest, I couldn't tell you much about their specific interests lately, other than they seem to require a great deal of attention. As for Claire and me, quote, close, might be a strong word. When we were younger, I spent a lot of time trying to make sure things stayed quiet at home.
+
+00:42:54.000 --> 00:43:08.000
+Whereas she was always dot dot dot louder. My mother dotes on those kids. It's almost like she's finally found the conversation she was waiting for all those years.
+
+00:43:08.000 --> 00:43:09.000
+The grandkids.
+
+00:43:09.000 --> 00:43:11.000
+conversation with who?
+
+00:43:11.000 --> 00:43:22.000
+Oh, oh, dotes on the kids conversations. Right. So Guillermo put person 8, which is toward grandchildren. So he's got her toward the grandkids.
+
+00:43:22.000 --> 00:43:27.000
+Person 8 is, um…
+
+00:43:27.000 --> 00:43:28.000
+The mother.
+
+00:43:28.000 --> 00:43:29.000
+That's the mother for him. Yeah.
+
+00:43:29.000 --> 00:43:32.000
+Which…
+
+00:43:32.000 --> 00:43:33.000
+Sylvia, Sylvia.
+
+00:43:33.000 --> 00:43:38.000
+It's it's Arthur's mother. And then, Kathy, you.
+
+00:43:38.000 --> 00:43:43.000
+Mine is out of order, because I'm still entering the birthdate, so I think there… there's mine.
+
+00:43:43.000 --> 00:43:46.000
+highly involved.
+
+00:43:46.000 --> 00:43:52.000
+We're highly involved, and you've got tort. You just… the difference is you have anxiety down and functioning up.
+
+00:43:52.000 --> 00:44:01.000
+Well, with that, my anxiety down was his comment, she's finally found her conversation.
+
+00:44:01.000 --> 00:44:02.000
+That's for her, that the anxiety's down. For Sylvie…
+
+00:44:02.000 --> 00:44:04.000
+Oh.
+
+00:44:04.000 --> 00:44:08.000
+Yeah. Yeah.
+
+00:44:08.000 --> 00:44:13.000
+Okay, so I just… one thing I would say, I mean, as a coding…
+
+00:44:13.000 --> 00:44:19.000
+Rule, once we have a name, we should get it in there, right?
+
+00:44:19.000 --> 00:44:30.000
+That is a rule. It's a rule for structure is for people is that once you have a name, you must add that person and make sure it's included.
+
+00:44:30.000 --> 00:44:34.000
+I don't know why it says client there, I have Arthur entered in my names.
+
+00:44:34.000 --> 00:44:37.000
+It's a bug in the site. All these name.
+
+00:44:37.000 --> 00:44:39.000
+It's a bug. Like person 80 should be say Sylvia, you know?
+
+00:44:39.000 --> 00:44:42.000
+Mm-hmm.
+
+00:44:42.000 --> 00:44:44.000
+Okay. Okay.
+
+00:44:44.000 --> 00:44:45.000
+So…
+
+00:44:45.000 --> 00:44:48.000
+So I have to. So AI, if you're listening, catalog these bugs.
+
+00:44:48.000 --> 00:44:52.000
+Okay, so we have…
+
+00:44:52.000 --> 00:44:55.000
+when we're looking at the SAR
+
+00:44:55.000 --> 00:44:56.000
+Shit.
+
+00:44:56.000 --> 00:45:07.000
+Well, what I can point out here, just looking across, is that the 3 of you all coded Sylvia moving toward her grandkids who are named here.
+
+00:45:07.000 --> 00:45:20.000
+You all have that in there. I don't. I actually have distance for close being a strong word between the siblings, Arthur and his sister.
+
+00:45:20.000 --> 00:45:21.000
+That's a different event.
+
+00:45:21.000 --> 00:45:28.000
+But so we can set that. We can bookmark that, but it looks like this toward thing.
+
+00:45:28.000 --> 00:45:33.000
+you know, you guys all agreed on that. I didn't code it.
+
+00:45:33.000 --> 00:45:43.000
+It doesn't feel I'm just going on feeling. I don't really feel like I needed to, but… at the same time it I could see an argument for it.
+
+00:45:43.000 --> 00:45:51.000
+Because it means that she… it's like she's not, like, distant from him, she's not complacent, she actually engages with those grandkids. And that's, I guess, the point of that.
+
+00:45:51.000 --> 00:45:53.000
+Yeah.
+
+00:45:53.000 --> 00:45:57.000
+I thought the comment that she's, you know, she's finally
+
+00:45:57.000 --> 00:46:05.000
+found her conversation seemed significant.
+
+00:46:05.000 --> 00:46:08.000
+But when you…
+
+00:46:08.000 --> 00:46:09.000
+No.
+
+00:46:09.000 --> 00:46:15.000
+Sure. It's kind of an orientation that's like to where her orientation is toward as opposed to a discrete move. But I don't know that it matters, honestly.
+
+00:46:15.000 --> 00:46:16.000
+Yeah.
+
+00:46:16.000 --> 00:46:21.000
+And you said you coded distance, but that was for… that was about the not-close comment, so…
+
+00:46:21.000 --> 00:46:24.000
+Where… where are…
+
+00:46:24.000 --> 00:46:28.000
+Well, I said to bookmark that, because we're just so we don't, because we're talking about the toward, right?
+
+00:46:28.000 --> 00:46:31.000
+Yeah.
+
+00:46:31.000 --> 00:46:32.000
+Okay, and then the…
+
+00:46:32.000 --> 00:46:34.000
+between the mother.
+
+00:46:34.000 --> 00:46:39.000
+over-functioning.
+
+00:46:39.000 --> 00:46:40.000
+Does everybody have over-functioning for Arthur, or just me?
+
+00:46:40.000 --> 00:46:44.000
+That's your column.
+
+00:46:44.000 --> 00:46:48.000
+Just use for spent time making sure things were quiet at home.
+
+00:46:48.000 --> 00:46:50.000
+Yeah.
+
+00:46:50.000 --> 00:46:53.000
+I'll give you that, actually, I agree with that.
+
+00:46:53.000 --> 00:46:57.000
+What do I have?
+
+00:46:57.000 --> 00:47:04.000
+You have… You did get… the distance.
+
+00:47:04.000 --> 00:47:16.000
+to person 84. I assume that that's. the for you, 84 is Claire, the sister. So you and I both put the distance in there just to come back to that, Kathy.
+
+00:47:16.000 --> 00:47:21.000
+Mm-hmm.
+
+00:47:21.000 --> 00:47:22.000
+She put that for… he… he…
+
+00:47:22.000 --> 00:47:24.000
+Only Laura put the over functioning.
+
+00:47:24.000 --> 00:47:26.000
+what he's doing.
+
+00:47:26.000 --> 00:47:27.000
+Yeah.
+
+00:47:27.000 --> 00:47:28.000
+All right. to be honest.
+
+00:47:28.000 --> 00:47:33.000
+I'm looking at what the rest of us put for that.
+
+00:47:33.000 --> 00:47:43.000
+I spent a lot of time trying to make sure things stayed quiet at home, whereas she was always louder.
+
+00:47:43.000 --> 00:47:49.000
+So where are the rest of our entries for that comment?
+
+00:47:49.000 --> 00:47:53.000
+Well, Laura's the only one that put in over functioning.
+
+00:47:53.000 --> 00:47:57.000
+for that, and I am agreeing with that now.
+
+00:47:57.000 --> 00:48:06.000
+I also think the distance is important to get in there between the siblings, between Arthur and Claire.
+
+00:48:06.000 --> 00:48:07.000
+Yeah.
+
+00:48:07.000 --> 00:48:08.000
+that, Kathy, you and I put in.
+
+00:48:08.000 --> 00:48:11.000
+I know I coded it, can you go down a little bit more? Because I'm behind on my…
+
+00:48:11.000 --> 00:48:14.000
+There we go. So I did distance.
+
+00:48:14.000 --> 00:48:15.000
+Okay, and I did not do that.
+
+00:48:15.000 --> 00:48:19.000
+It's right here.
+
+00:48:19.000 --> 00:48:20.000
+Um,
+
+00:48:20.000 --> 00:48:21.000
+Yeah.
+
+00:48:21.000 --> 00:48:25.000
+Right, and neither did Guillermo.
+
+00:48:25.000 --> 00:48:26.000
+Yeah, it could have. It could have been captured already.
+
+00:48:26.000 --> 00:48:30.000
+I think my overfunk… I think my over-functioning comes… comes…
+
+00:48:30.000 --> 00:48:37.000
+in a few more times, establishing that in a few more comments by him.
+
+00:48:37.000 --> 00:48:42.000
+Yeah, let's see, and the cumulative events, is there another distancing event before that?
+
+00:48:42.000 --> 00:48:45.000
+between, uh, two siblings.
+
+00:48:45.000 --> 00:48:46.000
+Okay.
+
+00:48:46.000 --> 00:48:52.000
+Well, that would be a question. Yeah, you'd have to go back for both you and Guillermo and look. I just did a scan, and I didn't see one, but I didn't go back that far.
+
+00:48:52.000 --> 00:48:55.000
+I'm just using the cumulative.
+
+00:48:55.000 --> 00:48:59.000
+button to the right to scan for that.
+
+00:48:59.000 --> 00:49:00.000
+There's…
+
+00:49:00.000 --> 00:49:13.000
+Right. Right, I just think it's a… it's a valid question. We should probably just table it for this one, because it'd be a rabbit hole for each of us, you know?
+
+00:49:13.000 --> 00:49:20.000
+But the rule is, if you already added, for example, if you already added over functioning.
+
+00:49:20.000 --> 00:49:26.000
+for Arthur over functioning for either his sister or his mother or whatever, you shouldn't add it again.
+
+00:49:26.000 --> 00:49:28.000
+Well, now, wait a minute, because…
+
+00:49:28.000 --> 00:49:35.000
+they're going to be maybe different episodes of over-functioning.
+
+00:49:35.000 --> 00:49:38.000
+That's right, and then you would add it separately. That's the exception.
+
+00:49:38.000 --> 00:49:40.000
+I was thinking about that.
+
+00:49:40.000 --> 00:49:49.000
+Before we met today, because I keep… I went through to prune mine, because I was doing so much of that repeating of those entries, and…
+
+00:49:49.000 --> 00:49:50.000
+Mm-hmm.
+
+00:49:50.000 --> 00:49:57.000
+I think there were some that I took out, but there were certainly some that I left in, and I think it was… my thinking on that is that if there's…
+
+00:49:57.000 --> 00:50:00.000
+If it's a difference between sort of a…
+
+00:50:00.000 --> 00:50:03.000
+a episodic, um…
+
+00:50:03.000 --> 00:50:07.000
+single episode of Reactivity.
+
+00:50:07.000 --> 00:50:15.000
+And… and that's the basis of the entry, but if there's one that is more of a chronic
+
+00:50:15.000 --> 00:50:18.000
+um, pattern that is…
+
+00:50:18.000 --> 00:50:20.000
+is the…
+
+00:50:20.000 --> 00:50:26.000
+the emotional process that's occurring over time, then coding it
+
+00:50:26.000 --> 00:50:30.000
+more than once establishes the difference between
+
+00:50:30.000 --> 00:50:44.000
+you know, somebody getting into a fight and how that gets coded once versus over-functioning, over-functioning, over-functioning, that is occurring over time.
+
+00:50:44.000 --> 00:50:46.000
+That's why I'm doing it.
+
+00:50:46.000 --> 00:50:48.000
+more than once.
+
+00:50:48.000 --> 00:50:50.000
+Because…
+
+00:50:50.000 --> 00:50:56.000
+So are you implying that you you coded those as separate dated over functioning events or episodes?
+
+00:50:56.000 --> 00:51:06.000
+that in general, when there's… and it's established to be over-functioning or distanced, like, let's say the father going into the garage all the time.
+
+00:51:06.000 --> 00:51:07.000
+I kept entering that with the different times he did it.
+
+00:51:07.000 --> 00:51:10.000
+Yeah.
+
+00:51:10.000 --> 00:51:23.000
+For that reason, that it's the emotional process. So, when this happened, when Evelyn got sick or something, he really retreated to the garage. That seems important to code that.
+
+00:51:23.000 --> 00:51:26.000
+It established… yeah.
+
+00:51:26.000 --> 00:51:27.000
+So, how does…
+
+00:51:27.000 --> 00:51:39.000
+Yeah, that's how I think about it. Yeah. And so there's a difference between kind of a a baseline.
+
+00:51:39.000 --> 00:51:40.000
+Uh-huh. Uh-huh.
+
+00:51:40.000 --> 00:51:47.000
+uh, you know, like, here it looks like he's describing a baseline with… he's like, this is the way it was when we were growing up, which is kind of just baseline, right? And then there's what you're talking about, which is, well, actually, we're talking about a specific case like last year.
+
+00:51:47.000 --> 00:51:50.000
+when he went into the garage after this discussion, and then you'd be able to date it.
+
+00:51:50.000 --> 00:51:53.000
+Right.
+
+00:51:53.000 --> 00:51:58.000
+I mean, everything here has to be dated, but that's why you have the unknown date.
+
+00:51:58.000 --> 00:52:00.000
+Yeah.
+
+00:52:00.000 --> 00:52:01.000
+Okay, so…
+
+00:52:01.000 --> 00:52:07.000
+certainty field. So baseline, you can kind of capture with unknown. Just say this is just the way it was, or they just said it. It was like this.
+
+00:52:07.000 --> 00:52:13.000
+And then just do that once.
+
+00:52:13.000 --> 00:52:14.000
+Okay.
+
+00:52:14.000 --> 00:52:22.000
+Yeah, exactly. That you would not duplicate. And I think that that rises to the level of a coding rule. That's like a method. It's a way that you code.
+
+00:52:22.000 --> 00:52:29.000
+And then the question, the debate part comes up when it's like, well, is that over functioning? Or is that distance that kind of thing?
+
+00:52:29.000 --> 00:52:32.000
+Yeah.
+
+00:52:32.000 --> 00:52:34.000
+So…
+
+00:52:34.000 --> 00:52:39.000
+You know, for this one, as for Claire and me, close might be a strong word.
+
+00:52:39.000 --> 00:52:42.000
+Um…
+
+00:52:42.000 --> 00:52:47.000
+You know, I think you'd have to, in order to code for distance,
+
+00:52:47.000 --> 00:52:49.000
+You'd have to make an assumption.
+
+00:52:49.000 --> 00:52:55.000
+that not defining yourself as close means you're distant.
+
+00:52:55.000 --> 00:52:58.000
+Um…
+
+00:52:58.000 --> 00:53:00.000
+And, you know, people can…
+
+00:53:00.000 --> 00:53:06.000
+Meaning all varieties ofusion when they're talking about close.
+
+00:53:06.000 --> 00:53:08.000
+Um…
+
+00:53:08.000 --> 00:53:11.000
+So, that might be a case if I…
+
+00:53:11.000 --> 00:53:16.000
+we're going to code that. It might be a way
+
+00:53:16.000 --> 00:53:20.000
+Because… does it rise to the…
+
+00:53:20.000 --> 00:53:24.000
+criterion for distance yet, is there enough evidence for it
+
+00:53:24.000 --> 00:53:27.000
+Being distant yet.
+
+00:53:27.000 --> 00:53:29.000
+It's a good guess, given…
+
+00:53:29.000 --> 00:53:33.000
+the distancing that we've coded for this, for Arthur.
+
+00:53:33.000 --> 00:53:35.000
+But, um…
+
+00:53:35.000 --> 00:53:40.000
+Anyway, that's just a thought about…
+
+00:53:40.000 --> 00:53:47.000
+about coding for distance in that instance.
+
+00:53:47.000 --> 00:53:53.000
+Right? It's interesting.
+
+00:53:53.000 --> 00:53:59.000
+Going back to the, uh, to the over-functioning thing, then we should probably go to the next one.
+
+00:53:59.000 --> 00:54:13.000
+I I think I mentioned this in a previous meeting. But the way I'm thinking about over functioning now is whether or not you had a choice to do it differently.
+
+00:54:13.000 --> 00:54:14.000
+Uh-huh. No.
+
+00:54:14.000 --> 00:54:19.000
+When is it over functioning versus just picking up the slack, because it's a good idea, something like that, you know, like somebody's getting old, and yeah, you're helping them down the stairs because they actually can't do it on their own.
+
+00:54:19.000 --> 00:54:27.000
+Yeah, that's not over-functioning.
+
+00:54:27.000 --> 00:54:28.000
+Yeah.
+
+00:54:28.000 --> 00:54:38.000
+Right. I've I've seen the confusion about that in a lot of bone meetings and stuff, or debate about it, I guess, and and that's the way I'm drawing the line now is where there is actually a choice, and it's something that you could modify.
+
+00:54:38.000 --> 00:54:39.000
+Yeah, there's a… there's a thoughtfulness in a… in a contact with reality.
+
+00:54:39.000 --> 00:54:43.000
+So Mr.
+
+00:54:43.000 --> 00:54:45.000
+a…
+
+00:54:45.000 --> 00:54:47.000
+Objectivity.
+
+00:54:47.000 --> 00:54:48.000
+And once reality-driven, one's emotionally driven.
+
+00:54:48.000 --> 00:54:52.000
+Yeah.
+
+00:54:52.000 --> 00:54:55.000
+and then that would be the rule for all the mechanisms, I guess.
+
+00:54:55.000 --> 00:54:56.000
+Yeah.
+
+00:54:56.000 --> 00:55:03.000
+Because when you argue, it's like, well, okay, you could argue, and maybe that's the best you can do, but you could also slow it down and think through it.
+
+00:55:03.000 --> 00:55:08.000
+Yeah. Yeah. You know, yes, there's a lot of… there's argument, debate, there's…
+
+00:55:08.000 --> 00:55:14.000
+You know, when people have differences, that's…
+
+00:55:14.000 --> 00:55:24.000
+that can be governed by a thoughtful process.
+
+00:55:24.000 --> 00:55:30.000
+Okay. All right, let's try to grab another one in here.
+
+00:55:30.000 --> 00:55:31.000
+Yeah.
+
+00:55:31.000 --> 00:55:40.000
+These are so substantive. I mean. I don't know how we would even approach this without the AI record keeping because we're generating all of these points in these ideas, and it's just too much to manage without.
+
+00:55:40.000 --> 00:55:41.000
+having it tracked for you, you know.
+
+00:55:41.000 --> 00:55:48.000
+Uh, I think, as I've mentioned before, I have these massive notes from when Kathy and I just did it with
+
+00:55:48.000 --> 00:55:54.000
+you know, on paper.
+
+00:55:54.000 --> 00:55:55.000
+You know, this week.
+
+00:55:55.000 --> 00:55:56.000
+Right. Okay.
+
+00:55:56.000 --> 00:55:58.000
+captured what we could.
+
+00:55:58.000 --> 00:56:06.000
+Right. All right. So the question for the next 2192. Let's see.
+
+00:56:06.000 --> 00:56:17.000
+2192 was, what was it like for you as a child trying to make sure things stayed quiet at home? So that's kind of a good question, because it gets into that over functioning question.
+
+00:56:17.000 --> 00:56:28.000
+I suppose it was a matter of survival, in a sense. My mother has always been sensitive to disruptions. If there was too much noise, or if things were out of place, you could feel the temperature in the room change.
+
+00:56:28.000 --> 00:56:37.000
+When Claire was born, that shift became permanent. She was a colicky baby, always crying. My mother seemed constantly on the verge of fraying.
+
+00:56:37.000 --> 00:56:41.000
+I remember distinctly realizing that if I was perfect.
+
+00:56:41.000 --> 00:56:53.000
+If I kept my room immaculate and stayed out of the way, I could somehow balance the scales. I became very good at anticipating what was needed before anyone had to ask. I felt like… My job to be the stable one.
+
+00:56:53.000 --> 00:57:06.000
+The one who didn't add to the weight she was already carrying even now when I visit, I find myself tidying up the kitchen or organizing her mail. It's a habit I can't seem to break.
+
+00:57:06.000 --> 00:57:07.000
+Yeah.
+
+00:57:07.000 --> 00:57:11.000
+That's just jam-packed. Wow.
+
+00:57:11.000 --> 00:57:12.000
+Okay.
+
+00:57:12.000 --> 00:57:18.000
+Yeah, I… you know, one of the things, this just has to do with the, um, AI putting all this together.
+
+00:57:18.000 --> 00:57:22.000
+They… the capacity of Arthur to…
+
+00:57:22.000 --> 00:57:25.000
+account for himself and what he was thinking, and…
+
+00:57:25.000 --> 00:57:31.000
+How his mother was before the birth of his sister, and how she was after
+
+00:57:31.000 --> 00:57:33.000
+is, like…
+
+00:57:33.000 --> 00:57:39.000
+you know, a level of observation that you don't typically come across.
+
+00:57:39.000 --> 00:57:40.000
+Um, initially in a clinical case.
+
+00:57:40.000 --> 00:57:46.000
+Right.
+
+00:57:46.000 --> 00:58:02.000
+Yeah, there's a… there's a degree of predictability to this, too. It's and and I think that all of that together makes it pretty easy. It makes it easier to code.
+
+00:58:02.000 --> 00:58:03.000
+Yeah.
+
+00:58:03.000 --> 00:58:06.000
+which speeds up our process in the beginning, and then eventually we have to move to real like Kathy's recordings, for example, or that Bowen interview where it's much harder.
+
+00:58:06.000 --> 00:58:07.000
+Yeah.
+
+00:58:07.000 --> 00:58:10.000
+and more nuanced once we're a little bit more stable, is the way I'm thinking about that.
+
+00:58:10.000 --> 00:58:13.000
+Yeah.
+
+00:58:13.000 --> 00:58:15.000
+Because that statement just hands it to you on a silver platter.
+
+00:58:15.000 --> 00:58:16.000
+Yeah.
+
+00:58:16.000 --> 00:58:17.000
+Right.
+
+00:58:17.000 --> 00:58:19.000
+Right. Exactly.
+
+00:58:19.000 --> 00:58:20.000
+That's a…
+
+00:58:20.000 --> 00:58:23.000
+You know. All right. Well, let's see if.
+
+00:58:23.000 --> 00:58:27.000
+Let's see if we can take that silver platter and make something of it here. So.
+
+00:58:27.000 --> 00:58:34.000
+anxiety up. Okay, so Guillermo said, anxious over Claire as a baby.
+
+00:58:34.000 --> 00:58:39.000
+Kathy always been sensitive to disruptions, anxiety up symptom up down. There's a lot here.
+
+00:58:39.000 --> 00:58:46.000
+I did the two that had always been sensitive, and then it was worse when Claire was born, as two entries.
+
+00:58:46.000 --> 00:58:52.000
+Mm-hmm. functioning down symptoms same.
+
+00:58:52.000 --> 00:58:57.000
+We're not going to get through this statement, that's for sure.
+
+00:58:57.000 --> 00:59:03.000
+Laura, you put anxiety up with too much noise.
+
+00:59:03.000 --> 00:59:10.000
+colicky baby adding to noise, symptom up, that's… that's true. Colicky.
+
+00:59:10.000 --> 00:59:11.000
+Yeah, none of us caught that one.
+
+00:59:11.000 --> 00:59:17.000
+But the problem with that is, see, I'm coding for Claire, and it's really not her…
+
+00:59:17.000 --> 00:59:18.000
+And that's up. It's the colicky baby that…
+
+00:59:18.000 --> 00:59:21.000
+Oh, okay.
+
+00:59:21.000 --> 00:59:23.000
+has the symptom.
+
+00:59:23.000 --> 00:59:27.000
+I think I coded for that for Claire.
+
+00:59:27.000 --> 00:59:33.000
+Yeah, you did. Symptom of anxiety up functioning down.
+
+00:59:33.000 --> 00:59:40.000
+Where did the functioning down come in?
+
+00:59:40.000 --> 00:59:41.000
+Yeah, it's a… it's a debate, I don't know.
+
+00:59:41.000 --> 00:59:44.000
+Would you add functioning down for a baby?
+
+00:59:44.000 --> 00:59:47.000
+I mean… yeah.
+
+00:59:47.000 --> 00:59:48.000
+Yeah.
+
+00:59:48.000 --> 00:59:49.000
+Right, right.
+
+00:59:49.000 --> 00:59:52.000
+Their neocortex is like part of their cerebellum.
+
+00:59:52.000 --> 00:59:57.000
+I mean, if it's over-functioning, what was drawing the… drawing the mother to…
+
+00:59:57.000 --> 01:00:02.000
+to be anxious or over-function was… or not… to be anxious.
+
+01:00:02.000 --> 01:00:06.000
+is the functioning of the baby, but yeah, that…
+
+01:00:06.000 --> 01:00:08.000
+That doesn't belong there, I think.
+
+01:00:08.000 --> 01:00:13.000
+Um…
+
+01:00:13.000 --> 01:00:20.000
+But I thought that the mother cons… the couple entries of constantly on the verge of Freight… fraying
+
+01:00:20.000 --> 01:00:25.000
+established a functioning down.
+
+01:00:25.000 --> 01:00:33.000
+Hmm. Okay, there's a lot of there on Cal and you're calling Kathy, but I'm gonna keep it up.
+
+01:00:33.000 --> 01:00:42.000
+Here, yeah, that's right. That's interesting. person 80. That's mother. So you put functioning down for mother symptom up anxiety up.
+
+01:00:42.000 --> 01:00:49.000
+always been sensitive to disruptions. Where did the symptom idea come from there?
+
+01:00:49.000 --> 01:00:52.000
+Um…
+
+01:00:52.000 --> 01:00:56.000
+the… the…
+
+01:00:56.000 --> 01:01:01.000
+The nerves fraying the reaction to… the reaction to…
+
+01:01:01.000 --> 01:01:06.000
+the environment, I guess.
+
+01:01:06.000 --> 01:01:08.000
+Um…
+
+01:01:08.000 --> 01:01:11.000
+Yeah, I mean…
+
+01:01:11.000 --> 01:01:15.000
+I think… I think I kind of drew that…
+
+01:01:15.000 --> 01:01:21.000
+from our last discussion, where symptom was being used for
+
+01:01:21.000 --> 01:01:23.000
+just behavior…
+
+01:01:23.000 --> 01:01:27.000
+not… it seemed like in some entry, symptom was being used.
+
+01:01:27.000 --> 01:01:34.000
+Um, by others in… as for behavior, not so much for a symptom, like a symptom.
+
+01:01:34.000 --> 01:01:37.000
+Um, so I… I guess I'm still…
+
+01:01:37.000 --> 01:01:39.000
+equivocal about
+
+01:01:39.000 --> 01:01:47.000
+what to call a symptom.
+
+01:01:47.000 --> 01:01:57.000
+What do you think about that one, Laura?
+
+01:01:57.000 --> 01:02:04.000
+Um, I guess I'm using a rule that's something like, it's like, do one or the other.
+
+01:02:04.000 --> 01:02:07.000
+I mean, I'm looking at what I…
+
+01:02:07.000 --> 01:02:14.000
+what I did.
+
+01:02:14.000 --> 01:02:18.000
+So I'm… I'm quoting, um, I'm… I'm quoting for…
+
+01:02:18.000 --> 01:02:22.000
+Uh, Claire both times.
+
+01:02:22.000 --> 01:02:25.000
+And…
+
+01:02:25.000 --> 01:02:30.000
+Oh, no, it's for Sylvia.
+
+01:02:30.000 --> 01:02:31.000
+Mm-hmm.
+
+01:02:31.000 --> 01:02:34.000
+And the next one I do…
+
+01:02:34.000 --> 01:02:40.000
+is clear, so I think that's wrong.
+
+01:02:40.000 --> 01:02:42.000
+Oh, no. Oh, no, I'm right, that's right.
+
+01:02:42.000 --> 01:02:46.000
+No, I did that right. Claire is the baby.
+
+01:02:46.000 --> 01:02:48.000
+I was thinking of the mother.
+
+01:02:48.000 --> 01:02:50.000
+So, I'm back.
+
+01:02:50.000 --> 01:02:53.000
+Um…
+
+01:02:53.000 --> 01:02:57.000
+So…
+
+01:02:57.000 --> 01:03:01.000
+Um, so where did you say the symptom was in there?
+
+01:03:01.000 --> 01:03:09.000
+I put a symptom for, uh, up at the top for the mother, always been sensitive to disruptions.
+
+01:03:09.000 --> 01:03:14.000
+And I have to say, a couple times ago, I wouldn't have done that. I think it was based on
+
+01:03:14.000 --> 01:03:19.000
+on our discussion from our last gathering of, of, of…
+
+01:03:19.000 --> 01:03:24.000
+kind of widening the definition of symptom to…
+
+01:03:24.000 --> 01:03:29.000
+be not kind of a formalized symptom, more of…
+
+01:03:29.000 --> 01:03:33.000
+Their behaviors, symptomatic, or… or…
+
+01:03:33.000 --> 01:03:37.000
+I loosened up my criteria for symptom, I think.
+
+01:03:37.000 --> 01:03:42.000
+I guess my opinion at the moment about this is that
+
+01:03:42.000 --> 01:03:51.000
+Um, it would be better not to widen the definition of symptom to leave it as anxiety.
+
+01:03:51.000 --> 01:03:55.000
+Because that would be more consistent with theory, anyway.
+
+01:03:55.000 --> 01:03:59.000
+Yeah.
+
+01:03:59.000 --> 01:04:00.000
+Yeah.
+
+01:04:00.000 --> 01:04:03.000
+You said leave it as anxiety. You're not talking about the anxiety variable.
+
+01:04:03.000 --> 01:04:05.000
+What? What do you mean? I just want to make sure they're.
+
+01:04:05.000 --> 01:04:06.000
+Well, that… I mean, I think I understand. People will… people could come in
+
+01:04:06.000 --> 01:04:11.000
+Euthan terms.
+
+01:04:11.000 --> 01:04:17.000
+with a presenting problem. I think that was the argument. If… I think that's what you said, Patrick.
+
+01:04:17.000 --> 01:04:21.000
+If people come in with a presenting problem,
+
+01:04:21.000 --> 01:04:23.000
+then that's the symptom, and…
+
+01:04:23.000 --> 01:04:29.000
+And maybe in clinical practice, that's what you would be tracking as a symptom.
+
+01:04:29.000 --> 01:04:34.000
+I think, you know, from the perspective of Bowen theory, that's…
+
+01:04:34.000 --> 01:04:38.000
+Um, the classification
+
+01:04:38.000 --> 01:04:42.000
+of, uh, of a…
+
+01:04:42.000 --> 01:04:47.000
+manifestation of anxiety.
+
+01:04:47.000 --> 01:04:49.000
+is not necessarily a symptom. It's a…
+
+01:04:49.000 --> 01:04:51.000
+Yeah.
+
+01:04:51.000 --> 01:04:54.000
+a characteristic of a person, or something like that.
+
+01:04:54.000 --> 01:04:55.000
+Yeah. Yeah.
+
+01:04:55.000 --> 01:05:00.000
+This is part of natural variation between people.
+
+01:05:00.000 --> 01:05:02.000
+Um…
+
+01:05:02.000 --> 01:05:07.000
+Sensitivity is anxiety, it's not a symptom.
+
+01:05:07.000 --> 01:05:13.000
+Yeah, sensitivity would… it would be reactivity, and…
+
+01:05:13.000 --> 01:05:16.000
+Uh, it's part of our functional organism.
+
+01:05:16.000 --> 01:05:17.000
+Mm-hmm. Mm-hmm.
+
+01:05:17.000 --> 01:05:22.000
+over… around which there's a lot of variation. So, before I would…
+
+01:05:22.000 --> 01:05:26.000
+I, you know, it would take more for me to call that a symptom.
+
+01:05:26.000 --> 01:05:27.000
+Mm-hmm.
+
+01:05:27.000 --> 01:05:29.000
+Um, it'd say…
+
+01:05:29.000 --> 01:05:33.000
+Um, say, like, what they do with, um…
+
+01:05:33.000 --> 01:05:37.000
+with, uh, alcohol use, does it interfere?
+
+01:05:37.000 --> 01:05:41.000
+with functioning.
+
+01:05:41.000 --> 01:05:44.000
+you know, physiologically, or…
+
+01:05:44.000 --> 01:05:46.000
+behaviorally or socially.
+
+01:05:46.000 --> 01:05:49.000
+Or, you know, um…
+
+01:05:49.000 --> 01:05:50.000
+Mm-hmm.
+
+01:05:50.000 --> 01:05:59.000
+functionally, you know, otherwise, you don't say that people drink is a symptom.
+
+01:05:59.000 --> 01:06:00.000
+Right?
+
+01:06:00.000 --> 01:06:02.000
+Mm-hmm.
+
+01:06:02.000 --> 01:06:03.000
+Yeah.
+
+01:06:03.000 --> 01:06:15.000
+I would have coded this. F function down, I would have left symptom out. And I would have and I'm starting to think more about the anxiety question.
+
+01:06:15.000 --> 01:06:16.000
+Mm-hmm.
+
+01:06:16.000 --> 01:06:21.000
+Um, just… just because I know it's easy to get these variables mixed up.
+
+01:06:21.000 --> 01:06:29.000
+are are confused to get conflated. And so I'm trying to just always pull them apart. But but I would leave symptom out of it for this one.
+
+01:06:29.000 --> 01:06:31.000
+I agree.
+
+01:06:31.000 --> 01:06:35.000
+and then functioning down. I actually think that this.
+
+01:06:35.000 --> 01:06:47.000
+This falls right into. the sensitivity to the environment, specifically other people, noise and disorder from other people. I would. It falls right in line with the lit review definition that I like.
+
+01:06:47.000 --> 01:06:56.000
+for functioning which is just that you're you have lack of autonomy, and you know you're not sure of yourself. And so you kind of.
+
+01:06:56.000 --> 01:07:07.000
+flail a little bit with that, or you react, you're that that part of functional level of differentiation of self.
+
+01:07:07.000 --> 01:07:08.000
+Yeah, I don't think I would put it functioning down.
+
+01:07:08.000 --> 01:07:11.000
+vulnerable something like that.
+
+01:07:11.000 --> 01:07:17.000
+Um, my mother has always been sensitive to disruptions.
+
+01:07:17.000 --> 01:07:25.000
+So, I guess I'm thinking about it in order to put functioning down, it has to be kind of a time-stamped.
+
+01:07:25.000 --> 01:07:28.000
+event.
+
+01:07:28.000 --> 01:07:29.000
+Yeah. Yeah.
+
+01:07:29.000 --> 01:07:31.000
+or the shift, you mean, as opposed to just a baseline.
+
+01:07:31.000 --> 01:07:32.000
+Yeah.
+
+01:07:32.000 --> 01:07:34.000
+Oh, that's it. I didn't pick that part up. That's actually interesting.
+
+01:07:34.000 --> 01:07:36.000
+Yeah.
+
+01:07:36.000 --> 01:07:40.000
+It's it's her. So it's… you're saying, Laura, that it's more describing her basic level and not a functional shift.
+
+01:07:40.000 --> 01:07:42.000
+Yeah.
+
+01:07:42.000 --> 01:07:44.000
+Uh-huh.
+
+01:07:44.000 --> 01:07:45.000
+There's just not evidence that it's functional. There's the functional shift does come with the…
+
+01:07:45.000 --> 01:07:50.000
+Interesting.
+
+01:07:50.000 --> 01:07:55.000
+Call to Baby, though, I think, doesn't it?
+
+01:07:55.000 --> 01:08:00.000
+Right. If there was too much noise or things, when Claire was born, that shift became permanent.
+
+01:08:00.000 --> 01:08:13.000
+Yeah.
+
+01:08:13.000 --> 01:08:14.000
+So…
+
+01:08:14.000 --> 01:08:16.000
+So… that shift became… so it's a shift. So there was more fluctuation, and then it just became the baseline. She never, I guess, it never went away. So I think that could be a shift down to a basic level.
+
+01:08:16.000 --> 01:08:23.000
+Yeah, it could be.
+
+01:08:23.000 --> 01:08:24.000
+None of us got that.
+
+01:08:24.000 --> 01:08:26.000
+That's very observant.
+
+01:08:26.000 --> 01:08:34.000
+Well, maybe Kathy was picking it up there in that.
+
+01:08:34.000 --> 01:08:39.000
+Yeah, I think one thing I'm gonna have to think through more is because…
+
+01:08:39.000 --> 01:08:46.000
+Ordinarily, not really necessarily thinking, you know, with cases, um,
+
+01:08:46.000 --> 01:08:49.000
+with the four variables.
+
+01:08:49.000 --> 01:08:54.000
+And here they are all sitting in front of us. It's like, you know,
+
+01:08:54.000 --> 01:08:58.000
+right there to be… to be had, and um…
+
+01:08:58.000 --> 01:09:01.000
+So I think it's… it just takes a little…
+
+01:09:01.000 --> 01:09:03.000
+a little more…
+
+01:09:03.000 --> 01:09:09.000
+More critical thinking about theory,
+
+01:09:09.000 --> 01:09:13.000
+to…
+
+01:09:13.000 --> 01:09:19.000
+to use them or not use them, with them all sitting there. Was she functioning down? Yeah, but that's not… that's not…
+
+01:09:19.000 --> 01:09:22.000
+Our rule. That's not…
+
+01:09:22.000 --> 01:09:28.000
+theoretical.
+
+01:09:28.000 --> 01:09:30.000
+Yeah.
+
+01:09:30.000 --> 01:09:31.000
+Yeah.
+
+01:09:31.000 --> 01:09:38.000
+Well, we should probably stop. We're a little over time here. I we could pick up. There's a lot in statement 2192. We could pick that one up next time.
+
+01:09:38.000 --> 01:09:39.000
+Is that…?
+
+01:09:39.000 --> 01:09:46.000
+Probably. And, um, but I'll the comment I was thinking.
+
+01:09:46.000 --> 01:09:55.000
+about this is that I've actually been doing a lot of research on this in my day job, um, in engineering, in the symptom question.
+
+01:09:55.000 --> 01:10:02.000
+And because. you know, we have to write a lot of tests that automatic that test for failures.
+
+01:10:02.000 --> 01:10:14.000
+for these memory components we're building, and. all these different teams are trying to solve this problem of how do we automate it all? And with AI and nobody knows how to organize.
+
+01:10:14.000 --> 01:10:19.000
+How do you list out all the failures and stuff? And really, medicine has the diagnostic model.
+
+01:10:19.000 --> 01:10:25.000
+for that, and it has for, like, 60 or 70 years or something like that.
+
+01:10:25.000 --> 01:10:36.000
+And they have two different parts of it. This is a great review. There's the semantic diagnosis, which is the symptom.
+
+01:10:36.000 --> 01:10:41.000
+And then there's the etiological diagnosis, which is, quote, the root cause.
+
+01:10:41.000 --> 01:10:49.000
+So there's the because you can have multiple symptoms that have the same cause, and you can have multiple causes that have the same symptoms.
+
+01:10:49.000 --> 01:10:51.000
+Yeah.
+
+01:10:51.000 --> 01:10:57.000
+And so it's all about mapping and figuring out which is which, and organizing it.
+
+01:10:57.000 --> 01:11:06.000
+in a differential diagnosis and then treatment plan. And the way that this shows up in engineering is this is getting technical, but it's a failure mode and effects analysis.
+
+01:11:06.000 --> 01:11:19.000
+And failure modes are symptoms. It's the way the system fails. And the key is that for a given system, you want to know the whole list of failure modes.
+
+01:11:19.000 --> 01:11:23.000
+So that you can go test and make sure that they're not occurring.
+
+01:11:23.000 --> 01:11:30.000
+You know? And so basically, long story short. Symptom in this.
+
+01:11:30.000 --> 01:11:38.000
+schema is failure. It's a failure mode. It's the way the system breaks down, but it's not necessarily the cause.
+
+01:11:38.000 --> 01:11:45.000
+And those are those are things you you want to identify and say when the triage phase.
+
+01:11:45.000 --> 01:11:56.000
+identifies the symptom, the semantic diagnosis. Which is which is, how did the thing fail? But we still don't know what caused it yet. And then you have to do deeper investigation.
+
+01:11:56.000 --> 01:12:04.000
+and often try things to figure out, try interventions to figure out the actual ideological diagnosis, the root cause.
+
+01:12:04.000 --> 01:12:11.000
+And those… that's the pipeline of investigation. It starts with semantic diagnosis or symptom failure mode.
+
+01:12:11.000 --> 01:12:24.000
+and ends up in etiological diagnosis. So symptom presenting problem does line up with that, and then when we get into questions like this, it's… I'm not sure how to map it yet, but.
+
+01:12:24.000 --> 01:12:31.000
+how the system fails and breaks down. is what is a synonym for symptom.
+
+01:12:31.000 --> 01:12:34.000
+Yeah, that… I think that makes some sense.
+
+01:12:34.000 --> 01:12:39.000
+Um, you know, just looking at the SARF list,
+
+01:12:39.000 --> 01:12:42.000
+Of course, the relationship variables have to do with
+
+01:12:42.000 --> 01:12:45.000
+you know, multiple people.
+
+01:12:45.000 --> 01:12:48.000
+The other variables are all individual.
+
+01:12:48.000 --> 01:12:52.000
+And then anxiety and functioning have to do with
+
+01:12:52.000 --> 01:12:54.000
+Um…
+
+01:12:54.000 --> 01:12:58.000
+with, say, etiology.
+
+01:12:58.000 --> 01:13:01.000
+And then the symptom would be…
+
+01:13:01.000 --> 01:13:05.000
+If there's a breakdown.
+
+01:13:05.000 --> 01:13:16.000
+Yes… Relationshipism that sort of adapts and then anxiety and functioning are ideological.
+
+01:13:16.000 --> 01:13:17.000
+You could say relationship is…
+
+01:13:17.000 --> 01:13:19.000
+Right. So pretty interesting.
+
+01:13:19.000 --> 01:13:21.000
+part of the ideological
+
+01:13:21.000 --> 01:13:23.000
+Um…
+
+01:13:23.000 --> 01:13:26.000
+trajectory, but it's…
+
+01:13:26.000 --> 01:13:31.000
+But it's at the level of the relationship system.
+
+01:13:31.000 --> 01:13:33.000
+And, uh,
+
+01:13:33.000 --> 01:13:37.000
+And then, given the individual's
+
+01:13:37.000 --> 01:13:39.000
+position in that.
+
+01:13:39.000 --> 01:13:46.000
+the ideological variables of anxiety and functioning are affected.
+
+01:13:46.000 --> 01:13:50.000
+And, um, and it's that…
+
+01:13:50.000 --> 01:13:57.000
+It's really that balance. It's when anxiety exceeds functioning by too much.
+
+01:13:57.000 --> 01:14:04.000
+that this symptomatic failure happens.
+
+01:14:04.000 --> 01:14:05.000
+Yeah.
+
+01:14:05.000 --> 01:14:10.000
+Right? The 2 main variables.
+
+01:14:10.000 --> 01:14:11.000
+So, I mean, I like that, Patrick.
+
+01:14:11.000 --> 01:14:14.000
+Okay. Back to back to work.
+
+01:14:14.000 --> 01:14:19.000
+Yeah.
+
+01:14:19.000 --> 01:14:20.000
+I think so.
+
+01:14:20.000 --> 01:14:23.000
+Yeah, it's it's useful, isn't it? It's helpful. Someday I'll write it up or have AI write it up for me.
+
+01:14:23.000 --> 01:14:25.000
+Yeah.
+
+01:14:25.000 --> 01:14:26.000
+Okay, thank you.
+
+01:14:26.000 --> 01:14:35.000
+Alright guys, we've, uh… got this out for what another couple of weeks? Probably. Yeah, the 27th is the next one on the on the list.
+
+01:14:35.000 --> 01:14:36.000
+Okay.
+
+01:14:36.000 --> 01:14:38.000
+Okay. All right.
+
+01:14:38.000 --> 01:14:42.000
+Yep. Good.
+
+01:14:42.000 --> 01:14:43.000
+Thank you. Bye.
+
+01:14:43.000 --> 01:14:46.000
+So we'll continue on with Arthur. All right. Good to see you. Thanks.
+

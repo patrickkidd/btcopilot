@@ -13,6 +13,10 @@ Rules established from IRR calibration meetings. Updated after each session.
 
 ## Symptom Coding
 
+### What counts as a symptom
+
+**Symptom = functional breakdown.** Symptom is the point where anxiety exceeds functioning capacity and the system breaks down. Sensitivity, reactivity, and behavioral characteristics are anxiety, not symptom. Think of symptom as a "failure mode" — how the system fails — rather than a personality trait or presenting behavior. A behavior (e.g., drinking, sensitivity to noise) only becomes a symptom when it interferes with functioning physiologically, behaviorally, or socially.
+
 ### When to code "up" vs "down" vs "same"
 
 ## Anxiety Coding
@@ -42,6 +46,10 @@ The data model supports multiple recipients on a single relationship shift. When
 
 **Functioning down indicators:** "Unsure of oneself" — frozen/paralyzed, not knowing what to do. Impaired attention ("difficult to focus on anything else"). Clarity of thought disrupted, thinking system getting overridden. Signal-to-noise ratio in thinking degraded.
 
+**Baseline vs. shift:** "Always been X" describes a baseline level, not a functional shift. Code a baseline once with unknown date certainty. **Shifts require timestamps.** Exception: when evidence shows a baseline changed permanently at a specific event (e.g., "when Claire was born, that shift became permanent"), that IS a timestamped shift to a new basic level.
+
+**Infants:** Do not code functioning for infants. Symptom (e.g., colic) can be coded, but functioning assessment is not meaningful for infants.
+
 **Anxiety-functioning reciprocity:** Anxiety up and functioning down can co-occur and often do. They are different variables with a reciprocal relationship (anxiety up → functioning down, anxiety down → functioning up). Code both when evidence supports both — they are not redundant.
 
 ## Geographic Moves
@@ -49,6 +57,12 @@ The data model supports multiple recipients on a single relationship shift. When
 ### Moved vs Distance
 
 When a person has relocated geographically (e.g., "Dad's in Florida"), code "moved" — not "distance." Geographic distance does not imply emotional distance (the Bowen mechanism). Only code emotional distance when there is evidence of anxiety-driven avoidance of content, not merely physical separation. Divorce + geographic relocation alone is insufficient evidence for emotional distance.
+
+## Event Types: Structure vs. Function
+
+Events divide into two categories: **structural** (birth, death, marriage, divorce, bonded, moved, adopted) and **SARF shifts** (functional — how the organism responds). Structural events change the family configuration. SARF shifts track how people function in response. A birth is not a SARF shift; neither is getting married or dying. Track both, but as separate data entries — one structural event and one or more SARF shifts at the same or nearby timestamp.
+
+**Functional facts** (occupation, education, health, location) are Bowen's multigenerational functioning markers but are NOT SARF shifts. Do not code them as shift events. Track via person/event notes fields until a better data model solution exists.
 
 ## Structural Data
 
@@ -85,3 +99,4 @@ The "same" value (for symptom, anxiety, functioning) represents a second data po
 | 2026-02-16 | Meeting 1 | Initial rules from Sarah Round 1 calibration |
 | 2026-02-23 | Meeting 2 | Added: moved vs distance, preemptive parent addition, person field directionality, deduplication clarification, "same" value usage |
 | 2026-03-30 | Meeting 4 (Arthur) | Added: spouse pair bond rule, functioning down indicators, anxiety-functioning reciprocity, date placeholder convention |
+| 2026-04-13 | Meeting 5 (Arthur) | Added: symptom = functional breakdown (narrowed definition), baseline vs shift distinction, structural vs SARF event types, functional facts not shifts, no functioning for infants |
