@@ -53,7 +53,7 @@
 | 3 | 2026-03-16 | Sarah (tools review) | Patrick, Kathy, Guillermo, Laura | [deliberation](meetings/2026-03-16-sarah-round1-calibration-meeting3-deliberation.md) / [notes](meetings/2026-03-16-sarah-round1-calibration-meeting3-notes.md) |
 | 4 | 2026-03-30 | Arthur | Patrick, Kathy, Guillermo, Laura | [deliberation](meetings/2026-03-30-arthur-round1-calibration-deliberation.md) / [notes](meetings/2026-03-30-arthur-round1-calibration-notes.md) |
 | 5 | 2026-04-13 | Arthur (cont.) | Patrick, Kathy, Laura (Guillermo absent) | [deliberation](meetings/2026-04-13-arthur-round1-calibration-meeting5-deliberation.md) / [notes](meetings/2026-04-13-arthur-round1-calibration-meeting5-notes.md) |
-| 6 | 2026-04-27 | Arthur (cont.) | TBD | |
+| 6 | 2026-04-27 | Arthur (cont.) | Patrick, Kathy, Guillermo, Laura | [deliberation](meetings/2026-04-27-arthur-round1-calibration-meeting6-deliberation.md) / [notes](meetings/2026-04-27-arthur-round1-calibration-meeting6-notes.md) |
 
 ## Session Log
 
@@ -65,3 +65,4 @@
 | 2026-03-16 | Meeting 3: Sarah tools review — introduced AI calibration and lit review tools, established cumulative timeline as primary comparison unit, blind coding protocol, Laura aligned on deduplication rule |
 | 2026-03-30 | Meeting 4: Arthur case started, reviewed statements 1-6, established functioning down definition ("unsure of oneself"), spouse pair bond rule, date conventions. Key open questions: conflict vs distance definitions, defined self scope, symptom vs anxiety |
 | 2026-04-13 | Meeting 5: Arthur cont., reviewed statements 7-8 + 2192 (partial). Narrowed symptom definition (= functional breakdown, not behavior/sensitivity). Established baseline vs shift distinction. Structural events ≠ SARF shifts. Functional facts gap identified. Guillermo absent. |
+| 2026-04-27 | Meeting 6: All 4 present (Guillermo from Oregon). Revisited 2192 — two-code approach for baseline + intensification. Reviewed 2194 (Robert distancing) + 2294 (Sylvia post-retirement). Major open question: anxiety implicit in R mechanisms vs explicit coding. Retirement event missed by all. Kathy's shift-only insight. Plan holistic cumulative summary at case end. |

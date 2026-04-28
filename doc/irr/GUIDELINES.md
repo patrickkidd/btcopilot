@@ -100,3 +100,4 @@ The "same" value (for symptom, anxiety, functioning) represents a second data po
 | 2026-02-23 | Meeting 2 | Added: moved vs distance, preemptive parent addition, person field directionality, deduplication clarification, "same" value usage |
 | 2026-03-30 | Meeting 4 (Arthur) | Added: spouse pair bond rule, functioning down indicators, anxiety-functioning reciprocity, date placeholder convention |
 | 2026-04-13 | Meeting 5 (Arthur) | Added: symptom = functional breakdown (narrowed definition), baseline vs shift distinction, structural vs SARF event types, functional facts not shifts, no functioning for infants |
+| 2026-04-27 | Meeting 6 (Arthur) | Clarified rule 20: single statement can yield two entries for baseline + later intensification; shift-only coding — only code the shift, not the prior established pattern |
