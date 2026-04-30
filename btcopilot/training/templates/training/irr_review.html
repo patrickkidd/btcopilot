@@ -5,6 +5,7 @@
 {% block content %}
 
 <script>
+window._statementReviews = {{ (discussion.statement_reviews or {})|tojson }};
 window.discussionConfig = {
     discussionId: {{ discussion.id }},
     isExtracting: false,
@@ -36,13 +37,35 @@ window.currentUsername = '';
 
         <div id="statements-container">
         {% for item in statement_data %}
+            {% if item.statement.speaker and item.statement.speaker.type.value == 'expert' %}
+            <!-- Expert/coach statement row — no coder data, matches discussion audit styling -->
+            <div class="irr-review-row irr-review-expert-row box mb-2 py-3" id="statement-{{ item.statement.id }}">
+                <div class="irr-review-flex">
+                    <div class="irr-review-statement py-2">
+                        <div class="is-flex is-align-items-center mb-1" style="gap: 0.5rem;">
+                            <span class="has-text-grey-light is-size-7" style="font-size: 10px; font-weight: 500; opacity: 0.7;">
+                                {{ item.statement.speaker.name if item.statement.speaker else 'AI' }}
+                            </span>
+                        </div>
+                        <a href="{{ url_for('training.discussions.audit', discussion_id=discussion.id) }}#statement-{{ item.statement.id }}" class="statement-link">
+                            <div class="ai-message-bubble speaker-{{ expert_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in expert_speaker_map else 1 }}">
+                                {{ item.statement.text }}
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Subject statement row with coder columns -->
             <div class="irr-review-row box mb-2 py-3" id="statement-{{ item.statement.id }}">
                 <div class="irr-review-flex" style="overflow-x: auto;">
                     <!-- Statement Text -->
                     <div class="irr-review-statement py-2">
-                        <p class="heading is-size-7 mb-1">STATEMENT {{ item.statement.id }}</p>
+                        <div class="is-flex is-align-items-center mb-1" style="gap: 0.5rem;">
+                            <span class="heading is-size-7 mb-0">STATEMENT {{ item.statement.id }}</span>
+                        </div>
                         <a href="{{ url_for('training.discussions.audit', discussion_id=discussion.id) }}#statement-{{ item.statement.id }}" class="statement-link">
-                            <div class="statement-preview {% if item.statement.speaker.type.value == 'subject' %}user-message-bubble speaker-{{ subject_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in subject_speaker_map else 1 }}{% else %}ai-message-bubble speaker-{{ expert_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in expert_speaker_map else 1 }}{% endif %}">
+                            <div class="user-message-bubble speaker-{{ subject_speaker_map[item.statement.speaker.id] if item.statement.speaker and item.statement.speaker.id in subject_speaker_map else 1 }}">
                                 {{ item.statement.text }}
                             </div>
                         </a>
@@ -50,12 +73,12 @@ window.currentUsername = '';
 
                     <!-- Coder Columns -->
                     {% for coder in coders %}
-                    <div class="irr-review-coder{% if not loop.first %} analysis-column-divider{% endif %} py-2">
+                    <div class="irr-review-coder analysis-column-divider py-2">
                         <div class="section-header is-size-7 has-text-weight-bold mb-2" title="{{ coder }}">{{ coder|truncate(25)|upper }}</div>
-                        {% set extraction = item.extractions.get(coder) %}
+                        {% set extraction = item.extractions.get(coder) if item.extractions else none %}
                         {% if extraction and (extraction.people or extraction.events) %}
                             {% set data = extraction %}
-                            {% set cumulative_pdp = none %}
+                            {% set cumulative_pdp = {'people': extraction._cumulative_people} %}
                             {% set collapsed = false %}
                             {% set show_feedback = false %}
                             {% set message_id = none %}
@@ -76,8 +99,44 @@ window.currentUsername = '';
                         {% endif %}
                     </div>
                     {% endfor %}
+
+                    <!-- Statement Review Column -->
+                    <div class="irr-review-coder irr-review-summary-col analysis-column-divider py-2"
+                         x-data="statementReview({{ item.statement.id }})"
+                         x-init="init()">
+                        <div class="section-header is-size-7 has-text-weight-bold mb-2">REVIEW</div>
+                        <button class="button is-small is-light mb-2"
+                                @click="if (!loading) generate()"
+                                :style="loading ? 'pointer-events:none; opacity:0.7;' : ''">
+                            <span class="icon is-small">
+                                <i class="fas" :class="loading ? 'fa-spinner fa-pulse' : (content ? 'fa-sync-alt' : 'fa-robot')"></i>
+                            </span>
+                            <span x-text="loading ? 'Generating...' : (content ? 'Regenerate' : 'Generate')"></span>
+                        </button>
+                        <template x-if="content && content.summary">
+                            <div style="overflow-wrap: break-word; word-break: break-word; min-width: 0;">
+                                <template x-if="content.triage === 'SKIP'">
+                                    <p class="is-size-7 has-text-weight-bold mb-1" style="color: var(--color-success-fg, #2da44e);">Skip</p>
+                                </template>
+                                <template x-if="content.triage === 'DISCUSS'">
+                                    <p class="is-size-7 has-text-weight-bold mb-1" style="color: var(--color-attention-fg, #9a6700);">Discuss</p>
+                                </template>
+                                <template x-if="content.questions && content.questions.length">
+                                    <ul class="is-size-7" style="padding-left: 1rem; list-style: disc; line-height: 1.5;">
+                                        <template x-for="q in content.questions" :key="q">
+                                            <li x-text="q"></li>
+                                        </template>
+                                    </ul>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="error">
+                            <p class="is-size-7 has-text-danger" x-text="error"></p>
+                        </template>
+                    </div>
                 </div>
             </div>
+            {% endif %}
         {% endfor %}
         </div>
     </div>
@@ -454,6 +513,30 @@ document.addEventListener('alpine:init', () => {
     // Load cached report on init
     Alpine.store('calibrationReport').loadCached();
 });
+
+function statementReview(statementId) {
+    return {
+        statementId: statementId,
+        content: null,
+        loading: false,
+        error: null,
+        init() {
+            const cached = window._statementReviews && window._statementReviews[statementId];
+            if (cached) this.content = cached;
+        },
+        generate() {
+            this.loading = true;
+            this.error = null;
+            fetch(`/training/irr/discussion/{{ discussion.id }}/statement/${this.statementId}/review`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+            .then(data => { this.content = data; this.loading = false; })
+            .catch(err => { this.error = err.message; this.loading = false; });
+        }
+    };
+}
 </script>
 
 <script src="{{ url_for('training.audit.static', filename='js/discussion.js') }}"></script>
@@ -468,6 +551,17 @@ document.addEventListener('alpine:initialized', function() {
 </script>
 
 <style>
+/* Expand to full viewport width — override both base.html container and inner section padding */
+.section > .container {
+    max-width: 100% !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+}
+.section > .container > .section {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
 .irr-review-flex {
     display: flex;
     gap: 0;
@@ -480,6 +574,33 @@ document.addEventListener('alpine:initialized', function() {
 .irr-review-coder {
     min-width: 280px;
     flex: 1 1 0;
+}
+.irr-review-summary-col {
+    min-width: 220px;
+    flex: 1 1 220px;
+    overflow: hidden;
+}
+.irr-review-expert-row {
+    background: var(--color-canvas-subtle);
+    border: 1px solid var(--color-border-muted);
+    box-shadow: none;
+}
+/* Name badges: single line, clipped at column edge */
+.irr-review-coder .person-tag {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: block;
+}
+/* Clip overflow at column boundary without hiding the absolute-positioned delta chip */
+.irr-review-coder {
+    overflow: visible;
+}
+/* Ensure person-item has room for the absolute delta chip at bottom-right */
+.irr-review-coder .person-item {
+    padding-bottom: 1.25rem !important;
+    overflow: hidden;
 }
 .irr-review-coder .section-header {
     color: var(--color-fg-default);

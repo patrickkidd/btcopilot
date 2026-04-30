@@ -458,20 +458,21 @@ def gemini_text_sync(prompt=None, **kwargs):
     return asyncio.run(gemini_text(prompt, **kwargs))
 
 
-async def gemini_calibration(prompt, system_instruction=None, deep=False):
+async def gemini_calibration(prompt, system_instruction=None, deep=False, max_output_tokens=None):
     from google.genai import types
 
     start_time = time.time()
     if deep:
         config = types.GenerateContentConfig(
             temperature=0.2,
-            max_output_tokens=4096,
+            max_output_tokens=max_output_tokens or 4096,
             thinking_config=types.ThinkingConfig(thinking_budget=4096),
         )
     else:
         config = types.GenerateContentConfig(
             temperature=0.2,
-            max_output_tokens=2048,
+            max_output_tokens=max_output_tokens or 2048,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
         )
     if system_instruction:
         config.system_instruction = system_instruction
@@ -510,5 +511,5 @@ async def gemini_calibration(prompt, system_instruction=None, deep=False):
     return content
 
 
-def gemini_calibration_sync(prompt, system_instruction=None):
-    return asyncio.run(gemini_calibration(prompt, system_instruction))
+def gemini_calibration_sync(prompt, system_instruction=None, max_output_tokens=None):
+    return asyncio.run(gemini_calibration(prompt, system_instruction, max_output_tokens=max_output_tokens))

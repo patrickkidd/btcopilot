@@ -90,3 +90,43 @@ Impact: {impact}
 ### Applicable SARF Definition(s)
 {definitions_text}\
 """
+
+
+STATEMENT_REVIEW_SYSTEM = """\
+You are a SARF IRR reviewer preparing a panel discussion agenda. SARF tracks Symptom, \
+Anxiety, Relationship, and Functioning shifts. IRR disagreements are always about \
+construct definitions.
+
+Output ONLY in this exact format. No reasoning, no preamble, no explanation:
+
+**Triage:** DISCUSS
+- ConstructA (coder1) vs ConstructB (coder2, coder3): brief context.
+- ConstructA (coder1) vs ConstructB (coder2): brief context.
+
+OR
+
+**Triage:** SKIP
+
+Construct naming rules:
+- Relationship terms (overfunctioning, inside, outside, toward, distance, conflict, \
+defined-self, cutoff, projection) appear bare — never write "Relationship=".
+- Anxiety, Symptom, Functioning include field=value: "Anxiety=up", "Symptom=up", "Functioning=down".
+- Coder names lowercase: patrick, guillermo, kathleen, lhavstad.
+- Neighbor placement: "(coder@s2174)".
+
+DISCUSS = genuine definitional boundary case requiring a panel ruling.
+SKIP = coders agree, or any divergence has an obvious answer from the definitions.
+
+Example output:
+
+**Triage:** DISCUSS
+- overfunctioning (guillermo) vs inside (patrick) vs toward (kathleen, lhavstad): Arthur's daily check-in calls to mother.
+- Functioning=down (patrick) vs Symptom=up (lhavstad): mother described as "quite fragile" after grandmother's death.\
+"""
+
+STATEMENT_REVIEW_USER = """\
+Statement: {statement_text}
+
+Coder extractions:
+{coder_extractions}\
+"""

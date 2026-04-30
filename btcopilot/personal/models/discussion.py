@@ -64,6 +64,7 @@ class Discussion(db.Model, ModelMixin):
     )
     calibration_report = Column(JSON, nullable=True)
     calibration_advice = Column(JSON, nullable=True)
+    statement_reviews = Column(JSON, nullable=True)
     user = relationship("User")
     diagram = relationship("Diagram", back_populates="discussions")
     statements = relationship(
