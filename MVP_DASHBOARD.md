@@ -1,9 +1,21 @@
 # MVP Dashboard
 
-**Last consolidated:** 2026-04-12  
+**Last consolidated:** 2026-04-17  
 **Source of truth:** This file + GitHub milestones. GitHub project board is unreliable (OpenClaw marked items Done without verification).
 
 **How to use:** Milestones are ordered. Pick the next open task under the highest-priority milestone. Mark done with date when verified in code or app.
+
+**Each task row is a self-contained source of truth.** Every row must include enough context (root cause, file paths/line numbers, open decisions, spec link) for someone with no session history to start work. Spec docs (`familydiagram/doc/plans/`, `btcopilot/doc/plans/`) hold full details; rows summarize and link to them.
+
+**Working state files** (plans, analyses, investigations) live in date-prefixed folders: `doc/plans/YYYY-MM-DD--slug/` (multi-artifact) or `doc/plans/YYYY-MM-DD--slug.md` (single file). Stable references (specs, asbuilts, decisions) stay in their topical folders.
+
+---
+
+## Active Cross-Cutting Workstreams
+
+| Started | Workstream | Owner | Status | Tracker |
+|---------|------------|-------|--------|---------|
+| 2026-04-17 | Data integrity (9 items: concurrent merge, prune fixes, commit atomicity, field coverage, chat persistence, save-failure UI). Spans MVP 1 (chat) + MVP 2 (Pro viewing). 1924 out of scope — handled by re-extraction. | CC | In progress — grinding | [familydiagram/doc/plans/2026-04-17--data-integrity/](../familydiagram/doc/plans/2026-04-17--data-integrity/README.md) |
 
 ---
 
@@ -24,7 +36,6 @@
 | NEW | Auto-accept BE endpoint | CC | ~2-4 hr | New endpoint: extract_full() + commit_pdp_items() + cluster detect in one atomic DB transaction. Frontend calls this, hides PDP badge/drawer. |
 | #129 | Cluster date range missing end year | CC | ~15 min | ~~LearnView.qml:598 formatDateRange() missing eYear.~~ **FIX WRITTEN** (2026-04-12, not yet committed). |
 | #131 | Cluster titles truncated in focused state | CC | Low | LearnView.qml elide without conditional width on isFocused. Nice-to-have. |
-| NEW | Chat history lost on diagram reopen | CC | | Personal app: send chat message, close+reopen diagram, chat message+response gone. Statements are in Discussion DB table, not DiagramData — should survive regardless of diagram saves. Found during T04-04 concurrent testing. |
 | T8-1 | Beta test redo | Patrick | | After auto-accept + bug fixes. One human completes full flow. GH #81 incorrectly closed by OpenClaw. |
 
 ### Done
@@ -92,7 +103,6 @@ These exist but are not blocking MVP 1 since the PDP drawer is bypassed.
 | # | Task | Owner | Effort | Details |
 |---|------|-------|--------|---------|
 | T0-4 | FR-2 fix (concurrent write corruption) | Patrick | ~4 hr | Code complete on branches `familydiagram:fix/t0-4-fr2-applychange-merge`, `btcopilot:fix/t0-4-fr2-schema-cleanup`. 5 tests pass. **Pending Patrick manual test before merge.** GH #82. |
-| T0-5 | Partial-write bugs in `setDiagramData()` and server-side `set_diagram_data()` | CC | ~3 hr | Same root cause as T0-4 but in different code paths. `Diagram.setDiagramData()` (familydiagram `server_types.py`) only writes 5 of 43 fields — drops emotions, layers, UI flags on local writes (affects PDP undo). Server-side `Diagram.set_diagram_data()` (btcopilot `pro/models/diagram.py`) drops clusters and clusterCacheKey — affects server-side extraction. Both need field-by-field merge matching the T0-4 pattern. Found during FMEA of T0-4. |
 | T2-1 | Deterministic auto-arrange | CC+H | 2-3 wk | Replace Gemini with graph algorithm. GH #83. Analysis: doc/analyses/2026-02-20_auto_arrange.md. Simplified MVP option: generational Y-alignment (~1 week, ~70% value). |
 | T2-5 | Baseline view fix | CC+H | ~2 hr | GH #84. Root cause unknown, needs investigation. |
 

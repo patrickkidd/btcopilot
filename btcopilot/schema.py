@@ -12,7 +12,7 @@ from dataclasses import (
     MISSING,
     replace,
 )
-from typing import get_origin, get_args
+from typing import ClassVar, get_origin, get_args
 from PyQt5.QtCore import QDate, QDateTime, QTime
 
 _log = logging.getLogger(__name__)
@@ -427,6 +427,18 @@ class DiagramData:
     pencilColor: object = None  # Serialized color
     eventProperties: list = field(default_factory=list)
     legendData: dict | None = None
+
+    SCENE_COLLECTION_FIELDS: ClassVar[list[str]] = [
+        "people", "events", "pair_bonds", "emotions",
+        "multipleBirths", "layers", "layerItems", "items", "pruned",
+    ]
+
+    @staticmethod
+    def merge_scene_collection(server: list[dict], local: list[dict]) -> list[dict]:
+        """Union by id; local wins on conflict."""
+        merged = {item["id"]: item for item in server if item.get("id") is not None}
+        merged.update({item["id"]: item for item in local if item.get("id") is not None})
+        return list(merged.values())
 
     def clear(self) -> None:
         self.people = []
