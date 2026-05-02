@@ -265,7 +265,11 @@ def diagrams(id=None):
                 f"bytes: {len(diagram.data)} updated_at: {diagram.updated_at} "
                 f"version: {new_version}"
             )
-            return pickle.dumps({"version": new_version})
+            # Returns canonical post-write blob so client can refresh its
+            # snapshot (latent fix 3a in 2026-05-01--mvp-merge-fix).
+            return pickle.dumps(
+                {"version": new_version, "data": diagram.data}
+            )
         elif request.method == "DELETE":  # delete
             if not diagram.check_write_access(g.user):
                 return ("Access Denied", 401)
@@ -273,6 +277,35 @@ def diagrams(id=None):
             db.session.commit()
             _log.info(f"Deleted diagram for user: {g.user}")
             return ("Success", 200)
+
+
+@bp.route("/diagrams/<int:id>/reserve_ids", methods=("POST",))
+@encrypted
+def reserve_ids(id):
+    """
+    Reserve a block of ids for the calling client (Pro app's
+    ServerBlockAllocator). Body is pickled `{"count": int}`. Response is
+    pickled `{"start": int, "end": int, "version": int}`.
+
+    See plan: familydiagram/doc/plans/2026-05-01--mvp-merge-fix/README.md
+    """
+    if g.user.IS_ANONYMOUS:
+        return ("Access Denied", 401)
+    diagram = Diagram.query.get(id)
+    if not diagram:
+        return ("Not Found", 404)
+    if not diagram.check_write_access(g.user):
+        return ("Access Denied", 401)
+
+    args = pickle.loads(request.data)
+    count = int(args.get("count", 100))
+    start, end, new_version = diagram.reserve_id_block(count)
+    db.session.commit()
+    _log.info(
+        f"Reserved id block [{start}, {end}] for diagram {diagram.id}, "
+        f"user: {g.user}, new version: {new_version}"
+    )
+    return pickle.dumps({"start": start, "end": end, "version": new_version})
 
 
 ## Users

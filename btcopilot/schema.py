@@ -434,8 +434,81 @@ class DiagramData:
     ]
 
     @staticmethod
+    def apply_local_changes(
+        server: list[dict],
+        snapshot: list[dict],
+        local: list[dict],
+    ) -> list[dict]:
+        """
+        Merge for one Scene-collection field.
+
+        Apply only the user's actual changes (snapshot → local) on top of
+        the server's current state. Items the user didn't touch are taken
+        from the server, preserving concurrent edits.
+
+        Semantics per id:
+        - In snapshot, removed in local → DELETED. Drop from result.
+        - In snapshot AND in local, value differs → DIRTY. Take local (the
+          user's edit wins; item-level last-write-wins).
+        - In snapshot AND in local, value identical → CLEAN. Take server
+          (preserves concurrent edits made elsewhere).
+        - Not in snapshot, present in local → ADDED. Include in result.
+        - In server only (not in snapshot, not in local) → other side
+          added it. Include in result.
+
+        Comparison uses native Python `==`. PyQt5 types (QPointF, QDateTime,
+        QColor, QDate, QTime, QSize, QFont) all implement reliable __eq__
+        with semantic equality (e.g., QPointF uses fuzzy float compare).
+        Pickle-bytes was an earlier approach but was strictly worse: ~1000x
+        slower and produced false-positive dirty marks for floats with
+        identical semantic value but different IEEE 754 representation.
+
+        Plan: familydiagram/doc/plans/2026-05-01--mvp-merge-fix/README.md
+        """
+        snapshot_by_id = {
+            item["id"]: item for item in snapshot if item.get("id") is not None
+        }
+        local_by_id = {
+            item["id"]: item for item in local if item.get("id") is not None
+        }
+        server_by_id = {
+            item["id"]: item for item in server if item.get("id") is not None
+        }
+
+        deleted_ids = {id for id in snapshot_by_id if id not in local_by_id}
+
+        dirty_ids = set()
+        for id, local_item in local_by_id.items():
+            if id not in snapshot_by_id:
+                continue
+            if local_item != snapshot_by_id[id]:
+                dirty_ids.add(id)
+
+        added_ids = {id for id in local_by_id if id not in snapshot_by_id}
+
+        result: dict = {}
+        for id, server_item in server_by_id.items():
+            if id in deleted_ids:
+                continue
+            if id in dirty_ids:
+                result[id] = local_by_id[id]
+            else:
+                result[id] = server_item
+        for id in added_ids:
+            result[id] = local_by_id[id]
+
+        return list(result.values())
+
+    @staticmethod
     def merge_scene_collection(server: list[dict], local: list[dict]) -> list[dict]:
-        """Union by id; local wins on conflict."""
+        """
+        DEPRECATED. Use apply_local_changes(server, snapshot, local) instead.
+
+        Union by id; local wins on conflict. Silently corrupts edits on items
+        present in both snapshots (the bug fixed by apply_local_changes).
+        Kept temporarily for backwards compatibility during the cutover; will
+        be removed once all callers migrate.
+        """
         merged = {item["id"]: item for item in server if item.get("id") is not None}
         merged.update({item["id"]: item for item in local if item.get("id") is not None})
         return list(merged.values())

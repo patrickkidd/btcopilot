@@ -145,6 +145,72 @@ class Diagram(db.Model, ModelMixin):
     def saved_at(self):
         return self.updated_at if self.updated_at else self.created_at
 
+    def reserve_id_block(self, count: int, max_retries: int = 32) -> tuple[int, int, int]:
+        """
+        Atomically reserve `count` ids in the diagram's lastItemId space.
+
+        Returns (start, end, new_version) where ids in [start, end] inclusive
+        are reserved for the caller. Bumps `lastItemId` in the pickled blob
+        and the row's `version`.
+
+        Concurrency: uses SELECT FOR UPDATE row lock (works on PostgreSQL)
+        plus optimistic locking on `version` as a backstop. The
+        `with_for_update()` SELECT acquires the row lock; subsequent
+        readers from other transactions block until our COMMIT.
+        SQLite doesn't honor FOR UPDATE so the optimistic check
+        (`WHERE version=N`) is the actual serializer there.
+
+        Used by the Pro app's ServerBlockAllocator to prevent client-side
+        id collisions across concurrent writers (see
+        2026-05-01--mvp-merge-fix). Personal app does NOT call this — it
+        allocates server-side via commit_pdp_items.
+        """
+        if count <= 0:
+            raise ValueError(f"count must be > 0, got {count}")
+
+        for _ in range(max_retries):
+            db.session.expire(self)
+            # Acquire row lock (PostgreSQL); on SQLite this is a no-op but
+            # the optimistic version check below is the real serializer.
+            locked = (
+                db.session.query(Diagram)
+                .filter(Diagram.id == self.id)
+                .with_for_update()
+                .one()
+            )
+            expected_version = locked.version
+            if not locked.data:
+                data = {}
+            else:
+                import PyQt5.sip  # for unpickling QtCore types
+                data = pickle.loads(locked.data)
+            last_id = int(data.get("lastItemId", 0) or 0)
+            start = last_id + 1
+            end = last_id + count
+            data["lastItemId"] = end
+
+            new_data = pickle.dumps(data)
+            stmt = (
+                sql_update(Diagram)
+                .where(Diagram.id == self.id)
+                .where(Diagram.version == expected_version)
+                .values(data=new_data, version=Diagram.version + 1)
+            )
+            result = db.session.execute(stmt)
+            if result.rowcount == 1:
+                db.session.commit()
+                db.session.expire(self)
+                db.session.refresh(self)
+                return (start, end, self.version)
+            # rowcount==0 means another writer bumped version. Roll back
+            # this transaction and retry from a fresh read.
+            db.session.rollback()
+
+        raise RuntimeError(
+            f"reserve_id_block failed for diagram {self.id} after "
+            f"{max_retries} retries (concurrent contention)"
+        )
+
     def update_with_version_check(
         self, expected_version, new_data=None, diagram_data=None
     ):
