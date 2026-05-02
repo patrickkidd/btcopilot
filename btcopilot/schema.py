@@ -486,32 +486,21 @@ class DiagramData:
 
         added_ids = {id for id in local_by_id if id not in snapshot_by_id}
 
+        # Phase 1: take server's view of every non-deleted item.
         result: dict = {}
         for id, server_item in server_by_id.items():
-            if id in deleted_ids:
-                continue
-            if id in dirty_ids:
-                result[id] = local_by_id[id]
-            else:
+            if id not in deleted_ids:
                 result[id] = server_item
-        for id in added_ids:
-            result[id] = local_by_id[id]
+        # Phase 2: local wins for everything the user touched. This includes
+        # the edge case where the user edited an item locally that another
+        # client deleted server-side: per item-level LWW, the local edit
+        # wins (the item is resurrected with the user's edit). Same logic
+        # applies to local additions.
+        for id, local_item in local_by_id.items():
+            if id in dirty_ids or id in added_ids:
+                result[id] = local_item
 
         return list(result.values())
-
-    @staticmethod
-    def merge_scene_collection(server: list[dict], local: list[dict]) -> list[dict]:
-        """
-        DEPRECATED. Use apply_local_changes(server, snapshot, local) instead.
-
-        Union by id; local wins on conflict. Silently corrupts edits on items
-        present in both snapshots (the bug fixed by apply_local_changes).
-        Kept temporarily for backwards compatibility during the cutover; will
-        be removed once all callers migrate.
-        """
-        merged = {item["id"]: item for item in server if item.get("id") is not None}
-        merged.update({item["id"]: item for item in local if item.get("id") is not None})
-        return list(merged.values())
 
     def clear(self) -> None:
         self.people = []

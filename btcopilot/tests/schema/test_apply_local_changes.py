@@ -152,6 +152,34 @@ def test_items_without_ids_skipped():
     assert result == [{"id": 1, "name": "A"}]
 
 
+def test_local_edit_beats_server_delete():
+    """Item-level last-write-wins: if user edited an item locally and another
+    client deleted it server-side, the user's edit wins (item resurrects with
+    the user's edit). Per docstring: "Take local (the user's edit wins;
+    item-level last-write-wins)."
+    """
+    snapshot = [{"id": 1, "name": "A", "cutoff": False}]
+    local = [{"id": 1, "name": "A_local_edit", "cutoff": False}]
+    server = []  # other client deleted
+
+    result = DiagramData.apply_local_changes(server, snapshot, local)
+
+    assert result == [{"id": 1, "name": "A_local_edit", "cutoff": False}]
+
+
+def test_local_add_with_server_unchanged_no_other_items():
+    """Edge case: local has new id, server is empty (or has unrelated items).
+    The local add must appear in result even when server has nothing.
+    """
+    snapshot = []
+    local = [{"id": 5, "name": "Local5"}]
+    server = []
+
+    result = DiagramData.apply_local_changes(server, snapshot, local)
+
+    assert result == [{"id": 5, "name": "Local5"}]
+
+
 def test_regression_snapshot_must_reflect_local_view_not_canonical():
     """
     Regression for the bug discovered by e2e harness 2026-05-02:

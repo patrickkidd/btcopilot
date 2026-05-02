@@ -168,6 +168,8 @@ class Diagram(db.Model, ModelMixin):
         if count <= 0:
             raise ValueError(f"count must be > 0, got {count}")
 
+        import PyQt5.sip  # noqa: F401  side-effect: registers QtCore unpickle types
+
         for _ in range(max_retries):
             db.session.expire(self)
             # Acquire row lock (PostgreSQL); on SQLite this is a no-op but
@@ -182,7 +184,6 @@ class Diagram(db.Model, ModelMixin):
             if not locked.data:
                 data = {}
             else:
-                import PyQt5.sip  # for unpickling QtCore types
                 data = pickle.loads(locked.data)
             last_id = int(data.get("lastItemId", 0) or 0)
             start = last_id + 1
