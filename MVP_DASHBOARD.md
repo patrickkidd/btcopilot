@@ -1,7 +1,8 @@
 # MVP Dashboard
 
-**Last consolidated:** 2026-04-17  
-**Source of truth:** This file + GitHub milestones. GitHub project board is unreliable (OpenClaw marked items Done without verification).
+**Last consolidated:** 2026-05-02 (added MVP merge fix outcomes)
+**Previous consolidation:** 2026-04-17
+**Source of truth:** This file. GitHub Issues are no longer used for task tracking (as of 2026-05-02). Pull Requests on GitHub remain the code-review surface; issue-style work tracking happens here. Historical `GH #XX` references in this dashboard point at closed issues or PRs — kept for archaeology, not as live trackers.
 
 **How to use:** Milestones are ordered. Pick the next open task under the highest-priority milestone. Mark done with date when verified in code or app.
 
@@ -15,7 +16,8 @@
 
 | Started | Workstream | Owner | Status | Tracker |
 |---------|------------|-------|--------|---------|
-| 2026-04-17 | Data integrity (9 items: concurrent merge, prune fixes, commit atomicity, field coverage, chat persistence, save-failure UI). Spans MVP 1 (chat) + MVP 2 (Pro viewing). 1924 out of scope — handled by re-extraction. | CC | In progress — grinding | [familydiagram/doc/plans/2026-04-17--data-integrity/](../familydiagram/doc/plans/2026-04-17--data-integrity/README.md) |
+| 2026-04-17 | Data integrity (9 items: concurrent merge, prune fixes, commit atomicity, field coverage, chat persistence, save-failure UI). Spans MVP 1 (chat) + MVP 2 (Pro viewing). 1924 out of scope — handled by re-extraction. | CC | Item 1 (concurrent merge) superseded by 2026-05-01--mvp-merge-fix. Items 2-9 still open. | [familydiagram/doc/plans/2026-04-17--data-integrity/](../familydiagram/doc/plans/2026-04-17--data-integrity/README.md) |
+| 2026-05-01 | MVP merge fix: snapshot-diff merge + server-side block id allocation. Closes the silent-data-loss bug between concurrent Pro+Personal saves. Replaces item 1 of the data-integrity workstream with a deeper fix. | CC | DONE — 7/8 manual journeys PASS, 1 deferred. PR #114 (btcopilot) + PR #135 (familydiagram), both reviewed. | [familydiagram/doc/plans/2026-05-01--mvp-merge-fix/](../familydiagram/doc/plans/2026-05-01--mvp-merge-fix/README.md) |
 
 ---
 
@@ -94,7 +96,7 @@ These exist but are not blocking MVP 1 since the PDP drawer is bypassed.
 > Open Personal-app-generated diagrams in the Pro app with correct layout.
 > **Done condition:** Pro app opens a Personal-generated diagram with correct auto-layout, no data corruption, no FR-2 violation.
 
-**Status: ~10% complete.** T0-4 in progress (Patrick). Auto-arrange is the long pole.
+**Status: ~25% complete.** T0-4 done (superseded by MVP merge fix, 2026-05-02). Auto-arrange is now the long pole.
 
 **Note:** Pro app is basically done and out of scope for MVP 1. Only comes into picture for this milestone.
 
@@ -102,7 +104,6 @@ These exist but are not blocking MVP 1 since the PDP drawer is bypassed.
 
 | # | Task | Owner | Effort | Details |
 |---|------|-------|--------|---------|
-| T0-4 | FR-2 fix (concurrent write corruption) | Patrick | ~4 hr | Code complete on branches `familydiagram:fix/t0-4-fr2-applychange-merge`, `btcopilot:fix/t0-4-fr2-schema-cleanup`. 5 tests pass. **Pending Patrick manual test before merge.** GH #82. |
 | T2-1 | Deterministic auto-arrange | CC+H | 2-3 wk | Replace Gemini with graph algorithm. GH #83. Analysis: doc/analyses/2026-02-20_auto_arrange.md. Simplified MVP option: generational Y-alignment (~1 week, ~70% value). |
 | T2-5 | Baseline view fix | CC+H | ~2 hr | GH #84. Root cause unknown, needs investigation. |
 
@@ -110,6 +111,7 @@ These exist but are not blocking MVP 1 since the PDP drawer is bypassed.
 
 | Item | Date | Evidence |
 |------|------|----------|
+| T0-4: FR-2 fix (concurrent write corruption) | 2026-05-02 | Superseded and completed by MVP merge fix workstream (snapshot-diff merge + server-side block id allocation). 7/8 manual journeys PASS, 1 deferred (Personal lacks editEvent UI). 46 unit tests + 3 e2e harness journeys. PR #114 (btcopilot) + #135 (familydiagram). Plan: [familydiagram/doc/plans/2026-05-01--mvp-merge-fix/](../familydiagram/doc/plans/2026-05-01--mvp-merge-fix/README.md). |
 | T2-2, T2-3: Arrange error handling | 2026-02 | |
 | T2-4, T2-6 | 2026-02 | |
 
@@ -146,7 +148,7 @@ These exist but are not blocking MVP 1 since the PDP drawer is bypassed.
 | T9-9 | SARF definitions refinement | #106 (epic) | 3 | Depends on T9-3/4/5 |
 | T9-10 | GT expansion | #106 (epic) | 3 | Human. Depends on T9-1/2. |
 | T9-11 | Definition reference panel | #106 (epic) | 3 | Training app. Shares T9-1 infra. |
-| — | Further improve SARF F1 | (project board only) | — | No GH issue. General improvement tracking. |
+| — | Further improve SARF F1 | — | — | General improvement tracking. No specific tracker — falls under MVP 3 wave-3 work. |
 
 Individual GH issues #107-116 were closed and rolled into wave epics #104/#105/#106.
 
@@ -188,6 +190,7 @@ Per-discussion: 36=0.698, 37=0.487, 39=0.612, 48=0.642, 50=0.561, 51=0.697.
 
 | Date | Decision | Key Detail |
 |------|----------|------------|
+| 2026-05-02 | Snapshot-diff merge + server-side block id allocation for concurrent Pro/Personal saves | Replaces "union by id, local wins" merge. Pro pulls id blocks via POST /v1/diagrams/{id}/reserve_ids; Personal allocates server-side via commit_pdp_items (unchanged). Item-level last-write-wins documented as MVP behavior. Field-level merge deferred to v3. |
 | 2026-04-12 | Auto-accept extraction, bypass PDP drawer | Users won't understand approval step. Atomic BE endpoint. PDP code preserved. |
 | 2026-02-24 | Single-prompt extraction replaces delta-by-delta | 2x F1 improvement. User-initiated "Build my diagram" button. |
 | 2026-02-24 | Patrick is sole GT source for MVP | IRR study deferred. ~60 min/discussion. Target 3-5 (achieved 6). |
@@ -276,15 +279,15 @@ Items completed during the OpenClaw automation period (Feb-Mar 2026). Preserved 
 | [Server API & Data Model](doc/analyses/2026-02-20_server_api_and_data_model.md) | Endpoints, validation, sync |
 | [Bugs & TODOs Inventory](doc/analyses/2026-02-20_bugs_and_todos_inventory.md) | Complete bug list, skipped tests |
 
-### GitHub State (as of 2026-04-12)
+### GitHub Issues — DEPRECATED (as of 2026-05-02)
 
-**Issues to fix:**
-- #80 (T3-7): Incorrectly closed by OpenClaw. Not implemented. → Jira
-- #81 (T8-1): Incorrectly closed by OpenClaw. Partial — needs redo.
-- #82, #83: Assigned to old MVP 3 milestone on GitHub, belong to MVP 2.
-- #100: Should be closed (deferred by Patrick).
-- MVP 1 milestone description: Remove T3-7 from done-condition. Update flow to reflect auto-accept.
-- MVP 2 milestone title: "Human Beta" is misleading — this is Pro viewing.
-- Old MVP 3 milestone: Close (collapsed into MVP 2). Old MVP 4 renamed to MVP 3.
+GitHub Issues are no longer used for task tracking. This dashboard is the single source of truth. The `GH #XX` references throughout this document point at closed issues or PRs and are kept for archaeology only.
 
-**Project board trust level: LOW.** OpenClaw marked human-only tasks Done, reverted code as Done. Use this dashboard + GitHub issues as source of truth, not the project board.
+Historical issues that this dashboard references but does not actively manage:
+- #80 (T3-7): Was incorrectly closed by OpenClaw. Tracked as deferred/post-MVP.
+- #81 (T8-1): Beta test redo. Tracked as MVP 1 open work in this dashboard.
+- #82 (T0-4): Closed alongside the 2026-05-02 merge fix shipping. Tracked as Done in MVP 2.
+- #83, #84: Tracked as MVP 2 open work in this dashboard.
+- #100: Deferred. Tracked as Post-MVP in this dashboard.
+
+PRs (e.g. #114 btcopilot, #135 familydiagram) remain on GitHub as the code-review surface.

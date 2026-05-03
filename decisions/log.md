@@ -6,6 +6,43 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ---
 
+## 2026-05
+
+### 2026-05-02: Snapshot-diff merge + server-side block id allocation for concurrent Pro/Personal saves
+
+**Context:** When both Pro and Personal apps had the same diagram open, the second-saver's stale snapshot silently overwrote the other side's edits via `merge_scene_collection` ("union by id, local wins" — clobbers any item present in both snapshots regardless of who actually edited it). Plus `lastItemId` is a single counter both apps allocate from, so concurrent adds collide. This blocked the MVP intake flow (clinician leaves Pro open while client uses Personal).
+
+**Options considered:**
+1. **Renumber-on-collision** (rewrite cached ids in undo stack, Layer.itemProperties, etc.) — audit found ~10 distinct id-keyed sites; high silent-corruption risk if any missed.
+2. **Per-app id namespace partitioning** (Pro uses ids in [1, 2^30), Personal in [2^30, 2^31)) — Patrick rejected (apps share data, should share namespace).
+3. **UUIDs** — Patrick rejected (id space is integer).
+4. **Server-side block id allocation** (Pro reserves blocks of N ids on diagram open via dedicated endpoint; server's lastItemId always advances ahead of any block) — chosen.
+5. **Snapshot-diff merge** (`apply_local_changes`) replacing `merge_scene_collection`: user's actual changes (snapshot → local) applied on top of server's current state; items the user didn't touch pass through from server, preserving concurrent edits at item level.
+
+**Decision:** Both #4 and #5. The combination eliminates silent data loss across the realistic MVP intake scenarios (Pro left open while Personal does PDP commits, etc.) without requiring renumbering of established item ids. Tested via 46 unit tests + 3 e2e harness journeys + 7/8 manual journeys on real hardware. PR #114 (btcopilot) + #135 (familydiagram).
+
+**Reasoning:**
+- Snapshot-diff merge is correct by construction: items user didn't touch pass through from server. No more "local wins always" clobbering.
+- Block allocation makes id collisions structurally impossible without changing the integer id space. Pre-reserved block belongs to the requesting client; server's `lastItemId` advances atomically via SELECT FOR UPDATE + optimistic version locking.
+- Both fixes are localized and reversible. No schema migrations.
+- Caller-captured `_lastSavedSnapshot` (Pro's setData / Personal's saveDiagram) is the merge baseline — NOT the post-merge canonical bytes (which may include other-client items the local Scene never loaded). This subtle distinction was found by e2e harness after the first ship attempt.
+- Native Python `==` for dirty-detection (replaces pickle byte comparison): 1078x faster, more correct (Qt's QPointF/QDateTime use semantic equality including fuzzy float compare; pickle bytes produce false-positive dirties for identical-semantic floats with different IEEE 754 representation).
+
+**Trade-offs accepted:**
+- Item-level last-write-wins on the same-item-different-fields case (Pro and Personal both edit same person's different fields → second saver's whole item dict wins). Documented as MVP behavior; field-level merge is v3.
+- Block allocation leaks unused ids when a Pro session ends mid-block (~95 ids/session worst case). Math: 2^31 / (10 instances × 5 sessions/day × 95 leaks) > 1100 years per diagram. Negligible.
+- `reserve_id_block` concurrency under SQLite `:memory:` test environment can't be fully simulated (each thread gets a private DB). Production correctness verified by SQL semantics + serial test + monkeypatched retry-branch coverage.
+- `J-6` manual journey deferred until Personal exposes `editEvent` in QML (slot exists, no UI surface). Same-item-LWW behavior covered by unit test `test_same_item_both_sides_edited_local_wins`.
+
+**Revisit trigger:**
+- Customer report of same-field concurrent edit loss → time to ship field-level merge (v3 work item).
+- Block allocator failure under real PostgreSQL load → instrument `reserve_id_block` retry rate.
+- Future Personal-embedded-in-Pro architecture obsoletes the wire-protocol layer — at that point both fixes can be retired.
+
+**Plan:** [familydiagram/doc/plans/2026-05-01--mvp-merge-fix/](../familydiagram/doc/plans/2026-05-01--mvp-merge-fix/README.md). Manual journey results: [JOURNEYS_HUMAN.md](../familydiagram/doc/plans/2026-05-01--mvp-merge-fix/JOURNEYS_HUMAN.md). Implementation log: [logs/](../familydiagram/doc/plans/2026-05-01--mvp-merge-fix/logs/).
+
+---
+
 ## 2026-04
 
 ### 2026-04-12: Auto-accept extraction — skip PDP approval step for MVP 1
