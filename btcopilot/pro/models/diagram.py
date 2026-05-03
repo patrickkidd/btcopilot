@@ -12,6 +12,7 @@ import btcopilot
 from btcopilot.schema import DiagramData, PDP, from_dict
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
+from btcopilot.pro.safe_pickle import safe_loads_diagram
 
 
 # TODO: Remove once pro version adoption gets past 2.1.11
@@ -83,7 +84,7 @@ class Diagram(db.Model, ModelMixin):
     def get_diagram_data(self) -> DiagramData:
         import PyQt5.sip  # Required for unpickling QtCore objects
 
-        data = pickle.loads(self.data) if self.data else {}
+        data = safe_loads_diagram(self.data) if self.data else {}
         pdp_dict = data.get("pdp", {})
         known = {f.name for f in dc_fields(DiagramData)} - {"pdp"}
         kwargs = {k: data[k] for k in known if k in data}
@@ -94,7 +95,7 @@ class Diagram(db.Model, ModelMixin):
         import PyQt5.sip  # Required for pickling QtCore objects
         from btcopilot.schema import asdict
 
-        data = pickle.loads(self.data) if self.data else {}
+        data = safe_loads_diagram(self.data) if self.data else {}
 
         # Convert PDP dataclass to dict before pickling (JSON-compatible)
         data["pdp"] = asdict(diagram_data.pdp)
@@ -221,7 +222,7 @@ class Diagram(db.Model, ModelMixin):
             import PyQt5.sip
             from btcopilot.schema import asdict
 
-            data = pickle.loads(self.data) if self.data else {}
+            data = safe_loads_diagram(self.data) if self.data else {}
             data["pdp"] = asdict(diagram_data.pdp)
             data["lastItemId"] = diagram_data.lastItemId
             data["people"] = diagram_data.people
