@@ -595,9 +595,13 @@ async def _extract_and_validate(
             for attempt_num, errors in error_history:
                 history_lines.append(f"Attempt {attempt_num}:")
                 history_lines.extend(f"  - {err}" for err in errors)
+            committed_person_ids = sorted(
+                p["id"] for p in diagram_data.people if "id" in p
+            )
             current_prompt = prompt + DATA_EXTRACTION_CORRECTION.format(
                 failed_deltas=json.dumps(asdict(pdp_deltas), indent=2, default=str),
                 error_history="\n".join(history_lines),
+                committed_person_ids=committed_person_ids,
             )
 
     new_pdp = apply_deltas(pdp, pdp_deltas)

@@ -78,6 +78,8 @@ DATA_EXTRACTION_CORRECTION = """
 Fix errors in these deltas:
 {failed_deltas}
 {error_history}
+
+Valid committed person IDs (use ONLY these as positive person IDs — do NOT invent others): {committed_person_ids}
 """
 
 SARF_REVIEW_PROMPT = """Review SARF variable coding on these events.
