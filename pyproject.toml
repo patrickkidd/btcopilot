@@ -50,7 +50,6 @@ app = [
 
     # personal
     "anthropic",
-    "pydantic_ai",
     "google-genai",
 
     # training
@@ -61,7 +60,6 @@ app = [
     "langchain-openai",
     "langchain-text-splitters",
     "nest_asyncio",
-    "pydantic_ai",
     "pypdf",
     "rapidfuzz>=3.0.0",
     "scikit-learn>=1.3.0",
