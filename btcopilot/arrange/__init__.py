@@ -56,3 +56,13 @@ class DiagramDelta:
     """
 
     people: List[PersonDelta] = field(default_factory=list)
+
+
+# Algorithm lives in submodules:
+#   btcopilot.arrange.layout.layout   — main entry point (deterministic Bowen layout + refine)
+#   btcopilot.arrange.refine.refine   — iterative hill-climbing refinement layer
+# Dev workflow + decision log: familydiagram/doc/plans/2026-05-02--auto-arrange-layout.md
+#
+# DO NOT add a `layout` function here — Python's submodule resolution will shadow it
+# with the layout.py module once anything imports btcopilot.arrange.layout, breaking
+# `from btcopilot.arrange import layout` for callers who got the function first.

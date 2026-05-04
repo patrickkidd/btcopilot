@@ -1,8 +1,14 @@
-# MVP Dashboard
+# MVP Dashboard — DEPRECATED 2026-05-03
+
+> **DEPRECATED 2026-05-03.** This dashboard is no longer the source of truth. **Live MVP tracking moved to Jira FD-264** (Personal + Pro App MVP epic). Charter narrative lives in the FD-264 description; active task list is the FD-264 children; per-surface backlogs live in the FD project tagged with Components (Personal App / Pro App / Training App / Backend / Marketing / Content). User feedback intake via the `/feedback` skill → `theapp/USER_FEEDBACK_LOG.md`. See top-level [CLAUDE.md](../CLAUDE.md) "Documentation Routing > State tracking".
+>
+> Do NOT add new tasks, update statuses, or treat rows as authoritative. Preserved below for archaeology only.
+
+---
 
 **Last consolidated:** 2026-05-02 (added MVP merge fix outcomes)
 **Previous consolidation:** 2026-04-17
-**Source of truth:** This file. GitHub Issues are no longer used for task tracking (as of 2026-05-02). Pull Requests on GitHub remain the code-review surface; issue-style work tracking happens here. Historical `GH #XX` references in this dashboard point at closed issues or PRs — kept for archaeology, not as live trackers.
+**Source of truth (historical):** This file was the single source of truth from 2026-05-02 to 2026-05-03. GitHub Issues were retired as task trackers on 2026-05-02; this file was retired in turn on 2026-05-03 in favor of Jira FD-264.
 
 **How to use:** Milestones are ordered. Pick the next open task under the highest-priority milestone. Mark done with date when verified in code or app.
 

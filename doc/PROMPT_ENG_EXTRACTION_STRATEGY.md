@@ -433,6 +433,22 @@ Current state (gemini-3-flash-preview, 3-pass with R-review): **Stage 1+ reached
 
 ---
 
+## Deferred / Unexplored Hypotheses
+
+> Archived 2026-05-03 from fdserver#19 ("Further Improve SARF F1"). SARF F1 is currently above target (macro 0.602; see MVP Dashboard metrics). These were the next-most-promising directions when work paused. Re-open if F1 regresses or a stricter target is set. Ordered by expected impact at time of archival.
+
+1. **Per-variable review-then-filter passes (S, A, F).** Pass 3 currently applies only R corrections because full SARF re-application corrupted S/A. Hypothesis: separate review passes per variable (S-only, A-only, F-only) avoid the cross-field corruption. Test order: S, then A, then F.
+2. **Increase `thinking_budget` for Pass 3 only.** thinking=2048+ didn't help extraction (Passes 1–2) but the clinical distinction work happens in review. Higher budget on Pass 3 alone keeps extraction latency unchanged.
+3. **Functioning is the weakest variable (F=0.291 at archival; 0.524 currently).** If it regresses, instrument WHY before prompt edits — under-extraction vs over-extraction vs mis-coding. Then a targeted F-specific review pass (mirror of R review).
+4. **Events F1 is the gating ceiling for SARF.** SARF can't lift above the event-match floor. Diagnose remaining mismatches by class — date / kind / person — before further SARF prompt work.
+5. **GT data quality audit.** 18 GT events with `person=None`, 24 with placeholder descriptions artificially suppress measured F1. Cleanup is a measurement fix, not a model fix; may reveal that real quality is higher than measured.
+6. **Per-variable review prompts.** Replace single `RELATIONSHIP_REVIEW_PROMPT` with `SYMPTOM_REVIEW_PROMPT`, `ANXIETY_REVIEW_PROMPT`, `FUNCTIONING_REVIEW_PROMPT` — variable-specific clinical distinctions, applied independently. Adds passes (latency cost), tolerable for async.
+7. **Chain-of-thought extraction in Pass 2.** First pass generates plain-text reasoning per shift event; second pass extracts structured data from the reasoning. Separates clinical reasoning from schema compliance.
+
+Constraints (still apply if revived): follow `induction_agent.md` protocol, log to `doc/induction-reports/`, multi-run averaging (3+ runs) required for signal, production model `gemini-3-flash-preview` thinking=1024.
+
+---
+
 ## Related Files
 
 | File | Purpose |

@@ -56,21 +56,13 @@ Other: [README.md](README.md), [doc/plans/](doc/plans/)
 
 **Key prompt engineering lessons** (details in PROMPT_ENGINEERING_LOG.md): model is Gemini 2.0 Flash; verbose definitions killed F1 scores; see log for what NOT to include in prompts.
 
-### MVP Dashboard Maintenance (MANDATORY)
+### MVP State Tracking (UPDATED 2026-05-03)
 
-[MVP_DASHBOARD.md](MVP_DASHBOARD.md) is the **single source of truth** for all milestone/task/bug status. See top-level CLAUDE.md "Documentation Routing > State tracking" for the canonical rule.
+The single source of truth for MVP work is **Jira FD-264** (Personal + Pro App MVP epic). See top-level [CLAUDE.md](../CLAUDE.md) "Documentation Routing > State tracking" for the canonical rule.
 
-After completing or reviewing any MVP task:
-1. Update the task's row (strikethrough if done, add DONE date/notes)
-2. Move to the Done table for that milestone
+[MVP_DASHBOARD.md](MVP_DASHBOARD.md) is **DEPRECATED as a live tracker (2026-05-03)** and preserved only for archaeology. Do NOT add new tasks, update statuses, or treat its rows as authoritative. Use Jira.
 
-After new bugs are discovered during testing:
-1. Add a row to the Open table under the appropriate milestone in MVP_DASHBOARD.md
-
-Rules:
-- **Anti-staleness**: Never trust dashboard task statuses at face value. Verify against actual code before working on a task.
-- **No hardcoded F1 values**: F1 numbers are computed on-demand. Dashboard should reference measurement date and conditions, not bare numbers.
-- **Task status must match code reality**: If implementation already exists, mark it done regardless of when it was implemented.
+**Jira operations are strictly approval-gated**: never create or modify a Jira issue without explicit user "yes" in the same turn. No exceptions.
 
 ### Synthetic Client Dev Log (MANDATORY)
 
