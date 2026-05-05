@@ -1,6 +1,26 @@
 """
 Recursive subtree layout algorithm for Bowen family diagrams.
 
+═══════════════════════════════════════════════════════════════════════════════
+BEFORE MODIFYING THIS FILE, READ:
+  familydiagram/doc/plans/2026-05-02--auto-arrange-layout.md
+It contains the workstream history, decision log (D-1 through D-26), what was
+tried and rejected, MVP context, GT calibration data, the painter analogy that
+shaped the refine layer, the watchdog protocol for avoiding rabbit holes, and
+the dev workflow. Many obvious-looking changes have already been tried; the
+decision log explains why each was kept or rejected.
+
+Companion modules:
+  refine.py        — iterative hill-climbing post-pass (5 move types)
+  __init__.py      — Diagram/Person/Point/Rect dataclasses
+
+Dev tools (run from the familydiagram repo):
+  familydiagram/bin/arrange/fd_arrange_test.py  — run on every clinic case
+  familydiagram/bin/arrange/fd_fitness.py       — GT-comparison fitness oracle
+  familydiagram/bin/arrange/fd_compare.py       — surface manual-correction deltas
+  familydiagram/bin/arrange/README.md           — full dev workflow
+═══════════════════════════════════════════════════════════════════════════════
+
 Input: list of person dicts with keys:
   id, gender, size, partners (list of ids), parent_a (id), parent_b (id)
 
@@ -16,15 +36,17 @@ All spacing is proportional to person symbol size. For size=5 (125px):
 SIZE_PX = {1: 8, 2: 16, 3: 40, 4: 80, 5: 125}
 DEFAULT_SIZE = 125
 
-GEN_GAP_FACTOR = 2.1      # from grid search 2026-05-02 (best fitness)
-PARTNER_FACTOR = 1.4       # from grid search 2026-05-02 (best fitness)
-SIBLING_GAP_FACTOR = 0.5   # from grid search 2026-05-02 (best fitness)
-SUBTREE_GAP_FACTOR = 0.3   # from grid search 2026-05-02 (best fitness)
-PAIR_BOND_BEYOND = 0.75    # how far parents extend past outermost child (as multiple of avg parent size)
-LABEL_CHAR_WIDTH = 0.6     # char width as fraction of font height
-LABEL_BUFFER = 20          # extra buffer after label end
+GEN_GAP_FACTOR = 2.1  # from grid search 2026-05-02 (best fitness)
+PARTNER_FACTOR = 1.4  # from grid search 2026-05-02 (best fitness)
+SIBLING_GAP_FACTOR = 0.5  # from grid search 2026-05-02 (best fitness)
+SUBTREE_GAP_FACTOR = 0.3  # from grid search 2026-05-02 (best fitness)
+PAIR_BOND_BEYOND = (
+    0.75  # how far parents extend past outermost child (as multiple of avg parent size)
+)
+LABEL_CHAR_WIDTH = 0.6  # char width as fraction of font height
+LABEL_BUFFER = 20  # extra buffer after label end
 LABEL_OVERLAP_TOLERANCE = 80  # GT-derived: ~p75 of GT label-symbol overlaps; allow this much before forcing extra spread
-R_SIBLING_EXTRA = 60       # extra gap when an R symbol exists between adjacent siblings
+R_SIBLING_EXTRA = 60  # extra gap when an R symbol exists between adjacent siblings
 
 
 def _px(person):
@@ -78,6 +100,7 @@ def _sort_children(by_id, child_ids):
     def key(cid):
         p = by_id.get(cid, {})
         return (p.get("birth_date") or "", cid)
+
     return sorted(child_ids, key=key)
 
 
@@ -94,14 +117,21 @@ def _subtree_width(by_id, pid, placed, depth=0, r_pairs=None):
     )
     partner_family_placed = lambda qid: not has_parents(qid) or any(
         par in placed
-        for par in [by_id.get(qid, {}).get("parent_a"), by_id.get(qid, {}).get("parent_b")]
+        for par in [
+            by_id.get(qid, {}).get("parent_a"),
+            by_id.get(qid, {}).get("parent_b"),
+        ]
         if par
     )
     partner_ids = [qid for qid in (p.get("partners") or []) if qid in by_id]
     primary_partner = next(
         (qid for qid in partner_ids if qid not in placed and not has_parents(qid)),
         next(
-            (qid for qid in partner_ids if qid not in placed and partner_family_placed(qid)),
+            (
+                qid
+                for qid in partner_ids
+                if qid not in placed and partner_family_placed(qid)
+            ),
             None,
         ),
     )
@@ -119,7 +149,9 @@ def _subtree_width(by_id, pid, placed, depth=0, r_pairs=None):
     if not children:
         primary_width = couple_width
     else:
-        child_widths = [_subtree_width(by_id, c, placed, depth + 1, r_pairs) for c in children]
+        child_widths = [
+            _subtree_width(by_id, c, placed, depth + 1, r_pairs) for c in children
+        ]
         total_gap = sum(
             _sibling_gap(by_id, children[i], children[i + 1], r_pairs)
             for i in range(len(children) - 1)
@@ -200,10 +232,12 @@ def _compute_y_levels(by_id):
                     if y[pid] < need:
                         y[pid] = need
                         changed = True
-            for partner in (p.get("partners") or []):
+            for partner in p.get("partners") or []:
                 if partner not in y or partner == pid:
                     continue
-                if _is_descendant(by_id, pid, partner) or _is_descendant(by_id, partner, pid):
+                if _is_descendant(by_id, pid, partner) or _is_descendant(
+                    by_id, partner, pid
+                ):
                     continue  # cyclic: skip Y-equalization
                 if y[partner] > y[pid]:
                     y[pid] = y[partner]
@@ -247,7 +281,11 @@ def layout(people, r_pairs=None):
             return
 
         sa, sb = _px(pa), _px(pb)
-        factor = PARTNER_FACTOR * R_SYMBOL_FACTOR if frozenset([pa_id, pb_id]) in r_pairs else PARTNER_FACTOR
+        factor = (
+            PARTNER_FACTOR * R_SYMBOL_FACTOR
+            if frozenset([pa_id, pb_id]) in r_pairs
+            else PARTNER_FACTOR
+        )
         spacing = max(sa, sb) * factor
 
         # Male left of female (SOFT-2)
@@ -264,7 +302,9 @@ def layout(people, r_pairs=None):
         # Pre-compute children span to expand the pair-bond to encompass children.
         children = _sort_children(by_id, _children_of(by_id, pa_id, pb_id))
         if children:
-            child_widths = [_subtree_width(by_id, c, placed, r_pairs=r_pairs) for c in children]
+            child_widths = [
+                _subtree_width(by_id, c, placed, r_pairs=r_pairs) for c in children
+            ]
             gaps = [
                 _sibling_gap(by_id, children[i], children[i + 1], r_pairs)
                 for i in range(len(children) - 1)
@@ -284,14 +324,22 @@ def layout(people, r_pairs=None):
             new_sz = _px(by_id.get(new_id))
             new_x = positions[new_id][0]
             conflicts = sorted(
-                [q for q in placed if q != new_id and q in positions and abs(positions[q][1] - new_y) <= 5],
+                [
+                    q
+                    for q in placed
+                    if q != new_id
+                    and q in positions
+                    and abs(positions[q][1] - new_y) <= 5
+                ],
                 key=lambda q: positions[q][0],
                 reverse=not go_right,
             )
             for qid in conflicts:
                 qx = positions[qid][0]
                 q_sz = _px(by_id.get(qid))
-                sym_ov = min(new_x + new_sz / 2, qx + q_sz / 2) - max(new_x - new_sz / 2, qx - q_sz / 2)
+                sym_ov = min(new_x + new_sz / 2, qx + q_sz / 2) - max(
+                    new_x - new_sz / 2, qx - q_sz / 2
+                )
                 if sym_ov > 0:
                     if go_right:
                         # Skip if q's label would overlap new_id's symbol after the push.
@@ -306,8 +354,16 @@ def layout(people, r_pairs=None):
         if pa_id in placed and pb_id in placed:
             xa, xb = positions[pa_id][0], positions[pb_id][0]
             # label_min: left person's label must clear right person's symbol.
-            lp, rp = (by_id.get(left_id), by_id.get(right_id)) if xa < xb else (by_id.get(right_id), by_id.get(left_id))
-            min_sp = max(spacing, _px(lp) / 2 + _label_px(lp) + _px(rp) / 2) if lp and rp else spacing
+            lp, rp = (
+                (by_id.get(left_id), by_id.get(right_id))
+                if xa < xb
+                else (by_id.get(right_id), by_id.get(left_id))
+            )
+            min_sp = (
+                max(spacing, _px(lp) / 2 + _label_px(lp) + _px(rp) / 2)
+                if lp and rp
+                else spacing
+            )
             if abs(xa - xb) < min_sp:
                 # Enforce minimum label-aware couple spacing; nudge the right person outward.
                 mid = (xa + xb) / 2
@@ -323,7 +379,7 @@ def layout(people, r_pairs=None):
             actual_y = max(positions[pa_id][1], positions[pb_id][1])
         elif pa_id in placed:
             pa_pos = positions[pa_id]
-            go_right = (pa_id == left_id)
+            go_right = pa_id == left_id
             if go_right:
                 positions[pb_id] = (pa_pos[0] + effective_spacing, y_levels[pb_id])
             else:
@@ -334,7 +390,7 @@ def layout(people, r_pairs=None):
             actual_y = max(pa_pos[1], y_levels[pb_id])
         elif pb_id in placed:
             pb_pos = positions[pb_id]
-            go_right = (pb_id == left_id)
+            go_right = pb_id == left_id
             if pb_id == right_id:
                 positions[pa_id] = (pb_pos[0] - effective_spacing, y_levels[pa_id])
             else:
@@ -358,21 +414,30 @@ def layout(people, r_pairs=None):
         if total > 0:
             child_y = y_levels.get(children[0])
             if child_y is not None:
+
                 def _is_halfsib(cid):
                     if cid in children or cid not in positions:
                         return False
                     if abs(positions[cid][1] - child_y) > 5:
                         return False
                     p = by_id.get(cid, {})
-                    return p.get("parent_a") in (pa_id, pb_id) or p.get("parent_b") in (pa_id, pb_id)
-                halfsiblings = sorted([c for c in placed if _is_halfsib(c)], key=lambda c: positions[c][0])
+                    return p.get("parent_a") in (pa_id, pb_id) or p.get("parent_b") in (
+                        pa_id,
+                        pb_id,
+                    )
+
+                halfsiblings = sorted(
+                    [c for c in placed if _is_halfsib(c)], key=lambda c: positions[c][0]
+                )
                 if halfsiblings:
                     hs_right = [c for c in halfsiblings if positions[c][0] > actual_cx]
-                    hs_left  = [c for c in halfsiblings if positions[c][0] <= actual_cx]
+                    hs_left = [c for c in halfsiblings if positions[c][0] <= actual_cx]
                     if hs_right:
                         hs_first = hs_right[0]
                         gap = _sibling_gap(by_id, children[-1], hs_first, r_pairs)
-                        max_right = positions[hs_first][0] - _px(by_id[hs_first]) / 2 - gap
+                        max_right = (
+                            positions[hs_first][0] - _px(by_id[hs_first]) / 2 - gap
+                        )
                         if actual_cx + total / 2 > max_right:
                             actual_cx = max_right - total / 2
                     if hs_left:
@@ -404,7 +469,9 @@ def layout(people, r_pairs=None):
                         qx, qy = positions[qid]
                         if abs(qy - child_y) > 5:
                             continue
-                        q_lbl_end = qx + _px(by_id.get(qid)) / 2 + _label_px(by_id.get(qid))
+                        q_lbl_end = (
+                            qx + _px(by_id.get(qid)) / 2 + _label_px(by_id.get(qid))
+                        )
                         needed = q_lbl_end + next_sz / 2
                         if needed > min_next_cx:
                             min_next_cx = needed
@@ -429,13 +496,17 @@ def layout(people, r_pairs=None):
             q = by_id[qid]
             if q.get("parent_a") or q.get("parent_b"):
                 return 0
-            return sum(
-                1 for p2 in (q.get("partners") or [])
-                if p2 in by_id
-                and p2 != pid
-                and not by_id[p2].get("parent_a")
-                and not by_id[p2].get("parent_b")
-            ) + 1
+            return (
+                sum(
+                    1
+                    for p2 in (q.get("partners") or [])
+                    if p2 in by_id
+                    and p2 != pid
+                    and not by_id[p2].get("parent_a")
+                    and not by_id[p2].get("parent_b")
+                )
+                + 1
+            )
 
         def _parent_placed(qid):
             """True if qid is a root OR at least one of its parents is placed."""
@@ -447,8 +518,11 @@ def layout(people, r_pairs=None):
 
         unplaced = sorted(
             [
-                qid for qid in partner_ids
-                if qid not in placed and qid not in coupled_roots and _parent_placed(qid)
+                qid
+                for qid in partner_ids
+                if qid not in placed
+                and qid not in coupled_roots
+                and _parent_placed(qid)
             ],
             key=_tc4_priority,
             reverse=True,
@@ -485,7 +559,9 @@ def layout(people, r_pairs=None):
                     # Same label-aware minimum as place_couple: label must clear partner symbol.
                     lbl_p = _label_px(p)
                     lbl_q = _label_px(by_id[first_placed])
-                    spacing = max(spacing, sz / 2 + lbl_p + qsz / 2, qsz / 2 + lbl_q + sz / 2)
+                    spacing = max(
+                        spacing, sz / 2 + lbl_p + qsz / 2, qsz / 2 + lbl_q + sz / 2
+                    )
                     right_x = qpos[0] + spacing
                     left_x = qpos[0] - spacing
                     # Place on the side AWAY from the spouse's parents (outer side).
@@ -495,16 +571,20 @@ def layout(people, r_pairs=None):
                         for par in [q.get("parent_a"), q.get("parent_b")]
                         if par and par in positions
                     ]
+
                     def _same_row(other):
                         return (
                             other != first_placed
                             and abs(positions[other][1] - qpos[1]) < sz
                         )
+
                     def _side_taken(candidate_x):
                         return any(
                             abs(positions[other][0] - candidate_x) < spacing * 0.8
-                            for other in placed if _same_row(other)
+                            for other in placed
+                            if _same_row(other)
                         )
+
                     right_free = not _side_taken(right_x)
                     left_free = not _side_taken(left_x)
                     if parent_xs:
@@ -521,14 +601,18 @@ def layout(people, r_pairs=None):
                         # Both immediate slots taken; cascade outward on preferred side.
                         if go_right:
                             occupied = [
-                                positions[o][0] for o in placed if _same_row(o)
-                                and positions[o][0] > qpos[0]
+                                positions[o][0]
+                                for o in placed
+                                if _same_row(o) and positions[o][0] > qpos[0]
                             ]
-                            target_x = (max(occupied) + spacing) if occupied else right_x
+                            target_x = (
+                                (max(occupied) + spacing) if occupied else right_x
+                            )
                         else:
                             occupied = [
-                                positions[o][0] for o in placed if _same_row(o)
-                                and positions[o][0] < qpos[0]
+                                positions[o][0]
+                                for o in placed
+                                if _same_row(o) and positions[o][0] < qpos[0]
                             ]
                             target_x = (min(occupied) - spacing) if occupied else left_x
                     positions[pid] = (target_x, y_levels[pid])
@@ -551,9 +635,7 @@ def layout(people, r_pairs=None):
 
     # Identify root people (no parents in diagram)
     has_parents = {
-        p["id"]
-        for p in by_id.values()
-        if p.get("parent_a") or p.get("parent_b")
+        p["id"] for p in by_id.values() if p.get("parent_a") or p.get("parent_b")
     }
     roots = [p for p in by_id.values() if p["id"] not in has_parents]
     root_ids = {p["id"] for p in roots}
@@ -571,7 +653,8 @@ def layout(people, r_pairs=None):
         if root["id"] in paired_collect:
             continue
         partner_ids = [
-            qid for qid in (root.get("partners") or [])
+            qid
+            for qid in (root.get("partners") or [])
             if qid in by_id and qid in root_ids and qid not in paired_collect
         ]
         if partner_ids:
@@ -609,7 +692,8 @@ def layout(people, r_pairs=None):
 
     def _placed_children_of_person(pid):
         return [
-            p["id"] for p in by_id.values()
+            p["id"]
+            for p in by_id.values()
             if (p.get("parent_a") == pid or p.get("parent_b") == pid)
             and p["id"] in positions
         ]
@@ -623,7 +707,8 @@ def layout(people, r_pairs=None):
         if partner_id:
             return False
         non_root_unplaced = [
-            qid for qid in (root.get("partners") or [])
+            qid
+            for qid in (root.get("partners") or [])
             if qid in by_id and qid not in placed and qid not in root_ids
         ]
         return bool(non_root_unplaced) and all(
@@ -651,7 +736,9 @@ def layout(people, r_pairs=None):
             children_placed = _placed_children_of_couple(root["id"], partner_id)
             if children_placed:
                 # Phase 3: anchor X above already-placed children; Y from y_levels.
-                cx = sum(positions[c][0] for c in children_placed) / len(children_placed)
+                cx = sum(positions[c][0] for c in children_placed) / len(
+                    children_placed
+                )
                 place_couple(root["id"], partner_id, cx)
             else:
                 w = max(
@@ -668,7 +755,9 @@ def layout(people, r_pairs=None):
 
             children_placed = _placed_children_of_person(root["id"])
             if children_placed:
-                cx = sum(positions[c][0] for c in children_placed) / len(children_placed)
+                cx = sum(positions[c][0] for c in children_placed) / len(
+                    children_placed
+                )
                 place_person(root["id"], cx)
             else:
                 w = _subtree_width(by_id, root["id"], placed, r_pairs=r_pairs)
@@ -712,6 +801,7 @@ def layout(people, r_pairs=None):
     _compact(by_id, positions)
     _sweep(by_id, positions)
     from btcopilot.arrange.refine import refine
+
     positions = refine(by_id, positions, label_buffer=LABEL_BUFFER)
     return positions
 
@@ -734,7 +824,7 @@ def _sweep(by_id, positions):
                 continue
             seen.add(curr)
             # Only follow partners that are at or to the right of the starting person.
-            for qid in (by_id.get(curr, {}).get("partners") or []):
+            for qid in by_id.get(curr, {}).get("partners") or []:
                 if qid not in seen and positions.get(qid, (0,))[0] >= start_x:
                     queue.append(qid)
             queue += children_of.get(curr, [])
@@ -775,7 +865,13 @@ def _sweep(by_id, positions):
 
 
 def _compact(by_id, positions):
-    """Squeeze excess whitespace: pull right subtrees toward their left neighbor."""
+    """Squeeze excess whitespace: pull right subtrees toward their left neighbor.
+
+    Bounded by parent-anchor: never pulls a subtree's center further LEFT of its
+    parent-couple midpoint than it already is. Prevents the multi-cluster bug
+    where children placed correctly under their parents get yanked into adjacent
+    whitespace by a wider sibling cluster (see decision log D-28).
+    """
     children_of = {pid: [] for pid in by_id}
     for p in by_id.values():
         for par in [p.get("parent_a"), p.get("parent_b")]:
@@ -790,11 +886,33 @@ def _compact(by_id, positions):
             if curr in seen:
                 continue
             seen.add(curr)
-            for qid in (by_id.get(curr, {}).get("partners") or []):
+            for qid in by_id.get(curr, {}).get("partners") or []:
                 if qid not in seen and positions.get(qid, (0,))[0] >= start_x:
                     queue.append(qid)
             queue += children_of.get(curr, [])
         return seen
+
+    def _parent_anchor_cap(subtree_set, candidate_pull):
+        """Cap candidate_pull so no member is pulled past its parent-couple midpoint."""
+        max_pull = candidate_pull
+        for mid in subtree_set:
+            p = by_id.get(mid)
+            if not p or mid not in positions:
+                continue
+            pa, pb = p.get("parent_a"), p.get("parent_b")
+            if pa in positions and pb in positions:
+                anchor = (positions[pa][0] + positions[pb][0]) / 2
+            elif pa in positions:
+                anchor = positions[pa][0]
+            elif pb in positions:
+                anchor = positions[pb][0]
+            else:
+                continue
+            mx = positions[mid][0]
+            if mx <= anchor:
+                return 0.0
+            max_pull = min(max_pull, mx - anchor)
+        return max(0.0, max_pull)
 
     def _available_pull(subtree_set):
         """Max pixels this subtree can shift left without colliding with left neighbors."""
@@ -819,7 +937,9 @@ def _compact(by_id, positions):
                 continue
             nb_p = by_id.get(best_nb)
             nb_sz = _px(nb_p)
-            min_gap = max(_label_px(nb_p) - LABEL_BUFFER, SIBLING_GAP_FACTOR * (nb_sz + lsz) / 2)
+            min_gap = max(
+                _label_px(nb_p) - LABEL_BUFFER, SIBLING_GAP_FACTOR * (nb_sz + lsz) / 2
+            )
             min_x = best_x + nb_sz / 2 + min_gap + lsz / 2
             pull = min(pull, leftmost_x - min_x)
         return max(0.0, pull) if pull != float("inf") else 0.0
@@ -829,7 +949,9 @@ def _compact(by_id, positions):
         rows = {}
         for pid, (_, y) in positions.items():
             rows.setdefault(round(y), []).append(pid)
-        for y in sorted(rows, reverse=True):  # bottom-up: compact children before parents
+        for y in sorted(
+            rows, reverse=True
+        ):  # bottom-up: compact children before parents
             row = sorted(rows[y], key=lambda p: positions[p][0])
             for i in range(len(row) - 1, 0, -1):  # right-to-left
                 qid, pid = row[i], row[i - 1]
@@ -840,7 +962,10 @@ def _compact(by_id, positions):
                 min_qx = (
                     px
                     + _px(p) / 2
-                    + max(_label_px(p) - LABEL_BUFFER, SIBLING_GAP_FACTOR * (_px(p) + _px(q)) / 2)
+                    + max(
+                        _label_px(p) - LABEL_BUFFER,
+                        SIBLING_GAP_FACTOR * (_px(p) + _px(q)) / 2,
+                    )
                     + _px(q) / 2
                 )
                 row_slack = qx - min_qx
@@ -848,6 +973,7 @@ def _compact(by_id, positions):
                     continue
                 subtree = _subtree(qid)
                 pull = min(row_slack, _available_pull(subtree))
+                pull = _parent_anchor_cap(subtree, pull)
                 if pull > 1:
                     for mid in subtree:
                         if mid in positions:

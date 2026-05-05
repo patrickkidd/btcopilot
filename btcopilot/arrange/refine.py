@@ -1,15 +1,24 @@
 """
-Iterative refinement layer for fd_layout.
+Iterative refinement layer for btcopilot.arrange.layout.
+
+═══════════════════════════════════════════════════════════════════════════════
+BEFORE MODIFYING, READ:
+  familydiagram/doc/plans/2026-05-02--auto-arrange-layout.md
+The "painter" analogy that shaped this layer, the move-set design rationale,
+and what was tried and rejected (e.g. cluster-compress without symbol-overlap
+guard initially produced visually broken layouts — see D-25) all live there.
+═══════════════════════════════════════════════════════════════════════════════
 
 Implements the "painter" approach: hill-climbing over discrete subtree-slide
 moves. Each move slides a subtree (person + right-ward partners + descendants)
 horizontally and is accepted only if it improves intrinsic quality without
 creating collisions or violating Bowen invariants.
 
-Used as a post-pass in fd_layout.layout() after _sweep + _compact.
+Used as a post-pass in layout.layout() after _sweep + _compact.
 
 Quality is INTRINSIC (collisions, width, compactness) — not GT-based.
-GT comparison happens only at the global validation level (fd_fitness.py).
+GT comparison happens only at the global validation level
+(familydiagram/bin/arrange/fd_fitness.py).
 """
 
 from btcopilot.arrange import layout as fd_layout
@@ -41,7 +50,7 @@ def _subtree(by_id, children_of, positions, pid):
         if curr in seen:
             continue
         seen.add(curr)
-        for q in (by_id.get(curr, {}).get("partners") or []):
+        for q in by_id.get(curr, {}).get("partners") or []:
             if q not in seen and q in positions and positions[q][0] >= start_x:
                 queue.append(q)
         queue.extend(children_of.get(curr, []))
@@ -81,7 +90,10 @@ def _count_collisions(by_id, positions, label_buffer):
 
 def _has_symbol_overlap(by_id, positions):
     """Check ALL pairs (not just same-row neighbors) for symbol bbox overlap. Hard reject."""
-    items = [(pid, positions[pid][0], positions[pid][1], _px(by_id.get(pid))) for pid in positions]
+    items = [
+        (pid, positions[pid][0], positions[pid][1], _px(by_id.get(pid)))
+        for pid in positions
+    ]
     for i in range(len(items)):
         pid_a, ax, ay, asz = items[i]
         for j in range(i + 1, len(items)):
@@ -101,15 +113,55 @@ def _violates_bowen(by_id, positions):
             if par_id and par_id in positions:
                 if positions[par_id][1] >= y:
                     return True
-        for partner_id in (p.get("partners") or []):
+        for partner_id in p.get("partners") or []:
             if partner_id in positions and partner_id < pid:
                 if abs(positions[partner_id][1] - y) > 30:
                     return True
     return False
 
 
+ALIGNMENT_WEIGHT = 0.3
+
+
+def _alignment_penalty(by_id, positions):
+    """Sum of |couple_center - children_center| over each pair_bond with shared children.
+    Lower means children sit better-centered under their parents."""
+    children_of = _build_children_of(by_id)
+    total = 0.0
+    seen = set()
+    for pid, p in by_id.items():
+        if pid not in positions:
+            continue
+        for partner in p.get("partners") or []:
+            if partner not in positions:
+                continue
+            key = frozenset((pid, partner))
+            if key in seen:
+                continue
+            seen.add(key)
+            shared = [
+                c
+                for c in children_of.get(pid, [])
+                if c in positions
+                and partner
+                in (by_id.get(c, {}).get("parent_a"), by_id.get(c, {}).get("parent_b"))
+            ]
+            if not shared:
+                continue
+            cc = sum(positions[c][0] for c in shared) / len(shared)
+            pc = (positions[pid][0] + positions[partner][0]) / 2
+            total += abs(pc - cc)
+    return total
+
+
 def _quality(by_id, positions, label_buffer):
-    """Lower is better. Hard rejections return float('inf')."""
+    """Lower is better. Hard rejections return float('inf').
+
+    Quality = bbox_width + ALIGNMENT_WEIGHT * sum(|couple_center - children_center|).
+    The alignment term unblocks recenter moves that don't shrink bbox; without it,
+    refine rejects all valid recenter proposals where bbox stays equal or grows
+    (see decision log D-27).
+    """
     if _violates_bowen(by_id, positions):
         return float("inf")
     if _has_symbol_overlap(by_id, positions):
@@ -117,7 +169,9 @@ def _quality(by_id, positions, label_buffer):
     collisions = _count_collisions(by_id, positions, label_buffer)
     if collisions > 0:
         return float("inf")
-    return _bbox_width(positions)
+    return _bbox_width(positions) + ALIGNMENT_WEIGHT * _alignment_penalty(
+        by_id, positions
+    )
 
 
 def _candidate_anchors(by_id, positions, children_of):
@@ -196,16 +250,24 @@ def _recenter_couple_move(by_id, children_of, pos, person_pid):
     # Pick the partner that shares the most children
     partner = max(
         partners,
-        key=lambda q: sum(1 for c in children if person_pid in (by_id.get(c, {}).get("parent_a"), by_id.get(c, {}).get("parent_b"))
-                          and q in (by_id.get(c, {}).get("parent_a"), by_id.get(c, {}).get("parent_b"))),
+        key=lambda q: sum(
+            1
+            for c in children
+            if person_pid
+            in (by_id.get(c, {}).get("parent_a"), by_id.get(c, {}).get("parent_b"))
+            and q
+            in (by_id.get(c, {}).get("parent_a"), by_id.get(c, {}).get("parent_b"))
+        ),
     )
     if partner not in pos:
         return None
 
     shared_children = [
-        c for c in children
+        c
+        for c in children
         if c in pos
-        and partner in (by_id.get(c, {}).get("parent_a"), by_id.get(c, {}).get("parent_b"))
+        and partner
+        in (by_id.get(c, {}).get("parent_a"), by_id.get(c, {}).get("parent_b"))
     ]
     if not shared_children:
         return None
@@ -234,14 +296,19 @@ def _recenter_children_move(by_id, children_of, pos, person_pid):
         return None
     partner = max(
         partners,
-        key=lambda q: sum(1 for c in children
-                          if q in (by_id.get(c, {}).get("parent_a"), by_id.get(c, {}).get("parent_b"))),
+        key=lambda q: sum(
+            1
+            for c in children
+            if q in (by_id.get(c, {}).get("parent_a"), by_id.get(c, {}).get("parent_b"))
+        ),
     )
     if partner not in pos:
         return None
     shared_children = [
-        c for c in children
-        if partner in (by_id.get(c, {}).get("parent_a"), by_id.get(c, {}).get("parent_b"))
+        c
+        for c in children
+        if partner
+        in (by_id.get(c, {}).get("parent_a"), by_id.get(c, {}).get("parent_b"))
     ]
     if not shared_children:
         return None
@@ -297,7 +364,9 @@ def _swap_siblings_move(by_id, children_of, pos, parent_pid):
     return moves
 
 
-def _try_best_cluster_compress(by_id, children_of, pos, parent_pid, label_buffer, baseline_q):
+def _try_best_cluster_compress(
+    by_id, children_of, pos, parent_pid, label_buffer, baseline_q
+):
     """Try compressing parent's children by various scales; return (new_pos, new_q) for best."""
     best_scale, best_q = 1.0, baseline_q
     for scale in (0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3):
@@ -308,7 +377,10 @@ def _try_best_cluster_compress(by_id, children_of, pos, parent_pid, label_buffer
         if q < best_q:
             best_q, best_scale = q, scale
     if best_scale != 1.0:
-        return _cluster_compress_move(by_id, children_of, pos, parent_pid, best_scale), best_q
+        return (
+            _cluster_compress_move(by_id, children_of, pos, parent_pid, best_scale),
+            best_q,
+        )
     return None, baseline_q
 
 
@@ -328,7 +400,9 @@ def refine(by_id, positions, label_buffer=20, max_passes=40, deltas=None):
 
         # Phase 1: slide each candidate subtree
         for pid in _candidate_anchors(by_id, pos, children_of):
-            new_pos, new_q = _try_best_slide(by_id, children_of, pos, pid, deltas, label_buffer, baseline_q)
+            new_pos, new_q = _try_best_slide(
+                by_id, children_of, pos, pid, deltas, label_buffer, baseline_q
+            )
             if new_pos is not None:
                 pos, baseline_q = new_pos, new_q
                 improved_this_pass = True
@@ -337,7 +411,9 @@ def refine(by_id, positions, label_buffer=20, max_passes=40, deltas=None):
         for parent_pid in by_id:
             if parent_pid not in pos:
                 continue
-            new_pos, new_q = _try_best_cluster_compress(by_id, children_of, pos, parent_pid, label_buffer, baseline_q)
+            new_pos, new_q = _try_best_cluster_compress(
+                by_id, children_of, pos, parent_pid, label_buffer, baseline_q
+            )
             if new_pos is not None:
                 pos, baseline_q = new_pos, new_q
                 improved_this_pass = True

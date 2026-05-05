@@ -49,7 +49,8 @@ New clinical data outputs: store in `btcopilot-sources/`, create symlink, add to
 | Prompt extraction strategy | [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md) (self-updating after each induction run) |
 | Bowen theory formal spec | [doc/specs/BOWEN_THEORY.md](doc/specs/BOWEN_THEORY.md) |
 | F1 dashboard (operational tracking) | [doc/F1_DASHBOARD.md](doc/F1_DASHBOARD.md) |
-| Diagram layout algorithm | [doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md](doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md) |
+| Diagram layout — language-agnostic spec | [doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md](doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md) |
+| **Auto-arrange algorithm implementation — READ FIRST before changing `btcopilot/arrange/`**. Lives at `btcopilot/btcopilot/arrange/{layout,refine}.py`. Workstream history, decision log D-1..D-26, MVP context, GT calibration, painter analogy, tried-and-rejected paths, watchdog protocol, dev workflow. | [familydiagram doc/plans/2026-05-02--auto-arrange-layout.md](../familydiagram/doc/plans/2026-05-02--auto-arrange-layout.md) |
 | Audio upload (AssemblyAI, Celery) | [doc/AUDIO_UPLOAD_FLOW.md](doc/AUDIO_UPLOAD_FLOW.md) |
 
 Other: [README.md](README.md), [doc/plans/](doc/plans/)
@@ -310,3 +311,31 @@ When changing diagram rendering, update [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/
 **Trigger files**: `training/templates/components/family_diagram_svg.html`, `training/routes/diagram_render.py`, any diagram layout code.
 
 **Process**: update spec FIRST with new rule → implement in code → test → confirm sync.
+
+### Auto-Arrange Algorithm (MANDATORY before any change to `btcopilot/arrange/`)
+
+**Trigger keywords (in user prompts)**: `auto-arrange`, `auto arrange`, `arrange selection`, `arrange algorithm`, `btcopilot.arrange`, `arrange/layout`, `arrange/refine`, `fd_layout`, `fd_refine`, `fd_fitness`, `fd_arrange_test`, `bin/arrange`, `Bowen layout`, `family diagram layout` (when in implementation context).
+
+**Trigger files**: `btcopilot/arrange/layout.py`, `btcopilot/arrange/refine.py`, `btcopilot/arrange/__init__.py`, `familydiagram/bin/arrange/*`, `familydiagram/pkdiagram/documentview/documentcontroller.py` (`onArrangeSelection`).
+
+**When triggered**: BEFORE writing any code or proposing changes, read the workstream plan in full: [familydiagram/doc/plans/2026-05-02--auto-arrange-layout.md](../familydiagram/doc/plans/2026-05-02--auto-arrange-layout.md). It contains:
+
+- Decision log (D-1 through D-26) — what was tried, kept, rejected, and why. Many "obvious" approaches have already failed.
+- MVP context and the "GT is loose, not strict ground truth" principle.
+- Painter analogy that shaped `refine.py`'s move set.
+- GT calibration data (label-overlap p75=60px, sibling-gap median 0.74×, etc.).
+- "What was tried and failed" table — do not re-attempt these without new evidence.
+- Watchdog protocol — spawn a sub-agent proactively if same root cause appears 3+ iterations or a proposed fix is in the rejected-paths table.
+- Dev workflow: `familydiagram/bin/arrange/README.md` covers the `~/Desktop/fd_algorithm/` + `~/Desktop/fd_corrections/` cycle and the `fd_fitness.py` regression oracle.
+
+**Process for any algorithm change**:
+1. Read the plan doc.
+2. Run baseline: `uv run python familydiagram/bin/arrange/fd_fitness.py` (record current fitness number).
+3. Make change.
+4. Re-run fitness; refuse to ship a change that regresses fitness AND visual review.
+5. Refresh `~/Desktop/fd_algorithm/` via `fd_arrange_test.py` and ask Patrick for visual review.
+6. Append a new decision-log entry (D-N) to the plan doc with what changed, why, and outcome.
+
+**Skip**: typo fixes, comment edits, dev-tool refactors that don't touch the algorithm.
+
+**PHI**: Clinic case names are PHI. Never include real case names in source, comments, commit messages, or docs — anonymize as Case A/B/etc. See plan doc D-26 area for the established anonymization scheme.
