@@ -179,6 +179,51 @@ def fix_birth_event_self_references(deltas: PDPDeltas) -> None:
             event.person = None
 
 
+def _self_parent_dyad(
+    person: Person,
+    deltas: PDPDeltas,
+    diagram_data: DiagramData | None,
+) -> tuple[int | None, int | None] | None:
+    """If person.parents resolves to a PairBond that contains person.id, return
+    that bond's (person_a, person_b). Otherwise return None. Looks up first in
+    deltas.pair_bonds, then in committed diagram_data.pair_bonds."""
+    if person.id is None or person.parents is None:
+        return None
+    for pb in deltas.pair_bonds:
+        if pb.id == person.parents:
+            if person.id in (pb.person_a, pb.person_b):
+                return pb.person_a, pb.person_b
+            return None
+    if diagram_data:
+        for cpb in diagram_data.pair_bonds:
+            if cpb.get("id") == person.parents:
+                a, b = cpb.get("person_a"), cpb.get("person_b")
+                if person.id in (a, b):
+                    return a, b
+                return None
+    return None
+
+
+def fix_self_parent_references(
+    deltas: PDPDeltas, diagram_data: DiagramData | None = None
+) -> None:
+    """Clear Person.parents when the referenced PairBond contains the person.
+    The LLM occasionally outputs self-parent references; this is biologically
+    impossible. Drop the bad reference; leave the PairBond intact (it may be
+    a legitimate marriage to someone other than the mistaken 'child')."""
+    for person in deltas.people:
+        dyad = _self_parent_dyad(person, deltas, diagram_data)
+        if dyad is None:
+            continue
+        a, b = dyad
+        _log.warning(
+            f"fix_self_parent_references: Person {person.id} parents=PairBond "
+            f"{person.parents} contains self (person_a={a}, person_b={b}); "
+            f"clearing parents to None"
+        )
+        person.parents = None
+
+
 def validate_pdp_deltas(
     pdp: PDP,
     deltas: PDPDeltas,
@@ -269,6 +314,17 @@ def validate_pdp_deltas(
             )
 
         if (
+            event.kind in (EventKind.Birth, EventKind.Adopted)
+            and event.person is not None
+            and event.child is not None
+            and event.person == event.child
+        ):
+            errors.append(
+                f"Event {event.id} (kind={event.kind.value}) has "
+                f"person==child=={event.person} (self-reference)"
+            )
+
+        if (
             event.person is not None
             and event.person < 0
             and event.person not in all_pdp_person_ids
@@ -315,6 +371,14 @@ def validate_pdp_deltas(
         ):
             errors.append(
                 f"Person {person.id} references non-existent PDP pair_bond {person.parents}"
+            )
+
+        dyad = _self_parent_dyad(person, deltas, diagram_data)
+        if dyad is not None:
+            a, b = dyad
+            errors.append(
+                f"Person {person.id} parents=PairBond {person.parents} "
+                f"contains self (person_a={a}, person_b={b})"
             )
 
     for pair_bond in deltas.pair_bonds:
@@ -575,9 +639,6 @@ async def _extract_and_validate(
             label = "DELTAS" if attempt == 0 else f"RETRY {attempt} DELTAS"
             ai_log.info(f"{label}:\n\n{_pretty_repr(pdp_deltas)}")
 
-        reassign_delta_ids(pdp, pdp_deltas)
-        dedup_pair_bonds(pdp_deltas)
-        fix_birth_event_self_references(pdp_deltas)
         try:
             validate_pdp_deltas(pdp, pdp_deltas, diagram_data, source)
             if attempt > 0:
@@ -590,7 +651,21 @@ async def _extract_and_validate(
                 f"{'; '.join(e.errors)}"
             )
             if attempt == MAX_EXTRACTION_RETRIES:
-                raise
+                _log.warning(
+                    f"PDP extraction exhausted retries ({source}); applying repair pass"
+                )
+                reassign_delta_ids(pdp, pdp_deltas)
+                dedup_pair_bonds(pdp_deltas)
+                fix_birth_event_self_references(pdp_deltas)
+                fix_self_parent_references(pdp_deltas, diagram_data)
+                try:
+                    validate_pdp_deltas(pdp, pdp_deltas, diagram_data, source)
+                    _log.warning(
+                        f"PDP repair pass succeeded after retry exhaustion ({source})"
+                    )
+                    break
+                except PDPValidationError:
+                    raise
             history_lines = []
             for attempt_num, errors in error_history:
                 history_lines.append(f"Attempt {attempt_num}:")
