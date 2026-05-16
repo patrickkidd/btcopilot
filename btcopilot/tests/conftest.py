@@ -1,5 +1,19 @@
 import os
 import sys
+
+# Load fdserver private prompts before ANY btcopilot.personal.prompts import.
+# Must run BEFORE `import btcopilot` below — the prompts override only fires
+# at module-import time. Without this, e2e tests silently fall through to
+# the open-source stub and prompt-quality validation is meaningless.
+_FDSERVER_PROMPTS = os.path.normpath(
+    os.path.join(
+        os.path.dirname(__file__), "..", "..", "..", "fdserver",
+        "prompts", "private_prompts.py",
+    )
+)
+if os.path.exists(_FDSERVER_PROMPTS):
+    os.environ.setdefault("FDSERVER_PROMPTS_PATH", _FDSERVER_PROMPTS)
+
 import pickle
 import datetime
 import warnings

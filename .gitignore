@@ -185,3 +185,5 @@ cython_debug/
 
 
 .DS_Store
+
+doc/log/coach-sessions/

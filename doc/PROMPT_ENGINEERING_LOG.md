@@ -2,7 +2,29 @@
 
 **Purpose**: Authoritative record of prompt engineering decisions, experiments, and lessons learned for the SARF data extraction system. Prevents regressions by documenting what works, what doesn't, and why.
 
-**Last Updated**: 2026-03-15 (conversation flow prompt tuning)
+**Last Updated**: 2026-05-16 (FD-325/326 returning-user coach)
+
+---
+
+## FD-325/326 — Returning-user-aware coach + current-events/intake balance (2026-05-16)
+
+**Scope**: `_CONVERSATION_FLOW_CORE` + Opus/Gemini addenda (fdserver, private IP); `committed_state` plumbing; outstanding-categories engine; conversational judge.
+
+**Extraction F1 not run — by design.** No extraction prompt was touched (extraction strategy, field descriptions, two-pass prompts unchanged). The change set is conversational-flow + a schema-derived coverage engine with no LLM. F1 measures extraction; there is no F1 surface here. Running it would burn cost to re-measure an untouched system.
+
+**Prompt direction**: returning-user + current-events/depth guidance expressed as *guidelines, not rules*; checklist replaced with prose; addenda reduced to length cues; few-shot at end. Rationale: rule/turn-count AC produces a robotic coach (the explicit FD-326 anti-goal). Validation is qualitative via a dedicated judge, not keyword/turn counting.
+
+**Quality measurement decision**: FD-326 uses a purpose-built LLM judge (`fd326_eval`, 4 dims: current-events engagement, name usage, no premature pivot, no theory-pitch) **instead of** `QualityEvaluator` response-type entropy. Finding: entropy mis-penalizes a coach that consistently does acknowledge+question turns — that consistency is correct coaching behavior but reads as low entropy. Entropy is a synthetic-client realism metric, not a coach-quality metric; applying it here produced false negatives. Future conversational features add their own judge dimensions following this pattern rather than reusing entropy.
+
+**Stability (3× e2e smoke, 6 tests/run)**: 17/18 judge PASS. Patterns (a) opening-current-events and (c) long-session: 6/6 both models, stable. Pattern (b) shallow-cycling/stonewalling: Opus 3/3 PASS; Gemini 1–2/3 — every failure is the judge flagging the stock phrase "Sounds like" as a therapy cliché (`no_theory_pitch`), with `no_premature_pivot=True` throughout. Not a behavioral regression; judge run-to-run variance on a stock phrase.
+
+**Pattern (b) decision (Patrick, 2026-05-16)**: Accept coach staying-present under stonewalling; do NOT iterate the prompt to force an intake bridge. Stonewalling is not a solvable problem — a real coach stays present rather than mechanically pivoting. The literal AC phrase "bridge when it's run its course" is satisfied as a diminishing-returns judgment, not a turn-count rule.
+
+**Test-infra root causes (both = silent-fallthrough class; fix in conftest)**:
+1. `FDSERVER_PROMPTS_PATH` — without it, e2e tests silently load the open-source prompt stub instead of the real fdserver prompts, making all prompt validation meaningless. `btcopilot/tests/conftest.py` now sets it before importing btcopilot; `coach_chat.py` sets it itself. Root cause of pre-handoff iterations 1–5 producing wrong behavior.
+2. `.env` not auto-loaded for pytest, and `.env` cannot be `source`d (`FLASK_APP=...create_app()` is invalid bash). e2e smoke needs `ANTHROPIC_API_KEY`/`GOOGLE_GEMINI_API_KEY` extracted per-line, and must run from the btcopilot rootdir (the theapp-root `pytest.ini` lacks `--e2e`). Recommend conftest export both keys from `.env` via line-parse, not source.
+
+**Data-model resolution (1924 incident)**: Committed Personal-app family data lives in `DiagramData.people/events/pair_bonds` (Scene collections), dates always QDateTime — never in `.pdp` (pending pool, cleared on commit) and never ISO. Desktop `Scene.write()` and Personal `commit_pdp_items()` converge on the same collections/keys (`person_a/person_b`, `person.parents`→pair_bonds entry, `gender`, lowercase `EventKind`). No intake.py linkage rewrite needed (contradicts the handoff's working assumption). The 1924 "empty pair_bonds Scene format" observation matches the post-corruption 2-person state from a pre-sandbox coach_chat overwrite, not an unhandled schema. Contract pinned by `test_committed_scene_format_contract` (9/9 intake tests pass).
 
 ---
 

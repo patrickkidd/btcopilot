@@ -8,6 +8,25 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ## 2026-05
 
+### 2026-05-16: FD-325/326 returning-user coach — data-model contract, pattern (b), measurement
+
+**Context:** FD-326 (returning-user-aware Personal coach balancing current-events talk with intake completion). A handoff flagged an unresolved data-model question: where committed Personal-app family data lives, and whether `intake.py` needed a linkage rewrite for Scene/QDateTime format (real diagram 1924 looked like raw Scene format with empty pair_bonds).
+
+**Options considered:**
+1. Harden `intake.py` to read `person.marriages` + Scene parents (handoff's assumed branch).
+2. Treat flat-PDP/ISO as the contract; document 1924 as a Pro-only artifact.
+3. Trace the extract→commit path to ground the answer before acting.
+
+**Decision:** #3 then a corrected form of #2. Committed Personal data lives in `DiagramData.people/events/pair_bonds` (Scene collections), dates always QDateTime — never `.pdp` (pending pool, cleared by `commit_pdp_items`), never ISO. Desktop `Scene.write()` and Personal `commit_pdp_items()` **converge** on the same collections/keys, so **no linkage rewrite is needed** (contradicts the handoff's working assumption). Contract pinned by a Scene-format/QDateTime regression test (`test_committed_scene_format_contract`); 9/9 intake tests pass. The 1924 "empty pair_bonds" observation is the post-corruption 2-person state from a pre-sandbox `coach_chat` overwrite, not an unhandled schema.
+
+**Pattern (b) decision (Patrick):** Accept the coach staying present under sustained stonewalling; do NOT iterate the prompt to force an intake bridge. Stonewalling is not a solvable problem; mechanical pivoting is the FD-326 anti-goal. The AC's "bridge when run its course" is a diminishing-returns judgment, not a turn-count rule.
+
+**Measurement decision:** FD-326 uses a dedicated 4-dim LLM judge (`fd326_eval`), not `QualityEvaluator` response-type entropy. Entropy mis-penalizes consistent acknowledge+question turns (correct coaching, low entropy) — it measures synthetic-client realism, not coach quality. Extraction F1 deliberately not run: no extraction prompt was touched, so there is no F1 surface.
+
+**Reasoning:** Tracing beat guessing — the feared rewrite was unnecessary, saving churn and a class of silent regressions. Two test-infra silent-fallthrough root causes documented: `FDSERVER_PROMPTS_PATH` (e2e silently used the OSS prompt stub — cause of prior wrong-behavior iterations) and `.env` not pytest-loaded / unsourceable. 3× e2e smoke: 17/18 PASS; only failures are (b)-Gemini judge variance on the stock phrase "Sounds like" (behavior correct, `no_premature_pivot=True`).
+
+**Revisit trigger:** A Personal-app user surface that writes committed data in a form other than `commit_pdp_items` output or desktop `Scene.write()`; or the cliché judge dimension blocking otherwise-correct Gemini coaching.
+
 ### 2026-05-02: Snapshot-diff merge + server-side block id allocation for concurrent Pro/Personal saves
 
 **Context:** When both Pro and Personal apps had the same diagram open, the second-saver's stale snapshot silently overwrote the other side's edits via `merge_scene_collection` ("union by id, local wins" — clobbers any item present in both snapshots regardless of who actually edited it). Plus `lastItemId` is a single counter both apps allocate from, so concurrent adds collide. This blocked the MVP intake flow (clinician leaves Pro open while client uses Personal).
