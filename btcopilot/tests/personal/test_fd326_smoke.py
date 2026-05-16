@@ -84,6 +84,7 @@ def _multi_turn(discussion, user_turns, model):
     transcript = []
     for u in user_turns:
         r = ask(discussion, u, model=model)
+        db.session.commit()  # persist turn so next ask() sees the history
         transcript.append(("user", u))
         transcript.append(("ai", r.statement))
     return transcript

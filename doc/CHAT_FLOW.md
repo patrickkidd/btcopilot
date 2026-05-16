@@ -142,6 +142,14 @@ uses this two-part loop. It is the standard, not FD-326-specific.
 btcopilot. Without it, tests silently use the open-source stub and any
 prompt validation is meaningless. `coach_chat.py` sets the same var itself.
 
+**Multi-turn gotcha**: `ask()` does not commit — it relies on the caller
+persisting each turn (the production HTTP route commits per request). Any
+in-process multi-turn loop (`_multi_turn`, `coach_chat.py`) MUST
+`db.session.commit()` after each `ask()`, else `discussion.statements`
+never reloads and the coach is silently memoryless across turns —
+invalidating every multi-turn result. (Cost a full round of FD-326
+conclusions, 2026-05-16.)
+
 ## Related Files
 
 - [btcopilot/btcopilot/personal/chat.py](btcopilot/btcopilot/personal/chat.py) - Chat-only orchestration + `summarize_committed_state`

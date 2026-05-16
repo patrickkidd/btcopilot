@@ -150,6 +150,97 @@ def outstanding_categories(
     ]
 
 
+_PLACEHOLDER_NAME_FRAGMENTS = ("'s spouse", "'s child", "'s partner")
+_PLACEHOLDER_NAMES = {"unknown", "new person", "assistant", "user"}
+_ROSTER_CAP = 60
+
+
+def roster_for_prompt(diagram_data: DiagramData | None) -> str:
+    """Every committed, real-named person — independent of whether the speaker
+    is structurally linked to them. Coverage() traverses from the speaker and
+    goes blank when a link is missing; this guarantees the coach is still
+    handed who is on file by name. Partner is annotated when both ends are
+    named (cheap, no deep traversal)."""
+    if diagram_data is None:
+        return ""
+    people = diagram_data.people or []
+    pair_bonds = diagram_data.pair_bonds or []
+    speaker_id = _speaker_id(people)
+
+    events = diagram_data.events or []
+    named = []
+    for p in people:
+        if not isinstance(p, dict):
+            continue
+        name = (p.get("name") or "").strip()
+        if not name or name.lower() in _PLACEHOLDER_NAMES:
+            continue
+        if any(frag in name for frag in _PLACEHOLDER_NAME_FRAGMENTS):
+            continue
+        named.append(p)
+
+    entries = []
+    for p in named[:_ROSTER_CAP]:
+        label = p["name"].strip()
+        gender = p.get("gender")
+        if gender in ("male", "female"):
+            label += f" ({gender})"
+        if p.get("id") == speaker_id:
+            label += " — the user"
+        else:
+            partner = _roster_partner(p, speaker_id, pair_bonds, people)
+            if partner:
+                label += f" — partner of {partner}"
+        facts = _roster_life_facts(p.get("id"), events)
+        if facts:
+            label += f" [{facts}]"
+        entries.append(label)
+
+    if not entries:
+        return ""
+    out = "People on file: " + "; ".join(entries) + "."
+    extra = len(named) - len(entries)
+    if extra > 0:
+        out += f" (+{extra} more)"
+    return out
+
+
+def _roster_life_facts(pid, events):
+    """Committed dated facts the coach must not re-ask: birth, death. Keyed by
+    the event's primary person (child for Birth, person for Death)."""
+    if pid is None:
+        return ""
+    born = died = None
+    for e in events:
+        kind = e.get("kind")
+        if kind == "birth" and (e.get("child") == pid or e.get("person") == pid):
+            born = _parse_iso_date(e.get("dateTime")) or born
+        elif kind == "death" and e.get("person") == pid:
+            died = _parse_iso_date(e.get("dateTime")) or died
+    parts = []
+    if born:
+        parts.append(f"b. {born.isoformat()}")
+    if died:
+        parts.append(f"d. {died.isoformat()}")
+    return ", ".join(parts)
+
+
+def _roster_partner(person, speaker_id, pair_bonds, people):
+    pid = person.get("id")
+    for pb in pair_bonds:
+        a, b = pb.get("person_a"), pb.get("person_b")
+        if pid not in (a, b):
+            continue
+        other = _person_by_id(people, b if a == pid else a)
+        other_name = ((other or {}).get("name") or "").strip()
+        if not other_name or other_name.lower() in _PLACEHOLDER_NAMES:
+            continue
+        if any(frag in other_name for frag in _PLACEHOLDER_NAME_FRAGMENTS):
+            continue
+        return "the user" if other and other.get("id") == speaker_id else other_name
+    return None
+
+
 def format_coverage_for_prompt(
     coverage_map: dict[DataCategory, CategoryCoverage],
 ) -> str:
@@ -297,7 +388,9 @@ def _relationship_patterns_coverage(shifts):
     rel = [e for e in shifts if e.get("relationship")]
     if not rel:
         return CategoryCoverage(DataCategory.RelationshipPatterns, CoverageStatus.NotCovered)
-    kinds = sorted({e.get("relationship") for e in rel if e.get("relationship")})
+    kinds = sorted({
+        _enum_val(e.get("relationship")) for e in rel if e.get("relationship")
+    })
     if len(rel) >= 3 or len(kinds) >= 2:
         status = CoverageStatus.Covered
     else:
@@ -369,6 +462,13 @@ def _connections_coverage(shifts, nodal_events):
         DataCategory.EventSymptomConnections, status,
         f"{connected} shift event(s) within {_CONNECTION_DAYS}d of a nodal event",
     )
+
+
+def _enum_val(x):
+    """Scene-stored fields may be Enum objects (e.g. RelationshipKind) or
+    their string values depending on the writer — same dual-type situation
+    as QDateTime dates. Normalize to the string value for compare/display."""
+    return x.value if isinstance(x, enum.Enum) else x
 
 
 def _parse_iso_date(s):

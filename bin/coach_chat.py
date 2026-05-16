@@ -27,10 +27,12 @@ Commands during chat:
 import argparse
 import datetime
 import json
+import logging
 import os
 import pickle
 import sys
 import tempfile
+import warnings
 
 # fdserver prompts must load before btcopilot.personal.prompts import.
 _FD = os.path.normpath(
@@ -150,6 +152,33 @@ PERSONAS = {
     ],
 }
 
+# One-paragraph SARF read of each persona, printed at startup so the tester
+# knows the clinical picture they're walking into (symptom, anxiety,
+# relationship, functioning).
+PERSONA_SARF = {
+    "sarah": (
+        "Sarah presents with recurrent insomnia (symptom) that flares with "
+        "work pressure and increased contact from her mother, who is a "
+        "chronic worrier — the family's anxiety runs through Sarah as the one "
+        "who absorbs it. The key relationships are an enmeshed, draining tie "
+        "with her mother and an emotional cutoff with her brother that she "
+        "won't discuss. Functioning is holding but brittle: she copes by "
+        "minimizing and deflecting ('it is what it is, that's just how the "
+        "family is'), which keeps the pattern intact and the symptom cycling."
+    ),
+    "marcus": (
+        "Marcus presents with relationship distress (symptom): he shuts down "
+        "and goes quiet when intimacy intensifies, just flagged by his "
+        "girlfriend and his sister. The anxiety is around commitment and "
+        "closeness. Relationally his parents stayed together but emotionally "
+        "cold — a contained, distancing father and an over-functioning "
+        "emotional mother — and Marcus reproduces the father's withdrawal, "
+        "including a college period of total cutoff. Functioning is "
+        "reasonable and his insight is rising: he is starting to see the "
+        "distancing as a multigenerational pattern rather than a personal flaw."
+    ),
+}
+
 
 def _load_real_diagram_bytes(diagram_id):
     """Read-only SELECT of one real Diagram's pickled data. No app init, no
@@ -258,14 +287,25 @@ def main():
     script = PERSONAS.get(args.persona, [])
     transcript = []
 
+    # Interactive feel-test: keep the console to persona/coach turns only.
+    # Framework INFO logs and deprecation warnings go to a side log, not the
+    # REPL. ERROR+ still surfaces so real failures aren't hidden.
+    logging.disable(logging.WARNING)
+    warnings.filterwarnings("ignore")
+
     print(f"\ncoach_chat | diagram={args.diagram} model={args.model} "
           f"persona={args.persona}")
+    sarf = PERSONA_SARF.get(args.persona)
+    if sarf:
+        print(f"\n[persona SARF] {sarf}\n")
     print("Enter=accept suggested line | /skip | /judge | /quit\n")
 
     i = 0
     while True:
+        # Suggested line is an icebreaker only — show it before the first
+        # user turn, then get out of the way.
         suggested = script[i] if i < len(script) else None
-        if suggested:
+        if suggested and not transcript:
             print(f"  [suggested] {suggested}")
         try:
             raw = input("you> ").strip()
@@ -287,6 +327,7 @@ def main():
             i += 1
 
         resp = ask(disc, user_text, model=model_id)
+        db.session.commit()  # persist turn so next ask() sees the history
         transcript.append(("user", user_text))
         transcript.append(("ai", resp.statement))
         print(f"\ncoach> {resp.statement}\n")

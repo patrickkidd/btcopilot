@@ -294,19 +294,24 @@ async def claude_text(prompt=None, **kwargs):
         "messages": messages,
     }
     if CLAUDE_THINKING_BUDGET > 0:
-        api_kwargs["thinking"] = {
-            "type": "enabled",
-            "budget_tokens": CLAUDE_THINKING_BUDGET,
-        }
+        api_kwargs["thinking"] = {"type": "adaptive"}
     else:
         temperature = kwargs.get("temperature", 0.45)
         api_kwargs["temperature"] = temperature
     if system_instruction:
         api_kwargs["system"] = system_instruction
 
-    response = await client.messages.create(**api_kwargs)
-
-    content = "".join(block.text for block in response.content if block.type == "text")
+    try:
+        response = await client.messages.create(**api_kwargs)
+        content = "".join(
+            block.text for block in response.content if block.type == "text"
+        )
+    finally:
+        # Close the httpx pool inside the loop that created it. Each call
+        # makes a fresh client and asyncio.run() tears down the loop; without
+        # this the client's deferred close fires against a closed loop
+        # ("Event loop is closed", dangling-task noise) on the next call.
+        await client.close()
     _log.debug(f"Completed Claude response in {time.time() - start_time} seconds")
     _log.debug(f"claude_text(): --> \n\n{content}")
     return content

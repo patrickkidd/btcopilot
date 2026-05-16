@@ -5,7 +5,11 @@ from flask import g
 
 from btcopilot.extensions import db, ai_log
 from btcopilot.llmutil import response_text_sync
-from btcopilot.personal.intake import coverage, format_coverage_for_prompt
+from btcopilot.personal.intake import (
+    coverage,
+    format_coverage_for_prompt,
+    roster_for_prompt,
+)
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.prompts import get_conversation_flow_prompt
 from btcopilot.schema import DiagramData
@@ -22,7 +26,9 @@ def summarize_committed_state(diagram_data: DiagramData | None) -> str:
     pair_bonds = diagram_data.pair_bonds or []
     if not people and not events and not pair_bonds:
         return ""
-    return format_coverage_for_prompt(coverage(diagram_data))
+    roster = roster_for_prompt(diagram_data)
+    cov = format_coverage_for_prompt(coverage(diagram_data))
+    return "\n".join(part for part in (roster, cov) if part)
 
 
 @dataclass

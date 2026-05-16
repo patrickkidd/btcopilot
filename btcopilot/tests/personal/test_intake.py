@@ -6,6 +6,7 @@ from btcopilot.personal.intake import (
     coverage,
     format_coverage_for_prompt,
     outstanding_categories,
+    roster_for_prompt,
 )
 from btcopilot.schema import DiagramData
 
@@ -145,6 +146,74 @@ def test_format_coverage_empty_when_only_presenting_problem():
     # All categories covered → empty/known-only prompt
     cov = {DataCategory.PresentingProblem: coverage(None)[DataCategory.PresentingProblem]}
     assert format_coverage_for_prompt(cov) == ""
+
+
+def test_roster_lists_all_named_people_even_without_speaker_links():
+    # Speaker (Marcus, id 1) has NO parents link and is not primary — coverage()
+    # goes blank on the family, but the roster must still name everyone. This is
+    # the FD-325 graceful-degradation contract: extraction connectivity is
+    # imperfect; the coach still gets who is on file by name.
+    people = [
+        {"id": 1, "name": "Marcus", "gender": "male"},
+        {"id": 2, "name": "Assistant", "gender": "male"},
+        {"id": 3, "name": "William", "gender": "male"},
+        {"id": 4, "name": "Dorothy", "gender": "female"},
+        {"id": 5, "name": "Uncle Jim", "gender": "male"},
+        {"id": 6, "name": "Lily's spouse", "gender": "None"},
+        {"id": 7, "name": "Unknown"},
+        {"id": 8, "name": "Jennifer", "gender": "female"},
+    ]
+    pair_bonds = [
+        {"id": 100, "person_a": 3, "person_b": 4},   # William + Dorothy
+        {"id": 101, "person_a": 1, "person_b": 8},   # Marcus + Jennifer
+    ]
+    events = [
+        {"id": 200, "kind": "death", "person": 3, "dateTime": "2015-01-01"},
+        {"id": 201, "kind": "birth", "child": 8, "dateTime": "1985-03-04"},
+    ]
+    out = roster_for_prompt(_diagram(people, pair_bonds, events))
+    assert out.startswith("People on file:")
+    for name in ("Marcus", "William", "Dorothy", "Uncle Jim", "Jennifer"):
+        assert name in out
+    assert "Assistant" not in out      # chat bot excluded
+    assert "Unknown" not in out        # placeholder excluded
+    assert "Lily's spouse" not in out  # structural stub excluded
+    assert "Marcus (male) — the user" in out
+    assert "William (male) — partner of Dorothy [d. 2015-01-01]" in out
+    assert "Jennifer (female) — partner of the user [b. 1985-03-04]" in out
+    # Coverage is blind here (no speaker links) — roster is the safety net.
+    assert coverage(_diagram(people, pair_bonds))[DataCategory.Father].status == \
+        CoverageStatus.NotCovered
+
+
+def test_real_desktop_quirks_dont_crash():
+    # Regression for two crashes found only on real desktop-synced diagrams
+    # (synthetic fixtures missed both): a scene-stub person with name=None,
+    # and a shift event whose `relationship` is a RelationshipKind enum object
+    # (desktop stores the enum, not its string). coverage()/roster must not
+    # raise and must not leak an enum repr into the prompt.
+    from btcopilot.schema import RelationshipKind
+
+    people = [
+        {"id": 1, "name": "Marcus", "gender": "male", "primary": True},
+        {"id": 2, "name": None, "gender": None, "kind": "Person"},  # scene stub
+        {"id": 3, "name": "Dana", "gender": "female"},
+    ]
+    pair_bonds = [{"id": 50, "person_a": 1, "person_b": 3}]
+    events = [
+        {"id": 9, "kind": "shift", "person": 1,
+         "relationship": RelationshipKind.Distance, "dateTime": "2020-01-01"},
+        {"id": 10, "kind": "shift", "person": 1,
+         "relationship": RelationshipKind.Conflict, "dateTime": "2020-06-01"},
+    ]
+    dd = _diagram(people, pair_bonds, events)
+    roster = roster_for_prompt(dd)
+    cov = coverage(dd)
+    rendered = format_coverage_for_prompt(cov)
+    assert "Marcus" in roster and "Dana" in roster
+    assert "RelationshipKind" not in roster + rendered
+    assert "distance" in rendered and "conflict" in rendered
+    assert cov[DataCategory.RelationshipPatterns].status == CoverageStatus.Covered
 
 
 def test_committed_scene_format_contract():
