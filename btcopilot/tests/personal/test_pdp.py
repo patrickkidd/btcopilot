@@ -1,16 +1,26 @@
+import asyncio
+import logging
+
+import pytest
+from mock import patch, AsyncMock
+
 from btcopilot.schema import (
     DiagramData,
     PDP,
     PDPDeltas,
+    PDPValidationError,
     Person,
     Event,
     EventKind,
     PairBond,
 )
 from btcopilot.pdp import (
+    MAX_EXTRACTION_RETRIES,
+    _extract_and_validate,
     validate_pdp_deltas,
     apply_deltas,
     fix_birth_event_self_references,
+    fix_self_parent_references,
 )
 
 
@@ -399,21 +409,21 @@ def test_birth_self_reference_commit_creates_inferred_parents():
     event = diagram_data.events[0]
     assert event["child"] is not None
     assert event["person"] is not None
-    assert event["person"] != event["child"], (
-        "Birth event must not have person==child after commit"
-    )
+    assert (
+        event["person"] != event["child"]
+    ), "Birth event must not have person==child after commit"
 
     # Barbara should be the child, inferred parents should be created
     barbara = next(p for p in diagram_data.people if p["name"] == "Barbara")
     assert barbara["id"] == event["child"]
 
     # Inferred mother and father should exist
-    assert len(diagram_data.people) == 3, (
-        "Should have Barbara + inferred mother + inferred father"
-    )
-    assert len(diagram_data.pair_bonds) == 1, (
-        "Should have one pair bond between inferred parents"
-    )
+    assert (
+        len(diagram_data.people) == 3
+    ), "Should have Barbara + inferred mother + inferred father"
+    assert (
+        len(diagram_data.pair_bonds) == 1
+    ), "Should have one pair bond between inferred parents"
 
     # Barbara should have parents reference to the pair bond
     assert barbara["parents"] is not None
@@ -439,3 +449,210 @@ def test_fix_birth_self_reference_ignores_non_birth_events():
 
     event = deltas.events[0]
     assert event.person == -1, "Shift events must not be modified"
+
+
+# Self-parent reference fix
+
+
+def test_fix_self_parent_reference_clears_parents():
+    """fix_self_parent_references must clear Person.parents when the
+    referenced PairBond contains the same person."""
+    deltas = PDPDeltas(
+        people=[
+            Person(id=-1, name="Person A"),
+            Person(id=-2, name="Spouse"),
+        ],
+        pair_bonds=[PairBond(id=-3, person_a=-1, person_b=-2)],
+    )
+    deltas.people[0].parents = -3
+
+    fix_self_parent_references(deltas)
+
+    assert deltas.people[0].parents is None
+    assert len(deltas.pair_bonds) == 1
+    assert deltas.pair_bonds[0].person_a == -1
+    assert deltas.pair_bonds[0].person_b == -2
+
+
+def test_fix_self_parent_reference_preserves_correct():
+    """fix_self_parent_references must not touch a legitimate parents reference."""
+    deltas = PDPDeltas(
+        people=[
+            Person(id=-1, name="Mom"),
+            Person(id=-2, name="Dad"),
+            Person(id=-3, name="Child", parents=-4),
+        ],
+        pair_bonds=[PairBond(id=-4, person_a=-1, person_b=-2)],
+    )
+
+    fix_self_parent_references(deltas)
+
+    child = next(p for p in deltas.people if p.id == -3)
+    assert child.parents == -4
+
+
+def test_fix_self_parent_reference_resolves_committed_pair_bond():
+    """fix_self_parent_references must resolve positive parents IDs against
+    diagram_data.pair_bonds and clear when the committed PairBond contains self."""
+    diagram_data = DiagramData(
+        people=[
+            {"id": 10, "name": "Person A"},
+            {"id": 11, "name": "Spouse"},
+        ],
+        pair_bonds=[{"id": 20, "person_a": 10, "person_b": 11}],
+    )
+    deltas = PDPDeltas(
+        people=[Person(id=10, parents=20)],
+    )
+
+    fix_self_parent_references(deltas, diagram_data)
+
+    assert deltas.people[0].parents is None
+
+
+def test_validate_pdp_deltas_raises_on_self_parent():
+    pdp = PDP()
+    deltas = PDPDeltas(
+        people=[
+            Person(id=-1, name="Person A"),
+            Person(id=-2, name="Spouse"),
+        ],
+        pair_bonds=[PairBond(id=-3, person_a=-1, person_b=-2)],
+    )
+    deltas.people[0].parents = -3
+
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas)
+
+    assert any("contains self" in err for err in exc_info.value.errors)
+
+
+def test_validate_pdp_deltas_raises_on_birth_event_self_reference():
+    pdp = PDP()
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="Mom")],
+        events=[
+            Event(
+                id=-2,
+                kind=EventKind.Birth,
+                person=-1,
+                child=-1,
+                dateTime="1953-01-01",
+            )
+        ],
+    )
+
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas)
+
+    assert any("self-reference" in err for err in exc_info.value.errors)
+
+
+def _bad_self_parent_deltas() -> PDPDeltas:
+    deltas = PDPDeltas(
+        people=[
+            Person(id=-1, name="Person A"),
+            Person(id=-2, name="Spouse"),
+        ],
+        pair_bonds=[PairBond(id=-3, person_a=-1, person_b=-2)],
+    )
+    deltas.people[0].parents = -3
+    return deltas
+
+
+def _bad_birth_event_deltas() -> PDPDeltas:
+    return PDPDeltas(
+        people=[Person(id=-1, name="Mom")],
+        events=[
+            Event(
+                id=-2,
+                kind=EventKind.Birth,
+                person=-1,
+                child=-1,
+                dateTime="1953-01-01",
+            )
+        ],
+    )
+
+
+def _bad_dup_pair_bond_deltas() -> PDPDeltas:
+    return PDPDeltas(
+        people=[
+            Person(id=-1, name="Mom"),
+            Person(id=-2, name="Dad"),
+        ],
+        pair_bonds=[
+            PairBond(id=-3, person_a=-1, person_b=-2),
+            PairBond(id=-4, person_a=-1, person_b=-2),
+        ],
+    )
+
+
+def _bad_id_collision_deltas() -> PDPDeltas:
+    return PDPDeltas(
+        people=[Person(id=-1, name="Mom")],
+        events=[
+            Event(
+                id=-1,
+                kind=EventKind.Shift,
+                person=-1,
+                description="Anxiety spike",
+                dateTime="2025-01-01",
+            )
+        ],
+    )
+
+
+def _run_extract_and_assert_repair(caplog, builder):
+    diagram_data = DiagramData()
+    counter = {"calls": 0}
+
+    async def fake(*args, **kwargs):
+        counter["calls"] += 1
+        return builder()
+
+    with patch("btcopilot.pdp.gemini_structured", AsyncMock(side_effect=fake)):
+        with caplog.at_level(logging.WARNING, logger="btcopilot.pdp"):
+            new_pdp, deltas = asyncio.run(
+                _extract_and_validate("prompt", diagram_data, "test_source")
+            )
+
+    assert counter["calls"] == 1 + MAX_EXTRACTION_RETRIES
+    validate_pdp_deltas(diagram_data.pdp, deltas, diagram_data, "test_source")
+    assert any(
+        "PDP repair pass succeeded after retry exhaustion" in rec.message
+        for rec in caplog.records
+    )
+    return new_pdp, deltas
+
+
+def test_extract_and_validate_self_parent_repair_after_exhaustion(caplog):
+    new_pdp, deltas = _run_extract_and_assert_repair(caplog, _bad_self_parent_deltas)
+    assert deltas.people[0].parents is None
+    assert any("fix_self_parent_references:" in rec.message for rec in caplog.records)
+
+
+def test_extract_and_validate_birth_event_self_reference_repair_after_exhaustion(
+    caplog,
+):
+    new_pdp, deltas = _run_extract_and_assert_repair(caplog, _bad_birth_event_deltas)
+    event = deltas.events[0]
+    assert event.person is None
+    assert event.child == -1
+    assert any(
+        "fix_birth_event_self_references:" in rec.message for rec in caplog.records
+    )
+
+
+def test_extract_and_validate_dedup_pair_bonds_repair_after_exhaustion(caplog):
+    new_pdp, deltas = _run_extract_and_assert_repair(caplog, _bad_dup_pair_bond_deltas)
+    assert len(deltas.pair_bonds) == 1
+    assert any("dedup_pair_bonds:" in rec.message for rec in caplog.records)
+
+
+def test_extract_and_validate_id_collision_repair_after_exhaustion(caplog):
+    new_pdp, deltas = _run_extract_and_assert_repair(caplog, _bad_id_collision_deltas)
+    person_ids = {p.id for p in deltas.people}
+    event_ids = {e.id for e in deltas.events}
+    assert not (person_ids & event_ids)
+    assert any("reassign_delta_ids:" in rec.message for rec in caplog.records)

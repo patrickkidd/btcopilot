@@ -52,6 +52,7 @@ New clinical data outputs: store in `btcopilot-sources/`, create symlink, add to
 | Diagram layout — language-agnostic spec | [doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md](doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md) |
 | **Auto-arrange algorithm implementation — READ FIRST before changing `btcopilot/arrange/`**. Lives at `btcopilot/btcopilot/arrange/{layout,refine}.py`. Workstream history, decision log D-1..D-26, MVP context, GT calibration, painter analogy, tried-and-rejected paths, watchdog protocol, dev workflow. | [familydiagram doc/plans/2026-05-02--auto-arrange-layout.md](../familydiagram/doc/plans/2026-05-02--auto-arrange-layout.md) |
 | Audio upload (AssemblyAI, Celery) | [doc/AUDIO_UPLOAD_FLOW.md](doc/AUDIO_UPLOAD_FLOW.md) |
+| Probabilistic extraction issues (watch list) | [doc/EXTRACTION_QUALITY.md](doc/EXTRACTION_QUALITY.md) |
 
 Other: [README.md](README.md), [doc/plans/](doc/plans/)
 
