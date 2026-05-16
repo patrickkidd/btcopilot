@@ -33,6 +33,12 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 **Gemini-(b) closed (Patrick):** Accept Gemini as a known-weaker secondary path; do not invest in stonewalling handling on any model. Opus is primary and solid across a/b/c.
 
+**Prompt IP restored — aggressive rewrite reverted (option a):** The lean rewrite deleted literature-derived clinical content (fact-level minimum dataset, clinical method, the "done" definition) and gutted tuned addenda (Opus 66→4, Gemini 22→3 lines). Reverted to the original literature `_CONVERSATION_FLOW_CORE` + original Opus/Gemini addenda; the ONLY changes layered on are additive: (1) the `committed_state` plumbing, (2) a "working memory of this user's family" block (FD-325: use known names, don't re-ask known facts, engine feeds the outstanding list), (3) the canned-empathy opener family ("I'm sorry to hear/Sorry to hear it") added to the existing AVOID-clichés list. No clinical IP deleted.
+
+**Return-pivot now measured + judge made robust:** Added a 5th judge dimension `returns_to_collection` (positively scores: topic winds down → coach bridges to a real missing area; true when not applicable) — the FD-326 promise was previously unmeasured (only a negative no-premature-pivot guard existed). Also fixed a silent meter corruption: gemini-2.5-flash intermittently truncated the judge JSON tail, crashing the test and dropping patterns (had been losing (b)-Opus); parser now recovers the five gating booleans by regex.
+
+**Measured outcome (3× e2e, 5-dim judge, restored prompt):** (a) opening 6/6 and (c) long-session 6/6 PASS on BOTH models incl. return-pivot. (b) sustained-stonewall script: fails both models at turn 10 (clumsy theory-pitch bridge or no bridge) — the explicitly out-of-scope case; does not occur in normal long sessions. Conclusion: option (a) succeeds for in-scope behavior; no fallback to (b), no further stonewalling work.
+
 **Methodology rule added:** any multi-turn coach validation must persist each turn (commit) — an in-process `ask()` loop without commit silently tests a memoryless coach. Encoded by the `db.session.commit()` in `_multi_turn` and `coach_chat.py`.
 
 **Revisit trigger:** A Personal-app user surface that writes committed data in a form other than `commit_pdp_items` output or desktop `Scene.write()`; or the cliché judge dimension blocking otherwise-correct Gemini coaching.

@@ -28,4 +28,13 @@ Fixed: commit each turn in both harnesses; also switched Claude `thinking` enabl
 
 ## Psychological reading
 
-With real conversational memory, Opus under stonewalling stays present and keeps the thread — correct coaching. Gemini does not: it reaches for canned empathy and, under sustained non-engagement, abandons the present moment to run the intake checklist — the exact "coach abandons you to fill out a form" failure this system exists to prevent. This is a model-capability gap on the Gemini path, not a prompt phrase to ban. Open decision (Patrick): accept Gemini as a known-weaker secondary path (Opus is primary and solid), or invest (Gemini-specific work, deterministic post-strip, or route stonewalling-type sessions to Opus).
+With real conversational memory, Opus under stonewalling stays present and keeps the thread — correct coaching. Gemini does not: it reaches for canned empathy and, under sustained non-engagement, abandons the present moment to run the intake checklist — the exact "coach abandons you to fill out a form" failure this system exists to prevent. Model-capability gap on the Gemini path, not a prompt phrase to ban.
+
+## Resolution (restored literature prompt + 5-dim judge)
+
+The lean prompt rewrite was reverted (it had deleted literature clinical IP). On the restored literature prompt + an additive FD-325 working-memory block + the canned-empathy opener added to the avoid-list, with a new `returns_to_collection` judge dimension:
+
+- (a) opening and (c) long-session: 6/6 both models, including the now-measured return-pivot. The literature prompt drives current-events engagement AND the graceful return to data collection in a normal session — the core FD-326 behavior, measured and passing.
+- (b) sustained-stonewall script: still fails both models at the final turn (clumsy theory-pitch bridge or no bridge). Accepted out-of-scope per Patrick (stonewalling not worth handling on any model); does not occur in normal long sessions.
+
+Psychological note: the return-pivot working in (c) but not under the artificial 5-turn stonewall confirms it's a stonewalling-handling edge, not a general failure — a real coach also bridges awkwardly when a client gives nothing for five straight turns.

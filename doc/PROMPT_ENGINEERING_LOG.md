@@ -20,12 +20,16 @@
 
 **Fix**: `db.session.commit()` after each `ask()` in both `coach_chat.py` and `_multi_turn`. Also `thinking.type` `enabled→adaptive` in `llmutil.claude_text` (SDK-deprecated; adaptive takes no `budget_tokens`; Anthropic states adaptive improves performance — so this also changes the model behavior under test).
 
-**Stability — valid harness + adaptive thinking (3× e2e smoke, 6 tests/run): 15/18 PASS.**
-- (a) opening-current-events: Opus + Gemini 3/3 — solid.
-- (c) long-session: Opus + Gemini 3/3 — solid.
-- (b) shallow-cycling/stonewalling: **Opus 3/3 PASS; Gemini 0/3 PASS.** Two Gemini failures were canned-empathy clichés ("I'm curious", "those stretches can really wear you down"); one was the cardinal FD-326 failure — `engage=False, no_pivot=False`: Gemini pivoted to family-history interrogation while the user was still on current events. With real memory, Gemini under stonewalling does not reliably stay present; Opus does.
+**Prompt-IP question (Patrick) — lean rewrite reverted.** Diff vs the pre-rewrite prompt showed the "lean" version deleted literature-derived clinical content (fact-level minimum dataset, symptom-then-connect method, the "done" definition) and gutted tuned addenda (Opus 66→4, Gemini 22→3 lines). The rules-based coverage engine detects a *structural gap*; it does not carry the clinical *content/rationale* — engine and literature checklist are complementary, not substitutes. Reverted to the original literature core + original addenda. Only additive changes kept: `committed_state` plumbing; an FD-325 "working memory" block (use known names, don't re-ask known facts, engine feeds the outstanding list); and the canned-empathy opener family added to the existing AVOID-clichés list.
 
-**Open decision (Patrick): Gemini-(b).** Opus is the primary user path and is solid across a/b/c. Gemini consistently fails (b) and not only on clichés — it sometimes commits the core anti-goal (premature intake pivot). Choice: accept Gemini as a known-weaker secondary path, or invest (Gemini addendum work / deterministic post-strip / route (b)-type sessions to Opus). The earlier "stonewalling is unsolvable, accept stay-present" reasoning still holds for Opus; it does NOT excuse Gemini's premature pivot.
+**Return-pivot now measured.** Added judge dimension `returns_to_collection` (topic winds down → coach bridges to a real missing area; true when not applicable). The FD-326 promise had been unmeasured (only a negative no-premature-pivot guard). Also fixed silent meter corruption: gemini-2.5-flash truncates the judge JSON tail intermittently and crashed the test (was dropping (b)-Opus); parser now recovers the five gating booleans by regex.
+
+**Stability — restored prompt + 5-dim judge (3× e2e, 6/run, meter reliable):**
+- (a) opening-current-events: Opus + Gemini **6/6** — solid.
+- (c) long-session: Opus + Gemini **6/6** incl. return-pivot — solid.
+- (b) sustained-stonewall script: fails both models at turn 10 (clumsy theory-pitch bridge, or no bridge). Out of scope per Patrick's standing decision ("not worth dealing with stonewalling regardless of model"); does not occur in normal long sessions (c is clean).
+
+**Conclusion**: option (a) succeeds for in-scope behavior on both models. No fallback to the rewrite; no further stonewalling work. The literature clinical IP is preserved; FD-325 returning-user awareness works via the additive working-memory block; the return-pivot is now a measured, passing behavior in normal sessions.
 
 **Test-infra root causes (both = silent-fallthrough class; fix in conftest)**:
 1. `FDSERVER_PROMPTS_PATH` — without it, e2e tests silently load the open-source prompt stub instead of the real fdserver prompts, making all prompt validation meaningless. `btcopilot/tests/conftest.py` now sets it before importing btcopilot; `coach_chat.py` sets it itself. Root cause of pre-handoff iterations 1–5 producing wrong behavior.

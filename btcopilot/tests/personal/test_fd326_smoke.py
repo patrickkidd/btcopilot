@@ -100,6 +100,7 @@ def _judge(label, transcript, known=None):
     verdict = "PASS" if s.passed else "FAIL"
     print(
         f"\n[FD326 {verdict}] {label} | "
+        f"returns={s.returns_to_collection} "
         f"engage={s.current_events_engagement} "
         f"names={s.name_usage} "
         f"no_pivot={s.no_premature_pivot} "

@@ -347,7 +347,8 @@ def _run_judge(transcript):
     v = "PASS" if s.passed else "FAIL"
     print(f"\n[FD326 {v}] engage={s.current_events_engagement} "
           f"names={s.name_usage} no_pivot={s.no_premature_pivot} "
-          f"no_pitch={s.no_theory_pitch}\n  {s.notes}")
+          f"no_pitch={s.no_theory_pitch} returns={s.returns_to_collection}"
+          f"\n  {s.notes}")
     return s
 
 
@@ -366,7 +367,8 @@ def _write_artifact(args, transcript, scores):
         f"- FD-326 judge: **{verdict}**"
         + (f" — engage={scores.current_events_engagement} "
            f"names={scores.name_usage} no_pivot={scores.no_premature_pivot} "
-           f"no_pitch={scores.no_theory_pitch}" if scores else ""),
+           f"no_pitch={scores.no_theory_pitch} "
+           f"returns={scores.returns_to_collection}" if scores else ""),
         f"- judge notes: {scores.notes if scores else '(none)'}",
         "",
         "## Transcript",
@@ -400,6 +402,7 @@ def _write_artifact(args, transcript, scores):
                 "name_usage": scores.name_usage,
                 "no_premature_pivot": scores.no_premature_pivot,
                 "no_theory_pitch": scores.no_theory_pitch,
+                "returns_to_collection": scores.returns_to_collection,
                 "notes": scores.notes,
             }),
             "transcript": [{"role": r, "text": t} for r, t in transcript],
