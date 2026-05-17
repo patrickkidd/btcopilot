@@ -45,18 +45,7 @@ class AttachmentStyle(enum.StrEnum):
     FearfulAvoidant = "fearful_avoidant"
 
 
-class DataCategory(enum.StrEnum):
-    PresentingProblem = "presenting_problem"
-    Mother = "mother"
-    Father = "father"
-    ParentsStatus = "parents_status"  # married, divorced, remarried
-    Siblings = "siblings"
-    MaternalGrandparents = "maternal_grandparents"
-    PaternalGrandparents = "paternal_grandparents"
-    AuntsUncles = "aunts_uncles"
-    Spouse = "spouse"
-    Children = "children"
-    NodalEvents = "nodal_events"  # deaths, illnesses, marriages, divorces, moves
+from btcopilot.personal.intake import DataCategory  # canonical home  # noqa: E402,F401
 
 
 @dataclass

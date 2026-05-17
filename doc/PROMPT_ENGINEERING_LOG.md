@@ -2,7 +2,40 @@
 
 **Purpose**: Authoritative record of prompt engineering decisions, experiments, and lessons learned for the SARF data extraction system. Prevents regressions by documenting what works, what doesn't, and why.
 
-**Last Updated**: 2026-03-15 (conversation flow prompt tuning)
+**Last Updated**: 2026-05-16 (FD-325/326 returning-user coach)
+
+---
+
+## FD-325/326 — Returning-user-aware coach + current-events/intake balance (2026-05-16)
+
+**Scope**: `_CONVERSATION_FLOW_CORE` + Opus/Gemini addenda (fdserver, private IP); `committed_state` plumbing; outstanding-categories engine; conversational judge.
+
+**Extraction F1 not run — by design.** No extraction prompt was touched (extraction strategy, field descriptions, two-pass prompts unchanged). The change set is conversational-flow + a schema-derived coverage engine with no LLM. F1 measures extraction; there is no F1 surface here. Running it would burn cost to re-measure an untouched system.
+
+**Prompt direction**: returning-user + current-events/depth guidance expressed as *guidelines, not rules*; checklist replaced with prose; addenda reduced to length cues; few-shot at end. Rationale: rule/turn-count AC produces a robotic coach (the explicit FD-326 anti-goal). Validation is qualitative via a dedicated judge, not keyword/turn counting.
+
+**Quality measurement decision**: FD-326 uses a purpose-built LLM judge (`coacheval`, 4 dims: current-events engagement, name usage, no premature pivot, no theory-pitch) **instead of** `QualityEvaluator` response-type entropy. Finding: entropy mis-penalizes a coach that consistently does acknowledge+question turns — that consistency is correct coaching behavior but reads as low entropy. Entropy is a synthetic-client realism metric, not a coach-quality metric; applying it here produced false negatives. Future conversational features add their own judge dimensions following this pattern rather than reusing entropy.
+
+**RETRACTED — invalid harness.** The first round of multi-turn results (reported as "17/18", "(b)-Gemini opener tic", "pattern (b): accept stay-present", "skip the opener") was produced by a harness bug: `ask()` does not commit; it relies on the caller persisting each turn (the production HTTP route commits per request). Both `coach_chat.py` and the smoke's `_multi_turn` looped `ask()` with no commit between turns, so `discussion.statements` never reloaded and **the coach had no within-session memory across turns**. Single-turn (a) and `committed_state`/name-usage were unaffected (committed_state is re-derived from the diagram each call). Patterns (b) and (c) and every conclusion about stonewalling/opener behavior drawn from them are void.
+
+**Fix**: `db.session.commit()` after each `ask()` in both `coach_chat.py` and `_multi_turn`. Also `thinking.type` `enabled→adaptive` in `llmutil.claude_text` (SDK-deprecated; adaptive takes no `budget_tokens`; Anthropic states adaptive improves performance — so this also changes the model behavior under test).
+
+**Prompt-IP question (Patrick) — lean rewrite reverted.** Diff vs the pre-rewrite prompt showed the "lean" version deleted literature-derived clinical content (fact-level minimum dataset, symptom-then-connect method, the "done" definition) and gutted tuned addenda (Opus 66→4, Gemini 22→3 lines). The rules-based coverage engine detects a *structural gap*; it does not carry the clinical *content/rationale* — engine and literature checklist are complementary, not substitutes. Reverted to the original literature core + original addenda. Only additive changes kept: `committed_state` plumbing; an FD-325 "working memory" block (use known names, don't re-ask known facts, engine feeds the outstanding list); and the canned-empathy opener family added to the existing AVOID-clichés list.
+
+**Return-pivot now measured.** Added judge dimension `returns_to_collection` (topic winds down → coach bridges to a real missing area; true when not applicable). The FD-326 promise had been unmeasured (only a negative no-premature-pivot guard). Also fixed silent meter corruption: gemini-2.5-flash truncates the judge JSON tail intermittently and crashed the test (was dropping (b)-Opus); parser now recovers the five gating booleans by regex.
+
+**Stability — restored prompt + 5-dim judge (3× e2e, 6/run, meter reliable):**
+- (a) opening-current-events: Opus + Gemini **6/6** — solid.
+- (c) long-session: Opus + Gemini **6/6** incl. return-pivot — solid.
+- (b) sustained-stonewall script: fails both models at turn 10 (clumsy theory-pitch bridge, or no bridge). Out of scope per Patrick's standing decision ("not worth dealing with stonewalling regardless of model"); does not occur in normal long sessions (c is clean).
+
+**Conclusion**: option (a) succeeds for in-scope behavior on both models. No fallback to the rewrite; no further stonewalling work. The literature clinical IP is preserved; FD-325 returning-user awareness works via the additive working-memory block; the return-pivot is now a measured, passing behavior in normal sessions.
+
+**Test-infra root causes (both = silent-fallthrough class; fix in conftest)**:
+1. `FDSERVER_PROMPTS_PATH` — without it, e2e tests silently load the open-source prompt stub instead of the real fdserver prompts, making all prompt validation meaningless. `btcopilot/tests/conftest.py` now sets it before importing btcopilot; `coach_chat.py` sets it itself. Root cause of pre-handoff iterations 1–5 producing wrong behavior.
+2. `.env` not auto-loaded for pytest, and `.env` cannot be `source`d (`FLASK_APP=...create_app()` is invalid bash). e2e smoke needs `ANTHROPIC_API_KEY`/`GOOGLE_GEMINI_API_KEY` extracted per-line, and must run from the btcopilot rootdir (the theapp-root `pytest.ini` lacks `--e2e`). Recommend conftest export both keys from `.env` via line-parse, not source.
+
+**Data-model resolution (1924 incident)**: Committed Personal-app family data lives in `DiagramData.people/events/pair_bonds` (Scene collections), dates always QDateTime — never in `.pdp` (pending pool, cleared on commit) and never ISO. Desktop `Scene.write()` and Personal `commit_pdp_items()` converge on the same collections/keys (`person_a/person_b`, `person.parents`→pair_bonds entry, `gender`, lowercase `EventKind`). No intake.py linkage rewrite needed (contradicts the handoff's working assumption). The 1924 "empty pair_bonds Scene format" observation matches the post-corruption 2-person state from a pre-sandbox coach_chat overwrite, not an unhandled schema. Contract pinned by `test_committed_scene_format_contract` and verified on three real populated desktop clinic diagrams (332/98/70 people): `person.parents`→`pair_bonds` resolves 100%, dates QDateTime, no Qt/enum leak. Grinding real desktop data exposed two production crashes synthetic fixtures missed — `name=None` scene stubs and `relationship` stored as a `RelationshipKind` enum object — both fixed and pinned (`test_real_desktop_quirks_dont_crash`, 11/11 intake).
 
 ---
 

@@ -31,12 +31,15 @@ Summarize the following discussion.
 # implementation that has full per-model assembly control.
 
 
-def get_conversation_flow_prompt(model: str | None = None) -> str:
+def get_conversation_flow_prompt(
+    model: str | None = None, committed_state: str = ""
+) -> str:
     """Return the conversation flow system prompt for the given model.
 
-    Stub — returns a minimal generic prompt. Production deployments override
-    this callable via FDSERVER_PROMPTS_PATH with full Bowen interview protocol
-    and model-specific response style tuning.
+    `committed_state` is a compact rendering of family data already in the
+    diagram (see `summarize_committed_state` in chat.py). Empty string means
+    a fresh user; non-empty means a returning user with prior session(s).
+    Production deployments override this callable via FDSERVER_PROMPTS_PATH.
     """
     return "You are a family systems consultant. Help the user tell their family's story across three generations."
 
