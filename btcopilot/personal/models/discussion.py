@@ -65,6 +65,20 @@ class Discussion(db.Model, ModelMixin):
     calibration_report = Column(JSON, nullable=True)
     calibration_advice = Column(JSON, nullable=True)
     statement_reviews = Column(JSON, nullable=True)
+    extracted_through_order = Column(
+        Integer,
+        nullable=True,
+        comment="Re-extraction cursor: highest Statement.order whose extraction "
+        "has been accepted/committed. NULL = nothing accepted yet (extract from "
+        "the start, legacy behaviour). Advances only on full PDP accept.",
+    )
+    pending_extracted_through_order = Column(
+        Integer,
+        nullable=True,
+        comment="Max Statement.order included in the most recent extract, held "
+        "until that PDP is accepted; on full accept it is promoted to "
+        "extracted_through_order. NULL when no extract awaits acceptance.",
+    )
     user = relationship("User")
     diagram = relationship("Diagram", back_populates="discussions")
     statements = relationship(
@@ -107,14 +121,6 @@ class Discussion(db.Model, ModelMixin):
     )
 
     def conversation_history(self, up_to_order: int | None = None) -> str:
-        """
-        Build conversation history string from statements.
-
-        Args:
-            up_to_order: If provided, only include statements with order < this value.
-                        Used during extraction to avoid seeing the current statement
-                        (which is passed separately as user_message).
-        """
         statements = self.statements
         if up_to_order is not None:
             statements = [s for s in statements if (s.order or 0) < up_to_order]

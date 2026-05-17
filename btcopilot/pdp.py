@@ -1,6 +1,7 @@
 import copy
 import logging
 import os
+import secrets
 from datetime import date, datetime
 
 import json
@@ -8,6 +9,7 @@ import json
 from btcopilot.extensions import ai_log
 from btcopilot.llmutil import gemini_structured
 from btcopilot.personal.models import SpeakerType
+from btcopilot.training.f1_metrics import match_people
 from btcopilot.personal.prompts import (
     DATA_EXTRACTION_CORRECTION,
     DATA_EXTRACTION_PASS1_PROMPT,
@@ -15,6 +17,8 @@ from btcopilot.personal.prompts import (
     DATA_EXTRACTION_PASS2_PROMPT,
     DATA_EXTRACTION_PASS2_CONTEXT,
     SARF_REVIEW_PROMPT,
+    CURSOR_MARKER_TEMPLATE,
+    CURSOR_EXTRACTION_RULE_TEMPLATE,
 )
 from btcopilot.schema import (
     DiagramData,
@@ -224,6 +228,243 @@ def fix_self_parent_references(
         person.parents = None
 
 
+def _committed_person_matches(
+    deltas: PDPDeltas, diagram_data: DiagramData
+) -> dict[int, int]:
+    """Return {negative delta person id -> committed positive person id} for
+    delta people that duplicate an already-committed person. Reuses
+    f1_metrics.match_people (name + gender + parent similarity)."""
+    new_people = [p for p in deltas.people if p.id is not None and p.id < 0 and p.name]
+    if not new_people:
+        return {}
+
+    committed_people = [
+        from_dict(Person, p) for p in diagram_data.people if p.get("id") is not None
+    ]
+    if not committed_people:
+        return {}
+
+    committed_bonds = [from_dict(PairBond, pb) for pb in diagram_data.pair_bonds]
+
+    _, id_map = match_people(
+        new_people,
+        committed_people,
+        deltas.pair_bonds,
+        committed_bonds,
+    )
+    return {
+        ai_id: gt_id
+        for ai_id, gt_id in id_map.items()
+        if ai_id is not None and ai_id < 0 and gt_id is not None and gt_id >= 0
+    }
+
+
+def _remap_person_refs(deltas: PDPDeltas, remap: dict[int, int]) -> None:
+    """Rewrite every delta reference to a remapped person id and drop the
+    duplicate delta Person rows."""
+    deltas.people = [p for p in deltas.people if p.id not in remap]
+
+    for person in deltas.people:
+        if person.parents is not None and person.parents in remap:
+            person.parents = remap[person.parents]
+
+    for event in deltas.events:
+        if event.person is not None and event.person in remap:
+            event.person = remap[event.person]
+        if event.spouse is not None and event.spouse in remap:
+            event.spouse = remap[event.spouse]
+        if event.child is not None and event.child in remap:
+            event.child = remap[event.child]
+        event.relationshipTargets = [remap.get(t, t) for t in event.relationshipTargets]
+        event.relationshipTriangles = [
+            remap.get(t, t) for t in event.relationshipTriangles
+        ]
+
+    for pair_bond in deltas.pair_bonds:
+        if pair_bond.person_a is not None and pair_bond.person_a in remap:
+            pair_bond.person_a = remap[pair_bond.person_a]
+        if pair_bond.person_b is not None and pair_bond.person_b in remap:
+            pair_bond.person_b = remap[pair_bond.person_b]
+
+    deltas.delete = [remap.get(d, d) for d in deltas.delete]
+
+
+def _committed_dyads(diagram_data: DiagramData) -> set[tuple[int, int]]:
+    dyads: set[tuple[int, int]] = set()
+    for cpb in diagram_data.pair_bonds:
+        a, b = cpb.get("person_a"), cpb.get("person_b")
+        if a is not None and b is not None:
+            dyads.add(tuple(sorted([a, b])))
+    return dyads
+
+
+def _drop_committed_dup_pair_bonds(
+    deltas: PDPDeltas, diagram_data: DiagramData
+) -> None:
+    """Drop delta PairBonds whose dyad already exists in the committed diagram,
+    clearing Person.parents references off the removed bond."""
+    committed_dyads = _committed_dyads(diagram_data)
+
+    kept = []
+    removed_ids: set[int] = set()
+    for pb in deltas.pair_bonds:
+        if pb.person_a is not None and pb.person_b is not None:
+            dyad = tuple(sorted([pb.person_a, pb.person_b]))
+            if dyad in committed_dyads:
+                if pb.id is not None:
+                    removed_ids.add(pb.id)
+                continue
+        kept.append(pb)
+    deltas.pair_bonds = kept
+
+    if removed_ids:
+        for person in deltas.people:
+            if person.parents in removed_ids:
+                person.parents = None
+
+
+def _committed_event_keys(diagram_data: DiagramData) -> set[tuple]:
+    """Identity of a committed event for dedup. PairBond-kind events are
+    identified by (kind, committed dyad); Birth/Adopted by committed child;
+    others by (kind, committed person). Dates are intentionally excluded —
+    the LLM frequently re-infers a different day for the same committed
+    structural event (e.g. 'June 1990' -> 1990-06-01 vs committed 1990-06-15)."""
+    keys: set[tuple] = set()
+    for ce in diagram_data.events:
+        kind = ce.get("kind")
+        if kind is None:
+            continue
+        kind = EventKind(kind)
+        person, spouse, child = (
+            ce.get("person"),
+            ce.get("spouse"),
+            ce.get("child"),
+        )
+        if kind.isPairBond() and not kind.isOffspring():
+            if person is not None and spouse is not None:
+                keys.add((kind, tuple(sorted([person, spouse]))))
+        elif kind.isOffspring():
+            if child is not None:
+                keys.add((kind, child))
+        elif person is not None:
+            keys.add((kind, person))
+    return keys
+
+
+def _delta_event_key(ev: Event) -> tuple | None:
+    if ev.kind.isPairBond() and not ev.kind.isOffspring():
+        if ev.person is not None and ev.spouse is not None:
+            return (ev.kind, tuple(sorted([ev.person, ev.spouse])))
+        return None
+    if ev.kind.isOffspring():
+        return (ev.kind, ev.child) if ev.child is not None else None
+    return (ev.kind, ev.person) if ev.person is not None else None
+
+
+def _drop_committed_dup_events(deltas: PDPDeltas, diagram_data: DiagramData) -> None:
+    """Drop delta events that duplicate a committed structural event (the
+    referenced people resolve to committed positive ids)."""
+    committed_keys = _committed_event_keys(diagram_data)
+    kept = []
+    for ev in deltas.events:
+        key = _delta_event_key(ev)
+        if key is not None and key in committed_keys:
+            refs = key[1] if isinstance(key[1], tuple) else (key[1],)
+            if all(r is not None and r >= 0 for r in refs):
+                continue
+        kept.append(ev)
+    deltas.events = kept
+
+
+def fix_committed_person_duplicates(
+    deltas: PDPDeltas, diagram_data: DiagramData | None = None
+) -> None:
+    """Drop delta people that duplicate an already-committed person and remap
+    every reference to the committed positive id. Then drop pair_bonds/events
+    that fully duplicate a committed one (these survive even when the LLM
+    correctly references committed people by positive id but re-emits their
+    marriage/birth). Never fabricates data.
+
+    Re-extraction on an existing diagram makes the LLM recreate committed
+    people as new negative-id Persons and re-emit their marriages/births.
+    Accepting those corrupts the committed diagram (FD-319)."""
+    if diagram_data is None:
+        return
+    # match_people is a global assignment: dropping matched delta people
+    # shifts the optimal matching, exposing committed duplicates the first
+    # pass could not see. validate_pdp_deltas recomputes the same matcher, so
+    # a single pass that leaves residual matches dead-ends extraction. Iterate
+    # to a fixed point. Each non-empty pass drops >=1 delta person, so this
+    # converges in <= len(deltas.people) iterations; cap defensively.
+    all_remapped: dict[int, int] = {}
+    for _ in range(len(deltas.people) + 2):
+        remap = _committed_person_matches(deltas, diagram_data)
+        if not remap:
+            break
+        all_remapped.update(remap)
+        _remap_person_refs(deltas, remap)
+    else:
+        residual = _committed_person_matches(deltas, diagram_data)
+        if residual:
+            _log.error(
+                "fix_committed_person_duplicates: did not converge; residual "
+                f"committed duplicates {sorted(residual.keys())} -> "
+                f"{sorted(residual.values())}"
+            )
+    if all_remapped:
+        _log.warning(
+            "fix_committed_person_duplicates: delta people "
+            f"{sorted(all_remapped.keys())} duplicate committed people "
+            f"{sorted(set(all_remapped.values()))}; remapped references"
+        )
+
+    n_pb, n_ev = len(deltas.pair_bonds), len(deltas.events)
+    _drop_committed_dup_pair_bonds(deltas, diagram_data)
+    _drop_committed_dup_events(deltas, diagram_data)
+    dropped_pb = n_pb - len(deltas.pair_bonds)
+    dropped_ev = n_ev - len(deltas.events)
+    if dropped_pb or dropped_ev:
+        _log.warning(
+            "fix_committed_person_duplicates: dropped "
+            f"{dropped_pb} committed-duplicate pair_bonds and "
+            f"{dropped_ev} committed-duplicate events"
+        )
+
+
+def _committed_dup_structural_errors(
+    deltas: PDPDeltas, diagram_data: DiagramData
+) -> list[str]:
+    """Errors for delta pair_bonds/events that duplicate a committed one and
+    whose people resolve to committed positive ids. Triggers the Ralph retry
+    loop so the repair pass runs even when no negative-id person was duped."""
+    errors: list[str] = []
+    committed_dyads = _committed_dyads(diagram_data)
+    for pb in deltas.pair_bonds:
+        if (
+            pb.person_a is not None
+            and pb.person_b is not None
+            and pb.person_a >= 0
+            and pb.person_b >= 0
+            and tuple(sorted([pb.person_a, pb.person_b])) in committed_dyads
+        ):
+            errors.append(
+                f"Delta pair_bond {pb.id} dyad "
+                f"({pb.person_a},{pb.person_b}) duplicates a committed pair_bond"
+            )
+    committed_keys = _committed_event_keys(diagram_data)
+    for ev in deltas.events:
+        key = _delta_event_key(ev)
+        if key is None or key not in committed_keys:
+            continue
+        refs = key[1] if isinstance(key[1], tuple) else (key[1],)
+        if all(r is not None and r >= 0 for r in refs):
+            errors.append(
+                f"Delta event {ev.id} (kind={ev.kind.value}) duplicates a "
+                f"committed event for {refs}"
+            )
+    return errors
+
+
 def validate_pdp_deltas(
     pdp: PDP,
     deltas: PDPDeltas,
@@ -280,6 +521,17 @@ def validate_pdp_deltas(
             errors.append(
                 f"Delta person has positive ID {person.id} not in committed diagram"
             )
+
+    if diagram_data:
+        for delta_id, committed_id in _committed_person_matches(
+            deltas, diagram_data
+        ).items():
+            p = next((dp for dp in deltas.people if dp.id == delta_id), None)
+            errors.append(
+                f"Delta person {delta_id} '{p.name if p else ''}' "
+                f"duplicates committed person {committed_id}"
+            )
+        errors.extend(_committed_dup_structural_errors(deltas, diagram_data))
 
     for event in deltas.events:
         if event.id >= 0 and event.id not in committed_event_ids:
@@ -639,6 +891,7 @@ async def _extract_and_validate(
             label = "DELTAS" if attempt == 0 else f"RETRY {attempt} DELTAS"
             ai_log.info(f"{label}:\n\n{_pretty_repr(pdp_deltas)}")
 
+        fix_committed_person_duplicates(pdp_deltas, diagram_data)
         try:
             validate_pdp_deltas(pdp, pdp_deltas, diagram_data, source)
             if attempt > 0:
@@ -713,8 +966,13 @@ async def _two_pass_extract(
     source: str,
     pass2_prompt: str | None = None,
     sarf_review_prompt: str | None = None,
+    cursor_nonce: str | None = None,
 ) -> tuple[PDP, PDPDeltas]:
-    """Two-pass extraction: people+structure first, then shifts+SARF."""
+    """Two-pass extraction: people+structure first, then shifts+SARF.
+
+    cursor_nonce: when set, conversation_history contains the nonced cursor
+    marker; append the matching cursor rule so Pass 1 emits items only for
+    content after it."""
     _log.info(
         f"PDP {source.upper()} INPUTS:\n"
         f"  conversation_history length: {len(conversation_history)}\n"
@@ -731,6 +989,8 @@ async def _two_pass_extract(
         diagram_data=json.dumps(committed_state, indent=2, default=str),
         conversation_history=conversation_history,
     )
+    if cursor_nonce:
+        prompt1 += CURSOR_EXTRACTION_RULE_TEMPLATE.format(nonce=cursor_nonce)
     pass1_pdp, pass1_deltas = await _extract_and_validate(
         prompt1,
         diagram_data,
@@ -803,6 +1063,27 @@ async def _two_pass_extract(
     return pass2_pdp, merged_deltas
 
 
+def _windowed_conversation(discussion) -> tuple[str, str | None]:
+    """Conversation text for extraction, windowed by the re-extraction cursor
+    once an extraction has been accepted. Returns (text, cursor_nonce); nonce
+    is None when no windowing applies. The marker carries a random per-call
+    nonce so user/transcript text cannot forge the boundary."""
+    cursor = discussion.extracted_through_order
+    if cursor is None:
+        return discussion.conversation_history(), None
+    prior = discussion.conversation_history(up_to_order=cursor + 1)
+    ordered = sorted(discussion.statements, key=lambda s: (s.order or 0, s.id or 0))
+    tail_stmts = [s for s in ordered if (s.order or 0) > cursor]
+    if not tail_stmts:
+        return discussion.conversation_history(), None
+    tail = "\n".join(
+        f"{s.speaker.name if s.speaker else 'Unknown'}: {s.text}" for s in tail_stmts
+    )
+    nonce = secrets.token_hex(8)
+    marker = CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
+    return prior + marker + tail, nonce
+
+
 async def extract_full(
     discussion,
     diagram_data: DiagramData,
@@ -815,13 +1096,15 @@ async def extract_full(
         if discussion.discussion_date
         else datetime.now().date()
     )
+    conversation, cursor_nonce = _windowed_conversation(discussion)
     return await _two_pass_extract(
         diagram_data,
-        discussion.conversation_history(),
+        conversation,
         reference_date.isoformat(),
         "extract_full",
         pass2_prompt=pass2_prompt,
         sarf_review_prompt=sarf_review_prompt,
+        cursor_nonce=cursor_nonce,
     )
 
 

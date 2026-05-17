@@ -21,6 +21,8 @@ from btcopilot.pdp import (
     apply_deltas,
     fix_birth_event_self_references,
     fix_self_parent_references,
+    fix_committed_person_duplicates,
+    _committed_person_matches,
 )
 
 
@@ -656,3 +658,234 @@ def test_extract_and_validate_id_collision_repair_after_exhaustion(caplog):
     event_ids = {e.id for e in deltas.events}
     assert not (person_ids & event_ids)
     assert any("reassign_delta_ids:" in rec.message for rec in caplog.records)
+
+
+# --- FD-319: committed-person duplication ---
+
+
+def _committed_couple_diagram() -> DiagramData:
+    return DiagramData(
+        people=[
+            {"id": 1, "name": "Mary", "gender": "female"},
+            {"id": 2, "name": "John", "gender": "male"},
+        ],
+        pair_bonds=[{"id": 10, "person_a": 1, "person_b": 2}],
+        events=[
+            {
+                "id": 20,
+                "kind": "married",
+                "person": 1,
+                "spouse": 2,
+                "dateTime": "1990-06-15",
+            }
+        ],
+    )
+
+
+def _committed_dup_deltas() -> PDPDeltas:
+    """LLM recreated the two committed parents and re-emitted their marriage,
+    plus a genuinely-new child Sarah."""
+    deltas = PDPDeltas(
+        people=[
+            Person(id=-1, name="Mary", gender="female"),
+            Person(id=-2, name="John", gender="male"),
+            Person(id=-3, name="Sarah", gender="female"),
+        ],
+        pair_bonds=[PairBond(id=-4, person_a=-1, person_b=-2)],
+        events=[
+            Event(
+                id=-5,
+                kind=EventKind.Married,
+                person=-1,
+                spouse=-2,
+                dateTime="1990-06-15",
+            ),
+            Event(
+                id=-6,
+                kind=EventKind.Birth,
+                person=-1,
+                spouse=-2,
+                child=-3,
+                dateTime="1995-01-01",
+            ),
+        ],
+    )
+    deltas.people[2].parents = -4
+    return deltas
+
+
+def test_validate_raises_on_committed_person_duplicate():
+    diagram_data = _committed_couple_diagram()
+    pdp = PDP()
+    deltas = _committed_dup_deltas()
+
+    with pytest.raises(PDPValidationError) as exc_info:
+        validate_pdp_deltas(pdp, deltas, diagram_data)
+
+    assert any(
+        "duplicates committed person" in err for err in exc_info.value.errors
+    )
+
+
+def test_fix_committed_person_duplicates_remaps_refs():
+    diagram_data = _committed_couple_diagram()
+    deltas = _committed_dup_deltas()
+
+    fix_committed_person_duplicates(deltas, diagram_data)
+
+    names = {p.name for p in deltas.people}
+    assert names == {"Sarah"}
+
+    sarah = next(p for p in deltas.people if p.name == "Sarah")
+    assert sarah.id == -3
+
+    birth = next(e for e in deltas.events if e.kind == EventKind.Birth)
+    assert birth.person == 1
+    assert birth.spouse == 2
+    assert birth.child == -3
+
+    # Committed marriage must not be re-added; committed pair_bond dyad dropped
+    assert all(e.kind != EventKind.Married for e in deltas.events)
+    committed_dyad_present = any(
+        {pb.person_a, pb.person_b} == {1, 2} for pb in deltas.pair_bonds
+    )
+    assert not committed_dyad_present
+    assert sarah.parents is None
+
+
+def test_fix_committed_person_duplicates_reaches_fixed_point():
+    """Re-extraction recreating a whole committed family. match_people is a
+    global assignment: dropping the first round of duplicates shifts the
+    optimal matching and exposes committed duplicates a single repair pass
+    never sees. validate_pdp_deltas recomputes the same matcher, so any
+    residual dead-ends extraction (the disc-55 production 500). The repair
+    must leave zero residual committed-person matches."""
+    diagram_data = DiagramData(
+        people=[
+            {"id": 1, "name": "Mary", "gender": "female"},
+            {"id": 2, "name": "John", "gender": "male"},
+            {"id": 3, "name": "Sarah", "gender": "female"},
+            {"id": 4, "name": "Mark", "gender": "male"},
+            {"id": 5, "name": "Anne", "gender": "female"},
+        ],
+        pair_bonds=[{"id": 10, "person_a": 1, "person_b": 2}],
+        events=[],
+    )
+    deltas = PDPDeltas(
+        people=[
+            Person(id=-1, name="Mary", gender="female"),
+            Person(id=-2, name="John", gender="male"),
+            Person(id=-3, name="Sarah", gender="female"),
+            Person(id=-4, name="Mark", gender="male"),
+            Person(id=-5, name="Anne", gender="female"),
+            Person(id=-6, name="Liam", gender="male"),  # genuinely new
+        ],
+        pair_bonds=[PairBond(id=-7, person_a=-1, person_b=-2)],
+        events=[
+            Event(id=-8, kind=EventKind.Birth, person=-1, spouse=-2,
+                  child=-6, dateTime="2015-01-01"),
+        ],
+    )
+
+    fix_committed_person_duplicates(deltas, diagram_data)
+
+    assert _committed_person_matches(deltas, diagram_data) == {}
+    validate_pdp_deltas(PDP(), deltas, diagram_data)  # must not raise
+    assert [p.name for p in deltas.people] == ["Liam"]
+    assert deltas.people[0].id == -6
+
+
+def test_fix_committed_person_duplicates_preserves_new_people():
+    """A delta person with no committed counterpart must be untouched."""
+    diagram_data = _committed_couple_diagram()
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="Sarah", gender="female")],
+        events=[
+            Event(
+                id=-2,
+                kind=EventKind.Shift,
+                person=-1,
+                description="anxiety up",
+                dateTime="2020-01-01",
+            )
+        ],
+    )
+
+    fix_committed_person_duplicates(deltas, diagram_data)
+
+    assert [p.name for p in deltas.people] == ["Sarah"]
+    assert deltas.people[0].id == -1
+    assert deltas.events[0].person == -1
+
+
+def _committed_dup_positive_id_deltas() -> PDPDeltas:
+    """LLM correctly references the committed couple by positive ID but
+    re-emits their marriage and pair_bond — zero delta people to remap."""
+    return PDPDeltas(
+        people=[],
+        pair_bonds=[PairBond(id=-1, person_a=1, person_b=2)],
+        events=[
+            Event(
+                id=-2,
+                kind=EventKind.Married,
+                person=1,
+                spouse=2,
+                dateTime="1990-06-01",
+            )
+        ],
+    )
+
+
+def test_extract_and_validate_drops_committed_dups_pre_validate(caplog):
+    """Pre-validate repair drops committed-dup people AND bond/event in the
+    single deterministic pass — no Ralph retry."""
+    diagram_data = _committed_couple_diagram()
+    counter = {"calls": 0}
+
+    async def fake(*args, **kwargs):
+        counter["calls"] += 1
+        return _committed_dup_deltas()
+
+    with patch("btcopilot.pdp.gemini_structured", AsyncMock(side_effect=fake)):
+        with caplog.at_level(logging.WARNING, logger="btcopilot.pdp"):
+            new_pdp, deltas = asyncio.run(
+                _extract_and_validate("prompt", diagram_data, "test_source")
+            )
+
+    assert counter["calls"] == 1
+    validate_pdp_deltas(diagram_data.pdp, deltas, diagram_data, "test_source")
+    assert {p.name for p in deltas.people} == {"Sarah"}
+    assert all(e.kind != EventKind.Married for e in deltas.events)
+    assert not any(
+        {pb.person_a, pb.person_b} == {1, 2} for pb in deltas.pair_bonds
+    )
+    assert any(
+        "fix_committed_person_duplicates:" in rec.message
+        for rec in caplog.records
+    )
+
+
+def test_extract_and_validate_drops_committed_dups_no_remap(caplog):
+    """LLM references committed people by positive ID and re-emits their
+    marriage with no delta people: bond/event still dropped pre-validate,
+    no retry."""
+    diagram_data = _committed_couple_diagram()
+    counter = {"calls": 0}
+
+    async def fake(*args, **kwargs):
+        counter["calls"] += 1
+        return _committed_dup_positive_id_deltas()
+
+    with patch("btcopilot.pdp.gemini_structured", AsyncMock(side_effect=fake)):
+        with caplog.at_level(logging.WARNING, logger="btcopilot.pdp"):
+            new_pdp, deltas = asyncio.run(
+                _extract_and_validate("prompt", diagram_data, "test_source")
+            )
+
+    assert counter["calls"] == 1
+    validate_pdp_deltas(diagram_data.pdp, deltas, diagram_data, "test_source")
+    assert deltas.events == []
+    assert deltas.pair_bonds == []
+    assert any(
+        "committed-duplicate" in rec.message for rec in caplog.records
+    )

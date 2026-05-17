@@ -8,7 +8,7 @@ import asyncio
 from btcopilot import auth, pdp
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram
-from btcopilot.schema import asdict
+from btcopilot.schema import asdict, get_all_pdp_item_ids
 from btcopilot.personal import Response, ask
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
 
@@ -217,6 +217,8 @@ def extract(discussion_id: int):
 
     diagram_data.pdp = new_pdp
     discussion.diagram.set_diagram_data(diagram_data)
+    orders = [s.order for s in discussion.statements if s.order is not None]
+    discussion.pending_extracted_through_order = max(orders) if orders else None
     db.session.commit()
 
     return jsonify(
@@ -225,6 +227,61 @@ def extract(discussion_id: int):
         events_count=len(new_pdp.events),
         pair_bonds_count=len(new_pdp.pair_bonds),
         pdp=asdict(new_pdp),
+    )
+
+
+@bp.route("/<int:discussion_id>/commit-pdp", methods=["POST"])
+def commit_pdp(discussion_id: int):
+    """Accept staged PDP items into the committed diagram. On a FULL accept
+    (every staged item) the re-extraction cursor advances so the next extract
+    treats this conversation as already captured. Partial accept commits the
+    items but leaves the cursor (the next extract re-windows the same range;
+    the deterministic committed-duplicate guard absorbs any repeat). All in
+    one transaction."""
+    user = auth.current_user()
+
+    discussion = Discussion.query.get(discussion_id)
+    if not discussion:
+        abort(404)
+    if discussion.user_id != user.id:
+        abort(401)
+    if not discussion.diagram:
+        abort(400, description="Discussion has no diagram attached")
+
+    body = request.get_json(silent=True) or {}
+    item_ids = body.get("item_ids")
+    if not isinstance(item_ids, list) or not item_ids:
+        abort(400, description="item_ids (non-empty list) required")
+
+    diagram_data = discussion.diagram.get_diagram_data()
+    staged = get_all_pdp_item_ids(diagram_data.pdp)
+    present = [i for i in item_ids if i in staged]
+    # The Personal client commits items locally then saves the diagram, so by
+    # the time this runs the server-side staged pool may already be drained —
+    # the server can't re-derive full-vs-partial. The client passes whether the
+    # staged pool is now fully drained; trust it for the cursor advance. When
+    # called standalone (no flag) fall back to the server-side comparison.
+    client_full = body.get("full_accept")
+    if isinstance(client_full, bool):
+        full_accept = client_full
+    else:
+        full_accept = bool(staged) and set(item_ids) >= staged
+
+    if present:
+        diagram_data.commit_pdp_items(present)
+        discussion.diagram.set_diagram_data(diagram_data)
+
+    if full_accept and discussion.pending_extracted_through_order is not None:
+        discussion.extracted_through_order = discussion.pending_extracted_through_order
+        discussion.pending_extracted_through_order = None
+
+    db.session.commit()
+
+    return jsonify(
+        success=True,
+        committed=len(present),
+        full_accept=full_accept,
+        extracted_through_order=discussion.extracted_through_order,
     )
 
 

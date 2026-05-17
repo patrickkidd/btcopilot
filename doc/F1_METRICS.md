@@ -78,6 +78,15 @@ GT:  PairBond(person_a=-5, person_b=-8)
 - person_b: -2 → resolved -8 ✓
 - **Match**: YES
 
+### Parent/Child (ChildOf) Matching
+
+Isolates the parent→offspring structural edge that person/pair-bond F1 hide
+(a person can match while its `parents` link is missing). One edge per person
+with `parents` set: `(child, sorted parent person-id pair)`, compared after the
+person id map. **Recall is the under-extraction signal** — missing parent/child
+links fragment the diagram even when people and bonds score well. Tracked as
+`child_of` in `f1_timeseries.json` and charted as "Parent/Child".
+
 ### SARF Variable Matching
 
 **Criteria** (per matched event):

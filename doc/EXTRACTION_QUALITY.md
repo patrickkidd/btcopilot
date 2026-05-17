@@ -18,6 +18,8 @@ window to see whether the validator-then-Ralph promotion changes frequency.
 | Birth event person==child | `validate_pdp_deltas` (added 2026-05-04) | `fix_birth_event_self_references` | `fix_birth_event_self_references:` | 6 hits / 196d (~1/mo) | Promoted |
 | Duplicate pair-bond dyads | `validate_pdp_deltas` (existing) | `dedup_pair_bonds` | `dedup_pair_bonds:` | 5 hits / 196d (~1/mo) | Promoted |
 | ID collisions | `validate_pdp_deltas` (existing) | `reassign_delta_ids` | `reassign_delta_ids:` | 7 hits / 196d (~1/mo) | Promoted |
+| Committed-person/pair-bond duplication | `validate_pdp_deltas` (added 2026-05-16, FD-319) | `fix_committed_person_duplicates` | `fix_committed_person_duplicates:` | Bench (no prod yet): raw flash/complex 10/10 → 0/10 after PASS1_CONTEXT carve-out; pro/complex 1/10 → 0/10; simple cells 0/10. Helper not yet deployed. | Watching |
+| Repair not converged vs its own validator (hard 500) | `validate_pdp_deltas` committed-person branch | `fix_committed_person_duplicates` fixed-point loop (added 2026-05-16, FD-319) | `did not converge; residual committed duplicates` | Found via real 27-person diagram (disc 55) intermittent extraction 500. Cause: `match_people` is a global assignment — one repair pass leaves residual matches the validator (same matcher) rejects, retries exhaust → 500. Fix: iterate remap/drop to fixed point. Captured 500 payload now passes; 20/20 clean re-extractions on disc 55; regression test `test_fix_committed_person_duplicates_reaches_fixed_point`. Not yet deployed. | Watching |
 
 Related Ralph-loop signals over the same window for context (NOT issue-specific):
 - `PDP validation failed` (any retry attempt that failed): 40 hits

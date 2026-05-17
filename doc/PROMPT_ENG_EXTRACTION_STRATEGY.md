@@ -64,7 +64,7 @@ Multi-run averages (2-3 runs each). 6/6 discussions, 0 API errors. Description-f
 
 **Remaining risk**: If a person has 2+ genuinely different shift events within the 730-day date tolerance, they'll match incorrectly. Accepted as rare with current GT dataset. SARF Signature Match (Proposal A from the experiment plan) is available as a future upgrade if this becomes a problem.
 
-### 2b. Committed Data Duplication (Resolved — 2026-03-05)
+### 2b. Committed Data Duplication (Re-opened 2026-05-16 — §2b' below supersedes the 2026-03-05 "Resolved" claim)
 
 **Problem**: Re-running extraction on a discussion with committed diagram items produced duplicates — the LLM re-created committed people/events/bonds with new negative IDs instead of referencing them by positive ID.
 
@@ -72,7 +72,41 @@ Multi-run averages (2-3 runs each). 6/6 discussions, 0 API errors. Description-f
 
 **Resolution**: Prompt-level fix. Added "COMMITTED DATA — REFERENCE, DON'T RECREATE" section to PASS1 prompt explaining the delta model, plus an example showing correct re-extraction with committed data. Also cleaned up diagram_data serialization to pass only committed items (people, events, pair_bonds) instead of full `asdict(diagram_data)` which included UI settings and noise.
 
-**Wrong approaches tried**: Rule-based post-hoc dedup (name matching unreliable, LLM-based dedup unnecessary if extraction is correct). Post-hoc dedup is wrong-headed — the fix belongs in the prompts.
+**Wrong approaches tried (per 2026-03-05 belief — partially overturned, see §2b')**: Rule-based post-hoc dedup. The "post-hoc dedup is wrong-headed" stance was overturned by the FD-329/FD-319 decision: a deterministic post-extraction repair is now the load-bearing safety net (`fix_committed_person_duplicates`), because no prompt guarantees idempotency at temperature on unseen inputs.
+
+### 2b'. Committed Data Duplication — empirical re-measurement (2026-05-16, FD-319)
+
+**The 2026-03-05 "Resolved" claim was falsified at scale.** Measured raw-LLM
+committed-duplicate rate on PRODUCTION prompts (`fdserver/prompts/private_prompts.py`,
+repair bypassed, N=10 × {gemini-3-flash-preview, gemini-3-pro-preview}, Pass-1 only):
+
+| scenario | flash baseline | flash variant | pro baseline | pro variant |
+|---|---|---|---|---|
+| simple (people / marriage) | 0.00 | 0.00 | 0.00 | 0.00 |
+| complex (15-person re-narration) | **1.00** | **0.00** | 0.10 | 0.00 |
+
+- The 2026-03-05 prompt fix *did* eliminate people/marriage re-emission (0/10 both
+  models, both simple scenarios) — that part of "Resolved" holds.
+- It did **not** eliminate **committed pair-bond re-emission** by flash on a large
+  committed state: deterministic 2 duplicate pair_bonds every run, 10/10. Nothing
+  else duplicated. Prior "Resolved" never tested a 15-person re-extraction.
+- The ticket's original N=1 "re-emits people + marriage" was a *default-prompt*
+  artifact (`FDSERVER_PROMPTS_PATH` unset in .env/shell/conftest).
+
+**Fix (shipped 2026-05-16, pending Patrick commit)**: single additive edit to
+`DATA_EXTRACTION_PASS1_CONTEXT`. The most-proximal directive `EXTRACT: ... all pair
+bonds between couples/parents ...` had no committed carve-out and overrode the
+upstream anti-recreation section + Example 6. Qualified to `All NEW ...` plus an
+explicit pair-bond-specific `⚠️ ALREADY-COMMITTED ITEMS` block with a pre-return
+self-check. Drives raw committed-dup to 0/10 across all cells/models. F1 not
+regressed (flash, 6 GT, avg 2: people 0.925→0.919, events 0.474→0.518,
+pair_bonds 0.820→0.845, agg 0.671→0.687 — all within run-to-run noise; claim
+bounded to "no regression", N=2). Report:
+`doc/induction-reports/2026-05-16_08-40-13--fd319-prompt-idempotency/`.
+
+**Lesson**: the carve-out for committed data must live in the *last* generation
+directive the model reads, not only in an upstream rules section. A literal
+"extract all X" instruction beats an earlier "don't recreate committed X" at scale.
 
 ### 3. High Model Stochasticity (Critical)
 
@@ -205,6 +239,9 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 15. SARF Decision Guide (prioritized checklist in Pass 2 prompt): additive guidance asking "is this relationship? symptom? anxiety? functioning?" in priority order. Marginal R +0.033, F +0.029 improvement without regressions. Only additive, non-example guidance works for SARF on gemini-3-flash. (2026-03-04, SARF induction run)
 16. 3-pass relationship review architecture: Pass 3 reviews all shift events with a dedicated RELATIONSHIP_REVIEW_PROMPT using full PDPDeltas schema, but ONLY applies `relationship`, `relationshipTargets`, and `relationshipTriangles` corrections — S/A/F remain untouched from Pass 2. R +103% (0.240→0.487), SARF macro +39% (0.341→0.473). 3-run mean, consistent across runs (R range 0.407-0.571). Latency +70% (~75s→~127s). The "review-then-filter" pattern works because: (a) the model CAN distinguish R from S/A/F on a second look, (b) structured output forces regeneration of ALL fields which corrupts S/A, so only R corrections are applied programmatically. (2026-03-04, SARF structural experiments)
 
+17. Committed-data carve-out in the LAST generation directive (FD-319, 2026-05-16): qualifying the proximal `EXTRACT: ... all pair bonds ...` directive in `DATA_EXTRACTION_PASS1_CONTEXT` to `All NEW ...` + an adjacent pair-bond-specific `⚠️ ALREADY-COMMITTED ITEMS` self-check. Raw committed-dup rate flash/complex 1.00→0.00, pro/complex 0.10→0.00 (N=10, repair bypassed), F1 not regressed. An upstream "don't recreate committed X" rules section is insufficient — a literal "extract all X" later in the prompt wins at scale.
+18. Re-extraction cursor rule (FD-319, 2026-05-16): when a discussion has an accepted cursor, send full conversation as context but emit only content after a nonced marker. Re-extraction scenario, 6 GT, 2 runs: committed-event re-emission ~⅓ down, parent/child recall 0.63→0.73, no F1 regression; fresh-extraction F1 unchanged (cursor inactive). Pairs with the deterministic committed-duplicate guard (still load-bearing). Wide-context + tail-only-emit beat per-statement extraction (which died on low F1) because context is preserved.
+
 **Things that failed**:
 1. Adding explicit negative examples for SARF variables (caused model to stop using them)
 2. Adding percentage guidance ("only ~10-15% should have anxiety") - too constraining
@@ -223,6 +260,7 @@ Statement 1856: "Fell apart when mother died" at 69% similarity
 15. Hard event count targets in full-extraction (2026-03-03) — model drops events randomly, not by clinical significance
 16. Explicit birth event instructions at any specificity level (2026-03-03) — Gemini 2.5 Flash birth generation is non-deterministic regardless of prompt
 17. Pre-transcript rule placement for full-extraction (2026-03-03) — less effective than post-transcript (recency bias matters but 1770 lines of examples still dominate)
+18. Dedicated structural-completion pass after Pass 1 (2026-05-16, FD-319) — separate LLM pass to recover missing parent/child + couple links. A/B on 6 GT discussions, 2 runs: parent/child recall 0.872→0.882 (+0.01, inside run-to-run noise which spans 0.4–1.0), while aggregate 0.690→0.670 and events 0.517→0.480 regressed. Reverted. **Key finding: structural under-extraction is scenario-specific** — fresh single-shot extraction already gets ~0.87 parent/child recall; the low ~0.63 only appears in the re-extraction-with-committed-context scenario. The lever for that is the cursor/windowing architecture (cursor experiment lifted re-extraction child_of recall 0.63→0.73), not a separate completion pass. Don't add LLM passes to fix a problem that doesn't exist in the path being measured.
 18. Raising description similarity threshold from 0.4 to 0.5 (2026-03-03) — eliminates false matches but hurts measured F1 because false TPs were being counted
 19. Hybrid per-pass model selection (flash-lite P1, 2.5-flash P2) (2026-03-04) — does NOT outperform flash-lite on both passes when thinking=1024 is enabled. The bottleneck is thinking budget, not model capability.
 20. thinking_budget > 1024 on flash-lite (2026-03-04) — 2048 and 4096 both worse than 1024. Model over-thinks and second-guesses, dropping valid events.
