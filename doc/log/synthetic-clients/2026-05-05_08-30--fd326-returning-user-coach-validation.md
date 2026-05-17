@@ -2,7 +2,7 @@
 
 ## What changed
 
-Conversational-flow prompt (`_CONVERSATION_FLOW_CORE` + Opus/Gemini addenda) rewritten so returning-user awareness and the current-events/intake balance are expressed as guidelines, not rules. Committed family data is now summarized into the system instruction so the coach references known people by name and does not re-ask answered structural questions. A dedicated 4-dimension LLM judge (`fd326_eval`) replaces `QualityEvaluator` entropy for measuring coach quality.
+Conversational-flow prompt (`_CONVERSATION_FLOW_CORE` + Opus/Gemini addenda) rewritten so returning-user awareness and the current-events/intake balance are expressed as guidelines, not rules. Committed family data is now summarized into the system instruction so the coach references known people by name and does not re-ask answered structural questions. A dedicated 4-dimension LLM judge (`coacheval`) replaces `QualityEvaluator` entropy for measuring coach quality.
 
 ## Why
 

@@ -341,9 +341,9 @@ def _run_judge(transcript):
     if not transcript:
         print("(nothing to judge yet)")
         return None
-    from btcopilot.personal.fd326_eval import evaluate_fd326
+    from btcopilot.personal.coacheval import evaluate_coach
 
-    s = evaluate_fd326(transcript, KNOWN_NAMES)
+    s = evaluate_coach(transcript, KNOWN_NAMES)
     v = "PASS" if s.passed else "FAIL"
     print(f"\n[FD326 {v}] engage={s.current_events_engagement} "
           f"names={s.name_usage} no_pivot={s.no_premature_pivot} "

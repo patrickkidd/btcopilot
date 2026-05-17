@@ -3,7 +3,7 @@ diagram + blank conversation history. Verifies the new committed_state
 plumbing produces coherent coach output and (qualitatively) that the prompt
 is steering toward outstanding categories.
 
-Run: uv run pytest btcopilot/btcopilot/tests/personal/test_fd326_smoke.py -v -m e2e -s
+Run: uv run pytest btcopilot/btcopilot/tests/personal/test_coach_smoke.py -v -m e2e -s
 """
 import pickle
 
@@ -94,9 +94,9 @@ _KNOWN = ["Mary", "John", "Sarah"]
 
 
 def _judge(label, transcript, known=None):
-    from btcopilot.personal.fd326_eval import evaluate_fd326
+    from btcopilot.personal.coacheval import evaluate_coach
 
-    s = evaluate_fd326(transcript, known if known is not None else _KNOWN)
+    s = evaluate_coach(transcript, known if known is not None else _KNOWN)
     verdict = "PASS" if s.passed else "FAIL"
     print(
         f"\n[FD326 {verdict}] {label} | "

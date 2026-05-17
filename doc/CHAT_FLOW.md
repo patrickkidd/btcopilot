@@ -126,11 +126,11 @@ uses this two-part loop. It is the standard, not FD-326-specific.
    the judge and saves the transcript. Add new personas/diagrams by editing
    the dicts at the top — keep it general.
 
-2. **Automated gate** — `btcopilot/personal/fd326_eval.py:evaluate_fd326()`.
+2. **Automated gate** — `btcopilot/personal/coacheval.py:evaluate_coach()`.
    LLM-judge over four behavioral dimensions (current-events engagement,
    name usage, no premature pivot, no theory-pitch), returns per-conversation
    pass/fail + offending turn. Wired into
-   `btcopilot/tests/personal/test_fd326_smoke.py` (3 AC patterns × Opus +
+   `btcopilot/tests/personal/test_coach_smoke.py` (3 AC patterns × Opus +
    Gemini). High run-to-run variance — run the suite ≥3× for a stability
    rate, don't treat a single FAIL as definitive. Future conversational
    features add their own judge dimensions following this pattern rather than
@@ -154,7 +154,7 @@ conclusions, 2026-05-16.)
 
 - [btcopilot/btcopilot/personal/chat.py](btcopilot/btcopilot/personal/chat.py) - Chat-only orchestration + `summarize_committed_state`
 - [btcopilot/btcopilot/personal/intake.py](btcopilot/btcopilot/personal/intake.py) - Outstanding-categories engine (structural + functioning coverage)
-- [btcopilot/btcopilot/personal/fd326_eval.py](btcopilot/btcopilot/personal/fd326_eval.py) - Automated conversational-quality judge
+- [btcopilot/btcopilot/personal/coacheval.py](btcopilot/btcopilot/personal/coacheval.py) - Automated conversational-quality judge
 - [btcopilot/bin/coach_chat.py](btcopilot/bin/coach_chat.py) - Manual interactive test harness (reusable)
 - [btcopilot/btcopilot/personal/routes/discussions.py](btcopilot/btcopilot/personal/routes/discussions.py) - HTTP routes (chat + extract)
 - [btcopilot/btcopilot/personal/prompts.py](btcopilot/btcopilot/personal/prompts.py) - Default prompt constants

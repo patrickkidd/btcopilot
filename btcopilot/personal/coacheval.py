@@ -51,7 +51,7 @@ def _parse_judge(raw: str) -> dict | None:
 
 
 @dataclass
-class FD326Scores:
+class CoachScores:
     current_events_engagement: bool
     name_usage: bool
     no_premature_pivot: bool
@@ -118,7 +118,7 @@ Return ONLY compact JSON:
 "notes": "<=10 words, no quotes, no newlines, ASCII only, cite worst turn #"}}"""
 
 
-def evaluate_fd326(turns: list[tuple[str, str]], known_names: list[str]) -> FD326Scores:
+def evaluate_coach(turns: list[tuple[str, str]], known_names: list[str]) -> CoachScores:
     transcript = "\n".join(
         f"[{i + 1}] {'USER' if r == 'user' else 'COACH'}: {t}"
         for i, (r, t) in enumerate(turns)
@@ -141,7 +141,7 @@ def evaluate_fd326(turns: list[tuple[str, str]], known_names: list[str]) -> FD32
             break
     if d is None:
         raise ValueError(f"fd326 judge returned unparseable output: {raw[:300]!r}")
-    return FD326Scores(
+    return CoachScores(
         current_events_engagement=bool(d["current_events_engagement"]),
         name_usage=bool(d["name_usage"]),
         no_premature_pivot=bool(d["no_premature_pivot"]),

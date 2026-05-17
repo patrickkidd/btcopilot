@@ -168,6 +168,11 @@ def roster_for_prompt(diagram_data: DiagramData | None) -> str:
     speaker_id = _speaker_id(people)
 
     events = diagram_data.events or []
+    by_id = {
+        p["id"]: p for p in people
+        if isinstance(p, dict) and p.get("id") is not None
+    }
+    life = _life_facts_index(events)
     named = []
     for p in people:
         if not isinstance(p, dict):
@@ -188,10 +193,10 @@ def roster_for_prompt(diagram_data: DiagramData | None) -> str:
         if p.get("id") == speaker_id:
             label += " — the user"
         else:
-            partner = _roster_partner(p, speaker_id, pair_bonds, people)
+            partner = _roster_partner(p, speaker_id, pair_bonds, by_id)
             if partner:
                 label += f" — partner of {partner}"
-        facts = _roster_life_facts(p.get("id"), events)
+        facts = life.get(p.get("id"), "")
         if facts:
             label += f" [{facts}]"
         entries.append(label)
@@ -205,33 +210,43 @@ def roster_for_prompt(diagram_data: DiagramData | None) -> str:
     return out
 
 
-def _roster_life_facts(pid, events):
-    """Committed dated facts the coach must not re-ask: birth, death. Keyed by
-    the event's primary person (child for Birth, person for Death)."""
-    if pid is None:
-        return ""
-    born = died = None
+def _life_facts_index(events):
+    """One pass over events → {person_id: "b. <date>, d. <date>"}. Committed
+    dated facts the coach must not re-ask. Birth keyed by child or person,
+    death by person; last dated event wins (matches prior per-person scan)."""
+    born, died = {}, {}
     for e in events:
         kind = e.get("kind")
-        if kind == "birth" and (e.get("child") == pid or e.get("person") == pid):
-            born = _parse_iso_date(e.get("dateTime")) or born
-        elif kind == "death" and e.get("person") == pid:
-            died = _parse_iso_date(e.get("dateTime")) or died
-    parts = []
-    if born:
-        parts.append(f"b. {born.isoformat()}")
-    if died:
-        parts.append(f"d. {died.isoformat()}")
-    return ", ".join(parts)
+        if kind == "birth":
+            d = _parse_iso_date(e.get("dateTime"))
+            if d:
+                for key in (e.get("child"), e.get("person")):
+                    if key is not None:
+                        born[key] = d
+        elif kind == "death":
+            p = e.get("person")
+            if p is not None:
+                d = _parse_iso_date(e.get("dateTime"))
+                if d:
+                    died[p] = d
+    out = {}
+    for pid in set(born) | set(died):
+        parts = []
+        if pid in born:
+            parts.append(f"b. {born[pid].isoformat()}")
+        if pid in died:
+            parts.append(f"d. {died[pid].isoformat()}")
+        out[pid] = ", ".join(parts)
+    return out
 
 
-def _roster_partner(person, speaker_id, pair_bonds, people):
+def _roster_partner(person, speaker_id, pair_bonds, by_id):
     pid = person.get("id")
     for pb in pair_bonds:
         a, b = pb.get("person_a"), pb.get("person_b")
         if pid not in (a, b):
             continue
-        other = _person_by_id(people, b if a == pid else a)
+        other = by_id.get(b if a == pid else a)
         other_name = ((other or {}).get("name") or "").strip()
         if not other_name or other_name.lower() in _PLACEHOLDER_NAMES:
             continue
