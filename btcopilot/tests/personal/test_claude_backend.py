@@ -94,6 +94,7 @@ async def test_claude_text_with_turns():
     with patch("btcopilot.llmutil._anthropic_client") as mock_client_fn:
         mock_client = MagicMock()
         mock_client.messages.create = mock_create
+        mock_client.close = AsyncMock()
         mock_client_fn.return_value = mock_client
 
         result = await claude_text(
@@ -119,6 +120,7 @@ async def test_claude_text_with_simple_prompt():
     with patch("btcopilot.llmutil._anthropic_client") as mock_client_fn:
         mock_client = MagicMock()
         mock_client.messages.create = mock_create
+        mock_client.close = AsyncMock()
         mock_client_fn.return_value = mock_client
 
         result = await claude_text(prompt="What is 2+2?")
@@ -136,6 +138,7 @@ def test_claude_text_sync():
     with patch("btcopilot.llmutil._anthropic_client") as mock_client_fn:
         mock_client = MagicMock()
         mock_client.messages.create = mock_create
+        mock_client.close = AsyncMock()
         mock_client_fn.return_value = mock_client
 
         result = claude_text_sync(prompt="Hello")
