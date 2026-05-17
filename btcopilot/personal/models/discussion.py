@@ -148,6 +148,17 @@ class Discussion(db.Model, ModelMixin):
     def next_order(self) -> int:
         from btcopilot.personal.models import Statement
 
+        # Serialize order allocation per discussion. A bare max+1 lets two
+        # concurrent chat turns read the same max and assign duplicate
+        # Statement.order, which corrupts the re-extraction window boundary
+        # (statements on the cursor edge get misclassified, silently dropping
+        # or duplicating conversation in the next extract). The SELECT FOR
+        # UPDATE on the parent row blocks a second writer until this turn
+        # commits, so each turn sees the prior turn's committed orders.
+        # SQLite (tests) ignores FOR UPDATE; PostgreSQL (prod) enforces it.
+        db.session.query(Discussion).filter(
+            Discussion.id == self.id
+        ).with_for_update().one()
         max_order = (
             db.session.query(db.func.max(Statement.order))
             .filter(Statement.discussion_id == self.id)
