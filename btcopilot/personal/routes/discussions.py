@@ -2,6 +2,7 @@ import logging
 import pickle
 
 from flask import Blueprint, jsonify, request, abort
+from sqlalchemy import update as sql_update
 from sqlalchemy.orm import subqueryload
 
 import asyncio
@@ -212,20 +213,55 @@ def extract(discussion_id: int):
     if not discussion.diagram:
         abort(400, description="Discussion has no diagram attached")
 
-    diagram_data = discussion.diagram.get_diagram_data()
-    new_pdp, deltas = asyncio.run(pdp.extract_full(discussion, diagram_data))
-
-    diagram_data.pdp = new_pdp
-    discussion.diagram.set_diagram_data(diagram_data)
-    orders = [s.order for s in discussion.statements if s.order is not None]
-    discussion.pending_extracted_through_order = max(orders) if orders else None
+    # Atomically claim the extraction. Overlapping extracts each run the
+    # expensive LLM pass and then race the single staged PDP and pending
+    # cursor; this conditional UPDATE admits exactly one at a time. Committed
+    # immediately so the flag is visible to the other request and no row lock
+    # is held across the multi-second LLM call.
+    claimed = db.session.execute(
+        sql_update(Discussion)
+        .where(Discussion.id == discussion_id, Discussion.extracting.is_(False))
+        .values(extracting=True)
+    ).rowcount
     db.session.commit()
+    if not claimed:
+        abort(409, description="An extraction is already in progress")
+
+    try:
+        diagram_data = discussion.diagram.get_diagram_data()
+        expected_version = discussion.diagram.version
+        # Bind the pending cursor to THIS extraction's input window, captured
+        # before the LLM call, so a concurrent chat turn cannot retroactively
+        # widen what this extraction is credited with having covered.
+        orders = [s.order for s in discussion.statements if s.order is not None]
+        pending_through = max(orders) if orders else None
+
+        new_pdp, _ = asyncio.run(pdp.extract_full(discussion, diagram_data))
+        diagram_data.pdp = new_pdp
+
+        ok, _ = discussion.diagram.update_with_version_check(
+            expected_version, diagram_data=diagram_data
+        )
+        if not ok:
+            db.session.rollback()
+            abort(409, description="Diagram changed during extraction; re-extract")
+        discussion.pending_extracted_through_order = pending_through
+        db.session.commit()
+    finally:
+        db.session.rollback()
+        db.session.execute(
+            sql_update(Discussion)
+            .where(Discussion.id == discussion_id)
+            .values(extracting=False)
+        )
+        db.session.commit()
 
     return jsonify(
         success=True,
         people_count=len(new_pdp.people),
         events_count=len(new_pdp.events),
         pair_bonds_count=len(new_pdp.pair_bonds),
+        pending_extracted_through_order=pending_through,
         pdp=asdict(new_pdp),
     )
 
@@ -233,11 +269,11 @@ def extract(discussion_id: int):
 @bp.route("/<int:discussion_id>/commit-pdp", methods=["POST"])
 def commit_pdp(discussion_id: int):
     """Accept staged PDP items into the committed diagram. On a FULL accept
-    (every staged item) the re-extraction cursor advances so the next extract
-    treats this conversation as already captured. Partial accept commits the
-    items but leaves the cursor (the next extract re-windows the same range;
-    the deterministic committed-duplicate guard absorbs any repeat). All in
-    one transaction."""
+    the re-extraction cursor advances to the extraction the client is
+    accepting (accepted_through_order) so the next extract treats that
+    conversation as captured. The diagram write is guarded by an optimistic
+    version check with bounded retry, so a concurrent extract or commit cannot
+    silently overwrite committed items. All in one transaction."""
     user = auth.current_user()
 
     discussion = Discussion.query.get(discussion_id)
@@ -258,33 +294,72 @@ def commit_pdp(discussion_id: int):
     ):
         abort(400, description="item_ids list required (empty only if full_accept)")
 
-    diagram_data = discussion.diagram.get_diagram_data()
-    staged = get_all_pdp_item_ids(diagram_data.pdp)
-    present = [i for i in item_ids if i in staged]
     # The Personal client commits items locally then saves the diagram, so by
     # the time this runs the server-side staged pool may already be drained —
     # the server can't re-derive full-vs-partial. The client passes whether the
     # staged pool is now fully drained; trust it for the cursor advance. When
     # called standalone (no flag) fall back to the server-side comparison.
     client_full = body.get("full_accept")
-    if isinstance(client_full, bool):
-        full_accept = client_full
-    else:
-        full_accept = bool(staged) and set(item_ids) >= staged
+    accepted_through = body.get("accepted_through_order")
 
-    if present:
+    diagram = discussion.diagram
+    committed = 0
+    full_accept = False
+    for _ in range(32):
+        db.session.refresh(diagram)
+        expected_version = diagram.version
+        diagram_data = diagram.get_diagram_data()
+        staged = get_all_pdp_item_ids(diagram_data.pdp)
+        present = [i for i in item_ids if i in staged]
+        if isinstance(client_full, bool):
+            full_accept = client_full
+        else:
+            full_accept = bool(staged) and set(item_ids) >= staged
+
+        if not present:
+            committed = 0
+            break
         diagram_data.commit_pdp_items(present)
-        discussion.diagram.set_diagram_data(diagram_data)
+        ok, _ = diagram.update_with_version_check(
+            expected_version, diagram_data=diagram_data
+        )
+        if not ok:
+            # Another writer bumped the version between our read and write.
+            # Re-read the now-current committed state and retry —
+            # commit_pdp_items is idempotent on item ids, so re-applying
+            # against fresh data never double-commits.
+            db.session.rollback()
+            continue
+        committed = len(present)
+        break
+    else:
+        abort(409, description="Diagram write contention; retry commit-pdp")
 
-    if full_accept and discussion.pending_extracted_through_order is not None:
-        discussion.extracted_through_order = discussion.pending_extracted_through_order
-        discussion.pending_extracted_through_order = None
+    # Bind the cursor advance to the exact extraction the client accepted, NOT
+    # to whatever pending currently holds. A concurrent extract may have
+    # advanced pending past conversation this accept never covered; advancing
+    # to that value would skip that conversation from every future extract.
+    # Fall back to pending only when the client did not specify the value
+    # (older client / standalone call).
+    if full_accept:
+        target = (
+            accepted_through
+            if isinstance(accepted_through, int)
+            else discussion.pending_extracted_through_order
+        )
+        if target is not None and (
+            discussion.extracted_through_order is None
+            or target > discussion.extracted_through_order
+        ):
+            discussion.extracted_through_order = target
+        if discussion.pending_extracted_through_order == target:
+            discussion.pending_extracted_through_order = None
 
     db.session.commit()
 
     return jsonify(
         success=True,
-        committed=len(present),
+        committed=committed,
         full_accept=full_accept,
         extracted_through_order=discussion.extracted_through_order,
     )

@@ -642,3 +642,19 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 
 **Revisit trigger:** Conditions that would prompt reconsideration
 ```
+
+---
+
+## 2026-05-16: FD-331 re-extraction/accept concurrency safety; stacked on uncommitted FD-319
+
+**Context:** FD-331 fixes three concurrency defects in FD-319's re-extraction cursor (unguarded /extract, unversioned commit-pdp diagram write, non-atomic Statement.order). FD-319's implementation was discovered to be uncommitted working-tree state in ~/worktrees/FD-319, not on the FD-319 branch.
+
+**Options considered:** (a) wait for FD-319 to be committed; (b) reimplement the cursor on master; (c) carry FD-319's WIP into the FD-331 worktree as a labeled base commit and stack FD-331 on top.
+
+**Decision:** (c). One base commit per repo carries FD-319 WIP verbatim ("rebased away once FD-319 lands"); FD-331's own commits sit on top so the reviewable diff is only the concurrency fix.
+
+**Reasoning:** FD-331 structurally depends on FD-319 code; waiting blocks the work. Carrying as a separate base commit keeps FD-331's delta clean and the eventual rebase mechanical. The FD-319 worktree/branch was left untouched (Patrick's active WIP).
+
+**Fixes:** (1) next_order() takes SELECT FOR UPDATE on the Discussion row (Postgres-enforced; SQLite no-op). (2) /extract claims an atomic `extracting` flag (409 on overlap) and writes the diagram via optimistic version check (409 stale). (3) commit-pdp writes via version-checked bounded retry; cursor advance bound to client-supplied accepted_through_order, not current pending — falls back to pending for legacy clients.
+
+**Revisit trigger:** FD-319 lands (rebase, drop base commit); or true-concurrency Postgres test harness added (the row-lock fix is currently only regression-guarded on SQLite).
