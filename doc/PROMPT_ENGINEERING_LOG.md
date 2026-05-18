@@ -542,3 +542,92 @@ Both passes route through `_extract_and_validate()` for retry/validation. Pass 2
 **Key insight**: Gemini and Opus have opposite natural tendencies. Constraints that guard Gemini from verbosity cause Opus to produce one-liners. Per-model addenda resolve this without compromising either model.
 
 **Status**: Initial architecture deployed. No conversational quality metrics exist yet — next step is building a rubric-based evaluation framework to baseline and iterate the Opus addendum. See plan at `btcopilot/plans/opus-conversational-prompts.md`.
+
+### May 2026: PASS1_CONTEXT committed-data carve-out (FD-319 prompt idempotency)
+
+**Context**: FD-319 shipped a deterministic repair (`fix_committed_person_duplicates`)
+as a safety net. Remaining ticket scope: measure the raw-LLM committed-duplicate rate
+and test whether a prompt change reduces how often the repair must fire.
+
+**Measurement** (PRODUCTION prompts, repair bypassed, Pass-1 only, N=10 ×
+{gemini-3-flash-preview, gemini-3-pro-preview}):
+
+| scenario | flash baseline | pro baseline |
+|---|---|---|
+| simple_people / simple_marriage | 0/10 | 0/10 |
+| complex (15-person re-narration) | **10/10** (exactly 2 dup pair_bonds/run) | 1/10 |
+
+Strategy doc §2b's 2026-03-05 "Resolved" claim was falsified at scale: the prior
+prompt fix eliminated people/marriage re-emission but not committed **pair-bond**
+re-emission by flash on a large committed state. The ticket's N=1 "people+marriage"
+observation was a default-prompt artifact (`FDSERVER_PROMPTS_PATH` unset everywhere).
+
+**Change**: one additive edit to `DATA_EXTRACTION_PASS1_CONTEXT` in
+`fdserver/prompts/private_prompts.py`. The proximal directive
+`EXTRACT: ... all pair bonds between couples/parents ...` had no committed
+carve-out and beat the upstream "COMMITTED DATA — REFERENCE, DON'T RECREATE"
+section + Example 6. Qualified to `All NEW ...` + an adjacent pair-bond-specific
+`⚠️ ALREADY-COMMITTED ITEMS` block with a pre-return self-check. No working
+content removed.
+
+**Results**: raw committed-dup rate → 0/10 across all cells/models (flash/complex
+1.00→0.00, pro/complex 0.10→0.00; simple cells unchanged at 0.00). F1 gate
+(gemini-3-flash, 6 GT, avg 2 runs): people 0.925→0.919, events 0.474→0.518,
+pair_bonds 0.820→0.845, aggregate 0.671→0.687 — all within run-to-run variance.
+
+**Decision**: SHIP (pending Patrick commit of fdserver). F1 claim bounded to
+"no regression" (N=2; documented 10-15% events stochasticity). Deterministic
+repair stays load-bearing — the prompt reduces repair firing frequency, it does
+not make the repair redundant (no idempotency guarantee at temperature 0.1 on
+unseen inputs).
+
+**Alternatives considered**: (a) prompt-only, drop the repair — rejected: stochastic,
+no guarantee, prior "Resolved" already failed this way; (b) repair-only, no prompt
+change — rejected: leaves flash at 100% raw dup on large states, repair load
+unbounded; (c) enumerate committed IDs into PASS1_CONTEXT via a new format
+placeholder — deferred: requires a `pdp.py` signature change, not needed since the
+salience edit alone reached 0/10.
+
+**Report**: `doc/induction-reports/2026-05-16_08-40-13--fd319-prompt-idempotency/`.
+**Follow-up (non-blocking)**: 3-run F1 confirmation folded into next routine F1 run.
+
+### May 2026: Structural-completion pass — rejected (negative result)
+
+**Hypothesis**: a dedicated post-Pass-1 LLM pass to recover missing parent/child
+and couple links would fix structural under-extraction.
+
+**Measurement infra added (kept)**: isolated parent/child (`child_of`) recall/F1
+metric in `f1_metrics.match_child_of`, surfaced in `run_extract_full_f1` and the
+training F1 dashboard (also charted Pair Bonds, previously tracked but unplotted).
+This metric stays regardless of the pass outcome.
+
+**A/B (6 GT discussions, 2 runs, structural pass ON vs OFF)**:
+parent/child recall 0.872→0.882 (+0.01, inside noise — this metric ranges
+0.4–1.0 run-to-run); aggregate 0.690→0.670; events 0.517→0.480; pair-bonds
+−0.01; people flat.
+
+**Decision: rejected, reverted.** No recall signal above noise; net negative on
+aggregate/events; adds an LLM pass + latency. Logged in strategy doc "things
+that failed" #18.
+
+**Reframe**: structural under-extraction is scenario-specific. Fresh single-shot
+extraction already reaches ~0.87 parent/child recall. The low ~0.63 is specific
+to re-extraction with committed context — and the cursor/windowing experiment
+already lifts that (0.63→0.73). The cursor architecture is the lever for both
+re-extraction idempotency and the re-extraction structural-recall gap; a separate
+completion pass is not warranted.
+
+### May 2026: Re-extraction cursor rule (FD-319) — kept
+
+Prompt change: a cursor rule appended to Pass 1 when a discussion has an
+accepted re-extraction cursor; the full conversation is context but only
+content after a nonced marker is emitted. Measured (re-extraction scenario, 6
+GT, 2 runs): committed-event re-emission ~⅓ down, parent/child recall
+0.63→0.73, no F1 regression. Standard fresh-extraction F1 unchanged (cursor
+inactive without an accepted cursor), so no f1_timeseries entry. Deterministic
+committed-duplicate guard stays load-bearing — the rule reduces how often it
+fires, it is not the safety mechanism. Marker is a per-call random nonce so
+user text cannot forge the boundary. Concurrency defects found in adversarial
+review (concurrent extract / diagram-blob clobber) are deferred to a separate
+FD-264 child, not fixed here. Report:
+`doc/induction-reports/2026-05-16_19-50-22--fd319-cursor-windowing/`.

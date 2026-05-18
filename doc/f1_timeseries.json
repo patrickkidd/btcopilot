@@ -4,6 +4,8 @@
     "aggregate",
     "people",
     "events",
+    "pair_bonds",
+    "child_of",
     "symptom",
     "anxiety",
     "relationship",
@@ -205,6 +207,20 @@
       "relationship": 0.487,
       "functioning": 0.291,
       "note": "3-pass R-review architecture (3-run mean). SARF macro 0.341->0.473 (+39%). R +103% (0.240->0.487). Latency +70%."
+    },
+    {
+      "date": "2026-05-16",
+      "commit": "ba817fa+fdserver-uncommitted",
+      "model": "gemini-3-flash-preview",
+      "aggregate": 0.687,
+      "people": 0.919,
+      "events": 0.518,
+      "pair_bonds": 0.845,
+      "symptom": null,
+      "anxiety": null,
+      "relationship": null,
+      "functioning": null,
+      "note": "FD-319 PASS1_CONTEXT committed-data carve-out. 6 GT, avg 2 runs. Primary win is re-extraction idempotency (raw committed-dup flash/complex 1.00->0.00, pro/complex 0.10->0.00, N=10, repair bypassed), NOT F1: vs backup (agg 0.671, people 0.925, events 0.474, pb 0.820) all deltas within run-to-run noise, claim bounded to no-regression at N=2. SARF not tracked by run_extract_full_f1. Prompt change uncommitted in fdserver pending Patrick."
     }
   ]
 }

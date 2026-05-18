@@ -8,6 +8,66 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ## 2026-05
 
+### 2026-05-16: FD-319 — fix repair non-convergence (hard 500 on real diagram)
+
+**Context:** Manual test on a real 27-person diagram (disc 55) hit an
+intermittent extraction 500, blocking the returning user entirely — worse
+than the original duplication symptom. Root cause: the duplicate validator
+and the duplicate repair call the same `match_people` (a global assignment).
+One repair pass drops its matches; removing them shifts the optimal matching
+and exposes committed duplicates the first pass never saw. The validator
+recomputes the same matcher and rejects the residual; 3 retries exhaust → 500.
+
+**Decision:** Iterate the remap/drop in `fix_committed_person_duplicates` to a
+fixed point (bounded by delta size; each non-empty pass drops ≥1 person so it
+converges). Chosen over (a) loosening the validator — would let real duplicates
+through; (b) a different matcher in repair vs validator — guarantees divergence.
+
+**Reasoning:** Aligns repair with its validator by construction. Verified on the
+exact captured 500 payload (now passes) and 20/20 clean re-extractions on disc
+55; regression test added; full pdp suite + 3-cycle journey green.
+
+**Revisit trigger:** `did not converge; residual committed duplicates` appears
+in logs, or a matcher change reintroduces instability.
+
+### 2026-05-16: FD-319 — ship PASS1_CONTEXT committed-data carve-out; keep deterministic repair as load-bearing safety net
+
+**Context:** FD-319 shipped a deterministic post-extraction repair
+(`fix_committed_person_duplicates`). Remaining scope: quantify the raw-LLM
+committed-duplicate rate and test a prompt fix. Measurement (PRODUCTION prompts,
+repair bypassed, N=10 × {gemini-3-flash-preview, gemini-3-pro-preview}) showed
+the prior strategy-doc §2b "Resolved 2026-03-05" claim was falsified at scale:
+flash re-emits committed **pair_bonds** 10/10 on a 15-person re-extraction
+(people/marriage already 0/10). The ticket's original N=1 "people+marriage" was
+a default-prompt artifact (`FDSERVER_PROMPTS_PATH` unset everywhere).
+
+**Options considered:**
+1. Prompt-only, drop the repair — rejected: stochastic, no idempotency guarantee at
+   temperature; the 2026-03-05 prompt-only approach already failed this way at scale.
+2. Repair-only, no prompt change — rejected: leaves flash at 100% raw dup on large
+   committed states; repair firing load unbounded and untracked pre-beta.
+3. Enumerate committed IDs into PASS1_CONTEXT via a new format placeholder —
+   deferred: needs a `pdp.py` signature change; unnecessary since the salience edit
+   alone reached 0/10.
+4. Salience edit to the proximal `EXTRACT: ... all pair bonds ...` directive
+   (qualify to `All NEW ...` + adjacent `⚠️ ALREADY-COMMITTED ITEMS` self-check) —
+   chosen.
+
+**Decision:** Ship option 4 (edit in `fdserver/prompts/private_prompts.py`, uncommitted
+pending Patrick). Keep `fix_committed_person_duplicates` as the load-bearing safety net,
+not redundant. Reverses the 2026-03-05 "post-hoc dedup is wrong-headed" stance.
+
+**Reasoning:** Raw committed-dup → 0/10 across all cells/models (flash/complex
+1.00→0.00, pro/complex 0.10→0.00); F1 not regressed (flash, 6 GT, avg 2:
+agg 0.671→0.687, people 0.925→0.919 — all within run-to-run noise). Decisive on the
+N=10 deterministic gate; F1 claim bounded to "no regression" at N=2. The carve-out
+must live in the *last* generation directive — an upstream rules section loses to a
+literal "extract all X" at scale.
+
+**Revisit trigger:** Production `fix_committed_person_duplicates:` grep frequency
+materially non-zero once a post-beta window exists; or a 3-run F1 confirmation
+shows a real regression; or a model upgrade changes the raw-dup profile.
+
 ### 2026-05-16: FD-325/326 returning-user coach — data-model contract, pattern (b), measurement
 
 **Context:** FD-326 (returning-user-aware Personal coach balancing current-events talk with intake completion). A handoff flagged an unresolved data-model question: where committed Personal-app family data lives, and whether `intake.py` needed a linkage rewrite for Scene/QDateTime format (real diagram 1924 looked like raw Scene format with empty pair_bonds).

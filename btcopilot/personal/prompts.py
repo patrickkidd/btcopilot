@@ -91,6 +91,24 @@ SARF_REVIEW_PROMPT = """Review SARF variable coding on these events.
 {conversation_history}
 """
 
+# {nonce} is a random per-extraction token so user/transcript text cannot
+# forge the boundary line.
+CURSOR_MARKER_TEMPLATE = (
+    "\n⟪CURSOR {nonce} — everything above this line is already in the "
+    "committed diagram. Use it only as context for disambiguation. Do NOT "
+    "emit new items for it. Emit items only for content BELOW this line.⟫\n"
+)
+
+CURSOR_EXTRACTION_RULE_TEMPLATE = (
+    "\n\nCURSOR RULE: The conversation contains exactly one marker line "
+    "'⟪CURSOR {nonce} ...⟫'. Content ABOVE that exact line is already "
+    "committed — treat it as context only; do NOT emit new (negative-id) "
+    "people, pair_bonds, or events for it. Emit items only for content BELOW "
+    "it. You may still reference committed items above by their positive id.\n"
+)
+
+
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PROMPT OVERRIDE MECHANISM
@@ -127,6 +145,8 @@ if _prompts_path:
                 "DATA_EXTRACTION_PASS2_PROMPT",
                 "DATA_EXTRACTION_PASS2_CONTEXT",
                 "SARF_REVIEW_PROMPT",
+                "CURSOR_MARKER_TEMPLATE",
+                "CURSOR_EXTRACTION_RULE_TEMPLATE",
             ):
                 if hasattr(_private, _var):
                     globals()[_var] = getattr(_private, _var)

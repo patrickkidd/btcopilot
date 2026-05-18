@@ -222,3 +222,36 @@ def test_commit_pdp_mixed_positive_negative_refs():
     assert committed_event["person"] == 46
     assert committed_event["spouse"] > 0
     assert committed_event["spouse"] != -1
+
+
+def test_commit_skips_orphaned_pair_bonds():
+    """FD-319 regression: the LLM emits structural events / pair bonds
+    referencing positive person ids that were never committed; commit must
+    NOT persist a pair bond whose endpoints are not real people (it corrupts
+    the diagram and crashes scene rendering). Found via diagram 1928."""
+    dd = DiagramData(
+        people=[{"id": 1, "name": "Speaker", "gender": "male"}],
+    )
+    dd.pdp = PDP(
+        people=[Person(id=-1, name="Bob", gender="male", confidence=0.9)],
+        events=[
+            # bonded event between two nonexistent positive ids -> would
+            # fabricate an inferred orphan pair bond
+            Event(id=-2, kind=EventKind.Bonded, person=821, spouse=819,
+                  dateTime="1994-01-01", confidence=0.9),
+        ],
+        pair_bonds=[
+            # explicit pdp pair bond with one dangling endpoint
+            PairBond(id=-3, person_a=821, person_b=-1, confidence=0.9),
+        ],
+    )
+
+    dd.commit_pdp_items([-1, -2, -3])
+
+    committed_person_ids = {p["id"] for p in dd.people}
+    for pb in dd.pair_bonds:
+        assert pb["person_a"] in committed_person_ids, dd.pair_bonds
+        assert pb["person_b"] in committed_person_ids, dd.pair_bonds
+    # Bob committed; no orphan bond survived; no inferred orphan created
+    assert any(p["name"] == "Bob" for p in dd.people)
+    assert dd.pdp.pair_bonds == []

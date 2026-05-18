@@ -25,6 +25,7 @@ from btcopilot.training.f1_metrics import (
     match_people,
     match_events,
     match_pair_bonds,
+    match_child_of,
     calculate_f1_from_counts,
     calculate_sarf_macro_f1,
 )
@@ -100,6 +101,10 @@ def run_extract_full_f1(discussion_id=None, model=None):
         )
         events_result = match_events(ai_pdp.events, gt_pdp.events, id_map)
         bonds_result = match_pair_bonds(ai_pdp.pair_bonds, gt_pdp.pair_bonds, id_map)
+        child_of_result = match_child_of(
+            ai_pdp.people, gt_pdp.people,
+            ai_pdp.pair_bonds, gt_pdp.pair_bonds, id_map,
+        )
 
         people_f1_metrics = calculate_f1_from_counts(
             len(people_result.matched_pairs),
@@ -115,6 +120,11 @@ def run_extract_full_f1(discussion_id=None, model=None):
             len(bonds_result.matched_pairs),
             len(bonds_result.ai_unmatched),
             len(bonds_result.gt_unmatched),
+        )
+        child_of_f1_metrics = calculate_f1_from_counts(
+            len(child_of_result.matched_pairs),
+            len(child_of_result.ai_unmatched),
+            len(child_of_result.gt_unmatched),
         )
 
         total_tp = people_f1_metrics.tp + events_f1_metrics.tp + bonds_f1_metrics.tp
@@ -133,6 +143,11 @@ def run_extract_full_f1(discussion_id=None, model=None):
             "people_f1": people_f1_metrics.f1,
             "events_f1": events_f1_metrics.f1,
             "pair_bonds_f1": bonds_f1_metrics.f1,
+            "child_of_f1": child_of_f1_metrics.f1,
+            "child_of_recall": child_of_f1_metrics.recall,
+            "child_of_tp": child_of_f1_metrics.tp,
+            "child_of_fp": child_of_f1_metrics.fp,
+            "child_of_fn": child_of_f1_metrics.fn,
             "aggregate_f1": aggregate.f1,
             "ai_people": len(ai_pdp.people),
             "gt_people": len(gt_pdp.people),
@@ -168,6 +183,8 @@ def run_extract_full_f1(discussion_id=None, model=None):
     avg_people = sum(r["people_f1"] for r in results) / n
     avg_events = sum(r["events_f1"] for r in results) / n
     avg_bonds = sum(r["pair_bonds_f1"] for r in results) / n
+    avg_child_of = sum(r["child_of_f1"] for r in results) / n
+    avg_child_of_recall = sum(r["child_of_recall"] for r in results) / n
     avg_aggregate = sum(r["aggregate_f1"] for r in results) / n
 
     print()
@@ -177,6 +194,7 @@ def run_extract_full_f1(discussion_id=None, model=None):
     print(f"People F1:      {avg_people:.3f}  (target > 0.7)")
     print(f"Events F1:      {avg_events:.3f}  (target > 0.3)")
     print(f"PairBonds F1:   {avg_bonds:.3f}")
+    print(f"ParentChild F1: {avg_child_of:.3f}  recall={avg_child_of_recall:.3f}  (under-extraction signal)")
     print(f"Aggregate F1:   {avg_aggregate:.3f}")
     print()
 
@@ -192,6 +210,10 @@ def run_extract_full_f1(discussion_id=None, model=None):
             f"(AI:{r['ai_events']} GT:{r['gt_events']} TP:{r['events_tp']} FP:{r['events_fp']} FN:{r['events_fn']})"
         )
         print(f"    PairBonds: F1={r['pair_bonds_f1']:.3f}")
+        print(
+            f"    ParentChild: F1={r['child_of_f1']:.3f} recall={r['child_of_recall']:.3f} "
+            f"(TP:{r['child_of_tp']} FP:{r['child_of_fp']} FN:{r['child_of_fn']})"
+        )
         if r["sarf"]:
             print(
                 f"    SARF: S={r['sarf'].get('symptom', 0):.3f} "

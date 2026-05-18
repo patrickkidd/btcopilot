@@ -575,6 +575,60 @@ def match_pair_bonds(
     return result
 
 
+def _child_of_edges(
+    people: list[Person], pair_bonds: list[PairBond]
+) -> list[tuple[Person, int, tuple[int, int]]]:
+    """Each parent->child structural edge as (child_person, child_id,
+    sorted parent person-id pair). Skips people with no parents bond or an
+    unresolvable bond."""
+    bonds_by_id = {b.id: b for b in pair_bonds}
+    edges = []
+    for p in people:
+        if p.id is None or p.parents is None:
+            continue
+        bond = bonds_by_id.get(p.parents)
+        if bond is None or bond.person_a is None or bond.person_b is None:
+            continue
+        edges.append((p, p.id, tuple(sorted((bond.person_a, bond.person_b)))))
+    return edges
+
+
+def match_child_of(
+    ai_people: list[Person],
+    gt_people: list[Person],
+    ai_pair_bonds: list[PairBond],
+    gt_pair_bonds: list[PairBond],
+    id_map: dict[int, int],
+) -> EntityMatchResult:
+    """Match parent->offspring structural edges after person id mapping.
+    Recall here is the parent/offspring under-extraction signal."""
+    result = EntityMatchResult()
+    gt_edges = _child_of_edges(gt_people, gt_pair_bonds)
+    gt_remaining = list(gt_edges)
+    ai_processed = set()
+
+    for ai_person, ai_child, ai_parents in _child_of_edges(
+        ai_people, ai_pair_bonds
+    ):
+        mapped_child = resolve_person_id(ai_child, id_map)
+        mapped_parents = tuple(
+            sorted(resolve_person_id(pid, id_map) for pid in ai_parents)
+        )
+        for gt_person, gt_child, gt_parents in list(gt_remaining):
+            if mapped_child == gt_child and mapped_parents == gt_parents:
+                result.matched_pairs.append((ai_person, gt_person))
+                gt_remaining.remove((gt_person, gt_child, gt_parents))
+                ai_processed.add(ai_person.id)
+                break
+
+    result.ai_unmatched = [
+        p for p, c, _ in _child_of_edges(ai_people, ai_pair_bonds)
+        if p.id not in ai_processed
+    ]
+    result.gt_unmatched = [p for p, c, _ in gt_remaining]
+    return result
+
+
 def calculate_f1_from_counts(tp: int, fp: int, fn: int) -> F1Metrics:
     metrics = F1Metrics(tp=tp, fp=fp, fn=fn)
 
