@@ -889,3 +889,39 @@ def test_extract_and_validate_drops_committed_dups_no_remap(caplog):
     assert any(
         "committed-duplicate" in rec.message for rec in caplog.records
     )
+
+
+def test_validate_flags_event_positive_ref_not_committed():
+    from btcopilot.pdp import fix_unresolved_person_refs
+
+    dd = DiagramData(people=[{"id": 1, "name": "Speaker"}])
+    deltas = PDPDeltas(
+        events=[Event(id=-2, kind=EventKind.Bonded, person=821, spouse=819,
+                       dateTime="1994-01-01")],
+    )
+    with pytest.raises(PDPValidationError) as exc:
+        validate_pdp_deltas(PDP(), deltas, dd)
+    assert any("non-existent committed" in e for e in exc.value.errors)
+
+    # deterministic repair drops the unanchorable event
+    fix_unresolved_person_refs(deltas, PDP(), dd)
+    assert deltas.events == []
+    validate_pdp_deltas(PDP(), deltas, dd)  # now clean
+
+
+def test_fix_unresolved_refs_clears_orphaned_parents():
+    """Dropping an unresolvable pair_bond must also clear Person.parents that
+    point at it, or validation never converges (FD-319 disc 60 500)."""
+    from btcopilot.pdp import fix_unresolved_person_refs
+
+    deltas = PDPDeltas(
+        people=[
+            Person(id=-3, name="A", parents=-14),
+            Person(id=-4, name="B", parents=-14),
+        ],
+        pair_bonds=[PairBond(id=-14, person_a=-2, person_b=-15)],  # -2,-15 absent
+    )
+    fix_unresolved_person_refs(deltas, PDP())
+    assert deltas.pair_bonds == []
+    assert all(p.parents is None for p in deltas.people)
+    validate_pdp_deltas(PDP(), deltas)  # converges, no error

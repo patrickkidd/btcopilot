@@ -87,12 +87,8 @@ def _staged_pdp():
 
 def _extract(subscriber, discussion):
     pdp, deltas = _staged_pdp()
-    with patch(
-        "btcopilot.pdp.extract_full", AsyncMock(return_value=(pdp, deltas))
-    ):
-        return subscriber.post(
-            f"/personal/discussions/{discussion.id}/extract"
-        )
+    with patch("btcopilot.pdp.extract_full", AsyncMock(return_value=(pdp, deltas))):
+        return subscriber.post(f"/personal/discussions/{discussion.id}/extract")
 
 
 def test_extract_stashes_pending_not_cursor(subscriber, discussion):
@@ -136,23 +132,17 @@ def test_partial_accept_commits_but_cursor_unchanged(subscriber, discussion):
 def test_repeat_commit_is_idempotent(subscriber, discussion):
     _extract(subscriber, discussion)
     body = {"item_ids": [-1, -2]}
-    subscriber.post(
-        f"/personal/discussions/{discussion.id}/commit-pdp", json=body
-    )
+    subscriber.post(f"/personal/discussions/{discussion.id}/commit-pdp", json=body)
     db.session.refresh(discussion)
     first = discussion.extracted_through_order
-    r2 = subscriber.post(
-        f"/personal/discussions/{discussion.id}/commit-pdp", json=body
-    )
+    r2 = subscriber.post(f"/personal/discussions/{discussion.id}/commit-pdp", json=body)
     assert r2.status_code == 200
     assert r2.get_json()["committed"] == 0  # already committed, no error
     db.session.refresh(discussion)
     assert discussion.extracted_through_order == first  # unchanged
 
 
-def test_client_full_accept_flag_overrides_server_derivation(
-    subscriber, discussion
-):
+def test_client_full_accept_flag_overrides_server_derivation(subscriber, discussion):
     """Client commits locally then saves; server-side staged may be drained,
     so the client's full_accept flag drives the cursor advance."""
     _extract(subscriber, discussion)
@@ -182,15 +172,11 @@ def test_client_full_accept_false_blocks_advance(subscriber, discussion):
 
 def test_commit_requires_item_ids(subscriber, discussion):
     _extract(subscriber, discussion)
-    r = subscriber.post(
-        f"/personal/discussions/{discussion.id}/commit-pdp", json={}
-    )
+    r = subscriber.post(f"/personal/discussions/{discussion.id}/commit-pdp", json={})
     assert r.status_code == 400
 
 
-def test_second_extract_after_accept_windows_from_cursor(
-    subscriber, discussion
-):
+def test_second_extract_after_accept_windows_from_cursor(subscriber, discussion):
     _extract(subscriber, discussion)
     subscriber.post(
         f"/personal/discussions/{discussion.id}/commit-pdp",
@@ -216,3 +202,32 @@ def test_second_extract_after_accept_windows_from_cursor(
     pre, post = text.split(CURSOR_MARKER_TEMPLATE.format(nonce=nonce))
     assert "Aunt Sue" in post
     assert "Hello" in pre
+
+
+def test_empty_full_accept_advances_cursor(subscriber, discussion):
+    """Re-extracting an already-covered discussion yields an empty PDP;
+    'Accept all' on it must still advance the cursor (J2: Extract button
+    must clear). Empty item_ids is valid when full_accept=True."""
+    _extract(subscriber, discussion)  # sets pending = max statement order (1)
+    db.session.refresh(discussion)
+    assert discussion.pending_extracted_through_order == 1
+    assert discussion.extracted_through_order is None
+
+    r = subscriber.post(
+        f"/personal/discussions/{discussion.id}/commit-pdp",
+        json={"item_ids": [], "full_accept": True},
+    )
+    assert r.status_code == 200
+    assert r.get_json()["full_accept"] is True
+    db.session.refresh(discussion)
+    assert discussion.extracted_through_order == 1
+    assert discussion.pending_extracted_through_order is None
+
+
+def test_empty_item_ids_without_full_accept_rejected(subscriber, discussion):
+    _extract(subscriber, discussion)
+    r = subscriber.post(
+        f"/personal/discussions/{discussion.id}/commit-pdp",
+        json={"item_ids": []},
+    )
+    assert r.status_code == 400

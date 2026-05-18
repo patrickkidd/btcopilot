@@ -250,8 +250,13 @@ def commit_pdp(discussion_id: int):
 
     body = request.get_json(silent=True) or {}
     item_ids = body.get("item_ids")
-    if not isinstance(item_ids, list) or not item_ids:
-        abort(400, description="item_ids (non-empty list) required")
+    # Empty item_ids is valid when full_accept is asserted: re-extracting an
+    # already-covered conversation yields an empty PDP; "Accept all" on it is
+    # still a full accept and must advance the re-extraction cursor.
+    if not isinstance(item_ids, list) or (
+        not item_ids and body.get("full_accept") is not True
+    ):
+        abort(400, description="item_ids list required (empty only if full_accept)")
 
     diagram_data = discussion.diagram.get_diagram_data()
     staged = get_all_pdp_item_ids(diagram_data.pdp)

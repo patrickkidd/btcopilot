@@ -605,10 +605,34 @@ class DiagramData:
                     f"PDP item {old_id} referenced but not found in PDP people, events, or pair_bonds"
                 )
 
+        # A pair bond may only reference people that exist after this commit:
+        # already-committed people, or people being committed in this batch.
+        # The LLM (esp. on cursor-windowed re-extraction) emits structural
+        # events referencing positive person ids that were never committed;
+        # _create_inferred_pair_bond_items then fabricates a bond between
+        # nonexistent people. Committing it corrupts the diagram and crashes
+        # scene rendering (Marriage.personA() is None). Fail early: skip it.
+        valid_person_ids = {p["id"] for p in self.people} | {
+            id_mapping[old]
+            for old in all_item_ids
+            if old in pdp_people_map and old in id_mapping
+        }
+
         for old_id in all_item_ids:
             if old_id in pdp_pair_bonds_map:
                 pair_bond = pdp_pair_bonds_map[old_id]
                 new_pair_bond = self._remap_pair_bond_ids(pair_bond, id_mapping)
+                if (
+                    new_pair_bond.person_a not in valid_person_ids
+                    or new_pair_bond.person_b not in valid_person_ids
+                ):
+                    _log.warning(
+                        f"Skipping orphaned pair bond {old_id} "
+                        f"(person_a={new_pair_bond.person_a}, "
+                        f"person_b={new_pair_bond.person_b}): endpoint not a "
+                        f"committed or newly-committed person"
+                    )
+                    continue
                 dyad = {new_pair_bond.person_a, new_pair_bond.person_b}
                 existing = next(
                     (
@@ -972,6 +996,20 @@ class DiagramData:
             if not event.kind.isPairBond():
                 continue
             if not event.person or not event.spouse:
+                continue
+
+            known_person_ids = {p["id"] for p in self.people} | {
+                p.id for p in self.pdp.people if p.id is not None
+            }
+            if (
+                event.person not in known_person_ids
+                or event.spouse not in known_person_ids
+            ):
+                _log.warning(
+                    f"Not inferring pair bond for {event.kind.value} event "
+                    f"{event_id}: person={event.person} spouse={event.spouse} "
+                    f"do not both resolve to known people"
+                )
                 continue
 
             if self._pair_bond_exists(event.person, event.spouse):

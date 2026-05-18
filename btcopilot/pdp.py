@@ -183,6 +183,79 @@ def fix_birth_event_self_references(deltas: PDPDeltas) -> None:
             event.person = None
 
 
+def fix_unresolved_person_refs(
+    deltas: PDPDeltas,
+    pdp: PDP,
+    diagram_data: DiagramData | None = None,
+) -> None:
+    """Deterministically drop events/pair_bonds whose person references do not
+    resolve. The LLM sometimes emits a positive person id that is not a
+    committed person (hallucinated "committed" ref) or a negative id with no
+    matching delta/PDP person. Per PDP_DATA_FLOW.md positive ids must reference
+    committed people and negatives must reference delta/PDP people; an
+    unresolvable ref makes the item un-anchorable and, uncaught, fabricates
+    orphaned structure at commit (FD-319, diagram 1928). Mutates in place."""
+    committed = (
+        {p["id"] for p in diagram_data.people if "id" in p}
+        if diagram_data
+        else set()
+    )
+    valid_neg = {p.id for p in pdp.people if p.id is not None}
+    valid_neg |= {p.id for p in deltas.people if p.id is not None}
+
+    def unresolved(ref) -> bool:
+        if ref is None:
+            return False
+        if ref > 0:
+            return ref not in committed
+        return ref not in valid_neg
+
+    kept_events = []
+    for e in deltas.events:
+        bad = next(
+            (
+                r
+                for r in ("person", "spouse", "child")
+                if unresolved(getattr(e, r))
+            ),
+            None,
+        )
+        if bad is not None:
+            _log.warning(
+                f"fix_unresolved_person_refs: dropping event {e.id} "
+                f"(kind={e.kind.value}); {bad}={getattr(e, bad)} does not "
+                f"resolve to a committed or delta person"
+            )
+            continue
+        kept_events.append(e)
+    deltas.events = kept_events
+
+    kept_bonds = []
+    dropped_bond_ids = set()
+    for b in deltas.pair_bonds:
+        if unresolved(b.person_a) or unresolved(b.person_b):
+            _log.warning(
+                f"fix_unresolved_person_refs: dropping pair_bond {b.id} "
+                f"(person_a={b.person_a}, person_b={b.person_b}): endpoint "
+                f"does not resolve to a committed or delta person"
+            )
+            dropped_bond_ids.add(b.id)
+            continue
+        kept_bonds.append(b)
+    deltas.pair_bonds = kept_bonds
+
+    # Dropping a bond must not orphan Person.parents pointing at it, else the
+    # validator fails "Person references non-existent pair_bond" and the retry
+    # loop never converges.
+    for p in deltas.people:
+        if p.parents is not None and p.parents in dropped_bond_ids:
+            _log.warning(
+                f"fix_unresolved_person_refs: clearing person {p.id} parents "
+                f"-> dropped pair_bond {p.parents}"
+            )
+            p.parents = None
+
+
 def _self_parent_dyad(
     person: Person,
     deltas: PDPDeltas,
@@ -603,6 +676,15 @@ def validate_pdp_deltas(
                 f"Event {event.id} references non-existent PDP child {event.child}"
             )
 
+        if diagram_data:
+            for role in ("person", "spouse", "child"):
+                ref = getattr(event, role)
+                if ref is not None and ref > 0 and ref not in committed_person_ids:
+                    errors.append(
+                        f"Event {event.id} references non-existent committed "
+                        f"{role} {ref}"
+                    )
+
         for target in event.relationshipTargets:
             if target < 0 and target not in all_pdp_person_ids:
                 errors.append(
@@ -892,6 +974,7 @@ async def _extract_and_validate(
             ai_log.info(f"{label}:\n\n{_pretty_repr(pdp_deltas)}")
 
         fix_committed_person_duplicates(pdp_deltas, diagram_data)
+        fix_unresolved_person_refs(pdp_deltas, pdp, diagram_data)
         try:
             validate_pdp_deltas(pdp, pdp_deltas, diagram_data, source)
             if attempt > 0:
