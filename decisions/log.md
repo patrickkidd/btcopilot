@@ -68,6 +68,43 @@ literal "extract all X" at scale.
 materially non-zero once a post-beta window exists; or a 3-run F1 confirmation
 shows a real regression; or a model upgrade changes the raw-dup profile.
 
+### 2026-05-16: FD-325/326 returning-user coach — data-model contract, pattern (b), measurement
+
+**Context:** FD-326 (returning-user-aware Personal coach balancing current-events talk with intake completion). A handoff flagged an unresolved data-model question: where committed Personal-app family data lives, and whether `intake.py` needed a linkage rewrite for Scene/QDateTime format (real diagram 1924 looked like raw Scene format with empty pair_bonds).
+
+**Options considered:**
+1. Harden `intake.py` to read `person.marriages` + Scene parents (handoff's assumed branch).
+2. Treat flat-PDP/ISO as the contract; document 1924 as a Pro-only artifact.
+3. Trace the extract→commit path to ground the answer before acting.
+
+**Decision:** #3 then a corrected form of #2. Committed Personal data lives in `DiagramData.people/events/pair_bonds` (Scene collections), dates always QDateTime — never `.pdp` (pending pool, cleared by `commit_pdp_items`), never ISO. Desktop `Scene.write()` and Personal `commit_pdp_items()` **converge** on the same collections/keys, so **no linkage rewrite is needed** (contradicts the handoff's working assumption). Contract pinned by a Scene-format/QDateTime regression test (`test_committed_scene_format_contract`); 9/9 intake tests pass. The 1924 "empty pair_bonds" observation is the post-corruption 2-person state from a pre-sandbox `coach_chat` overwrite, not an unhandled schema.
+
+**Pattern (b):** Opus stays present under sustained stonewalling (correct; do not force an intake bridge — mechanical pivoting is the FD-326 anti-goal). Gemini does NOT reliably stay present (see Correction below). Open decision: accept Gemini as a known-weaker secondary path vs invest.
+
+**Measurement decision:** FD-326 uses a dedicated 4-dim LLM judge (`coacheval`), not `QualityEvaluator` response-type entropy. Entropy mis-penalizes consistent acknowledge+question turns (correct coaching, low entropy) — it measures synthetic-client realism, not coach quality. Extraction F1 deliberately not run: no extraction prompt was touched, so there is no F1 surface.
+
+**Reasoning:** Tracing beat guessing — the feared intake.py rewrite was unnecessary, saving churn and a class of silent regressions. Three test-infra root causes found, all silent-fallthrough: `FDSERVER_PROMPTS_PATH` (e2e silently used the OSS prompt stub — cause of prior wrong-behavior iterations); `.env` not pytest-loaded / unsourceable; and — most consequential — **`ask()` does not persist turns, so the REPL and the smoke `_multi_turn` ran a coach with no within-session memory**. The production HTTP route commits per request and is unaffected; only the test/dev harnesses were. All first-round multi-turn results and the conclusions drawn from them ("17/18", "(b)-Gemini opener tic", "stay-present accepted", the measured/reverted prompt-reframe, "skip") are RETRACTED.
+
+**Correction (valid harness + Claude thinking enabled→adaptive):** 3× e2e = 15/18. (a) and (c) solid on Opus AND Gemini, 3/3 each. (b): Opus 3/3 PASS; Gemini 0/3 — two canned-empathy clichés, one cardinal failure (pivoted to family-history interrogation while the user was on current events). Conclusion: model-capability gap on the Gemini stonewalling path, not a prompt phrase. Open decision (Patrick): accept Gemini as a known-weaker secondary path (Opus primary and solid across a/b/c) vs invest (Gemini work / post-strip / route (b)-type sessions to Opus).
+
+**FD-325 graceful degradation (real-diagram finding + fix):** On real committed diagrams the returning-user coach went blank — the committed-state summary traversed structural links from the speaker, and extraction connectivity (FD-324) does not reliably produce them (real Marcus diagram 1813: 14 people committed, speaker not primary and unlinked to parents → coach told only "spouse Jennifer", not the roster). Decision: the coach is now handed every committed, real-named person by name (`roster_for_prompt`) independent of speaker traversal, folded into FD-326. Full structural coverage (mother/father/siblings categories) remains gated on FD-324; the roster makes returning-user awareness usable before FD-324 lands. Verified on 1813 + unit-pinned (10/10 intake).
+
+**Desktop-synced residual closed (and it was hiding crashes):** Verified roster/coverage/summarize on three real populated desktop clinic diagrams (332/98/70 people). `person.parents` resolves into `pair_bonds` 100% on real data — the handoff's feared linkage rewrite is disproven by observation, not just code-trace. Found and fixed two production crashes that synthetic fixtures missed: (1) scene-stub person with `name=None` → `AttributeError` in roster; (2) `relationship` stored as a `RelationshipKind` enum object (not its string) → `TypeError` sorting in coverage. Both would have 500'd `summarize_committed_state` on any real desktop diagram. Pinned by `test_real_desktop_quirks_dont_crash` (11/11 intake).
+
+**Gemini-(b) closed (Patrick):** Accept Gemini as a known-weaker secondary path; do not invest in stonewalling handling on any model. Opus is primary and solid across a/b/c.
+
+**Prompt IP restored — aggressive rewrite reverted (option a):** The lean rewrite deleted literature-derived clinical content (fact-level minimum dataset, clinical method, the "done" definition) and gutted tuned addenda (Opus 66→4, Gemini 22→3 lines). Reverted to the original literature `_CONVERSATION_FLOW_CORE` + original Opus/Gemini addenda; the ONLY changes layered on are additive: (1) the `committed_state` plumbing, (2) a "working memory of this user's family" block (FD-325: use known names, don't re-ask known facts, engine feeds the outstanding list), (3) the canned-empathy opener family ("I'm sorry to hear/Sorry to hear it") added to the existing AVOID-clichés list. No clinical IP deleted.
+
+**Return-pivot now measured + judge made robust:** Added a 5th judge dimension `returns_to_collection` (positively scores: topic winds down → coach bridges to a real missing area; true when not applicable) — the FD-326 promise was previously unmeasured (only a negative no-premature-pivot guard existed). Also fixed a silent meter corruption: gemini-2.5-flash intermittently truncated the judge JSON tail, crashing the test and dropping patterns (had been losing (b)-Opus); parser now recovers the five gating booleans by regex.
+
+**Measured outcome (3× e2e, 5-dim judge, restored prompt):** (a) opening 6/6 and (c) long-session 6/6 PASS on BOTH models incl. return-pivot. (b) sustained-stonewall script: fails both models at turn 10 (clumsy theory-pitch bridge or no bridge) — the explicitly out-of-scope case; does not occur in normal long sessions. Conclusion: option (a) succeeds for in-scope behavior; no fallback to (b), no further stonewalling work.
+
+**Presenting-problem coverage deferred (FD-330):** Patrick (PR #116 review) asked whether the presenting problem's ~10 literature sub-facts could be tracked in the engine like structural categories. Not feasible in the schema-derived engine: those sub-facts have no structured home in DiagramData/PDP, and an LLM/conversation pass violates the engine's no-LLM/blank-history design. Filed FD-330 (schema + extraction + per-sub-fact coverage; depends on FD-324). Kept the single coarse PresentingProblem category for now.
+
+**Methodology rule added:** any multi-turn coach validation must persist each turn (commit) — an in-process `ask()` loop without commit silently tests a memoryless coach. Encoded by the `db.session.commit()` in `_multi_turn` and `coach_chat.py`.
+
+**Revisit trigger:** A Personal-app user surface that writes committed data in a form other than `commit_pdp_items` output or desktop `Scene.write()`; or the cliché judge dimension blocking otherwise-correct Gemini coaching.
+
 ### 2026-05-02: Snapshot-diff merge + server-side block id allocation for concurrent Pro/Personal saves
 
 **Context:** When both Pro and Personal apps had the same diagram open, the second-saver's stale snapshot silently overwrote the other side's edits via `merge_scene_collection` ("union by id, local wins" — clobbers any item present in both snapshots regardless of who actually edited it). Plus `lastItemId` is a single counter both apps allocate from, so concurrent adds collide. This blocked the MVP intake flow (clinician leaves Pro open while client uses Personal).

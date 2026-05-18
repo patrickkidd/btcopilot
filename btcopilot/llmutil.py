@@ -26,7 +26,7 @@ CALIBRATION_MODEL = "gemini-3-flash-preview"
 RESPONSE_MODEL = os.environ.get("BTCOPILOT_RESPONSE_MODEL", "claude-opus-4-6")
 GEMINI_RESPONSE_MODEL = "gemini-3-flash-preview"
 
-CLAUDE_THINKING_BUDGET = 4096
+CLAUDE_THINKING_ENABLED = True
 
 # Client-facing model aliases → actual API model IDs.
 # The Personal app sends these aliases; the backend resolves them here.
@@ -275,8 +275,8 @@ async def claude_text(prompt=None, **kwargs):
       - max_output_tokens: int (default 8192, covers thinking + response)
       - prompt: str — simple single-turn prompt (alternative to turns)
 
-    When CLAUDE_THINKING_BUDGET > 0, extended thinking is enabled (forces
-    temperature=1.0 per Anthropic API). When 0, thinking is disabled and
+    When CLAUDE_THINKING_ENABLED, adaptive extended thinking is on (forces
+    temperature=1.0 per Anthropic API). Otherwise thinking is off and
     temperature from kwargs is respected.
     """
     start_time = time.time()
@@ -293,20 +293,25 @@ async def claude_text(prompt=None, **kwargs):
         "max_tokens": max_output_tokens,
         "messages": messages,
     }
-    if CLAUDE_THINKING_BUDGET > 0:
-        api_kwargs["thinking"] = {
-            "type": "enabled",
-            "budget_tokens": CLAUDE_THINKING_BUDGET,
-        }
+    if CLAUDE_THINKING_ENABLED:
+        api_kwargs["thinking"] = {"type": "adaptive"}
     else:
         temperature = kwargs.get("temperature", 0.45)
         api_kwargs["temperature"] = temperature
     if system_instruction:
         api_kwargs["system"] = system_instruction
 
-    response = await client.messages.create(**api_kwargs)
-
-    content = "".join(block.text for block in response.content if block.type == "text")
+    try:
+        response = await client.messages.create(**api_kwargs)
+        content = "".join(
+            block.text for block in response.content if block.type == "text"
+        )
+    finally:
+        # Close the httpx pool inside the loop that created it. Each call
+        # makes a fresh client and asyncio.run() tears down the loop; without
+        # this the client's deferred close fires against a closed loop
+        # ("Event loop is closed", dangling-task noise) on the next call.
+        await client.close()
     _log.debug(f"Completed Claude response in {time.time() - start_time} seconds")
     _log.debug(f"claude_text(): --> \n\n{content}")
     return content

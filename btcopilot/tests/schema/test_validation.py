@@ -232,7 +232,7 @@ def test_validate_deltas_allows_offspring_without_spouse():
         deltas = PDPDeltas(
             events=[
                 Event(
-                    id=-1, kind=kind, person=1, child=1, spouse=None, description="x", dateTime="2025-01-01"
+                    id=-1, kind=kind, person=1, child=2, spouse=None, description="x", dateTime="2025-01-01"
                 )
             ]
         )

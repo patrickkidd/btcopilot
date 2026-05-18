@@ -1,0 +1,32 @@
+{
+  "timestamp": "20260516_073251",
+  "diagram": "returning",
+  "model": "gemini",
+  "persona": "sarah",
+  "judge": {
+    "passed": true,
+    "current_events_engagement": true,
+    "name_usage": true,
+    "no_premature_pivot": true,
+    "no_theory_pitch": true,
+    "notes": "No offending turns were found in the transcript."
+  },
+  "transcript": [
+    {
+      "role": "user",
+      "text": "Hey. Haven't been sleeping well again."
+    },
+    {
+      "role": "ai",
+      "text": "Again, huh? What's been on your mind lately?"
+    },
+    {
+      "role": "user",
+      "text": "I dunno, few weeks maybe. Just lying there."
+    },
+    {
+      "role": "ai",
+      "text": "A few weeks, that's a long time to be just lying there. Is there anything in particular that's keeping you awake?"
+    }
+  ]
+}

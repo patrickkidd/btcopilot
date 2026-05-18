@@ -12,6 +12,7 @@ Induction reports and GT exports contain clinical data — **NEVER store in btco
 |-----------|----------------|-----------------|
 | Induction reports | `btcopilot/doc/induction-reports/` | `btcopilot-sources/training/induction-reports/` |
 | GT exports | `btcopilot/instance/gt_export.json` | `btcopilot-sources/training/gt-exports/` |
+| Coach feel-test sessions (`bin/coach_chat.py`) | `btcopilot/doc/log/coach-sessions/` | `btcopilot-sources/coach-sessions/` (default; freeform sessions contain real personal content). In-repo path is opt-in `--out shared` and only for synthetic-persona runs. |
 
 Symlinks exist for workflow compatibility:
 - `btcopilot/doc/induction-reports` → `btcopilot-sources/training/induction-reports/`
