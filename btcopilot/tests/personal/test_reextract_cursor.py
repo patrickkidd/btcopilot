@@ -36,19 +36,23 @@ def test_cursor_with_tail_inserts_marker_active(discussion):
     assert "Hi there" in post  # order 1, new tail
 
 
-def test_cursor_at_end_no_new_statements_inactive(discussion):
+def test_cursor_at_end_no_new_statements_marker_active_empty_tail(discussion):
+    # FD-319 PR#119 #4: empty tail still carries the marker so the cursor rule
+    # stays active and the model emits nothing instead of re-extracting all.
     discussion.extracted_through_order = 1  # == max order, nothing after
     text, nonce = _windowed_conversation(discussion)
-    assert nonce is None
-    assert MARKER_SENTINEL not in text
-    assert text == discussion.conversation_history()
+    assert nonce is not None
+    marker = CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
+    assert text.endswith(marker)
+    assert text == discussion.conversation_history() + marker
 
 
 def test_cursor_beyond_max_does_not_crash(discussion):
     discussion.extracted_through_order = 99  # e.g. statements deleted
     text, nonce = _windowed_conversation(discussion)
-    assert nonce is None
-    assert text == discussion.conversation_history()
+    assert nonce is not None
+    marker = CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
+    assert text.endswith(marker)
 
 
 def test_marker_nonce_not_forgeable_from_user_text(discussion):

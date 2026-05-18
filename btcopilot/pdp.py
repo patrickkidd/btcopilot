@@ -337,10 +337,10 @@ def _remap_person_refs(deltas: PDPDeltas, remap: dict[int, int]) -> None:
     duplicate delta Person rows."""
     deltas.people = [p for p in deltas.people if p.id not in remap]
 
-    for person in deltas.people:
-        if person.parents is not None and person.parents in remap:
-            person.parents = remap[person.parents]
-
+    # remap is person-id -> committed-person-id ONLY. person.parents is a
+    # PairBond id and deltas.delete holds mixed-entity ids; remapping either
+    # with a person map corrupts non-person ids and breaks apply_deltas
+    # removal of staged items (PR #119 review).
     for event in deltas.events:
         if event.person is not None and event.person in remap:
             event.person = remap[event.person]
@@ -359,15 +359,15 @@ def _remap_person_refs(deltas: PDPDeltas, remap: dict[int, int]) -> None:
         if pair_bond.person_b is not None and pair_bond.person_b in remap:
             pair_bond.person_b = remap[pair_bond.person_b]
 
-    deltas.delete = [remap.get(d, d) for d in deltas.delete]
 
-
-def _committed_dyads(diagram_data: DiagramData) -> set[tuple[int, int]]:
-    dyads: set[tuple[int, int]] = set()
+def _committed_dyads(diagram_data: DiagramData) -> dict[tuple[int, int], int]:
+    """{sorted (person_a, person_b) -> committed PairBond id}. Membership
+    checks (`dyad in committed_dyads`) still work on the dict's keys."""
+    dyads: dict[tuple[int, int], int] = {}
     for cpb in diagram_data.pair_bonds:
         a, b = cpb.get("person_a"), cpb.get("person_b")
         if a is not None and b is not None:
-            dyads.add(tuple(sorted([a, b])))
+            dyads[tuple(sorted([a, b]))] = cpb.get("id")
     return dyads
 
 
@@ -375,25 +375,26 @@ def _drop_committed_dup_pair_bonds(
     deltas: PDPDeltas, diagram_data: DiagramData
 ) -> None:
     """Drop delta PairBonds whose dyad already exists in the committed diagram,
-    clearing Person.parents references off the removed bond."""
+    remapping Person.parents off the removed bond to the committed bond id so
+    parent-child links are preserved (PR #119 review)."""
     committed_dyads = _committed_dyads(diagram_data)
 
     kept = []
-    removed_ids: set[int] = set()
+    remap_pb: dict[int, int] = {}
     for pb in deltas.pair_bonds:
         if pb.person_a is not None and pb.person_b is not None:
             dyad = tuple(sorted([pb.person_a, pb.person_b]))
             if dyad in committed_dyads:
                 if pb.id is not None:
-                    removed_ids.add(pb.id)
+                    remap_pb[pb.id] = committed_dyads[dyad]
                 continue
         kept.append(pb)
     deltas.pair_bonds = kept
 
-    if removed_ids:
+    if remap_pb:
         for person in deltas.people:
-            if person.parents in removed_ids:
-                person.parents = None
+            if person.parents in remap_pb:
+                person.parents = remap_pb[person.parents]
 
 
 def _committed_event_keys(diagram_data: DiagramData) -> set[tuple]:
@@ -1157,13 +1158,13 @@ def _windowed_conversation(discussion) -> tuple[str, str | None]:
     prior = discussion.conversation_history(up_to_order=cursor + 1)
     ordered = sorted(discussion.statements, key=lambda s: (s.order or 0, s.id or 0))
     tail_stmts = [s for s in ordered if (s.order or 0) > cursor]
+    nonce = secrets.token_hex(8)
+    marker = CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
     if not tail_stmts:
-        return discussion.conversation_history(), None
+        return prior + marker, nonce
     tail = "\n".join(
         f"{s.speaker.name if s.speaker else 'Unknown'}: {s.text}" for s in tail_stmts
     )
-    nonce = secrets.token_hex(8)
-    marker = CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
     return prior + marker + tail, nonce
 
 

@@ -750,7 +750,9 @@ def test_fix_committed_person_duplicates_remaps_refs():
         {pb.person_a, pb.person_b} == {1, 2} for pb in deltas.pair_bonds
     )
     assert not committed_dyad_present
-    assert sarah.parents is None
+    # FD-319 PR#119 #2: the dropped duplicate bond's child keeps its parent
+    # link, remapped onto the surviving committed pair_bond (id 10).
+    assert sarah.parents == 10
 
 
 def test_fix_committed_person_duplicates_reaches_fixed_point():
