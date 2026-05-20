@@ -53,17 +53,16 @@ Current sample (45 statements, 3 discussions) provides ~±15% margin of error. T
 
 ---
 
-## Current Baseline (2025-12-28, 45 cases)
+## Current Baseline (2026-05-20, 6 GT discussions, N=3, infer_parents_from_birth_events repair)
 
-| Metric | Current | Target | Gap | Rationale |
-|--------|---------|--------|-----|-----------|
-| Aggregate F1 | 0.327 | **0.50** | -0.17 | Weighted average of component targets |
-| People F1 | 0.743 | **0.75** | -0.01 | NER benchmark: 65-78% for clinical entities |
-| Events F1 | 0.217 | **0.55** | -0.33 | Event extraction: 55-70% typical for clinical |
-| Symptom F1 | 0.222 | **0.45** | -0.23 | SARF variable extraction |
-| Anxiety F1 | 0.207 | **0.45** | -0.24 | SARF variable extraction |
-| Relationship F1 | 0.244 | **0.45** | -0.21 | SARF variable extraction |
-| Functioning F1 | 0.244 | **0.45** | -0.21 | SARF variable extraction |
+| Metric | Current | Target | Gap | Notes |
+|--------|---------|--------|-----|-------|
+| Aggregate F1 | 0.668 | **0.50** | +0.17 ✓ | |
+| People F1 | 0.928 | **0.75** | +0.18 ✓ | |
+| Events F1 | 0.477 | **0.55** | -0.07 | Primary remaining gap |
+| PairBonds F1 | 0.803 | **0.75** | +0.05 ✓ | |
+| **ParentChild F1** | **0.815** | **0.75** | **+0.07 ✓** | New metric (FD-324); N=3 avg recall=0.799 |
+| **LCC % (connectivity)** | **89.5%** | **≥80%** | **+9.5% ✓** | Target met (FD-324) |
 
 **Change log**:
 - 2025-12-26: Events F1 +42% (0.078→0.111) after P0 prompt fixes
@@ -75,6 +74,7 @@ Current sample (45 statements, 3 discussions) provides ~±15% margin of error. T
 - 2026-03-03: Pivot to full-extraction mode (extract_full). Aggregate 0.327→0.551, Events 0.217→0.335.
 - 2026-03-03: **Remove Event.description matching** (Strategy B: kind+date+person only). Events 0.335→0.470, Agg 0.551→0.595.
 - 2026-03-03: **2-pass split extraction** (extract_full_split). 6/6 disc, 100% completion. Events 0.470→0.509, Bonds 0.539→0.832, Agg 0.595→0.669.
+- 2026-05-20: **infer_parents_from_birth_events** deterministic repair (FD-324). ParentChild F1: 0.366→0.815 N=3 avg (+123%); LCC %: 51%→89.5% (target ≥80% met). Aggregate/People/Bonds non-regressed (within noise).
 
 ---
 
@@ -258,6 +258,12 @@ Targets are based on published clinical NLP benchmarks, adjusted downward to acc
 2. Domain-specific constructs (differentiation, anxiety, etc.)
 3. Implicit vs explicit mentions
 4. Current cascade dependency (SARF F1 limited by Events F1)
+
+### ParentChild F1 Target: 0.75
+
+**Benchmark context**: Same as PairBonds — binary relationship extraction between named entities, same domain and source complexity.
+
+**Adjustment**: Target 0.75, matching PairBonds. The structural constraint (forward-referencing pair bond IDs at Person creation time) creates a systematic recall floor; `infer_parents_from_birth_events` addresses most of it deterministically. First measured at 0.782–0.837 (FD-324, 2026-05-20).
 
 ---
 

@@ -209,6 +209,21 @@
       "note": "3-pass R-review architecture (3-run mean). SARF macro 0.341->0.473 (+39%). R +103% (0.240->0.487). Latency +70%."
     },
     {
+      "date": "2026-05-20",
+      "commit": "6e6ad5a+fdserver-FD-324",
+      "model": "gemini-3-flash-preview",
+      "aggregate": 0.668,
+      "people": 0.928,
+      "events": 0.477,
+      "pair_bonds": 0.803,
+      "parent_child": 0.815,
+      "symptom": null,
+      "anxiety": null,
+      "relationship": null,
+      "functioning": null,
+      "note": "FD-324: infer_parents_from_birth_events deterministic repair. ParentChild F1 0.366->0.815 (+123%), LCC 51%->89.5% (target >=80% met). No regression on Aggregate/People/Bonds. N=3 avg, 6 GT discussions."
+    },
+    {
       "date": "2026-05-16",
       "commit": "ba817fa+fdserver-uncommitted",
       "model": "gemini-3-flash-preview",
