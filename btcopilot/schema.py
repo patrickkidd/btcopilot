@@ -338,9 +338,9 @@ class PDP:
     people: list[Person] = field(default_factory=list)
     events: list[Event] = field(default_factory=list)
     pair_bonds: list[PairBond] = field(default_factory=list)
-    # Pending edits/deletes targeting already-committed (positive-ID) entities,
-    # waiting for per-item accept/reject in the review sheet.
-    committed_edits: list[dict] = field(default_factory=list)
+    # Positive-ID entries in people/events/pair_bonds above are pending edits to
+    # already-committed entities, shown as Update cards in the review sheet.
+    # Pending deletes of committed entities (positive IDs from PDPDeltas.delete).
     committed_deletes: list[int] = field(default_factory=list)
 
 
@@ -796,25 +796,34 @@ class DiagramData:
         ]
 
     def accept_committed_edit(self, item_id: int) -> None:
-        """Apply a pending committed-entity edit and remove it from the queue."""
         if item_id <= 0:
             raise ValueError(f"Item ID {item_id} must be positive (committed entity)")
-        edit = next((e for e in self.pdp.committed_edits if e.get("id") == item_id), None)
-        if edit is None:
+        pdp_edit = next(
+            (p for p in self.pdp.people if p.id == item_id),
+            next(
+                (e for e in self.pdp.events if e.id == item_id),
+                next((pb for pb in self.pdp.pair_bonds if pb.id == item_id), None),
+            ),
+        )
+        if pdp_edit is None:
             raise ValueError(f"No pending committed edit for id {item_id}")
+        edit_dict = asdict(pdp_edit)
         for collection in (self.people, self.events, self.pair_bonds):
             for i, item in enumerate(collection):
                 if item.get("id") == item_id:
-                    collection[i] = {**item, **{k: v for k, v in edit.items() if v is not None}}
+                    collection[i] = {**item, **{k: v for k, v in edit_dict.items() if v is not None}}
                     break
-        self.pdp.committed_edits = [e for e in self.pdp.committed_edits if e.get("id") != item_id]
+        self.pdp.people = [p for p in self.pdp.people if p.id != item_id]
+        self.pdp.events = [e for e in self.pdp.events if e.id != item_id]
+        self.pdp.pair_bonds = [pb for pb in self.pdp.pair_bonds if pb.id != item_id]
         _log.info(f"Applied committed edit for id {item_id}")
 
     def reject_committed_edit(self, item_id: int) -> None:
-        """Discard a pending committed-entity edit."""
         if item_id <= 0:
             raise ValueError(f"Item ID {item_id} must be positive (committed entity)")
-        self.pdp.committed_edits = [e for e in self.pdp.committed_edits if e.get("id") != item_id]
+        self.pdp.people = [p for p in self.pdp.people if p.id != item_id]
+        self.pdp.events = [e for e in self.pdp.events if e.id != item_id]
+        self.pdp.pair_bonds = [pb for pb in self.pdp.pair_bonds if pb.id != item_id]
         _log.info(f"Rejected committed edit for id {item_id}")
 
     def accept_committed_delete(self, item_id: int) -> None:

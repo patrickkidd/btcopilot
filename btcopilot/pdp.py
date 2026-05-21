@@ -1248,18 +1248,6 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
     events_by_id = {item.id: item for item in pdp.events}
     pair_bonds_by_id = {item.id: item for item in pdp.pair_bonds}
 
-    def _is_new_pdp_item(item):
-        return item.id is not None and item.id < 0
-
-    def _is_committed_ref(item):
-        return (
-            item.id is not None
-            and item.id > 0
-            and item.id not in people_by_id
-            and item.id not in events_by_id
-            and item.id not in pair_bonds_by_id
-        )
-
     # Process people deltas
     people_to_update = [
         (item, people_by_id[item.id])
@@ -1267,9 +1255,7 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if item.id in people_by_id
     ]
     people_to_add = [
-        item
-        for item in deltas.people
-        if item.id not in people_by_id and _is_new_pdp_item(item)
+        item for item in deltas.people if item.id not in people_by_id and item.id is not None
     ]
 
     # Process event deltas
@@ -1279,9 +1265,7 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if item.id in events_by_id
     ]
     events_to_add = [
-        item
-        for item in deltas.events
-        if item.id not in events_by_id and _is_new_pdp_item(item)
+        item for item in deltas.events if item.id not in events_by_id and item.id is not None
     ]
 
     # Process pair_bond deltas
@@ -1293,25 +1277,8 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
     pair_bonds_to_add = [
         item
         for item in deltas.pair_bonds
-        if item.id not in pair_bonds_by_id and _is_new_pdp_item(item)
+        if item.id not in pair_bonds_by_id and item.id is not None
     ]
-
-    # Positive-ID delta items targeting committed diagram entities: stage them
-    # in committed_edits for per-item review rather than discarding.
-    committed_edit_ids = {e.get("id") for e in pdp.committed_edits}
-    for item in deltas.people + deltas.events + deltas.pair_bonds:
-        if not _is_committed_ref(item):
-            continue
-        d = asdict(item)
-        if item.id not in committed_edit_ids:
-            pdp.committed_edits.append(d)
-            committed_edit_ids.add(item.id)
-        else:
-            # Update existing staged edit with latest delta fields
-            for i, existing in enumerate(pdp.committed_edits):
-                if existing.get("id") == item.id:
-                    pdp.committed_edits[i] = {**existing, **{k: v for k, v in d.items() if v is not None}}
-                    break
 
     to_update_all = people_to_update + events_to_update + pair_bonds_to_update
     upserts_applied = []
@@ -1349,20 +1316,9 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         pdp.pair_bonds.append(item)
         upserts_applied.append(item)
 
-    committed_refs = [
-        item
-        for item in deltas.people + deltas.events + deltas.pair_bonds
-        if _is_committed_ref(item)
-    ]
-    expected = (
-        len(deltas.people)
-        + len(deltas.events)
-        + len(deltas.pair_bonds)
-        - len(committed_refs)
-    )
+    expected = len(deltas.people) + len(deltas.events) + len(deltas.pair_bonds)
     assert len(upserts_applied) == expected, (
-        f"Failed to apply all upserts ({len(upserts_applied)} applied, {expected} expected, "
-        f"{len(committed_refs)} committed refs staged)"
+        f"Failed to apply all upserts ({len(upserts_applied)} applied, {expected} expected)"
     )
 
     # Negative-ID deletes → remove from PDP staging; positive-ID deletes → stage

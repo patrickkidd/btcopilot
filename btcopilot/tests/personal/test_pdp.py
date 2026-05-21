@@ -934,49 +934,41 @@ def test_fix_unresolved_refs_clears_orphaned_parents():
 # --- FD-333: committed-entity edits and deletes ---
 
 def test_apply_deltas_stages_committed_edit():
-    """Positive-id delta targeting a committed person is staged in committed_edits."""
-    diagram_data = DiagramData(
-        people=[{"id": 10, "name": "Alice", "gender": "female"}],
-        pdp=PDP(),
-    )
+    """Positive-id delta for a committed person is added to pdp.people."""
     deltas = PDPDeltas(people=[Person(id=10, name="Alicia")])
-    new_pdp = apply_deltas(diagram_data.pdp, deltas)
-    assert len(new_pdp.committed_edits) == 1
-    assert new_pdp.committed_edits[0]["id"] == 10
-    assert new_pdp.committed_edits[0]["name"] == "Alicia"
+    new_pdp = apply_deltas(PDP(), deltas)
+    assert len(new_pdp.people) == 1
+    assert new_pdp.people[0].id == 10
+    assert new_pdp.people[0].name == "Alicia"
 
 
 def test_apply_deltas_stages_committed_delete():
     """Positive-id in deltas.delete is staged in committed_deletes."""
-    diagram_data = DiagramData(
-        people=[{"id": 10, "name": "Bob"}],
-        pdp=PDP(),
-    )
     deltas = PDPDeltas(delete=[10])
-    new_pdp = apply_deltas(diagram_data.pdp, deltas)
+    new_pdp = apply_deltas(PDP(), deltas)
     assert 10 in new_pdp.committed_deletes
 
 
 def test_accept_committed_edit_applies_to_diagram():
-    """accept_committed_edit merges staged fields into the committed entity."""
+    """accept_committed_edit merges pdp.people entry into the committed entity."""
     diagram_data = DiagramData(
         people=[{"id": 10, "name": "Alice", "gender": "female"}],
-        pdp=PDP(committed_edits=[{"id": 10, "name": "Alicia"}]),
+        pdp=PDP(people=[Person(id=10, name="Alicia")]),
     )
     diagram_data.accept_committed_edit(10)
     assert diagram_data.people[0]["name"] == "Alicia"
-    assert diagram_data.pdp.committed_edits == []
+    assert diagram_data.pdp.people == []
 
 
 def test_reject_committed_edit_discards_staged_edit():
-    """reject_committed_edit drops the staged edit without touching the entity."""
+    """reject_committed_edit drops the pdp entry without touching the committed entity."""
     diagram_data = DiagramData(
         people=[{"id": 10, "name": "Alice"}],
-        pdp=PDP(committed_edits=[{"id": 10, "name": "Alicia"}]),
+        pdp=PDP(people=[Person(id=10, name="Alicia")]),
     )
     diagram_data.reject_committed_edit(10)
     assert diagram_data.people[0]["name"] == "Alice"
-    assert diagram_data.pdp.committed_edits == []
+    assert diagram_data.pdp.people == []
 
 
 def test_accept_committed_delete_cascade():

@@ -70,6 +70,7 @@ def test_pickle_contains_json_serializable_dicts(db_session, test_user):
                 }
             ],
             "pair_bonds": [],
+            "committed_deletes": [],
         },
         "lastItemId": 2,
         "pair_bonds": [],
