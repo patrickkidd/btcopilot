@@ -1220,10 +1220,17 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
     events_by_id = {item.id: item for item in pdp.events}
     pair_bonds_by_id = {item.id: item for item in pdp.pair_bonds}
 
-    # Positive-ID delta items reference committed diagram items — skip them.
-    # Only negative-ID items are new PDP items to add.
     def _is_new_pdp_item(item):
         return item.id is not None and item.id < 0
+
+    def _is_committed_ref(item):
+        return (
+            item.id is not None
+            and item.id > 0
+            and item.id not in people_by_id
+            and item.id not in events_by_id
+            and item.id not in pair_bonds_by_id
+        )
 
     # Process people deltas
     people_to_update = [
@@ -1261,11 +1268,24 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if item.id not in pair_bonds_by_id and _is_new_pdp_item(item)
     ]
 
-    # Combine updates for processing
+    # Positive-ID delta items targeting committed diagram entities: stage them
+    # in committed_edits for per-item review rather than discarding.
+    committed_edit_ids = {e.get("id") for e in pdp.committed_edits}
+    for item in deltas.people + deltas.events + deltas.pair_bonds:
+        if not _is_committed_ref(item):
+            continue
+        d = asdict(item)
+        if item.id not in committed_edit_ids:
+            pdp.committed_edits.append(d)
+            committed_edit_ids.add(item.id)
+        else:
+            # Update existing staged edit with latest delta fields
+            for i, existing in enumerate(pdp.committed_edits):
+                if existing.get("id") == item.id:
+                    pdp.committed_edits[i] = {**existing, **{k: v for k, v in d.items() if v is not None}}
+                    break
+
     to_update_all = people_to_update + events_to_update + pair_bonds_to_update
-    to_add_people = people_to_add
-    to_add_events = events_to_add
-    to_add_pair_bonds = pair_bonds_to_add
     upserts_applied = []
 
     for item, existing in to_update_all:
@@ -1286,29 +1306,25 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
                 )
         upserts_applied.append(item)
 
-    for item in to_add_people:
+    for item in people_to_add:
         _log.debug(f"Adding new person to PDP: {item}")
         pdp.people.append(item)
         upserts_applied.append(item)
 
-    for item in to_add_events:
+    for item in events_to_add:
         _log.debug(f"Adding new event to PDP: {item}")
         pdp.events.append(item)
         upserts_applied.append(item)
 
-    for item in to_add_pair_bonds:
+    for item in pair_bonds_to_add:
         _log.debug(f"Adding new pair_bond to PDP: {item}")
         pdp.pair_bonds.append(item)
         upserts_applied.append(item)
 
-    # Count committed-item references that were intentionally skipped
     committed_refs = [
         item
         for item in deltas.people + deltas.events + deltas.pair_bonds
-        if not _is_new_pdp_item(item)
-        and item.id not in people_by_id
-        and item.id not in events_by_id
-        and item.id not in pair_bonds_by_id
+        if _is_committed_ref(item)
     ]
     expected = (
         len(deltas.people)
@@ -1318,21 +1334,31 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
     )
     assert len(upserts_applied) == expected, (
         f"Failed to apply all upserts ({len(upserts_applied)} applied, {expected} expected, "
-        f"{len(committed_refs)} committed refs skipped)"
+        f"{len(committed_refs)} committed refs staged)"
     )
 
-    to_delete_ids = deltas.delete
+    # Negative-ID deletes → remove from PDP staging; positive-ID deletes → stage
+    # in committed_deletes for per-item review.
+    pdp_delete_ids = [d for d in deltas.delete if d < 0]
+    committed_delete_ids_new = [d for d in deltas.delete if d > 0]
+
     for idx in reversed(range(len(pdp.people))):
-        if pdp.people[idx].id in to_delete_ids:
+        if pdp.people[idx].id in pdp_delete_ids:
             del pdp.people[idx]
 
     for idx in reversed(range(len(pdp.events))):
-        if pdp.events[idx].id in to_delete_ids:
+        if pdp.events[idx].id in pdp_delete_ids:
             del pdp.events[idx]
 
     for idx in reversed(range(len(pdp.pair_bonds))):
-        if pdp.pair_bonds[idx].id in to_delete_ids:
+        if pdp.pair_bonds[idx].id in pdp_delete_ids:
             del pdp.pair_bonds[idx]
+
+    existing_committed_deletes = set(pdp.committed_deletes)
+    for d in committed_delete_ids_new:
+        if d not in existing_committed_deletes:
+            pdp.committed_deletes.append(d)
+            existing_committed_deletes.add(d)
 
     pdp = cleanup_pair_bonds(pdp)
 
