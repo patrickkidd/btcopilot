@@ -32,7 +32,7 @@ from btcopilot.training.f1_metrics import (
 from btcopilot import pdp
 
 
-def run_extract_full_f1(discussion_id=None, model=None):
+def run_extract_full_f1(discussion_id=None, model=None, sarf_model=None):
     nest_asyncio.apply()
 
     if model:
@@ -40,6 +40,9 @@ def run_extract_full_f1(discussion_id=None, model=None):
 
         llmutil.EXTRACTION_MODEL_LARGE = model
         print(f"Using model: {model}\n")
+
+    if sarf_model:
+        print(f"Using SARF review model (Pass 3): {sarf_model}\n")
 
     from btcopilot.personal.models import Discussion, Statement
 
@@ -76,7 +79,7 @@ def run_extract_full_f1(discussion_id=None, model=None):
         diagram_data = DiagramData()
 
         try:
-            ai_pdp, _ = asyncio.run(pdp.extract_full(discussion, diagram_data))
+            ai_pdp, _ = asyncio.run(pdp.extract_full(discussion, diagram_data, sarf_review_model=sarf_model))
         except Exception as e:
             elapsed = time.time() - disc_start
             print(f"EXTRACTION FAILED ({elapsed:.1f}s): {e}")
@@ -256,14 +259,19 @@ def main():
     parser.add_argument(
         "--model",
         type=str,
-        help="Override extraction model",
+        help="Override extraction model (Passes 1+2)",
+    )
+    parser.add_argument(
+        "--sarf-model",
+        type=str,
+        help="Override SARF review model (Pass 3)",
     )
     args = parser.parse_args()
 
     app = create_app()
     with app.app_context():
         result = run_extract_full_f1(
-            discussion_id=args.discussion, model=args.model
+            discussion_id=args.discussion, model=args.model, sarf_model=args.sarf_model
         )
         sys.exit(0 if result and result["count"] > 0 else 1)
 

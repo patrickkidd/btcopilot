@@ -92,32 +92,32 @@ def _llm_deltas_with_committed_refs():
 
 
 def test_apply_deltas_excludes_committed_people_from_pdp():
-    """Positive-ID people in deltas are committed refs, not new PDP items."""
+    """Positive-ID people in deltas are staged in pdp.people as pending edits."""
     dd = _diagram_1882()
     deltas = _llm_deltas_with_committed_refs()
 
     pdp = apply_deltas(dd.pdp, deltas)
 
     pdp_ids = {p.id for p in pdp.people}
-    # Only the genuinely new person should be in PDP
+    # New person (negative ID) is in PDP
     assert -1 in pdp_ids
-    # Committed people (positive IDs) must NOT be in PDP
+    # Positive-ID people are staged as pending committed edits in pdp.people
     for committed_id in [1, 23, 46, 16, 42]:
-        assert committed_id not in pdp_ids, (
-            f"Committed person {committed_id} should not be in PDP"
+        assert committed_id in pdp_ids, (
+            f"Committed person {committed_id} should be staged in pdp.people as pending edit"
         )
-    assert len(pdp.people) == 1
-    assert pdp.people[0].name == "Aunt Mary"
+    assert len(pdp.people) == 6  # 1 new + 5 committed-entity edits
 
 
 def test_apply_deltas_excludes_committed_pair_bonds_from_pdp():
-    """Positive-ID pair bonds in deltas are committed refs, not new PDP items."""
+    """Positive-ID pair bonds in deltas are staged in pdp.pair_bonds as pending edits."""
     dd = _diagram_1882()
     deltas = _llm_deltas_with_committed_refs()
 
     pdp = apply_deltas(dd.pdp, deltas)
 
-    assert len(pdp.pair_bonds) == 0
+    assert len(pdp.pair_bonds) == 1
+    assert pdp.pair_bonds[0].id == 68
 
 
 def test_apply_deltas_keeps_new_events_in_pdp():
@@ -149,10 +149,10 @@ def test_commit_pdp_after_reextraction():
 
     id_mapping = dd.commit_pdp_items(all_ids)
 
-    # All PDP items should be committed (PDP now empty)
-    assert len(dd.pdp.people) == 0
+    # Negative-ID PDP items committed; positive-ID pending edits remain
+    assert all(p.id > 0 for p in dd.pdp.people)
     assert len(dd.pdp.events) == 0
-    assert len(dd.pdp.pair_bonds) == 0
+    assert all(pb.id > 0 for pb in dd.pdp.pair_bonds)
 
     # New person committed
     assert len(dd.people) == prev_people + 1

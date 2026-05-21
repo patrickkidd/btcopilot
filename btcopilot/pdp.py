@@ -7,7 +7,7 @@ from datetime import date, datetime
 import json
 
 from btcopilot.extensions import ai_log
-from btcopilot.llmutil import gemini_structured
+from btcopilot.llmutil import gemini_structured, SARF_REVIEW_MODEL
 from btcopilot.personal.models import SpeakerType
 from btcopilot.training.f1_metrics import match_people
 from btcopilot.personal.prompts import (
@@ -1078,6 +1078,7 @@ async def _two_pass_extract(
     source: str,
     pass2_prompt: str | None = None,
     sarf_review_prompt: str | None = None,
+    sarf_review_model: str | None = None,
     cursor_nonce: str | None = None,
 ) -> tuple[PDP, PDPDeltas]:
     """Two-pass extraction: people+structure first, then shifts+SARF.
@@ -1149,7 +1150,7 @@ async def _two_pass_extract(
             people_json=people_json,
             conversation_history=conversation_history,
         )
-        review_deltas = await gemini_structured(review_prompt, PDPDeltas, large=True)
+        review_deltas = await gemini_structured(review_prompt, PDPDeltas, large=True, model=sarf_review_model or SARF_REVIEW_MODEL)
         reviewed = {e.id: e for e in review_deltas.events}
         for event in pass2_pdp.events:
             if event.id not in reviewed:
@@ -1201,6 +1202,7 @@ async def extract_full(
     diagram_data: DiagramData,
     pass2_prompt: str | None = None,
     sarf_review_prompt: str | None = None,
+    sarf_review_model: str | None = None,
 ) -> tuple[PDP, PDPDeltas]:
     diagram_data.pdp = PDP()
     reference_date = (
@@ -1216,6 +1218,7 @@ async def extract_full(
         "extract_full",
         pass2_prompt=pass2_prompt,
         sarf_review_prompt=sarf_review_prompt,
+        sarf_review_model=sarf_review_model,
         cursor_nonce=cursor_nonce,
     )
 
@@ -1248,11 +1251,6 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
     events_by_id = {item.id: item for item in pdp.events}
     pair_bonds_by_id = {item.id: item for item in pdp.pair_bonds}
 
-    # Positive-ID delta items reference committed diagram items — skip them.
-    # Only negative-ID items are new PDP items to add.
-    def _is_new_pdp_item(item):
-        return item.id is not None and item.id < 0
-
     # Process people deltas
     people_to_update = [
         (item, people_by_id[item.id])
@@ -1260,9 +1258,7 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if item.id in people_by_id
     ]
     people_to_add = [
-        item
-        for item in deltas.people
-        if item.id not in people_by_id and _is_new_pdp_item(item)
+        item for item in deltas.people if item.id not in people_by_id and item.id is not None
     ]
 
     # Process event deltas
@@ -1272,9 +1268,7 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if item.id in events_by_id
     ]
     events_to_add = [
-        item
-        for item in deltas.events
-        if item.id not in events_by_id and _is_new_pdp_item(item)
+        item for item in deltas.events if item.id not in events_by_id and item.id is not None
     ]
 
     # Process pair_bond deltas
@@ -1286,14 +1280,10 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
     pair_bonds_to_add = [
         item
         for item in deltas.pair_bonds
-        if item.id not in pair_bonds_by_id and _is_new_pdp_item(item)
+        if item.id not in pair_bonds_by_id and item.id is not None
     ]
 
-    # Combine updates for processing
     to_update_all = people_to_update + events_to_update + pair_bonds_to_update
-    to_add_people = people_to_add
-    to_add_events = events_to_add
-    to_add_pair_bonds = pair_bonds_to_add
     upserts_applied = []
 
     for item, existing in to_update_all:
@@ -1314,53 +1304,48 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
                 )
         upserts_applied.append(item)
 
-    for item in to_add_people:
+    for item in people_to_add:
         _log.debug(f"Adding new person to PDP: {item}")
         pdp.people.append(item)
         upserts_applied.append(item)
 
-    for item in to_add_events:
+    for item in events_to_add:
         _log.debug(f"Adding new event to PDP: {item}")
         pdp.events.append(item)
         upserts_applied.append(item)
 
-    for item in to_add_pair_bonds:
+    for item in pair_bonds_to_add:
         _log.debug(f"Adding new pair_bond to PDP: {item}")
         pdp.pair_bonds.append(item)
         upserts_applied.append(item)
 
-    # Count committed-item references that were intentionally skipped
-    committed_refs = [
-        item
-        for item in deltas.people + deltas.events + deltas.pair_bonds
-        if not _is_new_pdp_item(item)
-        and item.id not in people_by_id
-        and item.id not in events_by_id
-        and item.id not in pair_bonds_by_id
-    ]
-    expected = (
-        len(deltas.people)
-        + len(deltas.events)
-        + len(deltas.pair_bonds)
-        - len(committed_refs)
-    )
+    expected = len(deltas.people) + len(deltas.events) + len(deltas.pair_bonds)
     assert len(upserts_applied) == expected, (
-        f"Failed to apply all upserts ({len(upserts_applied)} applied, {expected} expected, "
-        f"{len(committed_refs)} committed refs skipped)"
+        f"Failed to apply all upserts ({len(upserts_applied)} applied, {expected} expected)"
     )
 
-    to_delete_ids = deltas.delete
+    # Negative-ID deletes → remove from PDP staging; positive-ID deletes → stage
+    # in pdp.delete for per-item review.
+    pdp_delete_ids = [d for d in deltas.delete if d < 0]
+    committed_delete_ids_new = [d for d in deltas.delete if d > 0]
+
     for idx in reversed(range(len(pdp.people))):
-        if pdp.people[idx].id in to_delete_ids:
+        if pdp.people[idx].id in pdp_delete_ids:
             del pdp.people[idx]
 
     for idx in reversed(range(len(pdp.events))):
-        if pdp.events[idx].id in to_delete_ids:
+        if pdp.events[idx].id in pdp_delete_ids:
             del pdp.events[idx]
 
     for idx in reversed(range(len(pdp.pair_bonds))):
-        if pdp.pair_bonds[idx].id in to_delete_ids:
+        if pdp.pair_bonds[idx].id in pdp_delete_ids:
             del pdp.pair_bonds[idx]
+
+    existing_deletes = set(pdp.delete)
+    for d in committed_delete_ids_new:
+        if d not in existing_deletes:
+            pdp.delete.append(d)
+            existing_deletes.add(d)
 
     pdp = cleanup_pair_bonds(pdp)
 
