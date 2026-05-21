@@ -943,10 +943,10 @@ def test_apply_deltas_stages_committed_edit():
 
 
 def test_apply_deltas_stages_committed_delete():
-    """Positive-id in deltas.delete is staged in committed_deletes."""
+    """Positive-id in deltas.delete is staged in pdp.delete."""
     deltas = PDPDeltas(delete=[10])
     new_pdp = apply_deltas(PDP(), deltas)
-    assert 10 in new_pdp.committed_deletes
+    assert 10 in new_pdp.delete
 
 
 def test_accept_committed_edit_applies_to_diagram():
@@ -982,24 +982,24 @@ def test_accept_committed_delete_cascade():
             {"id": 20, "kind": "shift", "person": 10, "description": "x", "dateTime": "2000-01-01"},
         ],
         pair_bonds=[{"id": 30, "person_a": 10, "person_b": 11}],
-        pdp=PDP(committed_deletes=[10]),
+        pdp=PDP(delete=[10]),
     )
     diagram_data.accept_committed_delete(10)
     assert all(p["id"] != 10 for p in diagram_data.people)
     assert diagram_data.events == []
     assert diagram_data.pair_bonds == []
-    assert 10 not in diagram_data.pdp.committed_deletes
+    assert 10 not in diagram_data.pdp.delete
 
 
 def test_reject_committed_delete_clears_queue():
     """reject_committed_delete drops the pending delete; committed entity unchanged."""
     diagram_data = DiagramData(
         people=[{"id": 10, "name": "Alice"}],
-        pdp=PDP(committed_deletes=[10]),
+        pdp=PDP(delete=[10]),
     )
     diagram_data.reject_committed_delete(10)
     assert diagram_data.people[0]["id"] == 10
-    assert diagram_data.pdp.committed_deletes == []
+    assert diagram_data.pdp.delete == []
 
 
 def test_accept_committed_edit_raises_on_missing():
@@ -1013,7 +1013,7 @@ def test_accept_committed_edit_raises_on_missing():
 
 
 def test_accept_committed_delete_raises_on_missing():
-    """accept_committed_delete raises ValueError when id not in committed_deletes."""
+    """accept_committed_delete raises ValueError when id not in pdp.delete."""
     diagram_data = DiagramData(
         people=[{"id": 10, "name": "Alice"}],
         pdp=PDP(),

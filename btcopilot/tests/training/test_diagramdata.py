@@ -188,7 +188,7 @@ def as_dict():
                 }
             ],
             "pair_bonds": [],
-            "committed_deletes": [],
+            "delete": [],
         },
         "lastItemId": 0,
         "id": None,

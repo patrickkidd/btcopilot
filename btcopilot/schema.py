@@ -341,7 +341,7 @@ class PDP:
     # Positive-ID entries in people/events/pair_bonds above are pending edits to
     # already-committed entities, shown as Update cards in the review sheet.
     # Pending deletes of committed entities (positive IDs from PDPDeltas.delete).
-    committed_deletes: list[int] = field(default_factory=list)
+    delete: list[int] = field(default_factory=list)
 
 
 def get_all_pdp_item_ids(pdp: PDP) -> set[int]:
@@ -830,7 +830,7 @@ class DiagramData:
         """Cascade-delete a committed entity and remove it from the pending queue."""
         if item_id <= 0:
             raise ValueError(f"Item ID {item_id} must be positive (committed entity)")
-        if item_id not in self.pdp.committed_deletes:
+        if item_id not in self.pdp.delete:
             raise ValueError(f"No pending committed delete for id {item_id}")
 
         ids_to_remove: set[int] = set()
@@ -859,14 +859,14 @@ class DiagramData:
         self.people = [p for p in self.people if p.get("id") not in ids_to_remove]
         self.events = [e for e in self.events if e.get("id") not in ids_to_remove]
         self.pair_bonds = [pb for pb in self.pair_bonds if pb.get("id") not in ids_to_remove]
-        self.pdp.committed_deletes = [d for d in self.pdp.committed_deletes if d != item_id]
+        self.pdp.delete = [d for d in self.pdp.delete if d != item_id]
         _log.info(f"Cascade-deleted committed entity {item_id} (removed {ids_to_remove})")
 
     def reject_committed_delete(self, item_id: int) -> None:
         """Discard a pending committed-entity delete."""
         if item_id <= 0:
             raise ValueError(f"Item ID {item_id} must be positive (committed entity)")
-        self.pdp.committed_deletes = [d for d in self.pdp.committed_deletes if d != item_id]
+        self.pdp.delete = [d for d in self.pdp.delete if d != item_id]
         _log.info(f"Rejected committed delete for id {item_id}")
 
     def _next_pdp_id(self) -> int:

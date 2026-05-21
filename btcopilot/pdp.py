@@ -1322,7 +1322,7 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
     )
 
     # Negative-ID deletes → remove from PDP staging; positive-ID deletes → stage
-    # in committed_deletes for per-item review.
+    # in pdp.delete for per-item review.
     pdp_delete_ids = [d for d in deltas.delete if d < 0]
     committed_delete_ids_new = [d for d in deltas.delete if d > 0]
 
@@ -1338,11 +1338,11 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if pdp.pair_bonds[idx].id in pdp_delete_ids:
             del pdp.pair_bonds[idx]
 
-    existing_committed_deletes = set(pdp.committed_deletes)
+    existing_deletes = set(pdp.delete)
     for d in committed_delete_ids_new:
-        if d not in existing_committed_deletes:
-            pdp.committed_deletes.append(d)
-            existing_committed_deletes.add(d)
+        if d not in existing_deletes:
+            pdp.delete.append(d)
+            existing_deletes.add(d)
 
     pdp = cleanup_pair_bonds(pdp)
 
