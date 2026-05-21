@@ -7,7 +7,7 @@ from datetime import date, datetime
 import json
 
 from btcopilot.extensions import ai_log
-from btcopilot.llmutil import gemini_structured
+from btcopilot.llmutil import gemini_structured, SARF_REVIEW_MODEL
 from btcopilot.personal.models import SpeakerType
 from btcopilot.training.f1_metrics import match_people
 from btcopilot.personal.prompts import (
@@ -1078,6 +1078,7 @@ async def _two_pass_extract(
     source: str,
     pass2_prompt: str | None = None,
     sarf_review_prompt: str | None = None,
+    sarf_review_model: str | None = None,
     cursor_nonce: str | None = None,
 ) -> tuple[PDP, PDPDeltas]:
     """Two-pass extraction: people+structure first, then shifts+SARF.
@@ -1149,7 +1150,7 @@ async def _two_pass_extract(
             people_json=people_json,
             conversation_history=conversation_history,
         )
-        review_deltas = await gemini_structured(review_prompt, PDPDeltas, large=True)
+        review_deltas = await gemini_structured(review_prompt, PDPDeltas, large=True, model=sarf_review_model or SARF_REVIEW_MODEL)
         reviewed = {e.id: e for e in review_deltas.events}
         for event in pass2_pdp.events:
             if event.id not in reviewed:
@@ -1201,6 +1202,7 @@ async def extract_full(
     diagram_data: DiagramData,
     pass2_prompt: str | None = None,
     sarf_review_prompt: str | None = None,
+    sarf_review_model: str | None = None,
 ) -> tuple[PDP, PDPDeltas]:
     diagram_data.pdp = PDP()
     reference_date = (
@@ -1216,6 +1218,7 @@ async def extract_full(
         "extract_full",
         pass2_prompt=pass2_prompt,
         sarf_review_prompt=sarf_review_prompt,
+        sarf_review_model=sarf_review_model,
         cursor_nonce=cursor_nonce,
     )
 

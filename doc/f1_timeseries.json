@@ -236,6 +236,21 @@
       "relationship": null,
       "functioning": null,
       "note": "FD-319 PASS1_CONTEXT committed-data carve-out. 6 GT, avg 2 runs. Primary win is re-extraction idempotency (raw committed-dup flash/complex 1.00->0.00, pro/complex 0.10->0.00, N=10, repair bypassed), NOT F1: vs backup (agg 0.671, people 0.925, events 0.474, pb 0.820) all deltas within run-to-run noise, claim bounded to no-regression at N=2. SARF not tracked by run_extract_full_f1. Prompt change uncommitted in fdserver pending Patrick."
+    },
+    {
+      "date": "2026-05-21",
+      "commit": "FD-333-worktree+fdserver-induction",
+      "model": "gemini-3.1-flash-lite",
+      "sarf_review_model": "gemini-3-flash-preview",
+      "aggregate": 0.659,
+      "people": 0.927,
+      "events": 0.434,
+      "pair_bonds": 0.837,
+      "symptom": null,
+      "anxiety": null,
+      "relationship": null,
+      "functioning": null,
+      "note": "Model upgrade to gemini-3.1-flash-lite (Passes 1+2) + gemini-3-flash-preview for SARF review (Pass 3). 6 GT, avg 3 runs. Events +9.3% vs gemini-3-flash-preview cold baseline (0.397). Agg slightly lower than last entry (0.659 vs 0.687) due to different baseline — last entry was gemini-3-flash-preview with FD-319 prompt improvements not yet ported. Flash-lite with 3-flash-preview Pass 3 outperforms gemini-3-flash-preview alone on Events. Prompt induction kept 4 changes: pre-read warning, numbered extract order, child/person birth semantics inline, completeness check. Triangle pass not deployed (net neutral to negative). SARF macro too noisy to report at N=3."
     }
   ]
 }
