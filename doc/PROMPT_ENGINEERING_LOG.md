@@ -2,7 +2,80 @@
 
 **Purpose**: Authoritative record of prompt engineering decisions, experiments, and lessons learned for the SARF data extraction system. Prevents regressions by documenting what works, what doesn't, and why.
 
-**Last Updated**: 2026-05-16 (FD-325/326 returning-user coach)
+**Last Updated**: 2026-05-20 (FD-324 connectivity)
+
+---
+
+## FD-324 — Connectivity: infer_parents_from_birth_events repair (2026-05-20)
+
+**Objective**: Improve family-tree connectivity (LCC %) from ~51% baseline to ≥80%
+target, without F1 regression.
+
+**Baseline** (production prompt, production pdp.py, 6 GT discussions, 1 run):
+
+| Metric | Score |
+|---|---|
+| Aggregate F1 | 0.655 |
+| People F1 | 0.920 |
+| Events F1 | 0.408 |
+| PairBonds F1 | 0.828 |
+| **ParentChild F1** | 0.366 (recall=0.332) |
+| Average LCC % | 51.0% (5 discs, 1 failed) |
+
+**Root cause identified**: Person.parents was not being set despite pair bonds
+being extracted correctly. The LLM follows a people-first ID assignment order
+(people → events → pair_bonds), which requires forward-referencing pair bond IDs
+not yet computed. In complex multi-generation families, this fails silently —
+pair bonds are emitted with correct person references, but Person.parents fields
+are left null. Result: only couple edges (2 nodes per bond) connect the graph;
+parent-child edges (which span generations) are absent.
+
+**Experiment A: PairBonds-first ID assignment — REJECTED**
+
+Hypothesis: reversing the ID order (pair_bonds first) would let the LLM reference
+pair bond IDs when creating Person objects.
+
+Result: catastrophic F1 regression. Aggregate F1 dropped from 0.655 → 0.476
+(-0.179). People F1 dropped from 0.920 → 0.757. ParentChild F1 = 0.000 (worse
+than baseline). Events F1 below 0.3 target. The LLM was tuned on people-first
+examples; the new order confused its ID assignment throughout.
+
+**Decision: rejected, reverted.** Do not attempt ID order reversal without
+rewriting all examples in the prompt (and re-validating on a fresh batch).
+
+**Experiment B: infer_parents_from_birth_events deterministic repair — KEPT**
+
+Implementation: added `infer_parents_from_birth_events(deltas)` to `pdp.py`,
+called in `_extract_and_validate` after `fix_unresolved_person_refs`. The function
+reads birth events with person+spouse+child set, finds the matching PairBond by
+dyad, and sets Person.parents on the child if it is currently null. Purely
+deterministic; no LLM; same pattern as `fix_committed_person_duplicates`.
+
+Results (6 GT discussions, 1 run, production prompt unchanged):
+
+| Metric | Baseline | Exp B | Δ |
+|---|---|---|---|
+| Aggregate F1 | 0.655 | 0.651 | -0.004 (noise) |
+| People F1 | 0.920 | 0.902 | -0.018 (noise) |
+| Events F1 | 0.408 | 0.448 | **+0.040** |
+| PairBonds F1 | 0.828 | 0.822 | -0.006 (noise) |
+| **ParentChild F1** | 0.366 | **0.782** | **+0.416 (+114%)** |
+| ParentChild recall | 0.332 | **0.768** | **+0.436** |
+| Average LCC % | 51.0% | **89.5%** | **+38.5 pp (target ≥80% ✓)** |
+
+F1 non-regressed (all deltas within known run-to-run noise of ±0.05–0.10).
+ParentChild recall nearly doubled. Connectivity improving dramatically on
+early samples: disc 37 = 100%, disc 48 = 100%, disc 39 = 94.1%.
+
+**Decision: kept.** The repair is the correct fix because:
+1. No F1 regression
+2. ParentChild F1 +114%
+3. LCC % massively improved on real extractions
+4. Deterministic — same rationale as `fix_committed_person_duplicates`
+5. Prompt-only fix for this failure mode is not viable (forward-reference
+   problem requires rewriting all examples, high regression risk)
+
+**Related**: strategy doc §2b/§2b' for the dedup repair precedent.
 
 ---
 

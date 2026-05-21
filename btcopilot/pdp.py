@@ -183,6 +183,33 @@ def fix_birth_event_self_references(deltas: PDPDeltas) -> None:
             event.person = None
 
 
+def infer_parents_from_birth_events(deltas: PDPDeltas) -> None:
+    bond_by_dyad: dict[tuple[int, int], int] = {}
+    for pb in deltas.pair_bonds:
+        if pb.id is not None and pb.person_a is not None and pb.person_b is not None:
+            bond_by_dyad[tuple(sorted([pb.person_a, pb.person_b]))] = pb.id  # type: ignore[arg-type]
+
+    person_map = {p.id: p for p in deltas.people if p.id is not None}
+
+    for event in deltas.events:
+        if event.kind not in (EventKind.Birth, EventKind.Adopted):
+            continue
+        if event.child is None or event.person is None or event.spouse is None:
+            continue
+        dyad = tuple(sorted([event.person, event.spouse]))
+        pb_id = bond_by_dyad.get(dyad)  # type: ignore[arg-type]
+        if pb_id is None:
+            continue
+        child = person_map.get(event.child)
+        if child is None or child.parents is not None:
+            continue
+        _log.info(
+            f"infer_parents_from_birth_events: setting Person {event.child} "
+            f"parents={pb_id} from birth event {event.id}"
+        )
+        child.parents = pb_id
+
+
 def fix_unresolved_person_refs(
     deltas: PDPDeltas,
     pdp: PDP,
@@ -976,6 +1003,7 @@ async def _extract_and_validate(
 
         fix_committed_person_duplicates(pdp_deltas, diagram_data)
         fix_unresolved_person_refs(pdp_deltas, pdp, diagram_data)
+        infer_parents_from_birth_events(pdp_deltas)
         try:
             validate_pdp_deltas(pdp, pdp_deltas, diagram_data, source)
             if attempt > 0:

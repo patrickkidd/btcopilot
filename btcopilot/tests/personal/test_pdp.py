@@ -22,6 +22,8 @@ from btcopilot.pdp import (
     fix_birth_event_self_references,
     fix_self_parent_references,
     fix_committed_person_duplicates,
+    fix_unresolved_person_refs,
+    infer_parents_from_birth_events,
     _committed_person_matches,
 )
 
@@ -1026,3 +1028,82 @@ def test_accept_committed_delete_raises_on_missing():
     )
     with pytest.raises(ValueError, match="No pending committed delete"):
         diagram_data.accept_committed_delete(10)
+
+
+# ── infer_parents_from_birth_events ─────────────────────────────────────────
+
+
+def test_infer_parents_sets_child_parents():
+    deltas = PDPDeltas(
+        people=[
+            Person(id=-1, name="Mom"),
+            Person(id=-2, name="Dad"),
+            Person(id=-3, name="Child"),
+        ],
+        pair_bonds=[PairBond(id=-10, person_a=-1, person_b=-2)],
+        events=[
+            Event(id=-20, kind=EventKind.Birth, person=-1, spouse=-2, child=-3, dateTime="2000-01-01")
+        ],
+    )
+    infer_parents_from_birth_events(deltas)
+    assert deltas.people[2].parents == -10
+
+
+def test_infer_parents_does_not_overwrite_existing():
+    deltas = PDPDeltas(
+        people=[
+            Person(id=-1, name="Mom"),
+            Person(id=-2, name="Dad"),
+            Person(id=-3, name="Child", parents=-99),
+        ],
+        pair_bonds=[PairBond(id=-10, person_a=-1, person_b=-2)],
+        events=[
+            Event(id=-20, kind=EventKind.Birth, person=-1, spouse=-2, child=-3, dateTime="2000-01-01")
+        ],
+    )
+    infer_parents_from_birth_events(deltas)
+    assert deltas.people[2].parents == -99
+
+
+def test_infer_parents_skips_missing_bond():
+    deltas = PDPDeltas(
+        people=[
+            Person(id=-1, name="Mom"),
+            Person(id=-2, name="Dad"),
+            Person(id=-3, name="Child"),
+        ],
+        pair_bonds=[],
+        events=[
+            Event(id=-20, kind=EventKind.Birth, person=-1, spouse=-2, child=-3, dateTime="2000-01-01")
+        ],
+    )
+    infer_parents_from_birth_events(deltas)
+    assert deltas.people[2].parents is None
+
+
+def test_infer_parents_adopted_event():
+    deltas = PDPDeltas(
+        people=[
+            Person(id=-1, name="Mom"),
+            Person(id=-2, name="Dad"),
+            Person(id=-3, name="Child"),
+        ],
+        pair_bonds=[PairBond(id=-10, person_a=-1, person_b=-2)],
+        events=[
+            Event(id=-20, kind=EventKind.Adopted, person=-1, spouse=-2, child=-3, dateTime="2005-06-01")
+        ],
+    )
+    infer_parents_from_birth_events(deltas)
+    assert deltas.people[2].parents == -10
+
+
+def test_infer_parents_ignores_non_birth_events():
+    deltas = PDPDeltas(
+        people=[Person(id=-3, name="Child")],
+        pair_bonds=[PairBond(id=-10, person_a=-1, person_b=-2)],
+        events=[
+            Event(id=-20, kind=EventKind.Shift, person=-3, description="Anxiety spike")
+        ],
+    )
+    infer_parents_from_birth_events(deltas)
+    assert deltas.people[0].parents is None
