@@ -1033,6 +1033,7 @@ def test_accept_committed_delete_clears_pdp_staging():
     assert diagram_data.pdp.delete == []
 
 
+
 def test_reject_committed_delete_clears_queue():
     """reject_committed_delete drops the pending delete; committed entity unchanged."""
     diagram_data = DiagramData(
@@ -1211,6 +1212,7 @@ def test_accept_committed_delete_multihop_cascade_cleans_all_pdp_collections():
     assert diagram_data.pdp.events == []
     assert diagram_data.pdp.pair_bonds == []
     assert diagram_data.pdp.delete == []
+
 
 
 # ── infer_parents_from_birth_events ─────────────────────────────────────────
