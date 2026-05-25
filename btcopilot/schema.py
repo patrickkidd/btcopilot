@@ -843,7 +843,7 @@ class DiagramData:
             for event in self.events:
                 if event.get("id") in ids_to_remove:
                     continue
-                if any(event.get(r) == current for r in ("person", "spouse", "child")):
+                if any(event.get(r) == current for r in ("person", "spouse", "child")) or current in event.get("relationshipTargets", []) or current in event.get("relationshipTriangles", []):
                     to_visit.append(event["id"])
             for pb in self.pair_bonds:
                 if pb.get("id") in ids_to_remove:
@@ -859,7 +859,10 @@ class DiagramData:
         self.people = [p for p in self.people if p.get("id") not in ids_to_remove]
         self.events = [e for e in self.events if e.get("id") not in ids_to_remove]
         self.pair_bonds = [pb for pb in self.pair_bonds if pb.get("id") not in ids_to_remove]
-        self.pdp.delete = [d for d in self.pdp.delete if d != item_id]
+        self.pdp.people = [p for p in self.pdp.people if p.id not in ids_to_remove]
+        self.pdp.events = [e for e in self.pdp.events if e.id not in ids_to_remove]
+        self.pdp.pair_bonds = [pb for pb in self.pdp.pair_bonds if pb.id not in ids_to_remove]
+        self.pdp.delete = [d for d in self.pdp.delete if d not in ids_to_remove]
         _log.info(f"Cascade-deleted committed entity {item_id} (removed {ids_to_remove})")
 
     def reject_committed_delete(self, item_id: int) -> None:
