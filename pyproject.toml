@@ -19,6 +19,7 @@ app = [
     "celery==5.5.3",
     "redis",
     "click",
+    "colorlog",
     "ddtrace",
     "gunicorn",
     "flask",

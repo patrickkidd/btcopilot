@@ -188,9 +188,20 @@ def init_datadog(app):
     if not has_console:
         console = logging.StreamHandler(sys.stdout)
         console.setLevel(logging.INFO)
-        console.setFormatter(
-            logging.Formatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s")
-        )
+        if sys.stdout.isatty():
+            import colorlog
+
+            console.setFormatter(
+                colorlog.ColoredFormatter(
+                    "[%(asctime)s] %(log_color)s%(levelname)s%(reset)s in %(module)s: %(message)s"
+                )
+            )
+        else:
+            console.setFormatter(
+                logging.Formatter(
+                    "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
+                )
+            )
         logger.addHandler(console)
 
 
