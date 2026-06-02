@@ -71,3 +71,11 @@ Fix: collect `positiveEditIds` and `deleteIds` in addition to `negativeIds`. In 
 ### `get_app_state` vs. `get_personal_state` for scene counts
 
 `get_app_state` returns only login/view state for the Personal app — no scene data. Use `get_personal_state` with `component: "all"` to get `scene.personCount` and `scene.eventCount`.
+
+## 2026-05-22 — jira-pr: mandatory Jira comment must include TestInstance import path
+
+**What happened**: `/testing` session for FD-314/315/317 concluded the changes weren't in the codebase. The MCP `familydiagram-testing` server derives `project_root` from its own config file path — it was pointing at `~/worktrees/FD-333/familydiagram`, so the testing session launched the wrong code and found none of the three changed QML files. The session offered to update `.mcp.json`, which would have required a Claude Code restart and disturbed unrelated work.
+
+**Root cause**: The Jira ticket comment only contained the PR URL. The `/testing` skill had no signal about the worktree path or that it should use TestInstance directly.
+
+**Fix**: Step 6 of jira-pr SKILL.md now mandates a structured Jira comment on every ticket immediately after PR creation, containing: branch, worktree path, PR URL, repo scope, and an explicit "Testing note" with the TestInstance import path. Known Corrections updated to prohibit suggesting `.mcp.json` changes to the testing session.
