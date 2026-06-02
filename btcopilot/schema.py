@@ -680,6 +680,8 @@ class DiagramData:
                         event_dict[key] = validatedDateTimeText(value)
                 self.events.append(event_dict)
 
+        self._backfill_committed_parents()
+
         self.pdp.people = [p for p in self.pdp.people if p.id not in all_item_ids]
         self.pdp.events = [e for e in self.pdp.events if e.id not in all_item_ids]
         self.pdp.pair_bonds = [
@@ -702,6 +704,39 @@ class DiagramData:
             self._export_commit_state(item_ids, "post", id_mapping)
 
         return id_mapping
+
+    def _backfill_committed_parents(self) -> None:
+        """Cross-session parent back-fill: when a birth/adopted event names a
+        couple as the parents of an already-committed child whose `parents` is
+        still null, set it. The committed-data analogue of
+        pdp.infer_parents_from_birth_events, which only reaches delta people —
+        so a child committed in an earlier session is otherwise unreachable when
+        a later session states its parentage."""
+        bond_by_dyad: dict[tuple[int, int], int] = {}
+        for pb in self.pair_bonds:
+            a, b = pb.get("person_a"), pb.get("person_b")
+            if a is not None and b is not None:
+                bond_by_dyad[tuple(sorted((a, b)))] = pb["id"]
+        people_by_id = {p["id"]: p for p in self.people}
+        for e in self.events:
+            kind = e.get("kind")
+            kind = kind.value if isinstance(kind, EventKind) else kind
+            if kind not in (EventKind.Birth.value, EventKind.Adopted.value):
+                continue
+            person, spouse, child = e.get("person"), e.get("spouse"), e.get("child")
+            if person is None or spouse is None or child is None:
+                continue
+            bond_id = bond_by_dyad.get(tuple(sorted((person, spouse))))
+            if bond_id is None:
+                continue
+            ch = people_by_id.get(child)
+            if ch is None or ch.get("parents") is not None:
+                continue
+            ch["parents"] = bond_id
+            _log.info(
+                f"backfill_committed_parents: committed Person {child} "
+                f"parents={bond_id} from birth event {e.get('id')}"
+            )
 
     def _export_commit_state(
         self,

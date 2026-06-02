@@ -1197,6 +1197,66 @@ def _windowed_conversation(discussion) -> tuple[str, str | None]:
     return prior + marker + tail, nonce
 
 
+WINDOW_SIZE = int(os.getenv("FD_WINDOW_SIZE", "80"))
+
+
+def _fmt_stmts(stmts) -> str:
+    return "\n".join(
+        f"{s.speaker.name if s.speaker else 'Unknown'}: {s.text}" for s in stmts
+    )
+
+
+def _restage_new_items(working: DiagramData, original: DiagramData) -> PDP:
+    """Re-stage items committed across windows that are absent from the original
+    diagram as a fresh negative-id PDP. References into original committed items
+    stay positive; references among the new items are remapped to negatives."""
+    orig_people = {p["id"] for p in original.people}
+    orig_events = {e["id"] for e in original.events}
+    orig_bonds = {pb["id"] for pb in original.pair_bonds}
+
+    new_people = [p for p in working.people if p["id"] not in orig_people]
+    new_events = [e for e in working.events if e["id"] not in orig_events]
+    new_bonds = [pb for pb in working.pair_bonds if pb["id"] not in orig_bonds]
+
+    next_id = -1
+    id_map: dict[int, int] = {}
+    for item in [*new_people, *new_bonds, *new_events]:
+        id_map[item["id"]] = next_id
+        next_id -= 1
+
+    def remap(old):
+        return id_map.get(old, old) if old is not None else None
+
+    people, bonds, events = [], [], []
+    for p in new_people:
+        d = dict(p)
+        d["id"] = id_map[p["id"]]
+        d["parents"] = remap(p.get("parents"))
+        people.append(from_dict(Person, d))
+    for pb in new_bonds:
+        d = dict(pb)
+        d["id"] = id_map[pb["id"]]
+        d["person_a"] = remap(pb.get("person_a"))
+        d["person_b"] = remap(pb.get("person_b"))
+        bonds.append(from_dict(PairBond, d))
+    for e in new_events:
+        d = dict(e)
+        d["id"] = id_map[e["id"]]
+        for k in ("person", "spouse", "child"):
+            d[k] = remap(d.get(k))
+        d["relationshipTargets"] = [remap(t) for t in d.get("relationshipTargets") or []]
+        d["relationshipTriangles"] = [
+            remap(t) for t in d.get("relationshipTriangles") or []
+        ]
+        for k in ("dateTime", "endDateTime"):
+            v = d.get(k)
+            if v is not None and hasattr(v, "toString"):
+                d[k] = v.toString("yyyy-MM-dd")
+        events.append(from_dict(Event, d))
+
+    return PDP(people=people, events=events, pair_bonds=bonds)
+
+
 async def extract_full(
     discussion,
     diagram_data: DiagramData,
@@ -1204,23 +1264,80 @@ async def extract_full(
     sarf_review_prompt: str | None = None,
     sarf_review_model: str | None = None,
 ) -> tuple[PDP, PDPDeltas]:
-    diagram_data.pdp = PDP()
     reference_date = (
         discussion.discussion_date
         if discussion.discussion_date
         else datetime.now().date()
     )
-    conversation, cursor_nonce = _windowed_conversation(discussion)
-    return await _two_pass_extract(
-        diagram_data,
-        conversation,
-        reference_date.isoformat(),
-        "extract_full",
-        pass2_prompt=pass2_prompt,
-        sarf_review_prompt=sarf_review_prompt,
-        sarf_review_model=sarf_review_model,
-        cursor_nonce=cursor_nonce,
+    ref = reference_date.isoformat()
+
+    ordered = sorted(discussion.statements, key=lambda s: (s.order or 0, s.id or 0))
+    cursor = discussion.extracted_through_order
+    if cursor is None:
+        to_extract = ordered
+        prior_committed = []
+    else:
+        to_extract = [s for s in ordered if (s.order or 0) > cursor]
+        prior_committed = [s for s in ordered if (s.order or 0) <= cursor]
+
+    if len(to_extract) <= WINDOW_SIZE:
+        diagram_data.pdp = PDP()
+        conversation, cursor_nonce = _windowed_conversation(discussion)
+        return await _two_pass_extract(
+            diagram_data,
+            conversation,
+            ref,
+            "extract_full",
+            pass2_prompt=pass2_prompt,
+            sarf_review_prompt=sarf_review_prompt,
+            sarf_review_model=sarf_review_model,
+            cursor_nonce=cursor_nonce,
+        )
+
+    working = DiagramData(
+        people=copy.deepcopy(diagram_data.people),
+        events=copy.deepcopy(diagram_data.events),
+        pair_bonds=copy.deepcopy(diagram_data.pair_bonds),
+        lastItemId=diagram_data.lastItemId,
     )
+
+    for start in range(0, len(to_extract), WINDOW_SIZE):
+        window = to_extract[start : start + WINDOW_SIZE]
+        prior = prior_committed + to_extract[:start]
+        if prior:
+            nonce = secrets.token_hex(8)
+            marker = CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
+            conversation = _fmt_stmts(prior) + marker + _fmt_stmts(window)
+        else:
+            nonce = None
+            conversation = _fmt_stmts(window)
+
+        working.pdp = PDP()
+        pdp, _ = await _two_pass_extract(
+            working,
+            conversation,
+            ref,
+            "extract_full_window",
+            pass2_prompt=pass2_prompt,
+            sarf_review_prompt=sarf_review_prompt,
+            sarf_review_model=sarf_review_model,
+            cursor_nonce=nonce,
+        )
+        working.pdp = pdp
+        ids = [p.id for p in pdp.people if p.id is not None and p.id < 0]
+        ids += [e.id for e in pdp.events if e.id is not None and e.id < 0]
+        ids += [pb.id for pb in pdp.pair_bonds if pb.id is not None and pb.id < 0]
+        if ids:
+            working.commit_pdp_items(ids)
+
+    staged = _restage_new_items(working, diagram_data)
+    diagram_data.pdp = staged
+    deltas = PDPDeltas(
+        people=list(staged.people),
+        events=list(staged.events),
+        pair_bonds=list(staged.pair_bonds),
+    )
+    return staged, deltas
 
 
 async def import_text(
