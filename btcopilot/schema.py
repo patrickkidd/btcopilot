@@ -338,6 +338,10 @@ class PDP:
     people: list[Person] = field(default_factory=list)
     events: list[Event] = field(default_factory=list)
     pair_bonds: list[PairBond] = field(default_factory=list)
+    # Positive-ID entries in people/events/pair_bonds above are pending edits to
+    # already-committed entities, shown as Update cards in the review sheet.
+    # Pending deletes of committed entities (positive IDs from PDPDeltas.delete).
+    delete: list[int] = field(default_factory=list)
 
 
 def get_all_pdp_item_ids(pdp: PDP) -> set[int]:
@@ -790,6 +794,83 @@ class DiagramData:
         self.pdp.pair_bonds = [
             pb for pb in self.pdp.pair_bonds if pb.id not in ids_to_remove
         ]
+
+    def accept_committed_edit(self, item_id: int) -> None:
+        if item_id <= 0:
+            raise ValueError(f"Item ID {item_id} must be positive (committed entity)")
+        pdp_edit = next(
+            (p for p in self.pdp.people if p.id == item_id),
+            next(
+                (e for e in self.pdp.events if e.id == item_id),
+                next((pb for pb in self.pdp.pair_bonds if pb.id == item_id), None),
+            ),
+        )
+        if pdp_edit is None:
+            raise ValueError(f"No pending committed edit for id {item_id}")
+        edit_dict = asdict(pdp_edit)
+        for collection in (self.people, self.events, self.pair_bonds):
+            for i, item in enumerate(collection):
+                if item.get("id") == item_id:
+                    collection[i] = {**item, **{k: v for k, v in edit_dict.items() if v is not None}}
+                    break
+        self.pdp.people = [p for p in self.pdp.people if p.id != item_id]
+        self.pdp.events = [e for e in self.pdp.events if e.id != item_id]
+        self.pdp.pair_bonds = [pb for pb in self.pdp.pair_bonds if pb.id != item_id]
+        _log.info(f"Applied committed edit for id {item_id}")
+
+    def reject_committed_edit(self, item_id: int) -> None:
+        if item_id <= 0:
+            raise ValueError(f"Item ID {item_id} must be positive (committed entity)")
+        self.pdp.people = [p for p in self.pdp.people if p.id != item_id]
+        self.pdp.events = [e for e in self.pdp.events if e.id != item_id]
+        self.pdp.pair_bonds = [pb for pb in self.pdp.pair_bonds if pb.id != item_id]
+        _log.info(f"Rejected committed edit for id {item_id}")
+
+    def accept_committed_delete(self, item_id: int) -> None:
+        """Cascade-delete a committed entity and remove it from the pending queue."""
+        if item_id <= 0:
+            raise ValueError(f"Item ID {item_id} must be positive (committed entity)")
+        if item_id not in self.pdp.delete:
+            raise ValueError(f"No pending committed delete for id {item_id}")
+
+        ids_to_remove: set[int] = set()
+        to_visit = [item_id]
+        while to_visit:
+            current = to_visit.pop()
+            if current in ids_to_remove:
+                continue
+            ids_to_remove.add(current)
+            for event in self.events:
+                if event.get("id") in ids_to_remove:
+                    continue
+                if any(event.get(r) == current for r in ("person", "spouse", "child")) or current in event.get("relationshipTargets", []) or current in event.get("relationshipTriangles", []):
+                    to_visit.append(event["id"])
+            for pb in self.pair_bonds:
+                if pb.get("id") in ids_to_remove:
+                    continue
+                if pb.get("person_a") == current or pb.get("person_b") == current:
+                    to_visit.append(pb["id"])
+            for p in self.people:
+                if p.get("id") in ids_to_remove:
+                    continue
+                if p.get("parents") == current:
+                    to_visit.append(p["id"])
+
+        self.people = [p for p in self.people if p.get("id") not in ids_to_remove]
+        self.events = [e for e in self.events if e.get("id") not in ids_to_remove]
+        self.pair_bonds = [pb for pb in self.pair_bonds if pb.get("id") not in ids_to_remove]
+        self.pdp.people = [p for p in self.pdp.people if p.id not in ids_to_remove]
+        self.pdp.events = [e for e in self.pdp.events if e.id not in ids_to_remove]
+        self.pdp.pair_bonds = [pb for pb in self.pdp.pair_bonds if pb.id not in ids_to_remove]
+        self.pdp.delete = [d for d in self.pdp.delete if d not in ids_to_remove]
+        _log.info(f"Cascade-deleted committed entity {item_id} (removed {ids_to_remove})")
+
+    def reject_committed_delete(self, item_id: int) -> None:
+        """Discard a pending committed-entity delete."""
+        if item_id <= 0:
+            raise ValueError(f"Item ID {item_id} must be positive (committed entity)")
+        self.pdp.delete = [d for d in self.pdp.delete if d != item_id]
+        _log.info(f"Rejected committed delete for id {item_id}")
 
     def _next_pdp_id(self) -> int:
         """Generate next available negative PDP ID."""

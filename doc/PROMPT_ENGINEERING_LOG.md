@@ -2,7 +2,7 @@
 
 **Purpose**: Authoritative record of prompt engineering decisions, experiments, and lessons learned for the SARF data extraction system. Prevents regressions by documenting what works, what doesn't, and why.
 
-**Last Updated**: 2026-06-01 (FD-324 real-chat measurement + failure-mode classification)
+**Last Updated**: 2026-06-02 (FD-324 real-chat measurement + corrected conclusion)
 
 ---
 
@@ -117,8 +117,8 @@ vs ~22 fresh).
 | Failure mode | Status |
 |---|---|
 | (a) Duplicates | Accepted: rare in this data, no systematic pattern warranting a prompt change |
-| (b) Implicit spouse/sibling missing PairBond | Accepted out-of-scope: fix requires name-matching, explicitly rejected by ticket rules |
-| (c) Truly isolated mentions | Accepted out-of-scope: source text lacks relationship context; fabricating structure would be hallucination |
+| (b) Implicit spouse/parent missing PairBond | Addressed by Pass-1 prompt fixes (fdserver #23): emit both bond partners + delete the ID-ordering contradiction |
+| (c) Truly isolated mentions | Only genuine case is Monique (ex-girlfriend); the rest are stated-but-unextracted (architectural, see corrected conclusion) |
 
 ---
 

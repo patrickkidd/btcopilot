@@ -931,6 +931,290 @@ def test_fix_unresolved_refs_clears_orphaned_parents():
     validate_pdp_deltas(PDP(), deltas)  # converges, no error
 
 
+# --- FD-333: committed-entity edits and deletes ---
+
+def test_apply_deltas_stages_committed_edit():
+    """Positive-id delta for a committed person is added to pdp.people."""
+    deltas = PDPDeltas(people=[Person(id=10, name="Alicia")])
+    new_pdp = apply_deltas(PDP(), deltas)
+    assert len(new_pdp.people) == 1
+    assert new_pdp.people[0].id == 10
+    assert new_pdp.people[0].name == "Alicia"
+
+
+def test_apply_deltas_stages_committed_delete():
+    """Positive-id in deltas.delete is staged in pdp.delete."""
+    deltas = PDPDeltas(delete=[10])
+    new_pdp = apply_deltas(PDP(), deltas)
+    assert 10 in new_pdp.delete
+
+
+def test_accept_committed_edit_applies_to_diagram():
+    """accept_committed_edit merges pdp.people entry into the committed entity."""
+    diagram_data = DiagramData(
+        people=[{"id": 10, "name": "Alice", "gender": "female"}],
+        pdp=PDP(people=[Person(id=10, name="Alicia")]),
+    )
+    diagram_data.accept_committed_edit(10)
+    assert diagram_data.people[0]["name"] == "Alicia"
+    assert diagram_data.pdp.people == []
+
+
+def test_reject_committed_edit_discards_staged_edit():
+    """reject_committed_edit drops the pdp entry without touching the committed entity."""
+    diagram_data = DiagramData(
+        people=[{"id": 10, "name": "Alice"}],
+        pdp=PDP(people=[Person(id=10, name="Alicia")]),
+    )
+    diagram_data.reject_committed_edit(10)
+    assert diagram_data.people[0]["name"] == "Alice"
+    assert diagram_data.pdp.people == []
+
+
+def test_accept_committed_delete_cascade():
+    """accept_committed_delete removes the person plus all dependent events and pair bonds."""
+    diagram_data = DiagramData(
+        people=[
+            {"id": 10, "name": "Alice"},
+            {"id": 11, "name": "Bob"},
+        ],
+        events=[
+            {"id": 20, "kind": "shift", "person": 10, "description": "x", "dateTime": "2000-01-01"},
+        ],
+        pair_bonds=[{"id": 30, "person_a": 10, "person_b": 11}],
+        pdp=PDP(delete=[10]),
+    )
+    diagram_data.accept_committed_delete(10)
+    assert all(p["id"] != 10 for p in diagram_data.people)
+    assert diagram_data.events == []
+    assert diagram_data.pair_bonds == []
+    assert 10 not in diagram_data.pdp.delete
+
+
+def test_accept_committed_delete_cascade_relationship_events():
+    diagram_data = DiagramData(
+        people=[{"id": 10, "name": "Alice"}, {"id": 11, "name": "Bob"}],
+        events=[
+            {
+                "id": 20,
+                "kind": "shift",
+                "person": 11,
+                "description": "x",
+                "dateTime": "2000-01-01",
+                "relationshipTargets": [10],
+            },
+            {
+                "id": 21,
+                "kind": "shift",
+                "person": 11,
+                "description": "y",
+                "dateTime": "2000-01-02",
+                "relationshipTriangles": [10],
+            },
+        ],
+        pdp=PDP(delete=[10]),
+    )
+    diagram_data.accept_committed_delete(10)
+    assert all(p["id"] != 10 for p in diagram_data.people)
+    assert diagram_data.events == []
+
+
+def test_accept_committed_delete_clears_pdp_staging():
+    diagram_data = DiagramData(
+        people=[{"id": 10, "name": "Alice"}],
+        pdp=PDP(
+            people=[Person(id=10, name="Alicia")],
+            delete=[10],
+        ),
+    )
+    diagram_data.accept_committed_delete(10)
+    assert all(p["id"] != 10 for p in diagram_data.people)
+    assert diagram_data.pdp.people == []
+    assert diagram_data.pdp.delete == []
+
+
+
+def test_reject_committed_delete_clears_queue():
+    """reject_committed_delete drops the pending delete; committed entity unchanged."""
+    diagram_data = DiagramData(
+        people=[{"id": 10, "name": "Alice"}],
+        pdp=PDP(delete=[10]),
+    )
+    diagram_data.reject_committed_delete(10)
+    assert diagram_data.people[0]["id"] == 10
+    assert diagram_data.pdp.delete == []
+
+
+def test_accept_committed_edit_raises_on_missing():
+    """accept_committed_edit raises ValueError when no staged edit for id."""
+    diagram_data = DiagramData(
+        people=[{"id": 10, "name": "Alice"}],
+        pdp=PDP(),
+    )
+    with pytest.raises(ValueError, match="No pending committed edit"):
+        diagram_data.accept_committed_edit(10)
+
+
+def test_accept_committed_delete_raises_on_missing():
+    """accept_committed_delete raises ValueError when id not in pdp.delete."""
+    diagram_data = DiagramData(
+        people=[{"id": 10, "name": "Alice"}],
+        pdp=PDP(),
+    )
+    with pytest.raises(ValueError, match="No pending committed delete"):
+        diagram_data.accept_committed_delete(10)
+
+
+# ── FD-333: adversarial cascade-delete tests ────────────────────────────────
+
+
+def test_accept_committed_delete_cascade_via_relationship_targets_leaves_unrelated():
+    """Event linked only via relationshipTargets is deleted; unrelated event survives."""
+    diagram_data = DiagramData(
+        people=[
+            {"id": 10, "name": "Alice"},
+            {"id": 11, "name": "Bob"},
+            {"id": 12, "name": "Carol"},
+        ],
+        events=[
+            {
+                "id": 20,
+                "kind": "shift",
+                "person": 11,
+                "description": "rt",
+                "dateTime": "2000-01-01",
+                "relationshipTargets": [10],
+                "relationshipTriangles": [],
+            },
+            {
+                "id": 21,
+                "kind": "shift",
+                "person": 12,
+                "description": "unrelated",
+                "dateTime": "2000-01-02",
+                "relationshipTargets": [],
+                "relationshipTriangles": [],
+            },
+        ],
+        pdp=PDP(delete=[10]),
+    )
+    diagram_data.accept_committed_delete(10)
+    assert all(p["id"] != 10 for p in diagram_data.people)
+    assert all(e["id"] != 20 for e in diagram_data.events)
+    assert any(e["id"] == 21 for e in diagram_data.events)
+
+
+def test_accept_committed_delete_cascade_via_relationship_triangles_leaves_unrelated():
+    """Event linked only via relationshipTriangles is deleted; unrelated event survives."""
+    diagram_data = DiagramData(
+        people=[
+            {"id": 10, "name": "Alice"},
+            {"id": 11, "name": "Bob"},
+            {"id": 12, "name": "Carol"},
+        ],
+        events=[
+            {
+                "id": 20,
+                "kind": "shift",
+                "person": 11,
+                "description": "tri",
+                "dateTime": "2000-01-01",
+                "relationshipTargets": [],
+                "relationshipTriangles": [10],
+            },
+            {
+                "id": 21,
+                "kind": "shift",
+                "person": 12,
+                "description": "unrelated",
+                "dateTime": "2000-01-02",
+                "relationshipTargets": [],
+                "relationshipTriangles": [],
+            },
+        ],
+        pdp=PDP(delete=[10]),
+    )
+    diagram_data.accept_committed_delete(10)
+    assert all(p["id"] != 10 for p in diagram_data.people)
+    assert all(e["id"] != 20 for e in diagram_data.events)
+    assert any(e["id"] == 21 for e in diagram_data.events)
+
+
+def test_accept_committed_delete_clears_pdp_events_and_pair_bonds():
+    """Cascaded delete clears pdp.events and pdp.pair_bonds for all removed IDs."""
+    diagram_data = DiagramData(
+        people=[
+            {"id": 10, "name": "Alice"},
+            {"id": 11, "name": "Bob"},
+        ],
+        pair_bonds=[{"id": 30, "person_a": 10, "person_b": 11}],
+        events=[
+            {"id": 20, "kind": "shift", "person": 10, "description": "x",
+             "dateTime": "2000-01-01", "relationshipTargets": [], "relationshipTriangles": []},
+        ],
+        pdp=PDP(
+            events=[Event(id=20, kind=EventKind.Shift, person=10, description="edited")],
+            pair_bonds=[PairBond(id=30, person_a=10, person_b=11)],
+            delete=[10],
+        ),
+    )
+    diagram_data.accept_committed_delete(10)
+    assert diagram_data.pdp.events == []
+    assert diagram_data.pdp.pair_bonds == []
+    assert diagram_data.pdp.delete == []
+
+
+def test_accept_committed_delete_clears_cascaded_ids_from_pdp_delete():
+    """If a cascade-deleted entity also has its own pdp.delete entry, that entry is cleared too."""
+    diagram_data = DiagramData(
+        people=[
+            {"id": 10, "name": "Alice"},
+            {"id": 11, "name": "Bob"},
+        ],
+        pair_bonds=[{"id": 30, "person_a": 10, "person_b": 11}],
+        events=[],
+        pdp=PDP(delete=[10, 30]),  # both root and cascade target staged for delete
+    )
+    diagram_data.accept_committed_delete(10)
+    assert diagram_data.pair_bonds == []
+    assert diagram_data.pdp.delete == []
+
+
+def test_accept_committed_delete_multihop_cascade_cleans_all_pdp_collections():
+    """Alice(10) -> pair_bond(30) -> child(12) cascade: pair_bond, child, and birth
+    event are all removed from diagram and all pdp staging collections.
+    Bob(11) is the other pair_bond endpoint and survives (pair_bond deletion does
+    not cascade to the other person)."""
+    diagram_data = DiagramData(
+        people=[
+            {"id": 10, "name": "Alice"},
+            {"id": 11, "name": "Bob"},
+            {"id": 12, "name": "Child", "parents": 30},
+        ],
+        pair_bonds=[{"id": 30, "person_a": 10, "person_b": 11}],
+        events=[
+            {"id": 20, "kind": "birth", "person": 10, "spouse": 11, "child": 12,
+             "dateTime": "2000-01-01", "relationshipTargets": [], "relationshipTriangles": []},
+        ],
+        pdp=PDP(
+            people=[Person(id=12, name="Child edited")],
+            events=[Event(id=20, kind=EventKind.Birth, person=10, spouse=11, child=12)],
+            pair_bonds=[PairBond(id=30, person_a=10, person_b=11)],
+            delete=[10],
+        ),
+    )
+    diagram_data.accept_committed_delete(10)
+    surviving_ids = {p["id"] for p in diagram_data.people}
+    assert surviving_ids == {11}  # Bob survives; Alice and Child are gone
+    assert diagram_data.events == []
+    assert diagram_data.pair_bonds == []
+    assert diagram_data.pdp.people == []
+    assert diagram_data.pdp.events == []
+    assert diagram_data.pdp.pair_bonds == []
+    assert diagram_data.pdp.delete == []
+
+
+
 # ── infer_parents_from_birth_events ─────────────────────────────────────────
 
 
