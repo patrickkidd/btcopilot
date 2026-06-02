@@ -64,19 +64,33 @@ def _person_parents(p) -> int | None:
     return p.get("parents") if isinstance(p, dict) else p.parents
 
 
+def _assistant_ids(people: list) -> set[int]:
+    """ID(s) of the Assistant (id=2) — the AI is never part of the family graph."""
+    return {_person_id(p) for p in people if _person_id(p) == 2}
+
+
 def lcc_percent(people: list, pair_bonds: list) -> dict:
     """
+    LCC% of the family tree, EXCLUDING the User and Assistant from the count but
+    keeping the User as a CONNECTING node. In a Personal-app diagram the User is
+    the proband: spouse, children, parents and siblings all connect through them,
+    so deleting the User node fragments correctly-extracted families. The Assistant
+    (id=2) is the AI and is dropped from the graph entirely.
+
     Returns:
-        total: int — non-default people count
-        components: int — number of connected components
-        lcc: int — size of largest connected component
+        total: int — non-default people count (excludes User + Assistant)
+        components: int — number of connected components (User-as-connector graph)
+        lcc: int — non-default members of the largest component
         lcc_pct: float — lcc / total * 100 (0.0 if total == 0)
     """
-    default = _default_ids(people)
-    nodes = {_person_id(p) for p in people if _person_id(p) not in default and _person_id(p) is not None}
+    default = _default_ids(people)           # User + Assistant — excluded from the count
+    assistant = _assistant_ids(people)       # Assistant only — excluded from the graph
+    nodes = {_person_id(p) for p in people
+             if _person_id(p) is not None and _person_id(p) not in assistant}
 
-    if not nodes:
-        return {"total": 0, "components": 0, "lcc": 0, "lcc_pct": 0.0}
+    total = sum(1 for p in people if _person_id(p) is not None and _person_id(p) not in default)
+    if not nodes or total == 0:
+        return {"total": total, "components": 0, "lcc": 0, "lcc_pct": 0.0}
 
     # adjacency
     adj: dict[int, set[int]] = {n: set() for n in nodes}
@@ -105,7 +119,7 @@ def lcc_percent(people: list, pair_bonds: list) -> dict:
                 adj[pid].add(parent)
                 adj[parent].add(pid)
 
-    # BFS connected components
+    # DFS connected components; size each by its NON-DEFAULT members only
     visited: set[int] = set()
     component_sizes: list[int] = []
     for start in nodes:
@@ -113,18 +127,18 @@ def lcc_percent(people: list, pair_bonds: list) -> dict:
             continue
         queue = [start]
         visited.add(start)
-        size = 0
+        nd_size = 0
         while queue:
             cur = queue.pop()
-            size += 1
+            if cur not in default:
+                nd_size += 1
             for nb in adj[cur]:
                 if nb not in visited:
                     visited.add(nb)
                     queue.append(nb)
-        component_sizes.append(size)
+        component_sizes.append(nd_size)
 
     lcc = max(component_sizes) if component_sizes else 0
-    total = len(nodes)
     return {
         "total": total,
         "components": len(component_sizes),
