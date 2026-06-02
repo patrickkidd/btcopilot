@@ -66,11 +66,26 @@ Committed people in the diagram span two family groups:
 
 **Mode (b) implicit-spouse / implicit-sibling**: Sam, Alyssa, Julie, Robert, Connie all share last_name=Stinson, strongly suggesting a sibling group. Connecting them to a shared parent pair would link the Sam-Alyssa isolated couple into the main tree. However, fixing this requires inferring parent bonds from shared last names — which is name-matching, explicitly rejected per ticket rules. Out of scope.
 
-**Mode (c) truly isolated**: Monique, Joseph, Julia, Anthony — mentioned by name in the conversation with no stated family relationship. Vance-Meredith couple similarly isolated. The conversation never states how these individuals relate to the Stinson/O'Malley family. No prompt change can fabricate structure not in the source text.
+**Mode (c) truly isolated**: ONLY Monique (ex-girlfriend, no other relative) is genuinely
+isolated. Joseph/Julia/Anthony are NOT — disc 60 explicitly states "Jim and Sheila are
+the parents of Anthony, Joseph, Julia" and the user demanded the link be set; Vance/Meredith
+are Connie's sister + her husband (stated); Sam is the user's half-brother (stated). These
+are extraction failures, not missing source structure.
 
-**Root cause**: Patrick's discussion (200 statements) discusses a multi-person extended family but frequently mentions people by name without establishing their relationship to the main family tree. The LLM correctly extracts them as people and creates bonds where relationships are explicitly stated, but ~70% of the named individuals appear as passing references with no relationship context.
+**Conclusion (CORRECTED 2026-06-02 — supersedes the original below)**: Patrick's low LCC is
+NOT content-bounded. The relationships ARE in the transcript; fresh extraction recovers only
+~22 of 32 people and sets ~0-3 parents. Real causes are architectural: (1) single-shot
+re-extraction of a 200+ statement conversation under-extracts and drops parent links;
+(2) facts arrive across sessions (the children's mother is named only in a later session
+than the children), and the pipeline never back-fills parents on already-committed people.
+The lever is the cursor/windowing re-extraction architecture (FD-319, child_of 0.63→0.73),
+NOT prompt wording: four prompt-directive variants (incl. proband-linking and committed-
+back-fill) left Patrick within noise (25-29%). Guillermo, described within single
+discussions, reaches ~95% with the prompt fixes.
 
-**Conclusion**: Patrick's real-chat LCC is bounded by source text content, not pipeline quality. The 30% number reflects a genuinely sparse conversation — not a fixable extraction failure. This diagram would not meet the ≥80% AC even with perfect extraction.
+> ~~Original (incorrect) conclusion: "Patrick's real-chat LCC is bounded by source text
+> content... not a fixable extraction failure." Disproved — relationships are explicitly
+> stated; the gap is architectural under-extraction/back-fill, not content.~~
 
 ### Failure-mode classification: Guillermo diagram (1589)
 
@@ -88,9 +103,14 @@ Guillermo already meets ≥80% (88.5%). No action needed.
 |--------|------|---------|
 | 1589 Guillermo (real-chat) | 88.5% | ✓ |
 | Synthetic avg (6 GT discs) | 86.2% | ✓ |
-| 1924 Patrick (real-chat) | 30.0% | ✗ — content-bounded, not fixable |
+| 1924 Patrick (real-chat) | ~25-30% | ✗ — architecturally blocked (NOT content-bounded) |
 
-AC2 partially met. Patrick's diagram is content-bounded: the source conversation does not provide enough relationship structure to reach 80%. Accepted as out-of-scope per failure mode (c) analysis.
+AC2 partially met. Patrick does not reach 80%, but the relationships ARE stated in the
+transcript — the gap is architectural (single-shot under-extraction + no cross-session
+parent back-fill), addressable via the FD-319 cursor/windowing re-extraction, not prompt
+wording. Numbers here are the keep-User metric on single-shot re-extraction of a truncated
+discussion slice, which understates the live incrementally-built diagram (32 stored people
+vs ~22 fresh).
 
 ### AC4 disposition
 
