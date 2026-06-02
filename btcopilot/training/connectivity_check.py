@@ -16,6 +16,10 @@ Usage:
 
     # Measure a server diagram from the DB (committed state, no extraction):
     uv run python -m btcopilot.training.connectivity_check --diagram 1924
+
+    # Accumulate real-chat discussions in order (mimics live diagram growth):
+    uv run python -m btcopilot.training.connectivity_check --accumulate 55,58,60
+    uv run python -m btcopilot.training.connectivity_check --accumulate 28,57
 """
 
 import argparse
@@ -177,6 +181,170 @@ def _measure_gt_discussions(discussion_id=None):
         print(f"\nAverage LCC: {avg_lcc}%  ({len(totals)} discussions)")
 
 
+def _measure_accumulated_discussions(disc_ids: list[int]) -> dict:
+    """
+    Accumulate real-chat discussions in created_at order, carrying diagram_data
+    forward (each discussion sees the committed output of prior ones), then
+    measure LCC on the final committed state.
+
+    This mirrors how a live Personal-app diagram grows: discussion N sees all
+    people/pair_bonds committed from discussions 1..N-1.
+
+    Returns the lcc_percent stats dict for the final accumulated diagram.
+    """
+    nest_asyncio.apply()
+
+    from btcopilot.personal.models import Discussion
+
+    print(f"Accumulating {len(disc_ids)} discussions in order: {disc_ids}\n")
+
+    diagram_data = DiagramData()
+
+    for disc_id in disc_ids:
+        disc = Discussion.query.get(disc_id)
+        if disc is None:
+            print(f"  Disc {disc_id}: NOT FOUND — skipping")
+            continue
+        print(f"  Disc {disc_id} ({disc.summary or ''}, {len(disc.statements)} stmts)...", end=" ", flush=True)
+        try:
+            ai_pdp, _ = asyncio.run(pdp_mod.extract_full(disc, diagram_data))
+        except Exception as e:
+            print(f"EXTRACTION FAILED — {e}")
+            continue
+
+        # Point diagram_data.pdp at the extraction result so commit_pdp_items
+        # can find the items (extract_full resets diagram_data.pdp to PDP()
+        # at the start and never writes the final result back).
+        diagram_data.pdp = ai_pdp
+
+        # Commit all new PDP items (negative IDs) to diagram_data so the next
+        # discussion sees them as committed (positive-ID) context.
+        all_pdp_ids = [p.id for p in ai_pdp.people if p.id is not None and p.id < 0]
+        all_pdp_ids += [e.id for e in ai_pdp.events if e.id < 0]
+        all_pdp_ids += [pb.id for pb in ai_pdp.pair_bonds if pb.id is not None and pb.id < 0]
+
+        if all_pdp_ids:
+            try:
+                id_mapping = diagram_data.commit_pdp_items(all_pdp_ids)
+                print(f"committed {len(id_mapping)} items")
+            except Exception as e:
+                print(f"COMMIT FAILED — {e}")
+        else:
+            print("no new PDP items")
+
+    stats = lcc_percent(diagram_data.people, diagram_data.pair_bonds)
+    print(
+        f"\nFinal accumulated state: {stats['total']} people, "
+        f"{stats['components']} components, LCC {stats['lcc_pct']}%"
+    )
+    return stats
+
+
+def _dump_disconnected(disc_ids: list[int]) -> None:
+    """
+    Accumulate discussions and print disconnected people for failure-mode
+    classification: (a) duplicate, (b) implicit-spouse missing PairBond,
+    (c) truly isolated.
+    """
+    nest_asyncio.apply()
+
+    from btcopilot.personal.models import Discussion
+
+    diagram_data = DiagramData()
+
+    for disc_id in disc_ids:
+        disc = Discussion.query.get(disc_id)
+        if disc is None:
+            print(f"  Disc {disc_id}: NOT FOUND — skipping")
+            continue
+        try:
+            ai_pdp, _ = asyncio.run(pdp_mod.extract_full(disc, diagram_data))
+        except Exception as e:
+            print(f"  Disc {disc_id}: EXTRACTION FAILED — {e}")
+            continue
+        diagram_data.pdp = ai_pdp
+        all_pdp_ids = [p.id for p in ai_pdp.people if p.id is not None and p.id < 0]
+        all_pdp_ids += [e.id for e in ai_pdp.events if e.id < 0]
+        all_pdp_ids += [pb.id for pb in ai_pdp.pair_bonds if pb.id is not None and pb.id < 0]
+        if all_pdp_ids:
+            try:
+                diagram_data.commit_pdp_items(all_pdp_ids)
+            except Exception as e:
+                print(f"  Disc {disc_id}: COMMIT FAILED — {e}")
+
+    # Find connected components and list the disconnected people
+    default_ids = _default_ids(diagram_data.people)
+    nodes = {
+        _person_id(p)
+        for p in diagram_data.people
+        if _person_id(p) not in default_ids and _person_id(p) is not None
+    }
+
+    bond_by_id: dict[int, tuple] = {}
+    for pb in diagram_data.pair_bonds:
+        a, b = _bond_endpoints(pb)
+        pb_id = pb.get("id") if isinstance(pb, dict) else pb.id
+        if pb_id is not None:
+            bond_by_id[pb_id] = (a, b)
+
+    adj: dict[int, set[int]] = {n: set() for n in nodes}
+    for pb in diagram_data.pair_bonds:
+        a, b = _bond_endpoints(pb)
+        if a in nodes and b in nodes:
+            adj[a].add(b)
+            adj[b].add(a)
+    for p in diagram_data.people:
+        pid = _person_id(p)
+        if pid not in nodes:
+            continue
+        pb_id = _person_parents(p)
+        if pb_id is None or pb_id not in bond_by_id:
+            continue
+        pa, pb_p = bond_by_id[pb_id]
+        for parent in (pa, pb_p):
+            if parent in nodes:
+                adj[pid].add(parent)
+                adj[parent].add(pid)
+
+    visited: set[int] = set()
+    components: list[set[int]] = []
+    for start in nodes:
+        if start in visited:
+            continue
+        queue = [start]
+        visited.add(start)
+        comp: set[int] = set()
+        while queue:
+            cur = queue.pop()
+            comp.add(cur)
+            for nb in adj[cur]:
+                if nb not in visited:
+                    visited.add(nb)
+                    queue.append(nb)
+        components.append(comp)
+
+    if not components:
+        print("No non-default people found.")
+        return
+
+    lcc_size = max(len(c) for c in components)
+    person_by_id = {_person_id(p): p for p in diagram_data.people if _person_id(p) is not None}
+
+    print(f"\nTotal non-default people: {len(nodes)}")
+    print(f"Components: {len(components)}, LCC size: {lcc_size}")
+    print(f"\nDisconnected components (not in LCC):")
+    for comp in sorted(components, key=len, reverse=True):
+        if len(comp) == lcc_size:
+            continue  # skip the LCC
+        print(f"\n  Component size {len(comp)}:")
+        for pid in sorted(comp):
+            p = person_by_id.get(pid, {})
+            name = p.get("name") or p.get("firstName", "") if isinstance(p, dict) else getattr(p, "name", "?")
+            pb_id = _person_parents(p)
+            bonds = [pb for pb in diagram_data.pair_bonds if pid in (_bond_endpoints(pb))]
+            print(f"    id={pid} name={name!r} parents_bond={pb_id} pair_bonds={len(bonds)}")
+
+
 def _measure_diagram(diagram_id: int):
     from btcopilot.pro.models.diagram import Diagram
 
@@ -199,12 +367,28 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--discussion", type=int)
     parser.add_argument("--diagram", type=int)
+    parser.add_argument(
+        "--accumulate",
+        type=str,
+        help="Comma-separated discussion IDs to accumulate in order (e.g. 55,58,60)",
+    )
+    parser.add_argument(
+        "--dump-disconnected",
+        type=str,
+        help="Comma-separated discussion IDs; accumulate then dump disconnected people",
+    )
     args = parser.parse_args()
 
     app = create_app()
     with app.app_context():
         if args.diagram:
             _measure_diagram(args.diagram)
+        elif args.accumulate:
+            disc_ids = [int(x.strip()) for x in args.accumulate.split(",")]
+            _measure_accumulated_discussions(disc_ids)
+        elif args.dump_disconnected:
+            disc_ids = [int(x.strip()) for x in args.dump_disconnected.split(",")]
+            _dump_disconnected(disc_ids)
         else:
             _measure_gt_discussions(args.discussion)
 
