@@ -1219,34 +1219,45 @@ def _restage_new_items(working: DiagramData, original: DiagramData) -> PDP:
     new_bonds = [pb for pb in working.pair_bonds if pb["id"] not in orig_bonds]
 
     next_id = -1
-    id_map: dict[int, int] = {}
-    for item in [*new_people, *new_bonds, *new_events]:
-        id_map[item["id"]] = next_id
+    person_map: dict[int, int] = {}
+    bond_map: dict[int, int] = {}
+    event_map: dict[int, int] = {}
+    for p in new_people:
+        person_map[p["id"]] = next_id
+        next_id -= 1
+    for pb in new_bonds:
+        bond_map[pb["id"]] = next_id
+        next_id -= 1
+    for e in new_events:
+        event_map[e["id"]] = next_id
         next_id -= 1
 
-    def remap(old):
-        return id_map.get(old, old) if old is not None else None
+    def rperson(old):
+        return person_map.get(old, old) if old is not None else None
+
+    def rbond(old):
+        return bond_map.get(old, old) if old is not None else None
 
     people, bonds, events = [], [], []
     for p in new_people:
         d = dict(p)
-        d["id"] = id_map[p["id"]]
-        d["parents"] = remap(p.get("parents"))
+        d["id"] = person_map[p["id"]]
+        d["parents"] = rbond(p.get("parents"))
         people.append(from_dict(Person, d))
     for pb in new_bonds:
         d = dict(pb)
-        d["id"] = id_map[pb["id"]]
-        d["person_a"] = remap(pb.get("person_a"))
-        d["person_b"] = remap(pb.get("person_b"))
+        d["id"] = bond_map[pb["id"]]
+        d["person_a"] = rperson(pb.get("person_a"))
+        d["person_b"] = rperson(pb.get("person_b"))
         bonds.append(from_dict(PairBond, d))
     for e in new_events:
         d = dict(e)
-        d["id"] = id_map[e["id"]]
+        d["id"] = event_map[e["id"]]
         for k in ("person", "spouse", "child"):
-            d[k] = remap(d.get(k))
-        d["relationshipTargets"] = [remap(t) for t in d.get("relationshipTargets") or []]
+            d[k] = rperson(d.get(k))
+        d["relationshipTargets"] = [rperson(t) for t in d.get("relationshipTargets") or []]
         d["relationshipTriangles"] = [
-            remap(t) for t in d.get("relationshipTriangles") or []
+            rperson(t) for t in d.get("relationshipTriangles") or []
         ]
         for k in ("dateTime", "endDateTime"):
             v = d.get(k)
@@ -1279,6 +1290,10 @@ async def extract_full(
     else:
         to_extract = [s for s in ordered if (s.order or 0) > cursor]
         prior_committed = [s for s in ordered if (s.order or 0) <= cursor]
+
+    if not to_extract:
+        diagram_data.pdp = PDP()
+        return PDP(), PDPDeltas()
 
     if len(to_extract) <= WINDOW_SIZE:
         diagram_data.pdp = PDP()
