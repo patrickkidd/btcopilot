@@ -351,7 +351,7 @@ def response_text_sync(prompt=None, model=None, **kwargs):
 # --- Public API ---
 
 
-async def gemini_structured(prompt, response_format, large=False):
+async def gemini_structured(prompt, response_format, large=False, model=None):
     from google.genai import types
 
     start_time = time.time()
@@ -359,7 +359,7 @@ async def gemini_structured(prompt, response_format, large=False):
         response_format, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED
     )
 
-    model = EXTRACTION_MODEL_LARGE if large else EXTRACTION_MODEL
+    model = model or (EXTRACTION_MODEL_LARGE if large else EXTRACTION_MODEL)
 
     client = _client()
     config = types.GenerateContentConfig(

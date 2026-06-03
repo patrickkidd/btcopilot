@@ -72,6 +72,7 @@ def run_extract_full_f1(discussion_id=None, model=None, sarf_model=None):
 
     for disc_id in disc_ids:
         discussion = Discussion.query.get(disc_id)
+        discussion.extracted_through_order = None
         print(f"Disc {disc_id} ({discussion.summary})...", end=" ", flush=True)
         disc_start = time.time()
 
@@ -146,7 +147,10 @@ def run_extract_full_f1(discussion_id=None, model=None, sarf_model=None):
             "people_f1": people_f1_metrics.f1,
             "events_f1": events_f1_metrics.f1,
             "pair_bonds_f1": bonds_f1_metrics.f1,
+            "pair_bonds_precision": bonds_f1_metrics.precision,
+            "pair_bonds_recall": bonds_f1_metrics.recall,
             "child_of_f1": child_of_f1_metrics.f1,
+            "child_of_precision": child_of_f1_metrics.precision,
             "child_of_recall": child_of_f1_metrics.recall,
             "child_of_tp": child_of_f1_metrics.tp,
             "child_of_fp": child_of_f1_metrics.fp,
@@ -186,7 +190,10 @@ def run_extract_full_f1(discussion_id=None, model=None, sarf_model=None):
     avg_people = sum(r["people_f1"] for r in results) / n
     avg_events = sum(r["events_f1"] for r in results) / n
     avg_bonds = sum(r["pair_bonds_f1"] for r in results) / n
+    avg_bonds_precision = sum(r["pair_bonds_precision"] for r in results) / n
+    avg_bonds_recall = sum(r["pair_bonds_recall"] for r in results) / n
     avg_child_of = sum(r["child_of_f1"] for r in results) / n
+    avg_child_of_precision = sum(r["child_of_precision"] for r in results) / n
     avg_child_of_recall = sum(r["child_of_recall"] for r in results) / n
     avg_aggregate = sum(r["aggregate_f1"] for r in results) / n
 
@@ -196,8 +203,8 @@ def run_extract_full_f1(discussion_id=None, model=None, sarf_model=None):
     print("=" * 60)
     print(f"People F1:      {avg_people:.3f}  (target > 0.7)")
     print(f"Events F1:      {avg_events:.3f}  (target > 0.3)")
-    print(f"PairBonds F1:   {avg_bonds:.3f}")
-    print(f"ParentChild F1: {avg_child_of:.3f}  recall={avg_child_of_recall:.3f}  (under-extraction signal)")
+    print(f"PairBonds F1:   {avg_bonds:.3f}  precision={avg_bonds_precision:.3f}  recall={avg_bonds_recall:.3f}")
+    print(f"ParentChild F1: {avg_child_of:.3f}  precision={avg_child_of_precision:.3f}  recall={avg_child_of_recall:.3f}  (precision=spurious-link, recall=under-extraction)")
     print(f"Aggregate F1:   {avg_aggregate:.3f}")
     print()
 
@@ -212,9 +219,13 @@ def run_extract_full_f1(discussion_id=None, model=None, sarf_model=None):
             f"    Events:    F1={r['events_f1']:.3f}  "
             f"(AI:{r['ai_events']} GT:{r['gt_events']} TP:{r['events_tp']} FP:{r['events_fp']} FN:{r['events_fn']})"
         )
-        print(f"    PairBonds: F1={r['pair_bonds_f1']:.3f}")
         print(
-            f"    ParentChild: F1={r['child_of_f1']:.3f} recall={r['child_of_recall']:.3f} "
+            f"    PairBonds: F1={r['pair_bonds_f1']:.3f} "
+            f"precision={r['pair_bonds_precision']:.3f} recall={r['pair_bonds_recall']:.3f}"
+        )
+        print(
+            f"    ParentChild: F1={r['child_of_f1']:.3f} "
+            f"precision={r['child_of_precision']:.3f} recall={r['child_of_recall']:.3f} "
             f"(TP:{r['child_of_tp']} FP:{r['child_of_fp']} FN:{r['child_of_fn']})"
         )
         if r["sarf"]:
@@ -242,6 +253,9 @@ def run_extract_full_f1(discussion_id=None, model=None, sarf_model=None):
         "people_f1": avg_people,
         "events_f1": avg_events,
         "pair_bonds_f1": avg_bonds,
+        "pair_bonds_precision": avg_bonds_precision,
+        "child_of_f1": avg_child_of,
+        "child_of_precision": avg_child_of_precision,
         "aggregate_f1": avg_aggregate,
         "per_discussion": results,
     }

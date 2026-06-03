@@ -219,6 +219,7 @@ def _measure_accumulated_discussions(disc_ids: list[int]) -> dict:
         if disc is None:
             print(f"  Disc {disc_id}: NOT FOUND — skipping")
             continue
+        disc.extracted_through_order = None
         print(f"  Disc {disc_id} ({disc.summary or ''}, {len(disc.statements)} stmts)...", end=" ", flush=True)
         try:
             ai_pdp, _ = asyncio.run(pdp_mod.extract_full(disc, diagram_data))
@@ -271,6 +272,7 @@ def _dump_disconnected(disc_ids: list[int]) -> None:
         if disc is None:
             print(f"  Disc {disc_id}: NOT FOUND — skipping")
             continue
+        disc.extracted_through_order = None
         try:
             ai_pdp, _ = asyncio.run(pdp_mod.extract_full(disc, diagram_data))
         except Exception as e:
