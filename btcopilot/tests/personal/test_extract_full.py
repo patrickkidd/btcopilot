@@ -183,3 +183,66 @@ def test_import_text_passes_text_as_conversation_history():
 
         pass1_prompt = mock_extract.call_args_list[0][0][0]
         assert text in pass1_prompt
+
+
+def test_gemini_structured_accepts_model_override():
+    # FD-337 regression: Pass-3 SARF review passes model=; the callee must accept it.
+    import inspect
+    from btcopilot.llmutil import gemini_structured
+
+    assert "model" in inspect.signature(gemini_structured).parameters
+
+
+def test_extract_full_windows_long_discussion_and_preserves_committed(discussion):
+    # FD-337: with WINDOW_SIZE forced below the statement count, extract_full runs one
+    # extraction per window on a clone and re-stages the union as negative-id deltas,
+    # without committing into the caller's diagram.
+    from btcopilot.pdp import extract_full
+
+    w1 = PDP(people=[Person(id=-1, name="Mom", gender="female", confidence=0.8)])
+    w2 = PDP(people=[Person(id=-1, name="Dad", gender="male", confidence=0.8)])
+
+    with patch("btcopilot.pdp.WINDOW_SIZE", 1), patch(
+        "btcopilot.pdp._two_pass_extract",
+        AsyncMock(side_effect=[(w1, PDPDeltas()), (w2, PDPDeltas())]),
+    ) as mock_two_pass:
+        diagram_data = DiagramData()
+        staged, _ = asyncio.run(extract_full(discussion, diagram_data))
+
+    assert mock_two_pass.call_count == 2
+    assert {p.name for p in staged.people} == {"Mom", "Dad"}
+    assert all(p.id < 0 for p in staged.people)
+    assert diagram_data.people == []
+
+
+def test_restage_new_items_keeps_committed_refs_positive():
+    # FD-337: re-staged new items get fresh negative ids; references into the original
+    # committed diagram stay positive, references among new items become negative.
+    import copy
+    from btcopilot.pdp import _restage_new_items
+
+    original = DiagramData(pdp=PDP(people=[Person(id=-1, name="User")]))
+    original.commit_pdp_items([-1])
+    user_id = original.people[0]["id"]
+
+    working = DiagramData(
+        people=copy.deepcopy(original.people),
+        lastItemId=original.lastItemId,
+    )
+    working.pdp = PDP(
+        people=[Person(id=-1, name="Spouse"), Person(id=-3, name="Kid", parents=-2)],
+        pair_bonds=[PairBond(id=-2, person_a=user_id, person_b=-1)],
+    )
+    working.commit_pdp_items([-1, -2, -3])
+
+    staged = _restage_new_items(working, original)
+
+    assert {p.name for p in staged.people} == {"Spouse", "Kid"}
+    assert all(p.id < 0 for p in staged.people)
+    assert len(staged.pair_bonds) == 1
+    bond = staged.pair_bonds[0]
+    assert bond.id < 0
+    assert user_id in (bond.person_a, bond.person_b)
+    assert any(x < 0 for x in (bond.person_a, bond.person_b))
+    kid = next(p for p in staged.people if p.name == "Kid")
+    assert kid.parents == bond.id

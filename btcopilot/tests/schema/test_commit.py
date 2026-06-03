@@ -614,3 +614,56 @@ def test_reject_transitive_cascade():
     assert data.pdp.people[0].name == "Bob"
     assert len(data.pdp.pair_bonds) == 0
     assert len(data.pdp.events) == 0
+
+
+def test_commit_backfills_committed_child_parents():
+    # FD-337: children + their couple committed in an earlier session, no parent links.
+    data = DiagramData(
+        pdp=PDP(
+            people=[
+                Person(id=-1, name="Anthony"),
+                Person(id=-2, name="Jim"),
+                Person(id=-3, name="Sheila"),
+            ],
+            pair_bonds=[PairBond(id=-4, person_a=-2, person_b=-3)],
+        )
+    )
+    m = data.commit_pdp_items([-1, -2, -3, -4])
+    anthony_id, jim_id, sheila_id, bond_id = m[-1], m[-2], m[-3], m[-4]
+    assert next(p for p in data.people if p["id"] == anthony_id)["parents"] is None
+
+    # A later session names the committed couple as Anthony's parents via a birth event.
+    data.pdp = PDP(
+        events=[
+            Event(
+                id=-5,
+                kind=EventKind.Birth,
+                person=jim_id,
+                spouse=sheila_id,
+                child=anthony_id,
+            )
+        ]
+    )
+    data.commit_pdp_items([-5])
+
+    assert next(p for p in data.people if p["id"] == anthony_id)["parents"] == bond_id
+
+
+def test_commit_backfill_does_not_overwrite_existing_parents():
+    data = DiagramData(
+        pdp=PDP(
+            people=[Person(id=-i, name=n) for i, n in enumerate(["Kid", "A", "B", "C", "D"], 1)],
+            pair_bonds=[
+                PairBond(id=-6, person_a=-2, person_b=-3),
+                PairBond(id=-7, person_a=-4, person_b=-5),
+            ],
+        )
+    )
+    m = data.commit_pdp_items([-1, -2, -3, -4, -5, -6, -7])
+    next(p for p in data.people if p["id"] == m[-1])["parents"] = m[-6]
+    # A later birth event names couple C+D as Kid's parents — must NOT overwrite A+B.
+    data.pdp = PDP(
+        events=[Event(id=-8, kind=EventKind.Birth, person=m[-4], spouse=m[-5], child=m[-1])]
+    )
+    data.commit_pdp_items([-8])
+    assert next(p for p in data.people if p["id"] == m[-1])["parents"] == m[-6]
