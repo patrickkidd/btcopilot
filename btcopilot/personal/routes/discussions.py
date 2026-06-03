@@ -11,6 +11,7 @@ from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram
 from btcopilot.schema import asdict, get_all_pdp_item_ids
 from btcopilot.personal import Response, ask
+from btcopilot.personal.deepreextract import VALID_K, DEFAULT_K
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
 
 _log = logging.getLogger(__name__)
@@ -363,6 +364,77 @@ def commit_pdp(discussion_id: int):
         full_accept=full_accept,
         extracted_through_order=discussion.extracted_through_order,
     )
+
+
+@bp.route("/<int:discussion_id>/deep-reextract", methods=["POST"])
+def deep_reextract(discussion_id: int):
+    from btcopilot.extensions import celery
+
+    user = auth.current_user()
+    discussion = Discussion.query.get(discussion_id)
+    if not discussion:
+        abort(404)
+    if discussion.user_id != user.id:
+        abort(401)
+    if not discussion.diagram:
+        abort(400, description="Discussion has no diagram attached")
+    if celery is None:
+        abort(503, description="Celery not available")
+
+    body = request.get_json(silent=True) or {}
+    k = int(body.get("k", DEFAULT_K))
+    if k not in VALID_K:
+        abort(400, description=f"k must be one of {sorted(VALID_K)}")
+
+    claimed = db.session.execute(
+        sql_update(Discussion)
+        .where(Discussion.id == discussion_id, Discussion.extracting.is_(False))
+        .values(extracting=True)
+    ).rowcount
+    db.session.commit()
+    if not claimed:
+        abort(409, description="An extraction is already in progress")
+
+    task = celery.send_task("deep_reextract", args=[discussion_id, k])
+    _log.info(
+        f"User {user.username} started deep_reextract task {task.id} "
+        f"for discussion {discussion_id} k={k}"
+    )
+    return jsonify({"task_id": task.id})
+
+
+@bp.route("/<int:discussion_id>/deep-reextract-status/<task_id>", methods=["GET"])
+def deep_reextract_status(discussion_id: int, task_id: str):
+    from btcopilot.extensions import celery
+    from celery.result import AsyncResult
+
+    user = auth.current_user()
+    discussion = Discussion.query.get(discussion_id)
+    if not discussion:
+        abort(404)
+    if discussion.user_id != user.id:
+        abort(401)
+    if celery is None:
+        return jsonify({"status": "error", "error": "Celery not available"}), 503
+
+    result = AsyncResult(task_id, app=celery)
+
+    if result.failed():
+        return jsonify({"status": "error", "error": str(result.result)})
+    if result.ready():
+        task_result = result.get()
+        return jsonify({"status": "complete", **task_result})
+    if result.state == "PROGRESS":
+        meta = result.info or {}
+        return jsonify(
+            {
+                "status": "progress",
+                "current": meta.get("current", 0),
+                "total": meta.get("total", 0),
+                "label": meta.get("label", ""),
+            }
+        )
+    return jsonify({"status": "pending"})
 
 
 # @bp.route("/<int:discussion_id>/statements", methods=["GET"])

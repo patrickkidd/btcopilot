@@ -197,56 +197,15 @@ def _measure_gt_discussions(discussion_id=None):
 
 def _measure_accumulated_discussions(disc_ids: list[int]) -> dict:
     """
-    Accumulate real-chat discussions in created_at order, carrying diagram_data
-    forward (each discussion sees the committed output of prior ones), then
-    measure LCC on the final committed state.
-
-    This mirrors how a live Personal-app diagram grows: discussion N sees all
-    people/pair_bonds committed from discussions 1..N-1.
+    Accumulate real-chat discussions in order, then measure LCC on the final
+    committed state. Delegates to personal.deepreextract.accumulate_discussions.
 
     Returns the lcc_percent stats dict for the final accumulated diagram.
     """
-    nest_asyncio.apply()
-
-    from btcopilot.personal.models import Discussion
+    from btcopilot.personal.deepreextract import accumulate_discussions
 
     print(f"Accumulating {len(disc_ids)} discussions in order: {disc_ids}\n")
-
-    diagram_data = DiagramData()
-
-    for disc_id in disc_ids:
-        disc = Discussion.query.get(disc_id)
-        if disc is None:
-            print(f"  Disc {disc_id}: NOT FOUND — skipping")
-            continue
-        disc.extracted_through_order = None
-        print(f"  Disc {disc_id} ({disc.summary or ''}, {len(disc.statements)} stmts)...", end=" ", flush=True)
-        try:
-            ai_pdp, _ = asyncio.run(pdp_mod.extract_full(disc, diagram_data))
-        except Exception as e:
-            print(f"EXTRACTION FAILED — {e}")
-            continue
-
-        # Point diagram_data.pdp at the extraction result so commit_pdp_items
-        # can find the items (extract_full resets diagram_data.pdp to PDP()
-        # at the start and never writes the final result back).
-        diagram_data.pdp = ai_pdp
-
-        # Commit all new PDP items (negative IDs) to diagram_data so the next
-        # discussion sees them as committed (positive-ID) context.
-        all_pdp_ids = [p.id for p in ai_pdp.people if p.id is not None and p.id < 0]
-        all_pdp_ids += [e.id for e in ai_pdp.events if e.id < 0]
-        all_pdp_ids += [pb.id for pb in ai_pdp.pair_bonds if pb.id is not None and pb.id < 0]
-
-        if all_pdp_ids:
-            try:
-                id_mapping = diagram_data.commit_pdp_items(all_pdp_ids)
-                print(f"committed {len(id_mapping)} items")
-            except Exception as e:
-                print(f"COMMIT FAILED — {e}")
-        else:
-            print("no new PDP items")
-
+    diagram_data = accumulate_discussions(disc_ids)
     stats = lcc_percent(diagram_data.people, diagram_data.pair_bonds)
     print(
         f"\nFinal accumulated state: {stats['total']} people, "

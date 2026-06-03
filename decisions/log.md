@@ -6,6 +6,88 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ---
 
+## 2026-06
+
+### 2026-06-03: FD-338 — default K bumped 6 → 8 (measured; supersedes the K=6 choice)
+
+**Context:** Measured the consensus delta against the REAL committed diagram 1924
+(currently 56% keep-User LCC), reconciled as a true PDP delta — harder and more
+realistic than the from-empty prototype's 94.9%. Sampling K-subsets from a 10-run
+pool: K=6 median ~85–90% but only ~half of runs clear 90% (tail to ~76–82%); K=8
+median ~90.6% with ~11/12 ≥90%. The full 10-run `match_people` merge ceilings at
+90.7% (5 residual components) — the forbidden name-dedup's 94.9% is out of
+`match_people`'s reach regardless of K.
+
+**Decision:** Ship **default K=8** ("max fidelity"); K=4 is the cheaper opt-down.
+`VALID_K = {4, 8}` (K=6 removed). ~$0.61/rebuild; cost modal copy updated to
+"about $0.60". Chosen over (a) keeping K=6 and beta-accepting ~88% — fails the
+≥90% AC's "reliably"; (b) investing in a better merge to recover toward 95% —
+deferred R&D, uncertain, would delay ship. Patrick decided.
+
+**Reasoning:** K=8 is the smallest tier that reliably clears the AC with the
+mandated matcher. Caveat: reliability measured on overlapping subsets of one
+10-run pool (correlated), not 12 independent K=8 rebuilds — directional, not a
+hard guarantee; a few independent K=8 confirmations are the remaining check.
+
+**Revisit trigger:** independent K=8 rebuilds dip below 90%; a merge improvement
+recovers the name-dedup ceiling (then K can drop); customer pricing model lands
+(remove cost modal).
+
+### 2026-06-02: FD-338 — default_acc_ids exclusion in merge_runs
+
+**Context:** `match_people` has a special rule: "User" in the GT list matches
+any AI person name (because the SARF editor labels the proband "User"). In the
+merge accumulator, the committed diagram has User (id=1) and Assistant (id=2).
+When merge_runs passes the full accumulator to match_people, real family members
+from the run (e.g. "Harlow") match "User" via this rule, polluting the mapping.
+
+**Decision:** Compute `default_acc_ids = _default_ids(committed.people)` (User
++ Assistant) and exclude those from the `matchable_acc` list passed to
+match_people. Bond endpoint resolution and parents propagation are also guarded
+against default IDs. The default people remain in `acc_bonds` for bond-dyad
+resolution.
+
+**Revisit trigger:** match_people special-case behavior changes.
+
+---
+
+### 2026-06-02: FD-338 — deep re-extraction delivers a PDP delta, not a diagram replace; K=6 default
+
+**Context:** Deep re-extraction (multi-sample consensus) rebuilds a fragmented
+Personal-app diagram. The ticket framed the on-completion UX as an open product
+decision (replace the diagram "recoverable via version history" vs stage into
+the PDP review sheet). There is NO diagram version history — replace is
+unrecoverable.
+
+**Decision:**
+1. **Deliver as a PDP delta vs the committed diagram (improve in place), never
+   replace.** Run K independent windowed `extract_full` accumulations from empty
+   (cursor nulled) → merge into one consolidated DiagramData → reconcile that
+   consolidated picture against the *current committed* diagram via
+   `match_people` to emit a delta PDP (negative-ID adds for missing people, new
+   pair-bonds bridging already-committed fragments, positive-ID edits for missing
+   parent links). Staged into `diagram_data.pdp`; user reviews/accepts in the
+   existing PDPSheet. Preserves committed IDs, manual edits, layout. Per
+   PDP_DATA_FLOW.md / DATA_SYNC_FLOW.md the PDP *is* the delta system.
+2. **Merge dedup MUST use `f1_metrics.match_people`** (structural+name), not the
+   prototype's raw-name canonicalization. The prototype hit 94.9% LCC via
+   name-dedup (forbidden per FD-324); match_people is the sanctioned swap and
+   must be re-verified to clear the ≥90% AC.
+3. **Default K=6** (the only consensus tier measured ≥90%, 94.9%); K=4 is the
+   cheaper opt-down. Chosen over K=4-default because K=4 single-consensus is
+   unproven against the "reliably ≥90%" AC. ~$0.46/rebuild.
+4. **Temporary cost-confirm modal** on the Rebuild button (warns ~$0.50/run to
+   AFS, says check with patrick@alaskafamilysystems.com first), tagged in-code
+   for removal once a customer pricing model exists. Accepted as interim cost
+   control pre-pricing.
+
+**Reasoning:** The PDP delta path is the documented mechanism for all diagram
+changes and the only non-destructive option. K=6 trades cost for AC compliance.
+
+**Revisit trigger:** match_people merge fails to reach ≥90% LCC reliably on
+diagram 1924; customer pricing model lands (remove the cost modal); K=4 later
+proven reliable (demote default).
+
 ## 2026-05
 
 ### 2026-05-16: FD-319 — fix repair non-convergence (hard 500 on real diagram)
