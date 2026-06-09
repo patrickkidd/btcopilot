@@ -8,6 +8,7 @@ The K runs never write to the DB — all DiagramData mutations are in-memory.
 import asyncio
 import copy
 import logging
+import math
 
 import nest_asyncio
 
@@ -27,7 +28,8 @@ class RunCount:
 
 
 VALID_K = {RunCount.Four, RunCount.Eight}
-DEFAULT_K = RunCount.Eight
+# Default is the faster/cheaper K=4 tier; "max fidelity" (K=8) is opt-in.
+DEFAULT_K = RunCount.Four
 
 # Per-run resilience: each from-empty accumulation makes ~13 LLM calls, any of
 # which can transiently time out or yield a momentarily invalid PDP. Retry a
@@ -36,14 +38,80 @@ DEFAULT_K = RunCount.Eight
 RUN_ATTEMPTS = 3
 MIN_RUNS = 3
 
+# Cooperative cancel: the client's status poll refreshes a short-lived redis
+# "alive" key; the task checks it between windows and aborts if the user
+# cancelled or the key expired (app quit). Avoids killing the worker and stops
+# orphaned background rebuilds. Heartbeat TTL > client poll interval (~1s).
+REBUILD_ALIVE_TTL = 30
+
+
+class RebuildCancelled(Exception):
+    """Raised to abort deep_reextract when the client cancelled or vanished."""
+
+
+def _rebuild_redis():
+    from btcopilot.extensions import celery
+
+    backend = getattr(celery, "backend", None)
+    return getattr(backend, "client", None)
+
+
+def mark_rebuild_alive(task_id: str) -> None:
+    import redis as _redis
+
+    r = _rebuild_redis()
+    if r is None:
+        return
+    try:
+        r.setex(f"rebuild:alive:{task_id}", REBUILD_ALIVE_TTL, "1")
+    except _redis.exceptions.RedisError:
+        pass
+
+
+def request_rebuild_cancel(task_id: str) -> None:
+    import redis as _redis
+
+    r = _rebuild_redis()
+    if r is None:
+        return
+    try:
+        r.setex(f"rebuild:cancel:{task_id}", 600, "1")
+    except _redis.exceptions.RedisError:
+        pass
+
+
+def rebuild_should_abort(task_id: str) -> bool:
+    """True if the user cancelled (explicit flag) or stopped polling (the alive
+    key expired). Redis errors degrade to 'keep going' — a heartbeat blip must
+    not kill a long rebuild."""
+    import redis as _redis
+
+    r = _rebuild_redis()
+    if r is None:
+        return False
+    try:
+        if r.exists(f"rebuild:cancel:{task_id}"):
+            return True
+        return not r.exists(f"rebuild:alive:{task_id}")
+    except _redis.exceptions.RedisError:
+        return False
+
 
 # ── accumulation helper (shared with connectivity_check) ─────────────────────
 
 
-def accumulate_discussions(disc_ids: list[int]) -> DiagramData:
+def _discussion_window_count(disc) -> int:
+    """How many extraction windows a from-empty extract_full of disc will run."""
+    n = len(disc.statements)
+    return math.ceil(n / pdp_mod.WINDOW_SIZE) if n else 0
+
+
+def accumulate_discussions(disc_ids: list[int], on_window=None) -> DiagramData:
     """Fresh from-empty accumulation of disc_ids (in order). DB read-only —
     extracted_through_order is mutated in memory only; no db.session.commit.
-    Returns the final DiagramData with all items committed to positive IDs."""
+    Returns the final DiagramData with all items committed to positive IDs.
+    on_window(), forwarded to extract_full, fires once per extraction window
+    for fine-grained progress."""
     from btcopilot.personal.models import Discussion
 
     nest_asyncio.apply()
@@ -57,7 +125,9 @@ def accumulate_discussions(disc_ids: list[int]) -> DiagramData:
         # In-memory only — never persisted
         disc.extracted_through_order = None
 
-        ai_pdp, _ = asyncio.run(pdp_mod.extract_full(disc, diagram_data))
+        ai_pdp, _ = asyncio.run(
+            pdp_mod.extract_full(disc, diagram_data, on_window=on_window)
+        )
         diagram_data.pdp = ai_pdp
 
         neg_ids = [p.id for p in ai_pdp.people if p.id is not None and p.id < 0]
@@ -249,6 +319,7 @@ def deep_reextract(
     discussion_id: int,
     k: int,
     on_progress=None,
+    cancel_check=None,
 ) -> tuple[PDP, PDPDeltas]:
     """
     Run K independent from-empty accumulations over all discussions sharing
@@ -290,28 +361,43 @@ def deep_reextract(
         raise ValueError(f"Diagram {disc.diagram_id} not found")
     committed_dd = committed_diagram.get_diagram_data()
 
-    total = k + 1  # k runs + 1 merge step
+    # Progress ticks per extraction WINDOW (each ~20-30s) across all passes so
+    # the bar keeps moving and never looks stuck. Windows are pre-counted for a
+    # sensible percent; the label is user-facing, not internal "run i/k" jargon.
+    windows_per_pass = sum(_discussion_window_count(d) for d in sibling_discs)
+    total = k * max(1, windows_per_pass) + 1  # +1 for the final merge step
+    progress = {"done": 0}
     runs: list[DiagramData] = []
 
     for i in range(k):
-        label = f"run {i + 1}/{k}"
-        if on_progress:
-            on_progress(i, total, label)
+        label = f"Finding missing people and connections… (pass {i + 1} of {k})"
+
+        def tick(_label=label):
+            if cancel_check and cancel_check():
+                raise RebuildCancelled()
+            progress["done"] += 1
+            if on_progress:
+                on_progress(min(progress["done"], total - 1), total, _label)
+
         run_dd = None
         for attempt in range(1, RUN_ATTEMPTS + 1):
             try:
-                run_dd = accumulate_discussions(disc_ids)
+                run_dd = accumulate_discussions(disc_ids, on_window=tick)
                 break
+            except RebuildCancelled:
+                raise
             except Exception as e:
-                _log.warning(f"deep_reextract: {label} attempt {attempt} failed — {e}")
+                _log.warning(
+                    f"deep_reextract: pass {i + 1} attempt {attempt} failed — {e}"
+                )
         if run_dd is None:
             _log.warning(
-                f"deep_reextract: {label} dropped after {RUN_ATTEMPTS} attempts"
+                f"deep_reextract: pass {i + 1} dropped after {RUN_ATTEMPTS} attempts"
             )
             continue
         runs.append(run_dd)
         _log.info(
-            f"deep_reextract: {label} done — "
+            f"deep_reextract: pass {i + 1}/{k} done — "
             f"{len(run_dd.people)} people, {len(run_dd.pair_bonds)} bonds"
         )
 
@@ -322,11 +408,11 @@ def deep_reextract(
         )
 
     if on_progress:
-        on_progress(k, total, "merging")
+        on_progress(total - 1, total, "Merging the results…")
 
     delta_pdp, delta_pdp_deltas = merge_runs(runs, committed_dd)
 
     if on_progress:
-        on_progress(total, total, "done")
+        on_progress(total, total, "Done")
 
     return delta_pdp, delta_pdp_deltas

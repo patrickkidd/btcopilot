@@ -8,6 +8,57 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ## 2026-06
 
+### 2026-06-09: FD-338 — fuzzy name matching is WRONG for dedup; never rely on card review; dedup belongs in the LLM
+
+**Two mistakes Patrick has corrected before — logged so they stop recurring:**
+
+1. **Fuzzy name matching does NOT work for person identity / dedup.** Already
+   learned (FD-324). I reached for it again in the FD-338 merge/reconcile
+   (`match_people`'s fuzzy `token_set_ratio` name component). On the real
+   diagram it produced soft-duplicates it could not catch: **"Client"** and
+   **"Patrick"** added as separate people from the User/proband node; **"Jim's
+   Ex"** vs **"Jim's Ex-Wife"** and **"William"** vs **"William Patrick"** left
+   un-merged. Patrick would have blocked this had he seen it. **RULE: never use
+   fuzzy name similarity to decide person identity for committed/production
+   data.** (Offline F1 *scoring* is a separate, acceptable use.)
+
+2. **Never rely on the user reviewing PDP cards as the quality gate.** Most
+   users click **Accept All**; almost no one flips through cards. Output must be
+   correct BEFORE the review sheet — the sheet is not a safety net. Recurring
+   mistake; stop assuming human curation will catch bad proposals.
+
+**Direction (Patrick):** Dedup must happen **in the LLM** — give the model the
+committed people as context so it recognizes existing people semantically and
+emits only genuinely-missing people/connections, instead of extracting from
+empty and fuzzy-matching afterward. Also reconsider the K-independent-passes
+design — it exists only to average out which bridges a stochastic single pass
+misses; with LLM-side dedup a simpler/targeted approach is likely enough.
+
+**Status:** FD-338's from-empty + `match_people`-merge reconcile is the wrong
+foundation per the above and must be reworked before shipping. Current PRs hold.
+
+**Revisit trigger:** any future person-dedup work — re-read this before reaching
+for name similarity.
+
+### 2026-06-09: FD-338 — default rebuild tier K=4 (max-fidelity opt-in); supersedes K=8 default
+
+**Context:** K=8 as the default makes every rebuild ~$0.60 and ~20+ min on a
+single worker — too heavy for everyday use. Patrick: the "rigor" (Max fidelity)
+toggle should default OFF.
+
+**Decision:** Default rebuild = **K=4** (~$0.30, faster); **K=8 is opt-in** via
+the Max-fidelity toggle. UI toggle defaults off; backend `DEFAULT_K = 4`; cost
+modal copy is now tier-dynamic ($0.30 / $0.60). Reverses the 2026-06-03
+K=8-default decision.
+
+**Reasoning:** Cheap/fast default fits routine use; users wanting the higher
+connectivity opt into max fidelity. NOTE: the default K=4 tier does **not**
+reliably meet AC#1 (≥90% LCC) — only opt-in K=8 approaches it (~90.5%). Accepted
+as a product trade: default fast, rigor on demand.
+
+**Revisit trigger:** AC#1 reinterpreted to require the *default* tier reach 90%;
+or a cheaper path to 90% (better merge / parallel workers) lands.
+
 ### 2026-06-03: FD-338 — default K bumped 6 → 8 (measured; supersedes the K=6 choice)
 
 **Context:** Measured the consensus delta against the REAL committed diagram 1924

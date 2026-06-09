@@ -11,7 +11,12 @@ from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram
 from btcopilot.schema import asdict, get_all_pdp_item_ids
 from btcopilot.personal import Response, ask
-from btcopilot.personal.deepreextract import VALID_K, DEFAULT_K
+from btcopilot.personal.deepreextract import (
+    VALID_K,
+    DEFAULT_K,
+    mark_rebuild_alive,
+    request_rebuild_cancel,
+)
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
 
 _log = logging.getLogger(__name__)
@@ -417,12 +422,19 @@ def deep_reextract_status(discussion_id: int, task_id: str):
     if celery is None:
         return jsonify({"status": "error", "error": "Celery not available"}), 503
 
+    # This poll is the client's liveness heartbeat: refresh the key the worker
+    # watches so it knows someone is still waiting. If polling stops (cancel or
+    # app quit), the key expires and the task aborts itself.
+    mark_rebuild_alive(task_id)
+
     result = AsyncResult(task_id, app=celery)
 
     if result.failed():
         return jsonify({"status": "error", "error": str(result.result)})
     if result.ready():
         task_result = result.get()
+        if task_result.get("cancelled"):
+            return jsonify({"status": "error", "error": "Rebuild cancelled"})
         return jsonify({"status": "complete", **task_result})
     if result.state == "PROGRESS":
         meta = result.info or {}
@@ -435,6 +447,27 @@ def deep_reextract_status(discussion_id: int, task_id: str):
             }
         )
     return jsonify({"status": "pending"})
+
+
+@bp.route("/<int:discussion_id>/deep-reextract/<task_id>/cancel", methods=["POST"])
+def deep_reextract_cancel(discussion_id: int, task_id: str):
+    """Cancel a running rebuild: flag it so the worker aborts on its next window,
+    and release the lock immediately so the user can re-trigger right away."""
+    user = auth.current_user()
+    discussion = Discussion.query.get(discussion_id)
+    if not discussion:
+        abort(404)
+    if discussion.user_id != user.id:
+        abort(401)
+
+    request_rebuild_cancel(task_id)
+    db.session.execute(
+        sql_update(Discussion)
+        .where(Discussion.id == discussion_id)
+        .values(extracting=False)
+    )
+    db.session.commit()
+    return jsonify({"success": True})
 
 
 # @bp.route("/<int:discussion_id>/statements", methods=["GET"])

@@ -5,7 +5,12 @@ from sqlalchemy import update as sql_update
 
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion
-from btcopilot.personal.deepreextract import deep_reextract
+from btcopilot.personal.deepreextract import (
+    deep_reextract,
+    mark_rebuild_alive,
+    rebuild_should_abort,
+    RebuildCancelled,
+)
 from btcopilot.schema import asdict
 from btcopilot.training.connectivity_check import lcc_percent, _person_id
 
@@ -14,6 +19,8 @@ _log = logging.getLogger(__name__)
 
 def deep_reextract_task(self, discussion_id: int, k: int):
     _log.info(f"deep_reextract_task() discussion={discussion_id}, k={k}")
+    task_id = self.request.id
+    mark_rebuild_alive(task_id)
 
     try:
 
@@ -23,7 +30,12 @@ def deep_reextract_task(self, discussion_id: int, k: int):
                 meta={"current": current, "total": total, "label": label},
             )
 
-        delta_pdp, _ = deep_reextract(discussion_id, k, on_progress=on_progress)
+        delta_pdp, _ = deep_reextract(
+            discussion_id,
+            k,
+            on_progress=on_progress,
+            cancel_check=lambda: rebuild_should_abort(task_id),
+        )
 
         disc = db.session.get(Discussion, discussion_id)
         if disc is None:
@@ -75,6 +87,9 @@ def deep_reextract_task(self, discussion_id: int, k: int):
             "lcc_pct": stats["lcc_pct"],
             "k": k,
         }
+    except RebuildCancelled:
+        _log.info(f"deep_reextract_task cancelled (discussion={discussion_id})")
+        return {"cancelled": True}
     finally:
         db.session.execute(
             sql_update(Discussion)
