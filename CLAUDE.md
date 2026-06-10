@@ -48,6 +48,7 @@ New clinical data outputs: store in `btcopilot-sources/`, create symlink, add to
 | Psychological foundations | [doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md](doc/specs/PSYCHOLOGICAL_FOUNDATIONS.md) |
 | Feature/behavior specs | [doc/specs/](doc/specs/) |
 | Prompt extraction strategy | [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md) (self-updating after each induction run) |
+| **Model evaluations catalog — START HERE to compare extraction models/configs** (F1, cost, latency per model; benchmark-era comparability rules) | [doc/MODEL_EVALUATIONS.md](doc/MODEL_EVALUATIONS.md) |
 | Bowen theory formal spec | [doc/specs/BOWEN_THEORY.md](doc/specs/BOWEN_THEORY.md) |
 | F1 dashboard (operational tracking) | [doc/F1_DASHBOARD.md](doc/F1_DASHBOARD.md) |
 | Diagram layout — language-agnostic spec | [doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md](doc/FAMILY_DIAGRAM_LAYOUT_ALGORITHM.md) |
@@ -57,7 +58,7 @@ New clinical data outputs: store in `btcopilot-sources/`, create symlink, add to
 
 Other: [README.md](README.md), [doc/plans/](doc/plans/)
 
-**Key prompt engineering lessons** (details in PROMPT_ENGINEERING_LOG.md): model is Gemini 2.0 Flash; verbose definitions killed F1 scores; see log for what NOT to include in prompts.
+**Key prompt engineering lessons** (details in PROMPT_ENGINEERING_LOG.md): production extraction models are gemini-3.1-flash-lite (Pass 1+2) and gemini-3-flash-preview (Pass 3 SARF review), thinking=1024 — see `llmutil.py` for current constants and doc/MODEL_EVALUATIONS.md for alternatives; verbose definitions killed F1 scores; see log for what NOT to include in prompts.
 
 ### MVP State Tracking (UPDATED 2026-05-03)
 
