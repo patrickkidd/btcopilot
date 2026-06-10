@@ -6,6 +6,50 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ---
 
+## 2026-06
+
+### 2026-06-09: Fable 5 extraction experiment — adapter design, induction convergence call
+
+**Context:** Evaluating claude-fable-5 ($10/$50 per MTok) for extraction. No
+Anthropic structured-output path existed in the pipeline.
+
+**Decision 1 — prompted-JSON adapter over constrained decoding.** Anthropic's
+`output_config.format` rejects the PDPDeltas schema two ways: subset-required
+objects time out grammar compilation; require-all + nullable wrappers exceed
+the 16-union-param limit (ours needs 23). Adapter embeds the JSON schema in the
+prompt and validates client-side via `from_dict()`. Zero parse failures in ~70
+calls. Constraint applies to ANY future Anthropic structured extraction on this
+schema shape. (`btcopilot/llmutil.py: claude_structured`, fable-5-extraction worktree)
+
+**Decision 2 — dateCertainty="unknown" for inferred dates REVERTED.** Measured
+Events −0.016; opening the F1 date gate raised FPs elsewhere and risks false
+TPs. Don't retry without a tighter mechanism.
+
+**Decision 3 — induction declared converged at cold baseline.** 4 iterations
+(2 kept within noise, 1 reverted, 1 contaminated by billing): Fable 5's +39%
+Events gain is model-native; prompts are already at their tuning ceiling.
+Implication: future frontier-model evals should run cold baseline + 1-2
+targeted iterations, not full 10-iteration inductions.
+
+**Decision 4 — matcher asymmetry classified as metric bug, not model error.**
+`match_events` requires exact person/spouse slot assignment on married events;
+AI choosing the other partner can never match. Affects all models. Fix belongs
+in `f1_metrics.py` (canonicalize spouse pairs symmetrically), not in prompts.
+
+**Decision 5 (Phase 5 results) — hybrid Pass-3 swap is the recommended first
+production step.** flash-lite extraction + fable-5 SARF review: SARF macro
+0.535 vs 0.375 prod (+43%, 2-run mean), Events/Aggregate unchanged,
+~$0.20/discussion, latency cost confined to Pass 3. All-Fable sets records on
+every metric (Agg 0.731 / Events 0.617 / SARF 0.621) at ~$1.30/discussion but
+is async-only. The 2026-03-04 "hybrid per-pass selection doesn't help" finding
+is overturned — it tested same-tier Gemini swaps; a stronger reviewer model
+does lift SARF. Production options handed to Patrick: (A) hybrid, (B)
+all-Fable async, (C) status quo.
+
+**Revisit trigger:** Anthropic raises the union-param limit (retry constrained
+decoding); SARF variance bounds needed before production commit (hybrid macro
+spread 0.490-0.579 across 2 runs; all-Fable SARF is single-run).
+
 ## 2026-05
 
 ### 2026-05-16: FD-319 — fix repair non-convergence (hard 500 on real diagram)
