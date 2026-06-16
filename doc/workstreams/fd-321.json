@@ -74,7 +74,7 @@
       "agent_track": {"status": "pending", "at": null, "token": null},
       "human_track": {"status": "pending", "at": null, "script": null}
     },
-    "merge": {"status": "pending", "at": null, "pr_url": null}
+    "merge": {"status": "pending", "at": null, "pr_url": "https://github.com/patrickkidd/btcopilot/pull/127 + https://github.com/patrickkidd/familydiagram/pull/148"}
   },
   "findings": [
     {"id": "F-001", "summary": "First build pass used a bare PK.DatePicker for birth date - unfocusable, could not be clicked into; clunky UX. Fixed: reuses the EventForm PK.DatePickerButtons+PK.DatePicker pair (editable/focusable). Structure verified (parses/mounts, 14 form tests pass); interactive focus/click confirmation pending the real-app walk.", "severity": "major", "repro": "Open the wizard/profile form; try to click into or focus the birth date field", "validation_status": "human-verified", "status": "fixed-pending-walk", "found_in_track": "human", "criterion": "C12", "regression_test": "pkdiagram/tests/personal/test_userprofile.py"},
