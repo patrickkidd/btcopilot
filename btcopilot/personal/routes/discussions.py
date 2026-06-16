@@ -9,7 +9,7 @@ import asyncio
 from btcopilot import auth, pdp
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram
-from btcopilot.schema import asdict, get_all_pdp_item_ids, DEFAULT_SUBJECT_NAME
+from btcopilot.schema import asdict, get_all_pdp_item_ids
 from btcopilot.personal import Response, ask
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
 
@@ -22,24 +22,24 @@ def _create_discussion(data: dict) -> Discussion:
     user = auth.current_user()
 
     # Ensure user has a free_diagram
-    if not user.free_diagram:
+    diagram = user.free_diagram
+    if diagram is None:
         diagram = Diagram(
             user_id=user.id,
             name=f"{user.username} Personal Case File",
             data=pickle.dumps({}),
         )
-
         db.session.add(diagram)
         db.session.flush()
         user.free_diagram_id = diagram.id
 
-    subject_name = DEFAULT_SUBJECT_NAME
-    if user.free_diagram:
-        subject_name = user.free_diagram.get_diagram_data().subject_display_name()
+    # Read the speaker label off the diagram directly (not the lazily-populated
+    # relationship) so a named primary is honored even at create time.
+    subject_name = diagram.get_diagram_data().subject_display_name()
 
     discussion = Discussion(
         user_id=user.id,
-        diagram_id=user.free_diagram_id,
+        diagram_id=diagram.id,
         summary="New Discussion",
         speakers=[
             Speaker(name=subject_name, type=SpeakerType.Subject, person_id=1),

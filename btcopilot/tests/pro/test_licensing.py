@@ -212,6 +212,25 @@ def test_users_update_no_password(flask_app, test_user):
     assert user.last_name == args["last_name"]
 
 
+def test_users_update_clears_name(flask_app, test_user):
+    """A present-but-empty name key clears the field (PATCH semantics) so a
+    cleared profile name propagates instead of silently keeping the old value."""
+    test_user.set_password("something")
+    test_user.first_name = "Dana"
+    test_user.last_name = "Reed"
+    code = "123456"
+    test_user.set_reset_password_code(code)
+    db.session.commit()
+    args = {"first_name": "Dana", "last_name": "", "reset_password_code": code}
+    bdata = pickle.dumps(args)
+    with flask_app.test_client() as client:
+        response = client.post("/v1/users/%s" % test_user.id, data=bdata)
+    assert response.status_code == 200
+    user = User.query.get(test_user.id)
+    assert user.first_name == "Dana"
+    assert user.last_name == ""
+
+
 def test_users_update_invalid_code(flask_app, test_user):
     test_user.set_password("old password")
     code = "123456"
