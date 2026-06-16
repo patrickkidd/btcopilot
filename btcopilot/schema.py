@@ -1273,23 +1273,6 @@ class DiagramData:
                 return p
         return None
 
-    def subject_birth_date(self) -> str | None:
-        """ISO birth date of the primary person, taken from their birth event.
-        Birth is stored as an Event (kind=birth) on the node, not a scalar."""
-        primary = self.primary_person()
-        if not primary:
-            return None
-        pid = primary.get("id")
-        for e in self.events:
-            if not isinstance(e, dict):
-                continue
-            if e.get("kind") == EventKind.Birth.value and e.get("person") == pid:
-                dt = e.get("dateTime")
-                if dt and hasattr(dt, "toString"):
-                    return dt.toString("yyyy-MM-dd")
-                return dt
-        return None
-
     def subject_display_name(self) -> str:
         """Speaker label for the first-person user: their real name when the
         primary person carries one, else the neutral default."""

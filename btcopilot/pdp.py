@@ -1071,28 +1071,6 @@ def _committed_state_for_prompt(diagram_data: DiagramData) -> dict:
     }
 
 
-def _speaker_identity_for_prompt(diagram_data: DiagramData) -> str:
-    """Identify the first-person speaker to the extractor so it references the
-    existing primary person instead of fabricating a duplicate for "I/me".
-
-    Empty string when no named primary person exists (wizard skipped) so the
-    prompt still assembles and runs."""
-    primary = diagram_data.primary_person()
-    name = primary.get("name") if primary else None
-    if not name:
-        return ""
-    pid = primary.get("id")
-    birth = diagram_data.subject_birth_date()
-    birth_clause = f", born {birth}" if birth else ""
-    return (
-        f"\n\nSPEAKER IDENTITY: The first-person speaker (\"I\"/\"me\") in the "
-        f"conversation is {name}{birth_clause}, already in the committed diagram "
-        f"as person id {pid}. Do NOT create a new person for the speaker. "
-        f"Reference {name} by their committed id {pid}; attribute the speaker's "
-        f"own events to that id.\n"
-    )
-
-
 async def _two_pass_extract(
     diagram_data: DiagramData,
     conversation_history: str,
@@ -1123,7 +1101,7 @@ async def _two_pass_extract(
     ) + DATA_EXTRACTION_PASS1_CONTEXT.format(
         diagram_data=json.dumps(committed_state, indent=2, default=str),
         conversation_history=conversation_history,
-    ) + _speaker_identity_for_prompt(diagram_data)
+    )
     if cursor_nonce:
         prompt1 += CURSOR_EXTRACTION_RULE_TEMPLATE.format(nonce=cursor_nonce)
     pass1_pdp, pass1_deltas = await _extract_and_validate(

@@ -13,7 +13,7 @@ from btcopilot.schema import (
     PairBond,
 )
 from btcopilot.schema import DEFAULT_SUBJECT_NAME
-from btcopilot.pdp import _committed_state_for_prompt, _speaker_identity_for_prompt
+from btcopilot.pdp import _committed_state_for_prompt
 
 
 def test_empty_diagram():
@@ -171,77 +171,6 @@ def test_committed_state_excludes_ui_fields(discussion):
         pass1_prompt = mock_extract.call_args_list[0][0][0]
         assert '"Alice"' in pass1_prompt
         assert "Default Layer" not in pass1_prompt
-
-
-# --- Speaker identity ---
-
-
-def test_speaker_identity_names_primary_and_birth():
-    dd = DiagramData()
-    dd.people = [{"id": 7, "name": "Jordan Lee", "primary": True}]
-    dd.events = [{"id": 20, "kind": "birth", "person": 7, "dateTime": "1985-03-02"}]
-
-    block = _speaker_identity_for_prompt(dd)
-    assert "Jordan Lee" in block
-    assert "1985-03-02" in block
-    assert "7" in block
-    assert "Do NOT create a new person" in block
-
-
-def test_speaker_identity_without_birth():
-    dd = DiagramData()
-    dd.people = [{"id": 7, "name": "Jordan Lee", "primary": True}]
-    block = _speaker_identity_for_prompt(dd)
-    assert "Jordan Lee" in block
-    assert "born" not in block
-
-
-def test_speaker_identity_empty_when_no_name():
-    dd = DiagramData()
-    dd.people = [{"id": 7, "primary": True}]
-    assert _speaker_identity_for_prompt(dd) == ""
-
-
-def test_speaker_identity_empty_when_no_primary():
-    dd = DiagramData()
-    dd.people = [{"id": 7, "name": "Jordan Lee"}]
-    assert _speaker_identity_for_prompt(dd) == ""
-
-
-def test_speaker_identity_in_pass1_prompt(discussion):
-    """The named speaker identity is observable in the assembled pass1 prompt."""
-    dd = DiagramData()
-    dd.people = [{"id": 7, "name": "Jordan Lee", "primary": True, "gender": "male"}]
-    dd.events = [{"id": 20, "kind": "birth", "person": 7, "dateTime": "1985-03-02"}]
-
-    with patch(
-        "btcopilot.pdp._extract_and_validate",
-        AsyncMock(return_value=(PDP(), PDPDeltas())),
-    ) as mock_extract:
-        from btcopilot.pdp import extract_full
-
-        asyncio.run(extract_full(discussion, dd))
-        pass1_prompt = mock_extract.call_args_list[0][0][0]
-        assert "SPEAKER IDENTITY" in pass1_prompt
-        assert "Jordan Lee" in pass1_prompt
-        assert "1985-03-02" in pass1_prompt
-
-
-def test_nameless_speaker_pass1_prompt_assembles(discussion):
-    """Wizard skipped (no named primary): prompt still assembles, no identity
-    block, extraction runs without crashing."""
-    dd = DiagramData()
-    dd.people = [{"id": 1, "name": "Alice"}]
-
-    with patch(
-        "btcopilot.pdp._extract_and_validate",
-        AsyncMock(return_value=(PDP(), PDPDeltas())),
-    ) as mock_extract:
-        from btcopilot.pdp import extract_full
-
-        asyncio.run(extract_full(discussion, dd))
-        pass1_prompt = mock_extract.call_args_list[0][0][0]
-        assert "SPEAKER IDENTITY" not in pass1_prompt
 
 
 # --- Subject display name (label rename) ---
