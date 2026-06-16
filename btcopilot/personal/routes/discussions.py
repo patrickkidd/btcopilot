@@ -9,7 +9,7 @@ import asyncio
 from btcopilot import auth, pdp
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram
-from btcopilot.schema import asdict, get_all_pdp_item_ids
+from btcopilot.schema import asdict, get_all_pdp_item_ids, DEFAULT_SUBJECT_NAME
 from btcopilot.personal import Response, ask
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
 
@@ -33,12 +33,16 @@ def _create_discussion(data: dict) -> Discussion:
         db.session.flush()
         user.free_diagram_id = diagram.id
 
+    subject_name = DEFAULT_SUBJECT_NAME
+    if user.free_diagram:
+        subject_name = user.free_diagram.get_diagram_data().subject_display_name()
+
     discussion = Discussion(
         user_id=user.id,
         diagram_id=user.free_diagram_id,
         summary="New Discussion",
         speakers=[
-            Speaker(name="Client", type=SpeakerType.Subject, person_id=1),
+            Speaker(name=subject_name, type=SpeakerType.Subject, person_id=1),
             Speaker(name="Coach", type=SpeakerType.Expert, person_id=2),
         ],
     )
@@ -108,12 +112,18 @@ def chat(discussion_id: int):
         if changed:
             discussion.diagram.set_diagram_data(diagram_data)
 
-        # Update speaker person_ids if primary person differs from default
+        # Sync the Subject speaker to the primary person: keep person_id and the
+        # display label (real name, else neutral default) in step so the chat
+        # transcript and extraction prompt name the user, not "Client".
         user_speaker = Speaker.query.filter_by(
             discussion_id=discussion.id, type=SpeakerType.Subject
         ).first()
-        if user_speaker and user_speaker.person_id != user_person_id:
-            user_speaker.person_id = user_person_id
+        if user_speaker:
+            if user_speaker.person_id != user_person_id:
+                user_speaker.person_id = user_person_id
+            subject_name = diagram_data.subject_display_name()
+            if user_speaker.name != subject_name:
+                user_speaker.name = subject_name
 
     statement = request.json["statement"]
     model = request.json.get("model")

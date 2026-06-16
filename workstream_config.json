@@ -1,0 +1,37 @@
+{
+  "base_branch": "master",
+  "worktree_root": "/Users/patrick/worktrees",
+  "worktree_layout": "<root>/<ticket>/<repo> (project convention, overrides skill canonical <root>/<repo>-<ticket>)",
+  "test_commands": {
+    "unit": "uv run pytest btcopilot/tests -x -q",
+    "integration": "uv run pytest btcopilot/tests -q",
+    "familydiagram_unit": "cd /Users/patrick/worktrees/FD-321/familydiagram && uv run pytest familydiagram/tests -x -q"
+  },
+  "e2e_harness": {
+    "what": "drive a sandboxed instance end-to-end as a human would (isolated ports/state)",
+    "command": "familydiagram-testing MCP bridge (real app UI) against sandboxed Flask on port 8889",
+    "notes": "Production Flask on 8888 is user-managed - never touch. Sandbox stack: Flask 8889 + isolated Celery broker. Training app web UI via chrome-devtools MCP.",
+    "subharnesses": {
+      "personal_app": "familydiagram-testing MCP (get_app_state() first; headless=false for screenshots)",
+      "backend_api": "curl against sandbox Flask 8889",
+      "extraction_f1": "FD-338-style real-LLM extraction battery with F1 comparison vs stored baseline (+/-0.05 band)"
+    }
+  },
+  "referee": {
+    "command": null,
+    "oracle_dir": "doc/workstreams/oracles",
+    "gate_definitions_dir": "doc/workstreams/gates",
+    "token_dir": "doc/workstreams/tokens",
+    "notes": "SETUP GAP: no referee implementation exists in this project. FD-338 closed evidence-based without tokens. Pending Patrick's call (flagged at ground)."
+  },
+  "jira": {
+    "project": "FD",
+    "via": "REST v2/v3, basic auth patrick@alaskafamilysystems.com + ATLASSIAN_TOKEN from ~/theapp/.env (extract with grep|cut, not source), site https://alaskafamilysystems.atlassian.net",
+    "gate_status_map": {
+      "ground": "In Progress",
+      "merge": "Done"
+    }
+  },
+  "pr_lookup": "gh pr list --repo patrickkidd/{repo} --head {branch} --state open --json url --jq '.[].url'",
+  "protected_paths": ["btcopilot/personal/prompts.py"]
+}

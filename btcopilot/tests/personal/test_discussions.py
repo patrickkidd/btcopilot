@@ -5,7 +5,15 @@ import pytest
 from btcopilot.extensions import db
 from btcopilot.pro.models import User, Diagram
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
-from btcopilot.schema import PDPDeltas, Person, Event, EventKind, asdict
+from btcopilot.schema import (
+    DiagramData,
+    PDPDeltas,
+    Person,
+    Event,
+    EventKind,
+    asdict,
+    DEFAULT_SUBJECT_NAME,
+)
 
 from btcopilot.tests.training.conftest import flask_json
 
@@ -64,6 +72,33 @@ def test_get(subscriber, discussions):
     assert response.get_json() == flask_json(
         discussion.as_dict(include=["statements", "speakers"])
     )
+
+
+@pytest.mark.chat_flow
+def test_chat_renames_subject_speaker_to_real_name(subscriber):
+    """A named primary person renames the Subject speaker from the default."""
+    diagram = subscriber.user.free_diagram
+    dd = DiagramData()
+    dd.people = [{"id": 5, "name": "Sam Rivera", "primary": True}]
+    diagram.set_diagram_data(dd)
+
+    discussion = Discussion(
+        user_id=subscriber.user.id,
+        diagram_id=diagram.id,
+        speakers=[Speaker(type=SpeakerType.Subject, name=DEFAULT_SUBJECT_NAME)],
+    )
+    db.session.add(discussion)
+    db.session.commit()
+
+    subscriber.post(
+        f"/personal/discussions/{discussion.id}/statements",
+        json={"statement": "Hello"},
+    )
+
+    speaker = Speaker.query.filter_by(
+        discussion_id=discussion.id, type=SpeakerType.Subject
+    ).first()
+    assert speaker.name == "Sam Rivera"
 
 
 def test_get_404(subscriber):

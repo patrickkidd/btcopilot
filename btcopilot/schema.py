@@ -383,6 +383,11 @@ def hash_sarf_dicts(event_data: list[dict]) -> str:
     return hashlib.sha256(content.encode()).hexdigest()[:16]
 
 
+# Neutral label for the first-person speaker when the user has not set a real
+# name on the primary person (e.g. intake wizard skipped).
+DEFAULT_SUBJECT_NAME = "Client"
+
+
 @dataclass
 class DiagramData:
     id: int | None = None
@@ -1261,6 +1266,37 @@ class DiagramData:
             ),
         )
 
+    def primary_person(self) -> dict | None:
+        """The diagram's first-person speaker node (primary=True), if any."""
+        for p in self.people:
+            if isinstance(p, dict) and p.get("primary"):
+                return p
+        return None
+
+    def subject_birth_date(self) -> str | None:
+        """ISO birth date of the primary person, taken from their birth event.
+        Birth is stored as an Event (kind=birth) on the node, not a scalar."""
+        primary = self.primary_person()
+        if not primary:
+            return None
+        pid = primary.get("id")
+        for e in self.events:
+            if not isinstance(e, dict):
+                continue
+            if e.get("kind") == EventKind.Birth.value and e.get("person") == pid:
+                dt = e.get("dateTime")
+                if dt and hasattr(dt, "toString"):
+                    return dt.toString("yyyy-MM-dd")
+                return dt
+        return None
+
+    def subject_display_name(self) -> str:
+        """Speaker label for the first-person user: their real name when the
+        primary person carries one, else the neutral default."""
+        primary = self.primary_person()
+        name = primary.get("name") if primary else None
+        return name if name else DEFAULT_SUBJECT_NAME
+
     def ensure_chat_defaults(self) -> tuple[int, int, bool]:
         """Idempotently ensure chat speaker people exist.
 
@@ -1274,15 +1310,13 @@ class DiagramData:
         changed = False
 
         # Find primary person (pro app) or existing User person
-        primary_person = None
+        primary_person = self.primary_person()
         user_person_id = None
         assistant_person_id = None
 
         for p in self.people:
             if not isinstance(p, dict):
                 continue
-            if p.get("primary"):
-                primary_person = p
             if p.get("id") == 1:
                 user_person_id = 1
             if p.get("id") == 2:

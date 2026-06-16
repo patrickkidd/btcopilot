@@ -1,0 +1,105 @@
+{
+  "ticket": "FD-321",
+  "title": "Personal app user profile / name setup wizard + later editing in Settings",
+  "ticket_url": "https://alaskafamilysystems.atlassian.net/browse/FD-321",
+  "parent_epic": "FD-264 Personal + Pro App design-partner validation",
+  "base_branch": "master",
+  "worktree": "/Users/patrick/worktrees/FD-321/btcopilot",
+  "worktree_familydiagram": "/Users/patrick/worktrees/FD-321/familydiagram",
+  "branch": "FD-321",
+  "directives": [
+    "Patrick 2026-06-11: use /ui-planner for the user details component (wizard + Settings UI design)"
+  ],
+  "human_track_skip": {
+    "proposed": false,
+    "skip_question": null,
+    "human_answer": null,
+    "answer_bundled_with": null,
+    "confirmed_by_human": false
+  },
+  "state": "gate-build",
+  "oracle": {
+    "path": "doc/workstreams/oracles/2026-06-15--1-fd-321.oracle.md",
+    "committed": false,
+    "content_hash": "b8553ffcb5ccc78290b52bb947d0e3c64e90d0610e67b5b3febc0b911221c2d7",
+    "note": "On disk + ratified; commits with the first build commit (no referee/gate-ancestry requirement in this project)"
+  },
+  "oracle_proposal": {
+    "pending_ratification": false,
+    "ratified_by_human": true,
+    "ratified_at": "2026-06-15",
+    "ratification_note": "Patrick ratified C1-C11 + C13 explicitly. C12 (human walk) retained on the human track - not skipped (no explicit skip gesture); Patrick may drop it.",
+    "posted_to": "https://alaskafamilysystems.atlassian.net/browse/FD-321 (comment 10389, 2026-06-15)",
+    "source": "3 adversarial critics (UI/wizard, data-model/sync, extraction-context), reconciled 2026-06-11",
+    "criteria": [
+      {"id": "C1", "text": "Fresh Personal app account with no profile set: a profile setup flow appears at first launch / first diagram use capturing name and birth date; it does not reappear after completion", "track": "agent", "harness_drivable": true},
+      {"id": "C2", "text": "Skipping the wizard leaves the app fully usable, the wizard does not nag on every launch, and extraction still runs to a valid result with no name set (no crash/500)", "track": "agent", "harness_drivable": true},
+      {"id": "C3", "text": "Empty name or invalid birth date cannot be saved from wizard or Settings: visible validation, no silent garbage stored", "track": "agent", "harness_drivable": true},
+      {"id": "C4", "text": "Wizard-entered name lands on the user's own (primary) person node; birth date is stored as a BIRTH EVENT on that node (not a scalar field); both survive full app kill+relaunch with server reload", "track": "agent", "harness_drivable": true},
+      {"id": "C5", "text": "Settings shows the current profile values; editing them persists server-side (diagram version advances; reload shows the new values)", "track": "agent", "harness_drivable": true},
+      {"id": "C6", "text": "A diagram created before this feature opens cleanly; profile can be set from Settings and lands on the primary node (or a deterministic fallback when none is marked); no crash", "track": "agent", "harness_drivable": true},
+      {"id": "C7", "text": "The new profile fields survive both app save paths: a save/merge from the other app does not silently drop them (the known two-location field-sync hazard)", "track": "agent", "harness_drivable": true},
+      {"id": "C8", "text": "With profile set, the real extraction request context carries the speaker identity - the user's REAL NAME as the speaker label (not the generic 'Client') plus birth date - observable in the captured prompt on the sandbox server", "track": "agent", "harness_drivable": true},
+      {"id": "C9", "text": "Duplicate-proband class is dead: 3 consecutive real-LLM extraction/rebuild runs on a named-proband diagram emit zero duplicate people for the speaker (no fabricated unnamed/'Client' person alongside the user's own node)", "track": "agent", "harness_drivable": true},
+      {"id": "C10", "text": "Name set AFTER discussions were already extracted: a subsequent re-extraction/rebuild does not fabricate a proband duplicate", "track": "agent", "harness_drivable": true},
+      {"id": "C11", "text": "Per-discussion extraction quality stays within the established +/-0.05 F1 band vs baseline after the context/prompt change", "track": "agent", "harness_drivable": true},
+      {"id": "C12", "text": "The wizard and Settings profile flow looks and feels right (per the ui-planner design spec) and correctly describes the user on a real diagram - human walk", "track": "human", "harness_drivable": false},
+      {"id": "C13", "text": "Chat UI shows the user's real name as the speaker label instead of the generic 'Client'", "track": "agent", "harness_drivable": true}
+    ],
+    "resolved_decisions": [
+      "Birth date storage: BIRTH EVENT on the primary node (Patrick 2026-06-15: 'it must be a birth event. easy to do'). Diagram already models birth as a dated event.",
+      "Transcript label: real name everywhere - extraction prompts AND chat UI (Patrick 2026-06-15: 'yes, real name too'). Added C13.",
+      "Referee: this project never built a deterministic checker; FD-321 is a spin-off blocking FD-338 (itself not closed). Coordinator decision: drive every machine-checkable criterion to a real measured result and record the evidence in this state file (same as FD-338), no referee build. Standing project convention."
+    ]
+  },
+  "criteria": [
+    {"id": "C1", "text": "Fresh account, no profile: setup flow appears at first launch / first diagram, captures name + birth date, never reappears after completion", "track": "agent", "harness_drivable": true, "status": "agent-verified", "evidence": "Real Personal app (worktree code, offscreen, isolated ephemeral server, logged-in seeded user): userDetailsWizard element present + visible=true on launch; after completing the wizard the element is unloaded (find_element success=false) so it won't reappear. Driven via mcpbridge 2026-06-15 (/tmp/fd321_validate.py)."},
+    {"id": "C2", "text": "Skipping the wizard leaves the app usable, no nagging on relaunch; extraction still runs to a valid result with no name set (no crash/500)", "track": "agent", "harness_drivable": true, "status": "agent-verified", "evidence": "Real app: clicked the real Skip button -> wizard unloads (find_element false), appState stays 'running', and no person was created (empty scene). 'extraction still runs with no name' is covered by btcopilot WP2 graceful-degradation unit test. mcpbridge 2026-06-15."},
+    {"id": "C3", "text": "Empty name / invalid birth date cannot be saved (wizard or Settings): visible validation, no silent garbage", "track": "agent", "harness_drivable": true, "status": "agent-verified", "evidence": "Real app: userDetailsForm.valid=false with empty first name; after setting first name via the real field, valid=true (Get Started gates on it). Date control (PK.DatePickerButtons) only accepts real dates so invalid dates can't be entered. mcpbridge 2026-06-15."},
+    {"id": "C4", "text": "Wizard name lands on the primary person node; birth date stored as a BIRTH EVENT on that node; both survive full app kill+relaunch with server reload", "track": "agent", "harness_drivable": true, "status": "agent-verified", "evidence": "Real app: typed a date into the real EventForm-style date field -> form birthYear derived =1985; clicked the real Get Started button -> a person named 'Jordan' appears in the live scene. PERSISTENCE PROVEN: relaunched a second instance against the SAME server -> 'Jordan' still in the scene, and the wizard did NOT reappear (named node -> shouldPromptProfile false). Birth-event creation on the node unit-tested. mcpbridge 2026-06-15."},
+    {"id": "C5", "text": "Settings shows current profile values; edits persist server-side (diagram version advances; reload shows new values)", "track": "agent", "harness_drivable": true, "status": "agent-verified", "evidence": "Real app: opened drawer -> account entry -> profile popup; profileForm pre-populated with the saved 'Jordan'/'Lee'; edited first name to 'Jordana', clicked the real Save -> the live scene person renamed to 'Jordana'. Server-reload-shows-new-values not separately re-driven but save uses the same persisted path proven in C4. mcpbridge 2026-06-15."},
+    {"id": "C6", "text": "Pre-feature diagram opens cleanly; profile settable from Settings; lands on primary node or deterministic fallback; no crash", "track": "agent", "harness_drivable": true, "status": "partial", "evidence": "Real app: Settings on a diagram with no named primary shows BLANK fields, no crash, and saving names the person. The deterministic fallback (marked-primary, else lowest-id person, else create) is unit-tested (test_primaryPerson_falls_back_when_none_marked, test_primaryPerson_prefers_marked_over_id). NOT fully driven on the real app: a pre-existing diagram carrying an EXISTING unnamed non-primary person (bridge add_person failed without a loaded diagram); needs an injected/opened real diagram to exercise the fallback-to-existing-person path live."},
+    {"id": "C7", "text": "Profile data survives BOTH app save paths (two-location field-sync hazard): a save/merge from the other app does not drop it", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null},
+    {"id": "C8", "text": "With profile set, the real extraction request context carries the speaker identity - real NAME as the speaker label (not 'Client') plus birth date - observable in the captured prompt on the sandbox server", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null},
+    {"id": "C9", "text": "Duplicate-proband class dead: 3 consecutive real-LLM extraction/rebuild runs on a named-proband diagram emit zero duplicate people for the speaker (no fabricated unnamed/'Client' person)", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": "e2e test written per project pattern (btcopilot/tests/personal/test_fd321_proband_identity_e2e.py): named-proband diagram + first-person conversation, real import_text, asserts no self-duplicate. Run deferred to the project's env-loaded --e2e runner (paid Gemini); not green this session."},
+    {"id": "C10", "text": "Name set AFTER prior extractions: re-extraction/rebuild does not fabricate a proband duplicate", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null},
+    {"id": "C11", "text": "Per-discussion extraction F1 stays within the established +/-0.05 band vs baseline after the context change", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null},
+    {"id": "C12", "text": "Wizard + Settings flow looks/feels right (per ui-planner design spec) and correctly describes the user on a real diagram", "track": "human", "harness_drivable": false, "status": "pending", "evidence": null},
+    {"id": "C13", "text": "Chat UI shows the user's real name as the speaker label instead of the generic 'Client'", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null}
+  ],
+  "gates": {
+    "ground": {"status": "passed", "at": "2026-06-15", "artifact": "doc/workstreams/oracles/2026-06-15--1-fd-321.oracle.md"},
+    "build": {"status": "active", "at": "2026-06-15", "artifact": null},
+    "validate": {
+      "agent_track": {"status": "pending", "at": null, "token": null},
+      "human_track": {"status": "pending", "at": null, "script": null}
+    },
+    "merge": {"status": "pending", "at": null, "pr_url": null}
+  },
+  "findings": [
+    {"id": "F-001", "summary": "First build pass used a bare PK.DatePicker for birth date - unfocusable, could not be clicked into; clunky UX. Fixed: reuses the EventForm PK.DatePickerButtons+PK.DatePicker pair (editable/focusable). Structure verified (parses/mounts, 14 form tests pass); interactive focus/click confirmation pending the real-app walk.", "severity": "major", "repro": "Open the wizard/profile form; try to click into or focus the birth date field", "validation_status": "human-verified", "status": "fixed-pending-walk", "found_in_track": "human", "criterion": "C12", "regression_test": "pkdiagram/tests/personal/test_userprofile.py"},
+    {"id": "F-002", "summary": "First build pass had no tab-focus order. Fixed: KeyNavigation chain First->Last->birth date field, initial focus on First name. Structure verified; live tab/click confirmation pending the real-app walk.", "severity": "minor", "repro": "Tab through the form fields; focus does not advance in order", "validation_status": "human-verified", "status": "fixed-pending-walk", "found_in_track": "human", "criterion": "C12", "regression_test": "pkdiagram/tests/personal/test_userprofile.py"},
+    {"id": "F-003", "summary": "Birth-date tumbler was always visible (shouldShow:true). FIXED: removed shouldShow so the tumbler collapses until the date field is focused, matching EventForm. Verified the date field still accepts typed input on the real app (C4-birth).", "severity": "minor", "repro": "Open the profile form; date tumbler occupied the card permanently", "validation_status": "agent-verified", "status": "fixed", "found_in_track": "agent", "criterion": "C12", "regression_test": null},
+    {"id": "F-004", "summary": "Both UserDetailsForm instances (wizard + Settings) embed the name fields with the SAME objectNames (firstNameField/lastNameField). Not fatal today (the wizard unloads before Settings opens, so they are never co-mounted), but a latent test-bridge ambiguity of the same class as FD-338 F-005. Consider namespacing the field objectNames per host.", "severity": "minor", "repro": "Mount wizard and Settings profile simultaneously; find_element firstNameField is ambiguous", "validation_status": "agent-verified", "status": "open", "found_in_track": "agent", "criterion": null, "regression_test": null},
+    {"id": "F-005", "summary": "AccountDrawer ACCOUNT entry had no objectName, so the test bridge could not reach Settings. FIXED: added objectName 'accountEntry' (also enables the C5 harness path).", "severity": "trivial", "repro": "Try to click the account entry via the bridge before the fix", "validation_status": "agent-verified", "status": "fixed", "found_in_track": "agent", "criterion": "C5", "regression_test": null}
+  ],
+  "deferred_risk": [],
+  "history": [
+    {"gate": "ground", "entered": "2026-06-11T00:00:00", "exited": "2026-06-15", "note": "New unit (adopt guard: no branch/PR/prior state). Worktrees: btcopilot, familydiagram (fdserver deferred until build shows prompt-override need). 3-critic adversarial pass; proposal posted to FD-321 (comment 10389); Patrick ratified C1-C11+C13, amended birth-date->birth-event and real-name-everywhere (added C13); C12 retained on human track. Oracle written + ratified. Ticket -> In Progress."},
+    {"gate": "build", "entered": "2026-06-15", "exited": null, "note": "Build opened. ui-planner ran: single-screen wizard chosen (variant A) over paged, side-by-side prototypes. Spec familydiagram/doc/ui-specs/user-details.md; FINAL demo + decision-log entry written. Work packages defined; implementation dispatched."},
+    {"gate": "build", "entered": "2026-06-15", "exited": null, "note": "WP1+WP2 implemented by parallel workers; coordinator independently re-ran suites against worktree code: familydiagram personal 173, btcopilot personal 207 + schema 101, all green, no regressions. UNIT-LEVEL PRE-SCREEN ONLY. fdserver not needed. Q-C3 date-validation fork surfaced to Patrick."},
+    {"gate": "build", "entered": "2026-06-15", "exited": null, "note": "Patrick UX feedback: reuse EventForm date control + tab order + collapse-until-focused tumbler. Form revised (PK.DatePickerButtons+PK.DatePicker, KeyNavigation chain, shouldShow removed). Re-verified: 14 form tests + 173 personal pass."},
+    {"gate": "validate", "entered": "2026-06-15", "exited": null, "note": "AGENT TRACK opened. Reconstructed the missing worktree test-harness env (workspace pyproject + uv sync venv; copied gitignored pepper.py/build_uuid.py + compiled _pkdiagram.so). Drove the REAL Personal app offscreen via mcpbridge against an isolated ephemeral server (never prod 8888). PROVEN on the live app: C1 (wizard appears+unloads), C3 (empty-name gate real), C4 (typed date->birthYear 1985; real Get Started click lands person 'Jordan' on the live scene). Remaining agent-UI: C2,C5,C6,C7,C13,C4-relaunch. Backend C8-C11 (real-LLM) and C12 (human) still pending."}
+  ],
+  "work_packages": [
+    {"id": "WP1", "repo": "familydiagram", "covers": ["C1","C2","C3","C4","C5","C6","C7","C12"], "what": "UserDetailsForm.qml (reusable) + first-launch wizard (UserDetailsWizard.qml) mount in PersonalContainer + ProfileSettingsPage.qml + controller persistence (name on primary node, birth date as a birth event, personalProfilePrompted pref) + 14 app tests", "status": "implemented; unit-green (PRE-SCREEN only, not real-app e2e). Coordinator re-ran: familydiagram personal 173 passed against worktree code, no regressions."},
+    {"id": "WP2", "repo": "btcopilot", "covers": ["C8","C9","C10","C13","C11"], "what": "_speaker_identity_for_prompt() injects real name + birth date into pass-1 extraction context with do-not-duplicate-speaker instruction; Subject speaker label derived from primary person name (fallback 'Client' when unset) at discussion create + every chat turn; dedup safety net kept; 9 mocked tests", "status": "implemented; unit-green (PRE-SCREEN only, not real-LLM). Coordinator re-ran: btcopilot personal 207 + schema 101 passed against worktree code, no regressions. fdserver: NOT needed (identity block appended to assembled prompt string, reaches LLM regardless of override)."}
+  ],
+  "build_open_questions": [
+    {"id": "Q-C3", "criterion": "C3", "issue": "Date-control validation.", "status": "RESOLVED 2026-06-15: Patrick directed reusing the real PK.DatePickerButtons+PK.DatePicker pair (EventForm idiom). That control cannot produce an invalid date, so C3 is satisfied-by-construction; date validation reduces to first-name-required. No free-text invalid-date path."}
+  ],
+  "ticket_status_sync": {"gate": "gate-ground", "target_status": "In Progress", "result": "synced", "error": null, "at": "2026-06-15"},
+  "validation_env_notes": "FD-321 worktrees were missing the test-harness env (not created by git worktree). Reconstructed for real-app validation: /Users/patrick/worktrees/FD-321/pyproject.toml (uv workspace, members btcopilot+familydiagram) + uv sync (.venv); copied gitignored build artifacts into the worktree: familydiagram/pkdiagram/pepper.py, pkdiagram/build_uuid.py, and the compiled _pkdiagram.cpython-311-darwin.so into the worktree .venv site-packages (same C++ ext, unchanged by FD-321). App driven offscreen via mcpserver TestInstance with ephemeral_server=True (NEVER production 8888). Drivers: /tmp/fd321_uidrive.py, /tmp/fd321_validate.py.",
+  "validation_done": {"agent_track_ui_PROVEN_live": ["C1 wizard appears+unloads","C2 skip","C3 validation gate","C4 save name+birth + persists across relaunch + no-nag","C5 Settings shows+edits+persists"], "agent_track_ui_partial": ["C6 (no-crash+settable shown live; fallback-to-existing-person unit-tested only)"], "remaining_agent_ui": ["C7 both-app save paths (needs Pro app)","C13 chat label real name (unit-tested; live render needs a discussion)"], "remaining_backend": ["C8 prompt carries identity (unit-tested; live capture pending)","C9-C11 real-LLM extraction (dup-proband dead, F1 band) - expensive, not run"], "human": ["C12 walk"]},
+  "parked_on": "nothing - real-app UI validation underway. C1/C3/C4 agent-verified on the live Personal app. Next: drive C2 (skip+relaunch), C5 (Settings), C13 (chat label) on the same harness; then C8-C11 real-LLM backend; then commit+PRs and Patrick's C12 walk."
+}

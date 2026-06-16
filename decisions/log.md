@@ -6,7 +6,28 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ---
 
-## 2026-05
+## 2026-06
+
+### 2026-06-15: FD-321 — user profile (name + birth date) ground + UI decisions
+
+**Context:** FD-321 captures the Personal-app user's own name + birth date and feeds them into
+extraction/rebuild context (kills the duplicate-proband "Client" fabrication class). Driven via the
+workstream skill. Oracle ratified by Patrick: C1–C11 + C13 (machine-proven), C12 (human walk).
+
+**Decisions accepted:**
+- **Birth date is a Birth EVENT** on the primary node, not a scalar Person field (Patrick: "it must
+  be a birth event"). Avoids a new schema field and the two-location DiagramData sync hazard.
+- **Real name everywhere:** the user's name replaces the generic "Client" speaker label in both
+  extraction prompts and the chat UI (added C13).
+- **Wizard UI = single-screen** (variant A), chosen over a multi-step paged wizard after side-by-side
+  prototypes. One reusable `UserDetailsForm` drives both the first-launch wizard and the Settings
+  editor. Spec: `familydiagram/doc/ui-specs/user-details.md`.
+- **Closure without a referee:** this project has no deterministic referee; every machine-checkable
+  criterion is driven to a real measured result and its evidence recorded in the unit state file
+  (`doc/workstreams/fd-321.json`). Standing convention, same as in-flight units.
+
+**Revisit trigger:** if extraction F1 moves outside the ±0.05 band after injecting speaker identity
+(C11), the prompt-context change is incomplete and must be re-tuned before merge.
 
 ### 2026-05-16: FD-319 — fix repair non-convergence (hard 500 on real diagram)
 
