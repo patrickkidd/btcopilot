@@ -317,6 +317,17 @@
    "found_in_track": "agent",
    "criterion": "C5",
    "regression_test": null
+  },
+  {
+   "id": "F-006",
+   "summary": "Human walk (Patrick): the Personal app does not render the family-diagram canvas, so the named node can only be SEEN in the Pro app opened against the same backend; the Pro app loads the server version on open and does not live-sync a concurrent Personal-app edit (re-open required). Environment/script reality, NOT a product bug.",
+   "severity": "minor",
+   "repro": "Set name in Personal wizard; open the free diagram in a Pro app on the same server -> node visible after (re-)open.",
+   "validation_status": "human-verified",
+   "status": "open",
+   "found_in_track": "human",
+   "criterion": "C12",
+   "regression_test": null
   }
  ],
  "deferred_risk": [
@@ -371,6 +382,12 @@
    "entered": "2026-06-16",
    "exited": null,
    "note": "Patrick: link account name <-> own-diagram node, scoped to the free diagram (client files excluded). Implemented two-way (pre-fill + write-back), verified on the live app (pre-fill 'Test'; save wrote 'Zelda Quill' to the server user record). Adversarial review found 2 major bugs (clear-name desync, logout-on-repull) + minors; all fixed + tested. Final: btcopilot 349, familydiagram 178 green. Both PRs updated. Only C12 (human walk) remains."
+  },
+  {
+   "gate": "validate",
+   "entered": "2026-06-18",
+   "exited": null,
+   "note": "Human walk in progress (live sandbox: Personal app + Pro app on one ephemeral server). A1-A4 pass. DIRECT server-DB evidence: free_diagram id=1 holds person id=3 'Patrick' primary=True + birth event 1980-05-11; account = 'Patrick Stinson' (wizard write-back). Pro app shows the node after (re-)open. Script revised to the two-app reality (node=Pro, wizard/Settings/chat-label/drawer=Personal) via the script sub-agent."
   }
  ],
  "work_packages": [
