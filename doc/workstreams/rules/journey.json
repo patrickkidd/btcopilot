@@ -1,12 +1,19 @@
 {
-  "gate": "validate-journey",
-  "learnings": [
-    {
-      "id": "L-authoring-prose",
-      "at": "2026-06-18",
-      "trigger": "Patrick: 'you didn't follow the rules for authoring the human script'",
-      "rule": "The coordinator NEVER supplies the script's prose. On a guard rejection, pass ONLY the guard's printed failure reasons to the script sub-agent and let it re-author; do NOT hand it verbatim replacement text to paste. Handing 'Replace X with exactly: <bullets>' is the coordinator authoring the script, which the gate forbids and which drifts the voice from naive-operator to architect.",
-      "fix_applied": "Regenerated the script via a fresh sub-agent from requirements only; on guard failures, relay reasons, never prose."
-    }
-  ]
+ "gate": "validate-journey",
+ "learnings": [
+  {
+   "id": "L-authoring-prose",
+   "at": "2026-06-18",
+   "trigger": "Patrick: 'you didn't follow the rules for authoring the human script'",
+   "rule": "The coordinator NEVER supplies the script's prose. On a guard rejection, pass ONLY the guard's printed failure reasons to the script sub-agent and let it re-author; do NOT hand it verbatim replacement text to paste. Handing 'Replace X with exactly: <bullets>' is the coordinator authoring the script, which the gate forbids and which drifts the voice from naive-operator to architect.",
+   "fix_applied": "Regenerated the script via a fresh sub-agent from requirements only; on guard failures, relay reasons, never prose."
+  },
+  {
+   "id": "L-launch-apps",
+   "at": "2026-06-18",
+   "trigger": "Patrick: 'you must always launch the apps when I run the human script. Never wait for me to tell you'",
+   "rule": "When handing the human a validation script, the coordinator ALWAYS launches every app/environment the script requires (here: the Personal app AND the Pro app against one shared sandbox server) as part of the hand-off, immediately and proactively. Never wait for the human to ask. Re-launch any that the human closes when they continue.",
+   "fix_applied": "Launch the full app set at hand-off and on resume."
+  }
+ ]
 }
