@@ -1,0 +1,370 @@
+{
+ "ticket": "FD-338",
+ "title": "Deep re-extraction (multi-sample consensus) for high-fidelity diagram rebuild \u2014 shipped as gate-and-dock",
+ "base_branch": "master",
+ "worktree": "/Users/patrick/worktrees/deep-reextract/btcopilot",
+ "worktree_familydiagram": "/Users/patrick/worktrees/deep-reextract/familydiagram",
+ "branch": "deep-reextract",
+ "human_track_skip": {
+  "proposed": false,
+  "skip_question": null,
+  "human_answer": null,
+  "answer_bundled_with": null,
+  "confirmed_by_human": false
+ },
+ "state": "gate-build",
+ "oracle": {
+  "path": null,
+  "committed": false,
+  "content_hash": null,
+  "note": "Oracle = FD-338 Jira acceptance criteria, accepted by Patrick in-session; UI criteria C6-C12 derived from the built rebuild flow."
+ },
+ "criteria": [
+  {
+   "id": "C1",
+   "text": "A rebuild reliably reconnects the canonical fragmented family to >=90% connectivity",
+   "track": "agent",
+   "harness_drivable": true,
+   "status": "agent-verified",
+   "evidence": "Re-proved in GT learning loop round (2026-06-10): 2 consecutive full real-LLM rebuilds of the canonical diagram scored 95.0% and 97.5% LCC (GT-scorer projection, post-dock). Prior battery: 7/7 production-pipeline runs 94.3-97.3% keep-User LCC (2026-06-09)."
+  },
+  {
+   "id": "C2",
+   "text": "Per-discussion extraction quality (F1) does not regress",
+   "track": "agent",
+   "harness_drivable": true,
+   "status": "agent-verified",
+   "evidence": "Re-proved after the GT-loop dock-prompt change (3-run confirmation 2026-06-10): mean vs 2026-05-21 baseline aggregate -0.005, people -0.005, events -0.010, pair_bonds -0.016, parent_child -0.003 \u2014 all within the +/-0.05 band; People/Events gates pass. Prior fix-round result: aggregate -0.013, people +0.003, events -0.042, pair_bonds -0.009."
+  },
+  {
+   "id": "C3",
+   "text": "Rebuild runs async with live progress and cooperative cancel through the real task queue",
+   "track": "agent",
+   "harness_drivable": true,
+   "status": "agent-verified",
+   "evidence": "Real Celery smoke on sandbox (solo pool, isolated broker): task completed in 121s with PROGRESS states ('Finding missing people...', 'Reconnecting separated family members...'); orphan watchdog verified (un-polled task self-cancelled at TTL)."
+  },
+  {
+   "id": "C4",
+   "text": "Merge and dock logic covered by mocked-LLM tests",
+   "track": "agent",
+   "harness_drivable": true,
+   "status": "agent-verified",
+   "evidence": "btcopilot suite 796 passed (incl. 9 dock tests, weld/majority-vote/K=1 tests); familydiagram personal suite 176 passed."
+  },
+  {
+   "id": "C5",
+   "text": "Cost per rebuild stays in the measured range",
+   "track": "agent",
+   "harness_drivable": true,
+   "status": "agent-verified",
+   "evidence": "~$0.11 per K=1 rebuild measured across the acceptance battery (vs $0.23 K=4 budget in the ticket)."
+  },
+  {
+   "id": "C6",
+   "text": "Rebuild action is visible and enabled on a diagram with a discussion and people",
+   "track": "agent",
+   "harness_drivable": true,
+   "status": "agent-verified",
+   "evidence": "Real Personal app (worktree code, bridge on 9899) against sandbox 8889: with 0 people rebuildButton visible=false; after UI extract+Accept All committed 7 people (diagram 2011 v4), rebuildButton visible=true enabled=true with discussion 61 selected."
+  },
+  {
+   "id": "C7",
+   "text": "Rebuild shows a live progress overlay in the real app UI and completes",
+   "track": "agent",
+   "harness_drivable": true,
+   "status": "agent-verified",
+   "evidence": "Overlay transitions watched live via bridge: visible=true progress=0 'Starting rebuild...' cancellable=true -> progress=10 'Finding missing people and connections\u2026 (pass 1 of 8)' -> closed on completion; both runs were real Celery tasks on sandbox worker (b20d9173 k=1 succeeded 15.6s, a233eb57 k=8 succeeded 107s in sandbox_celery.log), driven by real HTTP enqueue+1s status polls in sandbox_flask.log."
+  },
+  {
+   "id": "C8",
+   "text": "Completed rebuild stages its results in the review sheet; no junk 'Update -> null' card; badge count matches visible cards",
+   "track": "agent",
+   "harness_drivable": true,
+   "status": "agent-verified",
+   "evidence": "After real k=1 rebuild on diagram 2011: sheet auto-opened, cardStack count=6 = itemCount=6 = badge pdpCount=6; staged delta had 8 rows and the 2 excluded were exactly the name-null parents-only edit rows (committed ids 10,11) that would render 'Update -> null'; all 6 rendered cards (4 named people + 2 bonds) resolve non-null names."
+  },
+  {
+   "id": "C9",
+   "text": "Accept All applies the staged rebuild to the diagram, including relationship edits on already-committed people",
+   "track": "agent",
+   "harness_drivable": true,
+   "status": "agent-verified",
+   "evidence": "Clicked acceptAllButton in the real sheet: scene 7 -> 11 people; dev DB diagram 2011 v8 shows already-committed Carol Hughes (id 11, parents was null) now parents=30 = new Evelyn(33)+Frank(34) bond, 4 new people + 2 new bonds committed, server PDP drained to []."
+  },
+  {
+   "id": "C10",
+   "text": "Applied rebuild persists across full app relaunch",
+   "track": "agent",
+   "harness_drivable": true,
+   "status": "agent-verified",
+   "evidence": "App process SIGTERMed (verified dead), relaunched with same sandbox: fresh process re-fetched diagram 2011 (v10) over HTTP and the reloaded scene shows 11 Person / 4 Marriage / 7 ChildOf \u2014 exactly the committed DB structure incl. Carol's new parents bond; asserted from the rebuilt scene, not UI memory."
+  },
+  {
+   "id": "C11",
+   "text": "Max-fidelity toggle off sends k=1, on sends k=8",
+   "track": "agent",
+   "harness_drivable": true,
+   "status": "agent-verified",
+   "evidence": "Server-side parse of the real HTTP bodies in sandbox_flask.log: toggle OFF -> 'started deep_reextract task b20d9173... k=1'; rebuildMaxFidelitySwitch clicked ON (checked=true read back) -> 'started deep_reextract task a233eb57... k=8'; celery task results echo k=1/k=8 respectively."
+  },
+  {
+   "id": "C12",
+   "text": "The rebuilt family is structurally correct per the user's own knowledge of their family, judged on their real diagram",
+   "track": "human",
+   "harness_drivable": false,
+   "status": "pending",
+   "evidence": null
+  },
+  {
+   "id": "C13",
+   "text": "Ex-partner (romantic, never married) attaches to the proband as a pair-bond staged with married=false so it renders dashed",
+   "track": "agent",
+   "harness_drivable": true,
+   "status": "agent-verified",
+   "evidence": "GT scorer round 2026-06-10: final full rebuild staged the ex-partner bond to the proband with married=false (both ex-partner assertions present); isolated dock probe 3/3 accepted with contiguous verbatim quotes, friend singleton stayed unattached 3/3 (zero false attaches). Plumbing: optional married flag on staged PairBond, commit mapping coerces None->married (legacy solid), dock applier sets false for romantic-not-married."
+  },
+  {
+   "id": "C14",
+   "text": "Owner GT edge assertions (5 corrections from the human walk) hold across 2 consecutive full rebuilds",
+   "track": "agent",
+   "harness_drivable": true,
+   "status": "failed",
+   "evidence": "Loop outcome 2026-06-10: best rebuild 5/7 required present, 5 forbidden violated, LCC 97.5 \u2014 not clean. The 5 remaining failures are deterministic committed-data poison on the canonical diagram (identical across 2 consecutive rebuilds); the additive delta cannot remove committed wrong-parent links or spurious bonds. Unblock requires Patrick's call: one-time supervised repair of the committed data vs a committed-correction feature (delete/committed-edit channels exist in schema but nothing populates them). Diagnosis: /tmp/fd338_evidence/ralph/iter2_diagnosis.md."
+  }
+ ],
+ "gates": {
+  "ground": {
+   "status": "passed",
+   "at": "2026-06-09T12:00:00",
+   "artifact": null
+  },
+  "build": {
+   "status": "passed",
+   "at": "2026-06-09T18:30:00",
+   "artifact": "fix-round suites green both repos"
+  },
+  "validate": {
+   "agent_track": {
+    "status": "active",
+    "at": "2026-06-09T19:30:00",
+    "token": null
+   },
+   "human_track": {
+    "status": "active",
+    "at": "2026-06-09T19:30:00",
+    "script": "doc/workstreams/fd-338-human-script.md"
+   }
+  },
+  "merge": {
+   "status": "pending",
+   "at": null,
+   "pr_url": "btcopilot#125 + familydiagram#147"
+  }
+ },
+ "findings": [
+  {
+   "id": "F-001",
+   "summary": "Extraction stages a duplicate person named 'Client' bridged to committed people (7/7 acceptance runs) ROOT-CAUSE FIX TRACKED: FD-321 (user name + birth date on the primary node, fed into extraction context) \u2014 re-parented to FD-264 2026-06-11.",
+   "severity": "major",
+   "repro": "Any K=1 rebuild of diagram 1924 discussions 55,58,60; inspect staged delta people",
+   "validation_status": "agent-verified",
+   "status": "open",
+   "found_in_track": "agent",
+   "criterion": "C8",
+   "regression_test": null
+  },
+  {
+   "id": "F-002",
+   "summary": "Per-item review ending on a reject never advances the re-extraction cursor (pre-existing FD-333 gap)",
+   "severity": "minor",
+   "repro": "Accept all staged cards one-by-one, reject the last one; cursor never advances",
+   "validation_status": "agent-verified",
+   "status": "open",
+   "found_in_track": "agent",
+   "criterion": null,
+   "regression_test": null
+  },
+  {
+   "id": "F-003",
+   "summary": "Merge cross-matched a new sibling to a committed person sharing a last name: k=1 rebuild of seeded discussion 61 matched extracted 'Ben Hughes' onto committed 'Dennis Hughes' (id 10), so Ben vanished from the delta, a duplicate 'Dennis Hughes' was staged as new, and committed Dennis got a parents edit making him a child of Carol + his own duplicate; the follow-up k=8 run staged a duplicate 'Carol Hughes' over committed Carol the same way \u2014 same dup-over-committed class as deferred F-001",
+   "severity": "major",
+   "repro": "Seed user fd338-uitest@example.com diagram 2011 discussion 61 (scripts in /tmp/fd338_evidence/agent/), extract+accept statements 1-5, add statements 6-9, run rebuild; inspect staged delta",
+   "validation_status": "agent-verified",
+   "status": "open",
+   "found_in_track": "agent",
+   "criterion": "C8",
+   "regression_test": null
+  },
+  {
+   "id": "F-004",
+   "summary": "After Accept All the app's local diagram copy retains the drained parents-edit rows in its pdp while the server pdp is empty \u2014 user-invisible (badge and sheet both 0) and self-corrects on reload, but local state diverges from server until then",
+   "severity": "minor",
+   "repro": "Accept All a rebuild delta containing parents-edit rows; compare get_personal_state(pdp) personCount (2) vs server diagram pdp ([])",
+   "validation_status": "agent-verified",
+   "status": "open",
+   "found_in_track": "agent",
+   "criterion": "C9",
+   "regression_test": null
+  },
+  {
+   "id": "F-005",
+   "summary": "objectName 'rebuildOverlayCancelButton' exists in both LoadingOverlay instances (extractOverlay and importOverlay); the bridge element finder resolves the hidden importOverlay copy, so the live rebuild Cancel button cannot be driven by the harness (clicked it: no-op)",
+   "severity": "minor",
+   "repro": "During a rebuild, bridge click rebuildOverlayCancelButton; get_property shows visible=false (importOverlay's) while extractOverlay.cancellable=true",
+   "validation_status": "agent-verified",
+   "status": "open",
+   "found_in_track": "agent",
+   "criterion": null,
+   "regression_test": null
+  },
+  {
+   "id": "F-006",
+   "summary": "Rebuild button is hidden until a discussion is selected \u2014 no affordance tells the user why; found by Patrick mid-walk (button appeared after selecting a discussion via the Discuss title dropdown)",
+   "severity": "minor",
+   "repro": "Launch Personal app fresh, open a populated diagram, stay on Discuss tab without selecting a discussion; rebuild button absent",
+   "validation_status": "human-verified",
+   "status": "open",
+   "found_in_track": "human",
+   "criterion": "C12",
+   "regression_test": null
+  },
+  {
+   "id": "F-007",
+   "summary": "Rebuilt diagram: proband attached to the wrong parent couple (cross-matched among three same-first-name people; generation flip). GT detail: btcopilot-sources/training/gt-exports/diagram-1924-structure-gt.md (confidential, outside repo)",
+   "severity": "major",
+   "repro": "Rebuild diagram 1924 (K=1) via the app; compare drawn structure to owner GT",
+   "validation_status": "human-verified",
+   "status": "open",
+   "found_in_track": "human",
+   "criterion": "C12",
+   "regression_test": null
+  },
+  {
+   "id": "F-008",
+   "summary": "Rebuilt diagram: a person's mother and son-in-law paired as a couple (wrong pair-bond synthesized as co-parents). GT detail: btcopilot-sources/training/gt-exports/diagram-1924-structure-gt.md (confidential, outside repo)",
+   "severity": "major",
+   "repro": "Rebuild diagram 1924 (K=1) via the app; compare drawn structure to owner GT",
+   "validation_status": "human-verified",
+   "status": "open",
+   "found_in_track": "human",
+   "criterion": "C12",
+   "regression_test": null
+  },
+  {
+   "id": "F-009",
+   "summary": "Dock applier: sibling_of with placeholder parents attaches only the floating member, not the anchor \u2014 anchor's own parents link never set. GT detail: btcopilot-sources/training/gt-exports/diagram-1924-structure-gt.md (confidential, outside repo)",
+   "severity": "major",
+   "repro": "Rebuild diagram 1924 (K=1) via the app; compare drawn structure to owner GT",
+   "validation_status": "human-verified",
+   "status": "open",
+   "found_in_track": "human",
+   "criterion": "C12",
+   "regression_test": null
+  },
+  {
+   "id": "F-010",
+   "summary": "Rebuilt diagram: son rendered as married to his mother (relation-type flip, partner_of vs child_of). GT detail: btcopilot-sources/training/gt-exports/diagram-1924-structure-gt.md (confidential, outside repo)",
+   "severity": "major",
+   "repro": "Rebuild diagram 1924 (K=1) via the app; compare drawn structure to owner GT",
+   "validation_status": "human-verified",
+   "status": "open",
+   "found_in_track": "human",
+   "criterion": "C12",
+   "regression_test": null
+  },
+  {
+   "id": "F-011",
+   "summary": "Ex-partner left floating; owner ruling: ex-partners belong on the diagram (criteria change, overturns the legit-disconnect assumption for this class). GT detail: btcopilot-sources/training/gt-exports/diagram-1924-structure-gt.md (confidential, outside repo)",
+   "severity": "major",
+   "repro": "Rebuild diagram 1924 (K=1) via the app; compare drawn structure to owner GT",
+   "validation_status": "human-verified",
+   "status": "open",
+   "found_in_track": "human",
+   "criterion": "C12",
+   "regression_test": null
+  },
+  {
+   "id": "F-012",
+   "summary": "Committed-data poison on diagram 1924 blocks 5 GT assertions: proband's committed parents point at the wrong couple's bond; one person seated under her sibling's bond via a wrong committed birth event; two spurious committed bonds. Unreachable by the additive delta by design.",
+   "severity": "major",
+   "repro": "Read-only committed audit: /tmp/fd338_evidence/ralph/committed_audit.json; identical failure set across 2 independent rebuilds",
+   "validation_status": "agent-verified",
+   "status": "open",
+   "found_in_track": "agent",
+   "criterion": "C14",
+   "regression_test": null
+  },
+  {
+   "id": "F-013",
+   "summary": "apply_parent_edits consumed ALL positive-id rows on full accept, silently destroying pending name/gender Update cards for legacy clients \u2014 fixed: only parents-only rows consumed, others stay staged",
+   "severity": "major",
+   "repro": "test_apply_parent_edits_leaves_non_parents_update_rows_staged",
+   "validation_status": "agent-verified",
+   "status": "fixed",
+   "found_in_track": "agent",
+   "criterion": "C9",
+   "regression_test": "btcopilot/tests/schema/test_commit.py::test_apply_parent_edits_leaves_non_parents_update_rows_staged"
+  },
+  {
+   "id": "F-014",
+   "summary": "Parents-edit channel now fires on the regular /extract path and applies server-side on full accept with NO review card (client hides the rows) \u2014 a wrong null-to-set parents link can reach the committed diagram silently. Mitigations: only fills when parents is null; conflicts dropped. Design call: should parents edits get review cards?",
+   "severity": "minor",
+   "repro": "Multi-window extract staging a positive-id parents row; accept all; row applied without review",
+   "validation_status": "agent-verified",
+   "status": "open",
+   "found_in_track": "agent",
+   "criterion": null,
+   "regression_test": null
+  }
+ ],
+ "deferred_risk": [
+  {
+   "what": "Pre-existing extraction-quality bugs on AI-residue test data (F-001 Client-dup, F-002 reject-cursor, stale full_accept race, count-toast mismatch, assistant-bond weld-through)",
+   "track": "agent",
+   "why": "Patrick: 'we need to defer existing bugs outside the scope of this ticket... we also don't need to be burning a ton of tokens and days on test data that isn't produced by the e2e extraction flow'",
+   "carried_to": "follow-up tickets after the human e2e walk",
+   "at": "2026-06-09T18:50:00"
+  },
+  {
+   "what": "F-006 rebuild-button discoverability (hidden until discussion selected)",
+   "track": "human",
+   "why": "Patrick: 'it appeared after selecting a discussion. We can defer that bug for later'",
+   "carried_to": "follow-up ticket after the walk",
+   "at": "2026-06-09T22:30:00"
+  }
+ ],
+ "history": [
+  {
+   "gate": "ground",
+   "entered": "2026-06-09T10:30:00",
+   "exited": "2026-06-09T12:00:00",
+   "note": "Ticket ACs accepted as oracle; architecture re-derived from first principles (council + probes) with Patrick's sign-off ('do it')"
+  },
+  {
+   "gate": "build",
+   "entered": "2026-06-09T14:00:00",
+   "exited": "2026-06-09T18:30:00",
+   "note": "gate-and-dock built + fix round; suites green; acceptance battery 7/7 >=94.3%"
+  },
+  {
+   "gate": "validate",
+   "entered": "2026-06-09T19:30:00",
+   "exited": null,
+   "note": "Agent track: C1-C5 verified; C6-C11 pending app-harness run. Human track: C12. First human script REJECTED by Patrick for rule violations (coordinator-authored, agent-track not exhausted, no guards run); redo in progress."
+  },
+  {
+   "gate": "validate",
+   "entered": "2026-06-09T20:00:00",
+   "exited": null,
+   "note": "Agent track C6-C11 all verified on the real Personal app (worktree code, bridge port 9899, offscreen QML) against sandbox flask 8889 + real Celery worker, using seeded test user 2308 / diagram 2011 / discussion 61 (scripts + logs in /tmp/fd338_evidence/agent/). Diagram 1924 untouched. New findings F-003 (merge dup-over-committed, major, same class as deferred F-001), F-004 (local pdp residue, minor), F-005 (duplicate overlay-cancel objectName blocks harness-driven cancel, minor)."
+  },
+  {
+   "gate": "validate",
+   "entered": "2026-06-10T00:00:00",
+   "exited": null,
+   "note": "Human walk on real diagram surfaced 5 structural errors (F-007..F-011); C12 not passed; unit returns to build for in-scope fixes; F-011 is a criteria change awaiting oracle confirmation (ex-partners attach)"
+  }
+ ],
+ "parked_on": "FD-321 merged to origin/master (root-cause fix for proband triplication). To use it here: (1) merge origin/master into deep-reextract \u2014 conflicts expected in schema + accept-route + their tests, both streams edited them; (2) set Patrick's name+birthdate on diagram 1924's primary node (currently unset='User', so FD-321 still emits neutral label and duplicates persist); (3) start local Postgres. Then run wipe + re-extract + rebuild + GT score. Awaiting Patrick's go + name-setting method (wizard vs direct)."
+}

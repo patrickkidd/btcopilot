@@ -12,7 +12,7 @@ from btcopilot.personal.deepreextract import (
     RebuildCancelled,
 )
 from btcopilot.schema import asdict
-from btcopilot.training.connectivity_check import lcc_percent, _person_id
+from btcopilot.familygraph import lcc_percent
 
 _log = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def deep_reextract_task(self, discussion_id: int, k: int):
                 meta={"current": current, "total": total, "label": label},
             )
 
-        delta_pdp, _ = deep_reextract(
+        delta_pdp, _, runs_used = deep_reextract(
             discussion_id,
             k,
             on_progress=on_progress,
@@ -72,10 +72,7 @@ def deep_reextract_task(self, discussion_id: int, k: int):
         ]
         if neg_ids:
             projected.commit_pdp_items(neg_ids)
-        for ep in [p for p in delta_pdp.people if p.id is not None and p.id > 0]:
-            for p in projected.people:
-                if _person_id(p) == ep.id:
-                    p["parents"] = ep.parents
+        projected.apply_parent_edits()
         stats = lcc_percent(projected.people, projected.pair_bonds)
 
         return {
@@ -86,6 +83,7 @@ def deep_reextract_task(self, discussion_id: int, k: int):
             "pdp": asdict(delta_pdp),
             "lcc_pct": stats["lcc_pct"],
             "k": k,
+            "runs_used": runs_used,
         }
     except RebuildCancelled:
         _log.info(f"deep_reextract_task cancelled (discussion={discussion_id})")

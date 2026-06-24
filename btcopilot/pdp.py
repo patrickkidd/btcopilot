@@ -356,6 +356,16 @@ def _committed_person_matches(
 def _remap_person_refs(deltas: PDPDeltas, remap: dict[int, int]) -> None:
     """Rewrite every delta reference to a remapped person id and drop the
     duplicate delta Person rows."""
+    lost_parents = [
+        (p.id, p.parents)
+        for p in deltas.people
+        if p.id in remap and p.parents is not None
+    ]
+    if lost_parents:
+        _log.warning(
+            f"_remap_person_refs: dropped {len(lost_parents)} dup people with "
+            f"parents set: {lost_parents}"
+        )
     deltas.people = [p for p in deltas.people if p.id not in remap]
 
     # remap is person-id -> committed-person-id ONLY. person.parents is a
@@ -466,6 +476,16 @@ def _drop_committed_dup_events(deltas: PDPDeltas, diagram_data: DiagramData) -> 
         if key is not None and key in committed_keys:
             refs = key[1] if isinstance(key[1], tuple) else (key[1],)
             if all(r is not None and r >= 0 for r in refs):
+                if (
+                    ev.kind.isOffspring()
+                    and ev.person is not None
+                    and ev.spouse is not None
+                ):
+                    _log.warning(
+                        f"_drop_committed_dup_events: dropped {ev.kind.value} dup "
+                        f"event {ev.id} carrying couple refs person={ev.person} "
+                        f"spouse={ev.spouse}"
+                    )
                 continue
         kept.append(ev)
     deltas.events = kept
@@ -1151,6 +1171,9 @@ async def _two_pass_extract(
             model=sarf_review_model or SARF_REVIEW_MODEL,
         )
         reviewed = {e.id: e for e in review_deltas.events}
+        valid_ids = {p.id for p in pass2_pdp.people if p.id is not None} | {
+            p["id"] for p in diagram_data.people
+        }
         for event in pass2_pdp.events:
             if event.id not in reviewed:
                 continue
@@ -1162,9 +1185,16 @@ async def _two_pass_extract(
             if rev.functioning is not None:
                 event.functioning = rev.functioning
             if rev.relationship is not None:
-                event.relationship = rev.relationship
-                event.relationshipTargets = rev.relationshipTargets
-                event.relationshipTriangles = rev.relationshipTriangles
+                rev_refs = set(rev.relationshipTargets) | set(rev.relationshipTriangles)
+                if rev_refs <= valid_ids:
+                    event.relationship = rev.relationship
+                    event.relationshipTargets = rev.relationshipTargets
+                    event.relationshipTriangles = rev.relationshipTriangles
+                else:
+                    _log.warning(
+                        f"sarf_review: rejected targets {sorted(rev_refs - valid_ids)} "
+                        f"for event {event.id}: not in roster"
+                    )
 
     merged_deltas = PDPDeltas(
         people=pass1_deltas.people + pass2_deltas.people,
@@ -1208,8 +1238,11 @@ def _fmt_stmts(stmts) -> str:
 def _restage_new_items(working: DiagramData, original: DiagramData) -> PDP:
     """Re-stage items committed across windows that are absent from the original
     diagram as a fresh negative-id PDP. References into original committed items
-    stay positive; references among the new items are remapped to negatives."""
-    orig_people = {p["id"] for p in original.people}
+    stay positive; references among the new items are remapped to negatives.
+    Original-committed people whose parents went null->set on the working copy
+    re-stage as positive-id Person edit rows."""
+    orig_parents = {p["id"]: p.get("parents") for p in original.people}
+    orig_people = set(orig_parents)
     orig_events = {e["id"] for e in original.events}
     orig_bonds = {pb["id"] for pb in original.pair_bonds}
 
@@ -1243,6 +1276,13 @@ def _restage_new_items(working: DiagramData, original: DiagramData) -> PDP:
         d["id"] = person_map[p["id"]]
         d["parents"] = rbond(p.get("parents"))
         people.append(from_dict(Person, d))
+    for p in working.people:
+        if (
+            p["id"] in orig_people
+            and p.get("parents") is not None
+            and orig_parents[p["id"]] is None
+        ):
+            people.append(Person(id=p["id"], parents=rbond(p["parents"])))
     for pb in new_bonds:
         d = dict(pb)
         d["id"] = bond_map[pb["id"]]
@@ -1351,6 +1391,7 @@ async def extract_full(
         ids += [pb.id for pb in pdp.pair_bonds if pb.id is not None and pb.id < 0]
         if ids:
             working.commit_pdp_items(ids)
+        working.apply_parent_edits()
         if on_window:
             on_window()
 

@@ -88,3 +88,33 @@ def test_get_unauthorized(subscriber, test_user_2):
 #     assert response.status_code == 200
 #     data = response.get_json()
 #     assert isinstance(data, list)
+
+
+def test_deep_reextract_default_k1(subscriber, discussion, mock_celery):
+    mock_celery.send_task.return_value.id = "task-1"
+    response = subscriber.post(f"/personal/discussions/{discussion.id}/deep-reextract")
+    assert response.status_code == 200
+    assert response.get_json() == {"task_id": "task-1"}
+    mock_celery.send_task.assert_called_once_with(
+        "deep_reextract", args=[discussion.id, 1]
+    )
+
+
+def test_deep_reextract_k8_still_valid(subscriber, discussion, mock_celery):
+    """Existing client toggle contract: explicit k=4/8 keeps working."""
+    mock_celery.send_task.return_value.id = "task-1"
+    response = subscriber.post(
+        f"/personal/discussions/{discussion.id}/deep-reextract", json={"k": 8}
+    )
+    assert response.status_code == 200
+    mock_celery.send_task.assert_called_once_with(
+        "deep_reextract", args=[discussion.id, 8]
+    )
+
+
+def test_deep_reextract_rejects_invalid_k(subscriber, discussion, mock_celery):
+    response = subscriber.post(
+        f"/personal/discussions/{discussion.id}/deep-reextract", json={"k": 2}
+    )
+    assert response.status_code == 400
+    mock_celery.send_task.assert_not_called()

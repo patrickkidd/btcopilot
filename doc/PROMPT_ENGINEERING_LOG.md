@@ -2,9 +2,153 @@
 
 **Purpose**: Authoritative record of prompt engineering decisions, experiments, and lessons learned for the SARF data extraction system. Prevents regressions by documenting what works, what doesn't, and why.
 
-**Last Updated**: 2026-06-02 (FD-324 real-chat measurement + corrected conclusion)
+**Last Updated**: 2026-06-10 (FD-338 GT learning loop round: consolidated scoreboard + 3-run F1 confirmation)
 
 ---
+
+## FD-338 — GT learning loop round: owner-GT scoreboard + 3-run F1 confirmation (2026-06-10)
+
+Consolidated record of the round driven by the diagram owner's 5 structural
+corrections (confidential GT outside the repo; scorer loads 12 assertions — 7
+required R1-R7, 5 forbidden F1-F5 — from an absolute path in btcopilot-sources).
+No assertion, scorer, or test was weakened at any point.
+
+### Changes made this round (mechanisms only, no identifying detail)
+
+- **Dock applier — sibling anchor fix**: a sibling_of edge that materializes
+  placeholder parents now sets the ANCHOR's own parents link as well; previously
+  only the floating member attached, leaving the anchor's parentage unset
+  (owner correction 3).
+- **Dashed ex-partner bonds**: optional `married: bool | None` on the staged
+  PairBond (None coerced to married/solid at commit — legacy default); the dock
+  applier stages partner_of edges with married=false for romantic-never-married
+  attachments so they render dashed (owner correction 5, overturns the prior
+  leave-floating policy for ex-partners).
+- **DOCK_PROMPT refinement (loop iteration 1 — the round's only prompt change)**:
+  (a) first-person anchoring — the client speaker IS a roster node; anchor
+  first-person evidence to the proband id; (b) never-married past romance is in
+  scope (partner_of married=false); the not-family carve-out narrowed to "no
+  stated romantic involvement"; (c) quote rule hardened — one contiguous verbatim
+  span (no "..."-stitching), quote must evidence the relation type, and reasoning
+  must restate the parent generation on child_of/parent_of edges. Full detail in
+  the next entry below.
+
+### Scoreboard (full real-LLM rebuilds of the canonical diagram, GT scorer)
+
+| Rebuild | Required present | Forbidden violated | LCC |
+|---|---|---|---|
+| Pre-iteration | 3/7 (R2,R4,R5) | 5/5 | 95.0% |
+| Post-iteration-1 | 5/7 (R2,R4,R5,R6,R7) | 5/5 | 97.5% |
+
+Iteration 1 flipped both ex-partner assertions (R6 attach, R7 dashed) with zero
+false attaches (the friend singleton stayed unattached 3/3 in the isolated
+probe). Iteration 2 applied no change: the 7 still-failing assertions trace to
+4 committed-data defects (wrong-couple parent link on the proband = R1/F1/F2;
+an anchor seated under her sibling's bond = R3/F4; two spurious committed bonds
+= F3, F5). All are committed-data poison — the additive delta cannot remove
+committed links/bonds and the dock only touches floating components, so no
+prompt/applier/merge-gate adjustment can flip them. Unblock paths (Patrick's
+call): one-time supervised repair of the committed canonical diagram, or a
+committed-correction feature through the existing delete/committed-edit schema
+channels plus a scorer-projection extension. Diagnosis artifacts in
+/tmp/fd338_evidence/ralph/.
+
+### F1 guardrail (6 GT discussions vs 2026-05-21 baseline, ±0.05 band)
+
+- Mid-loop (1 run, after the prompt change): agg +0.010, people -0.004,
+  events +0.028, pair_bonds -0.017 — pass.
+- Final 3-run confirmation (this entry):
+  run 1 agg 0.647 / people 0.922 / events 0.429 / bonds 0.828 / parent_child 0.823;
+  run 2 0.660 / 0.931 / 0.422 / 0.819 / 0.799;
+  run 3 0.654 / 0.913 / 0.420 / 0.816 / 0.813.
+- 3-run mean vs baseline: agg 0.654 (-0.005), people 0.922 (-0.005), events
+  0.424 (-0.010), pair_bonds 0.821 (-0.016), parent_child 0.812 (-0.003 vs the
+  2026-05-20 figure). All within the band; People>0.7 and Events>0.3 gates pass.
+  Outputs: /tmp/fd338_evidence/ralph/f1_final_run{1,2,3}.out.
+
+### Confidentiality sweep
+
+New real-name occurrences introduced this round in uncommitted fixtures and log
+text were anonymized before any commit. Pre-existing committed occurrences (one
+older section of this file, two btcopilot test files on master, three
+familydiagram files) are flagged for a separate history-scrub decision; the
+working-tree copy of the older section in this file is now anonymized.
+
+---
+
+## FD-338 — DOCK_PROMPT first-person anchoring + contiguous-quote rule (2026-06-10)
+
+**Scope**: Wording-only refinement of `DOCK_PROMPT` (btcopilot default; fdserver does
+not override it). No code change.
+
+**Problem (deterministic, 3/3 probe runs)**: the dock returned verdict "none" for an
+ex-partner singleton whose only connecting evidence is FIRST-PERSON ("I fell really
+hard for her") spoken by the client. Two wording gaps: (1) the pronoun-resolution
+instruction covered only third-person references and never said the client speaker IS
+a roster node, so first-person evidence had no anchor id; (2) "find the stated family
+connection" + "a friend or acquaintance is not family" read a never-married ex-partner
+out of scope despite the partner_of bullet.
+
+**Changes**: (a) new bullet — the diagram owner is in the main tree (the "User" node
+when present); anchor first-person evidence to the proband id; (b) past-romance
+sentence — romance that ended without marriage still attaches, partner_of
+married=false; not-family carve-out narrowed to "no stated romantic involvement";
+(c) quote rule hardened — ONE contiguous verbatim span, no "..."-stitching (first
+fix attempt produced 3/3 stitched quotes the gate rejected), quote must evidence the
+RELATION TYPE, and `reasoning` must restate the parent generation on
+child_of/parent_of edges (generation-flip guard).
+
+**Measurement (committed-only floats probe, diagram 1924, n=3 each)**: before — 0/3
+attach proposals; after bullet (a)+(b) — 3/3 propose partner_of proband married=false
+but 0/3 survive the verbatim gate (stitched quotes); after (c) — 3/3 accepted with
+contiguous verbatim quotes, and the friend singleton stayed verdict "none" in all
+runs (zero false attaches preserved). Probe artifacts:
+/tmp/fd338_evidence/ralph/dock_probe_{before,after,after2}.json.
+
+**F1 no-regression (1 run mid-loop, 6 GT)**: agg -0.024, people -0.009, events
+-0.027, pair_bonds -0.031 vs 2026-05-21 baseline — all within the ±0.05 band.
+3-run confirmation owed at end of loop per guardrail.
+
+**Scope**: New prompt surface, not an edit to extraction passes 1-3. `DOCK_PROMPT`
+added to `btcopilot/personal/prompts.py` as a btcopilot default (deliberate exception
+to the stub-only rule; in the FDSERVER_PROMPTS_PATH override tuple so fdserver may
+override). Consumed by `btcopilot/personal/dock.py`: one full-transcript call
+(pass-3 model), no cursor rule, explicit cross-turn pronoun-resolution instruction,
+edges-only output with verbatim-quote requirement; deterministic gates (quote
+substring-match, member-floating, anchor-in-main-tree) + programmatic edge applier;
+accepted only if floating-component count strictly drops.
+
+### Measurement (diagram 1924, discs 55,58,60, accumulate mode)
+
+- Offline probe (n=5 failing states): the pronoun-bridge couple docked 4/4 with
+  verified-correct antecedent (the pronoun resolved to the right in-tree relative,
+  confirmed by the preceding coach turn); zero false attaches of the two
+  legit-disconnect singletons; post-dock connectivity 93.3-97.0% (pre: 72-90%).
+- Production acceptance battery (n=7, K=1 path, projected commit onto the degraded
+  committed 1924 baseline): dock accepted 7/7 with strict drop (floats 6→4 / 5→3);
+  stable edge set sibling_of between the two-sister pair (6/6 applicable) + one
+  parent_of edge (7/7); dock-attributed kill-gate clean 7/7. Raw LCC 89.7-92.9%
+  (two committed placeholder junk rows cap the raw number); zero crashes in 10
+  production-path runs after the pass-3 splice gate fix.
+- Known dock precision limit: quote gate verifies evidence existence, not relation
+  type — 1/13 distinct accepted edges had right-family/wrong-generation (cousin as
+  sibling). Dock edges ride the staged-PDP review path, not auto-commit.
+
+### F1 no-regression (3 runs, 6 GT, production prompts)
+
+agg -0.013, people +0.003, events -0.042, pair_bonds -0.009 vs 2026-05-21 baseline —
+all within ±0.05 band. Events mean delta consumes 84% of the band; treat a repeat
+near -0.05 as drift, not noise. (No f1_timeseries entry: passes 1-3 untouched,
+consistent with FD-319 precedent.)
+
+### Lesson
+
+The connectivity deficit was never extraction capability — a directed, targeted,
+quote-grounded repair on a deterministically detected gap succeeds where both blind
+consensus (K-union, ~52% on the pronoun class at K=4) and the FD-319 *global*
+completion pass (untargeted, evidence-free, measured negative) failed. Targeting +
+evidence-grounding is the difference; do not generalize this into "add repair
+passes".
 
 ## FD-324 — Real-chat LCC measurement + failure-mode classification (2026-06-01)
 
@@ -55,22 +199,23 @@ No F1 regression. Run-to-run variance ±0.021 on aggregate (within known ±0.05�
 
 After accumulation (20 people, 11 components, LCC=6, LCC%=30%):
 
-Committed people in the diagram span two family groups:
-- **Stinson family**: Connie, Alyssa, Sam, Julie, Robert — last_name=Stinson, extraction also produced pair bonds Sam-Alyssa and Robert-Julie. These look like sibling-couples.
-- **O'Malley family**: Jim O'Malley, Elizabeth O'Malley — connected via bond #6.
-- **Cross-link**: Elizabeth-Robert bond (#7) connects O'Malley and Stinson clusters. Client is a child of Elizabeth+Robert.
-- **LCC (6 people)**: Elizabeth, Jim, Robert, Julie, Client, Connie — connected via bonds #5, #6, #7, #26.
-- **Disconnected**: Sam-Alyssa couple (2 people), Meredith-Vance couple (2 people), Monique/Joseph/Julia/Anthony singletons (4 people).
+Committed people in the diagram span two family groups (names anonymized — A* =
+paternal-surname group, B* = maternal-surname group, C* = others):
+- **Family A**: A1, A2, A3, A4, A5 — shared last name; extraction also produced pair bonds A3-A2 and A5-A4. These look like sibling-couples.
+- **Family B**: B1, B2 — connected via bond #6.
+- **Cross-link**: B2-A5 bond (#7) connects the A and B clusters. Client is a child of B2+A5.
+- **LCC (6 people)**: B2, B1, A5, A4, Client, A1 — connected via bonds #5, #6, #7, #26.
+- **Disconnected**: A3-A2 couple (2 people), C1-C2 couple (2 people), C3/C4/C5/C6 singletons (4 people).
 
-**Mode (a) duplicates**: Possible — Robert appears in two pair bonds (Elizabeth-Robert #7 and Robert-Julie #5). This could indicate the conversation discussed Robert in two different relationship contexts; not a duplicate person but possibly an erroneous second bond. Frequency too low to address with a targeted prompt change.
+**Mode (a) duplicates**: Possible — A5 appears in two pair bonds (B2-A5 #7 and A5-A4 #5). This could indicate the conversation discussed A5 in two different relationship contexts; not a duplicate person but possibly an erroneous second bond. Frequency too low to address with a targeted prompt change.
 
-**Mode (b) implicit-spouse / implicit-sibling**: Sam, Alyssa, Julie, Robert, Connie all share last_name=Stinson, strongly suggesting a sibling group. Connecting them to a shared parent pair would link the Sam-Alyssa isolated couple into the main tree. However, fixing this requires inferring parent bonds from shared last names — which is name-matching, explicitly rejected per ticket rules. Out of scope.
+**Mode (b) implicit-spouse / implicit-sibling**: A1-A5 all share a last name, strongly suggesting a sibling group. Connecting them to a shared parent pair would link the A3-A2 isolated couple into the main tree. However, fixing this requires inferring parent bonds from shared last names — which is name-matching, explicitly rejected per ticket rules. Out of scope.
 
-**Mode (c) truly isolated**: ONLY Monique (ex-girlfriend, no other relative) is genuinely
-isolated. Joseph/Julia/Anthony are NOT — disc 60 explicitly states "Jim and Sheila are
-the parents of Anthony, Joseph, Julia" and the user demanded the link be set; Vance/Meredith
-are Connie's sister + her husband (stated); Sam is the user's half-brother (stated). These
-are extraction failures, not missing source structure.
+**Mode (c) truly isolated**: ONLY C3 (ex-girlfriend, no other relative) is genuinely
+isolated. C4/C5/C6 are NOT — disc 60 explicitly names a couple as the parents of all
+three and the user demanded the link be set; C2/C1 are A1's sister + her husband
+(stated); A3 is the user's half-brother (stated). These are extraction failures, not
+missing source structure.
 
 **Conclusion (CORRECTED 2026-06-02 — supersedes the original below)**: Patrick's low LCC is
 NOT content-bounded. The relationships ARE in the transcript; fresh extraction recovers only
@@ -118,7 +263,7 @@ vs ~22 fresh).
 |---|---|
 | (a) Duplicates | Accepted: rare in this data, no systematic pattern warranting a prompt change |
 | (b) Implicit spouse/parent missing PairBond | Addressed by Pass-1 prompt fixes (fdserver #23): emit both bond partners + delete the ID-ordering contradiction |
-| (c) Truly isolated mentions | Only genuine case is Monique (ex-girlfriend); the rest are stated-but-unextracted (architectural, see corrected conclusion) |
+| (c) Truly isolated mentions | Only genuine case is the ex-girlfriend singleton; the rest are stated-but-unextracted (architectural, see corrected conclusion) |
 
 ---
 

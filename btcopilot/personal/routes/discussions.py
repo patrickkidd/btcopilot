@@ -9,7 +9,7 @@ import asyncio
 from btcopilot import auth, pdp
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram
-from btcopilot.schema import asdict, get_all_pdp_item_ids
+from btcopilot.schema import asdict, get_all_pdp_item_ids, is_parents_edit
 from btcopilot.personal import Response, ask
 from btcopilot.personal.deepreextract import (
     VALID_K,
@@ -277,9 +277,11 @@ def commit_pdp(discussion_id: int):
     """Accept staged PDP items into the committed diagram. On a FULL accept
     the re-extraction cursor advances to the extraction the client is
     accepting (accepted_through_order) so the next extract treats that
-    conversation as captured. The diagram write is guarded by an optimistic
-    version check with bounded retry, so a concurrent extract or commit cannot
-    silently overwrite committed items. All in one transaction."""
+    conversation as captured, and staged parents-edit rows (positive ids) are
+    applied server-side to the committed people. The diagram write is guarded
+    by an optimistic version check with bounded retry, so a concurrent extract
+    or commit cannot silently overwrite committed items. All in one
+    transaction."""
     user = auth.current_user()
 
     discussion = Discussion.query.get(discussion_id)
@@ -315,17 +317,29 @@ def commit_pdp(discussion_id: int):
         db.session.refresh(diagram)
         expected_version = diagram.version
         diagram_data = diagram.get_diagram_data()
-        staged = get_all_pdp_item_ids(diagram_data.pdp)
-        present = [i for i in item_ids if i in staged]
+        # The acceptance contract covers only NEW (negative-id) items.
+        # Positive ids in the staged pool are committed-entity edit rows;
+        # clients that echo them back are acknowledged as no-ops —
+        # commit_pdp_items raises on them by design.
+        staged_new = {i for i in get_all_pdp_item_ids(diagram_data.pdp) if i < 0}
+        present = [i for i in item_ids if i in staged_new]
         if isinstance(client_full, bool):
             full_accept = client_full
         else:
-            full_accept = bool(staged) and set(item_ids) >= staged
+            full_accept = bool(staged_new) and set(item_ids) >= staged_new
 
-        if not present:
+        parent_edits = full_accept and any(
+            is_parents_edit(p) for p in diagram_data.pdp.people
+        )
+        if not present and not parent_edits:
             committed = 0
             break
-        diagram_data.commit_pdp_items(present)
+        if present:
+            # Must run before apply_parent_edits: its trailing remap rewrites
+            # negative bond refs on staged parents rows to committed ids.
+            diagram_data.commit_pdp_items(present)
+        if parent_edits:
+            diagram_data.apply_parent_edits()
         ok, _ = diagram.update_with_version_check(
             expected_version, diagram_data=diagram_data
         )

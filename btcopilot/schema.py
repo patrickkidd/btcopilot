@@ -276,7 +276,19 @@ class PairBond:
     id: int | None = None
     person_a: int | None = None
     person_b: int | None = None
+    # None = unknown, committed as True (solid line). False = romantic but
+    # never married (girlfriend/boyfriend, ex-partner), rendered dashed.
+    married: bool | None = None
     confidence: float | None = None
+
+
+def committed_bond_chunk(pair_bond: PairBond) -> dict:
+    """Scene Marriage coerces married=None to False (dashed); map the staged
+    unknown to the scene default True before committing."""
+    chunk = asdict(pair_bond)
+    if chunk["married"] is None:
+        chunk["married"] = True
+    return chunk
 
 
 @dataclass
@@ -349,6 +361,27 @@ def get_all_pdp_item_ids(pdp: PDP) -> set[int]:
     ids.update(e.id for e in pdp.events)
     ids.update(pb.id for pb in pdp.pair_bonds if pb.id is not None)
     return ids
+
+
+def is_parents_edit(person: Person) -> bool:
+    """Staged positive-id row whose only payload is the parents link — the
+    server-applied channel (apply_parent_edits), not a user-reviewable card."""
+    return (
+        person.id is not None
+        and person.id > 0
+        and person.parents is not None
+        and person.name is None
+        and person.last_name is None
+        and person.gender is None
+    )
+
+
+def next_neg(existing_ids: set[int]) -> int:
+    """Next available negative ID not in existing_ids."""
+    n = -1
+    while n in existing_ids:
+        n -= 1
+    return n
 
 
 class ClusterPattern(enum.StrEnum):
@@ -433,8 +466,15 @@ class DiagramData:
     legendData: dict | None = None
 
     SCENE_COLLECTION_FIELDS: ClassVar[list[str]] = [
-        "people", "events", "pair_bonds", "emotions",
-        "multipleBirths", "layers", "layerItems", "items", "pruned",
+        "people",
+        "events",
+        "pair_bonds",
+        "emotions",
+        "multipleBirths",
+        "layers",
+        "layerItems",
+        "items",
+        "pruned",
     ]
 
     @staticmethod
@@ -472,9 +512,7 @@ class DiagramData:
         snapshot_by_id = {
             item["id"]: item for item in snapshot if item.get("id") is not None
         }
-        local_by_id = {
-            item["id"]: item for item in local if item.get("id") is not None
-        }
+        local_by_id = {item["id"]: item for item in local if item.get("id") is not None}
         server_by_id = {
             item["id"]: item for item in server if item.get("id") is not None
         }
@@ -564,7 +602,7 @@ class DiagramData:
 
     def add_pair_bond(self, pair_bond: PairBond) -> None:
         pair_bond.id = self._next_id()
-        chunk = asdict(pair_bond)
+        chunk = committed_bond_chunk(pair_bond)
         self.pair_bonds.append(chunk)
         _log.info(f"Added pair bond with new ID {pair_bond.id}")
 
@@ -653,7 +691,7 @@ class DiagramData:
                         f"{existing['id']} for dyad {dyad}, remapping"
                     )
                     continue
-                chunk = asdict(new_pair_bond)
+                chunk = committed_bond_chunk(new_pair_bond)
                 _log.info(
                     f"Committed pair bond with new ID {new_pair_bond.id}: {new_pair_bond}"
                 )
@@ -718,6 +756,9 @@ class DiagramData:
             if a is not None and b is not None:
                 bond_by_dyad[tuple(sorted((a, b)))] = pb["id"]
         people_by_id = {p["id"]: p for p in self.people}
+        # Explicit staged parents edits (apply_parent_edits channel) outrank
+        # event inference — backfilling first would drop the edit as a conflict.
+        pending_edits = {p.id for p in self.pdp.people if is_parents_edit(p)}
         for e in self.events:
             kind = e.get("kind")
             kind = kind.value if isinstance(kind, EventKind) else kind
@@ -730,13 +771,61 @@ class DiagramData:
             if bond_id is None:
                 continue
             ch = people_by_id.get(child)
-            if ch is None or ch.get("parents") is not None:
+            if ch is None or ch.get("parents") is not None or child in pending_edits:
                 continue
             ch["parents"] = bond_id
             _log.info(
                 f"backfill_committed_parents: committed Person {child} "
                 f"parents={bond_id} from birth event {e.get('id')}"
             )
+
+    def apply_parent_edits(self) -> int:
+        """Consume staged positive-id Person rows (the sanctioned 'set parents
+        on a committed person' channel) and apply the parents link to the
+        committed person. Rejected rows are dropped with a leak-counter
+        warning. Returns the applied count."""
+        edits = [p for p in self.pdp.people if is_parents_edit(p)]
+        if not edits:
+            return 0
+        consumed = {id(p) for p in edits}
+        self.pdp.people = [p for p in self.pdp.people if id(p) not in consumed]
+        leaked = sum(
+            1
+            for p in self.pdp.people
+            if p.id is not None and p.id >= 0 and p.parents is not None
+        )
+        if leaked:
+            _log.warning(
+                f"apply_parent_edits: {leaked} positive-id row(s) carry parents "
+                f"alongside other field edits and stay staged for review"
+            )
+        people_by_id = {p["id"]: p for p in self.people}
+        bond_ids = {pb["id"] for pb in self.pair_bonds}
+        applied = 0
+        for edit in edits:
+            target = people_by_id.get(edit.id)
+            if target is None:
+                reason = "person not committed"
+            elif edit.parents is None:
+                reason = "no parents on edit"
+            elif edit.parents not in bond_ids:
+                reason = f"pair bond {edit.parents} not committed"
+            elif target.get("parents") == edit.parents:
+                continue
+            elif target.get("parents") is not None:
+                reason = f"conflicts with parents={target['parents']}"
+            else:
+                target["parents"] = edit.parents
+                applied += 1
+                _log.info(
+                    f"apply_parent_edits: Person {edit.id} parents={edit.parents}"
+                )
+                continue
+            _log.warning(
+                f"apply_parent_edits: dropped Person {edit.id} "
+                f"parents={edit.parents}: {reason}"
+            )
+        return applied
 
     def _export_commit_state(
         self,
@@ -846,7 +935,10 @@ class DiagramData:
         for collection in (self.people, self.events, self.pair_bonds):
             for i, item in enumerate(collection):
                 if item.get("id") == item_id:
-                    collection[i] = {**item, **{k: v for k, v in edit_dict.items() if v is not None}}
+                    collection[i] = {
+                        **item,
+                        **{k: v for k, v in edit_dict.items() if v is not None},
+                    }
                     break
         self.pdp.people = [p for p in self.pdp.people if p.id != item_id]
         self.pdp.events = [e for e in self.pdp.events if e.id != item_id]
@@ -878,7 +970,11 @@ class DiagramData:
             for event in self.events:
                 if event.get("id") in ids_to_remove:
                     continue
-                if any(event.get(r) == current for r in ("person", "spouse", "child")) or current in event.get("relationshipTargets", []) or current in event.get("relationshipTriangles", []):
+                if (
+                    any(event.get(r) == current for r in ("person", "spouse", "child"))
+                    or current in event.get("relationshipTargets", [])
+                    or current in event.get("relationshipTriangles", [])
+                ):
                     to_visit.append(event["id"])
             for pb in self.pair_bonds:
                 if pb.get("id") in ids_to_remove:
@@ -893,12 +989,18 @@ class DiagramData:
 
         self.people = [p for p in self.people if p.get("id") not in ids_to_remove]
         self.events = [e for e in self.events if e.get("id") not in ids_to_remove]
-        self.pair_bonds = [pb for pb in self.pair_bonds if pb.get("id") not in ids_to_remove]
+        self.pair_bonds = [
+            pb for pb in self.pair_bonds if pb.get("id") not in ids_to_remove
+        ]
         self.pdp.people = [p for p in self.pdp.people if p.id not in ids_to_remove]
         self.pdp.events = [e for e in self.pdp.events if e.id not in ids_to_remove]
-        self.pdp.pair_bonds = [pb for pb in self.pdp.pair_bonds if pb.id not in ids_to_remove]
+        self.pdp.pair_bonds = [
+            pb for pb in self.pdp.pair_bonds if pb.id not in ids_to_remove
+        ]
         self.pdp.delete = [d for d in self.pdp.delete if d not in ids_to_remove]
-        _log.info(f"Cascade-deleted committed entity {item_id} (removed {ids_to_remove})")
+        _log.info(
+            f"Cascade-deleted committed entity {item_id} (removed {ids_to_remove})"
+        )
 
     def reject_committed_delete(self, item_id: int) -> None:
         """Discard a pending committed-entity delete."""
@@ -1026,9 +1128,7 @@ class DiagramData:
                 # Update child's parents to reference the pair bond
                 if event.child and event.child in pdp_people_map:
                     child_idx = next(
-                        i
-                        for i, p in enumerate(self.pdp.people)
-                        if p.id == event.child
+                        i for i, p in enumerate(self.pdp.people) if p.id == event.child
                     )
                     self.pdp.people[child_idx] = replace(
                         self.pdp.people[child_idx], parents=pair_bond_id
