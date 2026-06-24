@@ -12,6 +12,7 @@ from btcopilot.schema import (
     EventKind,
     PairBond,
 )
+from btcopilot.schema import DEFAULT_SUBJECT_NAME
 from btcopilot.pdp import _committed_state_for_prompt
 
 
@@ -170,3 +171,21 @@ def test_committed_state_excludes_ui_fields(discussion):
         pass1_prompt = mock_extract.call_args_list[0][0][0]
         assert '"Alice"' in pass1_prompt
         assert "Default Layer" not in pass1_prompt
+
+
+# --- Subject display name (label rename) ---
+
+
+def test_subject_display_name_uses_primary_name():
+    dd = DiagramData()
+    dd.people = [{"id": 7, "name": "Jordan Lee", "primary": True}]
+    assert dd.subject_display_name() == "Jordan Lee"
+
+
+def test_subject_display_name_falls_back_when_unset():
+    dd = DiagramData()
+    dd.people = [{"id": 7, "primary": True}]
+    assert dd.subject_display_name() == DEFAULT_SUBJECT_NAME
+
+    empty = DiagramData()
+    assert empty.subject_display_name() == DEFAULT_SUBJECT_NAME

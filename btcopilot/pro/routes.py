@@ -420,9 +420,11 @@ def users_update(user_id):
     if args.get("password"):
         user.set_password(args["password"])
         user.status = "confirmed"
-    if args.get("first_name"):
+    # Honor a present key even when empty so a cleared name propagates (PATCH
+    # semantics); an absent key leaves the field untouched.
+    if "first_name" in args:
         user.first_name = args["first_name"]
-    if args.get("last_name"):
+    if "last_name" in args:
         user.last_name = args["last_name"]
     db.session.commit()
     data = user.as_dict(

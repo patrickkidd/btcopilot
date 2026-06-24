@@ -1,0 +1,26 @@
+{
+ "gate": "validate-journey",
+ "learnings": [
+  {
+   "id": "L-authoring-prose",
+   "at": "2026-06-18",
+   "trigger": "Patrick: 'you didn't follow the rules for authoring the human script'",
+   "rule": "The coordinator NEVER supplies the script's prose. On a guard rejection, pass ONLY the guard's printed failure reasons to the script sub-agent and let it re-author; do NOT hand it verbatim replacement text to paste. Handing 'Replace X with exactly: <bullets>' is the coordinator authoring the script, which the gate forbids and which drifts the voice from naive-operator to architect.",
+   "fix_applied": "Regenerated the script via a fresh sub-agent from requirements only; on guard failures, relay reasons, never prose."
+  },
+  {
+   "id": "L-launch-apps",
+   "at": "2026-06-18",
+   "trigger": "Patrick: 'you must always launch the apps when I run the human script. Never wait for me to tell you'",
+   "rule": "When handing the human a validation script, the coordinator ALWAYS launches every app/environment the script requires (here: the Personal app AND the Pro app against one shared sandbox server) as part of the hand-off, immediately and proactively. Never wait for the human to ask. Re-launch any that the human closes when they continue.",
+   "fix_applied": "Launch the full app set at hand-off and on resume."
+  },
+  {
+   "id": "L-independent-server",
+   "at": "2026-06-18",
+   "trigger": "A8 persistence step: quitting the Personal app destroyed the server+sandbox because the launcher tied the ephemeral server's lifecycle to the app process.",
+   "rule": "For human walks that include a persistence/restart step, run the sandbox SERVER as an independent long-lived process (stable db-dir) and launch the app(s) against it via server_url (ephemeral_server=False). Quitting/closing an app must NEVER tear down the server or its DB. On the human's quit-and-reopen step, the coordinator relaunches the app against the SAME running server so state persists.",
+   "fix_applied": "Standalone ephemeral_server.py on a fixed port+db-dir; Personal+Pro apps launched with ephemeral_server=False, server_url=that server; their close() only cleans their own app sandbox."
+  }
+ ]
+}
