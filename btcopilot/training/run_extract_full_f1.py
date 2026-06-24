@@ -13,6 +13,7 @@ Usage:
 
 import argparse
 import asyncio
+import os
 import sys
 import time
 
@@ -109,6 +110,34 @@ def run_extract_full_f1(discussion_id=None, model=None, sarf_model=None):
             ai_pdp.people, gt_pdp.people,
             ai_pdp.pair_bonds, gt_pdp.pair_bonds, id_map,
         )
+
+        if os.environ.get("F1_DUMP_ERRORS"):
+            name_by_id = {p.id: p.name for p in ai_pdp.people}
+            gt_name_by_id = {p.id: p.name for p in gt_pdp.people}
+            print(f"\n  [DUMP disc {disc_id}] AI events not in GT (FP):")
+            for e in events_result.ai_unmatched:
+                print(
+                    f"    FP kind={getattr(e.kind, 'value', e.kind)} dt={e.dateTime} "
+                    f"person={name_by_id.get(e.person, e.person)} desc={e.description!r}"
+                )
+            print(f"  [DUMP disc {disc_id}] GT events missed (FN):")
+            for e in events_result.gt_unmatched:
+                print(
+                    f"    FN kind={getattr(e.kind, 'value', e.kind)} dt={e.dateTime} "
+                    f"person={gt_name_by_id.get(e.person, e.person)} desc={e.description!r}"
+                )
+            print(f"  [DUMP disc {disc_id}] AI bonds not in GT (FP):")
+            for b in bonds_result.ai_unmatched:
+                print(
+                    f"    FP {name_by_id.get(b.person_a, b.person_a)} + "
+                    f"{name_by_id.get(b.person_b, b.person_b)}"
+                )
+            print(f"  [DUMP disc {disc_id}] GT bonds missed (FN):")
+            for b in bonds_result.gt_unmatched:
+                print(
+                    f"    FN {gt_name_by_id.get(b.person_a, b.person_a)} + "
+                    f"{gt_name_by_id.get(b.person_b, b.person_b)}"
+                )
 
         people_f1_metrics = calculate_f1_from_counts(
             len(people_result.matched_pairs),
@@ -247,6 +276,15 @@ def run_extract_full_f1(discussion_id=None, model=None, sarf_model=None):
         print(f"\nExtraction failures ({len(errors)}):")
         for disc_id, err in errors:
             print(f"  Disc {disc_id}: {err[:100]}")
+
+    from btcopilot.llmutil import CLAUDE_STRUCTURED_USAGE as cu
+
+    if cu["calls"]:
+        cost = cu["input_tokens"] / 1e6 * 10 + cu["output_tokens"] / 1e6 * 50
+        print(
+            f"\nClaude usage: {cu['calls']} calls, "
+            f"in={cu['input_tokens']} out={cu['output_tokens']}, est ${cost:.2f}"
+        )
 
     return {
         "count": n,

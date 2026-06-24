@@ -6,6 +6,62 @@
 
 ---
 
+## Fable 5 extraction experiment — induction findings (2026-06-09)
+
+**Scope**: claude-fable-5 on Pass 1+2 (prompted-JSON adapter; Anthropic
+constrained decoding rejects PDPDeltas schema — union limit + grammar timeout).
+Full run data: `doc/induction-reports/2026-06-09_16-10-00--fable-5-extraction/`.
+
+### Cold baseline (3-run means) vs same-day production
+
+Aggregate 0.721 vs 0.658; Events 0.592 vs 0.427 (+39%, benchmark record);
+PairBonds 0.785 vs 0.824 (mild dip, no gpt/grok-style collapse); SARF macro
+unchanged (Pass 3 identical). Run variance 3-5x lower than Gemini; several
+re-runs byte-identical per discussion (near-deterministic decoding).
+
+### Induction outcomes (converged at baseline — gains are model-native)
+
+| Change | Result |
+|---|---|
+| PASS1 one-birth-per-person rule | Kept; removed repeat-mention dupes; conflicting-age dupes survive |
+| PASS2 dateCertainty=unknown for inferred dates | **Reverted**: Events −0.016; opening the date gate raises FPs and risks false TPs |
+| PASS2 saturation example (caregiving trio = one overfunctioning event) | Kept; +1 TP disc 37, no regressions; scope to relationship-pattern texture only — GT separates distinct symptoms |
+| PASS1 conflicting-age dedup + self-check | Unverified (run contaminated by billing) |
+
+### Phase 5 — per-pass model analysis
+
+| P1+P2 / P3 | Agg | Events | SARF macro | $/disc |
+|---|---|---|---|---|
+| flash-lite / 3-flash (prod) | 0.658 | 0.427 | 0.375 | ~$0.003 |
+| flash-lite / fable-5 (2 runs) | 0.657 | 0.442 | 0.535 | $0.20 |
+| fable-5 / 3-flash (5 runs) | 0.721 | 0.592 | 0.367 | $0.83 |
+| fable-5 / fable-5 (1 run) | 0.731 | 0.617 | 0.621 | $1.30 |
+
+Events gain comes only from Fable extraction; SARF gain only from Fable review.
+Levers are independent and stack cleanly. SARF S and F cross Stage 4 in both
+Fable-P3 configs (all-Fable F=0.770 — historical weakest variable).
+
+### Gemini non-regression check of kept prompt edits (2 runs)
+
+New-prompt Gemini: Agg 0.635/0.655, Events 0.395/0.425 vs old-prompt same-day
+spread 0.639-0.670 / 0.383-0.458. No benefit, weak-negative at N=2. The kept
+edits (birth dedup, saturation example) were validated only under Fable
+extraction — NOT shipped to production prompts; they remain experimental in
+the fable-5-extraction worktree.
+
+### Lessons
+
+- Prompts tuned to saturation on Gemini transfer to Fable 5 without adaptation;
+  the prompt-side headroom is gone. Frontier-model evals need cold baseline +
+  1-2 targeted iterations, not 10.
+- Fable 5 follows narrowly-scoped rules well (birth dedup bound exactly where
+  worded) — rules must name the exact failure variant (repeat-mention vs
+  conflicting-age are different behaviors).
+- Married-event person/spouse slot asymmetry in `match_events` suppresses
+  measured F1 for ALL models — metric fix, not prompt fix.
+
+---
+
 ## FD-324 — Real-chat LCC measurement + failure-mode classification (2026-06-01)
 
 **Scope**: Extends prior FD-324 synthetic work. Adds `--accumulate` mode to
