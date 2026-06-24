@@ -33,5 +33,11 @@
     }
   },
   "pr_lookup": "gh pr list --repo patrickkidd/{repo} --head {branch} --state open --json url --jq '.[].url'",
-  "protected_paths": ["btcopilot/personal/prompts.py"]
+  "protected_paths": [
+    "btcopilot/personal/prompts.py"
+  ],
+  "human_docs": {
+    "dir": "doc/workstreams",
+    "convention": "*-human-*.md"
+  }
 }

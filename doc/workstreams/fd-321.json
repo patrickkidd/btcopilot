@@ -460,5 +460,42 @@
    "C12 walk"
   ]
  },
- "parked_on": "Patrick's C12 walkthrough. Human script at doc/workstreams/fd-321-human-script.md (passing guards before hand-off). Agent track green; C8-C11 deferred to FD-338."
+ "parked_on": "Patrick's C12 walkthrough. Human script at doc/workstreams/fd-321-human-script.md (passing guards before hand-off). Agent track green; C8-C11 deferred to FD-338.",
+ "act_step_runs": [
+  {
+   "step_id": "A1",
+   "kind": "command",
+   "command": "bash doc/workstreams/FD-321/fd321_sandbox.sh up",
+   "target": "sandbox: ephemeral SQLite server 127.0.0.1:62090 + Personal/Pro apps (fd321_sandbox.sh)",
+   "exit_code": 0
+  },
+  {
+   "step_id": "A3",
+   "kind": "command",
+   "command": "bash doc/workstreams/FD-321/fd321_sandbox.sh state",
+   "target": "sandbox: ephemeral SQLite server 127.0.0.1:62090 + Personal/Pro apps (fd321_sandbox.sh)",
+   "exit_code": 0
+  },
+  {
+   "step_id": "A5",
+   "kind": "command",
+   "command": "bash doc/workstreams/FD-321/fd321_sandbox.sh relaunch-personal",
+   "target": "sandbox: ephemeral SQLite server 127.0.0.1:62090 + Personal/Pro apps (fd321_sandbox.sh)",
+   "exit_code": 0
+  },
+  {
+   "step_id": "A5",
+   "kind": "command",
+   "command": "bash doc/workstreams/FD-321/fd321_sandbox.sh state",
+   "target": "sandbox: ephemeral SQLite server 127.0.0.1:62090 + Personal/Pro apps (fd321_sandbox.sh)",
+   "exit_code": 0
+  },
+  {
+   "step_id": "Teardown",
+   "kind": "command",
+   "command": "bash doc/workstreams/FD-321/fd321_sandbox.sh down",
+   "target": "sandbox: ephemeral SQLite server 127.0.0.1:62090 + Personal/Pro apps (fd321_sandbox.sh)",
+   "exit_code": 0
+  }
+ ]
 }
