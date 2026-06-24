@@ -17,7 +17,7 @@
   "answer_bundled_with": null,
   "confirmed_by_human": false
  },
- "state": "gate-validate",
+ "state": "gate-merge",
  "oracle": {
   "path": "doc/workstreams/oracles/2026-06-15--1-fd-321.oracle.md",
   "committed": false,
@@ -211,8 +211,8 @@
    "text": "Wizard + Settings flow looks/feels right (per ui-planner design spec) and correctly describes the user on a real diagram",
    "track": "human",
    "harness_drivable": false,
-   "status": "pending",
-   "evidence": null
+   "status": "human-verified",
+   "evidence": "Patrick walked the lean command-driven script (A1-A5 + restart persistence) on the live sandbox and reported all pass. Cross-app identity spine confirmed: one name consistent on the diagram node (Pro app), the chat speaker label + account drawer (Personal app), surviving a restart with no re-onboarding."
   },
   {
    "id": "C13",
@@ -250,14 +250,14 @@
     "note": "No referee in project; closed evidence-based. All agent criteria agent-verified or deferred (C8-C11 -> FD-338). Exhausted guard green."
    },
    "human_track": {
-    "status": "active",
-    "at": "2026-06-17",
+    "status": "passed",
+    "at": "2026-06-23",
     "script": "doc/workstreams/fd-321-human-script.md",
     "note": "C12 only. Script authored by sub-agent; running structure/handoff guards before hand-off."
    }
   },
   "merge": {
-   "status": "pending",
+   "status": "ready",
    "at": null,
    "pr_url": "https://github.com/patrickkidd/btcopilot/pull/127 + https://github.com/patrickkidd/familydiagram/pull/148"
   }
@@ -460,7 +460,7 @@
    "C12 walk"
   ]
  },
- "parked_on": "Patrick's C12 walkthrough. Human script at doc/workstreams/fd-321-human-script.md (passing guards before hand-off). Agent track green; C8-C11 deferred to FD-338.",
+ "parked_on": "Both validate tracks GREEN (agent + human/C12). Ready to merge on Patrick's timing once CI is green on both PRs.",
  "act_step_runs": [
   {
    "step_id": "A1",
