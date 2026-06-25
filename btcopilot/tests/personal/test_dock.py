@@ -29,7 +29,8 @@ TRANSCRIPT = """\
 [disc 7] User: Mona is Bob's mother.
 [disc 7] User: Sara is Carol's sister.
 [disc 7] User: Kyle is Carol's son.
-[disc 7] User: Evan is Alice's ex-boyfriend."""
+[disc 7] User: Evan is Alice's ex-boyfriend.
+[disc 7] User: Nora is the child of Greg."""
 
 
 def _committed() -> DiagramData:
@@ -351,3 +352,33 @@ def test_dock_noop_when_floating_count_does_not_drop(monkeypatch):
     out = dock_mod.dock(_committed(), delta, TRANSCRIPT)
     assert out is delta
     assert all(p.name != "Carol's spouse" for p in out.people)
+
+
+def test_dock_attaches_across_floating_groups(monkeypatch):
+    """A floating member may anchor to a member of a DIFFERENT floating group
+    (not just the main tree): the relation is real and the merge still drops
+    the floating-component count. Only same-group self-anchors stay rejected."""
+    from btcopilot.personal import dock as dock_mod
+    from btcopilot.personal.dock import DockEdge, Relation
+
+    edge = DockEdge(
+        member_id=-1,
+        relation=Relation.ChildOf,
+        anchor_id=-2,
+        quote="Nora is the child of Greg.",
+        reasoning="Greg is the parent generation",
+    )
+    monkeypatch.setattr(dock_mod, "gemini_structured", _gemini(_attach(edge)))
+    delta = PDP(
+        people=[
+            Person(id=-1, name="Nora"),
+            Person(id=-2, name="Greg"),
+            Person(id=-3, name="Greg's wife"),
+        ],
+        pair_bonds=[PairBond(id=-4, person_a=-2, person_b=-3)],
+    )
+    out = dock_mod.dock(_committed(), delta, TRANSCRIPT)
+    nora = next(p for p in out.people if p.name == "Nora")
+    assert nora.parents is not None
+    parent_bond = next(pb for pb in out.pair_bonds if pb.id == nora.parents)
+    assert -2 in {parent_bond.person_a, parent_bond.person_b}

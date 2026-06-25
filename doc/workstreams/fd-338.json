@@ -34,7 +34,7 @@
    "track": "agent",
    "harness_drivable": true,
    "status": "agent-verified",
-   "evidence": "Re-proved after the GT-loop dock-prompt change (3-run confirmation 2026-06-10): mean vs 2026-05-21 baseline aggregate -0.005, people -0.005, events -0.010, pair_bonds -0.016, parent_child -0.003 \u2014 all within the +/-0.05 band; People/Events gates pass. Prior fix-round result: aggregate -0.013, people +0.003, events -0.042, pair_bonds -0.009."
+   "evidence": "Re-proved after the GT-loop dock-prompt change (3-run confirmation 2026-06-10): mean vs 2026-05-21 baseline aggregate -0.005, people -0.005, events -0.010, pair_bonds -0.016, parent_child -0.003 \u2014 all within the +/-0.05 band; People/Events gates pass. Prior fix-round result: aggregate -0.013, people +0.003, events -0.042, pair_bonds -0.009. OVERNIGHT 2026-06-24 (FD-321 naming ON, 3 runs): People F1 0.917-0.936 (gate >0.70 PASS), Events F1 0.395-0.457 (gate >0.30 PASS), PairBonds ~0.82-0.84, ParentChild ~0.83-0.84. FD-321's proband-name-into-extraction change does not regress per-discussion quality."
   },
   {
    "id": "C3",
@@ -130,7 +130,7 @@
    "track": "agent",
    "harness_drivable": true,
    "status": "failed",
-   "evidence": "Loop outcome 2026-06-10: best rebuild 5/7 required present, 5 forbidden violated, LCC 97.5 \u2014 not clean. The 5 remaining failures are deterministic committed-data poison on the canonical diagram (identical across 2 consecutive rebuilds); the additive delta cannot remove committed wrong-parent links or spurious bonds. Unblock requires Patrick's call: one-time supervised repair of the committed data vs a committed-correction feature (delete/committed-edit channels exist in schema but nothing populates them). Diagnosis: /tmp/fd338_evidence/ralph/iter2_diagnosis.md."
+   "evidence": "Loop outcome 2026-06-10: best rebuild 5/7 required present, 5 forbidden violated, LCC 97.5 \u2014 not clean. The 5 remaining failures are deterministic committed-data poison on the canonical diagram (identical across 2 consecutive rebuilds); the additive delta cannot remove committed wrong-parent links or spurious bonds. Unblock requires Patrick's call: one-time supervised repair of the committed data vs a committed-correction feature (delete/committed-edit channels exist in schema but nothing populates them). Diagnosis: /tmp/fd338_evidence/ralph/iter2_diagnosis.md. OVERNIGHT 2026-06-24 (GT extended to 32 assertions = 5 first-walk + 8 second-walk N1-N8): scored on a NAMED FROM-EMPTY PROXY (single accumulation + dock, no committed base, no merge_runs consensus). 5 runs: required 5-7/17, forbidden clean 12-15/15, LCC 70-96.7%. FD-321's own correction CLEARS deterministically (proband duplicate gone, no 'Client', 5/5). Always-failing required (5/5): proband parents wrong (R1), brother absent (R5), wife is nobody's parent (N2), brother's-wife bond absent (N5a), trio's named mother never created (N7a/b/c), nephew on wrong uncle (N8a). Mechanism class = merge weld / missing consensus + placeholder fabrication; NOT fixable by a bounded downstream edit (prior placeholder-spouse reconciliation pass measured, no effect). CAVEAT: the proxy omits merge_runs against the committed base and understates structural quality; the honest C12/C14 verdict needs the real deep_reextract entrypoint (K=1, committed base = named primary on 1924). Report: /tmp/fd338_evidence/overnight/OVERNIGHT_REPORT.md and btcopilot-sources/training/gt-exports/OVERNIGHT_REPORT_2026-06-24.md."
   }
  ],
  "gates": {
@@ -316,6 +316,28 @@
    "found_in_track": "agent",
    "criterion": null,
    "regression_test": null
+  },
+  {
+   "id": "F-015",
+   "summary": "OVERNIGHT 2026-06-24 GT extension + named-proband measurement (8 second-walk corrections N1-N8 encoded into diagram-1924-edge-assertions.json, 32 assertions total; confidential names live only in btcopilot-sources/gt-exports). N1 (FD-321 target) CLEARED deterministically: proband duplicate gone, no neutral-placeholder person, 5/5 runs vs the real pre-FD-321 committed snapshot which DID contain the duplicate. N2-N8 NOT cleared in the proxy: N2 wife-is-a-parent fails 5/5 (placeholder fabrication); N4 sister-shares-parents fails 3/5; N5 brother's-wife bond fails 5/5 (merge weld); N7 trio's named mother fails 5/5 (placeholder fabrication) with occasional Elizabeth-misattach forbidden violation (extraction draw); N8 nephew-on-right-uncle fails 5/5 (extraction same-first-name collision). Residual class is merge-weld + placeholder-fabrication, NOT a bounded downstream edit (prior placeholder-spouse reconciliation pass measured, no effect). Material caveat: the proxy is a single from-empty K=1 accumulation with NO committed base and NO merge_runs consensus, so it understates structural quality; the honest C12/C14 verdict requires the real deep_reextract entrypoint against the named committed primary.",
+   "severity": "major",
+   "repro": "From /Users/patrick/worktrees/deep-reextract/btcopilot: source /tmp/fd338_evidence/overnight_env.sh && env -u VIRTUAL_ENV uv run --no-sync python /tmp/fd338_evidence/overnight/rebuild.py <out.json>; then scorer.py <out.json> against gt-exports/diagram-1924-edge-assertions.json",
+   "validation_status": "agent-verified",
+   "status": "open",
+   "found_in_track": "agent",
+   "criterion": "C14",
+   "regression_test": null
+  },
+  {
+   "id": "F-016",
+   "summary": "Dock could only weld a floating person onto the main tree; two separate floating fragments could never be joined to each other even when the transcript states the link. Working-tree fix to dock.py _gated: a floating member may anchor to a member of a DIFFERENT floating group (same-group self-anchors still rejected). Covered by test_dock_attaches_across_floating_groups; dock suite 12/12 green. Uncommitted.",
+   "severity": "minor",
+   "repro": "btcopilot/tests/personal/test_dock.py::test_dock_attaches_across_floating_groups",
+   "validation_status": "agent-verified",
+   "status": "fixed",
+   "found_in_track": "agent",
+   "criterion": "C14",
+   "regression_test": "btcopilot/tests/personal/test_dock.py::test_dock_attaches_across_floating_groups"
   }
  ],
  "deferred_risk": [
@@ -364,7 +386,13 @@
    "entered": "2026-06-10T00:00:00",
    "exited": null,
    "note": "Human walk on real diagram surfaced 5 structural errors (F-007..F-011); C12 not passed; unit returns to build for in-scope fixes; F-011 is a criteria change awaiting oracle confirmation (ex-partners attach)"
+  },
+  {
+   "gate": "validate",
+   "entered": "2026-06-24T07:20:00",
+   "exited": null,
+   "note": "Overnight unattended run after FD-321 merge. Extended GT to 32 assertions (8 second-walk corrections N1-N8). Measured FD-321+FD-338 on a NAMED FROM-EMPTY PROXY (5 runs). RESULT: FD-321's proband triplication is killed deterministically (N1 cleared 5/5; the real pre-FD-321 committed snapshot DID contain the duplicate). Broader structural corrections NOT cleared in the proxy (required 5-7/17): proband parents wrong, brother/wife/named-mother absent or placeholder, nephew on wrong uncle. CAVEAT the proxy omits merge_runs consensus against the committed base and understates quality; honest C12/C14 verdict needs the real deep_reextract entrypoint. F1 guardrail green under naming (People 0.92-0.94, Events 0.40-0.46). One working-tree code change: dock cross-floating-group weld (F-016). C12 left pending (human re-walk), C14 left failed (not faked). Git untouched; diagram 1924 primary name set to a real name (reversible, snapshot exists). Report: /tmp/fd338_evidence/overnight/OVERNIGHT_REPORT.md."
   }
  ],
- "parked_on": "FD-321 merged to origin/master (root-cause fix for proband triplication). To use it here: (1) merge origin/master into deep-reextract \u2014 conflicts expected in schema + accept-route + their tests, both streams edited them; (2) set Patrick's name+birthdate on diagram 1924's primary node (currently unset='User', so FD-321 still emits neutral label and duplicates persist); (3) start local Postgres. Then run wipe + re-extract + rebuild + GT score. Awaiting Patrick's go + name-setting method (wizard vs direct)."
+ "parked_on": "Conversational-editing loop GREEN-LIT, scope now BIDIRECTIONAL: (1) system asks a clarifying question when the rebuild leaves a gap; (2) user directly corrects the family in chat (\"vibe-coding the family\" \u2014 \"Meredith is Connies sister, not daughter\") and the coach applies it as a structural edit. Both mutate structure with the user as authority; corrections persist as transcript/GT so every future rebuild inherits them. Separate feature (question ledger + in-chat correction parser/applier + the coach prompt currently handles neither + UI) => its own ticket under epic FD-264. FD-338 rebuild ships now with C12 carried as deferred_risk pointing at it. Awaiting Patrick: explicit yes to draft the ticket."
 }

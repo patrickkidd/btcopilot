@@ -140,9 +140,11 @@ def _prompt(
 
 
 def _gated(
-    result: DockResult, transcript: str, main: set[int], floating: set[int]
+    result: DockResult, transcript: str, main: set[int], floats: list[set[int]]
 ) -> list[DockEdge]:
     tnorm = _norm(transcript)
+    floating = set().union(*floats) if floats else set()
+    group_of = {pid: i for i, c in enumerate(floats) for pid in c}
     edges = []
     for group in result.groups:
         for edge in group.edges:
@@ -150,8 +152,11 @@ def _gated(
                 reason = "quote not verbatim"
             elif edge.member_id not in floating:
                 reason = "member not floating"
-            elif edge.anchor_id not in main:
-                reason = "anchor not in main tree"
+            elif edge.anchor_id not in main and (
+                edge.anchor_id not in floating
+                or group_of[edge.anchor_id] == group_of[edge.member_id]
+            ):
+                reason = "anchor not in main tree or member's own group"
             else:
                 edges.append(edge)
                 continue
@@ -302,7 +307,7 @@ def dock(committed: DiagramData, delta: PDP, transcript: str) -> PDP:
     prompt = _prompt(people, bonds, main, floats, transcript)
     result = asyncio.run(gemini_structured(prompt, DockResult, model=SARF_REVIEW_MODEL))
 
-    edges = _gated(result, transcript, main, set().union(*floats))
+    edges = _gated(result, transcript, main, floats)
     if not edges:
         _log.info(f"dock: no edges accepted, keeping {len(floats)} floating")
         return delta
