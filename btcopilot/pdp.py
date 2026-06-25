@@ -223,9 +223,7 @@ def fix_unresolved_person_refs(
     unresolvable ref makes the item un-anchorable and, uncaught, fabricates
     orphaned structure at commit (FD-319, diagram 1928). Mutates in place."""
     committed = (
-        {p["id"] for p in diagram_data.people if "id" in p}
-        if diagram_data
-        else set()
+        {p["id"] for p in diagram_data.people if "id" in p} if diagram_data else set()
     )
     valid_neg = {p.id for p in pdp.people if p.id is not None}
     valid_neg |= {p.id for p in deltas.people if p.id is not None}
@@ -240,11 +238,7 @@ def fix_unresolved_person_refs(
     kept_events = []
     for e in deltas.events:
         bad = next(
-            (
-                r
-                for r in ("person", "spouse", "child")
-                if unresolved(getattr(e, r))
-            ),
+            (r for r in ("person", "spouse", "child") if unresolved(getattr(e, r))),
             None,
         )
         if bad is not None:
@@ -362,6 +356,16 @@ def _committed_person_matches(
 def _remap_person_refs(deltas: PDPDeltas, remap: dict[int, int]) -> None:
     """Rewrite every delta reference to a remapped person id and drop the
     duplicate delta Person rows."""
+    lost_parents = [
+        (p.id, p.parents)
+        for p in deltas.people
+        if p.id in remap and p.parents is not None
+    ]
+    if lost_parents:
+        _log.warning(
+            f"_remap_person_refs: dropped {len(lost_parents)} dup people with "
+            f"parents set: {lost_parents}"
+        )
     deltas.people = [p for p in deltas.people if p.id not in remap]
 
     # remap is person-id -> committed-person-id ONLY. person.parents is a
@@ -472,6 +476,16 @@ def _drop_committed_dup_events(deltas: PDPDeltas, diagram_data: DiagramData) -> 
         if key is not None and key in committed_keys:
             refs = key[1] if isinstance(key[1], tuple) else (key[1],)
             if all(r is not None and r >= 0 for r in refs):
+                if (
+                    ev.kind.isOffspring()
+                    and ev.person is not None
+                    and ev.spouse is not None
+                ):
+                    _log.warning(
+                        f"_drop_committed_dup_events: dropped {ev.kind.value} dup "
+                        f"event {ev.id} carrying couple refs person={ev.person} "
+                        f"spouse={ev.spouse}"
+                    )
                 continue
         kept.append(ev)
     deltas.events = kept
@@ -1150,8 +1164,16 @@ async def _two_pass_extract(
             people_json=people_json,
             conversation_history=conversation_history,
         )
-        review_deltas = await gemini_structured(review_prompt, PDPDeltas, large=True, model=sarf_review_model or SARF_REVIEW_MODEL)
+        review_deltas = await gemini_structured(
+            review_prompt,
+            PDPDeltas,
+            large=True,
+            model=sarf_review_model or SARF_REVIEW_MODEL,
+        )
         reviewed = {e.id: e for e in review_deltas.events}
+        valid_ids = {p.id for p in pass2_pdp.people if p.id is not None} | {
+            p["id"] for p in diagram_data.people
+        }
         for event in pass2_pdp.events:
             if event.id not in reviewed:
                 continue
@@ -1163,9 +1185,16 @@ async def _two_pass_extract(
             if rev.functioning is not None:
                 event.functioning = rev.functioning
             if rev.relationship is not None:
-                event.relationship = rev.relationship
-                event.relationshipTargets = rev.relationshipTargets
-                event.relationshipTriangles = rev.relationshipTriangles
+                rev_refs = set(rev.relationshipTargets) | set(rev.relationshipTriangles)
+                if rev_refs <= valid_ids:
+                    event.relationship = rev.relationship
+                    event.relationshipTargets = rev.relationshipTargets
+                    event.relationshipTriangles = rev.relationshipTriangles
+                else:
+                    _log.warning(
+                        f"sarf_review: rejected targets {sorted(rev_refs - valid_ids)} "
+                        f"for event {event.id}: not in roster"
+                    )
 
     merged_deltas = PDPDeltas(
         people=pass1_deltas.people + pass2_deltas.people,
@@ -1209,8 +1238,11 @@ def _fmt_stmts(stmts) -> str:
 def _restage_new_items(working: DiagramData, original: DiagramData) -> PDP:
     """Re-stage items committed across windows that are absent from the original
     diagram as a fresh negative-id PDP. References into original committed items
-    stay positive; references among the new items are remapped to negatives."""
-    orig_people = {p["id"] for p in original.people}
+    stay positive; references among the new items are remapped to negatives.
+    Original-committed people whose parents went null->set on the working copy
+    re-stage as positive-id Person edit rows."""
+    orig_parents = {p["id"]: p.get("parents") for p in original.people}
+    orig_people = set(orig_parents)
     orig_events = {e["id"] for e in original.events}
     orig_bonds = {pb["id"] for pb in original.pair_bonds}
 
@@ -1244,6 +1276,13 @@ def _restage_new_items(working: DiagramData, original: DiagramData) -> PDP:
         d["id"] = person_map[p["id"]]
         d["parents"] = rbond(p.get("parents"))
         people.append(from_dict(Person, d))
+    for p in working.people:
+        if (
+            p["id"] in orig_people
+            and p.get("parents") is not None
+            and orig_parents[p["id"]] is None
+        ):
+            people.append(Person(id=p["id"], parents=rbond(p["parents"])))
     for pb in new_bonds:
         d = dict(pb)
         d["id"] = bond_map[pb["id"]]
@@ -1255,7 +1294,9 @@ def _restage_new_items(working: DiagramData, original: DiagramData) -> PDP:
         d["id"] = event_map[e["id"]]
         for k in ("person", "spouse", "child"):
             d[k] = rperson(d.get(k))
-        d["relationshipTargets"] = [rperson(t) for t in d.get("relationshipTargets") or []]
+        d["relationshipTargets"] = [
+            rperson(t) for t in d.get("relationshipTargets") or []
+        ]
         d["relationshipTriangles"] = [
             rperson(t) for t in d.get("relationshipTriangles") or []
         ]
@@ -1274,7 +1315,10 @@ async def extract_full(
     pass2_prompt: str | None = None,
     sarf_review_prompt: str | None = None,
     sarf_review_model: str | None = None,
+    on_window=None,
 ) -> tuple[PDP, PDPDeltas]:
+    """on_window(), if given, fires once after each extraction window completes
+    so callers can report fine-grained progress during long re-extractions."""
     reference_date = (
         discussion.discussion_date
         if discussion.discussion_date
@@ -1298,7 +1342,7 @@ async def extract_full(
     if len(to_extract) <= WINDOW_SIZE:
         diagram_data.pdp = PDP()
         conversation, cursor_nonce = _windowed_conversation(discussion)
-        return await _two_pass_extract(
+        result = await _two_pass_extract(
             diagram_data,
             conversation,
             ref,
@@ -1308,6 +1352,9 @@ async def extract_full(
             sarf_review_model=sarf_review_model,
             cursor_nonce=cursor_nonce,
         )
+        if on_window:
+            on_window()
+        return result
 
     working = DiagramData(
         people=copy.deepcopy(diagram_data.people),
@@ -1344,6 +1391,9 @@ async def extract_full(
         ids += [pb.id for pb in pdp.pair_bonds if pb.id is not None and pb.id < 0]
         if ids:
             working.commit_pdp_items(ids)
+        working.apply_parent_edits()
+        if on_window:
+            on_window()
 
     staged = _restage_new_items(working, diagram_data)
     diagram_data.pdp = staged
@@ -1390,7 +1440,9 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if item.id in people_by_id
     ]
     people_to_add = [
-        item for item in deltas.people if item.id not in people_by_id and item.id is not None
+        item
+        for item in deltas.people
+        if item.id not in people_by_id and item.id is not None
     ]
 
     # Process event deltas
@@ -1400,7 +1452,9 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         if item.id in events_by_id
     ]
     events_to_add = [
-        item for item in deltas.events if item.id not in events_by_id and item.id is not None
+        item
+        for item in deltas.events
+        if item.id not in events_by_id and item.id is not None
     ]
 
     # Process pair_bond deltas
@@ -1452,9 +1506,9 @@ def apply_deltas(pdp: PDP, deltas: PDPDeltas) -> PDP:
         upserts_applied.append(item)
 
     expected = len(deltas.people) + len(deltas.events) + len(deltas.pair_bonds)
-    assert len(upserts_applied) == expected, (
-        f"Failed to apply all upserts ({len(upserts_applied)} applied, {expected} expected)"
-    )
+    assert (
+        len(upserts_applied) == expected
+    ), f"Failed to apply all upserts ({len(upserts_applied)} applied, {expected} expected)"
 
     # Negative-ID deletes → remove from PDP staging; positive-ID deletes → stage
     # in pdp.delete for per-item review.

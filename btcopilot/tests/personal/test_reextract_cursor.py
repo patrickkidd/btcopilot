@@ -9,7 +9,7 @@ from mock import patch, AsyncMock
 from btcopilot.extensions import db
 from btcopilot.pdp import _windowed_conversation
 from btcopilot.personal.prompts import CURSOR_MARKER_TEMPLATE
-from btcopilot.schema import PDP, PDPDeltas, Person
+from btcopilot.schema import PDP, PDPDeltas, PairBond, Person
 
 MARKER_SENTINEL = "⟪CURSOR "
 
@@ -235,3 +235,174 @@ def test_empty_item_ids_without_full_accept_rejected(subscriber, discussion):
         json={"item_ids": []},
     )
     assert r.status_code == 400
+
+
+# --- positive-id parents-edit rows staged alongside new items (FD-338) ---
+
+KID_ID = 5
+BOND_ID = 8
+
+
+def _seed_committed(discussion):
+    diagram = discussion.diagram
+    dd = diagram.get_diagram_data()
+    dd.people = [
+        {"id": KID_ID, "name": "Kid", "gender": "female"},
+        {"id": 6, "name": "Gma", "gender": "female"},
+        {"id": 7, "name": "Gpa", "gender": "male"},
+    ]
+    dd.pair_bonds = [{"id": BOND_ID, "person_a": 6, "person_b": 7}]
+    dd.lastItemId = BOND_ID
+    diagram.set_diagram_data(dd)
+    db.session.commit()
+
+
+def _stage(subscriber, discussion, pdp):
+    deltas = PDPDeltas(
+        people=list(pdp.people),
+        events=list(pdp.events),
+        pair_bonds=list(pdp.pair_bonds),
+    )
+    with patch("btcopilot.pdp.extract_full", AsyncMock(return_value=(pdp, deltas))):
+        r = subscriber.post(f"/personal/discussions/{discussion.id}/extract")
+    assert r.status_code == 200
+    return r
+
+
+def _parents_pdp():
+    return PDP(
+        people=[
+            Person(id=-1, name="Mom", gender="female", confidence=0.8),
+            Person(id=-2, name="Dad", gender="male", confidence=0.8),
+            Person(id=KID_ID, parents=BOND_ID),
+        ]
+    )
+
+
+def _committed_kid(discussion):
+    dd = discussion.diagram.get_diagram_data()
+    return next(p for p in dd.people if p["id"] == KID_ID)
+
+
+def test_full_accept_echoing_positive_id_applies_parents(subscriber, discussion):
+    """Old-client simulation: item_ids echoes every staged id including the
+    positive parents-edit row. Must not 500; negatives commit, parents apply,
+    cursor advances."""
+    _seed_committed(discussion)
+    _stage(subscriber, discussion, _parents_pdp())
+    r = subscriber.post(
+        f"/personal/discussions/{discussion.id}/commit-pdp",
+        json={"item_ids": [-1, -2, KID_ID]},
+    )
+    assert r.status_code == 200
+    data = r.get_json()
+    assert data["full_accept"] is True
+    assert data["committed"] == 2
+    db.session.refresh(discussion.diagram)
+    assert _committed_kid(discussion)["parents"] == BOND_ID
+    assert discussion.diagram.get_diagram_data().pdp.people == []
+    db.session.refresh(discussion)
+    assert discussion.extracted_through_order == 1
+
+
+def test_legacy_negatives_only_full_accept_with_parents_row_staged(
+    subscriber, discussion
+):
+    """Line-323 regression: no full_accept flag, item_ids covers exactly the
+    staged negatives while a positive parents row is also staged. Must still
+    derive a full accept (cursor advance) and apply the parents edit."""
+    _seed_committed(discussion)
+    _stage(subscriber, discussion, _parents_pdp())
+    r = subscriber.post(
+        f"/personal/discussions/{discussion.id}/commit-pdp",
+        json={"item_ids": [-1, -2]},
+    )
+    assert r.status_code == 200
+    assert r.get_json()["full_accept"] is True
+    db.session.refresh(discussion.diagram)
+    assert _committed_kid(discussion)["parents"] == BOND_ID
+    db.session.refresh(discussion)
+    assert discussion.extracted_through_order == 1
+
+
+def test_echoed_positive_id_alone_is_noop(subscriber, discussion):
+    """500 regression: a still-staged positive id echoed by itself must be
+    acknowledged as a no-op, never passed to commit_pdp_items."""
+    _seed_committed(discussion)
+    _stage(subscriber, discussion, _parents_pdp())
+    r = subscriber.post(
+        f"/personal/discussions/{discussion.id}/commit-pdp",
+        json={"item_ids": [KID_ID]},
+    )
+    assert r.status_code == 200
+    data = r.get_json()
+    assert data["committed"] == 0
+    assert data["full_accept"] is False
+    db.session.refresh(discussion.diagram)
+    assert _committed_kid(discussion).get("parents") is None
+    pdp_ids = {p.id for p in discussion.diagram.get_diagram_data().pdp.people}
+    assert pdp_ids == {-1, -2, KID_ID}
+    db.session.refresh(discussion)
+    assert discussion.extracted_through_order is None
+
+
+def test_partial_accept_leaves_parents_row_staged(subscriber, discussion):
+    _seed_committed(discussion)
+    _stage(subscriber, discussion, _parents_pdp())
+    r = subscriber.post(
+        f"/personal/discussions/{discussion.id}/commit-pdp",
+        json={"item_ids": [-1]},
+    )
+    assert r.status_code == 200
+    assert r.get_json()["full_accept"] is False
+    db.session.refresh(discussion.diagram)
+    assert _committed_kid(discussion).get("parents") is None
+    pdp_ids = {p.id for p in discussion.diagram.get_diagram_data().pdp.people}
+    assert KID_ID in pdp_ids
+
+
+def test_full_accept_with_drained_negatives_applies_parents(subscriber, discussion):
+    """Per-item accept end state: the client drained the negatives via its own
+    diagram saves, leaving only the parents row staged. The final commit-pdp
+    (full_accept=True, nothing left to commit) must still apply and write."""
+    _seed_committed(discussion)
+    _stage(subscriber, discussion, PDP(people=[Person(id=KID_ID, parents=BOND_ID)]))
+    r = subscriber.post(
+        f"/personal/discussions/{discussion.id}/commit-pdp",
+        json={"item_ids": [], "full_accept": True},
+    )
+    assert r.status_code == 200
+    assert r.get_json()["committed"] == 0
+    db.session.refresh(discussion.diagram)
+    assert _committed_kid(discussion)["parents"] == BOND_ID
+    assert discussion.diagram.get_diagram_data().pdp.people == []
+    db.session.refresh(discussion)
+    assert discussion.extracted_through_order == 1
+
+
+def test_parents_row_with_staged_bond_ref_applies_after_remap(subscriber, discussion):
+    """Remap-order regression: the parents row references a NEGATIVE staged
+    bond; commit_pdp_items must run first so its trailing remap rewrites the
+    ref to the committed bond id before apply_parent_edits gates on it."""
+    _seed_committed(discussion)
+    pdp = PDP(
+        people=[
+            Person(id=-1, name="Mom", gender="female", confidence=0.8),
+            Person(id=-2, name="Dad", gender="male", confidence=0.8),
+            Person(id=KID_ID, parents=-3),
+        ],
+        pair_bonds=[PairBond(id=-3, person_a=-1, person_b=-2)],
+    )
+    _stage(subscriber, discussion, pdp)
+    r = subscriber.post(
+        f"/personal/discussions/{discussion.id}/commit-pdp",
+        json={"item_ids": [-1, -2, -3]},
+    )
+    assert r.status_code == 200
+    assert r.get_json()["full_accept"] is True
+    db.session.refresh(discussion.diagram)
+    dd = discussion.diagram.get_diagram_data()
+    kid = next(p for p in dd.people if p["id"] == KID_ID)
+    new_bond = next(pb for pb in dd.pair_bonds if pb["id"] != BOND_ID)
+    assert kid["parents"] == new_bond["id"]
+    assert dd.pdp.people == []

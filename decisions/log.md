@@ -70,6 +70,333 @@ all-Fable async, (C) status quo.
 **Revisit trigger:** Anthropic raises the union-param limit (retry constrained
 decoding); SARF variance bounds needed before production commit (hybrid macro
 spread 0.490-0.579 across 2 runs; all-Fable SARF is single-run).
+### 2026-06-10: FD-338 — committed-poison fix = wipe-and-re-extract, not surgical repair; name-leak in history accepted
+
+**Context:** The GT loop proved 5 remaining wrong edges are poison in diagram
+1924's committed data (wrong committed parents link on the proband, a person
+seated under her sibling's bond via a bad committed birth event, two spurious
+committed bonds) — unreachable by the additive pipeline. Options were
+supervised surgical repair vs a committed-correction feature.
+
+**Decision (Patrick):** Neither — wipe all committed people/events/bonds from
+the canonical diagram and regenerate from the source conversations through the
+fixed pipeline (per-discussion extract -> fragmentation check -> rebuild ->
+connectivity + GT score). The committed state becomes 100% product of the
+current pipeline; consistent with the standing "no tuning on AI-residue data"
+ruling. Snapshot of the pre-wipe state kept in btcopilot-sources. Separately:
+pre-existing real-name occurrences in already-merged history are ACCEPTED
+("I'm not too worried about git history") — no rewrite; working-tree
+occurrences stay anonymized going forward.
+
+**Revisit trigger:** If the regenerated canonical state still fails GT
+assertions, the committed-correction feature question returns (it would then
+be pipeline output, in scope).
+
+### 2026-06-10: FD-338 — ex/romantic partners attach as unmarried pair bonds rendered dashed (GT item 5)
+
+**Context:** GT walk overturned the leave-floating policy for ex-partners: a
+girlfriend/boyfriend or ex must attach as a pair bond drawn dashed. The scene
+Marriage item already has a `married` property (default True = solid, False =
+dashed/bonded-only), but the staged PairBond dataclass had no such field, so
+extracted bonds could only commit solid.
+
+**Decision:** Optional tri-state `married: bool | None` on the staged PairBond
+(None = unstated). Commit maps None -> True in the committed chunk because the
+scene's property reader coerces a literal None to bool(None) = False — an
+unmapped legacy bond would silently render dashed. False survives commit and
+renders dashed with no familydiagram change (Marriage.read picks the key up
+from the chunk). The dock edge schema and DOCK_PROMPT now direct romantic
+partners INCLUDING exes to partner_of with married=true/false/unset; friends
+remain verdict none. The field is also exposed (optional, described) in the
+extraction structured-output schema, and merge_runs copies run bonds instead
+of rebuilding them so the flag survives accumulation.
+
+**Reasoning:** Flag plumbed at the schema boundary rather than a parallel
+"bond kind" enum: the scene already models married/separated/divorced as
+properties, and a single optional boolean keeps old staged data and old
+clients valid (from_dict defaults missing -> None). Exposing it to extraction
+risks false dashed flags on real marriages — wording restricts false to
+stated never-married relationships; DOCK_PROMPT + extraction schema change
+triggers the 6-GT F1 overfit-brake re-run in the loop.
+
+**Revisit trigger:** Real rebuilds start staging married=false on actual
+spouses (prompt wording too loose), or divorced/separated exes need the
+separate scene `divorced`/`separated` properties plumbed the same way.
+
+### 2026-06-10: FD-338 — committed-merge identity gate: no fuzzy-name-only welds onto committed people (F-003/F-007/F-008 class)
+
+**Context:** merge_runs welded run people onto committed people purely via
+match_people's fuzzy token-set name score (threshold 0.60). A new sibling
+sharing only a last name consumed the committed person (F-003: extracted Ben
+matched committed Dennis because Ben iterated first; Ben vanished, a duplicate
+Dennis staged, committed Dennis got a bogus parents edit). Same class produced
+the GT walk's wrong-parent-couple and mother+son-in-law couplings (F-007/F-008,
+three same-first-name men cross-matched).
+
+**Decision:** Hard rule — fuzzy name similarity alone never decides identity
+against committed data. Two-stage merge in merge_runs: (1) deterministic exact
+pre-pass welds run↔committed people whose normalized names are equal and
+unique on both sides, removing them from the fuzzy pool so a partial-name
+match can't consume a committed person whose exact counterpart appears later
+in the run; (2) a post-match gate on remaining fuzzy matches to committed
+people: accepted only with a compatible given name (same first token, or one
+token set a subset of the other) AND structural corroboration — shared bond
+partner, same parent bond, or shared child — resolved through already-trusted
+mappings (speaker welds + exact welds + prior corroborations, fixed-point).
+Rejected matches stage as new people. Cross-run matching onto the merge's own
+negative-id people stays loose (within-rebuild consensus, not identity).
+
+**Reasoning:** Wrong welds silently corrupt committed structure (wrong parent
+edits, generation flips); duplicates are visible in the review sheet and
+rejectable. Name compatibility is required on top of structural corroboration
+because siblings share parent bonds — corroboration alone would re-weld the
+F-003 class one step later. Gate scoped to committed targets only to keep the
+K>1 consensus dedup unchanged.
+
+**Revisit trigger:** Real-rebuild dup rate on first-name-only extractions
+becomes a review burden (corroboration seeds too thin on bond-poor diagrams),
+or nickname variants ("Bob"/"Robert") start staging duplicates frequently
+enough to need an alias table.
+
+### 2026-06-09: FD-338 — commit-pdp acceptance contract restricted to negative ids; parents edits applied server-side on full accept
+
+**Context:** Multi-window extraction now stages positive-id Person(id, parents)
+edit rows in the PDP. The commit-pdp route treated every staged id as
+committable: a client echoing a positive id 500'd (commit_pdp_items raises on
+non-negative ids by design), the legacy full-accept fallback comparison went
+permanently False whenever positive rows were staged (cursor freeze), and no
+server path applied parents edits in the real accept flow — application
+depended entirely on a client-side generic field merge that released clients
+never run.
+
+**Decision:** The wire contract covers only NEW (negative-id) items. The route
+filters echoed positive ids as no-op acknowledgments (schema layer stays
+strict and still raises — tolerant idempotent wire layer, strict programmatic
+layer); the fallback full-accept comparison runs over staged negatives only;
+on full accept the server calls apply_parent_edits AFTER commit_pdp_items
+(order load-bearing: the commit's trailing remap rewrites negative bond refs
+on parents rows first). Partial accepts leave parents rows staged — a
+mid-review apply would silently drop rows whose bond isn't committed yet.
+Shared predicate `schema.is_parents_edit` defines "parents-only row" once;
+the Personal client (controller + PDPSheet) uses it to exclude those rows
+from cards, accept-all echo, and the drained/full-accept computation, and the
+per-item Update-card accept now posts commit-pdp so a review ending on an
+Update card still advances the cursor.
+
+**Reasoning:** Released clients (2.1.22/2.1.23b2) never echo positive ids or
+call commit-pdp, so server-side application at full accept is the only
+channel that works for every client generation; negatives-only comparison
+restores legacy dev-client cursor advance; treating echoes as no-ops keeps
+retry idempotency without masking programmatic misuse.
+
+**Revisit trigger:** Any new staged positive-id row type beyond parents edits
+(events/pair_bonds Update rows reaching the accept path), or a server-side
+need to apply parents on partial accepts.
+
+### 2026-06-09: FD-338 — canonical-case cleanup approved; scope ruling: stop tuning on AI-residue test data
+
+**Context:** Committed diagram 1924 contained "Jim's Son 1/2" — name-only
+placeholder rows duplicating the named Anthony/Joseph, committed by earlier
+AI extraction runs during FD-337 testing. Unattachable (no transcript mention
+of the placeholder names) and unmatchable (no name overlap, zero structure),
+they capped raw LCC just under the 90% bar in 2/7 acceptance runs.
+
+**Decision (Patrick):** Delete the two rows from the dev DB (done, 34→32
+people, no event/bond references). Bigger picture: the e2e extraction flow has
+not been seriously human-tested on a diagram + its conversations; the 1924
+baseline is residue of prior AI runs, not human-validated data. Pre-existing
+data bugs are DEFERRED outside FD-338 scope, and no more significant token/day
+spend on test data not produced by the e2e extraction flow. The decisive gate
+for this feature is a human walking the real e2e flow on fresh extraction.
+
+**Note:** placeholder-vs-named duplicate is another ask-the-user case for the
+deferred closed-loop ticket ("Are 'Jim's Son 1' and Anthony the same
+person?").
+
+### 2026-06-09: FD-338 — gate-and-dock replaces K-union as the rebuild core; DEFAULT_K 4→1 (supersedes the K=4-default entry below)
+
+**Context:** Measured this session (n=11 single runs + 6 disconnect
+classifications): single-run LCC swings 47-94% on the canonical case; failures
+are always missing edges, never people; the dominant residual classes are a
+pronoun-bridge couple (find rate ~17%/run — union consensus needs ~16 arms for
+95% confidence, outside the cost envelope) and seam-severed branches. A
+directed-repair probe (full transcript, no cursor rule, explicit
+pronoun-resolution instruction, verbatim-quote gate, edges-only programmatic
+apply) docked the pronoun bridge 4/4 with verified-correct antecedent, zero
+false attaches of the two legit-disconnect singletons, lifting all 5 probe
+runs to 93-97%.
+
+**Decision:** Rebuild core = single windowed run + deterministic
+connected-components gate (free) + one directed dock call, accepted only if
+the floating-component count strictly drops (floor by construction). K stays a
+parameter (VALID_K={1,4,8}, arms+merge intact) but DEFAULT_K=1. merge_runs
+parents resolution: per-person plurality vote (was first-writer-wins).
+78-agent design council + adversarial review preceded this; consensus
+(rank 2) is retained as the insurance configuration, not the default.
+
+**Reasoning:** One mechanism covers both failure classes (probe + 7-run
+acceptance battery: dock recovered the pronoun bridge 6/6 and the
+explicit-evidence singleton 7/7 with zero dock-attributed false attaches);
+cost ~$0.11/rebuild vs $0.23 at K=4; the crash fix (pass-3 splice gate) held
+0/10 across acceptance+F1 runs vs ~15% before.
+
+**Revisit trigger:** Acceptance re-run after the client accept-path fix; if
+dock-attributed false attaches appear, or junk-excluded LCC <90% in >1/8 runs,
+fall back to K=4 + dock (rank-2 architecture).
+
+### 2026-06-09: FD-338 — "coach asks when unclear" adopted as a standing principle; closed-loop build deferred
+
+**Context:** The pronoun-bridge evidence exists only because the in-transcript
+coach asked whether the person just mentioned was a named relative's sibling.
+Patrick: a coach unclear on something
+would simply re-ask the client; the conversational prompt never asks
+clarifying questions.
+
+**Decision:** Going forward: (1) steer the live conversation to anchor
+relational references when first mentioned, so pronoun-only evidence never
+gets written; (2) a closed-loop clarification channel (deterministic gate
+detects floats; dock "no stated connection" verdicts generate at most one
+in-register question; the answer persists as transcript — permanent fix).
+Processing failures (evidence already explicit in transcript) are NEVER asked
+about — asking reads as not listening; they stay pipeline repairs. DEFERRED
+out of the FD-338 PR: needs a question ledger (open/answered/declined,
+never-re-ask, confirmed-disconnected persistence) and a client chat channel.
+Oracle = the free graph check + dock verdicts, not an LLM.
+
+**Revisit trigger:** If directed repair had failed the probe it would be
+mandatory; it passed, so the loop is the compounding complement. Pivot review
+(shrink dock/arms further?) once live answer data exists.
+
+### 2026-06-09: FD-338 — fuzzy name matching is WRONG for dedup; never rely on card review; dedup belongs in the LLM
+
+**Two mistakes Patrick has corrected before — logged so they stop recurring:**
+
+1. **Fuzzy name matching does NOT work for person identity / dedup.** Already
+   learned (FD-324). I reached for it again in the FD-338 merge/reconcile
+   (`match_people`'s fuzzy `token_set_ratio` name component). On the real
+   diagram it produced soft-duplicates it could not catch: **"Client"** and
+   **"Patrick"** added as separate people from the User/proband node; **"Jim's
+   Ex"** vs **"Jim's Ex-Wife"** and **"William"** vs **"William Patrick"** left
+   un-merged. Patrick would have blocked this had he seen it. **RULE: never use
+   fuzzy name similarity to decide person identity for committed/production
+   data.** (Offline F1 *scoring* is a separate, acceptable use.)
+
+2. **Never rely on the user reviewing PDP cards as the quality gate.** Most
+   users click **Accept All**; almost no one flips through cards. Output must be
+   correct BEFORE the review sheet — the sheet is not a safety net. Recurring
+   mistake; stop assuming human curation will catch bad proposals.
+
+**Direction (Patrick):** Dedup must happen **in the LLM** — give the model the
+committed people as context so it recognizes existing people semantically and
+emits only genuinely-missing people/connections, instead of extracting from
+empty and fuzzy-matching afterward. Also reconsider the K-independent-passes
+design — it exists only to average out which bridges a stochastic single pass
+misses; with LLM-side dedup a simpler/targeted approach is likely enough.
+
+**Status:** FD-338's from-empty + `match_people`-merge reconcile is the wrong
+foundation per the above and must be reworked before shipping. Current PRs hold.
+
+**Revisit trigger:** any future person-dedup work — re-read this before reaching
+for name similarity.
+
+### 2026-06-09: FD-338 — default rebuild tier K=4 (max-fidelity opt-in); supersedes K=8 default
+
+**Context:** K=8 as the default makes every rebuild ~$0.60 and ~20+ min on a
+single worker — too heavy for everyday use. Patrick: the "rigor" (Max fidelity)
+toggle should default OFF.
+
+**Decision:** Default rebuild = **K=4** (~$0.30, faster); **K=8 is opt-in** via
+the Max-fidelity toggle. UI toggle defaults off; backend `DEFAULT_K = 4`; cost
+modal copy is now tier-dynamic ($0.30 / $0.60). Reverses the 2026-06-03
+K=8-default decision.
+
+**Reasoning:** Cheap/fast default fits routine use; users wanting the higher
+connectivity opt into max fidelity. NOTE: the default K=4 tier does **not**
+reliably meet AC#1 (≥90% LCC) — only opt-in K=8 approaches it (~90.5%). Accepted
+as a product trade: default fast, rigor on demand.
+
+**Revisit trigger:** AC#1 reinterpreted to require the *default* tier reach 90%;
+or a cheaper path to 90% (better merge / parallel workers) lands.
+
+### 2026-06-03: FD-338 — default K bumped 6 → 8 (measured; supersedes the K=6 choice)
+
+**Context:** Measured the consensus delta against the REAL committed diagram 1924
+(currently 56% keep-User LCC), reconciled as a true PDP delta — harder and more
+realistic than the from-empty prototype's 94.9%. Sampling K-subsets from a 10-run
+pool: K=6 median ~85–90% but only ~half of runs clear 90% (tail to ~76–82%); K=8
+median ~90.6% with ~11/12 ≥90%. The full 10-run `match_people` merge ceilings at
+90.7% (5 residual components) — the forbidden name-dedup's 94.9% is out of
+`match_people`'s reach regardless of K.
+
+**Decision:** Ship **default K=8** ("max fidelity"); K=4 is the cheaper opt-down.
+`VALID_K = {4, 8}` (K=6 removed). ~$0.61/rebuild; cost modal copy updated to
+"about $0.60". Chosen over (a) keeping K=6 and beta-accepting ~88% — fails the
+≥90% AC's "reliably"; (b) investing in a better merge to recover toward 95% —
+deferred R&D, uncertain, would delay ship. Patrick decided.
+
+**Reasoning:** K=8 is the smallest tier that reliably clears the AC with the
+mandated matcher. Caveat: reliability measured on overlapping subsets of one
+10-run pool (correlated), not 12 independent K=8 rebuilds — directional, not a
+hard guarantee; a few independent K=8 confirmations are the remaining check.
+
+**Revisit trigger:** independent K=8 rebuilds dip below 90%; a merge improvement
+recovers the name-dedup ceiling (then K can drop); customer pricing model lands
+(remove cost modal).
+
+### 2026-06-02: FD-338 — default_acc_ids exclusion in merge_runs
+
+**Context:** `match_people` has a special rule: "User" in the GT list matches
+any AI person name (because the SARF editor labels the proband "User"). In the
+merge accumulator, the committed diagram has User (id=1) and Assistant (id=2).
+When merge_runs passes the full accumulator to match_people, real family members
+from the run match "User" via this rule, polluting the mapping.
+
+**Decision:** Compute `default_acc_ids = _default_ids(committed.people)` (User
++ Assistant) and exclude those from the `matchable_acc` list passed to
+match_people. Bond endpoint resolution and parents propagation are also guarded
+against default IDs. The default people remain in `acc_bonds` for bond-dyad
+resolution.
+
+**Revisit trigger:** match_people special-case behavior changes.
+
+---
+
+### 2026-06-02: FD-338 — deep re-extraction delivers a PDP delta, not a diagram replace; K=6 default
+
+**Context:** Deep re-extraction (multi-sample consensus) rebuilds a fragmented
+Personal-app diagram. The ticket framed the on-completion UX as an open product
+decision (replace the diagram "recoverable via version history" vs stage into
+the PDP review sheet). There is NO diagram version history — replace is
+unrecoverable.
+
+**Decision:**
+1. **Deliver as a PDP delta vs the committed diagram (improve in place), never
+   replace.** Run K independent windowed `extract_full` accumulations from empty
+   (cursor nulled) → merge into one consolidated DiagramData → reconcile that
+   consolidated picture against the *current committed* diagram via
+   `match_people` to emit a delta PDP (negative-ID adds for missing people, new
+   pair-bonds bridging already-committed fragments, positive-ID edits for missing
+   parent links). Staged into `diagram_data.pdp`; user reviews/accepts in the
+   existing PDPSheet. Preserves committed IDs, manual edits, layout. Per
+   PDP_DATA_FLOW.md / DATA_SYNC_FLOW.md the PDP *is* the delta system.
+2. **Merge dedup MUST use `f1_metrics.match_people`** (structural+name), not the
+   prototype's raw-name canonicalization. The prototype hit 94.9% LCC via
+   name-dedup (forbidden per FD-324); match_people is the sanctioned swap and
+   must be re-verified to clear the ≥90% AC.
+3. **Default K=6** (the only consensus tier measured ≥90%, 94.9%); K=4 is the
+   cheaper opt-down. Chosen over K=4-default because K=4 single-consensus is
+   unproven against the "reliably ≥90%" AC. ~$0.46/rebuild.
+4. **Temporary cost-confirm modal** on the Rebuild button (warns ~$0.50/run to
+   AFS, says check with patrick@alaskafamilysystems.com first), tagged in-code
+   for removal once a customer pricing model exists. Accepted as interim cost
+   control pre-pricing.
+
+**Reasoning:** The PDP delta path is the documented mechanism for all diagram
+changes and the only non-destructive option. K=6 trades cost for AC compliance.
+
+**Revisit trigger:** match_people merge fails to reach ≥90% LCC reliably on
+diagram 1924; customer pricing model lands (remove the cost modal); K=4 later
+proven reliable (demote default).
 
 ## 2026-05
 

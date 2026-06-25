@@ -667,3 +667,44 @@ def test_commit_backfill_does_not_overwrite_existing_parents():
     )
     data.commit_pdp_items([-8])
     assert next(p for p in data.people if p["id"] == m[-1])["parents"] == m[-6]
+
+
+def test_commit_pair_bond_married_none_defaults_true():
+    data = DiagramData(
+        pdp=PDP(
+            people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
+            pair_bonds=[PairBond(id=-3, person_a=-1, person_b=-2)],
+        )
+    )
+    data.commit_pdp_items([-3])
+    assert data.pair_bonds[0]["married"] is True
+
+
+def test_commit_pair_bond_married_false_preserved():
+    data = DiagramData(
+        pdp=PDP(
+            people=[Person(id=-1, name="Alice"), Person(id=-2, name="Bob")],
+            pair_bonds=[PairBond(id=-3, person_a=-1, person_b=-2, married=False)],
+        )
+    )
+    data.commit_pdp_items([-3])
+    assert data.pair_bonds[0]["married"] is False
+
+
+def test_apply_parent_edits_leaves_non_parents_update_rows_staged():
+    dd = DiagramData()
+    dd.people = [
+        {"id": 1, "name": "Ann Park", "parents": None},
+        {"id": 2, "name": "Ben Park", "parents": None},
+        {"id": 3, "name": "Cal Park", "parents": None},
+    ]
+    dd.pair_bonds = [{"id": 9, "person_a": 2, "person_b": 3}]
+    dd.pdp.people = [
+        Person(id=1, parents=9),
+        Person(id=2, name="Benjamin Park"),
+    ]
+    applied = dd.apply_parent_edits()
+    assert applied == 1
+    assert dd.people[0]["parents"] == 9
+    assert [p.id for p in dd.pdp.people] == [2]
+    assert dd.pdp.people[0].name == "Benjamin Park"

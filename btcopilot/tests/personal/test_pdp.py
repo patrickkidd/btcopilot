@@ -13,6 +13,7 @@ from btcopilot.schema import (
     Event,
     EventKind,
     PairBond,
+    is_parents_edit,
 )
 from btcopilot.pdp import (
     MAX_EXTRACTION_RETRIES,
@@ -724,9 +725,7 @@ def test_validate_raises_on_committed_person_duplicate():
     with pytest.raises(PDPValidationError) as exc_info:
         validate_pdp_deltas(pdp, deltas, diagram_data)
 
-    assert any(
-        "duplicates committed person" in err for err in exc_info.value.errors
-    )
+    assert any("duplicates committed person" in err for err in exc_info.value.errors)
 
 
 def test_fix_committed_person_duplicates_remaps_refs():
@@ -786,8 +785,14 @@ def test_fix_committed_person_duplicates_reaches_fixed_point():
         ],
         pair_bonds=[PairBond(id=-7, person_a=-1, person_b=-2)],
         events=[
-            Event(id=-8, kind=EventKind.Birth, person=-1, spouse=-2,
-                  child=-6, dateTime="2015-01-01"),
+            Event(
+                id=-8,
+                kind=EventKind.Birth,
+                person=-1,
+                spouse=-2,
+                child=-6,
+                dateTime="2015-01-01",
+            ),
         ],
     )
 
@@ -860,12 +865,9 @@ def test_extract_and_validate_drops_committed_dups_pre_validate(caplog):
     validate_pdp_deltas(diagram_data.pdp, deltas, diagram_data, "test_source")
     assert {p.name for p in deltas.people} == {"Sarah"}
     assert all(e.kind != EventKind.Married for e in deltas.events)
-    assert not any(
-        {pb.person_a, pb.person_b} == {1, 2} for pb in deltas.pair_bonds
-    )
+    assert not any({pb.person_a, pb.person_b} == {1, 2} for pb in deltas.pair_bonds)
     assert any(
-        "fix_committed_person_duplicates:" in rec.message
-        for rec in caplog.records
+        "fix_committed_person_duplicates:" in rec.message for rec in caplog.records
     )
 
 
@@ -890,9 +892,7 @@ def test_extract_and_validate_drops_committed_dups_no_remap(caplog):
     validate_pdp_deltas(diagram_data.pdp, deltas, diagram_data, "test_source")
     assert deltas.events == []
     assert deltas.pair_bonds == []
-    assert any(
-        "committed-duplicate" in rec.message for rec in caplog.records
-    )
+    assert any("committed-duplicate" in rec.message for rec in caplog.records)
 
 
 def test_validate_flags_event_positive_ref_not_committed():
@@ -900,8 +900,15 @@ def test_validate_flags_event_positive_ref_not_committed():
 
     dd = DiagramData(people=[{"id": 1, "name": "Speaker"}])
     deltas = PDPDeltas(
-        events=[Event(id=-2, kind=EventKind.Bonded, person=821, spouse=819,
-                       dateTime="1994-01-01")],
+        events=[
+            Event(
+                id=-2,
+                kind=EventKind.Bonded,
+                person=821,
+                spouse=819,
+                dateTime="1994-01-01",
+            )
+        ],
     )
     with pytest.raises(PDPValidationError) as exc:
         validate_pdp_deltas(PDP(), deltas, dd)
@@ -932,6 +939,7 @@ def test_fix_unresolved_refs_clears_orphaned_parents():
 
 
 # --- FD-333: committed-entity edits and deletes ---
+
 
 def test_apply_deltas_stages_committed_edit():
     """Positive-id delta for a committed person is added to pdp.people."""
@@ -979,7 +987,13 @@ def test_accept_committed_delete_cascade():
             {"id": 11, "name": "Bob"},
         ],
         events=[
-            {"id": 20, "kind": "shift", "person": 10, "description": "x", "dateTime": "2000-01-01"},
+            {
+                "id": 20,
+                "kind": "shift",
+                "person": 10,
+                "description": "x",
+                "dateTime": "2000-01-01",
+            },
         ],
         pair_bonds=[{"id": 30, "person_a": 10, "person_b": 11}],
         pdp=PDP(delete=[10]),
@@ -1031,7 +1045,6 @@ def test_accept_committed_delete_clears_pdp_staging():
     assert all(p["id"] != 10 for p in diagram_data.people)
     assert diagram_data.pdp.people == []
     assert diagram_data.pdp.delete == []
-
 
 
 def test_reject_committed_delete_clears_queue():
@@ -1149,11 +1162,20 @@ def test_accept_committed_delete_clears_pdp_events_and_pair_bonds():
         ],
         pair_bonds=[{"id": 30, "person_a": 10, "person_b": 11}],
         events=[
-            {"id": 20, "kind": "shift", "person": 10, "description": "x",
-             "dateTime": "2000-01-01", "relationshipTargets": [], "relationshipTriangles": []},
+            {
+                "id": 20,
+                "kind": "shift",
+                "person": 10,
+                "description": "x",
+                "dateTime": "2000-01-01",
+                "relationshipTargets": [],
+                "relationshipTriangles": [],
+            },
         ],
         pdp=PDP(
-            events=[Event(id=20, kind=EventKind.Shift, person=10, description="edited")],
+            events=[
+                Event(id=20, kind=EventKind.Shift, person=10, description="edited")
+            ],
             pair_bonds=[PairBond(id=30, person_a=10, person_b=11)],
             delete=[10],
         ),
@@ -1193,8 +1215,16 @@ def test_accept_committed_delete_multihop_cascade_cleans_all_pdp_collections():
         ],
         pair_bonds=[{"id": 30, "person_a": 10, "person_b": 11}],
         events=[
-            {"id": 20, "kind": "birth", "person": 10, "spouse": 11, "child": 12,
-             "dateTime": "2000-01-01", "relationshipTargets": [], "relationshipTriangles": []},
+            {
+                "id": 20,
+                "kind": "birth",
+                "person": 10,
+                "spouse": 11,
+                "child": 12,
+                "dateTime": "2000-01-01",
+                "relationshipTargets": [],
+                "relationshipTriangles": [],
+            },
         ],
         pdp=PDP(
             people=[Person(id=12, name="Child edited")],
@@ -1214,7 +1244,6 @@ def test_accept_committed_delete_multihop_cascade_cleans_all_pdp_collections():
     assert diagram_data.pdp.delete == []
 
 
-
 # ── infer_parents_from_birth_events ─────────────────────────────────────────
 
 
@@ -1227,7 +1256,14 @@ def test_infer_parents_sets_child_parents():
         ],
         pair_bonds=[PairBond(id=-10, person_a=-1, person_b=-2)],
         events=[
-            Event(id=-20, kind=EventKind.Birth, person=-1, spouse=-2, child=-3, dateTime="2000-01-01")
+            Event(
+                id=-20,
+                kind=EventKind.Birth,
+                person=-1,
+                spouse=-2,
+                child=-3,
+                dateTime="2000-01-01",
+            )
         ],
     )
     infer_parents_from_birth_events(deltas)
@@ -1243,7 +1279,14 @@ def test_infer_parents_does_not_overwrite_existing():
         ],
         pair_bonds=[PairBond(id=-10, person_a=-1, person_b=-2)],
         events=[
-            Event(id=-20, kind=EventKind.Birth, person=-1, spouse=-2, child=-3, dateTime="2000-01-01")
+            Event(
+                id=-20,
+                kind=EventKind.Birth,
+                person=-1,
+                spouse=-2,
+                child=-3,
+                dateTime="2000-01-01",
+            )
         ],
     )
     infer_parents_from_birth_events(deltas)
@@ -1259,7 +1302,14 @@ def test_infer_parents_skips_missing_bond():
         ],
         pair_bonds=[],
         events=[
-            Event(id=-20, kind=EventKind.Birth, person=-1, spouse=-2, child=-3, dateTime="2000-01-01")
+            Event(
+                id=-20,
+                kind=EventKind.Birth,
+                person=-1,
+                spouse=-2,
+                child=-3,
+                dateTime="2000-01-01",
+            )
         ],
     )
     infer_parents_from_birth_events(deltas)
@@ -1275,7 +1325,14 @@ def test_infer_parents_adopted_event():
         ],
         pair_bonds=[PairBond(id=-10, person_a=-1, person_b=-2)],
         events=[
-            Event(id=-20, kind=EventKind.Adopted, person=-1, spouse=-2, child=-3, dateTime="2005-06-01")
+            Event(
+                id=-20,
+                kind=EventKind.Adopted,
+                person=-1,
+                spouse=-2,
+                child=-3,
+                dateTime="2005-06-01",
+            )
         ],
     )
     infer_parents_from_birth_events(deltas)
@@ -1292,3 +1349,77 @@ def test_infer_parents_ignores_non_birth_events():
     )
     infer_parents_from_birth_events(deltas)
     assert deltas.people[0].parents is None
+
+
+@pytest.mark.parametrize(
+    "person, expected",
+    [
+        (Person(id=5, parents=8), True),
+        (Person(id=5, name="Kid", parents=8), False),
+        (Person(id=5, last_name="Smith", parents=8), False),
+        (Person(id=5, gender="female", parents=8), False),
+        (Person(id=5), False),
+        (Person(id=-5, parents=8), False),
+        (Person(parents=8), False),
+    ],
+)
+def test_is_parents_edit(person, expected):
+    assert is_parents_edit(person) is expected
+
+
+def test_apply_parent_edits_applies_and_gates():
+    dd = DiagramData(
+        pdp=PDP(
+            people=[
+                Person(id=-1, name="Kid"),
+                Person(id=-2, name="Mom"),
+                Person(id=-3, name="Dad"),
+            ],
+            pair_bonds=[PairBond(id=-4, person_a=-2, person_b=-3)],
+        )
+    )
+    mapping = dd.commit_pdp_items([-1, -2, -3, -4])
+    kid_id, bond_id = mapping[-1], mapping[-4]
+
+    dd.pdp.people = [
+        Person(id=kid_id, parents=bond_id),
+        Person(id=9999, parents=bond_id),
+        Person(id=kid_id, parents=bond_id + 100),
+        Person(id=-5, name="Uncle"),
+    ]
+    applied = dd.apply_parent_edits()
+    assert applied == 1
+    kid = next(p for p in dd.people if p["id"] == kid_id)
+    assert kid["parents"] == bond_id
+    assert [p.id for p in dd.pdp.people] == [-5]
+
+
+def test_apply_parent_edits_counts_leaked_fields(caplog):
+    dd = DiagramData(
+        pdp=PDP(
+            people=[
+                Person(id=-1, name="Kid"),
+                Person(id=-2, name="Mom"),
+                Person(id=-3, name="Dad"),
+            ],
+            pair_bonds=[PairBond(id=-4, person_a=-2, person_b=-3)],
+        )
+    )
+    mapping = dd.commit_pdp_items([-1, -2, -3, -4])
+    kid_id, bond_id = mapping[-1], mapping[-4]
+
+    dd.pdp.people = [
+        Person(id=kid_id, name="Kiddo", parents=bond_id),
+        Person(id=kid_id, parents=bond_id),
+    ]
+    with caplog.at_level(logging.WARNING, logger="btcopilot.schema"):
+        applied = dd.apply_parent_edits()
+    assert applied == 1
+    kid = next(p for p in dd.people if p["id"] == kid_id)
+    assert kid["parents"] == bond_id
+    assert kid["name"] == "Kid"
+    assert [p.name for p in dd.pdp.people] == ["Kiddo"]
+    assert any(
+        "apply_parent_edits: 1 positive-id row(s)" in rec.message
+        for rec in caplog.records
+    )

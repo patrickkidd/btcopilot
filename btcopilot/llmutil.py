@@ -188,6 +188,7 @@ PDP_SCHEMA_DESCRIPTIONS = {
     "PairBond.id": "REQUIRED - NEVER null. MUST be negative integer for new entries",
     "PairBond.person_a": "REQUIRED - NEVER null. ID of first person in the bond",
     "PairBond.person_b": "REQUIRED - NEVER null. ID of second person in the bond",
+    "PairBond.married": "true if the couple is or was married. false ONLY when stated as romantic but never married (dating, girlfriend/boyfriend, ex-partner). Omit when not stated",
 }
 
 PDP_FORCE_REQUIRED = {
