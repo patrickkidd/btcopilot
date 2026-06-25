@@ -28,23 +28,27 @@ def _create_discussion(data: dict) -> Discussion:
     user = auth.current_user()
 
     # Ensure user has a free_diagram
-    if not user.free_diagram:
+    diagram = user.free_diagram
+    if diagram is None:
         diagram = Diagram(
             user_id=user.id,
             name=f"{user.username} Personal Case File",
             data=pickle.dumps({}),
         )
-
         db.session.add(diagram)
         db.session.flush()
         user.free_diagram_id = diagram.id
 
+    # Read the speaker label off the diagram directly (not the lazily-populated
+    # relationship) so a named primary is honored even at create time.
+    subject_name = diagram.get_diagram_data().subject_display_name()
+
     discussion = Discussion(
         user_id=user.id,
-        diagram_id=user.free_diagram_id,
+        diagram_id=diagram.id,
         summary="New Discussion",
         speakers=[
-            Speaker(name="Client", type=SpeakerType.Subject, person_id=1),
+            Speaker(name=subject_name, type=SpeakerType.Subject, person_id=1),
             Speaker(name="Coach", type=SpeakerType.Expert, person_id=2),
         ],
     )
@@ -114,12 +118,18 @@ def chat(discussion_id: int):
         if changed:
             discussion.diagram.set_diagram_data(diagram_data)
 
-        # Update speaker person_ids if primary person differs from default
+        # Sync the Subject speaker to the primary person: keep person_id and the
+        # display label (real name, else neutral default) in step so the chat
+        # transcript and extraction prompt name the user, not "Client".
         user_speaker = Speaker.query.filter_by(
             discussion_id=discussion.id, type=SpeakerType.Subject
         ).first()
-        if user_speaker and user_speaker.person_id != user_person_id:
-            user_speaker.person_id = user_person_id
+        if user_speaker:
+            if user_speaker.person_id != user_person_id:
+                user_speaker.person_id = user_person_id
+            subject_name = diagram_data.subject_display_name()
+            if user_speaker.name != subject_name:
+                user_speaker.name = subject_name
 
     statement = request.json["statement"]
     model = request.json.get("model")

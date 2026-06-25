@@ -232,6 +232,19 @@ def _anthropic_client():
     )
 
 
+ANTHROPIC_EXTRACTION_TIMEOUT = 600  # seconds
+
+
+def _extraction_anthropic_client():
+    import anthropic
+
+    return anthropic.AsyncAnthropic(
+        api_key=os.environ["ANTHROPIC_EXTRACTION_API_KEY"],
+        timeout=ANTHROPIC_EXTRACTION_TIMEOUT,
+        max_retries=ANTHROPIC_MAX_RETRIES,
+    )
+
+
 def _prepare_claude_messages(prompt=None, turns=None):
     """Build Anthropic-compatible messages from prompt or turns.
 
@@ -355,12 +368,14 @@ def response_text_sync(prompt=None, model=None, **kwargs):
 async def gemini_structured(prompt, response_format, large=False, model=None):
     from google.genai import types
 
+    model = model or (EXTRACTION_MODEL_LARGE if large else EXTRACTION_MODEL)
+    if _is_claude_model(model):
+        return await claude_structured(prompt, response_format, model)
+
     start_time = time.time()
     response_schema = dataclass_to_json_schema(
         response_format, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED
     )
-
-    model = model or (EXTRACTION_MODEL_LARGE if large else EXTRACTION_MODEL)
 
     client = _client()
     config = types.GenerateContentConfig(
@@ -407,6 +422,59 @@ async def gemini_structured(prompt, response_format, large=False, model=None):
 
 def gemini_structured_sync(prompt, response_format, large=False):
     return asyncio.run(gemini_structured(prompt, response_format, large=large))
+
+
+CLAUDE_STRUCTURED_USAGE = {"calls": 0, "input_tokens": 0, "output_tokens": 0}
+
+# Constrained decoding (output_config.format) rejects the PDPDeltas schema:
+# >16 nullable params is over the union limit, and subset-required objects
+# time out grammar compilation. Schema goes in the prompt instead; the JSON
+# is validated client-side by from_dict().
+CLAUDE_JSON_INSTRUCTION = """
+
+OUTPUT FORMAT: Respond with ONLY a single valid JSON object conforming to this JSON Schema. No markdown fences, no commentary, no text before or after the JSON. Omit optional fields rather than emitting null.
+
+{schema}"""
+
+
+async def claude_structured(prompt, response_format, model):
+    start_time = time.time()
+    schema = dataclass_to_json_schema(
+        response_format, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED
+    )
+    full_prompt = prompt + CLAUDE_JSON_INSTRUCTION.format(schema=json.dumps(schema))
+
+    client = _extraction_anthropic_client()
+    async with client.messages.stream(
+        model=model,
+        max_tokens=32000,
+        thinking={"type": "adaptive"},
+        messages=[{"role": "user", "content": full_prompt}],
+    ) as stream:
+        response = await stream.get_final_message()
+
+    CLAUDE_STRUCTURED_USAGE["calls"] += 1
+    CLAUDE_STRUCTURED_USAGE["input_tokens"] += response.usage.input_tokens
+    CLAUDE_STRUCTURED_USAGE["output_tokens"] += response.usage.output_tokens
+    _log.info(
+        f"claude_structured({model}): {time.time() - start_time:.1f}s, "
+        f"in={response.usage.input_tokens} out={response.usage.output_tokens}"
+    )
+
+    if response.stop_reason == "max_tokens":
+        raise OutputTruncatedError(
+            "LLM response truncated due to token limit. Input data too large."
+        )
+    if response.stop_reason == "refusal":
+        raise RuntimeError(f"claude_structured refusal: {response.stop_details}")
+
+    text = next(b.text for b in response.content if b.type == "text").strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1].rsplit("```", 1)[0]
+    data = json.loads(text)
+    result = from_dict(response_format, data)
+    _log.debug(f"claude_structured(): --> {result}")
+    return result
 
 
 async def gemini_text(prompt=None, **kwargs):

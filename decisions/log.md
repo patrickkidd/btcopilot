@@ -8,6 +8,68 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ## 2026-06
 
+### 2026-06-15: FD-321 — user profile (name + birth date) ground + UI decisions
+
+**Context:** FD-321 captures the Personal-app user's own name + birth date and feeds them into
+extraction/rebuild context (kills the duplicate-proband "Client" fabrication class). Driven via the
+workstream skill. Oracle ratified by Patrick: C1–C11 + C13 (machine-proven), C12 (human walk).
+
+**Decisions accepted:**
+- **Birth date is a Birth EVENT** on the primary node, not a scalar Person field (Patrick: "it must
+  be a birth event"). Avoids a new schema field and the two-location DiagramData sync hazard.
+- **Real name everywhere:** the user's name replaces the generic "Client" speaker label in both
+  extraction prompts and the chat UI (added C13).
+- **Wizard UI = single-screen** (variant A), chosen over a multi-step paged wizard after side-by-side
+  prototypes. One reusable `UserDetailsForm` drives both the first-launch wizard and the Settings
+  editor. Spec: `familydiagram/doc/ui-specs/user-details.md`.
+- **Closure without a referee:** this project has no deterministic referee; every machine-checkable
+  criterion is driven to a real measured result and its evidence recorded in the unit state file
+  (`doc/workstreams/fd-321.json`). Standing convention, same as in-flight units.
+
+**Revisit trigger:** if extraction F1 moves outside the ±0.05 band after injecting speaker identity
+(C11), the prompt-context change is incomplete and must be re-tuned before merge.
+
+### 2026-06-09: Fable 5 extraction experiment — adapter design, induction convergence call
+
+**Context:** Evaluating claude-fable-5 ($10/$50 per MTok) for extraction. No
+Anthropic structured-output path existed in the pipeline.
+
+**Decision 1 — prompted-JSON adapter over constrained decoding.** Anthropic's
+`output_config.format` rejects the PDPDeltas schema two ways: subset-required
+objects time out grammar compilation; require-all + nullable wrappers exceed
+the 16-union-param limit (ours needs 23). Adapter embeds the JSON schema in the
+prompt and validates client-side via `from_dict()`. Zero parse failures in ~70
+calls. Constraint applies to ANY future Anthropic structured extraction on this
+schema shape. (`btcopilot/llmutil.py: claude_structured`, fable-5-extraction worktree)
+
+**Decision 2 — dateCertainty="unknown" for inferred dates REVERTED.** Measured
+Events −0.016; opening the F1 date gate raised FPs elsewhere and risks false
+TPs. Don't retry without a tighter mechanism.
+
+**Decision 3 — induction declared converged at cold baseline.** 4 iterations
+(2 kept within noise, 1 reverted, 1 contaminated by billing): Fable 5's +39%
+Events gain is model-native; prompts are already at their tuning ceiling.
+Implication: future frontier-model evals should run cold baseline + 1-2
+targeted iterations, not full 10-iteration inductions.
+
+**Decision 4 — matcher asymmetry classified as metric bug, not model error.**
+`match_events` requires exact person/spouse slot assignment on married events;
+AI choosing the other partner can never match. Affects all models. Fix belongs
+in `f1_metrics.py` (canonicalize spouse pairs symmetrically), not in prompts.
+
+**Decision 5 (Phase 5 results) — hybrid Pass-3 swap is the recommended first
+production step.** flash-lite extraction + fable-5 SARF review: SARF macro
+0.535 vs 0.375 prod (+43%, 2-run mean), Events/Aggregate unchanged,
+~$0.20/discussion, latency cost confined to Pass 3. All-Fable sets records on
+every metric (Agg 0.731 / Events 0.617 / SARF 0.621) at ~$1.30/discussion but
+is async-only. The 2026-03-04 "hybrid per-pass selection doesn't help" finding
+is overturned — it tested same-tier Gemini swaps; a stronger reviewer model
+does lift SARF. Production options handed to Patrick: (A) hybrid, (B)
+all-Fable async, (C) status quo.
+
+**Revisit trigger:** Anthropic raises the union-param limit (retry constrained
+decoding); SARF variance bounds needed before production commit (hybrid macro
+spread 0.490-0.579 across 2 runs; all-Fable SARF is single-run).
 ### 2026-06-10: FD-338 — committed-poison fix = wipe-and-re-extract, not surgical repair; name-leak in history accepted
 
 **Context:** The GT loop proved 5 remaining wrong edges are poison in diagram
