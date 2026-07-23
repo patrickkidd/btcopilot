@@ -10,7 +10,7 @@
 
 **Scope**: claude-fable-5 on Pass 1+2 (prompted-JSON adapter; Anthropic
 constrained decoding rejects PDPDeltas schema — union limit + grammar timeout).
-Full run data: `doc/induction-reports/2026-06-09_16-10-00--fable-5-extraction/`.
+Full run data: `fdserver/training/induction-reports/2026-06-09_16-10-00--fable-5-extraction/`.
 
 ### Cold baseline (3-run means) vs same-day production
 
@@ -473,7 +473,7 @@ Conversation flow prompts now use a callable override (`get_conversation_flow_pr
 - $0.016/extraction vs $0.012 — negligible cost increase
 - Confirmed best across 14 model configs spanning Google, OpenAI, and xAI
 - Needs multi-run validation (3+ runs) before production deployment
-- See full report: `doc/induction-reports/2026-03-04_15-36-39--model-evaluation-frontier/`
+- See full report: `fdserver/training/induction-reports/2026-03-04_15-36-39--model-evaluation-frontier/`
 
 **Non-Google alternatives evaluated (2026-03-04):**
 - gpt-5.2 (OpenAI): Events F1 tied (0.397) but Bonds -37%, 196s latency, $0.065/extraction. Best backup.
@@ -667,7 +667,7 @@ Based on failed experiments:
 
 - **Full-extraction harness**: `uv run python -m btcopilot.training.run_extract_full_f1` (production 2-pass, 6 GT discussions)
 - **Per-statement harness**: `uv run python -m btcopilot.training.run_prompts_live` (training app, 45 GT cases)
-- **Ground truth**: `instance/gt_export.json` (symlinked from btcopilot-sources)
+- **Ground truth**: `instance/gt_export.json` (runtime copy; authoritative exports in `fdserver/training/gt-exports/`)
 - **Metrics tracked**: Aggregate F1, People F1, Events F1, PairBonds F1, per-variable F1 (symptom, anxiety, relationship, functioning)
 
 ### Gemini Issue Detection
@@ -677,7 +677,7 @@ Based on failed experiments:
 
 ### Prompt Induction Reports
 
-- **Location**: `doc/induction-reports/<timestamp>/`
+- **Location**: `fdserver/training/induction-reports/<timestamp>/`
 - **Contains**: Iteration logs, F1 deltas, final report
 
 ---
@@ -775,7 +775,7 @@ re-coding). E3/E4 numbers not comparable.
 
 **Additional finding**: Description style mismatch (GT verbatim words vs AI clinical summaries) is the binding constraint on Events F1. Any consolidation that abstracts descriptions hurts matching. Raising similarity threshold from 0.4 to 0.5 is theoretically correct but hurts measured F1.
 
-**Report**: `doc/induction-reports/2026-03-03_08-20-00--full-extraction/`
+**Report**: `fdserver/training/induction-reports/2026-03-03_08-20-00--full-extraction/`
 
 ### Dec 2024: Add Gemini array issue instrumentation
 
@@ -895,7 +895,7 @@ Both passes route through `_extract_and_validate()` for retry/validation. Pass 2
 
 **What failed**: Hybrid models (flash-lite P1, 2.5-flash P2) don't beat homogeneous flash-lite+think. Temperature 0.0 vs 0.1 is noise. Thinking > 1024 causes over-reasoning.
 
-**Report**: `doc/induction-reports/2026-03-04_13-15-00--model-evaluation-flash-lite/`
+**Report**: `fdserver/training/induction-reports/2026-03-04_13-15-00--model-evaluation-flash-lite/`
 
 ### Mar 2026: Description-free event matching (Strategy B)
 
@@ -999,7 +999,7 @@ unbounded; (c) enumerate committed IDs into PASS1_CONTEXT via a new format
 placeholder — deferred: requires a `pdp.py` signature change, not needed since the
 salience edit alone reached 0/10.
 
-**Report**: `doc/induction-reports/2026-05-16_08-40-13--fd319-prompt-idempotency/`.
+**Report**: `fdserver/training/induction-reports/2026-05-16_08-40-13--fd319-prompt-idempotency/`.
 **Follow-up (non-blocking)**: 3-run F1 confirmation folded into next routine F1 run.
 
 ### May 2026: Structural-completion pass — rejected (negative result)
@@ -1041,4 +1041,4 @@ fires, it is not the safety mechanism. Marker is a per-call random nonce so
 user text cannot forge the boundary. Concurrency defects found in adversarial
 review (concurrent extract / diagram-blob clobber) are deferred to a separate
 FD-264 child, not fixed here. Report:
-`doc/induction-reports/2026-05-16_19-50-22--fd319-cursor-windowing/`.
+`fdserver/training/induction-reports/2026-05-16_19-50-22--fd319-cursor-windowing/`.

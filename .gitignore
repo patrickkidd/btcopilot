@@ -187,3 +187,6 @@ cython_debug/
 .DS_Store
 
 doc/log/coach-sessions/
+
+# Extraction experiment data lives in fdserver/training/ (proprietary IP) — never here
+doc/induction-reports/

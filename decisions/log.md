@@ -83,7 +83,7 @@ the canonical diagram and regenerate from the source conversations through the
 fixed pipeline (per-discussion extract -> fragmentation check -> rebuild ->
 connectivity + GT score). The committed state becomes 100% product of the
 current pipeline; consistent with the standing "no tuning on AI-residue data"
-ruling. Snapshot of the pre-wipe state kept in btcopilot-sources. Separately:
+ruling. Snapshot of the pre-wipe state kept in btcopilot-sources (moved 2026-07-22 to `fdserver/training/gt-exports/`). Separately:
 pre-existing real-name occurrences in already-merged history are ACCEPTED
 ("I'm not too worried about git history") — no rewrite; working-tree
 occurrences stay anonymized going forward.

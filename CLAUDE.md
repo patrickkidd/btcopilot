@@ -214,7 +214,7 @@ All web UI must work in **both light and dark modes**:
 
 **Non-negotiable requirements**:
 1. Read strategy doc FIRST: [doc/PROMPT_ENG_EXTRACTION_STRATEGY.md](doc/PROMPT_ENG_EXTRACTION_STRATEGY.md)
-2. Create timestamped run folder + report in `doc/induction-reports/`
+2. Create timestamped run folder + report in `fdserver/training/induction-reports/`
 3. Establish baseline F1 before any changes
 4. Log EVERY experiment (kept AND reverted) with F1 scores
 5. Generate final report (`.md`) in the run folder
