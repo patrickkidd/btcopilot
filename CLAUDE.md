@@ -6,10 +6,16 @@ Backend for Pro/Personal apps, training app, AI extraction system.
 
 ## Confidential Data Rules
 
-Induction reports and GT exports contain clinical data, and extraction/conversational-AI
-experiment artifacts are proprietary IP — **NEVER store either in the btcopilot repo, and
-NEVER in btcopilot-sources**. All of it lives in the private **fdserver** repo (2026-07-22,
-Patrick's direction; supersedes the earlier btcopilot-sources scheme).
+Induction reports, GT exports, and coach sessions contain clinical data, and
+extraction/conversational-AI experiment artifacts are proprietary IP — **NEVER store any
+of it in the btcopilot repo, and NEVER in btcopilot-sources**. All of it lives in the
+private **fdserver** repo (2026-07-22, Patrick's direction; supersedes the earlier
+btcopilot-sources scheme).
+
+**btcopilot-sources is ONLY for copyrighted academic literature** (Bowen theory book
+chapters etc.; rarely added to). It will be retired once the Pro app's Copilot feature is
+replaced by the embedded personal app. Never route generated data or experiment artifacts
+there.
 
 | Data Type | WRONG Location | Correct Location |
 |-----------|----------------|-----------------|

@@ -64,15 +64,15 @@ try:
 except ImportError:
     Mail = None
 
-# Artifact roots. DEFAULT is the private sibling repo (btcopilot-sources/),
-# OUTSIDE the open-source tree — same rule as induction reports / GT exports
-# (see btcopilot/CLAUDE.md confidential-data table). Freeform sessions draw
+# Artifact roots. DEFAULT is the private sibling repo (fdserver/), OUTSIDE the
+# open-source tree — same rule as induction reports / GT exports (see
+# btcopilot/CLAUDE.md confidential-data table). Freeform sessions draw
 # on real personal/family content; that must never sit inside the OSS repo,
 # gitignored or not. The in-repo path is opt-in (--out shared) and only for
 # synthetic-persona runs safe to share.
 _PRIVATE_DIR = os.path.normpath(
     os.path.join(os.path.dirname(__file__), "..", "..",
-                 "btcopilot-sources", "coach-sessions")
+                 "fdserver", "coach-sessions")
 )
 _SHARED_DIR = os.path.normpath(
     os.path.join(os.path.dirname(__file__), "..", "doc", "log", "coach-sessions")
@@ -266,7 +266,7 @@ def main():
     ap.add_argument("--persona", choices=["none", *PERSONAS], default="none")
     ap.add_argument(
         "--out", choices=["private", "shared"], default="private",
-        help="private = btcopilot-sources/ (default, never in OSS repo); "
+        help="private = fdserver/coach-sessions/ (default, never in OSS repo); "
         "shared = in-repo doc/log (synthetic personas only, no real data)",
     )
     ap.add_argument(
