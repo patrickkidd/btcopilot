@@ -285,7 +285,7 @@ def test_match_events_date_outside_tolerance():
             id=-1,
             kind=EventKind.Bonded,
             description="Family dinner",
-            dateTime=datetime(2024, 1, 1),
+            dateTime=datetime(2024, 3, 1),
         )
     ]
     gt_events = [
@@ -293,7 +293,7 @@ def test_match_events_date_outside_tolerance():
             id=-2,
             kind=EventKind.Bonded,
             description="Family dinner",
-            dateTime=datetime(2024, 1, 15),
+            dateTime=datetime(2024, 3, 15),
         )
     ]
 
@@ -412,8 +412,8 @@ def test_match_events_uncertain_always_matches():
 
 
 def test_match_events_approximate_within_tolerance():
-    """Approximate dates match within ±270 days (9 months)."""
-    # 214 days apart - within 270 day tolerance
+    """Approximate dates match within the approximate tolerance."""
+    # 228 days apart - within 730 day tolerance
     ai_events = [
         Event(
             id=-1,
@@ -428,7 +428,7 @@ def test_match_events_approximate_within_tolerance():
             id=-2,
             kind=EventKind.Shift,
             description="Event in the 80s",
-            dateTime=datetime(2025, 1, 1),
+            dateTime=datetime(2025, 1, 15),
             dateCertainty=DateCertainty.Certain,
         )
     ]
@@ -472,7 +472,7 @@ def test_match_events_certainty_none_backward_compat():
             id=-1,
             kind=EventKind.Shift,
             description="Event",
-            dateTime=datetime(2025, 1, 1),
+            dateTime=datetime(2025, 3, 1),
         )
     ]
     gt_events = [
@@ -480,14 +480,14 @@ def test_match_events_certainty_none_backward_compat():
             id=-2,
             kind=EventKind.Shift,
             description="Event",
-            dateTime=datetime(2025, 1, 5),
+            dateTime=datetime(2025, 3, 5),
         )
     ]
 
     result = match_events(ai_events, gt_events, {})
     assert len(result.matched_pairs) == 1
 
-    gt_events[0].dateTime = datetime(2025, 1, 15)
+    gt_events[0].dateTime = datetime(2025, 3, 15)
     result = match_events(ai_events, gt_events, {})
     assert len(result.matched_pairs) == 0
 
@@ -510,24 +510,24 @@ def test_dates_within_tolerance_unknown():
 
 def test_dates_within_tolerance_approximate():
     """Approximate dates use 730-day (2 year) tolerance for year-level estimates."""
-    # 214 days apart - within tolerance
+    # 228 days apart - within tolerance
     assert dates_within_tolerance(
         "2024-06-01",
-        "2025-01-01",
+        "2025-01-15",
         DateCertainty.Approximate,
         DateCertainty.Certain,
     )
     # 730 days apart - at boundary, should pass
     assert dates_within_tolerance(
-        "2023-01-02",
-        "2025-01-01",
+        "2023-03-02",
+        "2025-03-01",
         DateCertainty.Approximate,
         DateCertainty.Certain,
     )
     # 731 days apart - just outside tolerance
     assert not dates_within_tolerance(
-        "2023-01-01",
-        "2025-01-01",
+        "2023-03-01",
+        "2025-03-01",
         DateCertainty.Approximate,
         DateCertainty.Certain,
     )
@@ -536,14 +536,14 @@ def test_dates_within_tolerance_approximate():
 def test_dates_within_tolerance_certain():
     """Certain dates use 7-day tolerance."""
     assert dates_within_tolerance(
-        "2025-01-01",
-        "2025-01-05",
+        "2025-03-01",
+        "2025-03-05",
         DateCertainty.Certain,
         DateCertainty.Certain,
     )
     assert not dates_within_tolerance(
-        "2025-01-01",
-        "2025-01-15",
+        "2025-03-01",
+        "2025-03-15",
         DateCertainty.Certain,
         DateCertainty.Certain,
     )
@@ -570,11 +570,11 @@ def test_calculate_date_similarity_unknown():
 
 
 def test_calculate_date_similarity_approximate():
-    """Approximate dates use 270-day (9 month) tolerance for similarity."""
-    # 214 days apart - within tolerance, partial similarity
+    """Approximate dates use the 730-day tolerance for similarity."""
+    # 228 days apart - within tolerance, partial similarity
     sim = calculate_date_similarity(
         "2024-06-01",
-        "2025-01-01",
+        "2025-01-15",
         DateCertainty.Approximate,
         DateCertainty.Certain,
     )
@@ -1125,3 +1125,103 @@ def test_calculate_statement_f1_structural_missed():
     assert metrics.structural_events_f1 == 0.0
     assert metrics.structural_events_metrics.fn == 1
     assert metrics.structural_events_metrics.tp == 0
+
+
+def test_match_events_couple_slots_interchangeable():
+    ai_events = [
+        Event(
+            id=-1,
+            kind=EventKind.Married,
+            dateTime=datetime(2024, 1, 1),
+            person=-10,
+            spouse=-11,
+        )
+    ]
+    gt_events = [
+        Event(
+            id=-2,
+            kind=EventKind.Married,
+            dateTime=datetime(2024, 1, 1),
+            person=-21,
+            spouse=-20,
+        )
+    ]
+    id_map = {-10: -20, -11: -21}
+
+    result = match_events(ai_events, gt_events, id_map)
+    assert len(result.matched_pairs) == 1
+
+
+def test_match_events_couple_different_pair_no_match():
+    ai_events = [
+        Event(
+            id=-1,
+            kind=EventKind.Married,
+            dateTime=datetime(2024, 1, 1),
+            person=-10,
+            spouse=-12,
+        )
+    ]
+    gt_events = [
+        Event(
+            id=-2,
+            kind=EventKind.Married,
+            dateTime=datetime(2024, 1, 1),
+            person=-20,
+            spouse=-21,
+        )
+    ]
+    id_map = {-10: -20, -12: -22}
+
+    result = match_events(ai_events, gt_events, id_map)
+    assert len(result.matched_pairs) == 0
+
+
+def test_match_events_year_anchored_certain_matches_same_year():
+    ai_events = [
+        Event(
+            id=-1,
+            kind=EventKind.Death,
+            dateTime=datetime(2022, 6, 1),
+            dateCertainty=DateCertainty.Certain,
+            person=-10,
+        )
+    ]
+    gt_events = [
+        Event(
+            id=-2,
+            kind=EventKind.Death,
+            dateTime=datetime(2022, 1, 1),
+            dateCertainty=DateCertainty.Certain,
+            person=-20,
+        )
+    ]
+    id_map = {-10: -20}
+
+    result = match_events(ai_events, gt_events, id_map)
+    assert len(result.matched_pairs) == 1
+
+
+def test_match_events_year_anchored_certain_rejects_other_year():
+    ai_events = [
+        Event(
+            id=-1,
+            kind=EventKind.Death,
+            dateTime=datetime(2023, 1, 15),
+            dateCertainty=DateCertainty.Certain,
+            person=-10,
+        )
+    ]
+    gt_events = [
+        Event(
+            id=-2,
+            kind=EventKind.Death,
+            dateTime=datetime(2022, 1, 1),
+            dateCertainty=DateCertainty.Certain,
+            person=-20,
+        )
+    ]
+    id_map = {-10: -20}
+
+    result = match_events(ai_events, gt_events, id_map)
+    assert len(result.matched_pairs) == 0

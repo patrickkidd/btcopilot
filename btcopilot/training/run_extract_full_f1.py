@@ -118,13 +118,15 @@ def run_extract_full_f1(discussion_id=None, model=None, sarf_model=None):
             for e in events_result.ai_unmatched:
                 print(
                     f"    FP kind={getattr(e.kind, 'value', e.kind)} dt={e.dateTime} "
-                    f"person={name_by_id.get(e.person, e.person)} desc={e.description!r}"
+                    f"person={name_by_id.get(e.person, e.person)} "
+                    f"child={name_by_id.get(e.child, e.child)} desc={e.description!r}"
                 )
             print(f"  [DUMP disc {disc_id}] GT events missed (FN):")
             for e in events_result.gt_unmatched:
                 print(
                     f"    FN kind={getattr(e.kind, 'value', e.kind)} dt={e.dateTime} "
-                    f"person={gt_name_by_id.get(e.person, e.person)} desc={e.description!r}"
+                    f"person={gt_name_by_id.get(e.person, e.person)} "
+                    f"child={gt_name_by_id.get(e.child, e.child)} desc={e.description!r}"
                 )
             print(f"  [DUMP disc {disc_id}] AI bonds not in GT (FP):")
             for b in bonds_result.ai_unmatched:

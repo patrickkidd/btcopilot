@@ -41,27 +41,30 @@ GT:  Person(id=-3, name="Michael", parents=None)  # different Michael, no parent
 ### Event Matching
 
 **Criteria**:
-- `kind` exact match (enum: Birth, Death, Marriage, etc.)
-- `description` similarity ≥ 0.5 (rapidfuzz ratio)
-- `dateTime` proximity (±7 days if both specified, None matches any)
+- `kind` exact match (enum: Birth, Death, Married, etc.)
+- `dateTime` within tolerance (see Date Handling; description matching removed — see below)
 - Links match after ID resolution: `person`, `spouse`, `child`, `relationshipTargets`, `relationshipTriangles`
-- **Overall score**: 0.8 × description_similarity + 0.2 × date_similarity
+  - Birth/Adopted: `child` is the primary link; GT-null parent slots are lenient
+  - Married/Divorced/Separated/Bonded: `{person, spouse}` compared as an unordered pair (either partner may be primary)
+  - All others: exact equality on all three links
 
 **Date Handling**:
 - Flexible parsing via `dateutil` (handles "2025-03-12", "March 12 2025", "spring break")
 - None dates match any date (treated as unknown/unspecified)
-- Tolerance: ±7 days for specified dates
+- Tolerance is set by the LEAST certain side (`dateCertainty`):
+  - either `unknown` → always matches
+  - **either side is a Jan-1 date marked `certain` → year-only fact ("died in 2022"); matches any date in that calendar year**
+  - either `approximate` (or missing certainty) → ±730 days
+  - both `certain` → ±7 days
 
 **Example**:
 ```python
-AI:  Event(kind=Visit, description="didn't talk for a while", dateTime="2025-03-15", person=-1)
-GT:  Event(kind=Visit, description="didn't talk during spring break", dateTime="2025-03-12", person=-5)
+AI:  Event(kind=Death, dateTime="2022-06-01", dateCertainty=certain, person=-1)
+GT:  Event(kind=Death, dateTime="2022-01-01", dateCertainty=certain, person=-5)
 ```
-- kind: Visit == Visit ✓
-- description: 0.65 similarity ("didn't talk" common phrase) ✓
-- dateTime: 3 days apart (within ±7 days) → date_sim=0.95 ✓
+- kind: Death == Death ✓
+- GT date is Jan-1 + certain → year-only fact → AI date in 2022 ✓
 - person: -1 → resolved GT person -5 ✓
-- Overall score: 0.8 × 0.65 + 0.2 × 0.95 = 0.71 ✓
 - **Match**: YES
 
 ### PairBond Matching

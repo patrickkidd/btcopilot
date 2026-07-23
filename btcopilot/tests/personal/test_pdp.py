@@ -5,6 +5,7 @@ import pytest
 from mock import patch, AsyncMock
 
 from btcopilot.schema import (
+    DateCertainty,
     DiagramData,
     PDP,
     PDPDeltas,
@@ -20,6 +21,7 @@ from btcopilot.pdp import (
     _extract_and_validate,
     validate_pdp_deltas,
     apply_deltas,
+    dedup_birth_events,
     fix_birth_event_self_references,
     fix_self_parent_references,
     fix_committed_person_duplicates,
@@ -1423,3 +1425,41 @@ def test_apply_parent_edits_counts_leaked_fields(caplog):
         "apply_parent_edits: 1 positive-id row(s)" in rec.message
         for rec in caplog.records
     )
+
+
+def test_dedup_birth_events_keeps_most_specific():
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="Mom"), Person(id=-3, name="Child")],
+        events=[
+            Event(
+                id=-20,
+                kind=EventKind.Birth,
+                child=-3,
+                dateTime="1991-01-01",
+                dateCertainty=DateCertainty.Approximate,
+            ),
+            Event(
+                id=-21,
+                kind=EventKind.Birth,
+                person=-1,
+                child=-3,
+                dateTime="1985-03-12",
+                dateCertainty=DateCertainty.Certain,
+            ),
+            Event(id=-22, kind=EventKind.Death, person=-1),
+        ],
+    )
+    dedup_birth_events(deltas)
+    assert [e.id for e in deltas.events] == [-21, -22]
+
+
+def test_dedup_birth_events_leaves_distinct_children():
+    deltas = PDPDeltas(
+        people=[Person(id=-1, name="A"), Person(id=-2, name="B")],
+        events=[
+            Event(id=-10, kind=EventKind.Birth, child=-1, dateTime="1990-01-01"),
+            Event(id=-11, kind=EventKind.Birth, child=-2, dateTime="1992-01-01"),
+        ],
+    )
+    dedup_birth_events(deltas)
+    assert len(deltas.events) == 2

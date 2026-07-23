@@ -58,7 +58,7 @@ New clinical data outputs: store in `btcopilot-sources/`, create symlink, add to
 
 Other: [README.md](README.md), [doc/plans/](doc/plans/)
 
-**Key prompt engineering lessons** (details in PROMPT_ENGINEERING_LOG.md): production extraction models are gemini-3.1-flash-lite (Pass 1+2) and gemini-3-flash-preview (Pass 3 SARF review), thinking=1024 — see `llmutil.py` for current constants and doc/MODEL_EVALUATIONS.md for alternatives; verbose definitions killed F1 scores; see log for what NOT to include in prompts.
+**Key prompt engineering lessons** (details in PROMPT_ENGINEERING_LOG.md): production extraction model is gemini-3.6-flash for Pass 1+2 AND Pass 3 SARF self-review, thinking=1024 — see `llmutil.py` for current constants and doc/MODEL_EVALUATIONS.md for alternatives; verbose definitions killed F1 scores; see log for what NOT to include in prompts.
 
 ### MVP State Tracking (UPDATED 2026-05-03)
 

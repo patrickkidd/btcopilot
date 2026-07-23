@@ -709,6 +709,27 @@ See `btcopilot/doc/TODO_GEMINI_SCHEMA.md` for:
 
 ## Decision Log
 
+### Jul 2026: gemini-3.6-flash evaluation + E4 metric era
+
+**Context**: gemini-3.6-flash appeared on the API. Full extraction-experiment run
+(cold baseline, 5-iteration induction, per-pass analysis) in
+`~/worktrees/gemini-3.6-flash/`; report
+`doc/induction-reports/2026-07-22_07-56-26--gemini-3.6-flash/`.
+
+**Outcome**: Best Gemini-family numbers on record. Recommended config: all-3.6-flash
+(extraction + SARF self-review), E4 final ruler (3-run means): Events 0.544, Agg 0.704
+vs prod 0.413/0.652. SARF macro noisy (0.451/0.392 batch means) but above prod. Only one prompt change survived (fable-5 saturation
+example, +0.030 Events). Birth-suppression and pattern-gate prompts failed —
+see strategy doc failed #30–33.
+
+**Metric changes (era E4)**: (1) couple-slot symmetric matching fixes the married
+person/spouse asymmetry (prod Events +0.051); (2) year-precision dates — Jan-1 +
+certain = year-only fact, same-calendar-year match (Patrick's call, replacing a GT
+re-coding). E3/E4 numbers not comparable.
+
+**Status**: Worktree only, uncommitted. Production switch is Patrick's call.
+
+
 ### Dec 2024: Remove exhaustive SARF definitions from prompt
 
 **Context**: Commit `f6a7ee8` added comprehensive SARF definitions from literature review, doubling prompt size.

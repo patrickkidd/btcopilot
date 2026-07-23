@@ -19,9 +19,32 @@ run-to-run (3-run means required); claude-fable-5 is near-deterministic.
 |---|---|---|---|
 | E1 | ≤2026-02 | Per-statement extraction; description-gated matching | Nothing current |
 | E2 | 2026-03 | 2-pass split; description-free matching; thinking=1024; 3-pass R-review added late in era | E2 only |
-| E3 | 2026-05 → current | E2 + committed-dup carve-out, re-extraction cursor, parent-inference repair (FD-319/FD-324) | E3 only |
+| E3 | 2026-05 → 2026-07 | E2 + committed-dup carve-out, re-extraction cursor, parent-inference repair (FD-319/FD-324) | E3 only |
+| E4 | 2026-07-22 → current (worktree, uncommitted) | E3 + couple-slot symmetric event matching (unordered {person, spouse} for couple events) + year-precision dates (Jan-1 + certain = year-only fact, same-calendar-year match) | E4 only |
 
-## E3 — current pipeline era
+## E4 — couple-slot symmetric matching era (worktree, uncommitted)
+
+### gemini-3.6-flash experiment (2026-07-22) — [report](induction-reports/2026-07-22_07-56-26--gemini-3.6-flash/2026-07-22_07-56-26.md)
+
+| Config (extraction / SARF review) | Runs | Agg | Events | SARF macro | Latency/disc | Verdict |
+|---|---|---|---|---|---|---|
+| gemini-3.1-flash-lite / gemini-3-flash (**prod, same-day, E4 final**) | 3 | 0.652 | 0.413 | 0.359 | ~32s | Production |
+| **gemini-3.6-flash / gemini-3.6-flash** (self-review, **E4 final**) | 3 | **0.704** | **0.544** | **0.392** | ~76s | **Recommended upgrade**; flash-tier cost |
+| gemini-3.6-flash / gemini-3-flash (+saturation example, interim ruler) | 3 | 0.700 | 0.529 | 0.404 | ~76s | Superseded by self-review |
+| flash-lite / gemini-3.6-flash (hybrid, interim ruler) | 2 | 0.675 | 0.463 | 0.349 | ~44s | Rejected — SARF below prod |
+
+Interim ruler = couple-slot fix only (before the year-precision rule). SARF macro
+has high run variance (self-review batches 0.451/0.392 on identical config);
+rank by Events/Agg.
+
+E3-ruler cold baseline for cross-era anchoring: 3.6-flash 0.695/0.517 (Agg/Events) vs same-day prod 0.648/0.389.
+Experiment facts: prompt induction converged after 5 iterations with ONE kept change
+(fable-5 saturation example, Events +0.030). Birth-suppression prompts backfire on
+3.6-flash (salience) or cut ParentChild (births feed parent inference). Reviewer-only
+hybrid over lite extraction fails — SARF lift needs the better extraction pass underneath.
+Cost accounting not instrumented; flash-tier pricing assumed.
+
+## E3 — pipeline era (2026-05 → 2026-07)
 
 ### claude-fable-5 experiment (2026-06-09) — [report](induction-reports/2026-06-09_16-10-00--fable-5-extraction/2026-06-09_16-10-00.md)
 

@@ -21,6 +21,7 @@ from btcopilot.personal.prompts import (
     CURSOR_EXTRACTION_RULE_TEMPLATE,
 )
 from btcopilot.schema import (
+    DateCertainty,
     DiagramData,
     PDP,
     PDPDeltas,
@@ -181,6 +182,42 @@ def fix_birth_event_self_references(deltas: PDPDeltas) -> None:
                 f"person==child=={event.person}, clearing person to None"
             )
             event.person = None
+
+
+def dedup_birth_events(deltas: PDPDeltas) -> None:
+    """Keep one birth event per child. The LLM emits duplicate births with
+    conflicting dates when a person's age is mentioned more than once."""
+    rank = {
+        DateCertainty.Certain: 2,
+        DateCertainty.Approximate: 1,
+        DateCertainty.Unknown: 0,
+    }
+
+    def score(e: Event) -> tuple[int, int]:
+        return (
+            rank[e.dateCertainty],
+            sum(x is not None for x in (e.person, e.spouse)),
+        )
+
+    best: dict[int, Event] = {}
+    for e in deltas.events:
+        if e.kind is not EventKind.Birth or e.child is None:
+            continue
+        cur = best.get(e.child)
+        if cur is None or score(e) > score(cur):
+            best[e.child] = e
+    drop = {
+        id(e)
+        for e in deltas.events
+        if e.kind is EventKind.Birth
+        and e.child is not None
+        and best[e.child] is not e
+    }
+    if drop:
+        _log.warning(
+            f"dedup_birth_events: dropping {len(drop)} duplicate birth event(s)"
+        )
+        deltas.events = [e for e in deltas.events if id(e) not in drop]
 
 
 def infer_parents_from_birth_events(deltas: PDPDeltas) -> None:
@@ -1017,6 +1054,7 @@ async def _extract_and_validate(
 
         fix_committed_person_duplicates(pdp_deltas, diagram_data)
         fix_unresolved_person_refs(pdp_deltas, pdp, diagram_data)
+        dedup_birth_events(pdp_deltas)
         infer_parents_from_birth_events(pdp_deltas)
         try:
             validate_pdp_deltas(pdp, pdp_deltas, diagram_data, source)
