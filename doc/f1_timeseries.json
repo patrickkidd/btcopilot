@@ -258,14 +258,15 @@
       "model": "gemini-3.6-flash",
       "sarf_review_model": "gemini-3.6-flash",
       "aggregate": 0.704,
-      "people": null,
+      "people": 0.922,
       "events": 0.544,
-      "pair_bonds": null,
-      "symptom": null,
-      "anxiety": null,
-      "relationship": null,
-      "functioning": null,
-      "note": "ERA BREAK (E4 scorer): couple-slot symmetric matching for married/divorced/separated/bonded + year-precision dates (Jan-1 + certain = same-calendar-year match). Numbers NOT comparable to earlier entries. Model upgrade to gemini-3.6-flash for Passes 1+2 AND Pass 3 SARF self-review. 6 GT, avg 3 runs; same-day prod on same ruler: agg 0.652, events 0.413. Prompt change: saturation example ported from fable-5 run (fdserver PR). SARF macro noisy across batches (0.451/0.392), not reported per-variable."
+      "pair_bonds": 0.803,
+      "symptom": 0.477,
+      "anxiety": 0.37,
+      "relationship": 0.387,
+      "functioning": 0.333,
+      "note": "ERA BREAK (E4 scorer): couple-slot symmetric matching for married/divorced/separated/bonded + year-precision dates (Jan-1 + certain = same-calendar-year match). Numbers NOT comparable to earlier entries. Model upgrade to gemini-3.6-flash for Passes 1+2 AND Pass 3 SARF self-review. 6 GT, avg 3 runs; same-day prod on same ruler: agg 0.652, events 0.413. Prompt change: saturation example ported from fable-5 run (fdserver PR). SARF macro noisy across batches (0.451/0.392), not reported per-variable. SARF/people/bonds backfilled 2026-07-23 from the 3 final-ruler self-review run logs (fdserver archive); per-variable SARF at N=3 carries ~\u00b10.05 noise.",
+      "child_of": 0.815
     }
   ]
 }
