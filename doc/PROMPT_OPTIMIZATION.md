@@ -26,7 +26,7 @@ Before any changes:
 - **Strategy doc**: [PROMPT_ENG_EXTRACTION_STRATEGY.md](PROMPT_ENG_EXTRACTION_STRATEGY.md) — cumulative lessons, what worked/failed, known blockers
 - **Engineering log**: [PROMPT_ENGINEERING_LOG.md](PROMPT_ENGINEERING_LOG.md) — decision history
 - **F1 timeseries**: [f1_timeseries.json](f1_timeseries.json) — historical scores
-- **Recent induction reports**: `doc/induction-reports/` — what was tried recently
+- **Recent induction reports**: `fdserver/training/induction-reports/` — what was tried recently
 
 ### 3. Establish Baseline
 
@@ -85,7 +85,7 @@ Production prompts are loaded via `FDSERVER_PROMPTS_PATH` env var. The fdserver 
 
 ### What Must Be Created/Updated After Every Session
 
-1. **Induction report** in `doc/induction-reports/<timestamp>[--description]/`
+1. **Induction report** in `fdserver/training/induction-reports/<timestamp>[--description]/`
    - `<timestamp>.md` — Full report: methodology, results table, key findings, recommendations
    - `<timestamp>_log.jsonl` — Machine-readable iteration log (optional for interactive sessions, required for automated runs)
 
@@ -135,7 +135,7 @@ From [induction_agent.md](../btcopilot/training/prompts/induction_agent.md):
 | `doc/PROMPT_ENG_EXTRACTION_STRATEGY.md` | Cumulative strategy — read first, update after |
 | `doc/PROMPT_ENGINEERING_LOG.md` | Decision log |
 | `doc/f1_timeseries.json` | Historical F1 data (feeds dashboard) |
-| `doc/induction-reports/` | Per-session reports and logs |
+| `fdserver/training/induction-reports/` | Per-session reports and logs |
 | `doc/sarf-definitions/*.md` | Authoritative SARF variable definitions |
 | `doc/specs/DATA_MODEL.md` | Schema docs (PDPDeltas, Person, Event, etc.) |
 

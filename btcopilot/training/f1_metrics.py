@@ -211,6 +211,18 @@ def parse_date_flexible(date_str: str | None) -> datetime | None:
         return None
 
 
+def _year_anchored(dt: datetime | None, certainty: DateCertainty) -> bool:
+    """A Jan-1 date marked certain is a year-only fact ("died in 2022") —
+    coding tools anchor year-precision dates at Jan 1, so day-level tolerance
+    would reject any correct-year date."""
+    return (
+        certainty == DateCertainty.Certain
+        and dt is not None
+        and dt.month == 1
+        and dt.day == 1
+    )
+
+
 def dates_within_tolerance(
     date1: str | datetime | None,
     date2: str | datetime | None,
@@ -222,7 +234,8 @@ def dates_within_tolerance(
 
     Tolerance is determined by the LEAST certain date:
     - If either is Unknown: always matches
-    - If either is Approximate: ±270 days (9 months)
+    - If either is a Jan-1 date marked Certain (year-only fact): same calendar year matches
+    - If either is Approximate: ±730 days (2 years)
     - Both Certain: ±7 days
     - None (missing): treated as Approximate (therapy transcripts rarely have precise dates)
     """
@@ -237,6 +250,9 @@ def dates_within_tolerance(
 
     if dt1 is None or dt2 is None:
         return True
+
+    if _year_anchored(dt1, c1) or _year_anchored(dt2, c2):
+        return dt1.year == dt2.year
 
     if c1 == DateCertainty.Approximate or c2 == DateCertainty.Approximate:
         tolerance = APPROXIMATE_TOLERANCE_DAYS
@@ -258,7 +274,8 @@ def calculate_date_similarity(
 
     Tolerance is determined by the LEAST certain date:
     - If either is Unknown: returns 1.0
-    - If either is Approximate: use 270-day tolerance (9 months)
+    - If either is a Jan-1 date marked Certain (year-only fact): same calendar year scores
+    - If either is Approximate: use 730-day tolerance (2 years)
     - Both Certain: use 7-day tolerance
     - None (missing): treated as Approximate (therapy transcripts rarely have precise dates)
     """
@@ -273,6 +290,12 @@ def calculate_date_similarity(
 
     if dt1 is None or dt2 is None:
         return 1.0
+
+    if _year_anchored(dt1, c1) or _year_anchored(dt2, c2):
+        if dt1.year != dt2.year:
+            return 0.0
+        delta_days = abs((dt1 - dt2).days)
+        return 1.0 if delta_days == 0 else 1.0 - delta_days / 730
 
     if c1 == DateCertainty.Approximate or c2 == DateCertainty.Approximate:
         tolerance = APPROXIMATE_TOLERANCE_DAYS
@@ -464,11 +487,24 @@ def match_events(
             # person/spouse are optional parent links.
             # Other events: person is the primary link.
             is_child_centric = ai_event.kind in (EventKind.Birth, EventKind.Adopted)
+            # Couple events: person/spouse slots are interchangeable — the AI
+            # picking the other partner as `person` is still the same event.
+            is_couple = ai_event.kind in (
+                EventKind.Married,
+                EventKind.Divorced,
+                EventKind.Separated,
+                EventKind.Bonded,
+            )
             if is_child_centric:
                 links_match = (
                     ai_child == gt_event.child
                     and (gt_event.person is None or ai_person == gt_event.person)
                     and (gt_event.spouse is None or ai_spouse == gt_event.spouse)
+                )
+            elif is_couple:
+                links_match = (
+                    {ai_person, ai_spouse} == {gt_event.person, gt_event.spouse}
+                    and ai_child == gt_event.child
                 )
             else:
                 links_match = (

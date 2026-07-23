@@ -65,7 +65,7 @@
       "commit": "604aede",
       "aggregate": 0.278,
       "people": 0.682,
-      "events": 0.200,
+      "events": 0.2,
       "symptom": 0.244,
       "anxiety": 0.267,
       "relationship": 0.244,
@@ -77,7 +77,7 @@
       "commit": "3fcd6ef",
       "aggregate": 0.278,
       "people": 0.682,
-      "events": 0.200,
+      "events": 0.2,
       "symptom": 0.244,
       "anxiety": 0.267,
       "relationship": 0.244,
@@ -89,7 +89,7 @@
       "commit": "262b308",
       "aggregate": 0.278,
       "people": 0.682,
-      "events": 0.200,
+      "events": 0.2,
       "symptom": 0.244,
       "anxiety": 0.267,
       "relationship": 0.244,
@@ -140,7 +140,7 @@
       "events": 0.154,
       "symptom": 0.205,
       "anxiety": 0.205,
-      "relationship": 0.250,
+      "relationship": 0.25,
       "functioning": 0.227,
       "note": "Model migration to gemini-2.5-flash (per-statement, 45 GT cases). Aggregate drop from 0.327 due to gemini-2.0-flash server-side drift + model switch."
     },
@@ -161,9 +161,9 @@
       "commit": "76fd88d",
       "aggregate": 0.595,
       "people": 0.901,
-      "events": 0.470,
+      "events": 0.47,
       "symptom": 0.669,
-      "anxiety": 0.490,
+      "anxiety": 0.49,
       "relationship": 0.282,
       "functioning": 0.396,
       "note": "Remove Event.description matching from F1 scoring (match on kind+date+person only). 5/6 discussions, avg 2 runs. Events 0.335->0.470, Agg 0.551->0.595."
@@ -190,7 +190,7 @@
       "pair_bonds": 0.803,
       "symptom": 0.448,
       "anxiety": 0.459,
-      "relationship": 0.220,
+      "relationship": 0.22,
       "functioning": 0.198,
       "note": "Model upgrade to gemini-3-flash-preview (thinking=1024). +6.7% Agg, +9.1% Events vs 2.5-flash. SARF regressed -35.9% vs 2.5-flash baseline. Single run."
     },
@@ -250,7 +250,22 @@
       "anxiety": null,
       "relationship": null,
       "functioning": null,
-      "note": "Model upgrade to gemini-3.1-flash-lite (Passes 1+2) + gemini-3-flash-preview for SARF review (Pass 3). 6 GT, avg 3 runs. Events +9.3% vs gemini-3-flash-preview cold baseline (0.397). Agg slightly lower than last entry (0.659 vs 0.687) due to different baseline — last entry was gemini-3-flash-preview with FD-319 prompt improvements not yet ported. Flash-lite with 3-flash-preview Pass 3 outperforms gemini-3-flash-preview alone on Events. Prompt induction kept 4 changes: pre-read warning, numbered extract order, child/person birth semantics inline, completeness check. Triangle pass not deployed (net neutral to negative). SARF macro too noisy to report at N=3."
+      "note": "Model upgrade to gemini-3.1-flash-lite (Passes 1+2) + gemini-3-flash-preview for SARF review (Pass 3). 6 GT, avg 3 runs. Events +9.3% vs gemini-3-flash-preview cold baseline (0.397). Agg slightly lower than last entry (0.659 vs 0.687) due to different baseline \u2014 last entry was gemini-3-flash-preview with FD-319 prompt improvements not yet ported. Flash-lite with 3-flash-preview Pass 3 outperforms gemini-3-flash-preview alone on Events. Prompt induction kept 4 changes: pre-read warning, numbered extract order, child/person birth semantics inline, completeness check. Triangle pass not deployed (net neutral to negative). SARF macro too noisy to report at N=3."
+    },
+    {
+      "date": "2026-07-22",
+      "commit": "gemini-3.6-flash-branch",
+      "model": "gemini-3.6-flash",
+      "sarf_review_model": "gemini-3.6-flash",
+      "aggregate": 0.704,
+      "people": null,
+      "events": 0.544,
+      "pair_bonds": null,
+      "symptom": null,
+      "anxiety": null,
+      "relationship": null,
+      "functioning": null,
+      "note": "ERA BREAK (E4 scorer): couple-slot symmetric matching for married/divorced/separated/bonded + year-precision dates (Jan-1 + certain = same-calendar-year match). Numbers NOT comparable to earlier entries. Model upgrade to gemini-3.6-flash for Passes 1+2 AND Pass 3 SARF self-review. 6 GT, avg 3 runs; same-day prod on same ruler: agg 0.652, events 0.413. Prompt change: saturation example ported from fable-5 run (fdserver PR). SARF macro noisy across batches (0.451/0.392), not reported per-variable."
     }
   ]
 }

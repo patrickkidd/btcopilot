@@ -90,3 +90,6 @@ package-dir = {"" = "."}
 [tool.setuptools.package-data]
 "btcopilot.training" = ["templates/**/*", "static/**/*"]
 "btcopilot.pro" = ["templates/**/*", "static/**/*"]
+
+[tool.uv]
+constraint-dependencies = ["onnxruntime<1.24.0"]

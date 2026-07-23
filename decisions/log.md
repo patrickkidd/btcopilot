@@ -83,7 +83,7 @@ the canonical diagram and regenerate from the source conversations through the
 fixed pipeline (per-discussion extract -> fragmentation check -> rebuild ->
 connectivity + GT score). The committed state becomes 100% product of the
 current pipeline; consistent with the standing "no tuning on AI-residue data"
-ruling. Snapshot of the pre-wipe state kept in btcopilot-sources. Separately:
+ruling. Snapshot of the pre-wipe state kept in btcopilot-sources (moved 2026-07-22 to `fdserver/training/gt-exports/`). Separately:
 pre-existing real-name occurrences in already-merged history are ACCEPTED
 ("I'm not too worried about git history") — no rewrite; working-tree
 occurrences stay anonymized going forward.
@@ -1050,3 +1050,19 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 **Fixes:** (1) next_order() takes SELECT FOR UPDATE on the Discussion row (Postgres-enforced; SQLite no-op). (2) /extract claims an atomic `extracting` flag (409 on overlap) and writes the diagram via optimistic version check (409 stale). (3) commit-pdp writes via version-checked bounded retry; cursor advance bound to client-supplied accepted_through_order, not current pending — falls back to pending for legacy clients.
 
 **Revisit trigger:** FD-319 lands (rebase, drop base commit); or true-concurrency Postgres test harness added (the row-lock fix is currently only regression-guarded on SQLite).
+
+---
+
+## 2026-07-22: gemini-3.6-flash recommended as extraction upgrade; E4 metric era started
+
+**Context:** Extraction experiment on newly released gemini-3.6-flash (worktree `~/worktrees/gemini-3.6-flash/`, report `fdserver/training/induction-reports/2026-07-22_07-56-26--gemini-3.6-flash/`). Same-day prod baseline re-measured for comparability.
+
+**Options considered:** (a) status quo (flash-lite / 3-flash); (b) 3.6-flash extraction only; (c) all-3.6-flash including Pass-3 SARF self-review; (d) flash-lite extraction + 3.6-flash reviewer (cheap hybrid).
+
+**Decision (pending Patrick's sign-off):** (c) all-3.6-flash. E4 final ruler (3-run means): Events 0.544 vs 0.413, Agg 0.704 vs 0.652, flash-tier cost, ~76s/disc (2.4x prod — fine async, borderline sync). SARF macro noisy but above prod (batch means 0.451/0.392 vs 0.367/0.359). (d) rejected: reviewer upgrades don't rescue lite extraction (interim-ruler SARF 0.349 < prod 0.367).
+
+**Also decided:** two scorer fixes on the experiment branch (f1_metrics.py) define benchmark era E4: (1) couple-slot symmetric event matching (fixes a documented cross-model bias, prod Events +0.051); (2) year-precision dates — Patrick chose changing the scorer over re-coding GT: Jan-1 + certain = year-only fact, matches any same-calendar-year date. Headline configs re-measured on the final ruler: self-review 0.544/0.704 (Events/Agg) vs prod 0.413/0.652. f1_timeseries needs an era-break entry when committed.
+
+**Reasoning:** Largest Gemini-family quality jump measured on this benchmark; the only cheaper alternative with comparable Events F1 is claude-fable-5 at 2–3 orders of magnitude higher cost and worse latency.
+
+**Revisit trigger:** 3.6-flash pricing/latency changes; GT date-certainty tooling fix (would shift all Events numbers); mobile sync-path latency budget decision.

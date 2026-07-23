@@ -14,8 +14,8 @@ from btcopilot.schema import from_dict
 _log = logging.getLogger(__name__)
 
 EXTRACTION_MODEL = "gemini-3.1-flash-lite"
-EXTRACTION_MODEL_LARGE = "gemini-3.1-flash-lite"
-SARF_REVIEW_MODEL = "gemini-3-flash-preview"
+EXTRACTION_MODEL_LARGE = "gemini-3.6-flash"
+SARF_REVIEW_MODEL = "gemini-3.6-flash"
 CALIBRATION_MODEL = "gemini-3-flash-preview"
 
 # Chat/response model: configurable via env var for A/B testing.
