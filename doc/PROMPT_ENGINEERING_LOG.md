@@ -714,7 +714,7 @@ See `btcopilot/doc/TODO_GEMINI_SCHEMA.md` for:
 **Context**: gemini-3.6-flash appeared on the API. Full extraction-experiment run
 (cold baseline, 5-iteration induction, per-pass analysis) in
 `~/worktrees/gemini-3.6-flash/`; report
-`doc/induction-reports/2026-07-22_07-56-26--gemini-3.6-flash/`.
+`fdserver/training/induction-reports/2026-07-22_07-56-26--gemini-3.6-flash/`.
 
 **Outcome**: Best Gemini-family numbers on record. Recommended config: all-3.6-flash
 (extraction + SARF self-review), E4 final ruler (3-run means): Events 0.544, Agg 0.704

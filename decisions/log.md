@@ -1055,7 +1055,7 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 
 ## 2026-07-22: gemini-3.6-flash recommended as extraction upgrade; E4 metric era started
 
-**Context:** Extraction experiment on newly released gemini-3.6-flash (worktree `~/worktrees/gemini-3.6-flash/`, report `doc/induction-reports/2026-07-22_07-56-26--gemini-3.6-flash/`). Same-day prod baseline re-measured for comparability.
+**Context:** Extraction experiment on newly released gemini-3.6-flash (worktree `~/worktrees/gemini-3.6-flash/`, report `fdserver/training/induction-reports/2026-07-22_07-56-26--gemini-3.6-flash/`). Same-day prod baseline re-measured for comparability.
 
 **Options considered:** (a) status quo (flash-lite / 3-flash); (b) 3.6-flash extraction only; (c) all-3.6-flash including Pass-3 SARF self-review; (d) flash-lite extraction + 3.6-flash reviewer (cheap hybrid).
 

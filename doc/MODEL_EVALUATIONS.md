@@ -10,7 +10,9 @@ an experiment to production, use the **same-day production baseline** row listed
 with that experiment, never a number from another era.
 
 **Benchmark**: 6 synthetic GT discussions (36, 37, 39, 48, 50, 51) via
-`btcopilot.training.run_extract_full_f1`. Noise: Gemini Events F1 varies 10–15%
+`btcopilot.training.run_extract_full_f1`. Full experiment reports live in the
+private fdserver repo under `fdserver/training/induction-reports/` (moved from
+btcopilot 2026-07-22; links below are folder names there). Noise: Gemini Events F1 varies 10–15%
 run-to-run (3-run means required); claude-fable-5 is near-deterministic.
 
 ## Benchmark eras
@@ -24,7 +26,7 @@ run-to-run (3-run means required); claude-fable-5 is near-deterministic.
 
 ## E4 — couple-slot symmetric matching era (worktree, uncommitted)
 
-### gemini-3.6-flash experiment (2026-07-22) — [report](induction-reports/2026-07-22_07-56-26--gemini-3.6-flash/2026-07-22_07-56-26.md)
+### gemini-3.6-flash experiment (2026-07-22) — `2026-07-22_07-56-26--gemini-3.6-flash/2026-07-22_07-56-26.md` (fdserver)
 
 | Config (extraction / SARF review) | Runs | Agg | Events | SARF macro | Latency/disc | Verdict |
 |---|---|---|---|---|---|---|
@@ -46,7 +48,7 @@ Cost accounting not instrumented; flash-tier pricing assumed.
 
 ## E3 — pipeline era (2026-05 → 2026-07)
 
-### claude-fable-5 experiment (2026-06-09) — [report](induction-reports/2026-06-09_16-10-00--fable-5-extraction/2026-06-09_16-10-00.md)
+### claude-fable-5 experiment (2026-06-09) — `2026-06-09_16-10-00--fable-5-extraction/2026-06-09_16-10-00.md` (fdserver)
 
 | Config (extraction / SARF review) | Runs | Agg | Events | People | Bonds | SARF macro | Latency/disc | $/disc | Verdict |
 |---|---|---|---|---|---|---|---|---|---|
@@ -65,12 +67,12 @@ SARF gains are independent levers (extraction pass vs review pass).
 
 | Config | Runs | Agg | Events | Notes |
 |---|---|---|---|---|
-| gemini-3-flash-preview (FD-319 prompt-idempotency check) | 2 | 0.687 | 0.518 | [report](induction-reports/2026-05-16_08-40-13--fd319-prompt-idempotency/) |
+| gemini-3-flash-preview (FD-319 prompt-idempotency check) | 2 | 0.687 | 0.518 | `2026-05-16_08-40-13--fd319-prompt-idempotency/` (fdserver) |
 | flash + parent-inference repair (FD-324) | — | 0.651 | — | ParentChild 0.366→0.782; LCC 51→89.5% |
 
 ## E2 — 2-pass era (2026-03-03/04) — numbers NOT comparable to E3
 
-### Frontier model evaluation (2026-03-04) — [report](induction-reports/2026-03-04_15-36-39--model-evaluation-frontier/2026-03-04_15-36-39.md)
+### Frontier model evaluation (2026-03-04) — `2026-03-04_15-36-39--model-evaluation-frontier/2026-03-04_15-36-39.md` (fdserver)
 
 | Model | N | Agg | Events | Bonds | Latency | $/extract | Verdict |
 |---|---|---|---|---|---|---|---|
@@ -92,9 +94,9 @@ SARF gains are independent levers (extraction pass vs review pass).
 
 | Config | Result | Source |
 |---|---|---|
-| gemini-3.1-flash-lite (t=1024) | Agg 0.600, Events 0.368 — matches 2.5-flash at ~6× lower cost | [flash-lite eval](induction-reports/2026-03-04_13-15-00--model-evaluation-flash-lite/) |
+| gemini-3.1-flash-lite (t=1024) | Agg 0.600, Events 0.368 — matches 2.5-flash at ~6× lower cost | flash-lite eval (`2026-03-04_13-15-00--model-evaluation-flash-lite/`, fdserver) |
 | thinking_budget sweep | 1024 is the optimum (bell curve 0→4096); without thinking, lite models drop whole event categories | same |
-| 3-pass R-review architecture | R +103% (0.240→0.487), SARF macro +39% (0.341→0.473) on gemini-3-flash | [sarf-gemini3-flash](induction-reports/2026-03-04_19-22-28--sarf-gemini3-flash/) |
+| 3-pass R-review architecture | R +103% (0.240→0.487), SARF macro +39% (0.341→0.473) on gemini-3-flash | sarf-gemini3-flash (`2026-03-04_19-22-28--sarf-gemini3-flash/`, fdserver) |
 | Hybrid per-pass (flash-lite P1, 2.5-flash P2) | No benefit — bottleneck was thinking budget, not model tier. **Overturned 2026-06-09 for cross-provider review-pass swaps** (fable-5 P3 lifts SARF +43%) | strategy doc |
 
 ## E1 — per-statement era (≤2026-02) — historical only

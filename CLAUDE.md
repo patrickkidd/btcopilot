@@ -6,19 +6,22 @@ Backend for Pro/Personal apps, training app, AI extraction system.
 
 ## Confidential Data Rules
 
-Induction reports and GT exports contain clinical data — **NEVER store in btcopilot repo**.
+Induction reports and GT exports contain clinical data, and extraction/conversational-AI
+experiment artifacts are proprietary IP — **NEVER store either in the btcopilot repo, and
+NEVER in btcopilot-sources**. All of it lives in the private **fdserver** repo (2026-07-22,
+Patrick's direction; supersedes the earlier btcopilot-sources scheme).
 
 | Data Type | WRONG Location | Correct Location |
 |-----------|----------------|-----------------|
-| Induction reports | `btcopilot/doc/induction-reports/` | `btcopilot-sources/training/induction-reports/` |
-| GT exports | `btcopilot/instance/gt_export.json` | `btcopilot-sources/training/gt-exports/` |
-| Coach feel-test sessions (`bin/coach_chat.py`) | `btcopilot/doc/log/coach-sessions/` | `btcopilot-sources/coach-sessions/` (default; freeform sessions contain real personal content). In-repo path is opt-in `--out shared` and only for synthetic-persona runs. |
+| Induction reports | `btcopilot/doc/induction-reports/`, `btcopilot-sources/` | `fdserver/training/induction-reports/` |
+| GT exports | `btcopilot/instance/gt_export.json` (runtime copy only), `btcopilot-sources/` | `fdserver/training/gt-exports/` |
+| Coach feel-test sessions (`bin/coach_chat.py`) | `btcopilot/doc/log/coach-sessions/`, `btcopilot-sources/` | `fdserver/coach-sessions/` (freeform sessions contain real personal content). In-repo path is opt-in `--out shared` and only for synthetic-persona runs. |
 
-Symlinks exist for workflow compatibility:
-- `btcopilot/doc/induction-reports` → `btcopilot-sources/training/induction-reports/`
-- `theapp/instance/gt_export.json` → `btcopilot-sources/training/gt-exports/gt_export.json`
+`btcopilot/instance/gt_export.json` remains the runtime file the test harness reads; the
+authoritative archived exports live in fdserver.
 
-New clinical data outputs: store in `btcopilot-sources/`, create symlink, add to `.gitignore`, update this section.
+New clinical/IP data outputs: store in `fdserver/`, add to btcopilot `.gitignore` if a
+runtime copy is needed, update this section.
 
 ---
 
