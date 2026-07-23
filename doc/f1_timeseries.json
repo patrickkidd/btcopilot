@@ -268,5 +268,122 @@
       "note": "ERA BREAK (E4 scorer): couple-slot symmetric matching for married/divorced/separated/bonded + year-precision dates (Jan-1 + certain = same-calendar-year match). Numbers NOT comparable to earlier entries. Model upgrade to gemini-3.6-flash for Passes 1+2 AND Pass 3 SARF self-review. 6 GT, avg 3 runs; same-day prod on same ruler: agg 0.652, events 0.413. Prompt change: saturation example ported from fable-5 run (fdserver PR). SARF macro noisy across batches (0.451/0.392), not reported per-variable. SARF/people/bonds backfilled 2026-07-23 from the 3 final-ruler self-review run logs (fdserver archive); per-variable SARF at N=3 carries ~\u00b10.05 noise.",
       "child_of": 0.815
     }
-  ]
+  ],
+  "retrospective_e4": {
+    "description": "Historical code+prompt configs re-measured 2026-07-23 on ONE fixed ruler: E4 scorer, current GT DB, current Gemini endpoints. NOT the historical numbers (models/GT have drifted); the only cross-era-comparable series. Method + caveats: fdserver/training/induction-reports/2026-07-23--retrospective-series/. Chart renders data[] only; this key is data for a future retrospective view.",
+    "data": [
+      {
+        "label": "R1",
+        "date": "2026-03-03",
+        "config": "2-pass split; gemini-2.5-flash t=0; Mar-3 prompts",
+        "runs": 3,
+        "aggregate": 0.647,
+        "people": 0.905,
+        "events": 0.478,
+        "pair_bonds": 0.773,
+        "child_of": 0.594,
+        "symptom": 0.653,
+        "anxiety": 0.512,
+        "relationship": 0.272,
+        "functioning": 0.599,
+        "note": ""
+      },
+      {
+        "label": "R2",
+        "date": "2026-03-04",
+        "config": "2-pass; gemini-3-flash-preview t=1024; Mar-4 prompts",
+        "runs": 3,
+        "aggregate": 0.676,
+        "people": 0.917,
+        "events": 0.496,
+        "pair_bonds": 0.793,
+        "child_of": 0.779,
+        "symptom": 0.793,
+        "anxiety": 0.631,
+        "relationship": 0.57,
+        "functioning": 0.558,
+        "note": ""
+      },
+      {
+        "label": "R3",
+        "date": "2026-03-04",
+        "config": "3-pass R-review; gemini-3-flash-preview; Mar-4 prompts",
+        "runs": 3,
+        "aggregate": 0.658,
+        "people": 0.919,
+        "events": 0.446,
+        "pair_bonds": 0.827,
+        "child_of": 0.788,
+        "symptom": 0.634,
+        "anxiety": 0.577,
+        "relationship": 0.352,
+        "functioning": 0.634,
+        "note": ""
+      },
+      {
+        "label": "R4",
+        "date": "2026-05-17",
+        "config": "FD-319 cursor/carve-out; 3-flash; May-16 prompts",
+        "runs": 3,
+        "aggregate": 0.647,
+        "people": 0.916,
+        "events": 0.472,
+        "pair_bonds": 0.834,
+        "child_of": 0.769,
+        "symptom": 0.4,
+        "anxiety": 0.454,
+        "relationship": 0.37,
+        "functioning": 0.337,
+        "note": ""
+      },
+      {
+        "label": "R5",
+        "date": "2026-05-21",
+        "config": "FD-333-era; flash-lite/3-flash; May-21 prompts",
+        "runs": 3,
+        "aggregate": 0.662,
+        "people": 0.925,
+        "events": 0.443,
+        "pair_bonds": 0.821,
+        "child_of": 0.823,
+        "symptom": 0.398,
+        "anxiety": 0.463,
+        "relationship": 0.307,
+        "functioning": 0.306,
+        "note": ""
+      },
+      {
+        "label": "R6",
+        "date": "2026-06-25",
+        "config": "pre-3.6 production (FD-337/338/321); flash-lite/3-flash; Jun-2 prompts",
+        "runs": 3,
+        "aggregate": 0.652,
+        "people": 0.922,
+        "events": 0.413,
+        "pair_bonds": 0.82,
+        "child_of": 0.823,
+        "symptom": 0.353,
+        "anxiety": 0.434,
+        "relationship": 0.302,
+        "functioning": 0.349,
+        "note": "measured live 2026-07-22 (yr_prod runs), same ruler"
+      },
+      {
+        "label": "R7",
+        "date": "2026-07-22",
+        "config": "all-gemini-3.6-flash + saturation example",
+        "runs": 3,
+        "aggregate": 0.704,
+        "people": 0.922,
+        "events": 0.544,
+        "pair_bonds": 0.803,
+        "child_of": 0.815,
+        "symptom": 0.477,
+        "anxiety": 0.37,
+        "relationship": 0.387,
+        "functioning": 0.333,
+        "note": "measured live 2026-07-22 (yr_selfrev runs), same ruler"
+      }
+    ]
+  }
 }
