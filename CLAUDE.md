@@ -69,13 +69,11 @@ Other: [README.md](README.md), [doc/plans/](doc/plans/)
 
 **Key prompt engineering lessons** (details in PROMPT_ENGINEERING_LOG.md): production extraction model is gemini-3.6-flash for Pass 1+2 AND Pass 3 SARF self-review, thinking=1024 — see `llmutil.py` for current constants and doc/MODEL_EVALUATIONS.md for alternatives; verbose definitions killed F1 scores; see log for what NOT to include in prompts.
 
-### MVP State Tracking (UPDATED 2026-05-03)
+### MVP State Tracking
 
-The single source of truth for MVP work is **Jira FD-264** (Personal + Pro App MVP epic). See top-level [CLAUDE.md](../CLAUDE.md) "Documentation Routing > State tracking" for the canonical rule.
+Jira is the single source of truth (MVP epic **FD-264**). Site, id format, API auth, and the approval rule live in the top-level [CLAUDE.md "Jira (CANONICAL)"](../CLAUDE.md#jira-canonical) — not redefined here.
 
-[MVP_DASHBOARD.md](MVP_DASHBOARD.md) is **DEPRECATED as a live tracker (2026-05-03)** and preserved only for archaeology. Do NOT add new tasks, update statuses, or treat its rows as authoritative. Use Jira.
-
-**Jira operations are strictly approval-gated**: never create or modify a Jira issue without explicit user "yes" in the same turn. No exceptions.
+[MVP_DASHBOARD.md](MVP_DASHBOARD.md) is **DEPRECATED (2026-05-03)**, read-only archaeology. Never add rows or update statuses.
 
 ### Synthetic Client Dev Log (MANDATORY)
 
