@@ -1081,5 +1081,7 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 
 **Constraints found while applying it:** child worktrees must be created from the launch directory before entering any worktree (the harness refuses git aimed at another checkout once isolated); only one worktree is writable at a time, so multi-repo tickets switch by path. Not yet built: a `bin/sandbox FD-NNN` resolver (worktree-or-origin per repo → seeded BE on 8889 → Pro/Personal FE).
 
-**Revisit trigger:** the harness gains multi-repo worktree support; or the resolver script lands and the hand procedure in root CLAUDE.md gets replaced.
+**Guards (same day):** master is PR-only. Server side: btcopilot and familydiagram `master` require a PR (0 approvals), enforced for admins, no force-push/deletion — theapp and fdserver are private and GitHub refuses protection without Pro, so they rely on the local guard only. Local: theapp project settings pre-allow worktree-branch git/gh operations (no prompts) and deny literal master pushes, force pushes, `gh pr merge`, checkout/switch master; a `bin/git-guard` PreToolUse hook blocks the general forms deterministically (23 pipe-tested cases). Patrick's user-level settings still `ask` on every commit/push — Claude was blocked from editing that file, so until he removes those two entries the project allow rules do not remove the prompts.
+
+**Revisit trigger:** the harness gains multi-repo worktree support; or the resolver script lands and the hand procedure in root CLAUDE.md gets replaced; or a private repo goes public / plan upgrades (then apply the same branch protection).
 
