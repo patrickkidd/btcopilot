@@ -1,6 +1,6 @@
 # Fall 2026 direction (brainstorm, 2026-08-25)
 
-Status: **fork 2 ruled 2026-08-25 → alternative (returning long-horizon chat; diagram improved through chat).** Logged in `decisions/log.md` 2026-08-25. Forks 1/3/4/5/6 still open (fork 1 and 4 effectively follow from the ruling: structural correctness is the blocker; FD-340 parked). No Jira epic/stories until Patrick says so. Full evidence trail: git history of this file (commit 0a5a6bd).
+Status: **fork 2 ruled 2026-08-25 → alternative (returning long-horizon chat; diagram improved through chat).** Logged in `decisions/log.md` 2026-08-25. Forks 1/3/4/5/6 still open (fork 1 and 4 effectively follow from the ruling: structural correctness is the blocker; FD-340 parked). Jira: epic **FD-341** (first beta) created 2026-08-25 with FD-342..FD-353; FD-339 moved under it. FD-264 left open for Patrick to close. Full evidence trail: git history of this file (commit 0a5a6bd).
 
 ## 1. Where things stand
 
