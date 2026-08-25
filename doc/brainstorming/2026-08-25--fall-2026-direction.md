@@ -1,6 +1,6 @@
 # Fall 2026 direction (brainstorm, 2026-08-25)
 
-Status: nothing decided. Forks in §4 become `decisions/log.md` entries when ruled. Full evidence trail: git history of this file (commit 0a5a6bd).
+Status: **fork 2 ruled 2026-08-25 → alternative (returning long-horizon chat; diagram improved through chat).** Logged in `decisions/log.md` 2026-08-25. Forks 1/3/4/5/6 still open (fork 1 and 4 effectively follow from the ruling: structural correctness is the blocker; FD-340 parked). No Jira epic/stories until Patrick says so. Full evidence trail: git history of this file (commit 0a5a6bd).
 
 ## 1. Where things stand
 
@@ -38,7 +38,7 @@ Why this isn't echoing the prompt: it restates the Jun 24 ruling; it contradicts
 ## 4. Forks (Patrick rules)
 
 1. Blocker is structural correctness or auto-arrange? (Sep dogfood answers empirically.)
-2. MVP = long-horizon chat(+timeline) in App Store, or clinician-in-Pro loop (FD-264 as written)?
+2. ~~MVP = long-horizon chat(+timeline) in App Store, or clinician-in-Pro loop (FD-264 as written)?~~ **RULED: long-horizon chat; clinician loop → next epic.**
 3. FD-339 scope: user corrections only, or full bidirectional + ledger?
 4. FD-340: park with trigger, or continue?
 5. Tester GT: self-coding vs cross-coding; consent/de-identification protocol.
@@ -48,12 +48,13 @@ Why this isn't echoing the prompt: it restates the Jun 24 ruling; it contradicts
 
 | Block | Done condition |
 |---|---|
-| Sep wk 1–2: dogfood, no code — 3 return sessions on own diagram ≥3 days apart | Friction log; fork 1 ruled |
-| Sep–Oct: fence return path (reject identical-endpoint bonds, self-parenting, speaker weld, flat-name labels) | 3-session dogfood with zero structural errors on the user node |
-| Oct–Nov: FD-339 MVP (user corrections → reviewable structural edits, persisted as GT) | Own diagram corrected to "my family" via chat alone; 32-assertion GT passes |
-| Dec–Feb: 3–5 seminar testers on the return loop (consent first) | ≥3 testers × ≥3 sessions; real-case GT v2 exported |
-| Feb–Mar: run the SARF experiment; re-baseline on GT v2 | Decision logged: reopen extraction tuning or keep frozen |
-| Mar–May: cross-coded IRR on real cases; FD-318 only if diagrams coherent | Kappas for one real case; App Store go/no-go with evidence |
+| Sep wk 1–2: dogfood, no code — 3 return sessions on own diagram ≥3 days apart | Friction log; fork 1 confirmed empirically |
+| Sep–Oct: fence return path as commit invariants (identical-endpoint bonds, self-parenting, speaker weld, flat-name labels) | 3-session dogfood with zero structural errors on the user node |
+| Oct: incremental single-person placement + local neighborhood re-place (engine under every chat-edit) | New person from a return session lands next to its anchors without a global reflow; no overlap on own diagram |
+| Oct–Nov: FD-339 MVP — user corrections as agent tool calls through snapshot-diff merge; selection-as-context; entity chips + halos; tap-to-disambiguate; invariants as post-edit guards; one turn = one undo; trust-tiered auto-apply | Own diagram corrected to "my family" via chat alone; 32-assertion GT passes; corrections persisted as GT |
+| Dec–Feb: 3–5 seminar testers on the return loop (consent first) | ≥3 testers × ≥3 sessions unprompted; real-case GT v2 exported |
+| Feb–Mar: run the SARF experiment; re-baseline on GT v2; timeline trend (level vs delta) design | Decision logged: reopen extraction tuning or keep frozen |
+| Mar–May: cross-coded IRR on real cases; App Store go/no-go; clinician loop becomes next epic if diagrams coherent | Kappas for one real case; go/no-go with evidence |
 
 ## 6. Housekeeping (Patrick's git)
 Remove 11 stale worktrees (keep FD-340, this one); commit/discard familydiagram M5 build fixes, pkskills, article; close fdserver PRs #6/#15; ticket the Jul 21 bugs (Claude can file on request).
