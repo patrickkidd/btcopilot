@@ -1066,3 +1066,22 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 **Reasoning:** Largest Gemini-family quality jump measured on this benchmark; the only cheaper alternative with comparable Events F1 is claude-fable-5 at 2–3 orders of magnitude higher cost and worse latency.
 
 **Revisit trigger:** 3.6-flash pricing/latency changes; GT date-certainty tooling fix (would shift all Events numbers); mobile sync-path latency budget decision.
+
+---
+
+## 2026-08-25: Ticket lifecycle rules — Jira canonical, built-in worktrees, PR as observation surface
+
+**Context:** Audit of the non-skill instruction context found no ticket lifecycle: root CLAUDE.md still named the deprecated MVP dashboard as source of truth (contradicting this repo's CLAUDE.md), worktree paths were hand-rolled under `~/worktrees/<slug>/<repo>` while the Claude Code harness enforces its own `<repo>/.claude/worktrees/` tooling, and a background job following the harness would create an empty parent-repo worktree (the parent gitignores the three child repos) or fall back to editing origin clones. Jira credentials/endpoints lived only in archived skills.
+
+**Options considered:** (a) keep hand-rolled `~/worktrees` paths and forbid the built-in tool; (b) built-in tool, worktrees per child repo named by Jira id; (c) restructure into submodules or a monorepo so a parent worktree carries the code.
+
+**Decision (Patrick):** (b). Origin clones are read-only to Claude; every change goes through a child-repo worktree named `FD-NNN` (prefixed `FD-NNN-<slug>` on collision); Claude commits and pushes the worktree branch and keeps a draft PR from the first push — the PR is the surface Patrick reviews on, local human-test artifacts are handed over as absolute paths. Jira is canonical; issue CRUD needs a yes for the operation, not for the content. Sandboxes run on 8889 from the worktree (backend via `PYTHONPATH` over the shared uv venv — verified the worktree wins the import); 8888 stays Patrick's origin-clone server.
+
+**Rejected:** (c) — submodule worktrees need per-checkout submodule updates and a monorepo mixes the private fdserver with two public repos. (a) — diverges from the harness enforcement, so background jobs break.
+
+**Constraints found while applying it:** child worktrees must be created from the launch directory before entering any worktree (the harness refuses git aimed at another checkout once isolated); only one worktree is writable at a time, so multi-repo tickets switch by path. Not yet built: a `bin/sandbox FD-NNN` resolver (worktree-or-origin per repo → seeded BE on 8889 → Pro/Personal FE).
+
+**Guards (same day):** master is PR-only for Claude, not for Patrick. Server side: btcopilot and familydiagram `master` require a PR (0 approvals) for non-admins; admins bypass and may force-push (Patrick's explicit choice — he needs force-push on master), deletion blocked — theapp and fdserver are private and GitHub refuses protection without Pro. Since Claude acts with Patrick's admin token, the server does not stop Claude anywhere; the local hook is the real guard. familydiagram's two pre-existing rulesets (deletion + non-fast-forward on master) got a repository-admin "always" bypass; the Pull Request Ruleset's empty status-check rule was dropped because GitHub refuses to re-save it with zero checks. Local: theapp project settings pre-allow worktree-branch git/gh operations (no prompts) and deny literal master pushes, force pushes, `gh pr merge`, checkout/switch master; a `bin/git-guard` PreToolUse hook blocks the general forms deterministically (23 pipe-tested cases). Patrick's user-level settings still `ask` on every commit/push — Claude was blocked from editing that file, so until he removes those two entries the project allow rules do not remove the prompts.
+
+**Revisit trigger:** the harness gains multi-repo worktree support; or the resolver script lands and the hand procedure in root CLAUDE.md gets replaced; or a private repo goes public / plan upgrades (then apply the same branch protection).
+
