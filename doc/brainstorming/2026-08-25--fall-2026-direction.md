@@ -57,3 +57,13 @@ Why this isn't echoing the prompt: it restates the Jun 24 ruling; it contradicts
 
 ## 6. Housekeeping (Patrick's git)
 Remove 11 stale worktrees (keep FD-340, this one); commit/discard familydiagram M5 build fixes, pkskills, article; close fdserver PRs #6/#15; ticket the Jul 21 bugs (Claude can file on request).
+
+## 7. Round 3 — chat as the only UI (Patrick thinking out loud, 2026-08-25)
+
+- **Claim:** agent with diagram-edit tools (Micron "builder door" pattern) becomes the UI; diagram = derived view; drop manual arranging. **Holds:** FD-339 already covers dedupe/split/re-parent by chat. **Breaks:** correctness ≠ layout; layout on correct data is median-good/p95-bad with multiple right answers. Derived vs authored (Bowen tradition authors placement) is the real fork.
+- **Salvage:** persist arrangement as **constraints** ("maternal side left", "keep A adjacent to B"), not coordinates; deterministic render; a manual tweak = a chat edit; nothing flushed. Personal app: clean. Pro: file-format migration of hand-placed coordinates — separate project with rollback.
+- **Guardrail from record:** narrative extraction stays batch (single-prompt beat per-turn delta 2×, Feb 24); explicit user edits become tool calls. FD-339 R4 is that line. Don't let the agent extract implicit facts turn-by-turn via tools.
+- **Prereq either way:** incremental single-person placement (deferred May 4) for live diagram-while-chatting.
+- Voice: input + read-aloud exist; voice-only deferred (correction precision).
+- Evidence base is n=2 warm testers (Patrick, Guillermo); non-sycophantic metric = unprompted return. Don't invite the working group before the return path is fenced (Sep–Oct) — first impression on their own families would be the Jul 21 bugs.
+- **Candidate ruling for forks 1+2 (not decided):** MVP = chat + timeline; diagram derived with constraint hints, Personal only; Pro keeps authored layout.
