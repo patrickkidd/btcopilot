@@ -131,3 +131,37 @@ Once ruled, each becomes a `decisions/log.md` entry cross-referenced here.
 - Commit or discard: familydiagram M5 build fixes; pkskills CI-green gate; the article draft.
 - Close or rebase fdserver PRs #6 and #15 (stale since March).
 - File the Jul 21 bug list as tickets under FD-264 (can be done by Claude on request — content is in §2).
+
+---
+
+## 8. Round 2 (2026-08-25) — Patrick's challenges and responses
+
+### 8.1 "Corrections become ground truth" — what that means, and its limits
+- A correction = (what the user said in chat, the structural fact the user asserts) for a **real** family with the user as oracle. That is exactly the shape of structural GT (people, pair-bonds, parent-child). FD-339 R5 already requires corrections to persist as structure + transcript.
+- **Limits, stated plainly:** (a) it is GT for *structure* only — SARF/timeline coding still needs trained coders; (b) corrections are a *negative-biased* sample (only where extraction erred) — the "everything else was right" half of the truth set rests on user acceptance, and Patrick ruled 2026-06-09 "never rely on card review" because users accept lazily; (c) one family per user — n grows with users, not with sessions.
+- So: corrections give high-quality *error* labels for real families cheaply. They do not replace coded GT for events/SARF.
+
+### 8.2 Is the recommendation just echoing the prompt? Evidence it isn't
+- The pivot to chat-driven corrections was **ruled by Patrick on 2026-06-24** after measurement (FD-339: "no automated setting yields a correct family"), two months before today's prompt. The recommendation restates a decision already on record, not the prompt.
+- Places the record contradicted the prompt and the doc says so: "single conversation" (wrong — ≥3 sessions on 1924); "incremental improvements" (wrong — ceiling declared); "few months" (5 weeks); "diagram generation" conflates structure with layout; IRR self-coding endorsed in the prompt → doc proposes cross-coding instead; "beta testers will generate data" → count unverified.
+- Places the recommendation **differs** from the intuition: the intuition says diagram quality can "start terrible"; the record says two specific structural failures (duplicate of the user, self-bonds) **break accumulation itself**, so they must be fenced before the long-horizon loop is testable. Not "chat only," but "chat + commit invariants + corrections."
+- **Strongest case against the recommendation (unrebutted):** "the chat is useful" is measured on n=1 (Patrick) plus anecdote in the Aug article. Nobody has shown a non-Patrick user returns to chat over weeks. Retention is where chat products die. The Sep dogfood + Dec–Feb tester block are the falsification tests; if testers don't return, Option A is dead regardless of extraction quality.
+- **What would flip the recommendation:** the prod-dump count shows zero non-Patrick conversations *and* seminar testers decline the Dec block → the product has no user loop and the right move is Option B's clinician demo with manual diagram cleanup.
+
+### 8.3 Synthetic-GT ceiling — the record supports the hypothesis, with a twist
+- On synthetic GT, structure scores high (People 0.92, Bonds 0.80–0.83, ChildOf 0.82). On Patrick's real family the rebuild produced wrong parents, a mother–son marriage, cross-name merges. The failure modes on record are **exactly what synthetic personas never exercise**: three same-first-name men cross-matched (decision 2026-06-09), a sibling welded to a committed person sharing a last name (F-003), ex-partners, the speaker's own identity. Synthetic discussions have clean, unique names and scripted structure. Conclusion: the synthetic benchmark stopped discriminating around the 0.65–0.70 aggregate mark; it can no longer tell a good change from a bad one on the errors that matter.
+- **Twist:** the retrospective shows the quality that *fell* Mar→May was SARF (0.64→0.39), not structure. If the MVP becomes chat + timeline, the accuracy target moves to **events (0.54) and SARF (~0.39)** — the weakest metrics — not away from extraction. Timeline errors are lower-consequence (a mis-rated shift vs. married-to-your-mother) and judgeable in text, which is the real argument for the narrowing — not that extraction stops mattering.
+- Second twist: the Jun 7 brainstorm found the timeline stores *deltas* (up/down/same) and therefore cannot draw a trend line. "Timeline is novel enough to tolerate mediocre accuracy" presumes a visualization that does not exist yet. That is a design problem ahead of an extraction problem.
+
+### 8.4 MVP = chat + timeline app in the App Store, PMF over profit
+- Narrows scope correctly: drops FD-336, Personal auto-arrange, Pro interop (FD-318 becomes epic 2).
+- **iOS does not depend on FD-340.** The PyQt5 iOS build works (Qt 5.15.2 iOS SDK, simulator harness, tested 2026-03-11). FD-340 stays parked.
+- Costs it does not escape: (a) strangers' family/mental-health chat = privacy, consent-for-research in ToS, data retention, App Store "health" review category, liability framing ("not therapy"); (b) per-user LLM cost with no revenue (Opus chat + 3.6-flash extraction ~76 s/discussion + $0.10–0.60/rebuild); (c) **coder throughput, not data volume, is the GT bottleneck** — 6 IRR meetings covered ~10 statements across 2 cases. More real conversations without more coding capacity yields transcripts, not GT. This is what makes §8.5 load-bearing rather than a side quest.
+- Also unresolved: the timeline's level-vs-delta representation (§8.3) — a chat+timeline MVP ships a timeline that can't show a trend.
+
+### 8.5 "Funky brainstorm" — chat agents as the beta-test and coding surface
+Seed captured here; deserves its own session. Mapping the Micron pattern (chat as the authoring surface + a reference-manual tool that makes the agent expert in the engine) onto this project:
+- **Personal app testers:** the app already *is* a chat agent. Cheapest version: a beta-mode prompt addendum that asks one experience question at session end and writes to a feedback table (the `/feedback` skill → USER_FEEDBACK_LOG.md pipeline exists). Risk: product feedback inside the coaching transcript contaminates both the coaching frame and the GT transcript — keep it a separate turn type or separate channel.
+- **Training-app coders (highest leverage, per §8.4c):** a coding agent with tools over the training app — propose SARF codes with cited guideline rules, surface disagreements, explain the calibration rules — so coders judge instead of click. A coding advisor already exists in the calibration pages (calibrationprompts.py, routes/calibration.py); the step up is agent + tools + the guidelines as its manual, not a new system.
+- **Clinicians in Pro:** FD-336 (embed Discuss/Learn/Plan) is already the "chat as UI" ticket for non-technical users.
+- Open question for that session: what the human oracle *sees* — the human's job is judgment; the agent's job is everything that isn't. Define the judgment surface first, tools second.
