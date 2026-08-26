@@ -1,0 +1,42 @@
+#!/bin/bash
+# FD-342 sandbox: prod copy of diagram 1924 on an independent SQLite server (8889), Personal app against it.
+# Subcommands: up | reseed | relaunch | down
+set -uo pipefail
+PORT=8889
+TMP=/Users/patrick/.claude/jobs/ab4beafd/tmp
+DBDIR=$TMP/fd342_db
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BT=/Users/patrick/theapp/btcopilot/.claude/worktrees/FD-342
+FDS=/Users/patrick/theapp/fdserver/.claude/worktrees/FD-342
+FDG=/Users/patrick/theapp/familydiagram/.claude/worktrees/FD-342
+ENV=/Users/patrick/theapp/.env
+SRV="http://127.0.0.1:$PORT"
+LOG=$TMP/fd342_server.log
+
+seed() {
+  rm -rf "$DBDIR"; mkdir -p "$DBDIR"
+  ( cd "$BT" && PYTHONPATH="$BT" uv run --directory /Users/patrick/theapp --env-file "$ENV" python "$HERE/fd342_seed.py" "$DBDIR" "$HERE/prod_diagram_1924.json" )
+}
+start_server() {
+  ( cd "$BT" && PYTHONPATH="$BT" FLASK_CONFIG=development FLASK_AUTO_AUTH_USER=patrick@alaskafamilysystems.com \
+      FDSERVER_PROMPTS_PATH="$FDS/prompts/private_prompts.py" PYTHONUNBUFFERED=1 \
+      uv run --directory /Users/patrick/theapp --env-file "$ENV" python "$FDG/mcpserver/ephemeral_server.py" --port "$PORT" --db-dir "$DBDIR" >"$LOG" 2>&1 </dev/null & )
+  for _ in $(seq 1 60); do curl -s "$SRV/test/health" >/dev/null 2>&1 && break; sleep 1; done
+  curl -s "$SRV/test/health" >/dev/null && echo "server up on $PORT (log: $LOG)" || { echo "server FAILED"; tail -20 "$LOG"; exit 1; }
+}
+launch() {
+  ( cd "$FDG" && PYTHONPATH="$FDG" nohup uv run --directory /Users/patrick/theapp --env-file "$ENV" python -u "$HERE/fd342_app.py" "$SRV" >"$TMP/fd342_personal.log" 2>&1 </dev/null & )
+}
+stop() {
+  pkill -f "m pkdiagram" 2>/dev/null
+  pkill -f "ephemeral_server.py --port $PORT" 2>/dev/null
+  sleep 1
+}
+
+case "${1:-}" in
+  up)       stop; seed; start_server; launch; sleep 12; echo "Personal app launched against $SRV" ;;
+  reseed)   stop; seed; start_server; echo "reseeded from prod export; server up" ;;
+  relaunch) launch; sleep 10; echo "Personal app relaunched (server state preserved)" ;;
+  down)     stop; echo "sandbox down (db kept at $DBDIR)" ;;
+  *) echo "usage: fd342_sandbox.sh up|reseed|relaunch|down"; exit 2 ;;
+esac
