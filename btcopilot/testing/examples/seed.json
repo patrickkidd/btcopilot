@@ -1,0 +1,74 @@
+{
+  "users": [
+    {
+      "username": "spec@test",
+      "first_name": "Spec",
+      "last_name": "File"
+    },
+    {
+      "username": "spec+peer@test",
+      "first_name": "Peer",
+      "last_name": "File"
+    }
+  ],
+  "diagrams": [
+    {
+      "user": "spec@test",
+      "name": "Spec Case",
+      "data": {
+        "name": "Spec Case",
+        "people": [
+          {
+            "id": 1,
+            "name": "Ada",
+            "lastName": null,
+            "gender": "female",
+            "parents": null
+          }
+        ],
+        "events": [],
+        "pair_bonds": [],
+        "pdp": {
+          "people": [],
+          "events": [],
+          "pair_bonds": [],
+          "delete": []
+        },
+        "lastItemId": 1
+      }
+    }
+  ],
+  "discussions": [
+    {
+      "summary": "Spec discussion",
+      "user": "spec@test",
+      "diagram": "spec@test/Spec Case",
+      "speakers": [
+        {
+          "name": "Ada",
+          "type": "subject",
+          "role": "user",
+          "person_id": 1
+        },
+        {
+          "name": "Coach",
+          "type": "expert",
+          "role": "ai"
+        }
+      ],
+      "statements": [
+        {
+          "speaker": "Ada",
+          "text": "My mother Marisol never got along with my uncle Quillon."
+        }
+      ]
+    }
+  ],
+  "access_rights": [
+    {
+      "diagram": "spec@test/Spec Case",
+      "user": "spec+peer@test",
+      "right": "ro"
+    }
+  ]
+}

@@ -10,7 +10,7 @@ _log = logging.getLogger(__name__)
 
 def create_app(config: dict = None, **kwargs):
     from btcopilot.pro.copilot.engine import Engine
-    from btcopilot import auth, extensions, pro, personal, training
+    from btcopilot import auth, extensions, pro, personal, training, testing
 
     # Flask CLI may pass script_info as a kwarg, we ignore it
     kwargs.pop("script_info", None)
@@ -147,10 +147,16 @@ def create_app(config: dict = None, **kwargs):
 
     ## Initialize Modules
 
+    # pytest installs its own stand-ins in btcopilot/tests/conftest.py so tests
+    # can opt back into the real extensions by marker.
+    if app.config.get("TESTING") and "pytest" not in sys.modules:
+        testing.configure_test_app(app, broker=app.config.get("CELERY_BROKER_URL"))
+
     extensions.init_app(app)
     pro.init_app(app)
     personal.init_app(app)
     training.init_app(app)
+    testing.init_app(app)
 
     @app.route("/")
     def root():
