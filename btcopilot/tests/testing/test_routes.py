@@ -13,7 +13,14 @@ from btcopilot.app import create_app
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Speaker, Statement
 from btcopilot.personal.models.speaker import SpeakerType
-from btcopilot.pro.models import AccessRight, Diagram, License, Machine, User
+from btcopilot.pro.models import (
+    AccessRight,
+    Activation,
+    Diagram,
+    License,
+    Machine,
+    User,
+)
 from btcopilot.testing import configure_test_app, credentials, sandbox, stubs
 from btcopilot.testing.fixtures import Case, LicenseState
 
@@ -123,11 +130,11 @@ def test_health_names_the_loaded_checkout(client):
 def test_health_reports_whether_any_blanked_credential_survived(client, monkeypatch):
     for name in credentials.BLANKED:
         monkeypatch.delenv(name, raising=False)
-    assert client.get("/test/health").json["llm_keys"] is False
+    assert client.get("/test/health").json["credentials_present"] is False
 
     for name in (credentials.LLM_KEYS[0], credentials.SERVICE_KEYS[0]):
         monkeypatch.setenv(name, "anything")
-        assert client.get("/test/health").json["llm_keys"] is True
+        assert client.get("/test/health").json["credentials_present"] is True
         monkeypatch.delenv(name)
 
 
@@ -258,6 +265,156 @@ def test_import_licenses_the_account_the_app_runs_as(client):
         btcopilot.LICENSE_BETA,
     }
     assert Machine.query.filter_by(user_id=900).one().code == "REAL-HARDWARE-UUID"
+
+
+def test_primary_user_names_the_account_licensed_to_this_machine(client):
+    result = client.post(
+        "/test/seed",
+        json={
+            "profile": "family+hostile",
+            "hardware_uuid": "REAL-UUID",
+            "primary_user": "hostile@test",
+        },
+    ).json
+    assert result["primary_user"] == "hostile@test"
+    assert result["hardware_uuid"] == "REAL-UUID"
+
+    by_name = {row["username"]: row for row in result["users"]}
+    assert by_name["hostile@test"]["machine_code"] == "REAL-UUID"
+    assert by_name["hostile@test"]["licensed"] is True
+    assert by_name["family@test"]["machine_code"] == "REAL-UUID:family@test"
+
+
+def test_primary_user_may_name_an_account_no_profile_supplies(client):
+    result = client.post(
+        "/test/seed",
+        json={
+            "profile": "family+hostile",
+            "hardware_uuid": "REAL-UUID",
+            "primary_user": "me@test",
+        },
+    ).json
+    assert result["primary_user"] == "me@test"
+
+    by_name = {row["username"]: row for row in result["users"]}
+    assert by_name["me@test"]["machine_code"] == "REAL-UUID"
+    assert by_name["me@test"]["licensed"] is True
+    assert by_name["me@test"]["free_diagram_id"]
+
+
+def test_the_seed_response_lists_every_account_it_touched(client):
+    result = client.post(
+        "/test/seed",
+        json={
+            "profile": "family+hostile",
+            "primary_user": "me@test",
+            "users": [{"username": "extra@test"}],
+        },
+    ).json
+    reported = {row["username"] for row in result["users"]}
+    assert reported == {username for (username,) in db.session.query(User.username)}
+    assert {"me@test", "extra@test", "family@test", "hostile@test"} <= reported
+    assert all(row["id"] and "machine_code" in row for row in result["users"])
+
+
+def test_primary_user_cannot_be_a_hostile_license_case(client):
+    for username in ("hostile+expired@test", "hostile+nolicense@test"):
+        response = client.post(
+            "/test/seed", json={"profile": "hostile", "primary_user": username}
+        )
+        assert response.status_code == 400
+        assert username in response.json["error"]
+        assert User.query.count() == 0
+
+
+def test_an_explicit_user_takes_the_uuid_however_the_caller_orders_it(client):
+    """Ordering-independence: appending --user works as well as prepending."""
+    result = client.post(
+        "/test/seed",
+        json={
+            "profile": "family",
+            "hardware_uuid": "REAL-UUID",
+            "users": [{"username": "me@test"}],
+        },
+    ).json
+    assert result["primary_user"] == "me@test"
+    assert result["hardware_uuid"] == "REAL-UUID"
+
+
+def test_without_any_explicit_user_the_profile_leads(client):
+    result = client.post(
+        "/test/seed", json={"profile": "family+hostile", "hardware_uuid": "REAL-UUID"}
+    ).json
+    assert result["primary_user"] == "family@test"
+    assert result["hardware_uuid"] == "REAL-UUID"
+
+
+def test_seeding_activates_a_restored_users_licenses_on_this_machine(client):
+    """A user restored from a production dump carries active licenses activated
+    on the machine they were dumped from, so the app here sees none until this
+    machine gets its own activation."""
+    client.post(
+        "/test/seed",
+        json={"users": [{"username": "restored@test"}], "hardware_uuid": "PROD-MACHINE"},
+    )
+    user = User.query.filter_by(username="restored@test").one()
+    assert {m.code for m in Machine.query.filter_by(user_id=user.id)} == {"PROD-MACHINE"}
+
+    result = client.post(
+        "/test/seed",
+        json={"users": [{"username": "restored@test"}], "hardware_uuid": "THIS-MACHINE"},
+    ).json
+    assert result["hardware_uuid"] == "THIS-MACHINE"
+    assert result["users"][0]["licensed"] is True
+
+    this_machine = Machine.query.filter_by(code="THIS-MACHINE").one()
+    assert {m.code for m in Machine.query.filter_by(user_id=user.id)} == {
+        "PROD-MACHINE",
+        "THIS-MACHINE",
+    }
+    activated = [
+        license
+        for license in License.query.filter_by(user_id=user.id)
+        if any(a.machine_id == this_machine.id for a in license.activations)
+    ]
+    assert {license.policy.code for license in activated} == {
+        btcopilot.LICENSE_PROFESSIONAL_MONTHLY,
+        btcopilot.LICENSE_BETA,
+    }
+    assert License.query.filter_by(user_id=user.id).count() == 2
+
+
+def test_activating_this_machine_twice_adds_nothing(client):
+    payload = {
+        "users": [{"username": "restored@test"}],
+        "hardware_uuid": "THIS-MACHINE",
+    }
+    client.post("/test/seed", json=payload)
+    before = Activation.query.count()
+
+    client.post("/test/seed", json=payload)
+    assert Activation.query.count() == before
+    assert Machine.query.count() == 1
+
+
+def test_licensed_is_false_when_the_activation_is_on_another_machine(client):
+    """Guards the prod case specifically: active licenses plus activations
+    elsewhere must not report the account as usable here."""
+    client.post(
+        "/test/seed",
+        json={"users": [{"username": "elsewhere@test"}], "hardware_uuid": "PROD-MACHINE"},
+    )
+    user = User.query.filter_by(username="elsewhere@test").one()
+    prod = Machine.query.filter_by(code="PROD-MACHINE").one()
+    fresh = Machine(user_id=user.id, name="unactivated", code="OTHER-MACHINE")
+    db.session.add(fresh)
+    db.session.commit()
+
+    from btcopilot.testing.routes import _licensed
+
+    assert _licensed(user, prod) is True
+    assert _licensed(user, fresh) is False
+    assert _licensed(user, None) is False
 
 
 def test_seed_expired_license_is_inactive(client):

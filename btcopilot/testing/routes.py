@@ -67,7 +67,7 @@ def health():
             "status": "ready",
             "btcopilot": str(Path(btcopilot.__file__).resolve().parent),
             "llm": LLMMode.Stub.value if llmstub.stubbed() else LLMMode.Real.value,
-            "llm_keys": llmstub.credentialed(),
+            "credentials_present": llmstub.credentialed(),
             "broker": current_app.config.get("CELERY_BROKER_URL"),
             "profiles": sorted(fixtures.PROFILES),
         }
@@ -88,13 +88,10 @@ def seed():
     spec = fixtures.merge(fixtures.spec(body.get("profile")), body)
     hardware_uuid = body.get("hardware_uuid", DEFAULT_HARDWARE_UUID)
 
-    # The Pro app counts a license as active only when one of its activations
-    # names a machine whose code equals the app's own HARDWARE_UUID, and
-    # Machine.code is globally unique — so the caller's uuid goes to the first
-    # user seeded, which is the account reported as primary_user.
+    entries = _ordered_users(spec["users"], body)
     users = [
         _seed_user(entry, hardware_uuid, primary=index == 0)
-        for index, entry in enumerate(spec["users"])
+        for index, entry in enumerate(entries)
     ]
     diagrams = [_seed_diagram(entry) for entry in spec["diagrams"]]
     discussions = [_seed_discussion(entry) for entry in spec["discussions"]]
@@ -192,7 +189,7 @@ def import_export():
                 "username": user.username,
                 "free_diagram_id": user.free_diagram_id,
                 "machine_code": machine.code if machine else None,
-                "licensed": _licensed(user),
+                "licensed": _licensed(user, machine),
             },
             "diagram": (
                 {"id": diagram.id, "version": diagram.version} if diagram else None
@@ -242,6 +239,50 @@ def seed_pickle():
     return jsonify({"success": True, "id": diagram.id})
 
 
+def _ordered_users(entries: list, body: dict) -> list:
+    """The account the apps log in as must be seeded first, because Machine.code
+    is globally unique and only that account can carry the caller's hardware
+    uuid. Explicit `primary_user` wins, then the first user named in the request
+    body, then the profile's first — so a caller never has to know the ordering
+    rule to get the account it asked for."""
+    named = body.get("primary_user")
+    requested = named is not None
+    if not requested:
+        named = next(
+            (
+                entry["username"]
+                for entry in body.get("users", [])
+                if _licensable(entry)
+            ),
+            None,
+        )
+    if named is None:
+        return entries
+
+    primary = next((entry for entry in entries if entry["username"] == named), None)
+    if primary is None:
+        primary = {"username": named}
+        entries = entries + [primary]
+
+    # Only a requested primary is an error when it cannot be licensed; an
+    # inferred one just means the caller seeded an unlicensed account and said
+    # nothing about logging in as it.
+    if requested and not _licensable(primary):
+        state = LicenseState(primary.get("license", LicenseState.Active.value))
+        raise ValueError(
+            f"primary_user {named!r} is the {state.value}-license case; the "
+            f"account the apps log in as cannot be one the seed leaves unlicensed"
+        )
+    return [primary] + [entry for entry in entries if entry is not primary]
+
+
+def _licensable(entry: dict) -> bool:
+    return (
+        LicenseState(entry.get("license", LicenseState.Active.value))
+        is LicenseState.Active
+    )
+
+
 def _seed_user(entry: dict, hardware_uuid: str, primary: bool = False) -> dict:
     username = entry["username"]
     user = User.query.filter_by(username=username).first()
@@ -265,41 +306,62 @@ def _seed_user(entry: dict, hardware_uuid: str, primary: bool = False) -> dict:
         "username": user.username,
         "free_diagram_id": user.free_diagram_id,
         "machine_code": machine.code if machine else None,
-        "licensed": _licensed(user),
+        "licensed": _licensed(user, machine),
     }
 
 
-def _licensed(user: User) -> bool:
-    """The predicate the Pro app applies, minus the machine-code match the
-    caller can make itself from machine_code: an expired user has a machine and
-    activations but no active license, so machine_code alone would say usable."""
-    db.session.flush()
-    return any(license.active and license.activations for license in user.licenses)
+def _licensed(user: User, machine: Machine | None) -> bool:
+    """The predicate the Pro app applies: an active license activated on THIS
+    machine. A user restored from a production dump has active licenses and
+    activations, but on the machine they were dumped from, so anything looser
+    would call an unusable account usable."""
+    if machine is None:
+        return False
+    return any(
+        license.active
+        and any(a.machine_id == machine.id for a in license.activations)
+        for license in License.query.filter_by(user_id=user.id)
+    )
 
 
 def _license(
     user: User, entry: dict, hardware_uuid: str, primary: bool = False
 ) -> Machine | None:
-    """Licenses a user that has no machine yet, whether or not this call created
-    the user. Only the primary user's machine carries the caller's hardware uuid
-    verbatim, because Machine.code is unique and the app activates against its
-    own; every other user gets a per-user code, reported back as machine_code."""
+    """Three idempotent steps, any of which a restored or pre-existing user may
+    need on its own: a machine for THIS hardware uuid, licenses if the user has
+    none, and an activation on that machine for each active license."""
     state = LicenseState(entry.get("license", LicenseState.Active.value))
     if state is LicenseState.None_:
         return None
-    machine = Machine.query.filter_by(user_id=user.id).first()
-    if machine:
-        return machine
+    machine = _machine(user, entry, hardware_uuid, primary)
+    if not License.query.filter_by(user_id=user.id).count():
+        _grant_licenses(user, state)
+    _activate(user, machine)
+    return machine
+
+
+def _machine(user: User, entry: dict, hardware_uuid: str, primary: bool) -> Machine:
+    """Machine.code is globally unique and the desktop apps activate against
+    their own uuid, so the caller's uuid goes verbatim to the primary account
+    and everyone else gets a per-user code."""
     code = entry.get("hardware_uuid") or (
         hardware_uuid if primary else f"{hardware_uuid}:{user.username}"
     )
-    if Machine.query.filter_by(code=code).first():
+    taken = Machine.query.filter_by(code=code).first()
+    if taken and taken.user_id != user.id:
         code = f"{code}:{user.username}"
+        taken = Machine.query.filter_by(code=code).first()
+    if taken:
+        return taken
     machine = Machine(
         user_id=user.id, name=f"Sandbox machine for {user.username}", code=code
     )
     db.session.add(machine)
     db.session.flush()
+    return machine
+
+
+def _grant_licenses(user: User, state: LicenseState):
     for policy_code, product in LICENSED_POLICIES:
         policy = Policy.query.filter_by(code=policy_code).first()
         if policy is None:
@@ -315,17 +377,29 @@ def _license(
             )
             db.session.add(policy)
             db.session.flush()
-        license = License(
-            user_id=user.id,
-            policy=policy,
-            active=state is LicenseState.Active,
-            activated_at=datetime.datetime.utcnow(),
+        db.session.add(
+            License(
+                user_id=user.id,
+                policy=policy,
+                active=state is LicenseState.Active,
+                activated_at=datetime.datetime.utcnow(),
+            )
         )
-        db.session.add(license)
-        db.session.flush()
-        db.session.add(Activation(license_id=license.id, machine_id=machine.id))
     db.session.flush()
-    return machine
+
+
+def _activate(user: User, machine: Machine):
+    """Activation-if-missing-for-this-machine, the same idempotent spirit as
+    license-if-missing."""
+    for license in License.query.filter_by(user_id=user.id):
+        if not license.active:
+            continue
+        activated = Activation.query.filter_by(
+            license_id=license.id, machine_id=machine.id
+        ).first()
+        if not activated:
+            db.session.add(Activation(license_id=license.id, machine_id=machine.id))
+    db.session.flush()
 
 
 def _seed_diagram(entry: dict) -> dict:
