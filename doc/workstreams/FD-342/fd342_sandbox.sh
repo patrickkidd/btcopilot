@@ -1,6 +1,6 @@
 #!/bin/bash
 # FD-342 sandbox: prod copy of diagram 1924 on an independent SQLite server (8889), Personal app against it.
-# Subcommands: up | reseed | relaunch | down
+# Subcommands: up | reseed | relaunch [personal|pro] | license | down
 set -uo pipefail
 PORT=8889
 TMP=/Users/patrick/.claude/jobs/ab4beafd/tmp
@@ -24,8 +24,9 @@ start_server() {
   for _ in $(seq 1 60); do curl -s "$SRV/test/health" >/dev/null 2>&1 && break; sleep 1; done
   curl -s "$SRV/test/health" >/dev/null && echo "server up on $PORT (log: $LOG)" || { echo "server FAILED"; tail -20 "$LOG"; exit 1; }
 }
+license() { ( cd "$BT" && PYTHONPATH="$BT:$FDG" uv run --directory /Users/patrick/theapp --env-file "$ENV" python "$HERE/fd342_license.py" "$DBDIR" ); }
 launch() {
-  ( cd "$FDG" && PYTHONPATH="$FDG" nohup uv run --directory /Users/patrick/theapp --env-file "$ENV" python -u "$HERE/fd342_app.py" "$SRV" >"$TMP/fd342_personal.log" 2>&1 </dev/null & )
+  ( cd "$FDG" && PYTHONPATH="$FDG" nohup uv run --directory /Users/patrick/theapp --env-file "$ENV" python -u "$HERE/fd342_app.py" "$1" "$SRV" >"$TMP/fd342_$1.log" 2>&1 </dev/null & )
 }
 stop() {
   pkill -f "m pkdiagram" 2>/dev/null
@@ -34,9 +35,10 @@ stop() {
 }
 
 case "${1:-}" in
-  up)       stop; seed; start_server; launch; sleep 12; echo "Personal app launched against $SRV" ;;
-  reseed)   stop; seed; start_server; echo "reseeded from prod export; server up" ;;
-  relaunch) launch; sleep 10; echo "Personal app relaunched (server state preserved)" ;;
+  up)       stop; seed; license; start_server; launch personal; launch pro; sleep 12; echo "Personal + Pro launched against $SRV" ;;
+  reseed)   stop; seed; license; start_server; echo "reseeded from prod export; server up" ;;
+  license)  stop; license; start_server ;;
+  relaunch) launch "${2:-personal}"; sleep 10; echo "${2:-personal} app relaunched (server state preserved)" ;;
   down)     stop; echo "sandbox down (db kept at $DBDIR)" ;;
-  *) echo "usage: fd342_sandbox.sh up|reseed|relaunch|down"; exit 2 ;;
+  *) echo "usage: fd342_sandbox.sh up|reseed|relaunch [personal|pro]|license|down"; exit 2 ;;
 esac
