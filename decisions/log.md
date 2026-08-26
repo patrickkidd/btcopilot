@@ -1102,3 +1102,21 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 
 **Revisit trigger:** shared-case chat is requested; FD-339 corrections-through-chat lands (agent becomes a third writer through the same saver); the phone app needs to see desktop edits live (poll/refresh).
 
+## 2026-08-26: Premium chat model policy — latest Opus at equal price (Opus 4.6 → Opus 5)
+
+**Context:** The Personal app's Premium coaching tier ran Claude Opus 4.6. Opus 5 is available at the same list price, so the question was whether tracking the newest Opus needs a cost review each time.
+
+**Policy (Patrick):** for premium chat, always move to the latest Opus when the price is the same. Only when the price differs do we compare pricing and run cost projections before switching.
+
+**Price facts (Claude API, cached 2026-06-24):** `claude-opus-5` and `claude-opus-4-6` are both $5/$25 per Mtok input/output, both 1M context. Equal price, so the policy fires: Opus 5 becomes the default response model and the default client alias, and Opus 4.6 stays selectable.
+
+**Tokenizer caveat (measured, not assumed):** identical per-token price is not identical per-request cost. Opus 5 uses a different tokenizer than 4.6. Measured with `count_tokens` on one representative coach request (real system prompt + 10 statements): 3,987 tokens on 4.6 vs 5,411 on Opus 5 — a ratio of 1.36. Two controls confirm it is the tokenizer and not the payload shape: the system prompt alone is 1.37, plain user prose is 1.34. Expect roughly a third more input tokens per coach turn, i.e. about a third higher chat spend at unchanged list pricing. Output-side and thinking-token effects are unmeasured — they need live runs.
+
+**Request-shape changes forced by Opus 5:** the Anthropic chat path no longer sends sampling parameters. Opus 5 rejects `temperature`/`top_p`/`top_k` and `budget_tokens` outright, and rejects assistant prefill, so the one code path stays valid for both models: adaptive thinking always on, no sampling kwargs forwarded. The `CLAUDE_THINKING_ENABLED` flag was removed rather than left as a switch that would produce 400s on Opus 5.
+
+**Bug found and fixed while wiring this:** the coach prompt selector received the client-facing alias ("opus-4.6") but tested it with a `claude-` prefix check, so every Premium request from the app took the Gemini-tuned prompt branch. Aliases are now resolved to API model IDs once, before the prompt is assembled. Premium coach responses will use the Opus-tuned style for the first time — a real change in coach output; revert is one line if it reads worse.
+
+**Rejected:** aliasing the tier by name (e.g. "premium") so future model swaps need no client change. Cleaner, but it is a client-visible contract change and stored user settings would need migrating — deferred, not dismissed.
+
+**Revisit trigger:** a newer Opus ships, or Opus pricing changes (then the compare-first branch of the policy applies), or measured per-request cost moves materially from the 1.36 ratio above.
+

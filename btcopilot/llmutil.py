@@ -20,32 +20,39 @@ CALIBRATION_MODEL = "gemini-3-flash-preview"
 
 # Chat/response model: configurable via env var for A/B testing.
 # Set BTCOPILOT_RESPONSE_MODEL to override. Supported values:
-#   "claude-opus-4-6" (default) — Anthropic Claude Opus 4.6
+#   "claude-opus-5" (default) — Anthropic Claude Opus 5. Premium chat tracks the
+#     latest Opus while the price is unchanged ($5/$25 per Mtok, same as Opus
+#     4.6). See decisions/log.md 2026-08-26.
+#   "claude-opus-4-6" — previous premium model, still selectable.
 #   "gemini-3-flash-preview" — Google Gemini Flash (legacy)
 #   Any valid Anthropic or Gemini model identifier.
 # The backend is auto-detected from the model name prefix.
-RESPONSE_MODEL = os.environ.get("BTCOPILOT_RESPONSE_MODEL", "claude-opus-4-6")
+RESPONSE_MODEL = os.environ.get("BTCOPILOT_RESPONSE_MODEL", "claude-opus-5")
 GEMINI_RESPONSE_MODEL = "gemini-3-flash-preview"
-
-CLAUDE_THINKING_ENABLED = True
 
 # Client-facing model aliases → actual API model IDs.
 # The Personal app sends these aliases; the backend resolves them here.
 MODEL_ALIASES = {
+    "opus-5": "claude-opus-5",
     "opus-4.6": "claude-opus-4-6",
     "gemini-2.5-flash": "gemini-2.5-flash",
 }
 
-DEFAULT_RESPONSE_MODEL_ALIAS = "opus-4.6"
+DEFAULT_RESPONSE_MODEL_ALIAS = "opus-5"
 
 
 def resolve_model(alias: str | None) -> str:
     """Resolve a client-facing model alias to an API model ID.
 
-    Falls back to RESPONSE_MODEL if alias is None or unknown.
+    Raw API model IDs pass through unchanged. Falls back to RESPONSE_MODEL if
+    alias is None or unrecognized.
     """
-    if alias and alias in MODEL_ALIASES:
+    if not alias:
+        return RESPONSE_MODEL
+    if alias in MODEL_ALIASES:
         return MODEL_ALIASES[alias]
+    if _is_claude_model(alias) or alias.startswith("gemini-"):
+        return alias
     return RESPONSE_MODEL
 
 
@@ -286,16 +293,14 @@ async def claude_text(prompt=None, **kwargs):
       - model: str — Claude model identifier (default: RESPONSE_MODEL)
       - system_instruction: str — system prompt
       - turns: list of (role, text) tuples — "user"/"model" mapped to "user"/"assistant"
-      - temperature: float (ignored when thinking is enabled — API forces 1.0)
       - max_output_tokens: int (default 8192, covers thinking + response)
       - prompt: str — simple single-turn prompt (alternative to turns)
 
-    When CLAUDE_THINKING_ENABLED, adaptive extended thinking is on (forces
-    temperature=1.0 per Anthropic API). Otherwise thinking is off and
-    temperature from kwargs is respected.
+    Adaptive extended thinking is always on. Sampling kwargs shared with
+    gemini_text() (temperature/top_p/top_k) are not forwarded: Opus 5 rejects
+    them outright, and adaptive thinking pins temperature to 1.0 on Opus 4.6.
     """
     start_time = time.time()
-    model = kwargs.get("model", RESPONSE_MODEL)
     max_output_tokens = kwargs.get("max_output_tokens", 8192)
     system_instruction = kwargs.get("system_instruction")
 
@@ -307,12 +312,8 @@ async def claude_text(prompt=None, **kwargs):
         "model": resolved_model,
         "max_tokens": max_output_tokens,
         "messages": messages,
+        "thinking": {"type": "adaptive"},
     }
-    if CLAUDE_THINKING_ENABLED:
-        api_kwargs["thinking"] = {"type": "adaptive"}
-    else:
-        temperature = kwargs.get("temperature", 0.45)
-        api_kwargs["temperature"] = temperature
     if system_instruction:
         api_kwargs["system"] = system_instruction
 

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from flask import g
 
 from btcopilot.extensions import db, ai_log
-from btcopilot.llmutil import response_text_sync
+from btcopilot.llmutil import resolve_model, response_text_sync
 from btcopilot.personal.intake import (
     coverage,
     format_coverage_for_prompt,
@@ -41,6 +41,10 @@ def ask(
 ) -> Response:
 
     ai_log.info(f"User statement: {user_statement}")
+
+    # The client sends an alias ("opus-5"); the prompt selector keys on the API
+    # model id, so resolve once here and pass the id everywhere downstream.
+    model = resolve_model(model)
 
     committed_state = ""
     if discussion.diagram is not None:
