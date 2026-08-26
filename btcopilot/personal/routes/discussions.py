@@ -141,7 +141,7 @@ def chat(discussion_id: int):
         # Placeholder User/Assistant people belong to the free diagram only. A
         # real case file owns its own people; injecting speakers there would
         # write two fabricated members into the user's diagram.
-        if discussion.diagram_id == discussion.user.free_diagram_id:
+        if discussion.diagram_id == auth.current_user().free_diagram_id:
             user_person_id, _, changed = diagram_data.ensure_chat_defaults()
             if changed:
                 discussion.diagram.set_diagram_data(diagram_data)

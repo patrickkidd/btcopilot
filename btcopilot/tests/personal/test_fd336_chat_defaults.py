@@ -69,6 +69,14 @@ def _discussion(user, diagram):
     return discussion
 
 
+def _user_less_discussion(user, diagram):
+    """The familydiagram test app creates discussions with no user_id."""
+    discussion = _discussion(user, diagram)
+    discussion.user_id = None
+    db.session.commit()
+    return discussion
+
+
 def _chat(client, discussion):
     return client.post(
         f"/personal/discussions/{discussion.id}/statements",
@@ -127,6 +135,26 @@ def test_chat_heals_a_legacy_free_diagram_placeholder(subscriber):
     assert len(placeholders) == 1
     assert placeholders[0].get("primary") is True
     assert Diagram.query.get(diagram.id).version == version + 1
+
+
+@pytest.mark.chat_flow
+def test_chat_on_a_user_less_discussion_keys_defaults_off_the_caller(subscriber):
+    free_diagram = subscriber.user.free_diagram
+    free_discussion = _user_less_discussion(subscriber.user, free_diagram)
+
+    assert _chat(subscriber, free_discussion).status_code == 200
+
+    people = {
+        p["id"]: p for p in Diagram.query.get(free_diagram.id).get_diagram_data().people
+    }
+    assert people[1]["name"] == "User"
+    assert people[2]["name"] == "Assistant"
+
+    case_diagram = _case_diagram(subscriber.user)
+    case_discussion = _user_less_discussion(subscriber.user, case_diagram)
+
+    assert _chat(subscriber, case_discussion).status_code == 200
+    assert Diagram.query.get(case_diagram.id).get_diagram_data().people == CASE_PEOPLE
 
 
 def test_import_text_leaves_a_case_file_structure_untouched(subscriber):
