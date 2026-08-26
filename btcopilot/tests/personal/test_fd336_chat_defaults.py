@@ -174,3 +174,34 @@ def test_import_text_leaves_a_case_file_structure_untouched(subscriber):
     data = Diagram.query.get(diagram.id).get_diagram_data()
     assert data.people == CASE_PEOPLE
     assert [p.name for p in data.pdp.people] == ["Mom"]
+
+
+@pytest.mark.chat_flow
+def test_chat_by_a_non_owner_still_seeds_the_owners_free_diagram(anonymous, test_user):
+    diagram = test_user.free_diagram
+    discussion = _discussion(test_user, diagram)
+
+    assert _chat(anonymous, discussion).status_code == 200
+
+    people = {
+        p["id"]: p for p in Diagram.query.get(diagram.id).get_diagram_data().people
+    }
+    assert people[1]["name"] == "User"
+    assert people[1]["primary"] is True
+    assert people[2]["name"] == "Assistant"
+
+
+@pytest.mark.chat_flow
+def test_chat_by_a_non_owner_leaves_the_owners_case_file_untouched(
+    anonymous, test_user
+):
+    diagram = _case_diagram(test_user)
+    discussion = _discussion(test_user, diagram)
+    version = diagram.version
+
+    assert _chat(anonymous, discussion).status_code == 200
+
+    data = Diagram.query.get(diagram.id).get_diagram_data()
+    assert data.people == CASE_PEOPLE
+    assert data.lastItemId == 12
+    assert Diagram.query.get(diagram.id).version == version
