@@ -13,7 +13,6 @@ from btcopilot.schema import DiagramData, PDP, from_dict
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
 
-
 # TODO: Remove once pro version adoption gets past 2.1.11
 # Minimum client versions that support specific fields.
 # Fields not in this dict are always included.
@@ -90,7 +89,7 @@ class Diagram(db.Model, ModelMixin):
         kwargs["pdp"] = from_dict(PDP, pdp_dict) if pdp_dict else PDP()
         return DiagramData(**kwargs)
 
-    def set_diagram_data(self, diagram_data: DiagramData):
+    def _pickled(self, diagram_data: DiagramData) -> bytes:
         import PyQt5.sip  # Required for pickling QtCore objects
         from btcopilot.schema import asdict
 
@@ -104,7 +103,17 @@ class Diagram(db.Model, ModelMixin):
         data["events"] = diagram_data.events
         data["pair_bonds"] = diagram_data.pair_bonds
 
-        self.data = pickle.dumps(data)
+        return pickle.dumps(data)
+
+    def set_diagram_data(self, diagram_data: DiagramData):
+        """Unguarded write that still bumps version, so a client holding the
+        pre-write version can no longer overwrite it with a stale PUT."""
+        if self.id is None:
+            self.data = self._pickled(diagram_data)
+            return
+        ok, _ = self.update_with_version_check(None, diagram_data=diagram_data)
+        if not ok:
+            raise RuntimeError(f"set_diagram_data found no row for diagram {self.id}")
 
     def grant_access(self, user, right, _commit=False):
         from btcopilot.pro.models import AccessRight
@@ -145,7 +154,9 @@ class Diagram(db.Model, ModelMixin):
     def saved_at(self):
         return self.updated_at if self.updated_at else self.created_at
 
-    def reserve_id_block(self, count: int, max_retries: int = 32) -> tuple[int, int, int]:
+    def reserve_id_block(
+        self, count: int, max_retries: int = 32
+    ) -> tuple[int, int, int]:
         """
         Atomically reserve `count` ids in the diagram's lastItemId space.
 
@@ -218,16 +229,7 @@ class Diagram(db.Model, ModelMixin):
         if new_data is not None:
             data_to_save = new_data
         elif diagram_data is not None:
-            import PyQt5.sip
-            from btcopilot.schema import asdict
-
-            data = pickle.loads(self.data) if self.data else {}
-            data["pdp"] = asdict(diagram_data.pdp)
-            data["lastItemId"] = diagram_data.lastItemId
-            data["people"] = diagram_data.people
-            data["events"] = diagram_data.events
-            data["pair_bonds"] = diagram_data.pair_bonds
-            data_to_save = pickle.dumps(data)
+            data_to_save = self._pickled(diagram_data)
         else:
             return (False, None)
 

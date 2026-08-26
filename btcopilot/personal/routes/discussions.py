@@ -6,8 +6,10 @@ from sqlalchemy import update as sql_update
 from sqlalchemy.orm import subqueryload
 
 import asyncio
+import btcopilot
 from btcopilot import auth, pdp
 from btcopilot.extensions import db
+from btcopilot.familygraph import speaker_ids
 from btcopilot.pro.models import Diagram
 from btcopilot.schema import asdict, get_all_pdp_item_ids, is_parents_edit
 from btcopilot.personal import Response, ask
@@ -24,10 +26,15 @@ _log = logging.getLogger(__name__)
 bp = Blueprint("discussions", __name__, url_prefix="/discussions")
 
 
-def _create_discussion(data: dict) -> Discussion:
-    user = auth.current_user()
+def _diagram_for_new_discussion(user, diagram_id) -> Diagram:
+    if diagram_id is not None:
+        diagram = Diagram.query.get(diagram_id)
+        if not diagram:
+            abort(404)
+        if diagram.user_id != user.id and not user.has_role(btcopilot.ROLE_ADMIN):
+            abort(403)
+        return diagram
 
-    # Ensure user has a free_diagram
     diagram = user.free_diagram
     if diagram is None:
         diagram = Diagram(
@@ -38,18 +45,36 @@ def _create_discussion(data: dict) -> Discussion:
         db.session.add(diagram)
         db.session.flush()
         user.free_diagram_id = diagram.id
+    return diagram
 
-    # Read the speaker label off the diagram directly (not the lazily-populated
-    # relationship) so a named primary is honored even at create time.
-    subject_name = diagram.get_diagram_data().subject_display_name()
+
+def _create_discussion(data: dict) -> Discussion:
+    user = auth.current_user()
+
+    diagram = _diagram_for_new_discussion(user, data.get("diagram_id"))
+
+    # Read the speakers off the diagram directly (not the lazily-populated
+    # relationship) so a named primary is honored even at create time. On a
+    # diagram with no primary person there is no subject person to point at,
+    # and only the free diagram carries an Assistant person for the coach.
+    diagram_data = diagram.get_diagram_data()
+    subject_name = diagram_data.subject_display_name()
+    subject_person_id, assistant_person_id = speaker_ids(diagram_data.people)
+    expert_person_id = (
+        assistant_person_id if diagram.id == user.free_diagram_id else None
+    )
 
     discussion = Discussion(
         user_id=user.id,
         diagram_id=diagram.id,
         summary="New Discussion",
         speakers=[
-            Speaker(name=subject_name, type=SpeakerType.Subject, person_id=1),
-            Speaker(name="Coach", type=SpeakerType.Expert, person_id=2),
+            Speaker(
+                name=subject_name,
+                type=SpeakerType.Subject,
+                person_id=subject_person_id,
+            ),
+            Speaker(name="Coach", type=SpeakerType.Expert, person_id=expert_person_id),
         ],
     )
     db.session.add(discussion)
@@ -111,12 +136,17 @@ def chat(discussion_id: int):
     if not discussion:
         return abort(404)
 
-    # Ensure User and Assistant people exist in the diagram (if diagram exists)
     if discussion.diagram:
         diagram_data = discussion.diagram.get_diagram_data()
-        user_person_id, _, changed = diagram_data.ensure_chat_defaults()
-        if changed:
-            discussion.diagram.set_diagram_data(diagram_data)
+        # Placeholder User/Assistant people belong to the free diagram only. A
+        # real case file owns its own people; injecting speakers there would
+        # write two fabricated members into the user's diagram.
+        if discussion.diagram_id == discussion.user.free_diagram_id:
+            user_person_id, _, changed = diagram_data.ensure_chat_defaults()
+            if changed:
+                discussion.diagram.set_diagram_data(diagram_data)
+        else:
+            user_person_id, _ = speaker_ids(diagram_data.people)
 
         # Sync the Subject speaker to the primary person: keep person_id and the
         # display label (real name, else neutral default) in step so the chat

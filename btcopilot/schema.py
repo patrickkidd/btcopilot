@@ -301,6 +301,26 @@ class Person:
     confidence: float | None = None  # PDP
 
 
+def committed_person_chunk(person: Person) -> dict:
+    """Scene Person has name/lastName and no last_name, so a staged person
+    carrying only a last name commits under that name rather than rendering a
+    blank label. confidence is PDP-only and never reaches the scene."""
+    chunk = asdict(person)
+    del chunk["confidence"]
+    last_name = chunk.pop("last_name")
+    chunk["name"] = person.name or last_name
+    chunk["lastName"] = last_name if person.name else None
+    return chunk
+
+
+def person_from_committed_chunk(chunk: dict) -> Person:
+    """The one place that reads a committed person dict: rows written before
+    committed_person_chunk existed carry last_name instead of lastName."""
+    kept = {k: v for k, v in chunk.items() if k in ("id", "name", "gender", "parents")}
+    kept["last_name"] = chunk.get("lastName") or chunk.get("last_name")
+    return from_dict(Person, kept)
+
+
 class VariableShift(enum.StrEnum):
     Up = "up"
     Down = "down"
@@ -597,7 +617,7 @@ class DiagramData:
 
     def add_person(self, person: Person) -> None:
         person.id = self._next_id()
-        self.people.append(asdict(person))
+        self.people.append(committed_person_chunk(person))
         _log.info(f"Added person with new ID {person.id}")
 
     def add_event(self, event: Event) -> None:
@@ -707,7 +727,7 @@ class DiagramData:
                 person = pdp_people_map[old_id]
                 new_person = self._remap_person_ids(person, id_mapping)
                 _log.info(f"Committed person with new ID {new_person.id}: {new_person}")
-                self.people.append(asdict(new_person))
+                self.people.append(committed_person_chunk(new_person))
 
         for old_id in all_item_ids:
             if old_id in pdp_events_map:
@@ -1381,35 +1401,37 @@ class DiagramData:
         return name if name else DEFAULT_SUBJECT_NAME
 
     def ensure_chat_defaults(self) -> tuple[int, int, bool]:
-        """Idempotently ensure chat speaker people exist.
+        """Idempotently ensure chat speaker people exist. Placeholders belong to
+        the free diagram only — callers must not run this on a real case file,
+        where ids 1 and 2 are ordinary family members.
 
-        If a person with primary=True exists (pro app diagram), use them as the
-        user speaker. Otherwise, ensure User (ID=1) exists.
-
-        Always ensure Assistant (ID=2) exists.
+        The user speaker is the primary person; a legacy placeholder written
+        before the flag existed is flagged in place. Assistant is always ID=2.
 
         Returns (user_person_id, assistant_person_id, changed).
         """
         changed = False
 
-        # Find primary person (pro app) or existing User person
         primary_person = self.primary_person()
-        user_person_id = None
+        legacy_user = None
         assistant_person_id = None
 
         for p in self.people:
             if not isinstance(p, dict):
                 continue
             if p.get("id") == 1:
-                user_person_id = 1
+                legacy_user = p
             if p.get("id") == 2:
                 assistant_person_id = 2
 
-        # Use primary person as user if present, otherwise ensure User (ID=1)
         if primary_person:
             user_person_id = primary_person.get("id")
-        elif user_person_id is None:
-            user_dict = asdict(Person(id=1, name="User"))
+        elif legacy_user is not None:
+            legacy_user["primary"] = True
+            user_person_id = 1
+            changed = True
+        else:
+            user_dict = committed_person_chunk(Person(id=1, name="User"))
             user_dict["primary"] = True
             self.people.append(user_dict)
             user_person_id = 1
@@ -1418,7 +1440,7 @@ class DiagramData:
         # Ensure Assistant (ID=2) exists
         if assistant_person_id is None:
             assistant_person = Person(id=2, name="Assistant")
-            self.people.append(asdict(assistant_person))
+            self.people.append(committed_person_chunk(assistant_person))
             assistant_person_id = 2
             changed = True
 

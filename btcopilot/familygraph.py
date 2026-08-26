@@ -44,11 +44,10 @@ def default_ids(people: list) -> set[int]:
 
 
 def speaker_ids(people: list) -> tuple[int | None, int | None]:
-    """(user_id, assistant_id): user is the primary-flagged person, else id=1;
-    assistant is id=2. None when absent."""
+    """(user_id, assistant_id): user is the primary-flagged person, assistant is
+    id=2. None when absent — a diagram the app never seeded with chat defaults
+    has no speaker people, and id 1 there is a real person, not the user."""
     user = next((person_id(p) for p in people if person_primary(p)), None)
-    if user is None and any(person_id(p) == 1 for p in people):
-        user = 1
     assistant = 2 if any(person_id(p) == 2 for p in people) else None
     return user, assistant
 

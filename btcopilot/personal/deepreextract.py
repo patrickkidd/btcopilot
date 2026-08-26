@@ -24,6 +24,7 @@ from btcopilot.schema import (
     PairBond,
     from_dict,
     next_neg,
+    person_from_committed_chunk,
 )
 from btcopilot import pdp as pdp_mod
 from btcopilot.familygraph import default_ids, speaker_ids
@@ -163,7 +164,9 @@ def accumulate_discussions(disc_ids: list[int], on_window=None) -> DiagramData:
 
 def _people_from_diagram(diagram_data: DiagramData) -> list[Person]:
     return [
-        from_dict(Person, p) for p in diagram_data.people if p.get("id") is not None
+        person_from_committed_chunk(p)
+        for p in diagram_data.people
+        if p.get("id") is not None
     ]
 
 

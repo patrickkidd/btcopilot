@@ -33,6 +33,7 @@ from btcopilot.schema import (
     asdict,
     from_dict,
     get_all_pdp_item_ids,
+    person_from_committed_chunk,
 )
 
 _log = logging.getLogger(__name__)
@@ -209,9 +210,7 @@ def dedup_birth_events(deltas: PDPDeltas) -> None:
     drop = {
         id(e)
         for e in deltas.events
-        if e.kind is EventKind.Birth
-        and e.child is not None
-        and best[e.child] is not e
+        if e.kind is EventKind.Birth and e.child is not None and best[e.child] is not e
     }
     if drop:
         _log.warning(
@@ -370,7 +369,9 @@ def _committed_person_matches(
         return {}
 
     committed_people = [
-        from_dict(Person, p) for p in diagram_data.people if p.get("id") is not None
+        person_from_committed_chunk(p)
+        for p in diagram_data.people
+        if p.get("id") is not None
     ]
     if not committed_people:
         return {}
@@ -1313,7 +1314,7 @@ def _restage_new_items(working: DiagramData, original: DiagramData) -> PDP:
         d = dict(p)
         d["id"] = person_map[p["id"]]
         d["parents"] = rbond(p.get("parents"))
-        people.append(from_dict(Person, d))
+        people.append(person_from_committed_chunk(d))
     for p in working.people:
         if (
             p["id"] in orig_people

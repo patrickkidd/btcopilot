@@ -9,6 +9,7 @@ Consumers:
 - Discuss-tab burn-down (FD-327)
 - Plan-tab Tier (a) outstanding questions (FD-328)
 """
+
 import enum
 from dataclasses import dataclass
 
@@ -55,7 +56,9 @@ _CONNECTION_DAYS = 365
 
 def coverage(diagram_data: DiagramData | None) -> dict[DataCategory, CategoryCoverage]:
     if diagram_data is None:
-        result = {c: CategoryCoverage(c, CoverageStatus.NotCovered) for c in DataCategory}
+        result = {
+            c: CategoryCoverage(c, CoverageStatus.NotCovered) for c in DataCategory
+        }
         result[DataCategory.PresentingProblem] = CategoryCoverage(
             DataCategory.PresentingProblem,
             CoverageStatus.Covered,
@@ -81,41 +84,62 @@ def coverage(diagram_data: DiagramData | None) -> dict[DataCategory, CategoryCov
             CoverageStatus.Covered,
             "(conversation-derived)",
         ),
-        DataCategory.Mother: _parent_coverage(parents_pb, people, "female", DataCategory.Mother),
-        DataCategory.Father: _parent_coverage(parents_pb, people, "male", DataCategory.Father),
+        DataCategory.Mother: _parent_coverage(
+            parents_pb, people, "female", DataCategory.Mother
+        ),
+        DataCategory.Father: _parent_coverage(
+            parents_pb, people, "male", DataCategory.Father
+        ),
         DataCategory.ParentsStatus: _parents_status_coverage(parents_pb, events),
         DataCategory.Siblings: _list_coverage(
-            [p for p in people
-             if parents_pb_id is not None
-             and p.get("parents") == parents_pb_id
-             and p.get("id") != speaker_id],
-            DataCategory.Siblings, "siblings",
+            [
+                p
+                for p in people
+                if parents_pb_id is not None
+                and p.get("parents") == parents_pb_id
+                and p.get("id") != speaker_id
+            ],
+            DataCategory.Siblings,
+            "siblings",
         ),
         DataCategory.MaternalGrandparents: _grandparents_coverage(
-            mother, people, pair_bonds, DataCategory.MaternalGrandparents,
+            mother,
+            people,
+            pair_bonds,
+            DataCategory.MaternalGrandparents,
         ),
         DataCategory.PaternalGrandparents: _grandparents_coverage(
-            father, people, pair_bonds, DataCategory.PaternalGrandparents,
+            father,
+            people,
+            pair_bonds,
+            DataCategory.PaternalGrandparents,
         ),
         DataCategory.AuntsUncles: _list_coverage(
-            _aunts_uncles(mother, father, people), DataCategory.AuntsUncles, "aunts/uncles",
+            _aunts_uncles(mother, father, people),
+            DataCategory.AuntsUncles,
+            "aunts/uncles",
         ),
     }
 
     speaker_pbs = [
-        pb for pb in pair_bonds
+        pb
+        for pb in pair_bonds
         if speaker_id is not None
         and (pb.get("person_a") == speaker_id or pb.get("person_b") == speaker_id)
     ]
     spouses = [_other_person(pb, speaker_id, people) for pb in speaker_pbs]
     spouses = [s for s in spouses if s is not None]
-    result[DataCategory.Spouse] = _list_coverage(spouses, DataCategory.Spouse, "spouse(s)")
+    result[DataCategory.Spouse] = _list_coverage(
+        spouses, DataCategory.Spouse, "spouse(s)"
+    )
 
     children = []
     for pb in speaker_pbs:
         pb_id = pb.get("id")
         children.extend(p for p in people if p.get("parents") == pb_id)
-    result[DataCategory.Children] = _list_coverage(children, DataCategory.Children, "children")
+    result[DataCategory.Children] = _list_coverage(
+        children, DataCategory.Children, "children"
+    )
 
     nodal = [e for e in events if e.get("kind") in _NODAL_KINDS]
     if len(nodal) >= 3:
@@ -125,7 +149,8 @@ def coverage(diagram_data: DiagramData | None) -> dict[DataCategory, CategoryCov
     else:
         nodal_status = CoverageStatus.NotCovered
     result[DataCategory.NodalEvents] = CategoryCoverage(
-        DataCategory.NodalEvents, nodal_status,
+        DataCategory.NodalEvents,
+        nodal_status,
         f"{len(nodal)} nodal event(s)" if nodal else "",
     )
 
@@ -144,7 +169,8 @@ def outstanding_categories(
     """Categories that are NotCovered or Partial. PresentingProblem excluded
     (conversation-derived, never appears as outstanding from diagram alone)."""
     return [
-        c for c in coverage(diagram_data).values()
+        c
+        for c in coverage(diagram_data).values()
         if c.status != CoverageStatus.Covered
         and c.category != DataCategory.PresentingProblem
     ]
@@ -169,8 +195,7 @@ def roster_for_prompt(diagram_data: DiagramData | None) -> str:
 
     events = diagram_data.events or []
     by_id = {
-        p["id"]: p for p in people
-        if isinstance(p, dict) and p.get("id") is not None
+        p["id"]: p for p in people if isinstance(p, dict) and p.get("id") is not None
     }
     life = _life_facts_index(events)
     named = []
@@ -268,9 +293,7 @@ def format_coverage_for_prompt(
         if cov.status == CoverageStatus.Covered:
             covered.append(f"{label} ({cov.detail})" if cov.detail else label)
         else:
-            outstanding.append(
-                f"{label} — {cov.detail}" if cov.detail else label
-            )
+            outstanding.append(f"{label} — {cov.detail}" if cov.detail else label)
     parts = []
     if covered:
         parts.append("Already known: " + "; ".join(covered) + ".")
@@ -281,13 +304,14 @@ def format_coverage_for_prompt(
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
+
 def _speaker_id(people):
+    """The primary-flagged person, else no speaker. Falling back to id 1 named
+    a real, arbitrary person as the user on any diagram the app did not seed
+    with chat defaults."""
     for p in people:
         if isinstance(p, dict) and p.get("primary"):
             return p.get("id")
-    for p in people:
-        if isinstance(p, dict) and p.get("id") == 1:
-            return 1
     return None
 
 
@@ -331,7 +355,8 @@ def _aunts_uncles(mother, father, people):
         if not parent_pb:
             continue
         out.extend(
-            p for p in people
+            p
+            for p in people
             if p.get("parents") == parent_pb and p.get("id") != parent.get("id")
         )
     return out
@@ -344,7 +369,8 @@ def _parent_coverage(parents_pb, people, gender, cat):
     if parent and parent.get("name"):
         return CategoryCoverage(cat, CoverageStatus.Covered, parent["name"])
     return CategoryCoverage(
-        cat, CoverageStatus.Partial,
+        cat,
+        CoverageStatus.Partial,
         "parents PairBond exists but parent not yet named",
     )
 
@@ -354,17 +380,21 @@ def _parents_status_coverage(parents_pb, events):
         return CategoryCoverage(DataCategory.ParentsStatus, CoverageStatus.NotCovered)
     a, b = parents_pb.get("person_a"), parents_pb.get("person_b")
     relevant = [
-        e for e in events
+        e
+        for e in events
         if e.get("kind") in _MARITAL_KINDS
         and {e.get("person"), e.get("spouse")} == {a, b}
     ]
     if relevant:
         kinds = ", ".join(e.get("kind", "") for e in relevant)
         return CategoryCoverage(
-            DataCategory.ParentsStatus, CoverageStatus.Covered, kinds,
+            DataCategory.ParentsStatus,
+            CoverageStatus.Covered,
+            kinds,
         )
     return CategoryCoverage(
-        DataCategory.ParentsStatus, CoverageStatus.Partial,
+        DataCategory.ParentsStatus,
+        CoverageStatus.Partial,
         "parents PairBond exists but no marital event recorded",
     )
 
@@ -375,7 +405,8 @@ def _list_coverage(items, cat, label):
     names = [p.get("name", "?") for p in items if p.get("name")]
     detail = (
         f"{len(items)} {label}: {', '.join(names)}"
-        if names else f"{len(items)} {label}"
+        if names
+        else f"{len(items)} {label}"
     )
     return CategoryCoverage(cat, CoverageStatus.Covered, detail)
 
@@ -392,9 +423,12 @@ def _functioning_coverage(shifts):
     elif n >= 1:
         status = CoverageStatus.Partial
     else:
-        return CategoryCoverage(DataCategory.FamilyFunctioning, CoverageStatus.NotCovered)
+        return CategoryCoverage(
+            DataCategory.FamilyFunctioning, CoverageStatus.NotCovered
+        )
     return CategoryCoverage(
-        DataCategory.FamilyFunctioning, status,
+        DataCategory.FamilyFunctioning,
+        status,
         f"{n} shift event(s) with SARF coding",
     )
 
@@ -402,45 +436,47 @@ def _functioning_coverage(shifts):
 def _relationship_patterns_coverage(shifts):
     rel = [e for e in shifts if e.get("relationship")]
     if not rel:
-        return CategoryCoverage(DataCategory.RelationshipPatterns, CoverageStatus.NotCovered)
-    kinds = sorted({
-        _enum_val(e.get("relationship")) for e in rel if e.get("relationship")
-    })
+        return CategoryCoverage(
+            DataCategory.RelationshipPatterns, CoverageStatus.NotCovered
+        )
+    kinds = sorted(
+        {_enum_val(e.get("relationship")) for e in rel if e.get("relationship")}
+    )
     if len(rel) >= 3 or len(kinds) >= 2:
         status = CoverageStatus.Covered
     else:
         status = CoverageStatus.Partial
     return CategoryCoverage(
-        DataCategory.RelationshipPatterns, status,
+        DataCategory.RelationshipPatterns,
+        status,
         f"{len(rel)} event(s); kinds: {', '.join(kinds)}",
     )
 
 
 def _symptom_timeline_coverage(shifts):
-    dated_symptoms = [
-        e for e in shifts
-        if e.get("symptom") and e.get("dateTime")
-    ]
+    dated_symptoms = [e for e in shifts if e.get("symptom") and e.get("dateTime")]
     n = len(dated_symptoms)
     if n >= 2:
         ds = sorted(
-            d for d in (_parse_iso_date(e["dateTime"]) for e in dated_symptoms)
+            d
+            for d in (_parse_iso_date(e["dateTime"]) for e in dated_symptoms)
             if d is not None
         )
-        span = (
-            f", span {ds[0].isoformat()} → {ds[-1].isoformat()}" if ds else ""
-        )
+        span = f", span {ds[0].isoformat()} → {ds[-1].isoformat()}" if ds else ""
         return CategoryCoverage(
-            DataCategory.SymptomTimeline, CoverageStatus.Covered,
+            DataCategory.SymptomTimeline,
+            CoverageStatus.Covered,
             f"{n} dated symptom event(s){span}",
         )
     if n == 1:
         return CategoryCoverage(
-            DataCategory.SymptomTimeline, CoverageStatus.Partial,
+            DataCategory.SymptomTimeline,
+            CoverageStatus.Partial,
             "1 dated symptom event",
         )
     return CategoryCoverage(
-        DataCategory.SymptomTimeline, CoverageStatus.NotCovered,
+        DataCategory.SymptomTimeline,
+        CoverageStatus.NotCovered,
     )
 
 
@@ -452,7 +488,8 @@ def _connections_coverage(shifts, nodal_events):
             nodal_dates.append(d)
     if not nodal_dates:
         return CategoryCoverage(
-            DataCategory.EventSymptomConnections, CoverageStatus.NotCovered,
+            DataCategory.EventSymptomConnections,
+            CoverageStatus.NotCovered,
         )
 
     connected = 0
@@ -471,10 +508,12 @@ def _connections_coverage(shifts, nodal_events):
         status = CoverageStatus.Partial
     else:
         return CategoryCoverage(
-            DataCategory.EventSymptomConnections, CoverageStatus.NotCovered,
+            DataCategory.EventSymptomConnections,
+            CoverageStatus.NotCovered,
         )
     return CategoryCoverage(
-        DataCategory.EventSymptomConnections, status,
+        DataCategory.EventSymptomConnections,
+        status,
         f"{connected} shift event(s) within {_CONNECTION_DAYS}d of a nodal event",
     )
 
@@ -529,13 +568,18 @@ def _grandparents_coverage(parent, people, pair_bonds, cat):
     found = [p for p in (gma, gpa) if p and p.get("name")]
     if len(found) == 2:
         return CategoryCoverage(
-            cat, CoverageStatus.Covered, ", ".join(p["name"] for p in found),
+            cat,
+            CoverageStatus.Covered,
+            ", ".join(p["name"] for p in found),
         )
     if len(found) == 1:
         return CategoryCoverage(
-            cat, CoverageStatus.Partial, f"only {found[0]['name']} known",
+            cat,
+            CoverageStatus.Partial,
+            f"only {found[0]['name']} known",
         )
     return CategoryCoverage(
-        cat, CoverageStatus.Partial,
+        cat,
+        CoverageStatus.Partial,
         "grandparents PairBond exists but unnamed",
     )
