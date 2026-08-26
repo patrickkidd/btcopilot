@@ -27,6 +27,9 @@ def _loggers(request):
     yield
 
     logging.getLogger("btcopilot").handlers.clear()
+    # init_datadog() turns propagation off for the whole process, which silences
+    # caplog for every later test in the run.
+    logging.getLogger("btcopilot").propagate = True
 
 
 @pytest.mark.init_datadog
