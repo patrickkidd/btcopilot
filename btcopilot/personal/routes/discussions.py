@@ -19,7 +19,7 @@ from btcopilot.personal.deepreextract import (
     mark_rebuild_alive,
     request_rebuild_cancel,
 )
-from btcopilot.personal.models import Discussion, Speaker, SpeakerType
+from btcopilot.personal.models import Discussion, Speaker, SpeakerType, Statement
 
 _log = logging.getLogger(__name__)
 
@@ -245,7 +245,21 @@ def chat(discussion_id: int):
 
     db.session.commit()
 
-    return jsonify({"statement": response.statement})
+    # The pair ask() just stored. The client keeps the conversation in its own
+    # model, so it needs the rows themselves — a reply text alone leaves the
+    # chat rebuilding from a list the turn never entered.
+    stored = (
+        Statement.query.filter_by(discussion_id=discussion.id)
+        .order_by(Statement.order.desc(), Statement.id.desc())
+        .limit(2)
+        .all()
+    )
+    return jsonify(
+        {
+            "statement": response.statement,
+            "statements": [x.as_dict() for x in reversed(stored)],
+        }
+    )
 
 
 @bp.route("/<int:discussion_id>/extract", methods=["POST"])

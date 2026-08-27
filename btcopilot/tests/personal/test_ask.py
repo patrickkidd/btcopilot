@@ -27,7 +27,17 @@ def test_chat(subscriber, discussions):
         json={"discussion_id": discussion.id, "statement": "Hello"},
     )
     assert response.status_code == 200
-    assert response.json == {"statement": "some response"}
+    assert response.json["statement"] == "some response"
+
+    # The client keeps the conversation in its own model, so the turn has to
+    # come back as rows it can record, in the order they were said.
+    stored = response.json["statements"]
+    assert [x["text"] for x in stored] == ["Hello", "some response"]
+
+    assert [x["speaker_id"] for x in stored] == [
+        discussion.chat_user_speaker_id,
+        discussion.chat_ai_speaker_id,
+    ]
 
 
 def test_chat_bad_content_type(subscriber, discussions):
