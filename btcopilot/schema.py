@@ -284,10 +284,12 @@ class PairBond:
 
 def committed_bond_chunk(pair_bond: PairBond) -> dict:
     """Scene Marriage coerces married=None to False (dashed); map the staged
-    unknown to the scene default True before committing."""
+    unknown to the scene default True before committing. confidence is
+    PDP-only and never reaches the scene, exactly as for a committed person."""
     chunk = asdict(pair_bond)
     if chunk["married"] is None:
         chunk["married"] = True
+    del chunk["confidence"]
     return chunk
 
 

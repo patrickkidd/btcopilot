@@ -22,7 +22,7 @@ EXAMPLES_DIR = os.path.join(os.path.dirname(__file__), "examples")
 
 UNDER_PYTEST = (
     "create_sandbox_app() under pytest would return an app with real bcrypt, "
-    "Stripe, Chroma and mail, because create_app installs the stand-ins only "
+    "Stripe and mail, because create_app installs the stand-ins only "
     "outside pytest. Spawn the sandbox as a subprocess, or use the flask_app "
     "fixture for an in-process app."
 )
@@ -36,7 +36,6 @@ def sandbox_config(db_uri: str, fd_dir: str, broker: str | None = None) -> dict:
         "SQLALCHEMY_DATABASE_URI": db_uri,
         "SQLALCHEMY_TRACK_MODIFICATIONS": False,
         "FD_DIR": fd_dir,
-        "VECTOR_DB_PATH": os.path.join(fd_dir, "vector_db"),
         "CELERY_BROKER_URL": broker or MEMORY_BROKER,
         "CELERY_RESULT_BACKEND": broker or MEMORY_BACKEND,
     }

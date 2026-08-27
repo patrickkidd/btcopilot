@@ -1,7 +1,7 @@
 """Third-party stand-ins for a sandbox server process.
 
 The sandbox runs the real create_app, so the extensions that talk to Datadog,
-Stripe, Chroma, and SMTP are replaced with no-ops and bcrypt with a fast fake.
+Stripe and SMTP are replaced with no-ops and bcrypt with a fast fake.
 Celery stays live when a real broker is given, which is what makes background
 work (Rebuild diagram) actually run in the sandbox.
 
@@ -17,7 +17,6 @@ NOOP_EXTENSIONS = (
     "init_excepthook",
     "init_datadog",
     "init_stripe",
-    "init_chroma",
     "init_mail",
 )
 LIVE_BROKER_SCHEMES = ("redis://", "rediss://", "amqp://")

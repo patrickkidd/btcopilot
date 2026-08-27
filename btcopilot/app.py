@@ -9,7 +9,6 @@ _log = logging.getLogger(__name__)
 
 
 def create_app(config: dict = None, **kwargs):
-    from btcopilot.pro.copilot.engine import Engine
     from btcopilot import auth, extensions, pro, personal, training, testing
 
     # Flask CLI may pass script_info as a kwarg, we ignore it
@@ -63,14 +62,6 @@ def create_app(config: dict = None, **kwargs):
         pass
     else:
         _log.info(f"Created instance dir {app.instance_path}")
-
-    engine = Engine(
-        data_dir=app.config.get(
-            "VECTOR_DB_PATH", os.path.join(app.instance_path, "vector_db")
-        ),
-        k=20,
-    )
-    app.engine = engine
 
     ## Exception Notifs
 

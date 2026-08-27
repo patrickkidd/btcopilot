@@ -914,40 +914,6 @@ def access_right(id=None):
     return pickle.dumps(access_right.as_dict())
 
 
-@bp.route("/copilot/chat", methods=["POST"])
-@bp.route("/copilot/chat/<int:conversation_id>", methods=["POST", "DELETE"])
-@encrypted
-def copilot_chat(conversation_id: int = None):
-    from btcopilot.pro.copilot import Event
-
-    args = pickle.loads(request.data)
-    session = Session.query.filter_by(token=args["session"]).first()
-    if not session:
-        return ("Unauthorized", 401)
-
-    if not "question" in args:
-        return ("The parameter 'question' is required", 400)
-
-    events = [
-        Event(
-            dateTime=x["dateTime"],
-            description=x["description"],
-            people=x["people"],
-            variables=x["variables"],
-        )
-        for x in args.get("events", [])
-    ]
-
-    response = current_app.engine.ask(args["question"], events, conversation_id)
-    return pickle.dumps(
-        {
-            "conversation_id": conversation_id,
-            "response": response.answer,
-            "sources": response.sources,
-        }
-    )
-
-
 # --- Auto-Arrange ---
 #
 # As of 2026-05-03, the Pro app's Arrange Selection runs the deterministic Bowen

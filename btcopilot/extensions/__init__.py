@@ -31,7 +31,6 @@ from celery import Celery
 
 from btcopilot import version
 from .handlers import ColorfulSMTPHandler
-from .chroma import Chroma
 
 SERVER_FOLDER_PATH = os.path.realpath(
     os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")
@@ -44,7 +43,6 @@ EMBEDDINGS_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 _log = logging.getLogger(__name__)
 
 
-chroma = Chroma()
 db = SQLAlchemy()
 mail = Mail()
 csrf = CSRFProtect()
@@ -404,8 +402,6 @@ def cron_hourly():
     commands.expire_stale_sessions()
 
 
-def init_chroma(app):
-    chroma.init_app(app)
 
 
 def init_mail(app):
@@ -432,7 +428,6 @@ def init_app(app):
     init_mail(app)
     mail.init_app(app)
     init_csrf(app)
-    init_chroma(app)
 
     if os.environ.get("ENABLE_GRAPHQL", False) and "pytest" not in sys.modules:
         from btcopilot.extensions import graphql
