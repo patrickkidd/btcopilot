@@ -1085,3 +1085,38 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 
 **Revisit trigger:** the harness gains multi-repo worktree support; or the resolver script lands and the hand procedure in root CLAUDE.md gets replaced; or a private repo goes public / plan upgrades (then apply the same branch protection).
 
+## 2026-08-25: FD-336 embedding contract — discussions bind to the open case, chat defaults stay on the free diagram, single client writer
+
+**Context:** FD-336 embeds the Personal Discuss/Learn/Plan tabs beside the Pro canvas on the clinician's open server case. Grounding (three adversarial critics over the real code, `familydiagram/doc/workstreams/FD-336/`) found the ticket's "no btcopilot changes needed" false: `POST /personal/discussions/` ignores `diagram_id` and hardwires the caller's free diagram, so every embedded discussion/extract/commit would land on the wrong row while looking green in the client; every chat turn calls `ensure_chat_defaults` (inject Person 1 "User" / Person 2 "Assistant") and rewrites the row through `set_diagram_data` without bumping `version`, so on a clinician case that means phantom people, id collisions with non-person items, and a stale Pro save overwriting the server write with no 409. Separately, committed person dicts carry `last_name` while the desktop Scene reads `lastName`, so extracted last names are dropped on every current-version row and a last-name-only person renders a blank symbol (the ticket's "single-token name has no label" mechanism does not reproduce; a name-only chunk labels fine on master).
+
+**Decisions (Claude defaults, Patrick may override; full table in `familydiagram/doc/workstreams/FD-336/fd-336-decisions.md`):**
+- Discussions honor `diagram_id` for diagrams the caller owns (403 otherwise); absent → free diagram, Personal unchanged.
+- Chat defaults / placeholder people only on the caller's free diagram; on other diagrams the coach's subject is the primary-flagged person if any, else none. Every server-side row write bumps `version` — no unversioned writes remain.
+- Feature enabled only on server diagrams the user owns, read-write; shared and read-only opens show a disabled slot with an explanation.
+- One client writer per row: a `DiagramSaver` in familydiagram owns Scene + Diagram + the single `applyChange`; Pro's save and the PDP commit both go through it over `/v1/diagrams` pickle; Personal's JSON save path retires. An accept persists the whole Scene (unsaved Pro edits included) and leaves the document clean; accept is one undo step on Pro's stack that also restores the PDP and persists.
+- Save-before-chat: modal on Send/Extract with a dirty stack, Save completes the PUT before the POST, Cancel blocks.
+- Label contract: the writer emits Scene keys at commit (`committed_person_chunk` → `name`, `lastName`; `name = name or last_name`); a version-gated compat migration in familydiagram heals rows already written with `last_name` so diagram 1924 labels on reopen. No defensive reader.
+- Staging kept as the ticket states (S1 wrapper byte-identical output-vs-output, S2 pipeline on the saver, S3 complete DiagramData with a client-side `lastItemId` clamp ≥ the reserved block end).
+
+**Rejected:** widening Personal routes to shared read-write collaborators (separate auth ticket); auto-arrange on accept (incremental placement is a later story; a viewport-centre cascade offset is used instead); server-side `lastItemId` monotonic guard (client is the only /v1 writer this ticket).
+
+**Revisit trigger:** shared-case chat is requested; FD-339 corrections-through-chat lands (agent becomes a third writer through the same saver); the phone app needs to see desktop edits live (poll/refresh).
+
+## 2026-08-26: Premium chat model policy — latest Opus at equal price (Opus 4.6 → Opus 5)
+
+**Context:** The Personal app's Premium coaching tier ran Claude Opus 4.6. Opus 5 is available at the same list price, so the question was whether tracking the newest Opus needs a cost review each time.
+
+**Policy (Patrick):** for premium chat, always move to the latest Opus when the price is the same. Only when the price differs do we compare pricing and run cost projections before switching.
+
+**Price facts (Claude API, cached 2026-06-24):** `claude-opus-5` and `claude-opus-4-6` are both $5/$25 per Mtok input/output, both 1M context. Equal price, so the policy fires: Opus 5 becomes the default response model and the default client alias, and Opus 4.6 stays selectable.
+
+**Tokenizer caveat (measured, not assumed):** identical per-token price is not identical per-request cost. Opus 5 uses a different tokenizer than 4.6. Measured with `count_tokens` on one representative coach request (real system prompt + 10 statements): 3,987 tokens on 4.6 vs 5,411 on Opus 5 — a ratio of 1.36. Two controls confirm it is the tokenizer and not the payload shape: the system prompt alone is 1.37, plain user prose is 1.34. Expect roughly a third more input tokens per coach turn, i.e. about a third higher chat spend at unchanged list pricing. Output-side and thinking-token effects are unmeasured — they need live runs.
+
+**Request-shape changes forced by Opus 5:** the Anthropic chat path no longer sends sampling parameters. Opus 5 rejects `temperature`/`top_p`/`top_k` and `budget_tokens` outright, and rejects assistant prefill, so the one code path stays valid for both models: adaptive thinking always on, no sampling kwargs forwarded. The `CLAUDE_THINKING_ENABLED` flag was removed rather than left as a switch that would produce 400s on Opus 5.
+
+**Bug found and fixed while wiring this:** the coach prompt selector received the client-facing alias ("opus-4.6") but tested it with a `claude-` prefix check, so every Premium request from the app took the Gemini-tuned prompt branch. Aliases are now resolved to API model IDs once, before the prompt is assembled. Premium coach responses will use the Opus-tuned style for the first time — a real change in coach output; revert is one line if it reads worse.
+
+**Rejected:** aliasing the tier by name (e.g. "premium") so future model swaps need no client change. Cleaner, but it is a client-visible contract change and stored user settings would need migrating — deferred, not dismissed.
+
+**Revisit trigger:** a newer Opus ships, or Opus pricing changes (then the compare-first branch of the policy applies), or measured per-request cost moves materially from the 1.36 ratio above.
+

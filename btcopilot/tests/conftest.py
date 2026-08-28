@@ -86,11 +86,6 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "real_passwords: Use real bcrypt hashing instead of mocks"
     )
-    warnings.filterwarnings(
-        "ignore",
-        category=pydantic.warnings.PydanticDeprecatedSince211,
-        module="chromadb.types",
-    )
 
 
 # def pytest_collection_modifyitems(config, items):
@@ -156,7 +151,6 @@ def extensions():
         "init_mail": btcopilot.extensions.init_mail,
         "init_datadog": btcopilot.extensions.init_datadog,
         "init_stripe": btcopilot.extensions.init_stripe,
-        "init_chroma": btcopilot.extensions.init_chroma,
         "init_celery": btcopilot.extensions.init_celery,
     }
     with contextlib.ExitStack() as stack:
@@ -164,7 +158,6 @@ def extensions():
         stack.enter_context(patch("btcopilot.extensions.init_excepthook"))
         stack.enter_context(patch("btcopilot.extensions.init_datadog"))
         stack.enter_context(patch("btcopilot.extensions.init_stripe"))
-        stack.enter_context(patch("btcopilot.extensions.init_chroma"))
         stack.enter_context(patch("btcopilot.extensions.init_celery"))
         # assert sys.excepthook == sys.__excepthook__
         yield originals
@@ -192,12 +185,6 @@ def flask_app(request, tmp_path):
 
     logging.getLogger("btcopilot").setLevel(logging.DEBUG)
 
-    vector_db = request.node.get_closest_marker("vector_db")
-    if vector_db and "path" in vector_db.kwargs:
-        VECTOR_DB_PATH = vector_db.kwargs["path"]
-    else:
-        VECTOR_DB_PATH = os.path.join(tmp_path, "vector_db")
-
     kwargs = {
         "ENV": "unittest",
         "CONFIG": "testing",
@@ -205,14 +192,12 @@ def flask_app(request, tmp_path):
         "SECRET_KEY": "test_secret_key",
         "FD_DIR": tmp_path,
         "DATABASE": tmp_path,
-        "VECTOR_DB_PATH": VECTOR_DB_PATH,
         "MAIL_DEFAULT_SENDER": "patrickkidd@gmail.com",
         "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
         "SQLALCHEMY_TRACK_MODIFICATIONS": False,
         "SERVER_NAME": "127.0.0.1",
         "STRIPE_ENABLED": truthy(os.getenv("ENABLE_STRIPE", False)),
         "STRIPE_KEY": os.getenv("FD_TEST_STRIPE_KEY"),
-        "CHROMA_PERSIST_PATH": f"{tmp_path}/vector_db",
         "SCHEDULER_API_ENABLED": False,
         "CELERY_BROKER_URL": "memory://",
         "CELERY_RESULT_BACKEND": "cache+memory://",
@@ -286,11 +271,42 @@ def test_user_2(flask_app):
 
 
 @pytest.fixture
-def test_policy(flask_app):
+def licenseProduct(request):
+    """Which licence the user under test holds.
+
+    A beta build honours beta licences and strips every other one, so a test
+    running as a beta build needs a beta licence or it launches with no active
+    features at all -- which raises the "Beta License Required" modal and
+    blocks on it. The `beta` marker therefore sets the build AND the licence
+    together; they cannot disagree.
+
+    Override it directly to test a licence in its own right:
+
+        @pytest.mark.parametrize(
+            "licenseProduct",
+            [btcopilot.LICENSE_PROFESSIONAL, btcopilot.LICENSE_BETA],
+            indirect=True,
+        )
+    """
+    if hasattr(request, "param"):
+        return request.param
+    if request.node.get_closest_marker("beta"):
+        return btcopilot.LICENSE_BETA
+    return btcopilot.LICENSE_PROFESSIONAL
+
+
+#: The purchasable code for a product, where they differ.
+LICENSE_CODES = {
+    btcopilot.LICENSE_PROFESSIONAL: btcopilot.LICENSE_PROFESSIONAL_MONTHLY,
+}
+
+
+@pytest.fixture
+def test_policy(flask_app, licenseProduct):
     policy = Policy(
-        code=btcopilot.LICENSE_PROFESSIONAL_MONTHLY,
-        product=btcopilot.LICENSE_PROFESSIONAL,
-        name="Unit Test Monthly",
+        code=LICENSE_CODES.get(licenseProduct, licenseProduct),
+        product=licenseProduct,
+        name=f"Unit Test {licenseProduct.rsplit('.', 1)[-1]}",
         interval="month",
         amount=0.99,
         maxActivations=2,
@@ -454,12 +470,5 @@ def anonymous(flask_app):
 #     flask_app.test_client_class = customclient.CustomClient
 #     return flask_app.test_client(app=flask_app, user=test_user)
 
-# from btcopilot.extensions.chroma import Chroma
 
 
-# @pytest.fixture
-# def chroma_client(app):
-#     app.config["CHROMA_PERSIST_PATH"] = "/tmp/test_chroma"
-#     chroma = Chroma()
-#     chroma.init_app(app)
-#     return chroma

@@ -78,7 +78,11 @@ _SHARED_DIR = os.path.normpath(
     os.path.join(os.path.dirname(__file__), "..", "doc", "log", "coach-sessions")
 )
 
-MODELS = {"opus": "claude-opus-4-6", "gemini": "gemini-2.5-flash"}
+MODELS = {
+    "opus": "claude-opus-5",
+    "opus-4.6": "claude-opus-4-6",
+    "gemini": "gemini-2.5-flash",
+}
 
 DIAGRAMS = {
     "fresh": DiagramData(),

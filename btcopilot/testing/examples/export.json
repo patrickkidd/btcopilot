@@ -1,0 +1,74 @@
+{
+  "user": {
+    "id": 7,
+    "username": "exported@test",
+    "first_name": "Ex",
+    "last_name": "Ported",
+    "status": "confirmed",
+    "active": true,
+    "roles": "subscriber",
+    "created_at": "2024-01-01T00:00:00"
+  },
+  "diagram": {
+    "id": 1924,
+    "user_id": 7,
+    "name": "Exported Case",
+    "version": 344,
+    "use_real_names": false,
+    "data_b64": "gASVGgEAAAAAAAB9lCiMBG5hbWWUjA1FeHBvcnRlZCBDYXNllIwGcGVvcGxllF2UKH2UKIwCaWSUSwFoAYwDQWRhlIwIbGFzdE5hbWWUjAlXaGl0ZmllbGSUjAZnZW5kZXKUjAZmZW1hbGWUjAdwYXJlbnRzlE51fZQoaAZLAmgBjAdCZXJuYXJklGgIaAloCowEbWFsZZRoDE51ZYwKcGFpcl9ib25kc5RdlH2UKGgGSwOMCHBlcnNvbl9hlEsBjAhwZXJzb25fYpRLAowHbWFycmllZJSIjApjb25maWRlbmNllE51YYwGZXZlbnRzlF2UjANwZHCUfZQoaANdlGgXXZRoEF2UjAZkZWxldGWUXZR1jApsYXN0SXRlbUlklEsDdS4=",
+    "created_at": "2024-02-01T00:00:00",
+    "updated_at": "2026-02-01T00:00:00"
+  },
+  "discussions": [
+    {
+      "id": 55,
+      "user_id": 7,
+      "diagram_id": 1924,
+      "summary": "Exported discussion",
+      "status": "ready",
+      "extracting": false,
+      "synthetic": false,
+      "discussion_date": "2026-01-05",
+      "chat_user_speaker_id": 301,
+      "chat_ai_speaker_id": 302,
+      "created_at": "2026-01-05T00:00:00"
+    }
+  ],
+  "speakers": [
+    {
+      "id": 301,
+      "discussion_id": 55,
+      "person_id": 1,
+      "name": "Ada",
+      "type": "subject",
+      "created_at": "2026-01-05T00:00:00"
+    },
+    {
+      "id": 302,
+      "discussion_id": 55,
+      "name": "Coach",
+      "type": "expert",
+      "created_at": "2026-01-05T00:00:00"
+    }
+  ],
+  "statements": [
+    {
+      "id": 900,
+      "discussion_id": 55,
+      "speaker_id": 301,
+      "text": "Bernard and I married in 1958.",
+      "order": 1,
+      "approved": false,
+      "created_at": "2026-01-05T00:00:01"
+    },
+    {
+      "id": 903,
+      "discussion_id": 55,
+      "speaker_id": 302,
+      "text": "What was that year like for you?",
+      "order": 2,
+      "approved": false,
+      "created_at": "2026-01-05T00:00:02"
+    }
+  ]
+}

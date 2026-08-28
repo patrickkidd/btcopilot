@@ -55,11 +55,6 @@ app = [
 
     # training
     "assemblyai",
-    "chromadb",
-    "langchain-chroma",
-    "langchain-core",
-    "langchain-openai",
-    "langchain-text-splitters",
     "nest_asyncio",
     "pypdf",
     "rapidfuzz>=3.0.0",

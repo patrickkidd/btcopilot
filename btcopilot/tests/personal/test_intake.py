@@ -65,16 +65,46 @@ def test_full_picture():
         {"id": 400, "person_a": 1, "person_b": 9},  # user-spouse
     ]
     events = [
-        {"id": 500, "kind": "married", "person": 2, "spouse": 3, "dateTime": "1980-01-01"},
+        {
+            "id": 500,
+            "kind": "married",
+            "person": 2,
+            "spouse": 3,
+            "dateTime": "1980-01-01",
+        },
         {"id": 501, "kind": "death", "person": 6, "dateTime": "2010-01-01"},
         {"id": 502, "kind": "moved", "person": 1, "dateTime": "2018-01-01"},
         # Shift events with SARF + dates near structural anchors
-        {"id": 503, "kind": "shift", "person": 1, "symptom": "up", "dateTime": "2010-04-01"},
-        {"id": 504, "kind": "shift", "person": 1, "symptom": "up", "dateTime": "2018-03-01"},
-        {"id": 505, "kind": "shift", "person": 1, "relationship": "distance",
-         "relationshipTargets": [3], "dateTime": "2018-06-01"},
-        {"id": 506, "kind": "shift", "person": 1, "relationship": "conflict",
-         "relationshipTargets": [3], "dateTime": "2018-09-01"},
+        {
+            "id": 503,
+            "kind": "shift",
+            "person": 1,
+            "symptom": "up",
+            "dateTime": "2010-04-01",
+        },
+        {
+            "id": 504,
+            "kind": "shift",
+            "person": 1,
+            "symptom": "up",
+            "dateTime": "2018-03-01",
+        },
+        {
+            "id": 505,
+            "kind": "shift",
+            "person": 1,
+            "relationship": "distance",
+            "relationshipTargets": [3],
+            "dateTime": "2018-06-01",
+        },
+        {
+            "id": 506,
+            "kind": "shift",
+            "person": 1,
+            "relationship": "conflict",
+            "relationshipTargets": [3],
+            "dateTime": "2018-09-01",
+        },
     ]
     cov = coverage(_diagram(people, pair_bonds, events))
     assert cov[DataCategory.Mother].status == CoverageStatus.Covered
@@ -119,12 +149,36 @@ def test_functioning_coverage_rich_when_sarf_and_timeline_present():
         # Structural anchor
         {"id": 100, "kind": "death", "person": 99, "dateTime": "2019-01-01"},
         # Shift events with varied SARF coding, dated near the anchor
-        {"id": 101, "kind": "shift", "person": 1, "symptom": "up", "dateTime": "2019-03-15"},
-        {"id": 102, "kind": "shift", "person": 1, "symptom": "up", "dateTime": "2019-06-01"},
-        {"id": 103, "kind": "shift", "person": 1, "relationship": "distance",
-         "relationshipTargets": [99], "dateTime": "2019-08-01"},
-        {"id": 104, "kind": "shift", "person": 1, "relationship": "conflict",
-         "relationshipTargets": [99], "dateTime": "2020-01-01"},
+        {
+            "id": 101,
+            "kind": "shift",
+            "person": 1,
+            "symptom": "up",
+            "dateTime": "2019-03-15",
+        },
+        {
+            "id": 102,
+            "kind": "shift",
+            "person": 1,
+            "symptom": "up",
+            "dateTime": "2019-06-01",
+        },
+        {
+            "id": 103,
+            "kind": "shift",
+            "person": 1,
+            "relationship": "distance",
+            "relationshipTargets": [99],
+            "dateTime": "2019-08-01",
+        },
+        {
+            "id": 104,
+            "kind": "shift",
+            "person": 1,
+            "relationship": "conflict",
+            "relationshipTargets": [99],
+            "dateTime": "2020-01-01",
+        },
     ]
     cov = coverage(_diagram(people, events=events))
     assert cov[DataCategory.FamilyFunctioning].status == CoverageStatus.Covered
@@ -144,17 +198,19 @@ def test_format_coverage_renders_known_and_outstanding():
 
 def test_format_coverage_empty_when_only_presenting_problem():
     # All categories covered → empty/known-only prompt
-    cov = {DataCategory.PresentingProblem: coverage(None)[DataCategory.PresentingProblem]}
+    cov = {
+        DataCategory.PresentingProblem: coverage(None)[DataCategory.PresentingProblem]
+    }
     assert format_coverage_for_prompt(cov) == ""
 
 
 def test_roster_lists_all_named_people_even_without_speaker_links():
-    # Speaker (Marcus, id 1) has NO parents link and is not primary — coverage()
-    # goes blank on the family, but the roster must still name everyone. This is
-    # the FD-325 graceful-degradation contract: extraction connectivity is
-    # imperfect; the coach still gets who is on file by name.
+    # Speaker (Marcus) has NO parents link — coverage() goes blank on the
+    # family, but the roster must still name everyone. This is the FD-325
+    # graceful-degradation contract: extraction connectivity is imperfect; the
+    # coach still gets who is on file by name.
     people = [
-        {"id": 1, "name": "Marcus", "gender": "male"},
+        {"id": 1, "name": "Marcus", "gender": "male", "primary": True},
         {"id": 2, "name": "Assistant", "gender": "male"},
         {"id": 3, "name": "William", "gender": "male"},
         {"id": 4, "name": "Dorothy", "gender": "female"},
@@ -164,8 +220,8 @@ def test_roster_lists_all_named_people_even_without_speaker_links():
         {"id": 8, "name": "Jennifer", "gender": "female"},
     ]
     pair_bonds = [
-        {"id": 100, "person_a": 3, "person_b": 4},   # William + Dorothy
-        {"id": 101, "person_a": 1, "person_b": 8},   # Marcus + Jennifer
+        {"id": 100, "person_a": 3, "person_b": 4},  # William + Dorothy
+        {"id": 101, "person_a": 1, "person_b": 8},  # Marcus + Jennifer
     ]
     events = [
         {"id": 200, "kind": "death", "person": 3, "dateTime": "2015-01-01"},
@@ -175,15 +231,17 @@ def test_roster_lists_all_named_people_even_without_speaker_links():
     assert out.startswith("People on file:")
     for name in ("Marcus", "William", "Dorothy", "Uncle Jim", "Jennifer"):
         assert name in out
-    assert "Assistant" not in out      # chat bot excluded
-    assert "Unknown" not in out        # placeholder excluded
+    assert "Assistant" not in out  # chat bot excluded
+    assert "Unknown" not in out  # placeholder excluded
     assert "Lily's spouse" not in out  # structural stub excluded
     assert "Marcus (male) — the user" in out
     assert "William (male) — partner of Dorothy [d. 2015-01-01]" in out
     assert "Jennifer (female) — partner of the user [b. 1985-03-04]" in out
     # Coverage is blind here (no speaker links) — roster is the safety net.
-    assert coverage(_diagram(people, pair_bonds))[DataCategory.Father].status == \
-        CoverageStatus.NotCovered
+    assert (
+        coverage(_diagram(people, pair_bonds))[DataCategory.Father].status
+        == CoverageStatus.NotCovered
+    )
 
 
 def test_real_desktop_quirks_dont_crash():
@@ -201,10 +259,20 @@ def test_real_desktop_quirks_dont_crash():
     ]
     pair_bonds = [{"id": 50, "person_a": 1, "person_b": 3}]
     events = [
-        {"id": 9, "kind": "shift", "person": 1,
-         "relationship": RelationshipKind.Distance, "dateTime": "2020-01-01"},
-        {"id": 10, "kind": "shift", "person": 1,
-         "relationship": RelationshipKind.Conflict, "dateTime": "2020-06-01"},
+        {
+            "id": 9,
+            "kind": "shift",
+            "person": 1,
+            "relationship": RelationshipKind.Distance,
+            "dateTime": "2020-01-01",
+        },
+        {
+            "id": 10,
+            "kind": "shift",
+            "person": 1,
+            "relationship": RelationshipKind.Conflict,
+            "dateTime": "2020-06-01",
+        },
     ]
     dd = _diagram(people, pair_bonds, events)
     roster = roster_for_prompt(dd)
@@ -233,26 +301,69 @@ def test_committed_scene_format_contract():
     the desktop and Personal-commit schemas converge on these collections.
     """
     people = [
-        {"id": 1, "name": "User", "primary": True, "parents": 100,
-         "kind": "Person", "marriages": [400], "gender": "male",
-         "itemPos": [0.0, 0.0], "deceased": False, "layers": [],
-         "detailsText": {}},
-        {"id": 2, "name": "Mary", "gender": "female", "parents": 200,
-         "kind": "Person", "marriages": [100], "itemPos": [10.0, 0.0]},
-        {"id": 3, "name": "John", "gender": "male", "parents": 300,
-         "kind": "Person", "marriages": [100], "deceased": True},
-        {"id": 4, "name": "Sarah", "gender": "female", "parents": 100,
-         "kind": "Person"},
+        {
+            "id": 1,
+            "name": "User",
+            "primary": True,
+            "parents": 100,
+            "kind": "Person",
+            "marriages": [400],
+            "gender": "male",
+            "itemPos": [0.0, 0.0],
+            "deceased": False,
+            "layers": [],
+            "detailsText": {},
+        },
+        {
+            "id": 2,
+            "name": "Mary",
+            "gender": "female",
+            "parents": 200,
+            "kind": "Person",
+            "marriages": [100],
+            "itemPos": [10.0, 0.0],
+        },
+        {
+            "id": 3,
+            "name": "John",
+            "gender": "male",
+            "parents": 300,
+            "kind": "Person",
+            "marriages": [100],
+            "deceased": True,
+        },
+        {
+            "id": 4,
+            "name": "Sarah",
+            "gender": "female",
+            "parents": 100,
+            "kind": "Person",
+        },
         {"id": 5, "name": "Linda", "gender": "female", "kind": "Person"},
         {"id": 6, "name": "Tom", "gender": "male", "kind": "Person"},
         {"id": 7, "name": "Anne", "gender": "female", "kind": "Person"},
         {"id": 8, "name": "Bob", "gender": "male", "kind": "Person"},
-        {"id": 9, "name": "Lisa", "gender": "female", "kind": "Person",
-         "marriages": [400]},
-        {"id": 10, "name": "Emma", "gender": "female", "parents": 400,
-         "kind": "Person"},
-        {"id": 11, "name": "Karen", "gender": "female", "parents": 200,
-         "kind": "Person"},
+        {
+            "id": 9,
+            "name": "Lisa",
+            "gender": "female",
+            "kind": "Person",
+            "marriages": [400],
+        },
+        {
+            "id": 10,
+            "name": "Emma",
+            "gender": "female",
+            "parents": 400,
+            "kind": "Person",
+        },
+        {
+            "id": 11,
+            "name": "Karen",
+            "gender": "female",
+            "parents": 200,
+            "kind": "Person",
+        },
     ]
     # Desktop Marriage.write → pair_bonds collection with person_a/person_b.
     pair_bonds = [
@@ -263,20 +374,45 @@ def test_committed_scene_format_contract():
     ]
     # Post-commit_pdp_items: dateTime is QDateTime, never an ISO string.
     events = [
-        {"id": 500, "kind": "married", "person": 2, "spouse": 3,
-         "dateTime": _qdt("1980-01-01")},
-        {"id": 501, "kind": "death", "person": 6,
-         "dateTime": _qdt("2010-01-01")},
-        {"id": 502, "kind": "moved", "person": 1,
-         "dateTime": _qdt("2018-01-01")},
-        {"id": 503, "kind": "shift", "person": 1, "symptom": "up",
-         "dateTime": _qdt("2010-04-01")},
-        {"id": 504, "kind": "shift", "person": 1, "symptom": "up",
-         "dateTime": _qdt("2018-03-01")},
-        {"id": 505, "kind": "shift", "person": 1, "relationship": "distance",
-         "relationshipTargets": [3], "dateTime": _qdt("2018-06-01")},
-        {"id": 506, "kind": "shift", "person": 1, "relationship": "conflict",
-         "relationshipTargets": [3], "dateTime": _qdt("2018-09-01")},
+        {
+            "id": 500,
+            "kind": "married",
+            "person": 2,
+            "spouse": 3,
+            "dateTime": _qdt("1980-01-01"),
+        },
+        {"id": 501, "kind": "death", "person": 6, "dateTime": _qdt("2010-01-01")},
+        {"id": 502, "kind": "moved", "person": 1, "dateTime": _qdt("2018-01-01")},
+        {
+            "id": 503,
+            "kind": "shift",
+            "person": 1,
+            "symptom": "up",
+            "dateTime": _qdt("2010-04-01"),
+        },
+        {
+            "id": 504,
+            "kind": "shift",
+            "person": 1,
+            "symptom": "up",
+            "dateTime": _qdt("2018-03-01"),
+        },
+        {
+            "id": 505,
+            "kind": "shift",
+            "person": 1,
+            "relationship": "distance",
+            "relationshipTargets": [3],
+            "dateTime": _qdt("2018-06-01"),
+        },
+        {
+            "id": 506,
+            "kind": "shift",
+            "person": 1,
+            "relationship": "conflict",
+            "relationshipTargets": [3],
+            "dateTime": _qdt("2018-09-01"),
+        },
     ]
     dd = _diagram(people, pair_bonds, events)
     cov = coverage(dd)

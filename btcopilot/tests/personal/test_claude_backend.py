@@ -4,12 +4,38 @@ import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
 from btcopilot.llmutil import (
+    DEFAULT_RESPONSE_MODEL_ALIAS,
+    MODEL_ALIASES,
+    RESPONSE_MODEL,
     claude_text,
     claude_text_sync,
+    resolve_model,
     response_text_sync,
     _is_claude_model,
     _prepare_claude_messages,
 )
+
+
+# --- Model policy: premium chat tracks the latest Opus at equal price ---
+
+
+def test_default_response_model_is_opus_5():
+    assert RESPONSE_MODEL == "claude-opus-5"
+    assert DEFAULT_RESPONSE_MODEL_ALIAS == "opus-5"
+    assert resolve_model(DEFAULT_RESPONSE_MODEL_ALIAS) == "claude-opus-5"
+    assert resolve_model(None) == "claude-opus-5"
+
+
+def test_opus_4_6_still_selectable():
+    assert MODEL_ALIASES["opus-4.6"] == "claude-opus-4-6"
+    assert resolve_model("opus-4.6") == "claude-opus-4-6"
+    assert resolve_model("gemini-2.5-flash") == "gemini-2.5-flash"
+
+
+def test_resolve_model_passes_through_api_ids():
+    assert resolve_model("claude-opus-4-6") == "claude-opus-4-6"
+    assert resolve_model("gemini-3-flash-preview") == "gemini-3-flash-preview"
+    assert resolve_model("not-a-model") == RESPONSE_MODEL
 
 
 # --- Model detection ---
@@ -110,6 +136,12 @@ async def test_claude_text_with_turns():
     assert messages[0]["role"] == "user"
     assert messages[1]["role"] == "assistant"
     assert messages[2]["role"] == "user"
+    # Opus 5 rejects sampling params and budgeted thinking; the shared
+    # temperature kwarg must not reach the Anthropic request.
+    assert call_kwargs["thinking"] == {"type": "adaptive"}
+    assert not {"temperature", "top_p", "top_k"} & call_kwargs.keys()
+    assert "budget_tokens" not in call_kwargs["thinking"]
+    assert messages[-1]["role"] == "user"
 
 
 @pytest.mark.asyncio

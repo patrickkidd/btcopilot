@@ -51,11 +51,17 @@ environment variable. This enables A/B testing between models.
 
 | Model | Env Value | Use Case |
 |-------|-----------|----------|
-| Claude Opus 4.6 | `claude-opus-4-6` (default) | Chat responses — superior conversational quality |
+| Claude Opus 5 | `claude-opus-5` (default) | Chat responses — superior conversational quality |
+| Claude Opus 4.6 | `claude-opus-4-6` | Previous premium model, still selectable |
 | Gemini Flash | `gemini-3-flash-preview` | Legacy / fallback |
 
+Premium chat tracks the latest Opus while the per-token price is unchanged
+(decisions/log.md, 2026-08-26). Client-facing aliases (`opus-5`, `opus-4.6`,
+`gemini-2.5-flash`) resolve to API model IDs in `llmutil.resolve_model()`;
+raw API IDs pass through unchanged.
+
 **Tiered model strategy:**
-- **Chat/responses:** Claude Opus 4.6 (configurable) — via `response_text_sync()` in llmutil.py
+- **Chat/responses:** Claude Opus 5 (configurable) — via `response_text_sync()` in llmutil.py
 - **Extraction:** Gemini Flash (hardcoded — optimized prompts, structured output)
 - **Calibration:** Gemini Flash (hardcoded)
 - **RAG:** Gemini Flash (hardcoded)
