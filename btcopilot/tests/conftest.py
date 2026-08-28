@@ -271,11 +271,16 @@ def test_user_2(flask_app):
 
 
 @pytest.fixture
-def test_policy(flask_app):
+def test_policy(request, flask_app):
+    # A beta build honours beta licences and strips every other one, so a test
+    # marked `beta` needs a beta licence or it launches with no active
+    # features -- which raises the "Beta License Required" modal and hangs the
+    # test on it.
+    beta = request.node.get_closest_marker("beta") is not None
     policy = Policy(
-        code=btcopilot.LICENSE_PROFESSIONAL_MONTHLY,
-        product=btcopilot.LICENSE_PROFESSIONAL,
-        name="Unit Test Monthly",
+        code=btcopilot.LICENSE_BETA if beta else btcopilot.LICENSE_PROFESSIONAL_MONTHLY,
+        product=btcopilot.LICENSE_BETA if beta else btcopilot.LICENSE_PROFESSIONAL,
+        name="Unit Test Beta" if beta else "Unit Test Monthly",
         interval="month",
         amount=0.99,
         maxActivations=2,
