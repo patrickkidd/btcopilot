@@ -271,16 +271,42 @@ def test_user_2(flask_app):
 
 
 @pytest.fixture
-def test_policy(request, flask_app):
-    # A beta build honours beta licences and strips every other one, so a test
-    # marked `beta` needs a beta licence or it launches with no active
-    # features -- which raises the "Beta License Required" modal and hangs the
-    # test on it.
-    beta = request.node.get_closest_marker("beta") is not None
+def licenseProduct(request):
+    """Which licence the user under test holds.
+
+    A beta build honours beta licences and strips every other one, so a test
+    running as a beta build needs a beta licence or it launches with no active
+    features at all -- which raises the "Beta License Required" modal and
+    blocks on it. The `beta` marker therefore sets the build AND the licence
+    together; they cannot disagree.
+
+    Override it directly to test a licence in its own right:
+
+        @pytest.mark.parametrize(
+            "licenseProduct",
+            [btcopilot.LICENSE_PROFESSIONAL, btcopilot.LICENSE_BETA],
+            indirect=True,
+        )
+    """
+    if hasattr(request, "param"):
+        return request.param
+    if request.node.get_closest_marker("beta"):
+        return btcopilot.LICENSE_BETA
+    return btcopilot.LICENSE_PROFESSIONAL
+
+
+#: The purchasable code for a product, where they differ.
+LICENSE_CODES = {
+    btcopilot.LICENSE_PROFESSIONAL: btcopilot.LICENSE_PROFESSIONAL_MONTHLY,
+}
+
+
+@pytest.fixture
+def test_policy(flask_app, licenseProduct):
     policy = Policy(
-        code=btcopilot.LICENSE_BETA if beta else btcopilot.LICENSE_PROFESSIONAL_MONTHLY,
-        product=btcopilot.LICENSE_BETA if beta else btcopilot.LICENSE_PROFESSIONAL,
-        name="Unit Test Beta" if beta else "Unit Test Monthly",
+        code=LICENSE_CODES.get(licenseProduct, licenseProduct),
+        product=licenseProduct,
+        name=f"Unit Test {licenseProduct.rsplit('.', 1)[-1]}",
         interval="month",
         amount=0.99,
         maxActivations=2,
