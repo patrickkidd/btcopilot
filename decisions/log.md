@@ -1078,3 +1078,27 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 **Reasoning:** No automated extraction setting produced a correct family for Patrick's own diagram (Jun 9/24); corrections through chat are the only correctness path on record and double as real-family structural GT. Two failures (duplicate self, self-bonds) break accumulation itself, so they precede everything. Incremental single-person placement (deferred May 4) is the shared prerequisite of chat-driven corrections, local arrangement, and live diagram-while-chatting, so it moves ahead of FD-339.
 
 **Revisit trigger:** Seminar testers do not return unprompted in the Dec–Feb block (kills the premise → fall back to option 1 with manual diagram cleanup); prod-dump count shows zero non-Patrick conversations and testers decline; per-user LLM cost makes a free tier untenable.
+
+## 2026-08-25: Architecture B — one authoring tool surface for chat-driven diagram edits; Pro chat drawer first in FD-341
+
+**Context:** FD-342 dogfood found chat can only ADD (the only writer is the extraction PDP; edits/deletes of committed entities exist only in the review sheet). The Personal app renders no diagram (Discuss/Learn/Plan over a SceneModel), so chat-beside-diagram exists nowhere; four FD-341 stories assumed it.
+
+**Options considered:** (A) hybrid — batch extraction unchanged, agent tool calls for explicit user edits only; (B) one authoring tool surface (person/parents/bonds/events/SARF/merge/split/arrangement hint) used for user corrections with full CRUD, and potentially for narrative extraction as a read-before-write, guard-validated loop; (C) FD-336 full embed first.
+
+**Decision:** B for corrections now (FD-339 re-scoped; FD-349 trust tiers/undo and FD-350 GT log absorbed into it and closed). Narrative extraction stays batch until a measured spike (FD-355) compares agentic extraction on the same tool surface against the batch pipeline (6 GT discussions + diagram 1924 assertions; outcome = replace / split structure-vs-SARF / keep hybrid). **Amended same day:** Patrick ruled FD-336 in full (well-scoped, not weeks) ranked FIRST, and tickets kept to actual workstreams. FD-354 (thin drawer) and FD-355 (spike) deleted; 343/344 (guards, speaker weld) and the spike folded into FD-339 as phases 0 and 2; 345 (labels) into FD-336; 348 (arrangement hints) into FD-346; 349/350 already absorbed. Then consolidated to journey-shaped workstreams (Patrick: first two = embed the Personal app, vibe-code the diagram in Pro): FD-347 (pointing UI) and FD-346 (arrangement) folded into FD-339 as phases 2–3 and deleted. FD-342 (dogfood) deleted 2026-08-26 — it was FD-339's human walk, now written into FD-339. Final: 5 children — FD-336 → FD-339 ("Conversational diagram editing in the Pro app (agentic loop + authoring tools)") → FD-351 → FD-352 → FD-353.
+
+**Reasoning:** The June ceiling failures (duplicates, self-bonds, wrong parents, cross-name welds) are write-without-reading failures; a tool-calling agent gets invariant feedback per write. The 2026-02-24 result (per-turn delta extraction lost 2x F1) puts the burden of proof on B for extraction, hence a spike, not a pivot. FD-336 as designed changes persistence for every Pro user and cannot be feature-flagged.
+
+**Revisit trigger:** FD-355 numbers; the drawer's concurrent-save journeys failing; arrangement hints not reaching acceptable layouts within ~3 hints on 30-person families.
+
+## 2026-08-29: Pivot — chat-first web app ("Claude Code for Family Diagram"), parallel epic
+
+**Context:** Aug 28–30 brainstorm session. Adversarial 22-agent check of "interactive agent removes upfront extraction precision": holds for structure, fails for shift/SARF timeline. Architecture panel: keep Flask backend, JSON doc + command log, one web page (Vite/TS SVG, PWA), no Qt. Concept ruled: chat + one timeline picture above it; chat = event clock, record = state clock; lanes only person/couple/household; no diagram drawn at first; proactive near-zero default.
+
+**Options considered:** (a) continue FD-341 as sequenced (Pro drawer first); (b) fold the pivot into FD-341; (c) parallel epic, FD-341 kept separate as the June plan of record.
+
+**Decision:** (c). New epic: chat-first web app against the existing backend. Story 1 = web page (chat + timeline picture, existing endpoints, browser-session auth). Story 2 = corrections through chat (agent tool surface) in that page. Pro embed (FD-336) no longer first — superseded as the chat surface by the web page; FD-341 untouched pending Patrick's re-triage. Business model designed and TABLED (flat $29, Sonnet-class loop, founders $19; conditions: Sonnet quality test, caching, token logging — none exist).
+
+**Reasoning:** Old apps' tech debt (PyQt5, no PySide6/iOS path, 6-yr handwritten UI) makes every change expensive; a web page is a second client of endpoints that already exist, seeds the new architecture, and throws nothing away. The picture (1–2wk) drives corrections (3–5wk); both start now. Patrick's journal file → extraction → copy of 1924 supplies real dated events for the first picture.
+
+**Revisit trigger:** Patrick doesn't feel the picture on his own data (kills the insight premise); Sonnet-class coaching rejected by working group (re-opens cost model); story 1 blocked on personal-route auth >2 days.
