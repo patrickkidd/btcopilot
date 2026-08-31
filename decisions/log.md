@@ -1102,3 +1102,16 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 **Reasoning:** Old apps' tech debt (PyQt5, no PySide6/iOS path, 6-yr handwritten UI) makes every change expensive; a web page is a second client of endpoints that already exist, seeds the new architecture, and throws nothing away. The picture (1–2wk) drives corrections (3–5wk); both start now. Patrick's journal file → extraction → copy of 1924 supplies real dated events for the first picture.
 
 **Revisit trigger:** Patrick doesn't feel the picture on his own data (kills the insight premise); Sonnet-class coaching rejected by working group (re-opens cost model); story 1 blocked on personal-route auth >2 days.
+
+
+## 2026-08-31: Drawability rules ruled; question language replaces progress bar; question budget clarified
+
+**Context:** The always-unclear engineering point — what the timeline picture may draw — settled against Patrick's own record (discussions 55/58 + 14-month journal) and a hand-coded clinical case, via a visual ruling page built from real data.
+
+**Decision:** Five rules in doc/DRAWABILITY.md: (1) line at 3 directed points, dots below, span only where points exist; (2) date-guessed points count, rendered as bands for correction; (3) gaps dotted ("no data yet"), recorded no-change draws as solid flat; (4) order shown only when guess-ranges don't touch; (5) open states fade after last confirmation, death hard-stops a person. One visual question-treatment in exactly three places (order-unknown-that-matters, unconfirmed fades, undated shelf); candidates found deterministically, the coach picks/phrases in conversation — no background LLM calls, no progress bar, no "finished."
+
+**Also ruled (2026-08-31):** in-story follow-up questions (dating, year-before, who-else-was-in-it, one-SARF-dimension-per-anchor) are exempt from the ~1-targeted-question-per-session budget, which caps only out-of-flow clarification questions.
+
+**Reasoning:** The Learn tab failed by drawing whatever existed however sparse. Real-data findings: uncertainty is the norm for remembered history (57/84 chat dates year-grade+) and the exception for journaled-now (75/78 day-certain) — certainty is a property of capture time, so returning chat is the data-quality strategy; self-reported data is direction-rich (70%) except relationship moves; density encodes capture mode, not severity.
+
+**Revisit trigger:** Patrick's or testers' lanes draw misleading pictures under these rules in the first working-group cycle; the "?" pairs prove too numerous or too rare to fuel conversation.

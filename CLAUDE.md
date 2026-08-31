@@ -44,6 +44,7 @@ runtime copy is needed, update this section.
 | Prompt engineering decisions | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) |
 | Prompt optimization process | [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) |
 | Bowen theory concepts | [CONTEXT.md](CONTEXT.md) |
+| Drawability — when the timeline picture may draw vs must ask (5 rules, ruled 2026-08-31) | [doc/DRAWABILITY.md](doc/DRAWABILITY.md) |
 | Diagram layout/rendering/SVG | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) |
 | F1 metrics, evaluation | [doc/F1_METRICS.md](doc/F1_METRICS.md) |
 | Chat flow, personal app AI | [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md) |
