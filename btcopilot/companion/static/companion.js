@@ -50,7 +50,9 @@
     var step = Math.max(1, Math.ceil(span / 5));
     for (var yr = y0; yr <= y1; yr += step) {
       var iso = yr + "-01-01";
-      var t = el("text", { x: x(iso), y: y, "text-anchor": "middle", class: cls }, svg);
+      var px = x(iso);
+      var anchor = px < 22 ? "start" : "middle";
+      var t = el("text", { x: Math.max(2, px), y: y, "text-anchor": anchor, class: cls }, svg);
       t.textContent = yr;
       t.style.font = "500 9px " + css("--mono");
       t.style.fill = css("--muted");
@@ -337,6 +339,8 @@
   var send = document.getElementById("chat-send");
 
   function addBubble(role, text) {
+    var empty = chatLog.querySelector(".empty");
+    if (empty) empty.remove();
     var div = document.createElement("div");
     div.className = "bub " + role;
     div.textContent = text;
