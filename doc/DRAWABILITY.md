@@ -87,3 +87,16 @@ sentence on tap ("sleep got worse, around 1996, give or take a year") — the te
 gesture and the editing gesture are the same. No legends anywhere. Also queued as A/B
 tests: calm-period return prompts ("while it's calm"); mark-vocabulary variants.
 Only frame-4-style notifications are app-initiated; in-conversation aiming is not push.
+
+### Expanded view must be designed for sparse data (Patrick's first sandbox walk, 2026-09-01)
+
+First contact with the built expanded view: sparse lanes read as "random boxes drawn on
+a giant rectangle" — items too far apart to read as sharing a time axis, question marks
+floating at irregular offsets from their items. The view assumed clean dense data; the
+record's normal shape (per the data audit) is sparse, band-heavy, unevenly spaced.
+Rules: the expanded view organizes around eras/anchors, every mark visibly tied to the
+axis (per-mark year labels or gridline snap), question marks attached to their items.
+Horizontal pan/zoom of time is mandatory (multigenerational spans cannot fit a static
+view). Undated-shelf chips must respond to tap (speak themselves + offer "ask the coach
+when"). No lane-filter UI — lanes are chosen by the coach and user pins only (a filter
+panel is a data project; killed).
