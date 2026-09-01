@@ -12,7 +12,7 @@ here as part of the method.
 
 1. **Render**: PDF pages → images (local, deterministic).
 2. **Interpret**: a BAA-covered vision model (bake-off: GPT vs Gemini) reads all
-   pages of one case together and emits ONE JSON case document (schema below).
+   pages of one case together and emits ONE JSON case document (btcopilot.schema, below).
    Multi-PDF cases are one call when the pages fit, else per-PDF calls merged by
    a second model pass that deduplicates people/events across PDFs.
 3. **Import**: deterministic Python writes the .fd via the app's scene schema —
@@ -22,25 +22,26 @@ here as part of the method.
 4. **Review**: the professional opens the diagram in the app and corrects it.
    Uncertain items are flagged (unsure=true) rather than dropped.
 
-## Interpretation output schema (v0 draft — the bake-off scores against this)
+## Interpretation output format: btcopilot.schema (existing), not a new schema
 
-One JSON object per case:
+The model emits the SAME data model the chat extraction pipeline already produces
+(btcopilot/btcopilot/schema.py): `Person` (name, last_name, gender: PersonKind,
+parents, confidence), `PairBond` (married tri-state, confidence), `Event` (kind:
+EventKind, person/spouse/child, description, notes, location, dateTime,
+dateCertainty: DateCertainty = certain|approximate|unknown, symptom/anxiety/
+functioning: VariableShift = up|down|same, relationship: RelationshipKind +
+targets/triangles, confidence). One addition for this pipeline, per item:
+`source: {pdf, page}` provenance (carried into the imported item's notes tail).
 
-- `people[]`: `{ref, name_as_written, other_names[], gender|null, birth{year?, unsure}, death{year?, unsure}, notes}`
-- `parent_child[]`: `{child_ref, parent_refs[]}`
-- `pair_bonds[]`: `{a_ref, b_ref, kind: bonded|married|separated|divorced, year?, unsure}`
-- `events[]`: `{who_refs[], year?|year_range?, unsure, kind: shift|moved|death|birth|other,
-  description (verbatim-close), variables: {symptom|anxiety|functioning|relationship|differentiation: up|down}?,
-  nodal: bool, source: {pdf, page}}`
-- `relationship_symbols[]`: `{a_ref, b_ref?, kind: Conflict|Cutoff|Distance|Toward|Fusion|Projection|Overfunctioning|Underfunctioning|DefinedSelf|Inside|Outside|Reciprocity|Away, start_year?, end_year?, unsure, source}`
-- `unplaced[]`: anything legible but not confidently attributable — text + source,
-  never silently dropped.
-- Refs are per-case ids (p1, p2…): names stay only in `name_as_written`.
+Dates: transcribed as written; a missing or guessed-at year is dateTime=None or
+dateCertainty=approximate/unknown — the model never silently invents a date.
 
-Rules for the model: transcribe dates as written, never infer a missing year
-(year absent + unsure=true instead); names verbatim; every claim carries a source
-page; genogram glyph conventions (squares/circles, double lines, zigzags, cutoff
-bars) are read as structure, not decoration.
+Unattributable content: legible text the model cannot confidently pin to a person
+or date goes in an `unplaced[]` list (text + source page) INSIDE the per-case
+interpretation JSON — a sidecar file next to the PDFs, not markdown, not separate
+files, not in the diagram. During review it is either placed by hand or discarded;
+nothing legible is ever silently dropped. (Whether any of it should also land in
+the diagram's own notes field is Patrick's call, default no.)
 
 ## Bake-off protocol (approved, two-armed)
 
