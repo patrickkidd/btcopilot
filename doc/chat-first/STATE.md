@@ -168,17 +168,17 @@ precise spec on cheaper models; mechanics on the cheapest.
   Sonnet-vs-Opus coaching test. Ruled: in-story follow-ups are exempt from the
   ~1-question/session budget (it caps only out-of-flow clarifications).
 
-- **Notability handwritten cases (opened 2026-09-01, unruled)**: handwritten case
-  diagrams live in Notability's own cloud (the Mac app is the new web-wrapper; the
-  old iCloud containers on this Mac are empty — that's why Finder shows nothing).
-  Plan proposed, gated on Patrick: bulk PDF export via Notability auto-backup →
-  ~/fd-corpus/notability/ (never in a repo) → BAA-covered multimodal model
-  (OpenAI/Gemini, never Claude) interprets → bake-off he scores → normalize into the
-  anonymized corpus schema as case_NN files → one corpus. Claude touches only the
-  anonymized output. Local option noted: the M5 Max/128GB Mac runs ollama but all
-  installed qwen models are TEXT-ONLY — a vision model (Qwen-VL class) is one pull
-  away; bake-off proposed as three-armed (GPT / Gemini / local Qwen-VL, he scores
-  blind), likely mixture = local triage + frontier interpretation. RULED 2026-09-01: auto-backup is ON (PDFs landing in Google Drive); three-armed bake-off approved (keys in theapp/.env); the ingest/normalization work lives in the PRIVATE btcopilot-sources repo, not fdserver (fdserver is deployment-aimed).
+- **Notability handwritten cases (ruled 2026-09-01)**: .fd diagram files are the
+  SINGLE SOURCE OF TRUTH. Auto-backup is ON (PDFs landing in Google Drive). Pipeline:
+  BAA provider (OpenAI/Gemini; three-armed bake-off approved incl. local Qwen-VL —
+  keys in theapp/.env) interprets each PDF once → import script writes events INTO
+  the .fd files (approval pending) → Patrick reviews in the app with aliases on
+  (app already aliases names/nicknames in notes text; verified) → translator
+  (rebuild.py extension) emits the anonymous corpus: today's allowlist + alias-
+  scrubbed text + parent-child links (also unblocks the STRUCTURE session).
+  Scrubber gap guard = mechanical name-list scan + quarantine, nothing fancier
+  (approval pending). Work home: PRIVATE btcopilot-sources. This thread does NOT
+  gate the visualization prototype — only the FUNCTION-subset ruling does.
 
 ## Jira / branches
 

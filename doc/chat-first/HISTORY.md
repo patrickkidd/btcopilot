@@ -449,3 +449,21 @@ not the tool → a small bake-off on a few diagrams, scored by Patrick, picks th
 model → extraction to a normalized format decided with Patrick (candidate: the
 existing anonymized corpus schema, so hand cases become case_NN files alongside the
 app-derived ones) → Claude works only with the anonymized output, same as today.
+
+## Notability thread ruled: .fd files are the single source of truth
+
+Patrick redirected the pipeline design and it got simpler. The app already stores a
+unique random alias per person and substitutes name+nickname with the alias in all
+event/person notes text behind the hide-names toggle (verified in the scene code).
+Ruling: handwritten PDFs are interpreted ONCE by a BAA provider and their content is
+entered INTO the .fd diagram files (mostly merging timeline events into diagrams
+that already carry the structure); he reviews by opening diagrams with aliases on;
+a translator (extension of rebuild.py) then emits the anonymous corpus from any
+diagram — today's allowlist PLUS alias-scrubbed text and parent-child links (which
+also removes the STRUCTURE-session whitelist blocker). No ledger, no second schema.
+Explicit constraint: no anonymization rabbit hole — the only guard on the scrubber's
+known gap (surnames alone, places, misspelled handwritten names pass through) is a
+mechanical name-list scan with quarantine for his eyeball. Open approvals: that
+guard, and the import script that writes interpreted events into .fd files (its
+format doubles as the bake-off output format). The visualization prototype remains
+gated ONLY on the FUNCTION-subset ruling, not on this thread.
