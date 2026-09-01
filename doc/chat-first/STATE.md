@@ -175,7 +175,10 @@ precise spec on cheaper models; mechanics on the cheapest.
   ~/fd-corpus/notability/ (never in a repo) → BAA-covered multimodal model
   (OpenAI/Gemini, never Claude) interprets → bake-off he scores → normalize into the
   anonymized corpus schema as case_NN files → one corpus. Claude touches only the
-  anonymized output.
+  anonymized output. Local option noted: the M5 Max/128GB Mac runs ollama but all
+  installed qwen models are TEXT-ONLY — a vision model (Qwen-VL class) is one pull
+  away; bake-off proposed as three-armed (GPT / Gemini / local Qwen-VL, he scores
+  blind), likely mixture = local triage + frontier interpretation.
 
 ## Jira / branches
 
