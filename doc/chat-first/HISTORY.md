@@ -474,3 +474,10 @@ The Notability scope narrowed to: interpret PDFs → NEW .fd files (originals
 preserved) → profile them like the app cases → eyeball viability for a functioning
 timeline. Focus stays on finishing the corpus so the visualization prototype work
 can resume.
+
+Addendum: Patrick ruled the notes→diagram pipeline is reusable product technology —
+professionals will walk the same method (scan handwritten notes to PDF → diagram
+file). The core (interpretation prompt, output schema, .fd writer, confidence for
+human review) is to be built and documented as a reusable module, with the bake-off
+findings saved as part of the method; user-facing surfaces deferred until app
+surfaces are chosen.

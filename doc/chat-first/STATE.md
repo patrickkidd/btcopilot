@@ -176,7 +176,12 @@ precise spec on cheaper models; mechanics on the cheapest.
   writes NEW .fd diagram files (originals preserved untouched) → profile the new
   diagrams exactly like the app cases (marker density, span, people) → Patrick
   eyeballs which are viable for functioning-timeline inference. Work home: PRIVATE
-  btcopilot-sources. Does NOT gate the visualization prototype — only the
+  btcopilot-sources. RULED: the pipeline is REUSABLE PRODUCT TECH — professionals
+  scan/export notes to PDF → diagram file; build it as a clean module (interpretation
+  prompt + output schema + .fd writer + per-item confidence for human review) with
+  the method documented, bake-off findings included; user-facing surface deferred.
+  Placement default (unruled): module in public btcopilot, prompts in the private
+  layer like the coach prompts. Does NOT gate the visualization prototype — only the
   FUNCTION-subset ruling does.
 
 ## Jira / branches
