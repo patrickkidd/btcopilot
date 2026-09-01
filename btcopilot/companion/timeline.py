@@ -8,7 +8,6 @@ from btcopilot.personal.intake import _enum_val, _parse_iso_date
 from btcopilot.schema import DateCertainty, DiagramData, EventKind, VariableShift
 
 GAP_DAYS = 730
-ERA_GAP_DAYS = 1095
 STRIP_MAX_LANES = 2
 BAND_DAYS = {
     DateCertainty.Certain.value: 7,
@@ -322,30 +321,7 @@ def build_timeline(data: DiagramData) -> dict:
         "shelf": shelf,
         "questions": questions,
         "axis": axis,
-        "eras": _eras(drawn_dates),
     }
-
-
-def _eras(dates: list[str]) -> list[dict]:
-    """Split the record into data-density eras: a silence longer than
-    ERA_GAP_DAYS starts a new era. The expanded view renders time linearly
-    inside an era and visibly compresses the bridges between eras."""
-    if not dates:
-        return []
-    eras = []
-    start = prev = dates[0]
-    count = 1
-    for d in dates[1:]:
-        if (
-            datetime.date.fromisoformat(d) - datetime.date.fromisoformat(prev)
-        ).days > ERA_GAP_DAYS:
-            eras.append({"a": start, "b": prev, "count": count})
-            start = d
-            count = 0
-        count += 1
-        prev = d
-    eras.append({"a": start, "b": prev, "count": count})
-    return eras
 
 
 def _order_questions(lanes: list, dated: list, people_by_id: dict) -> list:

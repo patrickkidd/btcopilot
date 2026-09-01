@@ -118,11 +118,19 @@ def test_relationship_events_stamp_household_lane():
     assert any("Mutual closeness" in s for s in sentences)
 
 
-def test_eras_split_on_long_silence():
-    data = lanes_diagram_data([LANES_DOC, JOURNAL_DOC])
-    timeline = build_timeline(data)
-    eras = timeline["eras"]
-    assert len(eras) >= 2
-    assert sum(e["count"] for e in eras) > 0
-    for a, b in zip(eras, eras[1:]):
-        assert a["b"] < b["a"]
+def test_aliases_merge_spellings_without_code_changes():
+    doc = {
+        "entries": [
+            {"t": 2020.5, "t_end": None, "certainty": "day", "who": "Bobby (dad)",
+             "others": [], "desc": "retired", "variable": "functioning",
+             "direction": "up", "ongoing": False},
+        ],
+        "structure": [
+            {"fact": "owner born", "people": ["Owner"], "t": 1980.0},
+            {"fact": "father of owner", "people": ["Rob", "Owner"], "t": None},
+        ],
+    }
+    data = lanes_diagram_data([doc], aliases={"Bobby (dad)": "Rob"})
+    names = [p["name"] for p in data.people]
+    assert "Rob" in names
+    assert "Bobby (dad)" not in names

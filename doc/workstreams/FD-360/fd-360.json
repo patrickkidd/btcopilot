@@ -175,7 +175,7 @@
       "track": "human",
       "harness_drivable": false,
       "status": "human-verified",
-      "evidence": "Agent-performed manual walkthrough (Patrick away this session): tapping the strip opened the full-screen expanded view with 7 labeled person lanes + 2 pair-bond lanes, amber certainty bands, dotted gaps, bond event stamps with word labels, and the undated shelf as 3 dashed chips. Screenshot doc/workstreams/FD-360/evidence/desktop-2-expanded.png. NOT a substitute for Patrick's own sign-off. REDESIGNED after Patrick's first sandbox walk (DRAWABILITY sparse-data addendum): era-compressed time (linear inside data-density eras, labeled quiet-year bridges between), far-zoom era blocks, drag/pinch/wheel pan-zoom, double-tap era fit, per-mark year labels, question marks attached to their points. Also exercised against a real user record loaded via the lanes loader on the live sandbox (screenshots retained outside the repo per the confidential-data rules).",
+      "evidence": "Agent-performed manual walkthrough (Patrick away this session): tapping the strip opened the full-screen expanded view with 7 labeled person lanes + 2 pair-bond lanes, amber certainty bands, dotted gaps, bond event stamps with word labels, and the undated shelf as 3 dashed chips. Screenshot doc/workstreams/FD-360/evidence/desktop-2-expanded.png. NOT a substitute for Patrick's own sign-off. REDESIGNED after Patrick's first sandbox walk (DRAWABILITY sparse-data addendum): era-compressed time (linear inside data-density eras, labeled quiet-year bridges between), far-zoom era blocks, drag/pinch/wheel pan-zoom, double-tap era fit, per-mark year labels, question marks attached to their points. Also exercised against a real user record loaded via the lanes loader on the live sandbox (screenshots retained outside the repo per the confidential-data rules). ON HOLD: the era-compression rework built for sparse data was reverted on Patrick's direction (design returns to mockups-first against real data); the expanded view ships as the original known-wrong placeholder. The reverted implementation is preserved in branch history (35dd13b) for reuse.",
       "provenance": "ratified-ac",
       "tests": []
     },
@@ -388,7 +388,7 @@
     },
     {
       "id": "DR-008",
-      "summary": "Era view iteration 2 items, deliberately deferred per evidence-over-completeness: rows with nothing in the visible window still render as empty lanes; repeated per-mark year labels within one year are not deduped; era-detection threshold is a constant (3 years) tuned once against Patrick's record and will need tuning against other records.",
+      "summary": "SUPERSEDED: the era-view rework itself was put on hold and reverted (design returns to mockups-first); its iteration-2 items go with it. The reverted code is in branch history (35dd13b).",
       "criterion": "C10"
     },
     {
@@ -398,7 +398,7 @@
     },
     {
       "id": "DR-010",
-      "summary": "Shelf 'ask me about this next time' ships as a chat-input prefill the user sends themselves (honest, zero new persistence). A server-side queued note the coach context picks up automatically is NOT built; logged as the follow-up wiring.",
+      "summary": "Descoped with the era-view hold: shelf chips speak their fact on tap only; the ask-the-coach affordance and any coach-context wiring await the mockups-first design pass.",
       "criterion": null
     },
     {
@@ -431,6 +431,12 @@
       "entered": "2026-09-01T06:30:00Z",
       "exited": null,
       "note": "First-walkthrough findings folded in: real-record loader (--from-lanes), expanded-view rework, lane-filter UI removed, shelf chips speak on tap. Live sandbox reseeded from external scrubbed lane files; screenshots retained outside the repo per the confidential-data rules."
+    },
+    {
+      "gate": "validate",
+      "entered": "2026-09-01T08:00:00Z",
+      "exited": null,
+      "note": "Era-compression expanded view and pan/zoom reverted per Patrick (mockups-first against real data before building); lane-filter removal and sentence-on-tap shelf chips kept; real-record loader kept with aliases moved to a CLI flag."
     }
   ],
   "parked_on": "Patrick's review: PR #133, the human-track criteria (C10/C11/C14/C17), and deferred-risk scope calls DR-002/DR-006",
