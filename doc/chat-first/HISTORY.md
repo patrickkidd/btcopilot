@@ -380,3 +380,48 @@ PRIVATE fdserver repo (doc/oracle/: SPEC + rulings index + evidence — the whol
 store is IP; the public repo carries only the regime and R-id citations; no raw
 transcripts anywhere). The initial mined set (R-0001..R-0064) is a proposed
 consolidation awaiting his feature-grouped ratification pass per SPEC §10.
+
+## FUNCTION-subset session: the active basis is itself an illusion
+
+Recomputed from index.json and the case files 2026-09-01 (Session 1 opening step).
+The active-basis tiers reproduce exactly as recorded (11 / 13 / 4 / 28 zero-active
+with people / 5 blank), so the recorded numbers are current. But reading rebuild.py's
+`active_scaffold_split` closes a gap the earlier reports left open: **active-event
+count measures the LENGTH OF THE DIAGNOSTIC PERIOD, not the amount of function he
+actually marked.** Everything dated at or after the first marker-bearing point counts
+as active, whether or not that point carries anything itself. So the tier ranking is a
+period ranking.
+
+Counting the points that actually carry a nodal flag or a non-"none" variable
+direction gives a much thinner picture: **6 cases have 10 or more marked points, 15
+have 5 or more, and 33 of the 61 files have none at all.** The ranking reorders
+substantially against the active tiers — the case ranked second by active period
+(125 active) has 13 marked points and all of them are bare nodal flags with no
+variable value, while the case ranked fifth by period carries the second-densest
+variable tagging in the corpus. Two cases sitting in the top tier by period carry
+three marked points each.
+
+Three further facts from the same pass:
+
+- **The corpus has 61 files but not 61 families.** Two file pairs are identical across
+  every extracted field (people, events, pair-bonds, relationship symbols, span), and
+  a third pair shares its people and nearly all its events while differing in
+  pair-bond completeness. One of the identical pairs sits inside the top tier and the
+  other inside the second tier, so both tiers are inflated by one. Five further files
+  are empty and are byte-identical to each other for that reason.
+- **The differentiation variable is never used anywhere in the corpus.** Of the five
+  SARF directions, symptom is tagged most, then anxiety, then functioning, with
+  relationship rare and differentiation at zero.
+- **Every marked point is dated.** Across all cases there is not one marker-bearing
+  point without a year, which means the function signal is entirely available to
+  timeline work with no undated shelf problem on this side.
+
+Marked points are also sparse per person and clustered in time — the densest case
+spreads 33 marks over 9 people and 30 years, and several cases put all their marks
+on one or two people inside a decade. That matches his clinical teaching about
+episodic clusters rather than continuous tracks, and it is the shape phase A must
+account for.
+
+These are computed facts, not rulings. The subset itself remains unruled: the tier
+lists, the marker-count reordering, the four 1-9-active cases, the duplicate pairs,
+and the zero-active-may-be-coding-style question all wait on Patrick.

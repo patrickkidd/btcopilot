@@ -123,8 +123,23 @@ uncertainty right-skewed (median ~96% guessed); he dates marriages 2–3x more t
 prod population. Active-basis tiers: **11 cases ≥30 active, 13 at 10–29, 4 at 1–9
 active (case_01/10/28/42 — NO in/out ruling yet, do not infer), 28 zero-active with
 people (pure scaffold by the marker — possibly coding style; his eyeball decides),
-5 blank.** Worst volume illusion currently case_13 (52 dated / 0 active). The corpus
-self-sorted into the two planned subsets: active-bearing → FUNCTION candidates;
+5 blank.** Worst volume illusion currently case_13 (52 dated / 0 active).
+
+**The active basis is itself a period measure, not a signal measure (computed
+2026-09-01):** rebuild.py marks everything dated at or after the first marker-bearing
+point as active, so the tiers rank the LENGTH of the diagnostic period, not how much
+function he marked. Counting points that actually carry a nodal flag or a non-"none"
+variable: only 6 cases have >=10, 15 have >=5, and 33 files have zero. The ranking
+reorders against the active tiers (the #2 case by period has 13 marks, all bare nodal
+flags with no variable value; two top-tier-by-period cases carry 3 marks each). Also:
+**61 files are not 61 families** - two pairs are identical across every extracted
+field (one pair inside each of the top two tiers, inflating both by one) and a third
+pair shares people and nearly all events; **differentiation is never used anywhere**
+(symptom most, then anxiety, then functioning, relationship rare); **every marked
+point is dated** (no undated-shelf problem on the function side); marks are sparse
+per person and clustered in time (densest case = 33 marks over 9 people / 30 years).
+
+The corpus self-sorted into the two planned subsets: active-bearing → FUNCTION candidates;
 zero-active-but-structure-rich → STRUCTURE candidates. **Waiting on Patrick: eyeball
 via PRIVATE_case_mapping.md, rule the in-lists, and rule the four 1–9-active cases.**
 
