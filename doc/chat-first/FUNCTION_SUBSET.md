@@ -1,4 +1,8 @@
-# FUNCTION subset — ranking for Patrick's eyeball (reorder/move lines; the order and section you leave them in IS the ruling)
+# FUNCTION subset — proposed ranking (repo copy, case ids only)
+
+**The ruling copy is ~/fd-corpus/FUNCTION_SUBSET.md** — same content with diagram
+filenames inline (PII rule keeps them out of the repo). Patrick reorders THAT file;
+the order and section he leaves each line in IS the ruling.
 
 Proposed ranking basis: **marked points** (events you annotated with a nodal flag or
 a variable value), not active-period length — move lines if the basis is wrong.
