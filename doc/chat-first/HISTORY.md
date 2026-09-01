@@ -425,3 +425,27 @@ account for.
 These are computed facts, not rulings. The subset itself remains unruled: the tier
 lists, the marker-count reordering, the four 1-9-active cases, the duplicate pairs,
 and the zero-active-may-be-coding-style question all wait on Patrick.
+
+## Notability thread opens: handwritten cases join the corpus plan
+
+Patrick recalled a body of handwritten case diagrams in Notability — cases he saw
+while developing the app, existing only in handwriting; many have good structure in
+the app but sparse functioning timelines. He wants them interpreted and normalized
+into the corpus for one source of truth, and cannot reach them on the Mac.
+
+Diagnosis (verified on his machine 2026-09-01): the installed Notability for Mac is
+the new web-wrapper version that syncs through Notability's OWN cloud account, not
+iCloud Drive — both old iCloud containers on disk exist but are EMPTY. That is why
+Finder shows nothing; the notes live server-side with Notability, reachable from the
+iPad and (if logged in) the new Mac app. Nothing is wrong with his files.
+
+Proposed pipeline (unruled): bulk-export all notes as PDF via Notability's
+auto-backup feature (one setting on the iPad backs up everything as PDF to a cloud
+drive folder continuously) → land raw PDFs under ~/fd-corpus/notability/ (never in a
+repo) → interpretation by a BAA-covered multimodal model (OpenAI or Gemini — NOT
+Claude; content-blind protocol continues to bind Claude until the Anthropic BAA) —
+Notability's own OCR is handwriting-to-text and blind to diagram semantics, so it is
+not the tool → a small bake-off on a few diagrams, scored by Patrick, picks the
+model → extraction to a normalized format decided with Patrick (candidate: the
+existing anonymized corpus schema, so hand cases become case_NN files alongside the
+app-derived ones) → Claude works only with the anonymized output, same as today.

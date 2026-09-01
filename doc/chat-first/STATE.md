@@ -168,6 +168,15 @@ precise spec on cheaper models; mechanics on the cheapest.
   Sonnet-vs-Opus coaching test. Ruled: in-story follow-ups are exempt from the
   ~1-question/session budget (it caps only out-of-flow clarifications).
 
+- **Notability handwritten cases (opened 2026-09-01, unruled)**: handwritten case
+  diagrams live in Notability's own cloud (the Mac app is the new web-wrapper; the
+  old iCloud containers on this Mac are empty — that's why Finder shows nothing).
+  Plan proposed, gated on Patrick: bulk PDF export via Notability auto-backup →
+  ~/fd-corpus/notability/ (never in a repo) → BAA-covered multimodal model
+  (OpenAI/Gemini, never Claude) interprets → bake-off he scores → normalize into the
+  anonymized corpus schema as case_NN files → one corpus. Claude touches only the
+  anonymized output.
+
 ## Jira / branches
 
 - FD-359 epic (chat-first web app) with FD-360 (built, draft PR #133) and FD-361
