@@ -1,0 +1,84 @@
+{
+  "ticket": "FD-360",
+  "title": "Web page: chat + timeline picture against the existing backend",
+  "base_branch": "master",
+  "worktree": "/Users/patrick/theapp/btcopilot/.claude/worktrees/FD-360",
+  "branch": "FD-360",
+  "subfolder_namespaced": true,
+  "test_registry_traced": true,
+  "human_track_skip": {
+    "proposed": false,
+    "skip_question": null,
+    "human_answer": null,
+    "answer_bundled_with": null,
+    "confirmed_by_human": false
+  },
+  "state": "gate-build",
+  "oracle": {
+    "path": "doc/workstreams/oracles/FD-360/2026-08-31--1-fd-360.oracle.md",
+    "committed": false,
+    "content_hash": "ec0632d82d2b892be55c39e83fdabe228a41cac2b8cb7a257a50ed0a01ec5b13"
+  },
+  "oracle_proposal": {
+    "depth": "single-critic",
+    "note": "Medium blast radius: new route + auth surface reuse, but no touch to shared /personal auth or data migration. One critic sub-agent, grounded in real codebase reads (auth.py, sarfgraphmodel.py, schema.py).",
+    "posted_to": null,
+    "posted_to_note": "NOT posted as a Jira comment this run: team-lead's ground rules restrict Jira writes to reads + one closing comment. Proposal + ratification recorded here and in the committed oracle file instead.",
+    "proposed_criteria_summary": "17 criteria from the critic, reconciled to 17 ratified criteria (C1-C17) in the oracle file.",
+    "pending_ratification": false,
+    "ratified_by_human": false,
+    "ratified_by_delegate": true,
+    "ratification_note": "Ratified by the coordinator (fd360b) under team-lead's explicit pre-authorization to proceed autonomously while Patrick is away, NOT by Patrick's own direct yes on this criteria set. Documented as a deviation in the oracle file and to be flagged in the PR/report.",
+    "ratified_criteria": ["C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11","C12","C13","C14","C15","C16","C17"]
+  },
+  "criteria": [
+    {"id": "C1", "text": "Page loads on 8889 sandbox; login works; user's own diagram loads.", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null, "provenance": "ratified-ac", "tests": []},
+    {"id": "C2", "text": "Chat message returns a coach reply through the existing ask()/Discussion/Statement pipeline.", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null, "provenance": "ratified-ac", "tests": []},
+    {"id": "C3", "text": "Per-person step line reflects only that person's own directed events, correctly isolated from other people (avoids the known QML mixed-sum bug).", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null, "provenance": "human-complaint", "from_finding": "F-001", "tests": []},
+    {"id": "C4", "text": "auth.py / is_personal_app_request untouched by this unit's diff; existing /personal/* HMAC-only enforcement unchanged.", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null, "provenance": "human-complaint", "from_finding": "F-002", "tests": []},
+    {"id": "C5", "text": "New chat-send route rejects a forged cross-origin POST (CSRF).", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null, "provenance": "human-complaint", "from_finding": "F-003", "tests": []},
+    {"id": "C6", "text": "3-point line rule: <3 directed points = dots only; 3+ = line bounded to its own point range.", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null, "provenance": "ratified-ac", "tests": []},
+    {"id": "C7", "text": "Certainty rendering: Certain=sharp mark, Approximate=~1yr band, no-date=undated shelf only.", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null, "provenance": "ratified-ac", "tests": []},
+    {"id": "C8", "text": "Gap renders visually distinct from a recorded no-change (same-direction) mark.", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null, "provenance": "ratified-ac", "tests": []},
+    {"id": "C9", "text": "Strip scale (resting, <=2 lanes) shows only line/dots/amber-? -- no bands/fades/ticks.", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null, "provenance": "ratified-ac", "tests": []},
+    {"id": "C10", "text": "Expanded full view exists: more lanes, labels, bands, undated shelf as chips.", "track": "human", "harness_drivable": false, "status": "pending", "evidence": null, "provenance": "ratified-ac", "tests": []},
+    {"id": "C11", "text": "Tap-a-mark shows a plain one-sentence description, read-only.", "track": "human", "harness_drivable": false, "status": "pending", "evidence": null, "provenance": "ratified-ac", "tests": []},
+    {"id": "C12", "text": "Lane picker offers exactly the diagram's real people/pair-bonds.", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null, "provenance": "ratified-ac", "tests": []},
+    {"id": "C13", "text": "No silent stale read immediately after an extraction-triggering chat exchange.", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null, "provenance": "human-complaint", "from_finding": "F-004", "tests": []},
+    {"id": "C14", "text": "Responsive layout works at mobile (390px) and desktop widths.", "track": "human", "harness_drivable": false, "status": "pending", "evidence": null, "provenance": "ratified-ac", "tests": []},
+    {"id": "C15", "text": "Automated tests exist under btcopilot/btcopilot/tests/personal (or training) covering C1-C9,C12,C13.", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null, "provenance": "ratified-ac", "tests": []},
+    {"id": "C16", "text": "Seed fixture: 5+ people, 2 couples, 20+ dated events, mixed certainty incl. approximate+undated, exercising every rule above.", "track": "agent", "harness_drivable": true, "status": "pending", "evidence": null, "provenance": "ratified-ac", "tests": []},
+    {"id": "C17", "text": "Manual walkthrough per the Manual Testing Protocol on 8889 (snapshot+screenshot+interactions).", "track": "human", "harness_drivable": false, "status": "pending", "evidence": null, "provenance": "ratified-ac", "tests": []}
+  ],
+  "suite_tests": [],
+  "gates": {
+    "ground": {"status": "passed", "at": "2026-08-31T00:00:00Z", "artifact": "doc/workstreams/oracles/FD-360/2026-08-31--1-fd-360.oracle.md"},
+    "build": {"status": "active", "at": "2026-08-31T00:00:00Z", "artifact": null},
+    "validate": {
+      "agent_track": {"status": "not-started", "at": null, "token": null},
+      "human_track": {"status": "not-started", "at": null, "script": null}
+    },
+    "merge": {"status": "pending", "at": null, "pr_url": null}
+  },
+  "gate_definitions_path": null,
+  "handoff_path": null,
+  "act_step_runs": [],
+  "findings": [
+    {"id": "F-001", "summary": "Personal QML app's own timeline (_calculateCumulative in sarfgraphmodel.py) mixes all people's deltas into one running sum -- not per-person. New page must not reproduce this.", "severity": "major", "repro": "Inspect familydiagram/pkdiagram/personal/sarfgraphmodel.py _calculateCumulative; it keeps 3 scalars summed across every event regardless of person.", "validation_status": "agent-verified", "status": "open", "found_in_track": "agent", "criterion": "C3", "regression_test": null},
+    {"id": "F-002", "summary": "btcopilot/auth.py dispatches by URL path prefix; a naive session-auth 'bridge' placed inside the shared authenticator would weaken auth for the live Personal QML app's /personal/* calls.", "severity": "critical", "repro": "Read btcopilot/auth.py current_user()/is_personal_app_request()/_authenticate_pro_personal_apps(): HMAC-only, hard 401, no session fallback, chosen purely by request.path prefix.", "validation_status": "agent-verified", "status": "resolved", "found_in_track": "agent", "criterion": "C4", "regression_test": null},
+    {"id": "F-003", "summary": "flask_wtf CSRF is initialized app-wide but the training blueprint's own CSRF hook is currently commented out; a new session-authenticated mutating route needs its own protection or it's a new hole.", "severity": "major", "repro": "Read btcopilot/training/routes/__init__.py _csrf_protect(): body is fully commented out.", "validation_status": "agent-verified", "status": "open", "found_in_track": "agent", "criterion": "C5", "regression_test": null},
+    {"id": "F-004", "summary": "Extraction runs async (Celery); a chat reply and the PDP commit it triggers are decoupled in time, so the timeline endpoint can be queried before the delta lands.", "severity": "minor", "repro": "Read btcopilot/personal/deepreextract.py and personal/__init__.py init_celery -- extraction is a background task, not inline with the chat reply.", "validation_status": "agent-verified", "status": "open", "found_in_track": "agent", "criterion": "C13", "regression_test": null}
+  ],
+  "deferred_risk": [],
+  "history": [
+    {"gate": "ground", "entered": "2026-08-31T00:00:00Z", "exited": "2026-08-31T00:00:00Z", "note": "Adversarial single-critic pass run (grounded in real code reads); 17 criteria ratified by coordinator under team-lead's delegated authority (Patrick away) rather than Patrick's direct yes -- documented deviation. No Jira comment posted per team-lead's tightened write restriction."}
+  ],
+  "parked_on": "nothing -- proceeding to build",
+  "ticket_status_sync": {
+    "gate": "gate-ground",
+    "target_status": "In Progress",
+    "result": "no-map",
+    "error": "Team-lead's ground rules restrict this run to Jira reads + one closing comment; status-transition writes are intentionally skipped this run, not attempted.",
+    "at": "2026-08-31T00:00:00Z"
+  }
+}
