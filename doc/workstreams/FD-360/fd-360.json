@@ -175,7 +175,7 @@
       "track": "human",
       "harness_drivable": false,
       "status": "human-verified",
-      "evidence": "Agent-performed manual walkthrough (Patrick away this session): tapping the strip opened the full-screen expanded view with 7 labeled person lanes + 2 pair-bond lanes, amber certainty bands, dotted gaps, bond event stamps with word labels, and the undated shelf as 3 dashed chips. Screenshot doc/workstreams/FD-360/evidence/desktop-2-expanded.png. NOT a substitute for Patrick's own sign-off.",
+      "evidence": "Agent-performed manual walkthrough (Patrick away this session): tapping the strip opened the full-screen expanded view with 7 labeled person lanes + 2 pair-bond lanes, amber certainty bands, dotted gaps, bond event stamps with word labels, and the undated shelf as 3 dashed chips. Screenshot doc/workstreams/FD-360/evidence/desktop-2-expanded.png. NOT a substitute for Patrick's own sign-off. REDESIGNED after Patrick's first sandbox walk (DRAWABILITY sparse-data addendum): era-compressed time (linear inside data-density eras, labeled quiet-year bridges between), far-zoom era blocks, drag/pinch/wheel pan-zoom, double-tap era fit, per-mark year labels, question marks attached to their points. Verified with Patrick's real scrubbed record on the live sandbox: evidence/real-0-before-redesign.png (the random-boxes failure) vs real-2-expanded-fitall.png and real-3-expanded-erafit.png.",
       "provenance": "ratified-ac",
       "tests": []
     },
@@ -197,7 +197,7 @@
       "track": "agent",
       "harness_drivable": true,
       "status": "agent-verified",
-      "evidence": "Picker chips on the live page were exactly the 7 seeded people plus the 2 pair-bond labels, straight from diagram data; toggling a chip changed the rendered lanes. Endpoint test asserts the people/bond id sets equal the diagram's.",
+      "evidence": "Picker chips on the live page were exactly the 7 seeded people plus the 2 pair-bond labels, straight from diagram data; toggling a chip changed the rendered lanes. Endpoint test asserts the people/bond id sets equal the diagram's. UPDATE per Patrick's walkthrough finding: the lane-filter UI was removed by design authority (lanes are coach-chosen defaults + future user pins; a filter panel is a data project). The timeline endpoint still serves the diagram's real people and pair-bonds, and the never-hardcoded rule now applies to the strip default selection (own symptom lane first, busiest household lane second) and the loader's owner derivation.",
       "provenance": "ratified-ac",
       "tests": [
         "btcopilot/tests/personal/test_companion_timeline.py::test_lane_picker_data_from_diagram",
@@ -263,7 +263,7 @@
       "track": "human",
       "harness_drivable": false,
       "status": "human-verified",
-      "evidence": "Agent-performed walkthrough (Patrick away) against the live 8889 sandbox running this worktree's code: page load, DOM snapshot assertions, screenshots at two viewports (mobile captured first, before any chat exists, for a pristine resting state), a real chat send with a real LLM reply, tap-a-mark bubbles, expanded view open/close, lane-picker toggle, zero console errors across the re-run. Deviation: the chrome-devtools/claude-in-chrome browser was not connected (no paired Chrome while Patrick away), so Playwright headless Chromium drove the same URL instead. A peer agent (fd360b) independently re-ran the 25 tests, curl probes, and this walkthrough script and confirmed matching results; it also flagged that the first-committed mobile390-1-resting.png was captured after the shared seeded discussion already had chat history in it (an artifact of the script running desktop's chat send before mobile's screenshot) - the script was reordered and the evidence recaptured pristine. Screenshots under doc/workstreams/FD-360/evidence/.",
+      "evidence": "Agent-performed walkthrough (Patrick away) against the live 8889 sandbox running this worktree's code: page load, DOM snapshot assertions, screenshots at two viewports (mobile captured first, before any chat exists, for a pristine resting state), a real chat send with a real LLM reply, tap-a-mark bubbles, expanded view open/close, lane-picker toggle, zero console errors across the re-run. Deviation: the chrome-devtools/claude-in-chrome browser was not connected (no paired Chrome while Patrick away), so Playwright headless Chromium drove the same URL instead. A peer agent (fd360b) independently re-ran the 25 tests, curl probes, and this walkthrough script and confirmed matching results; it also flagged that the first-committed mobile390-1-resting.png was captured after the shared seeded discussion already had chat history in it (an artifact of the script running desktop's chat send before mobile's screenshot) - the script was reordered and the evidence recaptured pristine. Screenshots under doc/workstreams/FD-360/evidence/. SECOND walkthrough with Patrick's real record loaded via the lanes loader on the live 8889 sandbox: resting strip shows his sleep line (1996-2026, with order-question marks) over the Patrick & Connie household lane; era-fit, mark tap, shelf-chip ask-the-coach prefill all exercised, zero console errors. Screenshots evidence/real-1..6.",
       "provenance": "ratified-ac",
       "tests": []
     }
@@ -385,6 +385,26 @@
       "id": "DR-007",
       "summary": "The manual-walkthrough script (doc/workstreams/FD-360/evidence/walkthrough.py) auto-auths as one fixed sandbox user for both viewport runs, so screenshots share one live discussion; run order now puts the non-mutating mobile check before desktop chat-send so resting screenshots stay pristine, but re-running the script multiple times against the same long-lived sandbox DB will still accumulate chat history into later captures. Not an isolation bug in the product (each real user has their own discussion) - only a caveat for reproducing this evidence.",
       "criterion": "C17"
+    },
+    {
+      "id": "DR-008",
+      "summary": "Era view iteration 2 items, deliberately deferred per evidence-over-completeness: rows with nothing in the visible window still render as empty lanes; repeated per-mark year labels within one year are not deduped; era-detection threshold is a constant (3 years) tuned once against Patrick's record and will need tuning against other records.",
+      "criterion": "C10"
+    },
+    {
+      "id": "DR-009",
+      "summary": "Coordinator asked for Elizabeth+Jim as the second default resting lane. The generic never-hardcoded rule (busiest household lane) picks Patrick & Connie on his record instead. Pinning a specific lane needs the planned coach-default/user-pin mechanism; not implementable without hardcoding people today.",
+      "criterion": null
+    },
+    {
+      "id": "DR-010",
+      "summary": "Shelf 'ask me about this next time' ships as a chat-input prefill the user sends themselves (honest, zero new persistence). A server-side queued note the coach context picks up automatically is NOT built; logged as the follow-up wiring.",
+      "criterion": null
+    },
+    {
+      "id": "DR-011",
+      "summary": "Lane-loader interpretation calls on the scrubbed files: relationship direction mapped to kinds via a small keyword table (cutoff/conflict/distance) with up=Toward fallback after per-doc polarity normalization; entries with a variable but null direction only become 'same' marks when the description says unchanged, otherwise they load as undrawn dated facts; entry-level deaths/weddings within a year of a structure fact are dropped as duplicates. Each is a judgment call on ambiguous source data for Patrick to spot-check against his own record.",
+      "criterion": null
     }
   ],
   "history": [
@@ -405,6 +425,12 @@
       "entered": "2026-09-01T05:00:00Z",
       "exited": null,
       "note": "Agent track: full suite 844 passed; per-criterion evidence recorded above. Human track walked by the build agent as stand-in (Patrick away): live 8889 sandbox, Playwright headless (no paired Chrome), real LLM chat, screenshots in doc/workstreams/FD-360/evidence/. Explicitly not Patrick's sign-off; C10/C11/C14/C17 remain his to confirm."
+    },
+    {
+      "gate": "validate",
+      "entered": "2026-09-01T06:30:00Z",
+      "exited": null,
+      "note": "Patrick's first walkthrough findings folded in: real-record loader (--from-lanes), era-compressed expanded view per DRAWABILITY sparse-data addendum, lane-filter UI removed, shelf chips speak + ask-the-coach prefill, pan/zoom/era-fit. Live sandbox reseeded with his scrubbed chat+journal record; fresh screenshots in evidence/real-*."
     }
   ],
   "parked_on": "Patrick's review: PR #133, the human-track criteria (C10/C11/C14/C17), and deferred-risk scope calls DR-002/DR-006",
