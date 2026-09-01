@@ -1115,3 +1115,12 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 **Reasoning:** The Learn tab failed by drawing whatever existed however sparse. Real-data findings: uncertainty is the norm for remembered history (57/84 chat dates year-grade+) and the exception for journaled-now (75/78 day-certain) — certainty is a property of capture time, so returning chat is the data-quality strategy; self-reported data is direction-rich (70%) except relationship moves; density encodes capture mode, not severity.
 
 **Revisit trigger:** Patrick's or testers' lanes draw misleading pictures under these rules in the first working-group cycle; the "?" pairs prove too numerous or too rare to fuel conversation.
+
+
+## 2026-08-31: UI shape ruled from real-data mockups — conversation-led, always-on strip, quiet questions; cartoon rule
+
+**Context:** Three phone mockups from Patrick's real record (strip / question-first / living header).
+
+**Decision:** Question-first rejected (survey feel; "no one is going to like a questionnaire"). Ruled shape: conversation drives everything; picture always on, strip-small above the chat; questions as quiet in-place marks; the coach aims the picture via an inline reference; users can proactively fill gaps through the picture; undated shelf behind a tap. Cartoon rule recorded in doc/DRAWABILITY.md: one or two impactful correlations, not a dataset; the brain-rearranging moment is the product's acceptance test.
+
+**Revisit trigger:** working-group members don't notice quiet marks (engagement rests on coach prose alone), or the strip proves too small to aim at on phones.

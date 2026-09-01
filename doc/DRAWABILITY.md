@@ -60,3 +60,17 @@ in place, as specific answerable questions. There is no notion of "finished."
 - Self-reported chat/journal data is direction-rich (70% of Patrick's 162 moments);
   relationship moves are the exception (mostly categorical) — couple/household lanes
   are stamped marks and ranges, not curves.
+
+## The cartoon rule (ruled 2026-08-31)
+
+The resting picture shows almost nothing: strip-small, always on, one or two lanes,
+cartoon-level detail. The product exists to produce one or two brain-rearranging
+correlations, not a comprehensive dataset — users must never feel they've taken on a
+data project. Conversation drives everything; the UI is a secondary way to fill gaps,
+and the coach aims the picture with an inline reference when it wants attention.
+Questions are quiet marks in place — never cards, never a queue (survey feel killed
+the "question-first" mockup). The undated shelf lives behind a tap. The acceptance
+test for coach and picture alike is the felt shift ("something rearranging"), of which
+two real instances are on record (the stepmother-out/mother-in/high-school pileup;
+the triangle poke about B's relationship with A). Mockups:
+https://claude.ai/code/artifact/a20195e0-2310-4308-8fd5-1dc74ac28dc9
