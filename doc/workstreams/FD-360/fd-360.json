@@ -16,7 +16,7 @@
   "state": "gate-build",
   "oracle": {
     "path": "doc/workstreams/oracles/FD-360/2026-08-31--1-fd-360.oracle.md",
-    "committed": false,
+    "committed": true,
     "content_hash": "ec0632d82d2b892be55c39e83fdabe228a41cac2b8cb7a257a50ed0a01ec5b13"
   },
   "oracle_proposal": {
