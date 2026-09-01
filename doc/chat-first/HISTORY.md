@@ -467,3 +467,10 @@ mechanical name-list scan with quarantine for his eyeball. Open approvals: that
 guard, and the import script that writes interpreted events into .fd files (its
 format doubles as the bake-off output format). The visualization prototype remains
 gated ONLY on the FUNCTION-subset ruling, not on this thread.
+
+Correction, same day: Patrick killed the anonymization arm entirely — no translator,
+no scrub guard; the corpus's rare inferences go to BAA providers on raw content.
+The Notability scope narrowed to: interpret PDFs → NEW .fd files (originals
+preserved) → profile them like the app cases → eyeball viability for a functioning
+timeline. Focus stays on finishing the corpus so the visualization prototype work
+can resume.

@@ -168,17 +168,16 @@ precise spec on cheaper models; mechanics on the cheapest.
   Sonnet-vs-Opus coaching test. Ruled: in-story follow-ups are exempt from the
   ~1-question/session budget (it caps only out-of-flow clarifications).
 
-- **Notability handwritten cases (ruled 2026-09-01)**: .fd diagram files are the
-  SINGLE SOURCE OF TRUTH. Auto-backup is ON (PDFs landing in Google Drive). Pipeline:
-  BAA provider (OpenAI/Gemini; three-armed bake-off approved incl. local Qwen-VL —
-  keys in theapp/.env) interprets each PDF once → import script writes events INTO
-  the .fd files (approval pending) → Patrick reviews in the app with aliases on
-  (app already aliases names/nicknames in notes text; verified) → translator
-  (rebuild.py extension) emits the anonymous corpus: today's allowlist + alias-
-  scrubbed text + parent-child links (also unblocks the STRUCTURE session).
-  Scrubber gap guard = mechanical name-list scan + quarantine, nothing fancier
-  (approval pending). Work home: PRIVATE btcopilot-sources. This thread does NOT
-  gate the visualization prototype — only the FUNCTION-subset ruling does.
+- **Notability handwritten cases (ruled 2026-09-01, corrected same day)**: NO
+  anonymization machinery — no translator, no scrub guard; inference on this data is
+  rare and goes straight to a BAA provider (OpenAI/Gemini) with raw content. Scope:
+  PDFs (auto-backup ON, landing in Google Drive) → three-armed interpretation
+  bake-off (GPT / Gemini / local Qwen-VL; keys in theapp/.env) → import script
+  writes NEW .fd diagram files (originals preserved untouched) → profile the new
+  diagrams exactly like the app cases (marker density, span, people) → Patrick
+  eyeballs which are viable for functioning-timeline inference. Work home: PRIVATE
+  btcopilot-sources. Does NOT gate the visualization prototype — only the
+  FUNCTION-subset ruling does.
 
 ## Jira / branches
 
