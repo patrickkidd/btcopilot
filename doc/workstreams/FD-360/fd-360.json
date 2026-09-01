@@ -175,7 +175,7 @@
       "track": "human",
       "harness_drivable": false,
       "status": "human-verified",
-      "evidence": "Agent-performed manual walkthrough (Patrick away this session): tapping the strip opened the full-screen expanded view with 7 labeled person lanes + 2 pair-bond lanes, amber certainty bands, dotted gaps, bond event stamps with word labels, and the undated shelf as 3 dashed chips. Screenshot doc/workstreams/FD-360/evidence/desktop-2-expanded.png. NOT a substitute for Patrick's own sign-off. REDESIGNED after Patrick's first sandbox walk (DRAWABILITY sparse-data addendum): era-compressed time (linear inside data-density eras, labeled quiet-year bridges between), far-zoom era blocks, drag/pinch/wheel pan-zoom, double-tap era fit, per-mark year labels, question marks attached to their points. Verified with Patrick's real scrubbed record on the live sandbox: evidence/real-0-before-redesign.png (the random-boxes failure) vs real-2-expanded-fitall.png and real-3-expanded-erafit.png.",
+      "evidence": "Agent-performed manual walkthrough (Patrick away this session): tapping the strip opened the full-screen expanded view with 7 labeled person lanes + 2 pair-bond lanes, amber certainty bands, dotted gaps, bond event stamps with word labels, and the undated shelf as 3 dashed chips. Screenshot doc/workstreams/FD-360/evidence/desktop-2-expanded.png. NOT a substitute for Patrick's own sign-off. REDESIGNED after Patrick's first sandbox walk (DRAWABILITY sparse-data addendum): era-compressed time (linear inside data-density eras, labeled quiet-year bridges between), far-zoom era blocks, drag/pinch/wheel pan-zoom, double-tap era fit, per-mark year labels, question marks attached to their points. Also exercised against a real user record loaded via the lanes loader on the live sandbox (screenshots retained outside the repo per the confidential-data rules).",
       "provenance": "ratified-ac",
       "tests": []
     },
@@ -263,7 +263,7 @@
       "track": "human",
       "harness_drivable": false,
       "status": "human-verified",
-      "evidence": "Agent-performed walkthrough (Patrick away) against the live 8889 sandbox running this worktree's code: page load, DOM snapshot assertions, screenshots at two viewports (mobile captured first, before any chat exists, for a pristine resting state), a real chat send with a real LLM reply, tap-a-mark bubbles, expanded view open/close, lane-picker toggle, zero console errors across the re-run. Deviation: the chrome-devtools/claude-in-chrome browser was not connected (no paired Chrome while Patrick away), so Playwright headless Chromium drove the same URL instead. A peer agent (fd360b) independently re-ran the 25 tests, curl probes, and this walkthrough script and confirmed matching results; it also flagged that the first-committed mobile390-1-resting.png was captured after the shared seeded discussion already had chat history in it (an artifact of the script running desktop's chat send before mobile's screenshot) - the script was reordered and the evidence recaptured pristine. Screenshots under doc/workstreams/FD-360/evidence/. SECOND walkthrough with Patrick's real record loaded via the lanes loader on the live 8889 sandbox: resting strip shows his sleep line (1996-2026, with order-question marks) over the Patrick & Connie household lane; era-fit, mark tap, shelf-chip ask-the-coach prefill all exercised, zero console errors. Screenshots evidence/real-1..6.",
+      "evidence": "Agent-performed walkthrough (Patrick away) against the live 8889 sandbox running this worktree's code: page load, DOM snapshot assertions, screenshots at two viewports (mobile captured first, before any chat exists, for a pristine resting state), a real chat send with a real LLM reply, tap-a-mark bubbles, expanded view open/close, lane-picker toggle, zero console errors across the re-run. Deviation: the chrome-devtools/claude-in-chrome browser was not connected (no paired Chrome while Patrick away), so Playwright headless Chromium drove the same URL instead. A peer agent (fd360b) independently re-ran the 25 tests, curl probes, and this walkthrough script and confirmed matching results; it also flagged that the first-committed mobile390-1-resting.png was captured after the shared seeded discussion already had chat history in it (an artifact of the script running desktop's chat send before mobile's screenshot) - the script was reordered and the evidence recaptured pristine. Screenshots under doc/workstreams/FD-360/evidence/. SECOND walkthrough with a real user record loaded via the lanes loader on the live 8889 sandbox: resting strip shows the owner's symptom line with order-question marks over the busiest household lane; mark tap and shelf-chip sentences exercised, zero console errors. Screenshots retained outside the repo per the confidential-data rules.",
       "provenance": "ratified-ac",
       "tests": []
     }
@@ -393,7 +393,7 @@
     },
     {
       "id": "DR-009",
-      "summary": "Coordinator asked for Elizabeth+Jim as the second default resting lane. The generic never-hardcoded rule (busiest household lane) picks Patrick & Connie on his record instead. Pinning a specific lane needs the planned coach-default/user-pin mechanism; not implementable without hardcoding people today.",
+      "summary": "Coordinator asked for a specific household as the second default resting lane. The generic never-hardcoded rule (busiest household lane) picks a different household on the real record. Pinning a specific lane needs the planned coach-default/user-pin mechanism; not implementable without hardcoding people today.",
       "criterion": null
     },
     {
@@ -430,7 +430,7 @@
       "gate": "validate",
       "entered": "2026-09-01T06:30:00Z",
       "exited": null,
-      "note": "Patrick's first walkthrough findings folded in: real-record loader (--from-lanes), era-compressed expanded view per DRAWABILITY sparse-data addendum, lane-filter UI removed, shelf chips speak + ask-the-coach prefill, pan/zoom/era-fit. Live sandbox reseeded with his scrubbed chat+journal record; fresh screenshots in evidence/real-*."
+      "note": "First-walkthrough findings folded in: real-record loader (--from-lanes), expanded-view rework, lane-filter UI removed, shelf chips speak on tap. Live sandbox reseeded from external scrubbed lane files; screenshots retained outside the repo per the confidential-data rules."
     }
   ],
   "parked_on": "Patrick's review: PR #133, the human-track criteria (C10/C11/C14/C17), and deferred-risk scope calls DR-002/DR-006",

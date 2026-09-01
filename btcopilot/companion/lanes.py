@@ -20,7 +20,6 @@ from btcopilot.schema import (
     asdict,
 )
 
-ALIASES = {"Robert (dad)": "Bob", "Alissa": "Alyssa"}
 ASSISTANT_ID = 2
 
 CERTAINTY = {
@@ -45,8 +44,8 @@ RELATIONSHIP_KEYWORDS = (
 )
 
 
-def _canon(name: str) -> str:
-    return ALIASES.get(name, name)
+def _canon(name: str, aliases: dict[str, str]) -> str:
+    return aliases.get(name, name)
 
 
 def _date(t: float | None) -> str | None:
@@ -83,15 +82,16 @@ def _relationship_kind(desc: str, direction: str | None) -> RelationshipKind | N
 
 
 class _Builder:
-    def __init__(self, primary: str):
+    def __init__(self, primary: str, aliases: dict[str, str]):
         self.primary = primary
+        self.aliases = aliases
         self.people: dict[str, int] = {}
         self.bonds: dict[tuple[int, int], int] = {}
         self.events: list[Event] = []
         self.next_id = ASSISTANT_ID + 1
 
     def person(self, name: str) -> int:
-        name = _canon(name)
+        name = _canon(name, self.aliases)
         if name == self.primary:
             return 1
         if name not in self.people:
@@ -118,7 +118,7 @@ def _load_structure(builder: _Builder, facts: list[dict]):
     that name no event (pure kinship) still register their people."""
     for fact in facts:
         text = fact["fact"]
-        people = [_canon(p) for p in fact["people"]]
+        people = [_canon(p, builder.aliases) for p in fact["people"]]
         t = fact.get("t")
         for name in people:
             builder.person(name)
@@ -242,11 +242,8 @@ def _load_entries(builder: _Builder, entries: list[dict], rel_up_is_worse: bool)
             if kind is not None:
                 kwargs["relationship"] = kind
                 known = dict(builder.people, **{builder.primary: 1})
-                targets = [
-                    known[_canon(o)]
-                    for o in entry.get("others", [])
-                    if _canon(o) in known
-                ]
+                canon = [_canon(o, builder.aliases) for o in entry.get("others", [])]
+                targets = [known[o] for o in canon if o in known]
                 kwargs["relationshipTargets"] = [t for t in targets if t != who]
 
         builder.event(
@@ -260,22 +257,28 @@ def _load_entries(builder: _Builder, entries: list[dict], rel_up_is_worse: bool)
         )
 
 
-def _primary_name(docs: list[dict]) -> str:
+def _primary_name(docs: list[dict], aliases: dict[str, str]) -> str:
     """The diagram owner, named by the structure facts ("owner born",
     "... of owner"), never hardcoded."""
     for doc in docs:
         for fact in doc.get("structure", []):
             if fact["fact"].strip() == "owner born":
-                return _canon(fact["people"][0])
+                return _canon(fact["people"][0], aliases)
     for doc in docs:
         for fact in doc.get("structure", []):
             if fact["fact"].strip().endswith("of owner"):
-                return _canon(fact["people"][-1])
+                return _canon(fact["people"][-1], aliases)
     raise ValueError("No owner-naming structure fact in any lane doc")
 
 
-def lanes_diagram_data(docs: list[dict]) -> DiagramData:
-    builder = _Builder(_primary_name(docs))
+def lanes_diagram_data(
+    docs: list[dict], aliases: dict[str, str] | None = None
+) -> DiagramData:
+    """aliases merges alternate spellings of one person across docs
+    ({"name as written": "canonical name"}); pass at seed time, never
+    embed identities in code."""
+    aliases = aliases or {}
+    builder = _Builder(_primary_name(docs, aliases), aliases)
     for doc in docs:
         _load_structure(builder, doc.get("structure", []))
     for doc in docs:

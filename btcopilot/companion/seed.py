@@ -170,12 +170,20 @@ def main(argv: list[str]):
         metavar="LANES_JSON",
         help="Build the diagram from scrubbed lane JSON files instead of the fixture",
     )
+    parser.add_argument(
+        "--alias",
+        action="append",
+        default=[],
+        metavar="WRITTEN=CANONICAL",
+        help="Merge a name spelling into a canonical person (repeatable)",
+    )
     args = parser.parse_args(argv)
 
     diagram_data = None
     if args.from_lanes:
         docs = [json.load(open(path)) for path in args.from_lanes]
-        diagram_data = lanes_diagram_data(docs)
+        aliases = dict(a.split("=", 1) for a in args.alias)
+        diagram_data = lanes_diagram_data(docs, aliases)
 
     app = create_app()
     with app.app_context():
