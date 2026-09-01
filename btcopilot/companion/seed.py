@@ -127,7 +127,7 @@ def seed_diagram_data() -> DiagramData:
     )
 
 
-def seed(username: str):
+def seed(username: str, diagram_data: DiagramData | None = None):
     from btcopilot.extensions import db
     from btcopilot.pro.models import Diagram, User
 
@@ -136,6 +136,10 @@ def seed(username: str):
         raise SystemExit(f"No user {username}")
     for old in Diagram.query.filter_by(user_id=user.id, name=SEED_DIAGRAM_NAME):
         for discussion in old.discussions:
+            # Break the Discussion<->Speaker FK cycle so delete can sort
+            discussion.chat_user_speaker_id = None
+            discussion.chat_ai_speaker_id = None
+            db.session.flush()
             db.session.delete(discussion)
         if user.free_diagram_id == old.id:
             user.free_diagram_id = None
@@ -143,7 +147,7 @@ def seed(username: str):
     db.session.flush()
 
     diagram = Diagram(user_id=user.id, name=SEED_DIAGRAM_NAME, data=pickle.dumps({}))
-    diagram.set_diagram_data(seed_diagram_data())
+    diagram.set_diagram_data(diagram_data or seed_diagram_data())
     db.session.add(diagram)
     db.session.flush()
     user.free_diagram_id = diagram.id
@@ -151,11 +155,37 @@ def seed(username: str):
     return diagram
 
 
-if __name__ == "__main__":
-    from btcopilot.app import create_app
+def main(argv: list[str]):
+    import argparse
+    import json
 
-    username = sys.argv[1] if len(sys.argv) > 1 else "patrickkidd+unittest@gmail.com"
+    from btcopilot.app import create_app
+    from btcopilot.companion.lanes import lanes_diagram_data
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("username", nargs="?", default="patrickkidd+unittest@gmail.com")
+    parser.add_argument(
+        "--from-lanes",
+        nargs="+",
+        metavar="LANES_JSON",
+        help="Build the diagram from scrubbed lane JSON files instead of the fixture",
+    )
+    args = parser.parse_args(argv)
+
+    diagram_data = None
+    if args.from_lanes:
+        docs = [json.load(open(path)) for path in args.from_lanes]
+        diagram_data = lanes_diagram_data(docs)
+
     app = create_app()
     with app.app_context():
-        diagram = seed(username)
-        print(f"Seeded diagram {diagram.id} ({SEED_DIAGRAM_NAME}) for {username}")
+        diagram = seed(args.username, diagram_data)
+        source = "lanes" if args.from_lanes else "fixture"
+        print(
+            f"Seeded diagram {diagram.id} ({SEED_DIAGRAM_NAME}, {source}) "
+            f"for {args.username}"
+        )
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

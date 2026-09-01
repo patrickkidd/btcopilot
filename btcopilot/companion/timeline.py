@@ -8,6 +8,7 @@ from btcopilot.personal.intake import _enum_val, _parse_iso_date
 from btcopilot.schema import DateCertainty, DiagramData, EventKind, VariableShift
 
 GAP_DAYS = 730
+ERA_GAP_DAYS = 1095
 STRIP_MAX_LANES = 2
 BAND_DAYS = {
     DateCertainty.Certain.value: 7,
@@ -203,16 +204,23 @@ def build_timeline(data: DiagramData) -> dict:
         marks = []
         for event, date, certainty in dated:
             kind = _enum_val(event.get("kind"))
+            relationship = _enum_val(event.get("relationship"))
             try:
                 is_bond_kind = EventKind(kind).isPairBond()
             except ValueError:
                 continue
-            if not is_bond_kind:
-                continue
             if event.get("person") not in pair:
                 continue
-            spouse = event.get("spouse")
-            if spouse is not None and spouse not in pair:
+            if is_bond_kind:
+                spouse = event.get("spouse")
+                if spouse is not None and spouse not in pair:
+                    continue
+                label_word = kind
+                base = _structural_base(event, kind, people_by_id)
+            elif relationship and set(event.get("relationshipTargets") or []) & pair:
+                label_word = relationship
+                base = event.get("description") or relationship
+            else:
                 continue
             marks.append(
                 {
@@ -220,10 +228,8 @@ def build_timeline(data: DiagramData) -> dict:
                     "date": date.isoformat(),
                     "band_days": BAND_DAYS[certainty],
                     "certainty": certainty,
-                    "kind": kind,
-                    "sentence": _sentence(
-                        _structural_base(event, kind, people_by_id), date, certainty
-                    ),
+                    "kind": label_word,
+                    "sentence": _sentence(base, date, certainty),
                 }
             )
         marks.sort(key=lambda m: m["date"])
@@ -232,34 +238,77 @@ def build_timeline(data: DiagramData) -> dict:
 
     questions = _order_questions(lanes, dated, people_by_id)
 
-    person_lanes = sorted(
-        lanes, key=lambda l: (l["directed_count"], len(l["points"]) + len(l["same_marks"])), reverse=True
-    )
-    strip_lanes = []
-    for lane in person_lanes[:STRIP_MAX_LANES]:
-        ordered = sorted(lane["points"] + lane["same_marks"], key=lambda e: e["date"])
-        strip_lanes.append(
-            {
-                "key": lane["key"],
-                "label": lane["label"],
-                "line": (
-                    [[e["date"], e["value"]] for e in ordered] if lane["has_line"] else None
-                ),
-                "marks": [
-                    {"type": "dot", "date": e["date"], "value": e["value"]} for e in ordered
-                ],
-                "questions": [
-                    {"type": "question", "date": q["date"]}
-                    for q in questions
-                    if q["lane"] == lane["key"]
-                ],
-                "v_min": lane["v_min"],
-                "v_max": lane["v_max"],
-            }
+    # Resting strip: the user's own most-directed lane first, then the most
+    # active couple/household lane (coach-chosen defaults and user pins come
+    # later; nothing person-specific is hardcoded).
+    def _lane_rank(lane):
+        # The symptom lane is the presenting problem (DRAWABILITY): it leads
+        # whenever it can draw a line, ahead of busier anxiety/functioning.
+        return (
+            lane["variable"] == "symptom" and lane["has_line"],
+            lane["directed_count"],
+            len(lane["points"]) + len(lane["same_marks"]),
         )
 
-    all_dates = [d.isoformat() for _, d, _ in dated]
-    axis = {"min": min(all_dates), "max": max(all_dates)} if all_dates else None
+    def _strip_person_lane(lane):
+        ordered = sorted(lane["points"] + lane["same_marks"], key=lambda e: e["date"])
+        return {
+            "key": lane["key"],
+            "label": lane["label"],
+            "line": (
+                [[e["date"], e["value"]] for e in ordered] if lane["has_line"] else None
+            ),
+            "marks": [
+                {"type": "dot", "date": e["date"], "value": e["value"]} for e in ordered
+            ],
+            "questions": [
+                {"type": "question", "date": q["date"]}
+                for q in questions
+                if q["lane"] == lane["key"]
+            ],
+            "v_min": lane["v_min"],
+            "v_max": lane["v_max"],
+        }
+
+    primary_ids = {p["id"] for p in people if p.get("primary")}
+    own = sorted(
+        [l for l in lanes if l["person"] in primary_ids], key=_lane_rank, reverse=True
+    )
+    others = sorted(
+        [l for l in lanes if l["person"] not in primary_ids], key=_lane_rank, reverse=True
+    )
+    busiest_bond = max(bond_lanes, key=lambda l: len(l["marks"]), default=None)
+
+    strip_lanes = [_strip_person_lane(lane) for lane in (own[:1] or others[:1])]
+    if busiest_bond is not None and len(strip_lanes) < STRIP_MAX_LANES:
+        strip_lanes.append(
+            {
+                "key": busiest_bond["key"],
+                "label": busiest_bond["label"],
+                "line": None,
+                "marks": [
+                    {"type": "dot", "date": m["date"], "value": 0}
+                    for m in busiest_bond["marks"]
+                ],
+                "questions": [],
+                "v_min": 0,
+                "v_max": 0,
+            }
+        )
+    for lane in own[1:] + others:
+        if len(strip_lanes) >= STRIP_MAX_LANES:
+            break
+        if any(s["key"] == lane["key"] for s in strip_lanes):
+            continue
+        strip_lanes.append(_strip_person_lane(lane))
+
+    drawn_dates = sorted(
+        [e["date"] for lane in lanes for e in lane["points"] + lane["same_marks"]]
+        + [m["date"] for lane in bond_lanes for m in lane["marks"]]
+    )
+    axis = (
+        {"min": drawn_dates[0], "max": drawn_dates[-1]} if drawn_dates else None
+    )
 
     return {
         "people": [
@@ -273,7 +322,30 @@ def build_timeline(data: DiagramData) -> dict:
         "shelf": shelf,
         "questions": questions,
         "axis": axis,
+        "eras": _eras(drawn_dates),
     }
+
+
+def _eras(dates: list[str]) -> list[dict]:
+    """Split the record into data-density eras: a silence longer than
+    ERA_GAP_DAYS starts a new era. The expanded view renders time linearly
+    inside an era and visibly compresses the bridges between eras."""
+    if not dates:
+        return []
+    eras = []
+    start = prev = dates[0]
+    count = 1
+    for d in dates[1:]:
+        if (
+            datetime.date.fromisoformat(d) - datetime.date.fromisoformat(prev)
+        ).days > ERA_GAP_DAYS:
+            eras.append({"a": start, "b": prev, "count": count})
+            start = d
+            count = 0
+        count += 1
+        prev = d
+    eras.append({"a": start, "b": prev, "count": count})
+    return eras
 
 
 def _order_questions(lanes: list, dated: list, people_by_id: dict) -> list:
