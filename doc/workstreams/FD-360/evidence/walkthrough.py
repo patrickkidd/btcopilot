@@ -121,8 +121,11 @@ def mobile(page, tag):
 
 
 with sync_playwright() as pw:
-    run(pw, 1280, 800, "desktop", desktop)
+    # mobile() never sends chat; run it BEFORE desktop() so its "resting"
+    # screenshot is captured before any message exists in the shared
+    # seeded discussion (both auto-auth as the same sandbox user).
     run(pw, 390, 844, "mobile390", mobile)
+    run(pw, 1280, 800, "desktop", desktop)
 
 results["console_errors"] = console_errors
 print(json.dumps(results, indent=2))
