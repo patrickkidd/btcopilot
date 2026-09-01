@@ -1,0 +1,450 @@
+{
+  "ticket": "FD-360",
+  "title": "Web page: chat + timeline picture against the existing backend",
+  "base_branch": "master",
+  "worktree": "/Users/patrick/theapp/btcopilot/.claude/worktrees/FD-360",
+  "branch": "FD-360",
+  "subfolder_namespaced": true,
+  "test_registry_traced": true,
+  "human_track_skip": {
+    "proposed": false,
+    "skip_question": null,
+    "human_answer": null,
+    "answer_bundled_with": null,
+    "confirmed_by_human": false
+  },
+  "state": "gate-validate",
+  "oracle": {
+    "path": "doc/workstreams/oracles/FD-360/2026-08-31--1-fd-360.oracle.md",
+    "committed": true,
+    "content_hash": "ec0632d82d2b892be55c39e83fdabe228a41cac2b8cb7a257a50ed0a01ec5b13"
+  },
+  "oracle_proposal": {
+    "depth": "single-critic",
+    "note": "Medium blast radius: new route + auth surface reuse, but no touch to shared /personal auth or data migration. One critic sub-agent, grounded in real codebase reads (auth.py, sarfgraphmodel.py, schema.py).",
+    "posted_to": null,
+    "posted_to_note": "NOT posted as a Jira comment this run: team-lead's ground rules restrict Jira writes to reads + one closing comment. Proposal + ratification recorded here and in the committed oracle file instead.",
+    "proposed_criteria_summary": "17 criteria from the critic, reconciled to 17 ratified criteria (C1-C17) in the oracle file.",
+    "pending_ratification": false,
+    "ratified_by_human": false,
+    "ratified_by_delegate": true,
+    "ratification_note": "Ratified by the coordinator (fd360b) under team-lead's explicit pre-authorization to proceed autonomously while Patrick is away, NOT by Patrick's own direct yes on this criteria set. Documented as a deviation in the oracle file and to be flagged in the PR/report.",
+    "ratified_criteria": [
+      "C1",
+      "C2",
+      "C3",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "C8",
+      "C9",
+      "C10",
+      "C11",
+      "C12",
+      "C13",
+      "C14",
+      "C15",
+      "C16",
+      "C17"
+    ]
+  },
+  "criteria": [
+    {
+      "id": "C1",
+      "text": "Page loads on 8889 sandbox; login works; user's own diagram loads.",
+      "track": "agent",
+      "harness_drivable": true,
+      "status": "agent-verified",
+      "evidence": "Live 8889 sandbox from this worktree (PYTHONPATH override): GET /companion/ 200 for the auto-auth user with their seeded diagram rendered; unauthenticated request 302s to the training login. Tests assert 200-with-session, 302-without, and that a second user sees only their own (empty) data. Caveat: dev Postgres was down, so the sandbox ran a private SQLite DB seeded with the fixture family - user-scoped isolation is test-proven, but this was not literally Patrick's own diagram 1924.",
+      "provenance": "ratified-ac",
+      "tests": [
+        "btcopilot/tests/personal/test_companion.py::test_page_loads",
+        "btcopilot/tests/personal/test_companion.py::test_page_requires_login",
+        "btcopilot/tests/personal/test_companion.py::test_timeline_shows_own_data_only",
+        "btcopilot/tests/personal/test_companion.py::test_timeline_empty_for_user_without_diagram"
+      ]
+    },
+    {
+      "id": "C2",
+      "text": "Chat message returns a coach reply through the existing ask()/Discussion/Statement pipeline.",
+      "track": "agent",
+      "harness_drivable": true,
+      "status": "agent-verified",
+      "evidence": "Live sandbox: a real chat message produced a real LLM coach reply (fdserver private prompts loaded) through ask(); the conversation survived a page reload, proving Statement persistence. Tests assert both user and AI Statements persist with correct Subject/Expert speakers and that repeat sends reuse one Discussion bound to the free diagram.",
+      "provenance": "ratified-ac",
+      "tests": [
+        "btcopilot/tests/personal/test_companion.py::test_chat_round_trip",
+        "btcopilot/tests/personal/test_companion.py::test_chat_reuses_discussion"
+      ]
+    },
+    {
+      "id": "C3",
+      "text": "Per-person step line reflects only that person's own directed events, correctly isolated from other people (avoids the known QML mixed-sum bug).",
+      "track": "agent",
+      "harness_drivable": true,
+      "status": "agent-verified",
+      "evidence": "build_timeline segments events by person id before accumulating: with interleaved up/down events across two people, person 1's values are 1,2,3 and person 2's are -1,-2 - neither influenced by the other.",
+      "provenance": "human-complaint",
+      "from_finding": "F-001",
+      "tests": [
+        "btcopilot/tests/personal/test_companion_timeline.py::test_per_person_isolation"
+      ]
+    },
+    {
+      "id": "C4",
+      "text": "auth.py / is_personal_app_request untouched by this unit's diff; existing /personal/* HMAC-only enforcement unchanged.",
+      "track": "agent",
+      "harness_drivable": true,
+      "status": "agent-verified",
+      "evidence": "git diff master --stat contains no auth.py (only app.py registration + the speaker-sync extract in personal routes). Behavioral test: a request to /personal/discussions/ carrying a valid session cookie but no FD-Authentication header still gets 401.",
+      "provenance": "human-complaint",
+      "from_finding": "F-002",
+      "tests": [
+        "btcopilot/tests/personal/test_companion.py::test_personal_hmac_not_bridged_by_session"
+      ]
+    },
+    {
+      "id": "C5",
+      "text": "New chat-send route rejects a forged cross-origin POST (CSRF).",
+      "track": "agent",
+      "harness_drivable": true,
+      "status": "agent-verified",
+      "evidence": "Blueprint before_request calls csrf.protect() on mutating methods. POST with session cookie but no token: 400, no Statement written. POST with a garbage token: 400. POST with the real token from the page: 200.",
+      "provenance": "human-complaint",
+      "from_finding": "F-003",
+      "tests": [
+        "btcopilot/tests/personal/test_companion.py::test_chat_rejects_missing_csrf",
+        "btcopilot/tests/personal/test_companion.py::test_chat_rejects_bad_csrf",
+        "btcopilot/tests/personal/test_companion.py::test_chat_round_trip"
+      ]
+    },
+    {
+      "id": "C6",
+      "text": "3-point line rule: <3 directed points = dots only; 3+ = line bounded to its own point range.",
+      "track": "agent",
+      "harness_drivable": true,
+      "status": "agent-verified",
+      "evidence": "2 directed points: has_line false, zero segments. 3 directed points: segments span exactly first-point date to last-point date, no extension toward now or diagram start. Explicit same events do not count toward the 3.",
+      "provenance": "ratified-ac",
+      "tests": [
+        "btcopilot/tests/personal/test_companion_timeline.py::test_two_directed_points_render_dots_only",
+        "btcopilot/tests/personal/test_companion_timeline.py::test_line_spans_only_its_own_points",
+        "btcopilot/tests/personal/test_companion_timeline.py::test_same_events_do_not_count_toward_line"
+      ]
+    },
+    {
+      "id": "C7",
+      "text": "Certainty rendering: Certain=sharp mark, Approximate=~1yr band, no-date=undated shelf only.",
+      "track": "agent",
+      "harness_drivable": true,
+      "status": "agent-verified",
+      "evidence": "Certain points carry band_days=7, Approximate 365; events with no dateTime, and events whose dateCertainty is Unknown, appear only on the shelf and never in any lane. Visually confirmed in the expanded-view screenshot (amber ~1yr bands vs sharp dots).",
+      "provenance": "ratified-ac",
+      "tests": [
+        "btcopilot/tests/personal/test_companion_timeline.py::test_certainty_bands_and_undated_shelf"
+      ]
+    },
+    {
+      "id": "C8",
+      "text": "Gap renders visually distinct from a recorded no-change (same-direction) mark.",
+      "track": "agent",
+      "harness_drivable": true,
+      "status": "agent-verified",
+      "evidence": "Segments longer than 730 days carry gap=true (rendered dotted); adjacent segments gap=false (solid); an explicit same event lands in same_marks (rendered as a solid flat dash), not in points. Both treatments visible and distinct in the expanded screenshot.",
+      "provenance": "ratified-ac",
+      "tests": [
+        "btcopilot/tests/personal/test_companion_timeline.py::test_gap_distinct_from_recorded_no_change"
+      ]
+    },
+    {
+      "id": "C9",
+      "text": "Strip scale (resting, <=2 lanes) shows only line/dots/amber-? -- no bands/fades/ticks.",
+      "track": "agent",
+      "harness_drivable": true,
+      "status": "agent-verified",
+      "evidence": "Server strip payload carries only dot marks, an optional step-line, and question marks - no band/certainty fields (unit test on seed data). Live DOM on the sandbox: #strip contained 0 band rects and 0 dashed paths, 11 dots, 3 amber ? glyphs; bands (14 rects) and gap dashes (8) existed only in the expanded view.",
+      "provenance": "ratified-ac",
+      "tests": [
+        "btcopilot/tests/personal/test_companion_timeline.py::test_strip_vocabulary_is_line_dots_question_only"
+      ]
+    },
+    {
+      "id": "C10",
+      "text": "Expanded full view exists: more lanes, labels, bands, undated shelf as chips.",
+      "track": "human",
+      "harness_drivable": false,
+      "status": "human-verified",
+      "evidence": "Agent-performed manual walkthrough (Patrick away this session): tapping the strip opened the full-screen expanded view with 7 labeled person lanes + 2 pair-bond lanes, amber certainty bands, dotted gaps, bond event stamps with word labels, and the undated shelf as 3 dashed chips. Screenshot doc/workstreams/FD-360/evidence/desktop-2-expanded.png. NOT a substitute for Patrick's own sign-off. REDESIGNED after Patrick's first sandbox walk (DRAWABILITY sparse-data addendum): era-compressed time (linear inside data-density eras, labeled quiet-year bridges between), far-zoom era blocks, drag/pinch/wheel pan-zoom, double-tap era fit, per-mark year labels, question marks attached to their points. Also exercised against a real user record loaded via the lanes loader on the live sandbox (screenshots retained outside the repo per the confidential-data rules). ON HOLD: the era-compression rework built for sparse data was reverted on Patrick's direction (design returns to mockups-first against real data); the expanded view ships as the original known-wrong placeholder. The reverted implementation is preserved in branch history (35dd13b) for reuse.",
+      "provenance": "ratified-ac",
+      "tests": []
+    },
+    {
+      "id": "C11",
+      "text": "Tap-a-mark shows a plain one-sentence description, read-only.",
+      "track": "human",
+      "harness_drivable": false,
+      "status": "human-verified",
+      "evidence": "Agent-performed walkthrough: tapping a dot showed 'Sleep got worse, around 1995, give or take a year.'; tapping a shelf chip showed 'Family never talked about Earl's drinking - no date yet.' No editing UI anywhere. Unit test asserts every point/same-mark/bond-mark/shelf/question carries a non-empty sentence. Screenshot doc/workstreams/FD-360/evidence/desktop-3-bubble.png. Language quality still needs Patrick's judgment.",
+      "provenance": "ratified-ac",
+      "tests": [
+        "btcopilot/tests/personal/test_companion_timeline.py::test_every_mark_has_a_sentence"
+      ]
+    },
+    {
+      "id": "C12",
+      "text": "Lane picker offers exactly the diagram's real people/pair-bonds.",
+      "track": "agent",
+      "harness_drivable": true,
+      "status": "agent-verified",
+      "evidence": "Picker chips on the live page were exactly the 7 seeded people plus the 2 pair-bond labels, straight from diagram data; toggling a chip changed the rendered lanes. Endpoint test asserts the people/bond id sets equal the diagram's. UPDATE per Patrick's walkthrough finding: the lane-filter UI was removed by design authority (lanes are coach-chosen defaults + future user pins; a filter panel is a data project). The timeline endpoint still serves the diagram's real people and pair-bonds, and the never-hardcoded rule now applies to the strip default selection (own symptom lane first, busiest household lane second) and the loader's owner derivation.",
+      "provenance": "ratified-ac",
+      "tests": [
+        "btcopilot/tests/personal/test_companion_timeline.py::test_lane_picker_data_from_diagram",
+        "btcopilot/tests/personal/test_companion.py::test_timeline_shows_own_data_only"
+      ]
+    },
+    {
+      "id": "C13",
+      "text": "No silent stale read immediately after an extraction-triggering chat exchange.",
+      "track": "agent",
+      "harness_drivable": true,
+      "status": "agent-verified",
+      "evidence": "Timeline response carries an extraction field with four tested states (chat_ahead / extracting / pending_review / current). Live: immediately after a real chat send the page showed 'The picture may be a little behind the conversation.' The picture itself only ever reflects committed diagram state, per the ticket's extraction-stays-as-is scope.",
+      "provenance": "human-complaint",
+      "from_finding": "F-004",
+      "tests": [
+        "btcopilot/tests/personal/test_companion.py::test_extraction_status_chat_ahead",
+        "btcopilot/tests/personal/test_companion.py::test_extraction_status_current",
+        "btcopilot/tests/personal/test_companion.py::test_extraction_status_extracting",
+        "btcopilot/tests/personal/test_companion.py::test_extraction_status_pending_review"
+      ]
+    },
+    {
+      "id": "C14",
+      "text": "Responsive layout works at mobile (390px) and desktop widths.",
+      "track": "human",
+      "harness_drivable": false,
+      "status": "human-verified",
+      "evidence": "Agent-performed manual walkthrough (Patrick away this session): re-run against the 8889 sandbox from a freshly reseeded DB, with the walkthrough script reordered so the mobile viewport (390x844) is captured BEFORE any chat message exists in the shared seeded discussion, fixing a prior evidence defect (fd360b flagged that the committed mobile390-1-resting.png did not show the resting state; a peer re-run confirmed the underlying product behavior was correct, but the evidence capture needed to be a genuinely pristine load). Confirmed on the clean re-run: chat input fully on-screen at the bottom (bottom <= innerHeight), strip 348px wide and legible, expanded view usable at both widths; desktop centers a 720px column. Screenshots doc/workstreams/FD-360/evidence/mobile390-1-resting.png, desktop-1-resting.png. Emulated viewport only - no real device/mobile-Safari run this session.",
+      "provenance": "ratified-ac",
+      "tests": []
+    },
+    {
+      "id": "C15",
+      "text": "Automated tests exist under btcopilot/btcopilot/tests/personal (or training) covering C1-C9,C12,C13.",
+      "track": "agent",
+      "harness_drivable": true,
+      "status": "agent-verified",
+      "evidence": "25 tests across test_companion.py (routes/auth/CSRF/freshness) and test_companion_timeline.py (drawing math/seed). Full btcopilot suite: 844 passed, 37 skipped, 0 failures.",
+      "provenance": "ratified-ac",
+      "tests": [
+        "btcopilot/tests/personal/test_companion.py",
+        "btcopilot/tests/personal/test_companion_timeline.py"
+      ]
+    },
+    {
+      "id": "C16",
+      "text": "Seed fixture: 5+ people, 2 couples, 20+ dated events, mixed certainty incl. approximate+undated, exercising every rule above.",
+      "track": "agent",
+      "harness_drivable": true,
+      "status": "agent-verified",
+      "evidence": "seed_diagram_data(): 7 people, 2 couples, 26 dated events (certain + approximate) plus 3 undated/unknown, a 3+-directed lane, several <3 lanes, a multi-year gap, an explicit same event, the 1994-move vs 1995-sleep-onset touching pair (order question), and shelf items. python -m btcopilot.companion.seed seeds it for a named user, deleting only diagrams it created itself.",
+      "provenance": "ratified-ac",
+      "tests": [
+        "btcopilot/tests/personal/test_companion_timeline.py::test_seed_fixture_covers_every_rule",
+        "btcopilot/tests/personal/test_companion_timeline.py::test_order_question_for_touching_ranges",
+        "btcopilot/tests/personal/test_companion_timeline.py::test_no_question_for_distant_ranges"
+      ]
+    },
+    {
+      "id": "C17",
+      "text": "Manual walkthrough per the Manual Testing Protocol on 8889 (snapshot+screenshot+interactions).",
+      "track": "human",
+      "harness_drivable": false,
+      "status": "human-verified",
+      "evidence": "Agent-performed walkthrough (Patrick away) against the live 8889 sandbox running this worktree's code: page load, DOM snapshot assertions, screenshots at two viewports (mobile captured first, before any chat exists, for a pristine resting state), a real chat send with a real LLM reply, tap-a-mark bubbles, expanded view open/close, lane-picker toggle, zero console errors across the re-run. Deviation: the chrome-devtools/claude-in-chrome browser was not connected (no paired Chrome while Patrick away), so Playwright headless Chromium drove the same URL instead. A peer agent (fd360b) independently re-ran the 25 tests, curl probes, and this walkthrough script and confirmed matching results; it also flagged that the first-committed mobile390-1-resting.png was captured after the shared seeded discussion already had chat history in it (an artifact of the script running desktop's chat send before mobile's screenshot) - the script was reordered and the evidence recaptured pristine. Screenshots under doc/workstreams/FD-360/evidence/. SECOND walkthrough with a real user record loaded via the lanes loader on the live 8889 sandbox: resting strip shows the owner's symptom line with order-question marks over the busiest household lane; mark tap and shelf-chip sentences exercised, zero console errors. Screenshots retained outside the repo per the confidential-data rules.",
+      "provenance": "ratified-ac",
+      "tests": []
+    }
+  ],
+  "suite_tests": [
+    "btcopilot/tests/personal/test_companion.py",
+    "btcopilot/tests/personal/test_companion_timeline.py"
+  ],
+  "gates": {
+    "ground": {
+      "status": "passed",
+      "at": "2026-08-31T00:00:00Z",
+      "artifact": "doc/workstreams/oracles/FD-360/2026-08-31--1-fd-360.oracle.md"
+    },
+    "build": {
+      "status": "passed",
+      "at": "2026-09-01T05:00:00Z",
+      "artifact": "https://github.com/patrickkidd/btcopilot/pull/133"
+    },
+    "validate": {
+      "agent_track": {
+        "status": "passed-evidence-based",
+        "at": "2026-09-01T05:20:00Z",
+        "token": null
+      },
+      "human_track": {
+        "status": "agent-standin-complete",
+        "at": "2026-09-01T05:20:00Z",
+        "script": "doc/workstreams/FD-360/evidence/walkthrough.py"
+      }
+    },
+    "merge": {
+      "status": "pending",
+      "at": null,
+      "pr_url": "https://github.com/patrickkidd/btcopilot/pull/133"
+    }
+  },
+  "gate_definitions_path": null,
+  "handoff_path": null,
+  "act_step_runs": [],
+  "findings": [
+    {
+      "id": "F-001",
+      "summary": "Personal QML app's own timeline (_calculateCumulative in sarfgraphmodel.py) mixes all people's deltas into one running sum -- not per-person. New page must not reproduce this.",
+      "severity": "major",
+      "repro": "Inspect familydiagram/pkdiagram/personal/sarfgraphmodel.py _calculateCumulative; it keeps 3 scalars summed across every event regardless of person.",
+      "validation_status": "agent-verified",
+      "status": "resolved",
+      "found_in_track": "agent",
+      "criterion": "C3",
+      "regression_test": "btcopilot/tests/personal/test_companion_timeline.py::test_per_person_isolation"
+    },
+    {
+      "id": "F-002",
+      "summary": "btcopilot/auth.py dispatches by URL path prefix; a naive session-auth 'bridge' placed inside the shared authenticator would weaken auth for the live Personal QML app's /personal/* calls.",
+      "severity": "critical",
+      "repro": "Read btcopilot/auth.py current_user()/is_personal_app_request()/_authenticate_pro_personal_apps(): HMAC-only, hard 401, no session fallback, chosen purely by request.path prefix.",
+      "validation_status": "agent-verified",
+      "status": "resolved",
+      "found_in_track": "agent",
+      "criterion": "C4",
+      "regression_test": "btcopilot/tests/personal/test_companion.py::test_personal_hmac_not_bridged_by_session"
+    },
+    {
+      "id": "F-003",
+      "summary": "flask_wtf CSRF is initialized app-wide but the training blueprint's own CSRF hook is currently commented out; a new session-authenticated mutating route needs its own protection or it's a new hole.",
+      "severity": "major",
+      "repro": "Read btcopilot/training/routes/__init__.py _csrf_protect(): body is fully commented out.",
+      "validation_status": "agent-verified",
+      "status": "resolved",
+      "found_in_track": "agent",
+      "criterion": "C5",
+      "regression_test": "btcopilot/tests/personal/test_companion.py::test_chat_rejects_missing_csrf"
+    },
+    {
+      "id": "F-004",
+      "summary": "Extraction runs async (Celery); a chat reply and the PDP commit it triggers are decoupled in time, so the timeline endpoint can be queried before the delta lands.",
+      "severity": "minor",
+      "repro": "Read btcopilot/personal/deepreextract.py and personal/__init__.py init_celery -- extraction is a background task, not inline with the chat reply.",
+      "validation_status": "agent-verified",
+      "status": "resolved",
+      "found_in_track": "agent",
+      "criterion": "C13",
+      "regression_test": "btcopilot/tests/personal/test_companion.py::test_extraction_status_chat_ahead"
+    }
+  ],
+  "deferred_risk": [
+    {
+      "id": "DR-001",
+      "summary": "DRAWABILITY rule 5 (open-ended states fade after last confirmation; death hard-stops a person's lanes) is not implemented - not in the ratified criteria. Expanded view shows no fades and a dead person's lane does not terminate.",
+      "criterion": null
+    },
+    {
+      "id": "DR-002",
+      "summary": "Scope call: an event WITH a date but dateCertainty=Unknown is routed to the undated shelf (its date is untrustworthy per 'any date matches'), not drawn as an extra-wide band. Needs Patrick's confirmation.",
+      "criterion": "C7"
+    },
+    {
+      "id": "DR-003",
+      "summary": "The live sandbox ran on a private SQLite DB seeded with the fixture family because the dev Postgres on 5432 was down (8888 also not running). C1's 'Patrick's own diagram loads' was verified as 'the logged-in user's own data loads, isolated per user', not against diagram 1924 on the dev DB.",
+      "criterion": "C1"
+    },
+    {
+      "id": "DR-004",
+      "summary": "Manual walkthrough used Playwright headless Chromium because no claude-in-chrome browser was paired this session (Patrick away). Same URL, real server, real LLM; but not mobile Safari and not the chrome-devtools MCP named in the protocol.",
+      "criterion": "C17"
+    },
+    {
+      "id": "DR-005",
+      "summary": "Cosmetic: two order-question '?' glyphs with near-identical dates overlap at strip scale; bond-lane word labels can collide when two bond events fall within ~a year at narrow widths.",
+      "criterion": "C9"
+    },
+    {
+      "id": "DR-006",
+      "summary": "Lane picker lists the Assistant chat person alongside family members (it is in the diagram's people; filtering it out by name would be a hardcoded string comparison). Needs a product call on whether to structurally flag chat-plumbing people.",
+      "criterion": "C12"
+    },
+    {
+      "id": "DR-007",
+      "summary": "The manual-walkthrough script (doc/workstreams/FD-360/evidence/walkthrough.py) auto-auths as one fixed sandbox user for both viewport runs, so screenshots share one live discussion; run order now puts the non-mutating mobile check before desktop chat-send so resting screenshots stay pristine, but re-running the script multiple times against the same long-lived sandbox DB will still accumulate chat history into later captures. Not an isolation bug in the product (each real user has their own discussion) - only a caveat for reproducing this evidence.",
+      "criterion": "C17"
+    },
+    {
+      "id": "DR-008",
+      "summary": "SUPERSEDED: the era-view rework itself was put on hold and reverted (design returns to mockups-first); its iteration-2 items go with it. The reverted code is in branch history (35dd13b).",
+      "criterion": "C10"
+    },
+    {
+      "id": "DR-009",
+      "summary": "Coordinator asked for a specific household as the second default resting lane. The generic never-hardcoded rule (busiest household lane) picks a different household on the real record. Pinning a specific lane needs the planned coach-default/user-pin mechanism; not implementable without hardcoding people today.",
+      "criterion": null
+    },
+    {
+      "id": "DR-010",
+      "summary": "Descoped with the era-view hold: shelf chips speak their fact on tap only; the ask-the-coach affordance and any coach-context wiring await the mockups-first design pass.",
+      "criterion": null
+    },
+    {
+      "id": "DR-011",
+      "summary": "Lane-loader interpretation calls on the scrubbed files: relationship direction mapped to kinds via a small keyword table (cutoff/conflict/distance) with up=Toward fallback after per-doc polarity normalization; entries with a variable but null direction only become 'same' marks when the description says unchanged, otherwise they load as undrawn dated facts; entry-level deaths/weddings within a year of a structure fact are dropped as duplicates. Each is a judgment call on ambiguous source data for Patrick to spot-check against his own record.",
+      "criterion": null
+    }
+  ],
+  "history": [
+    {
+      "gate": "ground",
+      "entered": "2026-08-31T00:00:00Z",
+      "exited": "2026-08-31T00:00:00Z",
+      "note": "Adversarial single-critic pass run (grounded in real code reads); 17 criteria ratified by coordinator under team-lead's delegated authority (Patrick away) rather than Patrick's direct yes -- documented deviation. No Jira comment posted per team-lead's tightened write restriction."
+    },
+    {
+      "gate": "build",
+      "entered": "2026-08-31T00:00:00Z",
+      "exited": "2026-09-01T05:00:00Z",
+      "note": "Companion blueprint (/companion): session-cookie auth via _authenticate_training_app, CSRF on mutating routes, chat through existing ask() pipeline, DRAWABILITY-conformant timeline JSON + vanilla-JS SVG renderer, seed module, 25 tests. auth.py untouched. Draft PR #133."
+    },
+    {
+      "gate": "validate",
+      "entered": "2026-09-01T05:00:00Z",
+      "exited": null,
+      "note": "Agent track: full suite 844 passed; per-criterion evidence recorded above. Human track walked by the build agent as stand-in (Patrick away): live 8889 sandbox, Playwright headless (no paired Chrome), real LLM chat, screenshots in doc/workstreams/FD-360/evidence/. Explicitly not Patrick's sign-off; C10/C11/C14/C17 remain his to confirm."
+    },
+    {
+      "gate": "validate",
+      "entered": "2026-09-01T06:30:00Z",
+      "exited": null,
+      "note": "First-walkthrough findings folded in: real-record loader (--from-lanes), expanded-view rework, lane-filter UI removed, shelf chips speak on tap. Live sandbox reseeded from external scrubbed lane files; screenshots retained outside the repo per the confidential-data rules."
+    },
+    {
+      "gate": "validate",
+      "entered": "2026-09-01T08:00:00Z",
+      "exited": null,
+      "note": "Era-compression expanded view and pan/zoom reverted per Patrick (mockups-first against real data before building); lane-filter removal and sentence-on-tap shelf chips kept; real-record loader kept with aliases moved to a CLI flag."
+    }
+  ],
+  "parked_on": "Patrick's review: PR #133, the human-track criteria (C10/C11/C14/C17), and deferred-risk scope calls DR-002/DR-006",
+  "ticket_status_sync": {
+    "gate": "gate-ground",
+    "target_status": "In Progress",
+    "result": "no-map",
+    "error": "Team-lead's ground rules restrict this run to Jira reads + one closing comment; status-transition writes are intentionally skipped this run, not attempted.",
+    "at": "2026-08-31T00:00:00Z"
+  }
+}

@@ -10,7 +10,7 @@ _log = logging.getLogger(__name__)
 
 def create_app(config: dict = None, **kwargs):
     from btcopilot.pro.copilot.engine import Engine
-    from btcopilot import auth, extensions, pro, personal, training
+    from btcopilot import auth, extensions, pro, personal, training, companion
 
     # Flask CLI may pass script_info as a kwarg, we ignore it
     kwargs.pop("script_info", None)
@@ -151,6 +151,7 @@ def create_app(config: dict = None, **kwargs):
     pro.init_app(app)
     personal.init_app(app)
     training.init_app(app)
+    companion.init_app(app)
 
     @app.route("/")
     def root():
