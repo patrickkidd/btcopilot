@@ -171,10 +171,16 @@ precise spec on cheaper models; mechanics on the cheapest.
 - **Notability handwritten cases (ruled 2026-09-01, corrected same day)**: NO
   anonymization machinery — no translator, no scrub guard; inference on this data is
   rare and goes straight to a BAA provider (OpenAI/Gemini) with raw content. Scope:
-  PDFs (auto-backup ON, landing in Google Drive) → three-armed interpretation
-  bake-off (GPT / Gemini / local Qwen-VL; keys in theapp/.env) → import script
+  PDFs (auto-backup ON, landing in Google Drive) → TWO-armed interpretation
+  bake-off (GPT vs Gemini; local arm ruled OUT — no vision model installed, 30-40GB
+  pull not worth it vs frontier; keys in theapp/.env) → import script
   writes NEW .fd diagram files (originals preserved untouched) → profile the new
-  diagrams exactly like the app cases (marker density, span, people) → Patrick
+  diagrams exactly like the app cases. PDFs are LOCAL in btcopilot-sources/clinical/
+  (56 cases, ~420 PDFs after dropping Individual Coaching per his ruling); Claude
+  never manages that repo's git and never reads its client-named paths into context;
+  PRIVATE_pdf_mapping.md there maps folders→diagrams (ratified: 44 exact, 7 fuzzy,
+  14 no-match = new-to-app cases); bake-off samples = mapping rows 10/34/37/32/55;
+  spec = doc/NOTES_TO_DIAGRAM_PIPELINE.md (schema v0 awaiting his markup) (marker density, span, people) → Patrick
   eyeballs which are viable for functioning-timeline inference. Work home: PRIVATE
   btcopilot-sources. RULED: the pipeline is REUSABLE PRODUCT TECH — professionals
   scan/export notes to PDF → diagram file; build it as a clean module (interpretation
