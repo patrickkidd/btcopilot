@@ -178,7 +178,7 @@ precise spec on cheaper models; mechanics on the cheapest.
   anonymized output. Local option noted: the M5 Max/128GB Mac runs ollama but all
   installed qwen models are TEXT-ONLY — a vision model (Qwen-VL class) is one pull
   away; bake-off proposed as three-armed (GPT / Gemini / local Qwen-VL, he scores
-  blind), likely mixture = local triage + frontier interpretation.
+  blind), likely mixture = local triage + frontier interpretation. RULED 2026-09-01: auto-backup is ON (PDFs landing in Google Drive); three-armed bake-off approved (keys in theapp/.env); the ingest/normalization work lives in the PRIVATE btcopilot-sources repo, not fdserver (fdserver is deployment-aimed).
 
 ## Jira / branches
 
