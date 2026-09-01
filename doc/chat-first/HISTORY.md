@@ -32,6 +32,17 @@ his Micron pattern — users describe what they want, an agent with a tool surfa
 a built-in reference manual does the rest; the UI altitude rises to the user's
 subject-matter expertise. His user base is deeply non-technical.
 
+Motivations in his words: an "architectural singularity where all the feedback loops
+start pointing in the same direction" (usage → data → ground truth → product) instead
+of years of coding-training and pulling teeth; "instantly get users addicted" as an
+interactive experience; ~$9K slowly-declining ARR explicitly NOT a present concern;
+this is not his day job for a while (capacity constraint). Ruled same day:
+manual diagram tweaking stays — the chat has tool calls to control EVERYTHING in the
+app with full bidirectional reactivity between chat and UI; old diagrams migrate
+(the data model — SARF timeline + structural invariants — stays; the UI does not).
+Later that arc: anti-overfit ruling — it must NOT become a log app; no surfaces
+overfitted to individual examples; chat + the agentic loop stay the focus.
+
 Verdict (this session's first adversarial research run): "Claude Code for FD" is an
 ENGINE bet, not an app bet. What makes Claude Code work is a headless, verifiable
 substrate driven through tools. Ruling: build the tool surface / guards / manual /
@@ -184,6 +195,18 @@ content on public master (a test-fixture name, names in the decision log, IRR me
 transcripts quoting Patrick discussing his wife) — his separate call, untouched.
 New standing rule: real-record evidence stays on the machine, referenced by path.
 
+Patrick's first real walk of the page produced five findings, all now canonical in
+DRAWABILITY.md: the expanded view was illegible on real sparse data ("random boxes on
+a giant rectangle" — it assumed density that real records don't have); dead
+undated-shelf chips (now: tap speaks the fact + prefills the chat); lane-filter
+buttons killed outright ("a data project no one wants"); horizontal pan/zoom is
+mandatory for multigenerational spans; question marks must be visibly anchored to
+their items. An era-compression redesign (linear inside data-density eras, worded
+"N quiet years" bridges, era-fit zoom) was built when a hold order crossed it
+mid-flight, then REVERTED to honor mockups-first; it remains recoverable at commit
+35dd13b — which is ALSO one of the two contaminated commits, so a history purge
+deletes that work too (it would need re-implementing from its spec in this doc).
+
 ## 2026-08-31 — drawability ruled on real data
 
 Patrick's journal (78 points, 14 months, 96% day-certain) and his two coaching-chat
@@ -200,14 +223,72 @@ father/stepmother split-over-kids — his flagship example came from a conversat
 in the July snapshot (or memory differs); nobody's committed record contained ANY
 events despite 216 statements of chat (extraction results never committed in prod).
 
+The clinical teaching behind those rules (his words, the session's strongest
+statement of what the timeline is FOR): there are NO absolute values for S/A/R/F —
+only relative shifts, captured in episodic clusters (already detected "somewhat well"
+by his impression); baseline vs episodic levels are EMERGENT in the dataset; both
+human and AI coaching sample with a bias toward the periods where emotional process
+was running; a historical intake yields 3–5 remembered periods across the years, and
+the conversation exists to enable that remembering; undated things go to a coach
+backlog — never guess a position. His counterexample that sets the bar: a subject
+who took on more and more responsibility over 5–10 years while anxiety climbed —
+visible ONLY once everything sat on a timeline, "a major insight for that person."
+Related post-mortem (his words): the Learn tab "concept was good but I could never
+get it to work — the data didn't give clear trends and inferring never worked"; his
+diagnosis is that an unclear minimum-drawable standard is why the old timeline cards
+failed, hence "this thing needs to only show meaningful patterns." SARF
+coding-by-example on his own case: the split-over-having-kids codes as away moves for
+now, likely plus a Defined-self on the stepmother's side.
+
+Sequence fact, stated plainly: an early version of the ruling page was built from a
+clinical case mistakenly treated as his diagram; when he ordered that data completely
+ignored, the page was rebuilt entirely from his own record and republished at the
+same link — the ruled rules stand on HIS data; the case data was discarded.
+
+Counterweight on the coach (his felt sense, recorded so no session rebuilds a prompt
+he considers good): "I am already comfortable with the conversational flow and how it
+covers the required information (I worked a lot on that, I assume it transfers
+directly with zero loss here)" — the elicitation items are refinements, not a rebuild.
+Triangles, with his cautions: the R variable and event attributes map onto triangle
+shifts with inside/outside positions by triangle direction (do not ignore); triangles
+are a core "molecule" but not the only thing, and "we don't have enough data to
+understand when to prioritize each"; extraction prompts describe triangles and F1s
+exist (his statement) — the identified gap is only that the COACH never asks
+triangle-shaped questions.
+
 UI shape ruled from "Three Ways to Ask" (three interactive-feel mockups from his
 data): conversation drives everything (question-first variant DEAD — "no one is going
 to like a questionnaire"); picture always-on and strip-small; questions are quiet
 amber marks; the coach aims the picture with an inline chip; undated shelf behind a
-tap. The cartoon rule recorded: the product exists to produce one or two
+tap. He later named tracked unknowns THE engagement engine: "a really big deal …
+automatically engaging and automatically propells the conversation forward" — the
+question marks are the product thesis, not decoration. The cartoon rule recorded: the product exists to produce one or two
 brain-rearranging correlations, not a dataset; the two real instances on record are
 the acceptance test. Coverage serves only (a) better coach questions and (b) the
 timeline's own correlations.
+
+Coach elicitation (designed, PENDING Patrick's clinical sign-off — not landed):
+the conversational prompt has ZERO triangle questions (extraction prompts describe
+triangles and F1s exist — his statement; the gap is what never gets SAID in
+conversation; see his triangle cautions above), and its data-collection
+done-rule omits dated shifts and triangles. Designed as small additive prompt edits
+(who-else-was-in-it question shapes, a year-BEFORE probe, rotate one SARF dimension
+per time anchor, two done-rule criteria) plus a measurement instrument:
+planted-fact synthetic personas scored by SCANNING THE TRANSCRIPT for the planted
+facts (never through extraction, which drops ~half of shift events that WERE said),
+with the KPI "did the session move a lane toward drawable." Two blockers found by
+refuters: the synthetic client is broken on record (canned evasions ~50–60% of
+turns — must reveal planted facts when asked before any coach score means anything),
+and the baseline run doubles as the TABLED Sonnet-vs-Opus coaching-quality test.
+Budget ruling (Patrick, "sounds good"): in-story follow-ups (dating, year-before,
+who-else, one-dimension-per-anchor) are EXEMPT from the ~1-targeted-question-per-
+session budget, which caps only out-of-flow clarification questions.
+
+Also ruled in this stretch: NO modes — one agent, registers (coaching, app help via
+the manual tool, corrections, journaling) routed from context, never user-visible
+mode switches; sessions accumulate and the picture is the index back into them
+(every fact carries its source conversation); no progress bar — "what more data
+buys" appears in place as the question marks.
 
 Storyboard ("Flowing Through It", 7 frames, six months of elapsed time): Patrick
 loved the proactive messaging and the "ask while it's calm" idea (both now A/B test
@@ -223,8 +304,10 @@ amber=asking).
 An era-compression bake-off and then an interactive prototype (proto.html: "Chapter
 Shelf" + "Quiet Threads", from a 19-agent creative-adversarial run over six visual
 metaphors) were built BEFORE analyzing the real data. Patrick rejected the prototype
-outright ("total garbage") and named the process error: analyze the case base first,
-derive UI from it; mockups from real data before building; his rulings gate every
+outright ("total garbage") and named the process error: "you are supposed to be
+analyzing the code base to derive the UI ideas" — mine the cases AND the existing
+app's visual vocabulary/specs (he separately said the current diagram/timeline layout
+concept "is not bad"); mockups from real data before building; his rulings gate every
 phase. The creative run's cross-cutting findings survive as hypotheses (uncertainty
 lives in the mark's body as time-extent, never blur/opacity/size; every position
 channel single-tenant; silence is a self-captioning object; words are the most robust
@@ -233,8 +316,9 @@ named objects; elderly-vision floors are spec) — but nothing visual is derived
 until the corpus analysis is ratified.
 
 Corpus: prod diagrams are NOT the corpus. The real corpus is his personal clinical
-cases (iCloud Clinic Cases, 61 bundles) — sensitive client material, no BAA yet
-(he is pursuing one with Anthropic). Content-blind protocol invented and held: only
+cases (iCloud Clinic Cases, 61 bundles) — sensitive client material. BAA status:
+LLM-provider BAAs already EXIST ('don't worry about that'); the ANTHROPIC BAA is the
+pending one — until it lands, clinical content is used without exposing data. Content-blind protocol invented and held: only
 scripts touch the files; output is whitelisted structure (anon ids, gender, decimal
 years, certainty flags, kind enums, direction enums, text byte-lengths); free-text
 fields are never extracted at all; anonymization is one-way (no mapping file except
@@ -258,7 +342,10 @@ right-skewed spread, not a wall; he dates marriages 2–3x more than the prod
 population. Prod side barely moved; the 104-row candidates list (email + id, floor
 ≥40 dated events, UNRANKED by his order) stands.
 
-Rubric discipline (his corrections, now standing): volume ≠ quality; no rubric or
+Rubric discipline (his corrections, now standing): the nuance doctrine is a standing
+epistemic constraint on ALL inference over this data, not a rubric rule — it looks
+simple, is extremely nuanced, and training priors do not know how it works;
+volume ≠ quality; no rubric or
 ranking is inferred without him — he rules by example and by correcting proposed
 values; structural counts may be shown only as "volume (not quality)". Max-effort
 model spend happens ONLY on the filtered corpus (two launched runs violating this
@@ -275,7 +362,21 @@ basis the tiers are 11 cases at 30+ active events, 13 at 10–29, **28 at zero a
 (nearly half the corpus is scaffold end-to-end by the ratified marker — no event ever
 carries a nodal flag or a variable; caveat: this may partly reflect coding style,
 since variables/flags appear in only ~21% of cases — his eyeball decides), 9 out.
-The worst volume illusion: one case with 51 dated events and 0 active. The prod
+The worst volume illusion at the time of that report: one case with 51 dated
+events and 0 active (figures drift as extraction improves — index.json is always
+authoritative; never trust counts written in docs). The prod
 stress case (diagram 9) is 719 dated / 0 active. The corpus thereby self-sorted into
 his two planned subsets: cases WITH active events are the FUNCTION-subset candidates;
 zero-active-but-structure-rich cases are the STRUCTURE-subset candidates.
+
+Also ruled in this stretch: when the agentic loop is implemented, the app self-files
+friction reports — "when the model detects user friction it automatically posts it,
+even in the background" — alongside users asking the chat how to use the app from the
+built-in reference manual. And the human-oracle canonicalization ruling that created
+the oracle store itself: his direction is among the most valuable inputs to the whole
+agentic development process and "must be canonicalized and continually maintained
+just like everything else" — instituted per his BKM as a store in the
+PRIVATE fdserver repo (doc/oracle/: SPEC + rulings index + evidence — the whole
+store is IP; the public repo carries only the regime and R-id citations; no raw
+transcripts anywhere). The initial mined set (R-0001..R-0064) is a proposed
+consolidation awaiting his feature-grouped ratification pass per SPEC §10.

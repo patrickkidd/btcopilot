@@ -1,14 +1,18 @@
 # Chat-first rebuild — kickoff briefs for the next sessions
 
 Each brief is self-contained. Both sessions start from this worktree
-(`fall-2026-direction`), read [STATE.md](STATE.md) FIRST, and obey the standing
+(/Users/patrick/worktrees/fall-2026-direction/btcopilot, branch `fall-2026-direction`),
+read [STATE.md](STATE.md) FIRST, and obey the standing
 rules below. Patrick starts them; they do not start themselves.
 
 ## Standing rules that bind both sessions
 
 1. **Patrick's warning is law**: this data looks simple and is extremely nuanced;
    general genogram/therapy priors do not apply. Propose; he corrects. Never present
-   an inferred ranking or rubric as settled. His teachings: ~/fd-corpus/OWNER_RULINGS.md.
+   an inferred ranking or rubric as settled. **The human oracle is the binding input to all agentic development**: the store
+   (SPEC + rulings + evidence) lives in the PRIVATE fdserver repo at doc/oracle/;
+   cite rulings by id; capture his new statements there immediately; newest wins
+   via SUPERSEDED chains.
 2. **Content-blind protocol** until the Anthropic BAA exists: only whitelisted
    structure from ~/fd-corpus/clinic/ enters model context; free text never; the
    corpus never enters a repo; PRIVATE_case_mapping.md is for his eyes only and its
@@ -19,7 +23,11 @@ rules below. Patrick starts them; they do not start themselves.
 4. Communication: plain words, his terms, no invented vocabulary; decision questions
    self-contained in ONE numbered list with inline examples; no interim sub-agent
    chatter — one consolidated delivery per work unit; TLDR first.
-5. Two-clocks upkeep: append what happens to HISTORY.md, revise STATE.md, and add
+5. **PII rule**: real user emails (prod_candidates.csv), case filenames, prod
+   identifiers, and corpus values never appear in repo docs or commits; reference
+   cases as case_NN only. Corpus numbers are never trusted from docs — recompute from
+   ~/fd-corpus/clinic/index.json.
+6. Two-clocks upkeep: append what happens to HISTORY.md, revise STATE.md, and add
    his new teachings to OWNER_RULINGS.md as they occur.
 
 ## Session 1 — corpus subset for FUNCTION
@@ -30,15 +38,16 @@ FUNCTION (the SARF process over time), then run phase A on it.
 
 **Inputs**: ~/fd-corpus/clinic/index.json (volume + active/scaffold columns) and
 case files; ~/fd-corpus/PRIVATE_case_mapping.md (he opens diagrams in his app from
-it); ~/fd-corpus/OWNER_RULINGS.md; doc/DRAWABILITY.md; doc/chat-first/STATE.md;
+it); the oracle store (fdserver doc/oracle/); doc/DRAWABILITY.md; doc/chat-first/STATE.md;
 optionally ~/fd-corpus/design/prod_candidates.csv (other users' diagrams he may
 admit after eyeballing).
 
 **Where it starts**: the active-basis cut already exists — 11 cases ≥30 active
-events, 13 at 10–29, 28 zero-active, 9 out. Candidates for this subset are the
-active-bearing cases (~24). Present him the two tier lists with per-case one-line
-shape profiles; he eyeballs via the mapping file and rules in/out (he accepts the
-marker may miss 1–3 pertinent events per case). Watch for his correction on
+events, 13 at 10–29 (recompute from index.json — doc numbers are never authoritative).
+Candidates are the active-bearing cases. ALSO unruled: the four cases at 1–9 active
+(case_01/10/28/42) — ask, don't infer. Present him the tier lists with per-case
+one-line shape profiles; he eyeballs via the mapping file and rules in/out (he
+accepts the marker may miss 1–3 pertinent events per case). Watch for his correction on
 zero-active cases that are actually worked-but-unflagged (coding style) — those may
 re-enter.
 
@@ -51,7 +60,7 @@ ratified version feeds phase B (visual choices for function).
 
 **Outputs**: the ratified nature-of-data document (location: this doc/chat-first/
 package, name it NATURE_OF_THE_DATA.md); the ruled FUNCTION subset recorded in
-OWNER_RULINGS.md; HISTORY/STATE updated.
+the oracle store (fdserver doc/oracle/rulings.md); HISTORY/STATE updated.
 
 **First concrete step**: read STATE.md, verify ~/fd-corpus/clinic/index.json has
 active_events columns, present the tier lists + the five worst volume-vs-active
@@ -64,6 +73,14 @@ structure: people, pair-bonds, parent-child depth, generations, relationship
 symbols), toward structure-side inference and eventually the diagram picture.
 
 **Inputs**: same as session 1.
+
+**KNOWN BLOCKER (fix first)**: the anonymized corpus has NO parent-child links — the
+whitelist never extracted childOf/parents, and birth events name only the child, so
+generational dated depth, parent-child completeness, and marriage-to-birth sequencing
+are currently UNCOMPUTABLE from the corpus. Fix path: extend rebuild.py's whitelist
+with parent-child person-id PAIRS (anonymous ids only — content-blind-compatible),
+regenerate. That whitelist extension needs Patrick's protocol authorization: it is
+this session's FIRST question to him, before anything else.
 
 **Where it starts**: candidates are the zero-active-but-structure-rich cases (28
 zero-active; the richly-structured ones among them — people count, relationship
@@ -79,7 +96,7 @@ all hypotheses until he corrects). Then the same loop: tier lists → his eyebal
 in-list → max-effort structure-side analysis feeding the same NATURE_OF_THE_DATA.md
 (structure chapter) → his corrections.
 
-**Outputs**: ruled STRUCTURE subset in OWNER_RULINGS.md; structure chapter of the
+**Outputs**: ruled STRUCTURE subset in the oracle; structure chapter of the
 nature document; HISTORY/STATE updated.
 
 **First concrete step**: read STATE.md, then present the proposed structure-signal

@@ -100,3 +100,13 @@ Horizontal pan/zoom of time is mandatory (multigenerational spans cannot fit a s
 view). Undated-shelf chips must respond to tap (speak themselves + offer "ask the coach
 when"). No lane-filter UI — lanes are chosen by the coach and user pins only (a filter
 panel is a data project; killed).
+
+### The clinical teaching under these rules (owner, 2026-08-31; oracle R-0054)
+
+No absolute values exist for S/A/R/F — only relative shifts, captured in episodic
+clusters; baseline vs episodic levels are emergent in the dataset; intake yields 3-5
+remembered periods and the conversation exists to enable remembering; sampling biases
+toward emotional-process periods, so quiet stretches are structurally under-sampled;
+slow multi-year ramps are visible only on a timeline — producing that sight is the
+point. The picture shows ONLY meaningful patterns; an unclear minimum-drawable
+standard is why the old timeline cards failed (oracle R-0058/R-0059).

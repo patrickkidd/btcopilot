@@ -10,7 +10,9 @@ Ten-minute read by design.
 **"A coach who never forgets your family."** You talk to it (voice or text) the way
 you'd talk to someone trained in Bowen theory; it asks what a trained coach asks; the
 family record — structure + timeline — is its visible, touchable memory, growing for
-years. Conversation drives everything. One picture rides pinned above the chat:
+years. Conversation drives everything, AND manual tweaking stays: chat tool calls
+control everything in the app with full bidirectional reactivity (oracle R-0055).
+One picture rides pinned above the chat:
 strip-small at rest, cartoon-level detail, always current. Chat is the event clock
 (never rewritten); the record is the state clock (corrections change it). Proactive
 messages exist and default to near zero. The product's acceptance test is the felt
@@ -18,14 +20,27 @@ shift — one or two brain-rearranging correlations per user, not a dataset. Cov
 serves exactly two things: better coach questions, and the timeline's own
 correlations.
 
+No modes: one agent; coaching, app-help (manual tool), corrections, and journaling
+are registers routed from context, never user-visible switches. Lanes are queries
+over the existing schema, not entities (a person-variable lane; a household lane =
+pair-bond + members' events; "sleep" is a label from descriptions — symptom lanes are
+untyped, a known limit). Lane choice: the coach aims lanes as part of its reply;
+the strip resumes where it left off; proactive messages carry their lanes; user pins
+outrank everything. Within-lane density merges to worded count chips at scale.
+
 All drawing/asking rules are canonical in [../DRAWABILITY.md](../DRAWABILITY.md)
 (five drawability rules; one amber question treatment in three places; cartoon rule;
 at-rest vocabulary = line, dots, question mark; words-on-tap; no legends; no
 lane-filter UI; expanded view must be designed for sparse data; tokens-only styling
 so themes are A/B-testable with stable semantics: teal=data, amber=asking).
 
-Owner teachings that bind all inference: ~/fd-corpus/OWNER_RULINGS.md (accumulating,
-verbatim-close). Core of it: this data is far more nuanced than it looks; no rubric
+**The human oracle binds all agentic development** (his ruling: among the most
+valuable inputs to the entire process — canonicalized and continually maintained).
+The ENTIRE store (his BKM SPEC + rulings index + evidence) is IP and lives in the
+PRIVATE fdserver repo at doc/oracle/; public docs cite ruling ids ([Oracle: R-NNNN])
+and never restate quotes. Ops: append/merge/split/reword; SUPERSEDED chains (newest
+wins); the initial mined set (R-0001..R-0064) awaits his feature-grouped
+ratification pass (SPEC §10); no raw transcripts anywhere (R-0064). Core of it: this data is far more nuanced than it looks; no rubric
 or quality judgment is inferred without Patrick — he rules by example and by
 correcting proposed values; scaffold vs active events (early births are age
 scaffolding, not SARF material; the diagnostic period starts at the first event with
@@ -59,13 +74,28 @@ export-only). Known debt to schedule: secrets committed in compose need rotation
   narrow-lane always-on resting strip; inline chips in coach text aiming the picture.
   **Ruled not understood**: the expanded/detail view — Patrick's walk found it
   illegible on real sparse data; it is a placeholder pending ground-up design FROM
-  the corpus analysis. Era-compression work exists reverted-but-recoverable in branch
-  history.
-- **proto.html** (jobs tmp): interactive two-concept prototype — REJECTED by Patrick,
-  shelved. Its creative-round survivors (Chapter Shelf, Quiet Threads) and
+  the corpus analysis. Era-compression work exists reverted-but-recoverable at commit
+  35dd13b — NOTE: that is one of the two contaminated commits, so a history purge
+  deletes it (re-implement from HISTORY's description if purged).
+  Rebuild/reseed: `python -m btcopilot.companion.seed <username> --from-lanes
+  <chat.json> <journal.json> --alias "WRITTEN=CANONICAL"...` (identities only ever in
+  the ephemeral command); sandbox: from ~/theapp, `PYTHONPATH=<FD-360 worktree>
+  FLASK_APP=btcopilot.app:create_app FLASK_CONFIG=development
+  FLASK_SQLALCHEMY_DATABASE_URI=sqlite:////tmp/fd360-sandbox.db
+  FLASK_AUTO_AUTH_USER=patrickkidd+unittest@gmail.com FDSERVER_PROMPTS_PATH=<fdserver
+  private_prompts.py> uv run python -m flask run -p 8889 --no-reload`.
+  Open judgment calls recorded on the ticket (deferred_risk): default second lane
+  needs the coach-default/pin mechanism; ask-the-coach server queue unbuilt (chips
+  prefill the chat input instead); relationship keyword→kind mapping; the chat
+  "Assistant" person appears in lane data; unknown-certainty dated events route to
+  the shelf; rule-5 fades/death hard-stops unimplemented. One Jira closing comment on
+  FD-360 is pre-authorized but HELD until Patrick reviews the PR.
+- **proto.html** (durable copy: ~/fd-corpus/design/proto.html; jobs-tmp original is ephemeral): interactive two-concept prototype — REJECTED by Patrick,
+  shelved. It embeds real names inside prod-derived event descriptions: NEVER publish
+  or commit it; local file only. Its creative-round survivors (Chapter Shelf, Quiet Threads) and
   cross-cutting findings remain hypotheses only.
 - Three artifacts stand as reference: Drawability, "Three Ways to Ask", "Flowing
-  Through It" (URLs in HISTORY.md).
+  Through It" (URLs in HISTORY.md; readable any session via the Artifact tool's read action).
 
 ## The corpus (system of record for phases A and B)
 
@@ -77,21 +107,30 @@ Location **~/fd-corpus/** — NEVER in any repo; rebuild everything with
   never extracted). Content-blind protocol holds until the Anthropic BAA exists.
 - `design/`: his own record (corpus_patrick_chat/journal.json), prod-derived
   comparisons (corpus_304/9/1341/757.json), and `prod_candidates.csv` — 104 prod
-  diagrams (email + id, floor ≥40 dated events, UNRANKED; volume column explicitly
-  "not quality").
+  diagrams (email + id; floor = ≥40 dated events AND ≥20y span AND ≥5 people; his own
+  excluded; UNRANKED; volume column explicitly "not quality"; caveat: nothing in prod
+  marks clinic-derived diagrams, owner-exclusion was the only cross-contamination
+  filter).
 - `PRIVATE_case_mapping.md`: case_NN → his actual diagram file, HIS EYES ONLY,
   regenerated on the active basis.
 - `QUALITY_NOTES.md`: volume ≠ quality, in writing. `OWNER_RULINGS.md`: his teachings.
 
-Corpus facts (post bug-fixes; details in HISTORY): events live in five homes; median
-real case 23 dated events over 81 years; direction tagging in 21% of his cases;
-uncertainty a right-skewed spread (median ~96% guessed); he dates marriages 2–3x more
-than the prod population. **Active-basis tiers (current cut): 11 cases ≥30 active,
-13 at 10–29, 28 at zero active (pure scaffold by the marker — possibly coding style;
-his eyeball decides), 9 out.** The corpus self-sorted into the two planned subsets:
-active-bearing cases → FUNCTION candidates; zero-active-but-structure-rich →
-STRUCTURE candidates. **Waiting on Patrick: eyeball via PRIVATE_case_mapping.md and
-rule the in-lists.**
+Corpus facts (details in HISTORY). **Numbers rule: never trust counts written in
+docs — ~/fd-corpus/clinic/index.json is always authoritative; recompute before use.**
+Computed from index.json 2026-09-01 10:44: events live in five homes; median dated-bearing case
+28 dated events over ~85 years; direction tagging in 21% of his cases;
+uncertainty right-skewed (median ~96% guessed); he dates marriages 2–3x more than the
+prod population. Active-basis tiers: **11 cases ≥30 active, 13 at 10–29, 4 at 1–9
+active (case_01/10/28/42 — NO in/out ruling yet, do not infer), 28 zero-active with
+people (pure scaffold by the marker — possibly coding style; his eyeball decides),
+5 blank.** Worst volume illusion currently case_13 (52 dated / 0 active). The corpus
+self-sorted into the two planned subsets: active-bearing → FUNCTION candidates;
+zero-active-but-structure-rich → STRUCTURE candidates. **Waiting on Patrick: eyeball
+via PRIVATE_case_mapping.md, rule the in-lists, and rule the four 1–9-active cases.**
+
+**PII rule (binding, FD-360 incident is the precedent-as-rule):** real user emails
+(prod_candidates.csv), case filenames, prod identifiers, and any corpus values NEVER
+appear in repo docs or commits; sessions reference cases as case_NN only.
 
 A disposable Postgres container `fd-scratch-pg` (port 55432) holds the restored July
 prod dump for any further prod queries; `docker rm -f fd-scratch-pg` when done.
@@ -104,13 +143,23 @@ choices → build.** Nothing visual is derived before A is ratified. Model polic
 judgment on the big model; max effort ONLY on the filtered corpus; implementation to
 precise spec on cheaper models; mechanics on the cheapest.
 
+## Pending threads (designed, not landed)
+
+- Coach elicitation upgrade: additive prompt edits (triangle/who-else questions,
+  year-before probe, SARF-dimension rotation, done-rule criteria) await Patrick's
+  clinical sign-off on the phrasings; the measurement instrument scores planted facts
+  by transcript scan (never through extraction); the synthetic client must be fixed
+  first (canned evasions ~50–60% of turns); the baseline run doubles as the tabled
+  Sonnet-vs-Opus coaching test. Ruled: in-story follow-ups are exempt from the
+  ~1-question/session budget (it caps only out-of-flow clarifications).
+
 ## Jira / branches
 
 - FD-359 epic (chat-first web app) with FD-360 (built, draft PR #133) and FD-361
   (corrections through chat — not started). FD-341 untouched as the June plan of
   record; FD-336 superseded as the first chat surface (in docs, not yet in Jira).
 - This branch (`fall-2026-direction`) carries: decision log entries, the two
-  brainstorm docs, DRAWABILITY.md, and this package.
+  brainstorm docs, DRAWABILITY.md, and this package — draft PR #134.
 
 ## Open security items (Patrick's calls, untouched)
 
@@ -119,8 +168,16 @@ precise spec on cheaper models; mechanics on the cheapest.
 2. Public master, pre-existing: a test-fixture name, names in decisions/log.md, and
    IRR meeting transcripts under doc/irr/meetings quoting Patrick on family matters.
    Recommended: PR moving transcripts to fdserver + neutralizing names; his risk call.
-3. Business model TABLED (numbers in HISTORY); BAA with Anthropic in pursuit — until
-   it exists, clinical content never enters model context (structure-only corpus).
+3. Business model TABLED (numbers in HISTORY); LLM-provider BAAs EXIST, the ANTHROPIC
+   BAA is the pending one — until it lands, clinical content never enters model
+   context (structure-only corpus).
+4. Oracle-store items: (a) guards are code (SPEC §7: store-integrity, oracle-outside-
+   store, trace, coverage, id-stability) — follow-on ticket to implement in CI;
+   (b) the workstream skill's per-ticket oracle files are a second corpus (SPEC §11)
+   — unification or a bounded carve-out is his ruling; (c) the proposed tag
+   vocabulary needs his ratification; (d) the store awaits parent placement into an fdserver worktree from the staged
+   files (see session report); (e) his feature-grouped ratification pass over the
+   initial 64-ruling set.
 
 ## What's next
 
