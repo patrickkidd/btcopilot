@@ -6,7 +6,7 @@ Status: **fork 2 ruled 2026-08-25 → alternative (returning long-horizon chat; 
 
 - Last engineering: Jul 23 (Gemini 3.6-flash switch, deployed; agg 0.65→0.70, events 0.41→0.54). Break = 5 weeks.
 - **Jun 24 ruling, on record, forgotten:** rebuild hit a ceiling on Patrick's own family; "stop tuning extraction on AI-residue data"; pivot to human-in-the-loop corrections in chat = FD-339 (grounded, 7 reqs, never started).
-- Jul 21 test of own diagram: duplicate of Patrick, self-parent bond, self-marriage, two Connies, blank single-token labels, wrong ancestor. Never ticketed.
+- Jul 21 test of own diagram: duplicate of Patrick, self-parent bond, self-marriage, two copies of his wife, blank single-token labels, wrong ancestor. Never ticketed.
 - Paused: FD-340 PySide6 port (draft PR, 7 decisions). Not on the iOS critical path — PyQt5 iOS builds work.
 - Stalled: IRR (no meeting since Apr 27, no kappas); FD-318 MVP done condition untouched; retrospective's one follow-up experiment (Mar-4 prompt on 3.6-flash — SARF fell 0.64→0.39 Mar→May) not run.
 - ~25–30% of Jun–Jul session volume went into the workstream skill itself.
@@ -85,5 +85,5 @@ Remove 11 stale worktrees (keep FD-340, this one); commit/discard familydiagram 
 ## 10. Round 6 — "Claude Code for Family Diagram" (2026-08-26)
 - FD-339 gains a `read_manual(section)` tool: SARF model + event semantics (from fdserver extraction prompts), Bowen concepts, app usage. Architecture (per-turn tool vs cached system prefix vs both; sectioning; single source of truth with extraction prompts) = design brainstorm with Patrick before build.
 - Two writers: batch extraction = proposals accepted in the review sheet, F1-validated, unchanged. Agent writes only what the user asked for or said yes to; PDP reused as the inline approval (negative-id item, one-line question + tap); trust tiers. Edit log records what the user did; how those records become accuracy labels is deferred to FD-353 (side thread, not load-bearing). Design terms (oracle, ratification) stay out of user-facing language.
-- Dedup on record: FD-319 same-conversation re-extraction 10/10 → 0/10 (N=10, flash+pro) with carve-out + deterministic repair. Cross-session incremental resolution unmeasured; July two-Connies came from rebuilds. Double-write test required.
+- Dedup on record: FD-319 same-conversation re-extraction 10/10 → 0/10 (N=10, flash+pro) with carve-out + deterministic repair. Cross-session incremental resolution unmeasured; July two-his wifes came from rebuilds. Double-write test required.
 - ACs (human-authored/ratified): scripted SARF-CRUD conversation set with expected tool calls; ~30-item education/how-to question set with rubric; double-write 0/10; provenance on every write.

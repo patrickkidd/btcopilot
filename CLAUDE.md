@@ -45,6 +45,18 @@ runtime copy is needed, update this section.
 | Prompt optimization process | [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) |
 | Bowen theory concepts | [CONTEXT.md](CONTEXT.md) |
 | Drawability — when the timeline picture may draw vs must ask (5 rules, ruled 2026-08-31) | [doc/DRAWABILITY.md](doc/DRAWABILITY.md) |
+
+## Chat-first rebuild (CANONICAL)
+
+The chat-first rebuild ("a coach who never forgets your family") is documented under
+the two-clocks regime in [doc/chat-first/](doc/chat-first/):
+- **Read [doc/chat-first/STATE.md](doc/chat-first/STATE.md) FIRST in every session touching this work** — it is the current system of record.
+- [doc/chat-first/HISTORY.md](doc/chat-first/HISTORY.md) — the event clock: decision/brainstorm history; append, never rewrite.
+- [doc/chat-first/NEXT_SESSIONS.md](doc/chat-first/NEXT_SESSIONS.md) — kickoff briefs for the corpus FUNCTION/STRUCTURE sessions.
+- [doc/DRAWABILITY.md](doc/DRAWABILITY.md) — ruled drawing/asking rules.
+These are living documents: every session refines them as part of its work (append to
+HISTORY, revise STATE) and records Patrick's new teachings in ~/fd-corpus/OWNER_RULINGS.md.
+The clinical corpus itself lives OUTSIDE all repos at ~/fd-corpus (see STATE.md).
 | Diagram layout/rendering/SVG | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) |
 | F1 metrics, evaluation | [doc/F1_METRICS.md](doc/F1_METRICS.md) |
 | Chat flow, personal app AI | [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md) |
