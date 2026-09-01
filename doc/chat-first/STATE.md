@@ -180,8 +180,9 @@ precise spec on cheaper models; mechanics on the cheapest.
   scan/export notes to PDF → diagram file; build it as a clean module (interpretation
   prompt + output schema + .fd writer + per-item confidence for human review) with
   the method documented, bake-off findings included; user-facing surface deferred.
-  Placement default (unruled): module in public btcopilot, prompts in the private
-  layer like the coach prompts. Does NOT gate the visualization prototype — only the
+  Placement RULED: module in public btcopilot, prompts in the private layer like
+  the coach prompts; it will be factored into the new part of the training app that
+  becomes the released user app. Does NOT gate the visualization prototype — only the
   FUNCTION-subset ruling does.
 
 ## Jira / branches
