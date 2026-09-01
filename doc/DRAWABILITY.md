@@ -69,7 +69,9 @@ correlations, not a comprehensive dataset — users must never feel they've take
 data project. Conversation drives everything; the UI is a secondary way to fill gaps,
 and the coach aims the picture with an inline reference when it wants attention.
 Questions are quiet marks in place — never cards, never a queue (survey feel killed
-the "question-first" mockup). The undated shelf lives behind a tap. The acceptance
+the "question-first" mockup). The undated shelf lives behind a tap. Coverage is never the goal:
+it serves two things only — letting the coach ask better questions, and giving the
+timeline enough to show a correlation itself. The acceptance
 test for coach and picture alike is the felt shift ("something rearranging"), of which
 two real instances are on record (the stepmother-out/mother-in/high-school pileup;
 the triangle poke about B's relationship with A). Mockups:
