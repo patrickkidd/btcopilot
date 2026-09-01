@@ -76,3 +76,14 @@ test for coach and picture alike is the felt shift ("something rearranging"), of
 two real instances are on record (the stepmother-out/mother-in/high-school pileup;
 the triangle poke about B's relationship with A). Mockups:
 https://claude.ai/code/artifact/a20195e0-2310-4308-8fd5-1dc74ac28dc9
+
+### At-rest vocabulary (Patrick's storyboard review, 2026-09-01)
+
+The resting strip failed a cold read: bands, ranges, and tick pairs are meaningless
+without labels, and there is no room for labels. Rule: at strip scale only THREE marks
+exist — a line, dots, and the amber question mark. Bands/ranges/fades/ticks appear only
+in the expanded view where words fit beside them. Every mark says itself in a plain
+sentence on tap ("sleep got worse, around 1996, give or take a year") — the teaching
+gesture and the editing gesture are the same. No legends anywhere. Also queued as A/B
+tests: calm-period return prompts ("while it's calm"); mark-vocabulary variants.
+Only frame-4-style notifications are app-initiated; in-conversation aiming is not push.
