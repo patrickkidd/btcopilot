@@ -199,6 +199,11 @@ precise spec on cheaper models; mechanics on the cheapest.
   becomes the released user app. Does NOT gate the visualization prototype — only the
   FUNCTION-subset ruling does.
 
+- **Patrick's own comprehensive timeline (queued 2026-09-01, after the clinical
+  run)**: merge his old diagram, new diagram, and journal into one timeline —
+  sources exist in ~/fd-corpus/design/ (his chat/journal corpus files) plus his
+  live records; same synthesis machinery expected to apply.
+
 ## Jira / branches
 
 - FD-359 epic (chat-first web app) with FD-360 (built, draft PR #133) and FD-361
