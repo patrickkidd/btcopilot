@@ -90,7 +90,7 @@ export-only). Known debt to schedule: secrets committed in compose need rotation
   "Assistant" person appears in lane data; unknown-certainty dated events route to
   the shelf; rule-5 fades/death hard-stops unimplemented. One Jira closing comment on
   FD-360 is pre-authorized but HELD until Patrick reviews the PR.
-- **proto.html** (durable copy: ~/fd-corpus/design/proto.html; jobs-tmp original is ephemeral): interactive two-concept prototype — REJECTED by Patrick,
+- **proto.html** (durable copy: ~/theapp/btcopilot-sources/fd-corpus/design/proto.html; jobs-tmp original is ephemeral): interactive two-concept prototype — REJECTED by Patrick,
   shelved. It embeds real names inside prod-derived event descriptions: NEVER publish
   or commit it; local file only. Its creative-round survivors (Chapter Shelf, Quiet Threads) and
   cross-cutting findings remain hypotheses only.
@@ -104,8 +104,8 @@ moves + three variable shifts, one action-green, 8s felt animations on the field
 vocabulary (rings = a person's emotional field; tremble = moved by it; wall +
 field shadow = withdrawal; ghost-double + spikes = anxiety EVERYWHERE it appears;
 F-up ≈ defined self; symptom = interim cross + up/down arrow). Rulings:
-~/fd-corpus/OWNER_RULINGS.md (2026-09-01). Reference HTML (durable):
-~/fd-corpus/design/move-language.html (ratified galleries) and drilldown.html
+~/theapp/btcopilot-sources/fd-corpus/OWNER_RULINGS.md (2026-09-01). Reference HTML (durable):
+~/theapp/btcopilot-sources/fd-corpus/design/move-language.html (ratified galleries) and drilldown.html
 (three-level drill-down on two real records — KNOWN BUGGY; the rulings are the
 standard, not the prototype). Ruled three-level shape: wire with episode clusters
 → tap-zoom into episode (words readable) → moves step-by-step; claims live in
@@ -114,7 +114,7 @@ FD-360 against his real record — brief in NEXT_SESSIONS.md.
 
 ## The corpus (system of record for phases A and B)
 
-Location **~/fd-corpus/** — NEVER in any repo; rebuild everything with
+Location **~/theapp/btcopilot-sources/fd-corpus/** (moved 2026-09-02 from ~/fd-corpus, symlink left behind; his ruling: everything load-bearing consolidates into the PRIVATE btcopilot-sources repo — supersedes the older never-in-a-repo rule for this data); rebuild everything with
 `rebuild.py <diagrams-dir> <out-dir>` (self-verifying allowlist, no data inside it).
 - `clinic/case_01..61.json` + `index.json`: his 61 real clinical cases, one-way
   anonymized (P-ids, gender, decimal years, unsure flags, kind enums, per-variable
@@ -131,7 +131,7 @@ Location **~/fd-corpus/** — NEVER in any repo; rebuild everything with
 - `QUALITY_NOTES.md`: volume ≠ quality, in writing. `OWNER_RULINGS.md`: his teachings.
 
 Corpus facts (details in HISTORY). **Numbers rule: never trust counts written in
-docs — ~/fd-corpus/clinic/index.json is always authoritative; recompute before use.**
+docs — ~/theapp/btcopilot-sources/fd-corpus/clinic/index.json is always authoritative; recompute before use.**
 Computed from index.json 2026-09-01 10:44: events live in five homes; median dated-bearing case
 28 dated events over ~85 years; direction tagging in 21% of his cases;
 uncertainty right-skewed (median ~96% guessed); he dates marriages 2–3x more than the
@@ -218,7 +218,7 @@ precise spec on cheaper models; mechanics on the cheapest.
 
 - **Patrick's own comprehensive timeline (queued 2026-09-01, after the clinical
   run)**: merge his old diagram, new diagram, and journal into one timeline —
-  sources exist in ~/fd-corpus/design/ (his chat/journal corpus files) plus his
+  sources exist in ~/theapp/btcopilot-sources/fd-corpus/design/ (his chat/journal corpus files) plus his
   live records; same synthesis machinery expected to apply.
 
 ## Jira / branches

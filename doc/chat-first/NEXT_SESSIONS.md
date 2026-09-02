@@ -9,13 +9,13 @@ adversarial review on every deliverable, batch sub-agent work into one message).
 
 **Where it stands**: the basic concept is APPROVED in principle and pixel
 convergence has begun. The living mockup is
-~/fd-corpus/design/coach-screen.html (published artifact; job-tmp copy is
+~/theapp/btcopilot-sources/fd-corpus/design/coach-screen.html (published artifact; job-tmp copy is
 ephemeral — treat the fd-corpus copy as source, republish to the same artifact
 URL). It has: generic phone chrome (status bar, no app header); the picture
 pinned above the chat with per-level heights (rest wire ~78px with episode
 clusters and amber ?s → tap-zoom cluster view ~158px with ✕ close → play-by-play
 ~264px with ← back) playing the RATIFIED move language
-(~/fd-corpus/OWNER_RULINGS.md, 2026-09-01 entries — the standard for every
+(~/theapp/btcopilot-sources/fd-corpus/OWNER_RULINGS.md, 2026-09-01 entries — the standard for every
 gesture); scripted coach chat with chips that aim the picture; typing adds a
 moment to the wire; a test-record cycler OUTSIDE the phone frame (his record /
 dense clinical / empty / pathological — keep all four working at every step).

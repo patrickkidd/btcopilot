@@ -355,7 +355,7 @@ visual-representation choices → hand off.** Scaffold-vs-active ratified as the
 mechanical viability marker: a case's diagnostic period begins at its first event
 carrying a nodal flag or any variable value; early births before that are age/
 generation scaffolding that does NOT factor into SARF evaluation; active-event count
-is the signal. His teachings accumulate verbatim-close in ~/fd-corpus/OWNER_RULINGS.md.
+is the signal. His teachings accumulate verbatim-close in ~/theapp/btcopilot-sources/fd-corpus/OWNER_RULINGS.md.
 
 The active/scaffold re-cut then landed and reshaped the picture again: on the active
 basis the tiers are 11 cases at 30+ active events, 13 at 10–29, **28 at zero active**
@@ -441,7 +441,7 @@ iPad and (if logged in) the new Mac app. Nothing is wrong with his files.
 
 Proposed pipeline (unruled): bulk-export all notes as PDF via Notability's
 auto-backup feature (one setting on the iPad backs up everything as PDF to a cloud
-drive folder continuously) → land raw PDFs under ~/fd-corpus/notability/ (never in a
+drive folder continuously) → land raw PDFs under ~/theapp/btcopilot-sources/fd-corpus/notability/ (never in a
 repo) → interpretation by a BAA-covered multimodal model (OpenAI or Gemini — NOT
 Claude; content-blind protocol continues to bind Claude until the Anthropic BAA) —
 Notability's own OCR is handwriting-to-text and blind to diagram semantics, so it is
@@ -498,10 +498,10 @@ The creative rounds converged and Patrick ratified a complete visual vocabulary
 three variable shifts, each an 8-second felt animation in ONE action-green, built
 on the field vocabulary (concentric rings = a person's emotional field; tremble =
 being moved by it; the wall + field shadow = withdrawal). All rulings are in
-~/fd-corpus/OWNER_RULINGS.md (2026-09-01 entries, batches 1-3 + projection
+~/theapp/btcopilot-sources/fd-corpus/OWNER_RULINGS.md (2026-09-01 entries, batches 1-3 + projection
 ratification + the anxiety-everywhere rule). Reference implementations (galleries
 + the three-level drill-down wired to two real records) are durable at
-~/fd-corpus/design/move-language.html, drilldown.html, drilldown_data.json, and
+~/theapp/btcopilot-sources/fd-corpus/design/move-language.html, drilldown.html, drilldown_data.json, and
 published as artifacts. The drill-down integration is KNOWN BUGGY (his walk found
 cutoff/inside/outside/zigzag defects; some fixed, more remain) — the ratified
 rules, not the prototype, are the standard to build against. Symptom is interim
