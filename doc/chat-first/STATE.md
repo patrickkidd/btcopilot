@@ -97,6 +97,21 @@ export-only). Known debt to schedule: secrets committed in compose need rotation
 - Three artifacts stand as reference: Drawability, "Three Ways to Ask", "Flowing
   Through It" (URLs in HISTORY.md; readable any session via the Artifact tool's read action).
 
+## The move language (RATIFIED 2026-09-01)
+
+The visual vocabulary for the picture above the chat is ratified: ten relationship
+moves + three variable shifts, one action-green, 8s felt animations on the field
+vocabulary (rings = a person's emotional field; tremble = moved by it; wall +
+field shadow = withdrawal; ghost-double + spikes = anxiety EVERYWHERE it appears;
+F-up ≈ defined self; symptom = interim cross + up/down arrow). Rulings:
+~/fd-corpus/OWNER_RULINGS.md (2026-09-01). Reference HTML (durable):
+~/fd-corpus/design/move-language.html (ratified galleries) and drilldown.html
+(three-level drill-down on two real records — KNOWN BUGGY; the rulings are the
+standard, not the prototype). Ruled three-level shape: wire with episode clusters
+→ tap-zoom into episode (words readable) → moves step-by-step; claims live in
+chat; loop engineering rules (all interactions collected). Next: build it on
+FD-360 against his real record — brief in NEXT_SESSIONS.md.
+
 ## The corpus (system of record for phases A and B)
 
 Location **~/fd-corpus/** — NEVER in any repo; rebuild everything with
