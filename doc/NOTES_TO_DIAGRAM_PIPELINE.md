@@ -43,7 +43,37 @@ files, not in the diagram. During review it is either placed by hand or discarde
 nothing legible is ever silently dropped. (Whether any of it should also land in
 the diagram's own notes field is Patrick's call, default no.)
 
-## Bake-off protocol (approved, two-armed)
+## Bake-off VERDICT (2026-09-01, Patrick scored blind)
+
+**Synthesis wins.** Three arms: GPT-5.2 (reasoning=high) and Gemini 3.1 Pro extract
+independently from page images; a third call (Gemini) merges both JSONs while
+re-checking every kept item against the page images (dedup name variants; on
+disagreement downgrade dateCertainty rather than pick; nothing legible dropped —
+losers go to unplaced). Patrick's scores: two cases "C is a good merge", one
+"can't tell the three apart, default C", one excluded (case seen once, notes-only,
+no diagram — class ruled OUT of the corpus), one revealed a data-nature class
+rather than a model difference (see below). The production pipeline is therefore
+BOTH models + synthesis, ~3 calls/case; accuracy over cost is ruled (the data is
+irreplaceable).
+
+**Baseline-configuration cases (open design point):** some handwritten cases carry
+almost no dated events — they describe the family's baseline emotional
+configuration: anxiety-binding mechanisms, who's who structure, implied triangle
+positions, with ordering only implied by narrative sequence. Forcing these into
+dated events is wrong; candidate target = relationship symbols + person/diagram
+notes, dates absent. Awaiting Patrick's ruling before the full run treats them.
+
+**Transcription (ruled path):** each PDF also gets a verbatim plain-text
+transcription as a SEPARATE archival call — never as an intermediate step feeding
+extraction (chaining flattens the drawing's spatial information and propagates
+transcription errors); structure is always extracted image→JSON directly. The
+transcript is for archive, search, and human review.
+
+**Review at volume:** .md eyeballing does not scale past a cursory pass (his
+verdict); the real review surface for the 56-case run is the imported diagram
+opened in the app, corrected by hand.
+
+## Bake-off protocol (approved, two-armed → superseded by verdict above)
 
 5 sample cases spanning difficulty (1 PDF → 40 PDFs). Both models get identical
 prompts + the schema. Patrick scores blind per case: people found/missed,
