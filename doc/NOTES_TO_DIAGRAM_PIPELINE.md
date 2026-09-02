@@ -8,6 +8,19 @@ prompts live in the private layer (like the coach prompts). This spec is the
 bake-off scoring target; the winning model + prompt + failure modes get documented
 here as part of the method.
 
+## Field conventions (owner-ruled 2026-09-01, from the journal-merge test)
+
+- Event `description` = 3-5 words; full prose goes in `notes`. Never restate a
+  variable coding in text ("F: up" belongs in the functioning field only).
+- These fixes apply at IMPORT time (description->notes remap + short label), so
+  already-cached extractions never need re-paying.
+- The journal-merge dogfood test found correction cost ~= manual entry cost on the
+  cleanest possible input; attribution errors (wrong symbol person/kind) were among
+  the causes. The pipeline's output is a draft with provenance, not an adoptable
+  diagram, until a staged import-review UX exists. Patrick's own timeline is PARKED
+  - the corpus exists to figure out the right visuals in the new web app, and that
+  remains the sole focus.
+
 ## Stages
 
 1. **Render**: PDF pages → images (local, deterministic).
