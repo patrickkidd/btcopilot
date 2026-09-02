@@ -140,8 +140,10 @@ point is dated** (no undated-shelf problem on the function side); marks are spar
 per person and clustered in time (densest case = 33 marks over 9 people / 30 years).
 
 The corpus self-sorted into the two planned subsets: active-bearing → FUNCTION candidates;
-zero-active-but-structure-rich → STRUCTURE candidates. **Waiting on Patrick: eyeball
-via PRIVATE_case_mapping.md, rule the in-lists, and rule the four 1–9-active cases.**
+zero-active-but-structure-rich → STRUCTURE candidates. **RULED 2026-09-01: no eyeball gate — the FUNCTION subset is simply the
+marker-densest cases (case_29/41/03/40/48/61/50, the seven with >=9 annotated
+points); phase A proceeds on them now. The four 1-9-active cases and the
+zero-active question are moot for phase A.**
 
 **PII rule (binding, FD-360 incident is the precedent-as-rule):** real user emails
 (prod_candidates.csv), case filenames, prod identifiers, and any corpus values NEVER
