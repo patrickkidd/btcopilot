@@ -1124,3 +1124,14 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 **Decision:** Question-first rejected (survey feel; "no one is going to like a questionnaire"). Ruled shape: conversation drives everything; picture always on, strip-small above the chat; questions as quiet in-place marks; the coach aims the picture via an inline reference; users can proactively fill gaps through the picture; undated shelf behind a tap. Cartoon rule recorded in doc/DRAWABILITY.md: one or two impactful correlations, not a dataset; the brain-rearranging moment is the product's acceptance test.
 
 **Revisit trigger:** working-group members don't notice quiet marks (engagement rests on coach prose alone), or the strip proves too small to aim at on phones.
+
+## 2026-09-01 — Loop engineering is the project's organizing principle
+Patrick's ruling, verbatim-close: the whole project is about loop engineering now.
+Get something in front of users that keeps them chatting — neat graphics where the
+drill-down levels fill in visually AS THEY TYPE — generating a feedback loop of
+collected data; track corrections occurring directly in chat; maximize automatic
+in-app data collection (interactive, in the app itself) so users never need to talk
+to Patrick; the system learns from collected data. Visual-design convergence (the
+three-level drill-down: at-rest wire → aimed-lane episode → chalkboard moves) is now
+in service of retention + data generation, not a design end in itself. Connects to
+the earlier friction auto-report ruling.
