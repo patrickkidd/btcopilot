@@ -1,133 +1,151 @@
 # The nature of this data (phase A — for Patrick's correction)
 
 Basis: the seven marker-densest clinical cases (case_29, 41, 03, 40, 48, 61, 50),
-anonymized structure only, recomputed 2026-09-01. Every claim is labeled:
-**[computed]** = fact from the files; **[inference NN%]** = my read, with
-confidence; **[Q]** = a one-line question where inference runs out. Grounded in
-the ruled clinical teachings (no absolute S/A/R/F values; episodic clusters;
-emergent baselines; sampling bias toward periods of running process; never guess
-a position). General genogram/therapy priors are not used.
+anonymized structure only, recomputed 2026-09-01 and independently re-verified by
+adversarial recomputation (all numbers below survived it). Labels: **[computed]** =
+fact from the files; **[inference NN%]** = a read, with confidence; **[Q]** = a
+one-line question where inference runs out. Grounded in the ruled teachings (no
+absolute S/A/R/F values; episodic clusters; emergent baselines; sampling bias toward
+periods of running process; never guess a position). Owner facts folded in:
+case_29 was hand-curated by Patrick BEFORE the full SARF model existed and he
+counts THREE clusters in it — so (a) mechanical gap-clustering over-splits
+(clusters are nameable clinical episodes, not gap artifacts), and (b) case_29's
+idioms are hand-curation style, not app-era practice; it is treated as its own
+regime below.
 
 ## 1. A worked case is two layers with a sharp boundary
 
-Every case is a large scaffold carrying a small diagnostic payload. **[computed]**
-Scaffold: 21–121 dated points of plain genealogy (births, marriages, deaths).
-Payload: 9–33 marked points (nodal flag or variable value). The payload is
-1/5 to 1/10 of the dated material. The boundary is real, not an artifact: the
-scaffold establishes who exists and when generations turn over; clinical
-attention begins at the first mark and never retroactively marks the deep past.
-**[inference 85%]** The scaffold is built FOR the payload — context to make the
-few marked years interpretable — not an attempt at complete family history.
+**[computed]** Every case is a genealogical scaffold (20–120 dated unmarked
+points: births, marriages, deaths) carrying a diagnostic payload of 9–33 marked
+points (nodal flag or variable value). The payload share of dated material runs
+10%–39% (case_48 lowest, case_41 highest) — a minority everywhere, but the share
+varies 4x across cases. Marks start at 1965 at the earliest; scaffold reaches
+back to the 1930s. **[inference 85%]** The scaffold exists FOR the payload —
+context that makes the few marked years interpretable, not an attempt at
+complete family history. (Untestable in-file — no creation order — held at 85%
+on the strength of the ruled teachings.)
 
-## 2. The mark is a worded, custom, single-variable observation
+## 2. The mark: a worded, custom observation carrying one variable — or none
 
-**[computed]** Across all seven cases: marks are overwhelmingly "custom" events
-(kind = other), not structural ones — structural events (births/marriages) are
-almost never marked; deaths occasionally are, as nodal. Every single mark
-carries text (no zero-text marks anywhere; median 20–176 bytes — a phrase to a
-sentence). Marks carry ONE variable at a time almost without exception (a
-handful of S+A; exactly one S+A+F+R point in ~120 marks).
-**[inference 80%]** The mark is a clinical note-taking act: one observation,
-one dimension, in words, pinned to a time — not a scoring pass over the
-timeline. Multi-variable scoring of a moment is not how you work.
-**[Q]** Is the lone S+A+F+R point in case_29 a deliberate "everything moved
-here" nodal statement, or an over-coding you'd undo?
+**[computed]** 122 marks across the seven cases. 110 are "custom" events (kind
+= other); structural events are almost never marked (deaths occasionally, as
+nodal). Every mark carries text (median 20–176 bytes — phrase to sentence; zero
+exceptions). Variable arithmetic: ~28% of marks (34/122) are nodal-only with NO
+variable; nearly all the rest carry exactly ONE variable; exactly two marks
+carry two variables, and exactly one point (case_29, pre-SARF) carries four.
+**[inference 80%]** The mark is a note-taking act: one observation, one
+dimension at most, in words, pinned to a time — never a scoring pass.
+**[Q]** Nodal-only marks (~28%): a deliberate "something turned here" class
+distinct from variable shifts, or under-coding you'd backfill today?
 
-## 3. Each case is coded in a variable dialect, not the full palette
+## 3. Variable use is narrow and case-specific — cause unknown
 
-**[computed]** case_40 codes anxiety only. case_41 and case_61 are
-symptom-dominant. case_48 is nodal-flags only, zero variables. case_29 runs
-symptom+anxiety. Functioning appears in single digits across all seven;
-relationship-as-variable barely exists; differentiation is used exactly zero
-times in the entire corpus.
-**[inference 70%]** The dialect tracks the case's presenting problem (an
-anxiety case gets anxiety marks, a symptom case symptom marks) — the variable
-chosen IS diagnostic information, not a coding-style accident.
-**[Q]** Is per-case dialect real clinical signal, or just when-you-learned-
-which-feature coding history?
-**[computed]** Some direction values are neither up nor down but free text
-("other" in the enum: 9 in case_29, 3 in case_03).
-**[Q]** Are text-valued directions early-schema leftovers or deliberate
-qualitative shifts that up/down can't hold?
+**[computed]** case_40 codes anxiety only; case_41 and case_61 are
+symptom-dominant; case_48 is nodal-only (zero variables); case_29 (pre-SARF)
+runs symptom+anxiety. Functioning: 7 uses across all seven cases. Relationship
+as a variable: rare. Differentiation: zero uses in the entire corpus (the field
+exists in every event).
+**[Q]** Does the per-case variable palette track the presenting problem (the
+palette itself being diagnostic), or your coding history at the time each case
+was worked? The files cannot decide this.
+**[computed]** Some direction values are the enum value "other" (not up/down;
+the anonymizer maps any non-up/down value there): case_29: 9, case_03: 4,
+case_41: 5, case_40: 2.
+**[Q]** What are those non-up/down direction values in the source — early
+schema leftovers, or qualitative shifts up/down can't hold?
 
-## 4. Time is episodic clusters with a recency gradient; order beats position
+## 4. Time: episodic clusters; ordering is trustworthy, position is not
 
-**[computed]** Marks arrive in 1–7 clusters (gap >3y separates), and the
-LARGEST cluster is the most recent in nearly every case: case_29 puts 18 of 33
-marks in 2015–2019; case_41 puts 16 of 26 in 2014–2023; case_61 is one long
-2010–2019 episode. Earlier clusters are small (1–7 marks) and decades apart.
-**[inference 90%]** This is the ruled sampling bias made visible: the dense
-recent cluster is the consultation period (live observation); the sparse old
-clusters are the 3–5 remembered periods a historical intake yields. Two
-different data-generating processes in one timeline — remembered history vs
-observed present — and they look different: old clusters are sparser, more
-nodal, longer-gapped.
-**[computed]** Dating is guessed-but-precise: 50–100% of marks carry the unsure
-flag, yet most have month resolution. **[inference 85%]** You date to preserve
-ORDER and local spacing, not absolute position — consistent with the ruled
-"ordering IS drawable" and "never guess a position" teachings. The unsure flag
-means "don't trust the axis position", not "don't trust the sequence".
+**[computed]** Marks arrive in clusters separated by multi-year silent gaps in
+every case (mechanical gap>3y finds 1–7 per case; the owner's count for case_29
+is 3 — the mechanical split over-counts singletons and near-gaps, so cluster =
+nameable episode, threshold detection is only a first pass). Cluster recency is
+NOT a law: the biggest cluster is the most recent in 3 of 7 cases only.
+**[computed]** What DOES separate old from recent: composition. Pre-2005 marks
+are 60% nodal-only (25/42); post-2005 marks 33% (26/80) — the deep past is
+remembered as turning points, the nearer record carries variable shifts.
+**[inference 75%]** That composition gradient is the two data-generating
+processes: remembered history (a historical intake yields a few nameable
+periods, mostly "something turned here") vs closer observation (variable
+shifts). Case-level recency of bulk depends on when the case was worked, which
+the files don't carry.
+**[computed]** Dating is guessed-but-precise: 46–100% of marks carry the unsure
+flag, yet 74% of dated marks (83/112) have month resolution. **[inference 85%]**
+Dates preserve ORDER and local spacing, not absolute position — per the ruled
+"ordering IS drawable" / "never guess a position". The unsure flag means "don't
+trust the axis position", not "don't trust the sequence".
 
-## 5. Marks concentrate on one or two people; everyone else is context
+## 5. Marks concentrate on one or two people — but not only on people
 
-**[computed]** The top-marked person carries 40–80% of a case's marks; 2–9
-people carry any mark at all, out of 27–113 people in the diagram. **[inference
-90%]** One index person (plus sometimes a spouse/child) is the observational
-center; the other ~90% of people exist to give the marks a system to sit in.
-The corpus never shows whole-family variable tracking.
+**[computed]** The top-marked person carries 47–82% of a case's marks, always
+at least twice the runner-up; 2–9 people carry any mark, out of 27–71 people in
+these diagrams. Index gender: female in 4 cases, male in 2 (one case mixed);
+one diagram uses the "abortion" person kind. **[computed]** Marks also attach
+to pair-bonds, not just people: 8 of case_29's 33 marks are couple events
+(1 each in case_48/50) — and case_29's scaffold is nearly half couple events
+(48 dated). **[inference 90%]** One index person (sometimes plus spouse/child)
+is the observational center; the other ~90% of people are the system the marks
+sit in. Whole-family variable tracking does not appear anywhere.
 
-## 6. Relationship symbols live in two distinct idioms
+## 6. Relationship symbols: two idioms, and Cutoff is first-class
 
-**[computed]** Six of seven cases: relationship symbols are mostly or entirely
-UNDATED (case_03: 2 of 26 dated; case_41: 4 of 21; case_48: 0 of 3) — and the
-undated set is rich: Inside/Outside pairs (triangles), Projection, Distance,
-Conflict, Fusion. case_29 alone inverts this: 25 of 31 symbols dated, spanning
-the timeline. **[inference 85%]** Two idioms, matching the handwritten-notes
-finding independently: the dominant idiom draws the BASELINE EMOTIONAL
-CONFIGURATION (standing triangles, chronic distance, projection routes — a
-structural portrait, no time axis), and the second, used when observation is
-dense enough, moves relationship process ONTO the timeline. Same construct, two
-temporal registers.
-**[computed]** Triangles are represented as Inside/Outside symbol sets
-(case_03: 10 Inside + 7 Outside; case_41: 5 Inside + 3 Outside).
-**[Q]** In your notation, does one triangle produce several Inside/Outside
-symbols (per-leg), so symbol count >> triangle count?
+**[computed]** Six of seven cases: symbols are mostly or entirely UNDATED
+(case_03: 2 of 26 dated; case_41: 4 of 21; case_48: 0 of 3) and the undated
+vocabulary is rich: Inside/Outside sets (triangles), Projection, Distance,
+Conflict, Fusion, Cutoff (10 corpus-wide, 5 in case_29 alone), Toward,
+DefinedSelf. case_29 inverts the idiom: 25 of 31 symbols dated — and 18 of
+those carry END dates (episodes, not points) and 25 carry text (other cases:
+0–5 worded symbols). **[inference 85%]** The dominant idiom draws the BASELINE
+EMOTIONAL CONFIGURATION — standing triangles, chronic distance, projection
+routes; a structural portrait with no time axis. This converges independently
+with the handwritten-notes finding (baseline-configuration cases). The dated
+idiom moves relationship process onto the timeline as SPANS — but its one rich
+exemplar is pre-SARF hand-curation, so whether it represents your intended
+practice is an open owner question, not an inference.
+**[Q]** One triangle = several Inside/Outside symbols (per-leg), so symbol
+count >> triangle count?
+**[Q]** Is case_29's dated-span symbol idiom the future (intended practice) or
+an artifact of that case's hand curation?
 
 ## 7. Where uncertainty actually lives
 
-**[computed]** Not in whether events happened (marks always carry words) but
-in: axis position (unsure flags, 50–100% of marks), symbol dating (mostly
-absent by idiom), direction semantics (text-valued directions), and coverage
-(the years between clusters are unknowns, not quiet). **[inference 95%]** The
-inter-cluster gaps are unobserved-not-calm — treating them as "stable periods"
-would fabricate data. This is the single most dangerous default a
-visualization could assume.
+**[computed]** Not in whether things happened (every mark is worded) but in:
+axis position (unsure flags 46–100%), symbol dating (absent by idiom in 6/7),
+direction semantics ("other" values), event duration (t_end is used on ZERO
+person/couple events — durations exist only on dated relationship symbols), and
+coverage (multi-year silent gaps between clusters in every case).
+**[inference — doctrine, not file-testable]** The gaps are
+unobserved-not-calm; drawing them as stable periods would fabricate data. This
+is the most dangerous default a visualization could adopt.
 
-## 8. Constraints this hands phase B (not designs — constraints)
+## 8. Constraints handed to phase B (constraints, not designs)
 
-1. The drawable unit is the episodic cluster, not the year grid: 1–7 clusters
-   per case, dense-recent, sparse-old.
-2. Order and within-cluster spacing are trustworthy; absolute axis position is
-   not (unsure regime) — a drawing that implies precision lies.
-3. One case = one or two marked people + a system: the picture's foreground
-   population is tiny even when the diagram is huge.
-4. Variables come one-per-mark in a per-case dialect: a 5-lane variable grid
-   would be ~80% empty everywhere; the case's own dialect defines its lanes.
-5. Baseline configuration (undated symbols) and timeline process (dated marks)
-   are different pictures of the same family and must not be forced onto one
-   axis; case_29 shows the bridge state when symbols become datable.
-6. Gaps are unknowns: empty timeline space must read as "not asked/not
-   remembered", never as calm.
-7. Every mark has words: text is always available on tap; nothing needs a
+1. The drawable unit is the nameable episode-cluster (few per case), separated
+   by silent gaps that must read as unknown, never as calm.
+2. Order and within-cluster spacing are trustworthy; absolute position is not —
+   precision-implying drawings lie (46–100% unsure).
+3. Foreground population is tiny (1–2 marked people + occasionally the
+   pair-bond itself as a mark-carrier); background population is huge.
+4. Variables arrive one-per-mark in a narrow per-case palette; ~28% of marks
+   carry no variable at all (nodal-only) — the drawing needs a lane-less mark
+   class, and a 5-lane grid would be mostly empty everywhere.
+5. Two symbol registers: undated baseline configuration (a portrait, not a
+   timeline) vs dated relationship SPANS with end dates (episodes) — never
+   force both onto one axis; person/couple events have no durations at all.
+6. Every mark has words: text on tap is always available; nothing needs a
    synthetic label.
+7. The deep past is nodal-heavy turning points; the nearer record carries
+   variable shifts — one visual treatment will not fit both.
 
-## 9. Open questions (all one-liners, answer any subset)
+## 9. Open questions (answer any subset, by number)
 
-1. The per-case variable dialect: clinical signal or coding history? (§3)
-2. Text-valued directions: keep as qualitative shifts or normalize? (§3)
-3. One triangle = several Inside/Outside symbols? (§6)
-4. Is case_29's dated-symbol idiom your current practice (i.e. the future), or
-   case-specific?
-5. The lone everything-moved point in case_29: deliberate or over-coded? (§2)
-6. Are the small ancient clusters (2-4 marks, decades back) intake-remembered
-   periods as inferred, or later-added archaeology?
+1. Nodal-only marks: deliberate turning-point class or under-coding? (§2)
+2. Per-case variable palette: clinical signal or coding history? (§3)
+3. Non-up/down direction values in the source: what are they? (§3)
+4. One triangle = several Inside/Outside symbols? (§6)
+5. Dated-span symbols (case_29 style): intended future practice or curation
+   artifact? (§6)
+6. The four-variable point in case_29: deliberate "everything moved here" or
+   over-coding? (§2)
+7. Are the small decades-old clusters intake-remembered periods, or archaeology
+   added while working the case later? (§4)
