@@ -175,7 +175,15 @@ precise spec on cheaper models; mechanics on the cheapest.
   bake-off (GPT vs Gemini; local arm ruled OUT — no vision model installed, 30-40GB
   pull not worth it vs frontier; keys in theapp/.env) → import script
   writes NEW .fd diagram files (originals preserved untouched) → profile the new
-  diagrams exactly like the app cases. PDFs are LOCAL in btcopilot-sources/clinical/
+  diagrams exactly like the app cases. BAKE-OFF SCORED (2026-09-01): synthesis wins
+  (both models extract from images at max effort; third image-checked merge call);
+  ~3 calls/case ruled fine — data irreplaceable. Verbatim transcription kept as a
+  separate archival call, never chained into extraction. Open rulings: (a)
+  baseline-configuration cases (no dated events; binding mechanisms + implied
+  triangles) → relationship symbols + notes instead of forced events? (b) scope of
+  the "no diagram, saw once" exclusion (row 10 ruled out — whole class or per case?).
+  Review at volume happens in the app on imported diagrams, not in .md files.
+  PDFs are LOCAL in btcopilot-sources/clinical/
   (56 cases, ~420 PDFs after dropping Individual Coaching per his ruling); Claude
   never manages that repo's git and never reads its client-named paths into context;
   PRIVATE_pdf_mapping.md there maps folders→diagrams (ratified: 44 exact, 7 fuzzy,

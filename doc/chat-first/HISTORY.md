@@ -481,3 +481,12 @@ file). The core (interpretation prompt, output schema, .fd writer, confidence fo
 human review) is to be built and documented as a reusable module, with the bake-off
 findings saved as part of the method; user-facing surfaces deferred until app
 surfaces are chosen.
+
+Bake-off scored (same day): C — the synthesis arm — won or tied every case Patrick
+could judge; one sample was excluded as a "saw the case once, notes only, no
+diagram" class he ruled out; one sample surfaced a whole class of handwritten cases
+that are baseline-configuration descriptions (anxiety-binding mechanisms, implied
+triangles, narrative order, almost no dates) rather than timelines — extraction
+design for that class awaits his ruling. He also ruled the archival transcription
+question: keep verbatim per-PDF transcripts as separate output, never as a chained
+extraction step. Cursory .md review does not scale; the app is the review surface.
