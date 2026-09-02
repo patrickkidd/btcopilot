@@ -1,4 +1,14 @@
-# The nature of this data (phase A — for Patrick's correction)
+# The nature of this data (phase A — RATIFIED WITH CORRECTIONS 2026-09-01)
+
+**Owner corrections that cap this document's precision:** (1) IGNORE nodal flags —
+not used consistently; every nodal-composition claim below is void. (2) The
+per-case variable palettes reflect varying degrees of SARF clarity at coding time
+— coding history, not clinical signal. (3) HOLD ALL OF THIS LOOSELY: this is not a
+data-science exercise; the visual's job is an exceedingly simple impression that
+lets a person make their a-ha — the remaining open questions are permanently
+skipped as precision the visual doesn't need. Operative summary: **the data is a
+handful of worded moments in episodes on one or two people, with long unasked
+gaps — draw that and nothing more.**
 
 Basis: the seven marker-densest clinical cases (case_29, 41, 03, 40, 48, 61, 50),
 anonymized structure only, recomputed 2026-09-01 and independently re-verified by
