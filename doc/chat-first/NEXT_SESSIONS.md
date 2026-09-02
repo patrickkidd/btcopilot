@@ -1,52 +1,48 @@
 # Chat-first rebuild — kickoff brief for the next session
 
-Read [STATE.md](STATE.md) FIRST. Standing rules from the previous briefs still
-bind (oracle store, content-blind for clinic data, plain words, TLDR first,
-one-list decision questions, two-clocks upkeep).
+Read [STATE.md](STATE.md) FIRST. Standing rules from earlier briefs still bind
+(oracle store, content-blind for clinic data, plain words, TLDR first, decision
+questions in ONE numbered list with inline examples, two-clocks upkeep,
+adversarial review on every deliverable, batch sub-agent work into one message).
 
-**GATE (added 2026-09-01): the build does NOT start until Patrick approves the
-pixel-perfect interactive mockup of the actual app screen** — the concepts must be
-seen flowing in the real design first. Mockup: ~/fd-corpus/design/coach-screen.html
-(published artifact): phone frame, his real record pinned above a scripted coach
-chat, chips aiming the picture, three levels in place, ruled move language in the
-play-by-play, typing adds a moment to the wire. Iterate that until approved, THEN
-run the session below.
+## Session — refine the pixel design into the full app
 
-## Session — chat against the real diagram, with the ruled picture
+**Where it stands**: the basic concept is APPROVED in principle and pixel
+convergence has begun. The living mockup is
+~/fd-corpus/design/coach-screen.html (published artifact; job-tmp copy is
+ephemeral — treat the fd-corpus copy as source, republish to the same artifact
+URL). It has: generic phone chrome (status bar, no app header); the picture
+pinned above the chat with per-level heights (rest wire ~78px with episode
+clusters and amber ?s → tap-zoom cluster view ~158px with ✕ close → play-by-play
+~264px with ← back) playing the RATIFIED move language
+(~/fd-corpus/OWNER_RULINGS.md, 2026-09-01 entries — the standard for every
+gesture); scripted coach chat with chips that aim the picture; typing adds a
+moment to the wire; a test-record cycler OUTSIDE the phone frame (his record /
+dense clinical / empty / pathological — keep all four working at every step).
 
-**Goal**: Patrick chats with the coach against HIS real record and the pinned
-picture above the chat is generated live from it: wire-with-episode-clusters →
-tap-zoom into an episode → the moves played in the ratified move language. Every
-interaction is logged (loop engineering). This is the first real loop.
+**Goal**: Patrick iterates this into the complete app design — refine the core
+concept AND add the app shell around it:
+- session menu (past conversations, new session)
+- preferences
+- account view
+- whatever else he directs — he drives, one surface at a time
 
-**Inputs**:
-- FD-360 worktree (~/theapp/btcopilot/.claude/worktrees/FD-360, draft PR #133) —
-  working chat page + resting strip + sandbox on 8889 (relaunch command in
-  STATE.md; real-record DB at /tmp/fd360-sandbox.db).
-- The ratified move language: rulings in ~/fd-corpus/OWNER_RULINGS.md
-  (2026-09-01, batches 1-3 + projection + anxiety-everywhere rule); reference
-  HTML at ~/fd-corpus/design/move-language.html (galleries, ratified) and
-  ~/fd-corpus/design/drilldown.html (three-level drill-down, KNOWN BUGGY — build
-  against the rulings, not this file; its episode/zoom/step machinery is still
-  the best starting sketch).
-- His real diagram: prod dump in the fd-scratch-pg container (diagram 1924) or
-  the FD-360 sandbox real-record DB; his master .fd file for the fuller record.
+**Method rules learned the hard way (follow them)**:
+- Concepts regress to the happy path. Every change is walked against all four
+  test records and adversarially reviewed BEFORE showing him.
+- The rulings file is the standard, not any prototype. Log every new ruling he
+  makes to OWNER_RULINGS.md immediately; visual language changes go through
+  divergent options first — never converge unilaterally.
+- Visual communication to him: show, don't describe; no tables; one-line
+  captions; same-length loop animations; ONE green for all moves.
+- Keep the fd-corpus copy and the artifact in sync on every edit.
 
-**Scope, in order**:
-1. Port the three-level picture into the FD-360 page over the real record
-   (episodes computed server-side from his events; zoom; moves in the ruled
-   language, S/A/F moments included).
-2. Fix the known gesture bugs against the rulings (his walk found: targetless
-   cutoffs mis-drawn, zigzag wavelength, inside/outside reading as toward,
-   arrow-tail bug; MORE EXIST — verify every gesture against OWNER_RULINGS).
-3. Log signals server-side: taps, drill-downs, moves watched, corrections typed
-   in chat (loop engineering ruling in decisions/log.md 2026-09-01).
-4. He chats; corrections land in the record through the existing pipeline.
+**Open design questions carried in**:
+1. One moment firing S+A+F+relationship plays as several board steps with the
+   same caption — collapse to one composite step, or keep per-dimension?
+2. Symptom visual is interim (cross + up/down arrow) — revisit when he says.
+3. Episode clustering over-splits vs his hand count (JoseJ: 4 vs his 3).
 
-**Definition of done**: he can open the sandbox page, chat about his family, see
-the wire update, drill into an episode, watch the moves play correctly per the
-rulings, and every interaction row lands in a signals table he can query.
-
-**Not in scope**: the clinical corpus (extraction still running under its own
-thread), symptom's final visual (interim cross+arrow stands), genogram layout in
-the play-by-play (circle + partner adjacency is the ruled fallback).
+**After his sign-off on the full design**: the build session (chat against the
+real diagram on the FD-360 worktree, loop-engineering signal logging server-side
+— see STATE.md for the sandbox command and PR #133).
