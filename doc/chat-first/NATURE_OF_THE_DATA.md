@@ -137,15 +137,23 @@ is the most dangerous default a visualization could adopt.
 7. The deep past is nodal-heavy turning points; the nearer record carries
    variable shifts — one visual treatment will not fit both.
 
-## 9. Open questions (answer any subset, by number)
+## 9. Open questions (plain words, answer any subset by number)
 
-1. Nodal-only marks: deliberate turning-point class or under-coding? (§2)
-2. Per-case variable palette: clinical signal or coding history? (§3)
-3. Non-up/down direction values in the source: what are they? (§3)
-4. One triangle = several Inside/Outside symbols? (§6)
-5. Dated-span symbols (case_29 style): intended future practice or curation
-   artifact? (§6)
-6. The four-variable point in case_29: deliberate "everything moved here" or
-   over-coding? (§2)
-7. Are the small decades-old clusters intake-remembered periods, or archaeology
-   added while working the case later? (§4)
+1. Events with only the "nodal" checkbox and no variable set (all 13 marked
+   events in case_48 are like this): did you mean "a turning point happened
+   here" as its own kind of statement, or would you set a variable today?
+2. Each case leans on one variable (case_40: every value is anxiety; case_61:
+   nearly all symptom). Because those WERE an anxiety case and a symptom case —
+   or just how you coded back then?
+3. Some variable values are neither up nor down (9 events in case_29, 5 in
+   case_41, 4 in case_03, 2 in case_40). What did you type there — "max",
+   "mixed"? Real values or noise?
+4. case_03 shows 10 "inside" + 7 "outside" symbols: a handful of triangles each
+   drawn with several symbols, or 17 separate triangle observations?
+5. Only hand-built case_29 has relationship symbols with start AND end dates
+   (18 of them). Do you WANT symbols dated as spans going forward, or are
+   undated symbols the normal way?
+6. One case_29 event has all four variables set at once: keep as "everything
+   moved here", or trim it today?
+7. The lone old marks decades back (case_48: single marked events in 1974,
+   1979, 1985): remembered at intake, or added later while working the case?
