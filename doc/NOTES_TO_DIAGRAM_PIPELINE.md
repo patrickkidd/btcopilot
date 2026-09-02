@@ -56,7 +56,15 @@ rather than a model difference (see below). The production pipeline is therefore
 BOTH models + synthesis, ~3 calls/case; accuracy over cost is ruled (the data is
 irreplaceable).
 
-**Baseline-configuration cases (open design point):** some handwritten cases carry
+**Baseline-configuration cases (RULED):** undated relationship symbols wherever a
+symbol can be matched; symbol matching uses the operational definitions from the
+SARF literature review (doc/sarf-definitions/) embedded in the interpretation and
+synthesis prompts — never the model's generic priors. Gap: fusion/toward/away have
+no lit-review files; until defined, material suggesting them routes to unplaced
+rather than being symbolized (conservative default). Original open question below
+kept for the record.
+
+**Baseline-configuration cases (original open design point):** some handwritten cases carry
 almost no dated events — they describe the family's baseline emotional
 configuration: anxiety-binding mechanisms, who's who structure, implied triangle
 positions, with ordering only implied by narrative sequence. Forcing these into
