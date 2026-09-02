@@ -4,6 +4,14 @@ Read [STATE.md](STATE.md) FIRST. Standing rules from the previous briefs still
 bind (oracle store, content-blind for clinic data, plain words, TLDR first,
 one-list decision questions, two-clocks upkeep).
 
+**GATE (added 2026-09-01): the build does NOT start until Patrick approves the
+pixel-perfect interactive mockup of the actual app screen** — the concepts must be
+seen flowing in the real design first. Mockup: ~/fd-corpus/design/coach-screen.html
+(published artifact): phone frame, his real record pinned above a scripted coach
+chat, chips aiming the picture, three levels in place, ruled move language in the
+play-by-play, typing adds a moment to the wire. Iterate that until approved, THEN
+run the session below.
+
 ## Session — chat against the real diagram, with the ruled picture
 
 **Goal**: Patrick chats with the coach against HIS real record and the pinned
