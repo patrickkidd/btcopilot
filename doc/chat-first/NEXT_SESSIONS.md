@@ -1,104 +1,44 @@
-# Chat-first rebuild — kickoff briefs for the next sessions
+# Chat-first rebuild — kickoff brief for the next session
 
-Each brief is self-contained. Both sessions start from this worktree
-(/Users/patrick/worktrees/fall-2026-direction/btcopilot, branch `fall-2026-direction`),
-read [STATE.md](STATE.md) FIRST, and obey the standing
-rules below. Patrick starts them; they do not start themselves.
+Read [STATE.md](STATE.md) FIRST. Standing rules from the previous briefs still
+bind (oracle store, content-blind for clinic data, plain words, TLDR first,
+one-list decision questions, two-clocks upkeep).
 
-## Standing rules that bind both sessions
+## Session — chat against the real diagram, with the ruled picture
 
-1. **Patrick's warning is law**: this data looks simple and is extremely nuanced;
-   general genogram/therapy priors do not apply. Propose; he corrects. Never present
-   an inferred ranking or rubric as settled. **The human oracle is the binding input to all agentic development**: the store
-   (SPEC + rulings + evidence) lives in the PRIVATE fdserver repo at doc/oracle/;
-   cite rulings by id; capture his new statements there immediately; newest wins
-   via SUPERSEDED chains.
-2. **Content-blind protocol** until the Anthropic BAA exists: only whitelisted
-   structure from ~/fd-corpus/clinic/ enters model context; free text never; the
-   corpus never enters a repo; PRIVATE_case_mapping.md is for his eyes only and its
-   filenames never enter model context.
-3. **Max effort only on the filtered set**, after his tier rulings. Ruled order:
-   filter → A (nature-of-data document) → B (visual choices) → build. Nothing visual
-   before A is ratified.
-4. Communication: plain words, his terms, no invented vocabulary; decision questions
-   self-contained in ONE numbered list with inline examples; no interim sub-agent
-   chatter — one consolidated delivery per work unit; TLDR first.
-5. **PII rule**: real user emails (prod_candidates.csv), case filenames, prod
-   identifiers, and corpus values never appear in repo docs or commits; reference
-   cases as case_NN only. Corpus numbers are never trusted from docs — recompute from
-   ~/fd-corpus/clinic/index.json.
-6. Two-clocks upkeep: append what happens to HISTORY.md, revise STATE.md, and add
-   his new teachings to OWNER_RULINGS.md as they occur.
+**Goal**: Patrick chats with the coach against HIS real record and the pinned
+picture above the chat is generated live from it: wire-with-episode-clusters →
+tap-zoom into an episode → the moves played in the ratified move language. Every
+interaction is logged (loop engineering). This is the first real loop.
 
-## Session 1 — corpus subset for FUNCTION
+**Inputs**:
+- FD-360 worktree (~/theapp/btcopilot/.claude/worktrees/FD-360, draft PR #133) —
+  working chat page + resting strip + sandbox on 8889 (relaunch command in
+  STATE.md; real-record DB at /tmp/fd360-sandbox.db).
+- The ratified move language: rulings in ~/fd-corpus/OWNER_RULINGS.md
+  (2026-09-01, batches 1-3 + projection + anxiety-everywhere rule); reference
+  HTML at ~/fd-corpus/design/move-language.html (galleries, ratified) and
+  ~/fd-corpus/design/drilldown.html (three-level drill-down, KNOWN BUGGY — build
+  against the rulings, not this file; its episode/zoom/step machinery is still
+  the best starting sketch).
+- His real diagram: prod dump in the fd-scratch-pg container (diagram 1924) or
+  the FD-360 sandbox real-record DB; his master .fd file for the fuller record.
 
-**Goal**: needle through the anonymized corpus with Patrick to define the subset
-useful for timeline-data inference toward visualizing biological family-system
-FUNCTION (the SARF process over time), then run phase A on it.
+**Scope, in order**:
+1. Port the three-level picture into the FD-360 page over the real record
+   (episodes computed server-side from his events; zoom; moves in the ruled
+   language, S/A/F moments included).
+2. Fix the known gesture bugs against the rulings (his walk found: targetless
+   cutoffs mis-drawn, zigzag wavelength, inside/outside reading as toward,
+   arrow-tail bug; MORE EXIST — verify every gesture against OWNER_RULINGS).
+3. Log signals server-side: taps, drill-downs, moves watched, corrections typed
+   in chat (loop engineering ruling in decisions/log.md 2026-09-01).
+4. He chats; corrections land in the record through the existing pipeline.
 
-**Inputs**: ~/fd-corpus/clinic/index.json (volume + active/scaffold columns) and
-case files; ~/fd-corpus/PRIVATE_case_mapping.md (he opens diagrams in his app from
-it); the oracle store (fdserver doc/oracle/); doc/DRAWABILITY.md; doc/chat-first/STATE.md;
-optionally ~/fd-corpus/design/prod_candidates.csv (other users' diagrams he may
-admit after eyeballing).
+**Definition of done**: he can open the sandbox page, chat about his family, see
+the wire update, drill into an episode, watch the moves play correctly per the
+rulings, and every interaction row lands in a signals table he can query.
 
-**Where it starts**: the active-basis cut already exists — 11 cases ≥30 active
-events, 13 at 10–29 (recompute from index.json — doc numbers are never authoritative).
-Candidates are the active-bearing cases. ALSO unruled: the four cases at 1–9 active
-(case_01/10/28/42) — ask, don't infer. Present him the tier lists with per-case
-one-line shape profiles; he eyeballs via the mapping file and rules in/out (he
-accepts the marker may miss 1–3 pertinent events per case). Watch for his correction on
-zero-active cases that are actually worked-but-unflagged (coding style) — those may
-re-enter.
-
-**Then phase A (max effort, filtered set only)**: produce the document explaining
-the nature of this data — what a worked case is, how scaffold and active material
-relate, what the SARF variables + nodal flags + relationship moves actually encode
-across HIS cases, where uncertainty lives and why, with calibrated confidence and
-one-line questions wherever inference runs out. He corrects the document; only the
-ratified version feeds phase B (visual choices for function).
-
-**Outputs**: the ratified nature-of-data document (location: this doc/chat-first/
-package, name it NATURE_OF_THE_DATA.md); the ruled FUNCTION subset recorded in
-the oracle store (fdserver doc/oracle/rulings.md); HISTORY/STATE updated.
-
-**First concrete step**: read STATE.md, verify ~/fd-corpus/clinic/index.json has
-active_events columns, present the tier lists + the five worst volume-vs-active
-illusions, and ask for his in/out rulings. Nothing else until they arrive.
-
-## Session 2 — corpus subset for STRUCTURE
-
-**Goal**: define the subset good for diagram STRUCTURE work (biological family-system
-structure: people, pair-bonds, parent-child depth, generations, relationship
-symbols), toward structure-side inference and eventually the diagram picture.
-
-**Inputs**: same as session 1.
-
-**KNOWN BLOCKER (fix first)**: the anonymized corpus has NO parent-child links — the
-whitelist never extracted childOf/parents, and birth events name only the child, so
-generational dated depth, parent-child completeness, and marriage-to-birth sequencing
-are currently UNCOMPUTABLE from the corpus. Fix path: extend rebuild.py's whitelist
-with parent-child person-id PAIRS (anonymous ids only — content-blind-compatible),
-regenerate. That whitelist extension needs Patrick's protocol authorization: it is
-this session's FIRST question to him, before anything else.
-
-**Where it starts**: candidates are the zero-active-but-structure-rich cases (28
-zero-active; the richly-structured ones among them — people count, relationship
-symbols, marriage events, generational span) PLUS the structural layer of the
-function-rich cases. Key inversion to keep straight: scaffold births are
-diagnostically inert for FUNCTION but are first-class SIGNAL for structure (they
-establish generations); the active/scaffold split serves opposite roles here.
-
-**Process**: propose the structure-relevant signal set as QUESTIONS for Patrick
-before any scoring (candidate signals: generational dated depth, parent-child
-completeness, relationship-symbol coverage and kinds, marriage sequencing —
-all hypotheses until he corrects). Then the same loop: tier lists → his eyeball →
-in-list → max-effort structure-side analysis feeding the same NATURE_OF_THE_DATA.md
-(structure chapter) → his corrections.
-
-**Outputs**: ruled STRUCTURE subset in the oracle; structure chapter of the
-nature document; HISTORY/STATE updated.
-
-**First concrete step**: read STATE.md, then present the proposed structure-signal
-questions (one numbered list, inline examples from anonymized cases) — no scoring
-before he answers.
+**Not in scope**: the clinical corpus (extraction still running under its own
+thread), symptom's final visual (interim cross+arrow stands), genogram layout in
+the play-by-play (circle + partner adjacency is the ruled fallback).

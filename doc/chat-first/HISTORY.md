@@ -490,3 +490,22 @@ triangles, narrative order, almost no dates) rather than timelines — extractio
 design for that class awaits his ruling. He also ruled the archival transcription
 question: keep verbatim per-PDF transcripts as separate output, never as a chained
 extraction step. Cursory .md review does not scale; the app is the review surface.
+
+## The move language is ratified; the visual concept phase closes
+
+The creative rounds converged and Patrick ratified a complete visual vocabulary
+(the "move language") for the picture above the chat: ten relationship moves and
+three variable shifts, each an 8-second felt animation in ONE action-green, built
+on the field vocabulary (concentric rings = a person's emotional field; tremble =
+being moved by it; the wall + field shadow = withdrawal). All rulings are in
+~/fd-corpus/OWNER_RULINGS.md (2026-09-01 entries, batches 1-3 + projection
+ratification + the anxiety-everywhere rule). Reference implementations (galleries
++ the three-level drill-down wired to two real records) are durable at
+~/fd-corpus/design/move-language.html, drilldown.html, drilldown_data.json, and
+published as artifacts. The drill-down integration is KNOWN BUGGY (his walk found
+cutoff/inside/outside/zigzag defects; some fixed, more remain) — the ratified
+rules, not the prototype, are the standard to build against. Symptom is interim
+(cross + up/down arrow, revisit). The three-level shape is ruled: wire with
+episode clusters → zoom into the episode (words readable) → the moves played
+step-by-step in the ruled language; claims live in chat; loop engineering is the
+organizing principle (every tap/correction collected).
