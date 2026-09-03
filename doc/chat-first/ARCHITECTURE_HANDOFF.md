@@ -4,6 +4,43 @@ Everything below came out of the session that designed and built the chat-first 
 (2026-09-02/03). It is scope and open questions for a dedicated architecture session,
 not a plan. Nothing here is ruled unless it says so.
 
+## The vision this has to serve (STATE.md "The product (ruled)" — read it, not this summary)
+
+We are finishing what was started on the drawing board, not designing a new product.
+The architecture is judged by whether it can carry these, all previously ruled:
+
+- **"A coach who never forgets your family."** The family record — structure plus
+  timeline — is the coach's visible, touchable memory, **growing for years**. Longevity
+  is an architectural requirement, not a feature.
+- **Conversation drives everything AND manual tweaking stays**: chat tool calls control
+  everything in the app with **full bidirectional reactivity** (oracle R-0055). This is
+  the single strongest constraint on the write path — the agent and the browser must be
+  clients of the same thing, or reactivity is faked.
+- **Two clocks**: chat is the event clock and is never rewritten; the record is the
+  state clock and corrections change it. A document plus an append-only command log is
+  the natural shape of exactly this — the session should notice that the two-clocks
+  ruling already half-specifies the storage design.
+- **One picture pinned above the chat**, strip-small at rest, always current. "Always
+  current" across an agent worker, a browser and background extraction is a concurrency
+  requirement.
+- **No modes, one agent**; coaching, app-help, corrections and journaling are registers
+  routed from context. Corrections are ordinary turns, which is why a correction must be
+  as cheap and reversible as any other write.
+- **Lanes are queries over the existing schema, not entities.** Whatever replaces the
+  format must keep that true, or lanes become tables and the product becomes a data tool.
+- **Loop engineering**: every tap, chip, correction and drill is collected. The log is
+  the obvious home for that signal too.
+- **The acceptance test is the felt shift**, one or two brain-rearranging correlations
+  per user — not coverage, not a dataset. Coverage serves only better coach questions and
+  the timeline's own correlations.
+- Drawing and asking rules stay canonical in [../DRAWABILITY.md](../DRAWABILITY.md).
+- **The human oracle binds all agentic development**; the store is IP and lives in
+  fdserver. Architecture decisions get ruling ids like everything else.
+
+Working order was ruled too: filter → document the nature of the data → model-optimized
+visual choices → build. The chat-first build jumped ahead of that deliberately, to get
+something testable. The architecture session is where it rejoins the plan.
+
 **Scope of that session: the parent repo with worktrees in btcopilot and fdserver.**
 fdserver holds the prompts and the valuable IP and must be in scope. familydiagram is
 out — that trajectory ends with the Qt front end, and the only tie back to it is the
