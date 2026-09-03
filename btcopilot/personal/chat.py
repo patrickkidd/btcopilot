@@ -1,6 +1,6 @@
 import logging
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from flask import g
 
 from btcopilot.extensions import db, ai_log
@@ -12,8 +12,8 @@ from btcopilot.personal.intake import (
 )
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.prompts import get_conversation_flow_prompt
+from btcopilot.personal.refs import Ref, parse
 from btcopilot.schema import DiagramData
-
 
 _log = logging.getLogger(__name__)
 
@@ -34,6 +34,7 @@ def summarize_committed_state(diagram_data: DiagramData | None) -> str:
 @dataclass
 class Response:
     statement: str
+    refs: list[Ref] = field(default_factory=list)
 
 
 def ask(
@@ -73,6 +74,9 @@ def ask(
 
     ai_response = _generate_response(system_instruction, turns, model=model)
     ai_log.info(f"AI response: {ai_response}")
+    # The transcript stores the words the user saw; reference markup is chat
+    # metadata and must not reach the record or the extraction prompt.
+    ai_response, refs = parse(ai_response)
 
     ai_statement = Statement(
         discussion_id=discussion.id,
@@ -81,7 +85,7 @@ def ask(
         order=discussion.next_order(),
     )
     db.session.add(ai_statement)
-    return Response(statement=ai_response)
+    return Response(statement=ai_response, refs=refs)
 
 
 def _generate_response(

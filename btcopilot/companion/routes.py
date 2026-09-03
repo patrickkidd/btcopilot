@@ -1,84 +1,19 @@
-import logging
-
-from flask import Blueprint, jsonify, render_template, request
-from flask_wtf.csrf import CSRFError, generate_csrf
+from flask import jsonify, render_template
 
 from btcopilot import auth
-from btcopilot.auth import _authenticate_training_app
+from btcopilot.companion.blueprint import bp, current_session
+from btcopilot.companion.sessions import statements_payload
 from btcopilot.companion.timeline import build_timeline
-from btcopilot.extensions import csrf, db
-from btcopilot.personal.chat import Response, ask
 from btcopilot.personal.models import Discussion
-from btcopilot.personal.routes.discussions import (
-    _create_discussion,
-    _sync_chat_speakers,
-)
 from btcopilot.schema import DiagramData, get_all_pdp_item_ids
-
-_log = logging.getLogger(__name__)
-
-bp = Blueprint(
-    "companion",
-    __name__,
-    url_prefix="/companion",
-    template_folder="templates",
-    static_folder="static",
-)
-
-
-@bp.before_request
-def _authenticate():
-    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
-        csrf.protect()
-    _authenticate_training_app()
-
-
-@bp.errorhandler(CSRFError)
-def _csrf_error(e):
-    _log.warning(f"CSRF error: {e.description} from {request.remote_addr}")
-    return e.description, 400
-
-
-@bp.context_processor
-def _inject_globals():
-    return {"csrf_token": generate_csrf}
-
-
-def _discussion(user, create: bool = False) -> Discussion | None:
-    discussion = (
-        Discussion.query.filter_by(user_id=user.id)
-        .filter(Discussion.diagram_id == user.free_diagram_id)
-        .order_by(Discussion.id.desc())
-        .first()
-    )
-    if discussion is None and create:
-        discussion = _create_discussion({})
-    return discussion
 
 
 @bp.route("/")
 def index():
     user = auth.current_user()
-    discussion = _discussion(user)
-    statements = []
-    if discussion:
-        for s in discussion.statements:
-            role = "coach" if s.speaker_id == discussion.chat_ai_speaker_id else "user"
-            statements.append({"role": role, "text": s.text})
+    discussion = current_session(user)
+    statements = statements_payload(discussion) if discussion else []
     return render_template("companion/index.html", statements=statements, user=user)
-
-
-@bp.route("/chat", methods=["POST"])
-def chat():
-    if request.headers.get("Content-Type") != "application/json":
-        return ("Only 'Content-Type: application/json' is supported", 415)
-    user = auth.current_user()
-    statement = request.json["statement"]
-    discussion = _discussion(user, create=True)
-    _sync_chat_speakers(discussion)
-    response: Response = ask(discussion, statement)
-    db.session.commit()
-    return jsonify({"statement": response.statement, "discussion_id": discussion.id})
 
 
 @bp.route("/timeline")
@@ -112,7 +47,3 @@ def _extraction_status(user, diagram, data: DiagramData) -> dict:
                     state = "chat_ahead"
                     break
     return {"state": state, "up_to_date": state == "current"}
-
-
-def init_app(app):
-    app.register_blueprint(bp)

@@ -1,8 +1,12 @@
 import contextlib
+import datetime
+import re
 
+import flask.testing
 import pytest
 from mock import patch
 
+import btcopilot
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.tests.pro.conftest import pro_client, subscriber, admin
@@ -35,12 +39,43 @@ def chat_flow(request):
                     return_value=response,
                 )
             )
+            title = marker.kwargs.get("title", "A session title")
+            stack.enter_context(
+                patch(
+                    "btcopilot.personal.models.discussion.response_text_sync",
+                    return_value=title,
+                )
+            )
             ret = {
                 "response": response,
+                "title": title,
             }
         else:
             ret = None
         yield ret
+
+
+@pytest.fixture
+def web(flask_app, test_user):
+    """Browser client for the companion app: a logged-in session cookie, the
+    way the page itself is served."""
+    test_user.roles = btcopilot.ROLE_SUBSCRIBER
+    db.session.merge(test_user)
+    db.session.commit()
+    flask_app.test_client_class = flask.testing.FlaskClient
+    with flask_app.test_client(use_cookies=True) as client:
+        client.user = test_user
+        with client.session_transaction() as sess:
+            sess["user_id"] = test_user.id
+            sess["logged_in_at"] = datetime.datetime.now(
+                datetime.timezone.utc
+            ).isoformat()
+        yield client
+
+
+def csrf_token(web) -> str:
+    page = web.get("/companion/").get_data(as_text=True)
+    return re.search(r'name="csrf-token" content="([^"]+)"', page).group(1)
 
 
 @pytest.fixture

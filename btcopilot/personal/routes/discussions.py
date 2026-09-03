@@ -352,7 +352,11 @@ def commit_pdp(discussion_id: int):
         if present:
             # Must run before apply_parent_edits: its trailing remap rewrites
             # negative bond refs on staged parents rows to committed ids.
-            diagram_data.commit_pdp_items(present)
+            id_mapping = diagram_data.commit_pdp_items(present)
+            # Two-way traceability: the committed events now carry the
+            # discussion that coded them. The statement is not known here —
+            # extraction runs over a window, not a single statement.
+            diagram_data.stamp_event_source(list(id_mapping.values()), discussion.id)
         if parent_edits:
             diagram_data.apply_parent_edits()
         ok, _ = diagram.update_with_version_check(

@@ -1069,6 +1069,38 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 
 ---
 
+## 2026-09
+
+### 2026-09-02: Chat-first companion API — chip contract, save semantics, session switching
+
+**Context:** Phase 2 of the chat-first companion build (`doc/chat-first/BUILD_SPEC.md`): the REST
+surface behind the one-page coach — sessions, preferences, account, event CRUD, coach chips,
+traceability.
+
+**Decisions accepted:**
+- **Chip markup is `[[kind:target|label]]`** with four kinds (chapter, events, person, range),
+  parsed in `personal/refs.py` inside `ask()`. The transcript stores the label text only, so markup
+  never reaches the record or the extraction prompt. Unresolvable references are dropped rather than
+  shown pointing at nothing; a reply naming nothing yields an empty list and nothing is inferred
+  from prose. The instruction lives in `COACH_REFERENCE_INSTRUCTION`; fdserver overrides it, and an
+  override that drops it simply turns chips off.
+- **Event rules are enforced by normalizing on save, not by refusing the write.** A saved event
+  drops values that no longer apply to its kind (a shift switched to a death loses its shift
+  values), so no stored event can violate the rules. Unknown field names are still refused outright.
+- **No server-side "current session" pointer.** Sessions list by last activity, so the session the
+  user last spoke in is the one the page returns to. Switching is a client concern plus a post to
+  that session's statements.
+- **Another user's session is a 404, not a 403** — the app never confirms a session it will not show.
+- **Traceability is stamped at PDP commit**, where the discussion is known; the statement stays null
+  because extraction runs over a window, not a single statement. Stored as plain string keys on the
+  event chunk (never enum keys — those chunks are pickled for the Pro app).
+
+**Rejected:** adding `discussionId`/`statementId` fields to `schema.Event` — the extraction response
+schema is generated from that dataclass, so new fields would change the extraction contract and
+require an F1 run.
+
+---
+
 ## 2026-08-25: Ticket lifecycle rules — Jira canonical, built-in worktrees, PR as observation surface
 
 **Context:** Audit of the non-skill instruction context found no ticket lifecycle: root CLAUDE.md still named the deprecated MVP dashboard as source of truth (contradicting this repo's CLAUDE.md), worktree paths were hand-rolled under `~/worktrees/<slug>/<repo>` while the Claude Code harness enforces its own `<repo>/.claude/worktrees/` tooling, and a background job following the harness would create an empty parent-repo worktree (the parent gitignores the three child repos) or fall back to editing origin clones. Jira credentials/endpoints lived only in archived skills.

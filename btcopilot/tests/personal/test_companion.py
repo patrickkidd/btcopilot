@@ -1,5 +1,4 @@
 import datetime
-import re
 
 import flask.testing
 import pytest
@@ -9,32 +8,12 @@ from btcopilot.companion.seed import seed_diagram_data
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType, Statement
 from btcopilot.schema import Event, EventKind
+from btcopilot.tests.personal.conftest import csrf_token
 
 
 @pytest.fixture(autouse=True)
 def no_auto_auth(monkeypatch):
     monkeypatch.delenv("FLASK_AUTO_AUTH_USER", raising=False)
-
-
-@pytest.fixture
-def web(flask_app, test_user):
-    test_user.roles = btcopilot.ROLE_SUBSCRIBER
-    db.session.merge(test_user)
-    db.session.commit()
-    flask_app.test_client_class = flask.testing.FlaskClient
-    with flask_app.test_client(use_cookies=True) as client:
-        client.user = test_user
-        with client.session_transaction() as sess:
-            sess["user_id"] = test_user.id
-            sess["logged_in_at"] = datetime.datetime.now(
-                datetime.timezone.utc
-            ).isoformat()
-        yield client
-
-
-def _csrf_token(web) -> str:
-    page = web.get("/companion/").get_data(as_text=True)
-    return re.search(r'name="csrf-token" content="([^"]+)"', page).group(1)
 
 
 def test_page_loads(web):
@@ -57,7 +36,7 @@ def test_timeline_shows_own_data_only(web, test_user):
     diagram = test_user.free_diagram
     diagram.set_diagram_data(seed_diagram_data())
     db.session.commit()
-    token = _csrf_token(web)
+    token = csrf_token(web)
     data = web.get("/companion/timeline").get_json()
     assert {p["id"] for p in data["people"]} == {1, 2, 3, 4, 5, 6, 7}
     assert {b["id"] for b in data["pair_bonds"]} == {8, 9}
@@ -81,7 +60,7 @@ def test_timeline_empty_for_user_without_diagram(flask_app, test_user_2):
 
 @pytest.mark.chat_flow(response="a coach reply")
 def test_chat_round_trip(web, test_user):
-    token = _csrf_token(web)
+    token = csrf_token(web)
     response = web.post(
         "/companion/chat",
         json={"statement": "hello there"},
@@ -104,7 +83,7 @@ def test_chat_round_trip(web, test_user):
 
 @pytest.mark.chat_flow
 def test_chat_reuses_discussion(web, test_user):
-    token = _csrf_token(web)
+    token = csrf_token(web)
     first = web.post(
         "/companion/chat", json={"statement": "one"}, headers={"X-CSRFToken": token}
     ).get_json()

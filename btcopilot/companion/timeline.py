@@ -5,7 +5,13 @@ gap vs recorded no-change, undated shelf, deterministic order questions."""
 import datetime
 
 from btcopilot.personal.intake import _enum_val, _parse_iso_date
-from btcopilot.schema import DateCertainty, DiagramData, EventKind, VariableShift
+from btcopilot.schema import (
+    DateCertainty,
+    DiagramData,
+    EventKind,
+    TraceKey,
+    VariableShift,
+)
 
 GAP_DAYS = 730
 STRIP_MAX_LANES = 2
@@ -309,7 +315,17 @@ def build_timeline(data: DiagramData) -> dict:
         {"min": drawn_dates[0], "max": drawn_dates[-1]} if drawn_dates else None
     )
 
+    coded_in = {
+        event["id"]: {
+            "discussion_id": event[TraceKey.Discussion.value],
+            "statement_id": event.get(TraceKey.Statement.value),
+        }
+        for event in data.events
+        if isinstance(event, dict) and event.get(TraceKey.Discussion.value)
+    }
+
     return {
+        "coded_in": coded_in,
         "people": [
             {"id": p["id"], "name": _person_label(p), "primary": bool(p.get("primary"))}
             for p in people
