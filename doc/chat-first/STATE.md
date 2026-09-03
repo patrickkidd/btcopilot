@@ -65,6 +65,39 @@ login IS signup for later self-serve). Migration from Pro pickles: one-shot conv
 gate = positions exact + count differences explained; hard cutover (old Pro becomes
 export-only). Known debt to schedule: secrets committed in compose need rotation.
 
+## Where the build stands (live — revise, do not append)
+
+A build session produced a running app on the approved design: `/companion`, behind the
+existing login, wired to the real backend, run from this worktree on port 8889 against a
+scratch database holding Patrick's own record. Draft PRs: btcopilot #135, fdserver #29.
+
+**Patrick's live assessment of it (2026-09-03), carried verbatim because it is unresolved:**
+
+> "This feels like our core vision for this is not yet stable. The goal is to make chat
+> the UI for everything. I do not want the user to have to worry about complicated edit
+> dialogs, they are just there in principle, not as part of the main user journey. I
+> originally entitled this new project as Claude Code for Family Diagram. So it sounds
+> like this code is crippled for a number of reasons partially from the original vision
+> not being clear, and partly because you didn't complete the runnable code — and there
+> is nothing more to test in this code than what I had already tried out in the
+> familydiagram frontend?"
+>
+> "We need to take a step back and clarify the entire vision so that tactical questions
+> about what to add into this demo are properly aligned and not band-aids."
+
+Facts bearing on that, established rather than inferred:
+- R-0055 rules that chat tool calls control everything with full bidirectional
+  reactivity. The built app has **no tool calls** — the coach talks and points at the
+  record but cannot change it. Manual editing works. The build inverted the ruling.
+- **No user journeys or stories exist in any document.** This is why the build could be
+  specified wrongly without anyone noticing.
+- Ruled good during the build: the play-by-play, the coach-driven picture, and the
+  chapter view that shows no words until the coach names them or you tap.
+- Unverified: whether a live coach actually cites the reference index it is given.
+- Never ruled: the fate of the pending-extraction pool (see ARCHITECTURE_HANDOFF.md).
+- Storage under it is a pickled whole-document write under an optimistic lock; the page
+  is hand-written JavaScript where the ruling says a Vite/TypeScript PWA.
+
 ## Prototyping status (honest)
 
 - **FD-360 page** (PR #133, draft, worktree ~/theapp/btcopilot/.claude/worktrees/FD-360):
