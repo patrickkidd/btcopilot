@@ -289,15 +289,38 @@ cheaper models; mechanics on the cheapest.
    files (see session report); (e) his feature-grouped ratification pass over the
    initial 64-ruling set.
 
-## What's next
+## What's next — the architectural step back (in progress, 2026-09-03)
 
-**The architectural step back (in progress, 2026-09-03).** A brainstorm that goes back to
-the original brainstorm and fills its gaps, at vision and architecture altitude, on the
-big model used sparingly (no agent panels; Patrick rules in the main thread). Scope he
-named: the smallest-most-powerful-UI principle; what to do with the Pro app, from first
-principles; the data format — its relation to the existing format, reuse-and-modernize vs
-new-with-migration, moving off the pickle and whole-diagram optimistic writer toward
-multi-reader/writer synchronization in the manner of Google Docs (possibly the biggest
-item); and the prototype gaps listed under "Where the build stands" (no tool calls, no
-user journeys, the pending-pool fate), which were never ruled. Rulings land in the oracle
-store and here as they are made.
+A brainstorm that returns to the original brainstorm and fills its gaps, walked from
+highest altitude to lowest, **no mixing**. Ruled order:
+
+1. **The UI principle** — what "the smallest and most powerful simple UI we can test and
+   iterate on" includes and excludes. Patrick has his own thoughts; get them before
+   generating options.
+2. **The Pro app, from first principles** — the export-only hard cutover was ruled on
+   zero retention evidence; re-derive.
+3. **User journeys** — none exist anywhere (why the demo could be built inverted); the
+   minimum set that makes the prototype checkable.
+4. **Architecture as a concept** — the tool surface (what chat can do to the record; the
+   demo has no tool calls, inverting R-0055) and the pending-pool fate (accept-as-command
+   vs review gate; where the ground-truth signal lives). Includes the conceptual half of
+   the format question: is the model's *shape* too restrictive for what a coach needs to
+   say (is a moment always an event; are clusters first-class; does anything need a
+   time range).
+5. **The data format, mechanically** — whether the existing format fits what 1–4 ruled:
+   pickle + whole-diagram optimistic writes vs a document + command log vs Google-Docs-style
+   multi-reader/writer sync; reuse-and-modernize vs new-with-migration.
+6. **Front-end shape for the MVP** — last.
+
+**Model split (ruled):** 1–4 on the big model (small, ambiguous input); 5–6 on Opus
+reading the codebase (large, concrete input). The session boundary sits between 4 and 5:
+a fresh Opus session picks up 5–6 from this file alone.
+
+**Session discipline for 1–4 (ruled):** the big model is on paid credits — no agent
+panels, no sub-agents unless a fact is needed (then Sonnet/Haiku), short turns, Patrick
+rules in the main thread, every ruling written here and to the oracle store as it is
+made. **Read this file only to start; do not read HISTORY or the handoff brief unless a
+specific fact is needed** — context size is the cost driver. At each altitude, name in
+one line any constraint from below that could invalidate the ruling, then move on.
+
+Pinned (not next): the corpus/subset sessions in [NEXT_SESSIONS.md](NEXT_SESSIONS.md).
