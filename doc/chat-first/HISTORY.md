@@ -509,3 +509,24 @@ rules, not the prototype, are the standard to build against. Symptom is interim
 episode clusters → zoom into the episode (words readable) → the moves played
 step-by-step in the ruled language; claims live in chat; loop engineering is the
 organizing principle (every tap/correction collected).
+
+## 2026-09-03 — the architectural step back begins
+
+Patrick corrected the record's framing: the corpus (phases A/B, the subset sessions,
+notability) was a branch of the stream, not the main stream, and was pinned in favor of
+generating more data through chat. The main stream landed on the minimum viable
+prototype as a mobile app so he can just chat. On going to use it he found flaws in the
+demo that overlap with core architectural issues the original vision and plan never
+addressed. His governing principle, stated now: build the smallest and most powerful
+simple UI that we can test and iterate on.
+
+He opened a brainstorm session to take the architectural step back from the original
+brainstorm and fill the gaps: the UI principle; the Pro app from first principles; the
+data format (relation to the existing format, reuse vs new-with-migration, moving off the
+pickle and optimistic whole-diagram writer toward multi-reader/writer synchronization
+like Google Docs — "might even be the biggest thing"); and the prototype gaps this
+session's read of the corpus surfaced (the built app has no tool calls, inverting the
+ruling that chat controls everything; no user journeys exist anywhere; the pending-pool
+fate is unruled). Working constraint he set: the big model is on paid credits and is
+used judiciously — only where vision/architecture judgment is needed, the session bounded,
+no runaway spend.

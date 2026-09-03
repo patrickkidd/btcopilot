@@ -203,13 +203,19 @@ appear in repo docs or commits; sessions reference cases as case_NN only.
 A disposable Postgres container `fd-scratch-pg` (port 55432) holds the restored July
 prod dump for any further prod queries; `docker rm -f fd-scratch-pg` when done.
 
-## The ruled working order (violations get killed)
+## The main stream and the pinned branch (corrected 2026-09-03)
 
-**Filter (Patrick rules by example/correction) → A: max-effort document on the nature
-of this data → B: max-effort, model-optimized generation of visual-representation
-choices → build.** Nothing visual is derived before A is ratified. Model policy:
-judgment on the big model; max effort ONLY on the filtered corpus; implementation to
-precise spec on cheaper models; mechanics on the cheapest.
+The corpus work (phases A and B above — filter → nature-of-the-data document →
+model-optimized visual choices → build) was a **branch of the stream, not the main
+stream**, and Patrick pinned it in favor of generating more data through chat. The main
+stream landed on: **the minimum viable prototype as a mobile app so he can just chat.**
+Governing principle (his words, 2026-09-03): **build the smallest and most powerful
+simple UI that we can test and iterate on.** When he went to use the prototype he found
+flaws in the demo that overlap with core architectural questions the original vision and
+plan never addressed. The corpus, the FUNCTION/STRUCTURE-subset sessions and the
+notability pipeline stay documented below as pinned threads; they are not the next step.
+Model policy still holds: judgment on the big model; implementation to precise spec on
+cheaper models; mechanics on the cheapest.
 
 ## Pending threads (designed, not landed)
 
@@ -285,5 +291,13 @@ precise spec on cheaper models; mechanics on the cheapest.
 
 ## What's next
 
-The two sessions in [NEXT_SESSIONS.md](NEXT_SESSIONS.md): FUNCTION-subset and
-STRUCTURE-subset needling, both gated on Patrick's tier rulings, both feeding phase A.
+**The architectural step back (in progress, 2026-09-03).** A brainstorm that goes back to
+the original brainstorm and fills its gaps, at vision and architecture altitude, on the
+big model used sparingly (no agent panels; Patrick rules in the main thread). Scope he
+named: the smallest-most-powerful-UI principle; what to do with the Pro app, from first
+principles; the data format — its relation to the existing format, reuse-and-modernize vs
+new-with-migration, moving off the pickle and whole-diagram optimistic writer toward
+multi-reader/writer synchronization in the manner of Google Docs (possibly the biggest
+item); and the prototype gaps listed under "Where the build stands" (no tool calls, no
+user journeys, the pending-pool fate), which were never ruled. Rulings land in the oracle
+store and here as they are made.

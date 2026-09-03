@@ -1186,3 +1186,13 @@ require an F1 run.
 
 **Revisit trigger:** the harness gains multi-repo worktree support; or the resolver script lands and the hand procedure in root CLAUDE.md gets replaced; or a private repo goes public / plan upgrades (then apply the same branch protection).
 
+
+---
+
+## 2026-09-03: Corpus work pinned; the main stream is the chat MVP; architectural step back opened
+
+**Context:** STATE.md carried the corpus phases (filter → nature-of-the-data → visual choices → build) as the ruled working order and named the subset sessions as next. Patrick clarified that this was a side branch he had already pinned in favor of generating data through chat, and that the main stream had landed on a minimum viable mobile chat prototype. Using the prototype exposed gaps that trace back to questions the original vision never settled.
+
+**Decision (Patrick):** The corpus/subset/notability threads are pinned, not next. The governing principle is the smallest and most powerful simple UI that can be tested and iterated on. A brainstorm session takes the architectural step back and fills the gaps: the UI principle, the Pro app from first principles, the data format (reuse-and-modernize vs new-with-migration; off the pickle and whole-diagram optimistic writer toward multi-reader/writer sync), and the unruled prototype gaps (no tool calls, no user journeys, pending-pool fate). Big-model spend is bounded: judgment only, no agent panels by default.
+
+**Revisit trigger:** the brainstorm's rulings land (each gets its own entry and oracle ruling id); or the chat MVP produces enough data to reopen the corpus thread.
