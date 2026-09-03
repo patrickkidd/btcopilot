@@ -1,7 +1,9 @@
 """Seed a throwaway companion-test diagram for a user: 6-person family, 2
-couples, 26 dated events with mixed certainty, exercising every DRAWABILITY
-rule (3-point line, dots-only lane, gap, explicit same, touching approximate
-ranges, undated shelf). Never touches any diagram it did not create.
+couples, dated events with mixed certainty, exercising every DRAWABILITY rule
+(3-point line, dots-only lane, gap, explicit same, touching approximate ranges,
+undated shelf) and every move the play-by-play can draw (both directions of all
+three shift variables, and all twelve relationship kinds). Never touches any
+diagram it did not create.
 
 Usage: FLASK_CONFIG=development python -m btcopilot.companion.seed [username]
 """
@@ -17,6 +19,7 @@ from btcopilot.schema import (
     PairBond,
     Person,
     PersonKind,
+    RelationshipKind,
     VariableShift,
     asdict,
 )
@@ -123,9 +126,47 @@ def seed_diagram_data() -> DiagramData:
         _event(37, shift, person=1, dateTime="2003-01-01", dateCertainty=U,
                symptom=up, description="A rough patch no one can place"),
         _event(38, shift, person=4, anxiety=up, dateCertainty=U),
+        # Relationship moves: every kind the play-by-play draws, inside the two
+        # chapters the dated events already form (1980-2000, 2005-2021)
+        _event(39, shift, person=5, dateTime="1986-02-10", dateCertainty=C,
+               relationship=RelationshipKind.Conflict, relationshipTargets=[4],
+               description="Rows about money"),
+        _event(40, shift, person=4, dateTime="1987-05-01", dateCertainty=C,
+               relationship=RelationshipKind.Distance, relationshipTargets=[5],
+               description="Stopped bringing it up"),
+        _event(41, shift, person=7, dateTime="1989-08-01", dateCertainty=C,
+               relationship=RelationshipKind.Cutoff,
+               description="Stopped speaking to the family"),
+        _event(42, shift, person=4, dateTime="1991-03-01", dateCertainty=C,
+               relationship=RelationshipKind.Overfunctioning, relationshipTargets=[6],
+               description="Ran Kate's week for her"),
+        _event(43, shift, person=6, dateTime="1991-09-01", dateCertainty=C,
+               relationship=RelationshipKind.Underfunctioning, relationshipTargets=[4],
+               description="Let her mother take it over"),
+        _event(44, shift, person=4, dateTime="1993-02-01", dateCertainty=C,
+               relationship=RelationshipKind.Projection, relationshipTargets=[1],
+               description="Worry landed on Alex"),
+        _event(45, shift, person=5, dateTime="1995-01-15", dateCertainty=C,
+               relationship=RelationshipKind.Inside, relationshipTargets=[4],
+               relationshipTriangles=[1], description="Took the inside spot"),
+        _event(46, shift, person=1, dateTime="1997-06-01", dateCertainty=C,
+               relationship=RelationshipKind.Outside, relationshipTargets=[4],
+               relationshipTriangles=[5], description="Left on the outside"),
+        _event(47, shift, person=1, dateTime="2011-04-01", dateCertainty=C,
+               relationship=RelationshipKind.Toward, relationshipTargets=[3],
+               description="Reached out to Sam"),
+        _event(48, shift, person=3, dateTime="2013-06-01", dateCertainty=C,
+               relationship=RelationshipKind.Away, relationshipTargets=[1],
+               description="Pulled back from Alex"),
+        _event(49, shift, person=1, dateTime="2017-02-01", dateCertainty=C,
+               relationship=RelationshipKind.Fusion,
+               description="Could not tell where he ended"),
+        _event(50, shift, person=1, dateTime="2019-10-01", dateCertainty=C,
+               relationship=RelationshipKind.DefinedSelf, relationshipTargets=[4],
+               description="Said where he stood with Diane"),
     ]
     return DiagramData(
-        people=people, events=events, pair_bonds=pair_bonds, lastItemId=40
+        people=people, events=events, pair_bonds=pair_bonds, lastItemId=52
     )
 
 

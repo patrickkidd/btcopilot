@@ -162,6 +162,8 @@
     level: 1,
     chapter: null,
     step: 0,
+    playing: false,
+    version: 0,
     selected: null,
     lit: [],
     screen: "chat",
@@ -229,6 +231,24 @@
   var NODAL = ["cutoff", "defined-self", "fusion"];
   var WIRE_H = 78, CHAPTER_H = 158, BOARD_H = 264;
   var ASK_GAP_DAYS = 4 * 365;
+  var BEAT = 1400;                 // one move, one beat, whatever the move is
+
+  /* The picture changes height between its three levels, which resizes the
+     chat under it. A chat sitting at the newest message is held there for the
+     length of the transition; one scrolled back keeps the position it had. */
+  function setViewHeight(px) {
+    var view = $("view");
+    if (view.style.height === px + "px") return;
+    var chat = $("chat");
+    var atBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight <= 4;
+    view.style.height = px + "px";
+    if (!atBottom) return;
+    var until = Date.now() + 420;
+    (function pin() {
+      chat.scrollTop = chat.scrollHeight - chat.clientHeight;
+      if (Date.now() < until) requestAnimationFrame(pin);
+    })();
+  }
 
   function clip(text, chars) {
     text = String(text);
@@ -251,7 +271,7 @@
   function renderWire() {
     var view = $("view");
     var list = chapters();
-    view.style.height = WIRE_H + "px";
+    setViewHeight(WIRE_H);
     if (!list.length) {
       view.innerHTML = "<p>Nothing on your line yet — it draws itself as you talk.</p>";
       return;
@@ -296,7 +316,7 @@
     var view = $("view");
     var chapter = chapters()[S.chapter];
     var list = chapterEvents(S.chapter);
-    view.style.height = CHAPTER_H + "px";
+    setViewHeight(CHAPTER_H);
     if (!chapter || !list.length) { S.level = 1; renderWire(); return; }
 
     var W = Math.round(view.clientWidth || 380), x0 = 16, x1 = W - 16;
@@ -430,7 +450,10 @@
     view.querySelector(".ss").labelled = labelled;
   }
 
-  /* ---- the ratified move vocabulary: one action-green, no other colour ---- */
+  /* ---- the ratified move vocabulary: one action-green, no other colour ----
+     Every generator draws at full presence on its first frame. A symbol that
+     fades up from nothing arrives after the caption that names it, which is
+     the gap Patrick sees; so nothing here starts at zero opacity. */
   var MV = "var(--move)";
 
   function pairFrame(a, t) {
@@ -450,8 +473,8 @@
       out += '<line x1="' + (cx + Math.cos(a) * (r + 2)).toFixed(0) + '" y1="' +
         (cy + Math.sin(a) * (r + 2)).toFixed(0) + '" x2="' + (cx + Math.cos(a) * (r + 2 + l)).toFixed(0) +
         '" y2="' + (cy + Math.sin(a) * (r + 2 + l)).toFixed(0) + '" stroke="' + MV +
-        '" stroke-width="1.6"><animate attributeName="opacity" values="0;1;.2;1;0" dur="' +
-        (0.3 + (i % 3) * 0.15).toFixed(2) + 's" repeatCount="indefinite"/></line>';
+        '" stroke-width="1.6"><animate attributeName="opacity" values="1;.3;1" dur="' +
+        (0.5 + (i % 3) * 0.15).toFixed(2) + 's" repeatCount="indefinite"/></line>';
     }
     return out;
   }
@@ -491,19 +514,16 @@
         '" y2="-16" stroke="' + MV + '" stroke-width="2.6"/>' : "") + frame.close;
   }
 
-  function gWallSolo(x, y, cx, cy, slash) {
-    var dx = x - cx, dy = y - cy, L = Math.hypot(dx, dy) || 1;
-    var ux = dx / L, uy = dy / L, px = -uy, py = ux;
-    var wx = x + ux * 30, wy = y + uy * 30;
-    var out = '<line x1="' + (wx + px * 20).toFixed(0) + '" y1="' + (wy + py * 20).toFixed(0) +
-      '" x2="' + (wx - px * 20).toFixed(0) + '" y2="' + (wy - py * 20).toFixed(0) +
-      '" stroke="' + MV + '" stroke-width="4"/>';
-    out += '<line x1="' + (x + ux * 16).toFixed(0) + '" y1="' + (y + uy * 16).toFixed(0) +
-      '" x2="' + (wx - ux * 4).toFixed(0) + '" y2="' + (wy - uy * 4).toFixed(0) +
+  /* Cutoff or distance with nobody named: the wall stands beside the person,
+     not between two of them. */
+  function gWallSolo(a, side, slash) {
+    var wx = a[0] + 34 * side, y = a[1];
+    var out = '<line x1="' + wx + '" y1="' + (y - 20) + '" x2="' + wx + '" y2="' + (y + 20) +
+      '" stroke="' + MV + '" stroke-width="4"/>' +
+      '<line x1="' + (a[0] + 16 * side) + '" y1="' + y + '" x2="' + (wx - 4 * side) + '" y2="' + y +
       '" stroke="' + MV + '" stroke-width="1.4" stroke-dasharray="3 5" opacity=".55"/>';
     if (slash) {
-      out += '<line x1="' + (wx - px * 9 - ux * 7).toFixed(0) + '" y1="' + (wy - py * 9 - uy * 7).toFixed(0) +
-        '" x2="' + (wx + px * 9 + ux * 7).toFixed(0) + '" y2="' + (wy + py * 9 + uy * 7).toFixed(0) +
+      out += '<line x1="' + (wx - 9) + '" y1="' + (y + 12) + '" x2="' + (wx + 9) + '" y2="' + (y - 12) +
         '" stroke="' + MV + '" stroke-width="2.4"/>';
     }
     return out;
@@ -514,13 +534,20 @@
       '" fill="none" stroke="' + MV + '" stroke-width="2" opacity=".8"/></g>' + gSpikes(x, y, r, 8);
   }
 
-  function gCross(x, y, up) {
+  function gCross(x, y) {
     return '<g transform="translate(' + x + "," + y + ')"><rect x="-7" y="-2.6" width="14" height="5.2" fill="' +
-      MV + '" rx="1"/><rect x="-2.6" y="-7" width="5.2" height="14" fill="' + MV + '" rx="1"/></g>' +
-      '<line x1="' + (x + 16) + '" y1="' + (up ? y + 9 : y - 9) + '" x2="' + (x + 16) + '" y2="' +
-      (up ? y - 9 : y + 9) + '" stroke="' + MV + '" stroke-width="2.2"/>' +
-      '<polygon points="' + (x + 16) + "," + (up ? y - 14 : y + 14) + " " + (x + 11) + "," +
-      (up ? y - 5 : y + 5) + " " + (x + 21) + "," + (up ? y - 5 : y + 5) + '" fill="' + MV + '"/>';
+      MV + '" rx="1"/><rect x="-2.6" y="-7" width="5.2" height="14" fill="' + MV + '" rx="1"/></g>';
+  }
+
+  /* The one glyph that says which way a shift went: up or down, same shape for
+     symptom, anxiety and functioning, so no step is left without a symbol. */
+  function gCaret(x, y, up) {
+    var tip = up ? y - 13 : y + 13, tail = up ? y + 11 : y - 11;
+    var barb = up ? tip + 9 : tip - 9;
+    return '<line x1="' + x + '" y1="' + tail + '" x2="' + x + '" y2="' + tip +
+      '" stroke="' + MV + '" stroke-width="2.2"/>' +
+      '<polygon points="' + x + "," + tip + " " + (x - 5) + "," + barb + " " +
+      (x + 5) + "," + barb + '" fill="' + MV + '"/>';
   }
 
   function gFlank(x, y, up) {
@@ -535,9 +562,10 @@
 
   function gRing(x, y) {
     return '<circle cx="' + x + '" cy="' + y + '" r="18" fill="none" stroke="' + MV +
-      '" stroke-width="2.2"><animate attributeName="r" values="16;16;60" keyTimes="0;.2;1" ' +
-      'dur="2.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;.9;0" ' +
-      'keyTimes="0;.2;1" dur="2.6s" repeatCount="indefinite"/></circle>';
+      '" stroke-width="2.2"/><circle cx="' + x + '" cy="' + y + '" r="18" fill="none" stroke="' +
+      MV + '" stroke-width="1.6"><animate attributeName="r" values="18;52" dur="1.6s" ' +
+      'repeatCount="indefinite"/><animate attributeName="opacity" values=".55;0" dur="1.6s" ' +
+      'repeatCount="indefinite"/></circle>';
   }
 
   function gFusion(a, t) {
@@ -549,71 +577,104 @@
     return out + frame.close;
   }
 
-  function gestureFor(move, pos) {
-    var a = pos[move.from], t = (move.to.length && pos[move.to[0]]) || null;
-    var gesture = { symbol: "", stroke: {}, slide: null, buzz: [] };
-    if (!a) return gesture;
-    var kind = move.kind;
-    if (kind.endsWith("-up") || kind.endsWith("-down")) {
-      var up = kind.endsWith("-up"), base = kind.split("-")[0];
-      if (base === "anxiety") {
-        gesture.symbol = up ? gGhost(a[0], a[1], 14)
-          : '<g opacity=".35">' + gGhost(a[0], a[1], 14) + "</g>";
-      } else if (base === "symptom") {
-        gesture.symbol = gCross(a[0] + 30, a[1] - 24, up);
-      } else {
-        gesture.stroke[move.from] = up ? { stroke: MV, dash: null }
-          : { stroke: "currentColor", dash: "5 6" };
-        if (up) gesture.symbol = gRing(a[0], a[1]);
-      }
-      return gesture;
-    }
-    if (!t) {
-      if (kind === "cutoff") gesture.symbol = gWallSolo(a[0], a[1], 190, 132, true);
-      else if (kind === "distance") gesture.symbol = gWallSolo(a[0], a[1], 190, 132, false);
-      else if (kind === "defined-self") {
-        gesture.stroke[move.from] = { stroke: MV, dash: null };
-        gesture.symbol = gRing(a[0], a[1]);
-      } else if (kind === "fusion") {
-        gesture.symbol = gFusion(a, [a[0] + 44, a[1]]);
-      }
-      return gesture;
-    }
-    if (kind === "conflict") {
-      gesture.symbol = gZig(a[0], a[1], t[0], t[1]);
-      gesture.buzz = [move.from, move.to[0]];
-    }
-    else if (kind === "toward") {
-      gesture.symbol = gArrow(a[0], a[1], t[0], t[1]);
-      gesture.slide = { who: move.from, dx: (t[0] - a[0]) * 0.3, dy: (t[1] - a[1]) * 0.3 };
-    } else if (kind === "inside") {
-      gesture.slide = { who: move.from, dx: (t[0] - a[0]) * 0.4, dy: (t[1] - a[1]) * 0.4 };
-      gesture.symbol = gArrow(a[0], a[1], t[0], t[1]);
-    } else if (kind === "away") {
-      gesture.symbol = gArrow(t[0], t[1], a[0], a[1]);
-      gesture.slide = { who: move.from, dx: -(t[0] - a[0]) * 0.25, dy: -(t[1] - a[1]) * 0.25 };
-    } else if (kind === "outside") {
-      gesture.slide = { who: move.from, dx: -(t[0] - a[0]) * 0.3, dy: -(t[1] - a[1]) * 0.3 };
-    } else if (kind === "distance") gesture.symbol = gWallPair(a, t, false);
-    else if (kind === "cutoff") gesture.symbol = gWallPair(a, t, true);
-    else if (kind === "projection") {
-      gesture.symbol = gArrow(a[0], a[1], t[0], t[1]) + gGhost(a[0], a[1], 14) +
-        '<g opacity=".45">' + gSpikes(t[0], t[1], 12, 6) + "</g>";
-    } else if (kind === "fusion") gesture.symbol = gFusion(a, t);
-    else if (kind === "overfunctioning") {
-      gesture.symbol = gFlank(a[0] - 24, a[1], true) + gFlank(t[0] + 24, t[1], false);
-    } else if (kind === "underfunctioning") {
-      gesture.symbol = gFlank(a[0] - 24, a[1], false) + gFlank(t[0] + 24, t[1], true);
-    } else if (kind === "defined-self") {
-      gesture.stroke[move.from] = { stroke: MV, dash: null };
-      gesture.symbol = gRing(a[0], a[1]) + gArrow(a[0], a[1], t[0], t[1]);
-    } else gesture.symbol = gArrow(a[0], a[1], t[0], t[1]);
+  /* Every mark that hangs off a person hangs off the same side of that person
+     in every step: the seat decides the side, never the move. */
+  function markSide(a, W) { return a[0] > W / 2 ? -1 : 1; }
+
+  var SHIFT_GLYPH = {
+    symptom: function (a, side) { return gCross(a[0] + 38 * side, a[1] - 26); },
+    anxiety: function (a) { return gGhost(a[0], a[1], 14); },
+    functioning: function (a) { return gRing(a[0], a[1]); }
+  };
+  var SHIFT_CARET = { symptom: 58, anxiety: 44, functioning: 44 };
+
+  /* A relational move with nobody named still has to be drawn against
+     something: a point beside the actor, on the side its other marks use, so
+     the symbol never lands on the person's own name. */
+  function phantom(a, W) {
+    return [a[0] + 52 * markSide(a, W), a[1]];
+  }
+
+  function shiftGesture(move, a, side, gesture) {
+    var parts = move.kind.split("-"), variable = parts[0], up = parts[1] === "up";
+    gesture.symbol = SHIFT_GLYPH[variable](a, side) +
+      gCaret(a[0] + SHIFT_CARET[variable] * side, a[1] - 26, up);
+    if (variable === "functioning") (up ? gesture.act : gesture.dim).push(move.from);
     return gesture;
   }
 
-  function histMark(move, pos) {
+  function soloGesture(move, a, W, gesture) {
+    var kind = move.kind;
+    if (kind === "cutoff" || kind === "distance") {
+      gesture.symbol = gWallSolo(a, markSide(a, W), kind === "cutoff");
+    } else if (kind === "defined-self") {
+      gesture.act.push(move.from);
+      gesture.symbol = gRing(a[0], a[1]);
+    } else if (kind === "fusion") {
+      gesture.symbol = gFusion(a, phantom(a, W));
+    } else {
+      gesture.symbol = pairGesture(move, a, phantom(a, W), W, gesture);
+    }
+    return gesture;
+  }
+
+  /* One travel distance for every move that travels, and never off the board:
+     a person who walks out of the picture is the worst beat of all. */
+  var TRAVEL = 0.28;
+
+  function slideFor(who, a, sign, t, W) {
+    var x = Math.min(W - 30, Math.max(30, a[0] + (t[0] - a[0]) * TRAVEL * sign));
+    var y = Math.min(BOARD_H - 26, Math.max(34, a[1] + (t[1] - a[1]) * TRAVEL * sign));
+    return { who: who, dx: x - a[0], dy: y - a[1] };
+  }
+
+  function pairGesture(move, a, t, W, gesture) {
+    var kind = move.kind;
+    if (kind === "conflict") {
+      gesture.buzz = [move.from].concat(move.to);
+      return gZig(a[0], a[1], t[0], t[1]);
+    }
+    if (kind === "toward" || kind === "inside") {
+      gesture.slide = slideFor(move.from, a, 1, t, W);
+      return gArrow(a[0], a[1], t[0], t[1]);
+    }
+    if (kind === "away" || kind === "outside") {
+      gesture.slide = slideFor(move.from, a, -1, t, W);
+      return gArrow(t[0], t[1], a[0], a[1]);
+    }
+    if (kind === "distance") return gWallPair(a, t, false);
+    if (kind === "cutoff") return gWallPair(a, t, true);
+    if (kind === "projection") {
+      return gArrow(a[0], a[1], t[0], t[1]) + gGhost(a[0], a[1], 14) +
+        '<g opacity=".45">' + gSpikes(t[0], t[1], 12, 6) + "</g>";
+    }
+    if (kind === "fusion") return gFusion(a, t);
+    if (kind === "overfunctioning" || kind === "underfunctioning") {
+      var over = kind === "overfunctioning";
+      return gFlank(a[0] + 24 * markSide(a, W), a[1], over) +
+        gFlank(t[0] + 24 * markSide(t, W), t[1], !over);
+    }
+    if (kind === "defined-self") {
+      gesture.act.push(move.from);
+      return gRing(a[0], a[1]) + gArrow(a[0], a[1], t[0], t[1]);
+    }
+    return gArrow(a[0], a[1], t[0], t[1]);
+  }
+
+  /* One gesture per move, always with a symbol: act = drawn in action-green,
+     dim = drawn dashed, slide = the one person who travels this beat. */
+  function gestureFor(move, pos, W) {
     var a = pos[move.from], t = (move.to.length && pos[move.to[0]]) || null;
-    if (!a) return "";
+    var gesture = { symbol: "", act: [], dim: [], slide: null, buzz: [] };
+    var side = markSide(a, W);
+    if (SHIFT_GLYPH[move.kind.split("-")[0]]) return shiftGesture(move, a, side, gesture);
+    if (!t) return soloGesture(move, a, W, gesture);
+    gesture.symbol = pairGesture(move, a, t, W, gesture);
+    return gesture;
+  }
+
+  function histMark(move, pos, W) {
+    var a = pos[move.from], t = (move.to.length && pos[move.to[0]]) || null;
     var kind = move.kind;
     if (kind.indexOf("symptom") === 0) {
       return '<g transform="translate(' + (a[0] + 26) + "," + (a[1] - 20) +
@@ -627,7 +688,7 @@
       return '<circle cx="' + a[0] + '" cy="' + a[1] + '" r="15" fill="none" stroke="' + MV +
         '" stroke-width="1"' + (kind.endsWith("down") ? ' stroke-dasharray="4 5"' : "") + "/>";
     }
-    if (!t) return "";
+    if (!t) t = phantom(a, W);
     if (kind === "conflict") return gZig(a[0], a[1], t[0], t[1]).replace('stroke-width="2.2"', 'stroke-width="1.2"');
     if (kind === "distance" || kind === "cutoff") {
       var frame = pairFrame(a, t), wall = frame.L * 0.45;
@@ -646,6 +707,7 @@
   function movesOf(index) {
     var out = [];
     chapterEvents(index).forEach(function (event) {
+      if (event.person == null) return;
       if (event.relationship) {
         out.push({
           kind: event.relationship, from: event.person,
@@ -663,23 +725,28 @@
     return out;
   }
 
-  function renderBoard() {
-    var view = $("view");
-    var moves = movesOf(S.chapter);
-    var chapter = chapters()[S.chapter];
-    view.style.height = BOARD_H + "px";
-    if (!chapter) { S.level = 1; renderWire(); return; }
+  /* ---- the play-by-play stage ----
+     Built once per chapter, then stepped. Only the cue layer is ever redrawn:
+     the people and the faint history of earlier moves are the same nodes from
+     the first step to the last, so nothing flickers and stepping backwards
+     costs exactly what stepping forwards costs. */
+  var stage = null;
 
+  function stageKey(width) {
+    return [S.version, S.chapter, width].join(":");
+  }
+
+  function castOf(moves) {
     var cast = [];
     moves.forEach(function (move) {
       [move.from].concat(move.to).forEach(function (id) {
         if (id != null && cast.indexOf(id) < 0) cast.push(id);
       });
     });
-    if (!cast.length) {
-      view.innerHTML = "<p>No moves recorded in this chapter yet.</p>";
-      return;
-    }
+    return cast;
+  }
+
+  function seatedCast(cast) {
     var bonds = (S.timeline.pair_bonds || []).filter(function (bond) {
       return cast.indexOf(bond.person_a) >= 0 && cast.indexOf(bond.person_b) >= 0;
     });
@@ -691,8 +758,33 @@
         if (other != null && cast.indexOf(other) >= 0 && ordered.indexOf(other) < 0) ordered.push(other);
       });
     });
+    return { ordered: ordered, bonds: bonds };
+  }
 
-    var W = Math.round(view.clientWidth || 380), cx = W / 2, cy = BOARD_H / 2;
+  function personSvg(id, at) {
+    var person = people().filter(function (p) { return p.id === id; })[0];
+    var x = at[0], y = at[1];
+    var shape = person && person.gender === "female"
+      ? '<circle class="sym" cx="' + x.toFixed(0) + '" cy="' + y.toFixed(0) + '" r="13"/>'
+      : '<rect class="sym" x="' + (x - 12).toFixed(0) + '" y="' + (y - 12).toFixed(0) +
+        '" width="24" height="24"/>';
+    return '<g class="pn" data-id="' + id + '">' + shape + '<text x="' + x.toFixed(0) +
+      '" y="' + (y - 20).toFixed(0) + '" text-anchor="middle" font-size="13">' +
+      esc(clip(personName(id) || "?", 12)) + "</text></g>";
+  }
+
+  function buildStage() {
+    var view = $("view");
+    var moves = movesOf(S.chapter);
+    var W = Math.round(view.clientWidth || 380);
+    var cast = castOf(moves);
+    stage = null;
+    if (!cast.length) {
+      view.innerHTML = "<p>No moves recorded in this chapter yet.</p>";
+      return;
+    }
+    var seated = seatedCast(cast), ordered = seated.ordered;
+    var cx = W / 2, cy = BOARD_H / 2;
     var radius = Math.min(82, (W - 120) / 3.5);
     var pos = {};
     ordered.forEach(function (id, i) {
@@ -700,59 +792,103 @@
       pos[id] = [cx + radius * 1.75 * Math.cos(angle), cy + radius * Math.sin(angle)];
     });
 
-    var current = moves[S.step - 1];
-    var gesture = current ? gestureFor(current, pos)
-      : { symbol: "", stroke: {}, slide: null, buzz: [] };
-    var svg = '<svg viewBox="0 0 ' + W + " " + BOARD_H + '">';
-    bonds.forEach(function (bond) {
+    var svg = '<svg viewBox="0 0 ' + W + " " + BOARD_H + '"><g class="bonds">';
+    seated.bonds.forEach(function (bond) {
       var a = pos[bond.person_a], b = pos[bond.person_b];
-      if (a && b) {
-        svg += '<line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] +
-          '" stroke="var(--line)" stroke-width="1.2"/>';
-      }
+      svg += '<line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] +
+        '" stroke="var(--line)" stroke-width="1.2"/>';
     });
-    moves.slice(0, Math.max(0, S.step - 1)).forEach(function (move) {
-      var mark = histMark(move, pos);
-      if (mark) svg += '<g opacity=".16">' + mark + "</g>";
+    svg += '</g><g class="hist">';
+    moves.forEach(function (move) {
+      svg += '<g class="hm">' + histMark(move, pos, W) + "</g>";
     });
-    svg += gesture.symbol;
-    ordered.forEach(function (id) {
-      var at = pos[id], x = at[0], y = at[1];
-      var slide = gesture.slide && gesture.slide.who === id ? gesture.slide : null;
-      var moving = slide
-        ? '<animateTransform attributeName="transform" type="translate" values="0,0;' +
-          slide.dx.toFixed(0) + "," + slide.dy.toFixed(0) + '" dur="1.1s" fill="freeze"/>'
-        : "";
-      var buzzing = gesture.buzz.indexOf(id) >= 0 ? ' class="buzz"' : "";
-      svg += "<g" + buzzing + ">" + moving;
-      var override = gesture.stroke[id];
-      var stroke = override ? override.stroke : "currentColor";
-      var dash = override && override.dash ? ' stroke-dasharray="' + override.dash + '"' : "";
-      var width = override ? 2.4 : 1.5;
-      var person = people().filter(function (p) { return p.id === id; })[0];
-      var mover = current && current.from === id;
-      if (person && person.gender === "female") {
-        svg += '<circle cx="' + x.toFixed(0) + '" cy="' + y.toFixed(0) + '" r="13" fill="var(--panel)" stroke="' +
-          stroke + '" stroke-width="' + width + '"' + dash + "/>";
-      } else {
-        svg += '<rect x="' + (x - 12).toFixed(0) + '" y="' + (y - 12).toFixed(0) +
-          '" width="24" height="24" fill="var(--panel)" stroke="' + stroke +
-          '" stroke-width="' + width + '"' + dash + "/>";
-      }
-      svg += '<text x="' + x.toFixed(0) + '" y="' + (y - 20).toFixed(0) +
-        '" text-anchor="middle" font-size="13" fill="' +
-        (mover ? MV : "var(--faint)") + '">' + esc(clip(personName(id) || "?", 12)) + "</text></g>";
-    });
-    view.innerHTML = svg + "</svg>";
+    svg += '</g><g class="cue"></g><g class="cast">';
+    ordered.forEach(function (id) { svg += personSvg(id, pos[id]); });
+    view.innerHTML = svg + "</g></svg>";
 
+    stage = {
+      key: stageKey(W), moves: moves, pos: pos, width: W,
+      cue: view.querySelector("g.cue"),
+      marks: view.querySelectorAll("g.hm"),
+      nodes: ordered.map(function (id) {
+        return { id: id, node: view.querySelector('g.pn[data-id="' + id + '"]') };
+      })
+    };
+  }
+
+  var EMPTY_GESTURE = { symbol: "", act: [], dim: [], slide: null, buzz: [] };
+
+  function showStep(step) {
+    var moves = stage.moves, current = moves[step - 1];
+    var gesture = current ? gestureFor(current, stage.pos, stage.width) : EMPTY_GESTURE;
+    for (var i = 0; i < stage.marks.length; i++) {
+      stage.marks[i].classList.toggle("on", i < step - 1);
+    }
+    stage.cue.innerHTML = current ? '<g class="cuein">' + gesture.symbol + "</g>" : "";
+    stage.nodes.forEach(function (seat) {
+      var slide = gesture.slide && gesture.slide.who === seat.id ? gesture.slide : null;
+      seat.node.style.transform = slide
+        ? "translate(" + slide.dx.toFixed(1) + "px," + slide.dy.toFixed(1) + "px)" : "";
+      seat.node.classList.toggle("act", gesture.act.indexOf(seat.id) >= 0);
+      seat.node.classList.toggle("dim", gesture.dim.indexOf(seat.id) >= 0);
+      seat.node.classList.toggle("buzz", gesture.buzz.indexOf(seat.id) >= 0);
+      seat.node.classList.toggle("mv", !!current && current.from === seat.id);
+    });
     if (current) {
       var to = current.to.map(personName).filter(Boolean).join(", ");
-      captionFor(current.event, S.step + "/" + moves.length + " · " +
+      captionFor(current.event, step + "/" + moves.length + " · " +
         dateText(current.event.dateTime, current.event.dateCertainty) + " · " +
         (personName(current.from) || "?") + (to ? " → " + to : "") + " · " + current.event.label);
     } else {
       captionFor(null, "Play " + moves.length + " moves, one at a time.");
     }
+  }
+
+  function renderBoard() {
+    var view = $("view");
+    setViewHeight(BOARD_H);
+    var width = Math.round(view.clientWidth || 380);
+    if (!stage || stage.key !== stageKey(width)) buildStage();
+    if (!stage) return;
+    S.step = Math.min(S.step, stage.moves.length);
+    showStep(S.step);
+  }
+
+  /* One beat per move, whatever the move is: a step with a quiet symbol holds
+     the line exactly as long as a loud one. */
+  var beat = null;
+
+  function stopPlay() {
+    if (beat) { clearTimeout(beat); beat = null; }
+    S.playing = false;
+  }
+
+  function nextBeat() {
+    beat = setTimeout(function () {
+      beat = null;
+      if (S.level !== 3 || !stage || !S.playing) return;
+      if (S.step >= stage.moves.length) { stopPlay(); markControls(); return; }
+      S.step += 1;
+      showStep(S.step);
+      markControls();
+      nextBeat();
+    }, BEAT);
+  }
+
+  function startPlay() {
+    if (!stage || !stage.moves.length) return;
+    if (S.step >= stage.moves.length) S.step = 0;
+    S.playing = true;
+    if (!S.step) { S.step = 1; showStep(1); }
+    markControls();
+    nextBeat();
+  }
+
+  function stepTo(step) {
+    stopPlay();
+    S.step = Math.max(0, Math.min(stage.moves.length, step));
+    showStep(S.step);
+    markControls();
   }
 
   function captionFor(event, text) {
@@ -776,44 +912,78 @@
 
   function renderPicture() {
     var navL = $("nav-l"), navR = $("nav-r"), controls = $("pctl");
+    stopPlay();
+    CTL = null;
     navL.replaceChildren(); navR.replaceChildren(); controls.replaceChildren();
     $("caption").textContent = "";
     $("crumb").textContent = "";
+    if (S.level > 1 && !chapters()[S.chapter]) {
+      S.level = 1; S.chapter = null; S.step = 0;
+    }
 
     if (S.level === 1) {
       S.selected = null;
       renderWire();
     } else if (S.level === 2) {
       $("crumb").textContent = chapterTitle(S.chapter);
-      navR.appendChild(navButton("✕", "Close the chapter", function () { setLevel(1); }));
+      navR.appendChild(navButton("\u2715", "Close the chapter", function () { setLevel(1); }));
       renderChapter();
       var count = movesOf(S.chapter).length;
       if (count) {
-        var play = document.createElement("button");
-        play.className = "btn primary";
-        play.type = "button";
-        play.textContent = "▶ watch the " + count + " moves";
-        play.addEventListener("click", function () { S.level = 3; S.step = 0; renderPicture(); });
-        controls.appendChild(play);
+        var watch = document.createElement("button");
+        watch.className = "btn primary";
+        watch.type = "button";
+        watch.textContent = "\u25b6 watch the " + count + " moves";
+        watch.addEventListener("click", function () {
+          S.level = 3;
+          S.step = 0;
+          renderPicture();
+          startPlay();
+        });
+        controls.appendChild(watch);
       }
     } else {
-      $("crumb").textContent = chapterTitle(S.chapter) + " · the moves";
-      navL.appendChild(navButton("←", "Back to the chapter", function () { setLevel(2); }));
+      $("crumb").textContent = chapterTitle(S.chapter) + " \u00b7 the moves";
+      navL.appendChild(navButton("\u2190", "Back to the chapter", function () { setLevel(2); }));
       renderBoard();
-      var back = document.createElement("button");
-      back.className = "btn"; back.type = "button"; back.textContent = "◀";
-      back.setAttribute("aria-label", "Previous move");
-      back.addEventListener("click", function () { S.step = Math.max(0, S.step - 1); renderPicture(); });
-      var next = document.createElement("button");
-      next.className = "btn primary"; next.type = "button"; next.textContent = "▶ next move";
-      next.addEventListener("click", function () {
-        S.step = Math.min(movesOf(S.chapter).length, S.step + 1);
-        renderPicture();
-      });
-      controls.appendChild(back);
-      controls.appendChild(next);
+      if (stage) boardControls(controls);
     }
     controls.appendChild(listButton());
+  }
+
+  var CTL = null;
+
+  function moveButton(glyph, label, handler) {
+    var button = document.createElement("button");
+    button.className = "btn";
+    button.type = "button";
+    button.textContent = glyph;
+    button.setAttribute("aria-label", label);
+    button.addEventListener("click", handler);
+    return button;
+  }
+
+  function markControls() {
+    if (!CTL || !stage) return;
+    CTL.back.disabled = S.step <= 0;
+    CTL.next.disabled = S.step >= stage.moves.length;
+    CTL.play.textContent = S.playing ? "pause" : "play";
+    CTL.play.setAttribute("aria-label", S.playing ? "Pause the moves" : "Play the moves");
+    CTL.play.classList.toggle("primary", !S.playing);
+  }
+
+  function boardControls(controls) {
+    CTL = {
+      back: moveButton("\u25c0", "Previous move", function () { stepTo(S.step - 1); }),
+      next: moveButton("\u25b6", "Next move", function () { stepTo(S.step + 1); }),
+      play: moveButton("play", "Play the moves", function () {
+        if (S.playing) { stopPlay(); markControls(); } else startPlay();
+      })
+    };
+    controls.appendChild(CTL.back);
+    controls.appendChild(CTL.next);
+    controls.appendChild(CTL.play);
+    markControls();
   }
 
   function navButton(glyph, label, handler) {
@@ -1674,6 +1844,7 @@
   function refreshTimeline() {
     return api("GET", "/timeline").then(function (timeline) {
       S.timeline = timeline;
+      S.version += 1;
       if (S.chapter != null && !chapters()[S.chapter]) { S.chapter = null; S.level = 1; }
       renderFreshness();
       if (S.screen === "chat") renderPicture();

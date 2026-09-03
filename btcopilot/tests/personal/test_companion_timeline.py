@@ -8,6 +8,7 @@ from btcopilot.schema import (
     EventKind,
     PairBond,
     Person,
+    RelationshipKind,
     VariableShift,
     asdict,
 )
@@ -186,6 +187,20 @@ def test_every_mark_has_a_sentence():
         assert entry["sentence"]
     for entry in timeline["questions"]:
         assert entry["sentence"]
+
+
+def test_seed_fixture_covers_every_move_the_play_by_play_draws():
+    """The play-by-play has one symbol per move kind; the fixture has to walk
+    through all of them or the stepping is never exercised."""
+    events = seed_diagram_data().events
+    assert {e["relationship"] for e in events if e.get("relationship")} == {
+        kind.value for kind in RelationshipKind
+    }
+    for variable in ("symptom", "anxiety", "functioning"):
+        directions = {e[variable] for e in events if e.get(variable)}
+        assert {VariableShift.Up.value, VariableShift.Down.value} <= directions
+    chapters = build_timeline(seed_diagram_data())["chapters"]
+    assert all(chapter["count"] >= 5 for chapter in chapters)
 
 
 def test_seed_fixture_covers_every_rule():
