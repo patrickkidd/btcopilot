@@ -1067,6 +1067,107 @@ Single-prompt extraction (full conversation → one LLM call → complete PDP) t
 
 **Revisit trigger:** 3.6-flash pricing/latency changes; GT date-certainty tooling fix (would shift all Events numbers); mobile sync-path latency budget decision.
 
+## 2026-08-25: MVP done condition = returning long-horizon chat that improves the diagram through chat (supersedes FD-264's clinician-in-Pro loop)
+
+**Context:** Return from a 5-week break. Record shows the Jun 24 ruling (rebuild ceiling → human-in-the-loop corrections, FD-339) was never acted on; the Jul 21 test of Patrick's own diagram left unticketed structural bugs (duplicate self, self-bonds); FD-264's done condition (warm clinician uses a Personal-generated diagram in a Pro session) depends on diagram correctness + arrangement that measured out at a ceiling. Brainstorm: `doc/brainstorming/2026-08-25--fall-2026-direction.md`.
+
+**Options considered:** (1) FD-264 as written — clinician-in-Pro loop; pulls Pro interop, Personal auto-arrange, FD-336 forward. (2) Returning long-horizon chat — user returns over weeks, diagram/timeline stay coherent, diagram corrected through chat; clinician loop becomes the next epic. (3) Platform first (FD-340 port, FD-336).
+
+**Decision:** (2). MVP = a user returns and chats ≥3 sessions over ≥4 weeks; the diagram and timeline stay coherent (no duplicate self, no self-bonds, new facts land on the right people); the user corrects the family through chat ("vibe-coding the diagram"); the user says it was worth returning to. Techniques adopted as the design frame (brainstorm §7–§8): explicit user edits as agent tool calls while narrative extraction stays batch; arrangement as constraints/relations emitted by the agent and rendered by a deterministic engine that re-places only the touched neighborhood; agent writes through the existing snapshot-diff merge; selection-as-context, entity chips that halo diagram items, tap-to-disambiguate, commit invariants as post-edit guards, one turn = one undo step, trust-tiered auto-apply. Voice: current voice fine for now. Parked: FD-340 (trigger: PyQt5/Rosetta breaks a build or App Store submission needs it), Personal auto-arrange as a global feature, FD-336, workstream-skill work. Jira: first-beta epic FD-341 (children FD-342..FD-353, FD-339 moved under it) created 2026-08-25; FD-264 to be closed by Patrick. This is a BETA epic; the App Store MVP epic follows once FD-351 shows unprompted return.
+
+**Reasoning:** No automated extraction setting produced a correct family for Patrick's own diagram (Jun 9/24); corrections through chat are the only correctness path on record and double as real-family structural GT. Two failures (duplicate self, self-bonds) break accumulation itself, so they precede everything. Incremental single-person placement (deferred May 4) is the shared prerequisite of chat-driven corrections, local arrangement, and live diagram-while-chatting, so it moves ahead of FD-339.
+
+**Revisit trigger:** Seminar testers do not return unprompted in the Dec–Feb block (kills the premise → fall back to option 1 with manual diagram cleanup); prod-dump count shows zero non-Patrick conversations and testers decline; per-user LLM cost makes a free tier untenable.
+
+## 2026-08-25: Architecture B — one authoring tool surface for chat-driven diagram edits; Pro chat drawer first in FD-341
+
+**Context:** FD-342 dogfood found chat can only ADD (the only writer is the extraction PDP; edits/deletes of committed entities exist only in the review sheet). The Personal app renders no diagram (Discuss/Learn/Plan over a SceneModel), so chat-beside-diagram exists nowhere; four FD-341 stories assumed it.
+
+**Options considered:** (A) hybrid — batch extraction unchanged, agent tool calls for explicit user edits only; (B) one authoring tool surface (person/parents/bonds/events/SARF/merge/split/arrangement hint) used for user corrections with full CRUD, and potentially for narrative extraction as a read-before-write, guard-validated loop; (C) FD-336 full embed first.
+
+**Decision:** B for corrections now (FD-339 re-scoped; FD-349 trust tiers/undo and FD-350 GT log absorbed into it and closed). Narrative extraction stays batch until a measured spike (FD-355) compares agentic extraction on the same tool surface against the batch pipeline (6 GT discussions + diagram 1924 assertions; outcome = replace / split structure-vs-SARF / keep hybrid). **Amended same day:** Patrick ruled FD-336 in full (well-scoped, not weeks) ranked FIRST, and tickets kept to actual workstreams. FD-354 (thin drawer) and FD-355 (spike) deleted; 343/344 (guards, speaker weld) and the spike folded into FD-339 as phases 0 and 2; 345 (labels) into FD-336; 348 (arrangement hints) into FD-346; 349/350 already absorbed. Then consolidated to journey-shaped workstreams (Patrick: first two = embed the Personal app, vibe-code the diagram in Pro): FD-347 (pointing UI) and FD-346 (arrangement) folded into FD-339 as phases 2–3 and deleted. FD-342 (dogfood) deleted 2026-08-26 — it was FD-339's human walk, now written into FD-339. Final: 5 children — FD-336 → FD-339 ("Conversational diagram editing in the Pro app (agentic loop + authoring tools)") → FD-351 → FD-352 → FD-353.
+
+**Reasoning:** The June ceiling failures (duplicates, self-bonds, wrong parents, cross-name welds) are write-without-reading failures; a tool-calling agent gets invariant feedback per write. The 2026-02-24 result (per-turn delta extraction lost 2x F1) puts the burden of proof on B for extraction, hence a spike, not a pivot. FD-336 as designed changes persistence for every Pro user and cannot be feature-flagged.
+
+**Revisit trigger:** FD-355 numbers; the drawer's concurrent-save journeys failing; arrangement hints not reaching acceptable layouts within ~3 hints on 30-person families.
+
+## 2026-08-29: Pivot — chat-first web app ("Claude Code for Family Diagram"), parallel epic
+
+**Context:** Aug 28–30 brainstorm session. Adversarial 22-agent check of "interactive agent removes upfront extraction precision": holds for structure, fails for shift/SARF timeline. Architecture panel: keep Flask backend, JSON doc + command log, one web page (Vite/TS SVG, PWA), no Qt. Concept ruled: chat + one timeline picture above it; chat = event clock, record = state clock; lanes only person/couple/household; no diagram drawn at first; proactive near-zero default.
+
+**Options considered:** (a) continue FD-341 as sequenced (Pro drawer first); (b) fold the pivot into FD-341; (c) parallel epic, FD-341 kept separate as the June plan of record.
+
+**Decision:** (c). New epic: chat-first web app against the existing backend. Story 1 = web page (chat + timeline picture, existing endpoints, browser-session auth). Story 2 = corrections through chat (agent tool surface) in that page. Pro embed (FD-336) no longer first — superseded as the chat surface by the web page; FD-341 untouched pending Patrick's re-triage. Business model designed and TABLED (flat $29, Sonnet-class loop, founders $19; conditions: Sonnet quality test, caching, token logging — none exist).
+
+**Reasoning:** Old apps' tech debt (PyQt5, no PySide6/iOS path, 6-yr handwritten UI) makes every change expensive; a web page is a second client of endpoints that already exist, seeds the new architecture, and throws nothing away. The picture (1–2wk) drives corrections (3–5wk); both start now. Patrick's journal file → extraction → copy of 1924 supplies real dated events for the first picture.
+
+**Revisit trigger:** Patrick doesn't feel the picture on his own data (kills the insight premise); Sonnet-class coaching rejected by working group (re-opens cost model); story 1 blocked on personal-route auth >2 days.
+
+
+## 2026-08-31: Drawability rules ruled; question language replaces progress bar; question budget clarified
+
+**Context:** The always-unclear engineering point — what the timeline picture may draw — settled against Patrick's own record (discussions 55/58 + 14-month journal) and a hand-coded clinical case, via a visual ruling page built from real data.
+
+**Decision:** Five rules in doc/DRAWABILITY.md: (1) line at 3 directed points, dots below, span only where points exist; (2) date-guessed points count, rendered as bands for correction; (3) gaps dotted ("no data yet"), recorded no-change draws as solid flat; (4) order shown only when guess-ranges don't touch; (5) open states fade after last confirmation, death hard-stops a person. One visual question-treatment in exactly three places (order-unknown-that-matters, unconfirmed fades, undated shelf); candidates found deterministically, the coach picks/phrases in conversation — no background LLM calls, no progress bar, no "finished."
+
+**Also ruled (2026-08-31):** in-story follow-up questions (dating, year-before, who-else-was-in-it, one-SARF-dimension-per-anchor) are exempt from the ~1-targeted-question-per-session budget, which caps only out-of-flow clarification questions.
+
+**Reasoning:** The Learn tab failed by drawing whatever existed however sparse. Real-data findings: uncertainty is the norm for remembered history (57/84 chat dates year-grade+) and the exception for journaled-now (75/78 day-certain) — certainty is a property of capture time, so returning chat is the data-quality strategy; self-reported data is direction-rich (70%) except relationship moves; density encodes capture mode, not severity.
+
+**Revisit trigger:** Patrick's or testers' lanes draw misleading pictures under these rules in the first working-group cycle; the "?" pairs prove too numerous or too rare to fuel conversation.
+
+
+## 2026-08-31: UI shape ruled from real-data mockups — conversation-led, always-on strip, quiet questions; cartoon rule
+
+**Context:** Three phone mockups from Patrick's real record (strip / question-first / living header).
+
+**Decision:** Question-first rejected (survey feel; "no one is going to like a questionnaire"). Ruled shape: conversation drives everything; picture always on, strip-small above the chat; questions as quiet in-place marks; the coach aims the picture via an inline reference; users can proactively fill gaps through the picture; undated shelf behind a tap. Cartoon rule recorded in doc/DRAWABILITY.md: one or two impactful correlations, not a dataset; the brain-rearranging moment is the product's acceptance test.
+
+**Revisit trigger:** working-group members don't notice quiet marks (engagement rests on coach prose alone), or the strip proves too small to aim at on phones.
+
+## 2026-09-01 — Loop engineering is the project's organizing principle
+Patrick's ruling, verbatim-close: the whole project is about loop engineering now.
+Get something in front of users that keeps them chatting — neat graphics where the
+drill-down levels fill in visually AS THEY TYPE — generating a feedback loop of
+collected data; track corrections occurring directly in chat; maximize automatic
+in-app data collection (interactive, in the app itself) so users never need to talk
+to Patrick; the system learns from collected data. Visual-design convergence (the
+three-level drill-down: at-rest wire → aimed-lane episode → chalkboard moves) is now
+in service of retention + data generation, not a design end in itself. Connects to
+the earlier friction auto-report ruling.
+
+---
+
+## 2026-09
+
+### 2026-09-02: Chat-first companion API — chip contract, save semantics, session switching
+
+**Context:** Phase 2 of the chat-first companion build (`doc/chat-first/BUILD_SPEC.md`): the REST
+surface behind the one-page coach — sessions, preferences, account, event CRUD, coach chips,
+traceability.
+
+**Decisions accepted:**
+- **Chip markup is `[[kind:target|label]]`** with four kinds (chapter, events, person, range),
+  parsed in `personal/refs.py` inside `ask()`. The transcript stores the label text only, so markup
+  never reaches the record or the extraction prompt. Unresolvable references are dropped rather than
+  shown pointing at nothing; a reply naming nothing yields an empty list and nothing is inferred
+  from prose. The instruction lives in `COACH_REFERENCE_INSTRUCTION`; fdserver overrides it, and an
+  override that drops it simply turns chips off.
+- **Event rules are enforced by normalizing on save, not by refusing the write.** A saved event
+  drops values that no longer apply to its kind (a shift switched to a death loses its shift
+  values), so no stored event can violate the rules. Unknown field names are still refused outright.
+- **No server-side "current session" pointer.** Sessions list by last activity, so the session the
+  user last spoke in is the one the page returns to. Switching is a client concern plus a post to
+  that session's statements.
+- **Another user's session is a 404, not a 403** — the app never confirms a session it will not show.
+- **Traceability is stamped at PDP commit**, where the discussion is known; the statement stays null
+  because extraction runs over a window, not a single statement. Stored as plain string keys on the
+  event chunk (never enum keys — those chunks are pickled for the Pro app).
+
+**Rejected:** adding `discussionId`/`statementId` fields to `schema.Event` — the extraction response
+schema is generated from that dataclass, so new fields would change the extraction contract and
+require an F1 run.
+
 ---
 
 ## 2026-08-25: Ticket lifecycle rules — Jira canonical, built-in worktrees, PR as observation surface

@@ -28,7 +28,31 @@ Summarize the following discussion.
 # ── Conversation flow ─────────────────────────────────────────────────────────
 #
 # fdserver overrides get_conversation_flow_prompt() with a production
-# implementation that has full per-model assembly control.
+# implementation that has full per-model assembly control. An override that
+# drops COACH_REFERENCE_INSTRUCTION turns the chips off; the parser then finds
+# no references and the client shows none.
+
+COACH_REFERENCE_INSTRUCTION = """
+When your reply points at something already in the record, mark it inline as
+[[kind:target|the words to show]] and write nothing else about the markup:
+
+  [[chapter:<cluster id>|the words to show]]
+  [[events:<event id>,<event id>|the words to show]]
+  [[person:<person id>|the words to show]]
+  [[range:<YYYY-MM-DD>..<YYYY-MM-DD>|the words to show]]
+
+Use only ids listed in the reference index you were given. Mark at most three
+references in a reply, and none at all when your reply points at nothing.
+"""
+
+
+# ── Session title ────────────────────────────────────────────────────────────
+
+DISCUSSION_TITLE_PROMPT = """
+Give this conversation a title of at most six words. Reply with the title only.
+
+{conversation_history}
+"""
 
 
 def get_conversation_flow_prompt(
@@ -41,7 +65,10 @@ def get_conversation_flow_prompt(
     a fresh user; non-empty means a returning user with prior session(s).
     Production deployments override this callable via FDSERVER_PROMPTS_PATH.
     """
-    return "You are a family systems consultant. Help the user tell their family's story across three generations."
+    return (
+        "You are a family systems consultant. Help the user tell their family's "
+        "story across three generations." + COACH_REFERENCE_INSTRUCTION
+    )
 
 
 # ── Data extraction — 2-pass (structure then SARF shifts) ────────────────────
@@ -192,6 +219,8 @@ if _prompts_path:
             # Override prompt constants from private file.
             for _var in (
                 "SUMMARIZE_MESSAGES_PROMPT",
+                "COACH_REFERENCE_INSTRUCTION",
+                "DISCUSSION_TITLE_PROMPT",
                 "DATA_EXTRACTION_CORRECTION",
                 "DATA_EXTRACTION_PASS1_PROMPT",
                 "DATA_EXTRACTION_PASS1_CONTEXT",

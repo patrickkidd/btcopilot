@@ -103,6 +103,8 @@ class Diagram(db.Model, ModelMixin):
         data["people"] = diagram_data.people
         data["events"] = diagram_data.events
         data["pair_bonds"] = diagram_data.pair_bonds
+        data["clusters"] = diagram_data.clusters
+        data["clusterCacheKey"] = diagram_data.clusterCacheKey
 
         self.data = pickle.dumps(data)
 
