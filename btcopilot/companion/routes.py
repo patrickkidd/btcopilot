@@ -1,19 +1,34 @@
+import os
+
 from flask import jsonify, render_template
 
 from btcopilot import auth
 from btcopilot.companion.blueprint import bp, current_session
-from btcopilot.companion.sessions import statements_payload
+from btcopilot.companion.sessions import session_payload, statements_payload
 from btcopilot.companion.timeline import build_timeline
 from btcopilot.personal.models import Discussion
 from btcopilot.schema import DiagramData, get_all_pdp_item_ids
+
+STATIC_VERSION = str(
+    int(
+        os.path.getmtime(
+            os.path.join(os.path.dirname(__file__), "static", "companion.js")
+        )
+    )
+)
 
 
 @bp.route("/")
 def index():
     user = auth.current_user()
     discussion = current_session(user)
-    statements = statements_payload(discussion) if discussion else []
-    return render_template("companion/index.html", statements=statements, user=user)
+    return render_template(
+        "companion/index.html",
+        user=user,
+        session=session_payload(discussion) if discussion else None,
+        version=STATIC_VERSION,
+        statements=statements_payload(discussion) if discussion else [],
+    )
 
 
 @bp.route("/timeline")

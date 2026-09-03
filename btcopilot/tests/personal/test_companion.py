@@ -20,8 +20,10 @@ def test_page_loads(web):
     response = web.get("/companion/")
     assert response.status_code == 200
     page = response.get_data(as_text=True)
-    assert 'id="strip"' in page
+    assert 'id="view"' in page
     assert 'id="chat-form"' in page
+    assert 'id="sessions-open"' in page
+    assert 'id="timeline-screen"' in page
 
 
 def test_page_requires_login(flask_app):

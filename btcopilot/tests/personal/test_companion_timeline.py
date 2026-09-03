@@ -1,6 +1,7 @@
 from btcopilot.companion.seed import seed_diagram_data
 from btcopilot.companion.timeline import GAP_DAYS, build_timeline
 from btcopilot.schema import (
+    Cluster,
     DateCertainty,
     DiagramData,
     Event,
@@ -85,9 +86,7 @@ def test_certainty_bands_and_undated_shelf():
             11, 1, "2005-01-01", "symptom", VariableShift.Up, DateCertainty.Approximate
         ),
         _shift(12, 1, None, "symptom", VariableShift.Up),
-        _shift(
-            13, 1, "2010-01-01", "symptom", VariableShift.Up, DateCertainty.Unknown
-        ),
+        _shift(13, 1, "2010-01-01", "symptom", VariableShift.Up, DateCertainty.Unknown),
     ]
     timeline = build_timeline(_data([1], events))
     lane = _lane(timeline, "p1:symptom")
@@ -207,11 +206,75 @@ def test_seed_fixture_covers_every_rule():
     directed = {l["key"]: l["directed_count"] for l in timeline["lanes"]}
     assert any(n >= 3 for n in directed.values())
     assert any(n < 3 for n in directed.values())
-    gap_segments = [
-        s for l in timeline["lanes"] for s in l["segments"] if s["gap"]
-    ]
+    gap_segments = [s for l in timeline["lanes"] for s in l["segments"] if s["gap"]]
     assert gap_segments
     assert any(l["same_marks"] for l in timeline["lanes"])
     assert timeline["questions"]
     assert timeline["shelf"]
     assert timeline["bond_lanes"]
+
+
+def test_chapters_split_on_a_long_silence():
+    events = [
+        _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
+        _shift(11, 1, "1991-06-01", "symptom", VariableShift.Down),
+        _shift(12, 1, "2005-01-01", "symptom", VariableShift.Up),
+        _shift(13, 1, "2006-01-01", "symptom", VariableShift.Down),
+    ]
+    chapters = build_timeline(_data([1], events))["chapters"]
+    assert [c["event_ids"] for c in chapters] == [[10, 11], [12, 13]]
+    assert [c["label"] for c in chapters] == ["1990–1991", "2005–2006"]
+    assert chapters[1]["gap_days"] > 4 * 365
+
+
+def test_a_lone_event_joins_the_chapter_it_is_nearest():
+    events = [
+        _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
+        _shift(11, 1, "1991-01-01", "symptom", VariableShift.Down),
+        _shift(12, 1, "1995-06-01", "symptom", VariableShift.Up),
+    ]
+    chapters = build_timeline(_data([1], events))["chapters"]
+    assert [c["event_ids"] for c in chapters] == [[10, 11, 12]]
+
+
+def test_a_chapter_takes_its_title_from_a_cluster_inside_it():
+    events = [
+        _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
+        _shift(11, 1, "1991-01-01", "symptom", VariableShift.Down),
+    ]
+    data = _data([1], events)
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="cl-1",
+                title="The year everything moved",
+                summary="Two shifts in a row.",
+                eventIds=[10, 11],
+                startDate="1990-06-01",
+                endDate="1991-01-01",
+            )
+        )
+    ]
+    chapter = build_timeline(data)["chapters"][0]
+    assert chapter["title"] == "The year everything moved"
+    assert chapter["cluster_ids"] == ["cl-1"]
+
+
+def test_undated_events_belong_to_no_chapter_but_stay_in_the_list():
+    events = [
+        _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
+        _shift(
+            11, 1, "1991-01-01", "symptom", VariableShift.Down, DateCertainty.Unknown
+        ),
+    ]
+    timeline = build_timeline(_data([1], events))
+    assert [e["id"] for e in timeline["events"]] == [10, 11]
+    assert [c["event_ids"] for c in timeline["chapters"]] == [[10]]
+
+
+def test_every_event_carries_the_words_the_list_shows():
+    timeline = build_timeline(seed_diagram_data())
+    assert len(timeline["events"]) == len(seed_diagram_data().events)
+    for event in timeline["events"]:
+        assert event["label"]
+        assert event["person_name"]

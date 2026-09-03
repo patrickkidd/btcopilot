@@ -11,6 +11,7 @@ from dataclasses import fields
 from flask import abort, jsonify, request
 
 from btcopilot.companion.blueprint import bp, diagram
+from btcopilot.companion.timeline import DATE_FIELDS, event_payload
 from btcopilot.extensions import db
 from btcopilot.personal.intake import _enum_val, _parse_iso_date
 from btcopilot.schema import (
@@ -24,7 +25,6 @@ from btcopilot.schema import (
 )
 
 WRITABLE = {f.name for f in fields(Event)} - {"id"}
-DATE_FIELDS = ("dateTime", "endDateTime")
 PERSON_FIELDS = ("person", "spouse", "child")
 PERSON_LIST_FIELDS = ("relationshipTargets", "relationshipTriangles")
 SHIFT_VARIABLES = ("symptom", "anxiety", "functioning", "relationship")
@@ -38,14 +38,6 @@ ENUMS = {
     "functioning": VariableShift,
     "relationship": RelationshipKind,
 }
-
-
-def payload(event: dict) -> dict:
-    out = {key: _enum_val(value) for key, value in event.items()}
-    for key in DATE_FIELDS:
-        date = _parse_iso_date(event.get(key))
-        out[key] = date.isoformat() if date else None
-    return out
 
 
 def _coerce(body: dict, people: set) -> dict:
@@ -134,7 +126,7 @@ def create():
         if "kind" not in values:
             raise ValueError("An event needs a kind")
         data.add_event(_normalize(Event(id=0, **values)))
-        return payload(_qt_dates(data.events[-1]))
+        return event_payload(_qt_dates(data.events[-1]))
 
     return jsonify(_write(mutate)), 201
 
@@ -152,7 +144,7 @@ def update(event_id: int):
         merged.update(request.get_json())
         event = _normalize(Event(id=event_id, **_coerce(merged, _people(data))))
         existing.update(_qt_dates(asdict(event)))
-        return payload(existing)
+        return event_payload(existing)
 
     return jsonify(_write(mutate))
 

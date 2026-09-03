@@ -9,12 +9,16 @@ from btcopilot.schema import (
     DateCertainty,
     DiagramData,
     EventKind,
+    RelationshipKind,
     TraceKey,
     VariableShift,
 )
 
+DATE_FIELDS = ("dateTime", "endDateTime")
 GAP_DAYS = 730
 STRIP_MAX_LANES = 2
+CHAPTER_SPLIT_DAYS = 3 * 365
+CHAPTER_MERGE_DAYS = 6 * 365
 BAND_DAYS = {
     DateCertainty.Certain.value: 7,
     DateCertainty.Approximate.value: 365,
@@ -80,6 +84,135 @@ def _certainty(event: dict) -> str:
     return _enum_val(event.get("dateCertainty")) or DateCertainty.Certain.value
 
 
+def event_payload(event: dict) -> dict:
+    """One committed event chunk as JSON: enum values out of enums, Qt dates
+    out of dates."""
+    out = {key: _enum_val(value) for key, value in event.items()}
+    for key in DATE_FIELDS:
+        date = _parse_iso_date(event.get(key))
+        out[key] = date.isoformat() if date else None
+    return out
+
+
+def _label(event: dict, people_by_id: dict) -> str:
+    """The words the picture and the list show for one event."""
+    name = _person_label(people_by_id.get(event.get("person")))
+    for variable, _ in VARIABLES:
+        direction = _enum_val(event.get(variable))
+        if direction:
+            return _event_base(event, variable, direction, name)
+    kind = _enum_val(event.get("kind"))
+    if kind and kind != EventKind.Shift.value:
+        return _structural_base(event, kind, people_by_id)
+    description = event.get("description")
+    if description:
+        return description
+    relationship = _enum_val(event.get("relationship"))
+    if relationship:
+        return f"{name}: {RelationshipKind(relationship).menuLabel().lower()}"
+    return "Something happened"
+
+
+def _subject(event: dict, people_by_id: dict) -> dict | None:
+    """Birth and adoption are about the child; every other kind is about the
+    person (btcopilot/CLAUDE.md, Event Field Semantics)."""
+    kind = _enum_val(event.get("kind"))
+    if kind in (EventKind.Birth.value, EventKind.Adopted.value) and event.get("child"):
+        return people_by_id.get(event["child"])
+    return people_by_id.get(event.get("person"))
+
+
+def _undated(chunk: dict) -> bool:
+    return (
+        not chunk["dateTime"]
+        or chunk.get("dateCertainty") == DateCertainty.Unknown.value
+    )
+
+
+def _events_payload(data: DiagramData, people_by_id: dict) -> list[dict]:
+    events = []
+    for event in data.events:
+        if not isinstance(event, dict) or event.get("id") is None:
+            continue
+        chunk = event_payload(event)
+        chunk["label"] = _label(event, people_by_id)
+        chunk["person_name"] = _person_label(_subject(event, people_by_id))
+        events.append(chunk)
+    return sorted(events, key=lambda e: (_undated(e), e["dateTime"] or "", e["id"]))
+
+
+def _group_by_gap(dated: list[tuple[dict, datetime.date]]) -> list[list]:
+    """Chapters are episodes: a run of events with no long silence in it. A
+    lone event next to a chapter belongs to it rather than standing alone."""
+    groups = []
+    for chunk, date in dated:
+        if groups and (date - groups[-1][-1][1]).days > CHAPTER_SPLIT_DAYS:
+            groups.append([])
+        elif not groups:
+            groups.append([])
+        groups[-1].append((chunk, date))
+    for i in range(len(groups) - 1, -1, -1):
+        if len(groups[i]) != 1:
+            continue
+        previous = groups[i - 1] if i else None
+        following = groups[i + 1] if i + 1 < len(groups) else None
+        before = (groups[i][0][1] - previous[-1][1]).days if previous else None
+        after = (following[0][1] - groups[i][0][1]).days if following else None
+        reach = [
+            d for d in (before, after) if d is not None and d <= CHAPTER_MERGE_DAYS
+        ]
+        if not reach:
+            continue
+        if (
+            before is not None
+            and before in reach
+            and (after is None or before <= after)
+        ):
+            previous.extend(groups.pop(i))
+        else:
+            following[:0] = groups.pop(i)
+    return groups
+
+
+def _chapter_label(start: datetime.date, end: datetime.date) -> str:
+    return str(start.year) if start.year == end.year else f"{start.year}–{end.year}"
+
+
+def _chapters(events: list[dict], clusters: list[dict]) -> list[dict]:
+    dated = [
+        (chunk, datetime.date.fromisoformat(chunk["dateTime"]))
+        for chunk in events
+        if not _undated(chunk)
+    ]
+    chapters = []
+    previous_end = None
+    for index, group in enumerate(_group_by_gap(dated)):
+        start, end = group[0][1], group[-1][1]
+        named = [
+            cluster
+            for cluster in clusters
+            if isinstance(cluster, dict)
+            and cluster.get("startDate")
+            and start <= _parse_iso_date(cluster["startDate"]) <= end
+        ]
+        chapters.append(
+            {
+                "id": f"ch{index}",
+                "label": _chapter_label(start, end),
+                "title": named[0]["title"] if named else _chapter_label(start, end),
+                "summary": named[0].get("summary") if named else None,
+                "cluster_ids": [cluster["id"] for cluster in named],
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+                "event_ids": [chunk["id"] for chunk, _ in group],
+                "count": len(group),
+                "gap_days": (start - previous_end).days if previous_end else 0,
+            }
+        )
+        previous_end = end
+    return chapters
+
+
 def build_timeline(data: DiagramData) -> dict:
     people = [p for p in data.people if isinstance(p, dict) and p.get("id") is not None]
     people_by_id = {p["id"]: p for p in people}
@@ -92,19 +225,7 @@ def build_timeline(data: DiagramData) -> dict:
         date = _parse_iso_date(event.get("dateTime"))
         certainty = _certainty(event)
         if date is None or certainty == DateCertainty.Unknown.value:
-            kind = _enum_val(event.get("kind"))
-            name = _person_label(people_by_id.get(event.get("person")))
-            directions = [
-                (var, _enum_val(event.get(var)))
-                for var, _ in VARIABLES
-                if _enum_val(event.get(var))
-            ]
-            if directions:
-                base = _event_base(event, directions[0][0], directions[0][1], name)
-            elif kind and kind != EventKind.Shift.value:
-                base = _structural_base(event, kind, people_by_id)
-            else:
-                base = event.get("description") or "Something happened"
+            base = _label(event, people_by_id)
             shelf.append(
                 {
                     "event_id": event.get("id"),
@@ -195,9 +316,7 @@ def build_timeline(data: DiagramData) -> dict:
         if not isinstance(bond, dict) or bond.get("id") is None:
             continue
         pair = {bond.get("person_a"), bond.get("person_b")} - {None}
-        label = " & ".join(
-            _person_label(people_by_id.get(pid)) for pid in sorted(pair)
-        )
+        label = " & ".join(_person_label(people_by_id.get(pid)) for pid in sorted(pair))
         bonds.append(
             {
                 "id": bond["id"],
@@ -239,7 +358,14 @@ def build_timeline(data: DiagramData) -> dict:
             )
         marks.sort(key=lambda m: m["date"])
         if marks:
-            bond_lanes.append({"key": f"b{bond['id']}", "pair_bond": bond["id"], "label": label, "marks": marks})
+            bond_lanes.append(
+                {
+                    "key": f"b{bond['id']}",
+                    "pair_bond": bond["id"],
+                    "label": label,
+                    "marks": marks,
+                }
+            )
 
     questions = _order_questions(lanes, dated, people_by_id)
 
@@ -280,7 +406,9 @@ def build_timeline(data: DiagramData) -> dict:
         [l for l in lanes if l["person"] in primary_ids], key=_lane_rank, reverse=True
     )
     others = sorted(
-        [l for l in lanes if l["person"] not in primary_ids], key=_lane_rank, reverse=True
+        [l for l in lanes if l["person"] not in primary_ids],
+        key=_lane_rank,
+        reverse=True,
     )
     busiest_bond = max(bond_lanes, key=lambda l: len(l["marks"]), default=None)
 
@@ -311,9 +439,7 @@ def build_timeline(data: DiagramData) -> dict:
         [e["date"] for lane in lanes for e in lane["points"] + lane["same_marks"]]
         + [m["date"] for lane in bond_lanes for m in lane["marks"]]
     )
-    axis = (
-        {"min": drawn_dates[0], "max": drawn_dates[-1]} if drawn_dates else None
-    )
+    axis = {"min": drawn_dates[0], "max": drawn_dates[-1]} if drawn_dates else None
 
     coded_in = {
         event["id"]: {
@@ -324,12 +450,20 @@ def build_timeline(data: DiagramData) -> dict:
         if isinstance(event, dict) and event.get(TraceKey.Discussion.value)
     }
 
+    events = _events_payload(data, people_by_id)
     return {
         "coded_in": coded_in,
         "people": [
-            {"id": p["id"], "name": _person_label(p), "primary": bool(p.get("primary"))}
+            {
+                "id": p["id"],
+                "name": _person_label(p),
+                "gender": _enum_val(p.get("gender")),
+                "primary": bool(p.get("primary")),
+            }
             for p in people
         ],
+        "events": events,
+        "chapters": _chapters(events, data.clusters),
         "pair_bonds": bonds,
         "lanes": lanes,
         "bond_lanes": bond_lanes,
@@ -370,7 +504,10 @@ def _order_questions(lanes: list, dated: list, people_by_id: dict) -> list:
                 if pair_key in seen:
                     continue
                 seen.add(pair_key)
-                mid = min(p_date, s_date) + (max(p_date, s_date) - min(p_date, s_date)) / 2
+                mid = (
+                    min(p_date, s_date)
+                    + (max(p_date, s_date) - min(p_date, s_date)) / 2
+                )
                 family_base = _structural_base(event, kind, people_by_id)
                 point_base = point["sentence"].rstrip(".").split(",")[0].lower()
                 questions.append(

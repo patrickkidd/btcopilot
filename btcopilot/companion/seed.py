@@ -16,6 +16,7 @@ from btcopilot.schema import (
     EventKind,
     PairBond,
     Person,
+    PersonKind,
     VariableShift,
     asdict,
 )
@@ -23,8 +24,8 @@ from btcopilot.schema import (
 SEED_DIAGRAM_NAME = "FD-360 Companion Seed"
 
 
-def _person(id, name, last_name=None, primary=False):
-    chunk = asdict(Person(id=id, name=name, last_name=last_name))
+def _person(id, name, last_name=None, gender=None, primary=False):
+    chunk = asdict(Person(id=id, name=name, last_name=last_name, gender=gender))
     if primary:
         chunk["primary"] = True
     return chunk
@@ -39,14 +40,15 @@ def seed_diagram_data() -> DiagramData:
     up, down, same = VariableShift.Up, VariableShift.Down, VariableShift.Same
     shift = EventKind.Shift
 
+    male, female = PersonKind.Male, PersonKind.Female
     people = [
-        _person(1, "Alex", "Harmon", primary=True),
+        _person(1, "Alex", "Harmon", male, primary=True),
         _person(2, "Assistant"),
-        _person(3, "Sam", "Harmon"),
-        _person(4, "Diane", "Voss"),
-        _person(5, "Robert", "Voss"),
-        _person(6, "Kate", "Voss"),
-        _person(7, "Earl", "Voss"),
+        _person(3, "Sam", "Harmon", female),
+        _person(4, "Diane", "Voss", female),
+        _person(5, "Robert", "Voss", male),
+        _person(6, "Kate", "Voss", female),
+        _person(7, "Earl", "Voss", male),
     ]
     pair_bonds = [
         asdict(PairBond(id=8, person_a=1, person_b=3, married=True)),
