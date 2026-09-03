@@ -46,3 +46,15 @@ concept AND add the app shell around it:
 **After his sign-off on the full design**: the build session (chat against the
 real diagram on the FD-360 worktree, loop-engineering signal logging server-side
 — see STATE.md for the sandbox command and PR #133).
+
+## Next session — the architecture (READ ARCHITECTURE_HANDOFF.md FIRST)
+
+The chat-first app is built and testable (btcopilot PR #135, fdserver PR #29), but it
+runs on the old foundation: pickled whole-document writes under an optimistic lock, and
+a page written in the wrong language. The design it embodies is ruled good; the
+foundation under it is the open question.
+
+[ARCHITECTURE_HANDOFF.md](ARCHITECTURE_HANDOFF.md) carries the whole scope: what is
+already ruled, what was measured, the PDP question (never ruled — discovered), the two
+separate questions about the old format (mechanically adequate vs conceptually too
+restrictive), the fork to settle first, and what survives from the build.
