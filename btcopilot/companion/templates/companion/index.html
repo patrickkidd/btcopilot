@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>Companion</title>
+<style>
+:root{
+  --page:#EBEDE8; --paper:#F2F3F0; --card:#FBFBF9; --ink:#242A2E; --muted:#68716F;
+  --hair:#DBDED7; --draw:#146C7C; --unsure:#A97B2F;
+  --bandfill:rgba(201,148,65,.30);
+  --bubu:rgba(20,108,124,.10);
+  --sans:system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:ui-monospace,'SF Mono',Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#101416; --paper:#15191B; --card:#1C2225; --ink:#E5E8E3; --muted:#98A29E;
+    --hair:#2E373A; --draw:#5CB4C2; --unsure:#D2A458;
+    --bandfill:rgba(216,168,83,.26);
+    --bubu:rgba(92,180,194,.14);
+  }
+}
+:root[data-theme="dark"]{
+  --page:#101416; --paper:#15191B; --card:#1C2225; --ink:#E5E8E3; --muted:#98A29E;
+  --hair:#2E373A; --draw:#5CB4C2; --unsure:#D2A458;
+  --bandfill:rgba(216,168,83,.26);
+  --bubu:rgba(92,180,194,.14);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--page);color:var(--ink);
+  font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+.app{display:flex;flex-direction:column;height:100dvh;max-width:720px;margin:0 auto;
+  background:var(--paper)}
+@media (min-width:721px){
+  .app{border-left:1px solid var(--hair);border-right:1px solid var(--hair)}
+}
+.appbar{flex:none;display:flex;align-items:baseline;justify-content:space-between;
+  padding:12px 16px 9px;border-bottom:1px solid var(--hair)}
+.appbar .an{font:500 11px/1 var(--mono);letter-spacing:.16em}
+.appbar .ad{font:400 10px/1 var(--mono);color:var(--muted)}
+.pinned{flex:none;padding:10px 12px 8px;border-bottom:1px solid var(--hair);
+  background:var(--paper);box-shadow:0 6px 12px -10px rgba(20,30,34,.28);position:relative;z-index:2}
+.figcard{background:var(--card);border:1px solid var(--hair);border-radius:10px;
+  padding:8px 8px 5px;cursor:pointer}
+svg{display:block;width:100%;height:auto}
+.freshness{font:400 10.5px/1.4 var(--mono);color:var(--muted);margin:6px 2px 0}
+.freshness:empty{display:none}
+.chat{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:9px;padding:12px}
+.bub{max-width:82%;padding:9px 12px;font-size:13.5px;line-height:1.45;border-radius:15px;
+  white-space:pre-wrap}
+.coach{align-self:flex-start;background:var(--card);border:1px solid var(--hair);
+  border-bottom-left-radius:5px}
+.user{align-self:flex-end;background:var(--bubu);border-bottom-right-radius:5px}
+.inbar{flex:none;display:flex;gap:8px;align-items:center;padding:9px 12px
+  calc(13px + env(safe-area-inset-bottom));border-top:1px solid var(--hair)}
+.field{flex:1;border:1px solid var(--hair);background:var(--card);border-radius:999px;
+  padding:9px 14px;font:inherit;font-size:14px;color:var(--ink);outline:none}
+.field:focus{border-color:var(--draw)}
+.send{width:34px;height:34px;flex:none;border-radius:50%;background:var(--draw);
+  color:var(--card);font:600 16px/34px var(--sans);text-align:center;border:none;cursor:pointer}
+.send:disabled{opacity:.45}
+.overlay{position:fixed;inset:0;z-index:10;background:var(--page);display:flex;
+  flex-direction:column}
+.overlay[hidden]{display:none}
+.ovbar{flex:none;display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-bottom:1px solid var(--hair)}
+.ovbar .ovt{font:600 15px/1 var(--sans)}
+.ovclose{font:500 13px/1 var(--sans);color:var(--draw);background:none;border:none;
+  padding:6px 10px;cursor:pointer}
+.ovbody{flex:1;overflow-y:auto;padding:12px 12px 40px}
+.ovcard{background:var(--card);border:1px solid var(--hair);border-radius:10px;padding:10px}
+.shelfhead{font:500 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);margin:16px 2px 7px}
+.shelfrow{display:flex;flex-wrap:wrap;gap:7px}
+.shelfchip{display:inline-flex;align-items:center;gap:6px;background:var(--card);
+  border:1px dashed var(--unsure);border-radius:7px;padding:6px 9px;cursor:pointer;
+  font:600 11.5px/1.25 var(--sans);color:var(--ink)}
+.bubble{position:fixed;z-index:20;max-width:260px;background:var(--card);color:var(--ink);
+  border:1px solid var(--hair);border-radius:10px;padding:9px 12px;font-size:13px;
+  line-height:1.45;box-shadow:0 10px 24px -12px rgba(20,30,34,.4)}
+.bubble[hidden]{display:none}
+.empty{font-size:13px;color:var(--muted);text-align:center;margin:24px 12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="appbar"><span class="an">COMPANION</span><span class="ad">{{ user.first_name or user.username }}</span></div>
+  <div class="pinned">
+    <div class="figcard" id="strip-card" title="Tap to expand">
+      <svg id="strip" role="img" aria-label="Timeline strip"></svg>
+    </div>
+    <div class="freshness" id="freshness"></div>
+  </div>
+  <div class="chat" id="chat">
+    {% if not statements %}
+      <div class="empty">Say hello — the picture above fills in as you talk.</div>
+    {% endif %}
+    {% for s in statements %}
+      <div class="bub {{ 'coach' if s.role == 'coach' else 'user' }}">{{ s.text }}</div>
+    {% endfor %}
+  </div>
+  <form class="inbar" id="chat-form">
+    <input class="field" id="chat-input" placeholder="Write a message" autocomplete="off">
+    <button class="send" id="chat-send" type="submit" aria-label="Send">&#8593;</button>
+  </form>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="ovbar">
+    <span class="ovt">The picture so far</span>
+    <button class="ovclose" id="overlay-close">Done</button>
+  </div>
+  <div class="ovbody">
+    <div class="ovcard"><svg id="expanded" role="img" aria-label="Expanded timeline"></svg></div>
+    <div class="shelfhead" id="shelf-head" hidden>No date yet</div>
+    <div class="shelfrow" id="shelf"></div>
+  </div>
+</div>
+
+<div class="bubble" id="bubble" hidden></div>
+
+<script src="{{ url_for('companion.static', filename='companion.js') }}"></script>
+</body>
+</html>
