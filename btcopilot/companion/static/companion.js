@@ -1132,10 +1132,10 @@
 
   function aim(ref) {
     var ids = litFromRefs([ref]);
-    if (!ids.length) return;
+    var index = null;
+    for (var i = 0; i < ids.length && index === null; i++) index = chapterOfEvent(ids[i]);
+    if (index === null) return;
     S.lit = ids;
-    var index = chapterOfEvent(ids[0]);
-    if (index == null) return;
     S.selected = null;
     openChapter(index);
   }

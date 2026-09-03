@@ -11,6 +11,7 @@ from btcopilot.pro.models import Diagram, License, Policy
 from btcopilot.pro.models.license import LicenseStatus
 from btcopilot.pro.models.preferences import ChatMode, PrefKey, Proactive, Theme
 from btcopilot.schema import (
+    Cluster,
     DateCertainty,
     DiagramData,
     EventKind,
@@ -162,7 +163,14 @@ def test_session_of_another_user_is_not_found(web, token, test_user_2):
 )
 def test_chat_returns_chips_and_clean_text(web, token, family):
     data = family.get_diagram_data()
-    data.events = [{"id": 10, "kind": EventKind.Shift.value, "person": 1}]
+    data.events = [
+        {
+            "id": 10,
+            "kind": EventKind.Shift.value,
+            "person": 1,
+            "dateTime": "2010-03-01",
+        }
+    ]
     family.set_diagram_data(data)
     db.session.commit()
 
@@ -188,6 +196,105 @@ def test_chat_without_reference_returns_no_chips(web, token, family):
 def test_chip_pointing_at_nothing_is_dropped(web, token, family):
     body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
     assert body["statement"] == "I mean someone."
+    assert body["refs"] == []
+
+
+@pytest.fixture
+def dated(family):
+    """Two dated events and a cluster over them, so there is a chapter to aim at."""
+    data = family.get_diagram_data()
+    data.events = [
+        {
+            "id": 10,
+            "kind": EventKind.Shift.value,
+            "person": 1,
+            "dateTime": "2010-03-01",
+        },
+        {
+            "id": 11,
+            "kind": EventKind.Shift.value,
+            "person": 1,
+            "dateTime": "2010-06-01",
+        },
+    ]
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="c1",
+                title="A run",
+                summary="",
+                eventIds=[10, 11],
+                startDate="2010-03-01",
+            )
+        )
+    ]
+    data.lastItemId = 11
+    family.set_diagram_data(data)
+    db.session.commit()
+    return family
+
+
+def test_clusters_survive_a_server_side_write(dated):
+    """The chapter chip aims at a stored cluster, so a server write that keeps
+    events but drops clusters would silently kill it."""
+    data = dated.get_diagram_data()
+    data.events[0]["description"] = "edited"
+    dated.set_diagram_data(data)
+    db.session.commit()
+    assert [c["id"] for c in dated.get_diagram_data().clusters] == ["c1"]
+
+
+@pytest.mark.chat_flow(response="That chapter: [[chapter:c1|the run]].")
+def test_chapter_chip_names_a_cluster_on_the_line(web, token, dated):
+    body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
+    assert [(r["kind"], r["cluster_id"]) for r in body["refs"]] == [("chapter", "c1")]
+
+
+@pytest.mark.chat_flow(response="Off the line: [[chapter:c9|elsewhere]].")
+def test_chapter_chip_for_a_cluster_in_no_chapter_is_dropped(web, token, dated):
+    data = dated.get_diagram_data()
+    data.clusters = data.clusters + [
+        asdict(Cluster(id="c9", title="Off", summary="", startDate="1970-01-01"))
+    ]
+    dated.set_diagram_data(data)
+    db.session.commit()
+
+    body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
+    assert body["refs"] == []
+
+
+@pytest.mark.chat_flow(
+    response="Those years: [[range:2010-01-01..2010-12-31|that year]]."
+)
+def test_range_chip_covering_events_is_kept(web, token, dated):
+    body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
+    assert [r["kind"] for r in body["refs"]] == ["range"]
+
+
+@pytest.mark.chat_flow(
+    response="Those years: [[range:1970-01-01..1975-01-01|back then]]."
+)
+def test_range_chip_covering_no_event_is_dropped(web, token, dated):
+    body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
+    assert body["refs"] == []
+
+
+@pytest.mark.chat_flow(response="What about [[person:3|Nell]]?")
+def test_person_chip_with_no_events_is_dropped(web, token, dated):
+    body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
+    assert body["refs"] == []
+
+
+@pytest.mark.chat_flow(response="An undated one: [[events:12|that]].")
+def test_events_chip_for_an_undated_event_is_dropped(web, token, dated):
+    data = dated.get_diagram_data()
+    data.events = data.events + [
+        {"id": 12, "kind": EventKind.Shift.value, "person": 1, "dateTime": None}
+    ]
+    dated.set_diagram_data(data)
+    db.session.commit()
+
+    body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
     assert body["refs"] == []
 
 
@@ -429,7 +536,14 @@ def test_timeline_reports_where_an_event_was_coded(web, family):
 
 def test_timeline_omits_events_never_traced(web, family):
     data = family.get_diagram_data()
-    data.events = [{"id": 10, "kind": EventKind.Shift.value, "person": 1}]
+    data.events = [
+        {
+            "id": 10,
+            "kind": EventKind.Shift.value,
+            "person": 1,
+            "dateTime": "2010-03-01",
+        }
+    ]
     family.set_diagram_data(data)
     db.session.commit()
 

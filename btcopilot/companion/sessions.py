@@ -12,6 +12,7 @@ from btcopilot.companion.blueprint import (
     owned_session,
     sessions,
 )
+from btcopilot.companion.timeline import aimable
 from btcopilot.extensions import db
 from btcopilot.personal.chat import Response, ask
 from btcopilot.personal.models import Discussion
@@ -58,7 +59,7 @@ def _reply(discussion: Discussion, statement: str) -> dict:
     )
     return {
         "statement": response.statement,
-        "refs": [asdict(ref) for ref in resolve(response.refs, data)],
+        "refs": [asdict(ref) for ref in aimable(resolve(response.refs, data), data)],
         "discussion_id": discussion.id,
         "session": session_payload(discussion),
     }

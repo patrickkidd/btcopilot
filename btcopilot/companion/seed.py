@@ -12,6 +12,7 @@ import pickle
 import sys
 
 from btcopilot.schema import (
+    Cluster,
     DateCertainty,
     DiagramData,
     Event,
@@ -165,8 +166,19 @@ def seed_diagram_data() -> DiagramData:
                relationship=RelationshipKind.DefinedSelf, relationshipTargets=[4],
                description="Said where he stood with Diane"),
     ]
+    clusters = [
+        asdict(Cluster(id="cl1", title="The first household",
+                       summary="The years the family was forming.",
+                       eventIds=[10, 20, 21], startDate="1988-04-02",
+                       endDate="1999-11-05")),
+        asdict(Cluster(id="cl2", title="Sleep and the move",
+                       summary="Sleep worsened, then the household moved.",
+                       eventIds=[11, 12, 13], startDate="2005-03-10",
+                       endDate="2020-01-10")),
+    ]
     return DiagramData(
-        people=people, events=events, pair_bonds=pair_bonds, lastItemId=52
+        people=people, events=events, pair_bonds=pair_bonds, clusters=clusters,
+        lastItemId=52
     )
 
 

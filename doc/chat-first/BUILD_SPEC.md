@@ -164,3 +164,109 @@ Endpoints are REST per resource, not one endpoint per field.
 ## Not in scope tonight
 Close-up triangle drawings and cluster vignettes in the play-by-play (later, on the
 real family diagram); the real beta pricing numbers; voice.
+
+---
+
+# As built (2026-09-03)
+
+Branch `chat-first-app`. Written after the phase-5 integration walk; this
+section, not the text above, is the record of what actually exists.
+
+## What was built
+
+`/companion` serves the whole app behind the training-app login, on the user's
+own free diagram.
+
+- **The picture**, three levels, pinned above the chat: the resting wire with a
+  box per chapter and an amber `?` in unasked gaps; the chapter, one dot per
+  event with labels only for what the coach named or what you tapped; the
+  play-by-play, the moves stepped over a circular layout of the family.
+- **Coach chips.** The coach marks a reference inline; the server strips the
+  markup, resolves it against the diagram, drops anything it cannot aim at, and
+  hands the client a structured list. All four kinds work: chapter, an explicit
+  set of events, a person, a date range.
+- **Two-way traceability.** An event that carries the session that coded it
+  offers "coded in …", which switches session and highlights the message.
+- **Sessions** are Discussions: a searchable overlay grouped by recency, tap to
+  switch, long-press to rename, a button for a new one, auto-titled by the coach
+  after the first exchange.
+- **Settings**, an iOS-style nested list: profile, coach, appearance, diagrams,
+  plan and licences, email and sign-in with sign out. Speak-replies also sits on
+  the chat view and writes the same value.
+- **Timeline list**, full screen, searchable, grouped by chapter, with an
+  in-place editor covering every field `schema.Event` carries, and add and
+  delete. Every write takes the diagram's optimistic lock.
+- **Schema**: `users.preferences`, `users.birthdate`, `discussions.title`, one
+  alembic revision (head `e1f2a3b4c5d6`).
+
+`doc/chat-first/API.md` is the endpoint contract.
+
+## Deviations from the spec above, and why
+
+- **System fonts, not Libre Franklin / IBM Plex Mono.** No CDN is allowed, so
+  the mockup's faces are replaced by the system sans and mono at the same sizes.
+  The mono advance is unchanged, so label geometry matches.
+- **The plan line is a placeholder constant**, per the spec. The backend
+  inventory argued for a `Policy` row instead, since `Policy` already carries
+  name, amount, interval and description. The licences list already shows the
+  real policy name and status either way. Patrick's call which wins.
+- **Clusters are now persisted by the server.** `get_diagram_data` read
+  `clusters` and `clusterCacheKey`; `set_diagram_data` never wrote them. That
+  asymmetry meant a chapter chip could not resolve and chapters could never take
+  a cluster's title from anything the server wrote. Both fields are now written,
+  which changes the pickle shape by two keys the Personal app already produces.
+- **A chip must land in a chapter, not merely exist.** The spec said an
+  unresolvable reference is dropped. Existing was not enough: a date range over
+  empty years, a person with no events, an undated event and a cluster sitting
+  in a silence between chapters all resolved and then did nothing when tapped.
+  All four are now dropped server-side, so every chip that reaches the client
+  moves the picture.
+- **The old lane payload is dead weight.** The DRAWABILITY lane, strip, shelf,
+  question and axis data is still computed on every timeline read and still
+  covered by about ten tests, but nothing in the page draws it — the picture is
+  chapter-and-dot now. Deleting it costs those tests. Flagged, not decided.
+
+## Not done
+
+- **The coach is told to use ids it is never given.** The reference instruction
+  says "use only ids that appear in the record you were given", but the record
+  handed to the coach (`summarize_committed_state`) carries names, genders,
+  partners and life facts — no person, event or cluster ids at all. With the
+  stock prompt the coach can therefore only emit a date range; every other kind
+  would have to be invented, and invented ids are dropped. The chip machinery is
+  correct and tested end to end against canned replies, but a live coach cannot
+  drive it until the record carries ids. Not fixed here: it changes the coach's
+  production context, and prompt changes carry a mandated measurement process.
+- **fdserver must carry the reference instruction.** The default is
+  `COACH_REFERENCE_INSTRUCTION` in `btcopilot/personal/prompts.py`. fdserver
+  overrides `get_conversation_flow_prompt()` wholesale, so chips are off in
+  production until fdserver's prompt carries it. Deliberate fail-safe.
+- **Inline chips are 26px tall, under the 44px floor.** The approved mockup
+  draws them at 21px. A 44px target inside flowing prose cannot also hold the
+  standard's 8px gap between adjacent targets without widening the coach
+  bubble's line spacing. Two ruled documents disagree; needs a ruling.
+- **Historical coach messages carry no chips.** References come back only on a
+  live reply, so chips appear on a new reply and not on a reloaded transcript.
+- **Traceability records the discussion, never the statement.** Extraction runs
+  over a window of statements, so the statement is not knowable at the commit
+  site and stays null rather than guessed. On the deep-rebuild path, items
+  accumulated across several discussions are accepted through one discussion's
+  route and all take that discussion's id.
+- **No swipe-to-dismiss on the sessions overlay.** Tap, Done, rename and new all
+  work.
+- **Voice is a stored preference only**, per "not in scope tonight". Close-up
+  triangle drawings and cluster vignettes are likewise out of scope.
+- **Patrick's dev database still needs `alembic upgrade head`** before the page
+  can run against it.
+
+## Definition of done
+
+| # | item | state |
+|---|---|---|
+| 1 | `/companion` serves chat, picture, sessions, settings, timeline CRUD | met |
+| 2 | replies carry chips that aim the picture; tapping one works | met mechanically; a live coach cannot emit them until the record carries ids |
+| 3 | every event edit round-trips and redraws the picture | met |
+| 4 | preferences persist; speak-replies agrees in both places; sign out works | met |
+| 5 | 44px targets, 13px type floor, drag and wheel scrolling | met except inline chips at 26px |
+| 6 | tests cover the new routes and the CRUD round-trip; the suite passes | met |
+| 7 | nothing in this repo carries real personal data | met |

@@ -3,8 +3,10 @@ diagram state per doc/DRAWABILITY.md: 3-point line rule, certainty bands,
 gap vs recorded no-change, undated shelf, deterministic order questions."""
 
 import datetime
+import logging
 
 from btcopilot.personal.intake import _enum_val, _parse_iso_date
+from btcopilot.personal.refs import Ref, RefKind
 from btcopilot.schema import (
     DateCertainty,
     DiagramData,
@@ -13,6 +15,8 @@ from btcopilot.schema import (
     TraceKey,
     VariableShift,
 )
+
+_log = logging.getLogger(__name__)
 
 DATE_FIELDS = ("dateTime", "endDateTime")
 GAP_DAYS = 730
@@ -211,6 +215,61 @@ def _chapters(events: list[dict], clusters: list[dict]) -> list[dict]:
         )
         previous_end = end
     return chapters
+
+
+def aimable(refs: list[Ref], data: DiagramData) -> list[Ref]:
+    """A chip the picture cannot go to is not a chip. `resolve` keeps only
+    references the diagram holds; this keeps only the ones that land in a
+    chapter, which is the only place the picture can aim."""
+    people_by_id = {
+        p["id"]: p
+        for p in data.people
+        if isinstance(p, dict) and p.get("id") is not None
+    }
+    events = _events_payload(data, people_by_id)
+    chapters = _chapters(events, data.clusters)
+    dated = {event["id"]: event for event in events if not _undated(event)}
+    in_chapters = {
+        event_id for chapter in chapters for event_id in chapter["event_ids"]
+    }
+    named_clusters = {name for chapter in chapters for name in chapter["cluster_ids"]}
+
+    kept = []
+    for ref in refs:
+        if ref.kind is RefKind.Events:
+            if not in_chapters.intersection(ref.event_ids):
+                _log.warning(f"Reference {ref.label!r} names no event on the line")
+                continue
+        elif ref.kind is RefKind.Person:
+            if not any(
+                _links(event, ref.person_id)
+                for event_id, event in dated.items()
+                if event_id in in_chapters
+            ):
+                _log.warning(f"Reference {ref.label!r} names a person with no events")
+                continue
+        elif ref.kind is RefKind.Range:
+            if not any(
+                ref.start <= event["dateTime"] <= ref.end
+                for event_id, event in dated.items()
+                if event_id in in_chapters
+            ):
+                _log.warning(f"Reference {ref.label!r} covers no event on the line")
+                continue
+        elif ref.kind is RefKind.Chapter:
+            if ref.cluster_id not in named_clusters:
+                _log.warning(f"Reference {ref.label!r} names no chapter on the line")
+                continue
+        kept.append(ref)
+    return kept
+
+
+def _links(event: dict, person_id: int) -> bool:
+    return person_id in (
+        event.get("person"),
+        event.get("spouse"),
+        event.get("child"),
+    ) or person_id in (event.get("relationshipTargets") or [])
 
 
 def build_timeline(data: DiagramData) -> dict:
