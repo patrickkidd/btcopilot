@@ -384,6 +384,15 @@ def next_neg(existing_ids: set[int]) -> int:
     return n
 
 
+class TraceKey(enum.StrEnum):
+    """Keys stamped on a committed event dict recording where it was coded.
+    Stored as plain strings (never the enum itself) — event chunks are pickled
+    for the Pro app, which cannot import btcopilot."""
+
+    Discussion = "codedInDiscussion"
+    Statement = "codedInStatement"
+
+
 class ClusterPattern(enum.StrEnum):
     AnxietyCascade = "anxiety_cascade"
     TriangleActivation = "triangle_activation"
@@ -610,6 +619,17 @@ class DiagramData:
         chunk = committed_bond_chunk(pair_bond)
         self.pair_bonds.append(chunk)
         _log.info(f"Added pair bond with new ID {pair_bond.id}")
+
+    def stamp_event_source(
+        self, event_ids: list[int], discussion_id: int, statement_id: int | None = None
+    ) -> None:
+        """Record the discussion (and statement, where the caller knows it)
+        that coded these events. Ids that are not events are ignored."""
+        wanted = set(event_ids)
+        for event in self.events:
+            if event.get("id") in wanted:
+                event[TraceKey.Discussion.value] = discussion_id
+                event[TraceKey.Statement.value] = statement_id
 
     def commit_pdp_items(self, item_ids: list[int]) -> dict[int, int]:
         """

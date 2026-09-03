@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship
 from btcopilot.extensions import db
 from btcopilot.llmutil import response_text_sync
 from btcopilot.modelmixin import ModelMixin
+from btcopilot.personal.prompts import DISCUSSION_TITLE_PROMPT
 
 
 class DiscussionStatus(enum.StrEnum):
@@ -23,6 +24,7 @@ class Discussion(db.Model, ModelMixin):
 
     user_id = Column(Integer, db.ForeignKey("users.id"))
     diagram_id = Column(Integer, db.ForeignKey("diagrams.id"))
+    title = Column(Text)
     summary = Column(Text)
     discussion_date = Column(
         Date,
@@ -144,6 +146,13 @@ class Discussion(db.Model, ModelMixin):
                 conversation_history=self.conversation_history()
             ),
         )
+
+    def update_title(self):
+        self.title = response_text_sync(
+            DISCUSSION_TITLE_PROMPT.format(
+                conversation_history=self.conversation_history()
+            ),
+        ).strip()
 
     def next_order(self) -> int:
         from btcopilot.personal.models import Statement

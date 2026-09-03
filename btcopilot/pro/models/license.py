@@ -1,3 +1,4 @@
+import enum
 import uuid, datetime
 
 from sqlalchemy import (
@@ -13,6 +14,12 @@ from sqlalchemy.orm import relationship
 
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
+
+
+class LicenseStatus(enum.StrEnum):
+    Active = "active"
+    Canceled = "canceled"
+    Inactive = "inactive"
 
 
 class License(db.Model, ModelMixin):
@@ -67,6 +74,13 @@ class License(db.Model, ModelMixin):
             self.key,
             self.active,
         )
+
+    def status(self) -> LicenseStatus:
+        if not self.active:
+            return LicenseStatus.Inactive
+        if self.canceled:
+            return LicenseStatus.Canceled
+        return LicenseStatus.Active
 
     def days_old(self):
         if self.activated_at:

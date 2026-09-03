@@ -39,10 +39,23 @@ Endpoint-driven single-prompt extraction. See [PDP_DATA_FLOW.md](specs/PDP_DATA_
 Chat-only function:
 1. Builds conversation turns from discussion history
 2. Calls LLM with assembled prompt from `get_conversation_flow_prompt(model)`
-3. Creates Statement records for both user and AI
-4. Returns AI response text
+3. Parses coach references out of the reply (see below)
+4. Creates Statement records for both user and AI
+5. Returns `Response(statement, refs)`
 
 Uses Flask `g.custom_prompts` to override the assembled prompt if set.
+
+### Coach references ("chips")
+
+`COACH_REFERENCE_INSTRUCTION` (in `personal/prompts.py`, overridable by fdserver)
+tells the coach to mark a reference to the record inline as
+`[[kind:target|label]]`, where kind is one of `chapter`, `events`, `person`,
+`range`. `personal/refs.py` parses those out in `ask()`: the stored Statement
+and the text the user sees carry the label only — markup never reaches the
+transcript or the extraction prompt — and the structured references ride back
+on `Response.refs`. `refs.resolve()` then drops any reference the diagram
+cannot aim at, so a chip never points at nothing. A reply that names nothing
+yields an empty list; nothing is inferred from prose.
 
 ## Model Configuration
 
