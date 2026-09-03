@@ -12,7 +12,7 @@ from btcopilot.personal.intake import (
 )
 from btcopilot.personal.models import Discussion, Statement
 from btcopilot.personal.prompts import get_conversation_flow_prompt
-from btcopilot.personal.refs import Ref, parse
+from btcopilot.personal.refs import Ref, index, parse
 from btcopilot.schema import DiagramData
 
 _log = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ def summarize_committed_state(diagram_data: DiagramData | None) -> str:
         return ""
     roster = roster_for_prompt(diagram_data)
     cov = format_coverage_for_prompt(coverage(diagram_data))
-    return "\n".join(part for part in (roster, cov) if part)
+    return "\n".join(part for part in (roster, cov, index(diagram_data)) if part)
 
 
 @dataclass
