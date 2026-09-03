@@ -1,5 +1,8 @@
 # Chat-first rebuild — STATE (the system of record)
 
+**FD-362 is this project's epic and single source of truth at product altitude; this
+branch is the corpus. Process rules: [HOW_THIS_PROJECT_WORKS.md](HOW_THIS_PROJECT_WORKS.md).**
+
 Read this first, every session. This is the current truth; the derivation lives in
 [HISTORY.md](HISTORY.md). Both are living documents under the two-clocks regime:
 **append to HISTORY, revise STATE** as part of any work that changes either.
