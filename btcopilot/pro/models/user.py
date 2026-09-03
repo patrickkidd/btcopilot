@@ -3,13 +3,14 @@ import random
 import string
 import pickle
 
-from sqlalchemy import Column, Boolean, String, Integer, ForeignKey, inspect, JSON
+from sqlalchemy import Column, Boolean, Date, String, Integer, ForeignKey, inspect, JSON
 from sqlalchemy.orm import relationship
 import flask_bcrypt
 
 import btcopilot
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
+from btcopilot.pro.models.preferences import PREF_DEFAULTS, PrefKey, coerce_pref
 
 
 def randomString(length=32):
@@ -36,6 +37,9 @@ class User(db.Model, ModelMixin):
 
     first_name = Column(String(100), nullable=False, server_default="")
     last_name = Column(String(100), nullable=False, server_default="")
+    birthdate = Column(Date)
+
+    preferences = Column(JSON, nullable=False, default=dict, server_default="{}")
 
     stripe_id = Column(String(200))
 
@@ -122,6 +126,22 @@ class User(db.Model, ModelMixin):
 
     def full_name(self):
         return "%s %s" % (self.first_name, self.last_name)
+
+    def pref(self, key: PrefKey):
+        stored = (self.preferences or {}).get(key.value)
+        if stored is None:
+            return PREF_DEFAULTS[key]
+        return coerce_pref(key, stored)
+
+    def prefs(self) -> dict:
+        return {key.value: self.pref(key) for key in PrefKey}
+
+    def set_prefs(self, **kwargs) -> None:
+        preferences = dict(self.preferences or {})
+        for name, value in kwargs.items():
+            key = PrefKey(name)
+            preferences[key.value] = coerce_pref(key, value)
+        self.preferences = preferences
 
     def set_role(self, role: str):
         self.roles = role

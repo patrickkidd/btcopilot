@@ -23,6 +23,7 @@ class Discussion(db.Model, ModelMixin):
 
     user_id = Column(Integer, db.ForeignKey("users.id"))
     diagram_id = Column(Integer, db.ForeignKey("diagrams.id"))
+    title = Column(Text)
     summary = Column(Text)
     discussion_date = Column(
         Date,

@@ -102,6 +102,29 @@ def get(discussion_id: int):
     return jsonify(discussion.as_dict(include=["speakers", "statements"]))
 
 
+def _sync_chat_speakers(discussion: Discussion):
+    """Ensure User and Assistant people exist in the diagram, and sync the
+    Subject speaker to the primary person: keep person_id and the display label
+    (real name, else neutral default) in step so the chat transcript and
+    extraction prompt name the user, not "Client"."""
+    if not discussion.diagram:
+        return
+    diagram_data = discussion.diagram.get_diagram_data()
+    user_person_id, _, changed = diagram_data.ensure_chat_defaults()
+    if changed:
+        discussion.diagram.set_diagram_data(diagram_data)
+
+    user_speaker = Speaker.query.filter_by(
+        discussion_id=discussion.id, type=SpeakerType.Subject
+    ).first()
+    if user_speaker:
+        if user_speaker.person_id != user_person_id:
+            user_speaker.person_id = user_person_id
+        subject_name = diagram_data.subject_display_name()
+        if user_speaker.name != subject_name:
+            user_speaker.name = subject_name
+
+
 @bp.route("/<int:discussion_id>/statements", methods=["POST"])
 def chat(discussion_id: int):
     if request.headers.get("Content-Type") != "application/json":
@@ -111,25 +134,7 @@ def chat(discussion_id: int):
     if not discussion:
         return abort(404)
 
-    # Ensure User and Assistant people exist in the diagram (if diagram exists)
-    if discussion.diagram:
-        diagram_data = discussion.diagram.get_diagram_data()
-        user_person_id, _, changed = diagram_data.ensure_chat_defaults()
-        if changed:
-            discussion.diagram.set_diagram_data(diagram_data)
-
-        # Sync the Subject speaker to the primary person: keep person_id and the
-        # display label (real name, else neutral default) in step so the chat
-        # transcript and extraction prompt name the user, not "Client".
-        user_speaker = Speaker.query.filter_by(
-            discussion_id=discussion.id, type=SpeakerType.Subject
-        ).first()
-        if user_speaker:
-            if user_speaker.person_id != user_person_id:
-                user_speaker.person_id = user_person_id
-            subject_name = diagram_data.subject_display_name()
-            if user_speaker.name != subject_name:
-                user_speaker.name = subject_name
+    _sync_chat_speakers(discussion)
 
     statement = request.json["statement"]
     model = request.json.get("model")
