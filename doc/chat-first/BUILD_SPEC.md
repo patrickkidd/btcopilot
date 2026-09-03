@@ -3,6 +3,43 @@
 The design is settled. This is the build. Every decision below is ruled; do not
 re-open them. `UI_STANDARDS.md` in this folder is binding for every pixel.
 
+## READ THIS FIRST — reuse, do not reinvent
+
+**`BACKEND_INVENTORY.md` in this folder is required reading before you write a
+line.** It maps every existing model, column, relationship, endpoint and helper.
+Patrick's instruction: understand the existing structures and schema so nothing
+gets reinvented; anything that can be reused must be reused. Corrections that
+override anything later in this document:
+
+- **Phase 1 is already committed** (`9f31f76`): `users.preferences` with
+  `PrefKey` / `Proactive` / `ChatMode` / `Theme` and `pref` / `prefs` / `set_prefs`
+  in `pro/models/preferences.py`; `users.birthdate`; `discussions.title`. Alembic
+  head is `e1f2a3b4c5d6` — a further revision sets that as `down_revision`.
+- **Event field names come from `schema.py`, not from this document**:
+  `description`, `notes`, `location`, `dateTime`, `endDateTime`, `dateCertainty`.
+  Where this spec says summary / details / where / when / certainty it means those.
+  Committed events are plain dicts carrying Qt datetimes, **not `Event` dataclasses** —
+  handle them as the existing code does.
+- **Event writes reuse** `DiagramData.add_event`, `Diagram.get_diagram_data` /
+  `set_diagram_data`, and `update_with_version_check`. Only the route is new.
+- **Sessions reuse** the logic in `personal/routes/discussions.py` (today HMAC-signed
+  and unreachable from a browser) and the companion blueprint's existing
+  `_create_discussion`. Do **not** add a second creation path. Auto-title belongs
+  beside `Discussion.update_summary()`.
+- **Preferences endpoint adds no storage and no validation**: `User.prefs()` and
+  `User.set_prefs()` already raise on bad keys and values. The route is a thin shell.
+- **Account endpoint reuses** `User.licenses` → `Policy` (which already carries name,
+  amount, interval and description for six plans, so **beta pricing is a Policy row,
+  not a front-end constant**), `User.diagrams` / `free_diagram`, and `as_dict(only=…)`.
+- **Sign out reuses** `POST /training/auth/logout`, which clears the same cookie
+  session the companion blueprint authenticates against.
+- **The picture's server side already exists**: `build_timeline` behind
+  `GET /companion/timeline`, including extraction freshness. Extend it; do not
+  write a second timeline builder.
+- **Genuinely new**: the coach-reference chips (extend `Response`, which both chat
+  routes return) and event↔statement traceability (capture the negative→positive id
+  mapping that `commit_pdp_items` returns and all four callers currently discard).
+
 **Confidential data rule (hard):** no real names, emails, case identifiers, or
 clinical content in this repo, in commits, in fixtures, or in tests. Test fixtures
 use invented names. The approved visual mockup lives OUTSIDE this repo at
