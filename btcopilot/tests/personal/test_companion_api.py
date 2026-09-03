@@ -321,6 +321,13 @@ def test_event_round_trip(web, token, family):
     assert family.get_diagram_data().events == []
 
 
+def test_event_write_takes_the_diagram_lock(web, token, family):
+    before = family.version
+    post(web, token, "/companion/events", SHIFT)
+    db.session.refresh(family)
+    assert family.version == before + 1
+
+
 def test_event_variables_dropped_when_kind_is_not_shift(web, token, family):
     event = post(
         web, token, "/companion/events", dict(SHIFT, kind=EventKind.Death.value)

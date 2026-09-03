@@ -63,6 +63,9 @@ Patrick sets the numbers), `diagrams` (`id`, `name`, `last_activity`, `free`),
 carries any field `btcopilot.schema.Event` has except `id`; an unknown name is a
 400, as is a person id that is not in the diagram. Dates are ISO in and out.
 
+Every write takes the diagram's optimistic lock, so an edit racing a background
+extraction re-reads instead of clobbering; sustained contention is a 409.
+
 Saving normalizes rather than refusing: a non-shift kind clears the four shift
 values, targets need a relationship kind, triangles survive only for inside and
 outside. So a stored event can never break the editor's rules, and switching a

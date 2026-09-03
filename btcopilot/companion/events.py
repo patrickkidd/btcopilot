@@ -107,54 +107,61 @@ def _find(data, event_id: int) -> dict:
     abort(404)
 
 
-@bp.route("/events", methods=["POST"])
-def create():
+def _write(mutate):
+    """Every write takes the diagram's optimistic lock: a background extraction
+    can commit to the same diagram while the user is editing an event, and
+    whichever writer loses the race must re-read rather than clobber."""
     dia = diagram()
     if dia is None:
-        raise ValueError("This account has no diagram to add an event to")
-    data = dia.get_diagram_data()
-    values = _coerce(request.get_json(), _people(data))
-    if "kind" not in values:
-        raise ValueError("An event needs a kind")
+        abort(404)
+    for _ in range(32):
+        db.session.refresh(dia)
+        expected_version = dia.version
+        data = dia.get_diagram_data()
+        result = mutate(data)
+        ok, _ = dia.update_with_version_check(expected_version, diagram_data=data)
+        if ok:
+            db.session.commit()
+            return result
+        db.session.rollback()
+    abort(409, description="Diagram write contention; retry")
 
-    event = _normalize(Event(id=0, **values))
-    data.add_event(event)
-    chunk = _qt_dates(data.events[-1])
-    dia.set_diagram_data(data)
-    db.session.commit()
-    return jsonify(payload(chunk)), 201
+
+@bp.route("/events", methods=["POST"])
+def create():
+    def mutate(data):
+        values = _coerce(request.get_json(), _people(data))
+        if "kind" not in values:
+            raise ValueError("An event needs a kind")
+        data.add_event(_normalize(Event(id=0, **values)))
+        return payload(_qt_dates(data.events[-1]))
+
+    return jsonify(_write(mutate)), 201
 
 
 @bp.route("/events/<int:event_id>", methods=["PATCH"])
 def update(event_id: int):
-    dia = diagram()
-    if dia is None:
-        abort(404)
-    data = dia.get_diagram_data()
-    existing = _find(data, event_id)
-    merged = {
-        key: _enum_val(value) for key, value in existing.items() if key in WRITABLE
-    }
-    for key in DATE_FIELDS:
-        date = _parse_iso_date(existing.get(key))
-        merged[key] = date.isoformat() if date else None
-    merged.update(request.get_json())
+    def mutate(data):
+        existing = _find(data, event_id)
+        merged = {
+            key: _enum_val(value) for key, value in existing.items() if key in WRITABLE
+        }
+        for key in DATE_FIELDS:
+            date = _parse_iso_date(existing.get(key))
+            merged[key] = date.isoformat() if date else None
+        merged.update(request.get_json())
+        event = _normalize(Event(id=event_id, **_coerce(merged, _people(data))))
+        existing.update(_qt_dates(asdict(event)))
+        return payload(existing)
 
-    event = _normalize(Event(id=event_id, **_coerce(merged, _people(data))))
-    existing.update(_qt_dates(asdict(event)))
-    dia.set_diagram_data(data)
-    db.session.commit()
-    return jsonify(payload(existing))
+    return jsonify(_write(mutate))
 
 
 @bp.route("/events/<int:event_id>", methods=["DELETE"])
 def delete(event_id: int):
-    dia = diagram()
-    if dia is None:
-        abort(404)
-    data = dia.get_diagram_data()
-    _find(data, event_id)
-    data.events = [e for e in data.events if e.get("id") != event_id]
-    dia.set_diagram_data(data)
-    db.session.commit()
+    def mutate(data):
+        _find(data, event_id)
+        data.events = [e for e in data.events if e.get("id") != event_id]
+
+    _write(mutate)
     return "", 204
