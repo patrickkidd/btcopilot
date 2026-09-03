@@ -143,9 +143,10 @@ F-up ≈ defined self; symptom = interim cross + up/down arrow). Rulings:
 ~/theapp/btcopilot-sources/fd-corpus/OWNER_RULINGS.md (2026-09-01). Reference HTML (durable):
 ~/theapp/btcopilot-sources/fd-corpus/design/move-language.html (ratified galleries) and drilldown.html
 (three-level drill-down on two real records — KNOWN BUGGY; the rulings are the
-standard, not the prototype). Ruled three-level shape: wire with episode clusters
-→ tap-zoom into episode (words readable) → moves step-by-step; claims live in
-chat; loop engineering rules (all interactions collected). Next: build it on
+standard, not the prototype). Three-level shape, REVISED 2026-09-03 by the UI
+principle: wire with episode clusters → (the tap-zoom episode level is CUT; a tap is
+point-and-ask) → moves step-by-step driven from the chat's play-by-play; words and
+claims live in chat; loop engineering rules (all interactions collected). Next: build it on
 FD-360 against his real record — brief in NEXT_SESSIONS.md.
 
 ## The corpus (system of record for phases A and B)
@@ -216,6 +217,37 @@ plan never addressed. The corpus, the FUNCTION/STRUCTURE-subset sessions and the
 notability pipeline stay documented below as pinned threads; they are not the next step.
 Model policy still holds: judgment on the big model; implementation to precise spec on
 cheaper models; mechanics on the cheapest.
+
+## The UI principle (RULED 2026-09-03 — step-back item 1)
+
+**The coach never hands over the chalk.** Every tap on the picture loops back into the
+chat as communication to the coach, exactly like a spoken turn; visual input that does
+not return to the chat flow becomes a separate process and spawns UI and user-story
+complexity. One core engine — the agent loop — is everything; inline chips, what a tap
+sends back, and how the picture is aimed are harness. [Oracle: R-0065]
+
+- The picture is exceedingly simple: it shows as much as it can without crowding and
+  without requiring a tap for everything; a crowded visual (the wire timeline) means it
+  is doing too much. One tap to reveal a title is acceptable. [R-0066]
+- The tap-zoom cluster view (level 2 of the three-level shape) is CUT: tapping a cluster
+  is point-and-ask, and the cluster's words live in the chat via the play-by-play, never
+  in a navigable data view. The move step-through (level 3) survives, driven from chat.
+- One consistent visual mark says "this tap puts words in the chat"; anything without
+  the mark never costs a turn. Users control both tokens and flow. [R-0068]
+- Manual editing is NOT under test. The MVP is feature-complete only with the agent loop
+  and real-time tool-call edits (R-0055 restored); an include/defer feature list is
+  confirmed by Patrick before build. [R-0067]
+- The prototype's full timeline + event editor stays as designed, behind a menu, off the
+  main journey, with a one-line banner that editing by chat also works. [R-0069]
+- Play-by-play via a button that jumps to a complete, digestible concept is fine
+  (digestibility is a user test); drilling one datum at a time is rejected. [R-0071]
+- Every designed feature carries the learning loop: it generates data and corrections we
+  learn from. Part of principle one, product-ownership-wise. [R-0070]
+
+Open sub-rulings (main thread, this session): one-tap vs two-tap injection; whether the
+play-by-play is a model turn (wears the mark) or deterministic narration; whether it ends
+in a question or in suggested steering taps; whether non-injecting taps are silently
+recorded as coach context; the include/defer feature list.
 
 ## Pending threads (designed, not landed)
 
@@ -294,9 +326,8 @@ cheaper models; mechanics on the cheapest.
 A brainstorm that returns to the original brainstorm and fills its gaps, walked from
 highest altitude to lowest, **no mixing**. Ruled order:
 
-1. **The UI principle** — what "the smallest and most powerful simple UI we can test and
-   iterate on" includes and excludes. Patrick has his own thoughts; get them before
-   generating options.
+1. **The UI principle** — RULED 2026-09-03; see [The UI principle](#the-ui-principle-ruled-2026-09-03--step-back-item-1)
+   for the ruling and its open sub-rulings.
 2. **The Pro app, from first principles** — the export-only hard cutover was ruled on
    zero retention evidence; re-derive.
 3. **User journeys** — none exist anywhere (why the demo could be built inverted); the

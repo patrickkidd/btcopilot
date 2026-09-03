@@ -530,3 +530,22 @@ ruling that chat controls everything; no user journeys exist anywhere; the pendi
 fate is unruled). Working constraint he set: the big model is on paid credits and is
 used judiciously — only where vision/architecture judgment is needed, the session bounded,
 no runaway spend.
+
+### 2026-09-03 — item 1, the UI principle, ruled
+
+Patrick's own thoughts first: chat-driven, not an editor; the timeline list gives access to
+all the data; the play-by-play and clusters-over-time are the coach's chalkboard and work;
+the tap-zoom into a cluster puts the user into random-access data evaluation, which is
+what we do not want. The session proposed the reframe that a human coach's chalkboard is
+drawn on while talking and pointed at by the client, who is answered by speech — the
+coach never hands over the chalk — so every tap becomes a question to the coach and the
+zoom view goes. He ruled it the core concept: every tap loops back into chat, one engine,
+everything else harness; visual input that does not return to chat spawns its own process
+and complexity. Further rulings the same turn: the visual stays exceedingly simple and
+crowding means it is doing too much; manual editing is not under test and the MVP must
+carry the agent loop with real-time tool edits (he was disappointed the demo lacked it);
+a consistent visual mark for taps that inject into chat (users control tokens and flow);
+the prototype's timeline + editor stays behind a menu as the fallback with a banner; the
+play-by-play button is fine because it jumps to a complete concept; every feature carries
+the learning loop. Recorded as R-0065..R-0071. He then floated, for the question-back,
+suggested taps that steer the chat instead of a typed answer.
