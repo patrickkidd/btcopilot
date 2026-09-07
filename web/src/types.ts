@@ -1,10 +1,9 @@
+/** The three things a chip may name. The coach's markup is wider than this for
+ * historical reasons; the tokenizer narrows it to these on the way in. */
 export enum ChipKind {
   Event = "event",
-  Events = "events",
   Cluster = "cluster",
-  Chapter = "chapter",
   Person = "person",
-  Range = "range",
 }
 
 /** Teal is a reference to something the record holds; amber is the coach or the

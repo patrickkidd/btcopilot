@@ -20,7 +20,10 @@ def _page() -> str:
     it alone knows — the CSRF token and the session the user returns to."""
     path = os.path.join(BUNDLE, "index.html")
     if not os.path.exists(path):
-        raise RuntimeError(f"The web bundle is not built: {path} is missing")
+        raise RuntimeError(
+            f"The web bundle is not built ({path} is missing). "
+            "Run: npm --prefix web install && npm --prefix web run build"
+        )
     with open(path) as file:
         page = file.read()
     user = auth.current_user()

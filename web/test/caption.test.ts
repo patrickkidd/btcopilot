@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PicEvent, REST, reduce } from "../src/caption";
-import { ChipKind, InteractionKind } from "../src/types";
+import { InteractionKind, ItemKind } from "../src/types";
 
 describe("two taps on the picture", () => {
   it("the first tap opens a caption, records a look, and says nothing", () => {
@@ -9,7 +9,7 @@ describe("two taps on the picture", () => {
     expect(out.insert).toBeNull();
     expect(out.record).toEqual({
       kind: InteractionKind.Look,
-      item_kind: ChipKind.Cluster,
+      item_kind: ItemKind.Cluster,
       item_id: "ch0",
     });
   });
@@ -18,7 +18,11 @@ describe("two taps on the picture", () => {
     const open = reduce(REST, PicEvent.TapCluster, "ch0").state;
     const out = reduce(open, PicEvent.TapChip);
     expect(out.insert).toBe("[[cluster:ch0]]");
-    expect(out.record?.kind).toBe(InteractionKind.ChipTap);
+    expect(out.record).toEqual({
+      kind: InteractionKind.Say,
+      item_kind: ItemKind.Cluster,
+      item_id: "ch0",
+    });
     expect(out.state).toEqual(REST);
   });
 

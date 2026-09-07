@@ -4,7 +4,8 @@ import { token } from "./chips";
 /** Two taps on the picture (R-0073). The first tap looks: a caption appears and
  * nothing enters the chat. The second tap is the caption's one amber chip, and
  * that speaks. Tapping the open cluster again closes it; tapping another moves
- * the caption. Every tap is recorded, including the looks that send nothing. */
+ * the caption. Every tap is recorded against the item it touched, including the
+ * looks that send nothing. */
 
 export enum PicEvent {
   TapCluster = "tap_cluster",
@@ -56,7 +57,7 @@ export function reduce(state: PicState, event: PicEvent, id?: string): Outcome {
         insert: token(ChipKind.Cluster, target),
         play: null,
         record: {
-          kind: InteractionKind.ChipTap,
+          kind: InteractionKind.Say,
           item_kind: ItemKind.Cluster,
           item_id: target,
         },

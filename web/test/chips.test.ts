@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { aimedEvents, chips, token, tokenize } from "../src/chips";
-import { ChipKind, ChipTone } from "../src/types";
+import { aimedEvents, chips, itemKind, token, tokenize } from "../src/chips";
+import { ChipKind, ChipTone, ItemKind } from "../src/types";
 
 const chapters = [
   { id: "ch0", cluster_ids: ["c-mid90s"], event_ids: [11, 12, 13] },
@@ -49,6 +49,19 @@ describe("tokenize", () => {
     expect(tokenize("[[thing:9|x]]")).toEqual([{ text: "[[thing:9|x]]" }]);
   });
 
+  it("narrows the coach's wider markup to the three kinds a chip may name", () => {
+    expect(chips("[[events:11,13|both]]")[0].kind).toBe(ChipKind.Event);
+    expect(chips("[[chapter:ch1|then]]")[0].kind).toBe(ChipKind.Cluster);
+    expect(chips("[[person:4|her]]")[0].kind).toBe(ChipKind.Person);
+  });
+
+  it("keeps a span of time as plain words, not a chip that goes nowhere", () => {
+    expect(tokenize("between [[range:1990-01-01..1999-12-31|the nineties]]")).toEqual([
+      { text: "between " },
+      { text: "the nineties" },
+    ]);
+  });
+
   it("finds every chip in a play-by-play", () => {
     const found = chips(
       "[[event:11|one]] then [[event:12|two]] and [[event:13|three]]",
@@ -68,6 +81,12 @@ describe("aimedEvents", () => {
 
   it("aims a multi-event chip at all of them", () => {
     expect(aimedEvents(chips("[[events:11,13|x]]")[0], chapters)).toEqual([11, 13]);
+  });
+
+  it("maps every chip kind to the item kind the record stores", () => {
+    expect(itemKind(ChipKind.Event)).toBe(ItemKind.Event);
+    expect(itemKind(ChipKind.Cluster)).toBe(ItemKind.Cluster);
+    expect(itemKind(ChipKind.Person)).toBe(ItemKind.Person);
   });
 
   it("aims a cluster chip at the whole cluster, by cluster id or chapter id", () => {

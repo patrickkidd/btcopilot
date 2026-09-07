@@ -137,7 +137,6 @@ async function send(): Promise<void> {
   if (!statement) return;
   chat.add(Role.User, statement);
   chat.resetDraft();
-  tapped(InteractionKind.Say, ItemKind.Diagram);
   chat.busy(true);
   const reply = await api.say(statement);
   chat.busy(false);

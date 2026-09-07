@@ -191,3 +191,6 @@ doc/log/coach-sessions/
 # Extraction experiment data lives in fdserver/training/ (proprietary IP) — never here
 doc/induction-reports/
 .claude/worktrees/
+
+# Vite build output for the companion page (web/); built by the image.
+btcopilot/companion/static/web/

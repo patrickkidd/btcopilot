@@ -3,30 +3,47 @@ import { ChipKind, ChipTone, ItemKind, type Chip, type Piece } from "./types";
 /** Reference markup as the coach writes it: `[[kind:target]]`, or
  * `[[kind:target|label]]` when it has words of its own. The label-bearing form
  * is what btcopilot/personal/refs.py already emits; the bare form is what a
- * user's own message carries after they tap a chip. */
+ * user's own message carries after they tap a chip.
+ *
+ * A chip names one of three things — an event, a cluster, a person. The markup
+ * the coach may write is wider than that, so it is narrowed here: `events` is a
+ * list of events, `chapter` is what a cluster used to be called, and `range` is
+ * a span of time that resolves to nothing the picture can go to, so it stays
+ * plain words rather than becoming a chip that does nothing. */
+
+enum Markup {
+  Event = "event",
+  Events = "events",
+  Cluster = "cluster",
+  Chapter = "chapter",
+  Person = "person",
+  Range = "range",
+}
+
+const NARROWED: Record<Markup, ChipKind | null> = {
+  [Markup.Event]: ChipKind.Event,
+  [Markup.Events]: ChipKind.Event,
+  [Markup.Cluster]: ChipKind.Cluster,
+  [Markup.Chapter]: ChipKind.Cluster,
+  [Markup.Person]: ChipKind.Person,
+  [Markup.Range]: null,
+};
+
 const TOKEN = new RegExp(
-  `\\[\\[(${Object.values(ChipKind).join("|")}):([^|\\]]+)(?:\\|([^\\]]*))?\\]\\]`,
+  `\\[\\[(${Object.values(Markup).join("|")}):([^|\\]]+)(?:\\|([^\\]]*))?\\]\\]`,
   "g",
 );
 
 const KIND_WORD: Record<ChipKind, string> = {
   [ChipKind.Event]: "this",
-  [ChipKind.Events]: "these",
   [ChipKind.Cluster]: "this stretch",
-  [ChipKind.Chapter]: "this stretch",
   [ChipKind.Person]: "them",
-  [ChipKind.Range]: "then",
 };
 
-/** Chip markup is wider than the record's item kinds: several chip kinds name
- * the same kind of item, and a span of time is a reference to the record. */
 const ITEM_OF: Record<ChipKind, ItemKind> = {
   [ChipKind.Event]: ItemKind.Event,
-  [ChipKind.Events]: ItemKind.Event,
   [ChipKind.Cluster]: ItemKind.Cluster,
-  [ChipKind.Chapter]: ItemKind.Cluster,
   [ChipKind.Person]: ItemKind.Person,
-  [ChipKind.Range]: ItemKind.Diagram,
 };
 
 export const itemKind = (kind: ChipKind): ItemKind => ITEM_OF[kind];
@@ -43,11 +60,13 @@ export function tokenize(text: string, tone = ChipTone.Data): Piece[] {
   TOKEN.lastIndex = 0;
   for (let m = TOKEN.exec(text); m !== null; m = TOKEN.exec(text)) {
     if (m.index > at) pieces.push({ text: text.slice(at, m.index) });
-    const kind = m[1] as ChipKind;
+    const kind = NARROWED[m[1] as Markup];
     const label = (m[3] ?? "").trim();
-    pieces.push({
-      chip: { kind, target: m[2].trim(), label: label || KIND_WORD[kind], tone },
-    });
+    if (kind === null) pieces.push({ text: label });
+    else
+      pieces.push({
+        chip: { kind, target: m[2].trim(), label: label || KIND_WORD[kind], tone },
+      });
     at = m.index + m[0].length;
   }
   if (at < text.length) pieces.push({ text: text.slice(at) });
@@ -65,19 +84,17 @@ export function aimedEvents(
 ): number[] {
   switch (chip.kind) {
     case ChipKind.Event:
-    case ChipKind.Events:
       return chip.target
         .split(",")
         .map((part) => Number(part.trim()))
         .filter((id) => Number.isFinite(id));
-    case ChipKind.Cluster:
-    case ChipKind.Chapter: {
+    case ChipKind.Cluster: {
       const chapter = chapters.find(
         (c) => c.id === chip.target || c.cluster_ids.includes(chip.target),
       );
       return chapter ? chapter.event_ids : [];
     }
-    default:
+    case ChipKind.Person:
       return [];
   }
 }
