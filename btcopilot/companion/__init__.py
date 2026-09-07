@@ -1,4 +1,12 @@
-from btcopilot.companion import blueprint, events, routes, sessions, settings
+from btcopilot.companion import (
+    blueprint,
+    events,
+    interactions,
+    play,
+    routes,
+    sessions,
+    settings,
+)
 
 
 def init_app(app):

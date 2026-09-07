@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Companion</title>
+<link rel="manifest" href="/companion/manifest.webmanifest">
+<link rel="icon" href="data:,">
+</head>
+<body>
+<div class="app">
+  <div class="titlerow">
+    <div class="ttl">Your family</div>
+    <button class="iconbtn" id="menu-open" type="button" aria-label="Timeline and settings">
+      <svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><path d="M1 1h16M1 7h16M1 13h16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"/></svg>
+    </button>
+  </div>
+
+  <div class="screen" id="chat-screen">
+    <div class="pic">
+      <div class="view" id="view"></div>
+      <div class="caption" id="caption" hidden></div>
+    </div>
+    <div class="chat" id="chat"></div>
+    <div class="inbar">
+      <div class="field" id="composer" contenteditable="true" role="textbox"
+           aria-label="Message your coach" data-ph="Message your coach"></div>
+      <button class="send" id="send" type="button" aria-label="Send">&#8593;</button>
+    </div>
+  </div>
+
+  <div class="screen" id="menu-screen" hidden>
+    <div class="ovbar">
+      <span class="ovt">Timeline</span>
+      <button class="iconbtn" id="menu-add" type="button" aria-label="Add an event">+</button>
+      <button class="btn link" id="menu-close" type="button">Done</button>
+    </div>
+    <div class="scroller" id="menu-body"></div>
+  </div>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

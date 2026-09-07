@@ -1,0 +1,17 @@
+{
+  "name": "Family Companion",
+  "short_name": "Companion",
+  "start_url": "/companion/",
+  "scope": "/companion/",
+  "display": "standalone",
+  "background_color": "#f7f6f2",
+  "theme_color": "#0e7d78",
+  "icons": [
+    {
+      "src": "/companion/static/web/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
