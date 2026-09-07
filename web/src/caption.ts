@@ -1,4 +1,4 @@
-import { ChipKind, InteractionKind } from "./types";
+import { ChipKind, InteractionKind, ItemKind } from "./types";
 import { token } from "./chips";
 
 /** Two taps on the picture (R-0073). The first tap looks: a caption appears and
@@ -20,7 +20,7 @@ export interface PicState {
 
 export interface Record_ {
   kind: InteractionKind;
-  item_kind: ChipKind;
+  item_kind: ItemKind;
   item_id: string;
 }
 
@@ -44,7 +44,7 @@ export function reduce(state: PicState, event: PicEvent, id?: string): Outcome {
         insert: null,
         play: null,
         record: open
-          ? { kind: InteractionKind.Look, item_kind: ChipKind.Cluster, item_id: id }
+          ? { kind: InteractionKind.Look, item_kind: ItemKind.Cluster, item_id: id }
           : null,
       };
     }
@@ -57,7 +57,7 @@ export function reduce(state: PicState, event: PicEvent, id?: string): Outcome {
         play: null,
         record: {
           kind: InteractionKind.ChipTap,
-          item_kind: ChipKind.Cluster,
+          item_kind: ItemKind.Cluster,
           item_id: target,
         },
       };
@@ -71,7 +71,7 @@ export function reduce(state: PicState, event: PicEvent, id?: string): Outcome {
         play: target,
         record: {
           kind: InteractionKind.Play,
-          item_kind: ChipKind.Cluster,
+          item_kind: ItemKind.Cluster,
           item_id: target,
         },
       };

@@ -1,4 +1,4 @@
-import { ChipKind, ChipTone, type Chip, type Piece } from "./types";
+import { ChipKind, ChipTone, ItemKind, type Chip, type Piece } from "./types";
 
 /** Reference markup as the coach writes it: `[[kind:target]]`, or
  * `[[kind:target|label]]` when it has words of its own. The label-bearing form
@@ -17,6 +17,19 @@ const KIND_WORD: Record<ChipKind, string> = {
   [ChipKind.Person]: "them",
   [ChipKind.Range]: "then",
 };
+
+/** Chip markup is wider than the record's item kinds: several chip kinds name
+ * the same kind of item, and a span of time is a reference to the record. */
+const ITEM_OF: Record<ChipKind, ItemKind> = {
+  [ChipKind.Event]: ItemKind.Event,
+  [ChipKind.Events]: ItemKind.Event,
+  [ChipKind.Cluster]: ItemKind.Cluster,
+  [ChipKind.Chapter]: ItemKind.Cluster,
+  [ChipKind.Person]: ItemKind.Person,
+  [ChipKind.Range]: ItemKind.Diagram,
+};
+
+export const itemKind = (kind: ChipKind): ItemKind => ITEM_OF[kind];
 
 export function token(kind: ChipKind, target: string, label?: string): string {
   return label ? `[[${kind}:${target}|${label}]]` : `[[${kind}:${target}]]`;

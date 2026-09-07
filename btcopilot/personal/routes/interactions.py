@@ -22,13 +22,10 @@ def recent(diagram_id: int, n: int = 50) -> list[Interaction]:
     )
 
 
-@bp.route("/", methods=["POST"], strict_slashes=False)
-def record():
-    user = auth.current_user()
-    data = request.get_json()
-    if not data:
-        return jsonify(error="Request body is required"), 400
-
+def record_interaction(user, data: dict) -> Interaction:
+    """Write one tap against the diagram it touched. The browser surface
+    authenticates its own way and calls this directly: /personal/ is signed by
+    the native apps and a session cookie cannot reach it."""
     diagram = Diagram.query.get(data["diagram_id"])
     if not diagram:
         abort(404)
@@ -46,7 +43,15 @@ def record():
     )
     db.session.add(interaction)
     db.session.commit()
+    return interaction
 
+
+@bp.route("/", methods=["POST"], strict_slashes=False)
+def record():
+    data = request.get_json()
+    if not data:
+        return jsonify(error="Request body is required"), 400
+    interaction = record_interaction(auth.current_user(), data)
     return jsonify(success=True, interaction=interaction.as_dict())
 
 

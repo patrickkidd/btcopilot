@@ -1,6 +1,6 @@
 import type {
-  ChipKind,
   InteractionKind,
+  ItemKind,
   PlayReply,
   Reply,
   Statement,
@@ -37,12 +37,17 @@ export const say = (statement: string) =>
 export const play = (clusterId: string) =>
   call<PlayReply>("POST", "/play", { cluster_id: clusterId });
 
+/** Every tap is learning data (R-0077), including the looks that send nothing.
+ * A tap with no item in view is still about the record, so it is stored against
+ * the diagram itself rather than dropped. */
 export const record = (
+  diagramId: number,
   kind: InteractionKind,
-  itemKind: ChipKind | null = null,
+  itemKind: ItemKind,
   itemId: string | null = null,
 ) =>
   call<void>("POST", "/interactions", {
+    diagram_id: diagramId,
     kind,
     item_kind: itemKind,
     item_id: itemId,

@@ -3,13 +3,14 @@ import * as api from "./api";
 import { Chat, wait } from "./chat";
 import { Picture } from "./picture";
 import { Menu } from "./menu";
-import { aimedEvents } from "./chips";
+import { aimedEvents, itemKind } from "./chips";
 import { PicEvent, REST, reduce, type Outcome, type PicState } from "./caption";
 import { $, esc } from "./dom";
 import {
   ChipKind,
   ChipTone,
   InteractionKind,
+  ItemKind,
   Role,
   type Chip,
   type Statement,
@@ -18,7 +19,11 @@ import {
 
 declare global {
   interface Window {
-    COMPANION: { session: { id: number } | null; statements: Statement[] };
+    COMPANION: {
+      diagram_id: number | null;
+      session: { id: number } | null;
+      statements: Statement[];
+    };
   }
 }
 
@@ -36,13 +41,24 @@ let timeline: Timeline = {
 };
 let pic: PicState = REST;
 
+/** A tap can only be recorded against a diagram; without one there is nothing to
+ * record it on. */
+function tapped(
+  kind: InteractionKind,
+  item: ItemKind,
+  id: string | null = null,
+): void {
+  const diagram = window.COMPANION.diagram_id;
+  if (diagram !== null) void api.record(diagram, kind, item, id);
+}
+
 const picture = new Picture($("view"), {
   onCluster: (id) => apply(reduce(pic, PicEvent.TapCluster, id)),
 });
 
 const chat = new Chat($("chat"), $("composer"), {
   onChip: (chip) => {
-    void api.record(InteractionKind.ChipTap, chip.kind, chip.target);
+    tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
     if (chip.tone === ChipTone.Ask) chat.insert(chip);
     else aim(chip);
   },
@@ -62,7 +78,7 @@ function apply(outcome: Outcome): void {
   picture.setOpen(pic.open);
   caption();
   if (outcome.record)
-    void api.record(
+    tapped(
       outcome.record.kind,
       outcome.record.item_kind,
       outcome.record.item_id,
@@ -121,7 +137,7 @@ async function send(): Promise<void> {
   if (!statement) return;
   chat.add(Role.User, statement);
   chat.resetDraft();
-  void api.record(InteractionKind.Say);
+  tapped(InteractionKind.Say, ItemKind.Diagram);
   chat.busy(true);
   const reply = await api.say(statement);
   chat.busy(false);

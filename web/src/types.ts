@@ -14,6 +14,18 @@ export enum ChipTone {
   Ask = "ask",
 }
 
+/** What the record can be pointed at, as the Interaction model stores it. Chip
+ * kinds are markup and are wider than this: several of them name the same kind
+ * of item. */
+export enum ItemKind {
+  Person = "person",
+  Event = "event",
+  PairBond = "pair_bond",
+  Emotion = "emotion",
+  Cluster = "cluster",
+  Diagram = "diagram",
+}
+
 export enum InteractionKind {
   Look = "look",
   Say = "say",
