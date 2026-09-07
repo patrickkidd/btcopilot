@@ -42,6 +42,9 @@ export interface Chip {
   target: string;
   label: string;
   tone: ChipTone;
+  /** True when the coach wrote the reference with no words of its own, so the
+   * label is a stand-in the record can better. */
+  bare: boolean;
 }
 
 export type Piece = { text: string } | { chip: Chip };
@@ -101,8 +104,51 @@ export interface Statement {
   text: string;
 }
 
+/** The turn as it happens: words as they are written, the tool calls behind
+ * them, the deltas already in the record, the views the picture should take,
+ * and the persisted statement last. */
+export enum TurnEventKind {
+  ToolCall = "tool_call",
+  RecordPatch = "record_patch",
+  View = "view",
+}
+
+export enum ViewKind {
+  Triangle = "triangle",
+  Span = "span",
+  Compare = "compare",
+  Sequence = "sequence",
+  Cluster = "cluster",
+}
+
+export type View =
+  | { kind: ViewKind.Triangle; persons: number[] }
+  | { kind: ViewKind.Span; start: string; end: string }
+  | { kind: ViewKind.Compare; event_a: number; event_b: number }
+  | { kind: ViewKind.Sequence; events: number[] }
+  | { kind: ViewKind.Cluster; cluster: string };
+
+export type TurnEvent =
+  | { type: TurnEventKind.ToolCall; name: string; args: Record<string, unknown> }
+  | { type: TurnEventKind.RecordPatch; deltas: Delta[]; turn_id: string }
+  | { type: TurnEventKind.View; view: View };
+
+export interface Delta {
+  item_kind: ItemKind;
+  item_id: string;
+  field: string;
+  before: unknown;
+  after: unknown;
+}
+
+/** One agent-loop turn: the coach's words with their chips, and what it did
+ * behind them in the order it happened. */
 export interface Reply {
   statement: string;
+  statement_id: number;
+  views: View[] | null;
+  events: TurnEvent[];
+  turn_id: string;
   discussion_id: number;
 }
 

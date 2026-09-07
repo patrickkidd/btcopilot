@@ -31,8 +31,12 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 
 export const timeline = () => call<Timeline>("GET", "/timeline");
 
-export const say = (statement: string) =>
-  call<Reply>("POST", "/chat", { statement });
+/** One agent-loop turn. The coach answers with its words and, behind them, the
+ * tool calls, the deltas already applied and the views it asked for. */
+export const say = (statement: string, sessionId: number | null) =>
+  sessionId === null
+    ? call<Reply>("POST", "/chat", { statement })
+    : call<Reply>("POST", `/sessions/${sessionId}/statements`, { statement });
 
 export const play = (clusterId: string) =>
   call<PlayReply>("POST", "/play", { cluster_id: clusterId });

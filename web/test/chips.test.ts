@@ -18,6 +18,7 @@ describe("tokenize", () => {
           target: "11",
           label: "Dad moved out",
           tone: ChipTone.Data,
+          bare: false,
         },
       },
       { text: ", then." },
@@ -32,6 +33,7 @@ describe("tokenize", () => {
         target: "c-mid90s",
         label: "this stretch",
         tone: ChipTone.Data,
+        bare: true,
       },
     });
   });

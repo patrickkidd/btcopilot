@@ -65,7 +65,13 @@ export function tokenize(text: string, tone = ChipTone.Data): Piece[] {
     if (kind === null) pieces.push({ text: label });
     else
       pieces.push({
-        chip: { kind, target: m[2].trim(), label: label || KIND_WORD[kind], tone },
+        chip: {
+          kind,
+          target: m[2].trim(),
+          label: label || KIND_WORD[kind],
+          tone,
+          bare: !label,
+        },
       });
     at = m.index + m[0].length;
   }

@@ -4,6 +4,7 @@ import { Chat, wait } from "./chat";
 import { Picture } from "./picture";
 import { Menu } from "./menu";
 import { aimedEvents, itemKind } from "./chips";
+import { StepKind, steps } from "./turn";
 import { PicEvent, REST, reduce, type Outcome, type PicState } from "./caption";
 import { $, esc } from "./dom";
 import {
@@ -40,6 +41,7 @@ let timeline: Timeline = {
   shelf: [],
 };
 let pic: PicState = REST;
+let session: number | null = window.COMPANION.session?.id ?? null;
 
 /** A tap can only be recorded against a diagram; without one there is nothing to
  * record it on. */
@@ -56,7 +58,23 @@ const picture = new Picture($("view"), {
   onCluster: (id) => apply(reduce(pic, PicEvent.TapCluster, id)),
 });
 
+/** A chip the coach wrote without words of its own says what the record calls
+ * it: a person's name, an event's line, a stretch's title. */
+function chipLabel(chip: Chip): string {
+  if (!chip.bare) return chip.label;
+  if (chip.kind === ChipKind.Person)
+    return timeline.people.find((p) => String(p.id) === chip.target)?.name ?? chip.label;
+  if (chip.kind === ChipKind.Event)
+    return timeline.events.find((e) => String(e.id) === chip.target)?.label ?? chip.label;
+  return (
+    timeline.chapters.find(
+      (c) => c.id === chip.target || c.cluster_ids.includes(chip.target),
+    )?.title ?? chip.label
+  );
+}
+
 const chat = new Chat($("chat"), $("composer"), {
+  label: chipLabel,
   onChip: (chip) => {
     tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
     if (chip.tone === ChipTone.Ask) chat.insert(chip);
@@ -89,6 +107,7 @@ function apply(outcome: Outcome): void {
       target: outcome.state.open ?? "",
       label: captionTitle() ?? "this stretch",
       tone: ChipTone.Data,
+      bare: false,
     });
   if (outcome.play) void playThrough(outcome.play);
 }
@@ -125,23 +144,35 @@ async function playThrough(clusterId: string): Promise<void> {
   chat.busy(true);
   const reply = await api.play(clusterId);
   chat.busy(false);
-  await chat.type(reply.statement, (chip) => {
+  await chat.live().type(reply.statement, (chip) => {
     const ids = aimedEvents(chip, timeline.chapters);
     if (ids.length) picture.step(ids[0]);
   });
   pic = { ...pic, playing: null };
 }
 
+/** One turn. The coach's edits are already in the record by the time the reply
+ * arrives, so the page says what it did, re-reads, and draws what it asked to
+ * show — then types the words out, aiming the picture as each chip lands. */
 async function send(): Promise<void> {
   const statement = chat.draft();
   if (!statement) return;
   chat.add(Role.User, statement);
   chat.resetDraft();
   chat.busy(true);
-  const reply = await api.say(statement);
+
+  const reply = await api.say(statement, session);
+  session = reply.discussion_id;
   chat.busy(false);
-  await chat.type(reply.statement, (chip) => aim(chip));
-  timeline = await load();
+
+  const bubble = chat.live();
+  for (const step of steps(reply)) {
+    if (step.kind === StepKind.Note) bubble.note(step.line);
+    else if (step.kind === StepKind.Reload) await load();
+    else await picture.show(step.view);
+  }
+  await bubble.type(reply.statement, (chip) => aim(chip));
+  await load();
 }
 
 async function load(): Promise<Timeline> {
@@ -177,7 +208,7 @@ for (const statement of window.COMPANION.statements)
 void load().then(async () => {
   if (!window.COMPANION.statements.length) {
     await wait(300);
-    await chat.type(
+    await chat.live().type(
       "I'm here whenever you want to think out loud about your family. " +
         "Tell me who is on your mind.",
       () => undefined,

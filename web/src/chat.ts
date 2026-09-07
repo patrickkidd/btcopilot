@@ -8,19 +8,9 @@ import { ChipTone, Role, type Chip, type Piece } from "./types";
 
 export interface ChatHandlers {
   onChip(chip: Chip): void;
-}
-
-function pill(chip: Chip): string {
-  return (
-    `<button type="button" class="chip ${chip.tone}" ` +
-    `data-kind="${chip.kind}" data-target="${esc(chip.target)}">${esc(chip.label)}</button>`
-  );
-}
-
-function render(pieces: Piece[]): string {
-  return pieces
-    .map((p) => ("chip" in p ? pill(p.chip) : esc(p.text)))
-    .join("");
+  /** What a chip should read as. The coach may write a reference with no words
+   * of its own, and a name out of the record beats a pronoun in a sentence. */
+  label(chip: Chip): string;
 }
 
 export class Chat {
@@ -45,10 +35,25 @@ export class Chat {
           tone: button.classList.contains(ChipTone.Ask)
             ? ChipTone.Ask
             : ChipTone.Data,
+          bare: false,
         });
     };
     this.list.addEventListener("click", tap(this.list));
     this.composer.addEventListener("click", tap(this.composer));
+  }
+
+  private pill(chip: Chip): string {
+    return (
+      `<button type="button" class="chip ${chip.tone}" ` +
+      `data-kind="${chip.kind}" data-target="${esc(chip.target)}">` +
+      `${esc(this.handlers.label(chip))}</button>`
+    );
+  }
+
+  private render(pieces: Piece[]): string {
+    return pieces
+      .map((p) => ("chip" in p ? this.pill(p.chip) : esc(p.text)))
+      .join("");
   }
 
   clear(): void {
@@ -56,39 +61,45 @@ export class Chat {
   }
 
   add(role: Role, text: string, tone = ChipTone.Data): HTMLElement {
-    const bubble = el("div", `bub ${role}`, render(tokenize(text, tone)));
+    const bubble = el("div", `bub ${role}`, this.render(tokenize(text, tone)));
     this.list.append(bubble);
     this.scroll();
     return bubble;
   }
 
-  /** The coach's words arrive whole and are typed out, one piece at a time, so
-   * each chip can light its part of the picture as it lands. `onChip` fires as
-   * every chip appears. */
-  async type(
-    text: string,
-    onChip: (chip: Chip) => void,
-    pace = 260,
-  ): Promise<void> {
-    const bubble = el("div", `bub ${Role.Coach} typing`, "");
-    this.typing = bubble;
+  /** A coach bubble. It says what the coach did first, as a plain line each,
+   * then types the words out so every chip can light its part of the picture
+   * as it lands. */
+  live(): LiveBubble {
+    const bubble = el("div", `bub ${Role.Coach} typing`, '<span class="words"></span>');
     this.list.append(bubble);
-    for (const piece of tokenize(text)) {
-      if ("chip" in piece) {
-        bubble.insertAdjacentHTML("beforeend", pill(piece.chip));
-        onChip(piece.chip);
-        await wait(pace);
-      } else {
-        for (const word of piece.text.split(/(\s+)/)) {
-          bubble.insertAdjacentText("beforeend", word);
+    this.typing = bubble;
+    this.scroll();
+    const words = bubble.querySelector(".words") as HTMLElement;
+    return {
+      note: (line) => {
+        bubble.insertBefore(el("div", "did", esc(line)), words);
+        this.scroll();
+      },
+      type: async (text, onChip, pace = 260) => {
+        for (const piece of tokenize(text)) {
+          if ("chip" in piece) {
+            words.insertAdjacentHTML("beforeend", this.pill(piece.chip));
+            onChip(piece.chip);
+            await wait(pace);
+          } else {
+            for (const word of piece.text.split(/(\s+)/)) {
+              words.append(word);
+              this.scroll();
+              if (word.trim()) await wait(28);
+            }
+          }
           this.scroll();
-          if (word.trim()) await wait(28);
         }
-      }
-      this.scroll();
-    }
-    bubble.classList.remove("typing");
-    this.typing = null;
+        bubble.classList.remove("typing");
+        this.typing = null;
+      },
+    };
   }
 
   busy(on: boolean): void {
@@ -106,7 +117,7 @@ export class Chat {
   insert(chip: Chip): void {
     this.composer.focus();
     const selection = window.getSelection();
-    const html = pill({ ...chip, tone: ChipTone.Data }) + " ";
+    const html = this.pill({ ...chip, tone: ChipTone.Data }) + " ";
     if (
       selection?.rangeCount &&
       this.composer.contains(selection.getRangeAt(0).commonAncestorContainer)
@@ -146,6 +157,11 @@ export class Chat {
   private scroll(): void {
     this.list.scrollTop = this.list.scrollHeight;
   }
+}
+
+export interface LiveBubble {
+  note(line: string): void;
+  type(text: string, onChip: (chip: Chip) => void, pace?: number): Promise<void>;
 }
 
 export const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));

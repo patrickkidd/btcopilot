@@ -1,5 +1,8 @@
 import { esc } from "./dom";
-import type { Chapter, Person, Timeline, TimelineEvent } from "./types";
+import { ViewKind, type Chapter, type Person, type Timeline, type TimelineEvent, type View } from "./types";
+
+const SEQUENCE_MS = 1100;
+const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** The pinned picture: a horizontal time axis with each cluster drawn as one
  * blob. No words at rest (DRAWABILITY, at-rest vocabulary). Words arrive only
@@ -28,6 +31,9 @@ export class Picture {
   private open: string | null = null;
   private aimed = new Set<number>();
   private moving: TimelineEvent | null = null;
+  private cast: number[] = [];
+  private closed = false;
+  private band: { start: string; end: string } | null = null;
   private span: { min: number; max: number } = { min: 0, max: 1 };
 
   constructor(
@@ -68,15 +74,59 @@ export class Picture {
   /** One step of a play-by-play: the event pulses and its move is drawn. */
   step(eventId: number): void {
     this.aimed = new Set([eventId]);
+    this.cast = [];
+    this.closed = false;
     this.moving = this.data?.events.find((e) => e.id === eventId) ?? null;
     const chapter = this.chapterOf(eventId);
     if (chapter) this.open = chapter.id;
     this.render();
   }
 
+  /** Draw one view the coach asked for. The set is closed (R-0075): a triangle
+   * over three people, a span of time, two moments compared, a sequence of
+   * moves, or one cluster. */
+  async show(view: View): Promise<void> {
+    this.band = null;
+    this.cast = [];
+    switch (view.kind) {
+      case ViewKind.Triangle:
+        this.cast = view.persons;
+        this.closed = true;
+        this.moving = null;
+        this.aimed.clear();
+        this.open = this.open ?? this.data?.chapters.at(-1)?.id ?? null;
+        this.render();
+        return;
+      case ViewKind.Span:
+        this.band = { start: view.start, end: view.end };
+        this.moving = null;
+        this.render();
+        return;
+      case ViewKind.Compare:
+        this.aim([view.event_a, view.event_b]);
+        return;
+      case ViewKind.Sequence:
+        for (const id of view.events) {
+          this.step(id);
+          await pause(SEQUENCE_MS);
+        }
+        return;
+      case ViewKind.Cluster: {
+        const chapter = this.data?.chapters.find(
+          (c) => c.id === view.cluster || c.cluster_ids.includes(view.cluster),
+        );
+        this.setOpen(chapter ? chapter.id : this.open);
+        return;
+      }
+    }
+  }
+
   clearAim(): void {
     this.aimed.clear();
     this.moving = null;
+    this.cast = [];
+    this.band = null;
+    this.closed = false;
     this.render();
   }
 
@@ -116,6 +166,7 @@ export class Picture {
       `<svg viewBox="0 0 ${w} ${height}" width="${w}" height="${height}" ` +
       `role="img" aria-label="Your family over time">` +
       `<line class="axis" x1="${PAD}" y1="${this.axisY}" x2="${w - PAD}" y2="${this.axisY}"/>` +
+      this.span_() +
       this.data.chapters.map((c) => this.blob(c)).join("") +
       this.stage() +
       `</svg>`;
@@ -151,19 +202,42 @@ export class Picture {
     );
   }
 
-  /** The move being played: the people it touches, an arrow to each target,
-   * and an amber ring when anxiety moved. */
+  /** A span of time the coach named, drawn on the axis itself. */
+  private span_(): string {
+    if (!this.band) return "";
+    const a = this.x(this.band.start);
+    const b = this.x(this.band.end);
+    return (
+      `<rect class="band" x="${Math.min(a, b)}" y="${this.axisY - 16}" ` +
+      `width="${Math.max(4, Math.abs(b - a))}" height="32" rx="6"/>`
+    );
+  }
+
+  /** The people a view or a move puts on stage: a move draws the subject and
+   * whoever it reaches, a triangle draws its three and closes the loop. */
   private stage(): string {
+    if (this.cast.length) return this.figures(this.cast, this.closed, null);
     const event = this.moving;
     if (!event || !this.open) return "";
-    const subject = this.person(event.child ?? event.person);
-    const targets = [
+    const reached = [
       ...event.relationshipTargets,
       ...(event.spouse === null ? [] : [event.spouse]),
-    ]
+    ];
+    const subject = event.child ?? event.person;
+    if (subject === null && !reached.length) return "";
+    return this.figures(
+      [...(subject === null ? [] : [subject]), ...reached],
+      false,
+      event.anxiety ? 0 : null,
+    );
+  }
+
+  /** People on a line, an arrow from the first to each of the others, closed
+   * into a loop for a triangle, and an amber ring on whoever is anxious. */
+  private figures(ids: number[], closed: boolean, ring: number | null): string {
+    const cast = ids
       .map((id) => this.person(id))
       .filter((p): p is Person => !!p);
-    const cast = [subject, ...targets].filter((p): p is Person => !!p);
     if (!cast.length) return "";
     const gap = Math.min(130, (this.width - 2 * PAD) / (cast.length + 1));
     const left = this.width / 2 - (gap * (cast.length - 1)) / 2;
@@ -171,28 +245,32 @@ export class Picture {
     const nodes = cast
       .map(
         (p, i) =>
-          `<g class="pn${i === 0 && event.anxiety ? " anx" : ""}">` +
+          `<g class="pn${ring === i ? " anx" : ""}">` +
           `<circle class="sym" cx="${at(i)}" cy="${STAGE_Y}" r="14"/>` +
-          (i === 0 && event.anxiety
+          (ring === i
             ? `<circle class="ring" cx="${at(i)}" cy="${STAGE_Y}" r="21"/>`
             : "") +
           `<text x="${at(i)}" y="${STAGE_Y + 38}" text-anchor="middle">${esc(p.name)}</text>` +
           `</g>`,
       )
       .join("");
-    const arrows = targets
-      .map((_, i) => {
-        const from = at(0) + 16;
-        const to = at(i + 1) - 18;
-        return from < to
-          ? `<path class="arrow" d="M${from} ${STAGE_Y} L${to} ${STAGE_Y}" marker-end="url(#tip)"/>`
-          : `<path class="arrow" d="M${at(0) - 16} ${STAGE_Y} L${at(i + 1) + 18} ${STAGE_Y}" marker-end="url(#tip)"/>`;
-      })
-      .join("");
+    const link = (a: number, b: number) => {
+      const forward = at(a) < at(b);
+      const from = at(a) + (forward ? 16 : -16);
+      const to = at(b) + (forward ? -18 : 18);
+      return `<path class="arrow" d="M${from} ${STAGE_Y} L${to} ${STAGE_Y}" marker-end="url(#tip)"/>`;
+    };
+    const pairs = cast.slice(1).map((_, i) => link(0, i + 1));
+    if (closed && cast.length === 3)
+      pairs.push(
+        `<path class="arrow tri" d="M${at(1)} ${STAGE_Y + 16} Q${(at(1) + at(2)) / 2} ${
+          STAGE_Y + 46
+        } ${at(2)} ${STAGE_Y + 16}"/>`,
+      );
     return (
       `<defs><marker id="tip" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" ` +
       `markerHeight="6" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="currentColor"/></marker></defs>` +
-      `<g class="cast">${arrows}${nodes}</g>`
+      `<g class="cast">${pairs.join("")}${nodes}</g>`
     );
   }
 }
