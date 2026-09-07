@@ -1,6 +1,7 @@
 """Tests for Diagram model business logic (schema-level tests, not endpoint tests)."""
 
 import pickle
+from btcopilot import diagramjson
 from btcopilot.pro.models import Diagram
 from btcopilot.schema import DiagramData, asdict
 from btcopilot.extensions import db
@@ -21,7 +22,7 @@ def test_update_with_version_check_atomicity(test_user):
     db.session.flush()
     db.session.refresh(diagram)
     assert diagram.version == initial_version + 1
-    assert pickle.loads(diagram.data)["test"] == "atomic"
+    assert diagramjson.loads(diagram.data)["test"] == "atomic"
 
 
 def test_update_with_version_check_conflict(test_user):
