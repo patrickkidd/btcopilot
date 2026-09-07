@@ -148,6 +148,7 @@ def create_app(config: dict = None, **kwargs):
     ## Initialize Modules
 
     extensions.init_app(app)
+    auth.init_app(app)
     pro.init_app(app)
     personal.init_app(app)
     training.init_app(app)

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <title>Sign in</title>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 0; display: grid; place-items: center; min-height: 100vh; }
+      form { display: grid; gap: 12px; width: 280px; }
+      input, button { font: inherit; padding: 10px; }
+      .error { color: #b00020; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Sign in</h1>
+      {% if error %}<p class="error">{{ error }}</p>{% endif %}
+      {% if sent %}
+        <p>We emailed a six-digit code to {{ email }}.</p>
+        <form method="post" action="{{ url_for('chatauth.verify') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="email" value="{{ email }}" />
+          <input name="code" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" required autofocus />
+          <button type="submit">Continue</button>
+        </form>
+      {% else %}
+        <form method="post" action="{{ url_for('chatauth.login') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input name="email" type="email" placeholder="you@example.com" required autofocus />
+          <button type="submit">Email me a code</button>
+        </form>
+      {% endif %}
+    </main>
+  </body>
+</html>

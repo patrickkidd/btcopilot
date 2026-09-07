@@ -1,5 +1,6 @@
 import sys
 import logging
+import datetime
 from functools import wraps
 from typing import Union
 
@@ -7,9 +8,32 @@ from flask import g, request, abort, session, redirect, url_for
 
 import btcopilot
 from btcopilot.pro.models import User
+from btcopilot.auth import routes
+from btcopilot.auth.blueprint import bp
+from btcopilot.auth.signin import SESSION_TOKEN
+from btcopilot.auth.websession import WebSession
 
 
 _log = logging.getLogger(__name__)
+
+
+CONFIG_DEFAULTS = {
+    "CHAT_HOME": "/companion/",
+    "CHAT_SESSION_DAYS": 180,
+    "LOGIN_CODE_MINUTES": 10,
+    "LOGIN_CODES_PER_HOUR": 5,
+    "INVITATION_DAYS": 14,
+    "SITE_URL": "http://127.0.0.1:8888",
+}
+
+
+def init_app(app):
+    for key, value in CONFIG_DEFAULTS.items():
+        app.config.setdefault(key, value)
+    app.permanent_session_lifetime = datetime.timedelta(
+        days=app.config["CHAT_SESSION_DAYS"]
+    )
+    app.register_blueprint(bp)
 
 
 def is_pro_app_request():
@@ -240,6 +264,19 @@ def _authenticate_pro_personal_apps() -> User | None:
     return user
 
 
+def _web_session_ok() -> bool:
+    """Passwordless sign-ins carry a server-side session record so they can be
+    revoked. Cookies without one are the training app's own logins, unchanged."""
+    token = session.get(SESSION_TOKEN)
+    if not token:
+        return True
+    web_session = WebSession.query.filter_by(token=token).first()
+    if not web_session or not web_session.live():
+        return False
+    web_session.touch()
+    return True
+
+
 def _authenticate_training_app() -> User | None:
     """Authenticate user for personal app (/training/*) - supports both session and signature auth."""
     import os
@@ -257,7 +294,7 @@ def _authenticate_training_app() -> User | None:
     user_id = session.get("user_id")
     if user_id:
         user = User.query.get(user_id)
-        if user:
+        if user and _web_session_ok():
             g.current_user = user
             _set_tracing_tags(user)
             return user
