@@ -402,6 +402,11 @@ class ClusterPattern(enum.StrEnum):
     WorkFamilySpillover = "work_family_spillover"
 
 
+class ClusterSource(enum.StrEnum):
+    Model = "model"
+    User = "user"
+
+
 @dataclass
 class Cluster:
     id: str
@@ -412,6 +417,28 @@ class Cluster:
     endDate: str | None = None
     pattern: ClusterPattern | None = None
     dominantVariable: str | None = None
+    name: str | None = None
+    source: ClusterSource = ClusterSource.Model
+
+
+class ItemKind(enum.StrEnum):
+    """What a change or an interaction points at inside the record."""
+
+    Person = "person"
+    Event = "event"
+    PairBond = "pair_bond"
+    Emotion = "emotion"
+    Cluster = "cluster"
+    Diagram = "diagram"
+
+
+ITEM_COLLECTIONS = {
+    ItemKind.Person: "people",
+    ItemKind.Event: "events",
+    ItemKind.PairBond: "pair_bonds",
+    ItemKind.Emotion: "emotions",
+    ItemKind.Cluster: "clusters",
+}
 
 
 @dataclass

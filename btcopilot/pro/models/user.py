@@ -166,7 +166,7 @@ class User(db.Model, ModelMixin):
             bdata = pickle.dumps({})
 
         if not self.free_diagram:
-            diagram = Diagram(user_id=self.id, name="Free Diagram", data=bdata)
+            diagram = Diagram(user_id=self.id, name="Free Diagram")
             db_session = inspect(self).session
             db_session.add(diagram)
             db_session.merge(diagram)
@@ -177,6 +177,7 @@ class User(db.Model, ModelMixin):
             _updated_at = updated_at
         else:
             _updated_at = datetime.datetime.utcnow()
-        self.free_diagram.update(data=bdata, updated_at=_updated_at)
+        self.free_diagram.pickled = bdata
+        self.free_diagram.update(updated_at=_updated_at)
         if _commit:
             inspect(self).session.commit()

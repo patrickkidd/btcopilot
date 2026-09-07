@@ -21,6 +21,8 @@ with data. Anything else raises.
 """
 
 import enum
+import json
+import pickle
 
 import PyQt5.sip  # noqa: F401  registers QtCore types for pickle
 from PyQt5.QtCore import QDate, QDateTime, QPoint, QPointF, QSize, QSizeF, QTime, Qt
@@ -104,3 +106,30 @@ _DEC = {
     "QSize": lambda v: QSize(*v),
     "QColor": lambda v: QColor(v) if v else QColor(),
 }
+
+
+def loads(blob: bytes | None) -> dict:
+    """Decode a stored diagram blob, which is JSON now and pickle for old rows."""
+    if not blob:
+        return {}
+    if blob[:1] == b"{":
+        return from_json(json.loads(blob.decode("utf-8")))
+    return pickle.loads(blob)
+
+
+def dumps(data: dict) -> bytes:
+    return json.dumps(to_json(data)).encode("utf-8")
+
+
+def is_json(blob: bytes | None) -> bool:
+    return bool(blob) and blob[:1] == b"{"
+
+
+def store(blob: bytes | None) -> bytes:
+    """Normalize any incoming blob to the stored JSON form."""
+    return dumps(loads(blob))
+
+
+def wire(blob: bytes | None) -> bytes:
+    """The pickled form the Pro and Personal apps speak."""
+    return pickle.dumps(loads(blob))

@@ -1,5 +1,7 @@
 from datetime import datetime
 import pickle
+
+from btcopilot import diagramjson
 from urllib.parse import quote
 
 import pytest
@@ -25,7 +27,7 @@ def test_diagrams_create(flask_app, test_user):
 
     diagram = Diagram.query.get(diagram_id)
     assert diagram != None
-    assert pickle.loads(diagram.data)["something"] == "fake"
+    assert diagramjson.loads(diagram.data)["something"] == "fake"
 
 
 def test_diagrams_index_as_anonymous(flask_app):
@@ -126,8 +128,7 @@ def test_diagrams_patch_own_diagram(flask_app, test_user):
             ),
         )
         assert response.status_code == 200
-    bdata = Diagram.query.get(test_user.free_diagram_id).data
-    data = pickle.loads(bdata)
+    data = diagramjson.loads(Diagram.query.get(test_user.free_diagram_id).data)
     assert data["some"] == "fake"
 
 

@@ -1,6 +1,5 @@
 import logging
 import base64
-import pickle
 from flask import Blueprint, request, jsonify, abort
 from sqlalchemy.orm import subqueryload
 
@@ -86,7 +85,7 @@ def get(diagram_id):
         },
         exclude="data",
     )
-    ret["data"] = base64.b64encode(diagram.data or pickle.dumps({})).decode("utf-8")
+    ret["data"] = base64.b64encode(diagram.pickled).decode("utf-8")
 
     _log.info(f"Fetched diagram {diagram.id}, version: {diagram.version}")
     return jsonify(ret)
@@ -126,7 +125,7 @@ def update(diagram_id):
         return (
             jsonify(
                 version=diagram.version,
-                data=base64.b64encode(diagram.data).decode("utf-8"),
+                data=base64.b64encode(diagram.pickled).decode("utf-8"),
             ),
             409,
         )
