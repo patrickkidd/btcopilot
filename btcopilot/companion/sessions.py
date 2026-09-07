@@ -12,16 +12,13 @@ from btcopilot.companion.blueprint import (
     owned_session,
     sessions,
 )
-from btcopilot.companion.timeline import aimable
 from btcopilot.extensions import db
-from btcopilot.personal.chat import Response, ask
+from btcopilot.personal.coachturn import CoachTurn
 from btcopilot.personal.models import Discussion
-from btcopilot.personal.refs import resolve
 from btcopilot.personal.routes.discussions import (
     _create_discussion,
     _sync_chat_speakers,
 )
-from btcopilot.schema import DiagramData, asdict
 
 
 def session_payload(discussion: Discussion) -> dict:
@@ -48,21 +45,15 @@ def statements_payload(discussion: Discussion) -> list[dict]:
 
 
 def _reply(discussion: Discussion, statement: str) -> dict:
+    """One agent-loop turn. The words carry their own chips; `events` carries
+    what the coach did behind them, in the order it happened, so the page can
+    move the picture and the list from the same reply."""
     _sync_chat_speakers(discussion)
-    response: Response = ask(discussion, statement)
-    if discussion.title is None:
-        discussion.update_title()
-        discussion.update_summary()
     db.session.commit()
-    data = (
-        discussion.diagram.get_diagram_data() if discussion.diagram else DiagramData()
-    )
-    return {
-        "statement": response.statement,
-        "refs": [asdict(ref) for ref in aimable(resolve(response.refs, data), data)],
-        "discussion_id": discussion.id,
-        "session": session_payload(discussion),
-    }
+    reply = CoachTurn(discussion, statement, session_id=str(discussion.id)).run()
+    reply["discussion_id"] = discussion.id
+    reply["session"] = session_payload(discussion)
+    return reply
 
 
 def _statement_text() -> str:

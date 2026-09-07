@@ -1,13 +1,10 @@
 """The agent loop: tools that change the record, chips that resolve, one view
 kind at a time, and a play-by-play that cannot invent a move."""
 
-import json
-
 import pytest
 
 from btcopilot.extensions import db
 from btcopilot.personal import chips, record
-from btcopilot.personal.coachmodel import ModelTurn, ToolCall
 from btcopilot.personal.coachturn import CoachTurn, EventKind
 from btcopilot.personal.models import Author, Change
 from btcopilot.personal.playturn import PlayTurn
@@ -22,49 +19,19 @@ from btcopilot.schema import (
     Person,
     asdict,
 )
+from btcopilot.tests.personal.conftest import Model, called, said
 
 
-def said(text: str) -> ModelTurn:
-    return ModelTurn(text=text, blocks=[{"type": "text", "text": text}])
+def run(discussion, statement, model) -> dict:
+    return CoachTurn(discussion, statement, model=model).run()
 
 
-def called(tool: ToolName, **args) -> ModelTurn:
-    call = ToolCall(id=f"tu_{tool.value}", name=tool.value, args=args)
-    return ModelTurn(
-        calls=[call],
-        blocks=[
-            {"type": "tool_use", "id": call.id, "name": call.name, "input": call.args}
-        ],
-    )
+def kinds(reply: dict) -> list[str]:
+    return [event["type"] for event in reply["events"]]
 
 
-class Model:
-    """A coach that says exactly what the test scripted, in order."""
-
-    def __init__(self, *turns: ModelTurn):
-        self.turns = list(turns)
-        self.systems = []
-        self.histories = []
-
-    def turn(self, system, messages, tools):
-        self.systems.append(system)
-        self.histories.append(messages)
-        scripted = self.turns.pop(0)
-        if scripted.text:
-            yield scripted.text
-        return scripted
-
-
-def run(discussion, statement, model) -> list[tuple[EventKind, dict]]:
-    return list(CoachTurn(discussion, statement, model=model).run())
-
-
-def kinds(events) -> list[EventKind]:
-    return [kind for kind, _ in events]
-
-
-def payload(events, kind: EventKind) -> dict:
-    return next(body for k, body in events if k is kind)
+def event(reply: dict, kind: EventKind) -> dict:
+    return next(e for e in reply["events"] if e["type"] == kind.value)
 
 
 @pytest.fixture(autouse=True)
@@ -105,7 +72,7 @@ def family(test_user):
 
 
 def test_edit_writes_a_coach_change_and_the_record_moves(discussion, family):
-    events = run(
+    reply = run(
         discussion,
         "My dad moved out in 1994 and my mum got sick that winter.",
         Model(
@@ -120,12 +87,7 @@ def test_edit_writes_a_coach_change_and_the_record_moves(discussion, family):
             said("I put that down. [[event:11|that winter]]"),
         ),
     )
-    assert kinds(events) == [
-        EventKind.ToolCall,
-        EventKind.RecordPatch,
-        EventKind.Text,
-        EventKind.Statement,
-    ]
+    assert kinds(reply) == [EventKind.ToolCall.value, EventKind.RecordPatch.value]
 
     change = Change.query.filter_by(diagram_id=family.id).one()
     assert change.author is Author.Coach
@@ -134,22 +96,18 @@ def test_edit_writes_a_coach_change_and_the_record_moves(discussion, family):
     added = [e for e in family.get_diagram_data().events if e["id"] == 11]
     assert len(added) == 1
     assert added[0]["description"] == "got sick"
-    assert payload(events, EventKind.Statement)["text"] == (
-        "I put that down. [[event:11|that winter]]"
-    )
+    assert reply["statement"] == "I put that down. [[event:11|that winter]]"
 
 
 def test_a_chip_the_record_cannot_resolve_never_reaches_the_transcript(
     discussion, family
 ):
-    events = run(
+    reply = run(
         discussion,
         "Tell me about that.",
         Model(said("You mean [[event:999|the fight]] and [[event:10|the move]].")),
     )
-    assert payload(events, EventKind.Statement)["text"] == (
-        "You mean the fight and [[event:10|the move]]."
-    )
+    assert reply["statement"] == "You mean the fight and [[event:10|the move]]."
 
 
 def test_undo_puts_back_what_the_previous_turn_changed(discussion, family):
@@ -162,12 +120,12 @@ def test_undo_puts_back_what_the_previous_turn_changed(discussion, family):
     )
     assert family.get_diagram_data().people[0]["name"] == "Wrenn"
 
-    events = run(
+    reply = run(
         discussion,
         "Put that back.",
         Model(called(ToolName.Undo), said("Put back.")),
     )
-    assert EventKind.RecordPatch in kinds(events)
+    assert EventKind.RecordPatch.value in kinds(reply)
     assert family.get_diagram_data().people[0]["name"] == "Wren"
     assert Change.query.filter_by(turn_id="undo:earlier").count() == 1
 
@@ -184,8 +142,8 @@ def test_undoing_the_same_turn_twice_is_refused_in_plain_words(discussion, famil
     assert family.get_diagram_data().people[0]["name"] == "Wren"
 
     model = Model(called(ToolName.Undo), said("That is already back."))
-    events = run(discussion, "Put that back again.", model)
-    assert EventKind.RecordPatch not in kinds(events)
+    reply = run(discussion, "Put that back again.", model)
+    assert EventKind.RecordPatch.value not in kinds(reply)
     assert family.get_diagram_data().people[0]["name"] == "Wren"
 
     refused = model.histories[-1][-1]["content"][0]
@@ -198,9 +156,9 @@ def test_show_with_an_unknown_id_fails_where_the_model_can_see_it(discussion, fa
         called(ToolName.Show, kind="triangle", persons=[1, 2, 77]),
         said("I cannot draw that yet."),
     )
-    events = run(discussion, "Draw the triangle.", model)
-    assert EventKind.View not in kinds(events)
-    assert payload(events, EventKind.Statement)["views"] == []
+    reply = run(discussion, "Draw the triangle.", model)
+    assert EventKind.View.value not in kinds(reply)
+    assert reply["views"] == []
 
     refused = model.histories[-1][-1]["content"][0]
     assert refused["is_error"] is True
@@ -208,7 +166,7 @@ def test_show_with_an_unknown_id_fails_where_the_model_can_see_it(discussion, fa
 
 
 def test_show_stores_the_view_on_the_coach_statement(discussion, family):
-    events = run(
+    reply = run(
         discussion,
         "Show me that stretch.",
         Model(
@@ -216,14 +174,9 @@ def test_show_stores_the_view_on_the_coach_statement(discussion, family):
             said("Here it is."),
         ),
     )
-    assert payload(events, EventKind.View)["view"] == {
-        "kind": "span",
-        "start": "1994-01-01",
-        "end": "1995-01-01",
-    }
-    assert payload(events, EventKind.Statement)["views"] == [
-        {"kind": "span", "start": "1994-01-01", "end": "1995-01-01"}
-    ]
+    span = {"kind": "span", "start": "1994-01-01", "end": "1995-01-01"}
+    assert event(reply, EventKind.View)["view"] == span
+    assert reply["views"] == [span]
 
 
 def test_the_coach_is_handed_the_record_and_what_the_user_pointed_at(
@@ -260,7 +213,7 @@ def test_play_by_play_names_every_event_once_in_date_order(test_user):
     assert "11 1994-12-01" in model.histories[0][-1]["content"]
 
 
-def test_the_turn_streams_over_sse(web, family, monkeypatch):
+def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypatch):
     from btcopilot.tests.personal.conftest import csrf_token
 
     monkeypatch.setattr(
@@ -271,17 +224,16 @@ def test_the_turn_streams_over_sse(web, family, monkeypatch):
     )
     token = csrf_token(web)
     response = web.post(
-        "/companion/turn",
+        "/companion/chat",
         json={"statement": "My sister is Nell."},
         headers={"X-CSRFToken": token},
     )
     assert response.status_code == 200
-    assert response.mimetype == "text/event-stream"
 
-    body = response.get_data(as_text=True)
-    seen = [line[len("event: ") :] for line in body.splitlines() if line.startswith("event: ")]
-    assert seen == ["tool_call", "record_patch", "text", "statement"]
-
-    last = json.loads(body.rsplit("data: ", 1)[1])
-    assert last["text"] == "Added [[person:11|Nell]]."
-    assert last["id"] is not None
+    reply = response.get_json()
+    assert reply["statement"] == "Added [[person:11|Nell]]."
+    assert [e["type"] for e in reply["events"]] == ["tool_call", "record_patch"]
+    assert reply["events"][0]["name"] == "edit_person"
+    assert reply["events"][1]["turn_id"] == reply["turn_id"]
+    assert reply["statement_id"] is not None
+    assert reply["session"]["id"] == reply["discussion_id"]

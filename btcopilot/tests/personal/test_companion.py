@@ -16,8 +16,7 @@ from btcopilot.personal.models import (
 )
 from btcopilot.personal.routes.interactions import recent
 from btcopilot.schema import Event, EventKind, ItemKind
-from btcopilot.tests.personal.conftest import csrf_token
-from btcopilot.tests.personal.test_agent import Model, said
+from btcopilot.tests.personal.conftest import Model, csrf_token, said
 
 
 @pytest.fixture(autouse=True)

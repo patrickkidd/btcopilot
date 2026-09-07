@@ -6,6 +6,7 @@ picture draws lives in the record; who did what when lives beside it, which is
 why the interactions render separately.
 """
 
+from btcopilot import diagramjson
 from btcopilot.personal.intake import _enum_val, _parse_iso_date
 from btcopilot.personal.models import Interaction
 from btcopilot.schema import DiagramData
@@ -14,8 +15,14 @@ SHIFTS = ("anxiety", "symptom", "functioning")
 
 
 def date_text(value) -> str | None:
-    """A record date as YYYY-MM-DD. Pro writes Qt date objects, the chat app
-    writes strings, and both mean the same day."""
+    """A record date as YYYY-MM-DD.
+
+    Three writers, one day: Pro writes a Qt date object, the chat app writes a
+    string, and an undecoded record blob carries the converter's tagged form
+    (btcopilot.diagramjson).
+    """
+    if isinstance(value, dict) and diagramjson.TAG in value:
+        value = value["v"]
     parsed = _parse_iso_date(value)
     return parsed.isoformat() if parsed else None
 

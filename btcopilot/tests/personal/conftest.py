@@ -8,8 +8,41 @@ from mock import patch
 
 import btcopilot
 from btcopilot.extensions import db
+from btcopilot.personal.coachmodel import ModelTurn, ToolCall
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
+from btcopilot.personal.toolbox import ToolName
 from btcopilot.tests.pro.conftest import pro_client, subscriber, admin
+
+
+def said(text: str) -> ModelTurn:
+    return ModelTurn(text=text, blocks=[{"type": "text", "text": text}])
+
+
+def called(tool: ToolName, **args) -> ModelTurn:
+    call = ToolCall(id=f"tu_{tool.value}", name=tool.value, args=args)
+    return ModelTurn(
+        calls=[call],
+        blocks=[
+            {"type": "tool_use", "id": call.id, "name": call.name, "input": call.args}
+        ],
+    )
+
+
+class Model:
+    """A coach that says exactly what the test scripted, in order."""
+
+    def __init__(self, *turns: ModelTurn):
+        self.turns = list(turns)
+        self.systems = []
+        self.histories = []
+
+    def turn(self, system, messages, tools):
+        self.systems.append(system)
+        self.histories.append(messages)
+        scripted = self.turns.pop(0)
+        if scripted.text:
+            yield scripted.text
+        return scripted
 
 
 def pytest_configure(config):
@@ -37,6 +70,14 @@ def chat_flow(request):
                 patch(
                     "btcopilot.personal.chat._generate_response",
                     return_value=response,
+                )
+            )
+            # The companion's turn is the agent loop; a test that scripts the
+            # coach's words scripts them there too.
+            stack.enter_context(
+                patch(
+                    "btcopilot.personal.coachturn.CoachModel",
+                    new=lambda *a, **k: Model(said(response)),
                 )
             )
             title = marker.kwargs.get("title", "A session title")

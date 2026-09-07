@@ -2,8 +2,10 @@
 
 The coach gets the record, the recent chat, what the user has been looking at,
 and the tools. It talks and calls tools until it stops; every edit is already
-in the record by the time the reply lands, and every event on the way out is
-something the page can act on.
+in the record by the time the reply lands.
+
+The turn returns the coach's words plus the typed events behind them, so the
+page can move the picture with the same reply it types out.
 """
 
 import enum
@@ -26,11 +28,11 @@ RECENT_INTERACTIONS = 50
 
 
 class EventKind(enum.StrEnum):
-    Text = "text"
+    """What happened behind the words, in the order it happened."""
+
     ToolCall = "tool_call"
     RecordPatch = "record_patch"
     View = "view"
-    Statement = "statement"
 
 
 class CoachTurn:
@@ -61,8 +63,8 @@ class CoachTurn:
     def data(self) -> DiagramData:
         return self.diagram.get_diagram_data() if self.diagram else DiagramData()
 
-    def run(self):
-        """Yield (kind, payload) as the turn happens; the last is the statement."""
+    def run(self) -> dict:
+        """The coach's reply, its views, and the events behind it."""
         ai_log.info(f"User statement: {self.statement}")
         data = self.data
         user_statement = Statement(
@@ -76,19 +78,16 @@ class CoachTurn:
 
         system = get_agent_prompt(
             record=recordtext.render(data),
-            interactions=recordtext.interactions(recent(self.diagram.id, RECENT_INTERACTIONS)),
+            interactions=recordtext.interactions(
+                recent(self.diagram.id, RECENT_INTERACTIONS)
+            ),
         )
         messages = self._history()
         said = []
+        events = []
 
         for step in range(MAX_STEPS):
-            words = self.model.turn(system, messages, SCHEMAS)
-            while True:
-                try:
-                    yield EventKind.Text, {"text": next(words)}
-                except StopIteration as stop:
-                    turn = stop.value
-                    break
+            turn = self._say(system, messages)
             if turn.text:
                 said.append(turn.text)
             if not turn.calls:
@@ -96,7 +95,9 @@ class CoachTurn:
 
             results = []
             for call in turn.calls:
-                yield EventKind.ToolCall, {"name": call.name, "args": call.args}
+                events.append(
+                    {"type": EventKind.ToolCall.value, "name": call.name, "args": call.args}
+                )
                 text, event, refused = self._call(call)
                 results.append(
                     {
@@ -106,10 +107,9 @@ class CoachTurn:
                         "is_error": refused,
                     }
                 )
-                if event and "view" in event:
-                    yield EventKind.View, event
-                elif event:
-                    yield EventKind.RecordPatch, event
+                if event:
+                    kind = EventKind.View if "view" in event else EventKind.RecordPatch
+                    events.append(dict(event, type=kind.value))
             messages.append({"role": "assistant", "content": turn.blocks})
             messages.append({"role": "user", "content": results})
         else:
@@ -134,13 +134,22 @@ class CoachTurn:
             self.discussion.update_summary()
         db.session.commit()
 
-        yield EventKind.Statement, {
-            "id": coach_statement.id,
-            "text": reply,
+        return {
+            "statement": reply,
+            "statement_id": coach_statement.id,
             "views": self.toolbox.views,
+            "events": events,
             "turn_id": self.turn_id,
-            "discussion_id": self.discussion.id,
         }
+
+    def _say(self, system: str, messages: list[dict]):
+        """One model call. The words arrive whole; the page types them out."""
+        words = self.model.turn(system, messages, SCHEMAS)
+        while True:
+            try:
+                next(words)
+            except StopIteration as stop:
+                return stop.value
 
     def _call(self, call) -> tuple[str, dict | None, bool]:
         try:

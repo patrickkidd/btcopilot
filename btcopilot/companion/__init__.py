@@ -6,7 +6,6 @@ from btcopilot.companion import (
     routes,
     sessions,
     settings,
-    turn,
 )
 
 

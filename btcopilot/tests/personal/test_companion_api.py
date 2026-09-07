@@ -156,12 +156,12 @@ def test_session_of_another_user_is_not_found(web, token, test_user_2):
 
 
 # ── chips ───────────────────────────────────────────────────────────────────
-
-
 @pytest.mark.chat_flow(
-    response="That sits in [[events:10|two winters]], with [[person:1|Wren]]."
+    response="That sits in [[event:10|two winters]], with [[person:1|Wren]]."
 )
-def test_chat_returns_chips_and_clean_text(web, token, family):
+def test_chat_keeps_the_chips_the_record_resolves(web, token, family):
+    """Chips are the primitive (R-0072): they live in the words the page
+    renders. Three kinds only — event, cluster, person."""
     data = family.get_diagram_data()
     data.events = [
         {
@@ -175,28 +175,19 @@ def test_chat_returns_chips_and_clean_text(web, token, family):
     db.session.commit()
 
     body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
-    assert body["statement"] == "That sits in two winters, with Wren."
-    assert [(r["kind"], r["label"]) for r in body["refs"]] == [
-        ("events", "two winters"),
-        ("person", "Wren"),
-    ]
-    assert body["refs"][0]["event_ids"] == [10]
+    assert body["statement"] == (
+        "That sits in [[event:10|two winters]], with [[person:1|Wren]]."
+    )
 
     stored = Statement.query.order_by(Statement.order).all()[-1]
-    assert stored.text == "That sits in two winters, with Wren."
-
-
-@pytest.mark.chat_flow(response="Tell me more about that winter.")
-def test_chat_without_reference_returns_no_chips(web, token, family):
-    body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
-    assert body["refs"] == []
+    assert stored.text == body["statement"]
 
 
 @pytest.mark.chat_flow(response="I mean [[person:99|someone]].")
-def test_chip_pointing_at_nothing_is_dropped(web, token, family):
+def test_a_chip_pointing_at_nothing_becomes_its_own_words(web, token, family):
     body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
     assert body["statement"] == "I mean someone."
-    assert body["refs"] == []
+
 
 
 @pytest.fixture
@@ -243,50 +234,23 @@ def test_clusters_survive_a_server_side_write(dated):
     db.session.commit()
     assert [c["id"] for c in dated.get_diagram_data().clusters] == ["c1"]
 
-
-@pytest.mark.chat_flow(response="That chapter: [[chapter:c1|the run]].")
-def test_chapter_chip_names_a_cluster_on_the_line(web, token, dated):
+@pytest.mark.chat_flow(response="That stretch: [[cluster:c1|the run]].")
+def test_a_cluster_chip_survives_when_the_record_holds_it(web, token, dated):
     body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
-    assert [(r["kind"], r["cluster_id"]) for r in body["refs"]] == [("chapter", "c1")]
+    assert body["statement"] == "That stretch: [[cluster:c1|the run]]."
 
 
-@pytest.mark.chat_flow(response="Off the line: [[chapter:c9|elsewhere]].")
-def test_chapter_chip_for_a_cluster_in_no_chapter_is_dropped(web, token, dated):
-    data = dated.get_diagram_data()
-    data.clusters = data.clusters + [
-        asdict(Cluster(id="c9", title="Off", summary="", startDate="1970-01-01"))
-    ]
-    dated.set_diagram_data(data)
-    db.session.commit()
-
+@pytest.mark.chat_flow(response="Off the line: [[cluster:c9|elsewhere]].")
+def test_a_cluster_chip_the_record_does_not_hold_is_dropped(web, token, dated):
     body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
-    assert body["refs"] == []
+    assert body["statement"] == "Off the line: elsewhere."
 
 
-@pytest.mark.chat_flow(
-    response="Those years: [[range:2010-01-01..2010-12-31|that year]]."
-)
-def test_range_chip_covering_events_is_kept(web, token, dated):
-    body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
-    assert [r["kind"] for r in body["refs"]] == ["range"]
-
-
-@pytest.mark.chat_flow(
-    response="Those years: [[range:1970-01-01..1975-01-01|back then]]."
-)
-def test_range_chip_covering_no_event_is_dropped(web, token, dated):
-    body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
-    assert body["refs"] == []
-
-
-@pytest.mark.chat_flow(response="What about [[person:3|Nell]]?")
-def test_person_chip_with_no_events_is_dropped(web, token, dated):
-    body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
-    assert body["refs"] == []
-
-
-@pytest.mark.chat_flow(response="An undated one: [[events:12|that]].")
-def test_events_chip_for_an_undated_event_is_dropped(web, token, dated):
+@pytest.mark.chat_flow(response="An undated one: [[event:12|that]].")
+def test_a_chip_may_name_an_undated_event(web, token, dated):
+    """The old chip mechanism could only aim at the drawn line, so an undated
+    event was dropped. A chip is a reference into the record, and the record
+    holds undated events."""
     data = dated.get_diagram_data()
     data.events = data.events + [
         {"id": 12, "kind": EventKind.Shift.value, "person": 1, "dateTime": None}
@@ -295,7 +259,8 @@ def test_events_chip_for_an_undated_event_is_dropped(web, token, dated):
     db.session.commit()
 
     body = post(web, token, "/companion/chat", {"statement": "hi"}).get_json()
-    assert body["refs"] == []
+    assert body["statement"] == "An undated one: [[event:12|that]]."
+
 
 
 # ── preferences ─────────────────────────────────────────────────────────────
