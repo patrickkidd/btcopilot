@@ -1,31 +1,34 @@
-"""The play-by-play for one cluster.
+"""The play-by-play for one stretch of the line.
 
 It is coach-authored (R-0074): the coach picks which moves, in what order, and
 writes the words around them, and every move it names is a chip it cannot
-invent. Until the agent loop is wired, this endpoint writes the moves in date
-order with plain connecting words, which is the same shape the coach will
-produce and the same markup the page already renders."""
+invent. The page taps either a stored cluster or a chapter the line grouped by
+itself, so both resolve here to the same thing — a set of event ids and a name.
+"""
 
 from flask import jsonify, request
 
 from btcopilot.companion.blueprint import bp, diagram
 from btcopilot.companion.timeline import build_timeline
-from btcopilot.personal.refs import RefKind
-from btcopilot.schema import DiagramData
-
-JOINS = ("It starts when ", "Then ", "After that ", "Next ", "And then ")
-CLOSE = "That is the stretch. What do you remember about it?"
+from btcopilot.personal.playturn import PlayTurn
+from btcopilot.schema import ClusterSource, DiagramData
 
 
-def _chapter(payload: dict, cluster_id: str) -> dict:
-    for chapter in payload["chapters"]:
+def _cluster(data: DiagramData, cluster_id: str) -> dict:
+    for cluster in data.clusters:
+        if isinstance(cluster, dict) and str(cluster.get("id")) == str(cluster_id):
+            return cluster
+    for chapter in build_timeline(data)["chapters"]:
         if chapter["id"] == cluster_id or cluster_id in chapter["cluster_ids"]:
-            return chapter
+            return {
+                "id": chapter["id"],
+                "name": chapter["title"],
+                "title": chapter["title"],
+                "summary": chapter["summary"] or "",
+                "eventIds": chapter["event_ids"],
+                "source": ClusterSource.Model.value,
+            }
     raise ValueError(f"No cluster {cluster_id!r} on the line")
-
-
-def _chip(event: dict) -> str:
-    return f"[[{RefKind.Events.value}:{event['id']}|{event['label']}]]"
 
 
 @bp.route("/play", methods=["POST"])
@@ -34,25 +37,7 @@ def play():
     unknown = set(body) - {"cluster_id"}
     if unknown:
         raise ValueError(f"Unknown play field(s): {', '.join(sorted(unknown))}")
-    cluster_id = body["cluster_id"]
 
     dia = diagram()
-    payload = build_timeline(dia.get_diagram_data() if dia else DiagramData())
-    chapter = _chapter(payload, cluster_id)
-    by_id = {event["id"]: event for event in payload["events"]}
-    moves = sorted(
-        (by_id[i] for i in chapter["event_ids"] if i in by_id),
-        key=lambda e: (e["dateTime"] or "", e["id"]),
-    )
-
-    sentences = [
-        f"{JOINS[min(index, len(JOINS) - 1)]}{_chip(event)}."
-        for index, event in enumerate(moves)
-    ]
-    opening = f"{chapter['title']} — {len(moves)} moves. "
-    return jsonify(
-        {
-            "cluster_id": chapter["id"],
-            "statement": opening + " ".join(sentences) + " " + CLOSE,
-        }
-    )
+    data = dia.get_diagram_data() if dia else DiagramData()
+    return jsonify(PlayTurn(data, _cluster(data, body["cluster_id"])).run())

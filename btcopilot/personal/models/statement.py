@@ -22,6 +22,9 @@ class Statement(db.Model, ModelMixin):
     discussion_id = Column(Integer, ForeignKey("discussions.id"))
     speaker_id = Column(Integer, ForeignKey("speakers.id"))
     pdp_deltas = Column(JSON)
+    # What the coach aimed the picture at on this turn: a list of views, each a
+    # view kind plus parameters whose every id resolves in the record (R-0085).
+    views = Column(JSON)
     custom_prompts = Column(JSON)  # Store custom prompts used for this statement
     order = Column(Integer)  # Order within discussion for reliable sorting
 

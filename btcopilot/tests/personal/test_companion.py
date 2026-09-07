@@ -17,6 +17,7 @@ from btcopilot.personal.models import (
 from btcopilot.personal.routes.interactions import recent
 from btcopilot.schema import Event, EventKind, ItemKind
 from btcopilot.tests.personal.conftest import csrf_token
+from btcopilot.tests.personal.test_agent import Model, said
 
 
 @pytest.fixture(autouse=True)
@@ -227,21 +228,34 @@ def test_a_tap_is_recorded_against_the_diagram(web, test_user):
     ]
 
 
-def test_play_names_the_cluster_events_in_date_order(web, test_user):
+def test_play_hands_the_coach_the_cluster_events_in_date_order(
+    web, test_user, monkeypatch
+):
+    """The play-by-play is coach-authored (R-0074): the words are the model's,
+    the events it may name are not."""
     diagram = test_user.free_diagram
     diagram.set_diagram_data(seed_diagram_data())
     db.session.commit()
     chapter = web.get("/companion/timeline").get_json()["chapters"][0]
     token = csrf_token(web)
 
+    model = Model(
+        said(" then ".join(f"[[event:{i}|move]]" for i in chapter["event_ids"]))
+    )
+    monkeypatch.setattr(
+        "btcopilot.personal.playturn.CoachModel", lambda *a, **k: model
+    )
     reply = web.post(
         "/companion/play",
         json={"cluster_id": chapter["id"]},
         headers={"X-CSRFToken": token},
     ).get_json()
     assert reply["cluster_id"] == chapter["id"]
-    cited = [int(i) for i in re.findall(r"\[\[events:(\d+)\|", reply["statement"])]
+    cited = [int(i) for i in re.findall(r"\[\[event:(\d+)\|", reply["statement"])]
     assert cited == chapter["event_ids"]
+
+    handed = model.histories[0][-1]["content"]
+    assert all(str(i) in handed for i in chapter["event_ids"])
 
 
 def test_play_refuses_a_cluster_that_is_not_on_the_line(web, test_user):

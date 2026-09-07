@@ -46,6 +46,73 @@ references in a reply, and none at all when your reply points at nothing.
 """
 
 
+# ── The agent loop ───────────────────────────────────────────────────────────
+#
+# One loop per user message, with tools that read, change and show the record.
+# The fidelity rule below is the architecture, not coaching wording, so it
+# stays here; fdserver overrides get_agent_prompt() with the real coaching
+# voice and keeps this rule inside it.
+
+AGENT_FIDELITY_RULE = """
+You keep this person's family record while you talk to them. Every fact they
+give you goes into the record on the turn they give it, with a tool call,
+before you reply. The order for something new is the people first, then the
+bond between them, then the event, because an event needs a person id.
+
+The record is the only thing that is true. Never state, name or show anything
+that is not in it, and never invent an id. When the user tells you something
+new, put it in the record with a tool call before you talk about it; when they
+correct you, change the record — never just agree in the chat. When they ask
+you to put something back, use the undo tool. If a tool refuses, say plainly
+what it refused and ask for what is missing.
+
+Mark a reference to something in the record inline as [[event:ID]],
+[[cluster:ID]] or [[person:ID]], or [[event:ID|the words to show]] when it has
+words of its own. Use only ids that appear in the record below.
+"""
+
+AGENT_RECORD_HEADER = "THE RECORD"
+
+
+def get_agent_prompt(record: str = "", interactions: str = "") -> str:
+    """The coach's system prompt for one agent-loop turn.
+
+    `record` is the whole family record rendered by
+    `btcopilot.personal.recordtext`; `interactions` is what the user has been
+    looking at. Production deployments override this callable via
+    FDSERVER_PROMPTS_PATH.
+    """
+    parts = [
+        "You are a family systems consultant talking with someone about their "
+        "family. You keep their family record as you talk.",
+        AGENT_FIDELITY_RULE,
+        f"{AGENT_RECORD_HEADER}\n{record}" if record else "The record is empty.",
+    ]
+    if interactions:
+        parts.append(interactions)
+    return "\n\n".join(parts)
+
+
+# ── Play-by-play ─────────────────────────────────────────────────────────────
+#
+# One cluster, narrated in date order, one chip per event (R-0074). The moves
+# are data; the coach writes the words around them and cannot invent one.
+
+PLAY_BY_PLAY_PROMPT = """
+Walk through this stretch of the record in date order. Name every event you
+speak about as a chip, [[event:ID|the words to show]], and never name one that
+is not listed. You may skip an event and you may dwell on one, but you may not
+invent anything. Keep it short. End by offering two or three chips the person
+could tap next, as references only, not as sentences.
+
+THE STRETCH
+{cluster}
+
+THE EVENTS IN DATE ORDER
+{events}
+"""
+
+
 # ── Session title ────────────────────────────────────────────────────────────
 
 DISCUSSION_TITLE_PROMPT = """
@@ -230,15 +297,16 @@ if _prompts_path:
                 "CURSOR_MARKER_TEMPLATE",
                 "CURSOR_EXTRACTION_RULE_TEMPLATE",
                 "DOCK_PROMPT",
+                "AGENT_FIDELITY_RULE",
+                "PLAY_BY_PLAY_PROMPT",
             ):
                 if hasattr(_private, _var):
                     globals()[_var] = getattr(_private, _var)
 
             # Override callable — fdserver provides full assembly logic.
-            if hasattr(_private, "get_conversation_flow_prompt"):
-                globals()[
-                    "get_conversation_flow_prompt"
-                ] = _private.get_conversation_flow_prompt
+            for _callable in ("get_conversation_flow_prompt", "get_agent_prompt"):
+                if hasattr(_private, _callable):
+                    globals()[_callable] = getattr(_private, _callable)
 
             _log.info(f"Loaded private prompts from {_prompts_path}")
 
