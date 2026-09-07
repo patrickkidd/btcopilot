@@ -549,3 +549,35 @@ the prototype's timeline + editor stays behind a menu as the fallback with a ban
 play-by-play button is fine because it jumps to a complete concept; every feature carries
 the learning loop. Recorded as R-0065..R-0071. He then floated, for the question-back,
 suggested taps that steer the chat instead of a typed answer.
+
+### 2026-09-07 — architecture, data format, journeys ruled
+
+The session closed every remaining step-back item. It opened on the UI principle's leftover
+sub-rulings and Patrick ruled chips the primitive, the two-tap look/say semantic, and the
+play-by-play as coach-authored words over deterministic moves — chosen as option A from a
+side-by-side mockup against app-generated captions ("definitely A. holy shit"). The show
+tool followed: deterministic tool calls with a closed set of view kinds, fidelity enforced
+by the tool's design rather than the model's judgment.
+
+The Pro app came next and Patrick refused to decide it: everything said about Pro was
+brainstorm input, and he never ruled that Pro stays on its existing stack. That reopened
+the format question, and an audit corrected four things the earlier record had wrong — the
+pickle holds live Qt objects, Pro merges item by item three-way under an optimistic lock,
+the record is a plain dataclass, PDP and clusters ride inside the pickle, and the server's
+write path writes back only the pending pool, the id counter, people, events and
+pair-bonds. Option C was then proven: the record converts to pure JSON and back with the
+round trip exact on three fixtures and 1997 of 1998 real diagrams, loading through Pro's
+own read path, so Pro needs no change. From there came the Change and Interaction shapes,
+the ruling that the beta build carries no PDP, the six journeys that check the build, and
+the deferral of the seventh on the auto-arrange evidence he had never found satisfactory.
+
+Process corrections, now standing: keep the big model for concepts and push every read,
+write, git and build to sub-agents; label evidence versus assumption; stop batching and
+stop inventing terms; brainstorm when asked to brainstorm instead of offering
+multiple-choice; verify with a test script through the app's own loading code and leave the
+eyeball to him.
+
+Artifacts: the play-by-play A/B mockup at
+https://claude.ai/code/artifact/3fb3b475-a26a-485f-a554-10a9913a22b6, durable copy at
+~/theapp/btcopilot-sources/fd-corpus/design/playbyplay_ab.html. The converter proof
+screenshots live in the job's temp directory and are ephemeral.
