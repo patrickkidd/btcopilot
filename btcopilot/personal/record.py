@@ -46,10 +46,14 @@ def apply(
     Each delta is {item_kind, item_id, field, after}; `before` is read from the
     record so the log is always true, and any `before` passed in is ignored.
     Values are in the record's own tagged JSON form (see btcopilot.diagramjson).
+
+    A delta with field None and after None removes the item, cascading the way
+    the app's own scene does, and logs `before` as the whole item so undo puts
+    it back.
     """
     diagram = _lock(diagram_id)
     data = diagramjson.loads(diagram.data)
-    applied = [_set(data, d) for d in deltas]
+    applied = [d for delta in deltas for d in _apply(data, delta)]
     return _commit(
         diagram,
         data,
@@ -88,7 +92,7 @@ def undo(
             actual = _get(data, inverse)
             if actual != inverse["before"]:
                 raise Conflict(inverse, actual)
-            applied.append(_set(data, inverse))
+            applied.extend(_apply(data, inverse))
     return _commit(
         diagram,
         data,
@@ -125,34 +129,140 @@ def _lock(diagram_id: int) -> Diagram:
     )
 
 
+def _collection(data: dict, kind: ItemKind) -> list[dict]:
+    return data.setdefault(ITEM_COLLECTIONS[kind], [])
+
+
+def _find(data: dict, kind: ItemKind, item_id) -> dict | None:
+    for item in _collection(data, kind):
+        if str(item.get("id")) == str(item_id):
+            return item
+    return None
+
+
 def _item(data: dict, delta: dict) -> dict:
     kind = ItemKind(delta["item_kind"])
     if kind is ItemKind.Diagram:
         return data
-    collection = data.setdefault(ITEM_COLLECTIONS[kind], [])
-    for item in collection:
-        if str(item.get("id")) == str(delta["item_id"]):
-            return item
-    item = {"id": delta["item_id"]}
-    collection.append(item)
+    item = _find(data, kind, delta["item_id"])
+    if item is None:
+        item = {"id": delta["item_id"]}
+        _collection(data, kind).append(item)
     return item
 
 
+def _delta(delta: dict, before, after) -> dict:
+    return {
+        "item_id": delta["item_id"],
+        "item_kind": ItemKind(delta["item_kind"]).value,
+        "field": delta["field"],
+        "before": before,
+        "after": after,
+    }
+
+
 def _get(data: dict, delta: dict):
+    kind = ItemKind(delta["item_kind"])
+    if delta["field"] is None:
+        return diagramjson.to_json(_find(data, kind, delta["item_id"]))
     return diagramjson.to_json(_item(data, delta).get(delta["field"]))
+
+
+def _apply(data: dict, delta: dict) -> list[dict]:
+    if delta["field"] is not None:
+        return [_set(data, delta)]
+    kind = ItemKind(delta["item_kind"])
+    if kind is ItemKind.Diagram:
+        raise ValueError("the diagram itself cannot be removed by a delta")
+    if delta["after"] is None:
+        return _remove(data, kind, delta["item_id"])
+    return [_restore(data, delta)]
 
 
 def _set(data: dict, delta: dict) -> dict:
     item = _item(data, delta)
     before = diagramjson.to_json(item.get(delta["field"]))
     item[delta["field"]] = diagramjson.from_json(delta["after"])
+    return _delta(delta, before, delta["after"])
+
+
+def _restore(data: dict, delta: dict) -> dict:
+    kind = ItemKind(delta["item_kind"])
+    if _find(data, kind, delta["item_id"]) is not None:
+        raise ValueError(f"{kind.value} {delta['item_id']} is already in the record")
+    _collection(data, kind).append(diagramjson.from_json(delta["after"]))
+    return _delta(delta, None, delta["after"])
+
+
+def _drop(data: dict, kind: ItemKind, item_id) -> dict:
+    item = _find(data, kind, item_id)
+    if item is None:
+        raise ValueError(f"no {kind.value} {item_id} in the record")
+    _collection(data, kind).remove(item)
     return {
-        "item_id": delta["item_id"],
-        "item_kind": ItemKind(delta["item_kind"]).value,
-        "field": delta["field"],
-        "before": before,
-        "after": delta["after"],
+        "item_id": item_id,
+        "item_kind": kind.value,
+        "field": None,
+        "before": diagramjson.to_json(item),
+        "after": None,
     }
+
+
+def _remove(data: dict, kind: ItemKind, item_id) -> list[dict]:
+    """Remove an item and everything the app's scene removes along with it.
+
+    Mirrors Scene._do_removeItem: a person takes their events, the emotions
+    naming them, and their pair bonds; a pair bond orphans its children; an
+    event takes the emotions it caused.
+    """
+    deltas = []
+    if kind is ItemKind.Person:
+        for event in [e for e in _collection(data, ItemKind.Event) if _names(e, item_id)]:
+            deltas += _remove(data, ItemKind.Event, event["id"])
+        for emotion in [
+            e
+            for e in _collection(data, ItemKind.Emotion)
+            if str(e.get("person")) == str(item_id) or str(e.get("target")) == str(item_id)
+        ]:
+            deltas.append(_drop(data, ItemKind.Emotion, emotion["id"]))
+        for bond in [
+            b
+            for b in _collection(data, ItemKind.PairBond)
+            if str(b.get("person_a")) == str(item_id)
+            or str(b.get("person_b")) == str(item_id)
+        ]:
+            deltas += _remove(data, ItemKind.PairBond, bond["id"])
+    elif kind is ItemKind.PairBond:
+        for child in _collection(data, ItemKind.Person):
+            if str(child.get("parents")) == str(item_id):
+                deltas.append(
+                    _set(
+                        data,
+                        {
+                            "item_kind": ItemKind.Person,
+                            "item_id": child["id"],
+                            "field": "parents",
+                            "after": None,
+                        },
+                    )
+                )
+    elif kind is ItemKind.Event:
+        for emotion in [
+            e
+            for e in _collection(data, ItemKind.Emotion)
+            if str(e.get("event")) == str(item_id)
+        ]:
+            deltas.append(_drop(data, ItemKind.Emotion, emotion["id"]))
+    deltas.append(_drop(data, kind, item_id))
+    return deltas
+
+
+def _names(event: dict, person_id) -> bool:
+    """Scene's Event.people(): the person is one of the event's roles."""
+    ids = [event.get("person"), event.get("spouse"), event.get("child")]
+    ids += event.get("relationshipTargets") or []
+    ids += event.get("relationshipTriangles") or []
+    return any(str(x) == str(person_id) for x in ids if x is not None)
 
 
 def _commit(

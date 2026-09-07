@@ -121,6 +121,85 @@ def test_diff_at_item_and_field_level():
     assert deltas[(2, "name")] == ("Gone", None)
 
 
+def _family(user) -> Diagram:
+    return _diagram(
+        user,
+        {
+            "people": [
+                {"id": 1, "name": "Ada"},
+                {"id": 2, "name": "Bo"},
+                {"id": 3, "name": "Kid", "parents": 10},
+            ],
+            "pair_bonds": [{"id": 10, "person_a": 1, "person_b": 2}],
+            "events": [
+                {"id": 20, "person": 1, "kind": "birth"},
+                {"id": 21, "person": 2, "kind": "shift"},
+            ],
+            "emotions": [{"id": 30, "person": 1, "target": 2, "event": 20}],
+        },
+    )
+
+
+def test_delete_person_cascades_like_the_scene(subscriber):
+    diagram = _family(subscriber.user)
+
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Person, "item_id": 1, "field": None, "after": None}],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    data = diagram.get_diagram_data()
+    assert [p["id"] for p in data.people] == [2, 3]
+    assert data.pair_bonds == []
+    assert [e["id"] for e in data.events] == [21]
+    assert data.emotions == []
+    assert data.people[1]["parents"] is None
+
+
+def test_undo_of_delete_restores_the_family(subscriber):
+    diagram = _family(subscriber.user)
+    before = diagram.get_diagram_data()
+
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Person, "item_id": 1, "field": None, "after": None}],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    record.undo(diagram.id, "t1", author=Author.User)
+
+    after = diagram.get_diagram_data()
+    assert sorted(p["id"] for p in after.people) == sorted(
+        p["id"] for p in before.people
+    )
+    assert after.pair_bonds == before.pair_bonds
+    assert sorted(e["id"] for e in after.events) == sorted(
+        e["id"] for e in before.events
+    )
+    assert after.emotions == before.emotions
+    assert [p for p in after.people if p["id"] == 3][0]["parents"] == 10
+
+
+def test_delete_of_a_missing_item_raises(subscriber):
+    diagram = _family(subscriber.user)
+
+    with pytest.raises(ValueError):
+        record.apply(
+            diagram.id,
+            [
+                {
+                    "item_kind": ItemKind.Event,
+                    "item_id": 99,
+                    "field": None,
+                    "after": None,
+                }
+            ],
+            author=Author.Coach,
+            turn_id="t1",
+        )
+
+
 def test_pro_put_round_trip_and_logs_a_change(flask_app, test_user):
     diagram = test_user.free_diagram
     diagram.data = pickle.dumps({"people": [{"id": 1, "name": "Ada"}]})
