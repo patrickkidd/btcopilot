@@ -31,10 +31,16 @@ Computed from `DiagramData` alone, no model call, in `btcopilot/personal/cluster
 Parameters `SPAN_DAYS` and `CALM_GAP_DAYS` are module constants. Undated events
 never enter a candidate.
 
-**The record has no nodal flag.** `schema.Event` has never carried one, and the
+## Open for the owner
+
+**The record has no nodal flag.** The `Event` dataclass at `btcopilot/schema.py:317`
+has no `nodal` field and never has; the word does not appear in that file. The
 owner ruled the flags in the old corpus are used inconsistently and are to be
-ignored (`doc/chat-first/NATURE_OF_THE_DATA.md`). Nodal here means the event
-kind, which is what the intake engine has always meant by it.
+ignored (`doc/chat-first/NATURE_OF_THE_DATA.md`). So nodal here means the event
+kind — death, married, divorced, separated, moved — which is what the intake
+engine has always meant by it, and a cluster is seeded by one of those kinds or
+by any recorded shift. If the owner wants a per-event nodal flag it is an
+additive schema field and one more term in the seeding predicate.
 
 ## The model only names and explains
 

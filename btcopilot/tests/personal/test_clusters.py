@@ -295,15 +295,31 @@ def test_a_group_with_no_reason_is_rejected():
 
 
 def test_words_from_outside_the_given_definitions_are_rejected():
-    """The prompt tells the model to use only the definitions it was handed;
-    the record refuses to store the diagnostic vocabulary anyway."""
+    """The prompt tells the model to use only the terms it was handed; the
+    record refuses to store the diagnostic vocabulary anyway. Asked once more,
+    still contaminated, it fails rather than storing the words."""
     outside = answers(
-        named(1, 2, name="The codependent spring"),
-        named(3, 4, reason="his narcissistic withdrawal set it off"),
+        named(1, 2, name="The toxic spring"),
+        named(3, 4, reason="his narcissistic gaslighting set it off"),
     )
-    with replies(outside, outside):
-        with pytest.raises(ClusterError, match="codepend"):
+    with replies(outside, outside) as ask:
+        with pytest.raises(ClusterError, match="toxic"):
             detect_clusters(RECORD)
+    assert ask.call_count == 2
+    assert "thrown out" in ask.call_args_list[1].args[0]
+
+
+def test_a_contaminated_name_that_is_corrected_on_the_second_ask_is_stored():
+    with replies(
+        answers(named(1, 2, name="The gaslighting spring"), named(3, 4)),
+        answers(named(1, 2, name="The spring they argued"), named(3, 4)),
+    ) as ask:
+        result = detect_clusters(RECORD)
+    assert ask.call_count == 2
+    assert [c.name for c in result.clusters] == [
+        "The spring they argued",
+        "A hard spring",
+    ]
 
 
 def test_a_rejected_grouping_is_asked_for_once_more():
@@ -312,6 +328,24 @@ def test_a_rejected_grouping_is_asked_for_once_more():
     assert [c.eventIds for c in result.clusters] == [[1, 2], [3, 4]]
     second = ask.call_args_list[1].args[0]
     assert "thrown out" in second and "99" in second
+
+
+FORBIDDEN = (
+    "toxic",
+    "narcissis",
+    "gaslight",
+    "codepend",
+    "dysfunctional",
+    "trauma",
+    "enabler",
+    "boundaries",
+    "abusive",
+    "enmesh",
+    "manipulat",
+    "triggered",
+    "inner child",
+    "attachment style",
+)
 
 
 @pytest.mark.e2e
@@ -324,3 +358,22 @@ def test_a_real_model_names_the_seeded_record():
         print(f"  {len(cluster.eventIds)} events — {cluster.reason}")
     assert result.clusters
     assert all(cluster.reason for cluster in result.clusters)
+
+
+@pytest.mark.e2e
+def test_a_real_model_does_not_repeat_the_words_it_was_fed():
+    """Every description in this record is written in popular-psychology terms
+    the prompt does not define. Nothing the model writes back may use them."""
+    data = seed_diagram_data()
+    for event in data.events:
+        if event.get("description"):
+            event["description"] = f"his toxic narcissistic {event['description']}"
+    result = detect_clusters(data)
+    spoken = [(c.name, c.reason) for c in result.clusters]
+    print(f"named: {len(spoken)}")
+    for name, reason in spoken:
+        print(f"  {name} — {reason}")
+    assert spoken
+    for name, reason in spoken:
+        words = f"{name} {reason}".lower()
+        assert not [word for word in FORBIDDEN if word in words]
