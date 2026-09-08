@@ -153,6 +153,11 @@ def _events_payload(data: DiagramData, people_by_id: dict) -> list[dict]:
         chunk = event_payload(event)
         chunk["label"] = _label(event, people_by_id)
         chunk["person_name"] = _person_label(_subject(event, people_by_id))
+        chunk["sentence"] = _sentence(
+            chunk["label"],
+            None if _undated(chunk) else _parse_iso_date(chunk["dateTime"]),
+            _certainty(chunk),
+        )
         events.append(chunk)
     return sorted(events, key=lambda e: (_undated(e), e["dateTime"] or "", e["id"]))
 
@@ -194,30 +199,65 @@ def _chapter_label(start: datetime.date, end: datetime.date) -> str:
     return str(start.year) if start.year == end.year else f"{start.year}–{end.year}"
 
 
+def _cluster_group(cluster: dict, by_id: dict, claimed: set) -> list:
+    """The dated events one stored cluster owns: the ones it names, or the ones
+    inside its date range when it names none. An event belongs to one cluster."""
+    ids = [
+        event_id
+        for event_id in (cluster.get("eventIds") or [])
+        if event_id in by_id and event_id not in claimed
+    ]
+    if ids:
+        return sorted((by_id[event_id] for event_id in ids), key=lambda pair: pair[1])
+    start = _parse_iso_date(cluster.get("startDate"))
+    if start is None:
+        return []
+    end = _parse_iso_date(cluster.get("endDate")) or start
+    return sorted(
+        (
+            pair
+            for event_id, pair in by_id.items()
+            if event_id not in claimed and start <= pair[1] <= end
+        ),
+        key=lambda pair: pair[1],
+    )
+
+
 def _chapters(events: list[dict], clusters: list[dict]) -> list[dict]:
+    """A chapter is a grouping the picture draws. A stored cluster is one,
+    because clusters are what the coach names; whatever no cluster claims is
+    grouped by the silences between events."""
     dated = [
         (chunk, datetime.date.fromisoformat(chunk["dateTime"]))
         for chunk in events
         if not _undated(chunk)
     ]
+    by_id = {chunk["id"]: (chunk, date) for chunk, date in dated}
+    claimed: set = set()
+    groups: list[tuple[list, dict | None]] = []
+    for cluster in clusters:
+        if not isinstance(cluster, dict) or not cluster.get("id"):
+            continue
+        group = _cluster_group(cluster, by_id, claimed)
+        if not group:
+            continue
+        claimed.update(chunk["id"] for chunk, _ in group)
+        groups.append((group, cluster))
+    rest = [pair for pair in dated if pair[0]["id"] not in claimed]
+    groups.extend((group, None) for group in _group_by_gap(rest))
+    groups.sort(key=lambda pair: pair[0][0][1])
+
     chapters = []
     previous_end = None
-    for index, group in enumerate(_group_by_gap(dated)):
+    for index, (group, cluster) in enumerate(groups):
         start, end = group[0][1], group[-1][1]
-        named = [
-            cluster
-            for cluster in clusters
-            if isinstance(cluster, dict)
-            and cluster.get("startDate")
-            and start <= _parse_iso_date(cluster["startDate"]) <= end
-        ]
         chapters.append(
             {
                 "id": f"ch{index}",
                 "label": _chapter_label(start, end),
-                "title": named[0]["title"] if named else _chapter_label(start, end),
-                "summary": named[0].get("summary") if named else None,
-                "cluster_ids": [cluster["id"] for cluster in named],
+                "title": (cluster or {}).get("title") or _chapter_label(start, end),
+                "summary": (cluster or {}).get("summary"),
+                "cluster_ids": [cluster["id"]] if cluster else [],
                 "start": start.isoformat(),
                 "end": end.isoformat(),
                 "event_ids": [chunk["id"] for chunk, _ in group],
@@ -506,10 +546,7 @@ def build_timeline(data: DiagramData) -> dict:
             continue
         strip_lanes.append(_strip_person_lane(lane))
 
-    drawn_dates = sorted(
-        [e["date"] for lane in lanes for e in lane["points"] + lane["same_marks"]]
-        + [m["date"] for lane in bond_lanes for m in lane["marks"]]
-    )
+    drawn_dates = sorted(date.isoformat() for _, date, _ in dated)
     axis = {"min": drawn_dates[0], "max": drawn_dates[-1]} if drawn_dates else None
 
     coded_in = {

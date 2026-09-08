@@ -200,7 +200,9 @@ def test_seed_fixture_covers_every_move_the_play_by_play_draws():
         directions = {e[variable] for e in events if e.get(variable)}
         assert {VariableShift.Up.value, VariableShift.Down.value} <= directions
     chapters = build_timeline(seed_diagram_data())["chapters"]
-    assert all(chapter["count"] >= 5 for chapter in chapters)
+    # A stored cluster is a chapter of its own, so a chapter is as big as the
+    # cluster the coach named; nothing on the line stands alone.
+    assert all(chapter["count"] >= 3 for chapter in chapters)
 
 
 def test_seed_fixture_covers_every_rule():
@@ -273,6 +275,98 @@ def test_a_chapter_takes_its_title_from_a_cluster_inside_it():
     chapter = build_timeline(data)["chapters"][0]
     assert chapter["title"] == "The year everything moved"
     assert chapter["cluster_ids"] == ["cl-1"]
+
+
+def test_two_clusters_inside_one_run_of_events_stay_two_groupings():
+    """Without this the picture draws a single blob over a dense record, which
+    is the shape Patrick's first look at the beta rejected."""
+    events = [
+        _shift(10 + i, 1, f"2019-0{i + 1}-01", "symptom", VariableShift.Up)
+        for i in range(6)
+    ]
+    data = _data([1], events)
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="cl-a",
+                title="The first hard winter",
+                summary="",
+                eventIds=[10, 11, 12],
+                startDate="2019-01-01",
+                endDate="2019-03-01",
+            )
+        ),
+        asdict(
+            Cluster(
+                id="cl-b",
+                title="After the diagnosis",
+                summary="",
+                eventIds=[13, 14, 15],
+                startDate="2019-04-01",
+                endDate="2019-06-01",
+            )
+        ),
+    ]
+    chapters = build_timeline(data)["chapters"]
+    assert [c["event_ids"] for c in chapters] == [[10, 11, 12], [13, 14, 15]]
+    assert [c["title"] for c in chapters] == [
+        "The first hard winter",
+        "After the diagnosis",
+    ]
+
+
+def test_events_no_cluster_claims_are_grouped_by_the_silences_between_them():
+    events = [
+        _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
+        _shift(11, 1, "1990-06-01", "symptom", VariableShift.Down),
+        _shift(12, 1, "2010-01-01", "symptom", VariableShift.Up),
+        _shift(13, 1, "2010-06-01", "symptom", VariableShift.Down),
+    ]
+    data = _data([1], events)
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="cl-a",
+                title="The early years",
+                summary="",
+                eventIds=[10, 11],
+                startDate="1990-01-01",
+                endDate="1990-06-01",
+            )
+        )
+    ]
+    chapters = build_timeline(data)["chapters"]
+    assert [c["event_ids"] for c in chapters] == [[10, 11], [12, 13]]
+    assert [c["cluster_ids"] for c in chapters] == [["cl-a"], []]
+
+
+def test_every_dated_event_says_itself_in_a_sentence():
+    events = [
+        _shift(10, 1, "1996-01-01", "symptom", VariableShift.Up, DateCertainty.Approximate),
+    ]
+    event = build_timeline(_data([1], events))["events"][0]
+    assert "1996" in event["sentence"]
+    assert event["sentence"].endswith(".")
+
+
+def test_the_axis_spans_every_dated_event_not_only_the_lane_marks():
+    events = [
+        asdict(
+            Event(
+                id=10,
+                kind=EventKind.Birth,
+                person=1,
+                child=1,
+                dateTime="1980-01-01",
+                dateCertainty=DateCertainty.Certain,
+            )
+        ),
+        _shift(11, 1, "1996-01-01", "symptom", VariableShift.Up),
+    ]
+    assert build_timeline(_data([1], events))["axis"] == {
+        "min": "1980-01-01",
+        "max": "1996-01-01",
+    }
 
 
 def test_undated_events_belong_to_no_chapter_but_stay_in_the_list():
