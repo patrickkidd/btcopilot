@@ -338,10 +338,13 @@ function actions(): void {
  * written, and stays up until the reader taps back off it. */
 async function playThrough(clusterId: string): Promise<void> {
   const stretch = timeline.chapters.find((c) => c.id === clusterId);
+  // The board goes up on the tap, not when the coach comes back: a control
+  // that starts something starts it immediately (UI_STANDARDS). The coach's
+  // narration then lands on a board the reader is already looking at.
+  if (stretch) picture.openBoard(stretch.event_ids);
   chat.busy(true);
   const reply = await api.play(clusterId);
   chat.busy(false);
-  if (stretch) picture.openBoard(stretch.event_ids);
   await chat.live().type(reply.statement, (chip) => {
     const ids = aimedEvents(chip, timeline.chapters);
     if (ids.length) picture.step(ids[0]);
