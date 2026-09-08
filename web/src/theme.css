@@ -22,6 +22,8 @@
   --ask-press: #7c560f;
   --tint: rgba(14, 125, 120, 0.08);
   --ask-tint: rgba(201, 138, 27, 0.1);
+  /* a guessed date's band, the one place amber has an area (DRAWABILITY 2) */
+  --band: rgba(201, 148, 65, 0.3);
   --onaccent: #fff;
   --shadow: rgba(38, 49, 47, 0.1);
   --scrim: rgba(38, 49, 47, 0.3);
@@ -42,6 +44,7 @@
     --move: #5fce85;
     --tint: rgba(63, 196, 188, 0.13);
     --ask-tint: rgba(224, 168, 63, 0.14);
+    --band: rgba(216, 168, 83, 0.26);
     --ask-text: var(--ask);
     --move-text: var(--move);
     --data-press: #7fdcd5;
@@ -62,6 +65,7 @@
   --move: #5fce85;
   --tint: rgba(63, 196, 188, 0.13);
   --ask-tint: rgba(224, 168, 63, 0.14);
+  --band: rgba(216, 168, 83, 0.26);
   --ask-text: var(--ask);
   --move-text: var(--move);
   --data-press: #7fdcd5;
@@ -248,8 +252,44 @@ button { font-family: inherit; }
 .ss-hit:focus-visible { outline: 2px solid var(--data); outline-offset: -2px; }
 
 /* the one amber treatment: the record asking */
-.ss .qm { fill: var(--ask); font: 500 15px var(--mono); }
+/* the record asking breathes, so an amber mark reads as a live question rather
+   than a printed one */
+.ss .qm {
+  fill: var(--ask);
+  font: 500 15px var(--mono);
+  animation: ask 2.8s ease-in-out infinite;
+}
+@keyframes ask {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
 .ss .qm.small { font-size: 13px; }
+
+/* ---- the drawability marks (DRAWABILITY.md rules 1-5), drawn only where the
+   coach has named something and its words are beside them ---- */
+/* a guessed date is as wide as the guess */
+.ss .band { fill: var(--band); }
+/* silence is dotted and never flat */
+.ss .gap {
+  stroke: var(--faint);
+  stroke-width: 1.6;
+  stroke-dasharray: 1.5 5;
+  opacity: 0.55;
+}
+/* a recorded no-change is solid, and stays told apart from silence */
+.ss .flat { stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; }
+/* a moment with no direction at all */
+.ss .tick { stroke: var(--ink); stroke-width: 1.8; }
+/* three directed points earn a line; below three they stay dots */
+.ss .step {
+  fill: none;
+  stroke: var(--data);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* an open state fades past its last confirmation rather than stopping dead */
+.ss .fade { stroke: url(#openfade); stroke-width: 2.2; stroke-linecap: round; }
 
 /* ---- the moves board: Bowen's chalkboard, the deepest level ---- */
 /* screen one zooms into screen two: the board arrives scaled up and settles */
