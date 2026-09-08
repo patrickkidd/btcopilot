@@ -473,6 +473,8 @@ draft PRs already exist: btcopilot #135 and fdserver #29.
 
 ### Owner review round 1 (2026-09-08, RULED, not yet in the oracle store — append next fold)
 
+Every finding from every review round, row by row: [REVIEW_LOG.md](REVIEW_LOG.md).
+
 One selection state: a chip tap is a dot tap — spotlight plus a caption row carrying the
 ask chip, the board button, and the "coded in" chip. Chips are one size, full text, no
 truncation and no expand; labels are capped at the source, at most 28 grapheme clusters,
