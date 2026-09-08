@@ -133,6 +133,31 @@ def test_session_rename(web, token):
     assert db.session.get(Discussion, created["id"]).title == "The move"
 
 
+@pytest.mark.chat_flow(response="a coach reply")
+def test_session_delete_keeps_the_record(web, token, test_user):
+    created = post(web, token, "/personal/chat", {"statement": "hello"}).get_json()
+    events = len(test_user.free_diagram.get_diagram_data().events)
+
+    response = web.delete(
+        f"/personal/sessions/{created['discussion_id']}", headers={"X-CSRFToken": token}
+    )
+    assert response.status_code == 204
+    assert db.session.get(Discussion, created["discussion_id"]) is None
+    assert len(test_user.free_diagram.get_diagram_data().events) == events
+
+
+def test_session_delete_of_another_user_is_not_found(web, token, test_user_2):
+    other = Discussion(user_id=test_user_2.id, summary="theirs")
+    db.session.add(other)
+    db.session.commit()
+
+    response = web.delete(
+        f"/personal/sessions/{other.id}", headers={"X-CSRFToken": token}
+    )
+    assert response.status_code == 404
+    assert db.session.get(Discussion, other.id) is not None
+
+
 def test_session_rename_rejects_unknown_field(web, token):
     created = post(web, token, "/personal/sessions", {}).get_json()
 

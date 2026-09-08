@@ -758,7 +758,6 @@ button { font-family: inherit; }
   border-radius: 8px;
   background: none;
 }
-.chip.ask:active { background: var(--ask-tint); }
 .bub.user .chip { color: var(--onaccent); border-color: currentColor; }
 
 .inbar {
