@@ -18,14 +18,23 @@ def said(text: str) -> ModelTurn:
     return ModelTurn(text=text, blocks=[{"type": "text", "text": text}])
 
 
-def called(tool: ToolName, **args) -> ModelTurn:
-    call = ToolCall(id=f"tu_{tool.value}", name=tool.value, args=args)
-    return ModelTurn(
-        calls=[call],
-        blocks=[
+def called(tool: ToolName, text: str = "", **args) -> ModelTurn:
+    return calling((tool, args), text=text)
+
+
+def calling(*wanted: tuple[ToolName, dict], text: str = "") -> ModelTurn:
+    """One model call that asks for several tools at once, optionally saying
+    something first — which is how a real model leaks its planning."""
+    turn = ModelTurn(text=text)
+    if text:
+        turn.blocks.append({"type": "text", "text": text})
+    for index, (tool, args) in enumerate(wanted):
+        call = ToolCall(id=f"tu_{tool.value}_{index}", name=tool.value, args=args)
+        turn.calls.append(call)
+        turn.blocks.append(
             {"type": "tool_use", "id": call.id, "name": call.name, "input": call.args}
-        ],
-    )
+        )
+    return turn
 
 
 class Model:

@@ -83,15 +83,18 @@ class CoachTurn:
             ),
         )
         messages = self._history()
-        said = []
+        spoken = ""
         events = []
 
         for step in range(MAX_STEPS):
             turn = self._say(system, messages)
-            if turn.text:
-                said.append(turn.text)
+            # Only the last call is the coach speaking. Text before a tool call
+            # is the model working out what to do, and the user never sees it.
+            spoken = turn.text
             if not turn.calls:
                 break
+            if turn.text:
+                _log.info(f"Turn {self.turn_id} step {step} thought aloud: {turn.text}")
 
             results = []
             for call in turn.calls:
@@ -115,7 +118,7 @@ class CoachTurn:
         else:
             _log.warning(f"Turn {self.turn_id} hit {MAX_STEPS} steps without finishing")
 
-        reply = chips.validate("\n\n".join(said).strip(), self.data)
+        reply = chips.validate(spoken.strip(), self.data)
         ai_log.info(f"AI response: {reply}")
         coach_statement = Statement(
             discussion_id=self.discussion.id,

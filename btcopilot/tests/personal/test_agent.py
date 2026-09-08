@@ -19,7 +19,7 @@ from btcopilot.schema import (
     Person,
     asdict,
 )
-from btcopilot.tests.personal.conftest import Model, called, said
+from btcopilot.tests.personal.conftest import Model, called, calling, said
 
 
 def run(discussion, statement, model) -> dict:
@@ -237,3 +237,67 @@ def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypa
     assert reply["events"][1]["turn_id"] == reply["turn_id"]
     assert reply["statement_id"] is not None
     assert reply["session"]["id"] == reply["discussion_id"]
+
+
+def test_people_and_their_events_all_land_in_one_turn(discussion, family):
+    """A turn that adds the people and stops has lost what was said about them:
+    the coach keeps calling tools until every dated fact is in the record."""
+    reply = run(
+        discussion,
+        "My dad Ray left in 1994 and my mum Ivy got ill in 1996.",
+        Model(
+            calling(
+                (ToolName.EditPerson, {"name": "Ray", "gender": "male"}),
+                (ToolName.EditPerson, {"name": "Ivy", "gender": "female"}),
+            ),
+            calling(
+                (
+                    ToolName.EditEvent,
+                    {
+                        "kind": "moved",
+                        "date": "1994-01-01",
+                        "person": 11,
+                        "description": "left",
+                    },
+                ),
+                (
+                    ToolName.EditEvent,
+                    {
+                        "kind": "shift",
+                        "date": "1996-01-01",
+                        "person": 12,
+                        "symptom": "up",
+                    },
+                ),
+            ),
+            said("Both are down now."),
+        ),
+    )
+    assert kinds(reply).count(EventKind.ToolCall.value) == 4
+
+    data = family.get_diagram_data()
+    assert [p["name"] for p in data.people if p["id"] in (11, 12)] == ["Ray", "Ivy"]
+    assert [
+        (e["dateTime"], e["person"]) for e in data.events if e["id"] in (13, 14)
+    ] == [("1994-01-01", 11), ("1996-01-01", 12)]
+
+
+def test_the_words_before_a_tool_call_are_not_the_coach_speaking(discussion, family):
+    """The model works out what to do in the open. Only its last words, the
+    ones with no tool call behind them, are the reply."""
+    reply = run(
+        discussion,
+        "My sister is Nell.",
+        Model(
+            called(
+                ToolName.EditPerson,
+                text="I need to add a placeholder person first.",
+                name="Nell",
+            ),
+            said("Got her - [[person:11|Nell]]."),
+        ),
+    )
+    assert reply["statement"] == "Got her - [[person:11|Nell]]."
+
+    spoken = [s.text for s in discussion.statements]
+    assert "placeholder" not in " ".join(spoken)
