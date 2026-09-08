@@ -533,3 +533,31 @@ def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeyp
         (StatementKind.Turn.value, None),
         (StatementKind.Play.value, "c1"),
     ]
+
+
+TWO_HOURS = 2 * 3600
+
+
+def test_a_csrf_token_older_than_an_hour_still_posts(web, family, monkeypatch):
+    """The token the page is stamped with lives as long as the session it
+    belongs to. It expired after an hour, so a reader still signed in and still
+    typing had every send refused and read an empty coach bubble."""
+    import time
+
+    from btcopilot.tests.personal.conftest import csrf_token
+
+    monkeypatch.setattr(
+        "btcopilot.personal.coachturn.CoachModel",
+        lambda *a, **k: Model(said("Tell me about [[event:10|the move]].")),
+    )
+    token = csrf_token(web)
+    later = time.time() + TWO_HOURS
+    monkeypatch.setattr(time, "time", lambda: later)
+
+    reply = web.post(
+        "/personal/chat",
+        json={"statement": "My dad moved out."},
+        headers={"X-CSRFToken": token},
+    )
+    assert reply.status_code == 200
+    assert reply.get_json()["kind"] == StatementKind.Turn.value

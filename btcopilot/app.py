@@ -33,6 +33,10 @@ def create_app(config: dict = None, **kwargs):
         CELERY_BROKER_URL="redis://localhost:6379/0",
         CELERY_RESULT_BACKEND="redis://localhost:6379/0",
         WTF_CSRF_CHECK_DEFAULT=False,
+        # A token stamped into a page lives as long as the session that page
+        # belongs to. The default hour expires it under a reader who is still
+        # signed in and still typing, and every post after that is refused.
+        WTF_CSRF_TIME_LIMIT=None,
     )
 
     if config and config.get("CONFIG"):
