@@ -55,28 +55,6 @@ const ITEM_OF: Record<ChipKind, ItemKind> = {
 
 export const itemKind = (kind: ChipKind): ItemKind => ITEM_OF[kind];
 
-/** A chip has to fit inside a chat bubble on a phone, and the record hands out
- * labels of any length — an event's whole first line, a four-part surname. Past
- * this many characters the chip shows the beginning and says the rest on tap.
- * The number is what fits on two lines of a 390px bubble. */
-export const CHIP_MAX = 34;
-
-export interface ChipText {
-  text: string;
-  clipped: boolean;
-}
-
-/** Cut at the last space before the limit so a chip never breaks a word, and
- * never leave a stub that is mostly ellipsis. */
-export function chipText(label: string, max = CHIP_MAX): ChipText {
-  const clean = label.replace(/\s+/g, " ").trim();
-  if ([...clean].length <= max) return { text: clean, clipped: false };
-  const cut = [...clean].slice(0, max).join("");
-  const space = cut.lastIndexOf(" ");
-  const kept = space > max * 0.6 ? cut.slice(0, space) : cut.trimEnd();
-  return { text: `${kept}…`, clipped: true };
-}
-
 export function token(kind: ChipKind, target: string, label?: string): string {
   return label ? `[[${kind}:${target}|${label}]]` : `[[${kind}:${target}]]`;
 }

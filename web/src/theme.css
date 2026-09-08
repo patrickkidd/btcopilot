@@ -644,8 +644,9 @@ button { font-family: inherit; }
 }
 
 /* A chip never leaves its bubble: it may be as wide as the bubble and no
-   wider, it wraps to more lines when its words are long, and a label too long
-   to fit shows its beginning until it is tapped. */
+   wider, and it wraps to more lines rather than being cut. Labels are capped
+   at 28 graphemes by the server, so wrapping is for the ordinary long label,
+   not a guard against an unbounded one. */
 .chip {
   position: relative;
   display: inline-block;
