@@ -32,20 +32,32 @@ items, so each is logged FIXED without a commit citation.
 1. Coach must never reply with a bare list of chips (seen: fixture's canned "walk me
    through it" reply); remove the canned reply from the play fixture; prompt rule. OPEN
 2. Play-by-play cursor: the semi-opaque green oval overlaps three dots; replace with an
-   obvious indicator, e.g. a thin green ring around the selected dot. MOCKUP
+   obvious indicator, e.g. a thin green ring around the selected dot. RULED: no oval;
+   the selected dot is drawn on top in the ratified action green; the leader line from
+   the dot to the summary is the indicator; no tick.
 3. Up/down arrows (symptom/functioning up/down) must never disappear; the animation
    loop fades them; show movement another way. OPEN
 4. Summary line above prev/next ("15/17 | April 2004 | Ada | symptom down"): no symbol
    names, no move count; show what the user reported; date shown once (year under dots,
-   date in line — pick one); layout must survive hostile content. MOCKUP
+   date in line — pick one); layout must survive hostile content. RULED: variant A
+   "Name · their own words", no symbol names, no move count, date only under the dots;
+   the summary block reserves a fixed two-line height and clips (the board never
+   changes height when text wraps).
 5. Crumb line "FAMILY TIMELINE  Apr 1996 | defined self" duplicates the date/label above
-   the selected dot on the wire. MOCKUP
+   the selected dot on the wire. RULED: crumb shows only "FAMILY TIMELINE"; the dot's
+   label stays above the dot.
 6. Caption row "[ask about this] (▶ watch the 17 moves) (coded in: Untitled | 11:09am |
-   today →)" overflows on mobile; Play and coded-in buttons differ in height. OPEN
+   today →)" overflows on mobile; Play and coded-in buttons differ in height. RULED via
+   #8: the wire caption's button is the bare ▶ icon.
 7. Convergence rule: no visual/layout-hierarchy change without a quick mockup confirmed
    by the owner; changes surgical, not sweeping; clarify ambiguity before acting. RULED
 8. Board controls must be identical whichever way it is entered (chip in a narration vs
    dot on the wire); today the chip path shows only prev/next and the dot path also
-   shows "watch the moves", and the board shows it again. MOCKUP
+   shows "watch the moves", and the board shows it again. RULED: one control row always
+   [◀] [▶ explain] [▶] whichever way the board is entered; explain disabled while the
+   coach is still responding.
 9. "▶ watch the 17 moves" → "▶ explain the moves" (it triggers a slow coach response,
-   not an animation). OPEN
+   not an animation). RULED: label is "▶ explain" (not "explain the moves").
+10. Mockups must simulate wrapped/long text; non-happy-path rendering is a known blind
+    spot — every mockup carries a long-text state and every new region joins the
+    overflow gates. RULED
