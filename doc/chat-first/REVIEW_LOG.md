@@ -61,3 +61,11 @@ items, so each is logged FIXED without a commit citation.
 10. Mockups must simulate wrapped/long text; non-happy-path rendering is a known blind
     spot — every mockup carries a long-text state and every new region joins the
     overflow gates. RULED
+11. Failed or unanswered sends show a static warning label with a retry control instead
+    of an empty coach bubble; cleared on success, shown again if it still fails; also
+    covers a dead server and timeouts. Root cause found: CSRF token expired after 1 hour
+    → 400; tokens now live as long as the session. OPEN
+12. All text in the app is selectable and copyable; only controls keep user-select none.
+    OPEN
+13. Activity indicator (three animating dots) in the coach bubble from send until the
+    first words arrive; never a blank bubble. OPEN
