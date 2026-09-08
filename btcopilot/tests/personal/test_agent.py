@@ -342,18 +342,28 @@ def test_a_turn_that_never_stops_calling_tools_still_says_something(
     call. When the steps run out the coach is asked for its reply with no tools
     at all, and that is what the person reads."""
     working = [
-        called(ToolName.EditPerson, name=f"Person {n}") for n in range(MAX_STEPS)
+        called(
+            ToolName.EditPerson,
+            text=f"Working out step {n}.",
+            name=f"Person {n}",
+        )
+        for n in range(MAX_STEPS)
     ]
+    before = len(discussion.statements)
     model = Model(*working, said("I added them all. Who else was around then?"))
     reply = run(discussion, "There were six of them.", model)
 
-    assert reply["statement"] == "I added them all. Who else was around then?"
     assert model.offered[-1] == []
     assert FINISH in model.histories[-1][-1]["content"]
 
-    stored = discussion.statements[-1]
-    assert stored.text == reply["statement"]
-    assert stored.id == reply["statement_id"]
+    spoken = [s.text for s in discussion.statements]
+    assert len(spoken) - before == 2
+    assert spoken[-2:] == [
+        "There were six of them.",
+        "I added them all. Who else was around then?",
+    ]
+    assert "Working out" not in " ".join(spoken)
+    assert discussion.statements[-1].id == reply["statement_id"]
 
 
 def test_the_edits_of_a_capped_turn_are_all_kept(discussion, family):
@@ -371,7 +381,12 @@ def test_the_edits_of_a_capped_turn_are_all_kept(discussion, family):
 
     names = [p.get("name") for p in family.get_diagram_data().people]
     assert [f"Person {n}" for n in range(MAX_STEPS)] == names[-MAX_STEPS:]
-    assert Change.query.filter_by(turn_id=reply["turn_id"]).count() == MAX_STEPS
+
+    # The forced last call must not roll anything back or run anything twice:
+    # the rows are still there and still point at the statement.
+    written = Change.query.filter_by(turn_id=reply["turn_id"]).all()
+    assert len(written) == MAX_STEPS
+    assert {c.statement_id for c in written} == {reply["statement_id"]}
 
 
 def test_a_turn_with_no_words_at_all_fails_rather_than_showing_a_bare_bubble(
