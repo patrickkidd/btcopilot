@@ -33,6 +33,10 @@ from btcopilot.schema import (
 
 _log = logging.getLogger(__name__)
 
+# Bumped whenever the candidate rules or the naming prompt change, so a record
+# grouped by the older rules re-groups on its next event-changing turn.
+DETECTION_VERSION = 2
+
 # How far either side of a nodal event or shift a related event may sit and
 # still be part of the same cluster.
 SPAN_DAYS = 548
@@ -237,7 +241,7 @@ def compute_cache_key(events: list[Event]) -> str:
         }
         for e in events
     ]
-    return hash_sarf_dicts(event_data)
+    return hash_sarf_dicts([{"detectionVersion": DETECTION_VERSION}] + event_data)
 
 
 def _event_json(event: Event) -> dict:
