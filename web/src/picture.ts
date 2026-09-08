@@ -370,6 +370,11 @@ export class Picture {
     return this.level === Level.Board;
   }
 
+  /** Whether the picture is showing one cluster rather than the whole line. */
+  opened(): boolean {
+    return this.level === Level.Wire && this.focus !== null;
+  }
+
   /** The cluster the board is showing, which is what "explain" asks about. */
   showing(): string | null {
     return this.cluster;
@@ -849,6 +854,13 @@ export class Picture {
         `width:${zone.width.toFixed(1)}px;height:${ZONE}px"></button>`;
     });
     hits += this.shelfHit(x1, wire);
+    // A cluster is open, so the way back to all of them is on screen. It is the
+    // board's own arrow in the board's own corner, and the tap it stands for is
+    // the tap on empty ground.
+    if (this.level === Level.Wire)
+      hits +=
+        `<button class="corner l ss-hit" data-target="${Target.Ground}" ` +
+        `aria-label="back to the clusters">&#8592;</button>`;
 
     this.pin(height);
     this.host.innerHTML = `<div class="ss">${svg}${text}${html}${hits}</div>`;
