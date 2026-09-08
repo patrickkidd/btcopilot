@@ -393,6 +393,10 @@ button { font-family: inherit; }
 .ss .node .ini { font: 600 13px var(--sans); fill: var(--ink); }
 .ss .node .nm { font: 400 13px var(--mono); fill: var(--faint); }
 .ss .node .nm.on { fill: var(--move); font-weight: 600; }
+/* someone the coach has just put in the record, while the line saying so is
+   read: the same green their moves are drawn in, on the figure itself */
+.ss .node.lit { color: var(--move); }
+.ss .node.lit .nm { fill: var(--move); font-weight: 600; }
 .ss .node { color: var(--faint); }
 .ss .node .ghost .gh {
   fill: none;
@@ -627,14 +631,14 @@ button { font-family: inherit; }
 }
 /* the same key times as the fade they replace, travelling instead of fading */
 @keyframes symworse {
-  0%, 8% { transform: translateY(5px); }
-  14%, 48% { transform: translateY(-4px); }
-  54%, 100% { transform: translateY(5px); }
+  0%, 8% { transform: translateY(2.5px); }
+  14%, 48% { transform: translateY(-2px); }
+  54%, 100% { transform: translateY(2.5px); }
 }
 @keyframes symbetter {
-  0%, 50% { transform: translateY(-5px); }
-  56%, 90% { transform: translateY(4px); }
-  96%, 100% { transform: translateY(-5px); }
+  0%, 50% { transform: translateY(-2.5px); }
+  56%, 90% { transform: translateY(2px); }
+  96%, 100% { transform: translateY(-2.5px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

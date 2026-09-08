@@ -403,21 +403,29 @@ function drainArrow(from: Figure, to: Figure): string {
   );
 }
 
+/** How tall the arrow beside the health cross stands: the cross's own height,
+ * ruled 2026-09-08. The ratified sheet drew it at 32, twice the cross, which
+ * reads as a mark about the arrow rather than about the person. Every number
+ * below is that sheet's, halved; the stroke is the sheet's, unscaled. */
+const ARROW = 0.5;
+
 /** The health cross, and the arrow that says which way it went. */
 function cross(person: Figure, direction: Shift): string {
   const side = person.mirror ? -1 : 1;
   const cx = person.x + side * (rad(person) + 29);
   const cy = person.y - 6;
   const ax = cx + side * 26;
+  const up = (offset: number) => n1(cy + offset * ARROW);
+  const across = (offset: number) => n1(ax + offset * ARROW);
   const worse =
     `<g class="sym-arrow worse">` +
-    `<line class="mv-dir" x1="${n1(ax)}" y1="${n1(cy + 14)}" x2="${n1(ax)}" y2="${n1(cy - 12)}"/>` +
-    `<polygon class="tipfill" points="${n1(ax)},${n1(cy - 18)} ${n1(ax - 8)},${n1(cy - 8)} ${n1(ax + 8)},${n1(cy - 8)}"/>` +
+    `<line class="mv-dir" x1="${n1(ax)}" y1="${up(14)}" x2="${n1(ax)}" y2="${up(-12)}"/>` +
+    `<polygon class="tipfill" points="${n1(ax)},${up(-18)} ${across(-8)},${up(-8)} ${across(8)},${up(-8)}"/>` +
     `</g>`;
   const better =
     `<g class="sym-arrow better">` +
-    `<line class="mv-dir" x1="${n1(ax)}" y1="${n1(cy - 12)}" x2="${n1(ax)}" y2="${n1(cy + 14)}"/>` +
-    `<polygon class="tipfill" points="${n1(ax)},${n1(cy + 20)} ${n1(ax - 8)},${n1(cy + 10)} ${n1(ax + 8)},${n1(cy + 10)}"/>` +
+    `<line class="mv-dir" x1="${n1(ax)}" y1="${up(-12)}" x2="${n1(ax)}" y2="${up(14)}"/>` +
+    `<polygon class="tipfill" points="${n1(ax)},${up(20)} ${across(-8)},${up(10)} ${across(8)},${up(10)}"/>` +
     `</g>`;
   const arrow =
     direction === Shift.Up ? worse : direction === Shift.Down ? better : "";
