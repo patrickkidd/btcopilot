@@ -74,10 +74,51 @@ test.describe("nothing moves when a chip is tapped", () => {
     expect(await page.locator(".caption").innerHTML()).toBe("");
 
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator(".caption .chip")).toBeVisible();
+    await expect(page.locator(".caption .chip").first()).toBeVisible();
     const filled = await frame(page);
 
     expect(filled.caption).toEqual(empty.caption);
+  });
+
+  test("the caption stays one strip however many controls it holds", async ({
+    page,
+  }) => {
+    await settle(page);
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    await expect(page.locator(".caption .trace")).toBeVisible();
+    // three controls at 390px do not fit side by side, so the strip scrolls
+    // sideways rather than wrapping onto a second line
+    const strip = await page.locator(".caption").evaluate((node) => ({
+      height: Math.round(node.getBoundingClientRect().height),
+      children: node.childElementCount,
+      overflows: node.scrollWidth > node.clientWidth,
+    }));
+    expect(strip.children).toBe(3);
+    expect(strip.height).toBe(44);
+    expect(strip.overflows).toBe(true);
+  });
+});
+
+test.describe("a moment traces back to the words that coded it", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  test("the chip names the session and the tap outlines the bubble", async ({
+    page,
+  }) => {
+    await settle(page);
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    const chip = page.locator(".caption .trace");
+    await expect(chip).toContainText("coded in:");
+
+    const before = await frame(page);
+    await chip.click();
+    await expect(page.locator(".bub.traced")).toHaveCount(1);
+    const after = await frame(page);
+
+    // tracing scrolls the thread, it does not resize anything above it
+    expect(after.picture).toEqual(before.picture);
+    expect(after.caption).toEqual(before.caption);
+    expect(after.chat).toEqual(before.chat);
   });
 });
 

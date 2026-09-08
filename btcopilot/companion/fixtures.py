@@ -22,6 +22,7 @@ from btcopilot.schema import (
     EventKind,
     Person,
     PersonKind,
+    TraceKey,
     VariableShift,
     asdict,
 )
@@ -306,7 +307,28 @@ def install(key: str):
                 )
             )
         db.session.commit()
+        _stamp_coded_in(diagram, discussion)
     return user
+
+
+def _stamp_coded_in(diagram, discussion):
+    """A real record remembers which words coded each moment, so the fixtures
+    do too: every event is stamped against this discussion's first coach
+    statement. Without it there is nothing for traceability to point at."""
+    from btcopilot.extensions import db
+
+    coach_said = next(
+        (s for s in discussion.statements if s.speaker_id == discussion.chat_ai_speaker_id),
+        None,
+    )
+    if coach_said is None:
+        return
+    data = diagram.get_diagram_data()
+    for event in data.events:
+        event[TraceKey.Discussion.value] = discussion.id
+        event[TraceKey.Statement.value] = coach_said.id
+    diagram.set_diagram_data(data)
+    db.session.commit()
 
 
 @bp.cli.command("fixtures")

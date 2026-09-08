@@ -20,11 +20,16 @@ const PRESS_MS = 500;
 export interface SessionsHandlers {
   /** Open a session: the chat swaps to its statements. */
   onPick(session: Session): void;
+  /** The sessions as last read, so a moment tracing back to the one that coded
+   * it can name it. */
+  onList(sessions: Session[]): void;
 }
 
 const untitled = (session: Session) => !session.title?.trim();
 
-const titleOf = (session: Session) =>
+/** What a session is called on screen. A session the coach has not titled yet
+ * is named by when it happened, so two of them can still be told apart. */
+export const sessionTitle = (session: Session) =>
   untitled(session)
     ? `Untitled · ${clockTime(new Date(session.last_activity))}`
     : (session.title as string);
@@ -85,6 +90,7 @@ export class Sessions {
     this.list = sessions;
     this.family =
       account.diagrams.find((d) => d.free) ?? account.diagrams[0] ?? null;
+    this.handlers.onList(this.list);
     if (this.open) this.render();
   }
 
@@ -212,7 +218,7 @@ export class Sessions {
     const query = this.filter.trim().toLowerCase();
     const matches = query
       ? this.list.filter((s) =>
-          `${titleOf(s)} ${summaryOf(s)} ${this.family?.name ?? ""}`
+          `${sessionTitle(s)} ${summaryOf(s)} ${this.family?.name ?? ""}`
             .toLowerCase()
             .includes(query),
         )
@@ -300,7 +306,7 @@ export class Sessions {
 
   private rowHtml(session: Session, when: string): string {
     const title = untitled(session)
-      ? `<span class="untitled">${esc(titleOf(session))}</span>`
+      ? `<span class="untitled">${esc(sessionTitle(session))}</span>`
       : esc(session.title as string);
     // The app has one list row: the timeline list's `.row` with its `.r1`
     // title and `.r2` secondary line. A session row is that row with a date
@@ -352,7 +358,7 @@ export class Sessions {
     if (!session || !holder || holder.querySelector("input")) return;
     const field = document.createElement("input");
     field.className = "rename";
-    field.value = titleOf(session);
+    field.value = sessionTitle(session);
     holder.replaceChildren(field);
     field.focus({ preventScroll: true });
     field.select();

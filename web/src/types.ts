@@ -120,6 +120,14 @@ export interface Timeline {
   questions: Question[];
   axis: { min: string; max: string } | null;
   shelf: { event_id: number; label: string; sentence: string }[];
+  /** Where each moment was coded, by event id: the session, and the statement
+   * inside it. Two-way traceability runs on this. */
+  coded_in: Record<string, CodedIn>;
+}
+
+export interface CodedIn {
+  discussion_id: number;
+  statement_id: number | null;
 }
 
 export interface Statement {

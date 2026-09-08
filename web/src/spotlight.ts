@@ -85,7 +85,11 @@ export interface Row {
 
 /** Lay the named moments' words out in up to three rows: to the right of the
  * dot where there is room, otherwise to its left, and never over the one before.
- */
+ *
+ * A moment with no room left for even one character keeps its row with empty
+ * text: the leader line is drawn from the row down to the dot whatever the
+ * words do, so a crowded picture still shows which dots the coach named
+ * (ratified: the leader is emitted before the alignment and budget branch). */
 export function rows(
   named: { id: number; x: number; text: string }[],
   x0: number,
@@ -106,14 +110,13 @@ export function rows(
       left = limit;
       align = "right";
     }
-    if (budget < 1) return;
     out.push({
       id: mark.id,
       row: i,
       left,
       width: Math.max(0, width),
       align,
-      text: clip(mark.text, budget),
+      text: budget < 1 ? "" : clip(mark.text, budget),
       x: mark.x,
     });
   });

@@ -3,7 +3,7 @@ import * as api from "./api";
 import { Chat, wait } from "./chat";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu } from "./menu";
-import { Sessions } from "./sessions";
+import { Sessions, sessionTitle } from "./sessions";
 import { Settings } from "./settings";
 import { aimedEvents, chips, itemKind } from "./chips";
 import { StepKind, steps } from "./turn";
@@ -18,6 +18,8 @@ import {
   type Sel,
 } from "./caption";
 import { $, esc } from "./dom";
+import { toast } from "./toast";
+import { shortDate } from "./when";
 import {
   ChipKind,
   ChipTone,
@@ -25,6 +27,8 @@ import {
   ItemKind,
   Role,
   type Chip,
+  type CodedIn,
+  type Session,
   type Statement,
   type Timeline,
 } from "./types";
@@ -51,9 +55,13 @@ let timeline: Timeline = {
   questions: [],
   axis: null,
   shelf: [],
+  coded_in: {},
 };
 let pic: PicState = REST;
 let session: number | null = window.COMPANION.session?.id ?? null;
+/** The sessions as the sheet last read them, for naming the one that coded a
+ * moment. */
+let known: Session[] = [];
 
 /** A tap can only be recorded against a diagram; without one there is nothing to
  * record it on. */
@@ -128,6 +136,10 @@ const sessions = new Sessions(
       session = picked.id;
       void openSession(picked.id);
     },
+    onList: (list) => {
+      known = list;
+      actions();
+    },
   },
 );
 
@@ -159,7 +171,8 @@ speak.addEventListener("change", () => void settings.set({ speak: speak.checked 
 async function openSession(id: number): Promise<void> {
   const { statements } = await api.session(id);
   chat.clear();
-  for (const statement of statements) chat.add(statement.role, statement.text);
+  for (const statement of statements)
+    chat.add(statement.role, statement.text, ChipTone.Data, statement.id);
   picture.clear();
   pic = REST;
   const last = [...statements].reverse().find((s) => s.role === Role.Coach);
@@ -211,8 +224,38 @@ function selLabel(sel: Sel): string {
   return n ? `${n} thing${n === 1 ? "" : "s"} with no date yet` : "what has no date";
 }
 
-/** The row under the picture: what it is showing, and the two things a tap can
- * do about it. The words themselves live on the picture (converged mockup). */
+/** Traceability runs both ways: a moment on the picture says which session
+ * coded it, and tapping that says which words. */
+const TRACE_TITLE_CAP = 30;
+
+function codedIn(
+  eventId: number,
+): { label: string; where: CodedIn } | null {
+  const where = timeline.coded_in[String(eventId)];
+  if (!where) return null;
+  const found = known.find((s) => s.id === where.discussion_id);
+  const title = found ? sessionTitle(found) : "an earlier session";
+  const cut =
+    title.length > TRACE_TITLE_CAP
+      ? `${title.slice(0, TRACE_TITLE_CAP - 1)}…`
+      : title;
+  const when = found ? shortDate(new Date(found.last_activity), new Date()) : "";
+  return { label: `coded in: ${cut}${when ? ` · ${when}` : ""} →`, where };
+}
+
+/** Jump to the words that coded this moment: the session if it is not the one
+ * on screen, then the bubble itself, outlined while it settles. */
+async function traceTo(where: CodedIn): Promise<void> {
+  if (where.statement_id === null) return;
+  if (where.discussion_id !== session) {
+    session = where.discussion_id;
+    await openSession(where.discussion_id);
+  }
+  if (!chat.trace(where.statement_id)) toast("Those words are no longer here");
+}
+
+/** The row under the picture: what it is showing, and the things a tap can do
+ * about it. The words themselves live on the picture (converged mockup). */
 function actions(): void {
   $("pin-state").textContent = picture.state();
   const host = $("caption");
@@ -226,14 +269,20 @@ function actions(): void {
       ? timeline.chapters.find((c) => c.event_ids.includes(Number(sel.id)))
       : undefined;
   const ask = sel.kind === SelKind.Shelf ? "Ask when" : "Ask about this";
+  const trace = sel.kind === SelKind.Event ? codedIn(Number(sel.id)) : null;
   host.innerHTML =
     `<button type="button" class="chip ask" id="cap-chip">[${esc(ask)}]</button>` +
     (stretch
       ? `<button type="button" class="btn play" id="cap-play">Play</button>`
+      : "") +
+    (trace
+      ? `<button type="button" class="chip data trace" id="cap-trace">${esc(trace.label)}</button>`
       : "");
   $("cap-chip").addEventListener("click", () =>
     apply(reduce(pic, PicEvent.TapChip)),
   );
+  if (trace)
+    $("cap-trace").addEventListener("click", () => void traceTo(trace.where));
   if (stretch)
     $("cap-play").addEventListener("click", () =>
       apply(
@@ -336,7 +385,7 @@ $("menu-search").addEventListener("input", (e) =>
 );
 
 for (const statement of window.COMPANION.statements)
-  chat.add(statement.role, statement.text);
+  chat.add(statement.role, statement.text, ChipTone.Data, statement.id);
 
 void sessions.load(session);
 void settings.load();

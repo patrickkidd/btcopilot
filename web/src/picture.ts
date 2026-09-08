@@ -637,11 +637,16 @@ export class Picture {
         leaders.add(key);
         text += `<div class="ss-lead" style="left:${key}px;top:${ROWS[row.row] + 15}px;height:${wire - ROWS[row.row] - 15}px"></div>`;
       }
+      if (!row.text) continue;
       text +=
         `<div class="ss-t on" style="left:${row.left.toFixed(1)}px;top:${ROWS[row.row]}px;` +
         `width:${row.width.toFixed(1)}px;text-align:${row.align}">${esc(row.text)}</div>`;
     }
-    return { text, rowsLaid: laid.map((r) => ({ id: r.id, row: r.row })) };
+    // A row with no room for words is not a row the thumb can pick.
+    return {
+      text,
+      rowsLaid: laid.filter((r) => r.text).map((r) => ({ id: r.id, row: r.row })),
+    };
   }
 
   private protagonist(): string {

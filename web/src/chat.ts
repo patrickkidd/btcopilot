@@ -22,6 +22,8 @@ const CHARS = 2;
 const TICK_MS = 18;
 /** An offer is not a move: the answers the coach holds out land 160ms apart. */
 const OFFER_MS = 160;
+/** How long a traced bubble stays outlined after a moment jumps to it. */
+const TRACE_MS = 2200;
 
 export class Chat {
   private typing: HTMLElement | null = null;
@@ -79,16 +81,45 @@ export class Chat {
     this.list.innerHTML = "";
   }
 
-  add(role: Role, text: string, tone = ChipTone.Data): HTMLElement {
+  add(
+    role: Role,
+    text: string,
+    tone = ChipTone.Data,
+    statementId: number | null = null,
+  ): HTMLElement {
     const bubble = el(
       "div",
       `bub ${role}`,
       (role === Role.Coach ? `<div class="who">Coach</div>` : "") +
         this.render(tokenize(text, tone)),
     );
+    // The bubble carries its statement so a moment on the picture can point
+    // back at the words that coded it.
+    if (statementId !== null) bubble.dataset.statement = String(statementId);
     this.list.append(bubble);
     this.scroll();
     return bubble;
+  }
+
+  /** Scroll one statement's bubble into the middle of the thread and mark it,
+   * which is what a moment tracing back to where it was coded does. Never
+   * `scrollIntoView`: the outer page must not move (UI_STANDARDS). */
+  trace(statementId: number): boolean {
+    const bubble = this.list.querySelector<HTMLElement>(
+      `.bub[data-statement="${statementId}"]`,
+    );
+    if (!bubble) return false;
+    const box = this.list.getBoundingClientRect();
+    const at = bubble.getBoundingClientRect();
+    this.list.scrollTop = Math.max(
+      0,
+      this.list.scrollTop + (at.top - box.top) - (box.height - at.height) / 2,
+    );
+    bubble.classList.remove("traced");
+    void bubble.offsetWidth;
+    bubble.classList.add("traced");
+    window.setTimeout(() => bubble.classList.remove("traced"), TRACE_MS);
+    return true;
   }
 
   /** A coach bubble. It says what the coach did first, as a plain line each,

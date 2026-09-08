@@ -4,18 +4,18 @@
   --bg: #f7f6f2;
   --panel: #fff;
   --ink: #26312f;
-  --faint: #6e7a77;
+  --faint: #9aa5a1;
   --line: #d8d5cc;
   --data: #0e7d78;
-  --ask: #a8720f;
-  --move: #217a44;
+  --ask: #c98a1b;
+  --move: #2e9e57;
   --tint: rgba(14, 125, 120, 0.08);
-  --ask-tint: rgba(168, 114, 15, 0.1);
+  --ask-tint: rgba(201, 138, 27, 0.1);
   --onaccent: #fff;
-  --shadow: rgba(38, 49, 47, 0.14);
-  --scrim: rgba(38, 49, 47, 0.32);
-  /* UI_STANDARDS: IBM Plex Sans for words, IBM Plex Mono for data and chips. */
-  --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --shadow: rgba(38, 49, 47, 0.1);
+  --scrim: rgba(38, 49, 47, 0.3);
+  /* Libre Franklin for words, IBM Plex Mono for data and chips. */
+  --sans: "Libre Franklin", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   color-scheme: light dark;
 }
@@ -24,7 +24,7 @@
     --bg: #171d1c;
     --panel: #1f2725;
     --ink: #e6e9e6;
-    --faint: #93a09c;
+    --faint: #6d7a76;
     --line: #31403c;
     --data: #3fc4bc;
     --ask: #e0a83f;
@@ -32,15 +32,15 @@
     --tint: rgba(63, 196, 188, 0.13);
     --ask-tint: rgba(224, 168, 63, 0.14);
     --onaccent: #0d1413;
-    --shadow: rgba(0, 0, 0, 0.5);
-    --scrim: rgba(0, 0, 0, 0.5);
+    --shadow: rgba(0, 0, 0, 0.4);
+    --scrim: rgba(0, 0, 0, 0.28);
   }
 }
 :root[data-theme="dark"] {
   --bg: #171d1c;
   --panel: #1f2725;
   --ink: #e6e9e6;
-  --faint: #93a09c;
+  --faint: #6d7a76;
   --line: #31403c;
   --data: #3fc4bc;
   --ask: #e0a83f;
@@ -48,8 +48,8 @@
   --tint: rgba(63, 196, 188, 0.13);
   --ask-tint: rgba(224, 168, 63, 0.14);
   --onaccent: #0d1413;
-  --shadow: rgba(0, 0, 0, 0.5);
-  --scrim: rgba(0, 0, 0, 0.5);
+  --shadow: rgba(0, 0, 0, 0.4);
+  --scrim: rgba(0, 0, 0, 0.28);
 }
 
 * { box-sizing: border-box; }
@@ -486,8 +486,18 @@ button { font-family: inherit; }
   padding: 0 16px;
   font: 400 13px/1.35 var(--mono);
   color: var(--faint);
+  /* The caption is one strip and stays one strip: it scrolls sideways rather
+     than wrapping, so its height never changes (LAYOUT CONTRACT). */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  overscroll-behavior: contain;
 }
-.caption .chip { margin: 0; }
+.caption::-webkit-scrollbar { display: none; }
+.caption > * { flex: none; }
+.caption .chip { margin: 0; white-space: nowrap; }
 
 /* ---- chat ---- */
 .chat {
@@ -1421,4 +1431,27 @@ button { font-family: inherit; }
 }
 @media (prefers-reduced-motion: reduce) {
   .sn-pane, .sw, .sw-thumb { transition: none !important; }
+}
+
+/* two-way traceability: the moment says which session coded it, and the words
+   it came from light when you go there */
+.chip.trace {
+  border-radius: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60vw;
+}
+.bub.traced {
+  outline: 2px solid var(--move);
+  outline-offset: 2px;
+  animation: tracefade 2.2s ease-out forwards;
+}
+@keyframes tracefade {
+  0% { outline-color: var(--move); }
+  70% { outline-color: var(--move); }
+  100% { outline-color: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bub.traced { animation: none; }
 }

@@ -81,7 +81,15 @@ export class Menu {
     this.render();
   }
 
-  private data: Timeline = { people: [], events: [], chapters: [], questions: [], axis: null, shelf: [] };
+  private data: Timeline = {
+    people: [],
+    events: [],
+    chapters: [],
+    questions: [],
+    axis: null,
+    shelf: [],
+    coded_in: {},
+  };
 
   private chapterOf(id: number): Chapter | undefined {
     return this.data.chapters.find((c) => c.event_ids.includes(id));

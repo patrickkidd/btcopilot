@@ -85,6 +85,22 @@ describe("the spotlight: dense and sparse", () => {
     expect(row.left).toBeLessThan(366);
   });
 
+  it("a moment with no room for words keeps its row so its leader is drawn", () => {
+    // two dots almost on top of each other at the right edge: the second has
+    // nothing to write into, but the picture must still point at it
+    const laid = rows(
+      [
+        { id: 1, x: 368, text: "the first one" },
+        { id: 2, x: 370, text: "the second one" },
+      ],
+      16,
+      374,
+    );
+    expect(laid.map((r) => r.id)).toEqual([1, 2]);
+    expect(laid[1].text).toBe("");
+    expect(laid[1].x).toBe(370);
+  });
+
   it("more named moments than rows keeps the first three", () => {
     const laid = rows(
       Array.from({ length: 6 }, (_, i) => ({ id: i, x: 20 + i * 50, text: "x" })),
