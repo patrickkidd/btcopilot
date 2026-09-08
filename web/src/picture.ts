@@ -1,5 +1,23 @@
 import { esc } from "./dom";
-import { MarkKind, merge, span, type Mark, type Slot } from "./layout";
+import { draw, figure, ring, type Figure } from "./moves";
+import {
+  CH,
+  PIC_H,
+  ROWS,
+  WIRE,
+  X_PAD,
+  YEAR_TOP,
+  ZONE,
+  baseOpacity,
+  clip,
+  cycle,
+  dateText,
+  dotRadius,
+  rows,
+  words,
+  wrap2,
+  zones,
+} from "./spotlight";
 import {
   DateCertainty,
   ViewKind,
@@ -14,36 +32,31 @@ import {
 const SEQUENCE_MS = 1100;
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** The pinned picture: a time line with a dot per dated event, the stretches
- * drawn as groupings behind them, and the amber question mark where the record
- * has a question. No words at rest beyond the two end years, which are what
- * make it read as time rather than a shape (DRAWABILITY, at-rest vocabulary).
- * Words arrive in the caption when a mark is tapped; the people are drawn only
- * while a play-by-play or a view puts them on stage. */
+/** The pinned picture: the sentence spotlight the owner converged on
+ * (OWNER_RULINGS 2026-09-02). A wire with a dot per moment; the moments the
+ * coach's latest message names are drawn bright with their words above them,
+ * tied to their dots, and everything else recedes to a dim dot. A tap on the
+ * wire steps through the moments under the thumb and that moment writes itself
+ * out in full. The people appear only while a play-by-play walks the moves. */
 
-const REST_H = 88;
-const STAGE_H = 168;
-const REST_AXIS = 44;
-const STAGE_AXIS = 136;
-const STAGE_Y = 56;
-const PAD = 26;
-const DOT_R = 4;
-/** Question marks are wider than dots, so they need more room before they read
- * as two separate questions rather than one smudge. */
-const QUESTION_GAP = 15;
+/** While a move plays the picture grows just enough to stand the people above
+ * the wire; any more and the move floats in an empty box. */
+const STAGE_H = 252;
+const STAGE_GAP = 96;
+const NODAL = new Set(["cutoff", "defined-self", "fusion"]);
 
 export enum Target {
-  Cluster = "cluster",
-  Event = "event",
-  Count = "count",
+  Zone = "zone",
+  Band = "band",
   Question = "question",
   Shelf = "shelf",
 }
 
 export interface Tap {
   target: Target;
-  id: string;
-  ids: number[];
+  /** For a zone, which one; for the band, the y the thumb landed at. */
+  index: number;
+  y: number;
 }
 
 export interface PictureHandlers {
@@ -56,83 +69,94 @@ export function years(iso: string): number {
   return new Date(iso + "T00:00:00Z").getTime() / YEAR;
 }
 
-const yearOf = (iso: string): string => iso.slice(0, 4);
+interface Mark {
+  event: TimelineEvent;
+  x: number;
+}
 
 export class Picture {
   private data: Timeline | null = null;
-  private open: string | null = null;
-  private openIds: number[] = [];
-  private aimed = new Set<number>();
+  /** The moments the coach's latest message named — the spotlight. */
+  private named: number[] = [];
+  private selected: number | null = null;
   private moving: TimelineEvent | null = null;
   private cast: number[] = [];
   private closed = false;
   private band: { start: string; end: string } | null = null;
+  private focus: Chapter | null = null;
   private range = { min: 0, max: 1 };
+  private laid: { zones: Mark[][]; rows: { id: number; row: number }[] } = {
+    zones: [],
+    rows: [],
+  };
 
   constructor(
     private host: HTMLElement,
-    handlers: PictureHandlers,
+    private handlers: PictureHandlers,
   ) {
     window.addEventListener("resize", () => this.render());
-    const tap = (e: Event) => {
-      const hit = (e.target as Element).closest<SVGElement>("[data-target]");
-      if (!hit?.dataset.target) return;
+    this.host.addEventListener("click", (e) => {
+      const hit = (e.target as Element).closest<HTMLElement>("[data-target]");
+      if (!hit) return;
       e.preventDefault();
-      handlers.onTap({
+      const box = this.host.getBoundingClientRect();
+      this.handlers.onTap({
         target: hit.dataset.target as Target,
-        id: hit.dataset.id ?? "",
-        ids: (hit.dataset.ids ?? "")
-          .split(",")
-          .filter(Boolean)
-          .map((part) => Number(part)),
+        index: Number(hit.dataset.index ?? -1),
+        y: (e as MouseEvent).clientY - box.top,
       });
-    };
-    this.host.addEventListener("click", tap);
+    });
   }
 
   setData(data: Timeline): void {
     this.data = data;
-    this.range = span(this.dated().map((e) => years(e.dateTime as string)));
+    this.rescale();
     this.render();
   }
 
-  /** What the caption is about: a stretch, or the events a mark stands for. */
-  select(id: string | null, ids: number[] = []): void {
-    this.open = id;
-    this.openIds = ids;
+  /** What the coach's latest message named. Everything else recedes. */
+  spotlight(eventIds: number[]): void {
+    this.named = eventIds;
+    this.selected = null;
+    this.focus = this.chapterOf(eventIds[0]);
+    this.rescale();
     this.render();
   }
 
-  /** Aim the picture at what a chip names — the coach pointing, or the user's
-   * own tap coming back. */
-  aim(eventIds: number[]): void {
-    this.aimed = new Set(eventIds);
-    this.moving = null;
-    const chapter = this.chapterOf(eventIds[0]);
-    if (chapter) {
-      this.open = chapter.id;
-      this.openIds = [];
+  select(eventId: number | null): void {
+    this.selected = eventId;
+    this.render();
+  }
+
+  selection(): number | null {
+    return this.selected;
+  }
+
+  /** The moments under one tap zone, in time order. */
+  inZone(index: number): number[] {
+    return (this.laid.zones[index] ?? []).map((mark) => mark.event.id);
+  }
+
+  /** Which labelled row the thumb landed nearest, for a tap on the label band. */
+  rowAt(y: number): number | null {
+    let best: number | null = null;
+    let distance = Infinity;
+    for (const row of this.laid.rows) {
+      const d = Math.abs(ROWS[row.row] + 7.5 - y);
+      if (d < distance) {
+        distance = d;
+        best = row.id;
+      }
     }
-    this.render();
+    return best;
   }
 
-  /** One step of a play-by-play: the event pulses and its move is drawn. */
   step(eventId: number): void {
-    this.aimed = new Set([eventId]);
-    this.cast = [];
-    this.closed = false;
     this.moving = this.data?.events.find((e) => e.id === eventId) ?? null;
-    const chapter = this.chapterOf(eventId);
-    if (chapter) {
-      this.open = chapter.id;
-      this.openIds = [];
-    }
+    this.selected = eventId;
     this.render();
   }
 
-  /** Draw one view the coach asked for. The set is closed (R-0075): a triangle
-   * over three people, a span of time, two moments compared, a sequence of
-   * moves, or one cluster. */
   async show(view: View): Promise<void> {
     this.band = null;
     this.cast = [];
@@ -141,7 +165,6 @@ export class Picture {
         this.cast = view.persons;
         this.closed = true;
         this.moving = null;
-        this.aimed.clear();
         this.render();
         return;
       case ViewKind.Span:
@@ -150,7 +173,7 @@ export class Picture {
         this.render();
         return;
       case ViewKind.Compare:
-        this.aim([view.event_a, view.event_b]);
+        this.spotlight([view.event_a, view.event_b]);
         return;
       case ViewKind.Sequence:
         for (const id of view.events) {
@@ -162,23 +185,44 @@ export class Picture {
         const chapter = this.data?.chapters.find(
           (c) => c.id === view.cluster || c.cluster_ids.includes(view.cluster),
         );
-        if (chapter) this.select(chapter.id);
+        if (chapter) {
+          this.focus = chapter;
+          this.spotlight(chapter.event_ids);
+        }
         return;
       }
     }
   }
 
-  clearAim(): void {
-    this.aimed.clear();
+  clear(): void {
+    this.named = [];
+    this.selected = null;
     this.moving = null;
     this.cast = [];
     this.band = null;
+    this.focus = null;
     this.closed = false;
+    this.rescale();
     this.render();
   }
 
-  openChapter(): Chapter | null {
-    return this.data?.chapters.find((c) => c.id === this.open) ?? null;
+  /** What the readout beside the picture says the picture is showing. */
+  state(): string {
+    const event = this.event(this.selected);
+    if (event?.dateTime)
+      return `${dateText(event.dateTime, event.dateCertainty)} · ${clip(event.label, 30)}`;
+    if (this.focus) return this.focus.label;
+    const dated = this.dated();
+    if (!dated.length) return "nothing dated yet";
+    return `${this.yearOf(dated[0])}–${this.yearOf(dated[dated.length - 1])}`;
+  }
+
+  private yearOf = (event: TimelineEvent) => (event.dateTime as string).slice(0, 4);
+
+  private event(id: number | null): TimelineEvent | null {
+    return id === null
+      ? null
+      : (this.data?.events.find((e) => e.id === id) ?? null);
   }
 
   private chapterOf(eventId: number | undefined): Chapter | null {
@@ -186,297 +230,340 @@ export class Picture {
     return this.data.chapters.find((c) => c.event_ids.includes(eventId)) ?? null;
   }
 
-  /** The viewBox is sized in real pixels so nothing is stretched: the time axis
-   * has to span the full width, and a person has to stay round. */
-  private get width(): number {
-    return this.host.clientWidth || 360;
+  /** The coach drives the picture: when it names moments inside one stretch,
+   * the wire zooms to that stretch; otherwise the whole record is on it. */
+  private rescale(): void {
+    const shown = this.shown();
+    const dates = shown.map((e) => years(e.dateTime as string));
+    if (!dates.length) {
+      this.range = { min: 0, max: 1 };
+      return;
+    }
+    const min = Math.min(...dates);
+    const max = Math.max(...dates);
+    const pad = Math.max(0.3, (max - min) * 0.06);
+    this.range = { min: min - pad, max: max + pad };
   }
 
-  /** People are only drawn while a move or a view puts them on stage, and only
-   * then does the picture need the extra height. */
-  private get staged(): boolean {
-    return this.cast.length > 0 || this.moving !== null;
+  /** The moments on the wire: the focused stretch when the coach aimed at one,
+   * otherwise every dated moment in the record. */
+  private shown(): TimelineEvent[] {
+    const dated = this.dated();
+    if (!this.focus) return dated;
+    const ids = new Set(this.focus.event_ids);
+    // whatever is picked is always on the wire, or its words would describe a
+    // moment the picture is not showing
+    if (this.selected !== null) ids.add(this.selected);
+    const inFocus = dated.filter((e) => ids.has(e.id));
+    return inFocus.length ? inFocus : dated;
   }
 
-  private get axisY(): number {
-    return this.staged ? STAGE_AXIS : REST_AXIS;
-  }
-
-  private x(iso: string): number {
-    const { min, max } = this.range;
-    return PAD + ((years(iso) - min) / (max - min)) * (this.right - PAD);
-  }
-
-  /** The axis stops short of the shelf mark so the two never sit on top of
-   * each other on a phone. */
-  private get right(): number {
-    return this.width - (this.hasShelf ? PAD + 20 : PAD);
-  }
-
-  private get hasShelf(): boolean {
-    return !!this.data?.shelf.length;
-  }
-
-  private person(id: number | null): Person | undefined {
-    return id === null ? undefined : this.data?.people.find((p) => p.id === id);
-  }
-
-  /** What the line can carry: a date the record is at least approximately sure
-   * of. Anything else is on the shelf and must not also appear on the line. */
   private dated(): TimelineEvent[] {
     return (this.data?.events ?? []).filter(
       (e) => !!e.dateTime && e.dateCertainty !== DateCertainty.Unknown,
     );
   }
 
+  private person(id: number | null): Person | undefined {
+    return id === null ? undefined : this.data?.people.find((p) => p.id === id);
+  }
+
+  private get width(): number {
+    return this.host.clientWidth || 360;
+  }
+
+  private get staged(): boolean {
+    return this.cast.length > 0 || this.moving !== null;
+  }
+
+  private x(iso: string): number {
+    const { min, max } = this.range;
+    const x1 = this.width - X_PAD;
+    return X_PAD + ((years(iso) - min) / (max - min)) * (x1 - X_PAD);
+  }
+
   private render(): void {
     if (!this.data) return;
-    const height = this.staged ? STAGE_H : REST_H;
-    const w = this.width;
-    const empty = !this.dated().length;
-    this.host.innerHTML =
-      `<svg viewBox="0 0 ${w} ${height}" width="${w}" height="${height}" ` +
-      `role="img" aria-label="Your family over time">` +
-      (empty
-        ? this.nothing()
-        : `<line class="axis" x1="${PAD}" y1="${this.axisY}" x2="${this.right}" y2="${this.axisY}"/>` +
-          this.band_() +
-          this.data.chapters.map((c) => this.group(c)).join("") +
-          this.marks() +
-          this.questions() +
-          this.ends() +
-          this.shelf()) +
-      this.stage() +
-      `</svg>`;
-  }
+    const width = this.width;
+    const x0 = X_PAD;
+    const x1 = width - X_PAD;
+    const shown = this.shown();
+    const height = this.staged ? STAGE_H : PIC_H;
+    const wire = this.staged ? STAGE_H - 59 : WIRE;
 
-  /** Nothing has a date yet: one amber question mark, which is the whole
-   * at-rest vocabulary a record this empty has earned. */
-  private nothing(): string {
-    const y = this.axisY;
-    return (
-      `<line class="axis empty" x1="${PAD}" y1="${y}" x2="${this.width - PAD}" y2="${y}"/>` +
-      `<g class="ask q" data-target="${Target.Shelf}" data-id="none" ` +
-      `role="button" tabindex="0" aria-label="Nothing has a date yet">` +
-      `<circle class="hit" cx="${this.width / 2}" cy="${y}" r="26"/>` +
-      `<text class="qm" x="${this.width / 2}" y="${y + 8}" text-anchor="middle">?</text>` +
-      `</g>`
-    );
-  }
-
-  /** The two end years. Without them the strip is a shape; with them it is a
-   * span of time, and they are the only words the resting picture carries. */
-  private ends(): string {
-    const dates = this.dated().map((e) => e.dateTime as string);
-    const first = yearOf(dates[0]);
-    const last = yearOf(dates[dates.length - 1]);
-    const y = this.axisY + 20;
-    const label = (x: number, text: string, anchor: string) =>
-      `<text class="yr" x="${x}" y="${y}" text-anchor="${anchor}">${esc(text)}</text>`;
-    return first === last
-      ? label(this.width / 2, first, "middle")
-      : label(PAD, first, "start") + label(this.right, last, "end");
-  }
-
-  /** One stretch, drawn only as wide as its own events: a grouping behind the
-   * dots, never a shape that stands in for them. Two stretches never overlap —
-   * overlapping groupings read as one shape, which is the whole problem. */
-  private group(chapter: Chapter): string {
-    const a = this.x(chapter.start);
-    const b = this.x(chapter.end);
-    const y = this.axisY;
-    const mid = (a + b) / 2;
-    const chapters = this.data?.chapters ?? [];
-    const at = chapters.indexOf(chapter);
-    const before = chapters[at - 1];
-    const after = chapters[at + 1];
-    const room = Math.min(
-      before ? (a - this.x(before.end)) / 2 : Infinity,
-      after ? (this.x(after.start) - b) / 2 : Infinity,
-    );
-    const half = Math.max(
-      3,
-      Math.min(
-        Math.max(9, (b - a) / 2 + 7),
-        (b - a) / 2 + Math.max(room - 1, 0),
-        // never past the ends of the line, where the years are written
-        mid - PAD + 2,
-        this.right - mid + 2,
-      ),
-    );
-    const on = chapter.id === this.open;
-    const lit = chapter.event_ids.some((id) => this.aimed.has(id));
-    return (
-      `<g class="cl${on ? " on" : ""}${lit ? " lit" : ""}" ` +
-      `data-target="${Target.Cluster}" data-id="${esc(chapter.id)}" ` +
-      `data-ids="${chapter.event_ids.join(",")}" ` +
-      `role="button" tabindex="0" aria-label="${esc(chapter.title)}">` +
-      `<rect class="hit" x="${mid - half - 6}" y="${y - 22}" ` +
-      `width="${half * 2 + 12}" height="44" rx="8"/>` +
-      `<rect class="body" x="${mid - half}" y="${y - 13}" ` +
-      `width="${half * 2}" height="26" rx="13"/>` +
-      `</g>`
-    );
-  }
-
-  /** A dot per dated event, and a count mark wherever dots would collide. The
-   * merging happens inside a stretch, so a count never stands for moments from
-   * two different stretches. */
-  private marks(): string {
-    const events = this.dated();
-    const byId = new Map(events.map((e) => [e.id, e]));
-    const runs = new Map<string, Mark[]>();
-    for (const event of events) {
-      const key = this.chapterOf(event.id)?.id ?? "";
-      const mark = { id: event.id, x: this.x(event.dateTime as string) };
-      runs.set(key, [...(runs.get(key) ?? []), mark]);
+    if (!shown.length) {
+      this.laid = { zones: [], rows: [] };
+      this.host.innerHTML =
+        `<div class="ss" style="height:${PIC_H}px">` +
+        `<svg viewBox="0 0 ${width} ${PIC_H}" aria-hidden="true">` +
+        `<line class="wire empty" x1="${x0}" y1="${WIRE}" x2="${x1}" y2="${WIRE}"/>` +
+        `<text class="qm" x="${width / 2}" y="${WIRE + 6}" text-anchor="middle">?</text>` +
+        `</svg>` +
+        `<button class="ss-hit" data-target="${Target.Shelf}" ` +
+        `aria-label="Nothing has a date yet" ` +
+        `style="left:${x0}px;top:${WIRE - 22}px;width:${x1 - x0}px;height:${ZONE}px"></button>` +
+        `</div>`;
+      return;
     }
-    return [...runs.values()]
-      .flatMap((marks) => merge(marks))
-      .map((slot) => this.mark(slot, byId))
-      .join("");
-  }
 
-  private mark(slot: Slot, byId: Map<number, TimelineEvent>): string {
-    const y = this.axisY;
-    const lit = slot.ids.some((id) => this.aimed.has(id));
-    const on = slot.ids.every((id) => this.openIds.includes(id)) && !!this.openIds.length;
-    const cls = `${lit ? " lit" : ""}${on ? " on" : ""}`;
-    const data =
-      `data-id="${slot.ids.join(",")}" data-ids="${slot.ids.join(",")}"`;
-    if (slot.kind === MarkKind.Dot) {
-      const label = byId.get(slot.ids[0])?.label ?? "A moment";
-      return (
-        `<g class="ev${cls}" data-target="${Target.Event}" ${data} ` +
-        `role="button" tabindex="0" aria-label="${esc(label)}">` +
-        `<circle class="hit" cx="${slot.x}" cy="${y}" r="15"/>` +
-        `<circle class="dot" cx="${slot.x}" cy="${y}" r="${DOT_R}"/></g>`
-      );
-    }
-    const n = String(slot.ids.length);
-    const w = 16 + n.length * 7;
-    return (
-      `<g class="ct${cls}" data-target="${Target.Count}" ${data} ` +
-      `role="button" tabindex="0" aria-label="${n} moments">` +
-      `<rect class="hit" x="${slot.x - w / 2 - 6}" y="${y - 15}" ` +
-      `width="${w + 12}" height="30" rx="8"/>` +
-      `<rect class="pill" x="${slot.x - w / 2}" y="${y - 9}" ` +
-      `width="${w}" height="18" rx="9"/>` +
-      `<text class="n" x="${slot.x}" y="${y + 4}" text-anchor="middle">${n}</text></g>`
-    );
-  }
-
-  /** The amber question mark where the record cannot tell the order of two
-   * things that happened at about the same time (DRAWABILITY). Questions about
-   * the same years merge into one mark rather than stacking on each other. */
-  private questions(): string {
-    const y = this.axisY;
-    const all = this.data?.questions ?? [];
-    const marks: Mark[] = all.map((q: Question, i) => ({
-      id: i,
-      x: this.x(q.date),
+    const marks: Mark[] = shown.map((event) => ({
+      event,
+      x: this.x(event.dateTime as string),
     }));
-    return merge(marks, QUESTION_GAP)
-      .map((slot) => {
-        const asked = slot.ids.map((i) => all[i]);
-        const ids = [
-          ...new Set(asked.flatMap((q) => [q.event_id, q.other_event_id])),
-        ];
-        return (
-          `<g class="ask q" data-target="${Target.Question}" ` +
-          `data-id="${ids.join(",")}" data-ids="${ids.join(",")}" ` +
-          `role="button" tabindex="0" aria-label="An unanswered question">` +
-          `<circle class="hit" cx="${slot.x}" cy="${y - 17}" r="13"/>` +
-          `<text class="qm" x="${slot.x}" y="${y - 13}" text-anchor="middle">?</text></g>`
-        );
-      })
-      .join("");
+    const named = new Set(this.named);
+    const opacity = baseOpacity(marks.length, this.named.length);
+    const radius = dotRadius(marks.length);
+    const zoned = zones(marks, x0, x1);
+    this.laid.zones = zoned.map((zone) => zone.marks);
+    // the words are laid out first: where they land decides whether there is
+    // room for the bracket over the stretch
+    const { text, rowsLaid } = this.labels(marks, x0, x1, wire);
+    this.laid.rows = rowsLaid;
+
+    let svg =
+      `<svg viewBox="0 0 ${width} ${height}" aria-hidden="true">` +
+      `<defs><marker id="tip" viewBox="0 0 10 10" refX="8.5" refY="5" ` +
+      `markerWidth="5.5" markerHeight="5.5" orient="auto">` +
+      `<path d="M0 0 L10 5 L0 10 Z" class="tipfill"/></marker></defs>` +
+      this.bandMark(wire) +
+      `<line class="wire" x1="${x0}" y1="${wire}" x2="${x1}" y2="${wire}"/>` +
+      this.bracket(wire, x0, x1);
+
+    // one dot per moment; moments sharing a date stack instead of merging
+    const byDate = new Map<string, Mark[]>();
+    for (const mark of marks) {
+      const key = mark.event.dateTime as string;
+      byDate.set(key, [...(byDate.get(key) ?? []), mark]);
+    }
+    for (const group of byDate.values()) {
+      const x = group[0].x.toFixed(1);
+      const lit = group.filter((m) => named.has(m.event.id));
+      if (lit.length) {
+        if (group.length > lit.length)
+          svg += `<circle class="halo" cx="${x}" cy="${wire}" r="7"/>`;
+        lit.forEach((mark, i) => {
+          const cy = i === 0 ? (lit.length > 1 ? wire + 5 : wire) : i === 1 ? wire - 5 : wire + 5 + 10 * (i - 1);
+          svg += this.dot(mark, x, cy, 1, radius, true);
+        });
+      } else {
+        if (group.length > 1)
+          svg += `<circle class="halo" cx="${x}" cy="${wire}" r="7" opacity="${opacity}"/>`;
+        svg += this.dot(group[0], x, wire, opacity, radius, false);
+      }
+    }
+
+    svg += this.questions(wire);
+    svg += this.stage(width, wire);
+    svg += `</svg>`;
+
+    const first = this.yearOf(shown[0]);
+    const last = this.yearOf(shown[shown.length - 1]);
+    const yearTop = this.staged ? height - 22 : YEAR_TOP;
+    let html =
+      `<div class="ss-yr" style="left:${x0}px;top:${yearTop}px">${first}</div>`;
+    if (last !== first)
+      html += `<div class="ss-yr" style="right:${x0}px;top:${yearTop}px">${last}</div>`;
+
+    let hits =
+      `<button class="ss-hit" data-target="${Target.Band}" aria-label="what the coach named" ` +
+      `style="left:${x0}px;top:${ROWS[0] + 1}px;width:${x1 - x0}px;height:${ZONE}px"></button>`;
+    zoned.forEach((zone, i) => {
+      hits +=
+        `<button class="ss-hit" data-target="${Target.Zone}" data-index="${i}" ` +
+        `aria-label="moments around ${this.yearOf(zone.marks[0].event)}" ` +
+        `style="left:${zone.left.toFixed(1)}px;top:${wire - ZONE / 2}px;` +
+        `width:${zone.width.toFixed(1)}px;height:${ZONE}px"></button>`;
+    });
+    hits += this.shelfHit(x1, wire);
+
+    this.host.innerHTML = `<div class="ss" style="height:${height}px">${svg}${text}${html}${hits}</div>`;
   }
 
-  /** What has no date at all sits past the end of the line, never positioned
-   * on it (DRAWABILITY, the undated shelf). */
-  private shelf(): string {
-    if (!this.hasShelf) return "";
-    const x = this.width - PAD + 6;
-    const y = this.axisY;
+  private dot(
+    mark: Mark,
+    x: string,
+    cy: number,
+    opacity: number,
+    radius: number,
+    lit: boolean,
+  ): string {
+    const chosen = mark.event.id === this.selected;
+    if (chosen) return `<circle class="dot on" cx="${x}" cy="${cy}" r="7"/>`;
+    if (NODAL.has(mark.event.relationship ?? "") || mark.event.relationshipTargets.length >= 2)
+      return (
+        `<circle class="dot nodal" cx="${x}" cy="${cy}" r="6.5" opacity="${opacity}"/>` +
+        `<circle class="dot core" cx="${x}" cy="${cy}" r="2" opacity="${opacity}"/>`
+      );
+    return `<circle class="dot${lit ? " lit" : ""}" cx="${x}" cy="${cy}" r="${lit ? 5 : radius}" opacity="${opacity}"/>`;
+  }
+
+  /** The words. A chosen moment says itself in full over three rows; otherwise
+   * the moments the coach named take a row each, tied to their dots. */
+  private labels(
+    marks: Mark[],
+    x0: number,
+    x1: number,
+    wire: number,
+  ): { text: string; rowsLaid: { id: number; row: number }[] } {
+    const chosen = marks.find((m) => m.event.id === this.selected);
+    const wide = Math.floor((x1 - x0) / CH);
+    if (chosen) {
+      const event = chosen.event;
+      const meta =
+        dateText(event.dateTime as string, event.dateCertainty) +
+        (event.person_name && event.person_name !== this.protagonist()
+          ? ` · ${event.person_name}`
+          : "");
+      const lines = wrap2(clip(event.label.trim(), Math.min(88, wide * 2)), wide);
+      const text = [meta, lines[0], lines[1]]
+        .map((line, i) =>
+          line
+            ? `<div class="ss-t ${i ? "on" : "meta"}" ` +
+              `style="left:${x0}px;top:${ROWS[i]}px;width:${x1 - x0}px">${esc(line)}</div>`
+            : "",
+        )
+        .join("");
+      return { text, rowsLaid: [] };
+    }
+    const spotlit = marks.filter((m) => this.named.includes(m.event.id));
+    if (!spotlit.length) return { text: "", rowsLaid: [] };
+    const laid = rows(
+      spotlit.map((m) => ({
+        id: m.event.id,
+        x: m.x,
+        text: words(
+          m.event.dateTime as string,
+          m.event.dateCertainty,
+          m.event.person_name,
+          this.protagonist(),
+          m.event.label,
+        ),
+      })),
+      x0,
+      x1,
+    );
+    const leaders = new Set<string>();
+    let text = "";
+    for (const row of laid) {
+      const key = row.x.toFixed(1);
+      if (!leaders.has(key)) {
+        leaders.add(key);
+        text += `<div class="ss-lead" style="left:${key}px;top:${ROWS[row.row] + 15}px;height:${wire - ROWS[row.row] - 15}px"></div>`;
+      }
+      text +=
+        `<div class="ss-t on" style="left:${row.left.toFixed(1)}px;top:${ROWS[row.row]}px;` +
+        `width:${row.width.toFixed(1)}px;text-align:${row.align}">${esc(row.text)}</div>`;
+    }
+    return { text, rowsLaid: laid.map((r) => ({ id: r.id, row: r.row })) };
+  }
+
+  private protagonist(): string {
+    return this.data?.people.find((p) => p.primary)?.name ?? "";
+  }
+
+  /** The bracket over the stretch the coach aimed at. It is only drawn when no
+   * words are on the picture, because the words sit where it would go. */
+  private bracket(wire: number, x0: number, x1: number): string {
+    if (!this.focus || this.selected !== null || this.laid.rows.length) return "";
+    const a = Math.max(x0, this.x(this.focus.start) - 5);
+    const b = Math.min(x1, this.x(this.focus.end) + 5);
+    const top = wire - 12;
     return (
-      `<g class="ask shelf" data-target="${Target.Shelf}" data-id="shelf" ` +
-      `role="button" tabindex="0" aria-label="Things with no date yet">` +
-      `<circle class="hit" cx="${x}" cy="${y}" r="16"/>` +
-      `<circle class="ring" cx="${x}" cy="${y}" r="11"/>` +
-      `<text class="qm" x="${x}" y="${y + 5}" text-anchor="middle">?</text></g>`
+      `<path class="brk" d="M${a.toFixed(1)} ${wire - 8} L${a.toFixed(1)} ${top} ` +
+      `L${b.toFixed(1)} ${top} L${b.toFixed(1)} ${wire - 8}"/>`
     );
   }
 
-  /** A span of time the coach named, drawn on the axis itself. */
-  private band_(): string {
+  private bandMark(wire: number): string {
     if (!this.band) return "";
     const a = this.x(this.band.start);
     const b = this.x(this.band.end);
     return (
-      `<rect class="band" x="${Math.min(a, b)}" y="${this.axisY - 17}" ` +
-      `width="${Math.max(4, Math.abs(b - a))}" height="34" rx="6"/>`
+      `<rect class="span" x="${Math.min(a, b).toFixed(1)}" y="${wire - 14}" ` +
+      `width="${Math.max(4, Math.abs(b - a)).toFixed(1)}" height="28" rx="6"/>`
     );
   }
 
-  /** The people a view or a move puts on stage: a move draws the subject and
-   * whoever it reaches, a triangle draws its three and closes the loop. */
-  private stage(): string {
-    if (this.cast.length) return this.figures(this.cast, this.closed, null);
+  /** The one amber treatment: the record asking which of two things came first. */
+  private questions(wire: number): string {
+    if (this.selected !== null || this.named.length) return "";
+    const shown = new Set(this.shown().map((e) => e.id));
+    return (this.data?.questions ?? [])
+      .filter((q: Question) => shown.has(q.event_id))
+      .map((q: Question, i, all) => {
+        const x = this.x(q.date);
+        if (all.slice(0, i).some((other) => Math.abs(this.x(other.date) - x) < 16))
+          return "";
+        return `<text class="qm small" x="${x.toFixed(1)}" y="${wire - 16}" text-anchor="middle">?</text>`;
+      })
+      .join("");
+  }
+
+  private shelfHit(x1: number, wire: number): string {
+    if (!this.data?.shelf.length) return "";
+    return (
+      `<button class="ss-hit shelf" data-target="${Target.Shelf}" ` +
+      `aria-label="things with no date yet" ` +
+      `style="left:${x1 - 26}px;top:${wire - ZONE - 4}px;width:${ZONE}px;height:${ZONE}px">?</button>`
+    );
+  }
+
+  /** The people, only while a move or a view puts them on stage. The simple
+   * circular layout the 2026-09-02 ruling asked to keep for now. */
+  private stage(width: number, _wire: number): string {
+    const ids = this.cast.length ? this.cast : this.castOfMove();
+    const people = ids
+      .map((id) => this.person(id))
+      .filter((p): p is Person => !!p)
+      .map((p) => ({ id: p.id, name: p.name }));
+    if (!people.length) return "";
+    const figures: Figure[] = ring(people, width, STAGE_H - 59 - STAGE_GAP);
     const event = this.moving;
-    if (!event) return "";
+    const at = (id: number) => figures.find((f) => f.id === id) ?? null;
+    let marks = "";
+    const classes = new Map<number, string>();
+    if (event) {
+      const subject = event.child ?? event.person;
+      const reached = event.relationshipTargets[0] ?? event.spouse ?? null;
+      const actor = at(subject ?? -1);
+      if (actor) {
+        const drawn = draw(event.relationship, actor, at(reached ?? -1), {
+          symptom: event.symptom,
+          anxiety: event.anxiety,
+          functioning: event.functioning,
+        });
+        marks = drawn.marks;
+        classes.set(actor.id, drawn.actor);
+        if (reached !== null && drawn.target) classes.set(reached, drawn.target);
+      }
+    } else if (this.closed && figures.length === 3) {
+      marks = figures
+        .map((f, i) => {
+          const next = figures[(i + 1) % figures.length];
+          return `<path class="mv-tri" d="M${f.x.toFixed(1)} ${f.y.toFixed(1)} L${next.x.toFixed(1)} ${next.y.toFixed(1)}"/>`;
+        })
+        .join("");
+    }
+    return (
+      `<g class="cast">${marks}` +
+      figures.map((f) => figure(f, classes.get(f.id) ?? "", (classes.get(f.id) ?? "").includes("anx"))).join("") +
+      `</g>`
+    );
+  }
+
+  private castOfMove(): number[] {
+    const event = this.moving;
+    if (!event) return [];
+    const subject = event.child ?? event.person;
     const reached = [
       ...event.relationshipTargets,
       ...(event.spouse === null ? [] : [event.spouse]),
     ];
-    const subject = event.child ?? event.person;
-    if (subject === null && !reached.length) return "";
-    return this.figures(
-      [...(subject === null ? [] : [subject]), ...reached],
-      false,
-      event.anxiety ? 0 : null,
-    );
+    return [...(subject === null ? [] : [subject]), ...reached];
   }
 
-  /** People on a line, an arrow from the first to each of the others, closed
-   * into a loop for a triangle, and an amber ring on whoever is anxious. */
-  private figures(ids: number[], closed: boolean, ring: number | null): string {
-    const cast = ids
-      .map((id) => this.person(id))
-      .filter((p): p is Person => !!p);
-    if (!cast.length) return "";
-    const gap = Math.min(130, (this.width - 2 * PAD) / (cast.length + 1));
-    const left = this.width / 2 - (gap * (cast.length - 1)) / 2;
-    const at = (i: number) => left + i * gap;
-    const nodes = cast
-      .map(
-        (p, i) =>
-          `<g class="pn${ring === i ? " anx" : ""}">` +
-          `<circle class="sym" cx="${at(i)}" cy="${STAGE_Y}" r="14"/>` +
-          (ring === i
-            ? `<circle class="ring" cx="${at(i)}" cy="${STAGE_Y}" r="21"/>`
-            : "") +
-          `<text x="${at(i)}" y="${STAGE_Y + 38}" text-anchor="middle">${esc(p.name)}</text>` +
-          `</g>`,
-      )
-      .join("");
-    const link = (a: number, b: number) => {
-      const forward = at(a) < at(b);
-      const from = at(a) + (forward ? 16 : -16);
-      const to = at(b) + (forward ? -18 : 18);
-      return `<path class="arrow" d="M${from} ${STAGE_Y} L${to} ${STAGE_Y}" marker-end="url(#tip)"/>`;
-    };
-    const pairs = cast.slice(1).map((_, i) => link(0, i + 1));
-    if (closed && cast.length === 3)
-      pairs.push(
-        `<path class="arrow tri" d="M${at(1)} ${STAGE_Y + 16} Q${(at(1) + at(2)) / 2} ${
-          STAGE_Y + 46
-        } ${at(2)} ${STAGE_Y + 16}"/>`,
-      );
-    return (
-      `<defs><marker id="tip" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" ` +
-      `markerHeight="6" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="currentColor"/></marker></defs>` +
-      `<g class="cast">${pairs.join("")}${nodes}</g>`
-    );
+  /** The next moment a tap on a zone lands on. */
+  next(index: number, current: number | null): number | null {
+    return cycle(this.inZone(index), current);
   }
 }

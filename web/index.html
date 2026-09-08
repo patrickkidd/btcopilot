@@ -6,6 +6,9 @@
 <title>Companion</title>
 <link rel="manifest" href="/companion/manifest.webmanifest">
 <link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 </head>
 <body>
 <div class="app">
@@ -18,6 +21,10 @@
 
   <div class="screen" id="chat-screen">
     <div class="pic">
+      <div class="pin-label">
+        <span>Family time line</span>
+        <span id="pin-state"></span>
+      </div>
       <div class="view" id="view"></div>
       <div class="caption" id="caption" hidden></div>
     </div>

@@ -3,14 +3,13 @@ import * as api from "./api";
 import { Chat, wait } from "./chat";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu } from "./menu";
-import { aimedEvents, chipText, itemKind } from "./chips";
+import { aimedEvents, chips, itemKind } from "./chips";
 import { StepKind, steps } from "./turn";
 import {
   CHIP_KIND,
   PicEvent,
   REST,
   SelKind,
-  playable,
   reduce,
   type Outcome,
   type PicState,
@@ -65,18 +64,28 @@ function tapped(
   if (diagram !== null) void api.record(diagram, kind, item, id);
 }
 
-const SEL_OF: Record<Target, SelKind> = {
-  [Target.Cluster]: SelKind.Cluster,
-  [Target.Event]: SelKind.Event,
-  [Target.Count]: SelKind.Count,
-  [Target.Question]: SelKind.Question,
-  [Target.Shelf]: SelKind.Shelf,
-};
+const picture = new Picture($("view"), { onTap: (tap: Tap) => onTap(tap) });
 
-const picture = new Picture($("view"), {
-  onTap: (tap: Tap) =>
-    apply(reduce(pic, PicEvent.Tap, { kind: SEL_OF[tap.target], id: tap.id })),
-});
+/** A tap on the wire steps through the moments under the thumb; a tap on the
+ * words picks the one whose row was tapped; a tap on the shelf asks about what
+ * has no date. */
+function onTap(tap: Tap): void {
+  if (tap.target === Target.Shelf) {
+    apply(reduce(pic, PicEvent.Tap, { kind: SelKind.Shelf, id: "shelf" }));
+    return;
+  }
+  const chosen =
+    tap.target === Target.Zone
+      ? picture.next(tap.index, picture.selection())
+      : picture.rowAt(tap.y);
+  apply(
+    reduce(
+      pic,
+      PicEvent.Tap,
+      chosen === null ? undefined : { kind: SelKind.Event, id: String(chosen) },
+    ),
+  );
+}
 
 /** A chip the coach wrote without words of its own says what the record calls
  * it: a person's name, an event's line, a stretch's title. */
@@ -97,122 +106,70 @@ const chat = new Chat($("chat"), $("composer"), {
   label: chipLabel,
   onChip: (chip) => {
     tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
-    if (chip.tone === ChipTone.Ask) chat.insert(chip);
+    // An offer names nothing in the record, so it goes in the message as words.
+    if (chip.kind === ChipKind.Ask || chip.tone === ChipTone.Ask) chat.insert(chip);
     else aim(chip);
   },
 });
 
 const menu = new Menu($("menu-body"), load);
 
+/** The coach pointing: the moments its words name become the spotlight, and
+ * everything else on the wire recedes. A chip naming one moment that carries a
+ * move draws that move, which is what tapping a chip does in the approved
+ * play-by-play. */
 function aim(chip: Chip): void {
   const ids = aimedEvents(chip, timeline.chapters);
-  if (ids.length) picture.aim(ids);
+  if (!ids.length) return;
+  picture.spotlight(ids);
+  if (ids.length === 1 && hasMove(ids[0])) picture.step(ids[0]);
+  pic = REST;
+  actions();
 }
 
-/** One place turns a picture tap into its consequences: what the caption shows,
+function hasMove(id: number): boolean {
+  const event = timeline.events.find((e) => e.id === id);
+  return !!(
+    event &&
+    (event.relationship || event.symptom || event.anxiety || event.functioning)
+  );
+}
+
+/** One place turns a picture tap into its consequences: what the picture shows,
  * what goes in the composer, what gets recorded, what plays. */
 function apply(outcome: Outcome): void {
   pic = outcome.state;
   const sel = pic.sel;
-  picture.select(
-    sel && sel.kind === SelKind.Cluster ? sel.id : chapterOfSel(sel),
-    sel && sel.kind !== SelKind.Cluster ? eventIds(sel) : [],
-  );
-  caption();
+  picture.select(sel && sel.kind === SelKind.Event ? Number(sel.id) : null);
+  actions();
   if (outcome.record)
-    tapped(
-      outcome.record.kind,
-      outcome.record.item_kind,
-      outcome.record.item_id,
-    );
+    tapped(outcome.record.kind, outcome.record.item_kind, outcome.record.item_id);
   if (outcome.insert)
     chat.insert({
       kind: CHIP_KIND[outcome.insert.kind],
       target: outcome.insert.id,
-      label: selTitle(outcome.insert),
+      label: selLabel(outcome.insert),
       tone: ChipTone.Data,
       bare: false,
     });
   if (outcome.play) void playThrough(outcome.play);
 }
 
-const eventIds = (sel: Sel | null): number[] =>
-  sel ? sel.id.split(",").map(Number).filter(Number.isFinite) : [];
-
-/** The stretch a mark sits inside, so tapping a moment also lights the stretch
- * it belongs to rather than leaving it orphaned on the line. */
-function chapterOfSel(sel: Sel | null): string | null {
-  const [first] = eventIds(sel);
-  if (first === undefined) return null;
-  return timeline.chapters.find((c) => c.event_ids.includes(first))?.id ?? null;
+function selLabel(sel: Sel): string {
+  if (sel.kind === SelKind.Event)
+    return (
+      timeline.events.find((e) => String(e.id) === sel.id)?.label ?? "this moment"
+    );
+  if (sel.kind === SelKind.Cluster)
+    return timeline.chapters.find((c) => c.id === sel.id)?.title ?? "this stretch";
+  const n = timeline.shelf.length;
+  return n ? `${n} thing${n === 1 ? "" : "s"} with no date yet` : "what has no date";
 }
 
-/** The words a selected mark says about itself. */
-function selTitle(sel: Sel): string {
-  switch (sel.kind) {
-    case SelKind.Cluster: {
-      const chapter = timeline.chapters.find((c) => c.id === sel.id);
-      if (!chapter) return "this stretch";
-      // A stretch no cluster has named has only its years for a title, and the
-      // years are already the second line — so it says what it holds instead.
-      return chapter.title === chapter.label
-        ? `${chapter.count} moment${chapter.count === 1 ? "" : "s"}`
-        : chapter.title;
-    }
-    case SelKind.Event:
-      return (
-        timeline.events.find((e) => String(e.id) === sel.id)?.sentence ??
-        "this moment"
-      );
-    case SelKind.Count: {
-      const ids = eventIds(sel);
-      const dates = timeline.events
-        .filter((e) => ids.includes(e.id) && e.dateTime)
-        .map((e) => (e.dateTime as string).slice(0, 4));
-      const when =
-        dates.length && dates[0] !== dates[dates.length - 1]
-          ? `${dates[0]}–${dates[dates.length - 1]}`
-          : (dates[0] ?? "");
-      return `${ids.length} moments${when ? `, ${when}` : ""}`;
-    }
-    case SelKind.Question: {
-      const [id] = eventIds(sel);
-      return (
-        timeline.questions.find((q) => q.event_id === id)?.sentence ??
-        "Which came first?"
-      );
-    }
-    case SelKind.Shelf: {
-      const n = timeline.shelf.length;
-      return n
-        ? `${n} thing${n === 1 ? "" : "s"} with no date yet`
-        : "Nothing has a date yet";
-    }
-  }
-}
-
-/** The second line under the title: what the mark holds, in plain words. */
-function selDetail(sel: Sel): string {
-  if (sel.kind === SelKind.Cluster) {
-    const chapter = timeline.chapters.find((c) => c.id === sel.id);
-    if (!chapter) return "";
-    const when =
-      chapter.start.slice(0, 4) === chapter.end.slice(0, 4)
-        ? chapter.start.slice(0, 4)
-        : `${chapter.start.slice(0, 4)}–${chapter.end.slice(0, 4)}`;
-    return chapter.title === chapter.label
-      ? when
-      : `${chapter.count} moment${chapter.count === 1 ? "" : "s"}, ${when}`;
-  }
-  if (sel.kind === SelKind.Shelf)
-    return timeline.shelf.map((item) => item.label).join(" · ");
-  return "";
-}
-
-/** First tap: the words, one amber chip, and Play where there is something to
- * play. Nothing has entered the chat yet — the chip is the second tap that
- * speaks (R-0073). */
-function caption(): void {
+/** The row under the picture: what it is showing, and the two things a tap can
+ * do about it. The words themselves live on the picture (converged mockup). */
+function actions(): void {
+  $("pin-state").textContent = picture.state();
   const host = $("caption");
   const sel = pic.sel;
   if (!sel) {
@@ -220,32 +177,25 @@ function caption(): void {
     host.hidden = true;
     return;
   }
-  const detail = selDetail(sel);
+  const stretch =
+    sel.kind === SelKind.Event
+      ? timeline.chapters.find((c) => c.event_ids.includes(Number(sel.id)))
+      : undefined;
   const ask = sel.kind === SelKind.Shelf ? "Ask when" : "Ask about this";
-  // Play is about a stretch, and a moment inside one can be played from where
-  // it sits — otherwise a dense stretch, whose band its own dots cover, could
-  // never be played at all.
-  const stretch = playable(sel)
-    ? sel
-    : ((id) => (id ? { kind: SelKind.Cluster, id } : null))(chapterOfSel(sel));
   host.hidden = false;
   host.innerHTML =
-    `<div class="cap-words">` +
-    `<span class="cap-t">${esc(chipText(selTitle(sel), 90).text)}</span>` +
-    (detail ? `<span class="cap-d">${esc(chipText(detail, 70).text)}</span>` : "") +
-    `</div>` +
-    `<div class="cap-acts">` +
-    `<button type="button" class="chip ask" id="cap-chip">${ask}</button>` +
+    `<button type="button" class="chip ask" id="cap-chip">[${esc(ask)}]</button>` +
     (stretch
       ? `<button type="button" class="btn play" id="cap-play">Play</button>`
-      : "") +
-    `</div>`;
+      : "");
   $("cap-chip").addEventListener("click", () =>
     apply(reduce(pic, PicEvent.TapChip)),
   );
   if (stretch)
     $("cap-play").addEventListener("click", () =>
-      apply(reduce(pic, PicEvent.TapPlay, stretch as Sel)),
+      apply(
+        reduce(pic, PicEvent.TapPlay, { kind: SelKind.Cluster, id: stretch.id }),
+      ),
     );
 }
 
@@ -257,12 +207,14 @@ async function playThrough(clusterId: string): Promise<void> {
     const ids = aimedEvents(chip, timeline.chapters);
     if (ids.length) picture.step(ids[0]);
   });
-  pic = { ...pic, playing: null };
+  picture.clear();
+  pic = REST;
+  actions();
 }
 
 /** One turn. The coach's edits are already in the record by the time the reply
  * arrives, so the page says what it did, re-reads, and draws what it asked to
- * show — then types the words out, aiming the picture as each chip lands. */
+ * show — then types the words out, and every chip lights as it lands. */
 async function send(): Promise<void> {
   const statement = chat.draft();
   if (!statement) return;
@@ -282,13 +234,30 @@ async function send(): Promise<void> {
   }
   await bubble.type(reply.statement, (chip) => aim(chip));
   await load();
+  // What the message named stays lit after it is written: the spotlight is the
+  // resting state of the picture, not a flourish while it types.
+  spotlightFrom(reply.statement);
+}
+
+function spotlightFrom(text: string): void {
+  const named = aimedFrom(text);
+  if (named.length) picture.spotlight(named);
+  actions();
+}
+
+function aimedFrom(text: string): number[] {
+  const out: number[] = [];
+  for (const chip of chips(text))
+    for (const id of aimedEvents(chip, timeline.chapters))
+      if (!out.includes(id)) out.push(id);
+  return out;
 }
 
 async function load(): Promise<Timeline> {
   timeline = await api.timeline();
   picture.setData(timeline);
   menu.show(timeline);
-  caption();
+  actions();
   return timeline;
 }
 
@@ -315,14 +284,19 @@ for (const statement of window.COMPANION.statements)
   chat.add(statement.role, statement.text);
 
 void load().then(async () => {
-  if (!window.COMPANION.statements.length) {
+  const said = window.COMPANION.statements;
+  if (!said.length) {
     await wait(300);
     await chat.live().type(
       "I'm here whenever you want to think out loud about your family. " +
         "Tell me who is on your mind.",
       () => undefined,
     );
+    return;
   }
+  // Coming back a week later, the picture is where the last message left it.
+  const last = [...said].reverse().find((s) => s.role === Role.Coach);
+  if (last) spotlightFrom(last.text);
 });
 
 if ("serviceWorker" in navigator)

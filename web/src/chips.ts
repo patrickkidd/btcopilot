@@ -18,6 +18,10 @@ enum Markup {
   Chapter = "chapter",
   Person = "person",
   Range = "range",
+  /** What the coach offers to talk about next. It names nothing in the record,
+   * so it goes in the composer as words rather than aiming the picture — the
+   * offered chips that close the approved play-by-play. */
+  Ask = "ask",
 }
 
 const NARROWED: Record<Markup, ChipKind | null> = {
@@ -27,6 +31,7 @@ const NARROWED: Record<Markup, ChipKind | null> = {
   [Markup.Chapter]: ChipKind.Cluster,
   [Markup.Person]: ChipKind.Person,
   [Markup.Range]: null,
+  [Markup.Ask]: ChipKind.Ask,
 };
 
 const TOKEN = new RegExp(
@@ -38,12 +43,14 @@ const KIND_WORD: Record<ChipKind, string> = {
   [ChipKind.Event]: "this",
   [ChipKind.Cluster]: "this stretch",
   [ChipKind.Person]: "them",
+  [ChipKind.Ask]: "this",
 };
 
 const ITEM_OF: Record<ChipKind, ItemKind> = {
   [ChipKind.Event]: ItemKind.Event,
   [ChipKind.Cluster]: ItemKind.Cluster,
   [ChipKind.Person]: ItemKind.Person,
+  [ChipKind.Ask]: ItemKind.Diagram,
 };
 
 export const itemKind = (kind: ChipKind): ItemKind => ITEM_OF[kind];
@@ -90,8 +97,9 @@ export function tokenize(text: string, tone = ChipTone.Data): Piece[] {
         chip: {
           kind,
           target: m[2].trim(),
-          label: label || KIND_WORD[kind],
-          tone,
+          label: label || (kind === ChipKind.Ask ? m[2].trim() : KIND_WORD[kind]),
+          // An offer is the coach asking, and asking is always amber.
+          tone: kind === ChipKind.Ask ? ChipTone.Ask : tone,
           bare: !label,
         },
       });
@@ -123,6 +131,7 @@ export function aimedEvents(
       return chapter ? chapter.event_ids : [];
     }
     case ChipKind.Person:
+    case ChipKind.Ask:
       return [];
   }
 }

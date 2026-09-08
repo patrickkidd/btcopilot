@@ -4,6 +4,9 @@ export enum ChipKind {
   Event = "event",
   Cluster = "cluster",
   Person = "person",
+  /** Something the coach offers to talk about next. It names nothing in the
+   * record: tapping it puts its words in the composer. */
+  Ask = "ask",
 }
 
 /** Teal is a reference to something the record holds; amber is the coach or the

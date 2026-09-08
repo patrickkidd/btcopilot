@@ -4,7 +4,9 @@ import { ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
  * as pills, and a pill the user taps lands in the composer as something they
- * type around (R-0072). */
+ * type around (R-0072). While the coach's words type themselves out, each chip
+ * lights as it lands and the picture draws what it names — pane A of the
+ * approved play-by-play. */
 
 export interface ChatHandlers {
   onChip(chip: Chip): void;
@@ -12,6 +14,9 @@ export interface ChatHandlers {
    * of its own, and a name out of the record beats a pronoun in a sentence. */
   label(chip: Chip): string;
 }
+
+/** How long a chip stays lit while its move draws (pane A). */
+const LIT_MS = 1000;
 
 export class Chat {
   private typing: HTMLElement | null = null;
@@ -25,14 +30,12 @@ export class Chat {
       const button = (e.target as Element).closest<HTMLElement>("button.chip");
       if (!button) return;
       e.preventDefault();
-      const source = host === this.composer;
-      if (source) return void button.remove();
+      if (host === this.composer) return void button.remove();
       // A label too long to fit shows its beginning; the first tap on one of
       // those is a look at the rest of the words, and the tap after it speaks.
       if (button.classList.contains("clip")) {
         button.classList.remove("clip");
         button.textContent = button.dataset.full ?? button.textContent;
-        this.scroll();
         return;
       }
       this.handlers.onChip({
@@ -52,11 +55,12 @@ export class Chat {
   private pill(chip: Chip): string {
     const full = this.handlers.label(chip);
     const { text, clipped } = chipText(full);
+    const offer = chip.tone === ChipTone.Ask;
     return (
       `<button type="button" class="chip ${chip.tone}${clipped ? " clip" : ""}" ` +
       `data-kind="${chip.kind}" data-target="${esc(chip.target)}" ` +
       `data-full="${esc(full)}" title="${esc(full)}">` +
-      `${esc(text)}</button>`
+      `${offer ? "[" : ""}${esc(text)}${offer ? "]" : ""}</button>`
     );
   }
 
@@ -71,17 +75,26 @@ export class Chat {
   }
 
   add(role: Role, text: string, tone = ChipTone.Data): HTMLElement {
-    const bubble = el("div", `bub ${role}`, this.render(tokenize(text, tone)));
+    const bubble = el(
+      "div",
+      `bub ${role}`,
+      (role === Role.Coach ? `<div class="who">Coach</div>` : "") +
+        this.render(tokenize(text, tone)),
+    );
     this.list.append(bubble);
     this.scroll();
     return bubble;
   }
 
   /** A coach bubble. It says what the coach did first, as a plain line each,
-   * then types the words out so every chip can light its part of the picture
-   * as it lands. */
+   * then types the words out so every chip lights its part of the picture as it
+   * lands. */
   live(): LiveBubble {
-    const bubble = el("div", `bub ${Role.Coach} typing`, '<span class="words"></span>');
+    const bubble = el(
+      "div",
+      `bub ${Role.Coach} typing`,
+      `<div class="who">Coach</div><span class="words"></span>`,
+    );
     this.list.append(bubble);
     this.typing = bubble;
     this.scroll();
@@ -91,12 +104,15 @@ export class Chat {
         bubble.insertBefore(el("div", "did", esc(line)), words);
         this.scroll();
       },
-      type: async (text, onChip, pace = 260) => {
+      type: async (text, onChip, pace = LIT_MS) => {
         for (const piece of tokenize(text)) {
           if ("chip" in piece) {
             words.insertAdjacentHTML("beforeend", this.pill(piece.chip));
+            const pill = words.lastElementChild as HTMLElement;
+            pill.classList.add("lit");
             onChip(piece.chip);
             await wait(pace);
+            pill.classList.remove("lit");
           } else {
             for (const word of piece.text.split(/(\s+)/)) {
               words.append(word);
@@ -123,11 +139,13 @@ export class Chat {
     }
   }
 
-  /** Drop a chip into the composer at the caret, as an inline pill. */
+  /** Drop a chip into the composer at the caret, as an inline pill. A chip the
+   * coach offered keeps its amber, so what the user is about to send still
+   * looks like the thing they tapped. */
   insert(chip: Chip): void {
-    this.composer.focus();
+    this.composer.focus({ preventScroll: true });
     const selection = window.getSelection();
-    const html = this.pill({ ...chip, tone: ChipTone.Data }) + " ";
+    const html = this.pill(chip) + " ";
     if (
       selection?.rangeCount &&
       this.composer.contains(selection.getRangeAt(0).commonAncestorContainer)
