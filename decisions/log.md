@@ -1196,3 +1196,39 @@ require an F1 run.
 **Decision (Patrick):** The corpus/subset/notability threads are pinned, not next. The governing principle is the smallest and most powerful simple UI that can be tested and iterated on. A brainstorm session takes the architectural step back and fills the gaps: the UI principle, the Pro app from first principles, the data format (reuse-and-modernize vs new-with-migration; off the pickle and whole-diagram optimistic writer toward multi-reader/writer sync), and the unruled prototype gaps (no tool calls, no user journeys, pending-pool fate). Big-model spend is bounded: judgment only, no agent panels by default.
 
 **Revisit trigger:** the brainstorm's rulings land (each gets its own entry and oracle ruling id); or the chat MVP produces enough data to reopen the corpus thread.
+
+
+---
+
+## 2026-09-07: Clusters are stored server-side; a stretch the user named is not regrouped away
+
+**Context:** The ruling is that clusters are stored, not derived on read, but nothing wrote them: the
+page grouped events by the silences between them and the coach could not point at the result, so a
+chip aimed at a stretch never resolved. Detection existed only behind a stateless endpoint the client
+called by hand.
+
+**Decision:** A coach turn that changes an event re-groups the line server-side and writes the result
+into the record through the one write path, authored by the coach in the same turn, so the grouping
+carries a change log and an undo like every other item. A cache key on the record keeps the model call
+off turns that change nothing the grouping depends on; it is compared in the writer only, never on
+read. A grouping keeps its id across re-detection, matched by event overlap, so a chip the coach wrote
+last week still points at something the record holds.
+
+**Decision:** A stretch named through the coach's cluster tool is stored as the user's, and
+re-detection yields to it: its events are held out of the next detection and an overlapping model
+grouping loses the overlap. Nothing had ruled this. The alternative — treating every coach-made
+grouping as the model's — was rejected because re-detection would then regroup away a name the user
+had asked for, which is the worse failure and matches the established pattern that the coach does not
+overwrite what the user chose.
+
+**Decision:** Provenance on a grouping is never claimed falsely. A run of events the line grouped by
+date gaps is neither the model's nor the user's and says so, because re-detection keys on that field
+and a false value there costs someone an afternoon.
+
+**Also:** the other side of the chat stopped being a person in the record — the coach speaker points
+at no person and chat defaults no longer create one — while its id stays reserved so records written
+before this rule keep meaning the same thing.
+
+**Revisit trigger:** the turn's latency or model spend makes synchronous detection untenable (move it
+to the worker that already runs the agent loop); or the user gains a way to name a stretch without
+going through the coach, which would need its own provenance.

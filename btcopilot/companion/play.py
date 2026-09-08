@@ -26,7 +26,7 @@ def _cluster(data: DiagramData, cluster_id: str) -> dict:
                 "title": chapter["title"],
                 "summary": chapter["summary"] or "",
                 "eventIds": chapter["event_ids"],
-                "source": ClusterSource.Model.value,
+                "source": ClusterSource.Gaps.value,
             }
     raise ValueError(f"No cluster {cluster_id!r} on the line")
 

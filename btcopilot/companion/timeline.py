@@ -240,6 +240,11 @@ def _chapters(events: list[dict], clusters: list[dict]) -> list[dict]:
             continue
         group = _cluster_group(cluster, by_id, claimed)
         if not group:
+            # Re-detection removes a cluster whose events are gone, so this
+            # should not happen; say so rather than let the row disappear.
+            _log.warning(
+                f"Stored cluster {cluster['id']} holds no event on the line"
+            )
             continue
         claimed.update(chunk["id"] for chunk, _ in group)
         groups.append((group, cluster))

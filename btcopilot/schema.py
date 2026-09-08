@@ -405,6 +405,10 @@ class ClusterPattern(enum.StrEnum):
 class ClusterSource(enum.StrEnum):
     Model = "model"
     User = "user"
+    # Never stored: a run of events the line grouped by the silences around it,
+    # which the play-by-play treats as a stretch. Saying Model here would claim
+    # a grouping the model never made, and re-detection keys on this field.
+    Gaps = "gaps"
 
 
 @dataclass
