@@ -327,7 +327,6 @@ export class Sessions {
     this.sheet.classList.add("in");
     this.screen.style.transformOrigin = "50% 0";
     this.screen.style.transform = "scale(.96)";
-    this.screen.classList.add("back");
     if (!viaDrag) this.search.focus({ preventScroll: true });
   }
 
@@ -341,7 +340,6 @@ export class Sessions {
     this.scrim.classList.remove("in");
     this.sheet.classList.remove("in");
     this.screen.style.transform = "";
-    this.screen.classList.remove("back");
     window.setTimeout(() => {
       if (this.open) return;
       this.scrim.hidden = true;

@@ -121,9 +121,6 @@ button { font-family: inherit; }
   flex-direction: column;
   transition: transform 0.24s ease, filter 0.24s ease;
 }
-/* The screen behind a raised sheet steps back and dims, as the mockup has it. */
-.screen.back { filter: brightness(0.94); }
-
 .titlerow {
   flex: none;
   display: flex;
