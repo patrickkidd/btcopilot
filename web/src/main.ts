@@ -3,6 +3,7 @@ import * as api from "./api";
 import { Chat, wait } from "./chat";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu } from "./menu";
+import { Sessions } from "./sessions";
 import { aimedEvents, chips, itemKind } from "./chips";
 import { StepKind, steps } from "./turn";
 import {
@@ -114,6 +115,34 @@ const chat = new Chat($("chat"), $("composer"), {
 
 const menu = new Menu($("menu-body"), load);
 
+/** The session door beside the message box. The sheet lists every session and a
+ * tap swaps the chat to it (family-sections, the owner's pick). */
+const sessions = new Sessions(
+  $("sessions-open"),
+  $("overlay"),
+  $("chat-screen"),
+  $("inbar"),
+  {
+    onPick: (picked) => {
+      session = picked.id;
+      void openSession(picked.id);
+    },
+  },
+);
+
+/** Opening a session replaces the thread with its statements and puts the
+ * picture back where that session's last coach message left it. */
+async function openSession(id: number): Promise<void> {
+  const { statements } = await api.session(id);
+  chat.clear();
+  for (const statement of statements) chat.add(statement.role, statement.text);
+  picture.clear();
+  pic = REST;
+  const last = [...statements].reverse().find((s) => s.role === Role.Coach);
+  if (last) spotlightFrom(last.text);
+  else actions();
+}
+
 /** The coach pointing: the moments its words name become the spotlight, and
  * everything else on the wire recedes. A chip only ever aims the picture; it
  * never changes the picture's level, so nothing below it moves (the owner:
@@ -224,6 +253,7 @@ async function send(): Promise<void> {
   }
   await bubble.type(reply.statement, (chip) => aim(chip));
   await load();
+  void sessions.load(session);
   // What the message named stays lit after it is written: the spotlight is the
   // resting state of the picture, not a flourish while it types.
   spotlightFrom(reply.statement);
@@ -283,6 +313,8 @@ $("menu-search").addEventListener("input", (e) =>
 
 for (const statement of window.COMPANION.statements)
   chat.add(statement.role, statement.text);
+
+void sessions.load(session);
 
 void load().then(async () => {
   const said = window.COMPANION.statements;

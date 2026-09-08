@@ -1,8 +1,11 @@
 import type {
+  Account,
   InteractionKind,
   ItemKind,
   PlayReply,
+  Preferences,
   Reply,
+  Session,
   Statement,
   Timeline,
   TimelineEvent,
@@ -66,3 +69,19 @@ export const saveEvent = (id: number | null, body: Partial<TimelineEvent>) =>
     : call<TimelineEvent>("PATCH", `/events/${id}`, body);
 
 export const deleteEvent = (id: number) => call<void>("DELETE", `/events/${id}`);
+
+/** Sessions, newest activity first. The server has no current-session pointer:
+ * posting into a session is what makes it the one you come back to. */
+export const sessionIndex = () => call<Session[]>("GET", "/sessions");
+
+export const newSession = () => call<Session>("POST", "/sessions");
+
+export const renameSession = (id: number, title: string) =>
+  call<Session>("PATCH", `/sessions/${id}`, { title });
+
+export const preferences = () => call<Preferences>("GET", "/preferences");
+
+export const setPreferences = (body: Partial<Preferences>) =>
+  call<Preferences>("PATCH", "/preferences", body);
+
+export const account = () => call<Account>("GET", "/account");

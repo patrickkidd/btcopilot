@@ -180,3 +180,55 @@ export interface PlayReply {
   statement: string;
   cluster_id: string;
 }
+
+/** A session is a Discussion. The sheet lists them by recency; the coach titles
+ * one after the first exchange and a hand-given title replaces that. */
+export interface Session {
+  id: number;
+  title: string | null;
+  summary: string | null;
+  last_activity: string;
+  message_count: number;
+}
+
+export interface Diagram {
+  id: number;
+  name: string;
+  last_activity: string | null;
+  free: boolean;
+}
+
+export interface Account {
+  email: string;
+  sign_in_method: string;
+  plan: string;
+  diagrams: Diagram[];
+  licenses: { id: number; policy: string; status: string }[];
+}
+
+export enum Proactive {
+  Never = "never",
+  Rarely = "rarely",
+  Weekly = "weekly",
+}
+
+export enum Mode {
+  Text = "text",
+  Voice = "voice",
+}
+
+export enum Theme {
+  System = "system",
+  Light = "light",
+  Dark = "dark",
+}
+
+export interface Preferences {
+  speak: boolean;
+  proactive: Proactive;
+  mode: Mode;
+  theme: Theme;
+  first_name: string | null;
+  last_name: string | null;
+  birthdate: string | null;
+}
