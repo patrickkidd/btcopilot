@@ -8,10 +8,10 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 
 | status | rows |
 |---|---|
-| MET | 125 |
+| MET | 123 |
 | PARTIAL | 46 |
-| CHANGED | 75 |
-| MISSING | 111 |
+| CHANGED | 76 |
+| MISSING | 112 |
 | UNCHECKED | 23 |
 | N/A | 62 |
 | **total** | **442** |
@@ -21,8 +21,8 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | 1. App shell and navigation | 4 | 4 | 7 | 6 | 0 | 4 |
 | 2. Sessions / discussions drawer | 0 | 0 | 0 | 25 | 3 | 11 |
 | 3. Settings and account | 1 | 1 | 0 | 24 | 1 | 10 |
-| 4. Picture at rest — the sentence spotlight | 33 | 3 | 10 | 5 | 0 | 6 |
-| 5. Picture symbols — one row per symbol | 10 | 11 | 27 | 11 | 1 | 3 |
+| 4. Picture at rest — the sentence spotlight | 32 | 3 | 10 | 6 | 0 | 6 |
+| 5. Picture symbols — one row per symbol | 9 | 11 | 28 | 11 | 1 | 3 |
 | 6. Chalkboard / moves board | 4 | 2 | 5 | 12 | 1 | 4 |
 | 7. Show-tool view kinds | 1 | 5 | 0 | 0 | 1 | 0 |
 | 8. Play-by-play | 7 | 7 | 6 | 4 | 3 | 0 |
@@ -171,7 +171,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Sparse chapter dots | one `<circle r="4.5" fill="var(--data)">` per moment, evenly spaced across the box | `.dot{fill:var(--data)}` at `dotRadius` (picture.ts:399; theme.css:135) | MET |
 | Dense chapter glyph | more than 8 moments collapse to `<circle r="11" stroke="var(--data)" stroke-width="1.6">` with a count text at font-size 10 | No count glyph. Density is handled by shrinking the dot instead (spotlight.ts:66-68) | CHANGED |
 | Count text size | 9-10.5px against the binding 13px floor | No count text | MISSING |
-| Chapter year-range label | `<text y=26 font-size="10.5" fill="var(--faint)">` two-digit years | `.ss-yr{font:400 13px/17px var(--mono);color:var(--faint)}` at both ends (picture.ts:361-366; theme.css:127-132) | MET |
+| Chapter year-range label | `<text y=26 font-size="10.5" fill="var(--faint)">` two-digit years | No resting wire level exists, so the 10.5px two-digit range this row describes is never drawn. The chapter picture's own year labels are the separate ratified 13px `.ss-yr` row, which is MET (picture.ts:361-366; theme.css:127-132) | MISSING |
 | Gap question mark | `<text font-size="13" fill="var(--ask)">?</text>`, shown only when the gap between chapters is 4 years or more | `.qm.small` at 13px, `fill:var(--ask)`, drawn per unresolved question and suppressed within 16px of another, not on a 4-year gap rule (picture.ts:489-501; theme.css:178-179) | CHANGED |
 | Hint text | `<text x=16 y=74 font-size="9" fill="var(--faint)">tap a chapter</text>` | No hint text on the picture | MISSING |
 | Empty-record copy | "Nothing on your line yet — it draws itself as you talk.", `font-size:13px; color:var(--faint); padding:10px 6px` | No prose empty state. The empty picture is a dashed wire plus a centred "?" (picture.ts:296-306) | CHANGED |
@@ -219,7 +219,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Person, female | `<circle r="13" fill="var(--panel)" stroke=currentColor stroke-width="1.5">`, rising to 2.4 when a move overrides the stroke | Everyone is `<circle class="disc" r="17">`, `fill:var(--panel);stroke:var(--faint);stroke-width:1.6` (moves.ts:37,60-72; theme.css:183). Sex is never read | CHANGED |
 | Person, male or other | `<rect width="24" height="24">` offset -12/-12, same fill and stroke rules | No rect glyph exists in moves.ts | CHANGED |
 | Person, play-by-play pane A | disc r=17, fill `--card`, stroke `--mute` 1.6; initial `600 12px "IBM Plex Sans"` centred; name mono 9px `--mute`, letter-spacing .04em, at y = cy… | The disc, a `600 13px` initial and a `400 13px mono` name, drawn while a move or a coach view puts people on stage (moves.ts:60-72; picture.ts:508-512). Disc radius 17 matches; resolution 29 settles the timing | MET |
-| Person name label, board | `<text y="-20" font-size="10.5">`, fill `--move` and weight 600 for the current mover, `--faint` and 400 otherwise | `.nm{font:400 13px var(--mono);fill:var(--faint)}` at `y + R + 32` (theme.css:185; moves.ts:69) | MET |
+| Person name label, board | `<text y="-20" font-size="10.5">`, fill `--move` and weight 600 for the current mover, `--faint` and 400 otherwise | `.nm{font:400 13px var(--mono);fill:var(--faint)}` at `y + R + 32` (theme.css:185; moves.ts:69) against the ratified 10.5px on the board and 9px in pane A. Resolution 2 keeps the ratified values for data labels on a drawing, so this is a fidelity difference — and the build sits above the ratified size, not below it, so it is not a legibility defect | CHANGED |
 | Emotional field, rings | three `<circle cx cy r=24 fill=none class="A d" stroke-width="2.4" opacity="0">`, `r` animating 18 to 170 over 1.65s, begins staggered at 0s / .55s… | `field()` draws 2 static circles at `r = R+8+i*8`, so 25 and 33, `stroke:var(--move);stroke-width:1.2;opacity:0.4`. No `r` animation and no stagger (moves.ts:75-79; theme.css:200) | CHANGED |
 | Tremble | `@keyframes tremble10`, ±2.5px falling to ±2px, active 2-28% of a 10s loop, still afterwards | `@keyframes tremble` exists, 1.2s linear infinite, five steps of ±2px, still from 45% (theme.css:234-240), and is applied through the `shake` class. Distance sets the actor to `still`, so the actor never trembles while exposed (moves.ts:264) | CHANGED |
 | Wall | thick line `x1=105 y1=30 x2=105 y2=98`, `.A d`, stroke-width 6; `@keyframes oneslabb` slides it in from `translateX(-48px)` with opacity 0 to 1 bet… | `wall()` draws one straight `.mv-wall` path 52px long across the midpoint, `stroke:var(--ink);stroke-width:4` (moves.ts:100-116; theme.css:210). No push-in animation, and it is ink rather than the move green | CHANGED |
