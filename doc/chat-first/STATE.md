@@ -490,6 +490,31 @@ diagram row opens that diagram, one open at a time (User.current_diagram_id). Th
 Personal app is superseded: its endpoints are archived and the chat app's routes are the
 personal API — models, prompts and the agent loop stay; Pro routes are untouched. Done.
 
+### Owner review round 2 (2026-09-08, RULED, not yet in the oracle store)
+
+The board has one control row whichever way it was opened: back, "explain", forward, with
+explain dead only while the coach is answering the last one. The way onto the board from
+the timeline is the play mark alone, no words. The words under the board are a person and
+their own words — no count, no clinical term — in a block that keeps two lines of room;
+the date is written once, under the dot. The line above the wire says only "Family
+timeline". Nothing is drawn behind the move being played: the dot itself is drawn last, in
+the action green. Blank ground anywhere on the picture, and the picture's own name, put it
+down; a label picks its moment, and the words of the moment already picked go to where it
+was said. Every word the app says is selectable and copyable; only controls carrying no
+prose are held back. A send that fails says which of three things happened and offers to
+go again, and clears when anything lands. Three dots while the coach is thinking — this
+supersedes the mockups' blinking caret, which stays on words being written out. Sign-in
+tokens last as long as the session.
+
+**Preserved on the owner's word, do not remove**: the agent's tool-call summaries in the
+thread, and their formatting, separate from the coach's reply. He likes them as they are.
+
+**Measured, not changed**: the symptom arrow is exactly the ratified drawing — 26 of
+shaft, 10 of head, 2.6 stroke, 26 across from the cross. It reads tall because the board
+draws people at radius 13 where the ratified sheet draws them at 17, so the same arrow is
+1.23 of a person's width instead of 0.94. Side by side at
+`~/worktrees/fd362-sandbox/symptom_arrow_compare.png`.
+
 ## A/B-test list
 
 Kept for when there are enough users to run one.
