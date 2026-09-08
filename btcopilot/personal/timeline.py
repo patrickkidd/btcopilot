@@ -57,19 +57,32 @@ def _sentence(base: str, date: datetime.date | None, certainty: str) -> str:
     return f"{base}, {_date_phrase(date, certainty)}."
 
 
-def _born(person_id: int, events: list) -> str | None:
-    """The date on this person's birth event, if the record holds one."""
+def _life_event(person_id: int, events: list, kind: EventKind) -> dict | None:
+    """This person's birth or death, which the record keeps as an event about
+    them rather than a field on them. Birth is about the child; death is about
+    the person (btcopilot/CLAUDE.md, Event Field Semantics)."""
+    about = "child" if kind is EventKind.Birth else "person"
     for event in events:
         if not isinstance(event, dict):
             continue
-        if _enum_val(event.get("kind")) != EventKind.Birth.value:
+        if _enum_val(event.get("kind")) != kind.value:
             continue
-        if event.get("child") != person_id:
+        if event.get(about) != person_id:
             continue
-        date = _parse_iso_date(event.get("dateTime"))
-        if date:
-            return date.isoformat()
+        return event
     return None
+
+
+def _born(person_id: int, events: list) -> str | None:
+    """The date on this person's birth event, if the record holds one."""
+    event = _life_event(person_id, events, EventKind.Birth)
+    date = _parse_iso_date(event.get("dateTime")) if event else None
+    return date.isoformat() if date else None
+
+
+def _life_id(person_id: int, events: list, kind: EventKind) -> int | None:
+    event = _life_event(person_id, events, kind)
+    return event.get("id") if event else None
 
 
 def _person_label(person: dict | None) -> str:
@@ -284,6 +297,9 @@ def _drawn_clusters(events: list[dict], clusters: list[dict]) -> list[dict]:
                     or _cluster_label(start, end)
                 ),
                 "summary": (cluster or {}).get("summary"),
+                # Why these events are one episode, in the coach's own sentence.
+                # A grouping the silences made has none.
+                "reason": (cluster or {}).get("reason"),
                 "cluster_ids": [str(cluster["id"])] if cluster else [],
                 "source": (
                     cluster.get("source") if cluster else ClusterSource.Derived.value
@@ -601,6 +617,9 @@ def build_timeline(data: DiagramData) -> dict:
                 # when someone was born is an event about them, not a field on
                 # them, so the list is handed the date its rows are ordered by
                 "birth": _born(p["id"], data.events),
+                # the two events the person editor sends the reader to
+                "birth_event": _life_id(p["id"], data.events, EventKind.Birth),
+                "death_event": _life_id(p["id"], data.events, EventKind.Death),
             }
             for p in people
         ],

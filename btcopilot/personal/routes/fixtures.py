@@ -256,11 +256,23 @@ LONG_WORDS = "her back pain eased after the winter she stopped calling her mothe
 
 def long_move() -> DiagramData:
     """The moves record with one move carrying a description long enough to
-    wrap the summary under the board."""
+    wrap the summary under the board, and one person the record knows both the
+    birth and the death of."""
     data = moves()
     for event in data.events:
         if event["symptom"]:
             event["description"] = LONG_WORDS
+    data.events.extend(
+        [
+            asdict(
+                Event(id=70, kind=EventKind.Birth, child=1, dateTime="1961-02-03")
+            ),
+            asdict(
+                Event(id=71, kind=EventKind.Death, person=1, dateTime="2019-08-09")
+            ),
+        ]
+    )
+    data.lastItemId = 80
     data.clusters = [
         asdict(
             Cluster(

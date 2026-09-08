@@ -69,6 +69,9 @@ export interface Person {
   /** When they were born, which the record holds as an event about them
    * rather than a field on them. Null when it holds none. */
   birth: string | null;
+  /** Those two events themselves, so the reader can be sent to them. */
+  birth_event: number | null;
+  death_event: number | null;
 }
 
 export interface TimelineEvent {

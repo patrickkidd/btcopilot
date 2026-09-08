@@ -146,10 +146,16 @@ function field(
   return `<div class="lab">${esc(label)}</div>${body}`;
 }
 
+/** The groups where one person is chosen, so a tap on the one already chosen
+ * changes nothing and is free to mean "take me to them". The groups that hold
+ * several keep that tap, because it is how one of them is taken off again. */
+const ONE_PERSON = ["person", "spouse", "child"];
+
 export function openEditor(
   event: TimelineEvent | null,
   people: Person[],
   done: () => void,
+  goToPerson?: (personId: number) => void,
 ): HTMLElement {
   const kind = event?.kind ?? EventKind.Shift;
   const relationship = event?.relationship ?? "";
@@ -240,6 +246,16 @@ export function openEditor(
     group.addEventListener("click", (clicked) => {
       const button = (clicked.target as Element).closest<HTMLElement>(".seg");
       if (!button) return;
+      // the person this event is already about: the tap goes to them
+      if (
+        goToPerson &&
+        ONE_PERSON.includes(group.dataset.name ?? "") &&
+        button.classList.contains("on") &&
+        button.dataset.value
+      ) {
+        goToPerson(Number(button.dataset.value));
+        return;
+      }
       if (group.dataset.multiple) button.classList.toggle("on");
       else
         group
@@ -328,9 +344,10 @@ async function save(
   done();
 }
 
-/** What the record holds a person as. Birth and death are events about them,
- * so they are edited on the timeline and only shown here. */
-export enum Sex {
+/** What the record holds a person as: which symbol they are drawn with. Two of
+ * these are pregnancies that did not end in a birth, which the picture has its
+ * own symbols for, so this is a kind of person and never a sex. */
+export enum PersonKind {
   Male = "male",
   Female = "female",
   Abortion = "abortion",
@@ -338,30 +355,49 @@ export enum Sex {
   Unknown = "unknown",
 }
 
-/** The person editor: the event editor's own markup, with the three fields the
- * record keeps on a person. */
+/** The person editor: the event editor's own markup, with the fields the record
+ * keeps on a person. Being born and dying are events about them, so those are
+ * offered as the events themselves rather than as fields here. */
 export function openPersonEditor(
   person: Person | null,
   done: () => void,
+  goToEvent?: (eventId: number) => void,
 ): HTMLElement {
+  const life = [
+    ["birth_event", "Their birth"],
+    ["death_event", "Their death"],
+  ] as const;
   const editor = el(
     "div",
     "editor",
     `<div class="sec">Who</div>` +
       field("Name", "name", person?.name) +
       field("Last name", "last_name", person?.last_name) +
-      `<div class="lab">Sex</div>` +
-      chips("gender", plain(Object.values(Sex)), person?.gender ?? Sex.Unknown) +
+      `<div class="lab">Kind</div>` +
+      chips(
+        "gender",
+        plain(Object.values(PersonKind)),
+        person?.gender ?? PersonKind.Unknown,
+      ) +
       `<div class="sec">When</div>` +
-      `<div class="hint">${esc(
-        person?.birth
-          ? `Born ${person.birth}. Their birth is an event on the timeline.`
-          : "Being born is an event on the timeline, and so is dying.",
-      )}</div>` +
+      `<div class="hint">Add birth and death events by chatting with the coach.</div>` +
+      life
+        .map(([key, label]) =>
+          person?.[key]
+            ? `<button class="btn" type="button" data-event="${person[key]}">${label}</button>`
+            : "",
+        )
+        .join("") +
       `<div class="acts"><button class="save" type="button">Save</button>` +
       (person ? `<button class="del" type="button">Delete</button>` : "") +
       `</div>`,
   );
+
+  editor.querySelectorAll<HTMLElement>("[data-event]").forEach((button) => {
+    button.addEventListener("click", () =>
+      goToEvent?.(Number(button.dataset.event)),
+    );
+  });
 
   editor.querySelectorAll<HTMLElement>(".segs").forEach((group) => {
     group.addEventListener("click", (clicked) => {
@@ -380,7 +416,7 @@ export function openPersonEditor(
     };
     const gender =
       editor.querySelector<HTMLElement>('.segs[data-name="gender"] .seg.on')?.dataset
-        .value ?? Sex.Unknown;
+        .value ?? PersonKind.Unknown;
     void api
       .savePerson(person ? person.id : null, {
         name: text("name"),
