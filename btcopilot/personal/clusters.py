@@ -165,8 +165,17 @@ def next_id(taken: set[str]) -> str:
     return f"c{n}"
 
 
-def _source(cluster: dict) -> ClusterSource:
-    return ClusterSource(cluster.get("source") or ClusterSource.Model.value)
+def _source(cluster: dict) -> ClusterSource | None:
+    source = cluster.get("source")
+    return ClusterSource(source) if source else None
+
+
+def _regroupable(cluster: dict) -> bool:
+    """Only a grouping the model is known to have made may be regrouped.
+    A stretch of unknown provenance is treated as the user's, because the coach
+    does not overwrite what the user asked for and the cost is asymmetric:
+    guessing wrong about the model loses a name the user chose."""
+    return _source(cluster) is ClusterSource.Model
 
 
 def _reuse(mine: list[dict], event_ids: list[int], used: set[str]) -> str | None:
@@ -185,13 +194,14 @@ def _reuse(mine: list[dict], event_ids: list[int], used: set[str]) -> str | None
 
 
 def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
-    """The model's grouping, with every event a user cluster owns held out and
-    each group carrying the id of the stored grouping it continues."""
-    mine = [c for c in stored if _source(c) is ClusterSource.Model]
+    """The model's grouping, with every event a grouping it may not touch owns
+    held out, and each group carrying the id of the stored grouping it
+    continues."""
+    mine = [c for c in stored if _regroupable(c)]
     theirs = {
         event_id
         for c in stored
-        if _source(c) is ClusterSource.User
+        if not _regroupable(c)
         for event_id in c.get("eventIds") or []
     }
     taken = {str(c["id"]) for c in stored}
@@ -212,7 +222,7 @@ def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
 
 def _deltas(stored: list[dict], detected: list[Cluster], dates: dict) -> list[dict]:
     stored = [c for c in stored if isinstance(c, dict) and c.get("id") is not None]
-    mine = {str(c["id"]): c for c in stored if _source(c) is ClusterSource.Model}
+    mine = {str(c["id"]): c for c in stored if _regroupable(c)}
     kept = _detected(stored, detected, dates)
 
     deltas = [

@@ -7,7 +7,7 @@ from mock import patch
 
 from btcopilot.companion.timeline import build_timeline
 from btcopilot.extensions import db
-from btcopilot.personal import chips
+from btcopilot.personal import chips, recordtext
 from btcopilot.personal.chips import ChipKind
 from btcopilot.personal.clusters import sync
 from btcopilot.personal.coachturn import CoachTurn
@@ -170,6 +170,34 @@ def test_a_grouping_the_user_made_survives_regrouping(discussion, family):
     mine = [c for c in stored.values() if c["source"] == ClusterSource.Model.value]
     assert len(mine) == 1
     assert mine[0]["eventIds"] == [12, 13]
+
+
+def test_a_grouping_of_unknown_provenance_is_left_alone(discussion, family):
+    """A row written before provenance was recorded is treated as the user's:
+    guessing that the model made it would lose a name the user chose."""
+    data = family.get_diagram_data()
+    stale = asdict(Cluster(id="c1", title="When he left", summary="", eventIds=[10, 11]))
+    del stale["source"]
+    data.clusters = [stale]
+    family.set_diagram_data(data)
+    db.session.commit()
+
+    with detects(("Everything at once", [10, 11, 12, 13])):
+        sync(family.id, turn_id="t1")
+
+    stored = clusters_of(family)
+    assert stored["c1"]["eventIds"] == [10, 11]
+    assert "source" not in stored["c1"]
+    mine = [c for c in stored.values() if c.get("source") == ClusterSource.Model.value]
+    assert len(mine) == 1
+    assert mine[0]["eventIds"] == [12, 13]
+
+
+def test_the_coach_is_never_told_the_model_made_a_grouping_it_may_not_have(family):
+    stale = asdict(Cluster(id="c1", title="When he left", summary="", eventIds=[10]))
+    del stale["source"]
+
+    assert "(unknown)" in recordtext.cluster_line(stale)
 
 
 def test_regrouping_keeps_the_id_the_coach_already_pointed_at(family):
