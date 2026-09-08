@@ -318,9 +318,12 @@ button { font-family: inherit; }
 .ss .axis .ax-tick { stroke: var(--line); stroke-width: 1.2; }
 .ss .axis .ax-yr { font: 400 13px var(--mono); fill: var(--faint); }
 .ss .axis .ax-blob { fill: var(--faint); opacity: 0.22; }
-.ss .axis .ax-focus { fill: var(--data); opacity: 0.28; }
 .ss .axis .ax-dot { fill: var(--faint); transition: fill 0.3s, r 0.3s; }
 .ss .axis .ax-dot.played { fill: var(--data); }
+/* the move being drawn: the dot itself, on top of whatever it is crowded by,
+   in the one action green. Nothing sits behind it. */
+.ss .axis .ax-now { fill: var(--move); }
+.ss .axis .ax-yr.on { fill: var(--move-text); }
 .ss .bond { stroke: var(--line); stroke-width: 1.2; }
 .ss .hist { opacity: 0.16; animation: histin 0.32s ease; }
 .ss .hist * { animation: none !important; }
@@ -342,15 +345,20 @@ button { font-family: inherit; }
 }
 .ss .corner.l { left: 4px; }
 .ss .corner.r { right: 4px; }
+/* Two lines of room, always: the words under the board are a person and what
+   happened to them, and a long one must not push the board up the screen. What
+   does not fit is cut. */
 .bcap {
-  min-height: 15px;
+  height: 30px;
   padding: 2px 16px 0;
   font: 400 13px/15px var(--mono);
   color: var(--faint);
   text-align: center;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 .pctl {
   display: flex;
@@ -359,6 +367,9 @@ button { font-family: inherit; }
   padding: 4px 16px 2px;
 }
 .pctl .btn { border-radius: 4px; }
+/* the way onto the board carries the same mark as the control that steps it,
+   and no words: three controls with words do not fit across a phone */
+.btn.icon { min-width: 44px; padding: 0; }
 .pctl .btn[disabled] { opacity: 0.4; cursor: default; }
 .btn.primary { border-color: var(--data); color: var(--data); }
 
@@ -650,16 +661,6 @@ button { font-family: inherit; }
   white-space: nowrap;
 }
 .caption .chip::before { content: none; }
-/* the row must fit its parent at 390px: the trace chip is the one that gives,
-   truncating its words the way the mockup's own coded-in rule truncates them */
-.caption .chip.trace {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-  line-height: 40px;
-}
 
 /* ---- chat ---- */
 .chat {

@@ -249,6 +249,32 @@ def play() -> DiagramData:
     return data
 
 
+# Seventy characters of a person's own words, which is what the board's summary
+# has to survive without changing the board's height.
+LONG_WORDS = "her back pain eased after the winter she stopped calling her mother now"
+
+
+def long_move() -> DiagramData:
+    """The moves record with one move carrying a description long enough to
+    wrap the summary under the board."""
+    data = moves()
+    for event in data.events:
+        if event["symptom"]:
+            event["description"] = LONG_WORDS
+    data.clusters = [
+        asdict(
+            Cluster(
+                id=PLAY_CLUSTER,
+                title="The walk",
+                summary="Every move in order.",
+                eventIds=[event["id"] for event in data.events],
+                name="The walk",
+            )
+        )
+    ]
+    return data
+
+
 # The walk the coach speaks: every move in order, each one named inside a
 # sentence that says who did what and what it meant. Never a bare list of chips.
 PLAY_WALK = " ".join(
@@ -316,6 +342,7 @@ FIXTURES = {
     "hostile": (hostile, HOSTILE_CHAT),
     "moves": (moves, MOVES_CHAT),
     "play": (play, PLAY_CHAT),
+    "longmove": (long_move, None),
     "longname": (long_name, None),
 }
 

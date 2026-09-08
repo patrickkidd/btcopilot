@@ -105,6 +105,8 @@ export enum Target {
   Back = "back",
   Prev = "prev",
   Next = "next",
+  /** Ask the coach to talk through the stretch the board is showing. */
+  Explain = "explain",
 }
 
 const OWN = new Set<string>([Target.Back, Target.Prev, Target.Next]);
@@ -145,6 +147,9 @@ export class Picture {
   private at = 0;
   private pair: [number, number] | null = null;
   private entering = false;
+  /** True while the coach is still answering the last "explain", so the control
+   * that asked cannot be asked again until the words land or fail. */
+  private explaining = false;
   /** Set once the reader steps the board themselves. */
   private steered = false;
   private band: { start: string; end: string } | null = null;
@@ -295,6 +300,17 @@ export class Picture {
     return this.level === Level.Board;
   }
 
+  /** The stretch the board is showing, which is what "explain" asks about. */
+  showing(): string | null {
+    return this.cluster;
+  }
+
+  /** The coach is answering, or has finished answering, an explain. */
+  explains(busy: boolean): void {
+    this.explaining = busy;
+    if (this.level === Level.Board) this.render();
+  }
+
   private control(target: Target): void {
     // the reader taking the controls outranks a play-through still running:
     // from here the board is theirs to step
@@ -376,17 +392,6 @@ export class Picture {
     this.pair = null;
     this.rescale();
     this.render();
-  }
-
-  /** What the readout beside the picture says the picture is showing. */
-  state(): string {
-    const event = this.event(this.selected);
-    if (event?.dateTime)
-      return `${dateText(event.dateTime, event.dateCertainty)} · ${clip(event.label, 30)}`;
-    if (this.focus) return this.focus.label;
-    const dated = this.dated();
-    if (!dated.length) return "nothing dated yet";
-    return `${this.yearOf(dated[0])}–${this.yearOf(dated[dated.length - 1])}`;
   }
 
   private yearOf = (event: TimelineEvent) => (event.dateTime as string).slice(0, 4);
@@ -600,8 +605,12 @@ export class Picture {
         ? `<div class="pctl">` +
           `<button type="button" class="btn" data-target="${Target.Prev}" ` +
           `${this.at === 0 ? "disabled" : ""} aria-label="the move before">&#9664;</button>` +
-          `<button type="button" class="btn primary" data-target="${Target.Next}" ` +
-          `${this.at >= last ? "disabled" : ""}>&#9654; next move</button>` +
+          // One row, whichever way the board was opened. Explain is dead only
+          // while the coach is still answering the last one.
+          `<button type="button" class="btn primary" data-target="${Target.Explain}" ` +
+          `${this.explaining ? "disabled" : ""}>&#9654; explain</button>` +
+          `<button type="button" class="btn" data-target="${Target.Next}" ` +
+          `${this.at >= last ? "disabled" : ""} aria-label="the move after">&#9654;</button>` +
           `</div>`
         : "");
     // The board is as tall as what it holds — the drawing, its caption and its

@@ -81,6 +81,11 @@ const picture = new Picture($("view"), { onTap: (tap: Tap) => onTap(tap) });
  * words picks the one whose row was tapped; a tap on the shelf asks about what
  * has no date. */
 function onTap(tap: Tap): void {
+  if (tap.target === Target.Explain) {
+    const stretch = picture.showing();
+    if (stretch) void explain(stretch);
+    return;
+  }
   if (tap.target === Target.Shelf) {
     apply(reduce(pic, PicEvent.Tap, { kind: SelKind.Shelf, id: "shelf" }));
     return;
@@ -332,7 +337,7 @@ function apply(outcome: Outcome): void {
       tone: ChipTone.Data,
       bare: false,
     });
-  if (outcome.play) void playThrough(outcome.play);
+  if (outcome.play) enterBoard(outcome.play);
 }
 
 function selLabel(sel: Sel): string {
@@ -379,7 +384,6 @@ async function traceTo(where: CodedIn): Promise<void> {
 /** The row under the picture: what it is showing, and the things a tap can do
  * about it. The words themselves live on the picture (converged mockup). */
 function actions(): void {
-  $("pin-state").textContent = picture.state();
   const host = $("caption");
   const sel = pic.sel;
   if (!sel) {
@@ -395,13 +399,14 @@ function actions(): void {
   const ask = sel.kind === SelKind.Shelf ? "Ask when" : "Ask about this";
   const trace = sel.kind === SelKind.Event ? codedIn(Number(sel.id)) : null;
   // The board entry button is offered only when the stretch has at least one
-  // move the board can draw.
+  // move the board can draw. It carries no words: with the icon alone the row
+  // holds the ask chip, the way in and the coded-in chip across a phone.
   const moves = stretch ? picture.countMoves(stretch.event_ids) : 0;
   host.innerHTML =
     `<button type="button" class="chip ask" id="cap-chip">[${esc(ask)}]</button>` +
     (moves
-      ? `<button type="button" class="btn primary" id="cap-play">` +
-        `&#9654; explain the moves</button>`
+      ? `<button type="button" class="btn primary icon" id="cap-play" ` +
+        `aria-label="open the moves board">&#9654;</button>`
       : "") +
     (trace
       ? `<button type="button" class="chip data trace" id="cap-trace">${esc(trace.label)}</button>`
@@ -422,15 +427,22 @@ function actions(): void {
 /** The board is its own level, and entering it is the one deliberate act that
  * changes the picture's height. It goes up before the coach's words are
  * written, and stays up until the reader taps back off it. */
-async function playThrough(clusterId: string): Promise<void> {
+function enterBoard(clusterId: string): void {
   const stretch = timeline.chapters.find((c) => c.id === clusterId);
-  // The board goes up on the tap, not when the coach comes back: a control
-  // that starts something starts it immediately (UI_STANDARDS). The coach's
-  // narration then lands on a board the reader is already looking at.
   if (stretch) picture.openBoard(stretch.event_ids, clusterId);
+  pic = REST;
+  actions();
+}
+
+/** The board's own control: ask the coach to talk through the stretch on
+ * screen. The board is already up, so nothing here changes the picture's
+ * height; the words land beneath it and step it as they are typed. */
+async function explain(clusterId: string): Promise<void> {
+  picture.explains(true);
   chat.busy(true);
   const reply = await api.play(clusterId);
   chat.busy(false);
+  picture.explains(false);
   await chat.live(reply.cluster_id).type(reply.statement, (chip) => {
     const ids = aimedEvents(chip, timeline.chapters);
     if (ids.length) picture.step(ids[0]);

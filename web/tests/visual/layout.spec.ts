@@ -129,21 +129,22 @@ test.describe("nothing moves when a chip is tapped", () => {
       heights: [...node.children].map((c) =>
         Math.round(c.getBoundingClientRect().height),
       ),
-      fits: node.scrollWidth <= node.clientWidth,
     }));
     expect(strip.children).toBe(3);
     expect(strip.height).toBe(44);
     expect(strip.rows).toBe(1);
     // every control is the same 44px target, so the row reads as one strip
     expect(strip.heights).toEqual([44, 44, 44]);
-    expect(strip.fits).toBe(true);
   });
 });
 
-/** The caption row on every record the app can be handed: nothing it holds may
- * reach past the row, and the row may not grow a second line, whatever words
- * the record puts on it. */
-for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "longname"] as const) {
+/** The caption row on every record the app can be handed: it stays one line at
+ * its reserved height, and nothing it holds sits outside it — the row is one
+ * sideways strip, so "inside" is measured against everything the strip holds,
+ * scrolled or not. Three controls with the coded-in chip at its capped width do
+ * not fit across a phone, and the strip scrolls rather than wrapping, because
+ * its height is what the picture above it is fitted to. */
+for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "longmove", "longname"] as const) {
   test.describe(`the caption row on the ${key} record`, () => {
     test.use({ storageState: stateFor(key) });
 
@@ -166,17 +167,22 @@ for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "lon
           rows: new Set(
             [...node.children].map((c) => Math.round(c.getBoundingClientRect().top)),
           ).size,
+          // where a control sits in the strip's own content, which is what it
+          // may not leave: above its top, or past everything it holds
           escaped: [...node.children]
             .filter((c) => {
               const at = c.getBoundingClientRect();
-              return at.right > box.right + 1 || at.left < box.left - 1;
+              const left = at.left - box.left + node.scrollLeft;
+              return left < -1 || left + at.width > node.scrollWidth + 1;
             })
             .map((c) => (c as HTMLElement).id),
-          fits: node.scrollWidth <= node.clientWidth,
+          tall: [...node.children].filter(
+            (c) => Math.round(c.getBoundingClientRect().height) !== 44,
+          ).length,
         };
       });
       expect(row.escaped).toEqual([]);
-      expect(row.fits).toBe(true);
+      expect(row.tall).toBe(0);
       expect(row.rows).toBe(1);
       expect(row.height).toBe(44);
     });
@@ -241,7 +247,7 @@ test.describe("the board is the only thing that resizes the picture", () => {
     await settle(page);
     await page.locator('.ss-hit[data-target="zone"]').first().click();
     const enter = page.locator("#cap-play");
-    await expect(enter).toContainText(/explain the moves/);
+    await expect(enter).toHaveText("\u25b6");
 
     // the button appearing must not have moved anything
     const before = await frame(page);

@@ -22,7 +22,7 @@ test("the symptom mark is on screen for the whole loop", async ({ page }) => {
   const next = page.locator('.pctl [data-target="next"]');
   // the fourteenth move is the one the symptom mark belongs to
   for (let i = 0; i < 13; i += 1) await next.click();
-  await expect(page.locator(".bcap")).toHaveText(/^14\//);
+  await expect(page.locator(".bcap")).toHaveText("Ada · symptom up");
 
   const seen = [];
   for (const at of LOOP)

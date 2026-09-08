@@ -29,9 +29,7 @@ const pickStretch = async (page: Page) => {
 const enter = async (page: Page) => {
   await pickStretch(page);
   await page.locator("#cap-play").click();
-  // the button waits on a coach turn before the board appears, so this waits
-  // longer than a tap should ever need. What the board draws does not depend
-  // on the coach's words, and every shot here is of the picture alone.
+  // the way in opens the board itself now, with no coach turn behind it
   await expect(page.locator(".ss.board")).toBeVisible({ timeout: 30_000 });
   // past the .6s zoom, so the board is settled rather than mid-flight
   await page.waitForTimeout(800);
@@ -59,14 +57,15 @@ test.describe("the moves board", () => {
   test("a stretch offers to walk its moves", async ({ page }) => {
     await settle(page);
     await pickStretch(page);
-    await expect(page.locator("#cap-play")).toHaveText(/explain the moves/);
+    await expect(page.locator("#cap-play")).toHaveText("\u25b6");
     await expect(picture(page)).toHaveScreenshot("board-entry-offer.png", EXACT);
   });
 
   test("the board opens on the first move", async ({ page }) => {
     await settle(page);
     await enter(page);
-    await expect(page.locator(".bcap")).toHaveText(/^1\//);
+    // the words under the board name the move, and never count them
+    await expect(page.locator(".bcap")).toHaveText("Ada · toward");
     await freeze(page);
     await expect(picture(page)).toHaveScreenshot("board-first-move.png", EXACT);
   });
@@ -76,7 +75,7 @@ test.describe("the moves board", () => {
     await enter(page);
     for (let i = 0; i < 4; i += 1)
       await page.locator('.pctl [data-target="next"]').click();
-    await expect(page.locator(".bcap")).toHaveText(/^5\//);
+    await expect(page.locator(".bcap")).toHaveText("Ada · conflict");
     await freeze(page);
     await expect(picture(page)).toHaveScreenshot("board-fifth-move.png", EXACT);
   });

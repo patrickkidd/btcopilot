@@ -244,9 +244,13 @@ const yearOf = (iso: string) => new Date(iso + "T00:00:00Z").getTime() / YEAR_MS
 const AXIS_L = 30;
 const AXIS_R = 16;
 
+/** How near a decade label may come to the date under the selected dot before
+ * the decade one is dropped: the two are the same size on the same line. */
+const LABEL_GAP = 44;
+
 /** The years under the people: the axis pane A puts on stage with them, its
- * decade ticks, one dot per move, a blob wherever moves bunch up, and the
- * pooled focus under the move being drawn. */
+ * decade ticks, one dot per move, a blob wherever moves bunch up, and the move
+ * being drawn on top with its own date under it. */
 function axis(steps: Step[], at: number, width: number, top: number): string {
   const dated = steps
     .map((step, i) => ({ i, iso: step.event.dateTime }))
@@ -262,6 +266,9 @@ function axis(steps: Step[], at: number, width: number, top: number): string {
   const at_ = (iso: string) =>
     x0 + ((yearOf(iso) - first) / span) * (x1 - x0);
 
+  const now = dated.find((s) => s.i === at);
+  const nowX = now ? at_(now.iso) : null;
+
   let out = `<line class="ax" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}"/>`;
   // decade ticks, as pane A rules its axis by decades
   const decade = Math.ceil((first + 1970) / 10) * 10;
@@ -269,11 +276,16 @@ function axis(steps: Step[], at: number, width: number, top: number): string {
     const x = x0 + ((year - 1970 - first) / span) * (x1 - x0);
     if (x > x1) break;
     if (x < x0) continue;
+    // the date under the selected dot is the one that must be readable, so a
+    // decade label close enough to run into it keeps its tick and loses its year
+    const crowded = nowX !== null && Math.abs(x - nowX) < LABEL_GAP;
     out +=
       `<line class="ax-tick" x1="${x.toFixed(1)}" y1="${y - 4}" ` +
       `x2="${x.toFixed(1)}" y2="${y + 4}"/>` +
-      `<text class="ax-yr" x="${x.toFixed(1)}" y="${y + 18}" ` +
-      `text-anchor="middle">${year}</text>`;
+      (crowded
+        ? ""
+        : `<text class="ax-yr" x="${x.toFixed(1)}" y="${y + 18}" ` +
+          `text-anchor="middle">${year}</text>`);
   }
 
   // where moves bunch up, a blob says so before anything is opened
@@ -290,12 +302,6 @@ function axis(steps: Step[], at: number, width: number, top: number): string {
       `rx="${rx}" ry="${(rx * 0.68).toFixed(1)}"/>`;
   }
 
-  const now = steps[at]?.event.dateTime;
-  if (now)
-    out +=
-      `<ellipse class="ax-focus" cx="${at_(now).toFixed(1)}" cy="${y}" ` +
-      `rx="27" ry="9"/>`;
-
   // a move's dot fills in as it is played, so the axis carries how far along
   // the stretch the board is
   for (const s of dated) {
@@ -303,6 +309,18 @@ function axis(steps: Step[], at: number, width: number, top: number): string {
     out +=
       `<circle class="ax-dot${played ? " played" : ""}" ` +
       `cx="${at_(s.iso).toFixed(1)}" cy="${y}" r="${played ? 4.6 : 3.4}"/>`;
+  }
+
+  // The move being drawn is the last thing on the axis, so it is on top of the
+  // dots beside it however close they are. Nothing is drawn behind it: a shape
+  // wide enough to sit under three dots cannot say which of the three it means.
+  if (now !== undefined && nowX !== null) {
+    const when = dateText(now.iso, steps[at].event.dateCertainty);
+    out +=
+      `<circle class="ax-now" cx="${nowX.toFixed(1)}" cy="${y}" r="7"/>` +
+      // the date is written once, here, under the dot it belongs to
+      `<text class="ax-yr on" x="${nowX.toFixed(1)}" y="${y + 18}" ` +
+      `text-anchor="middle">${esc(when)}</text>`;
   }
   return `<g class="axis">${out}</g>`;
 }
@@ -352,21 +370,20 @@ export function board(
   return { svg, caption: caption(steps, at, people), height };
 }
 
-/** `step/total · year — from → to · label`, as the board draws it. */
+/** Who the move is about and what they said happened, in their own words.
+ *
+ * No count and no clinical term: the reader is told a person and a thing that
+ * happened, never "15/17" or "symptom down". The date is written once, under
+ * the dot on the years line. */
 function caption(steps: Step[], at: number, people: Person[]): string {
   const step = steps[at];
   if (!step) return "";
-  const name = (id: number | null) =>
-    people.find((p) => p.id === id)?.name ?? "someone";
   const event = step.event;
-  const when = event.dateTime
-    ? dateText(event.dateTime, event.dateCertainty)
-    : "no date yet";
-  const from = name(event.child ?? event.person);
-  const to = event.relationshipTargets
-    .concat(event.spouse === null ? [] : [event.spouse])
-    .map(name)
-    .join(", ");
-  const who = to ? `${from} → ${to}` : from;
-  return `${at + 1}/${steps.length} · ${when} · ${who} · ${esc(event.label)}`;
+  const who =
+    people.find((p) => p.id === (event.child ?? event.person))?.name ??
+    event.person_name;
+  // the description is the person's own words; the label is the record talking
+  // about itself, so it is only the fallback
+  const words = event.description?.trim() || event.label;
+  return who ? `${who} · ${words}` : words;
 }
