@@ -69,7 +69,7 @@ const tapWords = async (page: Page, index = 0) => {
 test.describe("a tap on a label", () => {
   test.use({ storageState: stateFor("moves") });
 
-  test("picks its moment, and goes to where it was said when tapped again", async ({
+  test("picks its moment, and opens its editor when tapped again", async ({
     page,
   }) => {
     await settle(page);
@@ -79,14 +79,12 @@ test.describe("a tap on a label", () => {
     await tapWords(page);
     // one moment is picked: the picture writes its date and then its words
     await expect(page.locator(".ss-t.meta")).toHaveCount(1);
-    const written = await page.locator(".ss-t").allInnerTexts();
 
-    // again: the same moment, still written the same way, and the thread goes
-    // to where it was said
+    // again, on a picture showing one cluster: the moment's own editor
     await tapWords(page);
-    await expect(page.locator(".ss-t.meta")).toHaveCount(1);
-    expect(await page.locator(".ss-t").allInnerTexts()).toEqual(written);
-    await expect(page.locator(".bub.traced")).toHaveCount(1);
+    await expect(page.locator("#menu-screen")).toBeVisible();
+    await expect(page.locator("#tab-events")).toHaveClass(/on/);
+    await expect(page.locator("#menu-body .editor")).toBeVisible();
   });
 
   test("a dot picks its moment and never travels", async ({ page }) => {
