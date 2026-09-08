@@ -1,4 +1,4 @@
-from .statement import Statement
+from .statement import Statement, StatementKind
 from .discussion import Discussion, DiscussionStatus
 from .speaker import Speaker, SpeakerType
 from .syntheticpersona import SyntheticPersona

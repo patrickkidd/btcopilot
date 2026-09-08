@@ -11,8 +11,9 @@ from btcopilot.personal.coachturn import (
     CoachTurn,
     EmptyReply,
     EventKind,
+    LabelTooLong,
 )
-from btcopilot.personal.models import Author, Change
+from btcopilot.personal.models import Author, Change, StatementKind
 from btcopilot.personal.playturn import PlayTurn
 from btcopilot.personal.toolbox import ToolName
 from btcopilot.schema import (
@@ -396,25 +397,111 @@ def test_a_turn_with_no_words_at_all_fails_rather_than_showing_a_bare_bubble(
         run(discussion, "Hello?", Model(said("")))
 
 
-def test_a_label_too_long_for_one_chip_is_replaced_not_shortened(discussion, family):
-    """A chip is one size and never truncates. A reference falls back to what
-    the record calls the thing; an offer keeps its own first words."""
-    long_label = "the winter when Dad finally moved out of the family house"
+def test_a_label_of_exactly_the_limit_is_left_alone(discussion, family):
+    """Twenty-eight fits. The boundary is where this goes wrong, so it is
+    pinned on both sides."""
+    label = "a" * chips.CHIP_MAX
     reply = run(
         discussion,
         "Tell me about that.",
-        Model(
-            said(
-                f"[[event:10|{long_label}]] and "
-                f"[[ask:{long_label}]] and [[event:10|the move]]."
-            )
-        ),
+        Model(said(f"[[event:10|{label}]] is where it starts.")),
     )
-    assert reply["statement"] == (
-        "[[event:10|moved out]] and "
-        "[[ask:the winter when Dad]] and [[event:10|the move]]."
+    assert reply["statement"] == f"[[event:10|{label}]] is where it starts."
+
+
+def test_one_label_over_the_limit_is_asked_again_never_trimmed(discussion, family):
+    """Twenty-nine does not fit. The coach is asked once to shorten it, and its
+    own shorter words are what the person reads — nothing here cuts them."""
+    long_label = "a" * (chips.CHIP_MAX + 1)
+    model = Model(
+        said(f"[[event:10|{long_label}]] is where it starts."),
+        said("[[event:10|the move]] is where it starts."),
     )
-    assert all(
-        len(label or target) <= chips.CHIP_MAX
-        for _, target, label in chips.parse(reply["statement"], family.get_diagram_data())
+    reply = run(discussion, "Tell me about that.", model)
+
+    assert reply["statement"] == "[[event:10|the move]] is where it starts."
+    assert model.offered[-1] == []
+    assert long_label in model.histories[-1][-1]["content"]
+    assert discussion.statements[-1].text == reply["statement"]
+
+
+def test_a_label_that_stays_too_long_fails_rather_than_being_cut(discussion, family):
+    long_label = "a" * (chips.CHIP_MAX + 1)
+    with pytest.raises(LabelTooLong):
+        run(
+            discussion,
+            "Tell me about that.",
+            Model(
+                said(f"[[event:10|{long_label}]]."),
+                said(f"[[event:10|{long_label}]] still."),
+            ),
+        )
+
+
+def test_a_label_is_measured_in_what_a_reader_sees(discussion, family):
+    """An accented letter is two code points and one character to read, so a
+    label of accents at the limit fits."""
+    label = "e\u0301" * chips.CHIP_MAX
+    assert chips.length(label) == chips.CHIP_MAX
+    assert len(label) == chips.CHIP_MAX * 2
+
+    reply = run(
+        discussion,
+        "Tell me about that.",
+        Model(said(f"[[event:10|{label}]].")),
     )
+    assert reply["statement"] == f"[[event:10|{label}]]."
+
+
+def test_a_play_by_play_is_marked_as_one_and_names_its_stretch(discussion, family):
+    """The page routes a tap by the kind of message it is in: a chip in a walk
+    steps the board, a chip anywhere else selects the moment."""
+    data = family.get_diagram_data()
+    model = Model(said("[[event:10|the move]] is the whole of it."))
+    reply = PlayTurn.stored(data, "c1", discussion=discussion, model=model).run()
+
+    assert reply["kind"] == StatementKind.Play.value
+    assert reply["cluster_id"] == "c1"
+
+    stored = discussion.statements[-1]
+    assert stored.id == reply["statement_id"]
+    assert stored.kind is StatementKind.Play
+    assert stored.cluster_id == "c1"
+
+
+def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeypatch):
+    """The page routes a chip tap by the kind of message it sits in, so the
+    kind travels with the message everywhere the page reads one."""
+    from btcopilot.tests.personal.conftest import csrf_token
+
+    monkeypatch.setattr(
+        "btcopilot.personal.coachturn.CoachModel",
+        lambda *a, **k: Model(said("Tell me about [[event:10|the move]].")),
+    )
+    monkeypatch.setattr(
+        "btcopilot.personal.playturn.CoachModel",
+        lambda *a, **k: Model(said("[[event:10|the move]] is the whole of it.")),
+    )
+    token = csrf_token(web)
+
+    said_reply = web.post(
+        "/companion/chat",
+        json={"statement": "My dad moved out."},
+        headers={"X-CSRFToken": token},
+    ).get_json()
+    assert said_reply["kind"] == StatementKind.Turn.value
+
+    played = web.post(
+        "/companion/play",
+        json={"cluster_id": "c1"},
+        headers={"X-CSRFToken": token},
+    ).get_json()
+    assert played["kind"] == StatementKind.Play.value
+    assert played["cluster_id"] == "c1"
+
+    stored = web.get(f"/companion/sessions/{said_reply['discussion_id']}").get_json()
+    assert [(s["kind"], s["cluster_id"]) for s in stored["statements"]] == [
+        (StatementKind.Turn.value, None),
+        (StatementKind.Turn.value, None),
+        (StatementKind.Play.value, "c1"),
+    ]

@@ -82,7 +82,8 @@ Mark a reference to something in the record inline as [[event:ID]],
 words of its own. Use only ids that appear in the record below.
 
 A chip is one size on the page and never truncates, so every label is at most
-28 characters — a noun phrase, never a sentence and never a clause.
+28 characters as a reader counts them — a noun phrase, never a sentence and
+never a clause. A label that does not fit is sent back for you to rewrite.
 
 When you offer somewhere to look next, write each offer as [[ask:the words]] —
 two or three of them, at the very end, nothing after them. An offer carries its

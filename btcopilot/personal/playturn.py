@@ -4,12 +4,18 @@ The moves are data and animate deterministically. The coach picks which ones to
 speak about and in what order, makes each one a chip, and cannot invent one:
 the events it is given are the only ids it sees, and every chip it writes is
 checked against the record before the words go out.
+
+The walk is a message in the session like any other, marked as a play so the
+page knows a tap on its chips steps the board rather than selecting a moment.
 """
 
 import logging
 
+from btcopilot.extensions import db
 from btcopilot.personal import chips, recordtext
 from btcopilot.personal.coachmodel import CoachModel
+from btcopilot.personal.coachturn import shorten_labels
+from btcopilot.personal.models import Discussion, Statement, StatementKind
 from btcopilot.personal.prompts import PLAY_BY_PLAY_PROMPT, get_agent_prompt
 from btcopilot.schema import DiagramData
 
@@ -20,10 +26,16 @@ class PlayTurn:
     """One cluster in, one coach message whose chips are its events."""
 
     def __init__(
-        self, data: DiagramData, cluster: dict, *, model: CoachModel | None = None
+        self,
+        data: DiagramData,
+        cluster: dict,
+        *,
+        discussion: Discussion | None = None,
+        model: CoachModel | None = None,
     ):
         self.data = data
         self.cluster = cluster
+        self.discussion = discussion
         self.model = model or CoachModel()
 
     @classmethod
@@ -54,18 +66,40 @@ class PlayTurn:
             cluster=recordtext.cluster_line(self.cluster),
             events="\n".join(recordtext.event_line(e) for e in events),
         )
-        words = self.model.turn(
-            get_agent_prompt(record=recordtext.render(self.data)),
-            [{"role": "user", "content": prompt}],
-            [],
-        )
+        system = get_agent_prompt(record=recordtext.render(self.data))
+        messages = [{"role": "user", "content": prompt}]
+        words = self.model.turn(system, messages, [])
         while True:
             try:
                 next(words)
             except StopIteration as stop:
                 turn = stop.value
                 break
+
+        spoken = shorten_labels(
+            self.model, system, messages, turn.text.strip(), self.data
+        )
+        walk = chips.validate(spoken, self.data)
         return {
+            "kind": StatementKind.Play.value,
             "cluster_id": self.cluster["id"],
-            "statement": chips.validate(turn.text.strip(), self.data),
+            "statement": walk,
+            "statement_id": self._persist(walk),
         }
+
+    def _persist(self, walk: str) -> int | None:
+        """The walk joins the session it was asked for, so coming back a week
+        later shows it where it happened."""
+        if self.discussion is None:
+            return None
+        statement = Statement(
+            discussion_id=self.discussion.id,
+            text=walk,
+            speaker=self.discussion.chat_ai_speaker,
+            order=self.discussion.next_order(),
+            kind=StatementKind.Play,
+            cluster_id=self.cluster["id"],
+        )
+        db.session.add(statement)
+        db.session.commit()
+        return statement.id

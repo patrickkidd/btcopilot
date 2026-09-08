@@ -1,3 +1,5 @@
+import enum
+
 from sqlalchemy import (
     Column,
     Text,
@@ -7,11 +9,21 @@ from sqlalchemy import (
     String,
     Boolean,
     DateTime,
+    Enum,
 )
 from sqlalchemy.orm import relationship
 
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
+
+
+class StatementKind(enum.StrEnum):
+    """What kind of message this is, which is how the page routes a tap on its
+    chips: a chip in a play-by-play steps the board, a chip anywhere else
+    selects the moment it names."""
+
+    Turn = "turn"
+    Play = "play"
 
 
 class Statement(db.Model, ModelMixin):
@@ -25,6 +37,13 @@ class Statement(db.Model, ModelMixin):
     # What the coach aimed the picture at on this turn: a list of views, each a
     # view kind plus parameters whose every id resolves in the record (R-0085).
     views = Column(JSON)
+    kind = Column(
+        Enum(StatementKind, values_callable=lambda e: [x.value for x in e]),
+        nullable=False,
+        default=StatementKind.Turn,
+    )
+    # The stretch a play-by-play narrates. Null on every other kind.
+    cluster_id = Column(String(64))
     custom_prompts = Column(JSON)  # Store custom prompts used for this statement
     order = Column(Integer)  # Order within discussion for reliable sorting
 

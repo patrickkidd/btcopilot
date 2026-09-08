@@ -15,7 +15,7 @@ import uuid
 from btcopilot.extensions import ai_log, db
 from btcopilot.personal import chips, clusters, recordtext
 from btcopilot.personal.coachmodel import CoachModel
-from btcopilot.personal.models import Change, Discussion, Statement
+from btcopilot.personal.models import Change, Discussion, Statement, StatementKind
 from btcopilot.personal.prompts import get_agent_prompt
 from btcopilot.personal.routes.interactions import recent
 from btcopilot.personal.toolbox import SCHEMAS, ToolError, Toolbox
@@ -35,9 +35,53 @@ FINISH = (
 )
 
 
+SHORTEN = (
+    "These chip labels are too long for the chip they go on: {labels}. Write "
+    "your reply again with every label at most {limit} characters — a noun "
+    "phrase, not a clause. Keep the same ids, the same events and the same "
+    "words around them; only the labels change."
+)
+
+
 class EmptyReply(Exception):
     """The coach finished a turn without saying anything. A statement with no
     words is a bare bubble on the page, so the turn fails instead."""
+
+
+class LabelTooLong(Exception):
+    """A chip label will not fit and the coach would not shorten it. Trimming
+    it here would hide a prompt that has stopped holding, and the page has no
+    truncation left to cover it."""
+
+
+def shorten_labels(model, system: str, messages: list[dict], spoken: str, data) -> str:
+    """Ask once for shorter chip labels. The reply is the coach's own words, so
+    nothing here rewrites them — it asks the coach to."""
+    over = chips.too_long(spoken, data)
+    if not over:
+        return spoken
+    _log.warning(f"Chip labels too long, asking again: {over}")
+    asked = messages + [
+        {"role": "assistant", "content": spoken},
+        {
+            "role": "user",
+            "content": SHORTEN.format(
+                labels="; ".join(repr(label) for label in over), limit=chips.CHIP_MAX
+            ),
+        },
+    ]
+    words = model.turn(system, asked, [])
+    while True:
+        try:
+            next(words)
+        except StopIteration as stop:
+            shortened = stop.value.text
+            break
+
+    still = chips.too_long(shortened, data)
+    if still:
+        raise LabelTooLong(f"Chip labels still too long after asking again: {still}")
+    return shortened
 
 
 
@@ -86,6 +130,7 @@ class CoachTurn:
             text=chips.validate(self.statement, data),
             speaker=self.discussion.chat_user_speaker,
             order=self.discussion.next_order(),
+            kind=StatementKind.Turn,
         )
         db.session.add(user_statement)
         db.session.commit()
@@ -139,6 +184,7 @@ class CoachTurn:
 
         if not spoken.strip():
             raise EmptyReply(f"Turn {self.turn_id} produced no words for the user")
+        spoken = shorten_labels(self.model, system, messages, spoken, self.data)
 
         change = self._regroup()
         if change:
@@ -158,6 +204,7 @@ class CoachTurn:
             speaker=self.discussion.chat_ai_speaker,
             order=self.discussion.next_order(),
             views=self.toolbox.views or None,
+            kind=StatementKind.Turn,
         )
         db.session.add(coach_statement)
         db.session.flush()

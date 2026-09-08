@@ -11,6 +11,8 @@ import enum
 import logging
 import re
 
+import regex
+
 from btcopilot.personal.intake import _enum_val
 from btcopilot.personal.recordtext import date_text
 from btcopilot.schema import DiagramData
@@ -32,7 +34,9 @@ TOKEN = re.compile(
 )
 
 # A chip is one size on the page and never truncates, so a label longer than
-# this is not shortened for display — it is refused here and replaced.
+# this is refused. It is measured in what a reader sees as one character — a
+# grapheme cluster — because an accent or a flag is several code points wide
+# and none of them takes any more room on the chip.
 CHIP_MAX = 28
 
 
@@ -77,66 +81,31 @@ def parse(text: str, data: DiagramData) -> list[tuple[ChipKind, str, str]]:
     return found
 
 
-def clip(words: str, limit: int = CHIP_MAX) -> str:
-    """Cut at the last space inside the limit, so a chip never breaks a word."""
-    words = " ".join(words.split())
-    if len(words) <= limit:
-        return words
-    cut = words[:limit].rstrip()
-    space = cut.rfind(" ")
-    return cut[:space] if space > limit // 2 else cut
+def length(words: str) -> int:
+    """How wide a label reads, in grapheme clusters."""
+    return len(regex.findall(r"\X", words))
 
 
-def label_of(kind: ChipKind, target: str, data: DiagramData) -> str:
-    """What the record itself calls this thing — the label a chip falls back to."""
-    if kind is ChipKind.Person:
-        person = next(p for p in data.people if str(p.get("id")) == target)
-        return person.get("name") or KIND_WORDS[kind]
-    if kind is ChipKind.Event:
-        event = next(e for e in data.events if str(e.get("id")) == target)
-        return (
-            event.get("description") or _enum_val(event.get("kind")) or KIND_WORDS[kind]
-        )
-    if kind is ChipKind.Cluster:
-        cluster = next(c for c in data.clusters if str(c.get("id")) == target)
-        return cluster.get("name") or cluster.get("title") or KIND_WORDS[kind]
-    return target
+def too_long(text: str, data: DiagramData) -> list[str]:
+    """The labels in `text` that will not fit on a chip."""
+    return [
+        label or target
+        for kind, target, label in parse(text, data)
+        if length(label or target) > CHIP_MAX
+    ]
 
 
 def validate(text: str, data: DiagramData) -> str:
-    """The words to persist.
-
-    A chip the record cannot resolve becomes its own label, so the user never
-    reads a reference that points at nothing. A label too long for one chip is
-    replaced rather than shortened for display: a reference falls back to what
-    the record calls the thing, an offer to its own first words.
-    """
+    """The words to persist: a chip the record cannot resolve becomes its own
+    label, so the user never reads a reference that points at nothing."""
 
     def _keep(match):
         kind, target = ChipKind(match.group(1)), match.group(2).strip()
-        label = (match.group(3) or "").strip()
-        if not resolves(kind, target, data):
-            words = label or KIND_WORDS[kind]
-            _log.warning(
-                f"Chip to unknown {kind.value} {target!r} replaced with {words!r}"
-            )
-            return words
-
-        if kind is ChipKind.Ask:
-            if len(target) <= CHIP_MAX:
-                return match.group(0)
-            short = clip(target)
-            _log.warning(f"Offer chip {target!r} is too long; cut to {short!r}")
-            return token(kind, short, label or None)
-
-        if len(label) <= CHIP_MAX:
+        if resolves(kind, target, data):
             return match.group(0)
-        short = clip(label_of(kind, target, data))
-        _log.warning(
-            f"Chip label {label!r} on {kind.value} {target} is too long; "
-            f"the record calls it {short!r}"
-        )
-        return token(kind, target, short)
+        label = (match.group(3) or "").strip() or KIND_WORDS[kind]
+        _log.warning(f"Chip to unknown {kind.value} {target!r} replaced with {label!r}")
+        return label
 
     return TOKEN.sub(_keep, text)
 

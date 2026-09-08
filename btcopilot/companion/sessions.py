@@ -16,7 +16,7 @@ from btcopilot.companion.blueprint import (
 from btcopilot.companion.diagrams import readable
 from btcopilot.extensions import db
 from btcopilot.personal.coachturn import CoachTurn
-from btcopilot.personal.models import Discussion
+from btcopilot.personal.models import Discussion, StatementKind
 from btcopilot.personal.routes.discussions import (
     _create_discussion,
     _sync_chat_speakers,
@@ -42,6 +42,8 @@ def statements_payload(discussion: Discussion) -> list[dict]:
                 "coach" if s.speaker_id == discussion.chat_ai_speaker_id else "user"
             ),
             "text": s.text,
+            "kind": (s.kind or StatementKind.Turn).value,
+            "cluster_id": s.cluster_id,
         }
         for s in discussion.statements
     ]
@@ -54,6 +56,7 @@ def _reply(discussion: Discussion, statement: str) -> dict:
     _sync_chat_speakers(discussion)
     db.session.commit()
     reply = CoachTurn(discussion, statement, session_id=str(discussion.id)).run()
+    reply["kind"] = StatementKind.Turn.value
     reply["discussion_id"] = discussion.id
     reply["session"] = session_payload(discussion)
     return reply

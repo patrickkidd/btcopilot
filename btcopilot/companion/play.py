@@ -8,9 +8,11 @@ itself, so both resolve here to the same thing — a set of event ids and a name
 
 from flask import jsonify, request
 
-from btcopilot.companion.blueprint import bp, diagram
+from btcopilot import auth
+from btcopilot.companion.blueprint import bp, current_session, diagram
 from btcopilot.companion.timeline import build_timeline
 from btcopilot.personal.playturn import PlayTurn
+from btcopilot.personal.routes.discussions import _sync_chat_speakers
 from btcopilot.schema import ClusterSource, DiagramData
 
 
@@ -40,4 +42,10 @@ def play():
 
     dia = diagram()
     data = dia.get_diagram_data() if dia else DiagramData()
-    return jsonify(PlayTurn(data, _cluster(data, body["cluster_id"])).run())
+    discussion = current_session(auth.current_user(), create=True)
+    _sync_chat_speakers(discussion)
+    return jsonify(
+        PlayTurn(
+            data, _cluster(data, body["cluster_id"]), discussion=discussion
+        ).run()
+    )
