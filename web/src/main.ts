@@ -116,19 +116,20 @@ function onTap(tap: Tap): void {
     putDown();
     return;
   }
-  // The words of the moment already picked are the way to where it came from.
-  // Which way depends on what the picture is showing: inside one cluster they
-  // go to the moment's own editor, and on a line of moments that belong to no
-  // cluster they go back to where it was said. Only the words do this: a dot
-  // picks and never travels, and a label naming some other moment picks that
-  // one.
-  if (tap.target === Target.Band && chosen === selected && selected !== null) {
-    if (picture.opened()) {
-      screen(Screen.Menu);
-      menu.goTo(Tab.Events, selected);
-      return;
-    }
-    const trace = codedIn(selected);
+  // The words of the moment already picked are the way to where it came from,
+  // and which way depends on what the picture is showing. Only the words do
+  // this: a dot picks and never travels, and a label naming some other moment
+  // picks that one.
+  const words = tap.target === Target.Band && chosen === selected && selected !== null;
+  // inside one cluster: the moment's own editor
+  if (words && picture.opened()) {
+    screen(Screen.Menu);
+    menu.goTo(Tab.Events, selected as number);
+    return;
+  }
+  // on a line of moments that belong to no cluster: where it was said
+  if (words) {
+    const trace = codedIn(selected as number);
     if (trace) void traceTo(trace.where);
     return;
   }
