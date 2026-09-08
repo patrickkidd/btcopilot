@@ -105,3 +105,22 @@ test.describe("a tap on a message's own words", () => {
     expect(await page.locator(".ss-t").count()).toBeLessThanOrEqual(3);
   });
 });
+
+test.describe("a second tap on the moment already selected", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  test("jumps to the words that coded it", async ({ page }) => {
+    await page.goto("/personal/");
+    await expect(page.locator(".ss")).toBeVisible();
+    await page.waitForTimeout(600);
+    // the words on the picture are reached through the band's own hit area
+    const band = page.locator('[aria-label="what the coach named"]');
+    const row = (await page.locator(".ss-t").first().boundingBox())!;
+    const box = (await band.boundingBox())!;
+    const at = { x: box.width / 2, y: row.y + row.height / 2 - box.y };
+    await band.click({ position: at });
+    await expect(page.locator("#caption .chip.trace")).toBeVisible();
+    await band.click({ position: at });
+    await expect(page.locator(".bub.traced")).toHaveCount(1);
+  });
+});

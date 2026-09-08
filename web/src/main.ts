@@ -94,9 +94,27 @@ function onTap(tap: Tap): void {
     actions();
     return;
   }
+  // Traceability runs both ways: a second tap on the moment already selected
+  // jumps to the words that coded it. Where a zone holds several moments the
+  // tap steps to the next one instead, which is the converged mockup's cycle,
+  // so this is the tap that would otherwise land on the same moment twice.
+  const selected = picture.selection();
+  const again =
+    selected !== null &&
+    (tap.target === Target.Zone
+      ? picture.inZone(tap.index).length === 1 &&
+        picture.inZone(tap.index)[0] === selected
+      : // while one moment is selected the picture writes only its words, so
+        // a tap on the band is a tap on that moment wherever it lands
+        (picture.rowAt(tap.y) ?? selected) === selected);
+  const trace = again ? codedIn(selected) : null;
+  if (trace) {
+    void traceTo(trace.where);
+    return;
+  }
   const chosen =
     tap.target === Target.Zone
-      ? picture.next(tap.index, picture.selection())
+      ? picture.next(tap.index, selected)
       : picture.rowAt(tap.y);
   apply(
     reduce(
