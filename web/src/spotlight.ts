@@ -90,12 +90,24 @@ export interface Row {
  * text: the leader line is drawn from the row down to the dot whatever the
  * words do, so a crowded picture still shows which dots the coach named
  * (ratified: the leader is emitted before the alignment and budget branch). */
+/** Which of the named moments get words. Three or fewer all do; past that it is
+ * the first, the middle and the last, so the words span the stretch rather than
+ * crowding into its opening (ruled). */
+export function pick<T>(sorted: T[]): T[] {
+  if (sorted.length <= ROWS.length) return sorted;
+  return [
+    sorted[0],
+    sorted[Math.floor((sorted.length - 1) / 2)],
+    sorted[sorted.length - 1],
+  ];
+}
+
 export function rows(
   named: { id: number; x: number; text: string }[],
   x0: number,
   x1: number,
 ): Row[] {
-  const sorted = [...named].sort((a, b) => a.x - b.x).slice(0, ROWS.length);
+  const sorted = pick([...named].sort((a, b) => a.x - b.x));
   const out: Row[] = [];
   sorted.forEach((mark, i) => {
     const previous = i ? sorted[i - 1].x : null;

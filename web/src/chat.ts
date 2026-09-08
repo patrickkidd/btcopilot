@@ -17,6 +17,9 @@ export interface PlayTap {
 
 export interface ChatHandlers {
   onChip(chip: Chip, play: PlayTap | null): void;
+  /** A tap on a bubble's own words rather than on a chip inside it: the picture
+   * lights what that message named. It is a look, so it costs no turn. */
+  onBubble(text: string): void;
   /** What a chip should read as. The coach may write a reference with no words
    * of its own, and a name out of the record beats a pronoun in a sentence. */
   label(chip: Chip): string;
@@ -46,6 +49,9 @@ function playTap(button: HTMLElement): PlayTap | null {
 }
 
 export class Chat {
+  /** What each bubble was written from, chips and all, so a tap on its words
+   * can light the same moments its chips name. */
+  private said = new WeakMap<HTMLElement, string>();
   private typing: HTMLElement | null = null;
   /** Whether the thread is following the newest words. */
   private stuck = true;
@@ -60,7 +66,15 @@ export class Chat {
   ) {
     const tap = (host: HTMLElement) => (e: Event) => {
       const button = (e.target as Element).closest<HTMLElement>("button.chip");
-      if (!button) return;
+      if (!button) {
+        if (host === this.composer) return;
+        const bubble = (e.target as Element).closest<HTMLElement>(".bub");
+        // A play-by-play's own words never take the picture off its board.
+        if (!bubble || bubble.dataset.play) return;
+        const said = this.said.get(bubble);
+        if (said) this.handlers.onBubble(said);
+        return;
+      }
       e.preventDefault();
       if (host === this.composer) return void button.remove();
       this.handlers.onChip(
@@ -125,6 +139,7 @@ export class Chat {
     // A play-by-play carries the stretch it walks, so its chips step the board
     // instead of taking the picture back to the wire.
     if (play !== null) bubble.dataset.play = play;
+    this.said.set(bubble, text);
     this.list.append(bubble);
     this.stuck = true;
     this.scroll();
@@ -173,6 +188,7 @@ export class Chat {
         this.scroll();
       },
       type: async (text, onChip, pace = READ_MS) => {
+        this.said.set(bubble, text);
         // A move holds until the sentence about it has been written and there
         // has been a beat to look at it, not for a fixed count from the moment
         // it was named. The chip stays lit for as long as its move is the one

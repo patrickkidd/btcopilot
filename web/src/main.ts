@@ -131,6 +131,16 @@ const chat = new Chat($("chat"), $("composer"), {
     else if (play) stepBoard(play, chip);
     else aim(chip);
   },
+  // A tap on a message's own words is a look: the picture lights what that
+  // message named, nothing enters the composer, and no turn is spent.
+  onBubble: (text) => {
+    const named = aimedFrom(text);
+    if (!named.length) return;
+    tapped(InteractionKind.Look, ItemKind.Event, String(named[0]));
+    picture.spotlight(named);
+    pic = REST;
+    actions();
+  },
 });
 
 /** An offer: the coach holding out something to say next, drawn amber. */

@@ -76,3 +76,32 @@ test.describe("a session row's own actions", () => {
     expect(await page.locator(".ss .dot").count()).toBe(moments);
   });
 });
+
+test.describe("a tap on a message's own words", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  test("lights what that message named, and costs no turn", async ({ page }) => {
+    await page.goto("/personal/");
+    await expect(page.locator(".ss")).toBeVisible();
+    await page.waitForTimeout(600);
+    const bubble = page.locator(".bub.coach").last();
+    const before = (await page.locator(".pic").boundingBox())!;
+    await bubble.click({ position: { x: 6, y: 6 } });
+    await page.waitForTimeout(300);
+    // words appear on the picture for what the message named
+    expect(await page.locator(".ss-t").count()).toBeGreaterThan(0);
+    // nothing entered the composer, and nothing above the chat moved
+    expect(await page.locator("#composer").innerText()).toBe("");
+    const after = (await page.locator(".pic").boundingBox())!;
+    expect(after.height).toBe(before.height);
+  });
+
+  test("never writes more than three rows of words", async ({ page }) => {
+    await page.goto("/personal/");
+    await expect(page.locator(".ss")).toBeVisible();
+    await page.waitForTimeout(600);
+    await page.locator(".bub.coach").last().click({ position: { x: 6, y: 6 } });
+    await page.waitForTimeout(300);
+    expect(await page.locator(".ss-t").count()).toBeLessThanOrEqual(3);
+  });
+});
