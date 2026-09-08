@@ -115,24 +115,16 @@ const chat = new Chat($("chat"), $("composer"), {
 const menu = new Menu($("menu-body"), load);
 
 /** The coach pointing: the moments its words name become the spotlight, and
- * everything else on the wire recedes. A chip naming one moment that carries a
- * move draws that move, which is what tapping a chip does in the approved
- * play-by-play. */
+ * everything else on the wire recedes. A chip only ever aims the picture; it
+ * never changes the picture's level, so nothing below it moves (the owner:
+ * chat bubbles must never move from a tap on a chip). The moves board is a
+ * level change and is entered from Play. */
 function aim(chip: Chip): void {
   const ids = aimedEvents(chip, timeline.chapters);
   if (!ids.length) return;
   picture.spotlight(ids);
-  if (ids.length === 1 && hasMove(ids[0])) picture.step(ids[0]);
   pic = REST;
   actions();
-}
-
-function hasMove(id: number): boolean {
-  const event = timeline.events.find((e) => e.id === id);
-  return !!(
-    event &&
-    (event.relationship || event.symptom || event.anxiety || event.functioning)
-  );
 }
 
 /** One place turns a picture tap into its consequences: what the picture shows,
@@ -174,7 +166,6 @@ function actions(): void {
   const sel = pic.sel;
   if (!sel) {
     host.innerHTML = "";
-    host.hidden = true;
     return;
   }
   const stretch =
@@ -182,7 +173,6 @@ function actions(): void {
       ? timeline.chapters.find((c) => c.event_ids.includes(Number(sel.id)))
       : undefined;
   const ask = sel.kind === SelKind.Shelf ? "Ask when" : "Ask about this";
-  host.hidden = false;
   host.innerHTML =
     `<button type="button" class="chip ask" id="cap-chip">[${esc(ask)}]</button>` +
     (stretch
@@ -261,9 +251,12 @@ async function load(): Promise<Timeline> {
   return timeline;
 }
 
+/** The list is full screen with its own back button, so it takes the title row
+ * over rather than stacking a second bar under it (ruling 2026-09-03 05:53). */
 function screen(which: Screen): void {
   $("chat-screen").hidden = which !== Screen.Chat;
   $("menu-screen").hidden = which !== Screen.Menu;
+  document.querySelector<HTMLElement>(".titlerow")!.hidden = which === Screen.Menu;
 }
 
 $("composer").addEventListener("keydown", (e) => {
@@ -277,8 +270,16 @@ $("send").addEventListener("click", () => void send());
 $("menu-open").addEventListener("click", () => {
   screen(Screen.Menu);
 });
-$("menu-close").addEventListener("click", () => screen(Screen.Chat));
+$("menu-close").addEventListener("click", () => {
+  const field = $("menu-search") as HTMLInputElement;
+  field.value = "";
+  menu.search("");
+  screen(Screen.Chat);
+});
 $("menu-add").addEventListener("click", () => menu.add());
+$("menu-search").addEventListener("input", (e) =>
+  menu.search((e.target as HTMLInputElement).value),
+);
 
 for (const statement of window.COMPANION.statements)
   chat.add(statement.role, statement.text);
