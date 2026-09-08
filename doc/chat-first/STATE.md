@@ -523,8 +523,8 @@ drawn, which today is the board.
 **Invite links use `turin.local`**, not 127.0.0.1, so the owner can open them from his
 phone.
 
-**Cluster detection design**: [doc/chat-first/CLUSTERS.md](CLUSTERS.md) (being written by
-build-clusters-2); rule-by-example pending the owner.
+**Cluster detection**: [doc/chat-first/CLUSTERS.md](CLUSTERS.md) (rules-first, model
+names + reason; owner examples pending).
 
 ## A/B-test list
 

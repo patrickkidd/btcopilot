@@ -95,27 +95,34 @@ items, so each is logged FIXED without a commit citation.
 23. Terminology: "cluster" is the term (never stretch/chapter); code and copy swept.
     FIXED @cb9de08.
 24. Cluster grounding plan RULED (owner: "right on. Let's do them all"): rules-first
-    deterministic candidates (anchor = nodal or variable shift; related moves within a
-    bounded span sharing a person/pair-bond; scaffold never joins; calm gap splits; lone
-    anchor stays a dot); model only names, states a stored one-sentence reason, and may
-    merge/split/add non-adjacent events with a stated reason; definition in the private
-    prompt from the owner's words and the repo theory docs only, with outside
-    Bowen/pop-psychology knowledge forbidden; contamination gate; rule-by-example
-    DEFERRED until the owner notices examples ("I will keep track of them"). Owner's
-    hunch recorded: some clusters will need a theoretical judgment linking non-adjacent
-    events; rules cannot define that yet — "wait and see". IN PROGRESS
-    (build-clusters-2). Note: DRAWABILITY rule 1 (3 directed points) governs trend lines
-    in one variable, not clusters.
+    candidates seeded by a nodal kind (intake's NODAL_KINDS) or a variable shift;
+    18-month span; shares a person or pair-bond; scaffold = structural kinds before the
+    first nodal/shift; merge on overlap; 24-month calm gap splits; lone event stays a
+    dot; model names + one-sentence reason + change with reason; validation rejects
+    unknown ids, dropped members, missing reason, diagnostic/pop-psychology words; one
+    re-ask then raise; private prompt quotes the theory spec's four variables and
+    relationship mechanisms, the record's twelve moves, R-0054/R-0037/R-0076,
+    closed-vocabulary instruction; cluster/episode definition deliberately left
+    undefined; examples section empty pending the owner. DONE @4acfaa1/@5805fba
+    (btcopilot) @f62986f (fdserver).
 25. Timeline list button inside the picture frame, styled like the sessions button;
     drawer tabs Events | People. FIXED @13736d4/@e277553.
 26. "Picture may be behind" badge removed. FIXED @9620bc4.
 27. Person editor: fields name, last name, "Kind" (the gender enum, all five values;
     never labelled sex/gender); help text "Add birth and death events by chatting with
     the coach."; buttons for existing birth/death events jump to that event's editor;
-    event editor person taps jump to the person editor. OPEN.
-28. The picture's back arrow shows whenever a cluster is open. OPEN.
+    event editor person taps jump to the person editor. FIXED @d756a25/@170af05.
+28. The picture's back arrow shows whenever a cluster is open. FIXED @7171d68.
 29. In the open-cluster picture, tapping an event label jumps to its editor in the
     Events tab (assumption pending owner: the resting wire keeps selected-label →
-    coded-in chat). OPEN.
+    coded-in chat). FIXED @17ad2f1/@45a53ee, verdict pending owner (chat jump now only
+    on the coded-in chip).
 30. Links in replies are written as markdown links so they are tappable in the Claude
     iOS app; hostname turin.local. RULED.
+31. Vocabulary: "cluster" = "episode" (one thing); "anchor" is not the owner's word and
+    is removed; "shift" is the SARF term; invented pattern labels (ClusterPattern enum,
+    pattern, dominantVariable) came from earlier AI output and are removed; a stored
+    cluster is name, reason, source, event ids, dates. RULED/FIXED @5805fba.
+32. Nodal events are defined by kind (NODAL_KINDS from the intake engine, now
+    enum-compared); no nodal flag on the record; decision to add one dissolved. NOTE.
+33. Archived Personal-app cluster test deleted after the enum removal. FIXED.
