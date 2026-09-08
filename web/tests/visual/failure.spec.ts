@@ -70,6 +70,42 @@ test.describe("a send that does not go through", () => {
     await expect(warning(page)).toHaveText(/No answer from the server/);
     await expect(page.locator(".bub.typing")).toHaveCount(0);
   });
+
+  test("goes when a later message lands, not only on the retry", async ({
+    page,
+  }) => {
+    await settle(page);
+    let refuse = true;
+    await page.route(SEND, (route) =>
+      refuse
+        ? route.fulfill({ status: 500, body: "no" })
+        : route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              statement: "I put that down.",
+              statement_id: 9002,
+              discussion_id: 1,
+              kind: "turn",
+              events: [],
+            }),
+          }),
+    );
+
+    await say(page, "My dad moved out.");
+    await expect(warning(page)).toHaveText(/server broke/);
+
+    // a second failure says the same thing in the same place, never a pile
+    await say(page, "And my mum got ill.");
+    await expect(warning(page)).toHaveCount(1);
+
+    // the reader says something else and it lands: the old warning is no
+    // longer true, and goes without being tapped
+    refuse = false;
+    await say(page, "She is better now.");
+    await expect(page.locator(".bub.coach").last()).toHaveText(/I put that down\./);
+    await expect(warning(page)).toHaveCount(0);
+  });
 });
 
 test.describe("an explain that does not go through", () => {

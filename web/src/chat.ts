@@ -228,8 +228,12 @@ export class Chat {
 
   /** Something did not go through, said where it would have appeared and left
    * there until it is put right. It never types, never fades and never goes on
-   * its own: the reader has to still find it when they look back. */
+   * its own: the reader has to still find it when they look back.
+   *
+   * One at a time. A second failure says the same thing in the same place
+   * rather than piling a second notice under the first. */
   warn(line: string, again: () => void): HTMLElement {
+    this.settled();
     const note = el(
       "div",
       "sys warn",
@@ -244,6 +248,13 @@ export class Chat {
     this.stuck = true;
     this.scroll();
     return note;
+  }
+
+  /** Something went through. Whatever did not go through before it is no longer
+   * true, however it was put right — the retry, or simply saying something
+   * else that landed. */
+  settled(): void {
+    for (const note of this.list.querySelectorAll(".sys.warn")) note.remove();
   }
 
   /** Scroll one statement's bubble into the middle of the thread and mark it,

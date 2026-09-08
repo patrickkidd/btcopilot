@@ -55,7 +55,11 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
       signal: AbortSignal.timeout(PATIENCE_MS),
     });
   } catch (error) {
-    throw new Failed(0, `${method} ${path}: ${(error as Error).message}`);
+    // Only a request that never got an answer: the network, or the wait above
+    // running out. Anything else thrown here is a mistake in this code and has
+    // to surface as itself rather than as the server being unreachable.
+    if (!(error instanceof TypeError || error instanceof DOMException)) throw error;
+    throw new Failed(0, `${method} ${path}: ${error.message}`);
   }
   if (!response.ok)
     throw new Failed(response.status, `${method} ${path}: ${await response.text()}`);

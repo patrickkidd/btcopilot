@@ -451,6 +451,7 @@ async function explain(clusterId: string): Promise<void> {
     chat.busy(false);
   }
   picture.explains(false);
+  chat.settled();
   await chat.live(reply.cluster_id).type(reply.statement, (chip) => {
     const ids = aimedEvents(chip, timeline.chapters);
     if (ids.length) picture.step(ids[0]);
@@ -499,6 +500,7 @@ async function deliver(statement: string): Promise<void> {
   }
   session = reply.discussion_id;
   chat.busy(false);
+  chat.settled();
 
   const bubble = chat.live();
   for (const step of steps(reply)) {
