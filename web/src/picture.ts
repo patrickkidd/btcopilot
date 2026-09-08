@@ -7,13 +7,13 @@ import {
 } from "./board";
 import { esc } from "./dom";
 import {
+  MarkKind,
   bands,
   fade,
-  flats,
+  markOf,
   rangesTouch,
   silence,
   trend,
-  undirected,
 } from "./marks";
 import {
   CH,
@@ -710,15 +710,15 @@ export class Picture {
       `markerWidth="5.5" markerHeight="5.5" orient="auto">` +
       `<path d="M0 0 L10 5 L0 10 Z" class="tipfill"/></marker></defs>` +
       this.bandMark(wire) +
+      // a guessed date's width goes under the wire, not over it
+      bands(marks, this.perYear(), wire, x1 - x0) +
       `<line class="wire" x1="${x0}" y1="${wire}" x2="${x1}" y2="${wire}"/>` +
-      // the drawability marks, behind the dots: what a guessed date is worth,
-      // where the record is silent, where it recorded no change, the trend the
-      // directed points earn, and the open state that has no ending
-      bands(marks, this.perYear(), wire) +
+      // the rest of the drawability marks, behind the dots: where the record is
+      // silent, where it recorded no change, the trend the directed points
+      // earn, and the open state that has no ending
       silence(marks, wire, GAP_YEARS, this.perYear()) +
       trend(marks, wire) +
       fade(marks, wire, x1) +
-      flats(marks, wire) +
       this.bracket(wire, x0, x1);
 
     // one dot per moment; moments sharing a date stack instead of merging
@@ -790,12 +790,20 @@ export class Picture {
         `<circle class="dot nodal" cx="${x}" cy="${cy}" r="6.5" opacity="${opacity}"/>` +
         `<circle class="dot core" cx="${x}" cy="${cy}" r="2" opacity="${opacity}"/>`
       );
-    // a moment with no direction is a mark, not a point on a trend: it is
-    // stamped where it happened rather than drawn as data going one way
-    if (!lit && undirected(mark.event))
+    // a moment with no direction is a mark, not a point on a trend, and a
+    // recorded no-change is a mark of its own that silence must never be
+    // mistaken for
+    const kind = markOf(mark.event);
+    const on = lit ? " lit" : "";
+    if (kind === MarkKind.Tick)
       return (
-        `<line class="tick" x1="${x}" y1="${cy - 5}" x2="${x}" y2="${cy + 5}" ` +
-        `opacity="${opacity}"/>`
+        `<line class="tick${on}" x1="${x}" y1="${cy - 5}" x2="${x}" y2="${cy + 5}" ` +
+        `opacity="${lit ? 1 : opacity}"/>`
+      );
+    if (kind === MarkKind.Flat)
+      return (
+        `<line class="flat${on}" x1="${(Number(x) - 7).toFixed(1)}" y1="${cy}" ` +
+        `x2="${(Number(x) + 7).toFixed(1)}" y2="${cy}" opacity="${lit ? 1 : opacity}"/>`
       );
     return `<circle class="dot${lit ? " lit" : ""}" cx="${x}" cy="${cy}" r="${lit ? 5 : radius}" opacity="${opacity}"/>`;
   }

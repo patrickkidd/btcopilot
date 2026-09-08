@@ -280,6 +280,8 @@ button { font-family: inherit; }
 .ss .flat { stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; }
 /* a moment with no direction at all */
 .ss .tick { stroke: var(--ink); stroke-width: 1.8; }
+/* named by the coach: the same mark, in the colour the spotlight uses */
+.ss .tick.lit, .ss .flat.lit { stroke: var(--data); }
 /* three directed points earn a line; below three they stay dots */
 .ss .step {
   fill: none;
@@ -1150,10 +1152,36 @@ button { font-family: inherit; }
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   touch-action: pan-y;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
+/* Swipe a session row left and its two actions come out from behind it. */
+.fs-body .row { position: relative; transition: transform 0.18s ease; }
+.fs-body .row.swiped { transform: translateX(-150px); }
+.fs-acts {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  bottom: -1px;
+  width: 150px;
+  display: flex;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.fs-act {
+  flex: 1;
+  min-height: 44px;
+  border: none;
+  background: none;
+  font: 600 13px var(--sans);
+  color: var(--faint);
+  cursor: pointer;
+}
+.fs-act.ren { color: var(--move-text); }
+.fs-act:active { background: var(--tint); }
+
 .fs-fhead {
   position: sticky;
   top: 0;

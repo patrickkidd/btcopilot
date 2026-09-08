@@ -48,12 +48,21 @@ export interface Mark {
 export const GUESS_YEARS = 1;
 
 /** A guessed date is a band as wide as the guess, so it is noticeable and
- * correctable and never reads as firm as a certain one (rule 2). */
-export function bands(marks: Mark[], perYear: number, wire: number): string {
+ * correctable and never reads as firm as a certain one (rule 2).
+ *
+ * A short record scales a year to most of the wire, where a band a whole year
+ * wide would swallow the line rather than mark one guess on it, so the band is
+ * held to an eighth of the wire however few years are on it. */
+export function bands(
+  marks: Mark[],
+  perYear: number,
+  wire: number,
+  span: number,
+): string {
   return marks
     .filter((m) => m.event.dateCertainty === DateCertainty.Approximate)
     .map((m) => {
-      const half = Math.max(6, perYear * GUESS_YEARS);
+      const half = Math.min(span / 8, Math.max(6, perYear * GUESS_YEARS));
       return (
         `<rect class="band" x="${(m.x - half).toFixed(1)}" y="${wire - 7}" ` +
         `width="${(half * 2).toFixed(1)}" height="14" rx="3"/>`
@@ -83,22 +92,20 @@ export function silence(
   return out;
 }
 
-/** A recorded no-change is data: a solid flat mark, told apart from silence at
- * every zoom (rule 3). */
-export function flats(marks: Mark[], wire: number): string {
-  return marks
-    .filter((m) => shiftOf(m.event)?.shift === Shift.Same)
-    .map(
-      (m) =>
-        `<line class="flat" x1="${(m.x - 7).toFixed(1)}" y1="${wire}" ` +
-        `x2="${(m.x + 7).toFixed(1)}" y2="${wire}"/>`,
-    )
-    .join("");
+/** What one moment is drawn as when the coach has not named it. A directed
+ * moment is a point on a trend and stays a dot; a recorded no-change is a solid
+ * flat mark, told apart from silence at every zoom (rule 3); a moment with no
+ * direction at all is a fact stamped where it happened. */
+export enum MarkKind {
+  Dot = "dot",
+  Flat = "flat",
+  Tick = "tick",
 }
 
-/** A moment with no direction at all: a fact, stamped where it happened. */
-export function undirected(event: TimelineEvent): boolean {
-  return shiftOf(event) === null;
+export function markOf(event: TimelineEvent): MarkKind {
+  const shift = shiftOf(event);
+  if (!shift) return MarkKind.Tick;
+  return shift.shift === Shift.Same ? MarkKind.Flat : MarkKind.Dot;
 }
 
 /** The line needs three directed points, and it spans only where they are: a
