@@ -1,5 +1,5 @@
 import { esc } from "./dom";
-import { draw, figure, ring, zigzag, type Figure, type Walk } from "./moves";
+import { R, draw, figure, ring, zigzag, type Figure, type Walk } from "./moves";
 import {
   CH,
   PIC_H,
@@ -385,6 +385,10 @@ export class Picture {
 
     this.pin(height);
     this.host.innerHTML = `<div class="ss">${svg}${text}${html}${hits}</div>`;
+    // CSS cannot reach the move language's SVG animations, so reduced motion
+    // holds them on their first frame the same way it stops the rest
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
+      this.host.querySelector("svg")?.pauseAnimations();
   }
 
   private dot(
@@ -525,7 +529,13 @@ export class Picture {
       .filter((p): p is Person => !!p)
       .map((p) => ({ id: p.id, name: p.name, gender: p.gender }));
     if (!people.length) return "";
-    const figures: Figure[] = ring(people, width, STAGE_H - 59 - STAGE_GAP);
+    const figures: Figure[] = ring(
+      people,
+      width,
+      STAGE_H - 59 - STAGE_GAP,
+      R,
+      STAGE_H - 40,
+    );
     const event = this.moving;
     const at = (id: number | null) =>
       id === null ? null : (figures.find((f) => f.id === id) ?? null);

@@ -12,6 +12,8 @@
   --tint: rgba(14, 125, 120, 0.08);
   --ask-tint: rgba(168, 114, 15, 0.1);
   --onaccent: #fff;
+  --shadow: rgba(38, 49, 47, 0.14);
+  --scrim: rgba(38, 49, 47, 0.32);
   /* UI_STANDARDS: IBM Plex Sans for words, IBM Plex Mono for data and chips. */
   --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -30,6 +32,8 @@
     --tint: rgba(63, 196, 188, 0.13);
     --ask-tint: rgba(224, 168, 63, 0.14);
     --onaccent: #0d1413;
+    --shadow: rgba(0, 0, 0, 0.5);
+    --scrim: rgba(0, 0, 0, 0.5);
   }
 }
 :root[data-theme="dark"] {
@@ -44,6 +48,8 @@
   --tint: rgba(63, 196, 188, 0.13);
   --ask-tint: rgba(224, 168, 63, 0.14);
   --onaccent: #0d1413;
+  --shadow: rgba(0, 0, 0, 0.5);
+  --scrim: rgba(0, 0, 0, 0.5);
 }
 
 * { box-sizing: border-box; }
@@ -61,6 +67,7 @@ button { font-family: inherit; }
 :focus-visible { outline: 2px solid var(--data); outline-offset: 1px; }
 
 .app {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100dvh;
@@ -72,7 +79,13 @@ button { font-family: inherit; }
 @media (min-width: 461px) {
   .app { border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
 }
-.screen { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.24s ease;
+}
 
 .titlerow {
   flex: none;
@@ -210,8 +223,8 @@ button { font-family: inherit; }
 .ss .body.tremout { animation: tremout 10s infinite; }
 .ss .body.domup { animation: domup 3s ease-in-out infinite; }
 .ss .body.subdown { animation: subdown 3s ease-in-out infinite; }
-.ss .body.dself { animation: hitsync 12s infinite, selfswap 8s infinite; }
-.ss .body.dself .disc { stroke-width: 2.6; }
+.ss .body.dself { animation: hitsync 12s infinite; }
+.ss .body.dself .disc { animation: selfswap 8s infinite; }
 .ss .body.fused .disc { stroke: var(--move); stroke-width: 2.4; }
 .ss .body.joining .disc { stroke: var(--move); stroke-width: 2.2; }
 
@@ -806,4 +819,250 @@ button { font-family: inherit; }
   color: var(--ask);
   font: 500 15px var(--sans);
   cursor: pointer;
+}
+
+/* ---- the session door: the button beside the message box, and the sheet it
+   raises (family-sections, the owner's pick 2026-09-02 23:33) ---- */
+.fs-glyph {
+  flex: none;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+/* the visible mark is a 34px circle; the target around it is the ruled 44 */
+.fs-glyph::before {
+  content: "";
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+.fs-glyph svg { position: relative; display: block; opacity: 0.8; }
+.fs-glyph:active::before { background: var(--tint); }
+
+.overlay { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
+.overlay > * { pointer-events: auto; }
+.fs-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+  opacity: 0;
+  transition: opacity 0.26s ease;
+}
+.fs-scrim.in { opacity: 1; }
+.fs-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 92%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -8px 30px var(--shadow);
+  transform: translateY(100%);
+  transition: transform 0.26s cubic-bezier(0.4, 0, 0.7, 0.5);
+}
+.fs-sheet.in {
+  transform: none;
+  transition-timing-function: cubic-bezier(0.3, 1.25, 0.5, 1);
+}
+.fs-handle {
+  flex: none;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+}
+.fs-grab { width: 36px; height: 5px; border-radius: 3px; background: var(--line); }
+.fs-search { flex: none; padding: 2px 12px 8px; border-bottom: 1px solid var(--line); }
+.fs-search input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 17px/1.4 var(--sans);
+  outline: none;
+}
+.fs-search input:focus { border-color: var(--data); }
+.fs-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
+.fs-fhead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 0 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.fs-fmain { flex: 1; min-width: 0; }
+.fs-fname {
+  font: 600 15px/1.25 var(--sans);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-flast {
+  font: 400 13px/1.25 var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-plus {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--move);
+  font: 600 22px/1 var(--sans);
+  cursor: pointer;
+}
+.fs-plus:active { background: var(--tint); }
+.fs-more {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+  font: 500 13px var(--mono);
+  color: var(--faint);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.fs-more:active { background: var(--tint); }
+.fs-hint {
+  padding: 18px 16px;
+  text-align: center;
+  font: 500 13px var(--mono);
+  color: var(--faint);
+}
+.fs-foot {
+  flex: none;
+  padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+.fs-new {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 1.5px solid var(--move);
+  border-radius: 22px;
+  background: none;
+  color: var(--move);
+  font: 600 15px var(--sans);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-new:active { background: var(--tint); }
+
+/* a session row is the app's list row with a date beside it */
+.row.side { flex-direction: row; align-items: center; gap: 10px; }
+.row.side .rmain { flex: 1; min-width: 0; }
+.row.side .rwhen {
+  flex: none;
+  max-width: 44%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.row.cur { position: relative; }
+.row.cur::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--data);
+}
+.row .untitled { color: var(--faint); }
+.row input.rename {
+  width: 100%;
+  padding: 1px 6px;
+  border: 1px solid var(--data);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 17px/1.3 var(--sans);
+  outline: none;
+}
+/* the day the sessions under it fall on */
+.ghead {
+  position: sticky;
+  top: 44px;
+  z-index: 1;
+  height: 24px;
+  line-height: 24px;
+  padding: 0 16px;
+  background: var(--panel);
+  font: 500 13px var(--mono);
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* what the app says about what it just did */
+.toasts {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 76px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.toast {
+  max-width: 88%;
+  padding: 6px 12px;
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--panel);
+  font: 500 13px var(--mono);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.toast.in { opacity: 0.92; }
+@media (prefers-reduced-motion: reduce) {
+  .fs-sheet, .fs-scrim, .toast, .screen { transition: none !important; }
 }
