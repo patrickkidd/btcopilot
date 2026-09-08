@@ -578,11 +578,16 @@ button { font-family: inherit; }
   display: inline-block;
   max-width: 100%;
   font: 500 13px/22px var(--mono);
-  border-radius: 13px;
-  padding: 1px 10px;
-  margin: 2px 4px 2px 0;
+  color: var(--data);
+  border: 1px solid var(--data);
+  border-radius: 10px;
+  padding: 1px 8px;
+  margin: 2px 2px 0 0;
   cursor: pointer;
   text-align: left;
+  /* The converged chip is nowrap. This one wraps, because a chip must never
+     leave its bubble however long the record's words are, which is asserted
+     in tests/visual/chat.spec.ts. */
   white-space: normal;
   overflow-wrap: anywhere;
   vertical-align: bottom;
@@ -606,7 +611,6 @@ button { font-family: inherit; }
   border-color: var(--ask);
   background: var(--ask-tint);
 }
-.chip.data { color: var(--data); border: 1px solid var(--data); }
 /* what the coach offers to talk about next, in its own square-cornered brackets */
 .chip.ask {
   color: var(--ask);

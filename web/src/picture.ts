@@ -442,7 +442,7 @@ export class Picture {
     };
     this.pin(PIC_H);
     return (
-      `<div class="ss" style="height:${PIC_H}px">` +
+      `<div class="ss">` +
       `<svg viewBox="0 0 ${width} ${PIC_H}" aria-hidden="true">` +
       column(a, X_PAD) +
       column(b, mid + 11) +
