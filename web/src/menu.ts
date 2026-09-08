@@ -144,7 +144,9 @@ export class Menu {
   }
 
   private divider(chapter: Chapter | undefined): string {
-    const count = chapter ? `${chapter.count} moments` : "";
+    const count = chapter
+      ? `${chapter.count} moment${chapter.count === 1 ? "" : "s"}`
+      : "";
     return (
       `<div class="div"><span>${esc(chapter ? chapter.label : UNPLACED)}</span>` +
       `<span class="dcount">${esc(count)}</span></div>`
