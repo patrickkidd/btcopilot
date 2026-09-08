@@ -92,3 +92,30 @@ items, so each is logged FIXED without a commit citation.
     OWNER.
 22. Timeline list discoverability: it lives behind the ≡ button; the owner did not find
     it. OPEN (note only).
+23. Terminology: "cluster" is the term (never stretch/chapter); code and copy swept.
+    FIXED @cb9de08.
+24. Cluster grounding plan RULED (owner: "right on. Let's do them all"): rules-first
+    deterministic candidates (anchor = nodal or variable shift; related moves within a
+    bounded span sharing a person/pair-bond; scaffold never joins; calm gap splits; lone
+    anchor stays a dot); model only names, states a stored one-sentence reason, and may
+    merge/split/add non-adjacent events with a stated reason; definition in the private
+    prompt from the owner's words and the repo theory docs only, with outside
+    Bowen/pop-psychology knowledge forbidden; contamination gate; rule-by-example
+    DEFERRED until the owner notices examples ("I will keep track of them"). Owner's
+    hunch recorded: some clusters will need a theoretical judgment linking non-adjacent
+    events; rules cannot define that yet — "wait and see". IN PROGRESS
+    (build-clusters-2). Note: DRAWABILITY rule 1 (3 directed points) governs trend lines
+    in one variable, not clusters.
+25. Timeline list button inside the picture frame, styled like the sessions button;
+    drawer tabs Events | People. FIXED @13736d4/@e277553.
+26. "Picture may be behind" badge removed. FIXED @9620bc4.
+27. Person editor: fields name, last name, "Kind" (the gender enum, all five values;
+    never labelled sex/gender); help text "Add birth and death events by chatting with
+    the coach."; buttons for existing birth/death events jump to that event's editor;
+    event editor person taps jump to the person editor. OPEN.
+28. The picture's back arrow shows whenever a cluster is open. OPEN.
+29. In the open-cluster picture, tapping an event label jumps to its editor in the
+    Events tab (assumption pending owner: the resting wire keeps selected-label →
+    coded-in chat). OPEN.
+30. Links in replies are written as markdown links so they are tappable in the Claude
+    iOS app; hostname turin.local. RULED.
