@@ -69,40 +69,46 @@ supersedes the old hard-cutover plan.
 
 ## Where the build stands (live — revise, do not append)
 
-A build session produced a running app on the approved design: `/companion`, behind the
-existing login, wired to the real backend, run from this worktree on port 8889 against a
-scratch database holding Patrick's own record. Draft PRs: btcopilot #135, fdserver #29.
+The beta build landed on branch FD-362 (draft PR btcopilot #136, fdserver #30) on
+2026-09-07/08, built by four parallel Opus agents plus an auditor and an integration walk:
 
-**Patrick's live assessment of it (2026-09-03), carried verbatim because it is unresolved:**
+- **Storage**: diagrams.data is JSON (reads accept pickle or JSON; Pro/Personal endpoints
+  keep the pickled wire via the converter); `python -m btcopilot.diagrams.migrate_json`
+  converts rows; models `Change` (per-command jsonb deltas, turn_id, compression, undo
+  with compare-and-set, delete deltas with Scene-mirrored cascade) and `Interaction`;
+  Cluster has name and source. Commits 3407de5, c63e086.
+- **Passwordless login**: invite link (`python -m btcopilot.auth.invite <email>`), 6-digit
+  emailed code, `WebSession` model, `/me`, sessions list/revoke; HMAC path untouched.
+  Commit 06d88b3.
+- **Front end**: Vite/TypeScript SVG page at /companion/ (web/), PWA manifest, chips
+  (event/cluster/person), look/say taps, play-by-play, views drawn, timeline+editor
+  behind the menu with the banner; bundle gitignored, `npm --prefix web run build`
+  required before pytest/sandbox (web/README.md). Commits 041ce47, 86dae55, 324b271,
+  dc1ee9d.
+- **Agent loop**: `POST /companion/chat` runs the coach with READ/EDIT/SHOW tools; EDIT
+  applies immediately via record.apply (author Coach, turn_id); reply carries ordered
+  events (tool_call, record_patch, view); `statements.views`; play-by-play coach-authored;
+  chips validated on write; private coaching prompts in fdserver. Commits f0425d9,
+  2cd9a8c (btcopilot), 992c7e0 (fdserver).
+- **Integration walk** (commits ec06352, b4eb54d): journeys 1–6 PASS with a live coach on
+  a fresh database; all btcopilot suites 960 passed, 37 skipped; web tests 31 passed.
+  Screenshots j1–j6.png in the job tmp dir (ephemeral).
 
-> "This feels like our core vision for this is not yet stable. The goal is to make chat
-> the UI for everything. I do not want the user to have to worry about complicated edit
-> dialogs, they are just there in principle, not as part of the main user journey. I
-> originally entitled this new project as Claude Code for Family Diagram. So it sounds
-> like this code is crippled for a number of reasons partially from the original vision
-> not being clear, and partly because you didn't complete the runnable code — and there
-> is nothing more to test in this code than what I had already tried out in the
-> familydiagram frontend?"
->
-> "We need to take a step back and clarify the entire vision so that tactical questions
-> about what to add into this demo are properly aligned and not band-aids."
+Open after the walk (follow-ups, not rulings): chips pointing at a stretch the page
+derived itself do not resolve for the coach because only stored clusters resolve —
+persist derived clusters into DiagramData.clusters (the ruling says clusters are stored);
+the training app caps the session cookie at 8 hours, overriding the chat app's 180 days;
+the chat "Assistant" speaker still appears as a person in the record; migrations chain
+f1a2b3c4d5e6 → a3b4c5d6e7f8 → b4c5d6e7f8a9 but sandboxes use create_all (no `flask db`
+wired); CI needs the web build step; the reply's `views` field duplicates the view events
+(page ignores it).
 
-Facts bearing on that, established rather than inferred:
-- R-0055 rules that chat tool calls control everything with full bidirectional
-  reactivity. The built app has **no tool calls** — the coach talks and points at the
-  record but cannot change it. Manual editing works. The build inverted the ruling.
-- **No user journeys or stories exist in any document.** This is why the build could be
-  specified wrongly without anyone noticing.
-- Ruled good during the build: the play-by-play, the coach-driven picture, and the
-  chapter view that shows no words until the coach names them or you tap.
-- Unverified: whether a live coach actually cites the reference index it is given.
-- Never ruled: the fate of the pending-extraction pool (see ARCHITECTURE_HANDOFF.md).
-- Storage under it is a pickled whole-document write under an optimistic lock; the page
-  is hand-written JavaScript where the ruling says a Vite/TypeScript PWA. That page is to
-  be rebuilt as the Vite page for the beta build.
-
-Landed on this branch since: the schema comparison (commit 268e74a) and the JSON-record
-proof with its converter (commit f32eb2c).
+Sandbox recipe for Patrick: /Users/patrick/.claude/jobs/1674c7c2/tmp/serve.sh (ephemeral)
+— from ~/theapp: `PYTHONPATH=<btcopilot worktree> FLASK_APP=btcopilot.app:create_app
+FLASK_CONFIG=development FLASK_SQLALCHEMY_DATABASE_URI=sqlite:///<db>
+FDSERVER_PROMPTS_PATH=<fdserver worktree>/prompts/private_prompts.py uv run python -m
+flask run -p 8889 --no-reload` after `npm --prefix web run build`; then `python -m
+btcopilot.auth.invite <email>` for a link; no auto-auth.
 
 ## Prototyping status (honest)
 
@@ -339,7 +345,7 @@ compression; death and fade stops.
 thing is extremely valuable. Then the app seminar, three more. Then the wider Bowen
 network. Names live only in the private oracle evidence.
 
-**The journeys that check the build** [R-0087]:
+**The journeys that check the build** [R-0087] — walked PASS 2026-09-08:
 
 1. A first conversation from an emailed link, no password, the picture growing from nothing.
 2. A correction through chat changes the event in place with a change row, and old chips

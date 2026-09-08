@@ -581,3 +581,16 @@ Artifacts: the play-by-play A/B mockup at
 https://claude.ai/code/artifact/3fb3b475-a26a-485f-a554-10a9913a22b6, durable copy at
 ~/theapp/btcopilot-sources/fd-corpus/design/playbyplay_ab.html. The converter proof
 screenshots live in the job's temp directory and are ephemeral.
+
+### 2026-09-08 — beta build landed
+
+Four parallel Opus agents built storage (JSON record, migration, Change/Interaction
+models), passwordless login, the Vite/TypeScript front end, and the agent tool-call loop
+(READ/EDIT/SHOW) against the 2026-09-07 rulings; an auditor and an integration walk
+followed. Journeys 1–6 walked PASS on a fresh database with a live coach; full suite green.
+Crossed wires mid-build: the front-end agent built the chat reply as an SSE stream, then
+reverted to the ruled JSON events contract after the coordinator caught it while the page
+was already being wired to the stream — resolved before merge, no stream code shipped.
+Left open: derived clusters need persisting to resolve their chips; a session-cookie TTL
+mismatch with the training app; the placeholder "Assistant" speaker; migrations not wired
+to sandboxes; CI missing the web build step; a duplicate `views` field in the reply.
