@@ -1,0 +1,107 @@
+import { expect, test, type Page } from "@playwright/test";
+import { stateFor } from "./setup";
+
+/** The moves board: the level a stretch opens into, and the chrome around the
+ * drawings. The drawings themselves have their own goldens in moves.spec.ts;
+ * these watch the things only the app can produce — the entry button, the
+ * people the record puts on the ellipse, the pair bonds beneath them, the
+ * earlier moves held behind the current one, the caption, and the step
+ * controls at their ends.
+ *
+ * Driven the way a reader drives it: select a moment, take the entry button,
+ * then step. No live coach turn is involved, so it is deterministic.
+ *
+ * The `moves` record is one moment per move the picture can draw, all in a
+ * single stretch, so the board it opens has every move on it in order. */
+
+const settle = async (page: Page) => {
+  await page.goto("/companion/");
+  await expect(page.locator(".ss")).toBeVisible();
+  await page.waitForTimeout(400);
+};
+
+/** Select a moment so the caption row offers its stretch. */
+const pickStretch = async (page: Page) => {
+  await page.locator('.ss-hit[data-target="zone"]').first().click();
+  await expect(page.locator("#cap-play")).toBeVisible();
+};
+
+const enter = async (page: Page) => {
+  await pickStretch(page);
+  await page.locator("#cap-play").click();
+  // the button waits on a coach turn before the board appears, so this waits
+  // longer than a tap should ever need. What the board draws does not depend
+  // on the coach's words, and every shot here is of the picture alone.
+  await expect(page.locator(".ss.board")).toBeVisible({ timeout: 30_000 });
+  // past the .6s zoom, so the board is settled rather than mid-flight
+  await page.waitForTimeout(800);
+};
+
+/** Hold every clock at one instant, or an 8, 10 or 12 second loop decides what
+ * the shot catches. */
+const freeze = (page: Page, ms = 2400) =>
+  page.evaluate((at) => {
+    for (const svg of document.querySelectorAll("svg")) {
+      svg.pauseAnimations();
+      svg.setCurrentTime(at / 1000);
+    }
+    for (const animation of document.getAnimations()) {
+      animation.pause();
+      animation.currentTime = at;
+    }
+  }, ms);
+
+const picture = (page: Page) => page.locator(".pic");
+
+test.describe("the moves board", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  test("a stretch offers to walk its moves", async ({ page }) => {
+    await settle(page);
+    await pickStretch(page);
+    await expect(page.locator("#cap-play")).toHaveText(/watch the \d+ moves/);
+    await expect(picture(page)).toHaveScreenshot("board-entry-offer.png");
+  });
+
+  test("the board opens on the first move", async ({ page }) => {
+    await settle(page);
+    await enter(page);
+    await expect(page.locator(".bcap")).toHaveText(/^1\//);
+    await freeze(page);
+    await expect(picture(page)).toHaveScreenshot("board-first-move.png");
+  });
+
+  test("earlier moves stay behind the one being drawn", async ({ page }) => {
+    await settle(page);
+    await enter(page);
+    for (let i = 0; i < 4; i += 1)
+      await page.locator('.pctl [data-target="next"]').click();
+    await expect(page.locator(".bcap")).toHaveText(/^5\//);
+    await freeze(page);
+    await expect(picture(page)).toHaveScreenshot("board-fifth-move.png");
+  });
+
+  test("the last move has nowhere further to go", async ({ page }) => {
+    await settle(page);
+    await enter(page);
+    const next = page.locator('.pctl [data-target="next"]');
+    while (await next.isEnabled()) await next.click();
+    await expect(page.locator('.pctl [data-target="prev"]')).toBeEnabled();
+    await freeze(page);
+    await expect(picture(page)).toHaveScreenshot("board-last-move.png");
+  });
+
+  test("back returns to the resting wire", async ({ page }) => {
+    await settle(page);
+    const before = await picture(page).boundingBox();
+    await enter(page);
+    await page.locator('[data-target="back"]').click();
+    await expect(page.locator(".ss.board")).toHaveCount(0);
+    // past the .25s height transition, or the box is read mid-flight
+    await page.waitForTimeout(500);
+    const after = await picture(page).boundingBox();
+    // the resting picture is one fixed height whatever it has been showing
+    expect(after?.height).toBe(before?.height);
+    await expect(picture(page)).toHaveScreenshot("board-back-to-wire.png");
+  });
+});

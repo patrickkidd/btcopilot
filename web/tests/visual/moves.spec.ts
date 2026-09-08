@@ -58,9 +58,15 @@ const CASES: Case[] = [
 function page(): string {
   const out = mkdtempSync(join(tmpdir(), "fd-moves-"));
   const bundle = join(out, "moves.js");
+  const entry = join(out, "entry.ts");
+  writeFileSync(
+    entry,
+    `export * from ${JSON.stringify(join(SRC, "moves.ts"))};\n` +
+      `export { triangle } from ${JSON.stringify(join(SRC, "board.ts"))};\n`,
+  );
   execFileSync(
     join(HERE, "..", "..", "node_modules", ".bin", "esbuild"),
-    [join(SRC, "moves.ts"), "--bundle", "--format=esm", `--outfile=${bundle}`],
+    [entry, "--bundle", "--format=esm", `--outfile=${bundle}`],
     { stdio: "pipe" },
   );
   const html = `<!doctype html><meta charset="utf-8"><style>
@@ -101,6 +107,17 @@ for (const spec of cases) {
     '"><g class="cast">' + body + '</g></svg></div>';
   root.append(cell);
 }
+// the board a coach's triangle view opens, which only a coach turn can reach
+// in the app and so cannot be driven from a golden there
+const tri = document.createElement("div");
+tri.className = "cell";
+tri.id = "m-triangle-board";
+tri.style.height = "264px";
+tri.innerHTML =
+  '<div class="ss board" style="height:264px">' +
+  triangle(trio.map((p) => ({ ...p, primary: false })), W).svg +
+  '</div>';
+root.append(tri);
 </script>`;
   const file = join(out, "moves.html");
   writeFileSync(file, html);
@@ -130,6 +147,14 @@ test.describe("the move language", () => {
       );
     });
   }
+
+  test("the board a coach's triangle opens", async ({ page: browser }) => {
+    test.skip(test.info().project.name !== "phone");
+    await browser.goto(url);
+    await expect(browser.locator("#m-triangle-board")).toHaveScreenshot(
+      "board-triangle.png",
+    );
+  });
 });
 
 test.describe("what a chip does", () => {
