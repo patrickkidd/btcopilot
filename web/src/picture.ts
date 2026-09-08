@@ -226,6 +226,7 @@ export class Picture {
     if (target === Target.Back) {
       this.level = Level.Wire;
       this.moves = [];
+      this.cast = [];
       this.at = 0;
     } else if (target === Target.Next)
       this.at = Math.min(this.moves.length - 1, this.at + 1);
