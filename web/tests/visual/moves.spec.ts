@@ -192,4 +192,16 @@ test.describe("the timeline behind the menu", () => {
     await expect(page.locator("#menu-body .row").first()).toBeVisible();
     await expect(page.locator("#menu-screen")).toHaveScreenshot("menu-list.png");
   });
+
+  test("the editor's fields, text centred in the box", async ({ page }) => {
+    await page.goto("/companion/");
+    await page.locator("#menu-open").click();
+    await page.locator("#menu-body .row").first().click();
+    await expect(page.locator(".editor .segs").first()).toBeVisible();
+    // The word fields sit below the fold; a fixed offset keeps the shot stable.
+    await page.locator("#menu-body").evaluate((body) => {
+      body.scrollTop = 420;
+    });
+    await expect(page.locator("#menu-screen")).toHaveScreenshot("menu-editor.png");
+  });
 });

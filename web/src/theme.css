@@ -907,7 +907,9 @@ button { font-family: inherit; }
   font: 400 17px var(--sans);
   outline: none;
 }
-.editor textarea {
+/* The textarea also carries .f, so this must out-rank `.editor .f` above it:
+   selecting on the tag alone loses and the field renders unpadded. */
+.editor textarea.f {
   height: auto;
   min-height: 44px;
   padding: 11px 12px;

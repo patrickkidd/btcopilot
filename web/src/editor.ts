@@ -201,7 +201,9 @@ export function openEditor(
       area.style.height = `${area.scrollHeight}px`;
     };
     area.addEventListener("input", grow);
-    grow();
+    // A detached textarea measures zero, and the caller inserts this editor
+    // after openEditor returns, so the first measure waits for the next frame.
+    requestAnimationFrame(grow);
   });
 
   editor.querySelectorAll<HTMLElement>(".segs").forEach((group) => {
