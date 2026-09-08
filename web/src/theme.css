@@ -192,6 +192,42 @@ button { font-family: inherit; }
 .ss .qm { fill: var(--ask); font: 500 15px var(--mono); }
 .ss .qm.small { font-size: 13px; }
 
+/* ---- the moves board: Bowen's chalkboard, the deepest level ---- */
+.ss.board { position: relative; }
+.ss .bond { stroke: var(--line); stroke-width: 1.2; }
+.ss .hist { opacity: 0.16; animation: histin 0.32s ease; }
+.ss .hist * { animation: none !important; }
+@keyframes histin { from { opacity: 0; } to { opacity: 0.16; } }
+.ss .corner {
+  position: absolute;
+  top: 2px;
+  width: 44px;
+  height: 44px;
+  font: 500 19px/1 var(--mono);
+  color: var(--data);
+}
+.ss .corner.l { left: 4px; }
+.ss .corner.r { right: 4px; }
+.bcap {
+  min-height: 15px;
+  padding: 2px 16px 0;
+  font: 400 13px/15px var(--mono);
+  color: var(--faint);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pctl {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 16px 2px;
+}
+.pctl .btn { border-radius: 4px; }
+.pctl .btn[disabled] { opacity: 0.4; cursor: default; }
+.btn.primary { border-color: var(--data); color: var(--data); }
+
 /* ---- the move language (ratified 2026-09-01): one green, never amber ----
    Every stroke width, dash array, duration and key time below is copied from
    the ratified demos; nothing here is redrawn from memory. */

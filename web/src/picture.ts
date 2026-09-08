@@ -1,3 +1,4 @@
+import { BOARD_H, board, castOfSteps, movesIn, type Step } from "./board";
 import { esc } from "./dom";
 import { R, draw, figure, ring, zigzag, type Figure, type Walk } from "./moves";
 import {
@@ -29,7 +30,8 @@ import {
   type View,
 } from "./types";
 
-const SEQUENCE_MS = 1100;
+/** The ratified hold: 1000ms after each move before the prose continues. */
+const HOLD_MS = 1000;
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** The pinned picture: the sentence spotlight the owner converged on
@@ -45,12 +47,25 @@ const STAGE_H = 252;
 const STAGE_GAP = 96;
 const NODAL = new Set(["cutoff", "defined-self", "fusion"]);
 
+/** The picture's levels. The middle "cluster drilldown" is CUT (R-0074): the
+ * resting wire and the moves board are the two that survive. */
+enum Level {
+  Wire = "wire",
+  Board = "board",
+}
+
 export enum Target {
   Zone = "zone",
   Band = "band",
   Question = "question",
   Shelf = "shelf",
+  /** The board's own controls, which the picture answers itself. */
+  Back = "back",
+  Prev = "prev",
+  Next = "next",
 }
+
+const OWN = new Set<string>([Target.Back, Target.Prev, Target.Next]);
 
 export interface Tap {
   target: Target;
@@ -82,6 +97,9 @@ export class Picture {
   private moving: TimelineEvent | null = null;
   private cast: number[] = [];
   private closed = false;
+  private level = Level.Wire;
+  private moves: Step[] = [];
+  private at = 0;
   private band: { start: string; end: string } | null = null;
   private focus: Chapter | null = null;
   private range = { min: 0, max: 1 };
@@ -99,6 +117,10 @@ export class Picture {
       const hit = (e.target as Element).closest<HTMLElement>("[data-target]");
       if (!hit) return;
       e.preventDefault();
+      if (OWN.has(hit.dataset.target as string)) {
+        this.control(hit.dataset.target as Target);
+        return;
+      }
       const box = this.host.getBoundingClientRect();
       this.handlers.onTap({
         target: hit.dataset.target as Target,
@@ -152,8 +174,55 @@ export class Picture {
   }
 
   step(eventId: number): void {
+    // while the board is open a named moment steps the board rather than
+    // staging one move over the wire
+    const on = this.moves.findIndex((m) => m.event.id === eventId);
+    if (this.level === Level.Board && on >= 0) {
+      this.at = on;
+      this.render();
+      return;
+    }
     this.moving = this.data?.events.find((e) => e.id === eventId) ?? null;
     this.selected = eventId;
+    this.render();
+  }
+
+  /** Enter the board: the moves of one stretch, numbered, on the people they
+   * happened between. The level below it is CUT, so this comes straight from
+   * the chat. */
+  openBoard(eventIds: number[]): number {
+    const events = (this.data?.events ?? []).filter((e) =>
+      eventIds.includes(e.id),
+    );
+    this.moves = movesIn(events);
+    if (!this.moves.length) return 0;
+    this.level = Level.Board;
+    this.at = 0;
+    this.moving = null;
+    this.cast = [];
+    this.render();
+    return this.moves.length;
+  }
+
+  /** How many moves a stretch would put on the board, for the entry button. */
+  countMoves(eventIds: number[]): number {
+    return movesIn(
+      (this.data?.events ?? []).filter((e) => eventIds.includes(e.id)),
+    ).length;
+  }
+
+  onBoard(): boolean {
+    return this.level === Level.Board;
+  }
+
+  private control(target: Target): void {
+    if (target === Target.Back) {
+      this.level = Level.Wire;
+      this.moves = [];
+      this.at = 0;
+    } else if (target === Target.Next)
+      this.at = Math.min(this.moves.length - 1, this.at + 1);
+    else if (target === Target.Prev) this.at = Math.max(0, this.at - 1);
     this.render();
   }
 
@@ -175,12 +244,19 @@ export class Picture {
       case ViewKind.Compare:
         this.spotlight([view.event_a, view.event_b]);
         return;
-      case ViewKind.Sequence:
-        for (const id of view.events) {
-          this.step(id);
-          await pause(SEQUENCE_MS);
+      case ViewKind.Sequence: {
+        // a sequence is the moves board, stepped in order, and it stays up
+        // afterwards so the reader can hold on any one move
+        const n = this.openBoard(view.events);
+        if (!n) return;
+        for (let i = 1; i < n; i += 1) {
+          await pause(HOLD_MS);
+          if (this.level !== Level.Board) return;
+          this.at = i;
+          this.render();
         }
         return;
+      }
       case ViewKind.Cluster: {
         const chapter = this.data?.chapters.find(
           (c) => c.id === view.cluster || c.cluster_ids.includes(view.cluster),
@@ -202,6 +278,9 @@ export class Picture {
     this.band = null;
     this.focus = null;
     this.closed = false;
+    this.level = Level.Wire;
+    this.moves = [];
+    this.at = 0;
     this.rescale();
     this.render();
   }
@@ -288,8 +367,43 @@ export class Picture {
     this.host.style.height = `${height}px`;
   }
 
+  /** The board is a level of its own: its own height, its own nav, its own
+   * step controls, and a caption saying which move of how many this is. */
+  private renderBoard(): void {
+    const cast = castOfSteps(this.moves);
+    const people = cast
+      .map((id) => this.person(id))
+      .filter((p): p is Person => !!p);
+    const { svg, caption } = board(
+      this.moves,
+      this.at,
+      people,
+      this.data?.events ?? [],
+      this.width,
+    );
+    const last = this.moves.length - 1;
+    this.pin(BOARD_H + 84);
+    this.host.innerHTML =
+      `<div class="ss board" style="height:${BOARD_H}px">${svg}` +
+      `<button class="corner l ss-hit" data-target="${Target.Back}" ` +
+      `aria-label="back to the time line">&#8592;</button></div>` +
+      `<div class="bcap">${esc(caption)}</div>` +
+      `<div class="pctl">` +
+      `<button type="button" class="btn" data-target="${Target.Prev}" ` +
+      `${this.at === 0 ? "disabled" : ""} aria-label="the move before">&#9664;</button>` +
+      `<button type="button" class="btn primary" data-target="${Target.Next}" ` +
+      `${this.at >= last ? "disabled" : ""}>&#9654; next move</button>` +
+      `</div>`;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
+      this.host.querySelector("svg")?.pauseAnimations();
+  }
+
   private render(): void {
     if (!this.data) return;
+    if (this.level === Level.Board && this.moves.length) {
+      this.renderBoard();
+      return;
+    }
     const width = this.width;
     const x0 = X_PAD;
     const x1 = width - X_PAD;

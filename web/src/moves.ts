@@ -51,6 +51,8 @@ export interface Figure {
   mirror?: boolean;
   /** The board they stand on, so a walk stops at its edge. */
   stage?: { w: number; h: number };
+  /** The board writes names above its people; the stage writes them below. */
+  above?: boolean;
 }
 
 /** The play-by-play stage, where pane A is the fidelity standard. */
@@ -194,7 +196,8 @@ export function figure(
     `</g>` +
     // clear of the outermost field ring, so a name is never drawn through one
     `<text class="nm${classes.includes("mover") ? " on" : ""}" x="${n1(person.x)}" ` +
-    `y="${n1(person.y + r + 32)}" text-anchor="middle">${esc(person.name)}</text>` +
+    `y="${n1(person.above ? person.y - r - 7 : person.y + r + 32)}" text-anchor="middle">` +
+    `${esc(person.name)}</text>` +
     `</g>`
   );
 }
