@@ -63,6 +63,14 @@ export const BOARD_R = 13;
 /** The ratified story loop. Heavier marks run a multiple of it. */
 export const LOOP = 8;
 
+/** The ratified demos are drawn in a 230x130 box. What was ratified is the
+ * drawing's proportions, not its arithmetic, so a ratified length scales to the
+ * board it lands on (UI_SPEC resolution 42). Marks that carry no proportion —
+ * stroke widths, dash arrays, spike lengths — keep their ratified numbers. */
+const DEMO = { w: 230, h: 130 };
+const tall = (f: Figure) => (f.stage ? f.stage.h / DEMO.h : 1);
+const wide = (f: Figure) => (f.stage ? f.stage.w / DEMO.w : 1);
+
 const rad = (f: Figure) => f.r ?? R;
 /** The square is 24 wide against the circle's r=13, per the ratified shapes. */
 const half = (f: Figure) => rad(f) * (12 / 13);
@@ -112,32 +120,41 @@ export interface Walk {
 }
 
 function walk(
-  who: Figure,
   dx: number,
   dy: number,
   at: number[],
   keyTimes: string,
   dur: string,
 ): Walk {
-  const [cx, cy] = fits(who, dx, dy);
   return {
-    values: at.map((k) => `${n1(cx * k)} ${n1(cy * k)}`).join(";"),
+    values: at.map((k) => `${n1(dx * k)} ${n1(dy * k)}`).join(";"),
     keyTimes,
     dur,
   };
 }
 
-/** A walk stops at the board's edge: nobody may step off the picture. */
-function fits(who: Figure, dx: number, dy: number): [number, number] {
+/** A walk keeps its ratified length, scaled to the board. Where the mover has
+ * no room for it, the layout gives and the walk does not: the mover starts
+ * further in, so the same move is the same drawing wherever the person happens
+ * to stand (UI_SPEC resolution 43). */
+function makeRoom(who: Figure, dx: number, dy: number): [number, number] {
   const box = who.stage;
-  if (!box) return [dx, dy];
-  const pad = rad(who) + 8;
-  const room = (from: number, delta: number, limit: number) =>
-    delta === 0
-      ? 1
-      : Math.max(0, Math.min(1, ((delta < 0 ? pad : limit - pad) - from) / delta));
-  const keep = Math.min(room(who.x, dx, box.w), room(who.y, dy, box.h));
-  return [dx * keep, dy * keep];
+  if (!box) return [0, 0];
+  const pad = rad(who) + 10;
+  const over = (from: number, delta: number, limit: number) => {
+    const end = from + delta;
+    if (end < pad) return pad - end;
+    if (end > limit - pad) return limit - pad - end;
+    return 0;
+  };
+  return [over(who.x, dx, box.w), over(who.y, dy, box.h)];
+}
+
+/** The same figure, stood far enough in that its whole walk fits. */
+function stoodBack(who: Figure, dx: number, dy: number): [Figure, [number, number]] {
+  const [sx, sy] = makeRoom(who, dx, dy);
+  if (!sx && !sy) return [who, [0, 0]];
+  return [{ ...who, x: who.x + sx, y: who.y + sy }, [sx, sy]];
 }
 
 /** An attribute animated across the story loop, on ratified key times. */
@@ -218,6 +235,7 @@ function rings(
   dur = "1.65s",
   fade = ".75;.45;0",
 ): string {
+  to = Math.round(to);
   return [0, 0.55, 1.1]
     .map(
       (begin) =>
@@ -254,8 +272,8 @@ function wall(frm: Frame, mover: Figure, struck: boolean): string {
     `d="M${n1(back)} ${n1(-spread - 40)} H${n1(L * 2)} V${n1(spread + 40)} H${n1(back)} Z ` +
     `M${n1(wx)} ${-arm} L${n1(wx)} ${arm} L${n1(back)} ${n1(spread)} L${n1(back)} ${n1(-spread)} Z"/>` +
     `</clipPath></defs>` +
-    rings(L, 0, "preA") +
-    rings(L, 0, "postA", ` clip-path="url(#${shadow})"`) +
+    rings(L, 0, "preA", "", 2.4, 170 * tall(mover)) +
+    rings(L, 0, "postA", ` clip-path="url(#${shadow})"`, 2.4, 170 * tall(mover)) +
     `<line class="mv-trace" x1="${n1(rad(mover) + 2)}" y1="0" x2="${n1(wx - 3)}" y2="0" ` +
     `opacity="0">${animate("opacity", "0;0;.55;.55", "0;.4;.46;1", "8s")}</line>` +
     strike +
@@ -481,6 +499,8 @@ export function zigzag(from: Figure, to: Figure, klass = "mv-tension"): string {
 /** The other party's storm, and the calm that only arrives a beat after the
  * actor has held still. */
 function storm(other: Figure): string {
+  const loud = Math.round(170 * tall(other));
+  const calm = Math.round(150 * tall(other));
   return (
     `<g class="stormlong">` +
     [0, 0.55]
@@ -488,7 +508,7 @@ function storm(other: Figure): string {
         (begin) =>
           `<circle class="fld" cx="${n1(other.x)}" cy="${n1(other.y)}" r="24" ` +
           `stroke-width="2.6" opacity="0">` +
-          `<animate attributeName="r" values="18;170" dur="1.1s" begin="${begin}s" repeatCount="indefinite"/>` +
+          `<animate attributeName="r" values="18;${loud}" dur="1.1s" begin="${begin}s" repeatCount="indefinite"/>` +
           `<animate attributeName="opacity" values=".8;.5;0" keyTimes="0;.7;1" dur="1.1s" ` +
           `begin="${begin}s" repeatCount="indefinite"/></circle>`,
       )
@@ -497,7 +517,7 @@ function storm(other: Figure): string {
     `<g class="stormcalm">` +
     `<circle class="fld" cx="${n1(other.x)}" cy="${n1(other.y)}" r="24" ` +
     `stroke-width="1.6" opacity="0">` +
-    `<animate attributeName="r" values="18;150" dur="2.8s" repeatCount="indefinite"/>` +
+    `<animate attributeName="r" values="18;${calm}" dur="2.8s" repeatCount="indefinite"/>` +
     `<animate attributeName="opacity" values=".35;.2;0" keyTimes="0;.7;1" dur="2.8s" repeatCount="indefinite"/>` +
     `</circle></g>`
   );
@@ -518,6 +538,9 @@ export interface Drawn {
   ghosts: { actor?: "out" | "in" | "solo"; target?: "out" | "in" | "solo" };
   /** Everything drawn around and between them. */
   marks: string;
+  /** Where a person has to stand for their whole walk to fit on the board.
+   * The layout gives, never the walk (UI_SPEC resolution 43). */
+  place: Record<number, [number, number]>;
   /** How far the move actually moves someone, by person id, on the ratified
    * key times. A move is a move: the person travels. */
   steps: Record<number, Walk>;
@@ -528,6 +551,7 @@ const NONE: Drawn = {
   target: "",
   third: "",
   ghosts: {},
+  place: {},
   marks: "",
   steps: {},
 };
@@ -565,22 +589,25 @@ export function draw(
         ...NONE,
         marks: pair.open + arrow(pair, actor, target, false) + pair.close,
         steps: {
-          [actor.id]: walk(actor, u.x * go, u.y * go, [0, 0, 1, 1], "0;.06;.5;1", "8s"),
+          [actor.id]: walk(u.x * go, u.y * go, [0, 0, 1, 1], "0;.06;.5;1", "8s"),
         },
       };
     }
     case Move.Away: {
       if (!target || !pair) return NONE;
       const u = unit(actor, target);
-      // the arrow leads the way out, so the walk is only as long as the room
-      // the board leaves in front of it
-      const reach = fits(actor, -u.x * 124, -u.y * 124);
-      const go = Math.min(68, (Math.hypot(reach[0], reach[1]) * 68) / 124);
+      // the walk keeps its ratified length, scaled to the board, and the mover
+      // stands far enough in that it and the arrow ahead of it both fit
+      const go = 68 * wide(actor);
+      const lead = go + 56 * wide(actor);
+      const [stood, shift] = stoodBack(actor, -u.x * lead, -u.y * lead);
+      const local = frame(stood, target);
       return {
         ...NONE,
-        marks: pair.open + arrow(pair, actor, target, true, go) + pair.close,
+        marks: local.open + arrow(local, stood, target, true, go) + local.close,
+        place: shift[0] || shift[1] ? { [actor.id]: shift } : {},
         steps: {
-          [actor.id]: walk(actor, -u.x * go, -u.y * go, [0, 0, 1, 1, 1], "0;.06;.5;.94;1", "8s"),
+          [actor.id]: walk(-u.x * go, -u.y * go, [0, 0, 1, 1, 1], "0;.06;.5;.94;1", "8s"),
         },
       };
     }
@@ -641,8 +668,8 @@ export function draw(
         target: "fused",
         marks: pair.open + bands(pair, actor, target, close) + pair.close,
         steps: {
-          [actor.id]: walk(actor, u.x * close, u.y * close, [0, 0, 1, 1], "0;.2;.55;1", "8s"),
-          [target.id]: walk(target, -u.x * close, -u.y * close, [0, 0, 1, 1], "0;.2;.55;1", "8s"),
+          [actor.id]: walk(u.x * close, u.y * close, [0, 0, 1, 1], "0;.2;.55;1", "8s"),
+          [target.id]: walk(-u.x * close, -u.y * close, [0, 0, 1, 1], "0;.2;.55;1", "8s"),
         },
       };
     }
@@ -653,11 +680,11 @@ export function draw(
       const u = unit(actor, target);
       const join = Math.max(0, u.length - (rad(actor) + rad(target) - 12));
       const steps: Record<number, Walk> = {
-        [actor.id]: walk(actor, u.x * join, u.y * join, [0, 0, 1, 1], "0;.2;.55;1", "8s"),
+        [actor.id]: walk(u.x * join, u.y * join, [0, 0, 1, 1], "0;.2;.55;1", "8s"),
       };
       if (third) {
         const out = unit(target, third);
-        steps[third.id] = walk(third, out.x * 42, out.y * 42, [0, 0, 1, 1], "0;.2;.55;1", "8s");
+        steps[third.id] = walk(out.x * 42, out.y * 42, [0, 0, 1, 1], "0;.2;.55;1", "8s");
       }
       return { ...NONE, actor: "joining", steps };
     }
@@ -671,22 +698,21 @@ export function draw(
         { x: 0, y: 0 },
       );
       const len = Math.hypot(away.x, away.y) || 1;
+      // the ratified bail-out, scaled to the board, with the mover stood far
+      // enough in to take the whole of it
+      const go = 55 * wide(actor);
+      const step: [number, number] = [(away.x / len) * go, (away.y / len) * go];
+      const [stood, shift] = stoodBack(actor, step[0], step[1]);
       return {
         ...NONE,
         actor: "tremout",
         marks:
           `<g class="tenspre">` +
-          others.map((o) => zigzag(actor, o, "mv-tension spark")).join("") +
+          others.map((o) => zigzag(stood, o, "mv-tension spark")).join("") +
           `</g>`,
+        place: shift[0] || shift[1] ? { [actor.id]: shift } : {},
         steps: {
-          [actor.id]: walk(
-            actor,
-            (away.x / len) * 55,
-            (away.y / len) * 55,
-            [0, 0, 1, 1],
-            "0;.32;.55;1",
-            "10s",
-          ),
+          [actor.id]: walk(step[0], step[1], [0, 0, 1, 1], "0;.32;.55;1", "10s"),
         },
       };
     }

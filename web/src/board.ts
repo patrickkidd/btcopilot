@@ -129,6 +129,8 @@ interface Gesture {
   classes: Map<number, string>;
   ghosts: Map<number, "out" | "in" | "solo">;
   steps: Record<number, Walk>;
+  /** Where a mover has to stand for its whole walk to fit on the board. */
+  place: Record<number, [number, number]>;
 }
 
 /** One step's drawing: the marks around the people and what each of them does. */
@@ -144,6 +146,7 @@ function gesture(step: Step, figures: Figure[]): Gesture {
     classes: new Map(),
     ghosts: new Map(),
     steps: {},
+    place: {},
   };
   if (!actor) return out;
   const reached = event.relationshipTargets[0] ?? event.spouse ?? null;
@@ -162,6 +165,7 @@ function gesture(step: Step, figures: Figure[]): Gesture {
   );
   out.marks = drawn.marks;
   out.steps = drawn.steps;
+  out.place = drawn.place;
   out.classes.set(actor.id, `${drawn.actor} mover`);
   if (reached !== null && drawn.target) out.classes.set(reached, drawn.target);
   if (third !== null && drawn.third) out.classes.set(third, drawn.third);
@@ -216,17 +220,23 @@ export function board(
   events: TimelineEvent[],
   width: number,
 ): BoardView {
-  const figures = ellipse(people, width);
+  const laid = ellipse(people, width);
   const now = steps[at];
   const g: Gesture = now
-    ? gesture(now, figures)
-    : { marks: "", classes: new Map(), ghosts: new Map(), steps: {} };
+    ? gesture(now, laid)
+    : { marks: "", classes: new Map(), ghosts: new Map(), steps: {}, place: {} };
+  // a mover whose walk would not fit stands further in, and everything that
+  // points at them is drawn from where they now stand
+  const figures = laid.map((f) => {
+    const shift = g.place[f.id];
+    return shift ? { ...f, x: f.x + shift[0], y: f.y + shift[1] } : f;
+  });
   const svg =
     `<svg viewBox="0 0 ${width} ${BOARD_H}" aria-hidden="true">` +
     `<defs><filter id="glow" x="-30%" y="-30%" width="160%" height="160%">` +
     `<feGaussianBlur stdDeviation="1.1"/></filter></defs>` +
     bonds(figures, events, g.steps) +
-    history(steps, at, figures) +
+    history(steps, at, laid) +
     `<g class="cast">${g.marks}` +
     figures
       .map((f) =>
