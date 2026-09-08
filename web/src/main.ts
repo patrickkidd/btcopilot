@@ -71,6 +71,10 @@ function tapped(
   if (diagram) void api.record(diagram.id, kind, item, id);
 }
 
+/** How long the thread takes to fade out for the session taking its place, the
+ * same 150ms the stylesheet transitions it over. */
+const FADE_MS = 150;
+
 const picture = new Picture($("view"), { onTap: (tap: Tap) => onTap(tap) });
 
 /** A tap on the wire steps through the moments under the thumb; a tap on the
@@ -233,6 +237,11 @@ function addStatement(statement: Statement): void {
  * picture back where that session's last coach message left it. */
 async function openSession(id: number): Promise<void> {
   const { statements } = await api.session(id);
+  // One thread fades out before the next one takes its place, so the swap does
+  // not read as words rewriting themselves.
+  const thread = $("chat");
+  thread.style.opacity = "0";
+  await wait(FADE_MS);
   chat.clear();
   for (const statement of statements) addStatement(statement);
   picture.clear();
@@ -240,6 +249,7 @@ async function openSession(id: number): Promise<void> {
   const last = [...statements].reverse().find((s) => s.role === Role.Coach);
   if (last) spotlightFrom(last.text);
   else actions();
+  thread.style.opacity = "";
 }
 
 /** The coach pointing: the moments its words name become the spotlight, and

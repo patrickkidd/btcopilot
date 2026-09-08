@@ -34,6 +34,56 @@ const CHARS = 2;
 const TICK_MS = 18;
 /** An offer is not a move: the answers the coach holds out land 160ms apart. */
 const OFFER_MS = 160;
+/** The beat between the last move's sentence and the question that closes the
+ * reply, from the approved play-by-play. */
+const ASK_MS = 260;
+/** The closing question types faster than the narration it follows. */
+const ASK_TICK_MS = 16;
+/** The question that closes a reply is the last sentence written before the
+ * first offered chip. */
+const LAST_SENTENCE = /[^.?!]*[.?!]?\s*$/;
+
+/** How a reply is laid out: the words, then the question that closes it set
+ * apart in amber, then the answers the coach holds out. A reply with no offered
+ * chips is words alone. */
+interface Written {
+  words: Piece[];
+  ask: string;
+  offers: Chip[];
+  tail: Piece[];
+}
+
+function layout(pieces: Piece[]): Written {
+  const first = pieces.findIndex(
+    (p) => "chip" in p && p.chip.tone === ChipTone.Ask,
+  );
+  if (first < 0) return { words: pieces, ask: "", offers: [], tail: [] };
+  const words = pieces.slice(0, first);
+  let ask = "";
+  const last = words[words.length - 1];
+  if (last && !("chip" in last)) {
+    const sentence = last.text.match(LAST_SENTENCE)?.[0] ?? "";
+    ask = sentence.trim();
+    words[words.length - 1] = {
+      text: last.text.slice(0, last.text.length - sentence.length),
+    };
+  }
+  const rest = pieces.slice(first);
+  const lastOffer =
+    rest.length -
+    1 -
+    [...rest]
+      .reverse()
+      .findIndex((p) => "chip" in p && p.chip.tone === ChipTone.Ask);
+  return {
+    words,
+    ask,
+    offers: rest
+      .slice(0, lastOffer + 1)
+      .flatMap((p) => ("chip" in p && p.chip.tone === ChipTone.Ask ? [p.chip] : [])),
+    tail: rest.slice(lastOffer + 1),
+  };
+}
 /** How long a traced bubble stays outlined after a moment jumps to it. */
 const TRACE_MS = 2200;
 
@@ -119,6 +169,21 @@ export class Chat {
       .join("");
   }
 
+  /** A whole reply as it stands when nothing is typing: the words, the closing
+   * question in amber, and the offers in their own row. A reopened session must
+   * read exactly as the reply did when it was written. */
+  private written(pieces: Piece[]): string {
+    const { words, ask, offers, tail } = layout(pieces);
+    return (
+      this.render(words) +
+      (ask ? `<div class="ask">${esc(ask)}</div>` : "") +
+      (offers.length
+        ? `<div class="offer">${offers.map((c) => this.pill(c)).join("")}</div>`
+        : "") +
+      this.render(tail)
+    );
+  }
+
   clear(): void {
     this.list.innerHTML = "";
     this.stuck = true;
@@ -134,8 +199,11 @@ export class Chat {
     const bubble = el(
       "div",
       `bub ${role}`,
-      (role === Role.Coach ? `<div class="who">Coach</div>` : "") +
-        this.render(tokenize(text, tone)),
+      role === Role.Coach
+        ? `<div class="who">Coach</div>` + this.written(tokenize(text, tone))
+        : // Only the coach offers; the same chip sent back by the user is words
+          // in their own sentence.
+          this.render(tokenize(text, tone)),
     );
     // The bubble carries its statement so a moment on the picture can point
     // back at the words that coded it.
@@ -204,30 +272,53 @@ export class Chat {
           held.classList.remove("lit");
           held = null;
         };
-        for (const piece of tokenize(text)) {
-          if ("chip" in piece) {
-            // an offer names nothing in the record, so nothing draws and the
-            // next one follows straight after
-            const offer = piece.chip.tone === ChipTone.Ask;
-            if (!offer) await release();
-            words.insertAdjacentHTML("beforeend", this.pill(piece.chip));
-            const pill = words.lastElementChild as HTMLElement;
-            onChip(piece.chip);
-            if (offer) await wait(OFFER_MS);
-            else {
-              pill.classList.add("lit");
-              held = pill;
-            }
-          } else {
-            for (let i = 0; i < piece.text.length; i += CHARS) {
-              words.append(piece.text.slice(i, i + CHARS));
-              this.scroll();
-              await wait(TICK_MS);
-            }
+        const write = async (into: HTMLElement, run: string, tick: number) => {
+          for (let i = 0; i < run.length; i += CHARS) {
+            into.append(run.slice(i, i + CHARS));
+            this.scroll();
+            await wait(tick);
           }
+        };
+        const { words: said, ask, offers, tail } = layout(tokenize(text));
+        for (const piece of said) {
+          if ("chip" in piece) {
+            await release();
+            words.insertAdjacentHTML("beforeend", this.pill(piece.chip));
+            (words.lastElementChild as HTMLElement).classList.add("lit");
+            held = words.lastElementChild as HTMLElement;
+            onChip(piece.chip);
+          } else await write(words, piece.text, TICK_MS);
           this.scroll();
         }
         await release();
+        // The question that closes the reply stands apart in amber, after a
+        // beat, and the answers land under it one at a time.
+        if (ask) {
+          await wait(ASK_MS);
+          const line = el("div", "ask");
+          bubble.append(line);
+          await write(line, ask, ASK_TICK_MS);
+        }
+        if (offers.length) {
+          const row = el("div", "offer");
+          bubble.append(row);
+          for (const offer of offers) {
+            row.insertAdjacentHTML("beforeend", this.pill(offer));
+            onChip(offer);
+            this.scroll();
+            await wait(OFFER_MS);
+          }
+        }
+        if (tail.length) {
+          const after = el("span", "words");
+          bubble.append(after);
+          for (const piece of tail) {
+            if ("chip" in piece) {
+              after.insertAdjacentHTML("beforeend", this.pill(piece.chip));
+              onChip(piece.chip);
+            } else await write(after, piece.text, TICK_MS);
+          }
+        }
         bubble.classList.remove("typing");
         this.typing = null;
       },

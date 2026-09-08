@@ -643,6 +643,8 @@ button { font-family: inherit; }
   gap: 10px;
   padding: 14px 12px;
   background: var(--bg);
+  /* the thread fades out and back as another session takes its place */
+  transition: opacity 0.15s;
   touch-action: pan-y;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -707,6 +709,21 @@ button { font-family: inherit; }
   border-radius: 50%;
   background: var(--move);
 }
+
+/* the question that closes a reply, set apart from the narration above it */
+.bub > .ask {
+  margin-top: 9px;
+  color: var(--ask-text);
+  font-weight: 500;
+}
+/* the answers the coach holds out, under the question */
+.bub > .offer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.bub > .offer .chip { margin: 0; }
 
 /* A chip never leaves its bubble: it may be as wide as the bubble and no
    wider, and it wraps to more lines rather than being cut. Labels are capped
