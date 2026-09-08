@@ -501,7 +501,8 @@ void settings.load();
 void load().then(async () => {
   const said = window.BOOTSTRAP.statements;
   if (!said.length) {
-    await wait(300);
+    // the ratified opening beat: 320ms before the coach starts typing
+    await wait(320);
     await chat.live().type(
       "I'm here whenever you want to think out loud about your family. " +
         "Tell me who is on your mind.",

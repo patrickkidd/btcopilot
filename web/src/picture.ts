@@ -13,6 +13,7 @@ import {
   markOf,
   rangesTouch,
   silence,
+  spans,
   trend,
 } from "./marks";
 import {
@@ -717,6 +718,7 @@ export class Picture {
       // silent, where it recorded no change, the trend the directed points
       // earn, and the open state that has no ending
       silence(marks, wire, GAP_YEARS, this.perYear()) +
+      spans(marks, wire, (iso) => this.x(iso)) +
       trend(marks, wire) +
       fade(marks, wire, x1) +
       this.bracket(wire, x0, x1);

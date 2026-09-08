@@ -71,6 +71,34 @@ export function bands(
     .join("");
 }
 
+/** What a moment that lasted covers: quiet horizontal bands beneath the main
+ * wire, each starting and ending where the record dates it. Added because a
+ * record's relationships carry start and end dates ("The Generalization Test").
+ * They stack so two overlapping spans can both be seen. */
+export function spans(
+  marks: Mark[],
+  wire: number,
+  at: (iso: string) => number,
+): string {
+  const ranged = marks
+    .filter((m) => !!m.event.endDateTime)
+    .sort((a, b) => a.x - b.x);
+  const ends: number[] = [];
+  return ranged
+    .map((m) => {
+      const right = at(m.event.endDateTime as string);
+      // a row is free once nothing on it reaches this far
+      let row = ends.findIndex((edge) => edge < m.x - 2);
+      if (row < 0) row = ends.length;
+      ends[row] = right;
+      return (
+        `<line class="lane" x1="${m.x.toFixed(1)}" y1="${wire + 12 + row * 6}" ` +
+        `x2="${Math.max(right, m.x + 3).toFixed(1)}" y2="${wire + 12 + row * 6}"/>`
+      );
+    })
+    .join("");
+}
+
 /** Silence is dotted and never flat: a stretch with nothing recorded must not
  * read as a stretch where nothing changed (rule 3). */
 export function silence(

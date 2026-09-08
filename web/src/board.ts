@@ -321,7 +321,13 @@ export function board(
   const now = steps[at];
   const g: Gesture = now
     ? gesture(now, laid)
-    : { marks: "", classes: new Map(), ghosts: new Map(), steps: {}, place: {} };
+    : {
+        marks: "",
+        classes: new Map(),
+        ghosts: new Map(),
+        steps: {},
+        place: {},
+      };
   // a mover whose walk would not fit stands further in, and everything that
   // points at them is drawn from where they now stand
   const figures = laid.map((f) => {
