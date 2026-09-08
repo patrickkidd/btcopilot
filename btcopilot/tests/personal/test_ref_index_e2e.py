@@ -24,22 +24,22 @@ def test_every_id_the_index_offers_survives_the_whole_loop():
     data = seed_diagram_data()
     out = index(data)
     person = _cited(out, "People")[0]
-    chapter = _cited(out, "Chapters")[0]
+    cluster = _cited(out, "Clusters")[0]
     event = _cited(out, "Events")[0]
 
     clean, refs = parse(
-        f"[[chapter:{chapter}|that stretch]] holds "
+        f"[[cluster:{cluster}|that cluster]] holds "
         f"[[events:{event}|what you just told me]] for "
         f"[[person:{person}|him]]."
     )
-    assert clean == "that stretch holds what you just told me for him."
+    assert clean == "that cluster holds what you just told me for him."
     chips = aimable(resolve(refs, data), data)
-    assert [c.kind for c in chips] == [RefKind.Chapter, RefKind.Events, RefKind.Person]
+    assert [c.kind for c in chips] == [RefKind.Cluster, RefKind.Events, RefKind.Person]
 
     timeline = build_timeline(data)
-    chapters = timeline["chapters"]
-    assert any(chapter in c["cluster_ids"] for c in chapters)
-    assert any(int(event) in c["event_ids"] for c in chapters)
+    clusters = timeline["clusters"]
+    assert any(cluster in c["cluster_ids"] for c in clusters)
+    assert any(int(event) in c["event_ids"] for c in clusters)
 
 
 def test_an_id_the_index_withholds_is_thrown_away():
@@ -56,7 +56,7 @@ def test_the_instruction_teaches_the_markup_the_parser_reads():
     for kind in RefKind:
         assert f"[[{kind.value}:" in COACH_REFERENCE_INSTRUCTION
     _, refs = parse(
-        "[[chapter:cl1|a]] [[events:10,11|b]] [[person:1|c]] "
+        "[[cluster:cl1|a]] [[events:10,11|b]] [[person:1|c]] "
         "[[range:1988-04-02..1999-11-05|d]]"
     )
     assert [r.kind for r in refs] == list(RefKind)

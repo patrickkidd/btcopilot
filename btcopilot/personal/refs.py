@@ -24,7 +24,7 @@ _log = logging.getLogger(__name__)
 
 
 class RefKind(enum.StrEnum):
-    Chapter = "chapter"
+    Cluster = "cluster"
     Events = "events"
     Person = "person"
     Range = "range"
@@ -47,8 +47,8 @@ MARKUP = re.compile(
 _LEFTOVER = re.compile(r"\[\[[^\]]*\]\]")
 
 
-def _chapter(target: str, label: str) -> Ref:
-    return Ref(kind=RefKind.Chapter, label=label, cluster_id=target.strip())
+def _cluster(target: str, label: str) -> Ref:
+    return Ref(kind=RefKind.Cluster, label=label, cluster_id=target.strip())
 
 
 def _events(target: str, label: str) -> Ref:
@@ -72,7 +72,7 @@ def _range(target: str, label: str) -> Ref:
 
 
 BUILDERS = {
-    RefKind.Chapter: _chapter,
+    RefKind.Cluster: _cluster,
     RefKind.Events: _events,
     RefKind.Person: _person,
     RefKind.Range: _range,
@@ -113,8 +113,8 @@ def resolve(refs: list[Ref], data: DiagramData) -> list[Ref]:
             if not ref.event_ids:
                 _log.warning("Reference to events none of which are in the diagram")
                 continue
-        if ref.kind is RefKind.Chapter and ref.cluster_id not in clusters:
-            _log.warning(f"Reference to unknown chapter {ref.cluster_id}")
+        if ref.kind is RefKind.Cluster and ref.cluster_id not in clusters:
+            _log.warning(f"Reference to unknown cluster {ref.cluster_id}")
             continue
         resolved.append(ref)
     return resolved
@@ -125,7 +125,7 @@ def resolve(refs: list[Ref], data: DiagramData) -> list[Ref]:
 # `resolve` and `personal.timeline.aimable` throw away every reference the
 # picture cannot go to. The index is the same rule stated forwards, so the
 # coach cites what will survive instead of guessing: a person who appears in a
-# dated event, a chapter that starts inside the dated record, a dated event.
+# dated event, a cluster that starts inside the dated record, a dated event.
 # Undated events and events whose date is Unknown are not on the line and are
 # therefore not citable.
 
@@ -175,7 +175,7 @@ def _people_entries(people: dict, dated: list[tuple[dict, datetime.date]]) -> li
     return entries
 
 
-def _chapter_entries(
+def _cluster_entries(
     clusters: list[dict], dated: list[tuple[dict, datetime.date]]
 ) -> list[str]:
     first, last = dated[-1][1], dated[0][1]
@@ -217,7 +217,7 @@ def index(data: DiagramData | None) -> str:
 
     sections = [
         ("People", _people_entries(people, dated)),
-        ("Chapters", _chapter_entries(data.clusters, dated)),
+        ("Clusters", _cluster_entries(data.clusters, dated)),
         (
             "Events (newest first)",
             [

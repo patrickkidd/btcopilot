@@ -34,7 +34,7 @@ export interface Step {
   cast: number[];
 }
 
-/** Which moments in a stretch are moves the board can draw. */
+/** Which moments in a cluster are moves the board can draw. */
 export function movesIn(events: TimelineEvent[]): Step[] {
   return events
     .filter(
@@ -54,7 +54,7 @@ function castOf(event: TimelineEvent): number[] {
   return [...new Set([...(subject === null ? [] : [subject]), ...reached])];
 }
 
-/** Everyone the whole stretch puts on the board, so the cast does not shuffle
+/** Everyone the whole cluster puts on the board, so the cast does not shuffle
  * between steps. */
 export function castOfSteps(steps: Step[]): number[] {
   const seen: number[] = [];
@@ -197,7 +197,7 @@ function gesture(step: Step, figures: Figure[]): Gesture {
   return out;
 }
 
-/** Earlier moves stay on the board behind the current gesture, so a stretch
+/** Earlier moves stay on the board behind the current gesture, so a cluster
  * accumulates into one picture instead of flashing past. */
 function history(steps: Step[], upTo: number, figures: Figure[]): string {
   if (upTo <= 0) return "";
@@ -303,7 +303,7 @@ function axis(steps: Step[], at: number, width: number, top: number): string {
   }
 
   // a move's dot fills in as it is played, so the axis carries how far along
-  // the stretch the board is
+  // the cluster the board is
   for (const s of dated) {
     const played = s.i <= at;
     out +=

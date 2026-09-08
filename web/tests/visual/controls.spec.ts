@@ -27,10 +27,10 @@ const controls = (page: Page) =>
 
 const fromTheWire = async (page: Page) => {
   await settle(page);
-  // a record whose moments sit inside a chapter needs it opened to reach them
-  const chapters = page.locator('.ss-hit[data-target="chapter"]');
-  if (await chapters.first().isVisible().catch(() => false)) {
-    await chapters.first().click();
+  // a record whose moments sit inside a cluster needs it opened to reach them
+  const clusters = page.locator('.ss-hit[data-target="cluster"]');
+  if (await clusters.first().isVisible().catch(() => false)) {
+    await clusters.first().click();
     await page.waitForTimeout(400);
   }
   await page.locator('.ss-hit[data-target="zone"]').first().click();

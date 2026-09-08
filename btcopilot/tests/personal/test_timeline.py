@@ -199,10 +199,10 @@ def test_seed_fixture_covers_every_move_the_play_by_play_draws():
     for variable in ("symptom", "anxiety", "functioning"):
         directions = {e[variable] for e in events if e.get(variable)}
         assert {VariableShift.Up.value, VariableShift.Down.value} <= directions
-    chapters = build_timeline(seed_diagram_data())["chapters"]
-    # A stored cluster is a chapter of its own, so a chapter is as big as the
+    clusters = build_timeline(seed_diagram_data())["clusters"]
+    # A stored cluster is a cluster of its own, so a cluster is as big as the
     # cluster the coach named; nothing on the line stands alone.
-    assert all(chapter["count"] >= 3 for chapter in chapters)
+    assert all(cluster["count"] >= 3 for cluster in clusters)
 
 
 def test_seed_fixture_covers_every_rule():
@@ -231,30 +231,30 @@ def test_seed_fixture_covers_every_rule():
     assert timeline["bond_lanes"]
 
 
-def test_chapters_split_on_a_long_silence():
+def test_clusters_split_on_a_long_silence():
     events = [
         _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
         _shift(11, 1, "1991-06-01", "symptom", VariableShift.Down),
         _shift(12, 1, "2005-01-01", "symptom", VariableShift.Up),
         _shift(13, 1, "2006-01-01", "symptom", VariableShift.Down),
     ]
-    chapters = build_timeline(_data([1], events))["chapters"]
-    assert [c["event_ids"] for c in chapters] == [[10, 11], [12, 13]]
-    assert [c["label"] for c in chapters] == ["1990–1991", "2005–2006"]
-    assert chapters[1]["gap_days"] > 4 * 365
+    clusters = build_timeline(_data([1], events))["clusters"]
+    assert [c["event_ids"] for c in clusters] == [[10, 11], [12, 13]]
+    assert [c["label"] for c in clusters] == ["1990–1991", "2005–2006"]
+    assert clusters[1]["gap_days"] > 4 * 365
 
 
-def test_a_lone_event_joins_the_chapter_it_is_nearest():
+def test_a_lone_event_joins_the_cluster_it_is_nearest():
     events = [
         _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
         _shift(11, 1, "1991-01-01", "symptom", VariableShift.Down),
         _shift(12, 1, "1995-06-01", "symptom", VariableShift.Up),
     ]
-    chapters = build_timeline(_data([1], events))["chapters"]
-    assert [c["event_ids"] for c in chapters] == [[10, 11, 12]]
+    clusters = build_timeline(_data([1], events))["clusters"]
+    assert [c["event_ids"] for c in clusters] == [[10, 11, 12]]
 
 
-def test_a_chapter_takes_its_title_from_a_cluster_inside_it():
+def test_a_cluster_takes_its_title_from_a_stored_cluster_inside_it():
     events = [
         _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
         _shift(11, 1, "1991-01-01", "symptom", VariableShift.Down),
@@ -272,9 +272,9 @@ def test_a_chapter_takes_its_title_from_a_cluster_inside_it():
             )
         )
     ]
-    chapter = build_timeline(data)["chapters"][0]
-    assert chapter["title"] == "The year everything moved"
-    assert chapter["cluster_ids"] == ["cl-1"]
+    cluster = build_timeline(data)["clusters"][0]
+    assert cluster["title"] == "The year everything moved"
+    assert cluster["cluster_ids"] == ["cl-1"]
 
 
 def test_two_clusters_inside_one_run_of_events_stay_two_groupings():
@@ -307,9 +307,9 @@ def test_two_clusters_inside_one_run_of_events_stay_two_groupings():
             )
         ),
     ]
-    chapters = build_timeline(data)["chapters"]
-    assert [c["event_ids"] for c in chapters] == [[10, 11, 12], [13, 14, 15]]
-    assert [c["title"] for c in chapters] == [
+    clusters = build_timeline(data)["clusters"]
+    assert [c["event_ids"] for c in clusters] == [[10, 11, 12], [13, 14, 15]]
+    assert [c["title"] for c in clusters] == [
         "The first hard winter",
         "After the diagnosis",
     ]
@@ -335,9 +335,9 @@ def test_events_no_cluster_claims_are_grouped_by_the_silences_between_them():
             )
         )
     ]
-    chapters = build_timeline(data)["chapters"]
-    assert [c["event_ids"] for c in chapters] == [[10, 11], [12, 13]]
-    assert [c["cluster_ids"] for c in chapters] == [["cl-a"], []]
+    clusters = build_timeline(data)["clusters"]
+    assert [c["event_ids"] for c in clusters] == [[10, 11], [12, 13]]
+    assert [c["cluster_ids"] for c in clusters] == [["cl-a"], []]
 
 
 def test_every_dated_event_says_itself_in_a_sentence():
@@ -369,7 +369,7 @@ def test_the_axis_spans_every_dated_event_not_only_the_lane_marks():
     }
 
 
-def test_undated_events_belong_to_no_chapter_but_stay_in_the_list():
+def test_undated_events_belong_to_no_cluster_but_stay_in_the_list():
     events = [
         _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
         _shift(
@@ -378,7 +378,7 @@ def test_undated_events_belong_to_no_chapter_but_stay_in_the_list():
     ]
     timeline = build_timeline(_data([1], events))
     assert [e["id"] for e in timeline["events"]] == [10, 11]
-    assert [c["event_ids"] for c in timeline["chapters"]] == [[10]]
+    assert [c["event_ids"] for c in timeline["clusters"]] == [[10]]
 
 
 def test_every_event_carries_the_words_the_list_shows():

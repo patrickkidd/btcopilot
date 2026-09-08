@@ -7,15 +7,14 @@ import { ChipKind, ChipTone, ItemKind, type Chip, type Piece } from "./types";
  *
  * A chip names one of three things — an event, a cluster, a person. The markup
  * the coach may write is wider than that, so it is narrowed here: `events` is a
- * list of events, `chapter` is what a cluster used to be called, and `range` is
- * a span of time that resolves to nothing the picture can go to, so it stays
- * plain words rather than becoming a chip that does nothing. */
+ * list of events, and `range` is a span of time that resolves to nothing the
+ * picture can go to, so it stays plain words rather than becoming a chip that
+ * does nothing. */
 
 enum Markup {
   Event = "event",
   Events = "events",
   Cluster = "cluster",
-  Chapter = "chapter",
   Person = "person",
   Range = "range",
   /** What the coach offers to talk about next. It names nothing in the record,
@@ -28,7 +27,6 @@ const NARROWED: Record<Markup, ChipKind | null> = {
   [Markup.Event]: ChipKind.Event,
   [Markup.Events]: ChipKind.Event,
   [Markup.Cluster]: ChipKind.Cluster,
-  [Markup.Chapter]: ChipKind.Cluster,
   [Markup.Person]: ChipKind.Person,
   [Markup.Range]: null,
   [Markup.Ask]: ChipKind.Ask,
@@ -41,7 +39,7 @@ const TOKEN = new RegExp(
 
 const KIND_WORD: Record<ChipKind, string> = {
   [ChipKind.Event]: "this",
-  [ChipKind.Cluster]: "this stretch",
+  [ChipKind.Cluster]: "this cluster",
   [ChipKind.Person]: "them",
   [ChipKind.Ask]: "this",
 };
@@ -94,7 +92,7 @@ export function chips(text: string): Chip[] {
 /** What the picture should aim at for one chip: the events it names. */
 export function aimedEvents(
   chip: Chip,
-  chapters: { id: string; cluster_ids: string[]; event_ids: number[] }[],
+  clusters: { id: string; cluster_ids: string[]; event_ids: number[] }[],
 ): number[] {
   switch (chip.kind) {
     case ChipKind.Event:
@@ -103,10 +101,10 @@ export function aimedEvents(
         .map((part) => Number(part.trim()))
         .filter((id) => Number.isFinite(id));
     case ChipKind.Cluster: {
-      const chapter = chapters.find(
+      const cluster = clusters.find(
         (c) => c.id === chip.target || c.cluster_ids.includes(chip.target),
       );
-      return chapter ? chapter.event_ids : [];
+      return cluster ? cluster.event_ids : [];
     }
     case ChipKind.Person:
     case ChipKind.Ask:

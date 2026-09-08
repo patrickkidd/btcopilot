@@ -14,7 +14,7 @@ from btcopilot.schema import DateCertainty, DiagramData
 
 def test_every_kind_parses():
     clean, refs = parse(
-        "In [[chapter:c2|those years]] — [[events:10,11|two moments]], "
+        "In [[cluster:c2|those years]] — [[events:10,11|two moments]], "
         "[[person:4|Nell]], [[range:1992-01-01..1998-12-31|92 to 98]]."
     )
     assert clean == "In those years — two moments, Nell, 92 to 98."
@@ -47,7 +47,7 @@ def test_resolve_drops_targets_the_diagram_does_not_have():
     refs = [
         Ref(kind=RefKind.Person, label="a", person_id=2),
         Ref(kind=RefKind.Events, label="b", event_ids=[10, 99]),
-        Ref(kind=RefKind.Chapter, label="c", cluster_id="c9"),
+        Ref(kind=RefKind.Cluster, label="c", cluster_id="c9"),
     ]
     resolved = resolve(refs, data)
     assert [r.label for r in resolved] == ["b"]
@@ -149,13 +149,13 @@ def test_a_reply_citing_the_index_resolves_to_real_targets():
     out = index(data)
     assert "c1" in out and "12 " in out and "3 Wren" in out
     clean, refs = parse(
-        "[[chapter:c1|the move]] set up [[events:12|the school year]] for "
+        "[[cluster:c1|the move]] set up [[events:12|the school year]] for "
         "[[person:3|Wren]]."
     )
     assert clean == "the move set up the school year for Wren."
     resolved = resolve(refs, data)
     assert [r.kind for r in resolved] == [
-        RefKind.Chapter,
+        RefKind.Cluster,
         RefKind.Events,
         RefKind.Person,
     ]
@@ -167,7 +167,7 @@ def test_a_reply_citing_the_index_resolves_to_real_targets():
 
 
 def _wide(people_count: int) -> DiagramData:
-    """A cast far larger than the chapters and events around it."""
+    """A cast far larger than the clusters and events around it."""
     return DiagramData(
         people=[{"id": i, "name": f"Person Number{i}"} for i in range(1, people_count + 1)],
         events=[
@@ -182,7 +182,7 @@ def _wide(people_count: int) -> DiagramData:
         clusters=[
             {
                 "id": f"c{n}",
-                "title": f"a chapter titled {n}",
+                "title": f"a cluster titled {n}",
                 "startDate": f"{1950 + n}-01-01",
                 "endDate": f"{1951 + n}-01-01",
             }
@@ -196,9 +196,9 @@ def _section(out: str, name: str) -> list[str]:
     return line.split(": ", 1)[1].split("; ")
 
 
-def test_chapters_are_listed_newest_first():
+def test_clusters_are_listed_newest_first():
     """Ids sort as text, so double digits are where a by-id sort goes wrong."""
-    entries = _section(index(_wide(5)), "Chapters")
+    entries = _section(index(_wide(5)), "Clusters")
     years = [int(entry.split(" ")[1][:4]) for entry in entries]
     assert years == sorted(years, reverse=True)
     assert entries[0].split(" ")[0] == "c24"
@@ -207,5 +207,5 @@ def test_chapters_are_listed_newest_first():
 def test_a_large_cast_cannot_crowd_out_the_events():
     out = index(_wide(300))
     assert len(out) <= INDEX_BUDGET_TOKENS * 4
-    for name in ("People", "Chapters", "Events"):
+    for name in ("People", "Clusters", "Events"):
         assert len(_section(out, name)) > 10

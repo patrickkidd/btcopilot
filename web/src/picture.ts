@@ -38,7 +38,7 @@ import {
   DateCertainty,
   ItemKind,
   ViewKind,
-  type Chapter,
+  type Cluster,
   type Person,
   type Question,
   type Timeline,
@@ -59,22 +59,22 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const NODAL = new Set(["cutoff", "defined-self", "fusion"]);
 
-/** The resting level: the whole line, one box per chapter (converged mockup,
- * crowded-chapter/timeline-converged.html renderRest).
+/** The resting level: the whole line, one box per cluster (converged mockup,
+ * crowded-cluster/timeline-converged.html renderRest).
  *
  * Its drawing is 78 tall, but the region it draws into is not. The picture
- * region is ONE height for both the resting wire and the open chapter, because
+ * region is ONE height for both the resting wire and the open cluster, because
  * a tap on the picture must never move a bubble; only entering the moves board,
  * which is a screen of its own, may change the layout. So the resting drawing
- * is top-aligned inside the chapter's box and the rest of that box is empty. */
+ * is top-aligned inside the cluster's box and the rest of that box is empty. */
 const REST_H = 78;
 const REST_WIRE = 46;
-/** A chapter of more than this many moments collapses to a ring and a count. */
+/** A cluster of more than this many moments collapses to a ring and a count. */
 const DENSE = 8;
-/** A gap of this many years or more between chapters earns the amber question. */
+/** A gap of this many years or more between clusters earns the amber question. */
 const GAP_YEARS = 4;
 
-/** A chapter's years at a glance, two digits each, as the converged mockup
+/** A cluster's years at a glance, two digits each, as the converged mockup
  * writes them: "93–97". One year when it starts and ends in the same one. */
 function shortYears(start: string, end: string): string {
   const a = start.slice(2, 4);
@@ -85,7 +85,7 @@ function shortYears(start: string, end: string): string {
 /** The picture's levels. The middle "cluster drilldown" is CUT (R-0074): the
  * resting wire and the moves board are the two that survive. */
 enum Level {
-  /** Nothing named yet: the whole line at a glance, one box per chapter. */
+  /** Nothing named yet: the whole line at a glance, one box per cluster. */
   Rest = "rest",
   Wire = "wire",
   Board = "board",
@@ -113,8 +113,8 @@ const LIT_MS = 2600;
 
 export enum Target {
   Zone = "zone",
-  /** A chapter box on the resting level. */
-  Chapter = "chapter",
+  /** A cluster box on the resting level. */
+  Cluster = "cluster",
   Band = "band",
   Question = "question",
   Shelf = "shelf",
@@ -124,7 +124,7 @@ export enum Target {
   Back = "back",
   Prev = "prev",
   Next = "next",
-  /** Ask the coach to talk through the stretch the board is showing. */
+  /** Ask the coach to talk through the cluster the board is showing. */
   Explain = "explain",
 }
 
@@ -162,7 +162,7 @@ export class Picture {
   private cast: number[] = [];
   private level = Level.Rest;
   private moves: Step[] = [];
-  /** The stretch the board is currently showing, so a chip already on its own
+  /** The cluster the board is currently showing, so a chip already on its own
    * board steps it rather than reopening it. */
   private cluster: string | null = null;
   private at = 0;
@@ -177,7 +177,7 @@ export class Picture {
   private litPeople: number[] = [];
   private litFor = 0;
   private band: { start: string; end: string } | null = null;
-  private focus: Chapter | null = null;
+  private focus: Cluster | null = null;
   private range = { min: 0, max: 1 };
   private laid: { zones: Mark[][]; rows: LabelRow[] } = {
     zones: [],
@@ -262,11 +262,11 @@ export class Picture {
   spotlight(eventIds: number[]): void {
     this.named = eventIds;
     this.selected = null;
-    // naming something opens the chapter it belongs to; naming nothing leaves
+    // naming something opens the cluster it belongs to; naming nothing leaves
     // the picture at rest, showing the whole line
     this.level = eventIds.length ? Level.Wire : Level.Rest;
     this.cluster = null;
-    this.focus = this.chapterOf(eventIds[0]);
+    this.focus = this.clusterOf(eventIds[0]);
     this.rescale();
     this.render();
   }
@@ -322,7 +322,7 @@ export class Picture {
     this.render();
   }
 
-  /** Enter the board: the moves of one stretch, numbered, on the people they
+  /** Enter the board: the moves of one cluster, numbered, on the people they
    * happened between. The level below it is CUT, so this comes straight from
    * the chat. */
   openBoard(eventIds: number[], cluster: string | null = null): number {
@@ -342,17 +342,17 @@ export class Picture {
   }
 
   /** A chip in a play-by-play steps the board and never goes back to the wire
-   * (owner review round 1). The board opens on the stretch the walk narrates if
+   * (owner review round 1). The board opens on the cluster the walk narrates if
    * it is not already up, then goes to the move the chip names — or, when the
    * chip names no move of its own, to the nth move of the walk. */
-  playStep(cluster: string, eventIds: number[], ordinal: number): void {
-    if (this.level !== Level.Board || this.cluster !== cluster) {
-      const stretch =
-        this.chapterOf(eventIds[0]) ??
-        this.data?.chapters.find(
-          (c) => c.id === cluster || c.cluster_ids.includes(cluster),
+  playStep(clusterId: string, eventIds: number[], ordinal: number): void {
+    if (this.level !== Level.Board || this.cluster !== clusterId) {
+      const cluster =
+        this.clusterOf(eventIds[0]) ??
+        this.data?.clusters.find(
+          (c) => c.id === clusterId || c.cluster_ids.includes(clusterId),
         );
-      if (!stretch || !this.openBoard(stretch.event_ids, cluster)) return;
+      if (!cluster || !this.openBoard(cluster.event_ids, clusterId)) return;
     }
     // the reader stepping the board themselves outranks a play-through still
     // running, which is what steering already means here
@@ -365,7 +365,7 @@ export class Picture {
     this.render();
   }
 
-  /** How many moves a stretch would put on the board, for the entry button. */
+  /** How many moves a cluster would put on the board, for the entry button. */
   countMoves(eventIds: number[]): number {
     return movesIn(
       (this.data?.events ?? []).filter((e) => eventIds.includes(e.id)),
@@ -376,7 +376,7 @@ export class Picture {
     return this.level === Level.Board;
   }
 
-  /** The stretch the board is showing, which is what "explain" asks about. */
+  /** The cluster the board is showing, which is what "explain" asks about. */
   showing(): string | null {
     return this.cluster;
   }
@@ -444,12 +444,12 @@ export class Picture {
         return;
       }
       case ViewKind.Cluster: {
-        const chapter = this.data?.chapters.find(
+        const cluster = this.data?.clusters.find(
           (c) => c.id === view.cluster || c.cluster_ids.includes(view.cluster),
         );
-        if (chapter) {
-          this.focus = chapter;
-          this.spotlight(chapter.event_ids);
+        if (cluster) {
+          this.focus = cluster;
+          this.spotlight(cluster.event_ids);
         }
         return;
       }
@@ -478,13 +478,13 @@ export class Picture {
       : (this.data?.events.find((e) => e.id === id) ?? null);
   }
 
-  private chapterOf(eventId: number | undefined): Chapter | null {
+  private clusterOf(eventId: number | undefined): Cluster | null {
     if (eventId === undefined || !this.data) return null;
-    return this.data.chapters.find((c) => c.event_ids.includes(eventId)) ?? null;
+    return this.data.clusters.find((c) => c.event_ids.includes(eventId)) ?? null;
   }
 
-  /** The coach drives the picture: when it names moments inside one stretch,
-   * the wire zooms to that stretch; otherwise the whole record is on it. */
+  /** The coach drives the picture: when it names moments inside one cluster,
+   * the wire zooms to that cluster; otherwise the whole record is on it. */
   private rescale(): void {
     const shown = this.shown();
     const dates = shown.map((e) => years(e.dateTime as string));
@@ -498,7 +498,7 @@ export class Picture {
     this.range = { min: min - pad, max: max + pad };
   }
 
-  /** The moments on the wire: the focused stretch when the coach aimed at one,
+  /** The moments on the wire: the focused cluster when the coach aimed at one,
    * otherwise every dated moment in the record. */
   private shown(): TimelineEvent[] {
     const dated = this.dated();
@@ -546,10 +546,10 @@ export class Picture {
 
   /** The board is a level of its own: its own height, its own nav, its own
    * step controls, and a caption saying which move of how many this is. */
-  /** The whole line at a glance: one box per chapter, its years above it, its
+  /** The whole line at a glance: one box per cluster, its years above it, its
    * moments as dots inside it, and the amber question where the record has a
-   * long gap it cannot account for. A tap opens a chapter. Converged mockup:
-   * crowded-chapter/timeline-converged.html renderRest. */
+   * long gap it cannot account for. A tap opens a cluster. Converged mockup:
+   * crowded-cluster/timeline-converged.html renderRest. */
   private renderRest(): void {
     const width = this.width;
     const x0 = X_PAD;
@@ -569,7 +569,7 @@ export class Picture {
       return;
     }
 
-    const chapters = this.restChapters();
+    const clusters = this.restClusters();
     const first = years(dated[0].dateTime as string);
     const last = years(dated[dated.length - 1].dateTime as string);
     const span = last - first || 1;
@@ -582,9 +582,9 @@ export class Picture {
       `<svg viewBox="0 0 ${width} ${REST_H}" height="${REST_H}" preserveAspectRatio="xMinYMin meet">` +
       `<line class="wire" x1="${x0}" y1="${REST_WIRE}" x2="${x1}" y2="${REST_WIRE}"/>`;
     let hits = "";
-    chapters.forEach((chapter, i) => {
-      const a = at(chapter.start);
-      const b = at(chapter.end);
+    clusters.forEach((cluster, i) => {
+      const a = at(cluster.start);
+      const b = at(cluster.end);
       const left = a - 10;
       const boxWidth = b - a + 20;
       const middle = (a + b) / 2;
@@ -593,24 +593,24 @@ export class Picture {
         `width="${boxWidth.toFixed(1)}" height="52" rx="8"/>` +
         `<rect class="ep-edge" x="${left.toFixed(1)}" y="12" ` +
         `width="${boxWidth.toFixed(1)}" height="52" rx="8"/>`;
-      if (chapter.count > DENSE)
+      if (cluster.count > DENSE)
         svg +=
           `<circle class="ep-many" cx="${middle.toFixed(1)}" cy="${REST_WIRE}" r="11"/>` +
           `<text class="ep-count" x="${middle.toFixed(1)}" y="${REST_WIRE + 4}" ` +
-          `text-anchor="middle">${chapter.count}</text>`;
+          `text-anchor="middle">${cluster.count}</text>`;
       else
-        for (let j = 0; j < chapter.count; j += 1) {
-          const spread = chapter.count > 1 ? j / (chapter.count - 1) : 0.5;
+        for (let j = 0; j < cluster.count; j += 1) {
+          const spread = cluster.count > 1 ? j / (cluster.count - 1) : 0.5;
           svg +=
             `<circle class="dot" cx="${(a + (b - a) * spread).toFixed(1)}" ` +
             `cy="${REST_WIRE}" r="4.5"/>`;
         }
       svg +=
         `<text class="ep-yrs" x="${middle.toFixed(1)}" y="26" text-anchor="middle">` +
-        `${esc(shortYears(chapter.start, chapter.end))}</text>`;
+        `${esc(shortYears(cluster.start, cluster.end))}</text>`;
 
-      const next = chapters[i + 1];
-      if (next && years(next.start) - years(chapter.end) >= GAP_YEARS) {
+      const next = clusters[i + 1];
+      if (next && years(next.start) - years(cluster.end) >= GAP_YEARS) {
         const gap = (at(next.start) + b) / 2;
         svg +=
           `<text class="qm small" x="${gap.toFixed(1)}" y="${REST_WIRE + 4}" ` +
@@ -620,22 +620,22 @@ export class Picture {
       // the box may be narrower than a thumb, so the target is grown to the floor
       const target = Math.max(ZONE, boxWidth);
       hits +=
-        `<button class="ss-hit" data-target="${Target.Chapter}" data-index="${i}" ` +
-        `aria-label="${esc(chapter.title || shortYears(chapter.start, chapter.end))}" ` +
+        `<button class="ss-hit" data-target="${Target.Cluster}" data-index="${i}" ` +
+        `aria-label="${esc(cluster.title || shortYears(cluster.start, cluster.end))}" ` +
         `style="left:${(middle - target / 2).toFixed(1)}px;top:${REST_WIRE - ZONE / 2}px;` +
         `width:${target.toFixed(1)}px;height:${ZONE}px"></button>`;
     });
-    svg += `<text class="ss-hint" x="${x0}" y="74">tap a chapter</text></svg>`;
+    svg += `<text class="ss-hint" x="${x0}" y="74">tap a cluster</text></svg>`;
 
     this.host.innerHTML = `<div class="ss">${svg}${hits}${shelf}</div>`;
   }
 
-  /** The chapters the resting level draws, in time order. A record with no
-   * chapters of its own is one chapter: everything on it. */
-  private restChapters(): Chapter[] {
-    const chapters = (this.data?.chapters ?? []).filter((c) => c.event_ids.length);
-    if (chapters.length)
-      return [...chapters].sort((a, b) => years(a.start) - years(b.start));
+  /** The clusters the resting level draws, in time order. A record with no
+   * clusters of its own is one cluster: everything on it. */
+  private restClusters(): Cluster[] {
+    const clusters = (this.data?.clusters ?? []).filter((c) => c.event_ids.length);
+    if (clusters.length)
+      return [...clusters].sort((a, b) => years(a.start) - years(b.start));
     const dated = this.dated();
     if (!dated.length) return [];
     return [
@@ -653,9 +653,9 @@ export class Picture {
     ];
   }
 
-  /** The moments in the chapter a resting tap landed on. */
-  inChapter(index: number): number[] {
-    return this.restChapters()[index]?.event_ids ?? [];
+  /** The moments in the cluster a resting tap landed on. */
+  inCluster(index: number): number[] {
+    return this.restClusters()[index]?.event_ids ?? [];
   }
 
   private renderBoard(): void {
@@ -668,7 +668,7 @@ export class Picture {
       : triangle(people, this.width);
     const last = this.moves.length - 1;
     // people pop in when the board opens, and only then: a step through the
-    // stretch must not restage everyone on every move
+    // cluster must not restage everyone on every move
     const zoom = this.entering ? " in" : "";
     this.entering = false;
     this.host.innerHTML =
@@ -788,7 +788,7 @@ export class Picture {
     const zoned = zones(marks, x0, x1);
     this.laid.zones = zoned.map((zone) => zone.marks);
     // the words are laid out first: where they land decides whether there is
-    // room for the bracket over the stretch
+    // room for the bracket over the cluster
     const { text, rowsLaid } = this.labels(marks, x0, x1, wire);
     this.laid.rows = rowsLaid;
 
@@ -976,14 +976,14 @@ export class Picture {
     return this.data?.people.find((p) => p.primary)?.name ?? "";
   }
 
-  /** The bracket over the stretch the coach aimed at. It is only drawn when no
+  /** The bracket over the cluster the coach aimed at. It is only drawn when no
    * words are on the picture, because the words sit where it would go. */
   private bracket(wire: number, x0: number, x1: number): string {
     if (!this.focus || this.selected !== null || this.laid.rows.length) return "";
     const a = Math.max(x0, this.x(this.focus.start) - 5);
     const b = Math.min(x1, this.x(this.focus.end) + 5);
     const top = wire - 12;
-    // a bracket with no label says a stretch is there but not which one
+    // a bracket with no label says a cluster is there but not which one
     const years = `${this.focus.start.slice(0, 4)}–${this.focus.end.slice(0, 4)}`;
     return (
       `<path class="brk" d="M${a.toFixed(1)} ${wire - 8} L${a.toFixed(1)} ${top} ` +

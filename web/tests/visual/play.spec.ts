@@ -2,8 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { stateFor } from "./setup";
 
 /** Step chips in a play-by-play (owner review round 1). The `play` record holds
- * one moment per move, all in one stored stretch, and its session holds a
- * play-by-play about that stretch whose chips are its moves in order.
+ * one moment per move, all in one stored cluster, and its session holds a
+ * play-by-play about that cluster whose chips are its moves in order.
  *
  * The walk is coach-authored and each move is a chip [Oracle: R-0074], and a
  * button reaches a whole digestible concept rather than cycling one datum at a

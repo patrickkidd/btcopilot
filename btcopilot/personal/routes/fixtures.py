@@ -36,7 +36,7 @@ CERTAIN = DateCertainty.Certain
 APPROX = DateCertainty.Approximate
 UNKNOWN = DateCertainty.Unknown
 
-LONG_LABEL = "the stretch when everybody stopped speaking about the house and the money"
+LONG_LABEL = "the cluster when everybody stopped speaking about the house and the money"
 LONG_NAME = "Margaret-Anne Fitzgerald-Winterbottom III"
 # A professional's client diagram can be named anything. Forty characters is
 # past what the title row can hold on a phone, so it has to ellipsise rather
@@ -232,7 +232,7 @@ PLAY_CLUSTER = "walk"
 
 
 def play() -> DiagramData:
-    """The moves record with its whole stretch stored as one cluster, so a
+    """The moves record with its whole cluster stored as one cluster, so a
     play-by-play about it has a cluster id that resolves."""
     data = moves()
     data.clusters = [

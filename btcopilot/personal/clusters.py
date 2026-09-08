@@ -172,7 +172,7 @@ def _source(cluster: dict) -> ClusterSource | None:
 
 def _regroupable(cluster: dict) -> bool:
     """Only a grouping the model is known to have made may be regrouped.
-    A stretch of unknown provenance is treated as the user's, because the coach
+    A cluster of unknown provenance is treated as the user's, because the coach
     does not overwrite what the user asked for and the cost is asymmetric:
     guessing wrong about the model loses a name the user chose."""
     return _source(cluster) is ClusterSource.Model

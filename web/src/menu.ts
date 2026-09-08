@@ -1,9 +1,9 @@
 import { esc } from "./dom";
 import { Direction, openEditor, openPersonEditor } from "./editor";
-import { emptyTimeline, type Chapter, type Person, type Timeline, type TimelineEvent } from "./types";
+import { emptyTimeline, type Cluster, type Person, type Timeline, type TimelineEvent } from "./types";
 
 /** The full timeline list behind the menu: full screen, searched, and divided
- * by chapter with a sticky header, so you always know which cluster you are in
+ * by cluster with a sticky header, so you always know which cluster you are in
  * (owner rulings 2026-09-03). Chat edits it too (R-0069).
  *
  * Two ways into the same record: what happened, and who it happened to. The
@@ -123,8 +123,8 @@ export class Menu {
 
   private data: Timeline = emptyTimeline();
 
-  private chapterOf(id: number): Chapter | undefined {
-    return this.data.chapters.find((c) => c.event_ids.includes(id));
+  private clusterOf(id: number): Cluster | undefined {
+    return this.data.clusters.find((c) => c.event_ids.includes(id));
   }
 
   private names(): Map<number, string> {
@@ -154,11 +154,11 @@ export class Menu {
     let html = "";
     let last: string | null | undefined;
     for (const event of shown) {
-      const chapter = this.chapterOf(event.id);
-      const key = chapter ? chapter.id : null;
+      const cluster = this.clusterOf(event.id);
+      const key = cluster ? cluster.id : null;
       if (key !== last) {
         last = key;
-        html += this.divider(chapter);
+        html += this.divider(cluster);
       }
       html += this.row(event, names);
     }
@@ -249,12 +249,12 @@ export class Menu {
     });
   }
 
-  private divider(chapter: Chapter | undefined): string {
-    const count = chapter
-      ? `${chapter.count} moment${chapter.count === 1 ? "" : "s"}`
+  private divider(cluster: Cluster | undefined): string {
+    const count = cluster
+      ? `${cluster.count} moment${cluster.count === 1 ? "" : "s"}`
       : "";
     return (
-      `<div class="div"><span>${esc(chapter ? chapter.label : UNPLACED)}</span>` +
+      `<div class="div"><span>${esc(cluster ? cluster.label : UNPLACED)}</span>` +
       `<span class="dcount">${esc(count)}</span></div>`
     );
   }

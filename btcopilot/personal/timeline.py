@@ -179,8 +179,8 @@ def _events_payload(data: DiagramData, people_by_id: dict) -> list[dict]:
 
 
 def _group_by_gap(dated: list[tuple[dict, datetime.date]]) -> list[list]:
-    """Chapters are episodes: a run of events with no long silence in it. A
-    lone event next to a chapter belongs to it rather than standing alone."""
+    """Clusters are episodes: a run of events with no long silence in it. A
+    lone event next to a cluster belongs to it rather than standing alone."""
     groups = []
     for chunk, date in dated:
         if groups and (date - groups[-1][-1][1]).days > CHAPTER_SPLIT_DAYS:
@@ -211,7 +211,7 @@ def _group_by_gap(dated: list[tuple[dict, datetime.date]]) -> list[list]:
     return groups
 
 
-def _chapter_label(start: datetime.date, end: datetime.date) -> str:
+def _cluster_label(start: datetime.date, end: datetime.date) -> str:
     return str(start.year) if start.year == end.year else f"{start.year}–{end.year}"
 
 
@@ -239,8 +239,8 @@ def _cluster_group(cluster: dict, by_id: dict, claimed: set) -> list:
     )
 
 
-def _chapters(events: list[dict], clusters: list[dict]) -> list[dict]:
-    """A chapter is a grouping the picture draws. A stored cluster is one,
+def _drawn_clusters(events: list[dict], clusters: list[dict]) -> list[dict]:
+    """A cluster is a grouping the picture draws. A stored cluster is one,
     because clusters are what the coach names; whatever no cluster claims is
     grouped by the silences between events."""
     dated = [
@@ -268,20 +268,20 @@ def _chapters(events: list[dict], clusters: list[dict]) -> list[dict]:
     groups.extend((group, None) for group in _group_by_gap(rest))
     groups.sort(key=lambda pair: pair[0][0][1])
 
-    chapters = []
+    clusters = []
     previous_end = None
     for index, (group, cluster) in enumerate(groups):
         start, end = group[0][1], group[-1][1]
-        chapters.append(
+        clusters.append(
             {
-                # A chapter a stored cluster backs is that cluster, and carries
+                # A cluster a stored cluster backs is that cluster, and carries
                 # its id, so a chip written about it resolves in the record.
                 "id": str(cluster["id"]) if cluster else f"ch{index}",
-                "label": _chapter_label(start, end),
+                "label": _cluster_label(start, end),
                 "title": (
                     (cluster or {}).get("name")
                     or (cluster or {}).get("title")
-                    or _chapter_label(start, end)
+                    or _cluster_label(start, end)
                 ),
                 "summary": (cluster or {}).get("summary"),
                 "cluster_ids": [str(cluster["id"])] if cluster else [],
@@ -296,37 +296,37 @@ def _chapters(events: list[dict], clusters: list[dict]) -> list[dict]:
             }
         )
         previous_end = end
-    return chapters
+    return clusters
 
 
 def aimable(refs: list[Ref], data: DiagramData) -> list[Ref]:
     """A chip the picture cannot go to is not a chip. `resolve` keeps only
     references the diagram holds; this keeps only the ones that land in a
-    chapter, which is the only place the picture can aim."""
+    cluster, which is the only place the picture can aim."""
     people_by_id = {
         p["id"]: p
         for p in data.people
         if isinstance(p, dict) and p.get("id") is not None
     }
     events = _events_payload(data, people_by_id)
-    chapters = _chapters(events, data.clusters)
+    clusters = _drawn_clusters(events, data.clusters)
     dated = {event["id"]: event for event in events if not _undated(event)}
-    in_chapters = {
-        event_id for chapter in chapters for event_id in chapter["event_ids"]
+    in_clusters = {
+        event_id for cluster in clusters for event_id in cluster["event_ids"]
     }
-    named_clusters = {name for chapter in chapters for name in chapter["cluster_ids"]}
+    named_clusters = {name for cluster in clusters for name in cluster["cluster_ids"]}
 
     kept = []
     for ref in refs:
         if ref.kind is RefKind.Events:
-            if not in_chapters.intersection(ref.event_ids):
+            if not in_clusters.intersection(ref.event_ids):
                 _log.warning(f"Reference {ref.label!r} names no event on the line")
                 continue
         elif ref.kind is RefKind.Person:
             if not any(
                 _links(event, ref.person_id)
                 for event_id, event in dated.items()
-                if event_id in in_chapters
+                if event_id in in_clusters
             ):
                 _log.warning(f"Reference {ref.label!r} names a person with no events")
                 continue
@@ -334,13 +334,13 @@ def aimable(refs: list[Ref], data: DiagramData) -> list[Ref]:
             if not any(
                 ref.start <= event["dateTime"] <= ref.end
                 for event_id, event in dated.items()
-                if event_id in in_chapters
+                if event_id in in_clusters
             ):
                 _log.warning(f"Reference {ref.label!r} covers no event on the line")
                 continue
-        elif ref.kind is RefKind.Chapter:
+        elif ref.kind is RefKind.Cluster:
             if ref.cluster_id not in named_clusters:
-                _log.warning(f"Reference {ref.label!r} names no chapter on the line")
+                _log.warning(f"Reference {ref.label!r} names no cluster on the line")
                 continue
         kept.append(ref)
     return kept
@@ -605,7 +605,7 @@ def build_timeline(data: DiagramData) -> dict:
             for p in people
         ],
         "events": events,
-        "chapters": _chapters(events, data.clusters),
+        "clusters": _drawn_clusters(events, data.clusters),
         "pair_bonds": bonds,
         "lanes": lanes,
         "bond_lanes": bond_lanes,

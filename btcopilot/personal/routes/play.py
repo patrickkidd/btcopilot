@@ -1,8 +1,8 @@
-"""The play-by-play for one stretch of the line.
+"""The play-by-play for one cluster of the line.
 
 It is coach-authored (R-0074): the coach picks which moves, in what order, and
 writes the words around them, and every move it names is a chip it cannot
-invent. The page taps either a stored cluster or a chapter the line grouped by
+invent. The page taps either a stored cluster or a cluster the line grouped by
 itself, so both resolve here to the same thing — a set of event ids and a name.
 """
 
@@ -20,14 +20,14 @@ def _cluster(data: DiagramData, cluster_id: str) -> dict:
     for cluster in data.clusters:
         if isinstance(cluster, dict) and str(cluster.get("id")) == str(cluster_id):
             return cluster
-    for chapter in build_timeline(data)["chapters"]:
-        if chapter["id"] == cluster_id or cluster_id in chapter["cluster_ids"]:
+    for cluster in build_timeline(data)["clusters"]:
+        if cluster["id"] == cluster_id or cluster_id in cluster["cluster_ids"]:
             return {
-                "id": chapter["id"],
-                "name": chapter["title"],
-                "title": chapter["title"],
-                "summary": chapter["summary"] or "",
-                "eventIds": chapter["event_ids"],
+                "id": cluster["id"],
+                "name": cluster["title"],
+                "title": cluster["title"],
+                "summary": cluster["summary"] or "",
+                "eventIds": cluster["event_ids"],
                 "source": ClusterSource.Derived.value,
             }
     raise ValueError(f"No cluster {cluster_id!r} on the line")

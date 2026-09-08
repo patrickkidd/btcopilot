@@ -87,18 +87,18 @@ function onTap(tap: Tap): void {
     return;
   }
   if (tap.target === Target.Explain) {
-    const stretch = picture.showing();
-    if (stretch) void explain(stretch);
+    const cluster = picture.showing();
+    if (cluster) void explain(cluster);
     return;
   }
   if (tap.target === Target.Shelf) {
     apply(reduce(pic, PicEvent.Tap, { kind: SelKind.Shelf, id: "shelf" }));
     return;
   }
-  // At rest the picture shows the whole line; a tap opens one chapter, which
+  // At rest the picture shows the whole line; a tap opens one cluster, which
   // is the one level change the reader makes for themselves.
-  if (tap.target === Target.Chapter) {
-    const ids = picture.inChapter(tap.index);
+  if (tap.target === Target.Cluster) {
+    const ids = picture.inCluster(tap.index);
     if (ids.length) picture.spotlight(ids);
     pic = REST;
     actions();
@@ -134,7 +134,7 @@ function onTap(tap: Tap): void {
 }
 
 /** A chip the coach wrote without words of its own says what the record calls
- * it: a person's name, an event's line, a stretch's title. */
+ * it: a person's name, an event's line, a cluster's title. */
 function chipLabel(chip: Chip): string {
   if (!chip.bare) return chip.label;
   if (chip.kind === ChipKind.Person)
@@ -142,7 +142,7 @@ function chipLabel(chip: Chip): string {
   if (chip.kind === ChipKind.Event)
     return timeline.events.find((e) => String(e.id) === chip.target)?.label ?? chip.label;
   return (
-    timeline.chapters.find(
+    timeline.clusters.find(
       (c) => c.id === chip.target || c.cluster_ids.includes(chip.target),
     )?.title ?? chip.label
   );
@@ -247,7 +247,7 @@ speak.addEventListener("change", () => void settings.set({ speak: speak.checked 
 // Every scroll area takes wheel, trackpad, touch AND mouse drag (UI_STANDARDS).
 for (const id of ["chat", "menu-body"]) dragScroll($(id));
 
-/** One stored message back on the thread. A play-by-play keeps the stretch it
+/** One stored message back on the thread. A play-by-play keeps the cluster it
  * walked, so its chips still step the board a week later. */
 function addStatement(statement: Statement): void {
   chat.add(
@@ -289,23 +289,23 @@ async function openSession(id: number): Promise<void> {
  * chat bubbles must never move from a tap on a chip). The moves board is a
  * level change and is entered from Play. */
 function aim(chip: Chip): void {
-  const ids = aimedEvents(chip, timeline.chapters);
+  const ids = aimedEvents(chip, timeline.clusters);
   if (!ids.length) return;
   picture.spotlight(ids);
   // A chip in the coach's words does exactly what a tap on the picture does:
   // there is one selection, wherever the reader touched it. A chip naming one
-  // moment selects that moment; a chip naming a stretch selects the stretch,
+  // moment selects that moment; a chip naming a cluster selects the cluster,
   // so the caption offers Play for it.
-  const stretch =
+  const cluster =
     ids.length > 1
-      ? timeline.chapters.find((c) => ids.every((id) => c.event_ids.includes(id)))
+      ? timeline.clusters.find((c) => ids.every((id) => c.event_ids.includes(id)))
       : undefined;
   apply(
     reduce(
       REST,
       PicEvent.Tap,
-      stretch
-        ? { kind: SelKind.Cluster, id: stretch.id }
+      cluster
+        ? { kind: SelKind.Cluster, id: cluster.id }
         : { kind: SelKind.Event, id: String(ids[0]) },
     ),
   );
@@ -314,7 +314,7 @@ function aim(chip: Chip): void {
 /** The nth chip of a walk steps the board to the nth move. The caption row
  * belongs to the wire, so it clears: the board carries its own. */
 function stepBoard(play: PlayTap, chip: Chip): void {
-  picture.playStep(play.cluster, aimedEvents(chip, timeline.chapters), play.ordinal);
+  picture.playStep(play.cluster, aimedEvents(chip, timeline.clusters), play.ordinal);
   pic = REST;
   actions();
 }
@@ -326,8 +326,8 @@ function apply(outcome: Outcome): void {
   const sel = pic.sel;
   picture.select(sel && sel.kind === SelKind.Event ? Number(sel.id) : null);
   if (sel?.kind === SelKind.Cluster) {
-    const stretch = timeline.chapters.find((c) => c.id === sel.id);
-    if (stretch) picture.spotlight(stretch.event_ids);
+    const cluster = timeline.clusters.find((c) => c.id === sel.id);
+    if (cluster) picture.spotlight(cluster.event_ids);
   }
   actions();
   if (outcome.record)
@@ -349,7 +349,7 @@ function selLabel(sel: Sel): string {
       timeline.events.find((e) => String(e.id) === sel.id)?.label ?? "this moment"
     );
   if (sel.kind === SelKind.Cluster)
-    return timeline.chapters.find((c) => c.id === sel.id)?.title ?? "this stretch";
+    return timeline.clusters.find((c) => c.id === sel.id)?.title ?? "this cluster";
   const n = timeline.shelf.length;
   return n ? `${n} thing${n === 1 ? "" : "s"} with no date yet` : "what has no date";
 }
@@ -393,18 +393,18 @@ function actions(): void {
     host.innerHTML = "";
     return;
   }
-  const stretch =
+  const cluster =
     sel.kind === SelKind.Event
-      ? timeline.chapters.find((c) => c.event_ids.includes(Number(sel.id)))
+      ? timeline.clusters.find((c) => c.event_ids.includes(Number(sel.id)))
       : sel.kind === SelKind.Cluster
-        ? timeline.chapters.find((c) => c.id === sel.id)
+        ? timeline.clusters.find((c) => c.id === sel.id)
         : undefined;
   const ask = sel.kind === SelKind.Shelf ? "Ask when" : "Ask about this";
   const trace = sel.kind === SelKind.Event ? codedIn(Number(sel.id)) : null;
-  // The board entry button is offered only when the stretch has at least one
+  // The board entry button is offered only when the cluster has at least one
   // move the board can draw. It carries no words: with the icon alone the row
   // holds the ask chip, the way in and the coded-in chip across a phone.
-  const moves = stretch ? picture.countMoves(stretch.event_ids) : 0;
+  const moves = cluster ? picture.countMoves(cluster.event_ids) : 0;
   host.innerHTML =
     `<button type="button" class="chip ask" id="cap-chip">[${esc(ask)}]</button>` +
     (moves
@@ -419,10 +419,10 @@ function actions(): void {
   );
   if (trace)
     $("cap-trace").addEventListener("click", () => void traceTo(trace.where));
-  if (moves && stretch)
+  if (moves && cluster)
     $("cap-play").addEventListener("click", () =>
       apply(
-        reduce(pic, PicEvent.TapPlay, { kind: SelKind.Cluster, id: stretch.id }),
+        reduce(pic, PicEvent.TapPlay, { kind: SelKind.Cluster, id: cluster.id }),
       ),
     );
 }
@@ -431,13 +431,13 @@ function actions(): void {
  * changes the picture's height. It goes up before the coach's words are
  * written, and stays up until the reader taps back off it. */
 function enterBoard(clusterId: string): void {
-  const stretch = timeline.chapters.find((c) => c.id === clusterId);
-  if (stretch) picture.openBoard(stretch.event_ids, clusterId);
+  const cluster = timeline.clusters.find((c) => c.id === clusterId);
+  if (cluster) picture.openBoard(cluster.event_ids, clusterId);
   pic = REST;
   actions();
 }
 
-/** The board's own control: ask the coach to talk through the stretch on
+/** The board's own control: ask the coach to talk through the cluster on
  * screen. The board is already up, so nothing here changes the picture's
  * height; the words land beneath it and step it as they are typed. */
 async function explain(clusterId: string): Promise<void> {
@@ -456,7 +456,7 @@ async function explain(clusterId: string): Promise<void> {
   picture.explains(false);
   chat.settled();
   await chat.live(reply.cluster_id).type(reply.statement, (chip) => {
-    const ids = aimedEvents(chip, timeline.chapters);
+    const ids = aimedEvents(chip, timeline.clusters);
     if (ids.length) picture.step(ids[0]);
   });
   pic = REST;
@@ -535,7 +535,7 @@ function spotlightFrom(text: string): void {
 function aimedFrom(text: string): number[] {
   const out: number[] = [];
   for (const chip of chips(text))
-    for (const id of aimedEvents(chip, timeline.chapters))
+    for (const id of aimedEvents(chip, timeline.clusters))
       if (!out.includes(id)) out.push(id);
   return out;
 }

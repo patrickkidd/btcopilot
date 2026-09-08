@@ -99,8 +99,8 @@ export function spans(
     .join("");
 }
 
-/** Silence is dotted and never flat: a stretch with nothing recorded must not
- * read as a stretch where nothing changed (rule 3). */
+/** Silence is dotted and never flat: a cluster with nothing recorded must not
+ * read as a cluster where nothing changed (rule 3). */
 export function silence(
   marks: Mark[],
   wire: number,

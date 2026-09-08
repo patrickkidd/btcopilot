@@ -160,7 +160,7 @@ SCHEMAS = [
     {
         "name": ToolName.EditCluster.value,
         "description": (
-            "Group events into a named stretch, or rename one. You may group and "
+            "Group events into a named cluster, or rename one. You may group and "
             "name; you may never name an event that is not in the record."
         ),
         "input_schema": {
@@ -349,7 +349,7 @@ class Toolbox:
 
     def _edit_cluster(self, args: dict) -> tuple[str, dict]:
         data = self.data
-        # A stretch named in conversation is the user's own grouping: automatic
+        # A cluster named in conversation is the user's own grouping: automatic
         # re-detection yields to it rather than regrouping it away.
         fields = {"source": ClusterSource.User.value}
         if args.get("name"):

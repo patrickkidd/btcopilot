@@ -42,7 +42,7 @@ class Statement(db.Model, ModelMixin):
         nullable=False,
         default=StatementKind.Turn,
     )
-    # The stretch a play-by-play narrates. Null on every other kind.
+    # The cluster a play-by-play narrates. Null on every other kind.
     cluster_id = Column(String(64))
     custom_prompts = Column(JSON)  # Store custom prompts used for this statement
     order = Column(Integer)  # Order within discussion for reliable sorting

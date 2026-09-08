@@ -18,7 +18,7 @@ const SUBJECT: Partial<Record<ToolName, string>> = {
   [ToolName.EditPerson]: "someone",
   [ToolName.EditPairBond]: "a couple",
   [ToolName.EditEvent]: "an event",
-  [ToolName.EditCluster]: "a stretch",
+  [ToolName.EditCluster]: "a cluster",
 };
 
 function words(args: Record<string, unknown>): string {

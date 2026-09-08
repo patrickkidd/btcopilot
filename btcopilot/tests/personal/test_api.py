@@ -217,7 +217,7 @@ def test_a_chip_pointing_at_nothing_becomes_its_own_words(web, token, family):
 
 @pytest.fixture
 def dated(family):
-    """Two dated events and a cluster over them, so there is a chapter to aim at."""
+    """Two dated events and a cluster over them, so there is a cluster to aim at."""
     data = family.get_diagram_data()
     data.events = [
         {
@@ -251,7 +251,7 @@ def dated(family):
 
 
 def test_clusters_survive_a_server_side_write(dated):
-    """The chapter chip aims at a stored cluster, so a server write that keeps
+    """The cluster chip aims at a stored cluster, so a server write that keeps
     events but drops clusters would silently kill it."""
     data = dated.get_diagram_data()
     data.events[0]["description"] = "edited"
@@ -259,10 +259,10 @@ def test_clusters_survive_a_server_side_write(dated):
     db.session.commit()
     assert [c["id"] for c in dated.get_diagram_data().clusters] == ["c1"]
 
-@pytest.mark.chat_flow(response="That stretch: [[cluster:c1|the run]].")
+@pytest.mark.chat_flow(response="That cluster: [[cluster:c1|the run]].")
 def test_a_cluster_chip_survives_when_the_record_holds_it(web, token, dated):
     body = post(web, token, "/personal/chat", {"statement": "hi"}).get_json()
-    assert body["statement"] == "That stretch: [[cluster:c1|the run]]."
+    assert body["statement"] == "That cluster: [[cluster:c1|the run]]."
 
 
 @pytest.mark.chat_flow(response="Off the line: [[cluster:c9|elsewhere]].")

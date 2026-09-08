@@ -17,10 +17,10 @@ const settle = async (page: Page) => {
   await page.waitForTimeout(500);
 };
 
-/** The resting picture: chapters to open, and nothing written on the wire. */
-const resting = (page: Page) => page.locator('.ss-hit[data-target="chapter"]');
+/** The resting picture: clusters to open, and nothing written on the wire. */
+const resting = (page: Page) => page.locator('.ss-hit[data-target="cluster"]');
 
-const openChapter = async (page: Page) => {
+const openCluster = async (page: Page) => {
   await resting(page).first().click();
   await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
   await page.waitForTimeout(400);
@@ -36,7 +36,7 @@ test.describe("putting the picture down", () => {
 
   test("a tap on empty wire shows the whole line again", async ({ page }) => {
     await settle(page);
-    await openChapter(page);
+    await openCluster(page);
     await pickMoment(page);
 
     // the far right of the picture, clear of every moment and every label
@@ -49,7 +49,7 @@ test.describe("putting the picture down", () => {
 
   test("the name of the picture does the same", async ({ page }) => {
     await settle(page);
-    await openChapter(page);
+    await openCluster(page);
     await pickMoment(page);
 
     await page.locator("#crumb").click();

@@ -127,7 +127,7 @@ def seed_diagram_data() -> DiagramData:
                symptom=up, description="A rough patch no one can place"),
         _event(38, shift, person=4, anxiety=up, dateCertainty=U),
         # Relationship moves: every kind the play-by-play draws, inside the two
-        # chapters the dated events already form (1980-2000, 2005-2021)
+        # clusters the dated events already form (1980-2000, 2005-2021)
         _event(39, shift, person=5, dateTime="1986-02-10", dateCertainty=C,
                relationship=RelationshipKind.Conflict, relationshipTargets=[4],
                description="Rows about money"),

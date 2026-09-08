@@ -256,7 +256,7 @@ class CoachTurn:
         }
 
     def _regroup(self):
-        """Re-cluster the line when the turn moved an event, so the stretches
+        """Re-cluster the line when the turn moved an event, so the clusters
         the coach and the picture point at are stored, not derived on read."""
         if not any(
             delta["item_kind"] == ItemKind.Event.value

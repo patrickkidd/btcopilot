@@ -8,7 +8,7 @@ import { ChipTone, Role, type Chip, type Piece } from "./types";
  * lights as it lands and the picture draws what it names — pane A of the
  * approved play-by-play. */
 
-/** A chip tapped inside a play-by-play: the stretch it walks, and which chip in
+/** A chip tapped inside a play-by-play: the cluster it walks, and which chip in
  * that walk this is. The board is what such a chip steps, never the wire. */
 export interface PlayTap {
   cluster: string;
@@ -208,7 +208,7 @@ export class Chat {
     // The bubble carries its statement so a moment on the picture can point
     // back at the words that coded it.
     if (statementId !== null) bubble.dataset.statement = String(statementId);
-    // A play-by-play carries the stretch it walks, so its chips step the board
+    // A play-by-play carries the cluster it walks, so its chips step the board
     // instead of taking the picture back to the wire.
     if (play !== null) bubble.dataset.play = play;
     this.said.set(bubble, text);

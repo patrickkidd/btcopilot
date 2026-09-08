@@ -176,7 +176,7 @@ def test_show_with_an_unknown_id_fails_where_the_model_can_see_it(discussion, fa
 def test_show_stores_the_view_on_the_coach_statement(discussion, family):
     reply = run(
         discussion,
-        "Show me that stretch.",
+        "Show me that cluster.",
         Model(
             called(ToolName.Show, kind="span", start="1994-01-01", end="1995-01-01"),
             said("Here it is."),
@@ -427,7 +427,7 @@ def test_one_label_over_the_limit_is_asked_again_never_trimmed(discussion, famil
 
 
 BARE = (
-    "Here is the stretch, move by move: [[event:10|moved out]], then "
+    "Here is the cluster, move by move: [[event:10|moved out]], then "
     "[[person:1|Wren]], then [[cluster:c1|the year he left]]."
 )
 

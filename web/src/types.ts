@@ -95,7 +95,7 @@ export interface TimelineEvent {
   child: number | null;
 }
 
-export interface Chapter {
+export interface Cluster {
   id: string;
   label: string;
   title: string;
@@ -120,7 +120,7 @@ export interface Question {
 export interface Timeline {
   people: Person[];
   events: TimelineEvent[];
-  chapters: Chapter[];
+  clusters: Cluster[];
   questions: Question[];
   axis: { min: string; max: string } | null;
   shelf: { event_id: number; label: string; sentence: string }[];
@@ -134,7 +134,7 @@ export interface Timeline {
 export const emptyTimeline = (): Timeline => ({
   people: [],
   events: [],
-  chapters: [],
+  clusters: [],
   questions: [],
   axis: null,
   shelf: [],
@@ -159,7 +159,7 @@ export interface Statement {
   role: Role;
   text: string;
   kind: StatementKind;
-  /** The stretch a play-by-play narrates. Null on every other kind. */
+  /** The cluster a play-by-play narrates. Null on every other kind. */
   cluster_id: string | null;
 }
 

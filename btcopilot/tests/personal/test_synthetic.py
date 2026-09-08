@@ -163,7 +163,7 @@ def test_words_per_response():
         Turn(speaker="user", text="I'm stressed"),
         Turn(speaker="ai", text="When did that start?"),
         Turn(speaker="user", text="Last month"),
-        Turn(speaker="ai", text="That's a tough stretch. What was going on in your family around that time? Any big changes?"),
+        Turn(speaker="ai", text="That's a tough cluster. What was going on in your family around that time? Any big changes?"),
     ]
     result = evaluator.evaluate(ConversationResult(turns=turns, persona=persona))
     assert len(result.wordsPerResponse) == 2

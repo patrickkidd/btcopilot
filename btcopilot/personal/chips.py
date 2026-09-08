@@ -42,7 +42,7 @@ CHIP_MAX = 28
 
 KIND_WORDS = {
     ChipKind.Event: "this",
-    ChipKind.Cluster: "this stretch",
+    ChipKind.Cluster: "this cluster",
     ChipKind.Person: "them",
     ChipKind.Ask: "this",
 }

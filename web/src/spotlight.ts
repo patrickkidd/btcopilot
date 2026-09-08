@@ -1,6 +1,6 @@
 /** The words the picture writes about a moment, and how they are cut to fit.
  * Pure, so the sentence spotlight's decisions can be checked without a browser.
- * Geometry and wording follow the converged mockup (crowded-chapter,
+ * Geometry and wording follow the converged mockup (crowded-cluster,
  * concept-sentence-spotlight, ruled 2026-09-02): one mono line per row, cut at a
  * space, three rows at most. */
 
@@ -91,7 +91,7 @@ export interface Row {
  * words do, so a crowded picture still shows which dots the coach named
  * (ratified: the leader is emitted before the alignment and budget branch). */
 /** Which of the named moments get words. Three or fewer all do; past that it is
- * the first, the middle and the last, so the words span the stretch rather than
+ * the first, the middle and the last, so the words span the cluster rather than
  * crowding into its opening (ruled). */
 export function pick<T>(sorted: T[]): T[] {
   if (sorted.length <= ROWS.length) return sorted;

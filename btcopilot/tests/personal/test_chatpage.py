@@ -193,7 +193,7 @@ def test_play_hands_the_coach_the_cluster_events_in_date_order(
     diagram = test_user.free_diagram
     diagram.set_diagram_data(seed_diagram_data())
     db.session.commit()
-    chapter = web.get("/personal/timeline").get_json()["chapters"][0]
+    cluster = web.get("/personal/timeline").get_json()["clusters"][0]
     token = csrf_token(web)
 
     # the walk is sentences, not a list of chips: a bare run is sent back
@@ -201,7 +201,7 @@ def test_play_hands_the_coach_the_cluster_events_in_date_order(
         said(
             " ".join(
                 f"That winter Ada [[event:{i}|move]] and Ben went quiet."
-                for i in chapter["event_ids"]
+                for i in cluster["event_ids"]
             )
         )
     )
@@ -210,15 +210,15 @@ def test_play_hands_the_coach_the_cluster_events_in_date_order(
     )
     reply = web.post(
         "/personal/play",
-        json={"cluster_id": chapter["id"]},
+        json={"cluster_id": cluster["id"]},
         headers={"X-CSRFToken": token},
     ).get_json()
-    assert reply["cluster_id"] == chapter["id"]
+    assert reply["cluster_id"] == cluster["id"]
     cited = [int(i) for i in re.findall(r"\[\[event:(\d+)\|", reply["statement"])]
-    assert cited == chapter["event_ids"]
+    assert cited == cluster["event_ids"]
 
     handed = model.histories[0][-1]["content"]
-    assert all(str(i) in handed for i in chapter["event_ids"])
+    assert all(str(i) in handed for i in cluster["event_ids"])
 
 
 def test_play_refuses_a_cluster_that_is_not_on_the_line(web, test_user):

@@ -234,9 +234,9 @@ def test_a_chip_to_a_stored_cluster_resolves_and_the_picture_can_aim_at_it(famil
         chips.validate(f"[[cluster:{cluster_id}|that spring]]", data)
         == f"[[cluster:{cluster_id}|that spring]]"
     )
-    chapters = build_timeline(data)["chapters"]
-    assert [c["id"] for c in chapters] == [cluster_id]
-    assert chapters[0]["title"] == "The hard spring"
+    clusters = build_timeline(data)["clusters"]
+    assert [c["id"] for c in clusters] == [cluster_id]
+    assert clusters[0]["title"] == "The hard spring"
 
 
 def test_the_play_endpoint_resolves_a_stored_cluster(web, test_user, family):

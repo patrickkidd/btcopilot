@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { EXACT, stateFor } from "./setup";
 
-/** The moves board: the level a stretch opens into, and the chrome around the
+/** The moves board: the level a cluster opens into, and the chrome around the
  * drawings. The drawings themselves have their own goldens in moves.spec.ts;
  * these watch the things only the app can produce — the entry button, the
  * people the record puts on the ellipse, the pair bonds beneath them, the
@@ -12,7 +12,7 @@ import { EXACT, stateFor } from "./setup";
  * then step. No live coach turn is involved, so it is deterministic.
  *
  * The `moves` record is one moment per move the picture can draw, all in a
- * single stretch, so the board it opens has every move on it in order. */
+ * single cluster, so the board it opens has every move on it in order. */
 
 const settle = async (page: Page) => {
   await page.goto("/personal/");
@@ -20,14 +20,14 @@ const settle = async (page: Page) => {
   await page.waitForTimeout(400);
 };
 
-/** Select a moment so the caption row offers its stretch. */
-const pickStretch = async (page: Page) => {
+/** Select a moment so the caption row offers its cluster. */
+const pickCluster = async (page: Page) => {
   await page.locator('.ss-hit[data-target="zone"]').first().click();
   await expect(page.locator("#cap-play")).toBeVisible();
 };
 
 const enter = async (page: Page) => {
-  await pickStretch(page);
+  await pickCluster(page);
   await page.locator("#cap-play").click();
   // the way in opens the board itself now, with no coach turn behind it
   await expect(page.locator(".ss.board")).toBeVisible({ timeout: 30_000 });
@@ -54,9 +54,9 @@ const picture = (page: Page) => page.locator(".pic");
 test.describe("the moves board", () => {
   test.use({ storageState: stateFor("moves") });
 
-  test("a stretch offers to walk its moves", async ({ page }) => {
+  test("a cluster offers to walk its moves", async ({ page }) => {
     await settle(page);
-    await pickStretch(page);
+    await pickCluster(page);
     await expect(page.locator("#cap-play")).toHaveText("\u25b6");
     await expect(picture(page)).toHaveScreenshot("board-entry-offer.png", EXACT);
   });

@@ -80,7 +80,7 @@ def event_line(event: dict) -> str:
 def cluster_line(cluster: dict) -> str:
     words = cluster.get("name") or cluster.get("title") or ""
 
-    # Never guess "model" here: source is what says whether a stretch may be
+    # Never guess "model" here: source is what says whether a cluster may be
     # regrouped or renamed, and telling the coach the model made a grouping the
     # user may have named costs the user their name.
     source = _enum_val(cluster.get("source")) or "unknown"

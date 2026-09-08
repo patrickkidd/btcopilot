@@ -150,10 +150,10 @@ for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "lon
 
     test("holds every control inside itself, on one line", async ({ page }) => {
       await settle(page);
-      // a record whose moments are inside a chapter needs it opened first
-      const chapters = page.locator('.ss-hit[data-target="chapter"]');
-      if (await chapters.first().isVisible().catch(() => false)) {
-        await chapters.first().click();
+      // a record whose moments are inside a cluster needs it opened first
+      const clusters = page.locator('.ss-hit[data-target="cluster"]');
+      if (await clusters.first().isVisible().catch(() => false)) {
+        await clusters.first().click();
         await page.waitForTimeout(400);
       }
       const zones = page.locator('.ss-hit[data-target="zone"]');
@@ -371,19 +371,19 @@ test.describe("each level is one fixed height", () => {
     });
   }
 
-  // A tap on the picture opens a chapter, which is the one thing most likely
+  // A tap on the picture opens a cluster, which is the one thing most likely
   // to move the chat, so it is checked on every shape of record.
   for (const key of ["one", "three40", "dense60"] as const) {
     test.describe(() => {
       test.use({ storageState: stateFor(key) });
-      test(`opening a chapter moves nothing on the ${key} record`, async ({
+      test(`opening a cluster moves nothing on the ${key} record`, async ({
         page,
       }) => {
         await settle(page);
         const before = await frame(page);
         expect(await pictureHeight(page)).toBe(158);
 
-        await page.locator('.ss-hit[data-target="chapter"]').first().click();
+        await page.locator('.ss-hit[data-target="cluster"]').first().click();
         await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
         await page.waitForTimeout(400);
 
@@ -394,7 +394,7 @@ test.describe("each level is one fixed height", () => {
         expect(open.chat).toEqual(before.chat);
         expect(open.bubbles).toEqual(before.bubbles);
 
-        // and tapping about inside the open chapter changes nothing either
+        // and tapping about inside the open cluster changes nothing either
         await page.locator('.ss-hit[data-target="zone"]').first().click();
         const after = await frame(page);
         expect(after.picture).toEqual(open.picture);
