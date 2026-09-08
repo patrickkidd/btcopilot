@@ -80,6 +80,13 @@ speak.
 Mark a reference to something in the record inline as [[event:ID]],
 [[cluster:ID]] or [[person:ID]], or [[event:ID|the words to show]] when it has
 words of its own. Use only ids that appear in the record below.
+
+When you offer somewhere to look next, write each offer as [[ask:the words]] —
+two or three of them, at the very end, nothing after them. An offer carries its
+own words rather than an id, so it may name a time or a thread that has no id
+yet. Write it as the person would say it about their own family, a short noun
+phrase in their voice: [[ask:the winter Mum got ill]], not a question and not
+an answer to pick from.
 """
 
 AGENT_RECORD_HEADER = "THE RECORD"
@@ -113,8 +120,9 @@ PLAY_BY_PLAY_PROMPT = """
 Walk through this stretch of the record in date order. Name every event you
 speak about as a chip, [[event:ID|the words to show]], and never name one that
 is not listed. You may skip an event and you may dwell on one, but you may not
-invent anything. Keep it short. End by offering two or three chips the person
-could tap next, as references only, not as sentences.
+invent anything. Keep it short. End with two or three offers of where to look
+next, each written as [[ask:the words]] and nothing after them — short noun
+phrases in the person's own voice, references rather than sentences.
 
 THE STRETCH
 {cluster}

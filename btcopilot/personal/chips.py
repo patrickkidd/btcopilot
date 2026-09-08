@@ -22,6 +22,9 @@ class ChipKind(enum.StrEnum):
     Event = "event"
     Cluster = "cluster"
     Person = "person"
+    # What the coach offers to look at next. It carries the words themselves
+    # rather than an id, so there is nothing to resolve and nothing to drop.
+    Ask = "ask"
 
 
 TOKEN = re.compile(
@@ -32,6 +35,7 @@ KIND_WORDS = {
     ChipKind.Event: "this",
     ChipKind.Cluster: "this stretch",
     ChipKind.Person: "them",
+    ChipKind.Ask: "this",
 }
 
 
@@ -53,6 +57,8 @@ def _ids(data: DiagramData, kind: ChipKind) -> set[str]:
 
 
 def resolves(kind: ChipKind, target: str, data: DiagramData) -> bool:
+    if kind is ChipKind.Ask:
+        return bool(str(target).strip())
     return str(target).strip() in _ids(data, kind)
 
 
@@ -82,6 +88,8 @@ def validate(text: str, data: DiagramData) -> str:
 
 
 def _describe(kind: ChipKind, target: str, data: DiagramData) -> str:
+    if kind is ChipKind.Ask:
+        return f"the offer to talk about {target}"
     if kind is ChipKind.Person:
         person = next(p for p in data.people if str(p.get("id")) == target)
         return f"person {target}: {person.get('name') or 'unnamed'}"
