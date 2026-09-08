@@ -11,11 +11,18 @@ const MOVES = [
   "distance",
   "cutoff",
   "conflict",
+  "fusion",
   "defined self",
+  "inside",
+  "outside",
+  "overfunctioning",
+  "underfunctioning",
+  "projection",
   "anxiety up",
   "symptom up",
   "symptom down",
   "functioning down",
+  "functioning up",
 ];
 
 test.describe("the move language", () => {

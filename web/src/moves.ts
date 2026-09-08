@@ -4,10 +4,7 @@ import { esc } from "./dom";
  * the people the play-by-play puts on stage. One green for every move mark;
  * amber is never used here, because amber only ever means the record asking.
  *
- * Built: toward, away, distance, cutoff, conflict, anxiety, symptom,
- * functioning up and down, defined self.
- * Not built yet: inside, outside, fusion, overfunctioning, underfunctioning —
- * they draw the person with no move rather than the wrong one. */
+ * All twelve relationship moves and the three variable shifts are drawn. */
 
 export enum Move {
   Toward = "toward",
@@ -16,6 +13,12 @@ export enum Move {
   Cutoff = "cutoff",
   Conflict = "conflict",
   DefinedSelf = "defined-self",
+  Inside = "inside",
+  Outside = "outside",
+  Fusion = "fusion",
+  Overfunctioning = "overfunctioning",
+  Underfunctioning = "underfunctioning",
+  Projection = "projection",
 }
 
 export enum Shift {
@@ -40,16 +43,27 @@ const unit = (a: Figure, b: Figure) => {
   return { x: dx / length, y: dy / length, length };
 };
 
+/** How far along the line between two people a move carries someone. */
+function toward(from: Figure, to: Figure, distance: number): [number, number] {
+  const u = unit(from, to);
+  return [u.x * distance, u.y * distance];
+}
+
 /** A person: the sharp outline that never leaves them, their initial, and their
  * name under it. */
 export function figure(
   person: Figure,
   classes: string,
   ghost = false,
+  step: [number, number] = [0, 0],
 ): string {
   const initial = person.name.trim().slice(0, 1).toUpperCase() || "?";
+  const moved =
+    step[0] || step[1]
+      ? ` transform="translate(${step[0].toFixed(1)} ${step[1].toFixed(1)})"`
+      : "";
   return (
-    `<g class="node ${classes}" data-person="${person.id}">` +
+    `<g class="node ${classes}" data-person="${person.id}"${moved}>` +
     (ghost
       ? `<circle class="ghost" cx="${person.x}" cy="${person.y}" r="${R}"/>`
       : "") +
@@ -135,50 +149,116 @@ function cross(person: Figure, direction: Shift): string {
   );
 }
 
+/** Fusion, as Bowen drew it: three bands holding the pair the whole way. */
+function bands(a: Figure, b: Figure): string {
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const rx = Math.abs(b.x - a.x) / 2 + R + 10;
+  const ry = R + 14;
+  return [0, 5, 10]
+    .map(
+      (grow) =>
+        `<ellipse class="mv-band" cx="${mid.x.toFixed(1)}" cy="${mid.y.toFixed(1)}" ` +
+        `rx="${(rx + grow).toFixed(1)}" ry="${(ry + grow).toFixed(1)}"/>`,
+    )
+    .join("");
+}
+
+/** The app-spec flank arrow, about two thirds the size of a person: up beside
+ * whoever rises, down beside whoever sinks, in lockstep. */
+function flank(person: Figure, up: boolean): string {
+  const x = person.x + R + 12;
+  const top = person.y - 11;
+  const bottom = person.y + 11;
+  const head = up
+    ? `M${x - 4} ${top + 5} L${x} ${top} L${x + 4} ${top + 5}`
+    : `M${x - 4} ${bottom - 5} L${x} ${bottom} L${x + 4} ${bottom - 5}`;
+  return `<path class="mv-flank" d="M${x} ${top} L${x} ${bottom} ${head}"/>`;
+}
+
+/** The tension in a triangle: a line from the mover to each of the others. */
+function tension(from: Figure, others: Figure[]): string {
+  return others
+    .map(
+      (other) =>
+        `<path class="mv-tension" d="M${from.x.toFixed(1)} ${from.y.toFixed(1)} ` +
+        `L${other.x.toFixed(1)} ${other.y.toFixed(1)}"/>`,
+    )
+    .join("");
+}
+
+/** Projection: the parent's agitation drains off along the arrow's own dashes
+ * and settles on the child, who inherits the identical shake. */
+function flow(from: Figure, to: Figure): string {
+  return (
+    `<path class="mv-flow" d="M${from.x.toFixed(1)} ${from.y.toFixed(1)} ` +
+    `L${to.x.toFixed(1)} ${to.y.toFixed(1)}"/>`
+  );
+}
+
 export interface Drawn {
   /** Extra classes for the mover's own figure. */
   actor: string;
   /** Extra classes for whoever the move reaches. */
   target: string;
+  /** Extra classes for the third person in a triangle. */
+  third: string;
   /** Everything drawn around and between them. */
   marks: string;
+  /** How far the move actually moves someone, by person id. A move is a move:
+   * the person travels, as they do in the approved play-by-play. */
+  steps: Record<number, [number, number]>;
 }
 
-const NONE: Drawn = { actor: "", target: "", marks: "" };
+const NONE: Drawn = { actor: "", target: "", third: "", marks: "", steps: {} };
 
-/** One move, in the ratified language. */
+/** One move, in the ratified language. `third` is the other point of a
+ * triangle, which inside and outside both need. */
 export function draw(
   kind: string | null,
   actor: Figure,
   target: Figure | null,
   shifts: { symptom: string | null; anxiety: string | null; functioning: string | null },
+  third: Figure | null = null,
 ): Drawn {
   if (shifts.anxiety)
-    return { actor: "anx shake", target: "", marks: field(actor) + spikes(actor) };
+    return {
+      ...NONE,
+      actor: "anx shake",
+      marks: field(actor) + spikes(actor),
+    };
   if (shifts.symptom)
-    return { actor: "", target: "", marks: cross(actor, shifts.symptom as Shift) };
+    return { ...NONE, marks: cross(actor, shifts.symptom as Shift) };
   if (shifts.functioning)
     return {
+      ...NONE,
       actor: shifts.functioning === Shift.Down ? "f-down" : "f-up",
-      target: "",
-      marks: "",
+      marks: ""
     };
   switch (kind) {
     case Move.Toward:
       return target
-        ? { actor: "step-to", target: "", marks: arrow(actor, target, false) }
+        ? {
+            ...NONE,
+            marks: arrow(actor, target, false),
+            steps: { [actor.id]: toward(actor, target, 9) },
+          }
         : NONE;
     case Move.Away:
       return target
-        ? { actor: "step-off", target: "", marks: arrow(actor, target, true) }
+        ? {
+            ...NONE,
+            marks: arrow(actor, target, true),
+            steps: { [actor.id]: toward(actor, target, -11) },
+          }
         : NONE;
     case Move.Distance:
       return target
-        ? { actor: "still", target: "", marks: field(actor) + wall(actor, target, false) }
+        ? { ...NONE, actor: "still", marks: field(actor) + wall(actor, target, false) }
         : NONE;
     case Move.Cutoff:
       return target
         ? {
+            ...NONE,
             actor: "still faded",
             target: "faded",
             marks: field(actor) + wall(actor, target, true),
@@ -186,10 +266,63 @@ export function draw(
         : NONE;
     case Move.Conflict:
       return target
-        ? { actor: "shake", target: "shake", marks: sparks(actor, target) }
+        ? { ...NONE, actor: "shake", target: "shake", marks: sparks(actor, target) }
         : NONE;
     case Move.DefinedSelf:
-      return { actor: "self", target: "", marks: `<circle class="mv-clear" cx="${actor.x}" cy="${actor.y}" r="${R + 12}"/>` };
+      return {
+        ...NONE,
+        actor: "self",
+        marks: `<circle class="mv-clear" cx="${actor.x}" cy="${actor.y}" r="${R + 12}"/>`,
+      };
+    case Move.Fusion:
+      // three bands hold the pair the whole way, and their fields are shared
+      return target
+        ? { ...NONE, actor: "fused", target: "fused", marks: bands(actor, target) }
+        : NONE;
+    case Move.Inside:
+      // the mover closes on the one they want; the same motion pushes the old
+      // insider out
+      return target
+        ? {
+            ...NONE,
+            marks: arrow(actor, target, false),
+            steps: {
+              [actor.id]: toward(actor, target, 14),
+              ...(third ? { [third.id]: toward(target, third, 16) } : {}),
+            },
+          }
+        : NONE;
+    case Move.Outside:
+      // the heat is between the mover and both of them, and it ends with the
+      // walk: no tension is drawn once they have gone
+      return target
+        ? {
+            ...NONE,
+            marks:
+              tension(actor, third ? [target, third] : [target]) +
+              arrow(actor, target, true),
+            steps: { [actor.id]: toward(actor, target, -13) },
+          }
+        : NONE;
+    case Move.Overfunctioning:
+      return target
+        ? { ...NONE, actor: "f-up", marks: flank(actor, true) + flank(target, false) }
+        : { ...NONE, actor: "f-up", marks: flank(actor, true) };
+    case Move.Underfunctioning:
+      return target
+        ? { ...NONE, actor: "f-down", marks: flank(actor, false) + flank(target, true) }
+        : { ...NONE, actor: "f-down", marks: flank(actor, false) };
+    case Move.Projection:
+      // anxiety uses one language everywhere: it drains off the parent and
+      // settles on the child, who inherits the identical shake
+      return target
+        ? {
+            ...NONE,
+            actor: "anx shake",
+            target: "anx shake",
+            marks: spikes(actor) + flow(actor, target) + spikes(target),
+          }
+        : { ...NONE, actor: "anx shake", marks: field(actor) + spikes(actor) };
     default:
       return NONE;
   }

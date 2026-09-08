@@ -172,11 +172,24 @@ MOVES = (
     ("distance", dict(relationship="distance", relationshipTargets=[2])),
     ("cutoff", dict(relationship="cutoff", relationshipTargets=[2])),
     ("conflict", dict(relationship="conflict", relationshipTargets=[2])),
+    ("fusion", dict(relationship="fusion", relationshipTargets=[2])),
     ("defined self", dict(relationship="defined-self")),
+    (
+        "inside",
+        dict(relationship="inside", relationshipTargets=[2], relationshipTriangles=[3]),
+    ),
+    (
+        "outside",
+        dict(relationship="outside", relationshipTargets=[2], relationshipTriangles=[3]),
+    ),
+    ("overfunctioning", dict(relationship="overfunctioning", relationshipTargets=[2])),
+    ("underfunctioning", dict(relationship="underfunctioning", relationshipTargets=[2])),
+    ("projection", dict(relationship="projection", relationshipTargets=[3])),
     ("anxiety up", dict(anxiety=VariableShift.Up)),
     ("symptom up", dict(symptom=VariableShift.Up)),
     ("symptom down", dict(symptom=VariableShift.Down)),
     ("functioning down", dict(functioning=VariableShift.Down)),
+    ("functioning up", dict(functioning=VariableShift.Up)),
 )
 
 
@@ -185,6 +198,7 @@ def moves() -> DiagramData:
     people = [
         _person(1, "Ada", primary=True),
         _person(2, "Ben", PersonKind.Male),
+        _person(3, "Cal", PersonKind.Male),
     ]
     events = [
         _event(20 + i, f"{1990 + i}-04-01", words, **kwargs)

@@ -353,7 +353,7 @@ export class Picture {
     }
 
     svg += this.questions(wire);
-    svg += this.stage(width, wire);
+    svg += this.stage(width);
     svg += `</svg>`;
 
     const first = this.yearOf(shown[0]);
@@ -510,7 +510,7 @@ export class Picture {
 
   /** The people, only while a move or a view puts them on stage. The simple
    * circular layout the 2026-09-02 ruling asked to keep for now. */
-  private stage(width: number, _wire: number): string {
+  private stage(width: number): string {
     const ids = this.cast.length ? this.cast : this.castOfMove();
     const people = ids
       .map((id) => this.person(id))
@@ -519,38 +519,63 @@ export class Picture {
     if (!people.length) return "";
     const figures: Figure[] = ring(people, width, STAGE_H - 59 - STAGE_GAP);
     const event = this.moving;
-    const at = (id: number) => figures.find((f) => f.id === id) ?? null;
+    const at = (id: number | null) =>
+      id === null ? null : (figures.find((f) => f.id === id) ?? null);
     let marks = "";
+    let steps: Record<number, [number, number]> = {};
     const classes = new Map<number, string>();
     if (event) {
       const subject = event.child ?? event.person;
       const reached = event.relationshipTargets[0] ?? event.spouse ?? null;
-      const actor = at(subject ?? -1);
+      const other =
+        event.relationshipTriangles[0] ??
+        event.relationshipTargets[1] ??
+        null;
+      const actor = at(subject);
       if (actor) {
-        const drawn = draw(event.relationship, actor, at(reached ?? -1), {
-          symptom: event.symptom,
-          anxiety: event.anxiety,
-          functioning: event.functioning,
-        });
+        const drawn = draw(
+          event.relationship,
+          actor,
+          at(reached),
+          {
+            symptom: event.symptom,
+            anxiety: event.anxiety,
+            functioning: event.functioning,
+          },
+          at(other),
+        );
         marks = drawn.marks;
+        steps = drawn.steps;
         classes.set(actor.id, drawn.actor);
         if (reached !== null && drawn.target) classes.set(reached, drawn.target);
+        if (other !== null && drawn.third) classes.set(other, drawn.third);
       }
     } else if (this.closed && figures.length === 3) {
+      // a triangle the coach asked to see: the tension around all three
       marks = figures
         .map((f, i) => {
           const next = figures[(i + 1) % figures.length];
-          return `<path class="mv-tri" d="M${f.x.toFixed(1)} ${f.y.toFixed(1)} L${next.x.toFixed(1)} ${next.y.toFixed(1)}"/>`;
+          return (
+            `<path class="mv-tension" d="M${f.x.toFixed(1)} ${f.y.toFixed(1)} ` +
+            `L${next.x.toFixed(1)} ${next.y.toFixed(1)}"/>`
+          );
         })
         .join("");
     }
     return (
       `<g class="cast">${marks}` +
-      figures.map((f) => figure(f, classes.get(f.id) ?? "", (classes.get(f.id) ?? "").includes("anx"))).join("") +
+      figures
+        .map((f) => {
+          const classed = classes.get(f.id) ?? "";
+          return figure(f, classed, classed.includes("anx"), steps[f.id]);
+        })
+        .join("") +
       `</g>`
     );
   }
 
+  /** Who a move puts on stage: the mover, whoever it reaches, and the third
+   * point of the triangle when the move is a triangle move. */
   private castOfMove(): number[] {
     const event = this.moving;
     if (!event) return [];
@@ -558,8 +583,10 @@ export class Picture {
     const reached = [
       ...event.relationshipTargets,
       ...(event.spouse === null ? [] : [event.spouse]),
+      ...event.relationshipTriangles,
     ];
-    return [...(subject === null ? [] : [subject]), ...reached];
+    const all = [...(subject === null ? [] : [subject]), ...reached];
+    return [...new Set(all)];
   }
 
   /** The next moment a tap on a zone lands on. */
