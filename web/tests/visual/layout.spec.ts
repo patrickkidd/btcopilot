@@ -1,0 +1,99 @@
+import { expect, test, type Page } from "@playwright/test";
+import { stateFor } from "./setup";
+
+/** The layout contract, asserted rather than eyeballed: the picture region owns
+ * its level's height and the chat fills what is left, so a tap on a chip or on
+ * the picture never moves a chat bubble. The owner's words: the visual and the
+ * header cannot change size when you click on chips, and chat bubbles must
+ * never change position on screen just from a click on a chip. */
+
+const settle = async (page: Page) => {
+  await page.goto("/companion/");
+  await expect(page.locator(".ss")).toBeVisible();
+  await page.waitForTimeout(600);
+};
+
+/** Where every bubble sits, and how tall the two fixed regions above them are. */
+const frame = (page: Page) =>
+  page.evaluate(() => {
+    const box = (selector: string) => {
+      const at = document.querySelector(selector)?.getBoundingClientRect();
+      return at ? [at.x, at.y, at.width, at.height] : null;
+    };
+    return {
+      title: box(".titlerow"),
+      picture: box(".pic"),
+      caption: box(".caption"),
+      chat: box(".chat"),
+      bubbles: [...document.querySelectorAll(".bub")].map((bubble) => {
+        const at = bubble.getBoundingClientRect();
+        return [at.x, at.y, at.width, at.height];
+      }),
+    };
+  });
+
+test.describe("nothing moves when a chip is tapped", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  test("a chip in a coach bubble aims the picture and moves nothing", async ({
+    page,
+  }) => {
+    await settle(page);
+    const chip = page.locator(".bub.coach .chip").first();
+    await expect(chip).toBeVisible();
+
+    const before = await frame(page);
+    await chip.click();
+    await page.waitForTimeout(500);
+    const after = await frame(page);
+
+    expect(after.title).toEqual(before.title);
+    expect(after.picture).toEqual(before.picture);
+    expect(after.caption).toEqual(before.caption);
+    expect(after.chat).toEqual(before.chat);
+    expect(after.bubbles).toEqual(before.bubbles);
+  });
+
+  test("tapping the wire selects a moment and moves nothing", async ({ page }) => {
+    await settle(page);
+    const before = await frame(page);
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    await expect(page.locator(".ss-t.on").first()).toBeVisible();
+    const after = await frame(page);
+
+    expect(after.picture).toEqual(before.picture);
+    expect(after.caption).toEqual(before.caption);
+    expect(after.bubbles).toEqual(before.bubbles);
+  });
+
+  test("the caption keeps its height whether or not anything is selected", async ({
+    page,
+  }) => {
+    await settle(page);
+    const empty = await frame(page);
+    expect(await page.locator(".caption").innerHTML()).toBe("");
+
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    await expect(page.locator(".caption .chip")).toBeVisible();
+    const filled = await frame(page);
+
+    expect(filled.caption).toEqual(empty.caption);
+  });
+});
+
+test.describe("the picture region is pinned", () => {
+  for (const key of ["empty", "one", "three40", "dense60"] as const) {
+    test.describe(() => {
+      test.use({ storageState: stateFor(key) });
+      test(`the resting picture is 158 high on the ${key} record`, async ({
+        page,
+      }) => {
+        await settle(page);
+        const height = await page
+          .locator("#view")
+          .evaluate((node) => node.getBoundingClientRect().height);
+        expect(Math.round(height)).toBe(158);
+      });
+    });
+  }
+});

@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from "vite";
 
 // Flask serves the bundle through the companion blueprint's static folder, and
@@ -17,4 +18,6 @@ export default defineConfig({
     },
   },
   server: { proxy: { "/companion": "http://127.0.0.1:8889" } },
+  // Playwright owns tests/visual; vitest owns the pure unit tests only.
+  test: { include: ["test/**/*.test.ts"] },
 });

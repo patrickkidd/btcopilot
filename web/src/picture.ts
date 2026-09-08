@@ -1,5 +1,5 @@
 import { esc } from "./dom";
-import { draw, figure, ring, type Figure } from "./moves";
+import { draw, figure, ring, zigzag, type Figure, type Walk } from "./moves";
 import {
   CH,
   PIC_H,
@@ -282,6 +282,12 @@ export class Picture {
     return X_PAD + ((years(iso) - min) / (max - min)) * (x1 - X_PAD);
   }
 
+  /** The picture region owns its level's height, so the chat below it only ever
+   * moves on a deliberate level change and never on a tap (LAYOUT CONTRACT). */
+  private pin(height: number): void {
+    this.host.style.height = `${height}px`;
+  }
+
   private render(): void {
     if (!this.data) return;
     const width = this.width;
@@ -293,8 +299,9 @@ export class Picture {
 
     if (!shown.length) {
       this.laid = { zones: [], rows: [] };
+      this.pin(PIC_H);
       this.host.innerHTML =
-        `<div class="ss" style="height:${PIC_H}px">` +
+        `<div class="ss">` +
         `<svg viewBox="0 0 ${width} ${PIC_H}" aria-hidden="true">` +
         `<line class="wire empty" x1="${x0}" y1="${WIRE}" x2="${x1}" y2="${WIRE}"/>` +
         `<text class="qm" x="${width / 2}" y="${WIRE + 6}" text-anchor="middle">?</text>` +
@@ -376,7 +383,8 @@ export class Picture {
     });
     hits += this.shelfHit(x1, wire);
 
-    this.host.innerHTML = `<div class="ss" style="height:${height}px">${svg}${text}${html}${hits}</div>`;
+    this.pin(height);
+    this.host.innerHTML = `<div class="ss">${svg}${text}${html}${hits}</div>`;
   }
 
   private dot(
@@ -515,15 +523,16 @@ export class Picture {
     const people = ids
       .map((id) => this.person(id))
       .filter((p): p is Person => !!p)
-      .map((p) => ({ id: p.id, name: p.name }));
+      .map((p) => ({ id: p.id, name: p.name, gender: p.gender }));
     if (!people.length) return "";
     const figures: Figure[] = ring(people, width, STAGE_H - 59 - STAGE_GAP);
     const event = this.moving;
     const at = (id: number | null) =>
       id === null ? null : (figures.find((f) => f.id === id) ?? null);
     let marks = "";
-    let steps: Record<number, [number, number]> = {};
+    let steps: Record<number, Walk> = {};
     const classes = new Map<number, string>();
+    const ghosts = new Map<number, "out" | "in" | "solo">();
     if (event) {
       const subject = event.child ?? event.person;
       const reached = event.relationshipTargets[0] ?? event.spouse ?? null;
@@ -546,29 +555,26 @@ export class Picture {
         );
         marks = drawn.marks;
         steps = drawn.steps;
-        classes.set(actor.id, drawn.actor);
+        // the mover's name carries the green: the play-by-play has to show who
+        // made the move
+        classes.set(actor.id, `${drawn.actor} mover`);
         if (reached !== null && drawn.target) classes.set(reached, drawn.target);
         if (other !== null && drawn.third) classes.set(other, drawn.third);
+        if (drawn.ghosts.actor) ghosts.set(actor.id, drawn.ghosts.actor);
+        if (reached !== null && drawn.ghosts.target)
+          ghosts.set(reached, drawn.ghosts.target);
       }
     } else if (this.closed && figures.length === 3) {
-      // a triangle the coach asked to see: the tension around all three
+      // a triangle the coach asked to see: the heat around all three, in the
+      // same zigzag the ratified triangle moves use
       marks = figures
-        .map((f, i) => {
-          const next = figures[(i + 1) % figures.length];
-          return (
-            `<path class="mv-tension" d="M${f.x.toFixed(1)} ${f.y.toFixed(1)} ` +
-            `L${next.x.toFixed(1)} ${next.y.toFixed(1)}"/>`
-          );
-        })
+        .map((f, i) => zigzag(f, figures[(i + 1) % figures.length]))
         .join("");
     }
     return (
       `<g class="cast">${marks}` +
       figures
-        .map((f) => {
-          const classed = classes.get(f.id) ?? "";
-          return figure(f, classed, classed.includes("anx"), steps[f.id]);
-        })
+        .map((f) => figure(f, classes.get(f.id) ?? "", ghosts.get(f.id) ?? "", steps[f.id]))
         .join("") +
       `</g>`
     );
