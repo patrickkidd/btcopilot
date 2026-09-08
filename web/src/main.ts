@@ -105,11 +105,8 @@ function onTap(tap: Tap): void {
     actions();
     return;
   }
-  // A label names one moment and selecting it is all a tap on it does; where
-  // a zone holds several moments the tap steps to the next of them. The way
-  // back to the words that coded a moment is the coded-in chip and nothing
-  // else, so nothing here happens on a second tap that did not happen on the
-  // first.
+  // A label names one moment: tapping it picks that moment, and where a zone
+  // holds several the tap steps to the next of them.
   const selected = picture.selection();
   const chosen =
     tap.target === Target.Zone
@@ -118,6 +115,14 @@ function onTap(tap: Tap): void {
   // blank ground inside the label band: the same as blank wire
   if (tap.target === Target.Band && chosen === null) {
     putDown();
+    return;
+  }
+  // The words of the moment already picked are the way back to where it was
+  // said. Only the words do this: a dot picks and never travels, and a label
+  // naming some other moment picks that one.
+  if (tap.target === Target.Band && chosen === selected && selected !== null) {
+    const trace = codedIn(selected);
+    if (trace) void traceTo(trace.where);
     return;
   }
   apply(

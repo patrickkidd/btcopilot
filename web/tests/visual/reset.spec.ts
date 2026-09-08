@@ -4,10 +4,12 @@ import { stateFor } from "./setup";
 /** Putting the picture down, and what a label does.
  *
  * Anything on the picture that is not a moment, a label or a control is
- * ground: a tap there clears what is selected and shows the whole line again.
- * The name of the picture does the same. A label selects the moment it names
- * and does nothing else, however many times it is tapped; the way back to the
- * words that coded a moment is the coded-in chip alone. */
+ * ground: a tap there clears what is picked and shows the whole line again.
+ * The name of the picture does the same.
+ *
+ * A label picks the moment it names; tapping the words of the moment already
+ * picked goes to where it was said in the conversation. Only the words travel:
+ * a dot picks and never moves the thread. */
 
 const settle = async (page: Page) => {
   await page.goto("/personal/");
@@ -67,7 +69,7 @@ const tapWords = async (page: Page, index = 0) => {
 test.describe("a tap on a label", () => {
   test.use({ storageState: stateFor("moves") });
 
-  test("selects its moment, and does nothing more when tapped again", async ({
+  test("picks its moment, and goes to where it was said when tapped again", async ({
     page,
   }) => {
     await settle(page);
@@ -79,11 +81,21 @@ test.describe("a tap on a label", () => {
     await expect(page.locator(".ss-t.meta")).toHaveCount(1);
     const written = await page.locator(".ss-t").allInnerTexts();
 
-    // again: the same moment, still written the same way, and nothing jumped
-    // to the words that coded it
+    // again: the same moment, still written the same way, and the thread goes
+    // to where it was said
     await tapWords(page);
     await expect(page.locator(".ss-t.meta")).toHaveCount(1);
     expect(await page.locator(".ss-t").allInnerTexts()).toEqual(written);
+    await expect(page.locator(".bub.traced")).toHaveCount(1);
+  });
+
+  test("a dot picks its moment and never travels", async ({ page }) => {
+    await settle(page);
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    await expect(page.locator(".ss-t.meta")).toHaveCount(1);
+    // the same dot again: still picked, and the thread has not moved
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    await expect(page.locator(".ss-t.meta")).toHaveCount(1);
     await expect(page.locator(".bub.traced")).toHaveCount(0);
   });
 });
