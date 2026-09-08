@@ -197,6 +197,16 @@ button { font-family: inherit; }
   min-width: 0;
   text-align: right;
 }
+/* The list button sits inside the thing it lists, in the same circle as the
+   one beside the message bar. The picture's own box is what it sits in, so it
+   is taken out of the flow and nothing below it moves. */
+.pic { position: relative; }
+.pic .fs-glyph {
+  position: absolute;
+  top: 0;
+  right: 6px;
+  z-index: 2;
+}
 .view { position: relative; transition: height 0.25s ease; }
 .ss { position: relative; width: 100%; height: 100%; }
 .ss svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
@@ -920,13 +930,7 @@ button { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* the button that opens the list, and the one that comes back from it */
-.listbtn {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-}
-.listbtn:active { background: var(--tint); }
+/* the button that comes back from the list */
 .backbtn {
   flex: none;
   width: 44px;
@@ -942,7 +946,7 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 .backbtn:active { background: var(--tint); border-radius: 50%; }
-.listbtn svg, .backbtn svg { pointer-events: none; }
+.backbtn svg { pointer-events: none; }
 .btn {
   display: inline-flex;
   align-items: center;
@@ -974,6 +978,27 @@ button { font-family: inherit; }
   color: var(--faint);
   border-bottom: 1px solid var(--line);
 }
+/* Two ways into the same record, side by side above the list: what happened,
+   and who it happened to. The row is one 44px target, like every other. */
+.tabs {
+  flex: none;
+  display: flex;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.tabs .tab {
+  flex: 1;
+  height: 44px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--faint);
+  font: 500 15px var(--sans);
+  cursor: pointer;
+}
+.tabs .tab.on { color: var(--ink); border-bottom-color: var(--data); }
+.tabs .tab:active { background: var(--tint); }
+
 .search {
   flex: none;
   padding: 8px 16px;
@@ -1057,6 +1082,8 @@ button { font-family: inherit; }
   gap: 6px;
 }
 .editor .sec { margin: 16px 0 4px; font: 600 15px/1.2 var(--sans); }
+/* what the record keeps somewhere else, said once rather than left missing */
+.editor .hint { font: 400 13px/1.4 var(--mono); color: var(--faint); }
 .editor .lab {
   font: 500 13px/1.4 var(--mono);
   color: var(--faint);
@@ -1154,17 +1181,6 @@ button { font-family: inherit; }
 
 .overlay { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
 .overlay > * { pointer-events: auto; }
-
-/* The picture only ever draws committed state, so when the conversation is
-   ahead of it the page says so rather than letting it look current. */
-.fresh {
-  margin: 0;
-  padding: 6px 16px;
-  font: 400 13px/1.4 var(--mono);
-  color: var(--ask-text);
-  background: var(--ask-tint);
-  border-bottom: 1px solid var(--line);
-}
 
 /* Signing out is a state of the app, not leaving it: the shell stays and this
    covers it until someone signs in again. */

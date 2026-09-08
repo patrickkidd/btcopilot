@@ -9,8 +9,7 @@ from btcopilot import auth
 from btcopilot.personal.routes import bp, current_session, diagram
 from btcopilot.personal.routes.sessions import session_payload, statements_payload
 from btcopilot.personal.timeline import build_timeline
-from btcopilot.personal.models import Discussion
-from btcopilot.schema import DiagramData, get_all_pdp_item_ids
+from btcopilot.schema import DiagramData
 
 BUNDLE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "web")
 
@@ -68,32 +67,8 @@ def manifest():
 
 @bp.route("/timeline")
 def timeline():
-    user = auth.current_user()
     in_use = diagram()
     data = in_use.get_diagram_data() if in_use else DiagramData()
-    payload = build_timeline(data)
-    payload["extraction"] = _extraction_status(user, in_use, data)
-    return jsonify(payload)
+    return jsonify(build_timeline(data))
 
 
-def _extraction_status(user, diagram, data: DiagramData) -> dict:
-    """The picture only reflects committed diagram state; never let it look
-    fresher than it is. States: extracting (a background extraction is
-    running), pending_review (extracted items staged but not committed),
-    chat_ahead (conversation past the extraction cursor), current."""
-    state = "current"
-    if diagram:
-        discussions = Discussion.query.filter_by(
-            user_id=user.id, diagram_id=diagram.id
-        ).all()
-        if any(d.extracting for d in discussions):
-            state = "extracting"
-        elif get_all_pdp_item_ids(data.pdp):
-            state = "pending_review"
-        else:
-            for d in discussions:
-                orders = [s.order for s in d.statements if s.order is not None]
-                if orders and max(orders) > (d.extracted_through_order or 0):
-                    state = "chat_ahead"
-                    break
-    return {"state": state, "up_to_date": state == "current"}

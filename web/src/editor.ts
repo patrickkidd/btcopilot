@@ -327,3 +327,70 @@ async function save(
   });
   done();
 }
+
+/** What the record holds a person as. Birth and death are events about them,
+ * so they are edited on the timeline and only shown here. */
+export enum Sex {
+  Male = "male",
+  Female = "female",
+  Abortion = "abortion",
+  Miscarriage = "miscarriage",
+  Unknown = "unknown",
+}
+
+/** The person editor: the event editor's own markup, with the three fields the
+ * record keeps on a person. */
+export function openPersonEditor(
+  person: Person | null,
+  done: () => void,
+): HTMLElement {
+  const editor = el(
+    "div",
+    "editor",
+    `<div class="sec">Who</div>` +
+      field("Name", "name", person?.name) +
+      field("Last name", "last_name", person?.last_name) +
+      `<div class="lab">Sex</div>` +
+      chips("gender", plain(Object.values(Sex)), person?.gender ?? Sex.Unknown) +
+      `<div class="sec">When</div>` +
+      `<div class="hint">${esc(
+        person?.birth
+          ? `Born ${person.birth}. Their birth is an event on the timeline.`
+          : "Being born is an event on the timeline, and so is dying.",
+      )}</div>` +
+      `<div class="acts"><button class="save" type="button">Save</button>` +
+      (person ? `<button class="del" type="button">Delete</button>` : "") +
+      `</div>`,
+  );
+
+  editor.querySelectorAll<HTMLElement>(".segs").forEach((group) => {
+    group.addEventListener("click", (clicked) => {
+      const button = (clicked.target as Element).closest<HTMLElement>(".seg");
+      if (!button) return;
+      group
+        .querySelectorAll(".seg")
+        .forEach((other) => other.classList.toggle("on", other === button));
+    });
+  });
+
+  editor.querySelector(".save")?.addEventListener("click", () => {
+    const text = (name: string): string | null => {
+      const node = editor.querySelector<HTMLInputElement>(`[data-name="${name}"]`);
+      return node && node.value.trim() ? node.value.trim() : null;
+    };
+    const gender =
+      editor.querySelector<HTMLElement>('.segs[data-name="gender"] .seg.on')?.dataset
+        .value ?? Sex.Unknown;
+    void api
+      .savePerson(person ? person.id : null, {
+        name: text("name"),
+        last_name: text("last_name"),
+        gender,
+      } as Partial<Person>)
+      .then(done);
+  });
+  editor.querySelector(".del")?.addEventListener("click", () => {
+    if (person) void api.deletePerson(person.id).then(done);
+  });
+  return editor;
+}

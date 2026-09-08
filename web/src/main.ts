@@ -2,7 +2,7 @@ import "./theme.css";
 import * as api from "./api";
 import { Chat, wait, type PlayTap } from "./chat";
 import { Picture, Target, type Tap } from "./picture";
-import { Menu } from "./menu";
+import { Menu, Tab } from "./menu";
 import { Sessions, sessionTitle, summaryOf } from "./sessions";
 import { Settings } from "./settings";
 import { aimedEvents, chips, itemKind } from "./chips";
@@ -27,7 +27,6 @@ import {
   InteractionKind,
   ItemKind,
   emptyTimeline,
-  Freshness,
   Role,
   StatementKind,
   type Chip,
@@ -541,25 +540,8 @@ function aimedFrom(text: string): number[] {
   return out;
 }
 
-/** What the page says while the record is behind the conversation. Nothing is
- * said when it is current. */
-const BEHIND: Record<Freshness, string> = {
-  [Freshness.Current]: "",
-  [Freshness.Extracting]: "Updating the picture from your conversation\u2026",
-  [Freshness.PendingReview]:
-    "New details from your conversation are waiting to be added.",
-  [Freshness.ChatAhead]: "The picture may be a little behind the conversation.",
-};
-
-function freshness(state: Freshness): void {
-  const line = BEHIND[state] ?? "";
-  $("fresh").textContent = line;
-  $("fresh").hidden = !line;
-}
-
 async function load(): Promise<Timeline> {
   timeline = await api.timeline();
-  freshness(timeline.extraction.state);
   picture.setData(timeline);
   menu.show(timeline);
   actions();
@@ -612,6 +594,28 @@ $("menu-add").addEventListener("click", () => menu.add());
 $("menu-search").addEventListener("input", (e) =>
   menu.search((e.target as HTMLInputElement).value),
 );
+
+/** The two lists behind the one button: what happened, and who it happened to.
+ * The search and the add button say which one they are for. */
+const TABS: [string, Tab, string, string][] = [
+  ["tab-events", Tab.Events, "Search events", "+ Add event"],
+  ["tab-people", Tab.People, "Search people", "+ Add someone"],
+];
+for (const [id, tab, placeholder, add] of TABS)
+  $(id).addEventListener("click", () => {
+    for (const [other] of TABS) {
+      const on = other === id;
+      $(other).classList.toggle("on", on);
+      $(other).setAttribute("aria-selected", String(on));
+    }
+    const field = $("menu-search") as HTMLInputElement;
+    field.value = "";
+    field.placeholder = placeholder;
+    field.setAttribute("aria-label", placeholder);
+    $("menu-add").textContent = add;
+    menu.search("");
+    menu.open(tab);
+  });
 
 for (const statement of window.BOOTSTRAP.statements) addStatement(statement);
 

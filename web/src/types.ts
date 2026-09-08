@@ -63,8 +63,12 @@ export type Piece = { text: string } | { chip: Chip };
 export interface Person {
   id: number;
   name: string;
+  last_name: string | null;
   gender: string | null;
   primary: boolean;
+  /** When they were born, which the record holds as an event about them
+   * rather than a field on them. Null when it holds none. */
+  birth: string | null;
 }
 
 export interface TimelineEvent {
@@ -113,15 +117,6 @@ export interface Question {
   sentence: string;
 }
 
-/** How far the picture is behind the conversation. The record only ever draws
- * committed state, so the page says so rather than looking fresher than it is. */
-export enum Freshness {
-  Current = "current",
-  Extracting = "extracting",
-  PendingReview = "pending_review",
-  ChatAhead = "chat_ahead",
-}
-
 export interface Timeline {
   people: Person[];
   events: TimelineEvent[];
@@ -132,7 +127,6 @@ export interface Timeline {
   /** Where each moment was coded, by event id: the session, and the statement
    * inside it. Two-way traceability runs on this. */
   coded_in: Record<string, CodedIn>;
-  extraction: { state: Freshness; up_to_date: boolean };
 }
 
 /** A record with nothing in it yet, which is what every surface starts on. A
@@ -145,7 +139,6 @@ export const emptyTimeline = (): Timeline => ({
   axis: null,
   shelf: [],
   coded_in: {},
-  extraction: { state: Freshness.Current, up_to_date: true },
 });
 
 export interface CodedIn {

@@ -1,10 +1,34 @@
 import { esc } from "./dom";
-import { Direction, openEditor } from "./editor";
+import { Direction, openEditor, openPersonEditor } from "./editor";
 import { emptyTimeline, type Chapter, type Person, type Timeline, type TimelineEvent } from "./types";
 
 /** The full timeline list behind the menu: full screen, searched, and divided
  * by chapter with a sticky header, so you always know which cluster you are in
- * (owner rulings 2026-09-03). Chat edits it too (R-0069). */
+ * (owner rulings 2026-09-03). Chat edits it too (R-0069).
+ *
+ * Two ways into the same record: what happened, and who it happened to. The
+ * people list is the same rows and the same editor, on the fields the record
+ * keeps about a person. */
+
+export enum Tab {
+  Events = "events",
+  People = "people",
+}
+
+/** Who is ordered by when they were born, and people the record has no birth
+ * for come after everyone it does. */
+function byBirth(a: Person, b: Person): number {
+  if (a.birth && b.birth) return a.birth < b.birth ? -1 : a.birth > b.birth ? 1 : 0;
+  if (a.birth) return -1;
+  if (b.birth) return 1;
+  return byName(a, b);
+}
+
+const byName = (a: Person, b: Person) => a.name.localeCompare(b.name);
+
+/** What the record calls someone, both names when it holds both. */
+const fullName = (person: Person) =>
+  [person.name, person.last_name].filter(Boolean).join(" ");
 
 const UNPLACED = "unplaced";
 const MONTHS = [
@@ -56,6 +80,9 @@ export class Menu {
   private editing: number | null = null;
   private adding = false;
   private query = "";
+  private tab = Tab.Events;
+  /** The people list is ordered by birth until the reader asks for names. */
+  private byName = false;
 
   constructor(
     private body: HTMLElement,
@@ -65,6 +92,19 @@ export class Menu {
   add(): void {
     this.adding = true;
     this.editing = null;
+    this.body.scrollTop = 0;
+    this.render();
+  }
+
+  /** Which of the two lists is on screen. */
+  showing(): Tab {
+    return this.tab;
+  }
+
+  open(tab: Tab): void {
+    this.tab = tab;
+    this.editing = null;
+    this.adding = false;
     this.body.scrollTop = 0;
     this.render();
   }
@@ -105,6 +145,10 @@ export class Menu {
   }
 
   private render(): void {
+    if (this.tab === Tab.People) {
+      this.renderPeople();
+      return;
+    }
     const names = this.names();
     const shown = this.data.events.filter((event) => this.matches(event, names));
     let html = "";
@@ -141,6 +185,68 @@ export class Menu {
       const row = this.body.querySelector(`.row[data-event="${this.editing}"]`);
       if (event && row) row.after(this.editor(event));
     }
+  }
+
+  private renderPeople(): void {
+    const words = this.query.trim().toLowerCase();
+    const shown = this.data.people
+      .filter((person) => fullName(person).toLowerCase().includes(words))
+      .sort(this.byName ? byName : byBirth);
+    let html = `<div class="div"><span>${
+      this.byName ? "by name" : "by birth"
+    }</span><span class="dcount" data-order="1" role="button" tabindex="0">${
+      this.byName ? "order by birth" : "order by name"
+    }</span></div>`;
+    for (const person of shown) html += this.personRow(person);
+    if (!shown.length)
+      html = `<div class="none">${
+        this.data.people.length ? "Nobody matches that search." : "Nobody on your record yet."
+      }</div>`;
+    const top = this.body.scrollTop;
+    this.body.innerHTML = html;
+    this.body.scrollTop = top;
+    this.body.querySelector('[data-order]')?.addEventListener("click", () => {
+      this.byName = !this.byName;
+      this.render();
+    });
+    this.body.querySelectorAll<HTMLElement>(".row").forEach((row) => {
+      row.addEventListener("click", () => {
+        const id = Number(row.dataset.person);
+        this.editing = this.editing === id ? null : id;
+        this.adding = false;
+        this.render();
+      });
+    });
+    if (this.adding) this.body.prepend(this.personEditor(null));
+    else if (this.editing !== null) {
+      const person = this.data.people.find((p) => p.id === this.editing);
+      const row = this.body.querySelector(`.row[data-person="${this.editing}"]`);
+      if (person && row) row.after(this.personEditor(person));
+    }
+  }
+
+  private personRow(person: Person): string {
+    const meta = [
+      person.birth ? `born ${person.birth.slice(0, 4)}` : "no birth on the record",
+      person.gender,
+      person.primary ? "you" : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    return (
+      `<div class="row${this.editing === person.id ? " on" : ""}" data-person="${person.id}" ` +
+      `role="button" tabindex="0">` +
+      `<div class="r1">${esc(fullName(person))}</div>` +
+      `<div class="r2">${esc(meta)}</div></div>`
+    );
+  }
+
+  private personEditor(person: Person | null): HTMLElement {
+    return openPersonEditor(person, () => {
+      this.editing = null;
+      this.adding = false;
+      void this.reload().then((data) => this.show(data));
+    });
   }
 
   private divider(chapter: Chapter | undefined): string {

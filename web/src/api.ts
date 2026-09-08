@@ -4,6 +4,7 @@ import type {
   InteractionKind,
   ItemKind,
   PlayReply,
+  Person,
   Preferences,
   Reply,
   Session,
@@ -103,6 +104,15 @@ export const saveEvent = (id: number | null, body: Partial<TimelineEvent>) =>
     : call<TimelineEvent>("PATCH", `/events/${id}`, body);
 
 export const deleteEvent = (id: number) => call<void>("DELETE", `/events/${id}`);
+
+/** The record's Person: a name, a last name and a gender. When someone was
+ * born, and whether they have died, are events about them. */
+export const savePerson = (id: number | null, body: Partial<Person>) =>
+  id === null
+    ? call<Person>("POST", "/people", body)
+    : call<Person>("PATCH", `/people/${id}`, body);
+
+export const deletePerson = (id: number) => call<void>("DELETE", `/people/${id}`);
 
 /** Sessions, newest activity first. The server has no current-session pointer:
  * posting into a session is what makes it the one you come back to. */

@@ -150,40 +150,11 @@ def _make_discussion(test_user, order):
     return discussion
 
 
-def test_extraction_status_chat_ahead(web, test_user):
+def test_the_timeline_says_nothing_about_extraction(web, test_user):
+    """The picture is written by the coach as it talks, so there is no cursor
+    behind the conversation to report and no badge saying so."""
     _make_discussion(test_user, order=3)
-    data = web.get("/personal/timeline").get_json()
-    assert data["extraction"] == {"state": "chat_ahead", "up_to_date": False}
-
-
-def test_extraction_status_current(web, test_user):
-    discussion = _make_discussion(test_user, order=3)
-    discussion.extracted_through_order = 3
-    db.session.commit()
-    data = web.get("/personal/timeline").get_json()
-    assert data["extraction"] == {"state": "current", "up_to_date": True}
-
-
-def test_extraction_status_extracting(web, test_user):
-    discussion = _make_discussion(test_user, order=3)
-    discussion.extracting = True
-    db.session.commit()
-    data = web.get("/personal/timeline").get_json()
-    assert data["extraction"] == {"state": "extracting", "up_to_date": False}
-
-
-def test_extraction_status_pending_review(web, test_user):
-    discussion = _make_discussion(test_user, order=3)
-    discussion.extracted_through_order = 3
-    diagram = test_user.free_diagram
-    diagram_data = diagram.get_diagram_data()
-    diagram_data.pdp.events.append(
-        Event(id=-1, kind=EventKind.Shift, person=1, description="staged")
-    )
-    diagram.set_diagram_data(diagram_data)
-    db.session.commit()
-    data = web.get("/personal/timeline").get_json()
-    assert data["extraction"] == {"state": "pending_review", "up_to_date": False}
+    assert "extraction" not in web.get("/personal/timeline").get_json()
 
 
 def test_pwa_files_are_served_from_the_app_root(web):
