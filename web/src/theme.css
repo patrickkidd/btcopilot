@@ -151,6 +151,11 @@ button { font-family: inherit; }
 .ss .dot.core { fill: var(--data); }
 .ss .halo { fill: none; stroke: var(--data); stroke-width: 1; opacity: 0.35; }
 .ss .brk { fill: none; stroke: var(--data); stroke-width: 1.2; }
+.ss .brkl { font: 400 13px var(--mono); fill: var(--data); letter-spacing: 0.04em; }
+/* two moments face to face: no axis, one asking mark between them */
+.ss .ss-w { font: 400 13px var(--mono); fill: var(--ink); }
+.ss .ss-w.meta { fill: var(--faint); }
+.ss .seam { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 5; }
 .ss .span { fill: var(--data); fill-opacity: 0.14; stroke: var(--data); stroke-width: 1.2; }
 
 /* the words: what the coach named, or the moment under the thumb */
@@ -193,7 +198,13 @@ button { font-family: inherit; }
 .ss .qm.small { font-size: 13px; }
 
 /* ---- the moves board: Bowen's chalkboard, the deepest level ---- */
+/* screen one zooms into screen two: the board arrives scaled up and settles */
 .ss.board { position: relative; }
+.ss.board.in svg { animation: boardin 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes boardin {
+  from { transform: scale(1.35); opacity: 0.25; }
+  to { transform: scale(1); opacity: 1; }
+}
 .ss .bond { stroke: var(--line); stroke-width: 1.2; }
 .ss .hist { opacity: 0.16; animation: histin 0.32s ease; }
 .ss .hist * { animation: none !important; }
@@ -522,15 +533,6 @@ button { font-family: inherit; }
   animation: blink 0.7s steps(1) infinite;
 }
 @keyframes blink { 50% { opacity: 0; } }
-.bub.dots i {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 4px;
-  border-radius: 50%;
-  background: var(--faint);
-  animation: bounce 1s infinite;
-}
 /* who is speaking, on the coach's side (approved play-by-play) */
 .bub .who {
   font: 500 13px/1.2 var(--mono);
@@ -557,9 +559,6 @@ button { font-family: inherit; }
   border-radius: 50%;
   background: var(--move);
 }
-.bub.dots i:nth-child(2) { animation-delay: 0.15s; }
-.bub.dots i:nth-child(3) { animation-delay: 0.3s; }
-@keyframes bounce { 50% { opacity: 0.3; } }
 
 /* A chip never leaves its bubble: it may be as wide as the bubble and no
    wider, it wraps to more lines when its words are long, and a label too long
@@ -1101,4 +1100,325 @@ button { font-family: inherit; }
 .toast.in { opacity: 0.92; }
 @media (prefers-reduced-motion: reduce) {
   .fs-sheet, .fs-scrim, .toast, .screen { transition: none !important; }
+}
+
+/* ---- settings: an iOS-Settings list where every row pushes its own page
+   (settings-nested, the owner's pick 2026-09-03 00:27) ---- */
+.avatar {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1.5px solid var(--data);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--data);
+  font: 500 15px var(--mono);
+  cursor: pointer;
+  overflow: hidden;
+}
+.avatar svg { width: 22px; height: 22px; display: block; }
+.avatar:active { background: var(--tint); }
+.sn-back {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 2px 2px 12px;
+  margin-left: -12px;
+  border: none;
+  background: none;
+  color: var(--data);
+  font: 500 19px/1 var(--mono);
+  cursor: pointer;
+}
+.sn-back:active { background: var(--tint); }
+
+.sn-stack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 44px;
+  bottom: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+.sn-pane {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg);
+  transform: translateX(100%);
+  transition: transform 0.22s ease;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
+.sn-pane.in { transform: none; }
+.sn-pane.under { transform: translateX(-28%); }
+.sn-grp {
+  margin: 0;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.sn-hd {
+  margin-top: 14px;
+  padding: 0 16px 5px;
+  font: 500 13px var(--mono);
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.sn-hd + .sn-grp { margin-top: 0; }
+.sn-grp + .sn-grp, div > .sn-grp { margin-top: 0; }
+.sn-pane > div + div > .sn-grp { margin-top: 14px; }
+.sn-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 7px 16px;
+  border-top: 1px solid var(--line);
+}
+.sn-row:first-child { border-top: none; }
+.sn-row.push { cursor: pointer; }
+.sn-row.push:active { background: var(--tint); }
+.sn-lbl {
+  max-width: 52%;
+  font: 400 17px/1.3 var(--sans);
+  color: var(--ink);
+}
+.sn-val {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font: 500 13px var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sn-val.ink { font: 400 17px/1.3 var(--sans); color: var(--ink); }
+.sn-chev { flex: none; color: var(--faint); font: 400 17px/1 var(--mono); }
+.sn-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 13px 16px;
+  cursor: pointer;
+}
+.sn-cell:active { background: var(--tint); }
+.sn-face {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--data);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--data);
+  font: 500 19px var(--mono);
+  overflow: hidden;
+}
+.sn-face svg { width: 26px; height: 26px; display: block; }
+.sn-who { flex: 1; min-width: 0; }
+.sn-name {
+  font: 600 17px/1.3 var(--sans);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sn-name.empty { font-weight: 400; color: var(--faint); }
+.sn-sub {
+  font: 500 13px/1.3 var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sn-in {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 0;
+  border: none;
+  border-bottom: 1px solid transparent;
+  background: none;
+  color: var(--ink);
+  font: 400 17px/1.3 var(--sans);
+  text-align: right;
+  text-overflow: ellipsis;
+  outline: none;
+}
+.sn-in::placeholder { color: var(--faint); }
+.sn-in.typing { border-bottom-color: var(--data); }
+.sn-seg { flex: 1; display: flex; justify-content: flex-end; min-width: 0; }
+.sn-seg button {
+  min-width: 44px;
+  height: 32px;
+  padding: 4px 8px;
+  margin-left: -1px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--faint);
+  font: 500 13px var(--mono);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sn-seg button:first-child { border-radius: 4px 0 0 4px; margin-left: 0; }
+.sn-seg button:last-child { border-radius: 0 4px 4px 0; }
+.sn-seg button.on {
+  position: relative;
+  z-index: 1;
+  color: var(--data);
+  border-color: var(--data);
+  background: var(--tint);
+}
+/* the ruled boolean: an iOS switch, never a native checkbox */
+.sw {
+  flex: none;
+  position: relative;
+  width: 51px;
+  height: 31px;
+  padding: 0;
+  border: none;
+  border-radius: 16px;
+  background: var(--line);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.sw.on { background: var(--data); }
+.sw-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px var(--shadow);
+  transition: left 0.15s ease;
+}
+.sw.on .sw-thumb { left: 22px; }
+.sn-m { flex: 1; min-width: 0; }
+.sn-t {
+  font: 400 17px/1.3 var(--sans);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sn-s {
+  font: 500 13px/1.3 var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sn-tick { flex: none; color: var(--data); font: 500 17px/1 var(--mono); }
+.sn-hint {
+  padding: 8px 16px 0;
+  font: 500 13px/1.4 var(--mono);
+  color: var(--faint);
+}
+.sn-srch { padding: 10px 16px; }
+.sn-srch input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--panel);
+  color: var(--ink);
+  font: 400 17px/1.4 var(--sans);
+  outline: none;
+}
+.sn-srch input:focus { border-color: var(--data); }
+.sn-plan { padding: 13px 16px; }
+.sn-badge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 3px 9px;
+  border: 1px solid var(--data);
+  border-radius: 10px;
+  color: var(--data);
+  font: 500 13px var(--mono);
+  white-space: nowrap;
+}
+.sn-price { margin-top: 8px; font: 600 17px/1.3 var(--sans); color: var(--ink); }
+.sn-manage {
+  margin-top: 12px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--data);
+  border-radius: 14px;
+  background: none;
+  color: var(--data);
+  font: 500 15px var(--sans);
+  cursor: pointer;
+}
+.sn-manage:active { background: var(--tint); }
+.sn-chip {
+  flex: none;
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: 500 13px var(--mono);
+}
+.sn-chip.on { color: var(--move); border-color: var(--move); }
+.sn-chip.off { color: var(--ask); border-color: var(--ask); }
+.sn-out {
+  width: 100%;
+  min-height: 44px;
+  padding: 13px 16px;
+  border: none;
+  background: none;
+  color: var(--ask);
+  font: 500 13px var(--mono);
+  text-align: center;
+  cursor: pointer;
+}
+.sn-out:active { background: var(--ask-tint); }
+.sn-foot {
+  padding: 12px 16px 22px;
+  text-align: center;
+  font: 500 13px var(--mono);
+  color: var(--faint);
+}
+
+/* the one ruled duplicate: a named shortcut writing the same value as the
+   coach settings page */
+.speakrow {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 6px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--faint);
+  font: 500 17px var(--mono);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.speakrow input {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--data);
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sn-pane, .sw, .sw-thumb { transition: none !important; }
 }

@@ -13,10 +13,12 @@
 <body>
 <div class="app">
   <div class="titlerow">
-    <div class="ttl">Your family</div>
+    <button class="sn-back" id="settings-back" type="button" aria-label="back" hidden>&#8249;</button>
+    <div class="ttl" id="title">Your family</div>
     <button class="iconbtn listbtn" id="menu-open" type="button" aria-label="open the timeline list">
       <svg width="20" height="16" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
     </button>
+    <button class="avatar" id="account" type="button" aria-label="Account and settings"></button>
   </div>
 
   <div class="screen" id="chat-screen">
@@ -29,6 +31,10 @@
       <div class="caption" id="caption"></div>
     </div>
     <div class="chat" id="chat"></div>
+    <label class="speakrow" id="speakrow">
+      <input type="checkbox" id="speak">
+      <span>speak replies</span>
+    </label>
     <div class="inbar" id="inbar">
       <button class="fs-glyph" id="sessions-open" type="button" aria-label="sessions">
         <svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>

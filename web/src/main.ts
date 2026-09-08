@@ -4,6 +4,7 @@ import { Chat, wait } from "./chat";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu } from "./menu";
 import { Sessions } from "./sessions";
+import { Settings } from "./settings";
 import { aimedEvents, chips, itemKind } from "./chips";
 import { StepKind, steps } from "./turn";
 import {
@@ -129,6 +130,29 @@ const sessions = new Sessions(
     },
   },
 );
+
+/** The title row shows the current view's title, and the family's name again
+ * when the settings stack closes. */
+const FAMILY_TITLE = $("title").textContent ?? "Your family";
+
+/** Speak replies is the one ruled duplicate: this row and the Coach settings
+ * page are two doors onto the same value. */
+const speak = $("speak") as HTMLInputElement;
+
+const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
+  onTitle: (title) => {
+    // The title row belongs to whatever is on top of it, so the chat's own
+    // controls step aside while the settings stack is up.
+    $("title").textContent = title ?? FAMILY_TITLE;
+    $("menu-open").hidden = title !== null;
+    $("account").hidden = title !== null;
+  },
+  onPrefs: (prefs) => {
+    speak.checked = prefs.speak;
+  },
+});
+
+speak.addEventListener("change", () => void settings.set({ speak: speak.checked }));
 
 /** Opening a session replaces the thread with its statements and puts the
  * picture back where that session's last coach message left it. */
@@ -315,6 +339,7 @@ for (const statement of window.COMPANION.statements)
   chat.add(statement.role, statement.text);
 
 void sessions.load(session);
+void settings.load();
 
 void load().then(async () => {
   const said = window.COMPANION.statements;
