@@ -972,8 +972,6 @@ button { font-family: inherit; }
   border-bottom: 1px solid var(--line);
   background: var(--panel);
   cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
 }
 .row.on, .row:active { background: var(--tint); }
 .r1 { font: 400 17px/1.3 var(--sans); color: var(--ink); }
@@ -1758,6 +1756,11 @@ button { font-family: inherit; }
 
 /* while a mouse drag is scrolling, the surface is being moved, not read */
 .dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; }
+/* Every word the app says can be selected and copied. Only the controls that
+   carry no prose of their own are held back, so a press on one is a press and
+   never a half-selected label. A chip inside a bubble is part of the sentence
+   it sits in, so it stays selectable and comes with the words around it. */
+.btn, .iconbtn, .send, .navbtn { user-select: none; -webkit-user-select: none; }
 
 /* ---- the resting level: the whole line, one box per chapter (converged
    mockup, crowded-chapter/timeline-converged.html renderRest) ---- */

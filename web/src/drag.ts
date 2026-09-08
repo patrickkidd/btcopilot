@@ -1,13 +1,33 @@
 /** Mouse drag to scroll. A wheel and a touch drag work on an overflow
  * container on their own; a mouse drag does not, and UI_STANDARDS requires
  * every scroll area to take all four. Momentum carries the surface on after
- * the button comes up, so it feels the same on a desktop as on a phone. */
+ * the button comes up, so it feels the same on a desktop as on a phone.
+ *
+ * A drag never starts on words. Dragging the surface and selecting a line of
+ * it are the same gesture, so the one that wins is decided by where the press
+ * landed: on the words themselves it selects, anywhere else it scrolls. */
 
 const FRICTION = 0.94;
 /** Below this the surface has stopped. */
 const STILL = 0.4;
 /** A press that moves less than this was a tap, not a drag. */
 const SLOP = 4;
+
+/** Whether the press landed on a line of text the reader may select, rather
+ * than on the space around it. The element's own text is measured, so pressing
+ * in a bubble's padding still drags the thread. */
+function onWords(target: Element, x: number, y: number): boolean {
+  if (getComputedStyle(target).userSelect === "none") return false;
+  const range = document.createRange();
+  for (const node of target.childNodes) {
+    if (node.nodeType !== Node.TEXT_NODE || !node.textContent?.trim()) continue;
+    range.selectNodeContents(node);
+    for (const box of range.getClientRects())
+      if (x >= box.left && x <= box.right && y >= box.top && y <= box.bottom)
+        return true;
+  }
+  return false;
+}
 
 export function dragScroll(host: HTMLElement): void {
   let from: { y: number; top: number } | null = null;
@@ -25,6 +45,8 @@ export function dragScroll(host: HTMLElement): void {
 
   host.addEventListener("pointerdown", (e) => {
     if (e.pointerType !== "mouse" || e.button !== 0) return;
+    const target = e.target as Element;
+    if (target instanceof Element && onWords(target, e.clientX, e.clientY)) return;
     cancelAnimationFrame(coasting);
     speed = 0;
     from = { y: e.clientY, top: host.scrollTop };
