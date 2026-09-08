@@ -69,3 +69,26 @@ items, so each is logged FIXED without a commit citation.
     OPEN
 13. Activity indicator (three animating dots) in the coach bubble from send until the
     first words arrive; never a blank bubble. OPEN
+14. Reset: tapping blank wire, blank label band, or the "Family timeline" crumb clears
+    the selection to the clusters view; label tap always selects its moment; the
+    selected moment's label tap jumps to where it was coded in chat; dots never jump.
+    FIXED @d7a9be9 / @5e5c583.
+15. The 8890 review database is never seeded, wiped or recreated; backups before
+    restarts; migrate only. RULED.
+16. Typing indicator = three dots (owner ruling supersedes the mockup's caret). FIXED
+    @df0f26c.
+17. Symptom-up arrow height = cross height (owner ruling supersedes the ratified 32px).
+    OPEN.
+18. The agentic tool-call summaries and their formatting apart from the reply are liked
+    and preserved; each tool-call line lights the created item on the picture as it
+    appears (chatting visibly produces data in real time — "an innovation for
+    behavioral health practice"). RULED/OPEN.
+19. Invite URLs use hostname turin.local so he can open them from his phone. RULED.
+20. First-session/sparse-data: options given (thresholds: stretch ≥3 moments, plain
+    wire under 6; life line birth→now; family taking shape as people are named;
+    chat-only hook). AWAITING OWNER.
+21. People list under the ≡ menu mirroring the timeline list (name, birth year,
+    relationship; ordered by birthdate; single-item editor) — proposed, AWAITING
+    OWNER.
+22. Timeline list discoverability: it lives behind the ≡ button; the owner did not find
+    it. OPEN (note only).
