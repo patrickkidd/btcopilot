@@ -36,6 +36,7 @@ import {
 } from "./spotlight";
 import {
   DateCertainty,
+  ItemKind,
   ViewKind,
   type Chapter,
   type Person,
@@ -106,6 +107,10 @@ interface LabelRow {
 /** How far beside a label's words still counts as the label. */
 const LABEL_SLOP = 6;
 
+/** How long someone the coach has just added stays lit: long enough to read
+ * the line that says they were added. */
+const LIT_MS = 2600;
+
 export enum Target {
   Zone = "zone",
   /** A chapter box on the resting level. */
@@ -168,6 +173,9 @@ export class Picture {
   private explaining = false;
   /** Set once the reader steps the board themselves. */
   private steered = false;
+  /** Who the coach has just put in the record, lit while its line is read. */
+  private litPeople: number[] = [];
+  private litFor = 0;
   private band: { start: string; end: string } | null = null;
   private focus: Chapter | null = null;
   private range = { min: 0, max: 1 };
@@ -207,6 +215,29 @@ export class Picture {
       x: (e as MouseEvent).clientX - box.left,
       y: (e as MouseEvent).clientY - box.top,
     };
+  }
+
+  /** Light what one line of what the coach did has just put in the record, at
+   * the moment that line lands: a moment as a dot on the wire, a person
+   * wherever people are drawn, which today is the board. */
+  light(made: { kind: ItemKind; id: string }[]): void {
+    const moments = made
+      .filter((one) => one.kind === ItemKind.Event)
+      .map((one) => Number(one.id))
+      .filter((id) => (this.data?.events ?? []).some((e) => e.id === id));
+    const people = made
+      .filter((one) => one.kind === ItemKind.Person)
+      .map((one) => Number(one.id));
+    if (people.length) {
+      this.litPeople = people;
+      window.clearTimeout(this.litFor);
+      this.litFor = window.setTimeout(() => {
+        this.litPeople = [];
+        this.render();
+      }, LIT_MS);
+    }
+    if (moments.length) this.spotlight(moments);
+    else if (people.length) this.render();
   }
 
   /** Put the picture down: nothing selected, nothing named, the whole line at
@@ -658,6 +689,8 @@ export class Picture {
           `${this.at >= last ? "disabled" : ""} aria-label="the move after">&#9654;</button>` +
           `</div>`
         : "");
+    for (const id of this.litPeople)
+      this.host.querySelector(`.node[data-person="${id}"]`)?.classList.add("lit");
     // The board is as tall as what it holds — the drawing, its caption and its
     // controls — rather than a fixed number with an empty band under it.
     this.pin(

@@ -508,8 +508,15 @@ async function deliver(statement: string): Promise<void> {
 
   const bubble = chat.live();
   for (const step of steps(reply)) {
-    if (step.kind === StepKind.Note) bubble.note(step.line);
-    else if (step.kind === StepKind.Reload) await load();
+    if (step.kind === StepKind.Note) {
+      bubble.note(step.line);
+      // what the line put in the record lights as the line lands, so the
+      // reader sees the thing the coach is telling them about
+      if (step.made.length) {
+        await load();
+        picture.light(step.made);
+      }
+    } else if (step.kind === StepKind.Reload) await load();
     else await picture.show(step.view);
   }
   await bubble.type(reply.statement, (chip) => aim(chip));
