@@ -123,6 +123,55 @@ test.describe("nothing moves when a chip is tapped", () => {
   });
 });
 
+test.describe("the message bar never pushes the thread", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  test("an offered chip lands in the composer without growing it", async ({
+    page,
+  }) => {
+    await settle(page);
+    const before = await frame(page);
+    const bar = await page.locator(".inbar").boundingBox();
+
+    const field = await page.locator("#composer").boundingBox();
+    // Playwright scrolls a target into view before clicking it, so the thread's
+    // own scroll offset is taken out of the comparison: what is under test is
+    // whether the message bar grew and pushed the thread, not where the reader
+    // had scrolled to.
+    const held = await page.locator("#chat").evaluate((n) => n.scrollTop);
+    await page.locator(".bub .chip.ask").first().click();
+    await expect(page.locator("#composer .chip")).toHaveCount(1);
+    await page.waitForTimeout(300);
+    await page.locator("#chat").evaluate((n, at) => (n.scrollTop = at), held);
+
+    const after = await frame(page);
+    expect(Math.round((await page.locator(".inbar").boundingBox())!.height)).toBe(
+      Math.round(bar!.height),
+    );
+    expect(Math.round((await page.locator("#composer").boundingBox())!.height)).toBe(
+      Math.round(field!.height),
+    );
+    expect(after.chat).toEqual(before.chat);
+    expect(after.bubbles).toEqual(before.bubbles);
+  });
+});
+
+test.describe("a scrollbar appearing never shifts the page", () => {
+  test.use({ storageState: stateFor("empty") });
+
+  test("tapping the undated shelf moves nothing sideways", async ({ page }) => {
+    await settle(page);
+    const before = await frame(page);
+    await page.locator('.ss-hit[data-target="shelf"]').first().click();
+    await expect(page.locator("#cap-chip")).toBeVisible();
+    await page.waitForTimeout(300);
+    const after = await frame(page);
+    expect(after.chat).toEqual(before.chat);
+    expect(after.picture).toEqual(before.picture);
+    expect(after.bubbles).toEqual(before.bubbles);
+  });
+});
+
 test.describe("the board is the only thing that resizes the picture", () => {
   test.use({ storageState: stateFor("moves") });
 

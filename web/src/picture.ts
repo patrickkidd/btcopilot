@@ -839,10 +839,14 @@ export class Picture {
     if (!this.data?.shelf.length) return "";
     const above = wire - ZONE - 4;
     const top = above >= 0 ? above : wire - ZONE / 2;
+    // The target is 44 wide and sits past the end of the line, so it has to be
+    // held inside the frame: a hair over the edge and tapping it scrolls the
+    // whole page sideways to reveal it.
+    const left = Math.min(x1 - 26, this.width - ZONE);
     return (
       `<button class="ss-hit shelf" data-target="${Target.Shelf}" ` +
       `aria-label="things with no date yet" ` +
-      `style="left:${x1 - 26}px;top:${top}px;width:${ZONE}px;height:${ZONE}px">?</button>`
+      `style="left:${left}px;top:${top}px;width:${ZONE}px;height:${ZONE}px">?</button>`
     );
   }
 

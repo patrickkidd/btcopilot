@@ -65,7 +65,10 @@
 }
 
 * { box-sizing: border-box; }
-html, body { height: 100%; }
+/* The outer page never scrolls. Without this the document can gain a
+   scrollbar, the viewport narrows, and the centred frame steps 2px sideways —
+   the whole app moving because a caption appeared. */
+html, body { height: 100%; overflow: hidden; }
 body {
   margin: 0;
   background: var(--bg);
@@ -86,6 +89,9 @@ button { font-family: inherit; }
   display: flex;
   flex-direction: column;
   height: 100dvh;
+  /* never wider than the window: a child that overflows must be clipped, not
+     allowed to stretch the frame and step it sideways under the centring */
+  width: 100%;
   max-width: 400px;
   margin: 0 auto;
   background: var(--panel);
@@ -567,6 +573,7 @@ button { font-family: inherit; }
   background: var(--bg);
   touch-action: pan-y;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .bub {
   max-width: 82%;
@@ -700,6 +707,18 @@ button { font-family: inherit; }
 }
 .field:focus { border-color: var(--data); }
 .field:empty::before { content: attr(data-ph); color: var(--faint); }
+/* A token in the composer sits ON the line of words, not above it: the chip's
+   own 26px box would make the field taller than its 44px resting height, and
+   the message bar growing pushes every bubble up the screen. */
+.field .chip {
+  font: 500 13px/18px var(--mono);
+  border-radius: 6px;
+  padding: 1px 6px;
+  margin: 0 3px 0 0;
+  vertical-align: baseline;
+}
+/* the target still meets the floor, grown around the smaller pill */
+.field .chip::before { inset: -12px -6px; }
 .send {
   flex: none;
   width: 44px;
@@ -776,6 +795,7 @@ button { font-family: inherit; }
   overflow-y: auto;
   touch-action: pan-y;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .banner {
   margin: 0;
@@ -1021,6 +1041,7 @@ button { font-family: inherit; }
   overflow-y: auto;
   touch-action: pan-y;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .fs-fhead {
   position: sticky;
@@ -1246,6 +1267,7 @@ button { font-family: inherit; }
   transition: transform 0.22s ease;
   touch-action: pan-y;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .sn-pane.in { transform: none; }
 .sn-pane.under { transform: translateX(-28%); }
