@@ -2,28 +2,30 @@
 
 Every row of `UI_SPEC.md` set against branch FD-362. Each build value was read from the source in this worktree and cites the file and line it came from: `web/index.html`, `web/src/theme.css`, and `web/src/*.ts`. Earlier audit write-ups were used only as pointers to where to look, never as the finding — several of their status claims did not survive reading the code. A row says UNCHECKED when the behaviour is not decidable from the front-end source, such as a backend rule or a copy string served by the API.
 
-Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is there · **CHANGED** the build does something different · **MISSING** absent · **UNCHECKED** no evidence either way · **N/A** the row is a superseded option, an unpicked option, or a conflict with no pick, so there is nothing for the build to match.
+Where UI_SPEC carried a conflict, the verdict here is against the resolved value, not against the losing source. Seven rows moved when the 36 conflicts were resolved: the coach-requested span band, the people appearing only when a move needs them, the amber question mark and the per-move advance all became MET, and the web frame width became CHANGED against the resolved 400px.
+
+Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is there · **CHANGED** the build does something different · **MISSING** absent · **UNCHECKED** no evidence either way · **N/A** the row is a superseded option, an unpicked option, or a source a resolution ruled against, so there is nothing for the build to match.
 
 | status | rows |
 |---|---|
-| MET | 122 |
-| PARTIAL | 46 |
+| MET | 126 |
+| PARTIAL | 44 |
 | CHANGED | 76 |
-| MISSING | 112 |
+| MISSING | 111 |
 | UNCHECKED | 23 |
 | N/A | 62 |
-| **total** | **441** |
+| **total** | **442** |
 
 | group | MET | PARTIAL | CHANGED | MISSING | UNCHECKED | N/A |
 |---|---|---|---|---|---|---|
-| 1. App shell and navigation | 5 | 4 | 6 | 6 | 0 | 4 |
+| 1. App shell and navigation | 4 | 4 | 7 | 6 | 0 | 4 |
 | 2. Sessions / discussions drawer | 0 | 0 | 0 | 25 | 3 | 11 |
 | 3. Settings and account | 1 | 1 | 0 | 24 | 1 | 10 |
-| 4. Picture at rest — the sentence spotlight | 32 | 4 | 10 | 5 | 0 | 6 |
-| 5. Picture symbols — one row per symbol | 10 | 10 | 27 | 11 | 1 | 3 |
+| 4. Picture at rest — the sentence spotlight | 33 | 3 | 10 | 5 | 0 | 6 |
+| 5. Picture symbols — one row per symbol | 12 | 9 | 27 | 11 | 1 | 3 |
 | 6. Chalkboard / moves board | 4 | 2 | 5 | 12 | 1 | 4 |
 | 7. Show-tool view kinds | 0 | 5 | 1 | 0 | 1 | 0 |
-| 8. Play-by-play | 5 | 7 | 7 | 5 | 3 | 0 |
+| 8. Play-by-play | 7 | 7 | 6 | 4 | 3 | 0 |
 | 9. Chips | 9 | 4 | 3 | 2 | 1 | 2 |
 | 10. Chat bubbles and layout | 13 | 1 | 3 | 2 | 0 | 6 |
 | 11. List view and event editor | 17 | 1 | 5 | 3 | 0 | 2 |
@@ -58,7 +60,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Focus ring, global | `outline: 2px solid var(--data)`, offset 1px, and -2px inside picture hit zones | `:focus-visible{outline:2px solid var(--data);outline-offset:1px}` (theme.css:61) and `-2px` on picture hit zones (theme.css:175) | MET |
 | Pressed state, global | every interactive element has a visible pressed state | `.ss-hit:active{background:var(--tint)}` (theme.css:174) and `.row.on`/`.chip.ask:active` (theme.css:460,380). No pressed state on `.iconbtn`, `.btn` or `.send` | PARTIAL |
 | Button and icon consistency | every button and icon meets one shared size and usability standard | `.iconbtn` and `.send` are 44x44 (theme.css:87-98,406-416), but `.btn` is `min-height:36px` (theme.css:429-441), so the Play and Done controls sit under the floor | PARTIAL |
-| App frame width, web | FD-360 720px; chat-first-app 420px; FD-362 460px, each with a border above the breakpoint | 460px (theme.css:67) | MET |
+| App frame width, web | FD-360 720px; chat-first-app 420px; FD-362 460px, each with a border above the breakpoint | `max-width:460px` (theme.css:67) against the resolved 400px | CHANGED |
 | PWA shell | manifest, service worker at `/companion/sw.js`, `icon.svg`, Google Fonts preconnect | manifest link, icon, Google Fonts preconnect (index.html:6-11) | MET |
 | Menu button label | a control's label must name what it does | `aria-label="Timeline and settings"` (index.html:17); the menu screen's own title is "Timeline" and it holds a list and an editor, no settings (index.html:40; menu.ts:36-55) | CHANGED |
 
@@ -174,7 +176,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Hint text | `<text x=16 y=74 font-size="9" fill="var(--faint)">tap a chapter</text>` | No hint text on the picture | MISSING |
 | Empty-record copy | "Nothing on your line yet — it draws itself as you talk.", `font-size:13px; color:var(--faint); padding:10px 6px` | No prose empty state. The empty picture is a dashed wire plus a centred "?" (picture.ts:296-306) | CHANGED |
 | Empty wire, as built FD-362 | dashed line `stroke-dasharray: 3 6` plus a centred "?" | `.wire.empty{stroke-dasharray:3 6}` plus a centred `.qm` (picture.ts:299-301; theme.css:126) | MET |
-| At-strip-scale vocabulary | exactly three marks: a line, dots, and the amber question mark. Bands, ranges, fades and ticks belong to the expanded view only | Line, dots and the amber question mark, plus a `.span` band drawn whenever the coach asks for a span view (picture.ts:477-484; theme.css:140) | PARTIAL |
+| At-strip-scale vocabulary | exactly three marks: a line, dots, and the amber question mark. Bands, ranges, fades and ticks belong to the expanded view only | Line, dots and the amber question mark, with a `.span` band only when the coach asks for a span view (picture.ts:477-484; theme.css:140), which resolution 14 allows | MET |
 | Every mark speaks | a plain sentence on tap, e.g. "sleep got worse, around 1996, give or take a year". No legends anywhere | A selected moment writes meta plus two wrapped rows onto the picture (picture.ts:411-426) | MET |
 | No progress bar | no data-completeness bar, no notion of being finished; the readout shows what more data buys, as specific answerable questions | No progress element in web/src | MET |
 | Questionnaire register | rejected; conversation drives everything and the picture is only a secondary way to fill gaps | No form or questionnaire in web/src | MET |
@@ -216,7 +218,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 |---|---|---|---|
 | Person, female | `<circle r="13" fill="var(--panel)" stroke=currentColor stroke-width="1.5">`, rising to 2.4 when a move overrides the stroke | Everyone is `<circle class="disc" r="17">`, `fill:var(--panel);stroke:var(--faint);stroke-width:1.6` (moves.ts:37,60-72; theme.css:183). Sex is never read | CHANGED |
 | Person, male or other | `<rect width="24" height="24">` offset -12/-12, same fill and stroke rules | No rect glyph exists in moves.ts | CHANGED |
-| Person, play-by-play pane A | disc r=17, fill `--card`, stroke `--mute` 1.6; initial `600 12px "IBM Plex Sans"` centred; name mono 9px `--mute`, letter-spacing .04em, at y = cy… | The disc, a `600 13px` initial and a `400 13px mono` name are drawn, but only while a move or a coach view puts people on stage (moves.ts:60-72; picture.ts:508-512) | PARTIAL |
+| Person, play-by-play pane A | disc r=17, fill `--card`, stroke `--mute` 1.6; initial `600 12px "IBM Plex Sans"` centred; name mono 9px `--mute`, letter-spacing .04em, at y = cy… | The disc, a `600 13px` initial and a `400 13px mono` name, drawn while a move or a coach view puts people on stage (moves.ts:60-72; picture.ts:508-512). Disc radius 17 matches; resolution 29 settles the timing | MET |
 | Person name label, board | `<text y="-20" font-size="10.5">`, fill `--move` and weight 600 for the current mover, `--faint` and 400 otherwise | `.nm{font:400 13px var(--mono);fill:var(--faint)}` at `y + R + 32` (theme.css:185; moves.ts:69) | MET |
 | Emotional field, rings | three `<circle cx cy r=24 fill=none class="A d" stroke-width="2.4" opacity="0">`, `r` animating 18 to 170 over 1.65s, begins staggered at 0s / .55s… | `field()` draws 2 static circles at `r = R+8+i*8`, so 25 and 33, `stroke:var(--move);stroke-width:1.2;opacity:0.4`. No `r` animation and no stagger (moves.ts:75-79; theme.css:200) | CHANGED |
 | Tremble | `@keyframes tremble10`, ±2.5px falling to ±2px, active 2-28% of a 10s loop, still afterwards | `@keyframes tremble` exists, 1.2s linear infinite, five steps of ±2px, still from 45% (theme.css:234-240), and is applied through the `shake` class. Distance sets the actor to `still`, so the actor never trembles while exposed (moves.ts:264) | CHANGED |
@@ -225,6 +227,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Pre-wall / post-wall gating | `@keyframes preA` opacity 1 to 0 by 26-30%; `@keyframes postA` opacity 0 to 1 rising at 38-42%; both 10s infinite | No before and after phases; the wall and the field are drawn together in one static frame (moves.ts:263-268) | MISSING |
 | Authorship trace | dashed line `x1=57 y1=64 x2=102 y2=64`, `.A d`, stroke-width 1.6, `stroke-dasharray="3 5"`, opacity animating `0;0;.55;.55` on keyTimes `0;.4;.46;1… | `.mv-trace` from the actor to the wall's midpoint, `stroke:var(--move);stroke-width:1.2;stroke-dasharray:3 4` (moves.ts:112; theme.css:211) | MET |
 | Distance | the wall drawing, alone | Wall plus field, actor class `still`, no strike (moves.ts:262-265) | PARTIAL |
+| Cutoff, the actor | the actor keeps their sharp outline and their name throughout; they tremble while exposed and go still once sheltered. Nothing about them dashes, d… | `Move.Cutoff` sets the actor to `still faded` and the target to `faded`; `.node.faded .disc{stroke-dasharray:3 3}` and `.node.faded .nm, .node.faded .ini{opacity:0.55}` (moves.ts:266-273; theme.css:193-194). Both people visibly fade, against the ruling that the actor never disappears | CHANGED |
 | Cutoff strike-through | `x1=92 y1=86 x2=118 y2=42`, `.A d`, stroke-width 3, gated by `postA` on a 10s loop | `.mv-strike` runs the full actor-to-target line rather than across the wall, `stroke:var(--ink);stroke-width:2` (moves.ts:108-110; theme.css:212). The actor is also given `faded`, which dashes their outline and drops their name to 0.55 opacity, against the ruling that the actor never disappears (moves.ts:266-273; theme.css:193-194) | CHANGED |
 | Conflict, both figures | mover circle `cx=45 cy=55 r=14` `.A` with `buzz .28s infinite`; target rect `x=162 y=41 w=28 h=28` `.A` with `buzz .28s infinite reverse` | Both figures get `shake`, `tremble 1.2s` (moves.ts:275-277; theme.css:198) | MET |
 | Conflict, sparks | one zigzag polyline `points="70,55 82,48 92,62 102,49 112,61 122,49 132,61 144,55"`, `.A d`, stroke-width 2.4; plus an 8-line radial spark cluster… | `sparks()` draws four separate 3-point zigzags stacked 9px apart at the midpoint, `stroke:var(--move);stroke-width:2`, static (moves.ts:352-364; theme.css:214). No single polyline, no radial spark cluster, no scale pulse | CHANGED |
@@ -261,8 +264,8 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Flank, generic generator | `gFlank`: two lines forming a chevron, stroke-width 2.2, `animateTransform` bobbing `4*sign` over 3s infinite | Replaced by `flank()`; a chevron on a shaft, no bob animation (moves.ts:166-176) | CHANGED |
 | Move colour | one green for every move mark, `--move` / `MV` | Every `.mv-*` class is `var(--move)` except `.mv-wall` and `.mv-strike`, which are `var(--ink)` (theme.css:200-231) | PARTIAL |
 | Symbol legibility rule | symbols must be self-evident without a legend, and each move must be apparent in the drawing itself. A text label is not enough; cutoff must show w… | — | UNCHECKED |
-| Symptom badge, playbyplay variant | circle r=7.5 offset (+14,-14), fill `--amber-line`; "!" `700 10px "IBM Plex Sans"` fill `#1a1200`; `pop .5s cubic-bezier(.2,1.6,.4,1)` scale .2 to 1 | not applicable (conflict with no pick) | N/A |
-| Anxiety ring, playbyplay variant | two concentric rings at r = R+7 = 24, stroke `--amber-line` 2.2 opacity .85, `pulse 1s ease-out` twice, scale .75 to 1.35, opacity 1 to .15 | not applicable (conflict with no pick) | N/A |
+| Symptom badge, playbyplay variant | circle r=7.5 offset (+14,-14), fill `--amber-line`; "!" `700 10px "IBM Plex Sans"` fill `#1a1200`; `pop .5s cubic-bezier(.2,1.6,.4,1)` scale .2 to 1 | not applicable (superseded by a resolution) | N/A |
+| Anxiety ring, playbyplay variant | two concentric rings at r = R+7 = 24, stroke `--amber-line` 2.2 opacity .85, `pulse 1s ease-out` twice, scale .75 to 1.35, opacity 1 to .15 | not applicable (superseded by a resolution) | N/A |
 | Cutoff, playbyplay variant | `.cutline` stroke `--mute` 1.6 round cap drawn over 500ms; after 480ms two 8px diagonal slash ticks stroke `--ink` 2.2 pop in at the midpoint ±4px;… | The build fades the actor and the target after a cutoff, which follows the play-by-play drawing rather than the ratified ruling (moves.ts:266-273) | CHANGED |
 | Drawability tick | `.tick` stroke `--ink` 1.5-2px; a moment with no direction | Not drawn anywhere in picture.ts | MISSING |
 | Drawability dot | `.dot` fill `--draw`, r 3.2px; a directed moment, up or down | `.dot` fill `--data` on the wire (theme.css:135) | MET |
@@ -272,7 +275,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Recorded no-change | `.flat` stroke `--ink` 2.5, round cap | No flat mark in picture.ts | MISSING |
 | Open-ended range fade | gradient stops, stop-opacity .5 to 0, colour `--draw` | No gradient or fade in theme.css | MISSING |
 | Ordering between guesses | order is drawn only when the guess ranges do not touch (1994±1 against 1996±1 draws it; two "1992" guesses sit side by side with none) | Not drawn. Order questions surface as an amber `?` instead (picture.ts:489-501) | MISSING |
-| Amber question glyph | 13x13px circle, border `1.3px solid var(--unsure)`, `500 9px mono`; `@keyframes ask` opacity .55 to 1, 2.8s ease-in-out infinite; off under reduced… | `.qm{fill:var(--ask);font:500 15px var(--mono)}`, 13px in the small variant (theme.css:178-179). A glyph, not a 13x13 outlined circle, and it does not pulse | CHANGED |
+| Amber question glyph | 13x13px circle, border `1.3px solid var(--unsure)`, `500 9px mono`; `@keyframes ask` opacity .55 to 1, 2.8s ease-in-out infinite; off under reduced… | `.qm{fill:var(--ask);font:500 15px var(--mono)}`, 13px in the small variant (theme.css:178-179). Resolutions 16 and 24 settle on the converged system's amber text mark rather than the editorial family's 13x13 outlined circle, so this matches; it does not pulse | MET |
 | Trace highlight on a bubble | `outline: 2px solid var(--move)`, offset 2px, `tracefade 2.2s ease-out forwards`, holding solid through 40% then fading to transparent | No `traced` class or outline animation in theme.css | MISSING |
 | Abstract people-mapping | rejected. If the visual maps people it IS the family diagram, or a subset showing the movement between people: Bowen's chalkboard, sequence on the… | People are only ever drawn as the cast of a move or a coach view (picture.ts:508-560) | MET |
 | Chapter Shelf list-row glyph set | compact glyphs: vertical tick plus circle for single-actor moves; bowing polylines for toward and away; one zigzag for conflict; two segments with… | not applicable (no pick to build) | N/A |
@@ -331,7 +334,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Owner's verdict on the coded version | "looks and feels great, that is what I wanted" | — | UNCHECKED |
 | Pinned picture region | background `--card2`, border-bottom 1px `--rule`, padding `10px 12px 4px`. A FIXED region above the chat | `.pic{flex:none}` keeps it out of the scroll, but its height changes between 158 and 252 (theme.css:101; picture.ts:285) | PARTIAL |
 | Picture SVG | `viewBox="0 0 440 262"`, `width:100%; height:auto` | One SVG sized to the picture's own width and height, not the pane A stage (picture.ts:322) | CHANGED |
-| People on stage | five people permanently on stage at fixed coordinates, disc r=17, 12px initial, 9px mono name 30px below | `stage()` returns an empty string unless a move is playing or a coach view sets a cast (picture.ts:508-514) | MISSING |
+| People on stage | five people permanently on stage at fixed coordinates, disc r=17, 12px initial, 9px mono name 30px below | `stage()` returns an empty string unless a move is playing or a coach view sets a cast (picture.ts:508-514), which is what resolution 29 asks for | MET |
 | Time axis | stroke `--rule` 1.4, full width at y=222 from x=30 to x=424; ticks at 1985, 1995, 2005, 2015, 2025; year labels `"IBM Plex Mono"` 9px fill `--mute` | No axis, ticks or year labels along a stage (picture.ts) | MISSING |
 | Density blobs | ellipses at three points, rx `[6,10,7]`, ry = rx × 0.68, fill `--idle` | Not drawn | MISSING |
 | Focus blob | fill `--teal` at opacity .28, rx=27 ry=9; `.flash` at opacity .6 reverting after 900ms | Not drawn; the focus is a bracket outline instead (picture.ts:463-475) | CHANGED |
@@ -342,7 +345,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Move arrow | `fill:none; stroke:var(--teal); stroke-width:2.4; stroke-linecap:round`; drawn in over 600ms ease-out; arrowhead marker `viewBox="0 0 10 10" refX="… | `stroke-dasharray:240` with `draw 0.6s ease-out forwards`, marker head `refX 8.5 refY 5 markerWidth 5.5` (picture.ts:323-325; theme.css:201-208) | PARTIAL |
 | Chat log region | padding 14px, flex column, gap 11px, min-height 214px — the GROWING region below the fixed picture | `.chat{flex:1;min-height:0;overflow-y:auto}` is the only scrolling region on the chat screen (theme.css:256-265) | MET |
 | Coach typing speed | 2 characters then an 18ms sleep, about 9ms per character; the closing ask line at 16ms per 2 characters | — | UNCHECKED |
-| Per-move narration hold | 1000ms after each chip or move before the prose continues | `SEQUENCE_MS = 1100` between steps (picture.ts:32) | CHANGED |
+| Per-move narration hold | 1000ms after each chip or move before the prose continues | `SEQUENCE_MS = 1100` between steps (picture.ts:32), which resolution 21 keeps as the ruled one-beat-per-move advance | MET |
 | Offer-chip stagger | 160ms between each of the three answer chips | No stagger; offered chips render with the bubble (chat.ts:55-71) | MISSING |
 | Initial coach delay | 320ms before typing starts, 260ms before the ask line | `await wait(300)` before the first-run greeting types (main.ts:289) | CHANGED |
 | Typing caret | 2px by 1em bar, background `--teal`, `@keyframes blink .7s steps(1) infinite` | `.bub.typing::after` a 2px by 1em bar on `blink 0.7s steps(1) infinite`, plus `.bub.dots` three 6px dots on `bounce 1s` staggered .15s and .3s (theme.css:287-334) | MET |
@@ -439,7 +442,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Delete button | min-width 92px, height 44px, border 1px `--ask`, colour `--ask` | `.acts .del` min-width 92, height 44, 1px `--ask` border, `--ask` text, rendered only when editing an existing event (editor.ts:193-194; theme.css:521-530) | MET |
 | Add-event button | full width, height 44px, border `1.5px solid var(--move)`, colour `--move`, border-radius 22px pill, in a footer | A `+` `.iconbtn` in the menu bar rather than a full-width footer button (index.html:41-43; menu.ts:19-23) | CHANGED |
 | Menu banner copy | "You can also edit just by chatting." | "You can also edit just by chatting." as `.banner` (menu.ts:8,39; theme.css:445-451) | MET |
-| Diagram / family switcher row | name `13.5px Libre Franklin`; sub `13px mono` = "N sessions · <when>"; `✓` in `--data` on the current one; current-row 3px `--data` left bar in the… | No diagram switcher in web/src | MISSING |
+| Diagram / family switcher row | name `13.5px Libre Franklin`; sub `13px mono` = "N sessions · <when>"; `✓` in `--data` on the current one; current-row 3px `--data` left bar in the… | No diagram switcher in web/src, and none is buildable yet: the page is bootstrapped with a single `diagram_id` from `user.free_diagram`, and no endpoint lists a user's diagrams or their session counts (routes.py:36-40) | MISSING — blocked on a backend list endpoint |
 | Chapter Shelf | sticky name rail 92px under a 560px viewport else 132px; chapter cards `rx:12` fill `--card` stroke `--hair`, width `clamp(30, 34*sqrt(sceneCount)*… | not applicable (no pick to build) | N/A |
 | Quiet Threads | sticky name rail 84px under 560px else 118px; lane gap `clamp(30, floor((H-rulerH-60)/laneCount), 54)`; three altitude modes by pixels-per-year; si… | not applicable (no pick to build) | N/A |
 
