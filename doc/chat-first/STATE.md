@@ -93,6 +93,9 @@ The beta build landed on branch FD-362 (draft PR btcopilot #136, fdserver #30) o
 - **Integration walk** (commits ec06352, b4eb54d): journeys 1–6 PASS with a live coach on
   a fresh database; all btcopilot suites 960 passed, 37 skipped; web tests 31 passed.
   Screenshots j1–j6.png in the job tmp dir (ephemeral).
+- A real-browser fix pass on 2026-09-08 found 22 deviations from the approved references
+  (table in the job tmp dir, ephemeral; to be moved into doc/chat-first/ when stable) and is
+  fixing them to the references with Playwright golden screenshots.
 
 Open after the walk (follow-ups, not rulings): chips pointing at a stretch the page
 derived itself do not resolve for the coach because only stored clusters resolve —
@@ -118,8 +121,9 @@ btcopilot.auth.invite <email>` for a link; no auto-auth.
   per-person timeline math with a regression test against the Qt app's
   mixed-people-sum bug; resting strip obeys the three-mark rule; tap-a-mark speaks a
   plain sentence; seeded or real-record sandbox on 8889 (relaunch command in the PR /
-  worker report; real-record DB at /tmp/fd360-sandbox.db). **Ruled good**: the
-  narrow-lane always-on resting strip; inline chips in coach text aiming the picture.
+  worker report; real-record DB at /tmp/fd360-sandbox.db). **Ruled good, superseded 2026-09-02 by the
+  sentence spotlight**: the narrow-lane always-on resting strip; inline chips in coach
+  text aiming the picture.
   **Ruled not understood**: the expanded/detail view — Patrick's walk found it
   illegible on real sparse data; it is a placeholder pending ground-up design FROM
   the corpus analysis. Era-compression work exists reverted-but-recoverable at commit
@@ -160,6 +164,15 @@ principle: wire with episode clusters → (the tap-zoom episode level is CUT; a 
 point-and-ask) → moves step-by-step driven from the chat's play-by-play; words and
 claims live in chat; loop engineering rules (all interactions collected). Next: build it on
 FD-360 against his real record — brief in NEXT_SESSIONS.md.
+
+On 2026-09-02 the picture design CONVERGED on the SENTENCE SPOTLIGHT — the coach's
+latest message lights the events it names, the rest of the dots stay dim, and up to
+three rows of words sit on the picture tied to their dots by leader lines (Oracle:
+OWNER_RULINGS.md 2026-09-02; folder ~/theapp/btcopilot-sources/fd-corpus/design/crowded-chapter/).
+This supersedes the FD-360 resting strip as the picture reference. The fidelity
+standard for every front-end build from here on is: playbyplay_ab.html pane A,
+move-language.html + OWNER_RULINGS.md, crowded-chapter/, and DRAWABILITY.md — each
+build is checked against them with an approved-vs-built deviation table.
 
 ## The corpus (system of record for phases A and B)
 
