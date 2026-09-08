@@ -54,8 +54,8 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(PATIENCE_MS),
     });
-  } catch (whatever) {
-    throw new Failed(0, `${method} ${path}: ${(whatever as Error).message}`);
+  } catch (error) {
+    throw new Failed(0, `${method} ${path}: ${(error as Error).message}`);
   }
   if (!response.ok)
     throw new Failed(response.status, `${method} ${path}: ${await response.text()}`);

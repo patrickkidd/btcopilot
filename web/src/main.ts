@@ -443,10 +443,9 @@ async function explain(clusterId: string): Promise<void> {
   let reply;
   try {
     reply = await api.play(clusterId);
-  } catch (whatever) {
-    chat.busy(false);
+  } catch (error) {
     picture.explains(false);
-    chat.warn(whatFailed(whatever), () => void explain(clusterId));
+    chat.warn(whatFailed(error), () => void explain(clusterId));
     return;
   } finally {
     chat.busy(false);
@@ -463,9 +462,9 @@ async function explain(clusterId: string): Promise<void> {
 /** What went wrong, in the words the reader needs: nothing came back, the
  * server refused it, or the server broke. The status itself is kept on the
  * error and logged, so a timeout is never read as a rejection. */
-function whatFailed(whatever: unknown): string {
-  const failed = whatever instanceof api.Failed ? whatever : null;
-  if (!failed) throw whatever;
+function whatFailed(error: unknown): string {
+  const failed = error instanceof api.Failed ? error : null;
+  if (!failed) throw error;
   console.warn(failed.message);
   if (failed.silent) return "No answer from the server";
   if (failed.status >= 500) return "The server broke on that one";
@@ -493,9 +492,9 @@ async function deliver(statement: string): Promise<void> {
   let reply;
   try {
     reply = await api.say(statement, session);
-  } catch (whatever) {
+  } catch (error) {
     chat.busy(false);
-    chat.warn(whatFailed(whatever), () => void deliver(statement));
+    chat.warn(whatFailed(error), () => void deliver(statement));
     return;
   }
   session = reply.discussion_id;
