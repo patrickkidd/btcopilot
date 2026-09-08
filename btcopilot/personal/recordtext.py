@@ -84,7 +84,11 @@ def cluster_line(cluster: dict) -> str:
     # regrouped or renamed, and telling the coach the model made a grouping the
     # user may have named costs the user their name.
     source = _enum_val(cluster.get("source")) or "unknown"
-    return f"{cluster['id']} \"{words}\" ({source}) events={cluster.get('eventIds') or []}"
+    line = (
+        f"{cluster['id']} \"{words}\" ({source}) events={cluster.get('eventIds') or []}"
+    )
+    reason = cluster.get("reason")
+    return f"{line} — {reason}" if reason else line
 
 
 def _section(title: str, lines: list[str]) -> str:

@@ -423,6 +423,8 @@ class Cluster:
     dominantVariable: str | None = None
     name: str | None = None
     source: ClusterSource = ClusterSource.Model
+    # One sentence saying which chain of moves makes these events one episode.
+    reason: str | None = None
 
 
 class ItemKind(enum.StrEnum):

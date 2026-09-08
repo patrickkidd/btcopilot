@@ -145,6 +145,40 @@ THE EVENTS IN DATE ORDER
 """
 
 
+# ── Clusters ─────────────────────────────────────────────────────────────────
+#
+# The candidates come from the rules in clusters.py, never from here. This stub
+# asks only for the naming; what makes events one episode is a clinical
+# definition and lives in the private prompts.
+
+CLUSTER_PROMPT = """
+Each candidate below is a group of events from one person's record. Name each
+group and say in one sentence why its events belong together.
+
+Keep the groups as given unless one is clearly wrong. You may join two of them,
+break one apart, or pull in an event from the unclustered list — and whenever
+you do, say why in `change`. Without that sentence the change is thrown out.
+
+Never write an id that is not listed below and never leave out an event listed
+under `anchorIds`.
+
+Return one entry per final group: `eventIds`, `name`, `reason`, and `change`
+when the group is not one of the candidates exactly as given.
+
+CANDIDATES
+{candidates}
+
+UNCLUSTERED EVENTS
+{unclustered}
+"""
+
+CLUSTER_REJECTED = """
+
+Your last answer was thrown out: {why}
+Answer again, fixing only that.
+"""
+
+
 # ── Session title ────────────────────────────────────────────────────────────
 
 DISCUSSION_TITLE_PROMPT = """
@@ -331,6 +365,8 @@ if _prompts_path:
                 "DOCK_PROMPT",
                 "AGENT_FIDELITY_RULE",
                 "PLAY_BY_PLAY_PROMPT",
+                "CLUSTER_PROMPT",
+                "CLUSTER_REJECTED",
             ):
                 if hasattr(_private, _var):
                     globals()[_var] = getattr(_private, _var)

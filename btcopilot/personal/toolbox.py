@@ -356,6 +356,8 @@ class Toolbox:
             fields["name"] = args["name"]
             fields["title"] = args["name"]
         fields["summary"] = args.get("summary") or ""
+        # The coach's sentence explained a grouping the user has now changed.
+        fields["reason"] = ""
         if args.get("event_ids") is not None:
             events = [self._event(data, e) for e in args["event_ids"]]
             if not events:
