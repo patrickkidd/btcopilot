@@ -94,3 +94,42 @@ written for it, reaches the record only through `record.apply` with author Coach
 is served on the timeline payload, and is given to the play-by-play prompt through
 the cluster line [Oracle: R-0074]. A user correction through `edit_cluster` sets
 `source=user` and clears the coach's reason.
+
+## When clusters are recomputed (ruled 2026-09-08)
+
+Clusters are recomputed for the **whole record, from scratch**, after any coach
+turn that adds or changes an event. A message that adds no event, or only adds
+or changes a person, never triggers a recompute. A cache key hashes the SARF
+fields on every event (symptom, anxiety, relationship, functioning) plus
+`DETECTION_VERSION`; even on an event-changing turn, if that key still matches
+what is stored, the model is not called.
+
+A cluster the user corrected (`source=user`) is never touched by a recompute —
+those events are held out of detection entirely, and a recomputed cluster that
+overlaps a user-corrected one yields the overlapping events to it.
+
+A recomputed cluster keeps the id of the stored cluster it shares the most
+events with, so a chip already placed in an earlier coach message keeps
+resolving to the same cluster after the record is re-clustered.
+
+**Nothing selective exists.** There is no logic that limits recomputation to
+only the clusters touched by the new event — it is whole-record every time.
+Cost is one model call per event-changing turn, for the whole record.
+
+A change to the candidate rules or the naming prompt bumps `DETECTION_VERSION`,
+which changes the cache key, so the next event-changing turn re-clusters the
+whole record even though no event itself changed.
+
+The owner ruled: "let's just play with it and see how it works in the Beta."
+[Oracle: R-0208] Selective invalidation is not being built now — revisit only
+if whole-record recompute shows a problem in use.
+
+## How to re-run clustering on a record by hand
+
+The resync path is `btcopilot.personal.clusters.sync(diagram_id, turn_id=...,
+user_id=..., session_id=...)` — the same function a coach turn calls. It
+re-detects clusters for the whole record and writes the result through
+`record.apply` with `author=Coach`, so it needs a `turn_id` the way any other
+record change does. Back up the database first — `sync` writes through the
+normal delta/apply path, so a mistaken run is just another change to correct,
+not something reversible in place.

@@ -126,3 +126,8 @@ items, so each is logged FIXED without a commit citation.
 32. Nodal events are defined by kind (NODAL_KINDS from the intake engine, now
     enum-compared); no nodal flag on the record; decision to add one dissolved. NOTE.
 33. Archived Personal-app cluster test deleted after the enum removal. FIXED.
+34. Cluster recompute behaviour: whole record, from scratch, on any event-changing turn;
+    cache key over the SARF fields plus DETECTION_VERSION; a user-corrected cluster is never
+    touched; a recomputed cluster keeps its old id on overlap so earlier chips keep
+    resolving; nothing selective exists. RULED (owner: "let's just play with it and see how
+    it works in the Beta").
