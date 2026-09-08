@@ -57,6 +57,17 @@ class User(db.Model, ModelMixin):
         "Diagram", primaryjoin="Diagram.id == User.free_diagram_id"
     )
 
+    # Which diagram the app is on, which is a different question from which one
+    # is free of charge. Null until the user switches, and then the free one.
+    current_diagram_id = Column(Integer, ForeignKey("diagrams.id", use_alter=True))
+    current_diagram = relationship(
+        "Diagram", primaryjoin="Diagram.id == User.current_diagram_id"
+    )
+
+    def diagram_in_use(self):
+        """The diagram every companion read is about."""
+        return self.current_diagram_id or self.free_diagram_id
+
     def __init__(
         self, *args, password=None, reset_password_code=None, roles=None, **kwargs
     ):

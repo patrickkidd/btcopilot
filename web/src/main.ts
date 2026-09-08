@@ -29,6 +29,7 @@ import {
   Role,
   type Chip,
   type CodedIn,
+  type Diagram,
   type Session,
   type Statement,
   type Timeline,
@@ -126,11 +127,17 @@ const chat = new Chat($("chat"), $("composer"), {
   label: chipLabel,
   onChip: (chip) => {
     tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
-    // An offer names nothing in the record, so it goes in the message as words.
-    if (chip.kind === ChipKind.Ask || chip.tone === ChipTone.Ask) chat.insert(chip);
+    // Two kinds of chip, and the colour says which. An amber chip is an offer:
+    // it names nothing in the record, so it goes into the message as words. A
+    // teal chip is a reference into the record, so it aims the picture.
+    if (offered(chip)) chat.insert(chip);
     else aim(chip);
   },
 });
+
+/** An offer: the coach holding out something to say next, drawn amber. */
+const offered = (chip: Chip) =>
+  chip.kind === ChipKind.Ask || chip.tone === ChipTone.Ask;
 
 const menu = new Menu($("menu-body"), load);
 
@@ -150,12 +157,26 @@ const sessions = new Sessions(
       known = list;
       actions();
     },
+    onDiagram: (diagram) => onDiagram(diagram),
   },
 );
 
+/** Another family is another record and another set of sessions, so the chat,
+ * the picture and the title all start again on it. */
+function onDiagram(diagram: Diagram): void {
+  familyTitle = diagram.name;
+  $("title").textContent = familyTitle;
+  session = null;
+  chat.clear();
+  picture.clear();
+  pic = REST;
+  void load();
+}
+
 /** The title row shows the current view's title, and the family's name again
- * when the settings stack closes. */
-const FAMILY_TITLE = $("title").textContent ?? "Your family";
+ * when the settings stack closes. The name follows whichever family the app is
+ * on. */
+let familyTitle = $("title").textContent ?? "Your family";
 
 /** Speak replies is the one ruled duplicate: this row and the Coach settings
  * page are two doors onto the same value. */
@@ -165,12 +186,16 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   onTitle: (title) => {
     // The title row belongs to whatever is on top of it, so the chat's own
     // controls step aside while the settings stack is up.
-    $("title").textContent = title ?? FAMILY_TITLE;
+    $("title").textContent = title ?? familyTitle;
     $("menu-open").hidden = title !== null;
     $("account").hidden = title !== null;
   },
   onPrefs: (prefs) => {
     speak.checked = prefs.speak;
+  },
+  onDiagram: (diagram) => {
+    onDiagram(diagram);
+    void sessions.load(null);
   },
 });
 

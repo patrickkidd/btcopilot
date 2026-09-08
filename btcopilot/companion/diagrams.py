@@ -3,11 +3,12 @@ granted. One resource per table, so the account page, the settings stack and the
 family switcher all read the same list rather than each growing an endpoint of
 its own."""
 
-from flask import jsonify
+from flask import abort, jsonify
 
 import btcopilot
 from btcopilot import auth
 from btcopilot.companion.blueprint import bp, last_activity
+from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion
 from btcopilot.pro.models import Diagram
 from btcopilot.pro.models.etc import AccessRight
@@ -43,6 +44,7 @@ def diagram_payload(diagram: Diagram, user) -> dict:
         "session_count": len(discussions),
         "last_activity": when.isoformat() if when else None,
         "free": diagram.id == user.free_diagram_id,
+        "current": diagram.id == user.diagram_in_use(),
         "owned": diagram.user_id == user.id,
     }
 
@@ -61,3 +63,16 @@ def diagrams_payload(user) -> list[dict]:
 @bp.route("/diagrams")
 def diagram_index():
     return jsonify(diagrams_payload(auth.current_user()))
+
+
+@bp.route("/diagrams/<int:diagram_id>/select", methods=["POST"])
+def diagram_select(diagram_id: int):
+    """Put the app on one of the user's readable diagrams. This never writes
+    free_diagram_id: which diagram is free of charge is a billing fact, not a
+    record of where the reader is."""
+    user = auth.current_user()
+    if diagram_id not in {d.id for d in readable(user)}:
+        abort(404)
+    user.current_diagram_id = diagram_id
+    db.session.commit()
+    return jsonify(diagram_payload(next(d for d in readable(user) if d.id == diagram_id), user))

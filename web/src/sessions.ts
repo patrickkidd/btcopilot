@@ -21,6 +21,8 @@ const PRESS_MS = 500;
 export interface SessionsHandlers {
   /** Open a session: the chat swaps to its statements. */
   onPick(session: Session): void;
+  /** The app moved to another family. */
+  onDiagram(diagram: Diagram): void;
   /** The sessions as last read, so a moment tracing back to the one that coded
    * it can name it. */
   onList(sessions: Session[]): void;
@@ -99,14 +101,14 @@ export class Sessions {
     );
     this.families = diagrams
       .map((diagram, i) => ({ diagram, sessions: lists[i] }))
-      .sort((a, b) => Number(b.diagram.free) - Number(a.diagram.free));
+      .sort((a, b) => Number(b.diagram.current) - Number(a.diagram.current));
     this.handlers.onList(this.families.flatMap((f) => f.sessions));
     if (this.open) this.render();
   }
 
   /** The family the app is on, which is the one a new session belongs to. */
   private home(): Family | undefined {
-    return this.families.find((f) => f.diagram.free) ?? this.families[0];
+    return this.families.find((f) => f.diagram.current) ?? this.families[0];
   }
 
   private find(id: number): Session | undefined {
@@ -311,7 +313,7 @@ export class Sessions {
     const name = family.diagram.name;
     const last = family.sessions[0];
     return (
-      `<div class="fs-fhead${family.diagram.free ? " cur" : ""}">` +
+      `<div class="fs-fhead${family.diagram.current ? " cur" : ""}">` +
       this.thumb(family) +
       `<div class="fs-fmain">` +
       `<div class="fs-fname">${esc(name)}</div>` +
@@ -377,11 +379,16 @@ export class Sessions {
    * start on the family the app is on, because that is the diagram the coach
    * writes to. */
   private async start(familyId?: number): Promise<void> {
-    const home = this.home();
+    let home = this.home();
+    // The "+" on another family moves the app there first: the coach writes to
+    // the diagram the app is on, so there is nowhere else to put the session.
     if (familyId !== undefined && home && familyId !== home.diagram.id) {
-      this.lower();
-      toast(`Open ${this.families.find((f) => f.diagram.id === familyId)?.diagram.name ?? "that family"} first`);
-      return;
+      const moved = this.families.find((f) => f.diagram.id === familyId);
+      if (!moved) return;
+      await api.selectDiagram(familyId);
+      this.handlers.onDiagram(moved.diagram);
+      await this.load(null);
+      home = this.home();
     }
     const current = this.current === null ? undefined : this.find(this.current);
     if (current && current.message_count === 0) {

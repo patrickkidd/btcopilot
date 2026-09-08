@@ -7,6 +7,7 @@ from flask import abort, jsonify, request
 from btcopilot import auth
 from btcopilot.companion.blueprint import (
     bp,
+    diagram,
     current_session,
     last_activity,
     owned_session,
@@ -84,7 +85,9 @@ def session_index():
 
 @bp.route("/sessions", methods=["POST"])
 def session_create():
-    return jsonify(session_payload(_create_discussion({}))), 201
+    """A new session belongs to the diagram the app is on, not to whichever one
+    happens to be free."""
+    return jsonify(session_payload(_create_discussion({}, diagram()))), 201
 
 
 @bp.route("/sessions/<int:session_id>")

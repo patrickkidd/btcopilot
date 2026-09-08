@@ -36,7 +36,7 @@ def _page() -> str:
         },
         "session": session_payload(discussion) if discussion else None,
         "statements": statements_payload(discussion) if discussion else [],
-        "diagram_id": user.free_diagram_id,
+        "diagram_id": user.diagram_in_use(),
     }
     head = (
         f'<meta name="csrf-token" content="{escape(generate_csrf())}">'

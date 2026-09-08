@@ -4,7 +4,9 @@
   --bg: #f7f6f2;
   --panel: #fff;
   --ink: #26312f;
-  --faint: #9aa5a1;
+  /* The mockup's #9aa5a1 measures 2.35:1 on the page, and this token carries
+     most of the app's small text. Darkened along its own hue to clear 4.5:1. */
+  --faint: #67746f;
   --line: #d8d5cc;
   --data: #0e7d78;
   --ask: #c98a1b;

@@ -55,7 +55,7 @@ def sessions(user, diagram_id: int | None = None) -> list[Discussion]:
     makes the session they last spoke in the one they return to. Without a
     diagram it is the one the app is on."""
     found = Discussion.query.filter_by(
-        user_id=user.id, diagram_id=diagram_id or user.free_diagram_id
+        user_id=user.id, diagram_id=diagram_id or user.diagram_in_use()
     ).all()
     return sorted(found, key=lambda d: (last_activity(d), d.id), reverse=True)
 
@@ -64,7 +64,7 @@ def current_session(user, create: bool = False) -> Discussion | None:
     found = sessions(user)
     if found:
         return found[0]
-    return _create_discussion({}) if create else None
+    return _create_discussion({}, diagram()) if create else None
 
 
 def owned_session(session_id: int) -> Discussion:
@@ -77,5 +77,7 @@ def owned_session(session_id: int) -> Discussion:
 
 
 def diagram():
-    """The diagram every companion surface reads and writes."""
-    return auth.current_user().free_diagram
+    """The diagram every companion surface reads and writes: the one the app is
+    on, which is the free one until the user switches."""
+    user = auth.current_user()
+    return user.current_diagram or user.free_diagram

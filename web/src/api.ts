@@ -94,3 +94,8 @@ export const account = () => call<Account>("GET", "/account");
 /** Every diagram the user can open — owned and granted — most recently active
  * first, each with how many sessions sit on it. */
 export const diagrams = () => call<Diagram[]>("GET", "/diagrams");
+
+/** Put the app on one of the user's diagrams. Which one is free of charge is a
+ * billing fact and is never written by switching. */
+export const selectDiagram = (id: number) =>
+  call<Diagram>("POST", `/diagrams/${id}/select`);

@@ -46,6 +46,9 @@ export interface SettingsHandlers {
   /** Every read or write of the preferences, so a value with a shortcut
    * elsewhere on screen shows the same thing. */
   onPrefs(prefs: Preferences): void;
+  /** The app moved to another family, so everything on screen is about a
+   * different record now. */
+  onDiagram(diagram: Diagram): void;
 }
 
 /** What a diagram row says under its name: how many sessions sit on it, when
@@ -55,7 +58,7 @@ function diagramSub(diagram: Diagram, now: Date): string {
   const when = diagram.last_activity
     ? shortDate(new Date(diagram.last_activity), now)
     : "nothing on it yet";
-  return `${count} · ${when}${diagram.free ? " · in use" : ""}`;
+  return `${count} · ${when}${diagram.current ? " · in use" : ""}`;
 }
 
 export class Settings {
@@ -420,14 +423,16 @@ export class Settings {
     const box = el("div", "sn-grp");
     const now = new Date();
     for (const diagram of account.diagrams) {
-      const row = el("div", `sn-row${diagram.free ? " cur" : ""}`);
+      const row = el("div", `sn-row push${diagram.current ? " cur" : ""}`);
       row.dataset.name = diagram.name.toLowerCase();
       const main = el("div", "sn-m");
       main.append(
         el("div", "sn-t", esc(diagram.name)),
         el("div", "sn-s", esc(diagramSub(diagram, now))),
       );
-      row.append(main, el("span", "sn-tick", diagram.free ? "✓" : ""));
+      row.append(main, el("span", "sn-tick", diagram.current ? "✓" : ""));
+      if (!diagram.current)
+        row.addEventListener("click", () => void this.switchTo(diagram));
       box.append(row);
     }
 
@@ -457,6 +462,16 @@ export class Settings {
       );
     }
     return { title: "Your diagrams", pane };
+  }
+
+  /** Put the app on another family. Everything the app shows is about one
+   * diagram, so the whole surface is re-read afterwards. */
+  private async switchTo(diagram: Diagram): Promise<void> {
+    await api.selectDiagram(diagram.id);
+    await this.load();
+    this.close();
+    this.handlers.onDiagram(diagram);
+    toast(`Now on ${diagram.name}`);
   }
 
   private plan(account: Account): Built {

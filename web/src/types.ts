@@ -208,8 +208,10 @@ export interface Diagram {
   /** How many of this user's sessions sit on it. */
   session_count: number;
   last_activity: string | null;
-  /** The one the record is being built on. */
+  /** The one that is free of charge, which is a billing fact. */
   free: boolean;
+  /** The one the app is on. */
+  current: boolean;
   owned: boolean;
 }
 
