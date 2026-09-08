@@ -4,6 +4,7 @@ from btcopilot.companion import (
     events,
     fixtures,
     interactions,
+    migrate,
     play,
     routes,
     sessions,

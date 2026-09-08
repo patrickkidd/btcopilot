@@ -60,7 +60,7 @@ def test_timeline_shows_own_data_only(web, test_user):
     db.session.commit()
     token = csrf_token(web)
     data = web.get("/companion/timeline").get_json()
-    assert {p["id"] for p in data["people"]} == {1, 2, 3, 4, 5, 6, 7}
+    assert {p["id"] for p in data["people"]} == {1, 3, 4, 5, 6, 7}
     assert {b["id"] for b in data["pair_bonds"]} == {8, 9}
 
 

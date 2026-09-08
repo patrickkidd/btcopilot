@@ -10,7 +10,7 @@ the call fails with words the model can act on [Oracle: R-0075].
 import enum
 import logging
 
-from btcopilot.personal import record, views
+from btcopilot.personal import clusters, record, views
 from btcopilot.personal.models import Author, Change
 from btcopilot.personal.recordtext import date_text, event_line, person_line
 from btcopilot.extensions import db
@@ -349,7 +349,9 @@ class Toolbox:
 
     def _edit_cluster(self, args: dict) -> tuple[str, dict]:
         data = self.data
-        fields = {"source": ClusterSource.Model.value}
+        # A stretch named in conversation is the user's own grouping: automatic
+        # re-detection yields to it rather than regrouping it away.
+        fields = {"source": ClusterSource.User.value}
         if args.get("name"):
             fields["name"] = args["name"]
             fields["title"] = args["name"]
@@ -470,11 +472,7 @@ class Toolbox:
         return max(used + [data.lastItemId or 0]) + 1
 
     def _next_cluster_id(self, data: DiagramData) -> str:
-        taken = {str(c.get("id")) for c in data.clusters}
-        n = len(taken) + 1
-        while f"c{n}" in taken:
-            n += 1
-        return f"c{n}"
+        return clusters.next_id({str(c.get("id")) for c in data.clusters})
 
     def _write(self, kind: ItemKind, item_id, fields: dict) -> tuple[str, dict]:
         if not fields:

@@ -47,7 +47,6 @@ def seed_diagram_data() -> DiagramData:
     male, female = PersonKind.Male, PersonKind.Female
     people = [
         _person(1, "Alex", "Harmon", male, primary=True),
-        _person(2, "Assistant"),
         _person(3, "Sam", "Harmon", female),
         _person(4, "Diane", "Voss", female),
         _person(5, "Robert", "Voss", male),

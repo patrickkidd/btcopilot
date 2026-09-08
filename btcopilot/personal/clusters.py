@@ -2,13 +2,20 @@ import json
 import logging
 from dataclasses import dataclass, field
 
+from btcopilot.extensions import db
 from btcopilot.llmutil import gemini_structured_sync
+from btcopilot.personal import record
+from btcopilot.personal.models import Author
+from btcopilot.pro.models import Diagram
 from btcopilot.schema import (
     Event,
     Cluster,
     ClusterPattern,
     ClusterResult,
+    ClusterSource,
+    ItemKind,
     asdict,
+    from_dict,
     hash_sarf_dicts,
 )
 
@@ -136,3 +143,145 @@ def detect_clusters(events: list[Event]) -> ClusterResult:
     _log.info(f"Detected {len(clusters)} clusters")
 
     return ClusterResult(clusters=clusters, cacheKey=cache_key)
+
+
+STORED_FIELDS = (
+    "title",
+    "name",
+    "summary",
+    "eventIds",
+    "startDate",
+    "endDate",
+    "pattern",
+    "dominantVariable",
+    "source",
+)
+
+
+def next_id(taken: set[str]) -> str:
+    n = len(taken) + 1
+    while f"c{n}" in taken:
+        n += 1
+    return f"c{n}"
+
+
+def _source(cluster: dict) -> ClusterSource:
+    return ClusterSource(cluster.get("source") or ClusterSource.Model.value)
+
+
+def _reuse(mine: list[dict], event_ids: list[int], used: set[str]) -> str | None:
+    """The stored grouping this detection continues: the one sharing the most
+    events. Keeping its id keeps what the coach already said about it pointing
+    at something the record still holds."""
+    best, shared = None, 0
+    for cluster in mine:
+        cluster_id = str(cluster["id"])
+        if cluster_id in used:
+            continue
+        overlap = len(set(cluster.get("eventIds") or []) & set(event_ids))
+        if overlap > shared:
+            best, shared = cluster_id, overlap
+    return best
+
+
+def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
+    """The model's grouping, with every event a user cluster owns held out and
+    each group carrying the id of the stored grouping it continues."""
+    mine = [c for c in stored if _source(c) is ClusterSource.Model]
+    theirs = {
+        event_id
+        for c in stored
+        if _source(c) is ClusterSource.User
+        for event_id in c.get("eventIds") or []
+    }
+    taken = {str(c["id"]) for c in stored}
+    kept: dict[str, Cluster] = {}
+    for cluster in detected:
+        event_ids = [e for e in cluster.eventIds if e in dates and e not in theirs]
+        if not event_ids:
+            continue
+        cluster.eventIds = event_ids
+        cluster.source = ClusterSource.Model
+        cluster.name = cluster.name or cluster.title
+        spanned = sorted(dates[e] for e in event_ids)
+        cluster.startDate, cluster.endDate = spanned[0], spanned[-1]
+        cluster.id = _reuse(mine, event_ids, set(kept)) or next_id(taken | set(kept))
+        kept[cluster.id] = cluster
+    return kept
+
+
+def _deltas(stored: list[dict], detected: list[Cluster], dates: dict) -> list[dict]:
+    stored = [c for c in stored if isinstance(c, dict) and c.get("id") is not None]
+    mine = {str(c["id"]): c for c in stored if _source(c) is ClusterSource.Model}
+    kept = _detected(stored, detected, dates)
+
+    deltas = [
+        {
+            "item_kind": ItemKind.Cluster.value,
+            "item_id": cluster_id,
+            "field": None,
+            "after": None,
+        }
+        for cluster_id in mine
+        if cluster_id not in kept
+    ]
+    for cluster_id, cluster in kept.items():
+        was = mine.get(cluster_id, {})
+        now = asdict(cluster)
+        deltas += [
+            {
+                "item_kind": ItemKind.Cluster.value,
+                "item_id": cluster_id,
+                "field": field,
+                "after": now[field],
+            }
+            for field in STORED_FIELDS
+            if now[field] != was.get(field)
+        ]
+    return deltas
+
+
+def sync(
+    diagram_id: int,
+    *,
+    turn_id: str,
+    user_id: int | None = None,
+    session_id: str | None = None,
+):
+    """Re-group the record's events and store the grouping.
+
+    Clusters are stored, not derived on read, so the coach can point at one and
+    have it still be there next turn. The model groups and names; it never
+    invents a member, and it never touches a cluster the user made — those
+    events are held out of the detection and a model grouping that overlaps one
+    yields the overlap to it.
+    """
+    diagram = db.session.get(Diagram, diagram_id)
+    data = diagram.get_diagram_data()
+    events = [
+        from_dict(Event, chunk)
+        for chunk in data.events
+        if isinstance(chunk, dict) and chunk.get("id") is not None
+    ]
+    cache_key = compute_cache_key(events)
+    if cache_key == data.clusterCacheKey:
+        return None
+
+    dates = {e.id: e.dateTime for e in events if e.dateTime}
+    deltas = _deltas(data.clusters, detect_clusters(events).clusters, dates)
+    deltas.append(
+        {
+            "item_kind": ItemKind.Diagram.value,
+            "item_id": None,
+            "field": "clusterCacheKey",
+            "after": cache_key,
+        }
+    )
+    return record.apply(
+        diagram_id,
+        deltas,
+        author=Author.Coach,
+        turn_id=turn_id,
+        user_id=user_id,
+        session_id=session_id,
+    )

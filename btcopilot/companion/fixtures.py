@@ -10,6 +10,7 @@ Usage: FLASK_CONFIG=development flask companion-fixtures [key ...]
 
 import datetime
 import pickle
+import traceback
 
 import click
 
@@ -342,8 +343,16 @@ def fixtures_command(keys):
     for key in keys or list(FIXTURES):
         if key not in FIXTURES:
             raise click.BadParameter(f"no fixture named {key}")
-        install(key)
-        token = Invitation.issue(
-            username(key), current_app.config["INVITATION_DAYS"]
-        ).token
+        try:
+            install(key)
+            token = Invitation.issue(
+                username(key), current_app.config["INVITATION_DAYS"]
+            ).token
+        except Exception:
+            # A caller that silences stderr must still see this fail: say what
+            # broke on both streams and leave a non-zero status behind.
+            trace = traceback.format_exc()
+            click.echo(trace, err=True)
+            click.echo(f"{key} FAILED: {trace.strip().splitlines()[-1]}")
+            raise SystemExit(1)
         click.echo(f"{key} {token}")

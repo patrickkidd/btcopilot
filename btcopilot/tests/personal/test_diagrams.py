@@ -25,9 +25,8 @@ def test_create_diagram(subscriber):
     assert diagram.version == 1
 
     diagram_data = diagram.get_diagram_data()
-    assert len(diagram_data.people) == 2
+    assert len(diagram_data.people) == 1
     assert diagram_data.people[0]["name"] == "User"
-    assert diagram_data.people[1]["name"] == "Assistant"
 
 
 def test_create_diagram_missing_name(subscriber):

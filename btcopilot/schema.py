@@ -456,6 +456,10 @@ def hash_sarf_dicts(event_data: list[dict]) -> str:
 # name on the primary person (e.g. intake wizard skipped).
 DEFAULT_SUBJECT_NAME = "Client"
 
+# 1 is the person the user speaks as; 2 was the chat assistant, which is no
+# longer a person in the record. Neither id is ever handed to a real person.
+RESERVED_ITEM_IDS = 2
+
 
 @dataclass
 class DiagramData:
@@ -1427,32 +1431,26 @@ class DiagramData:
         name = primary.get("name") if primary else None
         return name if name else DEFAULT_SUBJECT_NAME
 
-    def ensure_chat_defaults(self) -> tuple[int, int, bool]:
-        """Idempotently ensure chat speaker people exist.
+    def ensure_chat_defaults(self) -> tuple[int, bool]:
+        """Idempotently ensure the person the user speaks as exists.
 
         If a person with primary=True exists (pro app diagram), use them as the
         user speaker. Otherwise, ensure User (ID=1) exists.
 
-        Always ensure Assistant (ID=2) exists.
+        The other side of the chat is not a member of the family and is never a
+        person in the record; ID 2 stays reserved so records written before this
+        rule keep meaning the same thing.
 
-        Returns (user_person_id, assistant_person_id, changed).
+        Returns (user_person_id, changed).
         """
         changed = False
 
-        # Find primary person (pro app) or existing User person
         primary_person = self.primary_person()
         user_person_id = None
-        assistant_person_id = None
-
         for p in self.people:
-            if not isinstance(p, dict):
-                continue
-            if p.get("id") == 1:
+            if isinstance(p, dict) and p.get("id") == 1:
                 user_person_id = 1
-            if p.get("id") == 2:
-                assistant_person_id = 2
 
-        # Use primary person as user if present, otherwise ensure User (ID=1)
         if primary_person:
             user_person_id = primary_person.get("id")
         elif user_person_id is None:
@@ -1462,14 +1460,7 @@ class DiagramData:
             user_person_id = 1
             changed = True
 
-        # Ensure Assistant (ID=2) exists
-        if assistant_person_id is None:
-            assistant_person = Person(id=2, name="Assistant")
-            self.people.append(asdict(assistant_person))
-            assistant_person_id = 2
-            changed = True
-
         if changed:
-            self.lastItemId = max(self.lastItemId, 2)
+            self.lastItemId = max(self.lastItemId, RESERVED_ITEM_IDS)
 
-        return user_person_id, assistant_person_id, changed
+        return user_person_id, changed

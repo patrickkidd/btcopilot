@@ -49,7 +49,7 @@ JOURNAL_DOC = {
 def test_people_and_bonds_from_structure():
     data = lanes_diagram_data([LANES_DOC])
     names = {p["name"] for p in data.people}
-    assert names == {"Owner", "Assistant", "Mara", "Wren", "Bobby (dad)", "Gran", "Rita"}
+    assert names == {"Owner", "Mara", "Wren", "Bobby (dad)", "Gran", "Rita"}
     primary = next(p for p in data.people if p.get("primary"))
     assert primary["name"] == "Owner"
     pairs = {

@@ -15,12 +15,11 @@ from btcopilot.schema import (
     EventKind,
     PairBond,
     Person,
+    RESERVED_ITEM_IDS,
     RelationshipKind,
     VariableShift,
     asdict,
 )
-
-ASSISTANT_ID = 2
 
 CERTAINTY = {
     "day": DateCertainty.Certain,
@@ -88,7 +87,7 @@ class _Builder:
         self.people: dict[str, int] = {}
         self.bonds: dict[tuple[int, int], int] = {}
         self.events: list[Event] = []
-        self.next_id = ASSISTANT_ID + 1
+        self.next_id = RESERVED_ITEM_IDS + 1
 
     def person(self, name: str) -> int:
         name = _canon(name, self.aliases)
@@ -288,7 +287,6 @@ def lanes_diagram_data(
         _load_entries(builder, doc.get("entries", []), rel_up_is_worse)
 
     people = [dict(asdict(Person(id=1, name=builder.primary)), primary=True)]
-    people.append(asdict(Person(id=ASSISTANT_ID, name="Assistant")))
     for name, id in sorted(builder.people.items(), key=lambda kv: kv[1]):
         people.append(asdict(Person(id=id, name=name)))
 

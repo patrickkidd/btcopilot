@@ -253,11 +253,18 @@ def _chapters(events: list[dict], clusters: list[dict]) -> list[dict]:
         start, end = group[0][1], group[-1][1]
         chapters.append(
             {
-                "id": f"ch{index}",
+                # A chapter a stored cluster backs is that cluster, and carries
+                # its id, so a chip written about it resolves in the record.
+                "id": str(cluster["id"]) if cluster else f"ch{index}",
                 "label": _chapter_label(start, end),
-                "title": (cluster or {}).get("title") or _chapter_label(start, end),
+                "title": (
+                    (cluster or {}).get("name")
+                    or (cluster or {}).get("title")
+                    or _chapter_label(start, end)
+                ),
                 "summary": (cluster or {}).get("summary"),
-                "cluster_ids": [cluster["id"]] if cluster else [],
+                "cluster_ids": [str(cluster["id"])] if cluster else [],
+                "source": (cluster or {}).get("source"),
                 "start": start.isoformat(),
                 "end": end.isoformat(),
                 "event_ids": [chunk["id"] for chunk, _ in group],

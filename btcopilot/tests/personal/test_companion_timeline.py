@@ -140,7 +140,7 @@ def test_strip_vocabulary_is_line_dots_question_only():
 
 def test_lane_picker_data_from_diagram():
     timeline = build_timeline(seed_diagram_data())
-    assert {p["id"] for p in timeline["people"]} == {1, 2, 3, 4, 5, 6, 7}
+    assert {p["id"] for p in timeline["people"]} == {1, 3, 4, 5, 6, 7}
     assert {b["id"] for b in timeline["pair_bonds"]} == {8, 9}
     assert {b["label"] for b in timeline["pair_bonds"]} == {
         "Alex & Sam",

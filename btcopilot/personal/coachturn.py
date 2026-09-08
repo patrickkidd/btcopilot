@@ -13,13 +13,13 @@ import logging
 import uuid
 
 from btcopilot.extensions import ai_log, db
-from btcopilot.personal import chips, recordtext
+from btcopilot.personal import chips, clusters, recordtext
 from btcopilot.personal.coachmodel import CoachModel
 from btcopilot.personal.models import Change, Discussion, Statement
 from btcopilot.personal.prompts import get_agent_prompt
 from btcopilot.personal.routes.interactions import recent
 from btcopilot.personal.toolbox import SCHEMAS, ToolError, Toolbox
-from btcopilot.schema import DiagramData
+from btcopilot.schema import DiagramData, ItemKind
 
 _log = logging.getLogger(__name__)
 
@@ -118,6 +118,16 @@ class CoachTurn:
         else:
             _log.warning(f"Turn {self.turn_id} hit {MAX_STEPS} steps without finishing")
 
+        change = self._regroup()
+        if change:
+            events.append(
+                {
+                    "type": EventKind.RecordPatch.value,
+                    "deltas": change.deltas,
+                    "turn_id": change.turn_id,
+                }
+            )
+
         reply = chips.validate(spoken.strip(), self.data)
         ai_log.info(f"AI response: {reply}")
         coach_statement = Statement(
@@ -144,6 +154,21 @@ class CoachTurn:
             "events": events,
             "turn_id": self.turn_id,
         }
+
+    def _regroup(self):
+        """Re-cluster the line when the turn moved an event, so the stretches
+        the coach and the picture point at are stored, not derived on read."""
+        if not any(
+            delta["item_kind"] == ItemKind.Event.value
+            for delta in self.toolbox.deltas
+        ):
+            return None
+        return clusters.sync(
+            self.diagram.id,
+            turn_id=self.turn_id,
+            user_id=self.discussion.user_id,
+            session_id=self.session_id,
+        )
 
     def _say(self, system: str, messages: list[dict]):
         """One model call. The words arrive whole; the page types them out."""

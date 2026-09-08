@@ -66,6 +66,14 @@ def pytest_configure(config):
 
 
 @pytest.fixture(autouse=True)
+def regrouping():
+    """A turn that moves an event re-groups the line, which costs a model call.
+    Tests get no regrouping unless they put the real one back."""
+    with patch("btcopilot.personal.clusters.sync", return_value=None) as sync:
+        yield sync
+
+
+@pytest.fixture(autouse=True)
 def chat_flow(request):
 
     marker = request.node.get_closest_marker("chat_flow")
