@@ -626,3 +626,19 @@ endpoints in favor of the companion routes. Rulings recorded in STATE.md, not ye
 into the oracle store. Left open: the event editor's relationship fields and conditional
 visibility, step-chip routing verification, board SVG's fixed height, a stray chip-clipping
 line, and citing rulings in tests.
+
+## 2026-09-08 (night) — consolidation, open rows, stall
+
+The old Qt Personal app's routes were archived and unregistered; the chat app's own
+routes became the personal API at /personal/, and a cold-start circular import in the
+auth binding was fixed. Three overnight builder passes followed: night-symbols (the
+drawability marks, board sizing from its own cast), night-shell (session swipe/sort,
+signed-out screen, pressed states), and night-shell-2 (the ask line, chat fade, a
+screen-dim filter added then reverted as a double-dim, the board's nav button, tests
+citing rulings by id). The first night-shell pairing with its auditor went silent for
+two hours — no commits, no running processes — before it was noticed, stopped and
+relaunched with stall detection. A prior job directory was deleted on a session restart
+and took the owner's sandbox database with it; the stranded record survives only inside
+an untouched running process, decision pending. UI_GAP.md folded all three passes' rows;
+NEEDS-OWNER grew to 13 as builders surfaced unruled defensible differences rather than
+guessing at them.

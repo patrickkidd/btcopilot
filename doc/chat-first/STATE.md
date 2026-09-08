@@ -70,105 +70,129 @@ supersedes the old hard-cutover plan.
 ## Where the build stands (live — revise, do not append)
 
 The beta build is on branch FD-362 (draft PR btcopilot #136, fdserver #30), current
-through commits c5b0e00, 8bda759, cbfb3df and 31fa7bf (btcopilot) and 00423d6 (fdserver).
-
-**Still open from owner review round 1**: the event editor lacks the relationship field
-and relationshipTargets/Triangles/Intensity, and the person/spouse/child conditional
-visibility by event kind (mirror Pro's rules); play-by-play step chips routing on the
-page — the backend kind field exists, needs verifying; board SVG BOARD_H is still fixed
-264 inside the drawing (fix-symbols handoff: board()/triangle() should return a height);
-a client-side chip clipping line in chips.ts needs removing; tests must cite
-[Oracle: R-NNNN] where they pin a ruling, not yet done. Sandbox note: bring a fresh
-database up with `flask personal migrate`, and keep the sandbox database OUTSIDE any
-agent job directory — a job directory is deleted with its job and takes the record with
-it. Visual suite runs on 8896/8894 only.
+through the overnight run: night-symbols (commits 94410f7..6bec01e), night-shell
+(b95d79e, a75e077, 7a8d49a), and night-shell-2 (c18d74a..2c2ac86, which includes a
+revert at 0d1bfc1 — a filter-based screen-dim night-shell added was found to double up
+on the sessions-sheet scrim, which already dims the screen on its own, so the filter was
+taken back out). Full range: `git log --oneline -20`.
 
 **Personal API consolidated (2026-09-08)**: the browser app's routes are the personal
 API, served at `/personal/` on the session cookie, and the old Qt Personal app's
 signature-authenticated routes are unregistered under `btcopilot/personal/archive/`
 with their tests. Everything the page fetches moved from `/companion/` to `/personal/`,
 including the service-worker scope, the manifest and the bundle path, and the Flask CLI
-group is now `flask personal`.
+group is now `flask personal`. A cold-start circular import in the personal blueprint's
+auth binding is fixed (commit 2117528).
 
-- **Storage**: diagrams.data is JSON (reads accept pickle or JSON; Pro/Personal endpoints
-  keep the pickled wire via the converter); `python -m btcopilot.diagrams.migrate_json`
-  converts rows; models `Change` (per-command jsonb deltas, turn_id, compression, undo
-  with compare-and-set, delete deltas with Scene-mirrored cascade) and `Interaction`;
-  Cluster has name and source. Commits 3407de5, c63e086.
-- **Passwordless login**: invite link (`python -m btcopilot.auth.invite <email>`), 6-digit
-  emailed code, `WebSession` model, `/me`, sessions list/revoke; HMAC path untouched.
-  Commit 06d88b3. Invite links are single-use.
-- **Front end**: Vite/TypeScript SVG page at /personal/ (web/), PWA manifest, chips
-  (event/cluster/person), look/say taps, play-by-play, views drawn, timeline+editor
-  behind the menu with the banner; bundle gitignored, `npm --prefix web run build`
-  required before pytest/sandbox (web/README.md).
-- **Agent loop**: `POST /personal/chat` runs the coach with READ/EDIT/SHOW tools; EDIT
-  applies immediately via record.apply (author Coach, turn_id); reply carries ordered
-  events (tool_call, record_patch, view); play-by-play coach-authored; chips validated on
-  write; private coaching prompts in fdserver.
-- **Three follow-ups from the walk are closed.** Derived clusters are now stored, so a
-  chip pointing at a stretch the page grouped itself resolves for the coach. The chat
-  "Assistant" speaker is no longer written into the record as a person. The training app
-  no longer caps the chat app's cookie at 8 hours, so a sign-in lasts the ruled 180 days.
-- **Schema on a sandbox**: `flask personal migrate` brings an existing sandbox database
-  up to date. Sandboxes were built with `create_all`, so any column a builder landed
-  silently broke every existing sandbox until the file was deleted; that cost a full
-  golden run before the command existed.
-- **CI** runs the web build and a visual job. Neither has been watched run on GitHub, so
-  treat CI as unverified until a run is seen green.
+**Resolved overnight, previously listed as still open from owner review round 1**:
+play-by-play step chips now route on the page (a teal chip opens the board on its
+stretch, or steps it to the move it names, and never returns to the timeline — commit
+9140a66, independently re-verified green in the night-shell-2 sandbox); the board's SVG
+height is no longer fixed at 264 inside the drawing — `board()` and `triangle()` now
+return a height, so a cast of three no longer leaves an empty band (commit 94410f7);
+visual tests that pin a ruling now cite it by id, `[Oracle: R-NNNN]` (commit 2c2ac86).
 
-**Suites.** Backend 982 passed and 37 skipped, run against this worktree on 2026-09-08. Visual 116 green across both viewports at the last recorded run, with the phone
-drawing goldens held to 8 pixels rather than the suite's 1% ratio, because a drawing
-golden is a small cell where one percent hides a whole stroke. The visual suite runs on
-its own server on port 8894 and its own throwaway database, never on 8889: installing
-fixtures deletes and recreates records, and 8889 is Patrick's own sandbox on his own
-record.
+**Still open from owner review round 1**: the event editor lacks the relationship field
+and relationshipTargets/Triangles/Intensity, and the person/spouse/child conditional
+visibility by event kind (mirror Pro's rules); a client-side chip clipping line in
+chips.ts needs removing. Sandbox note below supersedes the earlier one — read it before
+touching the sandbox.
 
-**Spec and gap.** UI_SPEC.md carries 444 value rows, 52 resolutions and 3 open items. UI_GAP.md sets every
-one against the build: MET 281, PARTIAL 25, CHANGED 18, MISSING 29, NEEDS-OWNER 3,
-UNCHECKED 18, N/A 74, over 448 rows. An independent verifier measured the branch on
-2026-09-08 without reading any builder's report; the findings are at
-doc/chat-first/VERIFY_2026-09-08.md and are the reason several rows read as they do.
+**Suites.** Backend: 905 passed, 33 skipped, run against this worktree after the personal
+API consolidation (the drop from the prior 982/37 is old Qt Personal app tests archived,
+not lost coverage — new coverage was added alongside: play.spec.ts, gestures.spec.ts).
+Visual: 95 green on the phone viewport at the last recorded run. Neither has been watched
+run green on CI.
+
+**Spec and gap.** UI_SPEC.md carries 444 value rows, 52 resolutions and 3 open items.
+UI_GAP.md sets every one against the build, folded with the overnight builders'
+findings and regenerated by `tools/ui_gap_counts.py`: MET 318, PARTIAL 11, CHANGED 12,
+MISSING 5, NEEDS-OWNER 13, UNCHECKED 16, N/A 76, over 451 rows.
+
+**NEEDS-OWNER — needs Patrick's word, listed by name (UI_GAP.md carries the full
+detail on each)**:
+1. Crumb line — the ruling says the line above the picture is empty at rest and carries
+   the year range only at chapter level; the build keeps a permanent left label reading
+   "FAMILY TIME LINE" instead.
+2. Title row padding — mockup pads 14px with a 10px gap; build pads 10px with an 8px
+   gap so the 44px controls reach the edge; moving to the mockup shifts every golden
+   that includes the row, for 4px.
+3. Picture container padding — mockup is `4px 10px 8px`; build is `6px 0 4px` with 16px
+   gutters; a difference the row itself calls a hair, moving every picture golden.
+4. Spacing, chat and message bar — UI_STANDARDS asks 16px gutters; both converged
+   mockups write `padding:14px 12px` on the chat; build matches the mockups at 12px/10px.
+5. Data chip fill, play-by-play — pane A's mockup draws a filled teal-soft pill at
+   12.5px, under the 13px text floor; build draws an outlined 13px pill; adopting the
+   fill moves nearly every chat, picture and board golden for a colour change no ruling
+   reaches.
+6. Drawability marks, which level draws them — built only at the level where the coach
+   has named something, never at rest, because the middle (chapter) level is cut; no
+   rule says this is the right level.
+7. Drawability marks, geometry — no mockup fixes the tick's 10px height, the flat
+   mark's 14px width, the step line's 6px offset from the wire, the guessed-date band's
+   cap at an eighth of the wire, or the open-ended fade's run length; all five are
+   builder choices.
+8. Step line on alternating data — on data that alternates up and down every month the
+   step line reads as a zigzag woven through the dots; whether a trend should draw at
+   all at that density is a judgment call.
+9. New session refused on another family — the build now switches the app to that
+   family and starts the session there rather than refusing; whether "+" should switch
+   families at all is still open item 1 in UI_SPEC.
+10. Count chip inside coach prose — a dense chapter's count ring already opens the
+    chapter when tapped at the resting level; a count chip written into the coach's own
+    prose is not built, and no rule says the coach may write one.
+11. Historical coach messages carry chips — the spec row says a reopened session's old
+    coach messages carry no chips; the build renders them, and journey 2 requires the
+    old chips to still resolve, so the two readings cannot both hold.
+12/13. `triangle` and `compare` drawings (pre-existing, open items 2 and 3 in UI_SPEC) —
+    no mockup fixes either geometry; both are drawn from the nearest approved concept
+    with no source ruling them in.
 
 **The three things no rule reaches**, stated in full with their alternatives at the foot
-of UI_SPEC.md: (1) what tapping "+" on a family the app is not on should do; (2) how a
-close-up triangle is drawn, which nothing in the corpus shows; (3) how two moments are
-compared, also undrawn.
+of UI_SPEC.md: (1) what tapping "+" on a family the app is not on should do (item 9
+above); (2) how a close-up triangle is drawn (item 12 above); (3) how two moments are
+compared (item 13 above).
 
 **The felt call.** A move holds about one second on the board while its own animation is
 written to run eight, so each move is cut off early when a stretch plays through.
 Resolution 21 rules the 8-second loop and the per-move advance as two separate cadences,
-so the build is not wrong, only fast. Whether it feels right is Patrick's to judge and is
-the single most likely thing to bother him in the play-by-play.
+so the build is not wrong, only fast. Whether it feels right is Patrick's to judge.
 
-**What he will see that is still open**, grouped:
+**What he will see that is still open** (narrowed after the overnight fold — several
+items previously listed here are now built: the freshness banner, the title's own
+family name, the sessions-row swipe gesture, the sort-order hold, the question-mark
+breathing, and the chat fading on a session swap):
 
-- **The picture's vocabulary is incomplete.** Silence, a recorded no-change, an
-  open-ended range and an undirected moment all look like ordinary line. A guessed date
-  says "about 1994" in words but has no width, so a guess looks as firm as a certain one,
-  and two guesses never show which came first.
-- **Nothing tells him the picture is behind the conversation.** No freshness banner while
-  extraction runs or when new details wait.
-- **The title reads "Your family" until he opens settings or switches**, so a
-  professional sees the wrong word first.
-- **Three gestures are missing**: swiping a session row for rename and delete, tapping a
-  dense chapter's count to open it, and any response to a long press outside session rows.
-- **Two things move when they should not**: the sessions list can reorder under his thumb
-  if a reply lands while the sheet is open, and a tapped offer chip shifts the chat.
-- **Small motion is absent**: the amber question mark does not breathe and the chat does
-  not fade as the picture changes level.
+- **Two remaining picture-vocabulary judgment calls**, both above: the drawability
+  marks' level and their geometry have no ruling, and a dense alternating record draws
+  a zigzag that may or may not be the right thing to draw.
+- **The chat does not fade when the picture changes level** (it does fade on a session
+  swap, which is a different trigger).
+- **A long press outside a session row does nothing** — the session-row long press
+  (rename) is built; a card title, a crumb or a list row still has no long-press
+  handler.
 - **The line always fits the width**; he cannot pan or zoom it. Neither mockup pans
   either, so this may be a requirement that outlived its design.
 - **The one thing only he can answer**: whether each move reads without a legend, and
   whether the coach's words and the drawings tell the same story.
 
-**Sandbox recipe.** `/Users/patrick/worktrees/fd362-sandbox/serve.sh <port> <db>` runs it.
-Keep the serve script AND the database somewhere durable, never in
-an agent job directory: deleting the job deletes the directory and the record with it.
-From ~/theapp: `PYTHONPATH=<btcopilot worktree> FLASK_APP=btcopilot.app:create_app
+**Review sandbox — READ BEFORE TOUCHING.** The durable script and database are
+`/Users/patrick/worktrees/fd362-sandbox/serve.sh` and its `.db` files in that same
+directory — never an agent job's tmp directory. That rule exists because it was broken
+once already: a prior job directory was deleted on a session restart and took the
+owner's `beta.db` with it. The stranded record from that database survives nowhere
+except inside the still-running process on port 8889, pid 86248 — that process must NOT
+be restarted, killed, or reused until Patrick decides how (or whether) to recover the
+data from it. All new sandbox work goes on port 8890 against the durable script and
+database above, with fixtures `play` and `dense60` installed and invite links
+single-use.
+
+**Sandbox recipe (port 8890, durable location).**
+`/Users/patrick/worktrees/fd362-sandbox/serve.sh 8890 <db>` runs it. From ~/theapp:
+`PYTHONPATH=<btcopilot worktree> FLASK_APP=btcopilot.app:create_app
 FLASK_CONFIG=development FLASK_SQLALCHEMY_DATABASE_URI=sqlite:///<db>
 FDSERVER_PROMPTS_PATH=<fdserver worktree>/prompts/private_prompts.py uv run python -m
-flask run -p 8889 --no-reload` after `npm --prefix web run build`; then `flask personal
+flask run -p 8890 --no-reload` after `npm --prefix web run build`; then `flask personal
 migrate` if the database predates a schema change, and `python -m btcopilot.auth.invite
 <email>` for a single-use link. No auto-auth.
 
