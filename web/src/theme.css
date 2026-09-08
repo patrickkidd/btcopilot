@@ -714,6 +714,7 @@ button { font-family: inherit; }
   color: var(--onaccent);
   border-bottom-right-radius: 4px;
 }
+/* The caret the mockups blink while the words are being written out. */
 .bub.typing::after {
   content: "";
   display: inline-block;
@@ -724,6 +725,37 @@ button { font-family: inherit; }
   animation: blink 0.7s steps(1) infinite;
 }
 @keyframes blink { 50% { opacity: 0; } }
+/* Waiting, before there is anything to write. The mockups blink the caret here
+   too; the owner ruled that too dead to read as thinking, so it is three dots
+   at text height instead, and his ruling supersedes the mockup. */
+.bub.typing.dots::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-bottom: 2px;
+  border-radius: 50%;
+  background: var(--faint);
+  box-shadow: 11px 0 var(--faint), 22px 0 var(--faint);
+  animation: think 1.2s ease-in-out infinite;
+}
+/* one shadow at a time carries the beat, so three dots rise in turn from one
+   box: the element itself, then each shadow, a third of the loop apart */
+@keyframes think {
+  0%, 100% {
+    box-shadow: 11px 0 var(--faint), 22px 0 var(--faint);
+    transform: translateY(0);
+  }
+  16% { transform: translateY(-3px); }
+  33% {
+    box-shadow: 11px -3px var(--faint), 22px 0 var(--faint);
+    transform: translateY(0);
+  }
+  66% {
+    box-shadow: 11px 0 var(--faint), 22px -3px var(--faint);
+    transform: translateY(0);
+  }
+}
 /* who is speaking, on the coach's side (approved play-by-play) */
 .bub .who {
   font: 500 13px/1.2 var(--mono);

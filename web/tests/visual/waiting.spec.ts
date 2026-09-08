@@ -47,6 +47,25 @@ test.describe("waiting for the coach", () => {
     await expect(waiting(page)).toBeVisible();
     expect(await waiting(page).innerText()).not.toBe("");
     await expect(waiting(page)).toHaveCount(1);
+    // three dots at text height, moving
+    const dots = await waiting(page).evaluate((bubble) => {
+      const mark = getComputedStyle(bubble, "::after");
+      return {
+        width: mark.width,
+        height: mark.height,
+        beside: (mark.boxShadow.match(/rgb/g) ?? []).length,
+        animation: mark.animationName,
+        seconds: mark.animationDuration,
+      };
+    });
+    expect(dots).toEqual({
+      width: "6px",
+      height: "6px",
+      // two more dots beside the first, cast as its shadows
+      beside: 2,
+      animation: "think",
+      seconds: "1.2s",
+    });
 
     answer();
     await expect(page.locator(".bub.coach").last()).toHaveText(/I put that down\./);
