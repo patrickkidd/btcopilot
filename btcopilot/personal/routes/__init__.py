@@ -4,7 +4,6 @@ from flask import Blueprint, abort, request
 from flask_wtf.csrf import CSRFError, generate_csrf
 
 from btcopilot import auth
-from btcopilot.auth import _authenticate_training_app
 from btcopilot.extensions import csrf, db
 from btcopilot.personal.models import Discussion
 from btcopilot.personal.discussions import create_discussion
@@ -24,7 +23,7 @@ bp = Blueprint(
 def _authenticate():
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         csrf.protect()
-    _authenticate_training_app()
+    auth._authenticate_training_app()
 
 
 @bp.errorhandler(CSRFError)
