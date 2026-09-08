@@ -46,9 +46,9 @@ export interface SettingsHandlers {
   /** Every read or write of the preferences, so a value with a shortcut
    * elsewhere on screen shows the same thing. */
   onPrefs(prefs: Preferences): void;
-  /** The app moved to another family, so everything on screen is about a
-   * different record now. */
-  onDiagram(diagram: Diagram): void;
+  /** Which family the app is on. `switched` is false when this is simply the
+   * family it opened on, and true when the reader moved it. */
+  onDiagram(diagram: Diagram, how: { switched: boolean }): void;
 }
 
 /** What a diagram row says under its name: how many sessions sit on it, when
@@ -90,6 +90,9 @@ export class Settings {
     this.avatar.innerHTML = this.initial() || SILHOUETTE;
     this.applyTheme();
     this.handlers.onPrefs(this.prefs);
+    // The title row names the family the app is on, not a stock phrase.
+    const here = this.account?.diagrams.find((d) => d.current);
+    if (here) this.handlers.onDiagram(here, { switched: false });
     if (this.open) this.replaceTop();
   }
 
@@ -176,6 +179,9 @@ export class Settings {
     this.avatar.innerHTML = this.initial() || SILHOUETTE;
     this.applyTheme();
     this.handlers.onPrefs(this.prefs);
+    // The title row names the family the app is on, not a stock phrase.
+    const here = this.account?.diagrams.find((d) => d.current);
+    if (here) this.handlers.onDiagram(here, { switched: false });
     if (this.open) this.replaceTop();
   }
 
@@ -470,7 +476,7 @@ export class Settings {
     await api.selectDiagram(diagram.id);
     await this.load();
     this.close();
-    this.handlers.onDiagram(diagram);
+    this.handlers.onDiagram(diagram, { switched: true });
     toast(`Now on ${diagram.name}`);
   }
 

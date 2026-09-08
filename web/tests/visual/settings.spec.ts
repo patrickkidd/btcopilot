@@ -64,7 +64,8 @@ test.describe("the settings stack", () => {
     await page.locator("#settings-back").click();
     await page.waitForTimeout(300);
     await expect(page.locator(".sn-stack")).toBeHidden();
-    await expect(page.locator("#title")).toHaveText("Your family");
+    // the title row names the family the app is on, not a stock phrase
+    await expect(page.locator("#title")).toHaveText("FD-362 visual fixture");
   });
 
   test("speak replies is a switch of the ruled size, not a checkbox", async ({

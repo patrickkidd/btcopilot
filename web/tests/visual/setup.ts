@@ -97,6 +97,7 @@ export const KEYS = [
   "dense60",
   "hostile",
   "moves",
+  "longname",
 ] as const;
 export type Key = (typeof KEYS)[number];
 

@@ -22,7 +22,7 @@ export interface SessionsHandlers {
   /** Open a session: the chat swaps to its statements. */
   onPick(session: Session): void;
   /** The app moved to another family. */
-  onDiagram(diagram: Diagram): void;
+  onDiagram(diagram: Diagram, how: { switched: boolean }): void;
   /** The sessions as last read, so a moment tracing back to the one that coded
    * it can name it. */
   onList(sessions: Session[]): void;
@@ -386,7 +386,7 @@ export class Sessions {
       const moved = this.families.find((f) => f.diagram.id === familyId);
       if (!moved) return;
       await api.selectDiagram(familyId);
-      this.handlers.onDiagram(moved.diagram);
+      this.handlers.onDiagram(moved.diagram, { switched: true });
       await this.load(null);
       home = this.home();
     }

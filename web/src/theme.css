@@ -114,7 +114,18 @@ button { font-family: inherit; }
   padding: env(safe-area-inset-top) 10px 0;
   border-bottom: 1px solid var(--line);
 }
-.ttl { flex: 1; font: 600 17px/1.2 var(--sans); }
+/* A long family name must not push the controls beside it, or spill over the
+   picture below: min-width 0 lets a flex child shrink, and the name ellipsises
+   (both converged mockups' .ttl). 17px is the ruled floor, not the mockups' 15. */
+.ttl {
+  flex: 1;
+  min-width: 0;
+  font: 600 17px/1.2 var(--sans);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .iconbtn {
   flex: none;
   width: 44px;
@@ -712,7 +723,14 @@ button { font-family: inherit; }
   padding: env(safe-area-inset-top) 10px 0;
   border-bottom: 1px solid var(--line);
 }
-.ovt { flex: 1; font: 600 17px/1.2 var(--sans); }
+.ovt {
+  flex: 1;
+  min-width: 0;
+  font: 600 17px/1.2 var(--sans);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 /* the button that opens the list, and the one that comes back from it */
 .listbtn {
   border: 1px solid var(--line);

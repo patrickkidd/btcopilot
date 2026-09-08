@@ -157,15 +157,19 @@ const sessions = new Sessions(
       known = list;
       actions();
     },
-    onDiagram: (diagram) => onDiagram(diagram),
+    onDiagram: (diagram, how) => onDiagram(diagram, how),
   },
 );
 
 /** Another family is another record and another set of sessions, so the chat,
- * the picture and the title all start again on it. */
-function onDiagram(diagram: Diagram): void {
+ * the picture and the title all start again on it. Opening on a family only
+ * names it; nothing is thrown away. */
+function onDiagram(diagram: Diagram, how = { switched: true }): void {
   familyTitle = diagram.name;
-  $("title").textContent = familyTitle;
+  // The settings stack owns the title while it is open, so only write it when
+  // the chat is what the title row is naming.
+  if ($("settings-back").hidden) $("title").textContent = familyTitle;
+  if (!how.switched) return;
   session = null;
   chat.clear();
   picture.clear();
@@ -193,9 +197,9 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   onPrefs: (prefs) => {
     speak.checked = prefs.speak;
   },
-  onDiagram: (diagram) => {
-    onDiagram(diagram);
-    void sessions.load(null);
+  onDiagram: (diagram, how) => {
+    onDiagram(diagram, how);
+    if (how.switched) void sessions.load(null);
   },
 });
 

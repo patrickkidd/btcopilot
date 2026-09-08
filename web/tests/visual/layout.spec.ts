@@ -145,6 +145,45 @@ test.describe("the board is the only thing that resizes the picture", () => {
   });
 });
 
+test.describe("a long family name", () => {
+  test.use({ storageState: stateFor("longname") });
+
+  test("is cut with an ellipsis rather than spilling over the picture", async ({
+    page,
+  }) => {
+    await settle(page);
+    const title = page.locator("#title");
+    // the record's own name, not a stock phrase
+    await expect(title).toHaveText("The Fitzgerald-Winterbottom Family Files");
+
+    const fit = await title.evaluate((node) => {
+      const row = node.parentElement!.getBoundingClientRect();
+      const at = node.getBoundingClientRect();
+      return {
+        // a wide window has room for the whole name; a phone has not
+        clipped: node.scrollWidth > node.clientWidth,
+        ellipsised: getComputedStyle(node).textOverflow === "ellipsis",
+        spillsRight: Math.round(at.right - row.right),
+        rows: Math.round(at.height),
+      };
+    });
+    expect(fit.ellipsised).toBe(true);
+    expect(fit.spillsRight).toBeLessThanOrEqual(0);
+    // one line: a wrapped title is what pushed the picture down
+    expect(fit.rows).toBeLessThanOrEqual(24);
+
+    // and the controls beside it keep their ruled size
+    for (const id of ["menu-open", "account"]) {
+      const box = (await page.locator(`#${id}`).boundingBox())!;
+      expect(Math.round(box.width)).toBe(44);
+      expect(Math.round(box.height)).toBe(44);
+    }
+
+    // the picture starts where it always starts
+    expect(await pictureHeight(page)).toBe(158);
+  });
+});
+
 test.describe("a moment traces back to the words that coded it", () => {
   test.use({ storageState: stateFor("moves") });
 

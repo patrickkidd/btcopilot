@@ -37,6 +37,10 @@ UNKNOWN = DateCertainty.Unknown
 
 LONG_LABEL = "the stretch when everybody stopped speaking about the house and the money"
 LONG_NAME = "Margaret-Anne Fitzgerald-Winterbottom III"
+# A professional's client diagram can be named anything. Forty characters is
+# past what the title row can hold on a phone, so it has to ellipsise rather
+# than push the controls beside it or spill over the picture.
+LONG_DIAGRAM_NAME = "The Fitzgerald-Winterbottom Family Files"
 
 
 def _person(id, name, gender=PersonKind.Female, primary=False):
@@ -242,6 +246,12 @@ HOSTILE_CHAT = [
     ("user", "🙂🎉😀🔥🌍💡🥲🫠🧠🌱🕰️🪞 " * 12),
 ]
 
+def long_name() -> DiagramData:
+    """An ordinary small record; what is under test is its diagram's name."""
+    return three_over_forty()
+
+
+# key -> (builder, chat, diagram name)
 FIXTURES = {
     "empty": (empty, None),
     "one": (one, None),
@@ -249,7 +259,11 @@ FIXTURES = {
     "dense60": (sixty_in_five, None),
     "hostile": (hostile, HOSTILE_CHAT),
     "moves": (moves, MOVES_CHAT),
+    "longname": (long_name, None),
 }
+
+# the diagram name each fixture's record carries, when it is not the default
+DIAGRAM_NAMES = {"longname": LONG_DIAGRAM_NAME}
 
 
 def username(key: str) -> str:
@@ -281,7 +295,11 @@ def install(key: str):
         db.session.delete(old)
     db.session.flush()
 
-    diagram = Diagram(user_id=user.id, name=DIAGRAM_NAME, data=pickle.dumps({}))
+    diagram = Diagram(
+        user_id=user.id,
+        name=DIAGRAM_NAMES.get(key, DIAGRAM_NAME),
+        data=pickle.dumps({}),
+    )
     diagram.set_diagram_data(builder())
     db.session.add(diagram)
     db.session.flush()
