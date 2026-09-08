@@ -52,6 +52,10 @@ const NODAL = new Set(["cutoff", "defined-self", "fusion"]);
 enum Level {
   Wire = "wire",
   Board = "board",
+  /** Two moments face to face, which is how the record asks a question about
+   * a pair. No mockup fixes this drawing; it is built from the approved
+   * "Pairs, face to face" concept and the at-rest vocabulary. */
+  Compare = "compare",
 }
 
 export enum Target {
@@ -100,6 +104,8 @@ export class Picture {
   private level = Level.Wire;
   private moves: Step[] = [];
   private at = 0;
+  private pair: [number, number] | null = null;
+  private entering = false;
   private band: { start: string; end: string } | null = null;
   private focus: Chapter | null = null;
   private range = { min: 0, max: 1 };
@@ -140,6 +146,7 @@ export class Picture {
   spotlight(eventIds: number[]): void {
     this.named = eventIds;
     this.selected = null;
+    this.level = Level.Wire;
     this.focus = this.chapterOf(eventIds[0]);
     this.rescale();
     this.render();
@@ -197,6 +204,7 @@ export class Picture {
     this.moves = movesIn(events);
     if (!this.moves.length) return 0;
     this.level = Level.Board;
+    this.entering = true;
     this.at = 0;
     this.moving = null;
     this.cast = [];
@@ -229,6 +237,11 @@ export class Picture {
   async show(view: View): Promise<void> {
     this.band = null;
     this.cast = [];
+    // every view starts from the resting wire; the ones that are a level of
+    // their own say so below
+    this.level = Level.Wire;
+    this.closed = false;
+    this.moves = [];
     switch (view.kind) {
       case ViewKind.Triangle:
         this.cast = view.persons;
@@ -242,7 +255,11 @@ export class Picture {
         this.render();
         return;
       case ViewKind.Compare:
-        this.spotlight([view.event_a, view.event_b]);
+        // two moments face to face, a question mark between them, no axis
+        this.pair = [view.event_a, view.event_b];
+        this.level = Level.Compare;
+        this.moving = null;
+        this.render();
         return;
       case ViewKind.Sequence: {
         // a sequence is the moves board, stepped in order, and it stays up
@@ -251,7 +268,8 @@ export class Picture {
         if (!n) return;
         for (let i = 1; i < n; i += 1) {
           await pause(HOLD_MS);
-          if (this.level !== Level.Board) return;
+          // a tap on back, or another view, ends the walk through
+          if ((this.level as Level) !== Level.Board) return;
           this.at = i;
           this.render();
         }
@@ -281,6 +299,7 @@ export class Picture {
     this.level = Level.Wire;
     this.moves = [];
     this.at = 0;
+    this.pair = null;
     this.rescale();
     this.render();
   }
@@ -383,8 +402,10 @@ export class Picture {
     );
     const last = this.moves.length - 1;
     this.pin(BOARD_H + 84);
+    const zoom = this.entering ? " in" : "";
+    this.entering = false;
     this.host.innerHTML =
-      `<div class="ss board" style="height:${BOARD_H}px">${svg}` +
+      `<div class="ss board${zoom}" style="height:${BOARD_H}px">${svg}` +
       `<button class="corner l ss-hit" data-target="${Target.Back}" ` +
       `aria-label="back to the time line">&#8592;</button></div>` +
       `<div class="bcap">${esc(caption)}</div>` +
@@ -398,11 +419,51 @@ export class Picture {
       this.host.querySelector("svg")?.pauseAnimations();
   }
 
+  /** Two moments side by side with the record's one asking mark between them.
+   * No axis: a comparison is not a measurement. */
+  private renderPair(): string | null {
+    const [a, b] = (this.pair ?? [0, 0]).map((id) => this.event(id));
+    if (!a || !b) return null;
+    const width = this.width;
+    const mid = width / 2;
+    const column = (event: TimelineEvent, left: number): string => {
+      const wide = Math.floor((mid - X_PAD - 22) / CH);
+      const [one, two] = wrap2(event.label, wide);
+      const when = event.dateTime
+        ? dateText(event.dateTime, event.dateCertainty)
+        : "no date yet";
+      return (
+        `<text class="ss-w meta" x="${left}" y="${ROWS[0]}">${esc(when)}</text>` +
+        `<text class="ss-w" x="${left}" y="${ROWS[1] + 6}">${esc(one)}</text>` +
+        (two
+          ? `<text class="ss-w" x="${left}" y="${ROWS[2] + 6}">${esc(two)}</text>`
+          : "")
+      );
+    };
+    this.pin(PIC_H);
+    return (
+      `<div class="ss" style="height:${PIC_H}px">` +
+      `<svg viewBox="0 0 ${width} ${PIC_H}" aria-hidden="true">` +
+      column(a, X_PAD) +
+      column(b, mid + 11) +
+      `<line class="seam" x1="${mid}" y1="${ROWS[0] - 12}" x2="${mid}" y2="${ROWS[2] + 12}"/>` +
+      `<text class="qm" x="${mid}" y="${ROWS[1] + 6}" text-anchor="middle">?</text>` +
+      `</svg></div>`
+    );
+  }
+
   private render(): void {
     if (!this.data) return;
     if (this.level === Level.Board && this.moves.length) {
       this.renderBoard();
       return;
+    }
+    if (this.level === Level.Compare) {
+      const markup = this.renderPair();
+      if (markup) {
+        this.host.innerHTML = markup;
+        return;
+      }
     }
     const width = this.width;
     const x0 = X_PAD;
@@ -594,9 +655,13 @@ export class Picture {
     const a = Math.max(x0, this.x(this.focus.start) - 5);
     const b = Math.min(x1, this.x(this.focus.end) + 5);
     const top = wire - 12;
+    // a bracket with no label says a stretch is there but not which one
+    const years = `${this.focus.start.slice(0, 4)}–${this.focus.end.slice(0, 4)}`;
     return (
       `<path class="brk" d="M${a.toFixed(1)} ${wire - 8} L${a.toFixed(1)} ${top} ` +
-      `L${b.toFixed(1)} ${top} L${b.toFixed(1)} ${wire - 8}"/>`
+      `L${b.toFixed(1)} ${top} L${b.toFixed(1)} ${wire - 8}"/>` +
+      `<text class="brkl" x="${((a + b) / 2).toFixed(1)}" y="${top - 5}" ` +
+      `text-anchor="middle">${esc(years)}</text>`
     );
   }
 
@@ -649,6 +714,9 @@ export class Picture {
       STAGE_H - 59 - STAGE_GAP,
       R,
       STAGE_H - 40,
+      // a triangle the coach asked to see keeps its height, or three people on
+      // a flattened ring read as a row rather than a figure
+      this.closed ? 0.92 : 0.62,
     );
     const event = this.moving;
     const at = (id: number | null) =>

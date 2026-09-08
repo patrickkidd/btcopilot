@@ -756,6 +756,9 @@ export function ring(
   cy: number,
   r = R,
   height = cy * 2,
+  /** How much the ring is flattened. A closed triangle keeps its height, or it
+   * reads as a squashed ring rather than a figure. */
+  flat = 0.62,
 ): Figure[] {
   const radius = Math.min(78, Math.max(46, width / 2 - 74));
   const place = (p: (typeof people)[number], x: number, y: number): Figure => ({
@@ -776,7 +779,7 @@ export function ring(
     return place(
       p,
       width / 2 + Math.cos(angle) * radius,
-      cy + Math.sin(angle) * radius * 0.62,
+      cy + Math.sin(angle) * radius * flat,
     );
   });
 }

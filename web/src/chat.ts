@@ -17,6 +17,11 @@ export interface ChatHandlers {
 
 /** How long a chip stays lit while its move draws (pane A). */
 const LIT_MS = 1000;
+/** The coach writes two characters at a time, on the approved cadence. */
+const CHARS = 2;
+const TICK_MS = 18;
+/** An offer is not a move: the answers the coach holds out land 160ms apart. */
+const OFFER_MS = 160;
 
 export class Chat {
   private typing: HTMLElement | null = null;
@@ -109,15 +114,18 @@ export class Chat {
           if ("chip" in piece) {
             words.insertAdjacentHTML("beforeend", this.pill(piece.chip));
             const pill = words.lastElementChild as HTMLElement;
-            pill.classList.add("lit");
+            // an offer names nothing in the record, so nothing draws and the
+            // next one follows straight after
+            const offer = piece.chip.tone === ChipTone.Ask;
+            if (!offer) pill.classList.add("lit");
             onChip(piece.chip);
-            await wait(pace);
+            await wait(offer ? OFFER_MS : pace);
             pill.classList.remove("lit");
           } else {
-            for (const word of piece.text.split(/(\s+)/)) {
-              words.append(word);
+            for (let i = 0; i < piece.text.length; i += CHARS) {
+              words.append(piece.text.slice(i, i + CHARS));
               this.scroll();
-              if (word.trim()) await wait(28);
+              await wait(TICK_MS);
             }
           }
           this.scroll();
@@ -128,9 +136,15 @@ export class Chat {
     };
   }
 
+  /** Waiting is the same caret that types: one bar, blinking, where the words
+   * are about to appear. */
   busy(on: boolean): void {
     if (on && !this.typing) {
-      this.typing = el("div", `bub ${Role.Coach} dots`, "<i></i><i></i><i></i>");
+      this.typing = el(
+        "div",
+        `bub ${Role.Coach} typing dots`,
+        `<div class="who">Coach</div>`,
+      );
       this.list.append(this.typing);
       this.scroll();
     } else if (!on && this.typing?.classList.contains("dots")) {
