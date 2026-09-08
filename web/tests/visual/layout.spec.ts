@@ -58,8 +58,20 @@ test.describe("nothing moves when a chip is tapped", () => {
     page,
   }) => {
     await settle(page);
-    const chip = page.locator(".bub.coach .chip").first();
+    // The chip in the newest ordinary bubble. It must be one already on screen,
+    // or Playwright scrolls the thread to reach it and that scroll is measured
+    // as the page moving; and it must not be a play-by-play, whose chips are
+    // ruled to step the board, which is the one deliberate level change.
+    const chip = page
+      .locator(".bub.coach:not([data-play])")
+      .last()
+      .locator(".chip")
+      .first();
     await expect(chip).toBeVisible();
+    // Bring it into view first: the thread's own scroll to reach a chip is not
+    // the page moving, and measuring before that scroll would count it as one.
+    await chip.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(200);
 
     const before = await frame(page);
     await chip.click();

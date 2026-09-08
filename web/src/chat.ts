@@ -91,6 +91,10 @@ export class Chat {
       );
     };
     this.watchScrolling();
+    // The thread's height is only final once the web font has replaced the
+    // fallback, so pin it again then: otherwise a thread opened before the font
+    // lands sits partway up its own scroll.
+    void document.fonts?.ready.then(() => this.scroll());
     this.list.addEventListener("click", tap(this.list));
     this.composer.addEventListener("click", tap(this.composer));
   }
