@@ -22,6 +22,12 @@ import { chromium } from "@playwright/test";
  *                   "uv run flask companion fixtures"
  *   FIXTURE_CWD     where to run it (default ~/theapp)
  *
+ * The installer inherits this environment, so FLASK_SQLALCHEMY_DATABASE_URI must
+ * name the same database COMPANION_URL is serving. Point it anywhere else and the
+ * installer writes tokens the sandbox has never heard of: every invite answers 400
+ * and it reads as an auth failure. Run the installer without swallowing stderr when
+ * that happens — it crashes on a schema it cannot read and prints nothing at all.
+ *
  * Installing the fixtures deletes and recreates each fixture user's diagram and
  * discussions, which signs out any run already using them. Several people share
  * one checkout and one sandbox database here, so a whole run holds an exclusive
