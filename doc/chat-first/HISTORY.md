@@ -616,3 +616,13 @@ golden tolerance loose enough that five wrong drawings passed unchanged.
 
 Three follow-ups from the beta walk closed: derived clusters are stored, the "Assistant"
 speaker is no longer written as a person, and a sign-in lasts the ruled 180 days.
+
+## 2026-09-08 — owner review round 1
+
+Patrick ruled on selection state, chip sizing/labels, play-by-play step routing and
+timing, chat scroll pin, the moves board fitting its content (superseding RESOLVED #28's
+fixed 264px), editor field height, one-open-diagram, and archiving the old Personal app
+endpoints in favor of the companion routes. Rulings recorded in STATE.md, not yet folded
+into the oracle store. Left open: the event editor's relationship fields and conditional
+visibility, step-chip routing verification, board SVG's fixed height, a stray chip-clipping
+line, and citing rulings in tests.

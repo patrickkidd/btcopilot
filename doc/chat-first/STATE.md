@@ -70,7 +70,18 @@ supersedes the old hard-cutover plan.
 ## Where the build stands (live — revise, do not append)
 
 The beta build is on branch FD-362 (draft PR btcopilot #136, fdserver #30), current
-through commits 20ca396, b6f9af5, 90f2fa9 and d17b54b on 2026-09-08.
+through commits c5b0e00, 8bda759, cbfb3df and 31fa7bf (btcopilot) and 00423d6 (fdserver).
+
+**Still open from owner review round 1**: the event editor lacks the relationship field
+and relationshipTargets/Triangles/Intensity, and the person/spouse/child conditional
+visibility by event kind (mirror Pro's rules); play-by-play step chips routing on the
+page — the backend kind field exists, needs verifying; board SVG BOARD_H is still fixed
+264 inside the drawing (fix-symbols handoff: board()/triangle() should return a height);
+a client-side chip clipping line in chips.ts needs removing; tests must cite
+[Oracle: R-NNNN] where they pin a ruling, not yet done. Sandbox note: 8889 runs on
+beta.db with columns added by hand (statements.kind, cluster_id, users.current_diagram_id,
+discussions.title_set_by_user) — use `flask companion migrate` on a fresh database
+instead. Visual suite runs on 8896/8894 only.
 
 - **Storage**: diagrams.data is JSON (reads accept pickle or JSON; Pro/Personal endpoints
   keep the pickled wire via the converter); `python -m btcopilot.diagrams.migrate_json`
@@ -427,6 +438,24 @@ the converter, the Change and Interaction models, tool calls, chips, the play-by
 the timeline and editor behind a menu. It checks itself against journeys 1 through 6. The
 draft PRs already exist: btcopilot #135 and fdserver #29.
 
+### Owner review round 1 (2026-09-08, RULED, not yet in the oracle store — append next fold)
+
+One selection state: a chip tap is a dot tap — spotlight plus a caption row carrying the
+ask chip, the board button, and the "coded in" chip. Chips are one size, full text, no
+truncation and no expand; labels are capped at the source, at most 28 grapheme clusters,
+one re-ask, never trimmed after the fact; chips carry pressed-state feedback. In a
+play-by-play, step chips move the board and never return to the timeline — the statement
+kind Play/Turn plus its cluster_id is now persisted. A play-through holds each move until
+its narration line has finished typing plus about two seconds; the owner tunes the feel
+directly, and the eight-second loop stays a separate clock, never stretched to match. Chat
+stays pinned to the bottom while the coach types. The moves board fits its content — this
+supersedes the fixed 264px rows: mark every UI_SPEC.md row carrying RESOLVED #28 as
+SUPERSEDED by this ruling. Editor fields are 44px with the mockup's padding. Tapping a
+diagram row opens that diagram, one open at a time (User.current_diagram_id). The old
+Personal app is superseded: this PR archives the personal endpoints and the companion
+routes become the personal API — models, prompts and the agent loop stay; Pro routes are
+untouched. This is the first task of the next session, before any UI work.
+
 ## A/B-test list
 
 Kept for when there are enough users to run one.
@@ -528,6 +557,7 @@ stating something as fact without evidence is lying. Plain sentences, Patrick's 
 no coined labels, and no multiple-choice when he asked to brainstorm. For verification, a
 test script through the Pro app's own loading code plus his eyeball beats an agent driving
 the released app. Every multi-agent run spawns a persistent goal auditor before the
-workers start. Read this file to start; read HISTORY only for a specific fact.
+workers start. Read this file to start; read HISTORY only for a specific fact. One
+worktree per builder next round — shared-index sweeps and gap-file clobbers cost hours.
 
 Pinned (not next): the corpus/subset sessions in [NEXT_SESSIONS.md](NEXT_SESSIONS.md).
