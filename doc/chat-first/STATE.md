@@ -69,8 +69,8 @@ supersedes the old hard-cutover plan.
 
 ## Where the build stands (live — revise, do not append)
 
-The beta build landed on branch FD-362 (draft PR btcopilot #136, fdserver #30) on
-2026-09-07/08, built by four parallel Opus agents plus an auditor and an integration walk:
+The beta build is on branch FD-362 (draft PR btcopilot #136, fdserver #30), current
+through commits 20ca396, b6f9af5, 90f2fa9 and d17b54b on 2026-09-08.
 
 - **Storage**: diagrams.data is JSON (reads accept pickle or JSON; Pro/Personal endpoints
   keep the pickled wire via the converter); `python -m btcopilot.diagrams.migrate_json`
@@ -79,46 +79,78 @@ The beta build landed on branch FD-362 (draft PR btcopilot #136, fdserver #30) o
   Cluster has name and source. Commits 3407de5, c63e086.
 - **Passwordless login**: invite link (`python -m btcopilot.auth.invite <email>`), 6-digit
   emailed code, `WebSession` model, `/me`, sessions list/revoke; HMAC path untouched.
-  Commit 06d88b3.
+  Commit 06d88b3. Invite links are single-use.
 - **Front end**: Vite/TypeScript SVG page at /companion/ (web/), PWA manifest, chips
   (event/cluster/person), look/say taps, play-by-play, views drawn, timeline+editor
   behind the menu with the banner; bundle gitignored, `npm --prefix web run build`
-  required before pytest/sandbox (web/README.md). Commits 041ce47, 86dae55, 324b271,
-  dc1ee9d.
+  required before pytest/sandbox (web/README.md).
 - **Agent loop**: `POST /companion/chat` runs the coach with READ/EDIT/SHOW tools; EDIT
   applies immediately via record.apply (author Coach, turn_id); reply carries ordered
-  events (tool_call, record_patch, view); `statements.views`; play-by-play coach-authored;
-  chips validated on write; private coaching prompts in fdserver. Commits f0425d9,
-  2cd9a8c (btcopilot), 992c7e0 (fdserver).
-- **Integration walk** (commits ec06352, b4eb54d): journeys 1–6 PASS with a live coach on
-  a fresh database; all btcopilot suites 960 passed, 37 skipped; web tests 31 passed.
-  Screenshots j1–j6.png in the job tmp dir (ephemeral).
-- A real-browser fix pass on 2026-09-08 found 22 deviations from the approved references
-  (table in the job tmp dir, ephemeral; to be moved into doc/chat-first/ when stable) and is
-  fixing them to the references with Playwright golden screenshots.
-- UI_GAP.md row-by-row count against UI_SPEC.md's 441 rows, every build value read
-  from web/index.html, web/src/theme.css and web/src/*.ts with a file:line citation:
-  MET 122, PARTIAL 46, CHANGED 76, MISSING 112, UNCHECKED 23, N/A 62. The earlier
-  "fixed" claims for the move symbols were wrong, and so were several of the counts
-  derived from them, which is why the table is now read from the code rather than
-  from an audit write-up. Sessions and settings together are 49 MISSING and 1 MET.
-  Picture symbols are 27 CHANGED. The picture itself is 32 MET.
+  events (tool_call, record_patch, view); play-by-play coach-authored; chips validated on
+  write; private coaching prompts in fdserver.
+- **Three follow-ups from the walk are closed.** Derived clusters are now stored, so a
+  chip pointing at a stretch the page grouped itself resolves for the coach. The chat
+  "Assistant" speaker is no longer written into the record as a person. The training app
+  no longer caps the chat app's cookie at 8 hours, so a sign-in lasts the ruled 180 days.
+- **Schema on a sandbox**: `flask companion migrate` brings an existing sandbox database
+  up to date. Sandboxes were built with `create_all`, so any column a builder landed
+  silently broke every existing sandbox until the file was deleted; that cost a full
+  golden run before the command existed.
+- **CI** runs the web build and a visual job. Neither has been watched run on GitHub, so
+  treat CI as unverified until a run is seen green.
 
-Open after the walk (follow-ups, not rulings): chips pointing at a stretch the page
-derived itself do not resolve for the coach because only stored clusters resolve —
-persist derived clusters into DiagramData.clusters (the ruling says clusters are stored);
-the training app caps the session cookie at 8 hours, overriding the chat app's 180 days;
-the chat "Assistant" speaker still appears as a person in the record; migrations chain
-f1a2b3c4d5e6 → a3b4c5d6e7f8 → b4c5d6e7f8a9 but sandboxes use create_all (no `flask db`
-wired); CI needs the web build step; the reply's `views` field duplicates the view events
-(page ignores it).
+**Suites.** Backend 982 passed and 37 skipped, run against this worktree on 2026-09-08. Visual 116 green across both viewports at the last recorded run, with the phone
+drawing goldens held to 8 pixels rather than the suite's 1% ratio, because a drawing
+golden is a small cell where one percent hides a whole stroke. The visual suite runs on
+its own server on port 8894 and its own throwaway database, never on 8889: installing
+fixtures deletes and recreates records, and 8889 is Patrick's own sandbox on his own
+record.
 
-Sandbox recipe for Patrick: /Users/patrick/.claude/jobs/1674c7c2/tmp/serve.sh (ephemeral)
-— from ~/theapp: `PYTHONPATH=<btcopilot worktree> FLASK_APP=btcopilot.app:create_app
+**Spec and gap.** UI_SPEC.md carries 444 value rows, 52 resolutions and 3 open items. UI_GAP.md sets every
+one against the build: MET 281, PARTIAL 25, CHANGED 18, MISSING 29, NEEDS-OWNER 3,
+UNCHECKED 18, N/A 74, over 448 rows. An independent verifier measured the branch on
+2026-09-08 without reading any builder's report; the findings are at
+doc/chat-first/VERIFY_2026-09-08.md and are the reason several rows read as they do.
+
+**The three things no rule reaches**, stated in full with their alternatives at the foot
+of UI_SPEC.md: (1) what tapping "+" on a family the app is not on should do; (2) how a
+close-up triangle is drawn, which nothing in the corpus shows; (3) how two moments are
+compared, also undrawn.
+
+**The felt call.** A move holds about one second on the board while its own animation is
+written to run eight, so each move is cut off early when a stretch plays through.
+Resolution 21 rules the 8-second loop and the per-move advance as two separate cadences,
+so the build is not wrong, only fast. Whether it feels right is Patrick's to judge and is
+the single most likely thing to bother him in the play-by-play.
+
+**What he will see that is still open**, grouped:
+
+- **The picture's vocabulary is incomplete.** Silence, a recorded no-change, an
+  open-ended range and an undirected moment all look like ordinary line. A guessed date
+  says "about 1994" in words but has no width, so a guess looks as firm as a certain one,
+  and two guesses never show which came first.
+- **Nothing tells him the picture is behind the conversation.** No freshness banner while
+  extraction runs or when new details wait.
+- **The title reads "Your family" until he opens settings or switches**, so a
+  professional sees the wrong word first.
+- **Three gestures are missing**: swiping a session row for rename and delete, tapping a
+  dense chapter's count to open it, and any response to a long press outside session rows.
+- **Two things move when they should not**: the sessions list can reorder under his thumb
+  if a reply lands while the sheet is open, and a tapped offer chip shifts the chat.
+- **Small motion is absent**: the amber question mark does not breathe and the chat does
+  not fade as the picture changes level.
+- **The line always fits the width**; he cannot pan or zoom it. Neither mockup pans
+  either, so this may be a requirement that outlived its design.
+- **The one thing only he can answer**: whether each move reads without a legend, and
+  whether the coach's words and the drawings tell the same story.
+
+**Sandbox recipe.** `serve.sh` in the job tmp dir (ephemeral) runs the app on beta.db;
+from ~/theapp: `PYTHONPATH=<btcopilot worktree> FLASK_APP=btcopilot.app:create_app
 FLASK_CONFIG=development FLASK_SQLALCHEMY_DATABASE_URI=sqlite:///<db>
 FDSERVER_PROMPTS_PATH=<fdserver worktree>/prompts/private_prompts.py uv run python -m
-flask run -p 8889 --no-reload` after `npm --prefix web run build`; then `python -m
-btcopilot.auth.invite <email>` for a link; no auto-auth.
+flask run -p 8889 --no-reload` after `npm --prefix web run build`; then `flask companion
+migrate` if the database predates a schema change, and `python -m btcopilot.auth.invite
+<email>` for a single-use link. No auto-auth.
 
 ## Prototyping status (honest)
 

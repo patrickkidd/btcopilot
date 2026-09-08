@@ -594,3 +594,25 @@ was already being wired to the stream — resolved before merge, no stream code 
 Left open: derived clusters need persisting to resolve their chips; a session-cookie TTL
 mismatch with the training app; the placeholder "Assistant" speaker; migrations not wired
 to sandboxes; CI missing the web build step; a duplicate `views` field in the reply.
+
+### 2026-09-08 — exhaustive re-mine, fix pass, verification
+
+Every transcript in the window was re-mined for owner rulings, and the corpus was rebuilt
+around what came back. UI_SPEC grew to 444 value rows and its conflicts were closed by the
+precedence at its head rather than left open. When the build passes then marked 24 rows as
+needing the owner, he said he could not review that much and asked for it to be got right,
+so 21 were decided by that same precedence as resolutions 37 to 52. Five of those went
+against the build: ratified pixel numbers scale to the board they land on rather than being
+copied, and the 13px floor was read to carry a 4.5:1 contrast floor with it. Three questions
+are left because no rule reaches them, stated with their alternatives at the foot of UI_SPEC.
+
+An independent verifier measured the branch without reading any builder's report, recorded
+at VERIFY_2026-09-08.md. It found the thing the suite could not: a chapter tap moved every
+chat bubble 80px, because the picture had three heights and only the board was supposed to
+change the layout. The picture is now one height, the invariance test covers a chapter tap
+on four records, and the pin label is held to one line for the same reason. It also found
+six symbol stroke widths off, every desktop golden stale at the old frame width, and a
+golden tolerance loose enough that five wrong drawings passed unchanged.
+
+Three follow-ups from the beta walk closed: derived clusters are stored, the "Assistant"
+speaker is no longer written as a person, and a sign-in lasts the ruled 180 days.
