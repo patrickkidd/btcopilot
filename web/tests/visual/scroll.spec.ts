@@ -10,6 +10,12 @@ const settle = async (page: Page) => {
   await page.waitForTimeout(600);
 };
 
+/** Whether a scroll area has anything below its fold. */
+const overflows = (page: Page, selector: string) =>
+  page
+    .locator(selector)
+    .evaluate((node) => node.scrollHeight > node.clientHeight + 1);
+
 const dragUp = async (page: Page, selector: string, by: number) => {
   const box = (await page.locator(selector).boundingBox())!;
   const x = box.x + box.width / 2;
@@ -27,6 +33,12 @@ test.describe("scrolling the thread", () => {
 
   test("a mouse drag scrolls the chat", async ({ page }) => {
     await settle(page);
+    // A tall window can hold the whole thread, and a surface with nothing below
+    // the fold has nothing to scroll. Only the drag itself is under test here.
+    test.skip(
+      !(await overflows(page, "#chat")),
+      "the thread fits in this window",
+    );
     const at = () => page.locator("#chat").evaluate((node) => node.scrollTop);
     await page.locator("#chat").evaluate((node) => (node.scrollTop = 0));
     const before = await at();
@@ -42,8 +54,13 @@ test.describe("scrolling the thread", () => {
     await page.locator("#chat").hover();
     await page.mouse.wheel(0, 300);
     await page.waitForTimeout(300);
-    expect(await page.locator("#chat").evaluate((n) => n.scrollTop)).toBeGreaterThan(0);
+    // The outer page must not move whether or not the thread had room to
+    // scroll, which is the half of this that matters on every window.
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    if (await overflows(page, "#chat"))
+      expect(
+        await page.locator("#chat").evaluate((n) => n.scrollTop),
+      ).toBeGreaterThan(0);
   });
 
   test("a mouse drag scrolls the sessions sheet", async ({ page }) => {

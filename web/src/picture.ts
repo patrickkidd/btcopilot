@@ -50,7 +50,13 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const NODAL = new Set(["cutoff", "defined-self", "fusion"]);
 
 /** The resting level: the whole line, one box per chapter (converged mockup,
- * crowded-chapter/timeline-converged.html renderRest). */
+ * crowded-chapter/timeline-converged.html renderRest).
+ *
+ * Its drawing is 78 tall, but the region it draws into is not. The picture
+ * region is ONE height for both the resting wire and the open chapter, because
+ * a tap on the picture must never move a bubble; only entering the moves board,
+ * which is a screen of its own, may change the layout. So the resting drawing
+ * is top-aligned inside the chapter's box and the rest of that box is empty. */
 const REST_H = 78;
 const REST_WIRE = 46;
 /** A chapter of more than this many moments collapses to a ring and a count. */
@@ -413,7 +419,7 @@ export class Picture {
     const x1 = width - X_PAD;
     const dated = this.dated();
     this.laid = { zones: [], rows: [] };
-    this.pin(REST_H);
+    this.pin(PIC_H);
 
     // What has no date exists at every level: it is the one thing on the
     // picture the record is still asking about.
@@ -436,7 +442,7 @@ export class Picture {
         : x0 + ((years(iso) - first) / span) * (x1 - x0);
 
     let svg =
-      `<svg viewBox="0 0 ${width} ${REST_H}">` +
+      `<svg viewBox="0 0 ${width} ${REST_H}" height="${REST_H}" preserveAspectRatio="xMinYMin meet">` +
       `<line class="wire" x1="${x0}" y1="${REST_WIRE}" x2="${x1}" y2="${REST_WIRE}"/>`;
     let hits = "";
     chapters.forEach((chapter, i) => {
