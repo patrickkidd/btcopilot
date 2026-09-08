@@ -1800,3 +1800,16 @@ button { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Something did not go through. It is the app talking, so it is a system line;
+   it is amber because it is asking for something, and it holds still until the
+   reader deals with it. */
+.sys.warn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ask-text);
+  white-space: normal;
+  overflow: visible;
+}
+.sys.warn .chip.retry { flex: none; margin: 0; }

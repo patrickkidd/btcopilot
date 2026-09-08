@@ -14,22 +14,51 @@ import type {
 
 const ROOT = "/personal";
 
+/** How long the page waits for an answer before it tells the reader nothing
+ * came back. A server that never answers must not leave a caret blinking. */
+const PATIENCE_MS = 60_000;
+
 function csrf(): string {
   return (
     document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ""
   );
 }
 
+/** A request that did not come back with an answer. It keeps the status so the
+ * page can say which of the three things happened: nothing came back, the
+ * server refused it, or the server broke. */
+export class Failed extends Error {
+  constructor(
+    readonly status: number,
+    readonly detail: string,
+  ) {
+    super(`${status || "no answer"}: ${detail}`);
+    this.name = "Failed";
+  }
+
+  /** Nothing came back at all: the network, or a server that never answered. */
+  get silent(): boolean {
+    return this.status === 0;
+  }
+}
+
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const response = await fetch(ROOT + path, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrf(),
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  if (!response.ok) throw new Error(`${method} ${path}: ${await response.text()}`);
+  let response: Response;
+  try {
+    response = await fetch(ROOT + path, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrf(),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(PATIENCE_MS),
+    });
+  } catch (whatever) {
+    throw new Failed(0, `${method} ${path}: ${(whatever as Error).message}`);
+  }
+  if (!response.ok)
+    throw new Failed(response.status, `${method} ${path}: ${await response.text()}`);
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
 }
 

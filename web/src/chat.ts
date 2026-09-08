@@ -226,6 +226,26 @@ export class Chat {
     this.scroll();
   }
 
+  /** Something did not go through, said where it would have appeared and left
+   * there until it is put right. It never types, never fades and never goes on
+   * its own: the reader has to still find it when they look back. */
+  warn(line: string, again: () => void): HTMLElement {
+    const note = el(
+      "div",
+      "sys warn",
+      `<span>${esc(line)}</span>` +
+        `<button type="button" class="chip retry">[try again]</button>`,
+    );
+    note.querySelector("button")?.addEventListener("click", () => {
+      note.remove();
+      again();
+    });
+    this.list.append(note);
+    this.stuck = true;
+    this.scroll();
+    return note;
+  }
+
   /** Scroll one statement's bubble into the middle of the thread and mark it,
    * which is what a moment tracing back to where it was coded does. Never
    * `scrollIntoView`: the outer page must not move (UI_STANDARDS). */

@@ -440,8 +440,17 @@ function enterBoard(clusterId: string): void {
 async function explain(clusterId: string): Promise<void> {
   picture.explains(true);
   chat.busy(true);
-  const reply = await api.play(clusterId);
-  chat.busy(false);
+  let reply;
+  try {
+    reply = await api.play(clusterId);
+  } catch (whatever) {
+    chat.busy(false);
+    picture.explains(false);
+    chat.warn(whatFailed(whatever), () => void explain(clusterId));
+    return;
+  } finally {
+    chat.busy(false);
+  }
   picture.explains(false);
   await chat.live(reply.cluster_id).type(reply.statement, (chip) => {
     const ids = aimedEvents(chip, timeline.chapters);
@@ -451,17 +460,44 @@ async function explain(clusterId: string): Promise<void> {
   actions();
 }
 
+/** What went wrong, in the words the reader needs: nothing came back, the
+ * server refused it, or the server broke. The status itself is kept on the
+ * error and logged, so a timeout is never read as a rejection. */
+function whatFailed(whatever: unknown): string {
+  const failed = whatever instanceof api.Failed ? whatever : null;
+  if (!failed) throw whatever;
+  console.warn(failed.message);
+  if (failed.silent) return "No answer from the server";
+  if (failed.status >= 500) return "The server broke on that one";
+  return "The server would not take that";
+}
+
 /** One turn. The coach's edits are already in the record by the time the reply
  * arrives, so the page says what it did, re-reads, and draws what it asked to
- * show — then types the words out, and every chip lights as it lands. */
+ * show — then types the words out, and every chip lights as it lands.
+ *
+ * When it does not go through, the words the reader typed stay in the thread
+ * and a warning sits under them with the way to send them again. Nothing is
+ * left half-typed and nothing looks like it is still coming. */
 async function send(): Promise<void> {
   const statement = chat.draft();
   if (!statement) return;
   chat.add(Role.User, statement);
   chat.resetDraft();
+  await deliver(statement);
+}
+
+async function deliver(statement: string): Promise<void> {
   chat.busy(true);
 
-  const reply = await api.say(statement, session);
+  let reply;
+  try {
+    reply = await api.say(statement, session);
+  } catch (whatever) {
+    chat.busy(false);
+    chat.warn(whatFailed(whatever), () => void deliver(statement));
+    return;
+  }
   session = reply.discussion_id;
   chat.busy(false);
 
