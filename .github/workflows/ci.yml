@@ -55,7 +55,7 @@ jobs:
       FLASK_APP: btcopilot.app:create_app
       FLASK_CONFIG: development
       FLASK_SQLALCHEMY_DATABASE_URI: sqlite:////tmp/personal-visual.db
-      COMPANION_URL: http://127.0.0.1:8889
+      SANDBOX_URL: http://127.0.0.1:8889
       FIXTURE_CWD: ${{ github.workspace }}
       FIXTURE_CMD: python -m flask personal fixtures
     steps:
@@ -102,7 +102,7 @@ jobs:
         run: |
           nohup python -m flask run -p 8889 --no-reload > /tmp/flask-sandbox.log 2>&1 &
           for i in $(seq 1 30); do
-            curl -sf "$COMPANION_URL/" > /dev/null && exit 0
+            curl -sf "$SANDBOX_URL/" > /dev/null && exit 0
             sleep 1
           done
           echo "sandbox did not come up in time" >&2

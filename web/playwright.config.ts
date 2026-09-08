@@ -23,7 +23,7 @@ export default defineConfig({
     },
   },
   use: {
-    baseURL: process.env.COMPANION_URL ?? "http://127.0.0.1:8889",
+    baseURL: process.env.SANDBOX_URL ?? "http://127.0.0.1:8889",
     colorScheme: "light",
     deviceScaleFactor: 2,
   },

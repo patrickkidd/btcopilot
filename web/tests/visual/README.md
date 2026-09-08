@@ -22,7 +22,7 @@ Environment, if your sandbox is elsewhere:
 
 | variable | default |
 |---|---|
-| `COMPANION_URL` | `http://127.0.0.1:8889` |
+| `SANDBOX_URL` | `http://127.0.0.1:8889` |
 | `FIXTURE_CMD` | `uv run flask personal fixtures` |
 | `FIXTURE_CWD` | `~/theapp` |
 

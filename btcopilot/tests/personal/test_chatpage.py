@@ -43,7 +43,7 @@ def test_page_carries_what_only_the_server_knows(web, test_user):
     page = web.get("/personal/").get_data(as_text=True)
     assert 'name="csrf-token"' in page
     assert f'"diagram_id": {test_user.free_diagram_id}' in page
-    assert "window.COMPANION=" in page
+    assert "window.BOOTSTRAP=" in page
 
 
 def test_page_requires_login(flask_app):

@@ -40,7 +40,7 @@ def _page() -> str:
     }
     head = (
         f'<meta name="csrf-token" content="{escape(generate_csrf())}">'
-        f"<script>window.COMPANION={json.dumps(bootstrap)}</script>"
+        f"<script>window.BOOTSTRAP={json.dumps(bootstrap)}</script>"
     )
     return page.replace("</head>", head + "</head>", 1)
 

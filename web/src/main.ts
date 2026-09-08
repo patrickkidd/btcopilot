@@ -37,7 +37,7 @@ import {
 
 declare global {
   interface Window {
-    COMPANION: {
+    BOOTSTRAP: {
       diagram_id: number | null;
       session: { id: number } | null;
       statements: Statement[];
@@ -60,7 +60,7 @@ let timeline: Timeline = {
   coded_in: {},
 };
 let pic: PicState = REST;
-let session: number | null = window.COMPANION.session?.id ?? null;
+let session: number | null = window.BOOTSTRAP.session?.id ?? null;
 /** The sessions as the sheet last read them, for naming the one that coded a
  * moment. */
 let known: Session[] = [];
@@ -72,7 +72,7 @@ function tapped(
   item: ItemKind,
   id: string | null = null,
 ): void {
-  const diagram = window.COMPANION.diagram_id;
+  const diagram = window.BOOTSTRAP.diagram_id;
   if (diagram !== null) void api.record(diagram, kind, item, id);
 }
 
@@ -458,14 +458,14 @@ $("menu-search").addEventListener("input", (e) =>
   menu.search((e.target as HTMLInputElement).value),
 );
 
-for (const statement of window.COMPANION.statements)
+for (const statement of window.BOOTSTRAP.statements)
   chat.add(statement.role, statement.text, ChipTone.Data, statement.id);
 
 void sessions.load(session);
 void settings.load();
 
 void load().then(async () => {
-  const said = window.COMPANION.statements;
+  const said = window.BOOTSTRAP.statements;
   if (!said.length) {
     await wait(300);
     await chat.live().type(

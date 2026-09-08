@@ -17,13 +17,13 @@ import { chromium } from "@playwright/test";
  *
  * The repo and the sandbox database are named by the environment, so this never
  * guesses at anyone's real record:
- *   COMPANION_URL   the sandbox (default http://127.0.0.1:8889)
+ *   SANDBOX_URL   the sandbox (default http://127.0.0.1:8889)
  *   FIXTURE_CMD     how to run the fixture installer, default
  *                   "uv run flask personal fixtures"
  *   FIXTURE_CWD     where to run it (default ~/theapp)
  *
  * The installer inherits this environment, so FLASK_SQLALCHEMY_DATABASE_URI must
- * name the same database COMPANION_URL is serving. Point it anywhere else and the
+ * name the same database SANDBOX_URL is serving. Point it anywhere else and the
  * installer writes tokens the sandbox has never heard of: every invite answers 400
  * and it reads as an auth failure. Run the installer without swallowing stderr when
  * that happens — it crashes on a schema it cannot read and prints nothing at all.
@@ -113,7 +113,7 @@ export const EXACT = { maxDiffPixels: 8, maxDiffPixelRatio: 1 };
 
 export default async function setup() {
   await takeLock();
-  const base = process.env.COMPANION_URL ?? "http://127.0.0.1:8889";
+  const base = process.env.SANDBOX_URL ?? "http://127.0.0.1:8889";
   const command = (
     process.env.FIXTURE_CMD ?? "uv run flask personal fixtures"
   ).split(" ");
