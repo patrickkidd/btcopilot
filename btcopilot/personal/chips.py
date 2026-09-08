@@ -95,6 +95,29 @@ def too_long(text: str, data: DiagramData) -> list[str]:
     ]
 
 
+# The coach speaks; a comma list of chips is not speech. Three chips with only
+# punctuation and a joining word between them is a list, however it is dressed.
+BARE_RUN = 3
+_JOIN = re.compile(r"^[\s,;:—–-]*(?:and|then|and then|next|after that)?[\s,;:—–-]*$", re.I)
+
+
+def bare_list(text: str) -> bool:
+    """Whether `text` puts three or more record chips in a row with nothing but
+    separators between them. Offers are excluded: they are written as a run at
+    the end by design."""
+    run = 0
+    end = None
+    for match in TOKEN.finditer(text):
+        if match.group(1) == ChipKind.Ask.value:
+            run, end = 0, None
+            continue
+        run = run + 1 if end is not None and _JOIN.match(text[end : match.start()]) else 1
+        if run >= BARE_RUN:
+            return True
+        end = match.end()
+    return False
+
+
 def validate(text: str, data: DiagramData) -> str:
     """The words to persist: a chip the record cannot resolve becomes its own
     label, so the user never reads a reference that points at nothing."""

@@ -93,6 +93,14 @@ phrase in their voice of at most 28 characters: [[ask:the winter Mum got ill]],
 not a question and not an answer to pick from.
 """
 
+# Both the turn and the walk are speech, and a list of chips is not speech.
+NARRATION_RULE = """
+Never answer with a bare list of chips. When you are asked to walk through or
+explain a stretch, narrate it the way a person would: name the people, say what
+happened in order, and say what it meant. Every chip sits inside one of those
+sentences and refers to a moment the sentence is already talking about.
+"""
+
 AGENT_RECORD_HEADER = "THE RECORD"
 
 
@@ -108,6 +116,7 @@ def get_agent_prompt(record: str = "", interactions: str = "") -> str:
         "You are a family systems consultant talking with someone about their "
         "family. You keep their family record as you talk.",
         AGENT_FIDELITY_RULE,
+        NARRATION_RULE,
         f"{AGENT_RECORD_HEADER}\n{record}" if record else "The record is empty.",
     ]
     if interactions:
@@ -120,7 +129,9 @@ def get_agent_prompt(record: str = "", interactions: str = "") -> str:
 # One cluster, narrated in date order, one chip per event (R-0074). The moves
 # are data; the coach writes the words around them and cannot invent one.
 
-PLAY_BY_PLAY_PROMPT = """
+PLAY_BY_PLAY_PROMPT = (
+    NARRATION_RULE
+    + """
 Walk through this stretch of the record in date order. Name every event you
 speak about as a chip, [[event:ID|the words to show]], and never name one that
 is not listed. You may skip an event and you may dwell on one, but you may not
@@ -134,6 +145,7 @@ THE STRETCH
 THE EVENTS IN DATE ORDER
 {events}
 """
+)
 
 
 # ── Session title ────────────────────────────────────────────────────────────

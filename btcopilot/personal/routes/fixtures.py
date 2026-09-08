@@ -218,11 +218,10 @@ MOVES_CHAT = [
     ("user", "walk me through it"),
     (
         "coach",
-        "Here is the stretch, move by move: "
-        + ", then ".join(
-            f"[[event:{20 + i}|{words}]]" for i, (words, _) in enumerate(MOVES)
-        )
-        + ". What do you remember about the winter it started? "
+        "The winter of 1993 is where it turned: after a year of "
+        "[[event:22|keeping her distance from Ben]], Ada "
+        "[[event:23|stopped speaking to him altogether]]. "
+        "What do you remember about the winter it started? "
         + " ".join(
             f"[[ask:{offer}]]" for offer in ("winter 1993", "Ben's mother", "Ada, age 9")
         ),
@@ -250,15 +249,38 @@ def play() -> DiagramData:
     return data
 
 
+# The walk the coach speaks: every move in order, each one named inside a
+# sentence that says who did what and what it meant. Never a bare list of chips.
+PLAY_WALK = " ".join(
+    (
+        "In 1990 Ada [[event:20|moved toward Ben]], and a year later she"
+        " [[event:21|pulled away from him]] again.",
+        "Through 1992 she [[event:22|kept her distance]], and by 1993 that had"
+        " hardened into [[event:23|not speaking to him at all]].",
+        "When they did speak in 1994 it was [[event:24|open conflict]], and the"
+        " year after that neither of them"
+        " [[event:25|could tell where one ended and the other began]].",
+        "In 1996 Ada [[event:26|said plainly what she thought]] for the first"
+        " time.",
+        "Cal was drawn in next: in 1997 Ada was"
+        " [[event:27|close in with Ben while Cal was left out]], and in 1998"
+        " she was [[event:28|the one left out]].",
+        "In 1999 she [[event:29|took over what Ben should have carried]], and in"
+        " 2000 Ben [[event:30|let her carry it]].",
+        "By 2001 the worry had settled on Cal, and Ada"
+        " [[event:31|watched him for signs of it]].",
+        "In 2002 the house [[event:32|grew more anxious]], in 2003 Cal's"
+        " [[event:33|trouble got worse]], and in 2004 it [[event:34|eased]].",
+        "In 2005 Cal [[event:35|was managing less well]], and in 2006 he"
+        " [[event:36|was steadier than he had been]].",
+    )
+)
+
 PLAY_CHAT = [
     ("user", "walk me through it"),
     (
         "coach",
-        "Here is the stretch, move by move: "
-        + ", then ".join(
-            f"[[event:{20 + i}|{words}]]" for i, (words, _) in enumerate(MOVES)
-        )
-        + ".",
+        PLAY_WALK,
         {"kind": StatementKind.Play, "cluster_id": PLAY_CLUSTER},
     ),
 ]

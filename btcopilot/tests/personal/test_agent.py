@@ -9,6 +9,7 @@ from btcopilot.personal.coachturn import (
     FINISH,
     MAX_STEPS,
     CoachTurn,
+    BareList,
     EmptyReply,
     EventKind,
     LabelTooLong,
@@ -423,6 +424,33 @@ def test_one_label_over_the_limit_is_asked_again_never_trimmed(discussion, famil
     assert model.offered[-1] == []
     assert long_label in model.histories[-1][-1]["content"]
     assert discussion.statements[-1].text == reply["statement"]
+
+
+BARE = (
+    "Here is the stretch, move by move: [[event:10|moved out]], then "
+    "[[person:1|Wren]], then [[cluster:c1|the year he left]]."
+)
+
+TOLD = (
+    "Bo moved out in the summer of 1994, and [[event:10|that move]] is what "
+    "[[person:1|Wren]] still dates everything from. She calls it "
+    "[[cluster:c1|the year he left]]."
+)
+
+
+def test_a_reply_that_is_only_chips_is_asked_again_for_sentences(discussion, family):
+    """A comma list of chips is not the coach speaking, so it is sent back once
+    and the coach's own sentences are what the person reads."""
+    model = Model(said(BARE), said(TOLD))
+    reply = run(discussion, "Walk me through it.", model)
+
+    assert reply["statement"] == TOLD
+    assert BARE in model.histories[-1][-2]["content"]
+
+
+def test_a_reply_that_stays_a_list_of_chips_fails(discussion, family):
+    with pytest.raises(BareList):
+        run(discussion, "Walk me through it.", Model(said(BARE), said(BARE)))
 
 
 def test_a_label_that_stays_too_long_fails_rather_than_being_cut(discussion, family):

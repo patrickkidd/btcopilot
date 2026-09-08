@@ -14,7 +14,7 @@ import logging
 from btcopilot.extensions import db
 from btcopilot.personal import chips, recordtext
 from btcopilot.personal.coachmodel import CoachModel
-from btcopilot.personal.coachturn import shorten_labels
+from btcopilot.personal.coachturn import narrate, shorten_labels
 from btcopilot.personal.models import Discussion, Statement, StatementKind
 from btcopilot.personal.prompts import PLAY_BY_PLAY_PROMPT, get_agent_prompt
 from btcopilot.schema import DiagramData
@@ -79,6 +79,7 @@ class PlayTurn:
         spoken = shorten_labels(
             self.model, system, messages, turn.text.strip(), self.data
         )
+        spoken = narrate(self.model, system, messages, spoken)
         walk = chips.validate(spoken, self.data)
         return {
             "kind": StatementKind.Play.value,

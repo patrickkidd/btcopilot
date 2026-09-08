@@ -43,6 +43,14 @@ SHORTEN = (
 )
 
 
+NARRATE = (
+    "That reply is a list of chips, not something you said. Write it again as "
+    "sentences: name the people, say what happened in order and what it meant, "
+    "and put each chip inside a sentence that is already talking about that "
+    "moment. Keep the same ids and the same events."
+)
+
+
 class EmptyReply(Exception):
     """The coach finished a turn without saying anything. A statement with no
     words is a bare bubble on the page, so the turn fails instead."""
@@ -54,35 +62,57 @@ class LabelTooLong(Exception):
     truncation left to cover it."""
 
 
-def shorten_labels(model, system: str, messages: list[dict], spoken: str, data) -> str:
-    """Ask once for shorter chip labels. The reply is the coach's own words, so
-    nothing here rewrites them — it asks the coach to."""
-    over = chips.too_long(spoken, data)
-    if not over:
-        return spoken
-    _log.warning(f"Chip labels too long, asking again: {over}")
+class BareList(Exception):
+    """The coach answered with a run of chips and would not narrate it when
+    asked. A list of chips is not the coach speaking, and there is nothing here
+    that can turn one into sentences."""
+
+
+def _again(model, system: str, messages: list[dict], spoken: str, ask: str) -> str:
+    """Ask once for the reply again. The words are the coach's own, so nothing
+    here rewrites them — it asks the coach to."""
     asked = messages + [
         {"role": "assistant", "content": spoken},
-        {
-            "role": "user",
-            "content": SHORTEN.format(
-                labels="; ".join(repr(label) for label in over), limit=chips.CHIP_MAX
-            ),
-        },
+        {"role": "user", "content": ask},
     ]
     words = model.turn(system, asked, [])
     while True:
         try:
             next(words)
         except StopIteration as stop:
-            shortened = stop.value.text
-            break
+            return stop.value.text
 
+
+def shorten_labels(model, system: str, messages: list[dict], spoken: str, data) -> str:
+    """Ask once for shorter chip labels."""
+    over = chips.too_long(spoken, data)
+    if not over:
+        return spoken
+    _log.warning(f"Chip labels too long, asking again: {over}")
+    shortened = _again(
+        model,
+        system,
+        messages,
+        spoken,
+        SHORTEN.format(
+            labels="; ".join(repr(label) for label in over), limit=chips.CHIP_MAX
+        ),
+    )
     still = chips.too_long(shortened, data)
     if still:
         raise LabelTooLong(f"Chip labels still too long after asking again: {still}")
     return shortened
 
+
+def narrate(model, system: str, messages: list[dict], spoken: str) -> str:
+    """Ask once for sentences when the reply is a bare run of chips."""
+    if not chips.bare_list(spoken):
+        return spoken
+    _log.warning("Reply is a bare list of chips, asking again")
+    told = _again(model, system, messages, spoken, NARRATE)
+    if chips.bare_list(told):
+        raise BareList("Reply is still a bare list of chips after asking again")
+    return told
 
 
 class EventKind(enum.StrEnum):
@@ -185,6 +215,7 @@ class CoachTurn:
         if not spoken.strip():
             raise EmptyReply(f"Turn {self.turn_id} produced no words for the user")
         spoken = shorten_labels(self.model, system, messages, spoken, self.data)
+        spoken = narrate(self.model, system, messages, spoken)
 
         change = self._regroup()
         if change:
