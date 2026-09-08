@@ -32,6 +32,14 @@ export enum InteractionKind {
   Play = "play",
 }
 
+/** How sure the record is of a date. Unknown means the date matches anything,
+ * so the event has no place on the line and belongs on the undated shelf. */
+export enum DateCertainty {
+  Unknown = "unknown",
+  Approximate = "approximate",
+  Certain = "certain",
+}
+
 export enum Role {
   Coach = "coach",
   User = "user",
@@ -59,6 +67,8 @@ export interface Person {
 export interface TimelineEvent {
   id: number;
   label: string;
+  /** The event saying itself in a plain sentence, which is what a tap shows. */
+  sentence: string;
   person_name: string;
   person: number | null;
   dateTime: string | null;
@@ -90,10 +100,21 @@ export interface Chapter {
   count: number;
 }
 
+/** A place the record cannot tell which of two things came first. One amber
+ * treatment, used only for asking (DRAWABILITY). */
+export interface Question {
+  lane: string;
+  date: string;
+  event_id: number;
+  other_event_id: number;
+  sentence: string;
+}
+
 export interface Timeline {
   people: Person[];
   events: TimelineEvent[];
   chapters: Chapter[];
+  questions: Question[];
   axis: { min: string; max: string } | null;
   shelf: { event_id: number; label: string; sentence: string }[];
 }

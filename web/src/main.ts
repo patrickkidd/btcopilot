@@ -1,11 +1,21 @@
 import "./theme.css";
 import * as api from "./api";
 import { Chat, wait } from "./chat";
-import { Picture } from "./picture";
+import { Picture, Target, type Tap } from "./picture";
 import { Menu } from "./menu";
-import { aimedEvents, itemKind } from "./chips";
+import { aimedEvents, chipText, itemKind } from "./chips";
 import { StepKind, steps } from "./turn";
-import { PicEvent, REST, reduce, type Outcome, type PicState } from "./caption";
+import {
+  CHIP_KIND,
+  PicEvent,
+  REST,
+  SelKind,
+  playable,
+  reduce,
+  type Outcome,
+  type PicState,
+  type Sel,
+} from "./caption";
 import { $, esc } from "./dom";
 import {
   ChipKind,
@@ -37,6 +47,7 @@ let timeline: Timeline = {
   people: [],
   events: [],
   chapters: [],
+  questions: [],
   axis: null,
   shelf: [],
 };
@@ -54,8 +65,17 @@ function tapped(
   if (diagram !== null) void api.record(diagram, kind, item, id);
 }
 
+const SEL_OF: Record<Target, SelKind> = {
+  [Target.Cluster]: SelKind.Cluster,
+  [Target.Event]: SelKind.Event,
+  [Target.Count]: SelKind.Count,
+  [Target.Question]: SelKind.Question,
+  [Target.Shelf]: SelKind.Shelf,
+};
+
 const picture = new Picture($("view"), {
-  onCluster: (id) => apply(reduce(pic, PicEvent.TapCluster, id)),
+  onTap: (tap: Tap) =>
+    apply(reduce(pic, PicEvent.Tap, { kind: SEL_OF[tap.target], id: tap.id })),
 });
 
 /** A chip the coach wrote without words of its own says what the record calls
@@ -93,7 +113,11 @@ function aim(chip: Chip): void {
  * what goes in the composer, what gets recorded, what plays. */
 function apply(outcome: Outcome): void {
   pic = outcome.state;
-  picture.setOpen(pic.open);
+  const sel = pic.sel;
+  picture.select(
+    sel && sel.kind === SelKind.Cluster ? sel.id : chapterOfSel(sel),
+    sel && sel.kind !== SelKind.Cluster ? eventIds(sel) : [],
+  );
   caption();
   if (outcome.record)
     tapped(
@@ -101,47 +125,128 @@ function apply(outcome: Outcome): void {
       outcome.record.item_kind,
       outcome.record.item_id,
     );
-  if (outcome.insert) {
-    // The tap that speaks closes the caption, so the cluster it spoke about is
-    // the one it recorded, not the one still open.
-    const target = outcome.record?.item_id ?? "";
+  if (outcome.insert)
     chat.insert({
-      kind: ChipKind.Cluster,
-      target,
-      label: chapterTitle(target) ?? "this stretch",
+      kind: CHIP_KIND[outcome.insert.kind],
+      target: outcome.insert.id,
+      label: selTitle(outcome.insert),
       tone: ChipTone.Data,
       bare: false,
     });
-  }
   if (outcome.play) void playThrough(outcome.play);
 }
 
-function chapterTitle(id: string | null): string | null {
-  const chapter = timeline.chapters.find((c) => c.id === id);
-  return chapter ? chapter.title : null;
+const eventIds = (sel: Sel | null): number[] =>
+  sel ? sel.id.split(",").map(Number).filter(Number.isFinite) : [];
+
+/** The stretch a mark sits inside, so tapping a moment also lights the stretch
+ * it belongs to rather than leaving it orphaned on the line. */
+function chapterOfSel(sel: Sel | null): string | null {
+  const [first] = eventIds(sel);
+  if (first === undefined) return null;
+  return timeline.chapters.find((c) => c.event_ids.includes(first))?.id ?? null;
 }
 
-/** First tap: the title, one amber chip, and Play. Nothing has entered the chat
- * yet — the chip is the second tap that speaks. */
+/** The words a selected mark says about itself. */
+function selTitle(sel: Sel): string {
+  switch (sel.kind) {
+    case SelKind.Cluster: {
+      const chapter = timeline.chapters.find((c) => c.id === sel.id);
+      if (!chapter) return "this stretch";
+      // A stretch no cluster has named has only its years for a title, and the
+      // years are already the second line — so it says what it holds instead.
+      return chapter.title === chapter.label
+        ? `${chapter.count} moment${chapter.count === 1 ? "" : "s"}`
+        : chapter.title;
+    }
+    case SelKind.Event:
+      return (
+        timeline.events.find((e) => String(e.id) === sel.id)?.sentence ??
+        "this moment"
+      );
+    case SelKind.Count: {
+      const ids = eventIds(sel);
+      const dates = timeline.events
+        .filter((e) => ids.includes(e.id) && e.dateTime)
+        .map((e) => (e.dateTime as string).slice(0, 4));
+      const when =
+        dates.length && dates[0] !== dates[dates.length - 1]
+          ? `${dates[0]}–${dates[dates.length - 1]}`
+          : (dates[0] ?? "");
+      return `${ids.length} moments${when ? `, ${when}` : ""}`;
+    }
+    case SelKind.Question: {
+      const [id] = eventIds(sel);
+      return (
+        timeline.questions.find((q) => q.event_id === id)?.sentence ??
+        "Which came first?"
+      );
+    }
+    case SelKind.Shelf: {
+      const n = timeline.shelf.length;
+      return n
+        ? `${n} thing${n === 1 ? "" : "s"} with no date yet`
+        : "Nothing has a date yet";
+    }
+  }
+}
+
+/** The second line under the title: what the mark holds, in plain words. */
+function selDetail(sel: Sel): string {
+  if (sel.kind === SelKind.Cluster) {
+    const chapter = timeline.chapters.find((c) => c.id === sel.id);
+    if (!chapter) return "";
+    const when =
+      chapter.start.slice(0, 4) === chapter.end.slice(0, 4)
+        ? chapter.start.slice(0, 4)
+        : `${chapter.start.slice(0, 4)}–${chapter.end.slice(0, 4)}`;
+    return chapter.title === chapter.label
+      ? when
+      : `${chapter.count} moment${chapter.count === 1 ? "" : "s"}, ${when}`;
+  }
+  if (sel.kind === SelKind.Shelf)
+    return timeline.shelf.map((item) => item.label).join(" · ");
+  return "";
+}
+
+/** First tap: the words, one amber chip, and Play where there is something to
+ * play. Nothing has entered the chat yet — the chip is the second tap that
+ * speaks (R-0073). */
 function caption(): void {
   const host = $("caption");
-  const chapter = timeline.chapters.find((c) => c.id === pic.open);
-  if (!chapter) {
+  const sel = pic.sel;
+  if (!sel) {
     host.innerHTML = "";
     host.hidden = true;
     return;
   }
+  const detail = selDetail(sel);
+  const ask = sel.kind === SelKind.Shelf ? "Ask when" : "Ask about this";
+  // Play is about a stretch, and a moment inside one can be played from where
+  // it sits — otherwise a dense stretch, whose band its own dots cover, could
+  // never be played at all.
+  const stretch = playable(sel)
+    ? sel
+    : ((id) => (id ? { kind: SelKind.Cluster, id } : null))(chapterOfSel(sel));
   host.hidden = false;
   host.innerHTML =
-    `<span class="cap-t">${esc(chapter.title)}</span>` +
-    `<button type="button" class="chip ask" id="cap-chip">Ask about this</button>` +
-    `<button type="button" class="btn play" id="cap-play">Play</button>`;
+    `<div class="cap-words">` +
+    `<span class="cap-t">${esc(chipText(selTitle(sel), 90).text)}</span>` +
+    (detail ? `<span class="cap-d">${esc(chipText(detail, 70).text)}</span>` : "") +
+    `</div>` +
+    `<div class="cap-acts">` +
+    `<button type="button" class="chip ask" id="cap-chip">${ask}</button>` +
+    (stretch
+      ? `<button type="button" class="btn play" id="cap-play">Play</button>`
+      : "") +
+    `</div>`;
   $("cap-chip").addEventListener("click", () =>
     apply(reduce(pic, PicEvent.TapChip)),
   );
-  $("cap-play").addEventListener("click", () =>
-    apply(reduce(pic, PicEvent.TapPlay)),
-  );
+  if (stretch)
+    $("cap-play").addEventListener("click", () =>
+      apply(reduce(pic, PicEvent.TapPlay, stretch as Sel)),
+    );
 }
 
 async function playThrough(clusterId: string): Promise<void> {
