@@ -274,10 +274,14 @@ function actions(): void {
       : undefined;
   const ask = sel.kind === SelKind.Shelf ? "Ask when" : "Ask about this";
   const trace = sel.kind === SelKind.Event ? codedIn(Number(sel.id)) : null;
+  // The board entry button says how many moves it will draw, and is only
+  // offered when the stretch has at least one the board can draw.
+  const moves = stretch ? picture.countMoves(stretch.event_ids) : 0;
   host.innerHTML =
     `<button type="button" class="chip ask" id="cap-chip">[${esc(ask)}]</button>` +
-    (stretch
-      ? `<button type="button" class="btn play" id="cap-play">Play</button>`
+    (moves
+      ? `<button type="button" class="btn primary" id="cap-play">` +
+        `&#9654; watch the ${moves} move${moves === 1 ? "" : "s"}</button>`
       : "") +
     (trace
       ? `<button type="button" class="chip data trace" id="cap-trace">${esc(trace.label)}</button>`
@@ -287,7 +291,7 @@ function actions(): void {
   );
   if (trace)
     $("cap-trace").addEventListener("click", () => void traceTo(trace.where));
-  if (stretch)
+  if (moves && stretch)
     $("cap-play").addEventListener("click", () =>
       apply(
         reduce(pic, PicEvent.TapPlay, { kind: SelKind.Cluster, id: stretch.id }),
@@ -295,15 +299,19 @@ function actions(): void {
     );
 }
 
+/** The board is its own level, and entering it is the one deliberate act that
+ * changes the picture's height. It goes up before the coach's words are
+ * written, and stays up until the reader taps back off it. */
 async function playThrough(clusterId: string): Promise<void> {
+  const stretch = timeline.chapters.find((c) => c.id === clusterId);
   chat.busy(true);
   const reply = await api.play(clusterId);
   chat.busy(false);
+  if (stretch) picture.openBoard(stretch.event_ids);
   await chat.live().type(reply.statement, (chip) => {
     const ids = aimedEvents(chip, timeline.chapters);
     if (ids.length) picture.step(ids[0]);
   });
-  picture.clear();
   pic = REST;
   actions();
 }

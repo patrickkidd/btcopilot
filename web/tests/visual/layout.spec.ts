@@ -99,6 +99,28 @@ test.describe("nothing moves when a chip is tapped", () => {
   });
 });
 
+test.describe("the board is the only thing that resizes the picture", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  test("the entry button says how many moves, and moves nothing until it is tapped", async ({
+    page,
+  }) => {
+    await settle(page);
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    const enter = page.locator("#cap-play");
+    await expect(enter).toContainText(/watch the \d+ moves?/);
+
+    // the button appearing must not have moved anything
+    const before = await frame(page);
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    const after = await frame(page);
+    expect(after.picture).toEqual(before.picture);
+    expect(after.caption).toEqual(before.caption);
+    expect(after.bubbles).toEqual(before.bubbles);
+  });
+});
+
 test.describe("a moment traces back to the words that coded it", () => {
   test.use({ storageState: stateFor("moves") });
 

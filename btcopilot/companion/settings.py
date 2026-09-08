@@ -8,6 +8,7 @@ from flask import jsonify, request
 
 from btcopilot import auth
 from btcopilot.companion.blueprint import bp
+from btcopilot.companion.diagrams import diagrams_payload
 from btcopilot.extensions import db
 from btcopilot.pro.models.preferences import PrefKey
 
@@ -66,15 +67,7 @@ def account():
             "email": user.username,
             "sign_in_method": SignInMethod.Password,
             "plan": PLAN_PLACEHOLDER,
-            "diagrams": [
-                {
-                    "id": d.id,
-                    "name": d.name,
-                    "last_activity": d.saved_at().isoformat() if d.saved_at() else None,
-                    "free": d.id == user.free_diagram_id,
-                }
-                for d in user.diagrams
-            ],
+            "diagrams": diagrams_payload(user),
             "licenses": [
                 {
                     "id": l.id,

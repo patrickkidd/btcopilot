@@ -66,17 +66,23 @@ button { font-family: inherit; }
 [hidden] { display: none !important; }
 :focus-visible { outline: 2px solid var(--data); outline-offset: 1px; }
 
+/* At phone width the frame is 400 centred, so every mockup value transfers
+   without rescaling. Above that it widens to the 840 the desktop drawings are
+   drawn at, and is fluid between the two. */
 .app {
   position: relative;
   display: flex;
   flex-direction: column;
   height: 100dvh;
-  max-width: 460px;
+  max-width: 400px;
   margin: 0 auto;
   background: var(--panel);
   overflow: hidden;
 }
-@media (min-width: 461px) {
+@media (min-width: 900px) {
+  .app { max-width: 840px; }
+}
+@media (min-width: 401px) {
   .app { border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
 }
 .screen {
@@ -1348,6 +1354,17 @@ button { font-family: inherit; }
   text-overflow: ellipsis;
 }
 .sn-tick { flex: none; color: var(--data); font: 500 17px/1 var(--mono); }
+/* the diagram in use, marked the same way the current session is */
+.sn-row.cur, .fs-fhead.cur { position: relative; }
+.sn-row.cur::before, .fs-fhead.cur::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--data);
+}
 .sn-hint {
   padding: 8px 16px 0;
   font: 500 13px/1.4 var(--mono);

@@ -12,6 +12,7 @@ from btcopilot.companion.blueprint import (
     owned_session,
     sessions,
 )
+from btcopilot.companion.diagrams import readable
 from btcopilot.extensions import db
 from btcopilot.personal.coachturn import CoachTurn
 from btcopilot.personal.models import Discussion
@@ -70,7 +71,14 @@ def chat():
 
 @bp.route("/sessions")
 def session_index():
-    return jsonify([session_payload(d) for d in sessions(auth.current_user())])
+    """`?diagram_id=` lists another readable diagram's sessions, which is what
+    the sessions sheet needs to show a professional's families in one scroll.
+    A diagram the user cannot read is a 404, never a 403."""
+    user = auth.current_user()
+    asked = request.args.get("diagram_id", type=int)
+    if asked is not None and asked not in {d.id for d in readable(user)}:
+        abort(404)
+    return jsonify([session_payload(d) for d in sessions(user, asked)])
 
 
 @bp.route("/sessions", methods=["POST"])

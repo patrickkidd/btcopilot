@@ -202,8 +202,12 @@ export interface Session {
 export interface Diagram {
   id: number;
   name: string;
+  /** How many of this user's sessions sit on it. */
+  session_count: number;
   last_activity: string | null;
+  /** The one the record is being built on. */
   free: boolean;
+  owned: boolean;
 }
 
 export interface Account {

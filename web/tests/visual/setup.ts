@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { closeSync, mkdirSync, openSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
@@ -14,7 +14,44 @@ import { chromium } from "@playwright/test";
  *   FIXTURE_CMD     how to run the fixture installer, default
  *                   "uv run flask companion fixtures"
  *   FIXTURE_CWD     where to run it (default ~/theapp)
+ *
+ * Installing the fixtures deletes and recreates each fixture user's diagram and
+ * discussions, which signs out any run already using them. Several people share
+ * one checkout and one sandbox database here, so a whole run holds an exclusive
+ * lock: a second run waits rather than pulling the record out from under the
+ * first. Without it a suite fails with no bubbles on the page at all.
  */
+
+const LOCK = join(dirname(fileURLToPath(import.meta.url)), ".lock");
+const LOCK_WAIT_MS = 10 * 60 * 1000;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function releaseLock(): void {
+  rmSync(LOCK, { force: true });
+}
+
+async function takeLock(): Promise<void> {
+  const until = Date.now() + LOCK_WAIT_MS;
+  for (;;) {
+    try {
+      closeSync(openSync(LOCK, "wx"));
+      process.on("exit", releaseLock);
+      for (const signal of ["SIGINT", "SIGTERM"] as const)
+        process.once(signal, () => {
+          releaseLock();
+          process.exit(1);
+        });
+      return;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
+      if (Date.now() > until)
+        throw new Error(
+          `another visual run has held ${LOCK} for ten minutes; delete it if that run is gone`,
+        );
+      await sleep(2000);
+    }
+  }
+}
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const AUTH = join(HERE, ".auth");
@@ -31,6 +68,7 @@ export type Key = (typeof KEYS)[number];
 export const stateFor = (key: Key) => join(AUTH, `${key}.json`);
 
 export default async function setup() {
+  await takeLock();
   const base = process.env.COMPANION_URL ?? "http://127.0.0.1:8889";
   const command = (
     process.env.FIXTURE_CMD ?? "uv run flask companion fixtures"
@@ -60,6 +98,17 @@ export default async function setup() {
     await page.goto(`${base}/invite/${tokens.get(key)}`, {
       waitUntil: "domcontentloaded",
     });
+    // A sign-in link works once. If it has already been opened, or if the
+    // installer wrote to a different database than the sandbox reads, the
+    // invite answers with the sign-in page and the state below would be
+    // anonymous — every golden then shows a logged-out shell. Fail here
+    // instead, where the cause is still visible.
+    const me = await page.request.get(`${base}/me`);
+    if (!me.ok() || !(await me.json()).user)
+      throw new Error(
+        `the sign-in link for "${key}" did not open a session (GET /me returned ${me.status()}). ` +
+          `The link is single-use, and the installer and ${base} must share one database.`,
+      );
     const state = await context.storageState();
     writeFileSync(stateFor(key), JSON.stringify(state));
     await context.close();

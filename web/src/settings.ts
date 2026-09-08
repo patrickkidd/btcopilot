@@ -8,6 +8,7 @@ import {
   Proactive,
   Theme,
   type Account,
+  type Diagram,
   type Preferences,
 } from "./types";
 
@@ -45,6 +46,16 @@ export interface SettingsHandlers {
   /** Every read or write of the preferences, so a value with a shortcut
    * elsewhere on screen shows the same thing. */
   onPrefs(prefs: Preferences): void;
+}
+
+/** What a diagram row says under its name: how many sessions sit on it, when
+ * that last happened, and whether it is the one in use. */
+function diagramSub(diagram: Diagram, now: Date): string {
+  const count = `${diagram.session_count} session${diagram.session_count === 1 ? "" : "s"}`;
+  const when = diagram.last_activity
+    ? shortDate(new Date(diagram.last_activity), now)
+    : "nothing on it yet";
+  return `${count} · ${when}${diagram.free ? " · in use" : ""}`;
 }
 
 export class Settings {
@@ -409,22 +420,12 @@ export class Settings {
     const box = el("div", "sn-grp");
     const now = new Date();
     for (const diagram of account.diagrams) {
-      const row = el("div", "sn-row");
+      const row = el("div", `sn-row${diagram.free ? " cur" : ""}`);
       row.dataset.name = diagram.name.toLowerCase();
       const main = el("div", "sn-m");
       main.append(
         el("div", "sn-t", esc(diagram.name)),
-        el(
-          "div",
-          "sn-s",
-          esc(
-            diagram.last_activity
-              ? `${shortDate(new Date(diagram.last_activity), now)}${diagram.free ? " · in use" : ""}`
-              : diagram.free
-                ? "in use"
-                : "nothing on it yet",
-          ),
-        ),
+        el("div", "sn-s", esc(diagramSub(diagram, now))),
       );
       row.append(main, el("span", "sn-tick", diagram.free ? "✓" : ""));
       box.append(row);

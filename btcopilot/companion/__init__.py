@@ -1,5 +1,6 @@
 from btcopilot.companion import (
     blueprint,
+    diagrams,
     events,
     fixtures,
     interactions,

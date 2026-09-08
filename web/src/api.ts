@@ -1,5 +1,6 @@
 import type {
   Account,
+  Diagram,
   InteractionKind,
   ItemKind,
   PlayReply,
@@ -72,7 +73,11 @@ export const deleteEvent = (id: number) => call<void>("DELETE", `/events/${id}`)
 
 /** Sessions, newest activity first. The server has no current-session pointer:
  * posting into a session is what makes it the one you come back to. */
-export const sessionIndex = () => call<Session[]>("GET", "/sessions");
+export const sessionIndex = (diagramId?: number) =>
+  call<Session[]>(
+    "GET",
+    diagramId === undefined ? "/sessions" : `/sessions?diagram_id=${diagramId}`,
+  );
 
 export const newSession = () => call<Session>("POST", "/sessions");
 
@@ -85,3 +90,7 @@ export const setPreferences = (body: Partial<Preferences>) =>
   call<Preferences>("PATCH", "/preferences", body);
 
 export const account = () => call<Account>("GET", "/account");
+
+/** Every diagram the user can open — owned and granted — most recently active
+ * first, each with how many sessions sit on it. */
+export const diagrams = () => call<Diagram[]>("GET", "/diagrams");

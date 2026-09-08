@@ -39,12 +39,19 @@ const summaryOf = (session: Session) =>
   session.summary?.trim() ||
   (session.message_count === 0 ? "just started" : "in progress");
 
+/** One family and the sessions on it. A personal account has one of these; a
+ * professional has one per client diagram. */
+interface Family {
+  diagram: Diagram;
+  sessions: Session[];
+}
+
 export class Sessions {
-  private list: Session[] = [];
-  private family: Diagram | null = null;
+  private families: Family[] = [];
   private current: number | null = null;
   private filter = "";
-  private expanded = false;
+  /** The families the reader has opened past their three most recent. */
+  private expanded = new Set<number>();
   private open = false;
   private drag: { kind: "open" | "close"; y0: number; dy: number } | null = null;
 
@@ -82,18 +89,32 @@ export class Sessions {
     dragScroll(this.body);
   }
 
-  /** The record the sheet lists, re-read whenever the chat has moved on. */
+  /** The record the sheet lists, re-read whenever the chat has moved on. The
+   * family the app is on comes first; the rest follow by recency. */
   async load(currentId: number | null): Promise<void> {
     this.current = currentId;
-    const [sessions, account] = await Promise.all([
-      api.sessionIndex(),
-      api.account(),
-    ]);
-    this.list = sessions;
-    this.family =
-      account.diagrams.find((d) => d.free) ?? account.diagrams[0] ?? null;
-    this.handlers.onList(this.list);
+    const diagrams = await api.diagrams();
+    const lists = await Promise.all(
+      diagrams.map((diagram) => api.sessionIndex(diagram.id)),
+    );
+    this.families = diagrams
+      .map((diagram, i) => ({ diagram, sessions: lists[i] }))
+      .sort((a, b) => Number(b.diagram.free) - Number(a.diagram.free));
+    this.handlers.onList(this.families.flatMap((f) => f.sessions));
     if (this.open) this.render();
+  }
+
+  /** The family the app is on, which is the one a new session belongs to. */
+  private home(): Family | undefined {
+    return this.families.find((f) => f.diagram.free) ?? this.families[0];
+  }
+
+  private find(id: number): Session | undefined {
+    for (const family of this.families) {
+      const found = family.sessions.find((s) => s.id === id);
+      if (found) return found;
+    }
+    return undefined;
   }
 
   private wire(): void {
@@ -111,18 +132,23 @@ export class Sessions {
 
   private onBodyClick(e: Event): void {
     const target = e.target as Element;
-    if (target.closest(".fs-plus")) {
+    const plus = target.closest<HTMLElement>(".fs-plus");
+    if (plus) {
       e.stopPropagation();
-      void this.start();
+      void this.start(Number(plus.dataset.family));
       return;
     }
-    if (target.closest(".fs-more")) {
-      this.expanded = true;
+    const more = target.closest<HTMLElement>(".fs-more");
+    if (more) {
+      this.expanded.add(Number(more.dataset.family));
       this.render();
       return;
     }
-    if (target.closest(".fs-fhead")) {
-      this.expanded = !this.expanded;
+    const head = target.closest<HTMLElement>(".fs-fhead");
+    if (head) {
+      const id = Number(head.parentElement?.dataset.family);
+      if (this.expanded.has(id)) this.expanded.delete(id);
+      else this.expanded.add(id);
       this.render();
       return;
     }
@@ -214,84 +240,95 @@ export class Sessions {
     }, 280);
   }
 
-  /** What the sheet shows right now: the matching sessions, collapsed to the
-   * three most recent unless the family is expanded or a search is running. */
-  private shown(): { rows: Session[]; more: number } {
+  /** What one family shows right now: the matching sessions, collapsed to the
+   * three most recent unless it is expanded or a search is running. A search
+   * matching the family's own name keeps all of its sessions. */
+  private shown(family: Family): { rows: Session[]; more: number } {
     const query = this.filter.trim().toLowerCase();
-    const matches = query
-      ? this.list.filter((s) =>
-          `${sessionTitle(s)} ${summaryOf(s)} ${this.family?.name ?? ""}`
-            .toLowerCase()
-            .includes(query),
-        )
-      : this.list;
-    if (query || this.expanded || matches.length <= COLLAPSED)
+    const byName = !!query && family.diagram.name.toLowerCase().includes(query);
+    const matches =
+      query && !byName
+        ? family.sessions.filter((s) =>
+            `${sessionTitle(s)} ${summaryOf(s)}`.toLowerCase().includes(query),
+          )
+        : family.sessions;
+    if (query || this.expanded.has(family.diagram.id) || matches.length <= COLLAPSED)
       return { rows: matches, more: 0 };
     const rows = matches.filter((s, i) => i < COLLAPSED || s.id === this.current);
     return { rows, more: matches.length - rows.length };
   }
 
   private render(): void {
-    const name = this.family?.name ?? "your family";
-    this.newButton.textContent = `New session with ${name}`;
-    const { rows, more } = this.shown();
+    const home = this.home();
+    this.newButton.textContent = `New session with ${home?.diagram.name ?? "your family"}`;
     const now = new Date();
-    const counts = new Map<number, number>();
-    for (const s of this.list) {
-      const key = dayKey(new Date(s.last_activity));
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
+    const searching = !!this.filter.trim();
 
-    if (!rows.length) {
-      this.body.innerHTML = `<div class="fs-hint">${
-        this.filter.trim() ? "No sessions match" : "Past conversations collect here"
-      }</div>`;
-      return;
-    }
-
-    let html = `<section class="fs-sec">${this.headHtml(name)}`;
-    let group = "";
-    for (const session of rows) {
-      const when = new Date(session.last_activity);
-      const label = this.filter.trim() ? "" : groupLabel(when, now);
-      if (label && label !== group) {
-        group = label;
-        html += `<div class="ghead">${esc(label)}</div>`;
+    let html = "";
+    let total = 0;
+    for (const family of this.families) {
+      const { rows, more } = this.shown(family);
+      total += family.sessions.length;
+      if (searching && !rows.length) continue;
+      const id = family.diagram.id;
+      html += `<section class="fs-sec" data-family="${id}">${this.headHtml(family)}`;
+      // the clock only earns its place when a day holds more than one session
+      const counts = new Map<number, number>();
+      for (const s of family.sessions) {
+        const key = dayKey(new Date(s.last_activity));
+        counts.set(key, (counts.get(key) ?? 0) + 1);
       }
-      html += this.rowHtml(
-        session,
-        whenText(when, now, counts.get(dayKey(when)) ?? 1),
-      );
+      let group = "";
+      for (const session of rows) {
+        const when = new Date(session.last_activity);
+        const label = searching ? "" : groupLabel(when, now);
+        if (label && label !== group) {
+          group = label;
+          html += `<div class="ghead">${esc(label)}</div>`;
+        }
+        html += this.rowHtml(
+          session,
+          whenText(when, now, counts.get(dayKey(when)) ?? 1),
+        );
+      }
+      if (more) html += `<div class="fs-more" data-family="${id}">${more} more…</div>`;
+      html += "</section>";
     }
-    if (more) html += `<div class="fs-more">${more} more…</div>`;
-    html += "</section>";
-    if (this.list.length <= 1 && !this.filter.trim())
+
+    if (!html)
+      html = `<div class="fs-hint">${
+        searching ? "No sessions match" : "Past conversations collect here"
+      }</div>`;
+    else if (!searching && total <= 1)
       html += `<div class="fs-hint">Past conversations collect here</div>`;
+
     const top = this.body.scrollTop;
     this.body.innerHTML = html;
     this.body.scrollTop = top;
   }
 
-  private headHtml(name: string): string {
-    const last = this.list[0];
+  private headHtml(family: Family): string {
+    const name = family.diagram.name;
+    const last = family.sessions[0];
     return (
-      `<div class="fs-fhead">` +
-      this.thumb() +
+      `<div class="fs-fhead${family.diagram.free ? " cur" : ""}">` +
+      this.thumb(family) +
       `<div class="fs-fmain">` +
       `<div class="fs-fname">${esc(name)}</div>` +
       `<div class="fs-flast">last: ${esc(last ? summaryOf(last) : "nothing yet")}</div>` +
       `</div>` +
-      `<button class="fs-plus" type="button" aria-label="New session with ${esc(name)}">+</button>` +
+      `<button class="fs-plus" type="button" data-family="${family.diagram.id}" ` +
+      `aria-label="New session with ${esc(name)}">+</button>` +
       `</div>`
     );
   }
 
   /** The family's wire, small: one mark per session so the header carries the
    * same picture the app draws large. */
-  private thumb(): string {
+  private thumb(family: Family): string {
     const w = 60;
     const h = 14;
-    const times = this.list.map((s) => new Date(s.last_activity).getTime());
+    const times = family.sessions.map((s) => new Date(s.last_activity).getTime());
     let svg =
       `<svg class="thumb" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true">` +
       `<line x1="1" y1="${h / 2}" x2="${w - 1}" y2="${h / 2}" stroke="var(--line)" stroke-width="1"/>`;
@@ -324,10 +361,6 @@ export class Sessions {
     );
   }
 
-  private find(id: number): Session | undefined {
-    return this.list.find((s) => s.id === id);
-  }
-
   private pick(row: HTMLElement): void {
     const session = this.find(Number(row.dataset.id));
     if (!session) return;
@@ -338,8 +371,16 @@ export class Sessions {
   }
 
   /** A new session is refused while the one you are in has nothing in it: two
-   * empty sessions say nothing the first one does not. */
-  private async start(): Promise<void> {
+   * empty sessions say nothing the first one does not. A new session can only
+   * start on the family the app is on, because that is the diagram the coach
+   * writes to. */
+  private async start(familyId?: number): Promise<void> {
+    const home = this.home();
+    if (familyId !== undefined && home && familyId !== home.diagram.id) {
+      this.lower();
+      toast(`Open ${this.families.find((f) => f.diagram.id === familyId)?.diagram.name ?? "that family"} first`);
+      return;
+    }
     const current = this.current === null ? undefined : this.find(this.current);
     if (current && current.message_count === 0) {
       this.lower();
@@ -348,7 +389,7 @@ export class Sessions {
       return;
     }
     const session = await api.newSession();
-    this.list = [session, ...this.list];
+    if (home) home.sessions = [session, ...home.sessions];
     this.current = session.id;
     this.lower();
     this.handlers.onPick(session);
@@ -373,7 +414,10 @@ export class Sessions {
         return;
       }
       const saved = await api.renameSession(session.id, title);
-      this.list = this.list.map((s) => (s.id === saved.id ? saved : s));
+      for (const family of this.families)
+        family.sessions = family.sessions.map((s) =>
+          s.id === saved.id ? saved : s,
+        );
       this.render();
     };
     field.addEventListener("keydown", (e) => {

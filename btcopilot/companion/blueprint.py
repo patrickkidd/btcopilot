@@ -50,11 +50,12 @@ def last_activity(discussion: Discussion):
     return max(times) if times else discussion.created_at
 
 
-def sessions(user) -> list[Discussion]:
-    """The user's sessions on their own diagram, most recently active first —
-    which makes the session they last spoke in the one they return to."""
+def sessions(user, diagram_id: int | None = None) -> list[Discussion]:
+    """The user's sessions on one diagram, most recently active first — which
+    makes the session they last spoke in the one they return to. Without a
+    diagram it is the one the app is on."""
     found = Discussion.query.filter_by(
-        user_id=user.id, diagram_id=user.free_diagram_id
+        user_id=user.id, diagram_id=diagram_id or user.free_diagram_id
     ).all()
     return sorted(found, key=lambda d: (last_activity(d), d.id), reverse=True)
 
