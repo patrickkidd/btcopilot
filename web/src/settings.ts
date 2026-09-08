@@ -1,5 +1,6 @@
 import * as api from "./api";
 import { el, esc } from "./dom";
+import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { shortDate } from "./when";
 import {
@@ -104,6 +105,7 @@ export class Settings {
     pane.classList.add("sn-pane");
     pane.dataset.page = page;
     this.host.append(pane);
+    dragScroll(pane);
     void pane.offsetWidth;
     pane.classList.add("in");
     if (under) under.pane.classList.add("under");

@@ -1,5 +1,6 @@
 import * as api from "./api";
 import { $, el, esc } from "./dom";
+import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { clockTime, dayKey, groupLabel, whenText } from "./when";
 import type { Diagram, Session } from "./types";
@@ -78,6 +79,7 @@ export class Sessions {
     this.search = this.sheet.querySelector<HTMLInputElement>(".fs-search input")!;
     this.newButton = this.sheet.querySelector<HTMLButtonElement>(".fs-new")!;
     this.wire();
+    dragScroll(this.body);
   }
 
   /** The record the sheet lists, re-read whenever the chat has moved on. */

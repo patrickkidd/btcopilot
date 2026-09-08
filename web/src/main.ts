@@ -18,6 +18,7 @@ import {
   type Sel,
 } from "./caption";
 import { $, esc } from "./dom";
+import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { shortDate } from "./when";
 import {
@@ -165,6 +166,9 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
 });
 
 speak.addEventListener("change", () => void settings.set({ speak: speak.checked }));
+
+// Every scroll area takes wheel, trackpad, touch AND mouse drag (UI_STANDARDS).
+for (const id of ["chat", "menu-body"]) dragScroll($(id));
 
 /** Opening a session replaces the thread with its statements and puts the
  * picture back where that session's last coach message left it. */
