@@ -88,6 +88,7 @@ from btcopilot.personal.routes import (  # noqa: E402  bp must exist first
     fixtures,
     interactions,
     migrate,
+    people,
     play,
     sessions,
     settings,

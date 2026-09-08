@@ -57,6 +57,21 @@ def _sentence(base: str, date: datetime.date | None, certainty: str) -> str:
     return f"{base}, {_date_phrase(date, certainty)}."
 
 
+def _born(person_id: int, events: list) -> str | None:
+    """The date on this person's birth event, if the record holds one."""
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        if _enum_val(event.get("kind")) != EventKind.Birth.value:
+            continue
+        if event.get("child") != person_id:
+            continue
+        date = _parse_iso_date(event.get("dateTime"))
+        if date:
+            return date.isoformat()
+    return None
+
+
 def _person_label(person: dict | None) -> str:
     name = person.get("name") if person else None
     return name or "Someone"
@@ -580,8 +595,12 @@ def build_timeline(data: DiagramData) -> dict:
             {
                 "id": p["id"],
                 "name": _person_label(p),
+                "last_name": p.get("last_name"),
                 "gender": _enum_val(p.get("gender")),
                 "primary": bool(p.get("primary")),
+                # when someone was born is an event about them, not a field on
+                # them, so the list is handed the date its rows are ordered by
+                "birth": _born(p["id"], data.events),
             }
             for p in people
         ],
