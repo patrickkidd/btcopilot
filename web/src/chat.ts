@@ -218,6 +218,14 @@ export class Chat {
     return bubble;
   }
 
+  /** A line the app says rather than either speaker, centred between the
+   * bubbles: what just happened to the thread. */
+  system(line: string): void {
+    this.list.append(el("div", "sys", esc(line)));
+    this.stuck = true;
+    this.scroll();
+  }
+
   /** Scroll one statement's bubble into the middle of the thread and mark it,
    * which is what a moment tracing back to where it was coded does. Never
    * `scrollIntoView`: the outer page must not move (UI_STANDARDS). */

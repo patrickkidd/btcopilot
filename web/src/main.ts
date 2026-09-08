@@ -3,7 +3,7 @@ import * as api from "./api";
 import { Chat, wait, type PlayTap } from "./chat";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu } from "./menu";
-import { Sessions, sessionTitle } from "./sessions";
+import { Sessions, sessionTitle, summaryOf } from "./sessions";
 import { Settings } from "./settings";
 import { aimedEvents, chips, itemKind } from "./chips";
 import { StepKind, steps } from "./turn";
@@ -246,6 +246,11 @@ async function openSession(id: number): Promise<void> {
   for (const statement of statements) addStatement(statement);
   picture.clear();
   pic = REST;
+  // Picking up an older thread says so, so the words above the composer are
+  // not mistaken for the ones just written.
+  const picked = known.find((s) => s.id === id);
+  if (picked && statements.length)
+    chat.system(`Resumed · ${sessionTitle(picked)} — ${summaryOf(picked)}`);
   const last = [...statements].reverse().find((s) => s.role === Role.Coach);
   if (last) spotlightFrom(last.text);
   else actions();

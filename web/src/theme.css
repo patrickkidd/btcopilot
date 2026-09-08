@@ -1764,3 +1764,17 @@ button { font-family: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .ss .ep-edge { animation: none; }
 }
+
+/* A line the app says rather than either speaker: what just happened to the
+   thread. The mockup's 10.5px is below the binding 13px floor, so it is set at
+   the floor. */
+.sys {
+  align-self: center;
+  max-width: 92%;
+  font: 500 13px/1.35 var(--mono);
+  color: var(--faint);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -39,7 +39,7 @@ export const sessionTitle = (session: Session) =>
     ? `Untitled · ${clockTime(new Date(session.last_activity))}`
     : (session.title as string);
 
-const summaryOf = (session: Session) =>
+export const summaryOf = (session: Session) =>
   session.summary?.trim() ||
   (session.message_count === 0 ? "just started" : "in progress");
 
