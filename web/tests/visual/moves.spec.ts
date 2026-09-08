@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { stateFor } from "./setup";
+import { EXACT, stateFor } from "./setup";
 
 /** The move language, one golden per move, so a change to any drawing has to be
  * looked at.
@@ -144,6 +144,7 @@ test.describe("the move language", () => {
       }, AT_MS);
       await expect(browser.locator(`#m-${spec.name}`)).toHaveScreenshot(
         `move-${spec.name}.png`,
+        EXACT,
       );
     });
   }
@@ -153,6 +154,7 @@ test.describe("the move language", () => {
     await browser.goto(url);
     await expect(browser.locator("#m-triangle-board")).toHaveScreenshot(
       "board-triangle.png",
+      EXACT,
     );
   });
 });

@@ -102,6 +102,14 @@ export type Key = (typeof KEYS)[number];
 
 export const stateFor = (key: Key) => join(AUTH, `${key}.json`);
 
+/** For the goldens of a drawing rather than a page. The suite's one percent
+ * ratio is worth hundreds of pixels on a small cell, enough to hide a whole
+ * stroke width: five move drawings once passed while carrying the wrong one.
+ * An absolute count instead, loose enough for antialiasing and nothing more.
+ * The ratio is set wide so it cannot be the binding limit, because the
+ * stricter of the two applies. */
+export const EXACT = { maxDiffPixels: 8, maxDiffPixelRatio: 1 };
+
 export default async function setup() {
   await takeLock();
   const base = process.env.COMPANION_URL ?? "http://127.0.0.1:8889";
