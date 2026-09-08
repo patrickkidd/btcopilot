@@ -16,9 +16,9 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 
 | status | rows |
 |---|---|
-| MET | 248 |
+| MET | 249 |
 | PARTIAL | 27 |
-| CHANGED | 24 |
+| CHANGED | 23 |
 | MISSING | 35 |
 | NEEDS-OWNER | 3 |
 | UNCHECKED | 18 |
@@ -35,7 +35,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | 6. Chalkboard / moves board | 16 | 3 | 0 | 3 | 0 | 1 | 5 |
 | 7. Show-tool view kinds | 3 | 2 | 0 | 0 | 1 | 1 | 0 |
 | 8. Play-by-play | 10 | 6 | 6 | 3 | 0 | 2 | 0 |
-| 9. Chips | 10 | 3 | 3 | 1 | 0 | 1 | 2 |
+| 9. Chips | 11 | 3 | 2 | 1 | 0 | 1 | 2 |
 | 10. Chat bubbles and layout | 18 | 0 | 1 | 0 | 0 | 0 | 6 |
 | 11. List view and event editor | 14 | 0 | 0 | 0 | 1 | 0 | 2 |
 | 12. Type and colour tokens | 11 | 2 | 3 | 0 | 0 | 0 | 2 |
@@ -373,7 +373,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Chips are the primitive | a chip is a reference into the record — an event, a cluster or a person — rendered in both coach and user messages | Chips render in coach and user messages; a tap drops the reference into the composer as a token (chat.ts:29-52; caption.ts:213-226) | MET |
 | Two taps on the picture | the first tap looks: a title or caption, free, nothing enters the chat. The second tap is a chip and speaks | `reduce()` records a Look on the first tap and a Say only on the chip tap (caption.ts:198-226) | MET |
 | Coach-placed inline chips | tappable chips inside coach prose that jump to a cluster or a set of events | A coach chip aims the picture through `aimedEvents()` (chips.ts:117-137) | MET |
-| Base chip, converged files | `display:inline-block; font:500 13px "IBM Plex Mono"; color:var(--data); border:1px solid var(--data); border-radius:10px; padding:1px 8px; margin:… | `.chip{font:500 13px/22px var(--mono);border-radius:13px;padding:1px 10px;margin:2px 4px 2px 0;background:none}` with no border unless it is `.data` or `.ask` (theme.css:339-379) | CHANGED |
+| Base chip, converged files | `display:inline-block; font:500 13px "IBM Plex Mono"; color:var(--data); border:1px solid var(--data); border-radius:10px; padding:1px 8px; margin:… | `.chip` now carries `color: var(--data)`, a 1px `--data` border, radius 10, padding `1px 8px` and margin `2px 2px 0 0`; the separate data-tone rule is gone. One value differs on purpose: the chip wraps rather than `nowrap`, so it can never leave its bubble however long the record's words are (theme.css `.chip`) | MET |
 | Base chip, earlier files | the same shape at `500 11px mono` | not applicable (superseded) | N/A |
 | Chip data attributes | `data-aim="{chapterIndex}" data-mo="{comma-separated event indices}"` | `data-kind`, `data-target`, `data-full` on the button (chat.ts:60-62). The picture reads the chip through `aimedEvents`, not a `data-mo` attribute | CHANGED |
 | Chip markup, server side | `[[kind:target\ | `[[kind:target|label]]` parsed client-side by `tokenize()`; `range` narrows to null so it stays plain words rather than a chip that goes nowhere (chips.ts:14-40,86-110) | PARTIAL |
