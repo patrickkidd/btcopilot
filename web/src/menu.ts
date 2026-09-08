@@ -1,6 +1,6 @@
 import { esc } from "./dom";
 import { Direction, openEditor } from "./editor";
-import type { Chapter, Person, Timeline, TimelineEvent } from "./types";
+import { emptyTimeline, type Chapter, type Person, type Timeline, type TimelineEvent } from "./types";
 
 /** The full timeline list behind the menu: full screen, searched, and divided
  * by chapter with a sticky header, so you always know which cluster you are in
@@ -81,15 +81,7 @@ export class Menu {
     this.render();
   }
 
-  private data: Timeline = {
-    people: [],
-    events: [],
-    chapters: [],
-    questions: [],
-    axis: null,
-    shelf: [],
-    coded_in: {},
-  };
+  private data: Timeline = emptyTimeline();
 
   private chapterOf(id: number): Chapter | undefined {
     return this.data.chapters.find((c) => c.event_ids.includes(id));

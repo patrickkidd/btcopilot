@@ -26,6 +26,8 @@ import {
   ChipTone,
   InteractionKind,
   ItemKind,
+  emptyTimeline,
+  Freshness,
   Role,
   StatementKind,
   type Chip,
@@ -39,7 +41,7 @@ import {
 declare global {
   interface Window {
     BOOTSTRAP: {
-      diagram_id: number | null;
+      diagram: { id: number; name: string } | null;
       session: { id: number } | null;
       statements: Statement[];
     };
@@ -51,15 +53,7 @@ enum Screen {
   Menu = "menu",
 }
 
-let timeline: Timeline = {
-  people: [],
-  events: [],
-  chapters: [],
-  questions: [],
-  axis: null,
-  shelf: [],
-  coded_in: {},
-};
+let timeline: Timeline = emptyTimeline();
 let pic: PicState = REST;
 let session: number | null = window.BOOTSTRAP.session?.id ?? null;
 /** The sessions as the sheet last read them, for naming the one that coded a
@@ -73,8 +67,8 @@ function tapped(
   item: ItemKind,
   id: string | null = null,
 ): void {
-  const diagram = window.BOOTSTRAP.diagram_id;
-  if (diagram !== null) void api.record(diagram, kind, item, id);
+  const diagram = window.BOOTSTRAP.diagram;
+  if (diagram) void api.record(diagram.id, kind, item, id);
 }
 
 const picture = new Picture($("view"), { onTap: (tap: Tap) => onTap(tap) });
@@ -184,7 +178,8 @@ function onDiagram(diagram: Diagram, how = { switched: true }): void {
 /** The title row shows the current view's title, and the family's name again
  * when the settings stack closes. The name follows whichever family the app is
  * on. */
-let familyTitle = $("title").textContent ?? "Your family";
+let familyTitle = window.BOOTSTRAP.diagram?.name ?? $("title").textContent ?? "Your family";
+$("title").textContent = familyTitle;
 
 /** Speak replies is the one ruled duplicate: this row and the Coach settings
  * page are two doors onto the same value. */
@@ -443,8 +438,25 @@ function aimedFrom(text: string): number[] {
   return out;
 }
 
+/** What the page says while the record is behind the conversation. Nothing is
+ * said when it is current. */
+const BEHIND: Record<Freshness, string> = {
+  [Freshness.Current]: "",
+  [Freshness.Extracting]: "Updating the picture from your conversation\u2026",
+  [Freshness.PendingReview]:
+    "New details from your conversation are waiting to be added.",
+  [Freshness.ChatAhead]: "The picture may be a little behind the conversation.",
+};
+
+function freshness(state: Freshness): void {
+  const line = BEHIND[state] ?? "";
+  $("fresh").textContent = line;
+  $("fresh").hidden = !line;
+}
+
 async function load(): Promise<Timeline> {
   timeline = await api.timeline();
+  freshness(timeline.extraction.state);
   picture.setData(timeline);
   menu.show(timeline);
   actions();

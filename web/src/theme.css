@@ -1057,6 +1057,44 @@ button { font-family: inherit; }
 
 .overlay { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
 .overlay > * { pointer-events: auto; }
+
+/* The picture only ever draws committed state, so when the conversation is
+   ahead of it the page says so rather than letting it look current. */
+.fresh {
+  margin: 0;
+  padding: 6px 16px;
+  font: 400 13px/1.4 var(--mono);
+  color: var(--ask-text);
+  background: var(--ask-tint);
+  border-bottom: 1px solid var(--line);
+}
+
+/* Signing out is a state of the app, not leaving it: the shell stays and this
+   covers it until someone signs in again. */
+.signedout {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.so-app { font: 800 21px var(--sans); color: var(--ink); }
+.so-who { font: 500 13px var(--mono); color: var(--faint); }
+.so-in {
+  font: 500 13px var(--mono);
+  color: var(--data);
+  background: none;
+  border: 1px solid var(--data);
+  border-radius: 16px;
+  padding: 7px 18px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.so-in:active { background: var(--tint); }
 .fs-scrim {
   position: absolute;
   inset: 0;

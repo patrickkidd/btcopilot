@@ -6,7 +6,7 @@ from flask_wtf.csrf import generate_csrf
 from markupsafe import escape
 
 from btcopilot import auth
-from btcopilot.personal.routes import bp, current_session
+from btcopilot.personal.routes import bp, current_session, diagram
 from btcopilot.personal.routes.sessions import session_payload, statements_payload
 from btcopilot.personal.timeline import build_timeline
 from btcopilot.personal.models import Discussion
@@ -28,6 +28,7 @@ def _page() -> str:
         page = file.read()
     user = auth.current_user()
     discussion = current_session(user)
+    in_use = diagram()
     bootstrap = {
         "user": {
             "first_name": user.first_name,
@@ -36,7 +37,9 @@ def _page() -> str:
         },
         "session": session_payload(discussion) if discussion else None,
         "statements": statements_payload(discussion) if discussion else [],
-        "diagram_id": user.diagram_in_use(),
+        "diagram": (
+            {"id": in_use.id, "name": in_use.name} if in_use else None
+        ),
     }
     head = (
         f'<meta name="csrf-token" content="{escape(generate_csrf())}">'
@@ -66,10 +69,10 @@ def manifest():
 @bp.route("/timeline")
 def timeline():
     user = auth.current_user()
-    diagram = user.free_diagram
-    data = diagram.get_diagram_data() if diagram else DiagramData()
+    in_use = diagram()
+    data = in_use.get_diagram_data() if in_use else DiagramData()
     payload = build_timeline(data)
-    payload["extraction"] = _extraction_status(user, diagram, data)
+    payload["extraction"] = _extraction_status(user, in_use, data)
     return jsonify(payload)
 
 

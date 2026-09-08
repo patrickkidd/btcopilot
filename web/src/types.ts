@@ -113,6 +113,15 @@ export interface Question {
   sentence: string;
 }
 
+/** How far the picture is behind the conversation. The record only ever draws
+ * committed state, so the page says so rather than looking fresher than it is. */
+export enum Freshness {
+  Current = "current",
+  Extracting = "extracting",
+  PendingReview = "pending_review",
+  ChatAhead = "chat_ahead",
+}
+
 export interface Timeline {
   people: Person[];
   events: TimelineEvent[];
@@ -123,7 +132,21 @@ export interface Timeline {
   /** Where each moment was coded, by event id: the session, and the statement
    * inside it. Two-way traceability runs on this. */
   coded_in: Record<string, CodedIn>;
+  extraction: { state: Freshness; up_to_date: boolean };
 }
+
+/** A record with nothing in it yet, which is what every surface starts on. A
+ * fresh one each time, so two surfaces never share one object. */
+export const emptyTimeline = (): Timeline => ({
+  people: [],
+  events: [],
+  chapters: [],
+  questions: [],
+  axis: null,
+  shelf: [],
+  coded_in: {},
+  extraction: { state: Freshness.Current, up_to_date: true },
+});
 
 export interface CodedIn {
   discussion_id: number;

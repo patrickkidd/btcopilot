@@ -1,5 +1,5 @@
 import * as api from "./api";
-import { el, esc } from "./dom";
+import { $, el, esc } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { shortDate } from "./when";
@@ -338,7 +338,7 @@ export class Settings {
     out.type = "button";
     out.className = "sn-out";
     out.textContent = "Sign out";
-    out.addEventListener("click", () => signOut());
+    out.addEventListener("click", () => void signOut(account.email));
     const last = el("div", "sn-grp");
     last.append(out);
     pane.append(last, el("div", "sn-foot", "Family Diagram · beta"));
@@ -527,17 +527,21 @@ export class Settings {
   }
 }
 
-/** Signing out is a form post so the server can clear the session cookie. */
-function signOut(): void {
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = "/logout";
-  const token = document.createElement("input");
-  token.type = "hidden";
-  token.name = "csrf_token";
-  token.value =
-    document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? "";
-  form.append(token);
-  document.body.append(form);
-  form.submit();
+/** Signing out clears the session cookie and then covers the shell with the
+ * signed-out screen, which is a state of the app rather than leaving it. Sign
+ * in reloads the page, which is what the server answers with a login. */
+async function signOut(who: string): Promise<void> {
+  await fetch("/logout", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken":
+        document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ??
+        "",
+    },
+  });
+  $("signedout-who").textContent = `signed out \u2014 ${who}`;
+  $("signedout").hidden = false;
+  $("signedout-in").addEventListener("click", () => window.location.reload(), {
+    once: true,
+  });
 }
