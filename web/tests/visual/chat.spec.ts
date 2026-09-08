@@ -63,3 +63,20 @@ test.describe("the coach's words", () => {
     await expect(page.locator(".bub.coach .who").first()).toHaveText("Coach");
   });
 });
+
+test.describe("the question that closes a reply", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  test("it stands apart in amber above the answers held out", async ({ page }) => {
+    await page.goto("/personal/");
+    await expect(page.locator(".bub").first()).toBeVisible();
+    await page.waitForTimeout(400);
+    const bubble = page.locator(".bub.coach").last();
+    await expect(bubble.locator("> .ask")).toHaveText(
+      "What do you remember about the winter it started?",
+    );
+    await expect(bubble.locator("> .offer .chip.ask")).toHaveCount(3);
+    // the question is lifted out of the narration, not repeated in it
+    expect(await bubble.locator("> .ask").evaluate((n) => getComputedStyle(n).fontWeight)).toBe("500");
+  });
+});
