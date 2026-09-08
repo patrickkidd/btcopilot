@@ -56,21 +56,24 @@ export const CHIP_KIND: Record<SelKind, ChipKind> = {
   [SelKind.Shelf]: ChipKind.Event,
 };
 
-const same = (a: Sel | null, b: Sel) => a?.kind === b.kind && a.id === b.id;
 
 export function reduce(state: PicState, event: PicEvent, sel?: Sel): Outcome {
   const still = { state, insert: null, play: null, record: null };
   switch (event) {
     case PicEvent.Tap: {
       if (!sel) return { state: REST, insert: null, play: null, record: null };
-      const open = same(state.sel, sel) ? null : sel;
+      // A tap on a moment picks it, and picking the one already picked leaves
+      // it picked. Putting the picture down is a tap on the ground beside it,
+      // never a second tap on the thing itself.
       return {
-        state: { sel: open, playing: null },
+        state: { sel, playing: null },
         insert: null,
         play: null,
-        record: open
-          ? { kind: InteractionKind.Look, item_kind: ITEM[sel.kind], item_id: sel.id }
-          : null,
+        record: {
+          kind: InteractionKind.Look,
+          item_kind: ITEM[sel.kind],
+          item_id: sel.id,
+        },
       };
     }
     case PicEvent.TapChip: {

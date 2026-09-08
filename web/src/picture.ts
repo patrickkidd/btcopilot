@@ -94,6 +94,18 @@ enum Level {
   Compare = "compare",
 }
 
+/** A label the thumb can land on: which moment it names, which of the three
+ * rows it is written on, and where it sits across the picture. */
+interface LabelRow {
+  id: number;
+  row: number;
+  left: number;
+  width: number;
+}
+
+/** How far beside a label's words still counts as the label. */
+const LABEL_SLOP = 6;
+
 export enum Target {
   Zone = "zone",
   /** A chapter box on the resting level. */
@@ -102,6 +114,8 @@ export enum Target {
   Question = "question",
   Shelf = "shelf",
   /** The board's own controls, which the picture answers itself. */
+  /** Anywhere on the picture that is not a moment, a label or a control. */
+  Ground = "ground",
   Back = "back",
   Prev = "prev",
   Next = "next",
@@ -113,8 +127,10 @@ const OWN = new Set<string>([Target.Back, Target.Prev, Target.Next]);
 
 export interface Tap {
   target: Target;
-  /** For a zone, which one; for the band, the y the thumb landed at. */
+  /** For a zone, which one. */
   index: number;
+  /** Where the thumb landed on the picture. */
+  x: number;
   y: number;
 }
 
@@ -155,7 +171,7 @@ export class Picture {
   private band: { start: string; end: string } | null = null;
   private focus: Chapter | null = null;
   private range = { min: 0, max: 1 };
-  private laid: { zones: Mark[][]; rows: { id: number; row: number }[] } = {
+  private laid: { zones: Mark[][]; rows: LabelRow[] } = {
     zones: [],
     rows: [],
   };
@@ -167,19 +183,42 @@ export class Picture {
     window.addEventListener("resize", () => this.render());
     this.host.addEventListener("click", (e) => {
       const hit = (e.target as Element).closest<HTMLElement>("[data-target]");
-      if (!hit) return;
+      // Empty ground. Nothing on the picture is under the thumb, so the tap is
+      // the reader putting the picture down; the board has its own way back.
+      if (!hit) {
+        if (this.level !== Level.Board)
+          this.handlers.onTap(this.tapAt(Target.Ground, e));
+        return;
+      }
       e.preventDefault();
       if (OWN.has(hit.dataset.target as string)) {
         this.control(hit.dataset.target as Target);
         return;
       }
-      const box = this.host.getBoundingClientRect();
-      this.handlers.onTap({
-        target: hit.dataset.target as Target,
-        index: Number(hit.dataset.index ?? -1),
-        y: (e as MouseEvent).clientY - box.top,
-      });
+      this.handlers.onTap(this.tapAt(hit.dataset.target as Target, e, Number(hit.dataset.index ?? -1)));
     });
+  }
+
+  private tapAt(target: Target, e: Event, index = -1): Tap {
+    const box = this.host.getBoundingClientRect();
+    return {
+      target,
+      index,
+      x: (e as MouseEvent).clientX - box.left,
+      y: (e as MouseEvent).clientY - box.top,
+    };
+  }
+
+  /** Put the picture down: nothing selected, nothing named, the whole line at
+   * a glance again. */
+  dismiss(): void {
+    this.named = [];
+    this.selected = null;
+    this.focus = null;
+    this.cluster = null;
+    this.level = Level.Rest;
+    this.rescale();
+    this.render();
   }
 
   setData(data: Timeline): void {
@@ -215,11 +254,17 @@ export class Picture {
     return (this.laid.zones[index] ?? []).map((mark) => mark.event.id);
   }
 
-  /** Which labelled row the thumb landed nearest, for a tap on the label band. */
-  rowAt(y: number): number | null {
+  /** Which label the thumb landed on, for a tap in the label band. The band is
+   * one 44px target and the row nearest the tap wins it, which is the
+   * converged mockup's rule; across, the tap has to be on the words themselves,
+   * because the space beside them is ground and belongs to putting the picture
+   * down. */
+  rowAt(x: number, y: number): number | null {
     let best: number | null = null;
     let distance = Infinity;
     for (const row of this.laid.rows) {
+      if (x < row.left - LABEL_SLOP || x > row.left + row.width + LABEL_SLOP)
+        continue;
       const d = Math.abs(ROWS[row.row] + 7.5 - y);
       if (d < distance) {
         distance = d;
@@ -826,7 +871,7 @@ export class Picture {
     x0: number,
     x1: number,
     wire: number,
-  ): { text: string; rowsLaid: { id: number; row: number }[] } {
+  ): { text: string; rowsLaid: LabelRow[] } {
     const chosen = marks.find((m) => m.event.id === this.selected);
     const wide = Math.floor((x1 - x0) / CH);
     if (chosen) {
@@ -836,8 +881,8 @@ export class Picture {
         (event.person_name && event.person_name !== this.protagonist()
           ? ` · ${event.person_name}`
           : "");
-      const lines = wrap2(clip(event.label.trim(), Math.min(88, wide * 2)), wide);
-      const text = [meta, lines[0], lines[1]]
+      const lines = [meta, ...wrap2(clip(event.label.trim(), Math.min(88, wide * 2)), wide)];
+      const text = lines
         .map((line, i) =>
           line
             ? `<div class="ss-t ${i ? "on" : "meta"}" ` +
@@ -845,7 +890,15 @@ export class Picture {
             : "",
         )
         .join("");
-      return { text, rowsLaid: [] };
+      // the words of the moment already picked are its label, so a tap on them
+      // is a tap on it and picks it again rather than putting the picture down
+      return {
+        text,
+        rowsLaid: lines
+          .map((line, row) => ({ id: event.id, row, left: x0, width: x1 - x0, line }))
+          .filter((r) => r.line)
+          .map(({ id, row, left, width }) => ({ id, row, left, width })),
+      };
     }
     const spotlit = marks.filter((m) => this.named.includes(m.event.id));
     if (!spotlit.length) return { text: "", rowsLaid: [] };
@@ -880,7 +933,9 @@ export class Picture {
     // A row with no room for words is not a row the thumb can pick.
     return {
       text,
-      rowsLaid: laid.filter((r) => r.text).map((r) => ({ id: r.id, row: r.row })),
+      rowsLaid: laid
+        .filter((r) => r.text)
+        .map((r) => ({ id: r.id, row: r.row, left: r.left, width: r.width })),
     };
   }
 

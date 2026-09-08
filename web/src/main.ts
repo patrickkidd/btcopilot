@@ -81,6 +81,12 @@ const picture = new Picture($("view"), { onTap: (tap: Tap) => onTap(tap) });
  * words picks the one whose row was tapped; a tap on the shelf asks about what
  * has no date. */
 function onTap(tap: Tap): void {
+  // Empty ground on the picture puts it down: nothing selected, nothing named,
+  // the whole line at a glance again.
+  if (tap.target === Target.Ground) {
+    putDown();
+    return;
+  }
   if (tap.target === Target.Explain) {
     const stretch = picture.showing();
     if (stretch) void explain(stretch);
@@ -99,28 +105,21 @@ function onTap(tap: Tap): void {
     actions();
     return;
   }
-  // Traceability runs both ways: a second tap on the moment already selected
-  // jumps to the words that coded it. Where a zone holds several moments the
-  // tap steps to the next one instead, which is the converged mockup's cycle,
-  // so this is the tap that would otherwise land on the same moment twice.
+  // A label names one moment and selecting it is all a tap on it does; where
+  // a zone holds several moments the tap steps to the next of them. The way
+  // back to the words that coded a moment is the coded-in chip and nothing
+  // else, so nothing here happens on a second tap that did not happen on the
+  // first.
   const selected = picture.selection();
-  const again =
-    selected !== null &&
-    (tap.target === Target.Zone
-      ? picture.inZone(tap.index).length === 1 &&
-        picture.inZone(tap.index)[0] === selected
-      : // while one moment is selected the picture writes only its words, so
-        // a tap on the band is a tap on that moment wherever it lands
-        (picture.rowAt(tap.y) ?? selected) === selected);
-  const trace = again ? codedIn(selected) : null;
-  if (trace) {
-    void traceTo(trace.where);
-    return;
-  }
   const chosen =
     tap.target === Target.Zone
       ? picture.next(tap.index, selected)
-      : picture.rowAt(tap.y);
+      : picture.rowAt(tap.x, tap.y);
+  // blank ground inside the label band: the same as blank wire
+  if (tap.target === Target.Band && chosen === null) {
+    putDown();
+    return;
+  }
   apply(
     reduce(
       pic,
@@ -562,6 +561,23 @@ function screen(which: Screen): void {
   $("menu-screen").hidden = which !== Screen.Menu;
   document.querySelector<HTMLElement>(".titlerow")!.hidden = which === Screen.Menu;
 }
+
+/** The name of the picture is also the way back to it: tapping it puts the
+ * picture down, the same as tapping empty ground on it. */
+function putDown(): void {
+  picture.dismiss();
+  pic = REST;
+  actions();
+}
+
+$("crumb").addEventListener("click", putDown);
+$("crumb").addEventListener("keydown", (e) => {
+  const key = (e as KeyboardEvent).key;
+  if (key === "Enter" || key === " ") {
+    e.preventDefault();
+    putDown();
+  }
+});
 
 $("composer").addEventListener("keydown", (e) => {
   const key = e as KeyboardEvent;

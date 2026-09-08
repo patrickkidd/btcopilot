@@ -179,6 +179,18 @@ button { font-family: inherit; }
   text-overflow: ellipsis;
 }
 .pin-label span:first-child { flex: none; }
+/* The name of the picture is also the way back to it. The row is 18 tall, so
+   the words keep their place and the target is grown around them. */
+#crumb {
+  position: relative;
+  cursor: pointer;
+}
+#crumb::before {
+  content: "";
+  position: absolute;
+  inset: -13px -16px;
+}
+#crumb:active { color: var(--ink); }
 .pin-label span:last-child {
   text-transform: none;
   letter-spacing: 0;
