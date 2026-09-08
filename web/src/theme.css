@@ -259,6 +259,25 @@ button { font-family: inherit; }
   from { transform: scale(1.35); opacity: 0.25; }
   to { transform: scale(1); opacity: 1; }
 }
+/* people arrive on the board rather than being simply there (play-by-play) */
+.ss.board.in .node {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+@keyframes pop {
+  from { transform: scale(0.2); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+/* the years under the people: the axis, its decade ticks, one dot per move,
+   a blob where moves bunch and the pool under the move being drawn */
+.ss .axis .ax { stroke: var(--line); stroke-width: 1.4; }
+.ss .axis .ax-tick { stroke: var(--line); stroke-width: 1.2; }
+.ss .axis .ax-yr { font: 400 13px var(--mono); fill: var(--faint); }
+.ss .axis .ax-blob { fill: var(--faint); opacity: 0.22; }
+.ss .axis .ax-focus { fill: var(--data); opacity: 0.28; }
+.ss .axis .ax-dot { fill: var(--faint); transition: fill 0.3s, r 0.3s; }
+.ss .axis .ax-dot.played { fill: var(--data); }
 .ss .bond { stroke: var(--line); stroke-width: 1.2; }
 .ss .hist { opacity: 0.16; animation: histin 0.32s ease; }
 .ss .hist * { animation: none !important; }

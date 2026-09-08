@@ -17,8 +17,16 @@ import type { Person, TimelineEvent } from "./types";
  * The middle "cluster drilldown" level is CUT (R-0074): the board is entered
  * straight from the chat, and the words about it live in the chat. */
 
-/** The ratified board: 264px tall, people on an ellipse around its centre. */
+/** The ratified board drawing was 264px tall in a box proportioned for it. The
+ * board now fits its content (owner review round 1, 2026-09-08), so this is the
+ * most it may take rather than the height it always is. */
 export const BOARD_H = 264;
+/** The time axis under the people: the line, its ticks and its year labels. */
+const AXIS_H = 40;
+/** Room over a figure for the name written above it, and under it for the
+ * figure alone. */
+const ABOVE = BOARD_R + 22;
+const BELOW = BOARD_R + 10;
 
 export interface Step {
   event: TimelineEvent;
@@ -55,44 +63,48 @@ export function castOfSteps(steps: Step[]): number[] {
   return seen;
 }
 
-/** The ratified board layout: centre of the board, people on an ellipse of
- * x radius R*1.75 and y radius R, the first at the top. */
-export function ellipse(
-  people: Person[],
-  width: number,
-  height = BOARD_H,
-): Figure[] {
+export interface Layout {
+  figures: Figure[];
+  /** What the drawing actually needs, which is what the board is given. */
+  height: number;
+}
+
+/** The ratified board layout: people on an ellipse of x radius R*1.75 and
+ * y radius R, the first at the top.
+ *
+ * The board leaves no space it is not using. The ellipse keeps its ratified
+ * proportion and the frame limits it across; the height then follows from who
+ * is standing on it, because with three people nobody stands at the bottom and
+ * a fixed height would leave a band of nothing under them. Above, a figure
+ * needs room for the name written over it; below, the figure alone. */
+export function ellipse(people: Person[], width: number): Layout {
   const cx = width / 2;
   const n = people.length;
   const angleAt = (i: number) => -Math.PI / 2 + (i / n) * Math.PI * 2;
-  // The board leaves no space it is not using. What has to fit is the people,
-  // not the ellipse they stand on: with three of them nobody stands at the
-  // bottom of it, so sizing the ellipse to the box leaves a band of nothing
-  // under them. The lowest person a given cast puts on the ring is what the
-  // height is fitted to. Above, a figure needs room for the name written over
-  // it; below, the figure alone.
-  const ABOVE = BOARD_R + 22;
-  const BELOW = BOARD_R + 10;
-  const lowest = Math.max(...people.map((_, i) => Math.sin(angleAt(i))), 0);
-  const ry = Math.max(40, (height - ABOVE - BELOW) / (1 + lowest));
-  const cy = ABOVE + ry;
-  // across, the frame is the limit rather than the ratified 1.75, which was
-  // drawn in a box proportioned differently from a phone's
-  const rx = Math.min(cx - 44, ry * 1.75);
-  return people.map((p, i) => {
-    const angle = angleAt(i);
-    return {
-      id: p.id,
-      name: p.name,
-      gender: p.gender,
-      r: BOARD_R,
-      above: true,
-      x: n === 1 ? cx : cx + Math.cos(angle) * rx,
-      y: n === 1 ? cy : cy + Math.sin(angle) * ry,
-      mirror: n > 1 && Math.cos(angle) > 0,
-      stage: { w: width, h: height },
-    };
-  });
+  const sines = people.map((_, i) => Math.sin(angleAt(i)));
+  const rx = Math.max(60, Math.min(cx - 44, ((BOARD_H - ABOVE - BELOW) / 2) * 1.75));
+  const ry = Math.min(110, Math.max(44, rx / 1.75));
+  const top = n === 1 ? 0 : -Math.min(...sines, 0);
+  const lowest = n === 1 ? 0 : Math.max(...sines, 0);
+  const cy = ABOVE + ry * top;
+  const height = Math.round(cy + ry * lowest + BELOW);
+  return {
+    height,
+    figures: people.map((p, i) => {
+      const angle = angleAt(i);
+      return {
+        id: p.id,
+        name: p.name,
+        gender: p.gender,
+        r: BOARD_R,
+        above: true,
+        x: n === 1 ? cx : cx + Math.cos(angle) * rx,
+        y: n === 1 ? cy : cy + Math.sin(angle) * ry,
+        mirror: n > 1 && Math.cos(angle) > 0,
+        stage: { w: width, h: height },
+      };
+    }),
+  };
 }
 
 /** The pair bonds the record actually holds, drawn first and beneath
@@ -202,24 +214,97 @@ function history(steps: Step[], upTo: number, figures: Figure[]): string {
 export interface BoardView {
   svg: string;
   caption: string;
+  /** What the board takes, so the region above the chat is fitted to it. */
+  height: number;
 }
 
 /** The board holding a closed triangle: the three the coach named, with the
  * heat drawn on all three sides. No mockup fixes this geometry; it uses the
  * ratified tension zigzag rather than inventing a mark. */
 export function triangle(people: Person[], width: number): BoardView {
-  const figures = ellipse(people, width);
+  const { figures, height } = ellipse(people, width);
   const heat = figures
     .map((f, i) => zigzag(f, figures[(i + 1) % figures.length]))
     .join("");
   return {
     svg:
-      `<svg viewBox="0 0 ${width} ${BOARD_H}" aria-hidden="true">` +
+      `<svg viewBox="0 0 ${width} ${height}" aria-hidden="true">` +
       `<g class="cast">${heat}` +
       figures.map((f) => figure(f, "")).join("") +
       `</g></svg>`,
     caption: people.map((p) => p.name).join(" · "),
+    height,
   };
+}
+
+const YEAR_MS = 365.25 * 24 * 3600 * 1000;
+const yearOf = (iso: string) => new Date(iso + "T00:00:00Z").getTime() / YEAR_MS;
+/** The axis pads as pane A pads its own: wider on the left, where the first
+ * year label is written. */
+const AXIS_L = 30;
+const AXIS_R = 16;
+
+/** The years under the people: the axis pane A puts on stage with them, its
+ * decade ticks, one dot per move, a blob wherever moves bunch up, and the
+ * pooled focus under the move being drawn. */
+function axis(steps: Step[], at: number, width: number, top: number): string {
+  const dated = steps
+    .map((step, i) => ({ i, iso: step.event.dateTime }))
+    .filter((s): s is { i: number; iso: string } => !!s.iso);
+  if (!dated.length) return "";
+  const years = dated.map((s) => yearOf(s.iso));
+  const first = Math.min(...years);
+  const last = Math.max(...years);
+  const span = Math.max(1, last - first);
+  const x0 = AXIS_L;
+  const x1 = width - AXIS_R;
+  const y = top + 18;
+  const at_ = (iso: string) =>
+    x0 + ((yearOf(iso) - first) / span) * (x1 - x0);
+
+  let out = `<line class="ax" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}"/>`;
+  // decade ticks, as pane A rules its axis by decades
+  const decade = Math.ceil((first + 1970) / 10) * 10;
+  for (let year = decade; ; year += 10) {
+    const x = x0 + ((year - 1970 - first) / span) * (x1 - x0);
+    if (x > x1) break;
+    if (x < x0) continue;
+    out +=
+      `<line class="ax-tick" x1="${x.toFixed(1)}" y1="${y - 4}" ` +
+      `x2="${x.toFixed(1)}" y2="${y + 4}"/>` +
+      `<text class="ax-yr" x="${x.toFixed(1)}" y="${y + 18}" ` +
+      `text-anchor="middle">${year}</text>`;
+  }
+
+  // where moves bunch up, a blob says so before anything is opened
+  const blobs = new Map<number, number>();
+  for (const s of dated) {
+    const key = Math.round(at_(s.iso) / 18);
+    blobs.set(key, (blobs.get(key) ?? 0) + 1);
+  }
+  for (const [key, count] of blobs) {
+    if (count < 2) continue;
+    const rx = 6 + count;
+    out +=
+      `<ellipse class="ax-blob" cx="${(key * 18).toFixed(1)}" cy="${y}" ` +
+      `rx="${rx}" ry="${(rx * 0.68).toFixed(1)}"/>`;
+  }
+
+  const now = steps[at]?.event.dateTime;
+  if (now)
+    out +=
+      `<ellipse class="ax-focus" cx="${at_(now).toFixed(1)}" cy="${y}" ` +
+      `rx="27" ry="9"/>`;
+
+  // a move's dot fills in as it is played, so the axis carries how far along
+  // the stretch the board is
+  for (const s of dated) {
+    const played = s.i <= at;
+    out +=
+      `<circle class="ax-dot${played ? " played" : ""}" ` +
+      `cx="${at_(s.iso).toFixed(1)}" cy="${y}" r="${played ? 4.6 : 3.4}"/>`;
+  }
+  return `<g class="axis">${out}</g>`;
 }
 
 /** The whole board at one step. */
@@ -230,7 +315,9 @@ export function board(
   events: TimelineEvent[],
   width: number,
 ): BoardView {
-  const laid = ellipse(people, width);
+  const { figures: laid, height: stage } = ellipse(people, width);
+  const dated = steps.some((step) => !!step.event.dateTime);
+  const height = dated ? stage + AXIS_H : stage;
   const now = steps[at];
   const g: Gesture = now
     ? gesture(now, laid)
@@ -242,7 +329,7 @@ export function board(
     return shift ? { ...f, x: f.x + shift[0], y: f.y + shift[1] } : f;
   });
   const svg =
-    `<svg viewBox="0 0 ${width} ${BOARD_H}" aria-hidden="true">` +
+    `<svg viewBox="0 0 ${width} ${height}" aria-hidden="true">` +
     `<defs><filter id="glow" x="-30%" y="-30%" width="160%" height="160%">` +
     `<feGaussianBlur stdDeviation="1.1"/></filter></defs>` +
     bonds(figures, events, g.steps) +
@@ -253,8 +340,10 @@ export function board(
         figure(f, g.classes.get(f.id) ?? "", g.ghosts.get(f.id) ?? "", g.steps[f.id]),
       )
       .join("") +
-    `</g></svg>`;
-  return { svg, caption: caption(steps, at, people) };
+    `</g>` +
+    (dated ? axis(steps, at, width, stage) : "") +
+    `</svg>`;
+  return { svg, caption: caption(steps, at, people), height };
 }
 
 /** `step/total · year — from → to · label`, as the board draws it. */

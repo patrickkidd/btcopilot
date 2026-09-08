@@ -1,5 +1,4 @@
 import {
-  BOARD_H,
   board,
   castOfSteps,
   movesIn,
@@ -130,6 +129,9 @@ export class Picture {
   private cast: number[] = [];
   private level = Level.Rest;
   private moves: Step[] = [];
+  /** The stretch the board is currently showing, so a chip already on its own
+   * board steps it rather than reopening it. */
+  private cluster: string | null = null;
   private at = 0;
   private pair: [number, number] | null = null;
   private entering = false;
@@ -178,6 +180,7 @@ export class Picture {
     // naming something opens the chapter it belongs to; naming nothing leaves
     // the picture at rest, showing the whole line
     this.level = eventIds.length ? Level.Wire : Level.Rest;
+    this.cluster = null;
     this.focus = this.chapterOf(eventIds[0]);
     this.rescale();
     this.render();
@@ -231,12 +234,13 @@ export class Picture {
   /** Enter the board: the moves of one stretch, numbered, on the people they
    * happened between. The level below it is CUT, so this comes straight from
    * the chat. */
-  openBoard(eventIds: number[]): number {
+  openBoard(eventIds: number[], cluster: string | null = null): number {
     const events = (this.data?.events ?? []).filter((e) =>
       eventIds.includes(e.id),
     );
     this.moves = movesIn(events);
     if (!this.moves.length) return 0;
+    this.cluster = cluster;
     this.level = Level.Board;
     this.entering = true;
     this.steered = false;
@@ -244,6 +248,30 @@ export class Picture {
     this.cast = [];
     this.render();
     return this.moves.length;
+  }
+
+  /** A chip in a play-by-play steps the board and never goes back to the wire
+   * (owner review round 1). The board opens on the stretch the walk narrates if
+   * it is not already up, then goes to the move the chip names — or, when the
+   * chip names no move of its own, to the nth move of the walk. */
+  playStep(cluster: string, eventIds: number[], ordinal: number): void {
+    if (this.level !== Level.Board || this.cluster !== cluster) {
+      const stretch =
+        this.chapterOf(eventIds[0]) ??
+        this.data?.chapters.find(
+          (c) => c.id === cluster || c.cluster_ids.includes(cluster),
+        );
+      if (!stretch || !this.openBoard(stretch.event_ids, cluster)) return;
+    }
+    // the reader stepping the board themselves outranks a play-through still
+    // running, which is what steering already means here
+    this.steered = true;
+    const named = this.moves.findIndex((m) => eventIds.includes(m.event.id));
+    this.at =
+      named >= 0
+        ? named
+        : Math.min(this.moves.length - 1, Math.max(0, ordinal));
+    this.render();
   }
 
   /** How many moves a stretch would put on the board, for the entry button. */
@@ -264,6 +292,7 @@ export class Picture {
     if (target === Target.Back) {
       this.level = Level.Wire;
       this.moves = [];
+      this.cluster = null;
       this.cast = [];
       this.at = 0;
     } else if (target === Target.Next)
@@ -279,6 +308,7 @@ export class Picture {
     // their own say so below
     this.level = Level.Wire;
     this.moves = [];
+    this.cluster = null;
     switch (view.kind) {
       case ViewKind.Triangle:
         // people on stage draw only on the board, which is a level of its own
@@ -535,14 +565,16 @@ export class Picture {
     const people = ids
       .map((id) => this.person(id))
       .filter((p): p is Person => !!p);
-    const { svg, caption } = this.moves.length
+    const { svg, caption, height } = this.moves.length
       ? board(this.moves, this.at, people, this.data?.events ?? [], this.width)
       : triangle(people, this.width);
     const last = this.moves.length - 1;
+    // people pop in when the board opens, and only then: a step through the
+    // stretch must not restage everyone on every move
     const zoom = this.entering ? " in" : "";
     this.entering = false;
     this.host.innerHTML =
-      `<div class="ss board${zoom}" style="height:${BOARD_H}px">${svg}` +
+      `<div class="ss board${zoom}" style="height:${height}px">${svg}` +
       `<button class="corner l ss-hit" data-target="${Target.Back}" ` +
       `aria-label="back to the time line">&#8592;</button></div>` +
       `<div class="bcap">${esc(caption)}</div>` +
