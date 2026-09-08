@@ -96,9 +96,13 @@ The beta build landed on branch FD-362 (draft PR btcopilot #136, fdserver #30) o
 - A real-browser fix pass on 2026-09-08 found 22 deviations from the approved references
   (table in the job tmp dir, ephemeral; to be moved into doc/chat-first/ when stable) and is
   fixing them to the references with Playwright golden screenshots.
-- UI_GAP.md row-by-row count against UI_SPEC.md's 440 rows: MET 114, PARTIAL 35,
-  CHANGED 66, MISSING 107, UNCHECKED 57. The earlier "fixed" claims for the move
-  symbols were wrong — four symbols are still reinterpreted, not built to spec.
+- UI_GAP.md row-by-row count against UI_SPEC.md's 441 rows, every build value read
+  from web/index.html, web/src/theme.css and web/src/*.ts with a file:line citation:
+  MET 122, PARTIAL 46, CHANGED 76, MISSING 112, UNCHECKED 23, N/A 62. The earlier
+  "fixed" claims for the move symbols were wrong, and so were several of the counts
+  derived from them, which is why the table is now read from the code rather than
+  from an audit write-up. Sessions and settings together are 49 MISSING and 1 MET.
+  Picture symbols are 27 CHANGED. The picture itself is 32 MET.
 
 Open after the walk (follow-ups, not rulings): chips pointing at a stretch the page
 derived itself do not resolve for the coach because only stored clusters resolve —
@@ -263,8 +267,8 @@ sends back, and how the picture is aimed are harness. [Oracle: R-0065]
 - One consistent visual mark says "this tap puts words in the chat"; anything without
   the mark never costs a turn. Users control both tokens and flow. [R-0068]
 
-UI_SPEC.md (job tmp dir, 2026-09-08) is the exhaustive canonical record of every
-approved UI element — 440 rows, each with the exact value and its owner source.
+UI_SPEC.md (doc/chat-first/) is the exhaustive canonical record of every
+approved UI element — 441 rows, each with the exact value and its owner source.
 UI_GAP.md is the live approved-vs-built table. Every front-end build works row by row
 from UI_SPEC, and is verified against it — prose in this file never outranks UI_SPEC on
 a UI question. 36 rows in UI_SPEC are marked "Needs the owner's ruling" and are open.
