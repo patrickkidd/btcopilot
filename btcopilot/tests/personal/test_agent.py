@@ -394,3 +394,27 @@ def test_a_turn_with_no_words_at_all_fails_rather_than_showing_a_bare_bubble(
 ):
     with pytest.raises(EmptyReply):
         run(discussion, "Hello?", Model(said("")))
+
+
+def test_a_label_too_long_for_one_chip_is_replaced_not_shortened(discussion, family):
+    """A chip is one size and never truncates. A reference falls back to what
+    the record calls the thing; an offer keeps its own first words."""
+    long_label = "the winter when Dad finally moved out of the family house"
+    reply = run(
+        discussion,
+        "Tell me about that.",
+        Model(
+            said(
+                f"[[event:10|{long_label}]] and "
+                f"[[ask:{long_label}]] and [[event:10|the move]]."
+            )
+        ),
+    )
+    assert reply["statement"] == (
+        "[[event:10|moved out]] and "
+        "[[ask:the winter when Dad]] and [[event:10|the move]]."
+    )
+    assert all(
+        len(label or target) <= chips.CHIP_MAX
+        for _, target, label in chips.parse(reply["statement"], family.get_diagram_data())
+    )
