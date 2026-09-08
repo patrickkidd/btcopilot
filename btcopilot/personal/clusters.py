@@ -1,8 +1,8 @@
-"""Grouping the record's events into episodes: rules first, model second.
+"""Grouping the record's events into clusters: rules first, model second.
 
 The candidates are computed from the record with no model call at all. The
-model only names each one, says in a sentence why it is one episode, and may
-merge, split, or reach for a non-adjacent event when it states why. Spec and
+model only names each one, says in a sentence what its events have in common,
+and may merge, split, or reach for a further event when it states why. Spec and
 ruling ids: doc/chat-first/CLUSTERS.md.
 """
 
@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from btcopilot.extensions import db
 from btcopilot.llmutil import gemini_structured_sync
 from btcopilot.personal import record
-from btcopilot.personal.intake import _parse_iso_date
+from btcopilot.personal.intake import NODAL_KINDS, SHIFT_FIELDS, _parse_iso_date
 from btcopilot.personal.models import Author
 from btcopilot.personal.prompts import CLUSTER_PROMPT, CLUSTER_REJECTED
 from btcopilot.pro.models import Diagram
@@ -33,14 +33,11 @@ from btcopilot.schema import (
 
 _log = logging.getLogger(__name__)
 
-# An event anchors an episode when it records a shift in one of these.
-ANCHOR_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
-
-# How far either side of an anchor a related event may sit and still be part of
-# the same episode.
+# How far either side of a nodal event or shift a related event may sit and
+# still be part of the same cluster.
 SPAN_DAYS = 548
 
-# A silence this long inside a candidate ends the episode.
+# A stretch this long with no nodal event or shift in it ends a cluster.
 CALM_GAP_DAYS = 730
 
 # Diagnostic and popular-psychology words the definitions the model is given do
@@ -75,16 +72,20 @@ def _enum_value(val):
     return val.value if hasattr(val, "value") else val
 
 
-def _anchor(event: Event) -> bool:
-    return any(getattr(event, name) is not None for name in ANCHOR_FIELDS)
+def is_nodal_or_shift(event: Event) -> bool:
+    """The kinds the intake engine counts as nodal, or any recorded shift."""
+    return event.kind in NODAL_KINDS or any(
+        getattr(event, name) is not None for name in SHIFT_FIELDS
+    )
 
 
 def _scaffold(event: Event, opens: datetime.date) -> bool:
-    """Births, marriages and the rest dated before the first shift are the age
-    scaffolding the record hangs on, not episode material."""
+    """Early births give people ages and generations and are diagnostically
+    inert [Oracle: R-0037]; the diagnostic period opens at the first nodal
+    event or shift [Oracle: R-0038]."""
     return (
         event.kind.isStructural()
-        and not _anchor(event)
+        and not is_nodal_or_shift(event)
         and _parse_iso_date(event.dateTime) < opens
     )
 
@@ -115,21 +116,21 @@ def _dated(data: DiagramData) -> list[Event]:
 
 
 def joinable(data: DiagramData) -> list[Event]:
-    """Every dated event an episode may hold: the scaffolding is held out."""
+    """Every dated event a cluster may hold: the scaffolding is held out."""
     events = _dated(data)
-    anchors = [e for e in events if _anchor(e)]
-    if not anchors:
+    marked = [e for e in events if is_nodal_or_shift(e)]
+    if not marked:
         return []
-    opens = _parse_iso_date(anchors[0].dateTime)
+    opens = _parse_iso_date(marked[0].dateTime)
     return [e for e in events if not _scaffold(e, opens)]
 
 
-def _split(ids: list[int], when: dict, anchor_ids: set[int]) -> list[list[int]]:
-    """A stretch with no anchor in it for two years is not one episode. Cut
-    between two anchors that far apart, at the widest silence between them."""
-    anchors = [event_id for event_id in ids if event_id in anchor_ids]
+def _split(ids: list[int], when: dict, marked: set[int]) -> list[list[int]]:
+    """Two years with nothing nodal and no shift in them is not one cluster.
+    Cut between two such events that far apart, at the widest silence."""
+    ordered = [event_id for event_id in ids if event_id in marked]
     cuts = set()
-    for first, second in zip(anchors, anchors[1:]):
+    for first, second in zip(ordered, ordered[1:]):
         if (when[second] - when[first]).days < CALM_GAP_DAYS:
             continue
         between = ids[ids.index(first) : ids.index(second) + 1]
@@ -154,16 +155,16 @@ def _split(ids: list[int], when: dict, anchor_ids: set[int]) -> list[list[int]]:
 @dataclass
 class Candidate:
     eventIds: list[int]
-    anchorIds: list[int]
+    nodalOrShiftIds: list[int]
     startDate: str
     endDate: str
 
 
 def candidates(data: DiagramData) -> list[Candidate]:
-    """The episodes the record itself asserts, with no model in the loop."""
+    """The clusters the record itself asserts, with no model in the loop."""
     free = joinable(data)
-    anchors = [e for e in free if _anchor(e)]
-    if not anchors:
+    marked = [e for e in free if is_nodal_or_shift(e)]
+    if not marked:
         return []
 
     bonds = [
@@ -175,15 +176,15 @@ def candidates(data: DiagramData) -> list[Candidate]:
     when = {e.id: _parse_iso_date(e.dateTime) for e in free}
 
     groups: list[set[int]] = []
-    for anchor in anchors:
+    for seed in marked:
         near = {
             e.id
             for e in free
-            if abs((when[e.id] - when[anchor.id]).days) <= SPAN_DAYS
+            if abs((when[e.id] - when[seed.id]).days) <= SPAN_DAYS
             and (
-                e.id == anchor.id
-                or reach[e.id][0] & reach[anchor.id][0]
-                or reach[e.id][1] & reach[anchor.id][1]
+                e.id == seed.id
+                or reach[e.id][0] & reach[seed.id][0]
+                or reach[e.id][1] & reach[seed.id][1]
             )
         }
         overlapping = [group for group in groups if group & near]
@@ -192,11 +193,11 @@ def candidates(data: DiagramData) -> list[Candidate]:
             near |= group
         groups.append(near)
 
-    anchor_ids = {a.id for a in anchors}
+    marked_ids = {e.id for e in marked}
     kept = [
         Candidate(
             eventIds=ids,
-            anchorIds=[event_id for event_id in ids if event_id in anchor_ids],
+            nodalOrShiftIds=[i for i in ids if i in marked_ids],
             startDate=when[ids[0]].isoformat(),
             endDate=when[ids[-1]].isoformat(),
         )
@@ -204,9 +205,9 @@ def candidates(data: DiagramData) -> list[Candidate]:
         for ids in _split(
             sorted(group, key=lambda event_id: (when[event_id], event_id)),
             when,
-            anchor_ids,
+            marked_ids,
         )
-        if len(ids) > 1 and any(event_id in anchor_ids for event_id in ids)
+        if len(ids) > 1 and any(event_id in marked_ids for event_id in ids)
     ]
     return sorted(kept, key=lambda c: (c.startDate, c.eventIds[0]))
 
@@ -247,7 +248,7 @@ def _event_json(event: Event) -> dict:
         "description": event.description or "",
         "people": sorted(_people(event)),
     }
-    for name in ANCHOR_FIELDS:
+    for name in SHIFT_FIELDS:
         value = getattr(event, name)
         if value is not None:
             chunk[name] = _enum_value(value)
@@ -261,7 +262,7 @@ def _prompt(cands: list[Candidate], free: list[Event]) -> str:
     blocks = [
         {
             "candidate": n + 1,
-            "anchorIds": candidate.anchorIds,
+            "nodalOrShiftIds": candidate.nodalOrShiftIds,
             "events": [_event_json(by_id[i]) for i in candidate.eventIds],
         }
         for n, candidate in enumerate(cands)
@@ -285,7 +286,7 @@ def _check(
 
     known = {e.id for e in free}
     shapes = {frozenset(candidate.eventIds) for candidate in cands}
-    anchors = {event_id for candidate in cands for event_id in candidate.anchorIds}
+    marked = {i for candidate in cands for i in candidate.nodalOrShiftIds}
     seen: set[int] = set()
     for cluster in response.clusters:
         unknown = [event_id for event_id in cluster.eventIds if event_id not in known]
@@ -316,9 +317,9 @@ def _check(
                 f"Cluster {cluster.name!r} uses {outside}, which the definitions "
                 "you were given do not contain."
             )
-    dropped = anchors - seen
+    dropped = marked - seen
     if dropped:
-        raise ClusterError(f"Anchor events {sorted(dropped)} were left out.")
+        raise ClusterError(f"Events {sorted(dropped)} were left out.")
     return response.clusters
 
 
@@ -373,8 +374,6 @@ STORED_FIELDS = (
     "eventIds",
     "startDate",
     "endDate",
-    "pattern",
-    "dominantVariable",
     "source",
 )
 

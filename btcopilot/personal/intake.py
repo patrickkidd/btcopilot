@@ -12,7 +12,7 @@ Consumers:
 import enum
 from dataclasses import dataclass
 
-from btcopilot.schema import DiagramData
+from btcopilot.schema import DiagramData, EventKind
 
 
 class DataCategory(enum.StrEnum):
@@ -47,9 +47,24 @@ class CategoryCoverage:
     detail: str = ""
 
 
-_NODAL_KINDS = {"death", "married", "divorced", "separated", "moved"}
-_MARITAL_KINDS = {"married", "divorced", "separated", "bonded"}
-_SARF_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
+NODAL_KINDS = frozenset(
+    {
+        EventKind.Death,
+        EventKind.Married,
+        EventKind.Divorced,
+        EventKind.Separated,
+        EventKind.Moved,
+    }
+)
+_MARITAL_KINDS = frozenset(
+    {
+        EventKind.Married,
+        EventKind.Divorced,
+        EventKind.Separated,
+        EventKind.Bonded,
+    }
+)
+SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 _CONNECTION_DAYS = 365
 
 
@@ -117,7 +132,7 @@ def coverage(diagram_data: DiagramData | None) -> dict[DataCategory, CategoryCov
         children.extend(p for p in people if p.get("parents") == pb_id)
     result[DataCategory.Children] = _list_coverage(children, DataCategory.Children, "children")
 
-    nodal = [e for e in events if e.get("kind") in _NODAL_KINDS]
+    nodal = [e for e in events if _kind(e) in NODAL_KINDS]
     if len(nodal) >= 3:
         nodal_status = CoverageStatus.Covered
     elif nodal:
@@ -355,7 +370,7 @@ def _parents_status_coverage(parents_pb, events):
     a, b = parents_pb.get("person_a"), parents_pb.get("person_b")
     relevant = [
         e for e in events
-        if e.get("kind") in _MARITAL_KINDS
+        if _kind(e) in _MARITAL_KINDS
         and {e.get("person"), e.get("spouse")} == {a, b}
     ]
     if relevant:
@@ -381,7 +396,7 @@ def _list_coverage(items, cat, label):
 
 
 def _has_sarf(event):
-    return any(event.get(f) for f in _SARF_FIELDS)
+    return any(event.get(f) for f in SHIFT_FIELDS)
 
 
 def _functioning_coverage(shifts):
@@ -477,6 +492,11 @@ def _connections_coverage(shifts, nodal_events):
         DataCategory.EventSymptomConnections, status,
         f"{connected} shift event(s) within {_CONNECTION_DAYS}d of a nodal event",
     )
+
+
+def _kind(event: dict) -> EventKind | None:
+    value = _enum_val(event.get("kind"))
+    return EventKind(value) if value is not None else None
 
 
 def _enum_val(x):

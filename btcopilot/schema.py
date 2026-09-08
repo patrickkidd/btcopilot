@@ -393,15 +393,6 @@ class TraceKey(enum.StrEnum):
     Statement = "codedInStatement"
 
 
-class ClusterPattern(enum.StrEnum):
-    AnxietyCascade = "anxiety_cascade"
-    TriangleActivation = "triangle_activation"
-    ConflictResolution = "conflict_resolution"
-    ReciprocalDisturbance = "reciprocal_disturbance"
-    FunctioningGain = "functioning_gain"
-    WorkFamilySpillover = "work_family_spillover"
-
-
 class ClusterSource(enum.StrEnum):
     Model = "model"
     User = "user"
@@ -419,11 +410,9 @@ class Cluster:
     eventIds: list[int] = field(default_factory=list)
     startDate: str | None = None
     endDate: str | None = None
-    pattern: ClusterPattern | None = None
-    dominantVariable: str | None = None
     name: str | None = None
     source: ClusterSource = ClusterSource.Model
-    # One sentence saying which chain of moves makes these events one episode.
+    # One sentence saying what the record shows these events have in common.
     reason: str | None = None
 
 

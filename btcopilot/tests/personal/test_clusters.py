@@ -1,4 +1,4 @@
-"""The rules make the episodes; the model only names them and says why.
+"""The rules make the clusters; the model only names them and says why.
 
 The first half of this file runs without a model at all — that is the point of
 the deterministic pass. The second half scripts the model and checks what the
@@ -45,7 +45,7 @@ def grouped(data: DiagramData) -> list[list[int]]:
     return [c.eventIds for c in candidates(data)]
 
 
-def test_an_anchor_gathers_the_moves_around_it():
+def test_a_shift_gathers_the_moves_around_it():
     data = record(
         moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1994-11-01", person=1, description="stopped sleeping"),
@@ -54,7 +54,7 @@ def test_an_anchor_gathers_the_moves_around_it():
     assert grouped(data) == [[1, 2]]
 
 
-def test_a_move_beyond_the_span_is_a_different_episode():
+def test_a_move_beyond_the_span_stays_out():
     data = record(
         moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1996-06-01", person=1, description="two years later"),
@@ -62,7 +62,7 @@ def test_a_move_beyond_the_span_is_a_different_episode():
     assert grouped(data) == []
 
 
-def test_structure_dated_before_the_first_shift_is_scaffolding():
+def test_a_birth_before_anything_is_recorded_is_scaffolding():
     data = record(
         asdict(Event(id=1, kind=EventKind.Birth, child=1, dateTime="1994-01-01")),
         moment(2, "1994-06-01", person=1, anxiety=VariableShift.Up),
@@ -71,7 +71,7 @@ def test_structure_dated_before_the_first_shift_is_scaffolding():
     assert grouped(data) == [[2, 3]]
 
 
-def test_structure_after_the_first_shift_belongs_to_the_episode():
+def test_structure_from_the_recorded_period_belongs_to_the_cluster():
     data = record(
         moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
         asdict(
@@ -83,7 +83,7 @@ def test_structure_after_the_first_shift_belongs_to_the_episode():
     assert grouped(data) == [[1, 2]]
 
 
-def test_a_couple_share_an_episode_through_their_pair_bond():
+def test_a_couple_share_a_cluster_through_their_pair_bond():
     data = record(
         moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1994-09-01", person=2, description="her side of it"),
@@ -93,7 +93,7 @@ def test_a_couple_share_an_episode_through_their_pair_bond():
     assert grouped(data) == [[1, 2]]
 
 
-def test_a_lone_anchor_with_no_related_move_stays_a_dot():
+def test_a_lone_shift_with_no_related_move_stays_a_dot():
     data = record(
         moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1994-09-01", person=2, description="someone else entirely"),
@@ -101,7 +101,7 @@ def test_a_lone_anchor_with_no_related_move_stays_a_dot():
     assert grouped(data) == []
 
 
-def test_two_anchors_that_reach_the_same_move_are_one_episode():
+def test_two_shifts_that_reach_the_same_move_are_one_cluster():
     data = record(
         moment(1, "1994-01-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1994-11-01", person=1, description="the middle of it"),
@@ -110,10 +110,10 @@ def test_two_anchors_that_reach_the_same_move_are_one_episode():
     assert grouped(data) == [[1, 2, 3]]
 
 
-def test_two_years_with_no_anchor_ends_the_episode():
-    """The two anchors reach the same middle event, so the rules first put all
-    five together; nothing marks the stretch between the anchors, so it breaks
-    at the widest silence between them."""
+def test_two_recorded_years_apart_end_the_cluster():
+    """The two shifts reach the same middle event, so the rules first put all
+    five together; nothing is recorded in the stretch between them, so it breaks
+    at the widest silence."""
     data = record(
         moment(1, "1990-01-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1990-03-01", person=1, description="the week after"),
@@ -124,9 +124,9 @@ def test_two_years_with_no_anchor_ends_the_episode():
     assert grouped(data) == [[1, 2, 3], [4, 5]]
 
 
-def test_a_break_can_leave_an_anchor_standing_alone():
-    """When the break takes the only companion away, what is left is an anchor
-    with no related move, which is a dot and not an episode."""
+def test_a_break_can_leave_a_shift_standing_alone():
+    """When the break takes the only companion away, what is left is a shift
+    with no related move, which is a dot and not a cluster."""
     data = record(
         moment(1, "1990-01-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1991-06-01", person=1, description="the quiet middle"),
@@ -136,7 +136,7 @@ def test_a_break_can_leave_an_anchor_standing_alone():
     assert grouped(data) == [[2, 3, 4]]
 
 
-def test_an_undated_event_never_enters_an_episode():
+def test_an_undated_event_never_enters_a_cluster():
     data = record(
         moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
         moment(2, "1994-09-01", person=1, description="dated"),
@@ -145,7 +145,40 @@ def test_an_undated_event_never_enters_an_episode():
     assert grouped(data) == [[1, 2]]
 
 
-def test_a_relationship_move_anchors_an_episode():
+def test_a_nodal_event_seeds_a_cluster_with_no_variable_on_it():
+    """The intake engine's nodal kinds seed a cluster on their own; a birth is
+    not one of them."""
+    data = record(
+        asdict(Event(id=1, kind=EventKind.Death, person=1, dateTime="1994-06-01")),
+        moment(2, "1994-09-01", person=1, description="the months after"),
+    )
+    assert grouped(data) == [[1, 2]]
+
+
+def test_a_birth_alone_seeds_nothing():
+    data = record(
+        asdict(Event(id=1, kind=EventKind.Birth, child=1, dateTime="1994-06-01")),
+        moment(2, "1994-09-01", person=1, description="the months after"),
+    )
+    assert grouped(data) == []
+
+
+def test_a_nodal_event_opens_the_recorded_period_for_the_births_after_it():
+    """The period starts at the first nodal event or shift, so a birth dated
+    after an early marriage is no longer scaffolding."""
+    data = record(
+        asdict(
+            Event(
+                id=1, kind=EventKind.Married, person=1, spouse=2, dateTime="1950-01-01"
+            )
+        ),
+        asdict(Event(id=2, kind=EventKind.Birth, child=3, dateTime="1952-01-01")),
+        moment(3, "1952-06-01", person=3, anxiety=VariableShift.Up),
+    )
+    assert grouped(data) == [[2, 3]]
+
+
+def test_a_relationship_move_seeds_a_cluster():
     data = record(
         moment(
             1,
@@ -181,7 +214,7 @@ def test_the_words_in_a_description_never_move_a_boundary():
     assert grouped(plain) == grouped(loaded) == [[1, 2, 3]]
 
 
-EPISODE = record(
+RECORD = record(
     moment(1, "1994-06-01", person=1, anxiety=VariableShift.Up),
     moment(2, "1994-09-01", person=1, description="they argued"),
     moment(3, "1997-01-01", person=1, functioning=VariableShift.Down),
@@ -213,7 +246,7 @@ def replies(*responses):
 
 def test_the_model_names_the_candidates_it_was_given():
     with replies(answers(named(1, 2), named(3, 4, name="The winter after"))):
-        result = detect_clusters(EPISODE)
+        result = detect_clusters(RECORD)
     assert [c.eventIds for c in result.clusters] == [[1, 2], [3, 4]]
     assert [c.name for c in result.clusters] == ["A hard spring", "The winter after"]
     assert all(c.reason for c in result.clusters)
@@ -222,43 +255,43 @@ def test_the_model_names_the_candidates_it_was_given():
 def test_a_grouping_that_names_an_event_the_record_does_not_hold_is_rejected():
     with replies(answers(named(1, 2, 99)), answers(named(1, 2, 99))):
         with pytest.raises(ClusterError, match="99"):
-            detect_clusters(EPISODE)
+            detect_clusters(RECORD)
 
 
 def test_a_group_that_is_not_a_candidate_and_says_no_why_is_rejected():
     joined = named(1, 2, 3, 4)
     with replies(answers(joined), answers(joined)):
         with pytest.raises(ClusterError, match="says no reason"):
-            detect_clusters(EPISODE)
+            detect_clusters(RECORD)
 
 
 def test_the_model_may_join_two_candidates_when_it_says_why():
     with replies(
         answers(named(1, 2, 3, 4, change="the same argument came back in 1997"))
     ):
-        result = detect_clusters(EPISODE)
+        result = detect_clusters(RECORD)
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3, 4]]
 
 
-def test_an_anchor_may_not_be_left_out():
+def test_a_seeding_event_may_not_be_left_out():
     left_out = named(1, 2)
     with replies(answers(left_out), answers(left_out)):
         with pytest.raises(ClusterError, match=r"\[3\]"):
-            detect_clusters(EPISODE)
+            detect_clusters(RECORD)
 
 
 def test_one_event_may_not_sit_in_two_groups():
     twice = answers(named(1, 2), named(2, 3, 4, change="it reads both ways"))
     with replies(twice, twice):
         with pytest.raises(ClusterError, match="two clusters"):
-            detect_clusters(EPISODE)
+            detect_clusters(RECORD)
 
 
 def test_a_group_with_no_reason_is_rejected():
     silent = answers(named(1, 2, reason=""), named(3, 4))
     with replies(silent, silent):
         with pytest.raises(ClusterError, match="needs a reason"):
-            detect_clusters(EPISODE)
+            detect_clusters(RECORD)
 
 
 def test_words_from_outside_the_given_definitions_are_rejected():
@@ -270,12 +303,12 @@ def test_words_from_outside_the_given_definitions_are_rejected():
     )
     with replies(outside, outside):
         with pytest.raises(ClusterError, match="codepend"):
-            detect_clusters(EPISODE)
+            detect_clusters(RECORD)
 
 
 def test_a_rejected_grouping_is_asked_for_once_more():
     with replies(answers(named(1, 2, 99)), answers(named(1, 2), named(3, 4))) as ask:
-        result = detect_clusters(EPISODE)
+        result = detect_clusters(RECORD)
     assert [c.eventIds for c in result.clusters] == [[1, 2], [3, 4]]
     second = ask.call_args_list[1].args[0]
     assert "thrown out" in second and "99" in second

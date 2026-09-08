@@ -148,19 +148,19 @@ THE EVENTS IN DATE ORDER
 # ── Clusters ─────────────────────────────────────────────────────────────────
 #
 # The candidates come from the rules in clusters.py, never from here. This stub
-# asks only for the naming; what makes events one episode is a clinical
-# definition and lives in the private prompts.
+# asks only for the naming; the definitions the model is allowed to use live in
+# the private prompts.
 
 CLUSTER_PROMPT = """
 Each candidate below is a group of events from one person's record. Name each
-group and say in one sentence why its events belong together.
+group and say in one sentence what the record shows its events have in common.
 
 Keep the groups as given unless one is clearly wrong. You may join two of them,
 break one apart, or pull in an event from the unclustered list — and whenever
 you do, say why in `change`. Without that sentence the change is thrown out.
 
-Never write an id that is not listed below and never leave out an event listed
-under `anchorIds`.
+Never write an id that is not listed below, and never leave out an event listed
+under `nodalOrShiftIds`.
 
 Return one entry per final group: `eventIds`, `name`, `reason`, and `change`
 when the group is not one of the candidates exactly as given.
