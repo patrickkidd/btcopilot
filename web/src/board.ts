@@ -19,8 +19,6 @@ import type { Person, TimelineEvent } from "./types";
 
 /** The ratified board: 264px tall, people on an ellipse around its centre. */
 export const BOARD_H = 264;
-const REF_W = 380;
-const RING = 82;
 
 export interface Step {
   event: TimelineEvent;
@@ -65,12 +63,24 @@ export function ellipse(
   height = BOARD_H,
 ): Figure[] {
   const cx = width / 2;
-  const cy = height / 2;
-  const rx = Math.min(cx - 44, (RING * 1.75 * width) / REF_W);
-  const ry = Math.min(cy - 46, RING);
   const n = people.length;
+  const angleAt = (i: number) => -Math.PI / 2 + (i / n) * Math.PI * 2;
+  // The board leaves no space it is not using. What has to fit is the people,
+  // not the ellipse they stand on: with three of them nobody stands at the
+  // bottom of it, so sizing the ellipse to the box leaves a band of nothing
+  // under them. The lowest person a given cast puts on the ring is what the
+  // height is fitted to. Above, a figure needs room for the name written over
+  // it; below, the figure alone.
+  const ABOVE = BOARD_R + 22;
+  const BELOW = BOARD_R + 10;
+  const lowest = Math.max(...people.map((_, i) => Math.sin(angleAt(i))), 0);
+  const ry = Math.max(40, (height - ABOVE - BELOW) / (1 + lowest));
+  const cy = ABOVE + ry;
+  // across, the frame is the limit rather than the ratified 1.75, which was
+  // drawn in a box proportioned differently from a phone's
+  const rx = Math.min(cx - 44, ry * 1.75);
   return people.map((p, i) => {
-    const angle = -Math.PI / 2 + (i / n) * Math.PI * 2;
+    const angle = angleAt(i);
     return {
       id: p.id,
       name: p.name,

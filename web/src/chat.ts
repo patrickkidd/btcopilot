@@ -1,5 +1,5 @@
 import { esc, el } from "./dom";
-import { chipText, tokenize } from "./chips";
+import { tokenize } from "./chips";
 import { ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -15,8 +15,10 @@ export interface ChatHandlers {
   label(chip: Chip): string;
 }
 
-/** How long a chip stays lit while its move draws (pane A). */
-const LIT_MS = 1000;
+/** The beat after a move's sentence has been written, before the next move
+ * takes the board: long enough to look at what was just drawn. The owner tunes
+ * this by feel, so it is one number in one place. */
+const READ_MS = 2000;
 /** The coach writes two characters at a time, on the approved cadence. */
 const CHARS = 2;
 const TICK_MS = 18;
@@ -27,6 +29,11 @@ const TRACE_MS = 2200;
 
 export class Chat {
   private typing: HTMLElement | null = null;
+  /** Whether the thread is following the newest words. */
+  private stuck = true;
+  /** True while this class is the one moving the scroll, so its own pinning is
+   * not mistaken for the reader scrolling away. */
+  private pinning = false;
 
   constructor(
     private list: HTMLElement,
@@ -38,13 +45,6 @@ export class Chat {
       if (!button) return;
       e.preventDefault();
       if (host === this.composer) return void button.remove();
-      // A label too long to fit shows its beginning; the first tap on one of
-      // those is a look at the rest of the words, and the tap after it speaks.
-      if (button.classList.contains("clip")) {
-        button.classList.remove("clip");
-        button.textContent = button.dataset.full ?? button.textContent;
-        return;
-      }
       this.handlers.onChip({
         kind: button.dataset.kind as Chip["kind"],
         target: button.dataset.target ?? "",
@@ -55,19 +55,22 @@ export class Chat {
         bare: false,
       });
     };
+    this.watchScrolling();
     this.list.addEventListener("click", tap(this.list));
     this.composer.addEventListener("click", tap(this.composer));
   }
 
+  /** One size, the whole label, never cut. The coach's labels are capped at
+   * the source, so a chip that needs shortening is a bug upstream rather than
+   * something for the reader to expand. */
   private pill(chip: Chip): string {
     const full = this.handlers.label(chip);
-    const { text, clipped } = chipText(full);
     const offer = chip.tone === ChipTone.Ask;
     return (
-      `<button type="button" class="chip ${chip.tone}${clipped ? " clip" : ""}" ` +
+      `<button type="button" class="chip ${chip.tone}" ` +
       `data-kind="${chip.kind}" data-target="${esc(chip.target)}" ` +
       `data-full="${esc(full)}" title="${esc(full)}">` +
-      `${offer ? "[" : ""}${esc(text)}${offer ? "]" : ""}</button>`
+      `${offer ? "[" : ""}${esc(full)}${offer ? "]" : ""}</button>`
     );
   }
 
@@ -79,6 +82,7 @@ export class Chat {
 
   clear(): void {
     this.list.innerHTML = "";
+    this.stuck = true;
   }
 
   add(
@@ -97,6 +101,7 @@ export class Chat {
     // back at the words that coded it.
     if (statementId !== null) bubble.dataset.statement = String(statementId);
     this.list.append(bubble);
+    this.stuck = true;
     this.scroll();
     return bubble;
   }
@@ -133,6 +138,7 @@ export class Chat {
     );
     this.list.append(bubble);
     this.typing = bubble;
+    this.stuck = true;
     this.scroll();
     const words = bubble.querySelector(".words") as HTMLElement;
     return {
@@ -140,18 +146,32 @@ export class Chat {
         bubble.insertBefore(el("div", "did", esc(line)), words);
         this.scroll();
       },
-      type: async (text, onChip, pace = LIT_MS) => {
+      type: async (text, onChip, pace = READ_MS) => {
+        // A move holds until the sentence about it has been written and there
+        // has been a beat to look at it, not for a fixed count from the moment
+        // it was named. The chip stays lit for as long as its move is the one
+        // on the board.
+        let held: HTMLElement | null = null;
+        const release = async () => {
+          if (!held) return;
+          await wait(pace);
+          held.classList.remove("lit");
+          held = null;
+        };
         for (const piece of tokenize(text)) {
           if ("chip" in piece) {
-            words.insertAdjacentHTML("beforeend", this.pill(piece.chip));
-            const pill = words.lastElementChild as HTMLElement;
             // an offer names nothing in the record, so nothing draws and the
             // next one follows straight after
             const offer = piece.chip.tone === ChipTone.Ask;
-            if (!offer) pill.classList.add("lit");
+            if (!offer) await release();
+            words.insertAdjacentHTML("beforeend", this.pill(piece.chip));
+            const pill = words.lastElementChild as HTMLElement;
             onChip(piece.chip);
-            await wait(offer ? OFFER_MS : pace);
-            pill.classList.remove("lit");
+            if (offer) await wait(OFFER_MS);
+            else {
+              pill.classList.add("lit");
+              held = pill;
+            }
           } else {
             for (let i = 0; i < piece.text.length; i += CHARS) {
               words.append(piece.text.slice(i, i + CHARS));
@@ -161,6 +181,7 @@ export class Chat {
           }
           this.scroll();
         }
+        await release();
         bubble.classList.remove("typing");
         this.typing = null;
       },
@@ -227,8 +248,34 @@ export class Chat {
     this.composer.innerHTML = "";
   }
 
+  /** How far from the bottom still counts as watching the newest words. */
+  private static readonly STUCK_PX = 24;
+
+  /** The thread follows the coach's words down while the reader is at the
+   * bottom, and stops following the moment they scroll up to read something
+   * earlier. Scrolling back down picks it up again. */
+  private atBottom(): boolean {
+    const { scrollTop, scrollHeight, clientHeight } = this.list;
+    return scrollHeight - clientHeight - scrollTop <= Chat.STUCK_PX;
+  }
+
+  private watchScrolling(): void {
+    this.list.addEventListener(
+      "scroll",
+      () => {
+        if (!this.pinning) this.stuck = this.atBottom();
+      },
+      { passive: true },
+    );
+  }
+
   private scroll(): void {
+    if (!this.stuck) return;
+    this.pinning = true;
     this.list.scrollTop = this.list.scrollHeight;
+    requestAnimationFrame(() => {
+      this.pinning = false;
+    });
   }
 }
 

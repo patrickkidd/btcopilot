@@ -133,6 +133,8 @@ export class Picture {
   private at = 0;
   private pair: [number, number] | null = null;
   private entering = false;
+  /** Set once the reader steps the board themselves. */
+  private steered = false;
   private band: { start: string; end: string } | null = null;
   private focus: Chapter | null = null;
   private range = { min: 0, max: 1 };
@@ -215,6 +217,9 @@ export class Picture {
     // with people on stage is drawn on the board and nowhere else (ruled)
     const on = this.moves.findIndex((m) => m.event.id === eventId);
     if (this.level === Level.Board && on >= 0) {
+      // once the reader has taken the controls the play-through stops moving
+      // the board under them
+      if (this.steered) return;
       this.at = on;
       this.render();
       return;
@@ -234,6 +239,7 @@ export class Picture {
     if (!this.moves.length) return 0;
     this.level = Level.Board;
     this.entering = true;
+    this.steered = false;
     this.at = 0;
     this.cast = [];
     this.render();
@@ -252,6 +258,9 @@ export class Picture {
   }
 
   private control(target: Target): void {
+    // the reader taking the controls outranks a play-through still running:
+    // from here the board is theirs to step
+    if (target !== Target.Back) this.steered = true;
     if (target === Target.Back) {
       this.level = Level.Wire;
       this.moves = [];
@@ -530,7 +539,6 @@ export class Picture {
       ? board(this.moves, this.at, people, this.data?.events ?? [], this.width)
       : triangle(people, this.width);
     const last = this.moves.length - 1;
-    this.pin(BOARD_H + 84);
     const zoom = this.entering ? " in" : "";
     this.entering = false;
     this.host.innerHTML =
@@ -547,6 +555,14 @@ export class Picture {
           `${this.at >= last ? "disabled" : ""}>&#9654; next move</button>` +
           `</div>`
         : "");
+    // The board is as tall as what it holds — the drawing, its caption and its
+    // controls — rather than a fixed number with an empty band under it.
+    this.pin(
+      [...this.host.children].reduce(
+        (total, node) => total + node.getBoundingClientRect().height,
+        0,
+      ),
+    );
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
       this.host.querySelector("svg")?.pauseAnimations();
   }
