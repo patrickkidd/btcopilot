@@ -11,6 +11,7 @@ _log = logging.getLogger(__name__)
 def create_app(config: dict = None, **kwargs):
     from btcopilot.pro.copilot.engine import Engine
     from btcopilot import auth, companion, extensions, pro, personal, training
+    from btcopilot.auth import signin
 
     # Flask CLI may pass script_info as a kwarg, we ignore it
     kwargs.pop("script_info", None)
@@ -156,6 +157,10 @@ def create_app(config: dict = None, **kwargs):
 
     @app.route("/")
     def root():
+        """Someone who comes back to the site with a live chat session belongs
+        in their chat, not at the training app's login."""
+        if signin.current_web_session():
+            return redirect(app.config["CHAT_HOME"])
         return redirect(url_for("training.auth.login"))
 
     _log.debug("btcopilot.create_app() complete")

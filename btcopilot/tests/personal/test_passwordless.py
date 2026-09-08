@@ -56,6 +56,21 @@ def test_invite_creates_user_and_signs_in(flask_app, browser):
     assert browser.get("/me").get_json()["user"]["email"] == INVITED
 
 
+def test_coming_back_to_the_site_root_lands_in_the_chat(flask_app, browser):
+    invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
+    browser.get(f"/invite/{invitation.token}")
+
+    response = browser.get("/")
+    assert response.headers["Location"] == flask_app.config["CHAT_HOME"]
+
+
+def test_signing_in_stamps_the_session_the_training_app_ages(flask_app, browser):
+    invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
+    browser.get(f"/invite/{invitation.token}")
+    with browser.session_transaction() as cookie:
+        assert cookie["logged_in_at"]
+
+
 def test_invite_is_single_use(flask_app, browser):
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
     browser.get(f"/invite/{invitation.token}")

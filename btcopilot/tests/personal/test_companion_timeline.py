@@ -293,3 +293,11 @@ def test_every_event_carries_the_words_the_list_shows():
     for event in timeline["events"]:
         assert event["label"]
         assert event["person_name"]
+
+
+def test_an_event_carries_the_fields_whoever_stored_it_left_out():
+    events = [{"id": 10, "kind": EventKind.Shift.value, "dateTime": "1990-01-01"}]
+    event = build_timeline(_data([1], events))["events"][0]
+    assert event["relationshipTargets"] == []
+    assert event["relationshipTriangles"] == []
+    assert event["spouse"] is None

@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 from flask import current_app, request, session
@@ -38,6 +39,9 @@ def sign_in(user: User) -> WebSession:
     session.clear()
     session["user_id"] = user.id
     session[SESSION_TOKEN] = web_session.token
+    # The training app ages a session by this stamp and clears the cookie when
+    # it is missing, which would sign the chat user out on any shared route.
+    session["logged_in_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
     session.permanent = True
     return web_session
 

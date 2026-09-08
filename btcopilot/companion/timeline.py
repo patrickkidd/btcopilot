@@ -4,12 +4,14 @@ gap vs recorded no-change, undated shelf, deterministic order questions."""
 
 import datetime
 import logging
+from dataclasses import MISSING, fields as dc_fields
 
 from btcopilot.personal.intake import _enum_val, _parse_iso_date
 from btcopilot.personal.refs import Ref, RefKind
 from btcopilot.schema import (
     DateCertainty,
     DiagramData,
+    Event,
     EventKind,
     RelationshipKind,
     TraceKey,
@@ -89,13 +91,23 @@ def _certainty(event: dict) -> str:
 
 
 def event_payload(event: dict) -> dict:
-    """One committed event chunk as JSON: enum values out of enums, Qt dates
-    out of dates."""
-    out = {key: _enum_val(value) for key, value in event.items()}
+    """One committed event chunk as JSON: every field the schema declares, enum
+    values out of enums, Qt dates out of dates. A stored event only carries the
+    fields something set, and the page is entitled to the whole shape."""
+    out = {name: value for name, value in _event_defaults()}
+    out.update({key: _enum_val(value) for key, value in event.items()})
     for key in DATE_FIELDS:
         date = _parse_iso_date(event.get(key))
         out[key] = date.isoformat() if date else None
     return out
+
+
+def _event_defaults():
+    for f in dc_fields(Event):
+        if f.default_factory is not MISSING:
+            yield f.name, f.default_factory()
+        else:
+            yield f.name, _enum_val(None if f.default is MISSING else f.default)
 
 
 def _label(event: dict, people_by_id: dict) -> str:

@@ -101,19 +101,23 @@ function apply(outcome: Outcome): void {
       outcome.record.item_kind,
       outcome.record.item_id,
     );
-  if (outcome.insert)
+  if (outcome.insert) {
+    // The tap that speaks closes the caption, so the cluster it spoke about is
+    // the one it recorded, not the one still open.
+    const target = outcome.record?.item_id ?? "";
     chat.insert({
       kind: ChipKind.Cluster,
-      target: outcome.state.open ?? "",
-      label: captionTitle() ?? "this stretch",
+      target,
+      label: chapterTitle(target) ?? "this stretch",
       tone: ChipTone.Data,
       bare: false,
     });
+  }
   if (outcome.play) void playThrough(outcome.play);
 }
 
-function captionTitle(): string | null {
-  const chapter = timeline.chapters.find((c) => c.id === pic.open);
+function chapterTitle(id: string | null): string | null {
+  const chapter = timeline.chapters.find((c) => c.id === id);
   return chapter ? chapter.title : null;
 }
 
