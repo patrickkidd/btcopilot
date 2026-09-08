@@ -34,17 +34,24 @@ test.describe("chips in a bubble", () => {
     expect(escaped).toEqual([]);
   });
 
-  test("a label too long to fit shows the rest when it is tapped", async ({ page }) => {
+  test("every chip shows its whole label, at one size", async ({ page }) => {
     await page.goto("/companion/");
     await expect(page.locator(".bub").first()).toBeVisible();
-    const clipped = page.locator(".bub .chip.clip").first();
-    const before = (await clipped.textContent()) ?? "";
-    await clipped.scrollIntoViewIfNeeded();
-    await clipped.click();
-    const opened = page.locator(".bub .chip").filter({ hasText: before.slice(0, 12) });
-    await expect(opened.first()).not.toHaveClass(/clip/);
-    // looking at the rest of the words costs nothing
-    await expect(page.locator("#composer")).toHaveText("");
+    await page.waitForTimeout(400);
+    // The owner ruled out the two-tap expand: labels are capped at the source,
+    // so a chip is never cut and never has a second state to discover.
+    const cut = await page.evaluate(() =>
+      [...document.querySelectorAll(".bub .chip")]
+        .filter((c) => {
+          const words = c.textContent ?? "";
+          // a chip wraps onto more lines rather than being cut, so what marks
+          // a cut is the ellipsis and the label not matching what it names
+          return /…/.test(words) || words.replace(/^\[|\]$/g, "") !== (c.getAttribute("data-full") ?? words);
+        })
+        .map((c) => c.textContent),
+    );
+    expect(cut).toEqual([]);
+    expect(await page.locator(".bub .chip.clip").count()).toBe(0);
   });
 });
 

@@ -17,6 +17,9 @@
      (resolution 52). In dark mode the mark hues already clear the floor. */
   --ask-text: #9e6d15;
   --move-text: #27874b;
+  /* one step darker again, for the moment a chip is under the thumb */
+  --data-press: #0a5b57;
+  --ask-press: #7c560f;
   --tint: rgba(14, 125, 120, 0.08);
   --ask-tint: rgba(201, 138, 27, 0.1);
   --onaccent: #fff;
@@ -41,6 +44,8 @@
     --ask-tint: rgba(224, 168, 63, 0.14);
     --ask-text: var(--ask);
     --move-text: var(--move);
+    --data-press: #7fdcd5;
+    --ask-press: #f0c26a;
     --onaccent: #0d1413;
     --shadow: rgba(0, 0, 0, 0.4);
     --scrim: rgba(0, 0, 0, 0.28);
@@ -59,6 +64,8 @@
   --ask-tint: rgba(224, 168, 63, 0.14);
   --ask-text: var(--ask);
   --move-text: var(--move);
+  --data-press: #7fdcd5;
+  --ask-press: #f0c26a;
   --onaccent: #0d1413;
   --shadow: rgba(0, 0, 0, 0.4);
   --scrim: rgba(0, 0, 0, 0.28);
@@ -574,6 +581,9 @@ button { font-family: inherit; }
   touch-action: pan-y;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  /* the thread is pinned to its newest words in code; the browser's own
+     anchoring fights that as a bubble grows while it is typed */
+  overflow-anchor: none;
 }
 .bub {
   max-width: 82%;
@@ -663,11 +673,12 @@ button { font-family: inherit; }
   position: absolute;
   inset: -9px -4px;
 }
-.chip.clip {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+/* A chip answers the thumb: the converged chip colour one step darker under
+   the finger, for as long as the press lasts. */
+.chip:active { background: var(--tint); color: var(--data-press); }
+.chip.ask:active { background: var(--ask-tint); color: var(--ask-press); }
+.bub.user .chip:active { background: rgba(255, 255, 255, 0.18); color: inherit; }
+
 /* the chip lights while the move it names is drawn (approved play-by-play) */
 .chip.lit {
   color: var(--ask-text);

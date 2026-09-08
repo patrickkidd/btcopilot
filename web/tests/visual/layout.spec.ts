@@ -233,6 +233,39 @@ test.describe("a long family name", () => {
   });
 });
 
+test.describe("the moves board fills the room it takes", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  test("no empty band under the drawing or the controls", async ({ page }) => {
+    await settle(page);
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    await page.locator("#cap-play").click();
+    await expect(page.locator(".ss.board")).toBeVisible();
+    await page.waitForTimeout(600);
+
+    const fit = await page.evaluate(() => {
+      const view = document.querySelector("#view")!;
+      const parts = [...view.children].map((n) => n.getBoundingClientRect().height);
+      const last = view.lastElementChild!;
+      return {
+        region: Math.round(view.getBoundingClientRect().height),
+        content: Math.round(parts.reduce((a, b) => a + b, 0)),
+        lastClass: last.className,
+        lastBottom: Math.round(last.getBoundingClientRect().bottom),
+        regionBottom: Math.round(view.getBoundingClientRect().bottom),
+      };
+    });
+    // the region is exactly what it holds, and the controls are the last thing
+    expect(fit.region).toBe(fit.content);
+    expect(fit.lastClass).toContain("pctl");
+    expect(fit.regionBottom - fit.lastBottom).toBeLessThanOrEqual(1);
+
+    // and the ruled control height survives
+    for (const box of await page.locator(".pctl .btn").all())
+      expect(Math.round((await box.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
+  });
+});
+
 test.describe("a moment traces back to the words that coded it", () => {
   test.use({ storageState: stateFor("moves") });
 

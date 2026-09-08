@@ -231,8 +231,23 @@ function aim(chip: Chip): void {
   const ids = aimedEvents(chip, timeline.chapters);
   if (!ids.length) return;
   picture.spotlight(ids);
-  pic = REST;
-  actions();
+  // A chip in the coach's words does exactly what a tap on the picture does:
+  // there is one selection, wherever the reader touched it. A chip naming one
+  // moment selects that moment; a chip naming a stretch selects the stretch,
+  // so the caption offers Play for it.
+  const stretch =
+    ids.length > 1
+      ? timeline.chapters.find((c) => ids.every((id) => c.event_ids.includes(id)))
+      : undefined;
+  apply(
+    reduce(
+      REST,
+      PicEvent.Tap,
+      stretch
+        ? { kind: SelKind.Cluster, id: stretch.id }
+        : { kind: SelKind.Event, id: String(ids[0]) },
+    ),
+  );
 }
 
 /** One place turns a picture tap into its consequences: what the picture shows,
@@ -241,6 +256,10 @@ function apply(outcome: Outcome): void {
   pic = outcome.state;
   const sel = pic.sel;
   picture.select(sel && sel.kind === SelKind.Event ? Number(sel.id) : null);
+  if (sel?.kind === SelKind.Cluster) {
+    const stretch = timeline.chapters.find((c) => c.id === sel.id);
+    if (stretch) picture.spotlight(stretch.event_ids);
+  }
   actions();
   if (outcome.record)
     tapped(outcome.record.kind, outcome.record.item_kind, outcome.record.item_id);
@@ -309,7 +328,9 @@ function actions(): void {
   const stretch =
     sel.kind === SelKind.Event
       ? timeline.chapters.find((c) => c.event_ids.includes(Number(sel.id)))
-      : undefined;
+      : sel.kind === SelKind.Cluster
+        ? timeline.chapters.find((c) => c.id === sel.id)
+        : undefined;
   const ask = sel.kind === SelKind.Shelf ? "Ask when" : "Ask about this";
   const trace = sel.kind === SelKind.Event ? codedIn(Number(sel.id)) : null;
   // The board entry button says how many moves it will draw, and is only
