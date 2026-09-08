@@ -5,21 +5,21 @@ the user last spoke in."""
 from flask import abort, jsonify, request
 
 from btcopilot import auth
-from btcopilot.companion.blueprint import (
+from btcopilot.personal.routes import (
     bp,
     diagram,
     current_session,
     last_activity,
     owned_session,
-    sessions,
+    user_sessions,
 )
-from btcopilot.companion.diagrams import readable
+from btcopilot.personal.routes.diagrams import readable
 from btcopilot.extensions import db
 from btcopilot.personal.coachturn import CoachTurn
 from btcopilot.personal.models import Discussion, StatementKind
-from btcopilot.personal.routes.discussions import (
-    _create_discussion,
-    _sync_chat_speakers,
+from btcopilot.personal.discussions import (
+    create_discussion,
+    sync_chat_speakers,
 )
 
 
@@ -53,7 +53,7 @@ def _reply(discussion: Discussion, statement: str) -> dict:
     """One agent-loop turn. The words carry their own chips; `events` carries
     what the coach did behind them, in the order it happened, so the page can
     move the picture and the list from the same reply."""
-    _sync_chat_speakers(discussion)
+    sync_chat_speakers(discussion)
     db.session.commit()
     reply = CoachTurn(discussion, statement, session_id=str(discussion.id)).run()
     reply["kind"] = StatementKind.Turn.value
@@ -83,14 +83,14 @@ def session_index():
     asked = request.args.get("diagram_id", type=int)
     if asked is not None and asked not in {d.id for d in readable(user)}:
         abort(404)
-    return jsonify([session_payload(d) for d in sessions(user, asked)])
+    return jsonify([session_payload(d) for d in user_sessions(user, asked)])
 
 
 @bp.route("/sessions", methods=["POST"])
 def session_create():
     """A new session belongs to the diagram the app is on, not to whichever one
     happens to be free."""
-    return jsonify(session_payload(_create_discussion({}, diagram()))), 201
+    return jsonify(session_payload(create_discussion({}, diagram()))), 201
 
 
 @bp.route("/sessions/<int:session_id>")

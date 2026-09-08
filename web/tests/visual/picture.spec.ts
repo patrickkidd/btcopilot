@@ -5,7 +5,7 @@ import { stateFor } from "./setup";
  * on it does. Goldens, so a change to the drawing has to be looked at. */
 
 const settle = async (page: import("@playwright/test").Page) => {
-  await page.goto("/companion/");
+  await page.goto("/personal/");
   await expect(page.locator(".ss")).toBeVisible();
   await page.waitForTimeout(400);
 };

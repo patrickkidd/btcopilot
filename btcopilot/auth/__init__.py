@@ -19,7 +19,7 @@ _log = logging.getLogger(__name__)
 
 
 CONFIG_DEFAULTS = {
-    "CHAT_HOME": "/companion/",
+    "CHAT_HOME": "/personal/",
     "CHAT_SESSION_DAYS": 180,
     "LOGIN_CODE_MINUTES": 10,
     "LOGIN_CODES_PER_HOUR": 5,
@@ -37,10 +37,6 @@ def init_app(app):
 
 def is_pro_app_request():
     return request.path.startswith("/v1/")
-
-
-def is_personal_app_request():
-    return request.path.startswith("/personal")
 
 
 def is_training_app_request() -> bool:
@@ -77,14 +73,14 @@ def current_user() -> Union[User, None]:
     """
     Get the current authenticated user (possibly cached).
 
-    For pro/personal apps (/v1/*, /personal/*): Returns user if signature is valid
+    For the pro app (/v1/*): Returns user if signature is valid
     For training app (/training/*): Returns user if session is valid
     """
     if "current_user" in g:
         return g.current_user
 
-    if is_pro_app_request() or is_personal_app_request():
-        return _authenticate_pro_personal_apps()
+    if is_pro_app_request():
+        return _authenticate_pro_app()
 
     elif is_training_app_request():
         return _authenticate_training_app()
@@ -108,9 +104,7 @@ def _handle_unauthorized(status_code):
     from werkzeug.exceptions import HTTPException
     from flask import render_template, make_response
 
-    if is_personal_app_request():
-        abort(status_code)
-    elif status_code == 403:
+    if status_code == 403:
         # Authenticated but wrong role - show 403 page with logout
         response = make_response(
             render_template("errors/403.html", current_user=current_user()), 403
@@ -219,7 +213,7 @@ def minimum_role(role):
     return decorator
 
 
-def _authenticate_pro_personal_apps() -> User | None:
+def _authenticate_pro_app() -> User | None:
     """Handle desktop app authentication using FD-Authentication header.
 
     Desktop app authentication is completely controlled by signed headers.

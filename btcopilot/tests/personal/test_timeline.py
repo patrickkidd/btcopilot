@@ -1,5 +1,5 @@
-from btcopilot.companion.seed import seed_diagram_data
-from btcopilot.companion.timeline import GAP_DAYS, build_timeline
+from btcopilot.personal.seed import seed_diagram_data
+from btcopilot.personal.timeline import GAP_DAYS, build_timeline
 from btcopilot.schema import (
     Cluster,
     DateCertainty,

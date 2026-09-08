@@ -10,7 +10,7 @@ _log = logging.getLogger(__name__)
 
 def create_app(config: dict = None, **kwargs):
     from btcopilot.pro.copilot.engine import Engine
-    from btcopilot import auth, companion, extensions, pro, personal, training
+    from btcopilot import auth, extensions, pro, personal, training
     from btcopilot.auth import signin
 
     # Flask CLI may pass script_info as a kwarg, we ignore it
@@ -98,9 +98,9 @@ def create_app(config: dict = None, **kwargs):
     @app.errorhandler(403)
     def _(e):
         from flask import redirect, url_for, request
-        from btcopilot.auth import is_pro_app_request, is_personal_app_request
+        from btcopilot.auth import is_pro_app_request
 
-        if is_pro_app_request() or is_personal_app_request():
+        if is_pro_app_request():
             return "Forbidden", 403
         else:
             return redirect(url_for("training.auth.login", next=request.url))
@@ -153,7 +153,6 @@ def create_app(config: dict = None, **kwargs):
     pro.init_app(app)
     personal.init_app(app)
     training.init_app(app)
-    companion.init_app(app)
 
     @app.route("/")
     def root():

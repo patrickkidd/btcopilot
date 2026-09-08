@@ -10,8 +10,8 @@ from dataclasses import fields
 
 from flask import abort, jsonify, request
 
-from btcopilot.companion.blueprint import bp, diagram
-from btcopilot.companion.timeline import DATE_FIELDS, event_payload
+from btcopilot.personal.routes import bp, diagram
+from btcopilot.personal.timeline import DATE_FIELDS, event_payload
 from btcopilot.extensions import db
 from btcopilot.personal.intake import _enum_val, _parse_iso_date
 from btcopilot.schema import (

@@ -161,34 +161,3 @@ def test_e2e_chat_then_extract(test_user, diagram_with_discussion):
     assert len(diagram_data.pdp.people) == 0
     assert len(diagram_data.pdp.events) == 0
     assert len(diagram_data.pdp.pair_bonds) == 0
-
-
-@pytest.mark.chat_flow(response="Tell me more about your family.")
-def test_e2e_extract_endpoint(subscriber, diagram_with_discussion):
-    """Verify POST /discussions/<id>/extract populates PDP."""
-    diagram, discussion = diagram_with_discussion
-
-    # Chat first
-    ask(discussion, "My marriage has been struggling.")
-    db.session.commit()
-
-    # Extract via endpoint
-    with patch(
-        "btcopilot.pdp.extract_full",
-        AsyncMock(return_value=(CACHED_PDP, CACHED_DELTAS)),
-    ):
-        response = subscriber.post(
-            f"/personal/discussions/{discussion.id}/extract",
-        )
-
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["success"] is True
-    assert data["people_count"] == 2
-    assert data["events_count"] == 2
-
-    # Verify PDP in diagram
-    db.session.refresh(diagram)
-    diagram_data = diagram.get_diagram_data()
-    assert len(diagram_data.pdp.people) == 2
-    assert diagram_data.pdp.people[0].name == "Maria"

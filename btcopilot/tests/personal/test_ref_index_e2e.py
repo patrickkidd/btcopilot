@@ -2,8 +2,8 @@
 exist, a reply cites them, and every chip the client is handed aims at
 something the picture can actually show."""
 
-from btcopilot.companion.seed import seed_diagram_data
-from btcopilot.companion.timeline import aimable, build_timeline
+from btcopilot.personal.seed import seed_diagram_data
+from btcopilot.personal.timeline import aimable, build_timeline
 from btcopilot.personal.chat import summarize_committed_state
 from btcopilot.personal.prompts import COACH_REFERENCE_INSTRUCTION
 from btcopilot.personal.refs import RefKind, index, parse, resolve

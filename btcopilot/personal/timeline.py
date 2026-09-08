@@ -1,4 +1,4 @@
-"""Timeline picture data for the companion page, computed from committed
+"""Timeline picture data for the chat page, computed from committed
 diagram state per doc/DRAWABILITY.md: 3-point line rule, certainty bands,
 gap vs recorded no-change, undated shelf, deterministic order questions."""
 

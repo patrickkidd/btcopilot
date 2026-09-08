@@ -482,5 +482,5 @@ void load().then(async () => {
 
 if ("serviceWorker" in navigator)
   window.addEventListener("load", () =>
-    navigator.serviceWorker.register("/companion/sw.js", { scope: "/companion/" }),
+    navigator.serviceWorker.register("/personal/sw.js", { scope: "/personal/" }),
   );

@@ -53,7 +53,6 @@ bp = Blueprint(
 @bp.before_request
 def _csrf_protect():
     from btcopilot.extensions import csrf
-    from btcopilot.auth import is_personal_app_request
 
     # if not is_personal_app_request():
     #     csrf.protect()

@@ -65,7 +65,7 @@ class User(db.Model, ModelMixin):
     )
 
     def diagram_in_use(self):
-        """The diagram every companion read is about."""
+        """The diagram every chat read is about."""
         return self.current_diagram_id or self.free_diagram_id
 
     def __init__(

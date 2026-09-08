@@ -7,8 +7,8 @@ import enum
 from flask import jsonify, request
 
 from btcopilot import auth
-from btcopilot.companion.blueprint import bp
-from btcopilot.companion.diagrams import diagrams_payload
+from btcopilot.personal.routes import bp
+from btcopilot.personal.routes.diagrams import diagrams_payload
 from btcopilot.extensions import db
 from btcopilot.pro.models.preferences import PrefKey
 

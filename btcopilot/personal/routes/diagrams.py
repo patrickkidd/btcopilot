@@ -1,228 +1,78 @@
-import logging
-import base64
-from flask import Blueprint, request, jsonify, abort
-from sqlalchemy.orm import subqueryload
+"""The diagrams a user can open: the ones they own and the ones they have been
+granted. One resource per table, so the account page, the settings stack and the
+family switcher all read the same list rather than each growing an endpoint of
+its own."""
 
-import asyncio
+from flask import abort, jsonify
+
 import btcopilot
-from btcopilot import auth, pdp
+from btcopilot import auth
+from btcopilot.personal.routes import bp, last_activity
 from btcopilot.extensions import db
-from btcopilot.schema import DiagramData, Event, asdict, from_dict
-from btcopilot.pro.models import Diagram, AccessRight
-from btcopilot.personal.models import Discussion, Statement
-from btcopilot.personal import clusters
+from btcopilot.personal.models import Discussion
+from btcopilot.pro.models import Diagram
+from btcopilot.pro.models.etc import AccessRight
 
-_log = logging.getLogger(__name__)
-
-
-diagrams_bp = Blueprint("diagrams", __name__, url_prefix="/diagrams")
+GRANTED = (btcopilot.ACCESS_READ_ONLY, btcopilot.ACCESS_READ_WRITE)
 
 
-@diagrams_bp.route("/", methods=["POST"], strict_slashes=False)
-def create():
-    user = auth.current_user()
-
-    data = request.get_json()
-    if not data:
-        return jsonify(error="Request body is required"), 400
-
-    name = data.get("name", "").strip()
-    if not name:
-        return jsonify(error="Diagram name is required"), 400
-
-    diagram = Diagram(user_id=user.id, name=name, data=b"")
-
-    diagram_data = DiagramData()
-    diagram_data.ensure_chat_defaults()
-    diagram.set_diagram_data(diagram_data)
-
-    db.session.add(diagram)
-    db.session.commit()
-
-    _log.info(f"User {user.username} created diagram '{name}' (ID: {diagram.id})")
-
-    return jsonify(
-        success=True,
-        diagram={"id": diagram.id, "name": diagram.name, "version": diagram.version},
-    )
-
-
-@diagrams_bp.route("/", strict_slashes=False)
-def list_diagrams():
-    user = auth.current_user()
-
-    owned = Diagram.query.filter_by(user_id=user.id).all()
-    shared = (
-        Diagram.query.join(AccessRight)
-        .filter(
-            AccessRight.user_id == user.id,
-            AccessRight.right == btcopilot.ACCESS_READ_WRITE,
-        )
+def readable(user) -> list[Diagram]:
+    """Owned first, then granted, each once."""
+    found = list(user.diagrams)
+    seen = {d.id for d in found}
+    granted = (
+        Diagram.query.join(AccessRight, AccessRight.diagram_id == Diagram.id)
+        .filter(AccessRight.user_id == user.id, AccessRight.right.in_(GRANTED))
         .all()
     )
-    diagrams = sorted(set(owned + shared), key=lambda d: d.id)
-
-    return jsonify(
-        diagrams=[{"id": d.id, "name": d.name, "version": d.version} for d in diagrams]
-    )
+    found += [d for d in granted if d.id not in seen]
+    return found
 
 
-@diagrams_bp.route("/<int:diagram_id>")
-def get(diagram_id):
-    user = auth.current_user()
-
-    diagram = Diagram.query.get(diagram_id)
-    if not diagram:
-        abort(404)
-
-    if diagram.user_id != user.id and not user.has_role(btcopilot.ROLE_ADMIN):
-        abort(403)
-
-    ret = diagram.as_dict(
-        include={
-            "discussions": {"include": ["statements", "speakers"]},
-            "access_rights": {},
-        },
-        exclude="data",
-    )
-    ret["data"] = base64.b64encode(diagram.pickled).decode("utf-8")
-
-    _log.info(f"Fetched diagram {diagram.id}, version: {diagram.version}")
-    return jsonify(ret)
-
-
-@diagrams_bp.route("/<int:diagram_id>", methods=["PUT"])
-def update(diagram_id):
-    user = auth.current_user()
-
-    diagram = Diagram.query.get(diagram_id)
-    if not diagram:
-        abort(404)
-
-    if not diagram.check_write_access(user):
-        abort(403)
-
-    if request.json is None:
-        _log.error(
-            f"request.json is None. Content-Type: {request.content_type}, "
-            f"Content-Length: {request.content_length}, Data: {request.data[:100] if request.data else 'None'}"
-        )
-        return jsonify(error="Invalid JSON or missing Content-Type header"), 400
-
-    expected_version = request.json.get("expected_version")
-    data_b64 = request.json.get("data")
-
-    if data_b64 is not None:
-        new_data = base64.b64decode(data_b64)
-    else:
-        new_data = None
-
-    success, new_version = diagram.update_with_version_check(
-        expected_version, new_data=new_data
-    )
-
-    if not success:
-        return (
-            jsonify(
-                version=diagram.version,
-                data=base64.b64encode(diagram.pickled).decode("utf-8"),
-            ),
-            409,
-        )
-
-    _log.info(f"Updated diagram {diagram.id} new_version: {new_version}")
-
-    db.session.commit()
-
-    return jsonify(success=True, version=new_version)
-
-
-@diagrams_bp.route("/<int:diagram_id>/discussions")
-def discussions(diagram_id):
-    user = auth.current_user()
-
-    diagram = Diagram.query.get(diagram_id)
-    if not diagram:
-        abort(404)
-
-    if diagram.user_id != user.id:
-        abort(403)
-
-    discussions = (
-        Discussion.query.options(subqueryload(Discussion.statements))
-        .filter_by(diagram_id=diagram_id)
-        .all()
-    )
-    return jsonify(
-        [
-            discussion.as_dict(include=["statements", "speakers"])
-            for discussion in discussions
-        ]
-    )
-
-
-@diagrams_bp.route("/<int:diagram_id>/import-text", methods=["POST"])
-def import_journal(diagram_id):
-    user = auth.current_user()
-
-    diagram = Diagram.query.get(diagram_id)
-    if not diagram:
-        abort(404)
-
-    if not diagram.check_write_access(user):
-        abort(403)
-
-    data = request.get_json()
-    if not data or "text" not in data:
-        return jsonify(error="Text is required"), 400
-
-    text = data["text"]
-    if not text.strip():
-        return jsonify(error="Text cannot be empty"), 400
-
-    diagram_data = diagram.get_diagram_data()
-
-    new_pdp, deltas = asyncio.run(pdp.import_text(diagram_data, text))
-
-    diagram_data.pdp = new_pdp
-    diagram.set_diagram_data(diagram_data)
-    db.session.commit()
-
-    summary = {
-        "people": len(deltas.people),
-        "events": len(deltas.events),
-        "pairBonds": len(deltas.pair_bonds),
+def diagram_payload(diagram: Diagram, user) -> dict:
+    """A diagram as the switcher and the settings list need it: what it is
+    called, how much has been said on it, and when that last happened."""
+    discussions = Discussion.query.filter_by(
+        diagram_id=diagram.id, user_id=user.id
+    ).all()
+    latest = max((last_activity(d) for d in discussions), default=None)
+    saved = diagram.saved_at()
+    when = max(filter(None, (latest, saved)), default=None)
+    return {
+        "id": diagram.id,
+        "name": diagram.name,
+        "session_count": len(discussions),
+        "last_activity": when.isoformat() if when else None,
+        "free": diagram.id == user.free_diagram_id,
+        "current": diagram.id == user.diagram_in_use(),
+        "owned": diagram.user_id == user.id,
     }
 
-    _log.info(
-        f"User {user.username} imported journal to diagram {diagram_id}: {summary}"
+
+def diagrams_payload(user) -> list[dict]:
+    """Most recently active first, so the switcher opens on what you were
+    last in."""
+    payload = [diagram_payload(d, user) for d in readable(user)]
+    return sorted(
+        payload,
+        key=lambda d: (d["last_activity"] or "", d["id"]),
+        reverse=True,
     )
 
-    return jsonify(success=True, pdp=asdict(new_pdp), summary=summary)
+
+@bp.route("/diagrams")
+def diagram_index():
+    return jsonify(diagrams_payload(auth.current_user()))
 
 
-@diagrams_bp.route("/<int:diagram_id>/clusters", methods=["POST"])
-def detect_clusters(diagram_id):
+@bp.route("/diagrams/<int:diagram_id>/select", methods=["POST"])
+def diagram_select(diagram_id: int):
+    """Put the app on one of the user's readable diagrams. This never writes
+    free_diagram_id: which diagram is free of charge is a billing fact, not a
+    record of where the reader is."""
     user = auth.current_user()
-
-    diagram = Diagram.query.get(diagram_id)
-    if not diagram:
+    if diagram_id not in {d.id for d in readable(user)}:
         abort(404)
-
-    if diagram.user_id != user.id and not user.has_role(btcopilot.ROLE_ADMIN):
-        abort(403)
-
-    data = request.get_json()
-    if not data or "events" not in data:
-        return jsonify(error="Events array is required"), 400
-
-    events = [from_dict(Event, e) for e in data["events"]]
-
-    _log.info(f"Detecting clusters for diagram {diagram_id} with {len(events)} events")
-
-    result = clusters.detect_clusters(events)
-
-    return jsonify(
-        clusters=[asdict(c) for c in result.clusters],
-        cacheKey=result.cacheKey,
-    )
+    user.current_diagram_id = diagram_id
+    db.session.commit()
+    return jsonify(diagram_payload(next(d for d in readable(user) if d.id == diagram_id), user))

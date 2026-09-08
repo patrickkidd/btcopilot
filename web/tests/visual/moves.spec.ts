@@ -165,7 +165,7 @@ test.describe("what a chip does", () => {
   test("an offered chip goes into the message instead of aiming the picture", async ({
     page,
   }) => {
-    await page.goto("/companion/");
+    await page.goto("/personal/");
     await expect(page.locator(".bub.coach").first()).toBeVisible();
     const offer = page.locator(".bub .chip.ask").first();
     await expect(offer).toHaveText("[winter 1993]");
@@ -175,7 +175,7 @@ test.describe("what a chip does", () => {
   });
 
   test("what the coach named stays lit on the picture", async ({ page }) => {
-    await page.goto("/companion/");
+    await page.goto("/personal/");
     await expect(page.locator(".ss")).toBeVisible();
     await page.waitForTimeout(500);
     await expect(page.locator(".ss-t.on").first()).toBeVisible();
@@ -187,14 +187,14 @@ test.describe("the timeline behind the menu", () => {
   test.use({ storageState: stateFor("three40") });
 
   test("the list of everything, with the banner", async ({ page }) => {
-    await page.goto("/companion/");
+    await page.goto("/personal/");
     await page.locator("#menu-open").click();
     await expect(page.locator("#menu-body .row").first()).toBeVisible();
     await expect(page.locator("#menu-screen")).toHaveScreenshot("menu-list.png");
   });
 
   test("the editor's fields, text centred in the box", async ({ page }) => {
-    await page.goto("/companion/");
+    await page.goto("/personal/");
     await page.locator("#menu-open").click();
     await page.locator("#menu-body .row").first().click();
     await expect(page.locator(".editor .segs").first()).toBeVisible();
@@ -212,7 +212,7 @@ test.describe("the editor's fields by kind", () => {
   test.use({ storageState: stateFor("three40") });
 
   const openEditor = async (page: import("@playwright/test").Page) => {
-    await page.goto("/companion/");
+    await page.goto("/personal/");
     await page.locator("#menu-open").click();
     await page.locator("#menu-body .row").first().click();
     await expect(page.locator(".editor .segs").first()).toBeVisible();
@@ -281,7 +281,7 @@ test.describe("the editor's fields by kind", () => {
     await targets.nth(0).click();
     await targets.nth(1).click();
     const saved = page.waitForResponse(
-      (r) => /\/companion\/events/.test(r.url()) && r.request().method() === "PATCH",
+      (r) => /\/personal\/events/.test(r.url()) && r.request().method() === "PATCH",
     );
     await page.locator(".editor .save").click();
     const body = (await saved).request().postDataJSON();

@@ -12,7 +12,7 @@ import type {
   TimelineEvent,
 } from "./types";
 
-const ROOT = "/companion";
+const ROOT = "/personal";
 
 function csrf(): string {
   return (

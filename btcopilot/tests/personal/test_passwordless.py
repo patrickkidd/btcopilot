@@ -75,7 +75,7 @@ def test_signing_in_stamps_the_session_the_training_app_ages(flask_app, browser)
 def test_fixture_token_signs_in(flask_app, browser):
     """The visual suite mints its links through the fixture installer, so the
     installer's own token has to open a session, not the sign-in page."""
-    printed = flask_app.test_cli_runner().invoke(args=["companion", "fixtures", "empty"])
+    printed = flask_app.test_cli_runner().invoke(args=["personal", "fixtures", "empty"])
     assert printed.exit_code == 0, printed.output
     minted = printed.output.strip().split()[-1]
 

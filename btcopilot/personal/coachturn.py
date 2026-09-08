@@ -17,7 +17,7 @@ from btcopilot.personal import chips, clusters, recordtext
 from btcopilot.personal.coachmodel import CoachModel
 from btcopilot.personal.models import Change, Discussion, Statement, StatementKind
 from btcopilot.personal.prompts import get_agent_prompt
-from btcopilot.personal.routes.interactions import recent
+from btcopilot.personal.interactions import recent
 from btcopilot.personal.toolbox import SCHEMAS, ToolError, Toolbox
 from btcopilot.schema import DiagramData, ItemKind
 

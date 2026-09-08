@@ -192,5 +192,5 @@ doc/log/coach-sessions/
 doc/induction-reports/
 .claude/worktrees/
 
-# Vite build output for the companion page (web/); built by the image.
-btcopilot/companion/static/web/
+# Vite build output for the chat page (web/); built by the image.
+btcopilot/personal/static/web/

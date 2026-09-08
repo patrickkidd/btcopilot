@@ -2,6 +2,7 @@
 the transcript and never a person in the record."""
 
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
+from btcopilot.tests.personal.conftest import csrf_token
 from btcopilot.schema import DiagramData
 
 
@@ -21,9 +22,11 @@ def test_the_id_the_coach_used_to_hold_is_never_handed_to_anyone():
     assert data.lastItemId == 2
 
 
-def test_a_new_session_points_the_coach_at_no_person(subscriber):
-    response = subscriber.post("/personal/discussions/", json={})
-    assert response.status_code == 200
+def test_a_new_session_points_the_coach_at_no_person(web):
+    response = web.post(
+        "/personal/sessions", json={}, headers={"X-CSRFToken": csrf_token(web)}
+    )
+    assert response.status_code == 201
 
     discussion = Discussion.query.get(response.get_json()["id"])
     coach = Speaker.query.filter_by(

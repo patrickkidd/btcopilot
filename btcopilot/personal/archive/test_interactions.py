@@ -1,5 +1,5 @@
 from btcopilot.personal.models import Interaction
-from btcopilot.personal.routes.interactions import recent
+from btcopilot.personal.interactions import recent
 from btcopilot.schema import ItemKind
 
 

@@ -6,13 +6,13 @@ from flask_wtf.csrf import generate_csrf
 from markupsafe import escape
 
 from btcopilot import auth
-from btcopilot.companion.blueprint import bp, current_session
-from btcopilot.companion.sessions import session_payload, statements_payload
-from btcopilot.companion.timeline import build_timeline
+from btcopilot.personal.routes import bp, current_session
+from btcopilot.personal.routes.sessions import session_payload, statements_payload
+from btcopilot.personal.timeline import build_timeline
 from btcopilot.personal.models import Discussion
 from btcopilot.schema import DiagramData, get_all_pdp_item_ids
 
-BUNDLE = os.path.join(os.path.dirname(__file__), "static", "web")
+BUNDLE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "web")
 
 
 def _page() -> str:

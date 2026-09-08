@@ -5,7 +5,7 @@ import { stateFor } from "./setup";
  * sheet it raises. */
 
 const settle = async (page: Page) => {
-  await page.goto("/companion/");
+  await page.goto("/personal/");
   await expect(page.locator(".ss")).toBeVisible();
   await page.waitForTimeout(600);
 };

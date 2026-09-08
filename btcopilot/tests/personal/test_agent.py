@@ -231,7 +231,7 @@ def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypa
     )
     token = csrf_token(web)
     response = web.post(
-        "/companion/chat",
+        "/personal/chat",
         json={"statement": "My sister is Nell."},
         headers={"X-CSRFToken": token},
     )
@@ -485,21 +485,21 @@ def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeyp
     token = csrf_token(web)
 
     said_reply = web.post(
-        "/companion/chat",
+        "/personal/chat",
         json={"statement": "My dad moved out."},
         headers={"X-CSRFToken": token},
     ).get_json()
     assert said_reply["kind"] == StatementKind.Turn.value
 
     played = web.post(
-        "/companion/play",
+        "/personal/play",
         json={"cluster_id": "c1"},
         headers={"X-CSRFToken": token},
     ).get_json()
     assert played["kind"] == StatementKind.Play.value
     assert played["cluster_id"] == "c1"
 
-    stored = web.get(f"/companion/sessions/{said_reply['discussion_id']}").get_json()
+    stored = web.get(f"/personal/sessions/{said_reply['discussion_id']}").get_json()
     assert [(s["kind"], s["cluster_id"]) for s in stored["statements"]] == [
         (StatementKind.Turn.value, None),
         (StatementKind.Turn.value, None),

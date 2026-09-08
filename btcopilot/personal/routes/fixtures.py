@@ -5,7 +5,7 @@ a moment per move the picture can draw.
 Every fixture user is a throwaway on the sandbox database. Never run this against
 a database holding anyone's real record.
 
-Usage: FLASK_CONFIG=development flask companion-fixtures [key ...]
+Usage: FLASK_CONFIG=development flask personal fixtures [key ...]
 """
 
 import datetime
@@ -14,7 +14,7 @@ import traceback
 
 import click
 
-from btcopilot.companion.blueprint import bp
+from btcopilot.personal.routes import bp
 from btcopilot.schema import (
     Cluster,
     DateCertainty,

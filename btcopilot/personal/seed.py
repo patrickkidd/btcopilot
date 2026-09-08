@@ -1,11 +1,11 @@
-"""Seed a throwaway companion-test diagram for a user: 6-person family, 2
+"""Seed a throwaway throwaway chat diagram for a user: 6-person family, 2
 couples, dated events with mixed certainty, exercising every DRAWABILITY rule
 (3-point line, dots-only lane, gap, explicit same, touching approximate ranges,
 undated shelf) and every move the play-by-play can draw (both directions of all
 three shift variables, and all twelve relationship kinds). Never touches any
 diagram it did not create.
 
-Usage: FLASK_CONFIG=development python -m btcopilot.companion.seed [username]
+Usage: FLASK_CONFIG=development python -m btcopilot.personal.seed [username]
 """
 
 import pickle
@@ -214,7 +214,7 @@ def main(argv: list[str]):
     import json
 
     from btcopilot.app import create_app
-    from btcopilot.companion.lanes import lanes_diagram_data
+    from btcopilot.personal.lanes import lanes_diagram_data
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("username")

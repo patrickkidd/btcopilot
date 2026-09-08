@@ -91,7 +91,7 @@ def chat_flow(request):
                     return_value=response,
                 )
             )
-            # The companion's turn is the agent loop; a test that scripts the
+            # The coach's turn is the agent loop; a test that scripts the
             # coach's words scripts them there too.
             stack.enter_context(
                 patch(
@@ -117,7 +117,7 @@ def chat_flow(request):
 
 @pytest.fixture
 def web(flask_app, test_user):
-    """Browser client for the companion app: a logged-in session cookie, the
+    """Browser client for the chat app: a logged-in session cookie, the
     way the page itself is served."""
     test_user.roles = btcopilot.ROLE_SUBSCRIBER
     db.session.merge(test_user)
@@ -134,7 +134,7 @@ def web(flask_app, test_user):
 
 
 def csrf_token(web) -> str:
-    page = web.get("/companion/").get_data(as_text=True)
+    page = web.get("/personal/").get_data(as_text=True)
     return re.search(r'name="csrf-token" content="([^"]+)"', page).group(1)
 
 

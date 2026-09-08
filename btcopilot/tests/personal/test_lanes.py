@@ -1,5 +1,5 @@
-from btcopilot.companion.lanes import lanes_diagram_data
-from btcopilot.companion.timeline import build_timeline
+from btcopilot.personal.lanes import lanes_diagram_data
+from btcopilot.personal.timeline import build_timeline
 from btcopilot.schema import DateCertainty, EventKind, RelationshipKind
 
 LANES_DOC = {

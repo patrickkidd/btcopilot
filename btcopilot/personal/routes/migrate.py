@@ -7,7 +7,7 @@ built with create_all and stamped at head; a database that already carries data
 is migrated.
 
 Usage: FLASK_CONFIG=development FLASK_SQLALCHEMY_DATABASE_URI=sqlite:///<path>
-       flask companion migrate
+       flask personal migrate
 """
 
 import os
@@ -19,10 +19,10 @@ from alembic.config import Config
 from flask import current_app
 from sqlalchemy import inspect
 
-from btcopilot.companion.blueprint import bp
+from btcopilot.personal.routes import bp
 from btcopilot.extensions import db
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 
 def _config(uri: str) -> Config:

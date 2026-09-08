@@ -122,7 +122,7 @@ def resolve(refs: list[Ref], data: DiagramData) -> list[Ref]:
 
 # ── The ids the coach may cite ───────────────────────────────────────────────
 #
-# `resolve` and `companion.timeline.aimable` throw away every reference the
+# `resolve` and `personal.timeline.aimable` throw away every reference the
 # picture cannot go to. The index is the same rule stated forwards, so the
 # coach cites what will survive instead of guessing: a person who appears in a
 # dated event, a chapter that starts inside the dated record, a dated event.

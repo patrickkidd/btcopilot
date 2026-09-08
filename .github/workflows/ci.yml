@@ -40,7 +40,7 @@ jobs:
       - name: Install web dependencies
         run: npm --prefix web ci
 
-      - name: Build companion web bundle
+      - name: Build the chat web bundle
         run: npm --prefix web run build
 
       - name: Run web unit tests
@@ -54,10 +54,10 @@ jobs:
     env:
       FLASK_APP: btcopilot.app:create_app
       FLASK_CONFIG: development
-      FLASK_SQLALCHEMY_DATABASE_URI: sqlite:////tmp/companion-visual.db
+      FLASK_SQLALCHEMY_DATABASE_URI: sqlite:////tmp/personal-visual.db
       COMPANION_URL: http://127.0.0.1:8889
       FIXTURE_CWD: ${{ github.workspace }}
-      FIXTURE_CMD: python -m flask companion fixtures
+      FIXTURE_CMD: python -m flask personal fixtures
     steps:
       - uses: actions/checkout@v4
 
@@ -85,7 +85,7 @@ jobs:
       - name: Install Playwright chromium
         run: npx --prefix web playwright install --with-deps chromium
 
-      - name: Build companion web bundle
+      - name: Build the chat web bundle
         run: npm --prefix web run build
 
       - name: Create sandbox database
