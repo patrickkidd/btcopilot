@@ -37,7 +37,11 @@ class CoachModel:
         self.model = resolve_model(model) if model else RESPONSE_MODEL
 
     def turn(self, system: str, messages: list[dict], tools: list[dict]):
-        """One model call: yields the words as they arrive, returns the turn."""
+        """One model call: yields the words as they arrive, returns the turn.
+
+        No tools means the call cannot make one, which is how a turn is forced
+        to end in words.
+        """
         client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
         try:
             with client.messages.stream(
@@ -46,7 +50,7 @@ class CoachModel:
                 temperature=TEMPERATURE,
                 system=system,
                 messages=messages,
-                tools=tools,
+                **({"tools": tools} if tools else {}),
             ) as stream:
                 yield from stream.text_stream
                 message = stream.get_final_message()

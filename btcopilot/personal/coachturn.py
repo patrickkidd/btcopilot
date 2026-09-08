@@ -26,6 +26,20 @@ _log = logging.getLogger(__name__)
 MAX_STEPS = 6
 RECENT_INTERACTIONS = 50
 
+# What the coach is told when it has used every step and is still working. The
+# turn has to end in words, so the last call is made with no tools at all.
+FINISH = (
+    "You have used all the tool calls this turn allows. Stop working and reply "
+    "to the person now, in your own voice: what you have put in the record, and "
+    "what you want to know next."
+)
+
+
+class EmptyReply(Exception):
+    """The coach finished a turn without saying anything. A statement with no
+    words is a bare bubble on the page, so the turn fails instead."""
+
+
 
 class EventKind(enum.StrEnum):
     """What happened behind the words, in the order it happened."""
@@ -87,9 +101,10 @@ class CoachTurn:
         events = []
 
         for step in range(MAX_STEPS):
-            turn = self._say(system, messages)
-            # Only the last call is the coach speaking. Text before a tool call
-            # is the model working out what to do, and the user never sees it.
+            turn = self._say(system, messages, SCHEMAS)
+            # A turn ends on words, never on a tool call. Text written before a
+            # call is the model working out what to do and the user never sees
+            # it, so only a step that calls nothing is the coach speaking.
             spoken = turn.text
             if not turn.calls:
                 break
@@ -116,7 +131,14 @@ class CoachTurn:
             messages.append({"role": "assistant", "content": turn.blocks})
             messages.append({"role": "user", "content": results})
         else:
-            _log.warning(f"Turn {self.turn_id} hit {MAX_STEPS} steps without finishing")
+            _log.warning(
+                f"Turn {self.turn_id} used all {MAX_STEPS} steps; asking for the reply"
+            )
+            messages.append({"role": "user", "content": FINISH})
+            spoken = self._say(system, messages, []).text
+
+        if not spoken.strip():
+            raise EmptyReply(f"Turn {self.turn_id} produced no words for the user")
 
         change = self._regroup()
         if change:
@@ -170,9 +192,9 @@ class CoachTurn:
             session_id=self.session_id,
         )
 
-    def _say(self, system: str, messages: list[dict]):
+    def _say(self, system: str, messages: list[dict], tools: list[dict]):
         """One model call. The words arrive whole; the page types them out."""
-        words = self.model.turn(system, messages, SCHEMAS)
+        words = self.model.turn(system, messages, tools)
         while True:
             try:
                 next(words)

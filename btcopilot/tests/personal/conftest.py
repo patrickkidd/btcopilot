@@ -44,10 +44,12 @@ class Model:
         self.turns = list(turns)
         self.systems = []
         self.histories = []
+        self.offered = []
 
     def turn(self, system, messages, tools):
         self.systems.append(system)
         self.histories.append(messages)
+        self.offered.append([schema["name"] for schema in tools])
         scripted = self.turns.pop(0)
         if scripted.text:
             yield scripted.text

@@ -5,7 +5,13 @@ import pytest
 
 from btcopilot.extensions import db
 from btcopilot.personal import chips, record
-from btcopilot.personal.coachturn import CoachTurn, EventKind
+from btcopilot.personal.coachturn import (
+    FINISH,
+    MAX_STEPS,
+    CoachTurn,
+    EmptyReply,
+    EventKind,
+)
 from btcopilot.personal.models import Author, Change
 from btcopilot.personal.playturn import PlayTurn
 from btcopilot.personal.toolbox import ToolName
@@ -327,3 +333,49 @@ def test_play_by_play_ends_in_offered_chips(test_user):
     assert 2 <= len(offered) <= 3
     assert offered == ["the winter after he left", "how Wren took it"]
     assert statement.endswith("[[ask:how Wren took it]]")
+
+
+def test_a_turn_that_never_stops_calling_tools_still_says_something(
+    discussion, family
+):
+    """The page shows what the coach said, so a turn may not end on a tool
+    call. When the steps run out the coach is asked for its reply with no tools
+    at all, and that is what the person reads."""
+    working = [
+        called(ToolName.EditPerson, name=f"Person {n}") for n in range(MAX_STEPS)
+    ]
+    model = Model(*working, said("I added them all. Who else was around then?"))
+    reply = run(discussion, "There were six of them.", model)
+
+    assert reply["statement"] == "I added them all. Who else was around then?"
+    assert model.offered[-1] == []
+    assert FINISH in model.histories[-1][-1]["content"]
+
+    stored = discussion.statements[-1]
+    assert stored.text == reply["statement"]
+    assert stored.id == reply["statement_id"]
+
+
+def test_the_edits_of_a_capped_turn_are_all_kept(discussion, family):
+    """Running out of steps ends the talking, not the record: everything the
+    coach put in before the cap stays in."""
+    working = [
+        called(ToolName.EditPerson, name=f"Person {n}") for n in range(MAX_STEPS)
+    ]
+    reply = run(
+        discussion,
+        "There were six of them.",
+        Model(*working, said("All six are down.")),
+    )
+    assert kinds(reply).count(EventKind.ToolCall.value) == MAX_STEPS
+
+    names = [p.get("name") for p in family.get_diagram_data().people]
+    assert [f"Person {n}" for n in range(MAX_STEPS)] == names[-MAX_STEPS:]
+    assert Change.query.filter_by(turn_id=reply["turn_id"]).count() == MAX_STEPS
+
+
+def test_a_turn_with_no_words_at_all_fails_rather_than_showing_a_bare_bubble(
+    discussion, family
+):
+    with pytest.raises(EmptyReply):
+        run(discussion, "Hello?", Model(said("")))
