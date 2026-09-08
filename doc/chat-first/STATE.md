@@ -509,11 +509,19 @@ tokens last as long as the session.
 **Preserved on the owner's word, do not remove**: the agent's tool-call summaries in the
 thread, and their formatting, separate from the coach's reply. He likes them as they are.
 
-**Measured, not changed**: the symptom arrow is exactly the ratified drawing — 26 of
-shaft, 10 of head, 2.6 stroke, 26 across from the cross. It reads tall because the board
-draws people at radius 13 where the ratified sheet draws them at 17, so the same arrow is
-1.23 of a person's width instead of 0.94. Side by side at
+**The symptom arrow, ruled 2026-09-08 — SUPERSEDES symbol_truth.md**: the arrow beside the
+health cross stands as tall as the cross, not the sheet's 32. It was exactly the sheet's
+drawing (26 of shaft, 10 of head, 2.6 stroke, 26 across) and read tall because the board
+draws people at radius 13 where the sheet draws them at 17. Every number is now the
+sheet's halved; the stroke is unscaled. Side by side before the change at
 `~/worktrees/fd362-sandbox/symptom_arrow_compare.png`.
+
+**Each line of what the coach did lights what it made**, as the line lands: a moment
+through the picture's own spotlight, a person on the figure itself wherever people are
+drawn, which today is the board.
+
+**Invite links use `turin.local`**, not 127.0.0.1, so the owner can open them from his
+phone.
 
 ## A/B-test list
 
