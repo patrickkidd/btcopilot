@@ -415,10 +415,14 @@ export class Picture {
     this.laid = { zones: [], rows: [] };
     this.pin(REST_H);
 
+    // What has no date exists at every level: it is the one thing on the
+    // picture the record is still asking about.
+    const shelf = this.shelfHit(x1, REST_WIRE);
+
     if (!dated.length) {
       this.host.innerHTML =
         `<div class="ss"><p class="ss-empty">` +
-        `Nothing on your line yet — it draws itself as you talk.</p></div>`;
+        `Nothing on your line yet — it draws itself as you talk.</p>${shelf}</div>`;
       return;
     }
 
@@ -480,7 +484,7 @@ export class Picture {
     });
     svg += `<text class="ss-hint" x="${x0}" y="74">tap a chapter</text></svg>`;
 
-    this.host.innerHTML = `<div class="ss">${svg}${hits}</div>`;
+    this.host.innerHTML = `<div class="ss">${svg}${hits}${shelf}</div>`;
   }
 
   /** The chapters the resting level draws, in time order. A record with no
@@ -822,12 +826,17 @@ export class Picture {
       .join("");
   }
 
+  /** The amber question past the right end of the line, for what has no date.
+   * It sits above the wire where there is room for it and on the wire where
+   * there is not, which is the case at the resting level. */
   private shelfHit(x1: number, wire: number): string {
     if (!this.data?.shelf.length) return "";
+    const above = wire - ZONE - 4;
+    const top = above >= 0 ? above : wire - ZONE / 2;
     return (
       `<button class="ss-hit shelf" data-target="${Target.Shelf}" ` +
       `aria-label="things with no date yet" ` +
-      `style="left:${x1 - 26}px;top:${wire - ZONE - 4}px;width:${ZONE}px;height:${ZONE}px">?</button>`
+      `style="left:${x1 - 26}px;top:${top}px;width:${ZONE}px;height:${ZONE}px">?</button>`
     );
   }
 
