@@ -44,13 +44,42 @@ export enum Relationship {
   Cutoff = "cutoff",
 }
 
+/** Who the second person is, and when there is one, exactly as `EventForm.qml`
+ * decides it. The Pro app's Pregnancy kind has no counterpart in the record's
+ * `EventKind`, so it is the one entry that does not carry over. */
 const PAIR_KINDS = [
   EventKind.Bonded,
   EventKind.Married,
   EventKind.Separated,
   EventKind.Divorced,
+  EventKind.Moved,
+  EventKind.Birth,
+  EventKind.Adopted,
 ] as string[];
 const CHILD_KINDS = [EventKind.Birth, EventKind.Adopted] as string[];
+const PARTNER_KINDS = [
+  EventKind.Bonded,
+  EventKind.Married,
+  EventKind.Separated,
+  EventKind.Divorced,
+] as string[];
+
+const personLabel = (kind: string, relationship: string): string => {
+  if (CHILD_KINDS.includes(kind)) return "Parent 1";
+  if (PARTNER_KINDS.includes(kind)) return "Partner 1";
+  if (kind === EventKind.Shift && relationship === Relationship.Overfunctioning)
+    return "Overfunctioner";
+  if (kind === EventKind.Shift && relationship === Relationship.Underfunctioning)
+    return "Underfunctioner";
+  return "Person";
+};
+
+const spouseLabel = (kind: string): string =>
+  CHILD_KINDS.includes(kind)
+    ? "Parent 2"
+    : kind === EventKind.Moved
+      ? "Partner"
+      : "Partner 2";
 const SHIFT_VARIABLES = ["symptom", "anxiety", "functioning"] as const;
 
 const TARGET_LABELS: Partial<Record<Relationship, string>> = {
@@ -134,10 +163,11 @@ export function openEditor(
     "editor",
     `<div class="sec">What</div>` +
       chips("kind", plain(Object.values(EventKind)), kind) +
-      `<div class="sec">Who</div><div class="lab">Person</div>` +
+      `<div class="sec">Who</div>` +
+      `<div class="lab" data-label="person">${esc(personLabel(kind, relationship))}</div>` +
       chips("person", persons(true), event?.person ?? "") +
       `<div data-block="pair"${PAIR_KINDS.includes(kind) ? "" : " hidden"}>` +
-      `<div class="lab">With</div>` +
+      `<div class="lab" data-label="spouse">${esc(spouseLabel(kind))}</div>` +
       chips("spouse", persons(true), event?.spouse ?? "") +
       `</div><div data-block="child"${CHILD_KINDS.includes(kind) ? "" : " hidden"}>` +
       `<div class="lab">Child</div>` +
@@ -220,8 +250,11 @@ export function openEditor(
         block(editor, "pair").hidden = !PAIR_KINDS.includes(value);
         block(editor, "child").hidden = !CHILD_KINDS.includes(value);
         block(editor, "shift").hidden = value !== EventKind.Shift;
+        label(editor, "person").textContent = personLabel(value, chosen(editor, "relationship"));
+        label(editor, "spouse").textContent = spouseLabel(value);
       }
       if (group.dataset.name === "relationship") {
+        label(editor, "person").textContent = personLabel(chosen(editor, "kind"), value);
         block(editor, "targets").hidden = !value;
         label(editor, "targets").textContent = targetLabel(value);
         const triangle =
@@ -246,6 +279,12 @@ const block = (editor: HTMLElement, name: string) =>
 
 const label = (editor: HTMLElement, name: string) =>
   editor.querySelector<HTMLElement>(`[data-label="${name}"]`) as HTMLElement;
+
+/** The value a single-choice group is currently on, for the labels that read
+ * kind and relationship together. */
+const chosen = (editor: HTMLElement, name: string): string =>
+  editor.querySelector<HTMLElement>(`.segs[data-name="${name}"] .seg.on`)?.dataset
+    .value ?? "";
 
 async function save(
   event: TimelineEvent | null,

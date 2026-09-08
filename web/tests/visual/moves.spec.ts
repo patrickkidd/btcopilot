@@ -205,3 +205,89 @@ test.describe("the timeline behind the menu", () => {
     await expect(page.locator("#menu-screen")).toHaveScreenshot("menu-editor.png");
   });
 });
+
+/** The editor shows a second person, a child and the shift block only for the
+ * kinds `EventForm.qml` shows them for. These assert behaviour, not pixels. */
+test.describe("the editor's fields by kind", () => {
+  test.use({ storageState: stateFor("three40") });
+
+  const openEditor = async (page: import("@playwright/test").Page) => {
+    await page.goto("/companion/");
+    await page.locator("#menu-open").click();
+    await page.locator("#menu-body .row").first().click();
+    await expect(page.locator(".editor .segs").first()).toBeVisible();
+  };
+  const pick = (page: import("@playwright/test").Page, group: string, value: string) =>
+    page.locator(`.segs[data-name="${group}"] .seg[data-value="${value}"]`).click();
+  const block = (page: import("@playwright/test").Page, name: string) =>
+    page.locator(`.editor [data-block="${name}"]`);
+
+  for (const [kind, spouse, child] of [
+    ["shift", false, false],
+    ["death", false, false],
+    ["married", true, false],
+    ["bonded", true, false],
+    ["separated", true, false],
+    ["divorced", true, false],
+    ["moved", true, false],
+    ["birth", true, true],
+    ["adopted", true, true],
+  ] as [string, boolean, boolean][]) {
+    test(`${kind} shows ${spouse ? "a" : "no"} second person and ${child ? "a" : "no"} child`, async ({
+      page,
+    }) => {
+      await openEditor(page);
+      await pick(page, "kind", kind);
+      await expect(block(page, "pair")).toBeVisible({ visible: spouse });
+      await expect(block(page, "child")).toBeVisible({ visible: child });
+      await expect(block(page, "shift")).toBeVisible({ visible: kind === "shift" });
+    });
+  }
+
+  test("the second person is named for the kind", async ({ page }) => {
+    await openEditor(page);
+    await pick(page, "kind", "married");
+    await expect(page.locator('.editor [data-label="spouse"]')).toHaveText("Partner 2");
+    await pick(page, "kind", "birth");
+    await expect(page.locator('.editor [data-label="person"]')).toHaveText("Parent 1");
+    await expect(page.locator('.editor [data-label="spouse"]')).toHaveText("Parent 2");
+    await pick(page, "kind", "moved");
+    await expect(page.locator('.editor [data-label="spouse"]')).toHaveText("Partner");
+  });
+
+  test("targets appear with a relationship, triangles only inside and outside", async ({
+    page,
+  }) => {
+    await openEditor(page);
+    await pick(page, "kind", "shift");
+    await expect(block(page, "targets")).toBeHidden();
+    await pick(page, "relationship", "conflict");
+    await expect(block(page, "targets")).toBeVisible();
+    await expect(page.locator('.editor [data-label="targets"]')).toHaveText("Other(s)");
+    await expect(block(page, "triangles")).toBeHidden();
+    await pick(page, "relationship", "inside");
+    await expect(block(page, "triangles")).toBeVisible();
+    await expect(page.locator('.editor [data-label="triangles"]')).toHaveText("Outside(s)");
+    await expect(page.locator('.editor [data-label="person"]')).toHaveText("Person");
+    await pick(page, "relationship", "overfunctioning");
+    await expect(page.locator('.editor [data-label="person"]')).toHaveText("Overfunctioner");
+  });
+
+  test("a relationship saves with two targets", async ({ page }) => {
+    await openEditor(page);
+    await pick(page, "kind", "shift");
+    await pick(page, "relationship", "conflict");
+    const targets = page.locator('.segs[data-name="relationshipTargets"] .seg');
+    await targets.nth(0).click();
+    await targets.nth(1).click();
+    const saved = page.waitForResponse(
+      (r) => /\/companion\/events/.test(r.url()) && r.request().method() === "PATCH",
+    );
+    await page.locator(".editor .save").click();
+    const body = (await saved).request().postDataJSON();
+    expect(body.relationship).toBe("conflict");
+    expect(body.relationshipTargets).toHaveLength(2);
+    // The row is redrawn from the record, so the codes prove the write stuck.
+    await expect(page.locator("#menu-body .r2").first()).toContainText("R conflict");
+  });
+});
