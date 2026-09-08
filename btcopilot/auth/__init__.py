@@ -10,6 +10,7 @@ import btcopilot
 from btcopilot.pro.models import User
 from btcopilot.auth import routes
 from btcopilot.auth.blueprint import bp
+from btcopilot.auth.longsessions import LongSessions
 from btcopilot.auth.signin import SESSION_TOKEN
 from btcopilot.auth.websession import WebSession
 
@@ -30,9 +31,7 @@ CONFIG_DEFAULTS = {
 def init_app(app):
     for key, value in CONFIG_DEFAULTS.items():
         app.config.setdefault(key, value)
-    app.permanent_session_lifetime = datetime.timedelta(
-        days=app.config["CHAT_SESSION_DAYS"]
-    )
+    app.session_interface = LongSessions()
     app.register_blueprint(bp)
 
 

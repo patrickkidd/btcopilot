@@ -1,4 +1,5 @@
 import datetime
+import email.utils
 import re
 
 import flask
@@ -69,6 +70,30 @@ def test_signing_in_stamps_the_session_the_training_app_ages(flask_app, browser)
     browser.get(f"/invite/{invitation.token}")
     with browser.session_transaction() as cookie:
         assert cookie["logged_in_at"]
+
+
+def test_fixture_token_signs_in(flask_app, browser):
+    """The visual suite mints its links through the fixture installer, so the
+    installer's own token has to open a session, not the sign-in page."""
+    printed = flask_app.test_cli_runner().invoke(args=["companion", "fixtures", "empty"])
+    assert printed.exit_code == 0, printed.output
+    minted = printed.output.strip().split()[-1]
+
+    response = browser.get(f"/invite/{minted}")
+    assert response.status_code == 302
+    assert browser.get("/me").get_json()["user"] is not None
+
+
+def test_chat_cookie_outlives_the_training_timeout(flask_app, browser):
+    """The training app pins the cookie to eight hours; a chat sign-in must
+    still come back months later."""
+    invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
+    response = browser.get(f"/invite/{invitation.token}")
+    expires = email.utils.parsedate_to_datetime(
+        re.search(r"[Ee]xpires=([^;]+)", response.headers["Set-Cookie"]).group(1)
+    )
+    days = (expires - datetime.datetime.now(datetime.timezone.utc)).days
+    assert days > 30
 
 
 def test_invite_is_single_use(flask_app, browser):
