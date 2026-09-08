@@ -59,7 +59,7 @@ test.describe("the moves board", () => {
   test("a stretch offers to walk its moves", async ({ page }) => {
     await settle(page);
     await pickStretch(page);
-    await expect(page.locator("#cap-play")).toHaveText(/watch the \d+ moves/);
+    await expect(page.locator("#cap-play")).toHaveText(/explain the moves/);
     await expect(picture(page)).toHaveScreenshot("board-entry-offer.png", EXACT);
   });
 

@@ -461,8 +461,12 @@ button { font-family: inherit; }
 .ss .tenspre { animation: tenspre 10s infinite; }
 
 .ss .mv-dir { stroke: var(--move); stroke-width: 2.6; stroke-linecap: round; }
-.ss .sym-arrow.worse { animation: symworse 8s infinite; }
-.ss .sym-arrow.better { animation: symbetter 8s infinite; }
+/* The direction mark stays on screen for the whole loop: it is the one thing
+   saying which way the symptom went, and a reader who looks away must not find
+   it gone. Movement is its travel along its own axis, not its appearing. */
+.ss .sym-arrow { transform-box: view-box; }
+.ss .sym-arrow.worse { animation: symworse 8s ease-in-out infinite; }
+.ss .sym-arrow.better { animation: symbetter 8s ease-in-out infinite; }
 
 .ss .mv-func { fill: none; stroke-width: 2.6; }
 .ss .mv-func.up { stroke: var(--move); }
@@ -598,15 +602,16 @@ button { font-family: inherit; }
   0%, 37.5% { stroke: var(--ink); stroke-width: 2.2; }
   38.5%, 100% { stroke: var(--move); stroke-width: 2.6; }
 }
+/* the same key times as the fade they replace, travelling instead of fading */
 @keyframes symworse {
-  0%, 8% { opacity: 0; }
-  14%, 48% { opacity: 1; }
-  54%, 100% { opacity: 0; }
+  0%, 8% { transform: translateY(5px); }
+  14%, 48% { transform: translateY(-4px); }
+  54%, 100% { transform: translateY(5px); }
 }
 @keyframes symbetter {
-  0%, 50% { opacity: 0; }
-  56%, 90% { opacity: 1; }
-  96%, 100% { opacity: 0; }
+  0%, 50% { transform: translateY(-5px); }
+  56%, 90% { transform: translateY(4px); }
+  96%, 100% { transform: translateY(-5px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -635,7 +640,26 @@ button { font-family: inherit; }
 }
 .caption::-webkit-scrollbar { display: none; }
 .caption > * { flex: none; }
-.caption .chip { margin: 0; white-space: nowrap; }
+/* every control in the row is one 44px target at the same height (the
+   mockup's .btn floor), so the row reads as one strip of equal controls */
+.caption .chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  white-space: nowrap;
+}
+.caption .chip::before { content: none; }
+/* the row must fit its parent at 390px: the trace chip is the one that gives,
+   truncating its words the way the mockup's own coded-in rule truncates them */
+.caption .chip.trace {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  line-height: 40px;
+}
 
 /* ---- chat ---- */
 .chat {

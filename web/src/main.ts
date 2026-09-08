@@ -394,14 +394,14 @@ function actions(): void {
         : undefined;
   const ask = sel.kind === SelKind.Shelf ? "Ask when" : "Ask about this";
   const trace = sel.kind === SelKind.Event ? codedIn(Number(sel.id)) : null;
-  // The board entry button says how many moves it will draw, and is only
-  // offered when the stretch has at least one the board can draw.
+  // The board entry button is offered only when the stretch has at least one
+  // move the board can draw.
   const moves = stretch ? picture.countMoves(stretch.event_ids) : 0;
   host.innerHTML =
     `<button type="button" class="chip ask" id="cap-chip">[${esc(ask)}]</button>` +
     (moves
       ? `<button type="button" class="btn primary" id="cap-play">` +
-        `&#9654; watch the ${moves} move${moves === 1 ? "" : "s"}</button>`
+        `&#9654; explain the moves</button>`
       : "") +
     (trace
       ? `<button type="button" class="chip data trace" id="cap-trace">${esc(trace.label)}</button>`

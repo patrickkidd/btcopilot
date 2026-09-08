@@ -126,14 +126,62 @@ test.describe("nothing moves when a chip is tapped", () => {
       rows: new Set(
         [...node.children].map((c) => Math.round(c.getBoundingClientRect().top)),
       ).size,
-      scrollable: node.scrollWidth > node.clientWidth,
+      heights: [...node.children].map((c) =>
+        Math.round(c.getBoundingClientRect().height),
+      ),
       fits: node.scrollWidth <= node.clientWidth,
     }));
     expect(strip.children).toBe(3);
     expect(strip.height).toBe(44);
-    expect(strip.scrollable || strip.fits).toBe(true);
+    expect(strip.rows).toBe(1);
+    // every control is the same 44px target, so the row reads as one strip
+    expect(strip.heights).toEqual([44, 44, 44]);
+    expect(strip.fits).toBe(true);
   });
 });
+
+/** The caption row on every record the app can be handed: nothing it holds may
+ * reach past the row, and the row may not grow a second line, whatever words
+ * the record puts on it. */
+for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "longname"] as const) {
+  test.describe(`the caption row on the ${key} record`, () => {
+    test.use({ storageState: stateFor(key) });
+
+    test("holds every control inside itself, on one line", async ({ page }) => {
+      await settle(page);
+      // a record whose moments are inside a chapter needs it opened first
+      const chapters = page.locator('.ss-hit[data-target="chapter"]');
+      if (await chapters.first().isVisible().catch(() => false)) {
+        await chapters.first().click();
+        await page.waitForTimeout(400);
+      }
+      const zones = page.locator('.ss-hit[data-target="zone"]');
+      await zones.first().click();
+      await expect(page.locator(".caption .chip").first()).toBeVisible();
+
+      const row = await page.locator(".caption").evaluate((node) => {
+        const box = node.getBoundingClientRect();
+        return {
+          height: Math.round(box.height),
+          rows: new Set(
+            [...node.children].map((c) => Math.round(c.getBoundingClientRect().top)),
+          ).size,
+          escaped: [...node.children]
+            .filter((c) => {
+              const at = c.getBoundingClientRect();
+              return at.right > box.right + 1 || at.left < box.left - 1;
+            })
+            .map((c) => (c as HTMLElement).id),
+          fits: node.scrollWidth <= node.clientWidth,
+        };
+      });
+      expect(row.escaped).toEqual([]);
+      expect(row.fits).toBe(true);
+      expect(row.rows).toBe(1);
+      expect(row.height).toBe(44);
+    });
+  });
+}
 
 test.describe("the message bar never pushes the thread", () => {
   test.use({ storageState: stateFor("moves") });
@@ -193,7 +241,7 @@ test.describe("the board is the only thing that resizes the picture", () => {
     await settle(page);
     await page.locator('.ss-hit[data-target="zone"]').first().click();
     const enter = page.locator("#cap-play");
-    await expect(enter).toContainText(/watch the \d+ moves?/);
+    await expect(enter).toContainText(/explain the moves/);
 
     // the button appearing must not have moved anything
     const before = await frame(page);
