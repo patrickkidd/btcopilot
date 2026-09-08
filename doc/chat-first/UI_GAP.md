@@ -4,13 +4,13 @@ Every row of `UI_SPEC.md` set against branch FD-362. Each build value was read f
 
 Where UI_SPEC carried a conflict, the verdict here is against the resolved value, not against the losing source. Seven rows moved when the 36 conflicts were resolved: the coach-requested span band, the people appearing only when a move needs them, the amber question mark and the per-move advance all became MET, and the web frame width became CHANGED against the resolved 400px.
 
-Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is there · **CHANGED** the build does something different · **MISSING** absent · **UNCHECKED** no evidence either way · **N/A** the row is a superseded option, an unpicked option, or a source a resolution ruled against, so there is nothing for the build to match.
+Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is there · **CHANGED** the build does something different · **MISSING** absent · **UNCHECKED** no evidence either way · **N/A** the row is a superseded option, an unpicked option, or a conflict with no pick, so there is nothing for the build to match.
 
 | status | rows |
 |---|---|
-| MET | 126 |
-| PARTIAL | 44 |
-| CHANGED | 76 |
+| MET | 125 |
+| PARTIAL | 46 |
+| CHANGED | 75 |
 | MISSING | 111 |
 | UNCHECKED | 23 |
 | N/A | 62 |
@@ -22,13 +22,13 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | 2. Sessions / discussions drawer | 0 | 0 | 0 | 25 | 3 | 11 |
 | 3. Settings and account | 1 | 1 | 0 | 24 | 1 | 10 |
 | 4. Picture at rest — the sentence spotlight | 33 | 3 | 10 | 5 | 0 | 6 |
-| 5. Picture symbols — one row per symbol | 12 | 9 | 27 | 11 | 1 | 3 |
+| 5. Picture symbols — one row per symbol | 10 | 11 | 27 | 11 | 1 | 3 |
 | 6. Chalkboard / moves board | 4 | 2 | 5 | 12 | 1 | 4 |
-| 7. Show-tool view kinds | 0 | 5 | 1 | 0 | 1 | 0 |
+| 7. Show-tool view kinds | 1 | 5 | 0 | 0 | 1 | 0 |
 | 8. Play-by-play | 7 | 7 | 6 | 4 | 3 | 0 |
 | 9. Chips | 9 | 4 | 3 | 2 | 1 | 2 |
 | 10. Chat bubbles and layout | 13 | 1 | 3 | 2 | 0 | 6 |
-| 11. List view and event editor | 25 | 0 | 0 | 1 | 0 | 2 |
+| 11. List view and event editor | 17 | 1 | 5 | 3 | 0 | 2 |
 | 12. Type and colour tokens | 9 | 3 | 5 | 0 | 0 | 1 |
 | 13. Animation and timing | 2 | 2 | 3 | 13 | 1 | 3 |
 | 14. Tap and scroll behaviour | 11 | 2 | 1 | 4 | 0 | 2 |
@@ -60,7 +60,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Focus ring, global | `outline: 2px solid var(--data)`, offset 1px, and -2px inside picture hit zones | `:focus-visible{outline:2px solid var(--data);outline-offset:1px}` (theme.css:61) and `-2px` on picture hit zones (theme.css:175) | MET |
 | Pressed state, global | every interactive element has a visible pressed state | `.ss-hit:active{background:var(--tint)}` (theme.css:174) and `.row.on`/`.chip.ask:active` (theme.css:460,380). No pressed state on `.iconbtn`, `.btn` or `.send` | PARTIAL |
 | Button and icon consistency | every button and icon meets one shared size and usability standard | `.iconbtn` and `.send` are 44x44 (theme.css:87-98,406-416), but `.btn` is `min-height:36px` (theme.css:429-441), so the Play and Done controls sit under the floor | PARTIAL |
-| App frame width, web | FD-360 720px; chat-first-app 420px; FD-362 460px, each with a border above the breakpoint | `max-width:460px` (theme.css:67) against the resolved 400px | CHANGED |
+| App frame width, web | at phone width, `max-width: 400px` centred, so every mockup value transfers without rescaling; above that, the desktop drawings where they exist (t… | `.app{max-width:460px;margin:0 auto}` with hairlines above 461px (theme.css:63-74). One fixed width, so it matches neither the resolved 400px phone width nor any desktop treatment | CHANGED |
 | PWA shell | manifest, service worker at `/companion/sw.js`, `icon.svg`, Google Fonts preconnect | manifest link, icon, Google Fonts preconnect (index.html:6-11) | MET |
 | Menu button label | a control's label must name what it does | `aria-label="Timeline and settings"` (index.html:17); the menu screen's own title is "Timeline" and it holds a list and an editor, no settings (index.html:40; menu.ts:36-55) | CHANGED |
 
@@ -234,9 +234,9 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Toward, the walk | mover circle `cx=45 cy=55 r=14` `.A`, `@keyframes slide` translateX 0 to 96px at 50%, held to 94%, `8s ease-in-out infinite` | `steps` moves the actor 9px along the unit vector; the figure carries an SVG translate with no transition (moves.ts:228-234,50-53,62-64) | PARTIAL |
 | Toward, the arrow | line `y1=55 x2=146 y2=55` `.A d` stroke-width 2.4 `stroke-dasharray="10 8"`, `flow 1s linear infinite`; nested `<animate>` on `x1` with values `62;… | `.mv-arrow` `stroke:var(--move);stroke-width:2.4;stroke-dasharray:240;animation:draw 0.6s ease-out forwards` between two fixed points (moves.ts:82-97; theme.css:201-208). The tail does not travel and the arrow never leaves | CHANGED |
 | Away | mirror of toward: mover `cx=120 cy=60 r=14`, `awaywalk` translateX 0 to -68px between 50% and 94% over 8s; trailing line `.A d` stroke-width 2.4 `d… | Same arrow, drawn behind the mover at `R+46`, actor stepped -11px; it also stays drawn (moves.ts:236-243,88-92) | CHANGED |
-| Projection, blur | `<filter id="pb" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="1.2"/></filter>` | `.ss .node .ghost{filter:blur(1.2px)}` (theme.css:186-192), and `figure()` is called with `ghost=true` whenever the classes contain `anx` (picture.ts:554) | MET |
+| Projection, blur | an SVG filter, not a CSS one: `<filter id="pb" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="1.2"/></filter>`. A CSS `… | A CSS `filter: blur(1.2px)` on `.ss .node .ghost` (theme.css:186-192), applied wherever `figure()` is called with `ghost=true`, which is any figure classed `anx` (picture.ts:554). The ratified blur is an SVG `feGaussianBlur stdDeviation="1.2"` inside a filter region of -60% by 220% (move-language.html:181) — a near neighbour, not the same operation | PARTIAL |
 | Projection, sharp selves | parent `cx=52 cy=50 r=15` `.A` stroke-width 2; child `cx=178 cy=92 r=11` `.A` stroke-width 2 | The `.disc` is always drawn under the ghost, for both people (moves.ts:60-72) | MET |
-| Projection, ghost-double | the same circle inside the blur filter, `.A d` stroke-width 2, with `pshakeC 1.1s infinite`; parent opacity `1;1;0;0` and child opacity `0;0;1;1`,… | `.ghost` `stroke:var(--move);stroke-width:2.4;opacity:0.55` with `blur(1.2px)`, on both the parent and the child, both carrying `shake` (moves.ts:335-344; theme.css:186-192) | MET |
+| Projection, ghost-double | the same circle inside the blur filter, `.A d` stroke-width 2, with `pshakeC 1.1s infinite`; parent opacity `1;1;0;0` and child opacity `0;0;1;1`,… | `.ghost` on both the parent and the child, both carrying `shake` (moves.ts:335-344; theme.css:186-192). Two deltas from the ratified mark: `stroke-width` is 2.4 against the ratified 2 (move-language.html:184,191), and the blur is the CSS filter rather than the SVG one. Do not read PARTIAL here as geometry already correct | PARTIAL |
 | Projection, spike static | 8 lines `.A d` stroke-width 1.8, each with its own opacity flicker between 0.27s and 0.58s; the group scaling `1;1;.12;.12` on the parent and `.12;… | `spikes()` draws 10 static spikes from `R+3` to `R+10`, `stroke-width:1.6`, identically on both people at once (moves.ts:121-131,341; theme.css:213). No per-spike flicker and no inverse-linked gradient, so nothing shrinks on the parent as it sprouts on the child | CHANGED |
 | Projection, flow arrow | `x1=68 y1=57 x2=156 y2=83` `.A d` stroke-width 2.8 `stroke-dasharray="9 7"`, `flow .45s linear infinite`; head `<polygon points="165,86 150,76 153,… | `.mv-flow` `stroke-width:2.4;stroke-dasharray:6 6;animation:drain 1.4s linear infinite` (moves.ts:186-191; theme.css:219-228). The flow lives in the dashes, at 2.4 and 6 6 rather than 2.8 and 9 7, on a 1.4s march rather than 0.45s | PARTIAL |
 | Anxiety shake primitive | `pshakeC` / `cshakeC`, identical: `0%,100%(0,0) 20%(-2.5,1.5) 45%(2.5,-1.5) 70%(-2,1) 85%(2,-1)`, 1.1s infinite | One `tremble` keyframe shared by every shaking figure, 1.2s, five steps (theme.css:234-240) | PARTIAL |
@@ -264,8 +264,8 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Flank, generic generator | `gFlank`: two lines forming a chevron, stroke-width 2.2, `animateTransform` bobbing `4*sign` over 3s infinite | Replaced by `flank()`; a chevron on a shaft, no bob animation (moves.ts:166-176) | CHANGED |
 | Move colour | one green for every move mark, `--move` / `MV` | Every `.mv-*` class is `var(--move)` except `.mv-wall` and `.mv-strike`, which are `var(--ink)` (theme.css:200-231) | PARTIAL |
 | Symbol legibility rule | symbols must be self-evident without a legend, and each move must be apparent in the drawing itself. A text label is not enough; cutoff must show w… | — | UNCHECKED |
-| Symptom badge, playbyplay variant | circle r=7.5 offset (+14,-14), fill `--amber-line`; "!" `700 10px "IBM Plex Sans"` fill `#1a1200`; `pop .5s cubic-bezier(.2,1.6,.4,1)` scale .2 to 1 | not applicable (superseded by a resolution) | N/A |
-| Anxiety ring, playbyplay variant | two concentric rings at r = R+7 = 24, stroke `--amber-line` 2.2 opacity .85, `pulse 1s ease-out` twice, scale .75 to 1.35, opacity 1 to .15 | not applicable (superseded by a resolution) | N/A |
+| Symptom badge, playbyplay variant | circle r=7.5 offset (+14,-14), fill `--amber-line`; "!" `700 10px "IBM Plex Sans"` fill `#1a1200`; `pop .5s cubic-bezier(.2,1.6,.4,1)` scale .2 to 1 | not applicable (conflict with no pick) | N/A |
+| Anxiety ring, playbyplay variant | two concentric rings at r = R+7 = 24, stroke `--amber-line` 2.2 opacity .85, `pulse 1s ease-out` twice, scale .75 to 1.35, opacity 1 to .15 | not applicable (conflict with no pick) | N/A |
 | Cutoff, playbyplay variant | `.cutline` stroke `--mute` 1.6 round cap drawn over 500ms; after 480ms two 8px diagonal slash ticks stroke `--ink` 2.2 pop in at the midpoint ±4px;… | The build fades the actor and the target after a cutoff, which follows the play-by-play drawing rather than the ratified ruling (moves.ts:266-273) | CHANGED |
 | Drawability tick | `.tick` stroke `--ink` 1.5-2px; a moment with no direction | Not drawn anywhere in picture.ts | MISSING |
 | Drawability dot | `.dot` fill `--draw`, r 3.2px; a directed moment, up or down | `.dot` fill `--data` on the wire (theme.css:135) | MET |
@@ -321,7 +321,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | `span` — a span over a time range | no ruled drawing; the as-built draws a filled band at 14% opacity | `ViewKind.Span` sets a band; `.span` is a rect at `wire-14`, height 28, `rx 6`, `fill-opacity:0.14` (picture.ts:170-174,477-484; theme.css:140) | PARTIAL |
 | `compare` — two moments compared | no mockup. The nearest approved drawing is "Pairs, face to face": two moments side by side, a question mark between them, no axis | `ViewKind.Compare` calls `spotlight([event_a, event_b])` and nothing else; the comparison itself is never drawn (picture.ts:176-178) | PARTIAL |
 | `sequence` — a sequence of moves | the moves board, stepped in order | `ViewKind.Sequence` steps each event and awaits `SEQUENCE_MS = 1100` (picture.ts:32,180-185). No step controls | PARTIAL |
-| `cluster` — a cluster view | not in the ruled starting set of four | `ViewKind.Cluster` resolves a chapter and spotlights its events (picture.ts:186-196). A fifth kind beyond the ruled four | CHANGED |
+| `cluster` — a cluster view | resolves a chapter by id or cluster id and spotlights its events; the parameters resolve against the record or the call fails by name | `ViewKind.Cluster` resolves a chapter by id or cluster id and spotlights its events (picture.ts:186-196), which resolution 34 keeps as a sanctioned extension | MET |
 | Parameter validation | missing parameters raise by name; every person and event id is checked against the record before a view is built | — | UNCHECKED |
 | Extensibility | adding a kind must be easy; each kind added must show something meaningful | A kind must be added to the `ViewKind` enum and the `View` union (types.ts) and to the switch in `show()` (picture.ts:159-197), besides the backend | PARTIAL |
 
@@ -417,16 +417,16 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 
 | element | spec value | build value | status |
 |---|---|---|---|
-| The list view | full CRUD on all the user's data: a timeline list view reached by a simple button in the visual, styled like the sessions view with search, FULL SC… | Full screen with a back button, a search pill and sticky cluster dividers; the list takes the title row over rather than stacking a second bar under it (index.html:39-56; menu.ts; main.ts:254-259) | MET @8aec885 |
+| The list view | full CRUD on all the user's data: a timeline list view reached by a simple button in the visual, styled like the sessions view with search, FULL SC… | Full screen, but the bar holds a title, a `+` and a "Done" link rather than a back button, and the body is a banner plus a flat list (index.html:39-47; menu.ts:36-55) | CHANGED |
 | Placement | the full timeline and event editor live behind a menu, off the main journey, with a one-line banner saying editing by chat also works | Behind the menu button, off the chat journey (index.html:17,39) | MET |
-| Open-list button | 44x44px, border 1px `--line`, border-radius 8px, background `--panel`; glyph three lines, viewBox `0 0 16 12`, `stroke-width="1.8"`, round caps | `.iconbtn.listbtn`, 44x44, 1px `--line` border, radius 8, `--panel` background; glyph viewBox `0 0 16 12`, `stroke-width="1.8"`, round caps (index.html:17-19; theme.css `.listbtn`) | MET @8aec885 |
-| Back button | 44x44px, no border, colour `--data`; chevron path, viewBox `0 0 22 22`, `stroke-width="2"`, round caps and joins | `.backbtn`, 44x44, no border, colour `--data`, `margin-left:-10px`; chevron `M13.5 4.5 7 11l6.5 6.5`, viewBox `0 0 22 22`, `stroke-width="2"`, round caps and joins (index.html:41-43; theme.css `.backbtn`) | MET @8aec885 |
-| Sheet container | absolute, left/right/bottom 0, flex column, border-top 1px `--line`, top offset computed from the title row's bottom | `#menu-screen` is a flex-column screen holding its own 44px bar, the search, the scrolling body and the footer, and the chat title row is hidden while it is up, so it renders the geometry the absolute sheet does. The picture's prior state survives because the chat screen is only hidden, never rebuilt (index.html:39-56; main.ts:254-259) | MET @8aec885, ASSUMED equivalent to the mockup's absolute sheet |
-| Search bar | height 44px, `17px "Libre Franklin"`, border-radius 22px pill, border 1px `--line`; placeholder "Search events" | `.search input`, height 44, `400 17px var(--sans)`, radius 22 pill, 1px `--line`, placeholder "Search events"; filters on label, person and target names, every word must hit; clears on back (index.html:47-49; menu.ts; theme.css `.search`) | MET @8aec885 |
-| Cluster divider | sticky top, height 40px, `600 15px "Libre Franklin"`, showing the chapter label and "N moments", or "unplaced" ("No date yet" as built) | `.div` sticky top, height 40, `600 15px/1.2 var(--sans)`, chapter label left and "N moments" right in `400 13px` mono `--faint`; events in no chapter fall under "unplaced" (menu.ts; theme.css `.div`) | MET @8aec885 |
-| List row | min-height 56px, padding `8px 16px`, border-bottom 1px `--line`; line 1 `400 17px/1.3 "Libre Franklin"`; line 2 `400 13px/1.3 "IBM Plex Mono"` colo… | `.row{min-height:56px;padding:8px 16px;border-bottom:1px solid var(--line)}`; `.r1{font:400 17px/1.3 var(--sans)}`, `.r2{font:400 13px/1.3 var(--mono);color:var(--faint)}`; both lines ellipsise, column flex with a 3px gap (theme.css `.row`) | MET @8aec885 |
-| Row summary coding | must not overflow the phone; use abbreviated codes, e.g. `S↑ A↑ F= R conflict→mom` | The meta line is `Mon YYYY · person · S↑ A↑ F= R conflict→Mom`, with `△names` appended for triangles; the chapter label moved to the divider (menu.ts) | MET @8aec885 |
-| Row tap state | `.tl-row.on, .tl-row:active { background: var(--tint) }` | `.row.on, .row:active { background: var(--tint) }` (theme.css `.row`) | MET @8aec885 |
+| Open-list button | 44x44px, border 1px `--line`, border-radius 8px, background `--panel`; glyph three lines, viewBox `0 0 16 12`, `stroke-width="1.8"`, round caps | The title-row `.iconbtn`, 44x44, a three-line glyph (index.html:17-19) | PARTIAL |
+| Back button | 44x44px, no border, colour `--data`; chevron path, viewBox `0 0 22 22`, `stroke-width="2"`, round caps and joins | `.btn.link` reading "Done", `min-height:36px`, no chevron (index.html:44; theme.css:429-443) | CHANGED |
+| Sheet container | absolute, left/right/bottom 0, flex column, border-top 1px `--line`, top offset computed from the title row's bottom | Not a sheet; `#menu-screen` is a sibling screen toggled with `hidden` (index.html:39; main.ts:265-266) | CHANGED |
+| Search bar | height 44px, `17px "Libre Franklin"`, border-radius 22px pill, border 1px `--line`; placeholder "Search events" | No search input in menu.ts or index.html | MISSING |
+| Cluster divider | sticky top, height 40px, `600 15px "Libre Franklin"`, showing the chapter label and "N moments", or "unplaced" ("No date yet" as built) | No dividers and no sticky header. The chapter label is folded into each row's meta line (menu.ts:65-79) | MISSING |
+| List row | min-height 56px, padding `8px 16px`, border-bottom 1px `--line`; line 1 `400 17px/1.3 "Libre Franklin"`; line 2 `400 13px/1.3 "IBM Plex Mono"` colo… | `.row{min-height:56px;padding:8px 16px;border-bottom:1px solid var(--line)}`; `.r1{font:400 17px/1.3 var(--sans)}`, `.r2{font:400 13px/1.35 var(--mono);color:var(--faint)}` (theme.css:452-463) | MET |
+| Row summary coding | must not overflow the phone; use abbreviated codes, e.g. `S↑ A↑ F= R conflict→mom` | The meta line is `date · person · chapter label` in plain words (menu.ts:67-73). No abbreviated shift codes | CHANGED |
+| Row tap state | `.tl-row.on, .tl-row:active { background: var(--tint) }` | `.row.on{background:var(--tint)}` (theme.css:460) | MET |
 | Inline editor | padding `12px 16px 16px`, background `--bg` | `openEditor` is inserted directly after the tapped row, `padding:12px 16px 16px`, background `--bg` (menu.ts:49-53; theme.css:466-473) | MET |
 | Editor scope | everything `schema.Event` carries, as the Pro app's EventForm does; the layout may be simplified | Sections What, Who, Words, When and Shifts, with kind, person, spouse, child, summary, details, where, when, ended, certainty, the three shifts, Δ relationship, targets and triangles (editor.ts:135-195) | MET |
 | Event kinds | shift, birth, adopted, bonded, married, separated, divorced, moved, death | `EventKind` values rendered as the What chips (editor.ts:136) | MET |
@@ -437,12 +437,12 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Δ relationship placement | at the SAME level as Δ symptom, Δ anxiety and Δ functioning: a field label under one "Shifts" heading, never its own section | A `.lab` reading "Δ relationship" under the single `.sec` heading "Shifts", alongside the three variables (editor.ts:158-177) | MET |
 | Relationship field shape | not a single value: a kind AND the people involved, mover to targets. The editor must break it out into its people permutations | A kind chip group plus a multi-select targets group, and a triangles group (editor.ts:174-192) | MET |
 | Relationship sub-field visibility | follows `EventForm.qml` exactly: the three shifts and Δ relationship show only for kind=shift; the targets picker appears only once a relationship… | The shift block shows only for kind=shift; the targets block only once a relationship kind is chosen; the triangles block only for inside and outside. Target labels match the ruling exactly, including "Inside(s) 1" for outside and the "Person 2" fallback; triangle labels are "Outside(s)" for inside and "Inside(s) 2" for outside (editor.ts:55-80,158-192,217-228) | MET |
-| Editor segmented chips | height 32px, min-width 44px, `500 13px "IBM Plex Mono"`, border-radius 6px; selected: border and colour `--data`, background `--tint` | `.seg{height:32px;min-width:44px;font:500 13px var(--mono);border-radius:6px}`, `.seg.on` `--data` on `--tint`; padding and row gap now match the mockup's `0 10px` and `12px 8px` (theme.css `.seg`) | MET @8aec885 |
+| Editor segmented chips | height 32px, min-width 44px, `500 13px "IBM Plex Mono"`, border-radius 6px; selected: border and colour `--data`, background `--tint` | `.seg{height:32px;min-width:44px;font:500 13px var(--mono);border-radius:6px}`, `.seg.on` `--data` on `--tint` (theme.css:498-509) | MET |
 | Save button | full width, height 44px, background `--data`, colour `#fff`, border-radius 8px | `.acts .save` height 44, `--data` background, `--onaccent` text, radius 8 (theme.css:511-520) | MET |
 | Delete button | min-width 92px, height 44px, border 1px `--ask`, colour `--ask` | `.acts .del` min-width 92, height 44, 1px `--ask` border, `--ask` text, rendered only when editing an existing event (editor.ts:193-194; theme.css:521-530) | MET |
-| Add-event button | full width, height 44px, border `1.5px solid var(--move)`, colour `--move`, border-radius 22px pill, in a footer | `.addbtn` reading "+ Add event", full width, height 44, `1.5px solid var(--move)`, colour `--move`, radius 22 pill, in a `.foot` under the list (index.html:52-54; theme.css `.foot`, `.addbtn`) | MET @8aec885 |
+| Add-event button | full width, height 44px, border `1.5px solid var(--move)`, colour `--move`, border-radius 22px pill, in a footer | A `+` `.iconbtn` in the menu bar rather than a full-width footer button (index.html:41-43; menu.ts:19-23) | CHANGED |
 | Menu banner copy | "You can also edit just by chatting." | "You can also edit just by chatting." as `.banner` (menu.ts:8,39; theme.css:445-451) | MET |
-| Diagram / family switcher row | name `13.5px Libre Franklin`; sub `13px mono` = "N sessions · <when>"; `✓` in `--data` on the current one; current-row 3px `--data` left bar in the… | No diagram switcher in web/src, and none is buildable yet: the page is bootstrapped with a single `diagram_id` from `user.free_diagram`, and no endpoint lists a user's diagrams or their session counts (routes.py:36-40) | MISSING — blocked on a backend list endpoint |
+| Diagram / family switcher row | name `13.5px Libre Franklin`; sub `13px mono` = "N sessions · <when>"; `✓` in `--data` on the current one; current-row 3px `--data` left bar in the… | No diagram switcher in web/src | MISSING |
 | Chapter Shelf | sticky name rail 92px under a 560px viewport else 132px; chapter cards `rx:12` fill `--card` stroke `--hair`, width `clamp(30, 34*sqrt(sceneCount)*… | not applicable (no pick to build) | N/A |
 | Quiet Threads | sticky name rail 84px under 560px else 118px; lane gap `clamp(30, floor((H-rulerH-60)/laneCount), 54)`; three altitude modes by pixels-per-year; si… | not applicable (no pick to build) | N/A |
 
