@@ -9,6 +9,7 @@ from dataclasses import MISSING, fields as dc_fields
 from btcopilot.personal.intake import _enum_val, _parse_iso_date
 from btcopilot.personal.refs import Ref, RefKind
 from btcopilot.schema import (
+    ClusterSource,
     DateCertainty,
     DiagramData,
     Event,
@@ -269,7 +270,9 @@ def _chapters(events: list[dict], clusters: list[dict]) -> list[dict]:
                 ),
                 "summary": (cluster or {}).get("summary"),
                 "cluster_ids": [str(cluster["id"])] if cluster else [],
-                "source": (cluster or {}).get("source"),
+                "source": (
+                    cluster.get("source") if cluster else ClusterSource.Derived.value
+                ),
                 "start": start.isoformat(),
                 "end": end.isoformat(),
                 "event_ids": [chunk["id"] for chunk, _ in group],
