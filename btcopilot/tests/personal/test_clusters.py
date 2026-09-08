@@ -287,6 +287,29 @@ def test_one_event_may_not_sit_in_two_groups():
             detect_clusters(RECORD)
 
 
+def test_a_group_of_one_event_is_rejected():
+    """A single event is a dot on the line, whatever the model says. Asked once
+    more, still splitting one event off alone, it fails rather than storing it."""
+    alone = answers(
+        named(1, 2),
+        named(3, change="it stands on its own"),
+        named(4, change="and so does this"),
+    )
+    with replies(alone, alone) as ask:
+        with pytest.raises(ClusterError, match="never a cluster"):
+            detect_clusters(RECORD)
+    assert ask.call_count == 2
+    assert "thrown out" in ask.call_args_list[1].args[0]
+
+
+def test_a_split_that_stranded_one_event_and_is_corrected_is_stored():
+    with replies(
+        answers(named(1, 2), named(3), named(4)), answers(named(1, 2), named(3, 4))
+    ):
+        result = detect_clusters(RECORD)
+    assert [c.eventIds for c in result.clusters] == [[1, 2], [3, 4]]
+
+
 def test_a_group_with_no_reason_is_rejected():
     silent = answers(named(1, 2, reason=""), named(3, 4))
     with replies(silent, silent):

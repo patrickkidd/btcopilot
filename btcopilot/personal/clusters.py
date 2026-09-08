@@ -35,7 +35,10 @@ _log = logging.getLogger(__name__)
 
 # Bumped whenever the candidate rules or the naming prompt change, so a record
 # grouped by the older rules re-groups on its next event-changing turn.
-DETECTION_VERSION = 2
+DETECTION_VERSION = 3
+
+# A single event is a dot on the line, never a cluster.
+MIN_EVENTS = 2
 
 # How far either side of a nodal event or shift a related event may sit and
 # still be part of the same cluster.
@@ -211,7 +214,7 @@ def candidates(data: DiagramData) -> list[Candidate]:
             when,
             marked_ids,
         )
-        if len(ids) > 1 and any(event_id in marked_ids for event_id in ids)
+        if len(ids) >= MIN_EVENTS and any(event_id in marked_ids for event_id in ids)
     ]
     return sorted(kept, key=lambda c: (c.startDate, c.eventIds[0]))
 
@@ -297,6 +300,11 @@ def _check(
         if unknown:
             raise ClusterError(
                 f"Events {unknown} are not among the events you were given."
+            )
+        if len(cluster.eventIds) < MIN_EVENTS:
+            raise ClusterError(
+                f"Group {cluster.eventIds} holds fewer than {MIN_EVENTS} events; "
+                "one event on its own is never a cluster."
             )
         repeated = seen & set(cluster.eventIds)
         if repeated:
@@ -420,7 +428,8 @@ def _reuse(mine: list[dict], event_ids: list[int], used: set[str]) -> str | None
 def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
     """The model's grouping, with every event a grouping it may not touch owns
     held out, and each group carrying the id of the stored grouping it
-    continues."""
+    continues. An event left on its own once the held-out events are taken out
+    stays a dot on the line rather than becoming a cluster of one."""
     mine = [c for c in stored if _regroupable(c)]
     theirs = {
         event_id
@@ -432,7 +441,7 @@ def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
     kept: dict[str, Cluster] = {}
     for cluster in detected:
         event_ids = [e for e in cluster.eventIds if e in dates and e not in theirs]
-        if not event_ids:
+        if len(event_ids) < MIN_EVENTS:
             continue
         cluster.eventIds = event_ids
         cluster.source = ClusterSource.Model

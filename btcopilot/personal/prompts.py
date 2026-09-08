@@ -162,6 +162,9 @@ you do, say why in `change`. Without that sentence the change is thrown out.
 Never write an id that is not listed below, and never leave out an event listed
 under `nodalOrShiftIds`.
 
+Every group you return holds at least two events. A single event on its own is
+never a group, so never break one off alone.
+
 Return one entry per final group: `eventIds`, `name`, `reason`, and `change`
 when the group is not one of the candidates exactly as given.
 

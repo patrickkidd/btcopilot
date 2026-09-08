@@ -172,6 +172,35 @@ def test_a_grouping_the_user_made_survives_regrouping(discussion, family):
     assert mine[0]["eventIds"] == [12, 13]
 
 
+def test_an_event_left_alone_by_a_split_is_a_dot_not_a_cluster(discussion, family):
+    """A grouping the user made takes one event out of a model grouping of two.
+    The event left over is not stored as a grouping of its own, and the other
+    model grouping is stored as it was."""
+    data = family.get_diagram_data()
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="c1",
+                title="When he left",
+                summary="",
+                name="When he left",
+                eventIds=[11],
+                source=ClusterSource.User,
+            )
+        )
+    ]
+    family.set_diagram_data(data)
+    db.session.commit()
+
+    with detects(("The hard spring", [10, 11]), ("The winter after", [12, 13])):
+        sync(family.id, turn_id="t1")
+
+    stored = clusters_of(family)
+    assert stored["c1"]["eventIds"] == [11]
+    mine = [c for c in stored.values() if c["source"] == ClusterSource.Model.value]
+    assert [c["eventIds"] for c in mine] == [[12, 13]]
+
+
 def test_a_grouping_of_unknown_provenance_is_left_alone(discussion, family):
     """A row written before provenance was recorded is treated as the user's:
     guessing that the model made it would lose a name the user chose."""
