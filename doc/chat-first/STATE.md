@@ -78,10 +78,17 @@ visibility by event kind (mirror Pro's rules); play-by-play step chips routing o
 page — the backend kind field exists, needs verifying; board SVG BOARD_H is still fixed
 264 inside the drawing (fix-symbols handoff: board()/triangle() should return a height);
 a client-side chip clipping line in chips.ts needs removing; tests must cite
-[Oracle: R-NNNN] where they pin a ruling, not yet done. Sandbox note: 8889 runs on
-beta.db with columns added by hand (statements.kind, cluster_id, users.current_diagram_id,
-discussions.title_set_by_user) — use `flask companion migrate` on a fresh database
-instead. Visual suite runs on 8896/8894 only.
+[Oracle: R-NNNN] where they pin a ruling, not yet done. Sandbox note: bring a fresh
+database up with `flask personal migrate`, and keep the sandbox database OUTSIDE any
+agent job directory — a job directory is deleted with its job and takes the record with
+it. Visual suite runs on 8896/8894 only.
+
+**Personal API consolidated (2026-09-08)**: the browser app's routes are the personal
+API, served at `/personal/` on the session cookie, and the old Qt Personal app's
+signature-authenticated routes are unregistered under `btcopilot/personal/archive/`
+with their tests. Everything the page fetches moved from `/companion/` to `/personal/`,
+including the service-worker scope, the manifest and the bundle path, and the Flask CLI
+group is now `flask personal`.
 
 - **Storage**: diagrams.data is JSON (reads accept pickle or JSON; Pro/Personal endpoints
   keep the pickled wire via the converter); `python -m btcopilot.diagrams.migrate_json`
@@ -91,11 +98,11 @@ instead. Visual suite runs on 8896/8894 only.
 - **Passwordless login**: invite link (`python -m btcopilot.auth.invite <email>`), 6-digit
   emailed code, `WebSession` model, `/me`, sessions list/revoke; HMAC path untouched.
   Commit 06d88b3. Invite links are single-use.
-- **Front end**: Vite/TypeScript SVG page at /companion/ (web/), PWA manifest, chips
+- **Front end**: Vite/TypeScript SVG page at /personal/ (web/), PWA manifest, chips
   (event/cluster/person), look/say taps, play-by-play, views drawn, timeline+editor
   behind the menu with the banner; bundle gitignored, `npm --prefix web run build`
   required before pytest/sandbox (web/README.md).
-- **Agent loop**: `POST /companion/chat` runs the coach with READ/EDIT/SHOW tools; EDIT
+- **Agent loop**: `POST /personal/chat` runs the coach with READ/EDIT/SHOW tools; EDIT
   applies immediately via record.apply (author Coach, turn_id); reply carries ordered
   events (tool_call, record_patch, view); play-by-play coach-authored; chips validated on
   write; private coaching prompts in fdserver.
@@ -103,7 +110,7 @@ instead. Visual suite runs on 8896/8894 only.
   chip pointing at a stretch the page grouped itself resolves for the coach. The chat
   "Assistant" speaker is no longer written into the record as a person. The training app
   no longer caps the chat app's cookie at 8 hours, so a sign-in lasts the ruled 180 days.
-- **Schema on a sandbox**: `flask companion migrate` brings an existing sandbox database
+- **Schema on a sandbox**: `flask personal migrate` brings an existing sandbox database
   up to date. Sandboxes were built with `create_all`, so any column a builder landed
   silently broke every existing sandbox until the file was deleted; that cost a full
   golden run before the command existed.
@@ -155,11 +162,12 @@ the single most likely thing to bother him in the play-by-play.
 - **The one thing only he can answer**: whether each move reads without a legend, and
   whether the coach's words and the drawings tell the same story.
 
-**Sandbox recipe.** `serve.sh` in the job tmp dir (ephemeral) runs the app on beta.db;
-from ~/theapp: `PYTHONPATH=<btcopilot worktree> FLASK_APP=btcopilot.app:create_app
+**Sandbox recipe.** Keep the serve script AND the database somewhere durable, never in
+an agent job directory: deleting the job deletes the directory and the record with it.
+From ~/theapp: `PYTHONPATH=<btcopilot worktree> FLASK_APP=btcopilot.app:create_app
 FLASK_CONFIG=development FLASK_SQLALCHEMY_DATABASE_URI=sqlite:///<db>
 FDSERVER_PROMPTS_PATH=<fdserver worktree>/prompts/private_prompts.py uv run python -m
-flask run -p 8889 --no-reload` after `npm --prefix web run build`; then `flask companion
+flask run -p 8889 --no-reload` after `npm --prefix web run build`; then `flask personal
 migrate` if the database predates a schema change, and `python -m btcopilot.auth.invite
 <email>` for a single-use link. No auto-auth.
 
@@ -179,7 +187,7 @@ migrate` if the database predates a schema change, and `python -m btcopilot.auth
   the corpus analysis. Era-compression work exists reverted-but-recoverable at commit
   35dd13b — NOTE: that is one of the two contaminated commits, so a history purge
   deletes it (re-implement from HISTORY's description if purged).
-  Rebuild/reseed: `python -m btcopilot.companion.seed <username> --from-lanes
+  Rebuild/reseed: `python -m btcopilot.personal.seed <username> --from-lanes
   <chat.json> <journal.json> --alias "WRITTEN=CANONICAL"...` (identities only ever in
   the ephemeral command); sandbox: from ~/theapp, `PYTHONPATH=<FD-360 worktree>
   FLASK_APP=btcopilot.app:create_app FLASK_CONFIG=development
@@ -452,9 +460,8 @@ stays pinned to the bottom while the coach types. The moves board fits its conte
 supersedes the fixed 264px rows: mark every UI_SPEC.md row carrying RESOLVED #28 as
 SUPERSEDED by this ruling. Editor fields are 44px with the mockup's padding. Tapping a
 diagram row opens that diagram, one open at a time (User.current_diagram_id). The old
-Personal app is superseded: this PR archives the personal endpoints and the companion
-routes become the personal API — models, prompts and the agent loop stay; Pro routes are
-untouched. This is the first task of the next session, before any UI work.
+Personal app is superseded: its endpoints are archived and the chat app's routes are the
+personal API — models, prompts and the agent loop stay; Pro routes are untouched. Done.
 
 ## A/B-test list
 

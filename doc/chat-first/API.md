@@ -1,6 +1,6 @@
 # Companion API (phase 2)
 
-Everything is under `/companion`, behind the training-app login, on the user's
+Everything is under `/personal`, behind the training-app login, on the user's
 own free diagram. Writes need the CSRF token from the page's
 `<meta name="csrf-token">` in `X-CSRFToken`. A rejected value returns 400 with a
 plain-text reason; another user's resource returns 404.
