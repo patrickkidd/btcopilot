@@ -69,3 +69,54 @@ test.describe("what the coach did, one line at a time", () => {
     await expect(page.locator(".ss-t.on").first()).toContainText("distance");
   });
 });
+
+/** A turn that added someone. The board draws people, so the figure the line
+ * made lights on it. */
+const met = {
+  statement: "I put that down.",
+  statement_id: 9202,
+  discussion_id: 1,
+  kind: "turn",
+  views: null,
+  turn_id: "t2",
+  events: [
+    { type: "tool_call", name: "edit_person", args: { name: "Ada" } },
+    {
+      type: "record_patch",
+      turn_id: "t2",
+      deltas: [
+        { item_kind: "person", item_id: "1", field: "name", before: null, after: "Ada" },
+      ],
+    },
+  ],
+};
+
+test.describe("someone the coach has just put in the record", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  test("lights on the board, and stays lit like a spotlit moment", async ({
+    page,
+  }) => {
+    await settle(page);
+    await page.route(SEND, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(met),
+      }),
+    );
+    // people are drawn on the board, so the board is what is on screen
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    await page.locator("#cap-play").click();
+    await expect(page.locator(".ss.board")).toBeVisible();
+    await page.waitForTimeout(800);
+
+    await page.locator("#composer").fill("My mum is Ada.");
+    await page.locator("#send").click();
+
+    await expect(page.locator('.node.lit[data-person="1"]')).toBeVisible();
+    // no clock takes it away: it holds until the next thing is aimed at
+    await page.waitForTimeout(3200);
+    await expect(page.locator('.node.lit[data-person="1"]')).toBeVisible();
+  });
+});

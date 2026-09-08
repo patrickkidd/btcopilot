@@ -107,10 +107,6 @@ interface LabelRow {
 /** How far beside a label's words still counts as the label. */
 const LABEL_SLOP = 6;
 
-/** How long someone the coach has just added stays lit: long enough to read
- * the line that says they were added. */
-const LIT_MS = 2600;
-
 export enum Target {
   Zone = "zone",
   /** A cluster box on the resting level. */
@@ -173,9 +169,9 @@ export class Picture {
   private explaining = false;
   /** Set once the reader steps the board themselves. */
   private steered = false;
-  /** Who the coach has just put in the record, lit while its line is read. */
+  /** Who the coach has just put in the record. They stay lit the way a
+   * spotlit moment does: until the next thing is aimed at or picked. */
   private litPeople: number[] = [];
-  private litFor = 0;
   private band: { start: string; end: string } | null = null;
   private focus: Cluster | null = null;
   private range = { min: 0, max: 1 };
@@ -228,16 +224,11 @@ export class Picture {
     const people = made
       .filter((one) => one.kind === ItemKind.Person)
       .map((one) => Number(one.id));
-    if (people.length) {
-      this.litPeople = people;
-      window.clearTimeout(this.litFor);
-      this.litFor = window.setTimeout(() => {
-        this.litPeople = [];
-        this.render();
-      }, LIT_MS);
-    }
+    // the spotlight clears the last lighting before this one takes its place,
+    // so who this line made is set after it, not before
     if (moments.length) this.spotlight(moments);
-    else if (people.length) this.render();
+    this.litPeople = people;
+    this.render();
   }
 
   /** Put the picture down: nothing selected, nothing named, the whole line at
@@ -245,6 +236,7 @@ export class Picture {
   dismiss(): void {
     this.named = [];
     this.selected = null;
+    this.litPeople = [];
     this.focus = null;
     this.cluster = null;
     this.level = Level.Rest;
@@ -262,6 +254,7 @@ export class Picture {
   spotlight(eventIds: number[]): void {
     this.named = eventIds;
     this.selected = null;
+    this.litPeople = [];
     // naming something opens the cluster it belongs to; naming nothing leaves
     // the picture at rest, showing the whole line
     this.level = eventIds.length ? Level.Wire : Level.Rest;
@@ -273,6 +266,7 @@ export class Picture {
 
   select(eventId: number | null): void {
     this.selected = eventId;
+    this.litPeople = [];
     this.render();
   }
 
