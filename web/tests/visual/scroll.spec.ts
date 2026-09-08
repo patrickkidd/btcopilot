@@ -16,9 +16,13 @@ const overflows = (page: Page, selector: string) =>
     .locator(selector)
     .evaluate((node) => node.scrollHeight > node.clientHeight + 1);
 
+/** Down the gutter, clear of every bubble's words: a press that lands on words
+ * selects them rather than dragging the surface, which is the ruling that
+ * words can be taken away. The surface still takes a mouse drag everywhere
+ * else, which is what this asserts. */
 const dragUp = async (page: Page, selector: string, by: number) => {
   const box = (await page.locator(selector).boundingBox())!;
-  const x = box.x + box.width / 2;
+  const x = box.x + 3;
   const y = box.y + box.height * 0.7;
   await page.mouse.move(x, y);
   await page.mouse.down();
