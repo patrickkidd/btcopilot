@@ -1,6 +1,12 @@
-import { BOARD_H, board, castOfSteps, movesIn, type Step } from "./board";
+import {
+  BOARD_H,
+  board,
+  castOfSteps,
+  movesIn,
+  triangle,
+  type Step,
+} from "./board";
 import { esc } from "./dom";
-import { R, draw, figure, ring, zigzag, type Figure, type Walk } from "./moves";
 import {
   CH,
   PIC_H,
@@ -41,10 +47,6 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * wire steps through the moments under the thumb and that moment writes itself
  * out in full. The people appear only while a play-by-play walks the moves. */
 
-/** While a move plays the picture grows just enough to stand the people above
- * the wire; any more and the move floats in an empty box. */
-const STAGE_H = 252;
-const STAGE_GAP = 96;
 const NODAL = new Set(["cutoff", "defined-self", "fusion"]);
 
 /** The picture's levels. The middle "cluster drilldown" is CUT (R-0074): the
@@ -98,9 +100,7 @@ export class Picture {
   /** The moments the coach's latest message named — the spotlight. */
   private named: number[] = [];
   private selected: number | null = null;
-  private moving: TimelineEvent | null = null;
   private cast: number[] = [];
-  private closed = false;
   private level = Level.Wire;
   private moves: Step[] = [];
   private at = 0;
@@ -182,14 +182,14 @@ export class Picture {
 
   step(eventId: number): void {
     // while the board is open a named moment steps the board rather than
-    // staging one move over the wire
+    // off the board it only picks the moment out on the wire, because a move
+    // with people on stage is drawn on the board and nowhere else (ruled)
     const on = this.moves.findIndex((m) => m.event.id === eventId);
     if (this.level === Level.Board && on >= 0) {
       this.at = on;
       this.render();
       return;
     }
-    this.moving = this.data?.events.find((e) => e.id === eventId) ?? null;
     this.selected = eventId;
     this.render();
   }
@@ -206,7 +206,6 @@ export class Picture {
     this.level = Level.Board;
     this.entering = true;
     this.at = 0;
-    this.moving = null;
     this.cast = [];
     this.render();
     return this.moves.length;
@@ -240,25 +239,23 @@ export class Picture {
     // every view starts from the resting wire; the ones that are a level of
     // their own say so below
     this.level = Level.Wire;
-    this.closed = false;
     this.moves = [];
     switch (view.kind) {
       case ViewKind.Triangle:
+        // people on stage draw only on the board, which is a level of its own
         this.cast = view.persons;
-        this.closed = true;
-        this.moving = null;
+        this.level = Level.Board;
+        this.entering = true;
         this.render();
         return;
       case ViewKind.Span:
         this.band = { start: view.start, end: view.end };
-        this.moving = null;
         this.render();
         return;
       case ViewKind.Compare:
         // two moments face to face, a question mark between them, no axis
         this.pair = [view.event_a, view.event_b];
         this.level = Level.Compare;
-        this.moving = null;
         this.render();
         return;
       case ViewKind.Sequence: {
@@ -291,11 +288,9 @@ export class Picture {
   clear(): void {
     this.named = [];
     this.selected = null;
-    this.moving = null;
     this.cast = [];
     this.band = null;
     this.focus = null;
-    this.closed = false;
     this.level = Level.Wire;
     this.moves = [];
     this.at = 0;
@@ -370,10 +365,6 @@ export class Picture {
     return this.host.clientWidth || 360;
   }
 
-  private get staged(): boolean {
-    return this.cast.length > 0 || this.moving !== null;
-  }
-
   private x(iso: string): number {
     const { min, max } = this.range;
     const x1 = this.width - X_PAD;
@@ -389,17 +380,13 @@ export class Picture {
   /** The board is a level of its own: its own height, its own nav, its own
    * step controls, and a caption saying which move of how many this is. */
   private renderBoard(): void {
-    const cast = castOfSteps(this.moves);
-    const people = cast
+    const ids = this.moves.length ? castOfSteps(this.moves) : this.cast;
+    const people = ids
       .map((id) => this.person(id))
       .filter((p): p is Person => !!p);
-    const { svg, caption } = board(
-      this.moves,
-      this.at,
-      people,
-      this.data?.events ?? [],
-      this.width,
-    );
+    const { svg, caption } = this.moves.length
+      ? board(this.moves, this.at, people, this.data?.events ?? [], this.width)
+      : triangle(people, this.width);
     const last = this.moves.length - 1;
     this.pin(BOARD_H + 84);
     const zoom = this.entering ? " in" : "";
@@ -409,12 +396,15 @@ export class Picture {
       `<button class="corner l ss-hit" data-target="${Target.Back}" ` +
       `aria-label="back to the time line">&#8592;</button></div>` +
       `<div class="bcap">${esc(caption)}</div>` +
-      `<div class="pctl">` +
-      `<button type="button" class="btn" data-target="${Target.Prev}" ` +
-      `${this.at === 0 ? "disabled" : ""} aria-label="the move before">&#9664;</button>` +
-      `<button type="button" class="btn primary" data-target="${Target.Next}" ` +
-      `${this.at >= last ? "disabled" : ""}>&#9654; next move</button>` +
-      `</div>`;
+      // a cast the coach put on the board has nothing to step through
+      (this.moves.length
+        ? `<div class="pctl">` +
+          `<button type="button" class="btn" data-target="${Target.Prev}" ` +
+          `${this.at === 0 ? "disabled" : ""} aria-label="the move before">&#9664;</button>` +
+          `<button type="button" class="btn primary" data-target="${Target.Next}" ` +
+          `${this.at >= last ? "disabled" : ""}>&#9654; next move</button>` +
+          `</div>`
+        : "");
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
       this.host.querySelector("svg")?.pauseAnimations();
   }
@@ -454,7 +444,7 @@ export class Picture {
 
   private render(): void {
     if (!this.data) return;
-    if (this.level === Level.Board && this.moves.length) {
+    if (this.level === Level.Board && (this.moves.length || this.cast.length)) {
       this.renderBoard();
       return;
     }
@@ -469,8 +459,10 @@ export class Picture {
     const x0 = X_PAD;
     const x1 = width - X_PAD;
     const shown = this.shown();
-    const height = this.staged ? STAGE_H : PIC_H;
-    const wire = this.staged ? STAGE_H - 59 : WIRE;
+    // the resting picture is one fixed height, whatever it is showing: people
+    // on stage belong to the board, which is a level of its own (ruled)
+    const height = PIC_H;
+    const wire = WIRE;
 
     if (!shown.length) {
       this.laid = { zones: [], rows: [] };
@@ -535,12 +527,11 @@ export class Picture {
     }
 
     svg += this.questions(wire);
-    svg += this.stage(width);
     svg += `</svg>`;
 
     const first = this.yearOf(shown[0]);
     const last = this.yearOf(shown[shown.length - 1]);
-    const yearTop = this.staged ? height - 22 : YEAR_TOP;
+    const yearTop = YEAR_TOP;
     let html =
       `<div class="ss-yr" style="left:${x0}px;top:${yearTop}px">${first}</div>`;
     if (last !== first)
@@ -702,94 +693,6 @@ export class Picture {
       `aria-label="things with no date yet" ` +
       `style="left:${x1 - 26}px;top:${wire - ZONE - 4}px;width:${ZONE}px;height:${ZONE}px">?</button>`
     );
-  }
-
-  /** The people, only while a move or a view puts them on stage. The simple
-   * circular layout the 2026-09-02 ruling asked to keep for now. */
-  private stage(width: number): string {
-    const ids = this.cast.length ? this.cast : this.castOfMove();
-    const people = ids
-      .map((id) => this.person(id))
-      .filter((p): p is Person => !!p)
-      .map((p) => ({ id: p.id, name: p.name, gender: p.gender }));
-    if (!people.length) return "";
-    const figures: Figure[] = ring(
-      people,
-      width,
-      STAGE_H - 59 - STAGE_GAP,
-      R,
-      STAGE_H - 40,
-      // a triangle the coach asked to see keeps its height, or three people on
-      // a flattened ring read as a row rather than a figure
-      this.closed ? 0.92 : 0.62,
-    );
-    const event = this.moving;
-    const at = (id: number | null) =>
-      id === null ? null : (figures.find((f) => f.id === id) ?? null);
-    let marks = "";
-    let steps: Record<number, Walk> = {};
-    const classes = new Map<number, string>();
-    const ghosts = new Map<number, "out" | "in" | "solo">();
-    if (event) {
-      const subject = event.child ?? event.person;
-      const reached = event.relationshipTargets[0] ?? event.spouse ?? null;
-      const other =
-        event.relationshipTriangles[0] ??
-        event.relationshipTargets[1] ??
-        null;
-      const actor = at(subject);
-      if (actor) {
-        const drawn = draw(
-          event.relationship,
-          actor,
-          at(reached),
-          {
-            symptom: event.symptom,
-            anxiety: event.anxiety,
-            functioning: event.functioning,
-          },
-          at(other),
-        );
-        marks = drawn.marks;
-        steps = drawn.steps;
-        // the mover's name carries the green: the play-by-play has to show who
-        // made the move
-        classes.set(actor.id, `${drawn.actor} mover`);
-        if (reached !== null && drawn.target) classes.set(reached, drawn.target);
-        if (other !== null && drawn.third) classes.set(other, drawn.third);
-        if (drawn.ghosts.actor) ghosts.set(actor.id, drawn.ghosts.actor);
-        if (reached !== null && drawn.ghosts.target)
-          ghosts.set(reached, drawn.ghosts.target);
-      }
-    } else if (this.closed && figures.length === 3) {
-      // a triangle the coach asked to see: the heat around all three, in the
-      // same zigzag the ratified triangle moves use
-      marks = figures
-        .map((f, i) => zigzag(f, figures[(i + 1) % figures.length]))
-        .join("");
-    }
-    return (
-      `<g class="cast">${marks}` +
-      figures
-        .map((f) => figure(f, classes.get(f.id) ?? "", ghosts.get(f.id) ?? "", steps[f.id]))
-        .join("") +
-      `</g>`
-    );
-  }
-
-  /** Who a move puts on stage: the mover, whoever it reaches, and the third
-   * point of the triangle when the move is a triangle move. */
-  private castOfMove(): number[] {
-    const event = this.moving;
-    if (!event) return [];
-    const subject = event.child ?? event.person;
-    const reached = [
-      ...event.relationshipTargets,
-      ...(event.spouse === null ? [] : [event.spouse]),
-      ...event.relationshipTriangles,
-    ];
-    const all = [...(subject === null ? [] : [subject]), ...reached];
-    return [...new Set(all)];
   }
 
   /** The next moment a tap on a zone lands on. */

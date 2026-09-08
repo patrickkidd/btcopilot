@@ -3,6 +3,7 @@ import {
   BOARD_R,
   draw,
   figure,
+  zigzag,
   type Figure,
   type Walk,
 } from "./moves";
@@ -187,6 +188,24 @@ function history(steps: Step[], upTo: number, figures: Figure[]): string {
 export interface BoardView {
   svg: string;
   caption: string;
+}
+
+/** The board holding a closed triangle: the three the coach named, with the
+ * heat drawn on all three sides. No mockup fixes this geometry; it uses the
+ * ratified tension zigzag rather than inventing a mark. */
+export function triangle(people: Person[], width: number): BoardView {
+  const figures = ellipse(people, width);
+  const heat = figures
+    .map((f, i) => zigzag(f, figures[(i + 1) % figures.length]))
+    .join("");
+  return {
+    svg:
+      `<svg viewBox="0 0 ${width} ${BOARD_H}" aria-hidden="true">` +
+      `<g class="cast">${heat}` +
+      figures.map((f) => figure(f, "")).join("") +
+      `</g></svg>`,
+    caption: people.map((p) => p.name).join(" · "),
+  };
 }
 
 /** The whole board at one step. */

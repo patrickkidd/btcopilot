@@ -467,9 +467,12 @@ export function zigzag(from: Figure, to: Figure, klass = "mv-tension"): string {
   const b = u.length - rad(to) - 3;
   const nx = -u.y;
   const ny = u.x;
-  const points = Array.from({ length: 5 }, (_, i) => {
-    const along = a + ((b - a) * i) / 4;
-    const off = i === 0 || i === 4 ? 0 : i % 2 ? 4.5 : -4.5;
+  // the ratified tension zigzag is five points over about 60px; over a longer
+  // side it keeps that pitch rather than stretching into a kinked line
+  const n = Math.max(5, Math.round((b - a) / 15) | 1);
+  const points = Array.from({ length: n }, (_, i) => {
+    const along = a + ((b - a) * i) / (n - 1);
+    const off = i === 0 || i === n - 1 ? 0 : i % 2 ? 4.5 : -4.5;
     return `${n1(from.x + u.x * along + nx * off)},${n1(from.y + u.y * along + ny * off)}`;
   }).join(" ");
   return `<polyline class="${klass}" points="${points}"/>`;
