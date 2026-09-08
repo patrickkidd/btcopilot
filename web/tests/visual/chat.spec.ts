@@ -2,7 +2,9 @@ import { expect, test } from "@playwright/test";
 import { stateFor } from "./setup";
 
 /** Chips have to stay inside their bubble whatever the record calls things, and
- * the play-by-play has to light each chip as its move is drawn. */
+ * the play-by-play has to light each chip as its move is drawn. A reply ends in
+ * offered chips [Oracle: R-0074], and a chip is the primitive a reference is
+ * drawn as in both speakers' messages [Oracle: R-0072]. */
 
 test.describe("chips in a bubble", () => {
   test.use({ storageState: stateFor("hostile") });

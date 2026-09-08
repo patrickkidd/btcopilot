@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { stateFor } from "./setup";
 
 /** Every scroll area takes wheel, trackpad, touch drag AND mouse drag, and the
- * outer page never moves (UI_STANDARDS). */
+ * outer page never moves (UI_STANDARDS) [Oracle: R-0104, R-0105]. */
 
 const settle = async (page: Page) => {
   await page.goto("/personal/");

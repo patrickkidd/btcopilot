@@ -5,6 +5,10 @@ import { stateFor } from "./setup";
  * one moment per move, all in one stored stretch, and its session holds a
  * play-by-play about that stretch whose chips are its moves in order.
  *
+ * The walk is coach-authored and each move is a chip [Oracle: R-0074], and a
+ * button reaches a whole digestible concept rather than cycling one datum at a
+ * time [Oracle: R-0071].
+ *
  * What is under test is routing, not drawing: a chip in a walk opens the board
  * if it is closed, goes to the move it names, and never puts the picture back
  * on the timeline. No coach turn is involved, so it is deterministic. */
