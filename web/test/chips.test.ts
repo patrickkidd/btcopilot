@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { aimedEvents, chips, itemKind, token, tokenize } from "../src/chips";
+import {
+  CHIP_MAX,
+  aimedEvents,
+  chipText,
+  chips,
+  itemKind,
+  token,
+  tokenize,
+} from "../src/chips";
 import { ChipKind, ChipTone, ItemKind } from "../src/types";
 
 const chapters = [
@@ -101,5 +109,52 @@ describe("aimedEvents", () => {
   it("aims nothing when the chip names something the picture has not got", () => {
     expect(aimedEvents(chips("[[cluster:gone]]")[0], chapters)).toEqual([]);
     expect(aimedEvents(chips("[[person:4]]")[0], chapters)).toEqual([]);
+  });
+});
+
+describe("a chip has to fit inside a bubble", () => {
+  it("a short label is left exactly alone", () => {
+    expect(chipText("Dad moved out")).toEqual({
+      text: "Dad moved out",
+      clipped: false,
+    });
+  });
+
+  it("a label of sixty characters is cut and marked", () => {
+    const long =
+      "the stretch when everybody stopped speaking about the house and the money";
+    const { text, clipped } = chipText(long);
+    expect(clipped).toBe(true);
+    expect(text.length).toBeLessThanOrEqual(CHIP_MAX + 1);
+    expect(text.endsWith("…")).toBe(true);
+    expect(long.startsWith(text.slice(0, -1))).toBe(true);
+  });
+
+  it("a name is cut at a space when that still shows most of it", () => {
+    expect(chipText("Margaret Anne Winterbottom the Third of Kent").text).toBe(
+      "Margaret Anne Winterbottom the…",
+    );
+  });
+
+  it("a name whose second word is enormous is cut mid-word, not at the space", () => {
+    // Stopping at the space would leave a chip that is mostly ellipsis.
+    const { text } = chipText("Margaret-Anne Fitzgerald-Winterbottom III");
+    expect(text).toBe("Margaret-Anne Fitzgerald-Winterbot…");
+  });
+
+  it("a single unbroken word is cut rather than left whole", () => {
+    const { text, clipped } = chipText("x".repeat(80));
+    expect(clipped).toBe(true);
+    expect(text).toBe("x".repeat(CHIP_MAX) + "…");
+  });
+
+  it("emoji count as characters, not as the code units they are made of", () => {
+    const { text, clipped } = chipText("🙂🎉😀🔥🌍💡🥲🫠🧠🌱");
+    expect(clipped).toBe(false);
+    expect(text).toBe("🙂🎉😀🔥🌍💡🥲🫠🧠🌱");
+  });
+
+  it("runs of whitespace and newlines collapse so a chip stays one line", () => {
+    expect(chipText("Dad\n  moved\tout").text).toBe("Dad moved out");
   });
 });

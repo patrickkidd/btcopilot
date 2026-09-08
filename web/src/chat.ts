@@ -1,5 +1,5 @@
 import { esc, el } from "./dom";
-import { tokenize } from "./chips";
+import { chipText, tokenize } from "./chips";
 import { ChipTone, Role, type Chip, type Piece } from "./types";
 
 /** Chat is the whole surface: coach and user messages both render their chips
@@ -26,27 +26,37 @@ export class Chat {
       if (!button) return;
       e.preventDefault();
       const source = host === this.composer;
-      if (source) button.remove();
-      else
-        this.handlers.onChip({
-          kind: button.dataset.kind as Chip["kind"],
-          target: button.dataset.target ?? "",
-          label: button.textContent ?? "",
-          tone: button.classList.contains(ChipTone.Ask)
-            ? ChipTone.Ask
-            : ChipTone.Data,
-          bare: false,
-        });
+      if (source) return void button.remove();
+      // A label too long to fit shows its beginning; the first tap on one of
+      // those is a look at the rest of the words, and the tap after it speaks.
+      if (button.classList.contains("clip")) {
+        button.classList.remove("clip");
+        button.textContent = button.dataset.full ?? button.textContent;
+        this.scroll();
+        return;
+      }
+      this.handlers.onChip({
+        kind: button.dataset.kind as Chip["kind"],
+        target: button.dataset.target ?? "",
+        label: button.dataset.full ?? "",
+        tone: button.classList.contains(ChipTone.Ask)
+          ? ChipTone.Ask
+          : ChipTone.Data,
+        bare: false,
+      });
     };
     this.list.addEventListener("click", tap(this.list));
     this.composer.addEventListener("click", tap(this.composer));
   }
 
   private pill(chip: Chip): string {
+    const full = this.handlers.label(chip);
+    const { text, clipped } = chipText(full);
     return (
-      `<button type="button" class="chip ${chip.tone}" ` +
-      `data-kind="${chip.kind}" data-target="${esc(chip.target)}">` +
-      `${esc(this.handlers.label(chip))}</button>`
+      `<button type="button" class="chip ${chip.tone}${clipped ? " clip" : ""}" ` +
+      `data-kind="${chip.kind}" data-target="${esc(chip.target)}" ` +
+      `data-full="${esc(full)}" title="${esc(full)}">` +
+      `${esc(text)}</button>`
     );
   }
 
