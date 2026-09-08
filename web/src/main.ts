@@ -116,10 +116,18 @@ function onTap(tap: Tap): void {
     putDown();
     return;
   }
-  // The words of the moment already picked are the way back to where it was
-  // said. Only the words do this: a dot picks and never travels, and a label
-  // naming some other moment picks that one.
+  // The words of the moment already picked are the way to where it came from.
+  // Which way depends on what the picture is showing: inside one cluster they
+  // go to the moment's own editor, and on a line of moments that belong to no
+  // cluster they go back to where it was said. Only the words do this: a dot
+  // picks and never travels, and a label naming some other moment picks that
+  // one.
   if (tap.target === Target.Band && chosen === selected && selected !== null) {
+    if (picture.opened()) {
+      screen(Screen.Menu);
+      menu.goTo(Tab.Events, selected);
+      return;
+    }
     const trace = codedIn(selected);
     if (trace) void traceTo(trace.where);
     return;
@@ -601,21 +609,31 @@ const TABS: [string, Tab, string, string][] = [
   ["tab-events", Tab.Events, "Search events", "+ Add event"],
   ["tab-people", Tab.People, "Search people", "+ Add someone"],
 ];
-for (const [id, tab, placeholder, add] of TABS)
-  $(id).addEventListener("click", () => {
-    for (const [other] of TABS) {
-      const on = other === id;
-      $(other).classList.toggle("on", on);
-      $(other).setAttribute("aria-selected", String(on));
-    }
+
+/** Dress the drawer for one of its two lists. */
+function onTab(tab: Tab): void {
+  for (const [id, which, placeholder, add] of TABS) {
+    const on = which === tab;
+    $(id).classList.toggle("on", on);
+    $(id).setAttribute("aria-selected", String(on));
+    if (!on) continue;
     const field = $("menu-search") as HTMLInputElement;
     field.value = "";
     field.placeholder = placeholder;
     field.setAttribute("aria-label", placeholder);
     $("menu-add").textContent = add;
+  }
+}
+
+for (const [id, tab] of TABS)
+  $(id).addEventListener("click", () => {
+    onTab(tab);
     menu.search("");
     menu.open(tab);
   });
+
+// the drawer changes tab on its own when one thing sends the reader to another
+menu.onTab = onTab;
 
 for (const statement of window.BOOTSTRAP.statements) addStatement(statement);
 

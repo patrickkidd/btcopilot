@@ -109,6 +109,25 @@ export class Menu {
     this.render();
   }
 
+  /** Go to one thing's editor, on whichever list it lives on. This is how a
+   * person reaches the events about them and how an event reaches the people
+   * in it: the drawer stays open and the tab under it changes. */
+  goTo(tab: Tab, id: number): void {
+    this.tab = tab;
+    this.adding = false;
+    this.editing = id;
+    this.query = "";
+    this.onTab?.(tab);
+    this.render();
+    this.body
+      .querySelector(tab === Tab.People ? `.row[data-person="${id}"]` : `.row[data-event="${id}"]`)
+      ?.scrollIntoView({ block: "center" });
+  }
+
+  /** Told when the drawer changes tab under its own steam, so the header and
+   * the buttons above the list say the same thing it does. */
+  onTab?: (tab: Tab) => void;
+
   search(query: string): void {
     this.query = query;
     this.editing = null;
@@ -242,11 +261,15 @@ export class Menu {
   }
 
   private personEditor(person: Person | null): HTMLElement {
-    return openPersonEditor(person, () => {
-      this.editing = null;
-      this.adding = false;
-      void this.reload().then((data) => this.show(data));
-    });
+    return openPersonEditor(
+      person,
+      () => {
+        this.editing = null;
+        this.adding = false;
+        void this.reload().then((data) => this.show(data));
+      },
+      (eventId) => this.goTo(Tab.Events, eventId),
+    );
   }
 
   private divider(cluster: Cluster | undefined): string {
@@ -260,11 +283,16 @@ export class Menu {
   }
 
   private editor(event: TimelineEvent | null): HTMLElement {
-    return openEditor(event, this.data.people, () => {
-      this.editing = null;
-      this.adding = false;
-      void this.reload().then((data) => this.show(data));
-    });
+    return openEditor(
+      event,
+      this.data.people,
+      () => {
+        this.editing = null;
+        this.adding = false;
+        void this.reload().then((data) => this.show(data));
+      },
+      (personId) => this.goTo(Tab.People, personId),
+    );
   }
 
   private row(event: TimelineEvent, names: Map<number, string>): string {
