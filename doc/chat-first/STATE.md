@@ -162,7 +162,8 @@ the single most likely thing to bother him in the play-by-play.
 - **The one thing only he can answer**: whether each move reads without a legend, and
   whether the coach's words and the drawings tell the same story.
 
-**Sandbox recipe.** Keep the serve script AND the database somewhere durable, never in
+**Sandbox recipe.** `/Users/patrick/worktrees/fd362-sandbox/serve.sh <port> <db>` runs it.
+Keep the serve script AND the database somewhere durable, never in
 an agent job directory: deleting the job deletes the directory and the record with it.
 From ~/theapp: `PYTHONPATH=<btcopilot worktree> FLASK_APP=btcopilot.app:create_app
 FLASK_CONFIG=development FLASK_SQLALCHEMY_DATABASE_URI=sqlite:///<db>
