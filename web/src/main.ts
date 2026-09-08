@@ -85,6 +85,15 @@ function onTap(tap: Tap): void {
     apply(reduce(pic, PicEvent.Tap, { kind: SelKind.Shelf, id: "shelf" }));
     return;
   }
+  // At rest the picture shows the whole line; a tap opens one chapter, which
+  // is the one level change the reader makes for themselves.
+  if (tap.target === Target.Chapter) {
+    const ids = picture.inChapter(tap.index);
+    if (ids.length) picture.spotlight(ids);
+    pic = REST;
+    actions();
+    return;
+  }
   const chosen =
     tap.target === Target.Zone
       ? picture.next(tap.index, picture.selection())

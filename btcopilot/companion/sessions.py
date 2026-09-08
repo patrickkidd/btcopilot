@@ -27,6 +27,7 @@ def session_payload(discussion: Discussion) -> dict:
         "id": discussion.id,
         "title": discussion.title,
         "summary": discussion.summary,
+        "title_set_by_user": discussion.title_set_by_user,
         "last_activity": last_activity(discussion).isoformat(),
         "message_count": len(discussion.statements),
     }
@@ -105,6 +106,7 @@ def session_rename(session_id: int):
     if not title:
         raise ValueError("A session title cannot be empty")
     discussion.title = title
+    discussion.title_set_by_user = True
     db.session.commit()
     return jsonify(session_payload(discussion))
 

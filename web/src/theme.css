@@ -1069,6 +1069,8 @@ button { font-family: inherit; }
   background: var(--data);
 }
 .row .untitled { color: var(--faint); }
+/* a title someone gave by hand, so the coach's own titles read apart from it */
+.pencil { margin-left: 4px; font-size: 13px; color: var(--faint); }
 .row input.rename {
   width: 100%;
   padding: 1px 6px;
@@ -1489,3 +1491,31 @@ button { font-family: inherit; }
 
 /* while a mouse drag is scrolling, the surface is being moved, not read */
 .dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; }
+
+/* ---- the resting level: the whole line, one box per chapter (converged
+   mockup, crowded-chapter/timeline-converged.html renderRest) ---- */
+.ss .ep { fill: var(--data); opacity: 0.07; }
+.ss .ep-edge {
+  fill: none;
+  stroke: var(--data);
+  stroke-width: 1;
+  opacity: 0.35;
+  animation: chapter 2.2s ease-in-out infinite;
+}
+@keyframes chapter {
+  50% { opacity: 1; }
+}
+.ss .ep-many { fill: none; stroke: var(--data); stroke-width: 1.6; }
+/* a resting-wire data label keeps its ratified size, under the UI text floor */
+.ss .ep-count { font: 500 10px var(--mono); fill: var(--data); }
+.ss .ep-yrs { font: 400 10.5px var(--mono); fill: var(--faint); }
+.ss .ss-hint { font: 400 13px var(--mono); fill: var(--faint); }
+.ss-empty {
+  margin: 0;
+  padding: 10px 16px;
+  font: 400 13px/1.4 var(--sans);
+  color: var(--faint);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ss .ep-edge { animation: none; }
+}

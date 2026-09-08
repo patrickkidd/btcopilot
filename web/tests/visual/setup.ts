@@ -1,5 +1,12 @@
 import { execFileSync } from "node:child_process";
-import { closeSync, mkdirSync, openSync, rmSync, writeFileSync } from "node:fs";
+import {
+  closeSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
@@ -30,11 +37,31 @@ function releaseLock(): void {
   rmSync(LOCK, { force: true });
 }
 
+/** A run killed outright cannot clean up after itself, so the lock carries the
+ * pid that took it and a lock whose process is gone is not a lock. */
+function heldByLiveRun(): boolean {
+  let pid: number;
+  try {
+    pid = Number(readFileSync(LOCK, "utf8").trim());
+  } catch {
+    return false;
+  }
+  if (!pid) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function takeLock(): Promise<void> {
   const until = Date.now() + LOCK_WAIT_MS;
   for (;;) {
     try {
-      closeSync(openSync(LOCK, "wx"));
+      const handle = openSync(LOCK, "wx");
+      writeFileSync(handle, String(process.pid));
+      closeSync(handle);
       process.on("exit", releaseLock);
       for (const signal of ["SIGINT", "SIGTERM"] as const)
         process.once(signal, () => {
@@ -44,10 +71,12 @@ async function takeLock(): Promise<void> {
       return;
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
+      if (!heldByLiveRun()) {
+        rmSync(LOCK, { force: true });
+        continue;
+      }
       if (Date.now() > until)
-        throw new Error(
-          `another visual run has held ${LOCK} for ten minutes; delete it if that run is gone`,
-        );
+        throw new Error(`another visual run has held ${LOCK} for ten minutes`);
       await sleep(2000);
     }
   }

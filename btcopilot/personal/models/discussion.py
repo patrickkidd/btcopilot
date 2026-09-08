@@ -25,6 +25,12 @@ class Discussion(db.Model, ModelMixin):
     user_id = Column(Integer, db.ForeignKey("users.id"))
     diagram_id = Column(Integer, db.ForeignKey("diagrams.id"))
     title = Column(Text)
+    title_set_by_user = Column(
+        Boolean,
+        default=False,
+        nullable=False,
+        comment="Whether the title was given by hand rather than written by the coach",
+    )
     summary = Column(Text)
     discussion_date = Column(
         Date,
@@ -148,6 +154,9 @@ class Discussion(db.Model, ModelMixin):
         )
 
     def update_title(self):
+        """The coach never overwrites a title someone gave by hand."""
+        if self.title_set_by_user:
+            return
         self.title = response_text_sync(
             DISCUSSION_TITLE_PROMPT.format(
                 conversation_history=self.conversation_history()

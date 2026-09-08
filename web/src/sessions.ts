@@ -353,7 +353,9 @@ export class Sessions {
     return (
       `<div class="row side${session.id === this.current ? " cur" : ""}" data-id="${session.id}">` +
       `<div class="rmain">` +
-      `<div class="r1 rtitle">${title}</div>` +
+      `<div class="r1 rtitle">${title}` +
+      (session.title_set_by_user ? `<span class="pencil">&#9998;</span>` : "") +
+      `</div>` +
       `<div class="r2">${esc(summaryOf(session))}</div>` +
       `</div>` +
       `<div class="r2 rwhen">${esc(when)}</div>` +

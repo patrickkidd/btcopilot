@@ -194,6 +194,9 @@ export interface PlayReply {
 export interface Session {
   id: number;
   title: string | null;
+  /** A hand-given title, which the coach will not overwrite and the row marks
+   * with a pencil. */
+  title_set_by_user: boolean;
   summary: string | null;
   last_activity: string;
   message_count: number;

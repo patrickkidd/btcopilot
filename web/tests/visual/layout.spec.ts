@@ -144,19 +144,42 @@ test.describe("a moment traces back to the words that coded it", () => {
   });
 });
 
-test.describe("the picture region is pinned", () => {
+const pictureHeight = (page: Page) =>
+  page.locator("#view").evaluate((node) => Math.round(node.getBoundingClientRect().height));
+
+test.describe("each level is one fixed height", () => {
   for (const key of ["empty", "one", "three40", "dense60"] as const) {
     test.describe(() => {
       test.use({ storageState: stateFor(key) });
-      test(`the resting picture is 158 high on the ${key} record`, async ({
+      test(`the resting level is 78 high on the ${key} record`, async ({
         page,
       }) => {
         await settle(page);
-        const height = await page
-          .locator("#view")
-          .evaluate((node) => node.getBoundingClientRect().height);
-        expect(Math.round(height)).toBe(158);
+        expect(await pictureHeight(page)).toBe(78);
       });
     });
   }
+
+  test.describe(() => {
+    test.use({ storageState: stateFor("three40") });
+    test("opening a chapter takes it to 158 and holds it there", async ({
+      page,
+    }) => {
+      await settle(page);
+      expect(await pictureHeight(page)).toBe(78);
+
+      await page.locator('.ss-hit[data-target="chapter"]').first().click();
+      await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
+      await page.waitForTimeout(400);
+      expect(await pictureHeight(page)).toBe(158);
+
+      // once open, tapping about inside the chapter never changes it again
+      const before = await frame(page);
+      await page.locator('.ss-hit[data-target="zone"]').first().click();
+      expect(await pictureHeight(page)).toBe(158);
+      const after = await frame(page);
+      expect(after.picture).toEqual(before.picture);
+      expect(after.bubbles).toEqual(before.bubbles);
+    });
+  });
 });

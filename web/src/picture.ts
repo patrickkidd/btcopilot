@@ -49,9 +49,28 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const NODAL = new Set(["cutoff", "defined-self", "fusion"]);
 
+/** The resting level: the whole line, one box per chapter (converged mockup,
+ * crowded-chapter/timeline-converged.html renderRest). */
+const REST_H = 78;
+const REST_WIRE = 46;
+/** A chapter of more than this many moments collapses to a ring and a count. */
+const DENSE = 8;
+/** A gap of this many years or more between chapters earns the amber question. */
+const GAP_YEARS = 4;
+
+/** A chapter's years at a glance, two digits each, as the converged mockup
+ * writes them: "93–97". One year when it starts and ends in the same one. */
+function shortYears(start: string, end: string): string {
+  const a = start.slice(2, 4);
+  const b = end.slice(2, 4);
+  return a === b ? a : `${a}\u2013${b}`;
+}
+
 /** The picture's levels. The middle "cluster drilldown" is CUT (R-0074): the
  * resting wire and the moves board are the two that survive. */
 enum Level {
+  /** Nothing named yet: the whole line at a glance, one box per chapter. */
+  Rest = "rest",
   Wire = "wire",
   Board = "board",
   /** Two moments face to face, which is how the record asks a question about
@@ -62,6 +81,8 @@ enum Level {
 
 export enum Target {
   Zone = "zone",
+  /** A chapter box on the resting level. */
+  Chapter = "chapter",
   Band = "band",
   Question = "question",
   Shelf = "shelf",
@@ -101,7 +122,7 @@ export class Picture {
   private named: number[] = [];
   private selected: number | null = null;
   private cast: number[] = [];
-  private level = Level.Wire;
+  private level = Level.Rest;
   private moves: Step[] = [];
   private at = 0;
   private pair: [number, number] | null = null;
@@ -146,7 +167,9 @@ export class Picture {
   spotlight(eventIds: number[]): void {
     this.named = eventIds;
     this.selected = null;
-    this.level = Level.Wire;
+    // naming something opens the chapter it belongs to; naming nothing leaves
+    // the picture at rest, showing the whole line
+    this.level = eventIds.length ? Level.Wire : Level.Rest;
     this.focus = this.chapterOf(eventIds[0]);
     this.rescale();
     this.render();
@@ -380,6 +403,114 @@ export class Picture {
 
   /** The board is a level of its own: its own height, its own nav, its own
    * step controls, and a caption saying which move of how many this is. */
+  /** The whole line at a glance: one box per chapter, its years above it, its
+   * moments as dots inside it, and the amber question where the record has a
+   * long gap it cannot account for. A tap opens a chapter. Converged mockup:
+   * crowded-chapter/timeline-converged.html renderRest. */
+  private renderRest(): void {
+    const width = this.width;
+    const x0 = X_PAD;
+    const x1 = width - X_PAD;
+    const dated = this.dated();
+    this.laid = { zones: [], rows: [] };
+    this.pin(REST_H);
+
+    if (!dated.length) {
+      this.host.innerHTML =
+        `<div class="ss"><p class="ss-empty">` +
+        `Nothing on your line yet — it draws itself as you talk.</p></div>`;
+      return;
+    }
+
+    const chapters = this.restChapters();
+    const first = years(dated[0].dateTime as string);
+    const last = years(dated[dated.length - 1].dateTime as string);
+    const span = last - first || 1;
+    const at = (iso: string) =>
+      dated.length === 1
+        ? (x0 + x1) / 2
+        : x0 + ((years(iso) - first) / span) * (x1 - x0);
+
+    let svg =
+      `<svg viewBox="0 0 ${width} ${REST_H}">` +
+      `<line class="wire" x1="${x0}" y1="${REST_WIRE}" x2="${x1}" y2="${REST_WIRE}"/>`;
+    let hits = "";
+    chapters.forEach((chapter, i) => {
+      const a = at(chapter.start);
+      const b = at(chapter.end);
+      const left = a - 10;
+      const boxWidth = b - a + 20;
+      const middle = (a + b) / 2;
+      svg +=
+        `<rect class="ep" x="${left.toFixed(1)}" y="12" ` +
+        `width="${boxWidth.toFixed(1)}" height="52" rx="8"/>` +
+        `<rect class="ep-edge" x="${left.toFixed(1)}" y="12" ` +
+        `width="${boxWidth.toFixed(1)}" height="52" rx="8"/>`;
+      if (chapter.count > DENSE)
+        svg +=
+          `<circle class="ep-many" cx="${middle.toFixed(1)}" cy="${REST_WIRE}" r="11"/>` +
+          `<text class="ep-count" x="${middle.toFixed(1)}" y="${REST_WIRE + 4}" ` +
+          `text-anchor="middle">${chapter.count}</text>`;
+      else
+        for (let j = 0; j < chapter.count; j += 1) {
+          const spread = chapter.count > 1 ? j / (chapter.count - 1) : 0.5;
+          svg +=
+            `<circle class="dot" cx="${(a + (b - a) * spread).toFixed(1)}" ` +
+            `cy="${REST_WIRE}" r="4.5"/>`;
+        }
+      svg +=
+        `<text class="ep-yrs" x="${middle.toFixed(1)}" y="26" text-anchor="middle">` +
+        `${esc(shortYears(chapter.start, chapter.end))}</text>`;
+
+      const next = chapters[i + 1];
+      if (next && years(next.start) - years(chapter.end) >= GAP_YEARS) {
+        const gap = (at(next.start) + b) / 2;
+        svg +=
+          `<text class="qm small" x="${gap.toFixed(1)}" y="${REST_WIRE + 4}" ` +
+          `text-anchor="middle">?</text>`;
+      }
+
+      // the box may be narrower than a thumb, so the target is grown to the floor
+      const target = Math.max(ZONE, boxWidth);
+      hits +=
+        `<button class="ss-hit" data-target="${Target.Chapter}" data-index="${i}" ` +
+        `aria-label="${esc(chapter.title || shortYears(chapter.start, chapter.end))}" ` +
+        `style="left:${(middle - target / 2).toFixed(1)}px;top:${REST_WIRE - ZONE / 2}px;` +
+        `width:${target.toFixed(1)}px;height:${ZONE}px"></button>`;
+    });
+    svg += `<text class="ss-hint" x="${x0}" y="74">tap a chapter</text></svg>`;
+
+    this.host.innerHTML = `<div class="ss">${svg}${hits}</div>`;
+  }
+
+  /** The chapters the resting level draws, in time order. A record with no
+   * chapters of its own is one chapter: everything on it. */
+  private restChapters(): Chapter[] {
+    const chapters = (this.data?.chapters ?? []).filter((c) => c.event_ids.length);
+    if (chapters.length)
+      return [...chapters].sort((a, b) => years(a.start) - years(b.start));
+    const dated = this.dated();
+    if (!dated.length) return [];
+    return [
+      {
+        id: "all",
+        label: "",
+        title: "",
+        summary: null,
+        cluster_ids: [],
+        start: dated[0].dateTime as string,
+        end: dated[dated.length - 1].dateTime as string,
+        event_ids: dated.map((e) => e.id),
+        count: dated.length,
+      },
+    ];
+  }
+
+  /** The moments in the chapter a resting tap landed on. */
+  inChapter(index: number): number[] {
+    return this.restChapters()[index]?.event_ids ?? [];
+  }
+
   private renderBoard(): void {
     const ids = this.moves.length ? castOfSteps(this.moves) : this.cast;
     const people = ids
@@ -455,6 +586,10 @@ export class Picture {
         this.host.innerHTML = markup;
         return;
       }
+    }
+    if (this.level === Level.Rest && this.selected === null) {
+      this.renderRest();
+      return;
     }
     const width = this.width;
     const x0 = X_PAD;
