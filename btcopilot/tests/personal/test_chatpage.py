@@ -225,8 +225,14 @@ def test_play_hands_the_coach_the_cluster_events_in_date_order(
     chapter = web.get("/personal/timeline").get_json()["chapters"][0]
     token = csrf_token(web)
 
+    # the walk is sentences, not a list of chips: a bare run is sent back
     model = Model(
-        said(" then ".join(f"[[event:{i}|move]]" for i in chapter["event_ids"]))
+        said(
+            " ".join(
+                f"That winter Ada [[event:{i}|move]] and Ben went quiet."
+                for i in chapter["event_ids"]
+            )
+        )
     )
     monkeypatch.setattr(
         "btcopilot.personal.playturn.CoachModel", lambda *a, **k: model

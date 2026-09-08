@@ -8,8 +8,8 @@ from btcopilot.personal import chips, record
 from btcopilot.personal.coachturn import (
     FINISH,
     MAX_STEPS,
-    CoachTurn,
     BareList,
+    CoachTurn,
     EmptyReply,
     EventKind,
     LabelTooLong,

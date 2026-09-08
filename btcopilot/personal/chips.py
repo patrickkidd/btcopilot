@@ -98,7 +98,9 @@ def too_long(text: str, data: DiagramData) -> list[str]:
 # The coach speaks; a comma list of chips is not speech. Three chips with only
 # punctuation and a joining word between them is a list, however it is dressed.
 BARE_RUN = 3
-_JOIN = re.compile(r"^[\s,;:—–-]*(?:and|then|and then|next|after that)?[\s,;:—–-]*$", re.I)
+_JOIN = re.compile(
+    r"^[\s,;:—–-]*(?:and|then|and then|next|after that)?[\s,;:—–-]*$", re.I
+)
 
 
 def bare_list(text: str) -> bool:
@@ -111,7 +113,9 @@ def bare_list(text: str) -> bool:
         if match.group(1) == ChipKind.Ask.value:
             run, end = 0, None
             continue
-        run = run + 1 if end is not None and _JOIN.match(text[end : match.start()]) else 1
+        run = (
+            run + 1 if end is not None and _JOIN.match(text[end : match.start()]) else 1
+        )
         if run >= BARE_RUN:
             return True
         end = match.end()

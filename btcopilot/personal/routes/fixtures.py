@@ -260,8 +260,7 @@ PLAY_WALK = " ".join(
         "When they did speak in 1994 it was [[event:24|open conflict]], and the"
         " year after that neither of them"
         " [[event:25|could tell where one ended and the other began]].",
-        "In 1996 Ada [[event:26|said plainly what she thought]] for the first"
-        " time.",
+        "In 1996 Ada [[event:26|said plainly what she thought]] for the first" " time.",
         "Cal was drawn in next: in 1997 Ada was"
         " [[event:27|close in with Ben while Cal was left out]], and in 1998"
         " she was [[event:28|the one left out]].",

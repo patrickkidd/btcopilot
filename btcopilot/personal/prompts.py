@@ -129,9 +129,7 @@ def get_agent_prompt(record: str = "", interactions: str = "") -> str:
 # One cluster, narrated in date order, one chip per event (R-0074). The moves
 # are data; the coach writes the words around them and cannot invent one.
 
-PLAY_BY_PLAY_PROMPT = (
-    NARRATION_RULE
-    + """
+PLAY_BY_PLAY_PROMPT = NARRATION_RULE + """
 Walk through this stretch of the record in date order. Name every event you
 speak about as a chip, [[event:ID|the words to show]], and never name one that
 is not listed. You may skip an event and you may dwell on one, but you may not
@@ -145,7 +143,6 @@ THE STRETCH
 THE EVENTS IN DATE ORDER
 {events}
 """
-)
 
 
 # ── Session title ────────────────────────────────────────────────────────────
