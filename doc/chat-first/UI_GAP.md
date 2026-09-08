@@ -2,37 +2,38 @@
 
 Every row of `UI_SPEC.md` set against branch FD-362. Each build value was read from the source in this worktree and cites the file and line it came from: `web/index.html`, `web/src/theme.css`, and `web/src/*.ts`. Earlier audit write-ups were used only as pointers to where to look, never as the finding — several of their status claims did not survive reading the code. A row says UNCHECKED when the behaviour is not decidable from the front-end source, such as a backend rule or a copy string served by the API.
 
-Where UI_SPEC carried a conflict, the verdict here is against the resolved value, not against the losing source. Seven rows moved when the 36 conflicts were resolved: the coach-requested span band, the people appearing only when a move needs them, the amber question mark and the per-move advance all became MET, and the web frame width became CHANGED against the resolved 400px.
+Where UI_SPEC carried a conflict, the verdict here is against the resolved value, not against the losing source. Seven rows moved when the 36 conflicts were resolved: the coach-requested span band, the people appearing only when a move needs them, the amber question mark and the per-move advance all became MET, and the web frame width moved to NEEDS-OWNER, because resolution 31 set that number as a team default rather than by a ruling.
 
-Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is there · **CHANGED** the build does something different · **MISSING** absent · **UNCHECKED** no evidence either way · **N/A** the row is a superseded option, an unpicked option, or a conflict with no pick, so there is nothing for the build to match.
+Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is there · **CHANGED** the build does something different · **MISSING** absent · **UNCHECKED** no evidence either way · **NEEDS-OWNER** the build is defensibly different rather than wrong, because the value it differs from is a team default or an unruled call — do not act on this row without asking · **N/A** the row is a superseded option, an unpicked option, or a source a resolution ruled against, so there is nothing for the build to match.
 
 | status | rows |
 |---|---|
 | MET | 123 |
 | PARTIAL | 46 |
-| CHANGED | 76 |
+| CHANGED | 74 |
 | MISSING | 112 |
+| NEEDS-OWNER | 2 |
 | UNCHECKED | 23 |
 | N/A | 62 |
 | **total** | **442** |
 
-| group | MET | PARTIAL | CHANGED | MISSING | UNCHECKED | N/A |
-|---|---|---|---|---|---|---|
-| 1. App shell and navigation | 4 | 4 | 7 | 6 | 0 | 4 |
-| 2. Sessions / discussions drawer | 0 | 0 | 0 | 25 | 3 | 11 |
-| 3. Settings and account | 1 | 1 | 0 | 24 | 1 | 10 |
-| 4. Picture at rest — the sentence spotlight | 32 | 3 | 10 | 6 | 0 | 6 |
-| 5. Picture symbols — one row per symbol | 9 | 11 | 28 | 11 | 1 | 3 |
-| 6. Chalkboard / moves board | 4 | 2 | 5 | 12 | 1 | 4 |
-| 7. Show-tool view kinds | 1 | 5 | 0 | 0 | 1 | 0 |
-| 8. Play-by-play | 7 | 7 | 6 | 4 | 3 | 0 |
-| 9. Chips | 9 | 4 | 3 | 2 | 1 | 2 |
-| 10. Chat bubbles and layout | 13 | 1 | 3 | 2 | 0 | 6 |
-| 11. List view and event editor | 17 | 1 | 5 | 3 | 0 | 2 |
-| 12. Type and colour tokens | 9 | 3 | 5 | 0 | 0 | 1 |
-| 13. Animation and timing | 2 | 2 | 3 | 13 | 1 | 3 |
-| 14. Tap and scroll behaviour | 11 | 2 | 1 | 4 | 0 | 2 |
-| 15. Other | 4 | 0 | 0 | 0 | 11 | 8 |
+| group | MET | PARTIAL | CHANGED | MISSING | NEEDS-OWNER | UNCHECKED | N/A |
+|---|---|---|---|---|---|---|---|
+| 1. App shell and navigation | 4 | 4 | 6 | 6 | 1 | 0 | 4 |
+| 2. Sessions / discussions drawer | 0 | 0 | 0 | 25 | 0 | 3 | 11 |
+| 3. Settings and account | 1 | 1 | 0 | 24 | 0 | 1 | 10 |
+| 4. Picture at rest — the sentence spotlight | 32 | 3 | 10 | 6 | 0 | 0 | 6 |
+| 5. Picture symbols — one row per symbol | 10 | 11 | 27 | 11 | 0 | 1 | 3 |
+| 6. Chalkboard / moves board | 4 | 2 | 5 | 12 | 0 | 1 | 4 |
+| 7. Show-tool view kinds | 0 | 5 | 0 | 0 | 1 | 1 | 0 |
+| 8. Play-by-play | 7 | 7 | 6 | 4 | 0 | 3 | 0 |
+| 9. Chips | 9 | 4 | 3 | 2 | 0 | 1 | 2 |
+| 10. Chat bubbles and layout | 13 | 1 | 3 | 2 | 0 | 0 | 6 |
+| 11. List view and event editor | 17 | 1 | 5 | 3 | 0 | 0 | 2 |
+| 12. Type and colour tokens | 9 | 3 | 5 | 0 | 0 | 0 | 1 |
+| 13. Animation and timing | 2 | 2 | 3 | 13 | 0 | 1 | 3 |
+| 14. Tap and scroll behaviour | 11 | 2 | 1 | 4 | 0 | 0 | 2 |
+| 15. Other | 4 | 0 | 0 | 0 | 0 | 11 | 8 |
 
 ## 1. App shell and navigation
 
@@ -60,7 +61,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Focus ring, global | `outline: 2px solid var(--data)`, offset 1px, and -2px inside picture hit zones | `:focus-visible{outline:2px solid var(--data);outline-offset:1px}` (theme.css:61) and `-2px` on picture hit zones (theme.css:175) | MET |
 | Pressed state, global | every interactive element has a visible pressed state | `.ss-hit:active{background:var(--tint)}` (theme.css:174) and `.row.on`/`.chip.ask:active` (theme.css:460,380). No pressed state on `.iconbtn`, `.btn` or `.send` | PARTIAL |
 | Button and icon consistency | every button and icon meets one shared size and usability standard | `.iconbtn` and `.send` are 44x44 (theme.css:87-98,406-416), but `.btn` is `min-height:36px` (theme.css:429-441), so the Play and Done controls sit under the floor | PARTIAL |
-| App frame width, web | at phone width, `max-width: 400px` centred, so every mockup value transfers without rescaling; above that, the desktop drawings where they exist (t… | `.app{max-width:460px;margin:0 auto}` with hairlines above 461px (theme.css:63-74). One fixed width, so it matches neither the resolved 400px phone width nor any desktop treatment | CHANGED |
+| App frame width, web | at phone width, `max-width: 400px` centred, so every mockup value transfers without rescaling; above that, the desktop drawings where they exist (t… | `.app{max-width:460px;margin:0 auto}` with hairlines above 461px (theme.css:63-74). One fixed width, matching neither the 400px phone width nor any desktop treatment. Resolution 31 set those numbers as a team default with the owner unasked, so this is a difference from a team preference, not from a ruling | NEEDS-OWNER |
 | PWA shell | manifest, service worker at `/companion/sw.js`, `icon.svg`, Google Fonts preconnect | manifest link, icon, Google Fonts preconnect (index.html:6-11) | MET |
 | Menu button label | a control's label must name what it does | `aria-label="Timeline and settings"` (index.html:17); the menu screen's own title is "Timeline" and it holds a list and an editor, no settings (index.html:40; menu.ts:36-55) | CHANGED |
 
@@ -219,7 +220,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Person, female | `<circle r="13" fill="var(--panel)" stroke=currentColor stroke-width="1.5">`, rising to 2.4 when a move overrides the stroke | Everyone is `<circle class="disc" r="17">`, `fill:var(--panel);stroke:var(--faint);stroke-width:1.6` (moves.ts:37,60-72; theme.css:183). Sex is never read | CHANGED |
 | Person, male or other | `<rect width="24" height="24">` offset -12/-12, same fill and stroke rules | No rect glyph exists in moves.ts | CHANGED |
 | Person, play-by-play pane A | disc r=17, fill `--card`, stroke `--mute` 1.6; initial `600 12px "IBM Plex Sans"` centred; name mono 9px `--mute`, letter-spacing .04em, at y = cy… | The disc, a `600 13px` initial and a `400 13px mono` name, drawn while a move or a coach view puts people on stage (moves.ts:60-72; picture.ts:508-512). Disc radius 17 matches; resolution 29 settles the timing | MET |
-| Person name label, board | `<text y="-20" font-size="10.5">`, fill `--move` and weight 600 for the current mover, `--faint` and 400 otherwise | `.nm{font:400 13px var(--mono);fill:var(--faint)}` at `y + R + 32` (theme.css:185; moves.ts:69) against the ratified 10.5px on the board and 9px in pane A. Resolution 2 keeps the ratified values for data labels on a drawing, so this is a fidelity difference — and the build sits above the ratified size, not below it, so it is not a legibility defect | CHANGED |
+| Person name label, board | `<text y="-20" font-size="10.5">`, fill `--move` and weight 600 for the current mover, `--faint` and 400 otherwise | `.nm{font:400 13px var(--mono);fill:var(--faint)}` at `y + R + 32` (theme.css:185; moves.ts:69). Resolution 2 supersedes the ratified 10.5px board and 9px pane A sizes and applies the floor to picture text, so 13px is the value to hold. Do not shrink this | MET |
 | Emotional field, rings | three `<circle cx cy r=24 fill=none class="A d" stroke-width="2.4" opacity="0">`, `r` animating 18 to 170 over 1.65s, begins staggered at 0s / .55s… | `field()` draws 2 static circles at `r = R+8+i*8`, so 25 and 33, `stroke:var(--move);stroke-width:1.2;opacity:0.4`. No `r` animation and no stagger (moves.ts:75-79; theme.css:200) | CHANGED |
 | Tremble | `@keyframes tremble10`, ±2.5px falling to ±2px, active 2-28% of a 10s loop, still afterwards | `@keyframes tremble` exists, 1.2s linear infinite, five steps of ±2px, still from 45% (theme.css:234-240), and is applied through the `shake` class. Distance sets the actor to `still`, so the actor never trembles while exposed (moves.ts:264) | CHANGED |
 | Wall | thick line `x1=105 y1=30 x2=105 y2=98`, `.A d`, stroke-width 6; `@keyframes oneslabb` slides it in from `translateX(-48px)` with opacity 0 to 1 bet… | `wall()` draws one straight `.mv-wall` path 52px long across the midpoint, `stroke:var(--ink);stroke-width:4` (moves.ts:100-116; theme.css:210). No push-in animation, and it is ink rather than the move green | CHANGED |
@@ -321,7 +322,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | `span` — a span over a time range | no ruled drawing; the as-built draws a filled band at 14% opacity | `ViewKind.Span` sets a band; `.span` is a rect at `wire-14`, height 28, `rx 6`, `fill-opacity:0.14` (picture.ts:170-174,477-484; theme.css:140) | PARTIAL |
 | `compare` — two moments compared | no mockup. The nearest approved drawing is "Pairs, face to face": two moments side by side, a question mark between them, no axis | `ViewKind.Compare` calls `spotlight([event_a, event_b])` and nothing else; the comparison itself is never drawn (picture.ts:176-178) | PARTIAL |
 | `sequence` — a sequence of moves | the moves board, stepped in order | `ViewKind.Sequence` steps each event and awaits `SEQUENCE_MS = 1100` (picture.ts:32,180-185). No step controls | PARTIAL |
-| `cluster` — a cluster view | resolves a chapter by id or cluster id and spotlights its events; the parameters resolve against the record or the call fails by name | `ViewKind.Cluster` resolves a chapter by id or cluster id and spotlights its events (picture.ts:186-196), which resolution 34 keeps as a sanctioned extension | MET |
+| `cluster` — a cluster view | resolves a chapter by id or cluster id and spotlights its events; the parameters resolve against the record or the call fails by name | `ViewKind.Cluster` resolves a chapter by id or cluster id and spotlights its events (picture.ts:186-196). Resolution 34 keeps it as unruled rather than ruled in, so it is working code awaiting a decision, not a defect | NEEDS-OWNER |
 | Parameter validation | missing parameters raise by name; every person and event id is checked against the record before a view is built | — | UNCHECKED |
 | Extensibility | adding a kind must be easy; each kind added must show something meaningful | A kind must be added to the `ViewKind` enum and the `View` union (types.ts) and to the switch in `show()` (picture.ts:159-197), besides the backend | PARTIAL |
 
@@ -339,7 +340,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Density blobs | ellipses at three points, rx `[6,10,7]`, ry = rx × 0.68, fill `--idle` | Not drawn | MISSING |
 | Focus blob | fill `--teal` at opacity .28, rx=27 ry=9; `.flash` at opacity .6 reverting after 900ms | Not drawn; the focus is a bracket outline instead (picture.ts:463-475) | CHANGED |
 | Move dots on the axis | r=3.4 fill `--idle`; once played, r=4.6 fill `--teal`, `transition: fill .3s, r .3s`; `.flash` fill `--amber` | The wire's own dots stay under the stage, but they carry no played state (picture.ts:336-355) | PARTIAL |
-| Cluster bracket and label | bracket stroke `--teal` 1.2; label mono 9px fill `--teal-ink`, letter-spacing .04em, e.g. "1993–1997" | `.brk` path drawn with no text label, and only when no words are on the picture (picture.ts:463-475; theme.css:139) | PARTIAL |
+| Cluster bracket and label | bracket stroke `--teal` 1.2; label mono 9px fill `--teal-ink`, letter-spacing .04em, e.g. "1993–1997" | `.brk` path drawn with no text label at all, and only when no words are on the picture (picture.ts:463-475; theme.css:139). The label is missing rather than mis-sized; at the resolved 13px it needs room the bracket may not have | PARTIAL |
 | Node move transition | `transition: transform .55s cubic-bezier(.4,1.3,.5,1)` — an overshoot ease | The figure is translated by an SVG transform attribute with no CSS transition on `.node` (moves.ts:62-64; theme.css:183-198) | PARTIAL |
 | Node pop-in | `@keyframes pop` scale .2 to 1, opacity 0 to 1, `.5s cubic-bezier(.2,1.6,.4,1)` | No pop keyframe in theme.css | MISSING |
 | Move arrow | `fill:none; stroke:var(--teal); stroke-width:2.4; stroke-linecap:round`; drawn in over 600ms ease-out; arrowhead marker `viewBox="0 0 10 10" refX="… | `stroke-dasharray:240` with `draw 0.6s ease-out forwards`, marker head `refX 8.5 refY 5 markerWidth 5.5` (picture.ts:323-325; theme.css:201-208) | PARTIAL |
