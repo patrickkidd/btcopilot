@@ -18,8 +18,8 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 
 | status | rows |
 |---|---|
-| MET | 273 |
-| PARTIAL | 26 |
+| MET | 272 |
+| PARTIAL | 27 |
 | CHANGED | 21 |
 | MISSING | 30 |
 | NEEDS-OWNER | 3 |
@@ -39,7 +39,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | 8. Play-by-play | 12 | 5 | 6 | 3 | 0 | 2 | 0 |
 | 9. Chips | 11 | 4 | 2 | 1 | 0 | 1 | 2 |
 | 10. Chat bubbles and layout | 18 | 0 | 1 | 0 | 0 | 0 | 6 |
-| 11. List view and event editor | 27 | 0 | 0 | 0 | 0 | 0 | 2 |
+| 11. List view and event editor | 26 | 1 | 0 | 0 | 0 | 0 | 2 |
 | 12. Type and colour tokens | 10 | 3 | 3 | 0 | 0 | 0 | 2 |
 | 13. Animation and timing | 9 | 0 | 0 | 9 | 0 | 1 | 5 |
 | 14. Tap and scroll behaviour | 15 | 2 | 0 | 1 | 0 | 0 | 2 |
@@ -456,7 +456,7 @@ Statuses: **MET** the build matches the spec value · **PARTIAL** part of it is 
 | Delete button | min-width 92px, height 44px, border 1px `--ask`, colour `--ask` | `.acts .del` min-width 92, height 44, 1px `--ask` border, `--ask` text, rendered only when editing an existing event (editor.ts:193-194; theme.css:523-532) | MET |
 | Add-event button | full width, height 44px, border `1.5px solid var(--move)`, colour `--move`, border-radius 22px pill, in a footer | `.addbtn` reading "+ Add event", full width, height 44, `1.5px solid var(--move)`, colour `--move`, radius 22 pill, in a `.foot` under the list (index.html:52-54; theme.css `.foot`, `.addbtn`) | MET @8aec885 |
 | Menu banner copy | "You can also edit just by chatting." | "You can also edit just by chatting." as `.banner` (index.html; theme.css `.banner`; theme.css:447-453) | MET |
-| Diagram / family switcher row | name `13.5px Libre Franklin`; sub `13px mono` = "N sessions · <when>"; `✓` in `--data` on the current one; current-row 3px `--data` left bar in the… | Same row as group 2/3's diagrams list, name at the 17px body floor rather than 13.5. Drawing it is done; firing it is blocked: nothing on the user record points at a current diagram. `free_diagram_id` is what every read uses today and also what decides which diagram is free of charge, so writing it to switch would hand a user a paid diagram for nothing. Needs either a separate current-diagram column or a ruling that `free_diagram_id` may be repurposed. Not a UI gap (settings.ts `diagrams`) [66a8ff0] | MET |
+| Diagram / family switcher row | name `13.5px Libre Franklin`; sub `13px mono` = "N sessions · <when>"; `✓` in `--data` on the current one; current-row 3px `--data` left bar in the… | Same row as group 2/3's diagrams list, name at the 17px body floor rather than 13.5. Drawing it is done; firing it is blocked: nothing on the user record points at a current diagram. `free_diagram_id` is what every read uses today and also what decides which diagram is free of charge, so writing it to switch would hand a user a paid diagram for nothing. Needs either a separate current-diagram column or a ruling that `free_diagram_id` may be repurposed, which is a backend decision carried as blocked by the shell work rather than an owner ruling on the UI. PARTIAL rather than MET, because the row is a switcher in the mockup it comes from and this one does not switch; reading MET here would tell a reader a user can change families, and they cannot (settings.ts `diagrams`) [66a8ff0] | PARTIAL |
 | Chapter Shelf | sticky name rail 92px under a 560px viewport else 132px; chapter cards `rx:12` fill `--card` stroke `--hair`, width `clamp(30, 34*sqrt(sceneCount)*… | not applicable (no pick to build) | N/A |
 | Quiet Threads | sticky name rail 84px under 560px else 118px; lane gap `clamp(30, floor((H-rulerH-60)/laneCount), 54)`; three altitude modes by pixels-per-year; si… | not applicable (no pick to build) | N/A |
 
