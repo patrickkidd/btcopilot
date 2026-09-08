@@ -17,6 +17,8 @@ const TITLE_CAP = 120;
 const OPEN_DRAG = 40;
 const CLOSE_DRAG = 90;
 const PRESS_MS = 500;
+/** Swipe a row this far to the left to reveal Rename and Delete. */
+const SWIPE_PX = 72;
 
 export interface SessionsHandlers {
   /** Open a session: the chat swaps to its statements. */
@@ -55,6 +57,10 @@ export class Sessions {
   /** The families the reader has opened past their three most recent. */
   private expanded = new Set<number>();
   private open = false;
+  /** The row whose Rename and Delete are showing, if any. */
+  private swiped: HTMLElement | null = null;
+  /** True between the swipe revealing the actions and the click it ends with. */
+  private opening = false;
   private drag: { kind: "open" | "close"; y0: number; dy: number } | null = null;
 
   private scrim = el("div", "fs-scrim");
@@ -99,11 +105,29 @@ export class Sessions {
     const lists = await Promise.all(
       diagrams.map((diagram) => api.sessionIndex(diagram.id)),
     );
-    this.families = diagrams
+    const fresh = diagrams
       .map((diagram, i) => ({ diagram, sessions: lists[i] }))
       .sort((a, b) => Number(b.diagram.current) - Number(a.diagram.current));
+    // Newest first, except while the sheet is up: a list must not reorder under
+    // the reader's thumb because a reply landed (ratified behaviour). New
+    // sessions join at the end of their family until the sheet is closed.
+    this.families = this.open ? fresh.map((f) => this.held(f)) : fresh;
     this.handlers.onList(this.families.flatMap((f) => f.sessions));
     if (this.open) this.render();
+  }
+
+  /** One family's sessions in the order they are already on screen, updated in
+   * place, with anything new appended. */
+  private held(family: Family): Family {
+    const was = this.families.find((f) => f.diagram.id === family.diagram.id);
+    if (!was) return family;
+    const byId = new Map(family.sessions.map((s) => [s.id, s]));
+    const kept = was.sessions.flatMap((s) => {
+      const now = byId.get(s.id);
+      byId.delete(s.id);
+      return now ? [now] : [];
+    });
+    return { diagram: family.diagram, sessions: [...kept, ...byId.values()] };
   }
 
   /** The family the app is on, which is the one a new session belongs to. */
@@ -129,11 +153,33 @@ export class Sessions {
     this.newButton.addEventListener("click", () => void this.start());
     this.body.addEventListener("click", (e) => this.onBodyClick(e));
     this.pressToRename();
+    this.swipeForActions();
     this.drags();
   }
 
   private onBodyClick(e: Event): void {
     const target = e.target as Element;
+    const action = target.closest<HTMLElement>(".fs-act");
+    if (action) {
+      e.stopPropagation();
+      const row = action.closest<HTMLElement>(".row")!;
+      if (action.classList.contains("ren")) {
+        this.closeActions();
+        this.rename(row);
+      } else void this.remove(row);
+      return;
+    }
+    // The gesture that revealed the actions ends in a click of its own, which
+    // must not immediately put them away again.
+    if (this.opening) {
+      this.opening = false;
+      return;
+    }
+    // a tap anywhere else puts an open row's actions away rather than firing
+    if (this.swiped) {
+      this.closeActions();
+      return;
+    }
     const plus = target.closest<HTMLElement>(".fs-plus");
     if (plus) {
       e.stopPropagation();
@@ -157,6 +203,64 @@ export class Sessions {
     const row = target.closest<HTMLElement>(".row");
     if (!row || row.querySelector("input.rename")) return;
     this.pick(row);
+  }
+
+  /** Swipe a row left to reveal Rename and Delete, the ratified gesture beside
+   * the long press. The sheet scrolls vertically, so only a drag that is more
+   * across than down is a swipe. */
+  private swipeForActions(): void {
+    let from: { x: number; y: number; row: HTMLElement } | null = null;
+    this.body.addEventListener("pointerdown", (e) => {
+      const row = (e.target as Element).closest<HTMLElement>(".row");
+      if (!row || (e.target as Element).closest(".fs-act")) return;
+      from = { x: e.clientX, y: e.clientY, row };
+    });
+    this.body.addEventListener("pointermove", (e) => {
+      if (!from) return;
+      const dx = e.clientX - from.x;
+      if (Math.abs(dx) <= Math.abs(e.clientY - from.y)) return;
+      if (dx <= -SWIPE_PX) {
+        this.openActions(from.row);
+        from = null;
+      } else if (dx >= SWIPE_PX && this.swiped === from.row) {
+        this.closeActions();
+        from = null;
+      }
+    });
+    for (const kind of ["pointerup", "pointercancel"])
+      this.body.addEventListener(kind, () => {
+        from = null;
+      });
+  }
+
+  private openActions(row: HTMLElement): void {
+    if (this.swiped === row) return;
+    this.closeActions();
+    row.insertAdjacentHTML(
+      "beforeend",
+      `<div class="fs-acts">` +
+        `<button class="fs-act ren" type="button">Rename</button>` +
+        `<button class="fs-act del" type="button">Delete</button></div>`,
+    );
+    row.classList.add("swiped");
+    this.swiped = row;
+    this.opening = true;
+  }
+
+  private closeActions(): void {
+    if (!this.swiped) return;
+    this.swiped.classList.remove("swiped");
+    this.swiped.querySelector(".fs-acts")?.remove();
+    this.swiped = null;
+  }
+
+  private async remove(row: HTMLElement): Promise<void> {
+    const session = this.find(Number(row.dataset.id));
+    if (!session) return;
+    await api.deleteSession(session.id);
+    if (this.current === session.id) this.current = null;
+    await this.load(this.current);
+    this.render();
   }
 
   /** A long press on a row opens its title for editing in place. */
@@ -229,6 +333,7 @@ export class Sessions {
   private lower(): void {
     if (!this.open) return;
     this.open = false;
+    this.closeActions();
     this.drag = null;
     this.sheet.style.transition = "";
     this.sheet.style.transform = "";
@@ -304,6 +409,7 @@ export class Sessions {
     else if (!searching && total <= 1)
       html += `<div class="fs-hint">Past conversations collect here</div>`;
 
+    this.swiped = null;
     const top = this.body.scrollTop;
     this.body.innerHTML = html;
     this.body.scrollTop = top;

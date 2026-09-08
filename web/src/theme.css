@@ -290,6 +290,8 @@ button { font-family: inherit; }
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/* what lasted: a quiet band under the wire, dated at both ends */
+.ss .lane { stroke: var(--data); stroke-width: 3; opacity: 0.3; stroke-linecap: round; }
 /* an open state fades past its last confirmation rather than stopping dead */
 .ss .fade { stroke: url(#openfade); stroke-width: 2.2; stroke-linecap: round; }
 

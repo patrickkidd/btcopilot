@@ -117,6 +117,19 @@ def session_rename(session_id: int):
     return jsonify(session_payload(discussion))
 
 
+@bp.route("/sessions/<int:session_id>", methods=["DELETE"])
+def session_delete(session_id: int):
+    """A session goes; the record it coded stays. What the coach wrote into the
+    diagram is the record's, not the conversation's."""
+    discussion = owned_session(session_id)
+    discussion.chat_user_speaker_id = None
+    discussion.chat_ai_speaker_id = None
+    db.session.flush()
+    db.session.delete(discussion)
+    db.session.commit()
+    return "", 204
+
+
 @bp.route("/sessions/<int:session_id>/statements", methods=["POST"])
 def add_statement(session_id: int):
     statement = _statement_text()

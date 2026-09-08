@@ -81,6 +81,9 @@ export const sessionIndex = (diagramId?: number) =>
 
 export const newSession = () => call<Session>("POST", "/sessions");
 
+export const deleteSession = (id: number) =>
+  call<void>("DELETE", `/sessions/${id}`);
+
 export const renameSession = (id: number, title: string) =>
   call<Session>("PATCH", `/sessions/${id}`, { title });
 
