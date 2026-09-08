@@ -568,12 +568,16 @@ export function draw(
   if (shifts.anxiety)
     return {
       ...NONE,
-      actor: "pshake",
+      actor: "anx pshake",
       ghosts: { actor: "solo" },
       marks: spikes(actor, "solo"),
     };
   if (shifts.symptom)
-    return { ...NONE, marks: cross(actor, shifts.symptom as Shift) };
+    return {
+      ...NONE,
+      actor: "sym",
+      marks: cross(actor, shifts.symptom as Shift),
+    };
   if (shifts.functioning)
     return {
       ...NONE,
@@ -740,14 +744,15 @@ export function draw(
       return target
         ? {
             ...NONE,
-            actor: "pshake",
-            target: "pshake",
+            // the child inherits the identical shake under its own name
+            actor: "proj pshake",
+            target: "proj cshake",
             ghosts: { actor: "out", target: "in" },
             marks: spikes(actor, "out") + drainArrow(actor, target) + spikes(target, "in"),
           }
         : {
             ...NONE,
-            actor: "pshake",
+            actor: "proj pshake",
             ghosts: { actor: "solo" },
             marks: spikes(actor, "solo"),
           };
@@ -760,7 +765,8 @@ export function draw(
  * colour; up, one continuous line of their own, in THE green. */
 function functioning(person: Figure, direction: Shift): string {
   const r = rad(person);
-  const circumference = (2 * Math.PI * r).toFixed(0);
+  // the ratified 106 for r=17 is the circumference truncated, not rounded
+  const circumference = Math.floor(2 * Math.PI * r);
   if (direction === Shift.Up)
     return (
       `<circle class="mv-func up" cx="${n1(person.x)}" cy="${n1(person.y)}" r="${r}"/>`
