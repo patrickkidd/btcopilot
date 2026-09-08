@@ -7,6 +7,15 @@ import {
 } from "./board";
 import { esc } from "./dom";
 import {
+  bands,
+  fade,
+  flats,
+  rangesTouch,
+  silence,
+  trend,
+  undirected,
+} from "./marks";
+import {
   CH,
   PIC_H,
   ROWS,
@@ -434,6 +443,13 @@ export class Picture {
     return this.host.clientWidth || 360;
   }
 
+  /** How many pixels a year is worth on the wire as it is scaled now, which is
+   * what a guessed date's band and a silence are measured in. */
+  private perYear(): number {
+    const { min, max } = this.range;
+    return (this.width - X_PAD * 2) / Math.max(0.5, max - min);
+  }
+
   private x(iso: string): number {
     const { min, max } = this.range;
     const x1 = this.width - X_PAD;
@@ -695,6 +711,14 @@ export class Picture {
       `<path d="M0 0 L10 5 L0 10 Z" class="tipfill"/></marker></defs>` +
       this.bandMark(wire) +
       `<line class="wire" x1="${x0}" y1="${wire}" x2="${x1}" y2="${wire}"/>` +
+      // the drawability marks, behind the dots: what a guessed date is worth,
+      // where the record is silent, where it recorded no change, the trend the
+      // directed points earn, and the open state that has no ending
+      bands(marks, this.perYear(), wire) +
+      silence(marks, wire, GAP_YEARS, this.perYear()) +
+      trend(marks, wire) +
+      fade(marks, wire, x1) +
+      flats(marks, wire) +
       this.bracket(wire, x0, x1);
 
     // one dot per moment; moments sharing a date stack instead of merging
@@ -765,6 +789,13 @@ export class Picture {
       return (
         `<circle class="dot nodal" cx="${x}" cy="${cy}" r="6.5" opacity="${opacity}"/>` +
         `<circle class="dot core" cx="${x}" cy="${cy}" r="2" opacity="${opacity}"/>`
+      );
+    // a moment with no direction is a mark, not a point on a trend: it is
+    // stamped where it happened rather than drawn as data going one way
+    if (!lit && undirected(mark.event))
+      return (
+        `<line class="tick" x1="${x}" y1="${cy - 5}" x2="${x}" y2="${cy + 5}" ` +
+        `opacity="${opacity}"/>`
       );
     return `<circle class="dot${lit ? " lit" : ""}" cx="${x}" cy="${cy}" r="${lit ? 5 : radius}" opacity="${opacity}"/>`;
   }
@@ -865,12 +896,16 @@ export class Picture {
     );
   }
 
-  /** The one amber treatment: the record asking which of two things came first. */
+  /** The one amber treatment: the record asking which of two things came first.
+   *
+   * It asks only where the two guess ranges touch. Where they do not, the
+   * record knows the order and the dots' own places on the line say it, so
+   * nothing is asked (DRAWABILITY rule 4). */
   private questions(wire: number): string {
     if (this.selected !== null || this.named.length) return "";
     const shown = new Set(this.shown().map((e) => e.id));
     return (this.data?.questions ?? [])
-      .filter((q: Question) => shown.has(q.event_id))
+      .filter((q: Question) => shown.has(q.event_id) && this.ordered(q))
       .map((q: Question, i, all) => {
         const x = this.x(q.date);
         if (all.slice(0, i).some((other) => Math.abs(this.x(other.date) - x) < 16))
@@ -878,6 +913,18 @@ export class Picture {
         return `<text class="qm small" x="${x.toFixed(1)}" y="${wire - 16}" text-anchor="middle">?</text>`;
       })
       .join("");
+  }
+
+  /** Whether the record still has to ask about this pair: it does only while
+   * the two guess ranges touch. */
+  private ordered(q: Question): boolean {
+    const one = this.event(q.event_id);
+    const other = this.event(q.other_event_id);
+    if (!one?.dateTime || !other?.dateTime) return true;
+    return rangesTouch(
+      { date: one.dateTime, certainty: one.dateCertainty },
+      { date: other.dateTime, certainty: other.dateCertainty },
+    );
   }
 
   /** The amber question past the right end of the line, for what has no date.

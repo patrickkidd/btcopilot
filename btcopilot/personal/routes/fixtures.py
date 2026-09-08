@@ -14,6 +14,7 @@ import traceback
 
 import click
 
+from btcopilot.personal.models import StatementKind
 from btcopilot.personal.routes import bp
 from btcopilot.schema import (
     Cluster,
@@ -228,6 +229,40 @@ MOVES_CHAT = [
     ),
 ]
 
+PLAY_CLUSTER = "walk"
+
+
+def play() -> DiagramData:
+    """The moves record with its whole stretch stored as one cluster, so a
+    play-by-play about it has a cluster id that resolves."""
+    data = moves()
+    data.clusters = [
+        asdict(
+            Cluster(
+                id=PLAY_CLUSTER,
+                title="The walk",
+                summary="Every move in order.",
+                eventIds=[event["id"] for event in data.events],
+                name="The walk",
+            )
+        )
+    ]
+    return data
+
+
+PLAY_CHAT = [
+    ("user", "walk me through it"),
+    (
+        "coach",
+        "Here is the stretch, move by move: "
+        + ", then ".join(
+            f"[[event:{20 + i}|{words}]]" for i, (words, _) in enumerate(MOVES)
+        )
+        + ".",
+        {"kind": StatementKind.Play, "cluster_id": PLAY_CLUSTER},
+    ),
+]
+
 LONG_REPLY = "Here is the long version. " + ("This is a sentence about the family. " * 100)
 
 HOSTILE_CHAT = [
@@ -259,6 +294,7 @@ FIXTURES = {
     "dense60": (sixty_in_five, None),
     "hostile": (hostile, HOSTILE_CHAT),
     "moves": (moves, MOVES_CHAT),
+    "play": (play, PLAY_CHAT),
     "longname": (long_name, None),
 }
 
@@ -316,13 +352,14 @@ def install(key: str):
         db.session.flush()
         discussion.chat_user_speaker_id = me.id
         discussion.chat_ai_speaker_id = coach.id
-        for order, (role, text) in enumerate(chat):
+        for order, (role, text, *extra) in enumerate(chat):
             db.session.add(
                 Statement(
                     discussion_id=discussion.id,
                     speaker_id=coach.id if role == "coach" else me.id,
                     text=text,
                     order=order,
+                    **(extra[0] if extra else {}),
                 )
             )
         db.session.commit()

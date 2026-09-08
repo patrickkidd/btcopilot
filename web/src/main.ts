@@ -1,6 +1,6 @@
 import "./theme.css";
 import * as api from "./api";
-import { Chat, wait } from "./chat";
+import { Chat, wait, type PlayTap } from "./chat";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu } from "./menu";
 import { Sessions, sessionTitle } from "./sessions";
@@ -27,6 +27,7 @@ import {
   InteractionKind,
   ItemKind,
   Role,
+  StatementKind,
   type Chip,
   type CodedIn,
   type Diagram,
@@ -125,12 +126,15 @@ function chipLabel(chip: Chip): string {
 
 const chat = new Chat($("chat"), $("composer"), {
   label: chipLabel,
-  onChip: (chip) => {
+  onChip: (chip, play) => {
     tapped(InteractionKind.ChipTap, itemKind(chip.kind), chip.target);
     // Two kinds of chip, and the colour says which. An amber chip is an offer:
     // it names nothing in the record, so it goes into the message as words. A
     // teal chip is a reference into the record, so it aims the picture.
     if (offered(chip)) chat.insert(chip);
+    // A teal chip inside a play-by-play is a step of that walk: it moves the
+    // board and never takes the picture back to the wire (owner review 1).
+    else if (play) stepBoard(play, chip);
     else aim(chip);
   },
 });
@@ -208,13 +212,24 @@ speak.addEventListener("change", () => void settings.set({ speak: speak.checked 
 // Every scroll area takes wheel, trackpad, touch AND mouse drag (UI_STANDARDS).
 for (const id of ["chat", "menu-body"]) dragScroll($(id));
 
+/** One stored message back on the thread. A play-by-play keeps the stretch it
+ * walked, so its chips still step the board a week later. */
+function addStatement(statement: Statement): void {
+  chat.add(
+    statement.role,
+    statement.text,
+    ChipTone.Data,
+    statement.id,
+    statement.kind === StatementKind.Play ? statement.cluster_id : null,
+  );
+}
+
 /** Opening a session replaces the thread with its statements and puts the
  * picture back where that session's last coach message left it. */
 async function openSession(id: number): Promise<void> {
   const { statements } = await api.session(id);
   chat.clear();
-  for (const statement of statements)
-    chat.add(statement.role, statement.text, ChipTone.Data, statement.id);
+  for (const statement of statements) addStatement(statement);
   picture.clear();
   pic = REST;
   const last = [...statements].reverse().find((s) => s.role === Role.Coach);
@@ -248,6 +263,14 @@ function aim(chip: Chip): void {
         : { kind: SelKind.Event, id: String(ids[0]) },
     ),
   );
+}
+
+/** The nth chip of a walk steps the board to the nth move. The caption row
+ * belongs to the wire, so it clears: the board carries its own. */
+function stepBoard(play: PlayTap, chip: Chip): void {
+  picture.playStep(play.cluster, aimedEvents(chip, timeline.chapters), play.ordinal);
+  pic = REST;
+  actions();
 }
 
 /** One place turns a picture tap into its consequences: what the picture shows,
@@ -366,11 +389,11 @@ async function playThrough(clusterId: string): Promise<void> {
   // The board goes up on the tap, not when the coach comes back: a control
   // that starts something starts it immediately (UI_STANDARDS). The coach's
   // narration then lands on a board the reader is already looking at.
-  if (stretch) picture.openBoard(stretch.event_ids);
+  if (stretch) picture.openBoard(stretch.event_ids, clusterId);
   chat.busy(true);
   const reply = await api.play(clusterId);
   chat.busy(false);
-  await chat.live().type(reply.statement, (chip) => {
+  await chat.live(reply.cluster_id).type(reply.statement, (chip) => {
     const ids = aimedEvents(chip, timeline.chapters);
     if (ids.length) picture.step(ids[0]);
   });
@@ -458,8 +481,7 @@ $("menu-search").addEventListener("input", (e) =>
   menu.search((e.target as HTMLInputElement).value),
 );
 
-for (const statement of window.BOOTSTRAP.statements)
-  chat.add(statement.role, statement.text, ChipTone.Data, statement.id);
+for (const statement of window.BOOTSTRAP.statements) addStatement(statement);
 
 void sessions.load(session);
 void settings.load();

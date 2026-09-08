@@ -130,10 +130,21 @@ export interface CodedIn {
   statement_id: number | null;
 }
 
+/** What kind of message a statement is, which is how the page routes a tap on
+ * its chips: a chip in a play-by-play steps the moves board, a chip anywhere
+ * else selects the moment it names. Mirrors `StatementKind` on the server. */
+export enum StatementKind {
+  Turn = "turn",
+  Play = "play",
+}
+
 export interface Statement {
   id: number | null;
   role: Role;
   text: string;
+  kind: StatementKind;
+  /** The stretch a play-by-play narrates. Null on every other kind. */
+  cluster_id: string | null;
 }
 
 /** The turn as it happens: words as they are written, the tool calls behind
@@ -186,6 +197,8 @@ export interface Reply {
 
 export interface PlayReply {
   statement: string;
+  statement_id: number | null;
+  kind: StatementKind;
   cluster_id: string;
 }
 

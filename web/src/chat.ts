@@ -8,8 +8,15 @@ import { ChipTone, Role, type Chip, type Piece } from "./types";
  * lights as it lands and the picture draws what it names — pane A of the
  * approved play-by-play. */
 
+/** A chip tapped inside a play-by-play: the stretch it walks, and which chip in
+ * that walk this is. The board is what such a chip steps, never the wire. */
+export interface PlayTap {
+  cluster: string;
+  ordinal: number;
+}
+
 export interface ChatHandlers {
-  onChip(chip: Chip): void;
+  onChip(chip: Chip, play: PlayTap | null): void;
   /** What a chip should read as. The coach may write a reference with no words
    * of its own, and a name out of the record beats a pronoun in a sentence. */
   label(chip: Chip): string;
@@ -26,6 +33,17 @@ const TICK_MS = 18;
 const OFFER_MS = 160;
 /** How long a traced bubble stays outlined after a moment jumps to it. */
 const TRACE_MS = 2200;
+
+/** Where a tapped chip sits in its walk. Only a chip inside a play-by-play has
+ * one, and the offers that close the walk are not moves, so they do not count
+ * towards it. */
+function playTap(button: HTMLElement): PlayTap | null {
+  const bubble = button.closest<HTMLElement>(".bub");
+  const cluster = bubble?.dataset.play;
+  if (!bubble || !cluster) return null;
+  const moves = [...bubble.querySelectorAll<HTMLElement>(`.chip.${ChipTone.Data}`)];
+  return { cluster, ordinal: moves.indexOf(button) };
+}
 
 export class Chat {
   private typing: HTMLElement | null = null;
@@ -45,15 +63,18 @@ export class Chat {
       if (!button) return;
       e.preventDefault();
       if (host === this.composer) return void button.remove();
-      this.handlers.onChip({
-        kind: button.dataset.kind as Chip["kind"],
-        target: button.dataset.target ?? "",
-        label: button.dataset.full ?? "",
-        tone: button.classList.contains(ChipTone.Ask)
-          ? ChipTone.Ask
-          : ChipTone.Data,
-        bare: false,
-      });
+      this.handlers.onChip(
+        {
+          kind: button.dataset.kind as Chip["kind"],
+          target: button.dataset.target ?? "",
+          label: button.dataset.full ?? "",
+          tone: button.classList.contains(ChipTone.Ask)
+            ? ChipTone.Ask
+            : ChipTone.Data,
+          bare: false,
+        },
+        playTap(button),
+      );
     };
     this.watchScrolling();
     this.list.addEventListener("click", tap(this.list));
@@ -90,6 +111,7 @@ export class Chat {
     text: string,
     tone = ChipTone.Data,
     statementId: number | null = null,
+    play: string | null = null,
   ): HTMLElement {
     const bubble = el(
       "div",
@@ -100,6 +122,9 @@ export class Chat {
     // The bubble carries its statement so a moment on the picture can point
     // back at the words that coded it.
     if (statementId !== null) bubble.dataset.statement = String(statementId);
+    // A play-by-play carries the stretch it walks, so its chips step the board
+    // instead of taking the picture back to the wire.
+    if (play !== null) bubble.dataset.play = play;
     this.list.append(bubble);
     this.stuck = true;
     this.scroll();
@@ -130,12 +155,13 @@ export class Chat {
   /** A coach bubble. It says what the coach did first, as a plain line each,
    * then types the words out so every chip lights its part of the picture as it
    * lands. */
-  live(): LiveBubble {
+  live(play: string | null = null): LiveBubble {
     const bubble = el(
       "div",
       `bub ${Role.Coach} typing`,
       `<div class="who">Coach</div><span class="words"></span>`,
     );
+    if (play !== null) bubble.dataset.play = play;
     this.list.append(bubble);
     this.typing = bubble;
     this.stuck = true;
