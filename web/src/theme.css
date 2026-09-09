@@ -1969,6 +1969,15 @@ button { font-family: inherit; }
 }
 .hs-ttl { font: 600 16px var(--sans); color: var(--ink); }
 .hs-say { font: 400 14px var(--sans); color: var(--faint); margin-top: 6px; }
+.hs-steps {
+  margin: 10px 0 0;
+  padding-left: 22px;
+  font: 400 15px/1.45 var(--sans);
+  color: var(--ink);
+}
+.hs-steps li { margin-top: 6px; }
+.hs-steps li::marker { color: var(--data); font-weight: 600; }
+.hs-inline { vertical-align: -3px; color: var(--data); margin: 0 2px; }
 .hs-acts { display: flex; gap: 10px; margin-top: 16px; }
 .hs-later,
 .hs-go {

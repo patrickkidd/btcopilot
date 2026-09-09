@@ -71,6 +71,42 @@ function appleSteps(): HTMLElement {
   return box;
 }
 
+const SHARE_ICON =
+  '<svg class="hs-inline" width="14" height="17" viewBox="0 0 18 22" aria-hidden="true">' +
+  '<path d="M9 2v11M5 6l4-4 4 4" stroke="currentColor" stroke-width="1.8" ' +
+  'stroke-linecap="round" stroke-linejoin="round" fill="none"/>' +
+  '<path d="M3.5 10H2v10h14V10h-1.5" stroke="currentColor" stroke-width="1.8" ' +
+  'stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
+
+/** No phone lets a page add itself to the home screen, so the card has to
+ * say every tap: where the button is, what it looks like, and what to tap
+ * next. Nothing is assumed known. */
+function appleWords(): string[] {
+  const chrome = /CriOS/i.test(navigator.userAgent);
+  const firefox = /FxiOS/i.test(navigator.userAgent);
+  const where = chrome
+    ? "at the top right of the screen, next to the web address"
+    : firefox
+      ? "inside the menu behind the three lines at the bottom right"
+      : "in the middle of the bar at the bottom of the screen";
+  return [
+    `Tap the Share button ${SHARE_ICON} — a square with an arrow pointing up, ${where}`,
+    "A list slides up. Scroll down it until you see <b>Add to Home Screen</b>, and tap that",
+    "Tap <b>Add</b> at the top right",
+    "From now on, open Family Diagram from the icon on your home screen, like any app",
+  ];
+}
+
+function steps(words: string[]): HTMLElement {
+  const list = el("ol", "hs-steps");
+  for (const w of words) {
+    const li = el("li");
+    li.innerHTML = w;
+    list.append(li);
+  }
+  return list;
+}
+
 function card(): HTMLElement {
   const scrim = el("div", "hs-scrim");
   const box = el("div", "hs-card");
@@ -86,10 +122,7 @@ function card(): HTMLElement {
   };
 
   if (isApple()) {
-    box.append(
-      el("div", "hs-say", "Tap the Share button, then Add to Home Screen"),
-      appleSteps(),
-    );
+    box.append(steps(appleWords()), appleSteps());
     const got = el("button", "hs-go", "Got it");
     got.type = "button";
     got.addEventListener("click", close);
@@ -105,11 +138,12 @@ function card(): HTMLElement {
     buttons.append(later, add);
   } else {
     box.append(
-      el(
-        "div",
-        "hs-say",
-        "Use your browser's menu and choose Add to Home screen",
-      ),
+      steps([
+        "Tap the three dots at the top right of the screen",
+        "Tap <b>Add to Home screen</b> in the menu that opens",
+        "Tap <b>Add</b>",
+        "From now on, open Family Diagram from the icon on your home screen",
+      ]),
     );
     const got = el("button", "hs-go", "Got it");
     got.type = "button";
