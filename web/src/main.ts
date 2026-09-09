@@ -723,7 +723,9 @@ void load().then(async () => {
   if (last) spotlightFrom(last.text);
 });
 
-if ("serviceWorker" in navigator)
+// Never while developing: the worker answers a reload out of its own cache,
+// so a saved edit would never reach the page.
+if (import.meta.env.PROD && "serviceWorker" in navigator)
   window.addEventListener("load", () =>
     navigator.serviceWorker.register("/personal/sw.js", { scope: "/personal/" }),
   );
