@@ -5,6 +5,8 @@ import type {
   ItemKind,
   PlayReply,
   Person,
+  Passkey,
+  PasskeyCreationOptions,
   Preferences,
   Reply,
   Session,
@@ -145,3 +147,18 @@ export const diagrams = () => call<Diagram[]>("GET", "/diagrams");
  * billing fact and is never written by switching. */
 export const selectDiagram = (id: number) =>
   call<Diagram>("POST", `/diagrams/${id}/select`);
+
+/** The devices this account can sign in from without an emailed code. */
+export const passkeys = () =>
+  call<{ passkeys: Passkey[] }>("GET", "/passkeys").then((r) => r.passkeys);
+
+export const passkeyRegisterOptions = () =>
+  call<PasskeyCreationOptions>("POST", "/passkeys/register/options");
+
+export const addPasskey = (credential: unknown) =>
+  call<{ passkey: Passkey }>("POST", "/passkeys/register", credential).then(
+    (r) => r.passkey,
+  );
+
+export const revokePasskey = (id: number) =>
+  call<{ revoked: boolean }>("POST", `/passkeys/${id}/revoke`);

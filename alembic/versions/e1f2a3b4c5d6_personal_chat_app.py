@@ -94,6 +94,28 @@ def upgrade():
     op.create_index("ix_web_sessions_token", "web_sessions", ["token"], unique=True)
 
     op.create_table(
+        "passkeys",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=True),
+        sa.Column("user_id", sa.Integer(), nullable=False),
+        sa.Column("credential_id", sa.String(length=255), nullable=False),
+        sa.Column("public_key", sa.LargeBinary(), nullable=False),
+        sa.Column("sign_count", sa.Integer(), server_default="0", nullable=False),
+        sa.Column("transports", sa.JSON(), nullable=False),
+        sa.Column("name", sa.String(length=255), server_default="", nullable=False),
+        sa.Column("last_used_at", sa.DateTime(), nullable=True),
+        sa.Column("revoked_at", sa.DateTime(), nullable=True),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index("ix_passkeys_id", "passkeys", ["id"])
+    op.create_index("ix_passkeys_user_id", "passkeys", ["user_id"])
+    op.create_index(
+        "ix_passkeys_credential_id", "passkeys", ["credential_id"], unique=True
+    )
+
+    op.create_table(
         "invitations",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
@@ -164,6 +186,7 @@ def downgrade():
 
     op.drop_table("login_codes")
     op.drop_table("invitations")
+    op.drop_table("passkeys")
     op.drop_table("web_sessions")
 
     op.drop_table("interactions")

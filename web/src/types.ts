@@ -284,3 +284,24 @@ export interface Preferences {
   last_name: string | null;
   birthdate: string | null;
 }
+
+/** A key held by one device that signs the reader in without an emailed code. */
+export interface Passkey {
+  id: number;
+  name: string;
+  created_at: string;
+  last_used_at: string | null;
+}
+
+/** What the server hands the browser to make a key with, base64url where the
+ * browser wants bytes. */
+export interface PasskeyCreationOptions {
+  challenge: string;
+  rp: { id: string; name: string };
+  user: { id: string; name: string; displayName: string };
+  pubKeyCredParams: { type: "public-key"; alg: number }[];
+  timeout?: number;
+  attestation?: string;
+  authenticatorSelection?: Record<string, string>;
+  excludeCredentials?: { id: string; type: "public-key"; transports?: string[] }[];
+}

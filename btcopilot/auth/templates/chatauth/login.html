@@ -83,6 +83,15 @@
         text-decoration: none;
       }
       .error { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 0 0 16px; }
+      #device {
+        display: none;
+        color: var(--data);
+        background: none;
+        border: 1px solid var(--data);
+        margin-bottom: 14px;
+      }
+      .or { display: none; color: var(--faint); font: 400 13px var(--sans); text-align: center; margin: 0 0 14px; }
+      #device.on, #device.on + .or { display: block; }
     </style>
   </head>
   <body>
@@ -99,6 +108,8 @@
         </form>
         <a class="again" href="{{ url_for('chatauth.login') }}">Use a different email</a>
       {% else %}
+        <button id="device" type="button">Sign in with this device</button>
+        <p class="or">or</p>
         <p class="lead">Sign in with your email. There is no password.</p>
         <form method="post" action="{{ url_for('chatauth.login') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
@@ -107,5 +118,81 @@
         </form>
       {% endif %}
     </main>
+    <script>
+      // The key already on the phone signs the reader in without an email round
+      // trip. The button only appears where the phone can actually do it.
+      (function () {
+        var button = document.getElementById("device");
+        if (!button || !window.PublicKeyCredential) return;
+        var apple = /iphone|ipad|ipod|macintosh/i.test(navigator.userAgent);
+        var android = /android/i.test(navigator.userAgent);
+        if (apple || android) button.textContent = "Sign in with Face ID or fingerprint";
+
+        function fromB64(value) {
+          var raw = atob(value.replace(/-/g, "+").replace(/_/g, "/"));
+          return Uint8Array.from(raw, function (c) { return c.charCodeAt(0); });
+        }
+        function toB64(buffer) {
+          var bytes = new Uint8Array(buffer), out = "";
+          for (var i = 0; i < bytes.length; i++) out += String.fromCharCode(bytes[i]);
+          return btoa(out).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        }
+        function post(path, body) {
+          return fetch(path, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: body === undefined ? undefined : JSON.stringify(body),
+          });
+        }
+        function failed() {
+          var say = document.createElement("p");
+          say.className = "error";
+          say.textContent = "That did not work. Sign in with your email instead.";
+          button.parentNode.insertBefore(say, button);
+          button.classList.remove("on");
+        }
+
+        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+          .then(function (ok) { if (ok) button.classList.add("on"); })
+          .catch(function () {});
+
+        button.addEventListener("click", function () {
+          button.disabled = true;
+          post("/personal/passkeys/login/options")
+            .then(function (r) { return r.json(); })
+            .then(function (options) {
+              options.challenge = fromB64(options.challenge);
+              options.allowCredentials = (options.allowCredentials || []).map(function (c) {
+                return { id: fromB64(c.id), type: c.type, transports: c.transports };
+              });
+              return navigator.credentials.get({ publicKey: options });
+            })
+            .then(function (credential) {
+              return post("/personal/passkeys/login", {
+                id: credential.id,
+                rawId: toB64(credential.rawId),
+                type: credential.type,
+                response: {
+                  clientDataJSON: toB64(credential.response.clientDataJSON),
+                  authenticatorData: toB64(credential.response.authenticatorData),
+                  signature: toB64(credential.response.signature),
+                  userHandle: credential.response.userHandle
+                    ? toB64(credential.response.userHandle)
+                    : null,
+                },
+              });
+            })
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+            .then(function (answer) { window.location.href = answer.next; })
+            .catch(function () {
+              button.disabled = false;
+              failed();
+            });
+        });
+      })();
+    </script>
   </body>
 </html>

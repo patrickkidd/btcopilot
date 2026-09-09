@@ -21,6 +21,7 @@ import { $ } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { offerHomeScreen } from "./homescreen";
+import { offerPasskey } from "./passkey";
 import { shortDate } from "./when";
 import {
   ChipKind,
@@ -758,5 +759,6 @@ if (import.meta.env.PROD && "serviceWorker" in navigator)
   );
 
 // The page is only served to a signed-in reader, so this is the moment to ask
-// about the home screen.
-offerHomeScreen();
+// about a key on this device, and then about the home screen — one card at a
+// time, never both at once.
+void offerPasskey(offerHomeScreen);

@@ -3,12 +3,14 @@ import { $, el, esc } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { shortDate } from "./when";
+import { addPasskey, available, deviceWords } from "./passkey";
 import {
   Mode,
   Proactive,
   Theme,
   type Account,
   type Diagram,
+  type Passkey,
   type Preferences,
 } from "./types";
 
@@ -51,6 +53,19 @@ export interface SettingsHandlers {
   onDiagram(diagram: Diagram, how: { switched: boolean }): void;
 }
 
+/** A stored user agent is unreadable, so the row names the phone it came from. */
+function deviceLabel(userAgent: string): string {
+  for (const [pattern, name] of [
+    [/iphone/i, "iPhone"],
+    [/ipad/i, "iPad"],
+    [/macintosh|mac os/i, "Mac"],
+    [/android/i, "Android phone"],
+    [/windows/i, "Windows PC"],
+  ] as [RegExp, string][])
+    if (pattern.test(userAgent)) return name;
+  return "This device";
+}
+
 /** What a diagram row says under its name: how many sessions sit on it, when
  * that last happened, and whether it is the one in use. */
 function diagramSub(diagram: Diagram, now: Date): string {
@@ -66,6 +81,8 @@ export class Settings {
   private open = false;
   private prefs: Preferences | null = null;
   private account: Account | null = null;
+  private passkeys: Passkey[] = [];
+  private canPasskey = false;
   private host = el("div", "sn-stack");
 
   constructor(
@@ -83,9 +100,11 @@ export class Settings {
 
   /** The avatar carries the initial of whatever name the account has. */
   async load(): Promise<void> {
-    [this.prefs, this.account] = await Promise.all([
+    [this.prefs, this.account, this.passkeys, this.canPasskey] = await Promise.all([
       api.preferences(),
       api.account(),
+      api.passkeys().catch(() => []),
+      available(),
     ]);
     this.avatar.innerHTML = this.initial() || SILHOUETTE;
     this.applyTheme();
@@ -384,8 +403,60 @@ export class Settings {
         ],
         "Email and login",
       ),
+      this.group(this.passkeyRows(), "This device"),
     );
     return { title: "Profile", pane };
+  }
+
+  /** The keys that sign this account in without an emailed code, and the way to
+   * make one when there are none. */
+  private passkeyRows(): HTMLElement[] {
+    const rows = this.passkeys.map((passkey) => {
+      const row = el("div", "sn-row");
+      const main = el("div", "sn-m");
+      main.append(
+        el("div", "sn-t", esc(deviceLabel(passkey.name))),
+        el(
+          "div",
+          "sn-s",
+          esc(
+            passkey.last_used_at
+              ? `last used ${shortDate(new Date(passkey.last_used_at), new Date())}`
+              : "not used yet",
+          ),
+        ),
+      );
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "sn-manage";
+      remove.textContent = "Remove";
+      remove.addEventListener("click", () => void this.dropPasskey(passkey));
+      row.append(main, remove);
+      return row;
+    });
+    if (!this.passkeys.length && this.canPasskey) {
+      const row = el("div", "sn-row push");
+      row.append(el("div", "sn-lbl", esc(`Set up ${deviceWords()}`)), el("div", "sn-chev", "\u203a"));
+      row.addEventListener("click", () => void this.makePasskey());
+      rows.push(row);
+    }
+    if (!rows.length) rows.push(el("div", "sn-hint", "This device signs in by email."));
+    return rows;
+  }
+
+  private async makePasskey(): Promise<void> {
+    try {
+      await addPasskey();
+    } catch {
+      toast("That did not work");
+      return;
+    }
+    await this.load();
+  }
+
+  private async dropPasskey(passkey: Passkey): Promise<void> {
+    await api.revokePasskey(passkey.id);
+    await this.load();
   }
 
   private coach(prefs: Preferences): Built {

@@ -5,11 +5,14 @@ import re
 import flask
 import flask.testing
 import pytest
+import webauthn
 from flask_wtf.csrf import generate_csrf
+from webauthn.helpers import bytes_to_base64url
 
 from btcopilot import extensions
 from btcopilot.auth.invitation import Invitation
 from btcopilot.auth.logincode import LoginCode
+from btcopilot.auth.passkey import Passkey
 from btcopilot.auth.signin import SESSION_TOKEN
 from btcopilot.auth.websession import WebSession
 from btcopilot.extensions import db
@@ -177,4 +180,87 @@ def test_logout_revokes_the_session_record(flask_app, browser):
 
     browser.post("/personal/logout", data={"csrf_token": token(browser)})
     assert WebSession.query.filter_by(token=web_session_token).one().live() is False
+    assert browser.get("/personal/me").status_code == 401
+
+
+CREDENTIAL_ID = b"unittest-credential"
+PUBLIC_KEY = b"unittest-public-key"
+
+
+class Verified:
+    """What the webauthn library hands back once it has checked the signature.
+    The checking itself is the library's and is not re-tested here."""
+
+    credential_id = CREDENTIAL_ID
+    credential_public_key = PUBLIC_KEY
+    sign_count = 0
+    new_sign_count = 1
+
+
+def json_post(browser, path, body=None):
+    return browser.post(
+        path, json=body if body is not None else {}, headers={"X-CSRFToken": token(browser)}
+    )
+
+
+def signed_in(browser, flask_app):
+    invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
+    browser.get(f"/personal/invite/{invitation.token}")
+    return User.query.filter_by(username=INVITED).one()
+
+
+def stored_passkey(user, revoked=False) -> Passkey:
+    passkey = Passkey(
+        user_id=user.id,
+        credential_id=bytes_to_base64url(CREDENTIAL_ID),
+        public_key=PUBLIC_KEY,
+        sign_count=0,
+        transports=["internal"],
+        name="unittest",
+        revoked_at=datetime.datetime.utcnow() if revoked else None,
+    )
+    db.session.add(passkey)
+    db.session.commit()
+    return passkey
+
+
+def test_registering_a_passkey_stores_it(flask_app, browser, monkeypatch):
+    user = signed_in(browser, flask_app)
+    assert json_post(browser, "/personal/passkeys/register/options").status_code == 200
+
+    monkeypatch.setattr(webauthn, "verify_registration_response", lambda **kw: Verified())
+    response = json_post(browser, "/personal/passkeys/register", {"id": "x", "response": {}})
+    assert response.status_code == 200
+
+    stored = Passkey.live_for(user)
+    assert len(stored) == 1
+    assert stored[0].credential_id == bytes_to_base64url(CREDENTIAL_ID)
+
+
+def test_passkey_signs_the_user_in(flask_app, browser, monkeypatch):
+    user = signed_in(browser, flask_app)
+    passkey = stored_passkey(user)
+    browser.post("/personal/logout", data={"csrf_token": token(browser)})
+
+    assert json_post(browser, "/personal/passkeys/login/options").status_code == 200
+    monkeypatch.setattr(webauthn, "verify_authentication_response", lambda **kw: Verified())
+    response = json_post(
+        browser, "/personal/passkeys/login", {"id": bytes_to_base64url(CREDENTIAL_ID)}
+    )
+    assert response.get_json() == {"ok": True, "next": flask_app.config["CHAT_HOME"]}
+    assert browser.get("/personal/me").get_json()["user"]["email"] == INVITED
+    assert db.session.get(Passkey, passkey.id).sign_count == 1
+
+
+def test_revoked_passkey_is_refused(flask_app, browser, monkeypatch):
+    user = signed_in(browser, flask_app)
+    stored_passkey(user, revoked=True)
+    browser.post("/personal/logout", data={"csrf_token": token(browser)})
+
+    json_post(browser, "/personal/passkeys/login/options")
+    monkeypatch.setattr(webauthn, "verify_authentication_response", lambda **kw: Verified())
+    response = json_post(
+        browser, "/personal/passkeys/login", {"id": bytes_to_base64url(CREDENTIAL_ID)}
+    )
+    assert response.status_code == 401
     assert browser.get("/personal/me").status_code == 401
