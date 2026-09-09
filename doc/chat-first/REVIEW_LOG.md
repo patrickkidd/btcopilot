@@ -173,3 +173,26 @@ items, so each is logged FIXED without a commit citation.
     People). OPEN.
 47. Layout picks landed @9e47da8 (region 137px pending the button row's 4px margin; 60px
     band fits two rows of words, a third named moment is a lit dot). FIXED.
+
+48. Remove the "You can also edit just by chatting." line from the Events and People
+    lists. RULED.
+49. "in chat" (not "said"); a lone event selected on the main clusters wire counts as
+    event-selected: "in chat" active when the event has a coded-in statement; the
+    selected event's title jump must work on the main wire (root cause: event →
+    statement link not resolving on real records). OPEN.
+50. The Events/People list button moves from the name row into the chip row,
+    right-aligned. RULED.
+51. The account button loses its circle outline (no room around it); glyph + 44 target
+    stay. RULED.
+52. At rest the 44 band shows "tap a cluster", chips only once a cluster or event is
+    selected; the board hides the picture's chip row (no double "explain"); region
+    exactly 132px. RULED (coordinator, from the picked mockups).
+53. Coordinator reviews screenshots before the owner sees a build; the served bundle is
+    not rebuilt before restart time. PROCESS.
+54. Cluster minimum three landed (@1e24675/@f912051/@11207f6/@b0ea7bb, fdserver
+    @5e68dd0): floor enforced at the record's commit for every writer incl. undo and the
+    coach's grouping tool; root cause of the earlier one-event clusters was a stale
+    server process (operational), documented; owner's record re-run at version 4 → one
+    cluster (his own two-event grouping, grandfathered). OPEN for the owner: does the
+    three-event rule bind a grouping the user made; if so, that one gains an event or is
+    dropped.
