@@ -37,3 +37,63 @@ makes that possible. So:
 - Never review, harden or polish anything that has not been picked.
 - Test to the audience: a mockup gets one look; only real code gets the full loop.
 - No real names, emails, case identifiers or clinical content in any repo.
+
+## Rules that came from things going wrong (dated; these bind every session)
+
+Each of these was written down after a specific failure on this project. They are copied
+here, paraphrased, from the owner's global agent instructions so a session working only from
+the corpus still has them.
+
+**Eyeball review first (2026-09-08).** The moment a build is believed to work, the owner gets
+the link and a short list of what he will notice — and the session stops there. Continuous
+integration, coverage, desktop goldens and re-walks come after he has looked, and only on
+what he confirms is intended. His words that day: if you think something is finished, get me
+to test it myself first, because you go off on terribly long rabbit holes on things that are
+not even intended correctly.
+
+**An eyeball round is at most three items (2026-09-08).** Edit, take one headless screenshot
+at 393x852 for the coordinator to check, then the owner refreshes the dev server and sees it
+himself. Goldens, gates, suites and CI run once at the end of the day, never per round.
+
+**A user interface is never reported verified on the builder's own screenshots
+(2026-09-08).** A subagent once reported six journeys passing; the owner opened it and
+nothing worked. Verified means a real browser at phone and desktop sizes, hostile fixtures
+(empty, one item, sparse across decades, dense, undated, long labels, long names, unicode),
+deterministic gates (no console errors, no failed requests, no box outside its parent, no
+horizontal scroll, the page changed after every click), and Playwright screenshot goldens he
+approves. The builder and the verifier are different agents, and the verifier gets the spec
+and the fixtures, never the builder's report.
+
+**A build brief carries the approved references themselves (2026-09-08).** Hand the builder
+the ratified mockups, galleries and rulings by path, and say the reference wins over
+simplicity. Never paraphrase an approved design into something simpler — that is how the
+ratified move language and the ruled resting strip got dropped from a brief and then from the
+build. Every interface build ends with an approved-versus-built deviation table before anyone
+may call it done.
+
+**Every multi-agent run spawns a persistent auditor before the workers start (2026-09-08).**
+It runs on Opus with the goal statement and the references, and stays alive until stood down.
+Its first job is the clock and the cost: a ten-minute stall alarm, checking the sandbox is
+reachable, and flagging any verification beyond the one screenshot [Oracle: R-0228]. Its
+second is goal alignment — within the first check, read each worker's early output and
+confirm it understands the goal; correct it immediately if not; flag scope drift and
+misreadings; escalate only when a worker does not correct after one nudge. An auditor that
+misses a stall is replaced.
+
+**Nothing an agent says reaches the owner (2026-09-01).** No interim reports, no sign-offs,
+no coordination chatter, and never a summary while a subagent is still running. Hold
+everything until the deliverable is ready for his action, then send one message with all of
+it. Never ask him to review before the agents have finished.
+
+**There is a dev mode and it is used (2026-09-09).** Code changes on disk refresh the page
+instantly; working without one wastes his time [Oracle: R-0227]. The recipe is in STATE.md
+under the review sandbox.
+
+**Test to the audience, not the artifact (2026-09-02).** A mockup he will look at once gets
+one load and one screenshot. A gallery he must judge across records gets a deterministic
+gate. Only code gets the full loop.
+
+**Captions are written for someone who was not in the room (2026-09-02).** Card captions,
+trade-off lines and option names use common words and name concrete things on screen: what
+you are looking at, what to tap, what happens, what you give up. Never a term coined during
+the work, never a reference to a rule the reader has not read.

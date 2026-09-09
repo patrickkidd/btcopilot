@@ -69,134 +69,145 @@ supersedes the old hard-cutover plan.
 
 ## Where the build stands (live — revise, do not append)
 
-The beta build is on branch FD-362 (draft PR btcopilot #136, fdserver #30), current
-through the overnight run: night-symbols (commits 94410f7..6bec01e), night-shell
-(b95d79e, a75e077, 7a8d49a), and night-shell-2 (c18d74a..2c2ac86, which includes a
-revert at 0d1bfc1 — a filter-based screen-dim night-shell added was found to double up
-on the sessions-sheet scrim, which already dims the screen on its own, so the filter was
-taken back out). Full range: `git log --oneline -20`.
+**Branch `FD-362` in both repos; draft PRs btcopilot #136 and fdserver #30.** The beta build
+is real code against the real database, not a throwaway.
 
-**Personal API consolidated (2026-09-08)**: the browser app's routes are the personal
-API, served at `/personal/` on the session cookie, and the old Qt Personal app's
-signature-authenticated routes are unregistered under `btcopilot/personal/archive/`
-with their tests. Everything the page fetches moved from `/companion/` to `/personal/`,
-including the service-worker scope, the manifest and the bundle path, and the Flask CLI
-group is now `flask personal`. A cold-start circular import in the personal blueprint's
-auth binding is fixed (commit 2117528).
+**What the Personal app does today.** A signed-in person chats with the coach. The coach
+answers and calls tools that add, change and remove people, pair-bonds, events, variable
+shifts and clusters; each edit is named in the thread in its own formatting, and the picture
+and the lists change as the reply lands. One picture rides pinned above the chat in a fixed
+132px region, with three levels: clusters over time at rest, one cluster open on a tap, and a
+moves board for a play-by-play. A lower level slides in from the right as a card over the
+level it came from, and back reverses it. The grey line above the picture is the title of the
+level you are on, with a back arrow beside it; tapping either goes up one level. Under the
+picture, one chip row — ask, explain, in chat, and the list button — reads the same however
+the level was reached. The list button opens one drawer with Events and People tabs, each row
+opening an editor with 44px fields; a person's birth and death jump to those events and back.
+A sessions sheet holds past sessions with rename and sort. The account page slides over the
+content. Sign-in is passwordless from an emailed invite link and lasts 180 days. A send that
+fails says which of three things happened and offers to go again. Three dots show while the
+coach is thinking. Every word the app says is selectable and copyable. Users see the name
+"Family Diagram" everywhere; "Personal app" is the internal name only.
 
-**Resolved overnight, previously listed as still open from owner review round 1**:
-play-by-play step chips now route on the page (a teal chip opens the board on its
-stretch, or steps it to the move it names, and never returns to the timeline — commit
-9140a66, independently re-verified green in the night-shell-2 sandbox); the board's SVG
-height is no longer fixed at 264 inside the drawing — `board()` and `triangle()` now
-return a height, so a cast of three no longer leaves an empty band (commit 94410f7);
-visual tests that pin a ruling now cite it by id, `[Oracle: R-NNNN]` (commit 2c2ac86).
+**The owner reviewed it on his phone over four rounds, 2026-09-08 and 09**, and his word at
+the end of round 4 was that it is ready for him to start using like an app on the phone from
+the home screen. Every finding, round by round, with the commit that fixed it:
+[REVIEW_LOG.md](REVIEW_LOG.md), 66 rows. Rounds 1–4 are folded into the oracle store as
+R-0165..R-0228.
 
-**Still open from owner review round 1**: the event editor lacks the relationship field
-and relationshipTargets/Triangles/Intensity, and the person/spouse/child conditional
-visibility by event kind (mirror Pro's rules); a client-side chip clipping line in
-chips.ts needs removing. Sandbox note below supersedes the earlier one — read it before
-touching the sandbox.
+**His own record is small**: seven events, and one cluster he made himself holding two events.
+It predates the three-event floor and is grandfathered — see the open decisions below.
 
-**Suites.** Backend: 905 passed, 33 skipped, run against this worktree after the personal
-API consolidation (the drop from the prior 982/37 is old Qt Personal app tests archived,
-not lost coverage — new coverage was added alongside: play.spec.ts, gestures.spec.ts).
-Visual: 95 green on the phone viewport at the last recorded run. Neither has been watched
-run green on CI.
+**Review sandbox.** Durable scripts live in `/Users/patrick/worktrees/fd362-sandbox/`, outside
+every job directory on purpose: a database inside a job directory is deleted with the job, and
+that has already cost one sandbox.
+
+- `serve.sh 8890 beta2.db` — the Flask API from this worktree, bound to every interface, no
+  reload, so a Python change needs a restart.
+- `dev.sh` — the Vite dev server on 8891 proxying to 8890, host header forwarded so sign-in and
+  cookies mint for 8891; the service worker is off. **The owner reviews at
+  http://turin.local:8891/personal/** and every saved front-end edit shows on refresh, no
+  build. This is the dev mode he asked for [Oracle: R-0227].
+- `invite.sh <email>` — a sign-in link at turin.local, not 127.0.0.1, so his phone can open it.
+  A phone already signed in needs no new invite.
+- `env.sh` — the settings both scripts source, including the path to the private prompts in the
+  fdserver worktree.
+- `beta2.db` is the review database: never seeded, never wiped, backed up before any restart,
+  migrated with `flask personal migrate`. Its session history is kept across code changes
+  [Oracle: R-0191].
+
+**Suites.** Backend: 905 passed, 33 skipped, run in this worktree. Web unit tests and 95 visual
+tests were last recorded green on a Mac. **Neither suite has ever been watched green on CI, and
+CI fails on this branch today** for three understood reasons:
+
+1. Two web unit tests assert a reload event the turn handler no longer sends.
+2. Every screenshot test fails by construction: the approved images are recorded on macOS and
+   CI runs Ubuntu, which looks for images that were never recorded.
+3. The spotlight selector now matches two elements, so the tests using it error before
+   comparing anything.
 
 **Spec and gap.** UI_SPEC.md carries 444 value rows, 52 resolutions and 3 open items.
-UI_GAP.md sets every one against the build, folded with the overnight builders'
-findings and regenerated by `tools/ui_gap_counts.py`: MET 318, PARTIAL 11, CHANGED 12,
-MISSING 5, NEEDS-OWNER 13, UNCHECKED 16, N/A 76, over 451 rows.
+UI_GAP.md sets every one against the build: MET 318, PARTIAL 11, CHANGED 12, MISSING 5,
+NEEDS-OWNER 13, UNCHECKED 16, N/A 76, over 451 rows. UI_GAP is hand-maintained now; its
+generator is retired and must never be run again — it silently reverted other people's
+corrections three times.
 
-**NEEDS-OWNER — needs Patrick's word, listed by name (UI_GAP.md carries the full
-detail on each)**:
-1. Crumb line — the ruling says the line above the picture is empty at rest and carries
-   the year range only at chapter level; the build keeps a permanent left label reading
-   "FAMILY TIME LINE" instead.
-2. Title row padding — mockup pads 14px with a 10px gap; build pads 10px with an 8px
-   gap so the 44px controls reach the edge; moving to the mockup shifts every golden
-   that includes the row, for 4px.
-3. Picture container padding — mockup is `4px 10px 8px`; build is `6px 0 4px` with 16px
-   gutters; a difference the row itself calls a hair, moving every picture golden.
-4. Spacing, chat and message bar — UI_STANDARDS asks 16px gutters; both converged
-   mockups write `padding:14px 12px` on the chat; build matches the mockups at 12px/10px.
-5. Data chip fill, play-by-play — pane A's mockup draws a filled teal-soft pill at
-   12.5px, under the 13px text floor; build draws an outlined 13px pill; adopting the
-   fill moves nearly every chat, picture and board golden for a colour change no ruling
-   reaches.
-6. Drawability marks, which level draws them — built only at the level where the coach
-   has named something, never at rest, because the middle (chapter) level is cut; no
-   rule says this is the right level.
-7. Drawability marks, geometry — no mockup fixes the tick's 10px height, the flat
-   mark's 14px width, the step line's 6px offset from the wire, the guessed-date band's
-   cap at an eighth of the wire, or the open-ended fade's run length; all five are
-   builder choices.
-8. Step line on alternating data — on data that alternates up and down every month the
-   step line reads as a zigzag woven through the dots; whether a trend should draw at
-   all at that density is a judgment call.
-9. New session refused on another family — the build now switches the app to that
-   family and starts the session there rather than refusing; whether "+" should switch
-   families at all is still open item 1 in UI_SPEC.
-10. Count chip inside coach prose — a dense chapter's count ring already opens the
-    chapter when tapped at the resting level; a count chip written into the coach's own
-    prose is not built, and no rule says the coach may write one.
-11. Historical coach messages carry chips — the spec row says a reopened session's old
-    coach messages carry no chips; the build renders them, and journey 2 requires the
-    old chips to still resolve, so the two readings cannot both hold.
-12/13. `triangle` and `compare` drawings (pre-existing, open items 2 and 3 in UI_SPEC) —
-    no mockup fixes either geometry; both are drawn from the nearest approved concept
-    with no source ruling them in.
+**Still open in the build, no judgment needed to close it**: the event editor lacks the
+relationship field with its target and triangle lists, and the person, spouse and child fields
+are not hidden by event kind the way the Pro app hides them.
 
-**The three things no rule reaches**, stated in full with their alternatives at the foot
-of UI_SPEC.md: (1) what tapping "+" on a family the app is not on should do (item 9
-above); (2) how a close-up triangle is drawn (item 12 above); (3) how two moments are
-compared (item 13 above).
+## Open owner decisions (nothing moves on these without his word)
 
-**The felt call.** A move holds about one second on the board while its own animation is
-written to run eight, so each move is cut off early when a stretch plays through.
-Resolution 21 rules the 8-second loop and the per-move advance as two separate cadences,
-so the build is not wrong, only fast. Whether it feels right is Patrick's to judge.
+1. **Does the three-event floor bind a grouping the user made himself?** His own record holds a
+   two-event cluster he made. Either the floor binds it, and that cluster gains an event or is
+   dropped, or user groupings are exempt from the floor. The floor is one number in the schema,
+   enforced at the write for every writer.
+2. **The nodal ring drawn on a dot** — keep it or drop it.
+3. **The 13 rows marked NEEDS-OWNER in [UI_GAP.md](UI_GAP.md)**, where the build is defensibly
+   different rather than wrong. Three of them no rule reaches at all, stated with their
+   alternatives at the foot of UI_SPEC.md: what "+" does on a family the app is not currently
+   on, how a close-up triangle is drawn, and how two moments are compared.
+4. **The felt call** — whether each move on the board reads without a legend, and whether the
+   coach's words and the drawings tell the same story. Only he can answer it.
+5. Anything still marked OPEN in [REVIEW_LOG.md](REVIEW_LOG.md).
 
-**What he will see that is still open** (narrowed after the overnight fold — several
-items previously listed here are now built: the freshness banner, the title's own
-family name, the sessions-row swipe gesture, the sort-order hold, the question-mark
-breathing, and the chat fading on a session swap):
+## Next phase — isolation and deployment, so others can start using it
 
-- **Two remaining picture-vocabulary judgment calls**, both above: the drawability
-  marks' level and their geometry have no ruling, and a dense alternating record draws
-  a zigzag that may or may not be the right thing to draw.
-- **The chat does not fade when the picture changes level** (it does fade on a session
-  swap, which is a different trigger).
-- **A long press outside a session row does nothing** — the session-row long press
-  (rename) is built; a card title, a crumb or a list row still has no long-press
-  handler.
-- **The line always fits the width**; he cannot pan or zoom it. Neither mockup pans
-  either, so this may be a requirement that outlived its design.
-- **The one thing only he can answer**: whether each move reads without a legend, and
-  whether the coach's words and the drawings tell the same story.
+His words closing round 4: the app is ready to use from the phone's home screen, and the next
+phase is a closer look at code organization and potential isolation from the existing
+infrastructure, to minimise impact and churn while still maximising rapid prototyping on this
+app [Oracle: R-0226].
 
-**Review sandbox (revised 2026-09-08).** Durable scripts live in
-`/Users/patrick/worktrees/fd362-sandbox/`: `serve.sh` runs the Flask API on port 8890
-from the worktree, no-reload — a code change needs a rebuild and a restart to take
-effect. `dev.sh` runs the Vite dev server on port 8891, bound to all interfaces,
-proxying to 8890, with the host header forwarded so sign-in and cookies mint correctly
-for 8891; the service worker is off in dev. **The owner reviews at
-http://turin.local:8891/personal/** — every saved edit shows on refresh, no build
-needed during review. `invite.sh <email>` mints a turin.local invite. `env.sh` holds
-the settings. The review database, `beta2.db`, is never seeded or wiped, is backed up
-before any restart, and is migrated with `flask personal migrate`. A device already
-signed in needs no new invite.
+### Three things must come out of the Pro app's path before this branch merges
 
-### Pre-merge blockers (from doc/chat-first/ISOLATION_OPTIONS.md, 2026-09-09; the isolation decision itself is PARKED by the owner until the prototype is done)
+1. **Every Pro diagram is rewritten from pickle to JSON in place on its next save**, through an
+   encoder written for the chat app, with no migration step and no backup. A bug there silently
+   damages the only copy of a Pro user's family diagram. Before merge: Pro rows stay pickle
+   until an explicit, backed-up migration, and only chat-app rows are JSON.
+2. **The Pro save endpoint imports Personal code** and writes a row to the Personal change
+   table, so an exception there fails a desktop save. Remove it; let the Personal package
+   register a hook instead.
+3. **The shared schema dropped symbols the desktop app reads** — the cluster pattern list and
+   the pattern and dominant-variable fields. Restore them as tolerated fields the Personal app
+   never writes. Standing rule from here: no symbol the desktop app reads changes without its
+   desktop change in the same pull request.
 
-1. Pro-owned diagrams are converted pickle→JSON in place on their next save with no
-   explicit migration or backup — before merge: Pro rows stay pickle until an explicit
-   backed-up migration; only chat-app rows are JSON.
-2. The Pro save endpoint imports Personal-app code — remove before merge.
-3. schema.py dropped the ClusterPattern enum and the pattern/dominantVariable fields the
-   desktop app still reads — restore as tolerated unused fields before merge (never
-   written by the Personal app).
+### Isolation — the recommendation, with the discussion itself parked
+
+[ISOLATION_OPTIONS.md](ISOLATION_OPTIONS.md) maps what this branch touches (249 files in
+btcopilot, 29 of them shared with the Pro app, one shared with Training, one the public schema)
+and sets three ways to isolate against each other. The recommendation is **A now, B later,
+never C**: a package boundary inside btcopilot, where one adapter module is the only thing
+reaching Pro models and the shared schema, held by a lint rule in CI — one to two days,
+mechanical. B, a second service with its own tables, waits until the chat app's shape stops
+moving. C, its own repository, is the wrong trade while speed is the point. **The owner parked
+the isolation discussion until the prototype is done.** The three blockers above are not
+parked; they are merge conditions.
+
+### Deployment — what exists and what does not
+
+Ruled: one Docker image with the web bundle inside it, pushed to GHCR, pulled by one SSH
+compose command; passwordless invite links for the working group; the coaching prompts staying
+in the private fdserver repo and read through a path in the environment.
+
+What is actually built: the release workflow already builds an image and pushes it to GHCR on
+every push to master. What is missing is the whole gap — **that image contains no browser
+app.** The bundle is written to a directory that is gitignored, the Dockerfile has no Node step
+to build it, and `pyproject.toml` does not name the Personal package's static files as package
+data. Deploying today serves the API with no page. Three edits, one place each.
+
+### What must be true before beta users are invited
+
+- **Rule by example on clusters.** The rules make the candidates and the model names them, but
+  the owner ruled that the judgment calls linking events which are not adjacent in time cannot
+  be written as a rule yet and must wait for real examples he marks [Oracle: R-0193, R-0194].
+  Until he has marked some, cluster quality on somebody else's record is unmeasured.
+- **CI green, watched by a person.** The three failures above, then a run someone sees finish.
+- **The desktop app and Android are both unverified.** Nobody has opened a chat-app record in
+  the released Pro app — journey 7 is deferred on the auto-arrange evidence — and nobody has
+  opened the page on an Android phone.
+- **Secrets committed in the compose file need rotating** before anyone else's data is on that
+  server.
 
 ## Prototyping status (honest)
 
@@ -473,63 +484,52 @@ the converter, the Change and Interaction models, tool calls, chips, the play-by
 the timeline and editor behind a menu. It checks itself against journeys 1 through 6. The
 draft PRs already exist: btcopilot #135 and fdserver #29.
 
-### Owner review round 1 (2026-09-08, RULED, not yet in the oracle store — append next fold)
+### Owner review rounds 1–4 (2026-09-08 and 09) — the standing rulings
 
-Every finding from every review round, row by row: [REVIEW_LOG.md](REVIEW_LOG.md).
+Every finding row by row, with its commit: [REVIEW_LOG.md](REVIEW_LOG.md). All of it is in
+the oracle store as R-0165..R-0228; what follows is only what constrains future work.
 
-One selection state: a chip tap is a dot tap — spotlight plus a caption row carrying the
-ask chip, the board button, and the "coded in" chip. Chips are one size, full text, no
-truncation and no expand; labels are capped at the source, at most 28 grapheme clusters,
-one re-ask, never trimmed after the fact; chips carry pressed-state feedback. In a
-play-by-play, step chips move the board and never return to the timeline — the statement
-kind Play/Turn plus its cluster_id is now persisted. A play-through holds each move until
-its narration line has finished typing plus about two seconds; the owner tunes the feel
-directly, and the eight-second loop stays a separate clock, never stretched to match. Chat
-stays pinned to the bottom while the coach types. The moves board fits its content — this
-supersedes the fixed 264px rows: mark every UI_SPEC.md row carrying RESOLVED #28 as
-SUPERSEDED by this ruling. Editor fields are 44px with the mockup's padding. Tapping a
-diagram row opens that diagram, one open at a time (User.current_diagram_id). The old
-Personal app is superseded: its endpoints are archived and the chat app's routes are the
-personal API — models, prompts and the agent loop stay; Pro routes are untouched. Done.
-
-### Owner review round 2 (2026-09-08, RULED, not yet in the oracle store)
-
-The board has one control row whichever way it was opened: back, "explain", forward, with
-explain dead only while the coach is answering the last one. The way onto the board from
-the timeline is the play mark alone, no words. The words under the board are a person and
-their own words — no count, no clinical term — in a block that keeps two lines of room;
-the date is written once, under the dot. The line above the wire says only "Family
-timeline". Nothing is drawn behind the move being played: the dot itself is drawn last, in
-the action green. Blank ground anywhere on the picture, and the picture's own name, put it
-down; a label picks its moment, and the words of the moment already picked go to where it
-was said. Every word the app says is selectable and copyable; only controls carrying no
-prose are held back. A send that fails says which of three things happened and offers to
-go again, and clears when anything lands. Three dots while the coach is thinking — this
-supersedes the mockups' blinking caret, which stays on words being written out. Sign-in
-tokens last as long as the session.
-
-**Preserved on the owner's word, do not remove**: the agent's tool-call summaries in the
-thread, and their formatting, separate from the coach's reply. He likes them as they are.
-
-**The symptom arrow, ruled 2026-09-08 — SUPERSEDES symbol_truth.md**: the arrow beside the
-health cross stands as tall as the cross, not the sheet's 32. It was exactly the sheet's
-drawing (26 of shaft, 10 of head, 2.6 stroke, 26 across) and read tall because the board
-draws people at radius 13 where the sheet draws them at 17. Every number is now the
-sheet's halved; the stroke is unscaled. Side by side before the change at
-`~/worktrees/fd362-sandbox/symptom_arrow_compare.png`.
-
-**Each line of what the coach did lights what it made**, as the line lands: a moment
-through the picture's own spotlight, a person on the figure itself wherever people are
-drawn, which today is the board.
-
-**Invite links use `turin.local`**, not 127.0.0.1, so the owner can open them from his
-phone.
-
-**Cluster detection**: [doc/chat-first/CLUSTERS.md](CLUSTERS.md) (rules-first, model
-names + reason; owner examples pending).
-
-**Grandfathered**: the owner's own two-event cluster predates the three-event floor —
-pending his ruling whether the floor binds user groupings.
+- **One selection state.** A chip tap is a dot tap: spotlight, plus a caption row carrying
+  the ask chip, the board button and the "in chat" chip. That row reads the same whether a
+  cluster is open or an event inside it is selected.
+- **Chips are one size, full text**, never truncated and never expandable. Labels are capped
+  at the source at 28 grapheme clusters with one re-ask, never trimmed afterwards. Every chip
+  has a pressed state.
+- **The board fits its content.** This superseded the fixed 264px rows; every UI_SPEC row
+  carrying RESOLVED #28 is superseded by it. Its control row is always back, explain, forward,
+  with explain dead only while the coach is answering the last one. The way onto the board
+  from the timeline is the play mark alone, no words.
+- **A play-through holds each move** until its narration line finishes typing plus about two
+  seconds. The eight-second animation loop is a separate clock and is never stretched to
+  match. Step chips move the board and never return to the timeline.
+- **The words under the board are a person and their own words** — no count, no clinical
+  term — in a block keeping two lines of room; the date is written once, under the dot.
+  Nothing is drawn behind the move being played; the dot itself is drawn last, in action green.
+- **Each line of what the coach did lights what it made** as that line lands: a moment through
+  the picture's spotlight, a person on the figure wherever people are drawn.
+- **The grey line above the picture is the current view's title**, with the back arrow beside
+  it; tapping either goes up one level. Drilling in slides the lower view in from the right
+  over the higher one, about 240ms, instant under reduced motion; the account page covers the
+  content the same way.
+- **An open cluster shows its name and its reason, never a list of its events** — a cluster
+  can hold fifteen. Events stay dots; a tapped dot shows its words. At rest the band says
+  "tap a cluster".
+- **Blank ground puts the picture down.** Tapping empty space or the picture's own name
+  deselects; a label picks its moment; tapping the label of the moment already picked jumps to
+  where it was coded in the chat.
+- **Everything the app says is selectable and copyable**; only controls carrying no prose are
+  held back. Three dots show while the coach thinks, superseding the mockups' blinking caret,
+  which stays on words being written out. Sign-in tokens last as long as the session.
+- **Preserved on his word, do not remove**: the agent's tool-call summaries in the thread, and
+  their formatting standing apart from the coach's reply. He likes them as they are.
+- **The symptom arrow stands as tall as the health cross**, superseding the symbol sheet's 32.
+  Every number is the sheet's halved because the board draws people at radius 13 where the
+  sheet draws them at 17; the stroke is unscaled.
+- **Cluster detection**: [CLUSTERS.md](CLUSTERS.md) — the rules make the candidates, the model
+  only names them and gives a reason. The floor is three events, one number in the schema,
+  enforced at the record's commit for every writer including undo and the coach's own grouping
+  tool.
+- **Invite links use `turin.local`**, never 127.0.0.1, so he can open them from his phone.
 
 ## A/B-test list
 
@@ -591,7 +591,7 @@ Kept for when there are enough users to run one.
 - The branch is `FD-362`, the same name in both repos, in the built-in worktree location.
   It carries decision log entries, the brainstorm docs, DRAWABILITY.md, this package, the
   schema comparison and the converter in btcopilot, and the oracle store in fdserver.
-  Draft PRs: btcopilot #135, fdserver #29.
+  **Draft PRs: btcopilot #136, fdserver #30** (#135 and #29 are closed predecessors).
 
 ## Open security items (Patrick's calls, untouched)
 
@@ -624,21 +624,27 @@ All six items are ruled. Where each one landed:
 
 The next session is the build, not another brainstorm. Its brief is under Beta build.
 
-**Session discipline (ruled 2026-09-07, R-0088).** The big model is for concepts only: it
-rules and it drafts. Sub-agents do all reads, writes, git and builds — Opus for work to a
-spec, Sonnet where quality is unaffected. Rulings are written to the store at the end of a
-session in one pass, not as they are made. Every claim is labelled evidence or assumption;
-stating something as fact without evidence is lying. Plain sentences, Patrick's own terms,
-no coined labels, and no multiple-choice when he asked to brainstorm. For verification, a
-test script through the Pro app's own loading code plus his eyeball beats an agent driving
-the released app. Every multi-agent run spawns a persistent goal auditor before the
-workers start. Read this file to start; read HISTORY only for a specific fact. One
-worktree per builder next round — shared-index sweeps and gap-file clobbers cost hours.
-An eyeball round covers at most three items: edit, then one headless screenshot at
-393×852 for the coordinator to check, then the owner refreshes to see it himself.
-Goldens, gates, suites and CI run once, at the end of the day, not per round. The
-auditor's contract during a round is the clock and the cost first — a ten-minute stall
-alarm, checking the sandbox is reachable, and flagging any verification beyond the one
-screenshot — and an auditor that misses a stall is replaced.
+**Session discipline (ruled 2026-09-07 R-0088, extended through the review rounds of
+2026-09-08 and 09).** The full process rules are binding and live in
+[HOW_THIS_PROJECT_WORKS.md](HOW_THIS_PROJECT_WORKS.md). The short form:
+
+- The big model rules and drafts concepts. Sub-agents do every read, write, git command and
+  build — Opus for work to a spec, Sonnet or Haiku for mechanics.
+- **An eyeball round covers at most three items**: edit, one headless screenshot at 393x852
+  for the coordinator to check, then the owner refreshes the dev server and sees it himself.
+  Goldens, gates, suites and CI run once at the end of the day, never per round.
+- **The owner looks before anything is polished.** The moment a build is believed to work he
+  gets the link and a list of what he will notice. CI, coverage and re-walks come after.
+- **Every multi-agent run spawns a persistent auditor before the workers start.** Its job is
+  the clock and the cost first — a ten-minute stall alarm, checking the sandbox is reachable,
+  and flagging any verification beyond the one screenshot. An auditor that misses a stall is
+  replaced.
+- **Nothing an agent says reaches the owner.** No interim reports, no sign-offs, no
+  coordination chatter — one deliverable message when the work is ready for his action.
+- One worktree per builder. Shared-index sweeps and gap-file clobbers have cost hours.
+- Rulings are written to the store as they are made, not batched to the end of a session.
+- Every claim is labelled evidence or assumption. Plain sentences, his own terms, no coined
+  labels, no multiple-choice when he asked to brainstorm.
+- Read this file to start. Read HISTORY only for a specific fact.
 
 Pinned (not next): the corpus/subset sessions in [NEXT_SESSIONS.md](NEXT_SESSIONS.md).

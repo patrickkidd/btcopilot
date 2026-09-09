@@ -220,3 +220,15 @@ items, so each is logged FIXED without a commit citation.
     existing infra (ISOLATION_OPTIONS.md in progress). RULED.
 62. Isolation discussion parked until the prototype is done (owner); the three pre-merge
     blockers recorded in STATE.md.
+
+63. On reload the chat opened a little above the newest words instead of at the bottom of
+    the thread. FIXED @821e10b.
+64. Tapping a moment's title did nothing on some lines, because the dot's own tap target
+    was swallowing the tap. Every line answers where its words are written now.
+    FIXED @f4c49fc.
+65. A cluster or board sliding in showed the level underneath through it; it needs an
+    opaque background so it reads as a card sliding in. FIXED @b7bae33.
+66. Owner, closing the day: the app is ready for him to start using like an app on the
+    phone. Next phase is isolation of the Personal app and deployment so others can start
+    using it — the three pre-merge blockers, the isolation recommendation and the
+    deployment gap are in STATE.md. HANDOFF.

@@ -642,3 +642,36 @@ and took the owner's sandbox database with it; the stranded record survives only
 an untouched running process, decision pending. UI_GAP.md folded all three passes' rows;
 NEEDS-OWNER grew to 13 as builders surfaced unruled defensible differences rather than
 guessing at them.
+
+## 2026-09-08 and 09 — four owner review rounds on his phone
+
+He reviewed the running app on his own phone in four rounds and ruled row by row; every
+finding and its commit is in REVIEW_LOG.md, and the rulings are R-0165..R-0228 in the store.
+Round 1 set one selection state, chip sizing, play-by-play routing and timing, and archived
+the old Personal app's endpoints. Round 2 set the board's control row, the words under the
+board, blank ground putting the picture down, selectable text, the failed-send message, the
+thinking dots, and the symptom arrow at the cross's height. Round 3 set the button row to
+mockup plate F with "in chat", an open cluster showing its name and reason rather than a list
+of events, the app's name to Family Diagram everywhere, and the picture region to 132px.
+Round 4 made the grey label the current view's title with the back arrow beside it, gave
+drill-down a slide-in from the right, and put the account page over the content. He closed
+round 4 saying it is ready to use like an app on the phone from the home screen.
+
+Clusters were grounded on his own words: the rules make the candidates and the model only
+names them and gives a reason, and he approved the whole brainstorm while deferring
+rule-by-example ratification until he sees examples worth ruling on. The floor moved from two
+events to three and became one number in the schema enforced at the record's commit for every
+writer. Two one-event clusters found stored afterwards traced to a stale server process, not
+to the code — an operational cause, documented so the next session does not re-debug it. His
+own record re-ran to a single cluster: the two-event grouping he made himself, grandfathered
+pending his ruling on whether the floor binds user groupings. Derived grouping labels were
+removed from the schema and the copy, because the word pattern and the invented pattern names
+were never his.
+
+Process corrections landed the same two days and are now in HOW_THIS_PROJECT_WORKS.md: agent
+chatter never reaches him, a dev server with instant refresh is used instead of rebuilding,
+the auditor exists to audit cost and speed with a stall alarm, an eyeball round is at most
+three items, and he looks before anything is polished. A read-only organization review of
+both pull requests produced ISOLATION_OPTIONS.md with three ways to isolate the Personal app
+and three things that must come out of the Pro app's path before merge; he parked the
+isolation discussion itself until the prototype is done.
