@@ -230,11 +230,7 @@ button { font-family: inherit; }
 .pic { position: relative; }
 /* The list button sits at the end of the row of chips, in the same circle as
    the one beside the message bar, and nothing else is over there. */
-.caption .fs-glyph {
-  margin-left: auto;
-  width: 44px;
-  height: 44px;
-}
+.caption .listglyph { margin-left: auto; margin-right: -13px; }
 .view { position: relative; transition: height 0.25s ease; }
 /* One level in or one level out. The two views stand side by side for the
    length of the slide, each at the height the region already had, so nothing
@@ -1246,6 +1242,27 @@ button { font-family: inherit; }
 }
 .fs-glyph svg { position: relative; display: block; opacity: 0.8; }
 .fs-glyph:active::before { background: var(--tint); }
+/* The way into the lists: the three lines alone, no ring, no fill (owner
+   review 2026-09-09), in the ruled 44px target flush with the row's edge. */
+.listglyph {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.listglyph svg { display: block; width: 18px; height: 14px; }
+.listglyph:active { color: var(--data); }
+/* The home-screen badge: a quiet phone outline beside the account button,
+   only while the app runs inside a browser. */
+.avatar.homescreen { color: var(--faint); }
+.avatar.homescreen:active { color: var(--data); }
 
 .overlay { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
 .overlay > * { pointer-events: auto; }

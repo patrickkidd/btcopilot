@@ -166,3 +166,16 @@ export function offerHomeScreen(): void {
   if (last && Date.now() - last < AGAIN_AFTER_DAYS * 86_400_000) return;
   document.body.append(card());
 }
+
+/** The card on demand, whatever was remembered: the badge in the header is
+ * for the reader who said "not now" and changed their mind. */
+export function showHomeScreen(): void {
+  if (document.querySelector(".hs-scrim")) return;
+  document.body.append(card());
+}
+
+/** The badge lives while the app runs in a browser and goes once installed. */
+export function homeScreenBadge(button: HTMLElement, open: () => void): void {
+  button.hidden = installed();
+  button.addEventListener("click", open);
+}

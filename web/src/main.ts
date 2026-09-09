@@ -20,7 +20,7 @@ import {
 import { $ } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
-import { offerHomeScreen } from "./homescreen";
+import { offerHomeScreen, showHomeScreen, homeScreenBadge } from "./homescreen";
 import { offerPasskey } from "./passkey";
 import { shortDate } from "./when";
 import {
@@ -481,7 +481,7 @@ function actions(): void {
 
 /** The way into the two lists, at the end of the row (owner review round 3). */
 const LIST_BUTTON =
-  `<button class="fs-glyph" id="menu-open" type="button" ` +
+  `<button class="listglyph" id="menu-open" type="button" ` +
   `aria-label="open the timeline list">` +
   `<svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true">` +
   `<path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="1.6" ` +
@@ -762,3 +762,4 @@ if (import.meta.env.PROD && "serviceWorker" in navigator)
 // about a key on this device, and then about the home screen — one card at a
 // time, never both at once.
 void offerPasskey(offerHomeScreen);
+homeScreenBadge($("homescreen"), showHomeScreen);
