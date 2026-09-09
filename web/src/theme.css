@@ -161,10 +161,11 @@ button { font-family: inherit; }
 .iconbtn:active { background: var(--tint); }
 
 /* ---- the picture: the sentence spotlight (converged, ruled 2026-09-02) ---- */
-/* 132 of the phone, and no more (picked mockup, 2026-09-08): the name row 28,
-   the band the line is drawn in 60, and the row of controls under it 44. */
+/* 138 of the phone, and no more (picked mockup 2026-09-08, band grown by six
+   2026-09-08 so the year clears the controls): the name row 28, the band the
+   line is drawn in 66, and the row of controls under it 44. */
 .pic { flex: none; padding: 0; }
-/* the hairline under the picture is drawn inside its 132 rather than added to
+/* the hairline under the picture is drawn inside its 138 rather than added to
    it, so the region is the three rows and nothing more */
 .pic .caption { border-bottom: 1px solid var(--line); }
 /* One line, always: the state text on the right changes with the selection and
@@ -230,7 +231,9 @@ button { font-family: inherit; }
 .ss .wire.empty { stroke-dasharray: 3 6; }
 .ss-yr {
   position: absolute;
-  font: 400 13px/17px var(--mono);
+  /* the line box is the glyphs and nothing over: the six under the year is
+     space between it and the row of controls, not leading inside it */
+  font: 400 13px/13px var(--mono);
   color: var(--faint);
   white-space: nowrap;
 }

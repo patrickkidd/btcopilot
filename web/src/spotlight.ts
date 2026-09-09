@@ -8,12 +8,18 @@
 export const CH = 7.8;
 /** The band the line is drawn in, and what sits where inside it (the picked
  * phone mockup, 2026-09-08): two rows of words, the wire under them, and the
- * year of the moment picked under that. 60 of the picture's 132. */
+ * year of the moment picked under that. 66 of the picture's 138.
+ *
+ * The band was 60 and the year was written off the bottom of it, against the
+ * row of controls. Nothing inside the band could give the six back: the words
+ * end at 30, the picked dot reaches 48, and the year has to clear both. So the
+ * band grew by six and the region with it (owner ruling 2026-09-08). */
 export const ROWS = [0, 15];
 export const WIRE = 41;
-/** Where the year under the picked moment is written. */
-export const YEAR_TOP = 46;
-export const PIC_H = 60;
+/** Where the year under the picked moment is written: clear of the picked
+ * dot above it, and six clear of the row of controls below. */
+export const YEAR_TOP = 47;
+export const PIC_H = 66;
 export const X_PAD = 16;
 /** UI_STANDARDS: no tap target below 44. */
 export const ZONE = 44;

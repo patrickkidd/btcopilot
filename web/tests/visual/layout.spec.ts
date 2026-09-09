@@ -383,15 +383,16 @@ test.describe("a moment traces back to the words that coded it", () => {
   });
 });
 
-/** The band the line is drawn in: 60 of the picture's ruled 132 (picked phone
- * mockup, 2026-09-08), the other 72 being the name row and the row of controls
- * under it. */
-const BAND = 60;
+/** The band the line is drawn in: 66 of the picture's ruled 138 (picked phone
+ * mockup 2026-09-08, band grown by six on 2026-09-08 so the year under the
+ * picked moment clears the row of controls), the other 72 being the name row
+ * and the row of controls under it. */
+const BAND = 66;
 
 const pictureHeight = (page: Page) =>
   page.locator("#view").evaluate((node) => Math.round(node.getBoundingClientRect().height));
 
-/** What each row of the picture region measures, which is what the 132 is made
+/** What each row of the picture region measures, which is what the 138 is made
  * of. Exact, because the whole point of the number is that nothing under it
  * moves. */
 const rowHeights = (page: Page) =>
