@@ -246,6 +246,9 @@ button { font-family: inherit; }
   left: 0;
   top: 0;
   width: 100%;
+  /* the picture's own ground, so a level arrives as a card over the one it
+     came from rather than its words crossing the other level's words */
+  background: var(--panel);
   will-change: transform;
 }
 .ss { position: relative; width: 100%; height: 100%; }
