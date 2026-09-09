@@ -130,8 +130,10 @@ button { font-family: inherit; }
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 44px;
-  padding: env(safe-area-inset-top) 10px 0;
+  /* 40px marks need air: 8px above and below, so the row is 56 (the standard
+     top bar), not the 44 that left the account ring touching both edges. */
+  height: 56px;
+  padding: env(safe-area-inset-top) 12px 0;
   border-bottom: 1px solid var(--line);
 }
 /* A long family name must not push the controls beside it, or spill over the
