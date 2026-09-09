@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- The strips the phone draws its own furniture on take the app's own ground,
+     so the screen is the app from end to end rather than a page inside a
+     browser. The two values are the light and dark ground in theme.css. -->
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171d1c" media="(prefers-color-scheme: dark)">
 <title>Companion</title>
 <link rel="manifest" href="/personal/manifest.webmanifest">
 <link rel="icon" href="data:,">

@@ -396,6 +396,7 @@ async function traceTo(where: CodedIn): Promise<void> {
 /** The row under the picture: what it is showing, and the things a tap can do
  * about it. The words themselves live on the picture (converged mockup). */
 function actions(): void {
+  crumb();
   const host = $("caption");
   const sel = pic.sel;
   if (!sel) {
@@ -555,6 +556,14 @@ async function load(): Promise<Timeline> {
   menu.show(timeline);
   actions();
   return timeline;
+}
+
+/** The name of the picture is also the way back to it, so while one cluster is
+ * open it says so with the arrow in front of it (picked phone mockup). */
+function crumb(): void {
+  $("crumb").textContent = picture.opened()
+    ? "\u2190 Family timeline"
+    : "Family timeline";
 }
 
 /** The list is full screen with its own back button, so it takes the title row

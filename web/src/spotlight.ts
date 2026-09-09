@@ -6,10 +6,14 @@
 
 /** IBM Plex Mono advance at the 13px floor. */
 export const CH = 7.8;
-export const ROWS = [44, 59, 74];
-export const WIRE = 99;
-export const YEAR_TOP = 136;
-export const PIC_H = 158;
+/** The band the line is drawn in, and what sits where inside it (the picked
+ * phone mockup, 2026-09-08): two rows of words, the wire under them, and the
+ * year of the moment picked under that. 60 of the picture's 132. */
+export const ROWS = [0, 15];
+export const WIRE = 41;
+/** Where the year under the picked moment is written. */
+export const YEAR_TOP = 46;
+export const PIC_H = 60;
 export const X_PAD = 16;
 /** UI_STANDARDS: no tap target below 44. */
 export const ZONE = 44;
@@ -51,15 +55,42 @@ export function wrap2(text: string, wide: number): [string, string] {
 
 /** What a moment's row says: when, who it is about when that is not the person
  * whose record this is, and its own words. */
+/** What one moment's line says: its own words, and who it is about when that
+ * is not the person whose record this is. No date — the year is written once,
+ * under the moment picked — unless two of the moments on screen fall in the
+ * same year, when each of those says which month it was (picked mockup,
+ * 2026-09-08: A with C).  */
 export function words(
   date: string,
   certainty: string | null,
   who: string,
   protagonist: string,
   label: string,
+  month = false,
 ): string {
   const person = who && who !== protagonist ? `${who} · ` : "";
-  return `${dateText(date, certainty)} · ${person}${label.trim()}`;
+  const when = month ? `${monthText(date, certainty)} · ` : "";
+  return `${when}${person}${label.trim()}`;
+}
+
+/** The month a moment happened in, or its year when the record is only
+ * approximately sure of the date and has no month to give. */
+export function monthText(date: string, certainty: string | null): string {
+  const said = dateText(date, certainty);
+  return said.includes(" ") ? said.split(" ")[0] : said;
+}
+
+/** The years two or more of the moments on screen share, so their lines can
+ * say which month they were and the rest can stay wordless. */
+export function sharedYears(dates: string[]): Set<string> {
+  const seen = new Set<string>();
+  const twice = new Set<string>();
+  for (const date of dates) {
+    const year = date.slice(0, 4);
+    if (seen.has(year)) twice.add(year);
+    seen.add(year);
+  }
+  return twice;
 }
 
 /** How big a dot is at this density (the converged mockup's four steps). */
@@ -95,11 +126,14 @@ export interface Row {
  * crowding into its opening (ruled). */
 export function pick<T>(sorted: T[]): T[] {
   if (sorted.length <= ROWS.length) return sorted;
-  return [
-    sorted[0],
-    sorted[Math.floor((sorted.length - 1) / 2)],
-    sorted[sorted.length - 1],
-  ];
+  // the first and the last, and the middle one too when there is a row for it
+  return ROWS.length < 3
+    ? [sorted[0], sorted[sorted.length - 1]]
+    : [
+        sorted[0],
+        sorted[Math.floor((sorted.length - 1) / 2)],
+        sorted[sorted.length - 1],
+      ];
 }
 
 export function rows(

@@ -28,6 +28,7 @@ import {
   clip,
   cycle,
   dateText,
+  sharedYears,
   dotRadius,
   rows,
   words,
@@ -67,8 +68,11 @@ const NODAL = new Set(["cutoff", "defined-self", "fusion"]);
  * a tap on the picture must never move a bubble; only entering the moves board,
  * which is a screen of its own, may change the layout. So the resting drawing
  * is top-aligned inside the cluster's box and the rest of that box is empty. */
-const REST_H = 78;
-const REST_WIRE = 46;
+/** The resting band is the same 60 as the open one: one box per cluster on a
+ * wire through the middle, and the years each box covers written inside it
+ * (picked phone mockup, 2026-09-08). */
+const REST_H = 60;
+const REST_WIRE = 30;
 /** A cluster of more than this many moments collapses to a ring and a count. */
 const DENSE = 8;
 /** A gap of this many years or more between clusters earns the amber question. */
@@ -588,10 +592,10 @@ export class Picture {
       const boxWidth = b - a + 20;
       const middle = (a + b) / 2;
       svg +=
-        `<rect class="ep" x="${left.toFixed(1)}" y="12" ` +
-        `width="${boxWidth.toFixed(1)}" height="52" rx="8"/>` +
-        `<rect class="ep-edge" x="${left.toFixed(1)}" y="12" ` +
-        `width="${boxWidth.toFixed(1)}" height="52" rx="8"/>`;
+        `<rect class="ep" x="${left.toFixed(1)}" y="8" ` +
+        `width="${boxWidth.toFixed(1)}" height="40" rx="8"/>` +
+        `<rect class="ep-edge" x="${left.toFixed(1)}" y="8" ` +
+        `width="${boxWidth.toFixed(1)}" height="40" rx="8"/>`;
       if (cluster.count > DENSE)
         svg +=
           `<circle class="ep-many" cx="${middle.toFixed(1)}" cy="${REST_WIRE}" r="11"/>` +
@@ -605,7 +609,7 @@ export class Picture {
             `cy="${REST_WIRE}" r="4.5"/>`;
         }
       svg +=
-        `<text class="ep-yrs" x="${middle.toFixed(1)}" y="26" text-anchor="middle">` +
+        `<text class="ep-yrs" x="${middle.toFixed(1)}" y="21" text-anchor="middle">` +
         `${esc(shortYears(cluster.start, cluster.end))}</text>`;
 
       const next = clusters[i + 1];
@@ -640,7 +644,7 @@ export class Picture {
     });
 
     svg +=
-      `<text class="ss-hint" x="${x0}" y="74">` +
+      `<text class="ss-hint" x="${x0}" y="57">` +
       `${clusters.length ? "tap a cluster" : "tap a moment"}</text></svg>`;
 
     this.host.innerHTML = `<div class="ss">${svg}${hits}${shelf}</div>`;
@@ -838,13 +842,15 @@ export class Picture {
     svg += this.questions(wire);
     svg += `</svg>`;
 
-    const first = this.yearOf(shown[0]);
-    const last = this.yearOf(shown[shown.length - 1]);
-    const yearTop = YEAR_TOP;
-    let html =
-      `<div class="ss-yr" style="left:${x0}px;top:${yearTop}px">${first}</div>`;
-    if (last !== first)
-      html += `<div class="ss-yr" style="right:${x0}px;top:${yearTop}px">${last}</div>`;
+    // The year is written once, under the moment picked, and nowhere else: the
+    // words carry no date and the ends of the line carry none either (picked
+    // mockup, A).
+    const picked = marks.find((m) => m.event.id === this.selected);
+    const html = picked
+      ? `<div class="ss-yr on" style="left:${(picked.x - 30).toFixed(1)}px;` +
+        `top:${YEAR_TOP}px;width:60px;text-align:center">` +
+        `${esc(this.yearOf(picked.event))}</div>`
+      : "";
 
     let hits =
       `<button class="ss-hit" data-target="${Target.Band}" aria-label="what the coach named" ` +
@@ -857,13 +863,6 @@ export class Picture {
         `width:${zone.width.toFixed(1)}px;height:${ZONE}px"></button>`;
     });
     hits += this.shelfHit(x1, wire);
-    // A cluster is open, so the way back to all of them is on screen. It is the
-    // board's own arrow in the board's own corner, and the tap it stands for is
-    // the tap on empty ground.
-    if (this.level === Level.Wire)
-      hits +=
-        `<button class="corner l ss-hit" data-target="${Target.Ground}" ` +
-        `aria-label="back to the clusters">&#8592;</button>`;
 
     this.pin(height);
     this.host.innerHTML = `<div class="ss">${svg}${text}${html}${hits}</div>`;
@@ -918,16 +917,18 @@ export class Picture {
     const wide = Math.floor((x1 - x0) / CH);
     if (chosen) {
       const event = chosen.event;
-      const meta =
-        dateText(event.dateTime as string, event.dateCertainty) +
-        (event.person_name && event.person_name !== this.protagonist()
-          ? ` · ${event.person_name}`
-          : "");
-      const lines = [meta, ...wrap2(clip(event.label.trim(), Math.min(88, wide * 2)), wide)];
+      const who =
+        event.person_name && event.person_name !== this.protagonist()
+          ? `${event.person_name} · `
+          : "";
+      const lines = wrap2(
+        clip(who + event.label.trim(), Math.min(88, wide * ROWS.length)),
+        wide,
+      );
       const text = lines
         .map((line, i) =>
           line
-            ? `<div class="ss-t ${i ? "on" : "meta"}" ` +
+            ? `<div class="ss-t on" ` +
               `style="left:${x0}px;top:${ROWS[i]}px;width:${x1 - x0}px">${esc(line)}</div>`
             : "",
         )
@@ -944,6 +945,10 @@ export class Picture {
     }
     const spotlit = marks.filter((m) => this.named.includes(m.event.id));
     if (!spotlit.length) return { text: "", rowsLaid: [] };
+    // A line says which month it was only where it has to: where two of the
+    // moments being named fall in the same year and nothing else tells them
+    // apart (picked mockup, A with C).
+    const clash = sharedYears(spotlit.map((m) => m.event.dateTime as string));
     const laid = rows(
       spotlit.map((m) => ({
         id: m.event.id,
@@ -954,6 +959,7 @@ export class Picture {
           m.event.person_name,
           this.protagonist(),
           m.event.label,
+          clash.has((m.event.dateTime as string).slice(0, 4)),
         ),
       })),
       x0,

@@ -295,7 +295,7 @@ test.describe("a long family name", () => {
     }
 
     // the picture starts where it always starts
-    expect(await pictureHeight(page)).toBe(158);
+    expect(await pictureHeight(page)).toBe(BAND);
   });
 });
 
@@ -355,18 +355,35 @@ test.describe("a moment traces back to the words that coded it", () => {
   });
 });
 
+/** The band the line is drawn in: 60 of the picture's ruled 132 (picked phone
+ * mockup, 2026-09-08), the other 72 being the name row and the row of controls
+ * under it. */
+const BAND = 60;
+
 const pictureHeight = (page: Page) =>
   page.locator("#view").evaluate((node) => Math.round(node.getBoundingClientRect().height));
+
+/** What each row of the picture region measures, which is what the 132 is made
+ * of. Exact, because the whole point of the number is that nothing under it
+ * moves. */
+const rowHeights = (page: Page) =>
+  page.evaluate(() =>
+    [".pin-label", "#view", ".caption"].map((sel) =>
+      Math.round(document.querySelector(sel)!.getBoundingClientRect().height),
+    ),
+  );
 
 test.describe("each level is one fixed height", () => {
   for (const key of ["empty", "one", "three40", "dense60"] as const) {
     test.describe(() => {
       test.use({ storageState: stateFor(key) });
-      test(`the picture region is 158 high at rest on the ${key} record`, async ({
+      test(`the band the line is drawn in is ${BAND} high at rest on the ${key} record`, async ({
         page,
       }) => {
         await settle(page);
-        expect(await pictureHeight(page)).toBe(158);
+        expect(await pictureHeight(page)).toBe(BAND);
+        // the name row, the band, and the row of controls: 28, 60 and 44
+        expect(await rowHeights(page)).toEqual([28, BAND, 44]);
       });
     });
   }
@@ -382,7 +399,7 @@ test.describe("each level is one fixed height", () => {
       }) => {
         await settle(page);
         const before = await frame(page);
-        expect(await pictureHeight(page)).toBe(158);
+        expect(await pictureHeight(page)).toBe(BAND);
 
         // a record with no cluster of its own has its moments as loose dots
         const box = page.locator('.ss-hit[data-target="cluster"]');
@@ -392,7 +409,7 @@ test.describe("each level is one fixed height", () => {
         await page.waitForTimeout(400);
 
         const open = await frame(page);
-        expect(await pictureHeight(page)).toBe(158);
+        expect(await pictureHeight(page)).toBe(BAND);
         expect(open.picture).toEqual(before.picture);
         expect(open.caption).toEqual(before.caption);
         expect(open.chat).toEqual(before.chat);

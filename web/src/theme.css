@@ -79,7 +79,9 @@
 /* The outer page never scrolls. Without this the document can gain a
    scrollbar, the viewport narrows, and the centred frame steps 2px sideways —
    the whole app moving because a caption appeared. */
-html, body { height: 100%; overflow: hidden; }
+/* The ground reaches the ends of the screen, under the phone's own furniture:
+   Android paints its bars from the root element rather than from the body. */
+html, body { height: 100%; overflow: hidden; background: var(--bg); }
 body {
   margin: 0;
   background: var(--bg);
@@ -157,17 +159,19 @@ button { font-family: inherit; }
 .iconbtn:active { background: var(--tint); }
 
 /* ---- the picture: the sentence spotlight (converged, ruled 2026-09-02) ---- */
-.pic { flex: none; padding: 6px 0 4px; border-bottom: 1px solid var(--line); }
+/* 132 of the phone, and no more (picked mockup, 2026-09-08): the name row 28,
+   the band the line is drawn in 60, and the row of controls under it 44. */
+.pic { flex: none; padding: 0; border-bottom: 1px solid var(--line); }
 /* One line, always: the state text on the right changes with the selection and
    must never push the label on the left onto a second line, which would move
    the picture and everything under it. */
 .pin-label {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
-  height: 18px;
-  padding: 0 16px 2px;
+  height: 28px;
+  padding: 0 16px;
   font: 400 13px/1.2 var(--mono);
   color: var(--faint);
   text-transform: uppercase;
@@ -223,6 +227,8 @@ button { font-family: inherit; }
   color: var(--faint);
   white-space: nowrap;
 }
+/* the year of the moment picked, written once, under its own dot */
+.ss-yr.on { color: var(--data); }
 
 /* one dot per moment; the ones the coach named are solid, the rest recede */
 .ss .dot { fill: var(--data); }

@@ -77,8 +77,8 @@ test.describe("a tap on a label", () => {
     await expect(page.locator(".ss-t.on").first()).toBeVisible();
 
     await tapWords(page);
-    // one moment is picked: the picture writes its date and then its words
-    await expect(page.locator(".ss-t.meta")).toHaveCount(1);
+    // one moment is picked: its words are on the band and its year under its dot
+    await expect(page.locator(".ss-yr.on")).toHaveCount(1);
 
     // again, on a picture showing one cluster: the moment's own editor
     await tapWords(page);
@@ -97,10 +97,10 @@ test.describe("a tap on a label", () => {
       await page.waitForTimeout(400);
     }
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator(".ss-t.meta")).toHaveCount(1);
+    await expect(page.locator(".ss-yr.on")).toHaveCount(1);
     // the same dot again: still picked, and the thread has not moved
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator(".ss-t.meta")).toHaveCount(1);
+    await expect(page.locator(".ss-yr.on")).toHaveCount(1);
     await expect(page.locator(".bub.traced")).toHaveCount(0);
   });
 });

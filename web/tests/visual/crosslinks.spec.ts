@@ -106,13 +106,14 @@ test.describe("the picture with one cluster open", () => {
 
   test("shows the way back to all of them", async ({ page }) => {
     await settle(page);
-    await expect(page.locator(".ss .corner")).toHaveCount(0);
+    // the name of the picture is the way back, and says so while one is open
+    await expect(page.locator("#crumb")).toHaveText("Family timeline");
     await openCluster(page);
-    await expect(page.locator(".ss .corner")).toBeVisible();
+    await expect(page.locator("#crumb")).toHaveText("← Family timeline");
 
-    await page.locator(".ss .corner").click();
+    await page.locator("#crumb").click();
     await expect(page.locator('.ss-hit[data-target="cluster"]').first()).toBeVisible();
-    await expect(page.locator(".ss .corner")).toHaveCount(0);
+    await expect(page.locator("#crumb")).toHaveText("Family timeline");
   });
 
   test("the words of the moment picked open its editor", async ({ page }) => {
