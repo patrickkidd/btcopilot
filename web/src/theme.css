@@ -1008,13 +1008,6 @@ button { font-family: inherit; }
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
-.banner {
-  margin: 0;
-  padding: 12px 16px;
-  font: 400 15px/1.4 var(--sans);
-  color: var(--faint);
-  border-bottom: 1px solid var(--line);
-}
 /* Two ways into the same record, side by side above the list: what happened,
    and who it happened to. The row is one 44px target, like every other. */
 .tabs {

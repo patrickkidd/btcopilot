@@ -101,14 +101,16 @@ def one() -> DiagramData:
 
 
 def three_over_forty() -> DiagramData:
-    """Three moments over forty years: two the record holds as one cluster, and
-    one it holds on its own, which is a dot on the wire with no box."""
+    """Moments spread over forty years: three the record holds as one cluster,
+    which is the least a cluster may hold, and one it holds on its own, which
+    is a dot on the wire with no box."""
     return DiagramData(
         people=[_person(1, "Ada", primary=True), _person(2, "Ben", PersonKind.Male)],
         events=[
             _event(10, "1981-05-01", "Grandmother died", certainty=APPROX),
-            _event(11, "2003-09-10", "The move across the country"),
-            _event(12, "2021-11-02", "Ben stopped calling", person=2),
+            _event(11, "1994-02-14", "The winter she stopped calling home"),
+            _event(12, "2003-09-10", "The move across the country"),
+            _event(13, "2021-11-02", "Ben stopped calling", person=2),
         ],
         clusters=[
             asdict(
@@ -117,7 +119,7 @@ def three_over_forty() -> DiagramData:
                     reason="Ada lost her grandmother, and then moved away from everyone she knew.",
                     title="Leaving and losing",
                     summary="",
-                    eventIds=[10, 11],
+                    eventIds=[10, 11, 12],
                     startDate="1981-05-01",
                     endDate="2003-09-10",
                 )

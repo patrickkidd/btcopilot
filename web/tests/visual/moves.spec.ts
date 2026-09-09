@@ -186,7 +186,7 @@ test.describe("what a chip does", () => {
 test.describe("the timeline behind the menu", () => {
   test.use({ storageState: stateFor("three40") });
 
-  test("the list of everything, with the banner", async ({ page }) => {
+  test("the list of everything", async ({ page }) => {
     await page.goto("/personal/");
     await page.locator("#menu-open").click();
     await expect(page.locator("#menu-body .row").first()).toBeVisible();
