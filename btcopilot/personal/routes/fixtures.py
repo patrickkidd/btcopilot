@@ -101,12 +101,26 @@ def one() -> DiagramData:
 
 
 def three_over_forty() -> DiagramData:
+    """Three moments over forty years: two the record holds as one cluster, and
+    one it holds on its own, which is a dot on the wire with no box."""
     return DiagramData(
         people=[_person(1, "Ada", primary=True), _person(2, "Ben", PersonKind.Male)],
         events=[
             _event(10, "1981-05-01", "Grandmother died", certainty=APPROX),
             _event(11, "2003-09-10", "The move across the country"),
             _event(12, "2021-11-02", "Ben stopped calling", person=2),
+        ],
+        clusters=[
+            asdict(
+                Cluster(
+                    id="cT",
+                    title="Leaving and losing",
+                    summary="",
+                    eventIds=[10, 11],
+                    startDate="1981-05-01",
+                    endDate="2003-09-10",
+                )
+            )
         ],
         lastItemId=20,
     )
@@ -173,6 +187,8 @@ def hostile() -> DiagramData:
     return DiagramData(people=people, events=events, clusters=clusters, lastItemId=40)
 
 
+PLAY_CLUSTER = "walk"
+
 MOVES = (
     ("toward", dict(relationship="toward", relationshipTargets=[2])),
     ("away", dict(relationship="away", relationshipTargets=[2])),
@@ -211,7 +227,20 @@ def moves() -> DiagramData:
         _event(20 + i, f"{1990 + i}-04-01", words, **kwargs)
         for i, (words, kwargs) in enumerate(MOVES)
     ]
-    return DiagramData(people=people, events=events, lastItemId=60)
+    clusters = [
+        asdict(
+            Cluster(
+                id=PLAY_CLUSTER,
+                title="The walk",
+                summary="Every move in order.",
+                eventIds=[event["id"] for event in events],
+                name="The walk",
+            )
+        )
+    ]
+    return DiagramData(
+        people=people, events=events, clusters=clusters, lastItemId=60
+    )
 
 
 MOVES_CHAT = [
@@ -228,11 +257,8 @@ MOVES_CHAT = [
     ),
 ]
 
-PLAY_CLUSTER = "walk"
-
-
 def play() -> DiagramData:
-    """The moves record with its whole cluster stored as one cluster, so a
+    """The moves record, whose whole walk is one stored cluster, so a
     play-by-play about it has a cluster id that resolves."""
     data = moves()
     data.clusters = [

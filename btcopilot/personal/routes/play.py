@@ -2,34 +2,23 @@
 
 It is coach-authored (R-0074): the coach picks which moves, in what order, and
 writes the words around them, and every move it names is a chip it cannot
-invent. The page taps either a stored cluster or a cluster the line grouped by
-itself, so both resolve here to the same thing — a set of event ids and a name.
+invent. A walk is offered for the clusters the record holds, so what is asked
+for here is one of those.
 """
 
 from flask import jsonify, request
 
 from btcopilot import auth
 from btcopilot.personal.routes import bp, current_session, diagram
-from btcopilot.personal.timeline import build_timeline
 from btcopilot.personal.playturn import PlayTurn
 from btcopilot.personal.discussions import sync_chat_speakers
-from btcopilot.schema import ClusterSource, DiagramData
+from btcopilot.schema import DiagramData
 
 
 def _cluster(data: DiagramData, cluster_id: str) -> dict:
     for cluster in data.clusters:
         if isinstance(cluster, dict) and str(cluster.get("id")) == str(cluster_id):
             return cluster
-    for cluster in build_timeline(data)["clusters"]:
-        if cluster["id"] == cluster_id or cluster_id in cluster["cluster_ids"]:
-            return {
-                "id": cluster["id"],
-                "name": cluster["title"],
-                "title": cluster["title"],
-                "summary": cluster["summary"] or "",
-                "eventIds": cluster["event_ids"],
-                "source": ClusterSource.Derived.value,
-            }
     raise ValueError(f"No cluster {cluster_id!r} on the line")
 
 

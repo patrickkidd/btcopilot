@@ -396,10 +396,6 @@ class TraceKey(enum.StrEnum):
 class ClusterSource(enum.StrEnum):
     Model = "model"
     User = "user"
-    # Never stored, and ignored by re-detection: a run of events the line
-    # grouped mechanically by the silences around it. Saying Model here would
-    # claim a grouping the model never made, and re-detection keys on this field.
-    Derived = "derived"
 
 
 @dataclass

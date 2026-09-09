@@ -37,9 +37,9 @@ def test_every_id_the_index_offers_survives_the_whole_loop():
     assert [c.kind for c in chips] == [RefKind.Cluster, RefKind.Events, RefKind.Person]
 
     timeline = build_timeline(data)
-    clusters = timeline["clusters"]
-    assert any(cluster in c["cluster_ids"] for c in clusters)
-    assert any(int(event) in c["event_ids"] for c in clusters)
+    assert any(cluster in c["cluster_ids"] for c in timeline["clusters"])
+    # the moment is on the line, whether or not a cluster claims it
+    assert any(int(event) == e["id"] for e in timeline["events"])
 
 
 def test_an_id_the_index_withholds_is_thrown_away():

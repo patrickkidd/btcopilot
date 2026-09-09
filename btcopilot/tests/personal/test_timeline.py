@@ -231,27 +231,19 @@ def test_seed_fixture_covers_every_rule():
     assert timeline["bond_lanes"]
 
 
-def test_clusters_split_on_a_long_silence():
+def test_a_record_with_no_stored_cluster_draws_none():
+    """The picture draws the clusters the record holds. Moments no cluster
+    claims are dots on the wire, never boxed with whatever happened near
+    them."""
     events = [
         _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
         _shift(11, 1, "1991-06-01", "symptom", VariableShift.Down),
         _shift(12, 1, "2005-01-01", "symptom", VariableShift.Up),
         _shift(13, 1, "2006-01-01", "symptom", VariableShift.Down),
     ]
-    clusters = build_timeline(_data([1], events))["clusters"]
-    assert [c["event_ids"] for c in clusters] == [[10, 11], [12, 13]]
-    assert [c["label"] for c in clusters] == ["1990–1991", "2005–2006"]
-    assert clusters[1]["gap_days"] > 4 * 365
-
-
-def test_a_lone_event_joins_the_cluster_it_is_nearest():
-    events = [
-        _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
-        _shift(11, 1, "1991-01-01", "symptom", VariableShift.Down),
-        _shift(12, 1, "1995-06-01", "symptom", VariableShift.Up),
-    ]
-    clusters = build_timeline(_data([1], events))["clusters"]
-    assert [c["event_ids"] for c in clusters] == [[10, 11, 12]]
+    timeline = build_timeline(_data([1], events))
+    assert timeline["clusters"] == []
+    assert [e["id"] for e in timeline["events"]] == [10, 11, 12, 13]
 
 
 def test_a_cluster_takes_its_title_from_a_stored_cluster_inside_it():
@@ -315,7 +307,7 @@ def test_two_clusters_inside_one_run_of_events_stay_two_groupings():
     ]
 
 
-def test_events_no_cluster_claims_are_grouped_by_the_silences_between_them():
+def test_events_no_cluster_claims_stay_off_every_cluster():
     events = [
         _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
         _shift(11, 1, "1990-06-01", "symptom", VariableShift.Down),
@@ -335,9 +327,11 @@ def test_events_no_cluster_claims_are_grouped_by_the_silences_between_them():
             )
         )
     ]
-    clusters = build_timeline(data)["clusters"]
-    assert [c["event_ids"] for c in clusters] == [[10, 11], [12, 13]]
-    assert [c["cluster_ids"] for c in clusters] == [["cl-a"], []]
+    timeline = build_timeline(data)
+    assert [c["event_ids"] for c in timeline["clusters"]] == [[10, 11]]
+    assert [c["cluster_ids"] for c in timeline["clusters"]] == [["cl-a"]]
+    # the two the stored cluster does not claim are still on the line
+    assert [e["id"] for e in timeline["events"]] == [10, 11, 12, 13]
 
 
 def test_every_dated_event_says_itself_in_a_sentence():
@@ -378,7 +372,7 @@ def test_undated_events_belong_to_no_cluster_but_stay_in_the_list():
     ]
     timeline = build_timeline(_data([1], events))
     assert [e["id"] for e in timeline["events"]] == [10, 11]
-    assert [c["event_ids"] for c in timeline["clusters"]] == [[10]]
+    assert timeline["clusters"] == []
 
 
 def test_every_event_carries_the_words_the_list_shows():

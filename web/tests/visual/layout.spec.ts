@@ -371,8 +371,9 @@ test.describe("each level is one fixed height", () => {
     });
   }
 
-  // A tap on the picture opens a cluster, which is the one thing most likely
-  // to move the chat, so it is checked on every shape of record.
+  // A tap on the picture opens a cluster, or picks a moment that is in none,
+  // and that is the one thing most likely to move the chat, so it is checked on
+  // every shape of record.
   for (const key of ["one", "three40", "dense60"] as const) {
     test.describe(() => {
       test.use({ storageState: stateFor(key) });
@@ -383,7 +384,10 @@ test.describe("each level is one fixed height", () => {
         const before = await frame(page);
         expect(await pictureHeight(page)).toBe(158);
 
-        await page.locator('.ss-hit[data-target="cluster"]').first().click();
+        // a record with no cluster of its own has its moments as loose dots
+        const box = page.locator('.ss-hit[data-target="cluster"]');
+        if (await box.first().isVisible().catch(() => false)) await box.first().click();
+        else await page.locator('.ss-hit[data-target="zone"]').first().click();
         await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
         await page.waitForTimeout(400);
 

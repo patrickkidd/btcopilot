@@ -9,7 +9,6 @@ from dataclasses import MISSING, fields as dc_fields
 from btcopilot.personal.intake import _enum_val, _parse_iso_date
 from btcopilot.personal.refs import Ref, RefKind
 from btcopilot.schema import (
-    ClusterSource,
     DateCertainty,
     DiagramData,
     Event,
@@ -24,8 +23,6 @@ _log = logging.getLogger(__name__)
 DATE_FIELDS = ("dateTime", "endDateTime")
 GAP_DAYS = 730
 STRIP_MAX_LANES = 2
-CHAPTER_SPLIT_DAYS = 3 * 365
-CHAPTER_MERGE_DAYS = 6 * 365
 BAND_DAYS = {
     DateCertainty.Certain.value: 7,
     DateCertainty.Approximate.value: 365,
@@ -191,39 +188,6 @@ def _events_payload(data: DiagramData, people_by_id: dict) -> list[dict]:
     return sorted(events, key=lambda e: (_undated(e), e["dateTime"] or "", e["id"]))
 
 
-def _group_by_gap(dated: list[tuple[dict, datetime.date]]) -> list[list]:
-    """Clusters are episodes: a run of events with no long silence in it. A
-    lone event next to a cluster belongs to it rather than standing alone."""
-    groups = []
-    for chunk, date in dated:
-        if groups and (date - groups[-1][-1][1]).days > CHAPTER_SPLIT_DAYS:
-            groups.append([])
-        elif not groups:
-            groups.append([])
-        groups[-1].append((chunk, date))
-    for i in range(len(groups) - 1, -1, -1):
-        if len(groups[i]) != 1:
-            continue
-        previous = groups[i - 1] if i else None
-        following = groups[i + 1] if i + 1 < len(groups) else None
-        before = (groups[i][0][1] - previous[-1][1]).days if previous else None
-        after = (following[0][1] - groups[i][0][1]).days if following else None
-        reach = [
-            d for d in (before, after) if d is not None and d <= CHAPTER_MERGE_DAYS
-        ]
-        if not reach:
-            continue
-        if (
-            before is not None
-            and before in reach
-            and (after is None or before <= after)
-        ):
-            previous.extend(groups.pop(i))
-        else:
-            following[:0] = groups.pop(i)
-    return groups
-
-
 def _cluster_label(start: datetime.date, end: datetime.date) -> str:
     return str(start.year) if start.year == end.year else f"{start.year}–{end.year}"
 
@@ -253,9 +217,9 @@ def _cluster_group(cluster: dict, by_id: dict, claimed: set) -> list:
 
 
 def _drawn_clusters(events: list[dict], clusters: list[dict]) -> list[dict]:
-    """A cluster is a grouping the picture draws. A stored cluster is one,
-    because clusters are what the coach names; whatever no cluster claims is
-    grouped by the silences between events."""
+    """The clusters the picture draws, which are the clusters the record holds.
+    A moment no cluster claims is a moment on its own: it stays a dot on the
+    wire rather than being boxed with whatever happened near it."""
     dated = [
         (chunk, datetime.date.fromisoformat(chunk["dateTime"]))
         for chunk in events
@@ -277,33 +241,26 @@ def _drawn_clusters(events: list[dict], clusters: list[dict]) -> list[dict]:
             continue
         claimed.update(chunk["id"] for chunk, _ in group)
         groups.append((group, cluster))
-    rest = [pair for pair in dated if pair[0]["id"] not in claimed]
-    groups.extend((group, None) for group in _group_by_gap(rest))
     groups.sort(key=lambda pair: pair[0][0][1])
 
-    clusters = []
+    drawn = []
     previous_end = None
-    for index, (group, cluster) in enumerate(groups):
+    for group, cluster in groups:
         start, end = group[0][1], group[-1][1]
-        clusters.append(
+        drawn.append(
             {
-                # A cluster a stored cluster backs is that cluster, and carries
-                # its id, so a chip written about it resolves in the record.
-                "id": str(cluster["id"]) if cluster else f"ch{index}",
+                # It carries the record's own id, so a chip written about it
+                # resolves in the record.
+                "id": str(cluster["id"]),
                 "label": _cluster_label(start, end),
                 "title": (
-                    (cluster or {}).get("name")
-                    or (cluster or {}).get("title")
-                    or _cluster_label(start, end)
+                    cluster.get("name") or cluster.get("title") or _cluster_label(start, end)
                 ),
-                "summary": (cluster or {}).get("summary"),
+                "summary": cluster.get("summary"),
                 # Why these events are one episode, in the coach's own sentence.
-                # A grouping the silences made has none.
-                "reason": (cluster or {}).get("reason"),
-                "cluster_ids": [str(cluster["id"])] if cluster else [],
-                "source": (
-                    cluster.get("source") if cluster else ClusterSource.Derived.value
-                ),
+                "reason": cluster.get("reason"),
+                "cluster_ids": [str(cluster["id"])],
+                "source": cluster.get("source"),
                 "start": start.isoformat(),
                 "end": end.isoformat(),
                 "event_ids": [chunk["id"] for chunk, _ in group],
@@ -312,13 +269,14 @@ def _drawn_clusters(events: list[dict], clusters: list[dict]) -> list[dict]:
             }
         )
         previous_end = end
-    return clusters
+    return drawn
 
 
 def aimable(refs: list[Ref], data: DiagramData) -> list[Ref]:
     """A chip the picture cannot go to is not a chip. `resolve` keeps only
-    references the diagram holds; this keeps only the ones that land in a
-    cluster, which is the only place the picture can aim."""
+    references the diagram holds; this keeps the ones the picture can aim at,
+    which is any dated moment on the wire and any cluster it draws. A moment
+    inside no cluster is still a dot, and a chip naming it lights that dot."""
     people_by_id = {
         p["id"]: p
         for p in data.people
@@ -327,30 +285,21 @@ def aimable(refs: list[Ref], data: DiagramData) -> list[Ref]:
     events = _events_payload(data, people_by_id)
     clusters = _drawn_clusters(events, data.clusters)
     dated = {event["id"]: event for event in events if not _undated(event)}
-    in_clusters = {
-        event_id for cluster in clusters for event_id in cluster["event_ids"]
-    }
     named_clusters = {name for cluster in clusters for name in cluster["cluster_ids"]}
 
     kept = []
     for ref in refs:
         if ref.kind is RefKind.Events:
-            if not in_clusters.intersection(ref.event_ids):
+            if not dated.keys() & set(ref.event_ids):
                 _log.warning(f"Reference {ref.label!r} names no event on the line")
                 continue
         elif ref.kind is RefKind.Person:
-            if not any(
-                _links(event, ref.person_id)
-                for event_id, event in dated.items()
-                if event_id in in_clusters
-            ):
+            if not any(_links(event, ref.person_id) for event in dated.values()):
                 _log.warning(f"Reference {ref.label!r} names a person with no events")
                 continue
         elif ref.kind is RefKind.Range:
             if not any(
-                ref.start <= event["dateTime"] <= ref.end
-                for event_id, event in dated.items()
-                if event_id in in_clusters
+                ref.start <= event["dateTime"] <= ref.end for event in dated.values()
             ):
                 _log.warning(f"Reference {ref.label!r} covers no event on the line")
                 continue

@@ -624,32 +624,35 @@ export class Picture {
         `style="left:${(middle - target / 2).toFixed(1)}px;top:${REST_WIRE - ZONE / 2}px;` +
         `width:${target.toFixed(1)}px;height:${ZONE}px"></button>`;
     });
-    svg += `<text class="ss-hint" x="${x0}" y="74">tap a cluster</text></svg>`;
+    // A moment no cluster claims is drawn as itself: a dot on the wire where it
+    // happened, with no box around it and nothing else bundled into it.
+    const claimed = new Set(clusters.flatMap((cluster) => cluster.event_ids));
+    const loose = dated.filter((event) => !claimed.has(event.id));
+    this.laid.zones = loose.map((event) => [{ event, x: at(event.dateTime as string) }]);
+    loose.forEach((event, i) => {
+      const x = at(event.dateTime as string);
+      svg += `<circle class="dot" cx="${x.toFixed(1)}" cy="${REST_WIRE}" r="4.5"/>`;
+      hits +=
+        `<button class="ss-hit" data-target="${Target.Zone}" data-index="${i}" ` +
+        `aria-label="${esc(event.label)}" ` +
+        `style="left:${(x - ZONE / 2).toFixed(1)}px;top:${REST_WIRE - ZONE / 2}px;` +
+        `width:${ZONE}px;height:${ZONE}px"></button>`;
+    });
+
+    svg +=
+      `<text class="ss-hint" x="${x0}" y="74">` +
+      `${clusters.length ? "tap a cluster" : "tap a moment"}</text></svg>`;
 
     this.host.innerHTML = `<div class="ss">${svg}${hits}${shelf}</div>`;
   }
 
-  /** The clusters the resting level draws, in time order. A record with no
-   * clusters of its own is one cluster: everything on it. */
+  /** The clusters the resting level draws, in time order. They are the ones
+   * the record holds; a record with none draws none, and its moments are dots
+   * on the wire. */
   private restClusters(): Cluster[] {
-    const clusters = (this.data?.clusters ?? []).filter((c) => c.event_ids.length);
-    if (clusters.length)
-      return [...clusters].sort((a, b) => years(a.start) - years(b.start));
-    const dated = this.dated();
-    if (!dated.length) return [];
-    return [
-      {
-        id: "all",
-        label: "",
-        title: "",
-        summary: null,
-        cluster_ids: [],
-        start: dated[0].dateTime as string,
-        end: dated[dated.length - 1].dateTime as string,
-        event_ids: dated.map((e) => e.id),
-        count: dated.length,
-      },
-    ];
+    return [...(this.data?.clusters ?? [])]
+      .filter((c) => c.event_ids.length)
+      .sort((a, b) => years(a.start) - years(b.start));
   }
 
   /** The moments in the cluster a resting tap landed on. */
