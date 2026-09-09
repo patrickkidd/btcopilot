@@ -106,7 +106,6 @@ test.describe("someone the coach has just put in the record", () => {
       }),
     );
     // people are drawn on the board, so the board is what is on screen
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
     await page.locator("#cap-play").click();
     await expect(page.locator(".ss.board")).toBeVisible();
     await page.waitForTimeout(800);

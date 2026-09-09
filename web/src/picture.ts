@@ -373,6 +373,11 @@ export class Picture {
     return this.level === Level.Wire && this.focus !== null;
   }
 
+  /** The cluster the picture is showing, if it is showing one. */
+  openCluster(): Cluster | null {
+    return this.opened() ? this.focus : null;
+  }
+
   /** The cluster the board is showing, which is what "explain" asks about. */
   showing(): string | null {
     return this.cluster;
@@ -812,22 +817,30 @@ export class Picture {
       const key = mark.event.dateTime as string;
       byDate.set(key, [...(byDate.get(key) ?? []), mark]);
     }
+    // The moment picked is drawn last, so it is on top of whatever crowds it
+    // (picked mockup Q1).
+    let onTop = "";
     for (const group of byDate.values()) {
       const x = group[0].x.toFixed(1);
       const lit = group.filter((m) => named.has(m.event.id));
+      const keep = (mark: Mark, drawn: string) => {
+        if (mark.event.id === this.selected) onTop += drawn;
+        else svg += drawn;
+      };
       if (lit.length) {
         if (group.length > lit.length)
           svg += `<circle class="halo" cx="${x}" cy="${wire}" r="7"/>`;
         lit.forEach((mark, i) => {
           const cy = i === 0 ? (lit.length > 1 ? wire + 5 : wire) : i === 1 ? wire - 5 : wire + 5 + 10 * (i - 1);
-          svg += this.dot(mark, x, cy, 1, radius, true);
+          keep(mark, this.dot(mark, x, cy, 1, radius, true));
         });
       } else {
         if (group.length > 1)
           svg += `<circle class="halo" cx="${x}" cy="${wire}" r="7" opacity="${opacity}"/>`;
-        svg += this.dot(group[0], x, wire, opacity, radius, false);
+        keep(group[0], this.dot(group[0], x, wire, opacity, radius, false));
       }
     }
+    svg += onTop;
 
     svg += this.questions(wire);
     svg += `</svg>`;

@@ -8,6 +8,7 @@ from markupsafe import escape
 from btcopilot import auth
 from btcopilot.personal.routes import bp, current_session, diagram
 from btcopilot.personal.routes.sessions import session_payload, statements_payload
+from btcopilot.personal import record
 from btcopilot.personal.timeline import build_timeline
 from btcopilot.schema import DiagramData
 
@@ -69,6 +70,16 @@ def manifest():
 def timeline():
     in_use = diagram()
     data = in_use.get_diagram_data() if in_use else DiagramData()
-    return jsonify(build_timeline(data))
+    payload = build_timeline(data)
+    # Where each moment was written down comes from the command log, which is
+    # the only place that knows: the coach stamps its own message on the
+    # commands one turn made. What the record itself carries wins, for the
+    # moments that were stamped before the log existed.
+    if in_use:
+        payload["coded_in"] = {
+            **{str(k): v for k, v in record.coded_in(in_use.id).items()},
+            **{str(k): v for k, v in payload["coded_in"].items()},
+        }
+    return jsonify(payload)
 
 

@@ -561,3 +561,39 @@ def test_a_csrf_token_older_than_an_hour_still_posts(web, family, monkeypatch):
     )
     assert reply.status_code == 200
     assert reply.get_json()["kind"] == StatementKind.Turn.value
+
+
+def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
+    web, family, monkeypatch
+):
+    """The page offers the way back to where a moment was said. Nothing stamps
+    that on the moment itself outside the fixtures, so it is read from the
+    command log: the coach's own message against the commands that turn made."""
+    from btcopilot.tests.personal.conftest import csrf_token
+
+    monkeypatch.setattr(
+        "btcopilot.personal.coachturn.CoachModel",
+        lambda *a, **k: Model(
+            called(
+                ToolName.EditEvent,
+                kind="shift",
+                date="1994-12-01",
+                description="got sick",
+                person=1,
+                symptom="up",
+            ),
+            said("I put that down."),
+        ),
+    )
+    token = csrf_token(web)
+    reply = web.post(
+        "/personal/chat",
+        json={"statement": "My mum got sick that winter."},
+        headers={"X-CSRFToken": token},
+    ).get_json()
+
+    coded = web.get("/personal/timeline").get_json()["coded_in"]
+    made = [event["id"] for event in web.get("/personal/timeline").get_json()["events"]]
+    newest = str(max(made))
+    assert coded[newest]["statement_id"] == reply["statement_id"]
+    assert coded[newest]["discussion_id"] == reply["discussion_id"]

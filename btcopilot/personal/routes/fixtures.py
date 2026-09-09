@@ -107,9 +107,28 @@ def three_over_forty() -> DiagramData:
     return DiagramData(
         people=[_person(1, "Ada", primary=True), _person(2, "Ben", PersonKind.Male)],
         events=[
-            _event(10, "1981-05-01", "Grandmother died", certainty=APPROX),
-            _event(11, "1994-02-14", "The winter she stopped calling home"),
-            _event(12, "2003-09-10", "The move across the country"),
+            # the three in the cluster are moves the board can draw, so the
+            # walk it offers has something to walk through
+            _event(
+                10,
+                "1981-05-01",
+                "Grandmother died",
+                certainty=APPROX,
+                anxiety=VariableShift.Up,
+            ),
+            _event(
+                11,
+                "1994-02-14",
+                "The winter she stopped calling home",
+                relationship="distance",
+                relationshipTargets=[2],
+            ),
+            _event(
+                12,
+                "2003-09-10",
+                "The move across the country",
+                functioning=VariableShift.Down,
+            ),
             _event(13, "2021-11-02", "Ben stopped calling", person=2),
         ],
         clusters=[
@@ -249,6 +268,15 @@ def moves() -> DiagramData:
         people=people, events=events, clusters=clusters, lastItemId=60
     )
 
+
+# The sparse record has a conversation too, so its moments carry where they
+# were said and the row under the picture can offer the way back to it.
+# It names no moment, so the picture opens on the whole line the way a record
+# with no conversation about it does.
+THREE40_CHAT = [
+    ("user", "tell me about the year we moved"),
+    ("coach", "Tell me what you remember about it."),
+]
 
 MOVES_CHAT = [
     ("user", "walk me through it"),
@@ -391,7 +419,7 @@ def long_name() -> DiagramData:
 FIXTURES = {
     "empty": (empty, None),
     "one": (one, None),
-    "three40": (three_over_forty, None),
+    "three40": (three_over_forty, THREE40_CHAT),
     "dense60": (sixty_in_five, None),
     "hostile": (hostile, HOSTILE_CHAT),
     "moves": (moves, MOVES_CHAT),

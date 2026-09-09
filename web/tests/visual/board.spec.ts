@@ -22,8 +22,14 @@ const settle = async (page: Page) => {
 
 /** Select a moment so the caption row offers its cluster. */
 const pickCluster = async (page: Page) => {
-  await page.locator('.ss-hit[data-target="zone"]').first().click();
-  await expect(page.locator("#cap-play")).toBeVisible();
+  // explain belongs to the cluster, not to a moment inside it, so nothing is
+  // picked before it is taken (owner review round 3)
+  const box = page.locator('.ss-hit[data-target="cluster"]');
+  if (await box.first().isVisible().catch(() => false)) {
+    await box.first().click();
+    await page.waitForTimeout(400);
+  }
+  await expect(page.locator("#cap-play")).toBeEnabled();
 };
 
 const enter = async (page: Page) => {

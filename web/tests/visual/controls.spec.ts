@@ -33,7 +33,6 @@ const fromTheWire = async (page: Page) => {
     await clusters.first().click();
     await page.waitForTimeout(400);
   }
-  await page.locator('.ss-hit[data-target="zone"]').first().click();
   await page.locator("#cap-play").click();
   await expect(page.locator(".ss.board")).toBeVisible();
   await page.waitForTimeout(800);

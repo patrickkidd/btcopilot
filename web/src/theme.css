@@ -163,7 +163,10 @@ button { font-family: inherit; }
 /* ---- the picture: the sentence spotlight (converged, ruled 2026-09-02) ---- */
 /* 132 of the phone, and no more (picked mockup, 2026-09-08): the name row 28,
    the band the line is drawn in 60, and the row of controls under it 44. */
-.pic { flex: none; padding: 0; border-bottom: 1px solid var(--line); }
+.pic { flex: none; padding: 0; }
+/* the hairline under the picture is drawn inside its 132 rather than added to
+   it, so the region is the three rows and nothing more */
+.pic .caption { border-bottom: 1px solid var(--line); }
 /* One line, always: the state text on the right changes with the selection and
    must never push the label on the left onto a second line, which would move
    the picture and everything under it. */
@@ -174,6 +177,7 @@ button { font-family: inherit; }
   gap: 12px;
   height: 28px;
   padding: 0 16px;
+  box-sizing: border-box;
   font: 400 13px/1.2 var(--mono);
   color: var(--faint);
   text-transform: uppercase;
@@ -207,22 +211,12 @@ button { font-family: inherit; }
    one beside the message bar. The picture's own box is what it sits in, so it
    is taken out of the flow and nothing below it moves. */
 .pic { position: relative; }
-/* The list button lives in the 28 of the name row and never reaches the band
-   below it, where the words are. It keeps its 44 for the thumb in a target
-   around it, the way a chip does. */
-.pic .fs-glyph {
-  position: absolute;
-  top: 0;
-  right: 8px;
-  z-index: 2;
-  width: 28px;
-  height: 28px;
-}
-.pic .fs-glyph::before { width: 26px; height: 26px; }
-.pic .fs-glyph::after {
-  content: "";
-  position: absolute;
-  inset: -8px;
+/* The list button sits at the end of the row of chips, in the same circle as
+   the one beside the message bar, and nothing else is over there. */
+.caption .fs-glyph {
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
 }
 .view { position: relative; transition: height 0.25s ease; }
 .ss { position: relative; width: 100%; height: 100%; }
@@ -245,6 +239,9 @@ button { font-family: inherit; }
 
 /* one dot per moment; the ones the coach named are solid, the rest recede */
 .ss .dot { fill: var(--data); }
+/* the moment picked, drawn last so it is on top of whatever crowds it, larger
+   than the rest, in the one action green (picked mockup Q1) */
+.ss .dot.on { fill: var(--move); }
 .ss .dot.nodal { fill: none; stroke: var(--data); stroke-width: 1.5; }
 .ss .dot.core { fill: var(--data); }
 .ss .halo { fill: none; stroke: var(--data); stroke-width: 1; opacity: 0.35; }
@@ -682,8 +679,7 @@ button { font-family: inherit; }
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
-  margin-top: 4px;
+  height: 44px;
   padding: 0 16px;
   font: 400 13px/1.35 var(--mono);
   color: var(--faint);
@@ -719,6 +715,9 @@ button { font-family: inherit; }
 }
 .caption .tok::before { content: ""; position: absolute; inset: -9px -2px; }
 .caption .tok svg { flex: none; }
+/* while nothing is picked there is nothing to act on, so the row says what a
+   tap will do instead (owner review round 3) */
+.caption .cta { font: 400 13px/1.35 var(--mono); color: var(--faint); }
 .caption .tok.g { color: var(--move-text); border-color: var(--move); border-radius: 10px; }
 .caption .tok.data { color: var(--data); border-color: var(--data); border-radius: 10px; }
 /* nothing to do with it here, so it is still shown and plainly not offered */
@@ -1502,19 +1501,11 @@ button { font-family: inherit; }
   font: 500 15px var(--mono);
   cursor: pointer;
 }
-/* the ruled 40px circle inside the ruled 44px target (UI_STANDARDS) */
-.avatar::before {
-  content: "";
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  border: 1.5px solid var(--data);
-  border-radius: 50%;
-  background: var(--panel);
-}
+/* The glyph alone in the ruled 44px target: there is no room around it for a
+   ring, so it does not have one (owner review round 3). */
 .avatar > * , .avatar svg { position: relative; }
 .avatar svg { width: 22px; height: 22px; display: block; }
-.avatar:active::before { background: var(--tint); }
+.avatar:active { color: var(--data-press); }
 .sn-back {
   flex: none;
   min-width: 44px;

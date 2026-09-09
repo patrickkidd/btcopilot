@@ -34,6 +34,7 @@ import {
   type Diagram,
   type Session,
   type Statement,
+  type Cluster,
   type Timeline,
 } from "./types";
 
@@ -239,7 +240,6 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
     // The title row belongs to whatever is on top of it, so the chat's own
     // controls step aside while the settings stack is up.
     $("title").textContent = title ?? familyTitle;
-    $("menu-open").hidden = title !== null;
     $("account").hidden = title !== null;
   },
   onPrefs: (prefs) => {
@@ -411,7 +411,7 @@ const ASK_MARK =
 const PLAY_MARK =
   `<svg width="12" height="12" viewBox="0 0 18 18" aria-hidden="true">` +
   `<path d="M4.8 2.6 15.2 9 4.8 15.4Z" fill="currentColor"/></svg>`;
-const SAID_MARK =
+const IN_CHAT_MARK =
   `<svg width="14" height="14" viewBox="0 0 18 18" aria-hidden="true">` +
   `<rect x="1.6" y="2.4" width="14.8" height="10.2" rx="3" fill="none" ` +
   `stroke="currentColor" stroke-width="1.5"/>` +
@@ -426,33 +426,62 @@ function actions(): void {
   crumb();
   const host = $("caption");
   const sel = pic.sel;
-  const cluster =
-    sel?.kind === SelKind.Event
-      ? timeline.clusters.find((c) => c.event_ids.includes(Number(sel.id)))
-      : sel?.kind === SelKind.Cluster
-        ? timeline.clusters.find((c) => c.id === sel.id)
-        : undefined;
-  const trace = sel?.kind === SelKind.Event ? codedIn(Number(sel.id)) : null;
-  // the board is offered for a cluster with at least one move it can draw
-  const moves = cluster ? picture.countMoves(cluster.event_ids) : 0;
+  const open = picture.openCluster();
+  // The board has its own controls, and two rows saying explain is one too
+  // many.
+  if (picture.onBoard()) {
+    host.innerHTML = "";
+    return;
+  }
+  // Nothing open and nothing picked: there is nothing to act on, so the row
+  // says what a tap will do instead.
+  if (!sel && !open) {
+    host.innerHTML = `<span class="cta">tap a cluster</span>` + LIST_BUTTON;
+    wireList();
+    return;
+  }
+
+  // One cluster open: ask about it, or have it explained. Picked a moment
+  // inside it: ask about that, or go to where it was said.
+  const moment = sel?.kind === SelKind.Event ? Number(sel.id) : null;
+  const trace = moment === null ? null : codedIn(moment);
+  const moves = !sel && open ? picture.countMoves(open.event_ids) : 0;
 
   host.innerHTML =
-    tok("cap-chip", "", ASK_MARK, "ask", !!sel) +
+    tok("cap-chip", "", ASK_MARK, "ask", true) +
     tok("cap-play", "g", PLAY_MARK, "explain", moves > 0) +
-    tok("cap-trace", "data", SAID_MARK, "said", !!trace);
+    tok("cap-trace", "data", IN_CHAT_MARK, "in chat", !!trace) +
+    LIST_BUTTON;
 
-  if (sel)
-    $("cap-chip").addEventListener("click", () =>
-      apply(reduce(pic, PicEvent.TapChip)),
-    );
+  $("cap-chip").addEventListener("click", () =>
+    apply(
+      sel
+        ? reduce(pic, PicEvent.TapChip)
+        : reduce(pic, PicEvent.TapChip, {
+            kind: SelKind.Cluster,
+            id: (open as Cluster).id,
+          }),
+    ),
+  );
   if (trace)
     $("cap-trace").addEventListener("click", () => void traceTo(trace.where));
-  if (moves && cluster)
+  if (moves && open)
     $("cap-play").addEventListener("click", () =>
-      apply(
-        reduce(pic, PicEvent.TapPlay, { kind: SelKind.Cluster, id: cluster.id }),
-      ),
+      apply(reduce(pic, PicEvent.TapPlay, { kind: SelKind.Cluster, id: open.id })),
     );
+  wireList();
+}
+
+/** The way into the two lists, at the end of the row (owner review round 3). */
+const LIST_BUTTON =
+  `<button class="fs-glyph" id="menu-open" type="button" ` +
+  `aria-label="open the timeline list">` +
+  `<svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true">` +
+  `<path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="1.6" ` +
+  `stroke-linecap="round" fill="none"/></svg></button>`;
+
+function wireList(): void {
+  $("menu-open").addEventListener("click", () => screen(Screen.Menu));
 }
 
 /** The board is its own level, and entering it is the one deliberate act that
@@ -629,9 +658,6 @@ $("composer").addEventListener("keydown", (e) => {
   }
 });
 $("send").addEventListener("click", () => void send());
-$("menu-open").addEventListener("click", () => {
-  screen(Screen.Menu);
-});
 $("menu-close").addEventListener("click", () => {
   const field = $("menu-search") as HTMLInputElement;
   field.value = "";

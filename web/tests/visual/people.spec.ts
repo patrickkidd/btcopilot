@@ -21,13 +21,13 @@ const openList = async (page: Page) => {
 test.describe("the button that opens the list", () => {
   test.use({ storageState: stateFor("moves") });
 
-  test("sits in the picture's name row, dressed like the sessions button", async ({
+  test("sits at the end of the row of chips, dressed like the sessions button", async ({
     page,
   }) => {
     await settle(page);
     const where = await page.evaluate(() => {
       const button = document.getElementById("menu-open")!;
-      const picture = document.querySelector(".pic")!;
+      const row = document.querySelector(".caption")!;
       const sessions = document.getElementById("sessions-open")!;
       const box = button.getBoundingClientRect();
       const round = (n: HTMLElement) => {
@@ -35,20 +35,20 @@ test.describe("the button that opens the list", () => {
         return `${mark.width} ${mark.height} ${mark.borderRadius} ${mark.borderTopWidth}`;
       };
       return {
-        inside: picture.contains(button),
+        inRow: row.contains(button),
         inTitleRow: !!document.querySelector(".titlerow #menu-open"),
+        inNameRow: !!document.querySelector(".pin-label #menu-open"),
         size: [Math.round(box.width), Math.round(box.height)],
-        // the same circle as the sessions button, drawn to the name row's 28
-        round: round(button).split(" ").slice(2).join(" "),
-        sessions: round(sessions).split(" ").slice(2).join(" "),
-        reach: getComputedStyle(button, "::after").inset,
+        last: row.lastElementChild === button,
+        same: round(button) === round(sessions),
       };
     });
-    expect(where.inside).toBe(true);
+    expect(where.inRow).toBe(true);
     expect(where.inTitleRow).toBe(false);
-    expect(where.size).toEqual([28, 28]);
-    expect(where.round).toBe(where.sessions);
-    expect(where.reach).toBe("-8px");
+    expect(where.inNameRow).toBe(false);
+    expect(where.last).toBe(true);
+    expect(where.size).toEqual([44, 44]);
+    expect(where.same).toBe(true);
   });
 });
 

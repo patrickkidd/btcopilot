@@ -101,18 +101,30 @@ test.describe("nothing moves when a chip is tapped", () => {
     page,
   }) => {
     await settle(page);
+    // this record opens on the cluster the coach's last message named, so the
+    // picture is put down first to see the row with nothing picked
+    await page.locator("#crumb").click();
+    await page.waitForTimeout(400);
     const empty = await frame(page);
-    // the row is the same in every state: three chips, dimmed where there is
-    // nothing to do with them (picked plate F)
-    await expect(page.locator(".caption .tok")).toHaveCount(3);
-    await expect(page.locator(".caption .tok.dim")).toHaveCount(3);
+    await expect(page.locator(".caption .cta")).toHaveText("tap a cluster");
+
+    await page.locator('.ss-hit[data-target="cluster"]').first().click();
+    await page.waitForTimeout(400);
+    // a cluster open: ask about it, or have it explained
+    await expect(page.locator("#cap-chip")).not.toHaveClass(/dim/);
+    await expect(page.locator("#cap-play")).not.toHaveClass(/dim/);
+    await expect(page.locator("#cap-trace")).toHaveClass(/dim/);
+    const open = await frame(page);
 
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator("#cap-chip")).not.toHaveClass(/dim/);
-    const filled = await frame(page);
+    // a moment picked: ask about it, or go to where it was said
+    await expect(page.locator("#cap-play")).toHaveClass(/dim/);
+    await expect(page.locator("#cap-trace")).not.toHaveClass(/dim/);
+    const picked = await frame(page);
 
-    expect(filled.caption).toEqual(empty.caption);
-    await expect(page.locator(".caption .tok")).toHaveCount(3);
+    // and the row is the same height throughout
+    expect(open.caption).toEqual(empty.caption);
+    expect(picked.caption).toEqual(empty.caption);
   });
 
   test("the caption stays one strip however many controls it holds", async ({
@@ -127,17 +139,20 @@ test.describe("nothing moves when a chip is tapped", () => {
       height: Math.round(node.getBoundingClientRect().height),
       children: node.childElementCount,
       rows: new Set(
-        [...node.children].map((c) => Math.round(c.getBoundingClientRect().top)),
+        [...node.children].map((c) => {
+          const at = c.getBoundingClientRect();
+          return Math.round(at.top + at.height / 2);
+        }),
       ).size,
       heights: [...node.children].map((c) =>
         Math.round(c.getBoundingClientRect().height),
       ),
       fits: node.scrollWidth <= node.clientWidth,
     }));
-    expect(strip.children).toBe(3);
+    expect(strip.children).toBe(4);
     expect(strip.height).toBe(44);
     expect(strip.rows).toBe(1);
-    expect(strip.heights).toEqual([26, 26, 26]);
+    expect(strip.heights).toEqual([26, 26, 26, 44]);
     // and with one word each they fit across a phone, which the record's own
     // words in the asking chip never did
     expect(strip.fits).toBe(true);
@@ -168,8 +183,13 @@ for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "lon
         const box = node.getBoundingClientRect();
         return {
           height: Math.round(box.height),
+          // one line: the controls are different heights, so what tells a
+          // wrap from a row is where their middles sit
           rows: new Set(
-            [...node.children].map((c) => Math.round(c.getBoundingClientRect().top)),
+            [...node.children].map((c) => {
+              const at = c.getBoundingClientRect();
+              return Math.round(at.top + at.height / 2);
+            }),
           ).size,
           // where a control sits in the strip's own content, which is what it
           // may not leave: above its top, or past everything it holds
@@ -180,8 +200,12 @@ for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "lon
               return left < -1 || left + at.width > node.scrollWidth + 1;
             })
             .map((c) => (c as HTMLElement).id),
-          tall: [...node.children].filter(
-            (c) => Math.round(c.getBoundingClientRect().height) !== 26,
+          // the chips are 26 in the middle of the band; the button that opens
+          // the list is the row's own 44 control at its end
+          tall: [...node.children].filter((c) =>
+            c.classList.contains("tok")
+              ? Math.round(c.getBoundingClientRect().height) !== 26
+              : Math.round(c.getBoundingClientRect().height) !== 44,
           ).length,
         };
       });
@@ -294,17 +318,9 @@ test.describe("a long family name", () => {
     const avatar = (await page.locator("#account").boundingBox())!;
     expect(Math.round(avatar.width)).toBe(44);
     expect(Math.round(avatar.height)).toBe(44);
-    // the list button is in the picture's own name row, 28 with a 44 target
-    const list = await page.locator("#menu-open").evaluate((node) => {
-      const at = node.getBoundingClientRect();
-      const target = getComputedStyle(node, "::after");
-      return {
-        size: [Math.round(at.width), Math.round(at.height)],
-        reach: target.inset,
-      };
-    });
-    expect(list.size).toEqual([28, 28]);
-    expect(list.reach).toBe("-8px");
+    // the list button is at the end of the row of chips, at its ruled size
+    const list = (await page.locator("#menu-open").boundingBox())!;
+    expect([Math.round(list.width), Math.round(list.height)]).toEqual([44, 44]);
 
     // the picture starts where it always starts
     expect(await pictureHeight(page)).toBe(BAND);
@@ -316,7 +332,6 @@ test.describe("the moves board fills the room it takes", () => {
 
   test("no empty band under the drawing or the controls", async ({ page }) => {
     await settle(page);
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
     await page.locator("#cap-play").click();
     await expect(page.locator(".ss.board")).toBeVisible();
     await page.waitForTimeout(600);
@@ -353,7 +368,7 @@ test.describe("a moment traces back to the words that coded it", () => {
     await settle(page);
     await page.locator('.ss-hit[data-target="zone"]').first().click();
     const chip = page.locator("#cap-trace");
-    await expect(chip).toHaveText("said");
+    await expect(chip).toHaveText("in chat");
     await expect(chip).not.toHaveClass(/dim/);
 
     const before = await frame(page);

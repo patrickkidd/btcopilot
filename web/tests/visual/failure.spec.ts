@@ -116,7 +116,6 @@ test.describe("an explain that does not go through", () => {
     await page.route("**/personal/play", (route) =>
       route.fulfill({ status: 500, body: "no" }),
     );
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
     await page.locator("#cap-play").click();
     await expect(page.locator(".ss.board")).toBeVisible();
 

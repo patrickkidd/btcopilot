@@ -353,3 +353,46 @@ def diff(old: dict, new: dict) -> list[dict]:
                     }
                 )
     return deltas
+
+
+def coded_in(diagram_id: int) -> dict[int, dict]:
+    """Where each moment on this diagram was written down: the message the coach
+    was saying when it went in, and the session that message belongs to.
+
+    The command log is the record of that. Every command carries the deltas it
+    applied, and a coach turn stamps its own statement on the commands it made,
+    so a moment traces to a message through the commands that named it. The
+    newest such command wins: a moment changed twice belongs to the last thing
+    said about it.
+    """
+    from btcopilot.personal.models import Statement
+
+    found: dict[int, dict] = {}
+    rows = (
+        Change.query.filter(
+            Change.diagram_id == diagram_id, Change.statement_id.isnot(None)
+        )
+        .order_by(Change.id)
+        .all()
+    )
+    if not rows:
+        return found
+    said = {
+        statement.id: statement.discussion_id
+        for statement in Statement.query.filter(
+            Statement.id.in_({row.statement_id for row in rows})
+        ).all()
+    }
+    for row in rows:
+        for delta in row.deltas or []:
+            if delta.get("item_kind") != ItemKind.Event.value:
+                continue
+            try:
+                event_id = int(delta["item_id"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            found[event_id] = {
+                "discussion_id": said.get(row.statement_id),
+                "statement_id": row.statement_id,
+            }
+    return found

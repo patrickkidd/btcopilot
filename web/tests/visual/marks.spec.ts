@@ -15,8 +15,6 @@ test("the symptom mark is on screen for the whole loop", async ({ page }) => {
   await page.goto("/personal/");
   await expect(page.locator(".ss")).toBeVisible();
   await page.waitForTimeout(600);
-  await page.locator('.ss-hit[data-target="zone"]').first().click();
-  await page.waitForTimeout(300);
   await page.locator("#cap-play").click();
   await page.waitForTimeout(1200);
   const next = page.locator('.pctl [data-target="next"]');

@@ -42,7 +42,6 @@ test.describe("what the app says can be taken away", () => {
 
   test("the words under the picture select", async ({ page }) => {
     await settle(page);
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
     await page.locator("#cap-play").click();
     await expect(page.locator(".ss.board")).toBeVisible();
     await page.waitForTimeout(800);
