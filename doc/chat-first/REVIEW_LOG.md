@@ -149,3 +149,27 @@ items, so each is logged FIXED without a commit citation.
     chat bubble where it was said) but its label must say what it does. RULED/MOCKUP.
 38. Screenshot tolerance: the picture spec adopts the board spec's strict 8-pixel
     allowance; desktop goldens stay unmaintained until the phone review is done. RULED.
+
+## Round 3 (2026-09-08 afternoon)
+
+39. Button row = mockup plate F: the chat's own chip style, "ask" / "explain" / "in chat"
+    (not "said"), identical in both states, ask carries only the word. RULED (building).
+40. The built layout did not match the picked mockup (list button over the cluster boxes,
+    boxes over the CTA text); redo to the mockup with a no-overlap gate; screenshots
+    reviewed by the coordinator before the owner sees it. OPEN.
+41. An open cluster shows the cluster's NAME and REASON, never a list of events (15 events
+    must not overflow); events stay dots; a tapped dot shows its words. RULED.
+42. At rest and in an open cluster only dots, the line, the amber question mark and the
+    selected dot's year are drawn; guessed-date bands ("olive bar"), directionless ticks,
+    step lines, flat/fade/order marks are reserved for the expanded/board level. RULED.
+43. Labels never leave the picture frame (the overflowing "…began" label); gate added.
+    OPEN.
+44. Naming: "Family Diagram" everywhere users see it; "Companion" was never ruled and is
+    removed; the internal name is "Personal app". RULED.
+45. Cluster minimum is THREE events, enforced as a write invariant; two one-event model
+    clusters and a 1983+1992 pair were found stored after the two-event floor — root
+    cause being established; record re-run at DETECTION_VERSION 4. RULED/OPEN.
+46. List views: sticky cluster headings must not cover the scrollbar gutter (Events and
+    People). OPEN.
+47. Layout picks landed @9e47da8 (region 137px pending the button row's 4px margin; 60px
+    band fits two rows of words, a third named moment is a lit dot). FIXED.
