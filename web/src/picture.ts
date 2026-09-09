@@ -6,16 +6,9 @@ import {
   type Step,
 } from "./board";
 import { esc } from "./dom";
-import {
-  MarkKind,
-  bands,
-  fade,
-  markOf,
-  rangesTouch,
-  silence,
-  spans,
-  trend,
-} from "./marks";
+// The drawability marks belong to the level with room to read them, which is
+// the board; this line draws dots, the wire and the record's own question.
+import { rangesTouch } from "./marks";
 import {
   CH,
   PIC_H,
@@ -58,8 +51,6 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * wire steps through the moments under the thumb and that moment writes itself
  * out in full. The people appear only while a play-by-play walks the moves. */
 
-const NODAL = new Set(["cutoff", "defined-self", "fusion"]);
-
 /** The resting level: the whole line, one box per cluster (converged mockup,
  * crowded-cluster/timeline-converged.html renderRest).
  *
@@ -71,6 +62,9 @@ const NODAL = new Set(["cutoff", "defined-self", "fusion"]);
 /** The resting band is the same 60 as the open one: one box per cluster on a
  * wire through the middle, and the years each box covers written inside it
  * (picked phone mockup, 2026-09-08). */
+/** The least space left between two cluster boxes that would otherwise touch. */
+const BOX_GAP = 6;
+
 const REST_H = 60;
 const REST_WIRE = 30;
 /** A cluster of more than this many moments collapses to a ring and a count. */
@@ -528,13 +522,6 @@ export class Picture {
     return this.host.clientWidth || 360;
   }
 
-  /** How many pixels a year is worth on the wire as it is scaled now, which is
-   * what a guessed date's band and a silence are measured in. */
-  private perYear(): number {
-    const { min, max } = this.range;
-    return (this.width - X_PAD * 2) / Math.max(0.5, max - min);
-  }
-
   private x(iso: string): number {
     const { min, max } = this.range;
     const x1 = this.width - X_PAD;
@@ -585,11 +572,26 @@ export class Picture {
       `<svg viewBox="0 0 ${width} ${REST_H}" height="${REST_H}" preserveAspectRatio="xMinYMin meet">` +
       `<line class="wire" x1="${x0}" y1="${REST_WIRE}" x2="${x1}" y2="${REST_WIRE}"/>`;
     let hits = "";
+    // A box reaches a little past the moments it holds, and two clusters a
+    // month apart would then draw over one another. Where that happens the two
+    // boxes give way to each other and leave a gap between them.
+    const edges = clusters.map((cluster) => ({
+      left: at(cluster.start) - 10,
+      right: at(cluster.end) + 10,
+    }));
+    for (let i = 1; i < edges.length; i += 1) {
+      const gap = edges[i].left - edges[i - 1].right;
+      if (gap >= BOX_GAP) continue;
+      const middle = (edges[i - 1].right + edges[i].left) / 2;
+      edges[i - 1].right = middle - BOX_GAP / 2;
+      edges[i].left = middle + BOX_GAP / 2;
+    }
+
     clusters.forEach((cluster, i) => {
       const a = at(cluster.start);
       const b = at(cluster.end);
-      const left = a - 10;
-      const boxWidth = b - a + 20;
+      const left = edges[i].left;
+      const boxWidth = Math.max(6, edges[i].right - edges[i].left);
       const middle = (a + b) / 2;
       svg +=
         `<rect class="ep" x="${left.toFixed(1)}" y="8" ` +
@@ -643,9 +645,7 @@ export class Picture {
         `width:${ZONE}px;height:${ZONE}px"></button>`;
     });
 
-    svg +=
-      `<text class="ss-hint" x="${x0}" y="57">` +
-      `${clusters.length ? "tap a cluster" : "tap a moment"}</text></svg>`;
+    svg += `</svg>`;
 
     this.host.innerHTML = `<div class="ss">${svg}${hits}${shelf}</div>`;
   }
@@ -804,16 +804,7 @@ export class Picture {
       `markerWidth="5.5" markerHeight="5.5" orient="auto">` +
       `<path d="M0 0 L10 5 L0 10 Z" class="tipfill"/></marker></defs>` +
       this.bandMark(wire) +
-      // a guessed date's width goes under the wire, not over it
-      bands(marks, this.perYear(), wire, x1 - x0) +
       `<line class="wire" x1="${x0}" y1="${wire}" x2="${x1}" y2="${wire}"/>` +
-      // the rest of the drawability marks, behind the dots: where the record is
-      // silent, where it recorded no change, the trend the directed points
-      // earn, and the open state that has no ending
-      silence(marks, wire, GAP_YEARS, this.perYear()) +
-      spans(marks, wire, (iso) => this.x(iso)) +
-      trend(marks, wire) +
-      fade(marks, wire, x1) +
       this.bracket(wire, x0, x1);
 
     // one dot per moment; moments sharing a date stack instead of merging
@@ -880,28 +871,11 @@ export class Picture {
     radius: number,
     lit: boolean,
   ): string {
+    // Every moment on this line is a dot (ruled 2026-09-08). What kind of
+    // moment it is — a guess at a date, a no-change, a direction, a nodal
+    // moment — is drawn where there is room to read it, which is the board.
     const chosen = mark.event.id === this.selected;
     if (chosen) return `<circle class="dot on" cx="${x}" cy="${cy}" r="7"/>`;
-    if (NODAL.has(mark.event.relationship ?? "") || mark.event.relationshipTargets.length >= 2)
-      return (
-        `<circle class="dot nodal" cx="${x}" cy="${cy}" r="6.5" opacity="${opacity}"/>` +
-        `<circle class="dot core" cx="${x}" cy="${cy}" r="2" opacity="${opacity}"/>`
-      );
-    // a moment with no direction is a mark, not a point on a trend, and a
-    // recorded no-change is a mark of its own that silence must never be
-    // mistaken for
-    const kind = markOf(mark.event);
-    const on = lit ? " lit" : "";
-    if (kind === MarkKind.Tick)
-      return (
-        `<line class="tick${on}" x1="${x}" y1="${cy - 5}" x2="${x}" y2="${cy + 5}" ` +
-        `opacity="${lit ? 1 : opacity}"/>`
-      );
-    if (kind === MarkKind.Flat)
-      return (
-        `<line class="flat${on}" x1="${(Number(x) - 7).toFixed(1)}" y1="${cy}" ` +
-        `x2="${(Number(x) + 7).toFixed(1)}" y2="${cy}" opacity="${lit ? 1 : opacity}"/>`
-      );
     return `<circle class="dot${lit ? " lit" : ""}" cx="${x}" cy="${cy}" r="${lit ? 5 : radius}" opacity="${opacity}"/>`;
   }
 
@@ -941,6 +915,27 @@ export class Picture {
           .map((line, row) => ({ id: event.id, row, left: x0, width: x1 - x0, line }))
           .filter((r) => r.line)
           .map(({ id, row, left, width }) => ({ id, row, left, width })),
+      };
+    }
+    // One cluster open and nothing picked in it: the band says what the cluster
+    // is, in its own name and the coach's own sentence for why these moments
+    // are one episode. Never a list of the moments — they are the dots
+    // (ruled 2026-09-08), and a list of fifteen would not fit anyway.
+    if (this.focus) {
+      const said = [
+        this.focus.title || this.focus.label,
+        this.focus.reason ?? this.focus.summary ?? "",
+      ];
+      return {
+        text: said
+          .map((line, i) =>
+            line
+              ? `<div class="ss-t ${i ? "why" : "on"}" style="left:${x0}px;` +
+                `top:${ROWS[i]}px;width:${x1 - x0}px">${esc(line)}</div>`
+              : "",
+          )
+          .join(""),
+        rowsLaid: [],
       };
     }
     const spotlit = marks.filter((m) => this.named.includes(m.event.id));
