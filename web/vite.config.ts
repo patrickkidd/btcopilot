@@ -1,5 +1,5 @@
 /// <reference types="vitest" />
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { request as ask } from "node:http";
 import { defineConfig, type Plugin, type ProxyOptions } from "vite";
 
@@ -20,6 +20,14 @@ const SERVER_PATHS = [
   "/training",
   "/static",
 ];
+
+const CERT_DIR = process.env.DEV_CERT_DIR ?? new URL("./certs/", import.meta.url).pathname;
+const DEV_HOST = process.env.DEV_HOST ?? "turin.local";
+function certs(): { key: Buffer; cert: Buffer } | undefined {
+  const key = `${CERT_DIR}/${DEV_HOST}.key`;
+  if (!existsSync(key)) return undefined;
+  return { key: readFileSync(key), cert: readFileSync(`${CERT_DIR}/${DEV_HOST}.crt`) };
+}
 
 const proxy: Record<string, ProxyOptions> = Object.fromEntries(
   // the Host header is left alone so the server builds its links, and sets its
@@ -115,9 +123,9 @@ export default defineConfig({
       name: "dev-ca-type",
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
-          if (req.url?.endsWith("/dev-ca.crt"))
-            res.setHeader("Content-Type", "application/x-x509-ca-cert");
-          next();
+          if (!req.url?.endsWith("/dev-ca.crt")) return next();
+          res.setHeader("Content-Type", "application/x-x509-ca-cert");
+          res.end(readFileSync(`${CERT_DIR}/dev-ca.crt`));
         });
       },
     },
@@ -136,13 +144,10 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 8891,
-    // Face ID sign-in needs https off localhost. The certificate for
-    // turin.local is signed by the dev CA in certs/, which a phone trusts once
-    // by installing /dev-ca.crt.
-    https: {
-      key: readFileSync(new URL("./certs/turin.local.key", import.meta.url)),
-      cert: readFileSync(new URL("./certs/turin.local.crt", import.meta.url)),
-    },
+    // Face ID sign-in needs https off localhost. devcerts.sh makes a dev CA
+    // and a certificate it signed, outside git; DEV_CERT_DIR says where, and a
+    // phone trusts the CA once by installing /dev-ca.crt from that directory.
+    https: certs(),
     strictPort: true,
     // the review is opened at this machine's name on the network, not at
     // localhost, and the dev server turns away a host it was not told about
