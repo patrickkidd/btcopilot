@@ -13,6 +13,7 @@ import {
   CH,
   PIC_H,
   ROWS,
+  ROW_H,
   WIRE,
   X_PAD,
   YEAR_TOP,
@@ -104,6 +105,8 @@ interface LabelRow {
 
 /** How far beside a label's words still counts as the label. */
 const LABEL_SLOP = 6;
+/** How far above and below its own line a row of words still answers. */
+const ROW_SLOP = 3;
 
 export enum Target {
   Zone = "zone",
@@ -219,7 +222,20 @@ export class Picture {
         this.control(hit.dataset.target as Target);
         return;
       }
-      this.handlers.onTap(this.tapAt(hit.dataset.target as Target, e, Number(hit.dataset.index ?? -1)));
+      const tap = this.tapAt(
+        hit.dataset.target as Target,
+        e,
+        Number(hit.dataset.index ?? -1),
+      );
+      // The words are written over the wire, and the wire's own targets are 44
+      // tall so a thumb can find a dot — tall enough to cover the second line
+      // of a label. Where a tap lands on a line of words, the words answer it:
+      // the reader touched the label, not the dot underneath it.
+      const on =
+        tap.target === Target.Zone && this.rowAt(tap.x, tap.y) !== null
+          ? { ...tap, target: Target.Band }
+          : tap;
+      this.handlers.onTap(on);
     });
   }
 
@@ -310,7 +326,12 @@ export class Picture {
     for (const row of this.laid.rows) {
       if (x < row.left - LABEL_SLOP || x > row.left + row.width + LABEL_SLOP)
         continue;
-      const d = Math.abs(ROWS[row.row] + 7.5 - y);
+      const top = ROWS[row.row];
+      // A line of words answers for the line it is written on and no further.
+      // Without this every point in the band belonged to the nearest row, so a
+      // tap on the wire below the words named a moment nobody touched.
+      if (y < top - ROW_SLOP || y > top + ROW_H + ROW_SLOP) continue;
+      const d = Math.abs(top + ROW_H / 2 - y);
       if (d < distance) {
         distance = d;
         best = row.id;

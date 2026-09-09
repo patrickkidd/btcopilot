@@ -15,6 +15,9 @@ export const CH = 7.8;
  * end at 30, the picked dot reaches 48, and the year has to clear both. So the
  * band grew by six and the region with it (owner ruling 2026-09-08). */
 export const ROWS = [0, 15];
+/** How tall one row of words is. theme.css sets the same number on .ss-t: the
+ * words answer a tap only over their own line, so this has to be what is drawn. */
+export const ROW_H = 15;
 export const WIRE = 41;
 /** Where the year under the picked moment is written: clear of the picked
  * dot above it, and six clear of the row of controls below. */

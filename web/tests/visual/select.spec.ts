@@ -70,3 +70,31 @@ test.describe("dragging the thread", () => {
     expect(await chat.evaluate((n) => n.scrollTop)).toBeGreaterThan(before);
   });
 });
+
+/** The wire's tap targets are 44 tall so a thumb can find a dot, which is tall
+ * enough to cover the second line of a label written above it. That line was
+ * unreachable as words: a tap on it answered as the dot underneath, silently
+ * naming a different moment (owner bug, 2026-09-08). */
+test.describe("a label that runs onto a second line", () => {
+  test.use({ storageState: stateFor("hostile") });
+
+  test("answers on both of its lines, not just the first", async ({ page }) => {
+    await settle(page);
+    const box = page.locator('.ss-hit[data-target="cluster"]').first();
+    if (await box.isVisible().catch(() => false)) await box.click();
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    await page.waitForTimeout(400);
+    const rows = page.locator(".ss-t");
+    await expect(rows).toHaveCount(2);
+
+    for (const row of [0, 1]) {
+      const at = await rows.nth(row).boundingBox();
+      if (!at) throw new Error(`row ${row} is not drawn`);
+      await page.mouse.click(at.x + at.width / 2, at.y + at.height / 2);
+      await expect(page.locator("#menu-body .editor")).toBeVisible();
+      await page.locator("#menu-close").click();
+      await expect(page.locator("#menu-screen")).toBeHidden();
+      await page.waitForTimeout(300);
+    }
+  });
+});
