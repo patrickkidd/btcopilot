@@ -290,6 +290,7 @@ async function openSession(id: number): Promise<void> {
   if (last) spotlightFrom(last.text);
   else actions();
   thread.style.opacity = "";
+  chat.toEnd();
 }
 
 /** The coach pointing: the moments its words name become the spotlight, and
@@ -719,6 +720,7 @@ for (const [id, tab] of TABS)
 menu.onTab = onTab;
 
 for (const statement of window.BOOTSTRAP.statements) addStatement(statement);
+chat.toEnd();
 
 void sessions.load(session);
 void settings.load();

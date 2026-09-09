@@ -453,6 +453,33 @@ export class Chat {
       this.pinning = false;
     });
   }
+
+  /** How long after a thread is put up it keeps putting itself back on its
+   * last words. */
+  private static readonly SETTLE_MS = 800;
+
+  /** Open on the newest words and stay there while the page settles.
+   *
+   * Pinning once is not enough on a reload: the web fonts land after the
+   * bubbles have been measured and every one of them grows, and the picture
+   * takes its own height only when the record arrives, which shortens the
+   * thread's own box. Either leaves the last bubble under the edge. This holds
+   * the end in view until both have happened, and lets go the moment the
+   * reader scrolls up to read something earlier. */
+  toEnd(): void {
+    this.stuck = true;
+    this.scroll();
+    const until = performance.now() + Chat.SETTLE_MS;
+    const again = () => {
+      if (!this.stuck) return;
+      this.list.scrollTop = this.list.scrollHeight;
+      if (performance.now() < until) requestAnimationFrame(again);
+    };
+    requestAnimationFrame(again);
+    void document.fonts?.ready.then(() => {
+      if (this.stuck) this.list.scrollTop = this.list.scrollHeight;
+    });
+  }
 }
 
 export interface LiveBubble {
