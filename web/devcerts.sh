@@ -9,7 +9,7 @@ mkdir -p "$DIR" && cd "$DIR"
 [ -f dev-ca.key ] || openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -keyout dev-ca.key -out dev-ca.crt \
   -subj "/CN=Family Diagram Dev CA" -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign"
 openssl req -newkey rsa:2048 -nodes -keyout "$HOST.key" -out "$HOST.csr" -subj "/CN=$HOST"
-printf "subjectAltName=DNS:%s,DNS:localhost,IP:127.0.0.1\nbasicConstraints=CA:FALSE\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\n" "$HOST" > ext.cnf
+printf "subjectAltName=DNS:%s,DNS:%s.local,DNS:localhost,IP:127.0.0.1\nbasicConstraints=CA:FALSE\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\n" "$HOST" "$HOST" > ext.cnf
 openssl x509 -req -in "$HOST.csr" -CA dev-ca.crt -CAkey dev-ca.key -CAcreateserial -days 825 -out "$HOST.crt" -extfile ext.cnf
 rm -f "$HOST.csr" ext.cnf dev-ca.srl
 echo "certificates in $DIR"
