@@ -19,6 +19,7 @@ from btcopilot.personal.models import Author
 from btcopilot.personal.prompts import CLUSTER_PROMPT, CLUSTER_REJECTED
 from btcopilot.pro.models import Diagram
 from btcopilot.schema import (
+    MIN_CLUSTER_EVENTS,
     Cluster,
     ClusterResult,
     ClusterSource,
@@ -36,9 +37,6 @@ _log = logging.getLogger(__name__)
 # Bumped whenever the candidate rules or the naming prompt change, so a record
 # grouped by the older rules re-groups on its next event-changing turn.
 DETECTION_VERSION = 4
-
-# Fewer moments than this is a dot or a pair on the line, never a cluster.
-MIN_EVENTS = 3
 
 # How far either side of a nodal event or shift a related event may sit and
 # still be part of the same cluster.
@@ -214,7 +212,7 @@ def candidates(data: DiagramData) -> list[Candidate]:
             when,
             marked_ids,
         )
-        if len(ids) >= MIN_EVENTS and any(event_id in marked_ids for event_id in ids)
+        if len(ids) >= MIN_CLUSTER_EVENTS and any(event_id in marked_ids for event_id in ids)
     ]
     return sorted(kept, key=lambda c: (c.startDate, c.eventIds[0]))
 
@@ -301,9 +299,9 @@ def _check(
             raise ClusterError(
                 f"Events {unknown} are not among the events you were given."
             )
-        if len(cluster.eventIds) < MIN_EVENTS:
+        if len(cluster.eventIds) < MIN_CLUSTER_EVENTS:
             raise ClusterError(
-                f"Group {cluster.eventIds} holds fewer than {MIN_EVENTS} events; "
+                f"Group {cluster.eventIds} holds fewer than {MIN_CLUSTER_EVENTS} events; "
                 "anything smaller is never a cluster."
             )
         repeated = seen & set(cluster.eventIds)
@@ -441,13 +439,13 @@ def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
     taken = {str(c["id"]) for c in stored}
     kept: dict[str, Cluster] = {}
     for cluster in detected:
-        if len(cluster.eventIds) < MIN_EVENTS:
+        if len(cluster.eventIds) < MIN_CLUSTER_EVENTS:
             raise ClusterError(
                 f"Grouping {cluster.eventIds} arrived holding fewer than "
-                f"{MIN_EVENTS} events."
+                f"{MIN_CLUSTER_EVENTS} events."
             )
         event_ids = [e for e in cluster.eventIds if e in dates and e not in theirs]
-        if len(event_ids) < MIN_EVENTS:
+        if len(event_ids) < MIN_CLUSTER_EVENTS:
             continue
         cluster.eventIds = event_ids
         cluster.source = ClusterSource.Model
@@ -490,23 +488,6 @@ def _deltas(stored: list[dict], detected: list[Cluster], dates: dict) -> list[di
     return deltas
 
 
-def _guard(deltas: list[dict]) -> list[dict]:
-    """The last gate before the write: this path never stores a cluster holding
-    fewer than MIN_EVENTS events, whatever the rules made or the model said."""
-    small = [
-        delta["item_id"]
-        for delta in deltas
-        if delta["item_kind"] == ItemKind.Cluster.value
-        and delta["field"] == "eventIds"
-        and len(delta["after"] or []) < MIN_EVENTS
-    ]
-    if small:
-        raise ClusterError(
-            f"Clusters {small} would be stored holding fewer than {MIN_EVENTS} events."
-        )
-    return deltas
-
-
 def sync(
     diagram_id: int,
     *,
@@ -534,7 +515,7 @@ def sync(
         return None
 
     dates = {e.id: e.dateTime for e in events if e.dateTime}
-    deltas = _guard(_deltas(data.clusters, detect_clusters(data).clusters, dates))
+    deltas = _deltas(data.clusters, detect_clusters(data).clusters, dates)
     deltas.append(
         {
             "item_kind": ItemKind.Diagram.value,

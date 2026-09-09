@@ -16,6 +16,7 @@ from btcopilot.personal.recordtext import date_text, event_line, person_line
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram
 from btcopilot.schema import (
+    MIN_CLUSTER_EVENTS,
     ClusterSource,
     DateCertainty,
     DiagramData,
@@ -160,8 +161,9 @@ SCHEMAS = [
     {
         "name": ToolName.EditCluster.value,
         "description": (
-            "Group events into a named cluster, or rename one. You may group and "
-            "name; you may never name an event that is not in the record."
+            "Group events into a named cluster, or rename one. A cluster holds "
+            "at least three events. You may group and name; you may never name "
+            "an event that is not in the record."
         ),
         "input_schema": {
             "type": "object",
@@ -349,6 +351,8 @@ class Toolbox:
 
     def _edit_cluster(self, args: dict) -> tuple[str, dict]:
         data = self.data
+        if args.get("id") is None and args.get("event_ids") is None:
+            raise ToolError(f"A new cluster needs {MIN_CLUSTER_EVENTS} events")
         # A cluster named in conversation is the user's own grouping: automatic
         # re-detection yields to it rather than regrouping it away.
         fields = {"source": ClusterSource.User.value}
@@ -360,8 +364,10 @@ class Toolbox:
         fields["reason"] = ""
         if args.get("event_ids") is not None:
             events = [self._event(data, e) for e in args["event_ids"]]
-            if not events:
-                raise ToolError("A cluster needs at least one event")
+            if len(events) < MIN_CLUSTER_EVENTS:
+                raise ToolError(
+                    f"A cluster needs at least {MIN_CLUSTER_EVENTS} events"
+                )
             fields["eventIds"] = events
             dates = sorted(
                 date

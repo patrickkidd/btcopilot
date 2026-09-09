@@ -14,9 +14,13 @@ from btcopilot import diagramjson
 from btcopilot.extensions import db
 from btcopilot.personal.models import Author, Change
 from btcopilot.pro.models import Diagram
-from btcopilot.schema import ITEM_COLLECTIONS, ItemKind
+from btcopilot.schema import ITEM_COLLECTIONS, MIN_CLUSTER_EVENTS, ItemKind
 
 _log = logging.getLogger(__name__)
+
+
+class Invalid(Exception):
+    """The record the deltas would leave behind breaks a rule of the data model."""
 
 
 class Conflict(Exception):
@@ -265,9 +269,36 @@ def _names(event: dict, person_id) -> bool:
     return any(str(x) == str(person_id) for x in ids if x is not None)
 
 
+def _validate(data: dict, deltas: list[dict]):
+    """Every cluster this write leaves behind holds at least MIN_CLUSTER_EVENTS
+    events.
+
+    Checked here because `_commit` is the one function every writer reaches --
+    `apply`, `undo`, the coach's tools and the regrouping pass -- and checked on
+    the assembled item rather than the delta, because a cluster's fields arrive
+    as separate deltas and only the item says how many events it ends up
+    holding. A write answers for the clusters it touches, not for the ones it
+    inherited.
+    """
+    small = []
+    for cluster_id in dict.fromkeys(
+        str(delta["item_id"])
+        for delta in deltas
+        if delta["item_kind"] == ItemKind.Cluster.value
+    ):
+        cluster = _find(data, ItemKind.Cluster, cluster_id)
+        if cluster and len(cluster.get("eventIds") or []) < MIN_CLUSTER_EVENTS:
+            small.append(cluster_id)
+    if small:
+        raise Invalid(
+            f"clusters {small} would hold fewer than {MIN_CLUSTER_EVENTS} events"
+        )
+
+
 def _commit(
     diagram, data, deltas, author, turn_id, user_id, session_id, statement_id
 ) -> Change:
+    _validate(data, deltas)
     db.session.execute(
         sql_update(Diagram)
         .where(Diagram.id == diagram.id)

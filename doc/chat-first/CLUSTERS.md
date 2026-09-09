@@ -27,8 +27,8 @@ Computed from `DiagramData` alone, no model call, in `btcopilot/personal/cluster
   it, at the widest silence between the two seeding events either side.
 - A candidate holding fewer than **three** events is **not a cluster** — a lone
   shift with no related move, or a bare pair, stays dots on the line. The
-  minimum is `MIN_EVENTS`, and it binds the rules, the model's regrouping, and
-  the write: `sync` raises rather than store a grouping under it.
+  minimum is `MIN_CLUSTER_EVENTS` in `btcopilot/schema.py`, one number for every
+  writer (see "The floor is enforced at the write" below).
 
 Parameters `SPAN_DAYS` and `CALM_GAP_DAYS` are module constants. Undated events
 never enter a candidate.
@@ -130,14 +130,51 @@ The owner ruled: "let's just play with it and see how it works in the Beta."
 [Oracle: R-0208] Selective invalidation is not being built now — revisit only
 if whole-record recompute shows a problem in use.
 
+## The floor is enforced at the write (ruled 2026-09-08)
+
+A cluster holds at least three events. The number lives in `btcopilot/schema.py`
+as `MIN_CLUSTER_EVENTS`, because every writer imports schema and schema imports
+nothing.
+
+It is enforced in `record._commit`, which is the one function every writer
+reaches: `record.apply`, `record.undo` (which builds its inverse deltas and
+commits them without going through `apply`), the coach's `edit_cluster` tool,
+and the regrouping pass. The check runs on the record the write would leave
+behind, not on the deltas, because a cluster's fields arrive as separate deltas
+and only the assembled item says how many events it ends up holding. It raises
+before anything is written, so the transaction does not commit.
+
+A write answers for the clusters it touches, not for the ones it inherited. A
+turn that never mentions a cluster is never held to it, so a grouping stored
+under the older floor does not block unrelated work — but any write that touches
+that grouping fails until it holds three.
+
+Three further gates sit upstream of the write, and they exist for the message
+they give, not for the guarantee:
+- the rules never propose a candidate under the minimum;
+- validation rejects a model group under it and re-asks once with the reason;
+- detection raises if a group reaches it already under the minimum, which
+  separates "the producer is wrong" from "a grouping the user made took these
+  events", the second of which drops the leftovers silently.
+
+The coach's `edit_cluster` tool refuses a group under the minimum, and refuses a
+new cluster with no events at all, with words the model can act on.
+
+Fixture and seed data written through `set_diagram_data` bypasses `record`
+entirely and is not covered. Those are dev fixtures, and the fix there is the
+data, not a second rule.
+
 ## Only a restarted server groups by the current rules (learned 2026-09-08)
 
 `DETECTION_VERSION` makes a *stored* grouping stale; it cannot make a *running
 process* stale. A long-running sandbox server keeps the module it imported at
 start, so a rules or prompt change reaches real turns only after that server is
-restarted. On 2026-09-08 a server started before the minimum-size change stored
-one-event clusters on the owner's record hours after the change was committed,
-and wrote the cache key its older code computed. Restart the sandbox after every
+restarted. On 2026-09-08 a server started before the detection-version
+change stored one-event clusters on the owner's record hours after the
+two-event minimum was committed. It was identified by the cache key it wrote:
+that key is reproduced only by hashing the events with no detection version in
+the hash, which is the code from before 15:08 that day, while both later
+versions produce different keys. Restart the sandbox after every
 commit that touches this module, and read a surprising stored grouping as a
 question about which code the server was running before treating it as a rules bug.
 

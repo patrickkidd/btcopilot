@@ -398,6 +398,12 @@ class ClusterSource(enum.StrEnum):
     User = "user"
 
 
+# Fewer moments than this is a dot or a pair on the line, never a cluster. It
+# lives here because record, clusters, and the coach's tools all write clusters
+# and all import schema.
+MIN_CLUSTER_EVENTS = 3
+
+
 @dataclass
 class Cluster:
     id: str

@@ -101,14 +101,74 @@ def test_write_path_creates_a_cluster(subscriber):
         diagram.id,
         [
             {"item_kind": ItemKind.Cluster, "item_id": "c1", "field": "name", "after": "Cutoff"},
+            {"item_kind": ItemKind.Cluster, "item_id": "c1", "field": "eventIds", "after": [1, 2, 3]},
             {"item_kind": ItemKind.Cluster, "item_id": "c1", "field": "source", "after": "model"},
         ],
         author=Author.Coach,
         turn_id="t1",
     )
     assert diagram.get_diagram_data().clusters == [
-        {"id": "c1", "name": "Cutoff", "source": "model"}
+        {"id": "c1", "name": "Cutoff", "eventIds": [1, 2, 3], "source": "model"}
     ]
+
+
+def test_the_write_refuses_a_cluster_under_three_events(subscriber):
+    """The floor is enforced where every writer passes, on the record the write
+    would leave behind, not on the delta that carries the events."""
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
+
+    with pytest.raises(record.Invalid, match="fewer than 3"):
+        record.apply(
+            diagram.id,
+            [
+                {"item_kind": ItemKind.Cluster, "item_id": "c1", "field": "name", "after": "Cutoff"},
+                {"item_kind": ItemKind.Cluster, "item_id": "c1", "field": "eventIds", "after": [1, 2]},
+            ],
+            author=Author.Coach,
+            turn_id="t1",
+        )
+    assert diagram.get_diagram_data().clusters == []
+    assert Change.query.filter_by(diagram_id=diagram.id).count() == 0
+
+
+def test_a_write_that_only_renames_a_cluster_is_not_held_to_events_it_did_not_touch(
+    subscriber,
+):
+    """A rename touches no events, so it is judged on the cluster it leaves
+    behind -- which still holds three."""
+    diagram = _diagram(
+        subscriber.user,
+        {"clusters": [{"id": "c1", "name": "Cutoff", "eventIds": [1, 2, 3]}]},
+    )
+
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Cluster, "item_id": "c1", "field": "name", "after": "The year after"}],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    assert diagram.get_diagram_data().clusters[0]["name"] == "The year after"
+
+
+def test_undo_may_not_put_back_a_cluster_under_three_events(subscriber):
+    """Undo reaches the record without going through apply, so the floor has to
+    live where both of them commit; otherwise undoing the removal of a pair puts
+    the pair straight back."""
+    diagram = _diagram(
+        subscriber.user,
+        {"clusters": [{"id": "c1", "name": "Cutoff", "eventIds": [1, 2]}]},
+    )
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Cluster, "item_id": "c1", "field": None, "after": None}],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    assert diagram.get_diagram_data().clusters == []
+
+    with pytest.raises(record.Invalid, match="fewer than 3"):
+        record.undo(diagram.id, "t1", author=Author.User)
+    assert diagram.get_diagram_data().clusters == []
 
 
 def test_diff_at_item_and_field_level():

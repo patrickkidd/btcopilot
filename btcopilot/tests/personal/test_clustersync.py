@@ -12,7 +12,7 @@ from btcopilot.personal.chips import ChipKind
 from btcopilot.personal.clusters import ClusterError, sync
 from btcopilot.personal.coachturn import CoachTurn
 from btcopilot.personal.models import Author, Change
-from btcopilot.personal.toolbox import ToolName
+from btcopilot.personal.toolbox import ToolError, Toolbox, ToolName
 from btcopilot.schema import (
     Cluster,
     ClusterResult,
@@ -211,6 +211,35 @@ def test_a_grouping_under_the_minimum_is_never_stored(discussion, family):
 
     assert clusters_of(family) == {}
     assert not family.get_diagram_data().clusterCacheKey
+
+
+def test_the_coach_may_not_group_fewer_than_three_events(family):
+    """The tool the coach groups with is a second writer, and the same floor
+    binds it: the record refuses a pair with words the model can act on."""
+    tools = Toolbox(family.id, turn_id="t1")
+
+    with pytest.raises(ToolError, match="at least 3 events"):
+        tools.call(ToolName.EditCluster.value, {"name": "The pair", "event_ids": [10, 11]})
+    assert clusters_of(family) == {}
+
+
+def test_the_coach_may_not_make_a_cluster_with_no_events_at_all(family):
+    tools = Toolbox(family.id, turn_id="t1")
+
+    with pytest.raises(ToolError, match="needs 3 events"):
+        tools.call(ToolName.EditCluster.value, {"name": "Nothing in it"})
+    assert clusters_of(family) == {}
+
+
+def test_the_coach_groups_three_events_as_the_user_own_grouping(family):
+    tools = Toolbox(family.id, turn_id="t1")
+
+    tools.call(
+        ToolName.EditCluster.value, {"name": "That spring", "event_ids": [10, 11, 12]}
+    )
+    stored = clusters_of(family)
+    assert [c["eventIds"] for c in stored.values()] == [[10, 11, 12]]
+    assert [c["source"] for c in stored.values()] == [ClusterSource.User.value]
 
 
 def test_a_grouping_of_unknown_provenance_is_left_alone(discussion, family):
