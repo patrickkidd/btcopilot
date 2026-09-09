@@ -30,13 +30,14 @@ items, so each is logged FIXED without a commit citation.
 ## Round 2 (2026-09-08 morning)
 
 1. Coach must never reply with a bare list of chips (seen: fixture's canned "walk me
-   through it" reply); remove the canned reply from the play fixture; prompt rule. OPEN
+   through it" reply); remove the canned reply from the play fixture; prompt rule.
+   FIXED @0d41706/@2c8243f.
 2. Play-by-play cursor: the semi-opaque green oval overlaps three dots; replace with an
    obvious indicator, e.g. a thin green ring around the selected dot. RULED: no oval;
    the selected dot is drawn on top in the ratified action green; the leader line from
    the dot to the summary is the indicator; no tick.
 3. Up/down arrows (symptom/functioning up/down) must never disappear; the animation
-   loop fades them; show movement another way. OPEN
+   loop fades them; show movement another way. FIXED @60a39c3.
 4. Summary line above prev/next ("15/17 | April 2004 | Ada | symptom down"): no symbol
    names, no move count; show what the user reported; date shown once (year under dots,
    date in line — pick one); layout must survive hostile content. RULED: variant A
@@ -64,11 +65,12 @@ items, so each is logged FIXED without a commit citation.
 11. Failed or unanswered sends show a static warning label with a retry control instead
     of an empty coach bubble; cleared on success, shown again if it still fails; also
     covers a dead server and timeouts. Root cause found: CSRF token expired after 1 hour
-    → 400; tokens now live as long as the session. OPEN
+    → 400; tokens now live as long as the session. FIXED @dc4ceed/@ca6153e/@8dfd9c8.
 12. All text in the app is selectable and copyable; only controls keep user-select none.
-    OPEN
+    FIXED @708d7dd.
 13. Activity indicator (three animating dots) in the coach bubble from send until the
-    first words arrive; never a blank bubble. OPEN
+    first words arrive; never a blank bubble. FIXED @3660028 (indicator itself @df0f26c,
+    see #16).
 14. Reset: tapping blank wire, blank label band, or the "Family timeline" crumb clears
     the selection to the clusters view; label tap always selects its moment; the
     selected moment's label tap jumps to where it was coded in chat; dots never jump.
@@ -78,11 +80,11 @@ items, so each is logged FIXED without a commit citation.
 16. Typing indicator = three dots (owner ruling supersedes the mockup's caret). FIXED
     @df0f26c.
 17. Symptom-up arrow height = cross height (owner ruling supersedes the ratified 32px).
-    OPEN.
+    FIXED @542c06b (ruling written down @b1835f3).
 18. The agentic tool-call summaries and their formatting apart from the reply are liked
     and preserved; each tool-call line lights the created item on the picture as it
     appears (chatting visibly produces data in real time — "an innovation for
-    behavioral health practice"). RULED/OPEN.
+    behavioral health practice"). RULED/FIXED @fcbd156.
 19. Invite URLs use hostname turin.local so he can open them from his phone. RULED.
 20. First-session/sparse-data: options given (thresholds: stretch ≥3 moments, plain
     wire under 6; life line birth→now; family taking shape as people are named;
@@ -91,7 +93,8 @@ items, so each is logged FIXED without a commit citation.
     relationship; ordered by birthdate; single-item editor) — proposed, AWAITING
     OWNER.
 22. Timeline list discoverability: it lives behind the ≡ button; the owner did not find
-    it. OPEN (note only).
+    it. FIXED @13736d4 (settled by #25 below: the list button moved inside the picture
+    frame).
 23. Terminology: "cluster" is the term (never stretch/chapter); code and copy swept.
     FIXED @cb9de08.
 24. Cluster grounding plan RULED (owner: "right on. Let's do them all"): rules-first
@@ -141,36 +144,42 @@ items, so each is logged FIXED without a commit citation.
     the top-right date-range text removed (collided with the list button); row 3 C —
     status-bar and Safari-bar areas in the picture's off-white with a hairline
     (viewport-fit=cover, theme-color, safe-area insets; Android unverified, no hardware —
-    check in an emulator before beta users). OPEN (building).
+    check in an emulator before beta users). FIXED @9e47da8 (settled by #47 below); the
+    Android-emulator check is unbuilt work, tracked separately in STATE.md under "The
+    desktop app and Android are unverified".
 37. The button row under the picture is identical whether a cluster is open or an event
     inside it is selected, items dimmed when not applicable (extends the board's
     same-controls ruling); a mockup round for restyling that row is in progress; the
     coded-in button is not redundant with the title tap (title → editor; coded-in → the
-    chat bubble where it was said) but its label must say what it does. RULED/MOCKUP.
+    chat bubble where it was said) but its label must say what it does. FIXED @1adb168
+    (settled by #60 below: round 3 landed).
 38. Screenshot tolerance: the picture spec adopts the board spec's strict 8-pixel
     allowance; desktop goldens stay unmaintained until the phone review is done. RULED.
 
 ## Round 3 (2026-09-08 afternoon)
 
 39. Button row = mockup plate F: the chat's own chip style, "ask" / "explain" / "in chat"
-    (not "said"), identical in both states, ask carries only the word. RULED (building).
+    (not "said"), identical in both states, ask carries only the word. FIXED @1adb168
+    (settled by #60 below: round 3 landed).
 40. The built layout did not match the picked mockup (list button over the cluster boxes,
     boxes over the CTA text); redo to the mockup with a no-overlap gate; screenshots
-    reviewed by the coordinator before the owner sees it. OPEN.
+    reviewed by the coordinator before the owner sees it. FIXED @29cf81e.
 41. An open cluster shows the cluster's NAME and REASON, never a list of events (15 events
     must not overflow); events stay dots; a tapped dot shows its words. RULED.
 42. At rest and in an open cluster only dots, the line, the amber question mark and the
     selected dot's year are drawn; guessed-date bands ("olive bar"), directionless ticks,
     step lines, flat/fade/order marks are reserved for the expanded/board level. RULED.
 43. Labels never leave the picture frame (the overflowing "…began" label); gate added.
-    OPEN.
+    FIXED @29cf81e.
 44. Naming: "Family Diagram" everywhere users see it; "Companion" was never ruled and is
     removed; the internal name is "Personal app". RULED.
 45. Cluster minimum is THREE events, enforced as a write invariant; two one-event model
     clusters and a 1983+1992 pair were found stored after the two-event floor — root
-    cause being established; record re-run at DETECTION_VERSION 4. RULED/OPEN.
+    cause being established; record re-run at DETECTION_VERSION 4. FIXED @1e24675
+    (settled by #54 below: floor landed, root cause documented as a stale server
+    process).
 46. List views: sticky cluster headings must not cover the scrollbar gutter (Events and
-    People). OPEN.
+    People). FIXED @2591862.
 47. Layout picks landed @9e47da8 (region 137px pending the button row's 4px margin; 60px
     band fits two rows of words, a third named moment is a lit dot). FIXED.
 
@@ -179,7 +188,8 @@ items, so each is logged FIXED without a commit citation.
 49. "in chat" (not "said"); a lone event selected on the main clusters wire counts as
     event-selected: "in chat" active when the event has a coded-in statement; the
     selected event's title jump must work on the main wire (root cause: event →
-    statement link not resolving on real records). OPEN.
+    statement link not resolving on real records). FIXED @1adb168 (settled by #60 below:
+    round 3 landed, event→statement link works on real records).
 50. The Events/People list button moves from the name row into the chip row,
     right-aligned. RULED.
 51. The account button loses its circle outline (no room around it); glyph + 44 target
@@ -232,3 +242,20 @@ items, so each is logged FIXED without a commit citation.
     phone. Isolation of the Personal app and beta deployment are one named open issue in
     STATE.md, carrying the three pre-merge blockers, the isolation recommendation and the
     deployment gap. OPEN.
+
+## Still open (reconciled 2026-09-09)
+
+Every row previously marked OPEN, MOCKUP, or "building" was checked against later rows
+in this log and against `git log`; all but the two below found a commit or a later
+ruling that settles them and were updated in place above (rows are never deleted).
+These two are still genuinely open:
+
+- **#54** (round 3): the three-event cluster floor is built and landed, but the owner's
+  own record holds a two-event cluster he made himself, grandfathered from before the
+  floor existed. His decision needed: does the floor bind a grouping the user made
+  himself; if so, that cluster gains an event or is dropped. Tracked in STATE.md under
+  "The three-event floor and groupings the user makes himself".
+- **#66** (round 4): isolating the Personal app from the Pro desktop app and Training
+  app, and deploying it, is unbuilt. Tracked in STATE.md under "Isolation and beta
+  deployment" (three pre-merge blockers, the isolation recommendation, and the
+  deployment gap).

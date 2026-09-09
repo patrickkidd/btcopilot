@@ -229,12 +229,13 @@ before beta users.
 
 ### Rows still open in the review log
 
-[REVIEW_LOG.md](REVIEW_LOG.md) carries the row-by-row record and rows are never deleted, so
-some rows still read OPEN although a later row records the fix. The ones with no later row
-against them: the coach must never reply with a bare list of chips, and the canned reply comes
-out of the play fixture; the symptom and functioning arrows must not disappear as the
-animation loop fades them; and the timeline list lives behind the menu button, where the owner
-did not find it.
+[REVIEW_LOG.md](REVIEW_LOG.md) carries the row-by-row record and rows are never deleted.
+Reconciled 2026-09-09 against `git log` and later rows in the same log; every row this found
+a commit or a later ruling for is now marked FIXED or RULED in place. Two rows are still
+genuinely open, both already named above: row 54 (does the three-event cluster floor bind a
+grouping the owner made himself, see "The three-event floor and groupings the user makes
+himself") and row 66 (isolating and deploying the Personal app, see "Isolation and beta
+deployment").
 
 ## Prototyping status (honest)
 
