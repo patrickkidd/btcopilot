@@ -1261,7 +1261,9 @@ button { font-family: inherit; }
 .listglyph:active { color: var(--data); }
 /* The home-screen badge: a quiet phone outline beside the account button,
    only while the app runs inside a browser. */
-.avatar.homescreen { color: var(--faint); }
+/* Two 44px targets side by side would put 30px of air between the marks; the
+   targets overlap so the phone sits 12px from the account mark. */
+.avatar.homescreen { color: var(--faint); margin-right: -18px; }
 .avatar.homescreen:active { color: var(--data); }
 
 .overlay { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
