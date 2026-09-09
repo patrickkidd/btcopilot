@@ -1,4 +1,4 @@
-"""Companion REST surface: sessions, preferences, account, event CRUD."""
+"""Personal app REST surface: sessions, preferences, account, event CRUD."""
 
 import datetime
 

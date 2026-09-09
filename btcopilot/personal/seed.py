@@ -25,7 +25,7 @@ from btcopilot.schema import (
     asdict,
 )
 
-SEED_DIAGRAM_NAME = "FD-360 Companion Seed"
+SEED_DIAGRAM_NAME = "FD-360 seed"
 
 
 def _person(id, name, last_name=None, gender=None, primary=False):

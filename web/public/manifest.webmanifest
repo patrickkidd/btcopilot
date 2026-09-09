@@ -1,14 +1,14 @@
 {
-  "name": "Family Companion",
-  "short_name": "Companion",
-  "start_url": "/companion/",
-  "scope": "/companion/",
+  "name": "Family Diagram",
+  "short_name": "Family Diagram",
+  "start_url": "/personal/",
+  "scope": "/personal/",
   "display": "standalone",
   "background_color": "#f7f6f2",
-  "theme_color": "#0e7d78",
+  "theme_color": "#f7f6f2",
   "icons": [
     {
-      "src": "/companion/static/web/icon.svg",
+      "src": "/personal/static/web/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

@@ -1,11 +1,11 @@
 /* Minimal offline shell: the built bundle is cached so the app opens without a
-   network. Every /companion API call goes to the network untouched. */
-const CACHE = "companion-v1";
+   network. Every API call goes to the network untouched. */
+const CACHE = "familydiagram-v1";
 const SHELL = [
-  "/companion/",
-  "/companion/static/web/app.js",
-  "/companion/static/web/app.css",
-  "/companion/manifest.webmanifest",
+  "/personal/",
+  "/personal/static/web/app.js",
+  "/personal/static/web/app.css",
+  "/personal/manifest.webmanifest",
 ];
 
 self.addEventListener("install", (e) => {
@@ -32,7 +32,7 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   const shell =
     e.request.mode === "navigate" ||
-    url.pathname.startsWith("/companion/static/web/");
+    url.pathname.startsWith("/personal/static/web/");
   if (e.request.method !== "GET" || !shell) return;
   e.respondWith(
     fetch(e.request)
@@ -42,7 +42,7 @@ self.addEventListener("fetch", (e) => {
         return response;
       })
       .catch(() =>
-        caches.match(e.request).then((hit) => hit || caches.match("/companion/")),
+        caches.match(e.request).then((hit) => hit || caches.match("/personal/")),
       ),
   );
 });
