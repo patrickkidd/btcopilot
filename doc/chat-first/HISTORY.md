@@ -675,3 +675,21 @@ three items, and he looks before anything is polished. A read-only organization 
 both pull requests produced ISOLATION_OPTIONS.md with three ways to isolate the Personal app
 and three things that must come out of the Pro app's path before merge; he parked the
 isolation discussion itself until the prototype is done.
+
+## 2026-09-09 (evening) — the owner tests alone; isolation and beta deployment re-opened
+
+The owner kept testing on his phone after round 4 and hit the Anthropic account's credit
+limit; the failed sends showed that the server stored his words before asking the coach, so
+each failed attempt and the retry stored them again. The turn now commits the user's words
+only with the coach's answer and the page refuses a second send while one is in flight. One
+tap in the same minute posted learning data with no item kind and could not be traced in the
+current page code; it stays open pending his answer to what he tapped. The API sandbox was
+found running code five commits behind the worktree and was restarted on the current code
+(the review database backed up first, as the rule says).
+
+He re-opened the isolation and beta deployment topic. The three pre-merge blockers were
+re-verified as still present in the tree, the deploy gap was confirmed in the release
+workflows of both repos, and a second shape for the beta was put to him: a separate compose
+stack from a branch-tagged image, which lets the three clinicians use the branch without a
+merge and keeps Pro users off it entirely. The stale test count was measured (one backend
+page test, ten web unit tests, all written before rounds 2–4) rather than guessed.

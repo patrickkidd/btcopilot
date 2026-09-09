@@ -243,6 +243,21 @@ items, so each is logged FIXED without a commit citation.
     STATE.md, carrying the three pre-merge blockers, the isolation recommendation and the
     deployment gap. OPEN.
 
+67. Owner testing alone, evening: his message "May of 1971" was stored three times — the
+    coach failed on the first send (the Anthropic account was out of credit), the composer
+    still accepted a second send while the first was in flight, and the try-again button
+    posted the words a third time. The server stored the user's words before asking the
+    coach, so every failed attempt left a copy. Now the words are only committed with the
+    coach's answer, so a failed turn leaves nothing behind, and a second send while one is in
+    flight does nothing. Regression test on the turn. FIXED (this session's commit).
+68. Same minute: one tap posted a learning-data row with no item kind and the server refused
+    it with a 500. Every path in the current page code sends an item kind, so the tap that
+    did this is not identified; the coach's own words in the review record use only the
+    event and ask markup. OPEN — the owner is asked what he tapped right after the second
+    "May of 1971".
+69. The coach in the review sandbox cannot answer until the Anthropic API account behind the
+    key in the environment has credit again. Owner's side, not code. OPEN.
+
 ## Still open (reconciled 2026-09-09)
 
 Every row previously marked OPEN, MOCKUP, or "building" was checked against later rows
@@ -259,3 +274,6 @@ These two are still genuinely open:
   app, and deploying it, is unbuilt. Tracked in STATE.md under "Isolation and beta
   deployment" (three pre-merge blockers, the isolation recommendation, and the
   deployment gap).
+- **#68**: one learning-data post with no item kind, tap not identified.
+- **#69**: the Anthropic account behind the sandbox key is out of credit; the coach cannot
+  answer until it is topped up.

@@ -162,8 +162,10 @@ class CoachTurn:
             order=self.discussion.next_order(),
             kind=StatementKind.Turn,
         )
+        # Flushed, not committed: a turn that fails before the coach answers
+        # leaves no words behind, so a retry does not store them twice.
         db.session.add(user_statement)
-        db.session.commit()
+        db.session.flush()
 
         system = get_agent_prompt(
             record=recordtext.render(data),

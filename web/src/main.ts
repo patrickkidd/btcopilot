@@ -544,25 +544,32 @@ function whatFailed(error: unknown): string {
  * When it does not go through, the words the reader typed stay in the thread
  * and a warning sits under them with the way to send them again. Nothing is
  * left half-typed and nothing looks like it is still coming. */
+let inFlight = false;
+
 async function send(): Promise<void> {
   const statement = chat.draft();
-  if (!statement) return;
+  if (!statement || inFlight) return;
   chat.add(Role.User, statement);
   chat.resetDraft();
   await deliver(statement);
 }
 
 async function deliver(statement: string): Promise<void> {
+  // One turn at a time: a second send while the coach is answering would store
+  // the words again.
+  inFlight = true;
   chat.busy(true);
 
   let reply;
   try {
     reply = await api.say(statement, session);
   } catch (error) {
+    inFlight = false;
     chat.busy(false);
     chat.warn(whatFailed(error), () => void deliver(statement));
     return;
   }
+  inFlight = false;
   session = reply.discussion_id;
   chat.busy(false);
   chat.settled();

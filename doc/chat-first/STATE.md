@@ -116,9 +116,20 @@ that has already cost one sandbox.
   migrated with `flask personal migrate`. Its session history is kept across code changes
   [Oracle: R-0191].
 
-**Suites.** Backend: 905 passed, 33 skipped, run in this worktree. Web unit tests and 95 visual
-tests were last recorded green on a Mac. Continuous integration fails on this branch, and
-neither suite has ever been watched green on a runner; the three causes are under Open issues.
+**Suites (re-run 2026-09-09 evening).** Backend Personal tests: 389 pass, 23 skipped, run in
+this worktree; the whole backend was last recorded at 905 passed, 33 skipped. Web unit tests:
+44 pass, 10 fail — all ten are assertions written before the round 2–4 rulings (a second tap on
+the picked moment now leaves it picked; the spotlight rows; cluster chips by cluster id; the
+reload step the turn handler no longer sends) and not yet rewritten to them. The 95 visual
+tests were last recorded green on a Mac. Continuous integration fails on this branch (unit
+tests and visual both red on the pull request), and neither suite has ever been watched green
+on a runner; the causes are under Open issues.
+
+**Found by the owner testing alone, 2026-09-09 evening** (rows 67–69 of the review log): a
+failed coach turn used to leave the user's words stored, so a retry stored them again — fixed,
+the words now land only with the coach's answer, and a second send while one is in flight does
+nothing. One tap posted learning data with no item kind and is not yet identified. The coach in
+the sandbox is down until the Anthropic API account behind the key has credit again.
 
 **Spec and gap.** UI_SPEC.md carries 444 value rows, 52 resolutions and 3 open items.
 UI_GAP.md sets every one against the build: MET 318, PARTIAL 11, CHANGED 12, MISSING 5,
@@ -164,11 +175,24 @@ its own repository, which is the wrong trade while speed is the point.
 **Deployment.** The shape is ruled: one Docker image with the web bundle inside it, pushed to
 GHCR, pulled by one SSH compose command; passwordless invite links for the app working group
 of three clinicians; the coaching prompts staying in the private fdserver repo and read
-through a path in the environment. The release workflow already builds an image and pushes it
-to GHCR on every push to master. The gap is that **the image contains no browser app**: the
-bundle is written to a gitignored directory, the Dockerfile has no Node step to build it, and
-`pyproject.toml` does not name the Personal package's static files as package data. Deploying
-today serves the API with no page. Three edits, one place each.
+through a path in the environment. Verified 2026-09-09: btcopilot's release workflow builds a
+wheel and an image and pushes it to GHCR on every push to master, and can also be started by
+hand on any branch; fdserver's release workflow, on a push to its master, pulls that image on
+the production host, brings the compose stack up and runs the migrations. The gap is that
+**the image contains no browser app**: the bundle is written to a gitignored directory, the
+Dockerfile has no Node step to build it, and `pyproject.toml` names package data for the
+Training and Pro packages but not the Personal one, so even a built bundle is left out of the
+wheel. Deploying today serves the API with no page. Three edits, one place each.
+
+**Where the beta runs is not yet ruled.** Two shapes, decision pending with the owner:
+(a) a second compose stack beside production — its own Postgres, its own hostname, the
+image built by hand from this branch under a branch tag — so the three clinicians use the
+branch without it ever merging, Pro users share nothing with it, and the three pre-merge
+blockers bind only the merge, which can wait until the app's shape settles; (b) merge first
+and deploy on the production stack, which needs the three blockers and a green CI before
+anyone outside sees it. Cost of (a): the three image edits, a branch-tagged image build, a
+beta service pair in compose, an nginx server block and certificate, and a database
+initialised by the migrations — one to two days.
 
 **Continuous integration is failing on this branch**, for three understood reasons: two web
 unit tests assert a reload event the turn handler no longer sends; every screenshot test

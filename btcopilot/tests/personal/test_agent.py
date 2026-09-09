@@ -107,6 +107,19 @@ def test_edit_writes_a_coach_change_and_the_record_moves(discussion, family):
     assert reply["statement"] == "I put that down. [[event:11|that winter]]"
 
 
+def test_a_turn_that_fails_before_the_coach_answers_stores_no_words(discussion, family):
+    class Down:
+        def turn(self, system, messages, tools):
+            raise RuntimeError("model unreachable")
+            yield
+
+    before = len(discussion.statements)
+    with pytest.raises(RuntimeError):
+        run(discussion, "May of 1971", Down())
+    db.session.rollback()
+    assert len(discussion.statements) == before
+
+
 def test_a_chip_the_record_cannot_resolve_never_reaches_the_transcript(
     discussion, family
 ):

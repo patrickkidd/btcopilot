@@ -32,7 +32,7 @@ def test_page_loads(web):
     page = response.get_data(as_text=True)
     assert 'id="view"' in page
     assert 'id="composer"' in page
-    assert 'id="menu-open"' in page
+    assert 'id="sessions-open"' in page
     assert 'id="menu-screen"' in page
     assert "/personal/static/web/app.js" in page
 
