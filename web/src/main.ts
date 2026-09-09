@@ -17,7 +17,7 @@ import {
   type PicState,
   type Sel,
 } from "./caption";
-import { $, esc } from "./dom";
+import { $ } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { shortDate } from "./when";
@@ -395,38 +395,56 @@ async function traceTo(where: CodedIn): Promise<void> {
 
 /** The row under the picture: what it is showing, and the things a tap can do
  * about it. The words themselves live on the picture (converged mockup). */
+/** The three things the row under the picture can do, in the chat's own chip
+ * (picked plate F): one mark and one word each, drawn as the chip the coach
+ * writes into the messages below, so the row and the thread are plainly the
+ * same object. The row is the same in every state; a chip with nothing to do
+ * is dimmed rather than missing. */
+const ASK_MARK =
+  `<svg width="15" height="15" viewBox="0 0 18 18" aria-hidden="true">` +
+  `<rect x="1.3" y="7" width="15.4" height="9" rx="4.5" fill="none" ` +
+  `stroke="currentColor" stroke-width="1.4"/>` +
+  `<rect x="4" y="9.8" width="7" height="3.4" rx="1.7" fill="currentColor"/>` +
+  `<path d="M9 1v3.6M9 4.9 7.2 3.1M9 4.9l1.8-1.8" fill="none" ` +
+  `stroke="currentColor" stroke-width="1.4" stroke-linecap="round" ` +
+  `stroke-linejoin="round"/></svg>`;
+const PLAY_MARK =
+  `<svg width="12" height="12" viewBox="0 0 18 18" aria-hidden="true">` +
+  `<path d="M4.8 2.6 15.2 9 4.8 15.4Z" fill="currentColor"/></svg>`;
+const SAID_MARK =
+  `<svg width="14" height="14" viewBox="0 0 18 18" aria-hidden="true">` +
+  `<rect x="1.6" y="2.4" width="14.8" height="10.2" rx="3" fill="none" ` +
+  `stroke="currentColor" stroke-width="1.5"/>` +
+  `<path d="M5.6 12.6 4.6 16.2 8.6 12.6" fill="none" stroke="currentColor" ` +
+  `stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+
+const tok = (id: string, kind: string, mark: string, word: string, live: boolean) =>
+  `<button type="button" class="tok ${kind}${live ? "" : " dim"}" id="${id}"` +
+  `${live ? "" : " disabled"}>${mark}${word}</button>`;
+
 function actions(): void {
   crumb();
   const host = $("caption");
   const sel = pic.sel;
-  if (!sel) {
-    host.innerHTML = "";
-    return;
-  }
   const cluster =
-    sel.kind === SelKind.Event
+    sel?.kind === SelKind.Event
       ? timeline.clusters.find((c) => c.event_ids.includes(Number(sel.id)))
-      : sel.kind === SelKind.Cluster
+      : sel?.kind === SelKind.Cluster
         ? timeline.clusters.find((c) => c.id === sel.id)
         : undefined;
-  const ask = sel.kind === SelKind.Shelf ? "Ask when" : "Ask about this";
-  const trace = sel.kind === SelKind.Event ? codedIn(Number(sel.id)) : null;
-  // The board entry button is offered only when the cluster has at least one
-  // move the board can draw. It carries no words: with the icon alone the row
-  // holds the ask chip, the way in and the coded-in chip across a phone.
+  const trace = sel?.kind === SelKind.Event ? codedIn(Number(sel.id)) : null;
+  // the board is offered for a cluster with at least one move it can draw
   const moves = cluster ? picture.countMoves(cluster.event_ids) : 0;
+
   host.innerHTML =
-    `<button type="button" class="chip ask" id="cap-chip">[${esc(ask)}]</button>` +
-    (moves
-      ? `<button type="button" class="btn primary icon" id="cap-play" ` +
-        `aria-label="open the moves board">&#9654;</button>`
-      : "") +
-    (trace
-      ? `<button type="button" class="chip data trace" id="cap-trace">${esc(trace.label)}</button>`
-      : "");
-  $("cap-chip").addEventListener("click", () =>
-    apply(reduce(pic, PicEvent.TapChip)),
-  );
+    tok("cap-chip", "", ASK_MARK, "ask", !!sel) +
+    tok("cap-play", "g", PLAY_MARK, "explain", moves > 0) +
+    tok("cap-trace", "data", SAID_MARK, "said", !!trace);
+
+  if (sel)
+    $("cap-chip").addEventListener("click", () =>
+      apply(reduce(pic, PicEvent.TapChip)),
+    );
   if (trace)
     $("cap-trace").addEventListener("click", () => void traceTo(trace.where));
   if (moves && cluster)

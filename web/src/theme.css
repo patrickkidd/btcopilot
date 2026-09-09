@@ -683,16 +683,32 @@ button { font-family: inherit; }
 }
 .caption::-webkit-scrollbar { display: none; }
 .caption > * { flex: none; }
-/* every control in the row is one 44px target at the same height (the
-   mockup's .btn floor), so the row reads as one strip of equal controls */
-.caption .chip {
+/* The chat's own chip, in the row (picked plate F): one mark and one word, a
+   thin outline in its own colour and nothing filled in, 26 tall in the middle
+   of the 44 band. What answers the thumb is the whole band, the way the chat
+   chip already grows its own target. */
+.caption .tok {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  margin: 0;
+  gap: 6px;
+  height: 26px;
+  padding: 1px 8px;
+  border: 1px solid var(--ask);
+  border-radius: 8px;
+  background: none;
+  color: var(--ask-text);
+  font: 500 13px/22px var(--mono);
   white-space: nowrap;
+  cursor: pointer;
 }
-.caption .chip::before { content: none; }
+.caption .tok::before { content: ""; position: absolute; inset: -9px -2px; }
+.caption .tok svg { flex: none; }
+.caption .tok.g { color: var(--move-text); border-color: var(--move); border-radius: 10px; }
+.caption .tok.data { color: var(--data); border-color: var(--data); border-radius: 10px; }
+/* nothing to do with it here, so it is still shown and plainly not offered */
+.caption .tok.dim { opacity: 0.34; cursor: default; }
+.caption .tok:not(.dim):active { background: var(--tint); }
 
 /* ---- chat ---- */
 .chat {
