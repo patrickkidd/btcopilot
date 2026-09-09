@@ -57,7 +57,7 @@ test.describe("the moves board", () => {
   test("a cluster offers to walk its moves", async ({ page }) => {
     await settle(page);
     await pickCluster(page);
-    await expect(page.locator("#cap-play")).toHaveText("\u25b6");
+    await expect(page.locator("#cap-play")).toHaveText("explain");
     await expect(picture(page)).toHaveScreenshot("board-entry-offer.png", steady(page));
   });
 

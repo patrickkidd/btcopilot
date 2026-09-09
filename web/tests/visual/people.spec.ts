@@ -21,7 +21,7 @@ const openList = async (page: Page) => {
 test.describe("the button that opens the list", () => {
   test.use({ storageState: stateFor("moves") });
 
-  test("sits inside the picture, dressed like the sessions button", async ({
+  test("sits in the picture's name row, dressed like the sessions button", async ({
     page,
   }) => {
     await settle(page);
@@ -38,13 +38,17 @@ test.describe("the button that opens the list", () => {
         inside: picture.contains(button),
         inTitleRow: !!document.querySelector(".titlerow #menu-open"),
         size: [Math.round(box.width), Math.round(box.height)],
-        same: round(button) === round(sessions),
+        // the same circle as the sessions button, drawn to the name row's 28
+        round: round(button).split(" ").slice(2).join(" "),
+        sessions: round(sessions).split(" ").slice(2).join(" "),
+        reach: getComputedStyle(button, "::after").inset,
       };
     });
     expect(where.inside).toBe(true);
     expect(where.inTitleRow).toBe(false);
-    expect(where.size).toEqual([44, 44]);
-    expect(where.same).toBe(true);
+    expect(where.size).toEqual([28, 28]);
+    expect(where.round).toBe(where.sessions);
+    expect(where.reach).toBe("-8px");
   });
 });
 

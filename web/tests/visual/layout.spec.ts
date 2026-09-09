@@ -97,18 +97,22 @@ test.describe("nothing moves when a chip is tapped", () => {
     expect(after.bubbles).toEqual(before.bubbles);
   });
 
-  test("the caption keeps its height whether or not anything is selected", async ({
+  test("the row keeps its height and its three chips whatever is picked", async ({
     page,
   }) => {
     await settle(page);
     const empty = await frame(page);
-    expect(await page.locator(".caption").innerHTML()).toBe("");
+    // the row is the same in every state: three chips, dimmed where there is
+    // nothing to do with them (picked plate F)
+    await expect(page.locator(".caption .tok")).toHaveCount(3);
+    await expect(page.locator(".caption .tok.dim")).toHaveCount(3);
 
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator(".caption .chip").first()).toBeVisible();
+    await expect(page.locator("#cap-chip")).not.toHaveClass(/dim/);
     const filled = await frame(page);
 
     expect(filled.caption).toEqual(empty.caption);
+    await expect(page.locator(".caption .tok")).toHaveCount(3);
   });
 
   test("the caption stays one strip however many controls it holds", async ({
@@ -116,10 +120,9 @@ test.describe("nothing moves when a chip is tapped", () => {
   }) => {
     await settle(page);
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator(".caption .trace")).toBeVisible();
-    // Three controls do not fit across a phone and do across a desktop window.
-    // Either way the strip stays one line at its reserved height: where they do
-    // not fit it scrolls sideways rather than wrapping.
+    await expect(page.locator("#cap-chip")).toBeVisible();
+    // The three chips are 26 tall in the middle of the 44 band, on one line,
+    // and each is as wide as its own word (picked plate F).
     const strip = await page.locator(".caption").evaluate((node) => ({
       height: Math.round(node.getBoundingClientRect().height),
       children: node.childElementCount,
@@ -129,21 +132,22 @@ test.describe("nothing moves when a chip is tapped", () => {
       heights: [...node.children].map((c) =>
         Math.round(c.getBoundingClientRect().height),
       ),
+      fits: node.scrollWidth <= node.clientWidth,
     }));
     expect(strip.children).toBe(3);
     expect(strip.height).toBe(44);
     expect(strip.rows).toBe(1);
-    // every control is the same 44px target, so the row reads as one strip
-    expect(strip.heights).toEqual([44, 44, 44]);
+    expect(strip.heights).toEqual([26, 26, 26]);
+    // and with one word each they fit across a phone, which the record's own
+    // words in the asking chip never did
+    expect(strip.fits).toBe(true);
   });
 });
 
 /** The caption row on every record the app can be handed: it stays one line at
- * its reserved height, and nothing it holds sits outside it — the row is one
- * sideways strip, so "inside" is measured against everything the strip holds,
- * scrolled or not. Three controls with the coded-in chip at its capped width do
- * not fit across a phone, and the strip scrolls rather than wrapping, because
- * its height is what the picture above it is fitted to. */
+ * its reserved height, and nothing it holds sits outside it. With one word on
+ * each of the three chips the row fits across a phone (picked plate F), where
+ * the record's own words in the asking chip never did. */
 for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "longmove", "longname"] as const) {
   test.describe(`the caption row on the ${key} record`, () => {
     test.use({ storageState: stateFor(key) });
@@ -158,7 +162,7 @@ for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "lon
       }
       const zones = page.locator('.ss-hit[data-target="zone"]');
       await zones.first().click();
-      await expect(page.locator(".caption .chip").first()).toBeVisible();
+      await expect(page.locator(".caption .tok").first()).toBeVisible();
 
       const row = await page.locator(".caption").evaluate((node) => {
         const box = node.getBoundingClientRect();
@@ -177,7 +181,7 @@ for (const key of ["one", "three40", "dense60", "hostile", "moves", "play", "lon
             })
             .map((c) => (c as HTMLElement).id),
           tall: [...node.children].filter(
-            (c) => Math.round(c.getBoundingClientRect().height) !== 44,
+            (c) => Math.round(c.getBoundingClientRect().height) !== 26,
           ).length,
         };
       });
@@ -241,13 +245,12 @@ test.describe("a scrollbar appearing never shifts the page", () => {
 test.describe("the board is the only thing that resizes the picture", () => {
   test.use({ storageState: stateFor("moves") });
 
-  test("the entry button says how many moves, and moves nothing until it is tapped", async ({
+  test("the way onto the board says explain, and moves nothing until it is tapped", async ({
     page,
   }) => {
     await settle(page);
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    const enter = page.locator("#cap-play");
-    await expect(enter).toHaveText("\u25b6");
+    await expect(page.locator("#cap-play")).toHaveText("explain");
 
     // the button appearing must not have moved anything
     const before = await frame(page);
@@ -287,12 +290,21 @@ test.describe("a long family name", () => {
     // one line: a wrapped title is what pushed the picture down
     expect(fit.rows).toBeLessThanOrEqual(24);
 
-    // and the controls beside it keep their ruled size
-    for (const id of ["menu-open", "account"]) {
-      const box = (await page.locator(`#${id}`).boundingBox())!;
-      expect(Math.round(box.width)).toBe(44);
-      expect(Math.round(box.height)).toBe(44);
-    }
+    // and the control beside it keeps its ruled size
+    const avatar = (await page.locator("#account").boundingBox())!;
+    expect(Math.round(avatar.width)).toBe(44);
+    expect(Math.round(avatar.height)).toBe(44);
+    // the list button is in the picture's own name row, 28 with a 44 target
+    const list = await page.locator("#menu-open").evaluate((node) => {
+      const at = node.getBoundingClientRect();
+      const target = getComputedStyle(node, "::after");
+      return {
+        size: [Math.round(at.width), Math.round(at.height)],
+        reach: target.inset,
+      };
+    });
+    expect(list.size).toEqual([28, 28]);
+    expect(list.reach).toBe("-8px");
 
     // the picture starts where it always starts
     expect(await pictureHeight(page)).toBe(BAND);
@@ -335,13 +347,14 @@ test.describe("the moves board fills the room it takes", () => {
 test.describe("a moment traces back to the words that coded it", () => {
   test.use({ storageState: stateFor("moves") });
 
-  test("the chip names the session and the tap outlines the bubble", async ({
+  test("the said chip takes the thread to where it was said", async ({
     page,
   }) => {
     await settle(page);
     await page.locator('.ss-hit[data-target="zone"]').first().click();
-    const chip = page.locator(".caption .trace");
-    await expect(chip).toContainText("coded in:");
+    const chip = page.locator("#cap-trace");
+    await expect(chip).toHaveText("said");
+    await expect(chip).not.toHaveClass(/dim/);
 
     const before = await frame(page);
     await chip.click();
