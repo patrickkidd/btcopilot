@@ -611,22 +611,32 @@ async function load(): Promise<Timeline> {
 
 /** The name of the picture is also the way back to it, so while one cluster is
  * open it says so with the arrow in front of it (picked phone mockup). */
+/** The name row says which view the reader is in: the whole line at rest, and
+ * the cluster's own name once a cluster or its board is open. A green arrow
+ * stands beside the name whenever there is a view above this one, and the
+ * arrow and the name do the same thing (owner ruling 2026-09-08). */
 function crumb(): void {
-  $("crumb").textContent = picture.opened()
-    ? "\u2190 Family timeline"
-    : "Family timeline";
+  const deep = picture.deep();
+  const name = $("crumb");
+  name.textContent = picture.title() ?? "Family timeline";
+  name.classList.toggle("deep", deep);
+  name.setAttribute("aria-hidden", "false");
+  if (deep) {
+    name.setAttribute("role", "button");
+    name.setAttribute("tabindex", "0");
+  } else {
+    name.removeAttribute("role");
+    name.removeAttribute("tabindex");
+  }
+  $("up").hidden = !deep;
 }
 
-/** One step back: from a moment picked inside a cluster to the cluster itself,
- * and from the cluster to all of them. */
-function putDownOne(): void {
-  if (picture.opened() && picture.selection() !== null) {
-    apply(reduce(pic, PicEvent.Dismiss));
-    picture.select(null);
-    actions();
-    return;
-  }
-  putDown();
+/** Up exactly one level: the board to the cluster it is showing, an open
+ * cluster to the whole line. */
+function upOne(): void {
+  picture.up();
+  pic = REST;
+  actions();
 }
 
 /** The list is full screen with its own back button, so it takes the title row
@@ -645,12 +655,15 @@ function putDown(): void {
   actions();
 }
 
-$("crumb").addEventListener("click", putDownOne);
+$("up").addEventListener("click", upOne);
+$("crumb").addEventListener("click", () => {
+  if (picture.deep()) upOne();
+});
 $("crumb").addEventListener("keydown", (e) => {
   const key = (e as KeyboardEvent).key;
-  if (key === "Enter" || key === " ") {
+  if ((key === "Enter" || key === " ") && picture.deep()) {
     e.preventDefault();
-    putDownOne();
+    upOne();
   }
 });
 

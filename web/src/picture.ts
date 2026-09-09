@@ -115,14 +115,13 @@ export enum Target {
   /** The board's own controls, which the picture answers itself. */
   /** Anywhere on the picture that is not a moment, a label or a control. */
   Ground = "ground",
-  Back = "back",
   Prev = "prev",
   Next = "next",
   /** Ask the coach to talk through the cluster the board is showing. */
   Explain = "explain",
 }
 
-const OWN = new Set<string>([Target.Back, Target.Prev, Target.Next]);
+const OWN = new Set<string>([Target.Prev, Target.Next]);
 
 export interface Tap {
   target: Target;
@@ -392,16 +391,45 @@ export class Picture {
   private control(target: Target): void {
     // the reader taking the controls outranks a play-through still running:
     // from here the board is theirs to step
-    if (target !== Target.Back) this.steered = true;
-    if (target === Target.Back) {
-      this.level = Level.Wire;
-      this.moves = [];
-      this.cluster = null;
-      this.cast = [];
-      this.at = 0;
-    } else if (target === Target.Next)
+    this.steered = true;
+    if (target === Target.Next)
       this.at = Math.min(this.moves.length - 1, this.at + 1);
     else if (target === Target.Prev) this.at = Math.max(0, this.at - 1);
+    this.render();
+  }
+
+  /** The name of the view the reader is in: the cluster the board is showing,
+   * or the cluster open on the wire. Null at rest, where the picture is the
+   * whole line and has no name but its own. */
+  title(): string | null {
+    const open =
+      this.focus ??
+      (this.cluster
+        ? this.data?.clusters.find(
+            (c) => c.id === this.cluster || c.cluster_ids.includes(this.cluster as string),
+          ) ?? null
+        : null);
+    return this.level === Level.Rest || !open ? null : open.title || open.label;
+  }
+
+  /** A view below the whole line is open, so there is somewhere to go up to. */
+  deep(): boolean {
+    return this.level === Level.Board || this.opened();
+  }
+
+  /** Up exactly one level: the board to the cluster it is showing, an open
+   * cluster to the whole line. The title row is the only way up (owner ruling
+   * 2026-09-08), so the board carries no corner arrow of its own. */
+  up(): void {
+    if (this.level !== Level.Board) {
+      this.dismiss();
+      return;
+    }
+    this.level = Level.Wire;
+    this.moves = [];
+    this.cluster = null;
+    this.cast = [];
+    this.at = 0;
     this.render();
   }
 
@@ -683,9 +711,7 @@ export class Picture {
     const zoom = this.entering ? " in" : "";
     this.entering = false;
     this.host.innerHTML =
-      `<div class="ss board${zoom}" style="height:${height}px">${svg}` +
-      `<button class="corner l ss-hit" data-target="${Target.Back}" ` +
-      `aria-label="back to the time line">&#8592;</button></div>` +
+      `<div class="ss board${zoom}" style="height:${height}px">${svg}</div>` +
       `<div class="bcap">${esc(caption)}</div>` +
       // a cast the coach put on the board has nothing to step through
       (this.moves.length

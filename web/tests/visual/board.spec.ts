@@ -96,11 +96,16 @@ test.describe("the moves board", () => {
     await expect(picture(page)).toHaveScreenshot("board-last-move.png", steady(page));
   });
 
-  test("back returns to the resting wire", async ({ page }) => {
+  // the one way up is the arrow beside the view's name; the board carries no
+  // corner arrow of its own (owner ruling 2026-09-08)
+  test("back goes up one level, to the cluster the board was showing", async ({
+    page,
+  }) => {
     await settle(page);
     const before = await picture(page).boundingBox();
     await enter(page);
-    await page.locator('[data-target="back"]').click();
+    await expect(page.locator('[data-target="back"]')).toHaveCount(0);
+    await page.locator("#up").click();
     await expect(page.locator(".ss.board")).toHaveCount(0);
     // past the .25s height transition, or the box is read mid-flight
     await page.waitForTimeout(500);

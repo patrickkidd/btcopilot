@@ -173,9 +173,8 @@ button { font-family: inherit; }
    the picture and everything under it. */
 .pin-label {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   height: 28px;
   padding: 0 16px;
   box-sizing: border-box;
@@ -184,30 +183,47 @@ button { font-family: inherit; }
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+/* One line, cut with an ellipsis: a cluster's own name can be longer than the
+   row and must never push it onto a second line. */
 .pin-label span {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-transform: none;
+  letter-spacing: 0;
+  min-width: 0;
 }
-.pin-label span:first-child { flex: none; }
-/* The name of the picture is also the way back to it. The row is 18 tall, so
-   the words keep their place and the target is grown around them. */
-#crumb {
-  position: relative;
-  cursor: pointer;
-}
-#crumb::before {
+/* The row names the view the reader is in, and once a lower view is open it is
+   also the way up out of it. At rest it is a label: no pointer, no press, and
+   nothing to answer a tap. The row is 28 tall, so the words keep their place
+   and the target is grown around them. */
+#crumb { position: relative; }
+#crumb.deep { cursor: pointer; }
+#crumb.deep::before {
   content: "";
   position: absolute;
   inset: -13px -16px;
 }
-#crumb:active { color: var(--ink); }
-.pin-label span:last-child {
-  text-transform: none;
-  letter-spacing: 0;
-  min-width: 0;
-  text-align: right;
+#crumb.deep:active { color: var(--ink); }
+/* One way up, beside the name it is leaving, in the colour of a thing that
+   acts. The board has none of its own. */
+.pin-label .up {
+  position: relative;
+  flex: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 400 15px/1 var(--mono);
+  color: var(--move);
+  cursor: pointer;
 }
+.pin-label .up::before {
+  content: "";
+  position: absolute;
+  inset: -13px -14px;
+}
+.pin-label .up:active { opacity: 0.55; }
 /* The list button sits inside the thing it lists, in the same circle as the
    one beside the message bar. The picture's own box is what it sits in, so it
    is taken out of the flow and nothing below it moves. */
