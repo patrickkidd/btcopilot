@@ -108,7 +108,20 @@ function page(): Plugin {
 
 export default defineConfig({
   base: BASE,
-  plugins: [page()],
+  plugins: [
+    page(),
+    {
+      // iOS only offers to install the dev CA when it arrives as a certificate.
+      name: "dev-ca-type",
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.url?.endsWith("/dev-ca.crt"))
+            res.setHeader("Content-Type", "application/x-x509-ca-cert");
+          next();
+        });
+      },
+    },
+  ],
   build: {
     outDir: "../btcopilot/personal/static/web",
     emptyOutDir: true,
@@ -123,6 +136,13 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 8891,
+    // Face ID sign-in needs https off localhost. The certificate for
+    // turin.local is signed by the dev CA in certs/, which a phone trusts once
+    // by installing /dev-ca.crt.
+    https: {
+      key: readFileSync(new URL("./certs/turin.local.key", import.meta.url)),
+      cert: readFileSync(new URL("./certs/turin.local.crt", import.meta.url)),
+    },
     strictPort: true,
     // the review is opened at this machine's name on the network, not at
     // localhost, and the dev server turns away a host it was not told about
