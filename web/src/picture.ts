@@ -1045,20 +1045,21 @@ export class Picture {
           .map(({ id, row, left, width }) => ({ id, row, left, width })),
       };
     }
-    // One cluster open and nothing picked in it: the band says what the cluster
-    // is, in its own name and the coach's own sentence for why these moments
-    // are one episode. Never a list of the moments — they are the dots
-    // (ruled 2026-09-08), and a list of fifteen would not fit anyway.
+    // One cluster open and nothing picked in it: the band says the coach's own
+    // sentence for why these moments are one episode, over two rows and cut to
+    // fit. The cluster's name is not repeated here — it is the title of the
+    // view, and the row above says it (owner ruling 2026-09-08). Never a list
+    // of the moments: they are the dots, and fifteen would not fit anyway.
     if (this.focus) {
-      const said = [
-        this.focus.title || this.focus.label,
-        this.focus.reason ?? this.focus.summary ?? "",
-      ];
+      const why = (this.focus.reason ?? this.focus.summary ?? "").trim();
+      const lines = why
+        ? wrap2(clip(why, Math.min(88, wide * ROWS.length)), wide)
+        : [];
       return {
-        text: said
+        text: lines
           .map((line, i) =>
             line
-              ? `<div class="ss-t ${i ? "why" : "on"}" style="left:${x0}px;` +
+              ? `<div class="ss-t why" style="left:${x0}px;` +
                 `top:${ROWS[i]}px;width:${x1 - x0}px">${esc(line)}</div>`
               : "",
           )
