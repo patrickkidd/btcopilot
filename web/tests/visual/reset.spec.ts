@@ -47,14 +47,20 @@ test.describe("putting the picture down", () => {
     await expect(resting(page).first()).toBeVisible();
   });
 
-  test("the name of the picture does the same", async ({ page }) => {
+  test("the name of the picture goes back one step at a time", async ({ page }) => {
     await settle(page);
     await openCluster(page);
     await pickMoment(page);
 
+    // from the moment picked back to the cluster it is in
     await page.locator("#crumb").click();
-    await expect(page.locator(".ss-t.on")).toHaveCount(0);
+    await expect(page.locator(".ss-yr.on")).toHaveCount(0);
+    await expect(page.locator(".ss-t.on").first()).toHaveText("Leaving and losing");
+
+    // and from the cluster back to all of them
+    await page.locator("#crumb").click();
     await expect(resting(page).first()).toBeVisible();
+    await expect(page.locator("#crumb")).toHaveText("Family timeline");
   });
 });
 
@@ -66,21 +72,18 @@ const tapWords = async (page: Page, index = 0) => {
   await page.mouse.click(box.x + Math.min(40, box.width / 2), box.y + box.height / 2);
 };
 
-test.describe("a tap on a label", () => {
+test.describe("a tap on the words of the moment picked", () => {
   test.use({ storageState: stateFor("moves") });
 
-  test("picks its moment, and opens its editor when tapped again", async ({
-    page,
-  }) => {
-    await settle(page);
-    // the coach's last message names moments, so the wire carries their labels
-    await expect(page.locator(".ss-t.on").first()).toBeVisible();
-
-    await tapWords(page);
-    // one moment is picked: its words are on the band and its year under its dot
+  /** Pick a moment, so the band carries its words rather than the cluster's. */
+  const pickOne = async (page: Page) => {
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
     await expect(page.locator(".ss-yr.on")).toHaveCount(1);
+  };
 
-    // again, on a picture showing one cluster: the moment's own editor
+  test("opens its editor", async ({ page }) => {
+    await settle(page);
+    await pickOne(page);
     await tapWords(page);
     await expect(page.locator("#menu-screen")).toBeVisible();
     await expect(page.locator("#tab-events")).toHaveClass(/on/);
@@ -89,15 +92,7 @@ test.describe("a tap on a label", () => {
 
   test("a dot picks its moment and never travels", async ({ page }) => {
     await settle(page);
-    // whether the picture opens on the whole line or on one cluster depends on
-    // what the coach last named, so the cluster is opened when there is one
-    const box = page.locator('.ss-hit[data-target="cluster"]');
-    if (await box.first().isVisible().catch(() => false)) {
-      await box.first().click();
-      await page.waitForTimeout(400);
-    }
-    await page.locator('.ss-hit[data-target="zone"]').first().click();
-    await expect(page.locator(".ss-yr.on")).toHaveCount(1);
+    await pickOne(page);
     // the same dot again: still picked, and the thread has not moved
     await page.locator('.ss-hit[data-target="zone"]').first().click();
     await expect(page.locator(".ss-yr.on")).toHaveCount(1);

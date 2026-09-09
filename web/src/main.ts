@@ -584,6 +584,18 @@ function crumb(): void {
     : "Family timeline";
 }
 
+/** One step back: from a moment picked inside a cluster to the cluster itself,
+ * and from the cluster to all of them. */
+function putDownOne(): void {
+  if (picture.opened() && picture.selection() !== null) {
+    apply(reduce(pic, PicEvent.Dismiss));
+    picture.select(null);
+    actions();
+    return;
+  }
+  putDown();
+}
+
 /** The list is full screen with its own back button, so it takes the title row
  * over rather than stacking a second bar under it (ruling 2026-09-03 05:53). */
 function screen(which: Screen): void {
@@ -600,12 +612,12 @@ function putDown(): void {
   actions();
 }
 
-$("crumb").addEventListener("click", putDown);
+$("crumb").addEventListener("click", putDownOne);
 $("crumb").addEventListener("keydown", (e) => {
   const key = (e as KeyboardEvent).key;
   if (key === "Enter" || key === " ") {
     e.preventDefault();
-    putDown();
+    putDownOne();
   }
 });
 

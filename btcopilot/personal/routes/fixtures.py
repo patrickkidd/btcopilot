@@ -114,6 +114,7 @@ def three_over_forty() -> DiagramData:
             asdict(
                 Cluster(
                     id="cT",
+                    reason="Ada lost her grandmother, and then moved away from everyone she knew.",
                     title="Leaving and losing",
                     summary="",
                     eventIds=[10, 11],
@@ -144,6 +145,7 @@ def sixty_in_five() -> DiagramData:
         asdict(
             Cluster(
                 id="cA",
+                reason="Ada's sleep went first, and the worry spread through the house from there.",
                 title="The first hard winter",
                 summary="",
                 eventIds=[100 + i for i in range(20)],
@@ -154,6 +156,7 @@ def sixty_in_five() -> DiagramData:
         asdict(
             Cluster(
                 id="cB",
+                reason="Everything in this run follows what the doctor said that autumn.",
                 title="After the diagnosis",
                 summary="",
                 eventIds=[100 + i for i in range(20, 60)],
@@ -176,6 +179,7 @@ def hostile() -> DiagramData:
         asdict(
             Cluster(
                 id="cL",
+                reason=LONG_LABEL,
                 title=LONG_LABEL,
                 summary="",
                 eventIds=[10, 11, 12],
@@ -231,6 +235,7 @@ def moves() -> DiagramData:
         asdict(
             Cluster(
                 id=PLAY_CLUSTER,
+                reason="One move after another between Ada, Ben and Cal, in order.",
                 title="The walk",
                 summary="Every move in order.",
                 eventIds=[event["id"] for event in events],
@@ -265,6 +270,7 @@ def play() -> DiagramData:
         asdict(
             Cluster(
                 id=PLAY_CLUSTER,
+                reason="One move after another between Ada, Ben and Cal, in order.",
                 title="The walk",
                 summary="Every move in order.",
                 eventIds=[event["id"] for event in data.events],
@@ -303,6 +309,7 @@ def long_move() -> DiagramData:
         asdict(
             Cluster(
                 id=PLAY_CLUSTER,
+                reason="One move after another between Ada, Ben and Cal, in order.",
                 title="The walk",
                 summary="Every move in order.",
                 eventIds=[event["id"] for event in data.events],

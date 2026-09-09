@@ -103,6 +103,9 @@ export interface Cluster {
   label: string;
   title: string;
   summary: string | null;
+  /** Why these moments are one episode, in the coach's own sentence. Null for
+   * a cluster the reader regrouped or renamed themselves. */
+  reason: string | null;
   cluster_ids: string[];
   start: string;
   end: string;
