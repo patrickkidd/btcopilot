@@ -20,6 +20,7 @@ import {
 import { $ } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
+import { offerHomeScreen } from "./homescreen";
 import { shortDate } from "./when";
 import {
   ChipKind,
@@ -755,3 +756,7 @@ if (import.meta.env.PROD && "serviceWorker" in navigator)
   window.addEventListener("load", () =>
     navigator.serviceWorker.register("/personal/sw.js", { scope: "/personal/" }),
   );
+
+// The page is only served to a signed-in reader, so this is the moment to ask
+// about the home screen.
+offerHomeScreen();

@@ -59,6 +59,12 @@ def service_worker():
     return send_from_directory(BUNDLE, "sw.js", mimetype="text/javascript")
 
 
+@bp.route("/apple-touch-icon.png")
+def apple_touch_icon():
+    """iOS reads the icon from the app's own path, not from the manifest."""
+    return send_from_directory(BUNDLE, "apple-touch-icon.png", mimetype="image/png")
+
+
 @bp.route("/manifest.webmanifest")
 def manifest():
     return send_from_directory(

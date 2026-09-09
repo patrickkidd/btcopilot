@@ -32,7 +32,9 @@ def init_app(app):
     for key, value in CONFIG_DEFAULTS.items():
         app.config.setdefault(key, value)
     app.session_interface = LongSessions()
-    app.register_blueprint(bp)
+    # Sign-in belongs to the chat app the reader is signing in to, so its pages
+    # live under the same path as the app itself.
+    app.register_blueprint(bp, url_prefix="/personal")
 
 
 def is_pro_app_request():
@@ -41,6 +43,17 @@ def is_pro_app_request():
 
 def is_training_app_request() -> bool:
     return request.path.startswith("/training")
+
+
+def is_chat_app_request() -> bool:
+    return request.path.startswith("/personal")
+
+
+def login_url() -> str:
+    """The chat app signs in on its own passwordless page; the training app
+    keeps its own login."""
+    endpoint = "chatauth.login" if is_chat_app_request() else "training.auth.login"
+    return url_for(endpoint, next=request.url)
 
 
 def _set_tracing_tags(user):
@@ -114,7 +127,7 @@ def _handle_unauthorized(status_code):
         raise exception
     else:
         # Not authenticated - redirect to login
-        redirect_response = redirect(url_for("training.auth.login", next=request.url))
+        redirect_response = redirect(login_url())
         exception = HTTPException()
         exception.response = redirect_response
         raise exception
@@ -299,7 +312,7 @@ def _authenticate_training_app() -> User | None:
 
     from werkzeug.exceptions import HTTPException
 
-    redirect_response = redirect(url_for("training.auth.login", next=request.url))
+    redirect_response = redirect(login_url())
     # Create a proper HTTP exception with the redirect response
     exception = HTTPException()
     exception.response = redirect_response

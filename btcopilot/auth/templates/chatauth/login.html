@@ -2,32 +2,107 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
-    <title>Sign in</title>
+    <meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#171d1c" media="(prefers-color-scheme: dark)" />
+    <title>Family Diagram</title>
+    <link rel="apple-touch-icon" href="/personal/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Libre+Franklin:wght@400;500;600;800&display=swap" />
     <style>
-      body { font: 16px/1.5 system-ui, sans-serif; margin: 0; display: grid; place-items: center; min-height: 100vh; }
-      form { display: grid; gap: 12px; width: 280px; }
-      input, button { font: inherit; padding: 10px; }
-      .error { color: #b00020; }
+      /* The same tokens as the app's own page (web/src/theme.css); this page is
+         served before the bundle, so it carries the few it needs itself. */
+      :root {
+        --bg: #f7f6f2;
+        --panel: #fff;
+        --ink: #26312f;
+        --faint: #67746f;
+        --line: #d8d5cc;
+        --data: #0e7d78;
+        --tint: rgba(14, 125, 120, 0.08);
+        --onaccent: #fff;
+        --sans: "Libre Franklin", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+        --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #171d1c;
+          --panel: #1f2725;
+          --ink: #e6e9e6;
+          --faint: #818f8a;
+          --line: #31403c;
+          --data: #3fc4bc;
+          --tint: rgba(63, 196, 188, 0.13);
+          --onaccent: #0d1413;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--ink);
+        font: 400 15px/1.5 var(--sans);
+        display: flex;
+        justify-content: center;
+        padding: 14vh 22px 22px;
+      }
+      main { width: 100%; max-width: 340px; }
+      h1 { font: 800 21px var(--sans); margin: 0 0 6px; }
+      .lead { color: var(--faint); margin: 0 0 22px; }
+      form { display: grid; gap: 12px; }
+      input {
+        font: 400 16px var(--sans);
+        color: var(--ink);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 13px 14px;
+        width: 100%;
+      }
+      input#code { font: 500 20px var(--mono); letter-spacing: 6px; text-align: center; }
+      input:focus { outline: none; border-color: var(--data); box-shadow: 0 0 0 3px var(--tint); }
+      button {
+        font: 600 15px var(--sans);
+        color: var(--onaccent);
+        background: var(--data);
+        border: none;
+        border-radius: 12px;
+        padding: 14px;
+        width: 100%;
+      }
+      button:active { opacity: 0.85; }
+      .again {
+        display: inline-block;
+        margin-top: 16px;
+        font: 500 13px var(--mono);
+        color: var(--data);
+        text-decoration: none;
+      }
+      .error { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 0 0 16px; }
     </style>
   </head>
   <body>
     <main>
-      <h1>Sign in</h1>
+      <h1>Family Diagram</h1>
       {% if error %}<p class="error">{{ error }}</p>{% endif %}
       {% if sent %}
-        <p>We emailed a six-digit code to {{ email }}.</p>
+        <p class="lead">We sent a code to {{ email }}. It lasts {{ minutes }} minutes.</p>
         <form method="post" action="{{ url_for('chatauth.verify') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <input type="hidden" name="email" value="{{ email }}" />
-          <input name="code" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" required autofocus />
+          <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" required autofocus />
           <button type="submit">Continue</button>
         </form>
+        <a class="again" href="{{ url_for('chatauth.login') }}">Use a different email</a>
       {% else %}
+        <p class="lead">Sign in with your email. There is no password.</p>
         <form method="post" action="{{ url_for('chatauth.login') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <input name="email" type="email" placeholder="you@example.com" required autofocus />
+          <input name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required autofocus />
           <button type="submit">Email me a code</button>
         </form>
       {% endif %}

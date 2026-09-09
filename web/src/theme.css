@@ -1945,3 +1945,98 @@ button { font-family: inherit; }
   overflow: visible;
 }
 .sys.warn .chip.retry { flex: none; margin: 0; }
+
+/* The home-screen card: shown once per device after signing in, over the chat
+   rather than in front of it — tapping the ground behind it puts it away. */
+.hs-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--scrim);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+}
+.hs-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px var(--shadow);
+  padding: 18px;
+}
+.hs-ttl { font: 600 16px var(--sans); color: var(--ink); }
+.hs-say { font: 400 14px var(--sans); color: var(--faint); margin-top: 6px; }
+.hs-acts { display: flex; gap: 10px; margin-top: 16px; }
+.hs-later,
+.hs-go {
+  flex: 1;
+  font: 500 14px var(--sans);
+  border-radius: 12px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--faint);
+}
+.hs-go { border-color: var(--data); background: var(--data); color: var(--onaccent); }
+
+/* A phone with its toolbar at the foot: the share button lifts out of the bar,
+   then the row it opens lights up, on a loop. */
+.hs-show { margin-top: 14px; display: flex; justify-content: center; }
+.hs-phone {
+  position: relative;
+  width: 132px;
+  height: 104px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.hs-sheet {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 40px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.hs-row {
+  font: 500 9px var(--sans);
+  color: var(--ink);
+  border-radius: 4px;
+  padding: 2px 4px;
+  animation: hs-lit 4s ease-in-out infinite;
+}
+.hs-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+.hs-share {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  margin-left: -9px;
+  color: var(--data);
+  animation: hs-lift 4s ease-in-out infinite;
+}
+@keyframes hs-lift {
+  0%, 12% { transform: translateY(0); opacity: 1; }
+  38%, 100% { transform: translateY(-14px); opacity: 0.2; }
+}
+@keyframes hs-lit {
+  0%, 40% { background: none; }
+  55%, 88% { background: var(--tint); }
+  100% { background: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs-share, .hs-row { animation: none; }
+}

@@ -154,7 +154,7 @@ export default async function setup() {
   for (const key of KEYS) {
     const context = await browser.newContext();
     const page = await context.newPage();
-    await page.goto(`${base}/invite/${tokens.get(key)}`, {
+    await page.goto(`${base}/personal/invite/${tokens.get(key)}`, {
       waitUntil: "domcontentloaded",
     });
     // A sign-in link works once. If it has already been opened, or if the

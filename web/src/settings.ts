@@ -539,9 +539,9 @@ export class Settings {
 
 /** Signing out clears the session cookie and then covers the shell with the
  * signed-out screen, which is a state of the app rather than leaving it. Sign
- * in reloads the page, which is what the server answers with a login. */
+ * in goes to the app's own sign-in page. */
 async function signOut(who: string): Promise<void> {
-  await fetch("/logout", {
+  await fetch("/personal/logout", {
     method: "POST",
     headers: {
       "X-CSRFToken":
@@ -551,7 +551,9 @@ async function signOut(who: string): Promise<void> {
   });
   $("signedout-who").textContent = `signed out \u2014 ${who}`;
   $("signedout").hidden = false;
-  $("signedout-in").addEventListener("click", () => window.location.reload(), {
-    once: true,
-  });
+  $("signedout-in").addEventListener(
+    "click",
+    () => (window.location.href = "/personal/login"),
+    { once: true },
+  );
 }

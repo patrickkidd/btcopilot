@@ -32,7 +32,13 @@ def invite(token):
     invitation = Invitation.query.filter_by(token=token).first()
     if not invitation or not invitation.live():
         _log.warning(f"Dead invitation token used from {request.remote_addr}")
-        return render_template("chatauth/login.html", error="That link has expired."), 400
+        return (
+            render_template(
+                "chatauth/login.html",
+                error="That link has been used or has expired. Sign in with your email instead.",
+            ),
+            400,
+        )
     invitation.consume()
     sign_in(ensure_user(invitation.email))
     return redirect(chat_home())
@@ -49,6 +55,7 @@ def login():
     if not email:
         return render_template("chatauth/login.html", error="Enter your email."), 400
 
+    minutes = current_app.config["LOGIN_CODE_MINUTES"]
     window = datetime.datetime.utcnow() - datetime.timedelta(hours=1)
     if LoginCode.issued_since(email, window) >= current_app.config["LOGIN_CODES_PER_HOUR"]:
         _log.warning(f"Login code rate limit hit for {email}")
@@ -57,18 +64,20 @@ def login():
                 "chatauth/login.html",
                 email=email,
                 sent=True,
+                minutes=minutes,
                 error="Too many codes requested. Try again in an hour.",
             ),
             429,
         )
 
-    minutes = current_app.config["LOGIN_CODE_MINUTES"]
     if User.query.filter_by(username=email).first():
         _, code = LoginCode.issue(email, minutes)
         emails.send_login_code(email, code, minutes)
     else:
         _log.warning(f"Login code requested for unknown address {email}")
-    return render_template("chatauth/login.html", email=email, sent=True)
+    return render_template(
+        "chatauth/login.html", email=email, sent=True, minutes=minutes
+    )
 
 
 @bp.route("/login/verify", methods=("POST",))
@@ -83,6 +92,7 @@ def verify():
                 "chatauth/login.html",
                 email=email,
                 sent=True,
+                minutes=current_app.config["LOGIN_CODE_MINUTES"],
                 error="That code is wrong or expired.",
             ),
             401,
@@ -116,7 +126,9 @@ def me():
     )
 
 
-@bp.route("/sessions")
+# The chat app owns /personal/sessions for its own sessions, so the devices a
+# reader is signed in on are listed here.
+@bp.route("/signins")
 def sessions():
     user = _signed_in_user()
     if not user:
@@ -139,7 +151,7 @@ def sessions():
     )
 
 
-@bp.route("/sessions/<int:web_session_id>/revoke", methods=("POST",))
+@bp.route("/signins/<int:web_session_id>/revoke", methods=("POST",))
 def revoke(web_session_id):
     user = _signed_in_user()
     if not user:

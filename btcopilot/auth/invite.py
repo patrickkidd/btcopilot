@@ -21,7 +21,7 @@ def main():
         email = args.email.strip().lower()
         invitation = Invitation.issue(email, app.config["INVITATION_DAYS"])
         base = (args.base_url or app.config["SITE_URL"]).rstrip("/")
-        url = f"{base}/invite/{invitation.token}"
+        url = f"{base}/personal/invite/{invitation.token}"
         if args.send:
             send_invitation(email, url)
         print(url)

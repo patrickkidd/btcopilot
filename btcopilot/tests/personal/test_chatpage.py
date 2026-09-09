@@ -51,7 +51,7 @@ def test_page_requires_login(flask_app):
     with flask_app.test_client(use_cookies=True) as client:
         response = client.get("/personal/")
         assert response.status_code == 302
-        assert "/training/auth/login" in response.headers["Location"]
+        assert "/personal/login" in response.headers["Location"]
 
 
 def test_timeline_shows_own_data_only(web, test_user):

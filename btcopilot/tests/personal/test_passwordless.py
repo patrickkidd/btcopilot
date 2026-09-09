@@ -42,24 +42,24 @@ def token(browser) -> str:
 def request_code(browser, email: str):
     with extensions.mail.record_messages() as outbox:
         response = browser.post(
-            "/login", data={"csrf_token": token(browser), "email": email}
+            "/personal/login", data={"csrf_token": token(browser), "email": email}
         )
     return response, outbox
 
 
 def test_invite_creates_user_and_signs_in(flask_app, browser):
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
-    response = browser.get(f"/invite/{invitation.token}")
+    response = browser.get(f"/personal/invite/{invitation.token}")
     assert response.status_code == 302
     assert response.headers["Location"] == flask_app.config["CHAT_HOME"]
 
     assert User.query.filter_by(username=INVITED).first() is not None
-    assert browser.get("/me").get_json()["user"]["email"] == INVITED
+    assert browser.get("/personal/me").get_json()["user"]["email"] == INVITED
 
 
 def test_coming_back_to_the_site_root_lands_in_the_chat(flask_app, browser):
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
-    browser.get(f"/invite/{invitation.token}")
+    browser.get(f"/personal/invite/{invitation.token}")
 
     response = browser.get("/")
     assert response.headers["Location"] == flask_app.config["CHAT_HOME"]
@@ -67,7 +67,7 @@ def test_coming_back_to_the_site_root_lands_in_the_chat(flask_app, browser):
 
 def test_signing_in_stamps_the_session_the_training_app_ages(flask_app, browser):
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
-    browser.get(f"/invite/{invitation.token}")
+    browser.get(f"/personal/invite/{invitation.token}")
     with browser.session_transaction() as cookie:
         assert cookie["logged_in_at"]
 
@@ -79,16 +79,16 @@ def test_fixture_token_signs_in(flask_app, browser):
     assert printed.exit_code == 0, printed.output
     minted = printed.output.strip().split()[-1]
 
-    response = browser.get(f"/invite/{minted}")
+    response = browser.get(f"/personal/invite/{minted}")
     assert response.status_code == 302
-    assert browser.get("/me").get_json()["user"] is not None
+    assert browser.get("/personal/me").get_json()["user"] is not None
 
 
 def test_chat_cookie_outlives_the_training_timeout(flask_app, browser):
     """The training app pins the cookie to eight hours; a chat sign-in must
     still come back months later."""
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
-    response = browser.get(f"/invite/{invitation.token}")
+    response = browser.get(f"/personal/invite/{invitation.token}")
     expires = email.utils.parsedate_to_datetime(
         re.search(r"[Ee]xpires=([^;]+)", response.headers["Set-Cookie"]).group(1)
     )
@@ -98,8 +98,8 @@ def test_chat_cookie_outlives_the_training_timeout(flask_app, browser):
 
 def test_invite_is_single_use(flask_app, browser):
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
-    browser.get(f"/invite/{invitation.token}")
-    assert browser.get(f"/invite/{invitation.token}").status_code == 400
+    browser.get(f"/personal/invite/{invitation.token}")
+    assert browser.get(f"/personal/invite/{invitation.token}").status_code == 400
 
 
 def test_code_signs_in_an_existing_user(flask_app, browser, test_user):
@@ -108,11 +108,11 @@ def test_code_signs_in_an_existing_user(flask_app, browser, test_user):
     code = re.search(r"\b(\d{6})\b", outbox[0].body).group(1)
 
     response = browser.post(
-        "/login/verify",
+        "/personal/login/verify",
         data={"csrf_token": token(browser), "email": test_user.username, "code": code},
     )
     assert response.status_code == 302
-    assert browser.get("/me").get_json()["user"]["email"] == test_user.username
+    assert browser.get("/personal/me").get_json()["user"]["email"] == test_user.username
 
 
 def test_expired_code_is_rejected(flask_app, browser, test_user):
@@ -123,22 +123,22 @@ def test_expired_code_is_rejected(flask_app, browser, test_user):
     db.session.commit()
 
     response = browser.post(
-        "/login/verify",
+        "/personal/login/verify",
         data={"csrf_token": token(browser), "email": test_user.username, "code": code},
     )
     assert response.status_code == 401
-    assert browser.get("/me").status_code == 401
+    assert browser.get("/personal/me").status_code == 401
 
 
 def test_used_code_is_rejected(flask_app, browser, test_user):
     _, outbox = request_code(browser, test_user.username)
     code = re.search(r"\b(\d{6})\b", outbox[0].body).group(1)
     form = {"csrf_token": token(browser), "email": test_user.username, "code": code}
-    assert browser.post("/login/verify", data=form).status_code == 302
+    assert browser.post("/personal/login/verify", data=form).status_code == 302
 
-    browser.post("/logout", data={"csrf_token": token(browser)})
+    browser.post("/personal/logout", data={"csrf_token": token(browser)})
     response = browser.post(
-        "/login/verify",
+        "/personal/login/verify",
         data={"csrf_token": token(browser), "email": test_user.username, "code": code},
     )
     assert response.status_code == 401
@@ -158,23 +158,23 @@ def test_code_requests_are_rate_limited(flask_app, browser, test_user):
 
 def test_revoking_the_session_logs_out(flask_app, browser):
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
-    browser.get(f"/invite/{invitation.token}")
-    listed = browser.get("/sessions").get_json()["sessions"]
+    browser.get(f"/personal/invite/{invitation.token}")
+    listed = browser.get("/personal/signins").get_json()["sessions"]
     assert len(listed) == 1 and listed[0]["current"] is True
 
     response = browser.post(
-        f"/sessions/{listed[0]['id']}/revoke", data={"csrf_token": token(browser)}
+        f"/personal/signins/{listed[0]['id']}/revoke", data={"csrf_token": token(browser)}
     )
     assert response.get_json()["revoked"] is True
-    assert browser.get("/me").status_code == 401
+    assert browser.get("/personal/me").status_code == 401
 
 
 def test_logout_revokes_the_session_record(flask_app, browser):
     invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
-    browser.get(f"/invite/{invitation.token}")
+    browser.get(f"/personal/invite/{invitation.token}")
     with browser.session_transaction() as cookie:
         web_session_token = cookie[SESSION_TOKEN]
 
-    browser.post("/logout", data={"csrf_token": token(browser)})
+    browser.post("/personal/logout", data={"csrf_token": token(browser)})
     assert WebSession.query.filter_by(token=web_session_token).one().live() is False
-    assert browser.get("/me").status_code == 401
+    assert browser.get("/personal/me").status_code == 401
