@@ -20,6 +20,7 @@ from btcopilot.schema import (
     DateCertainty,
     Event,
     EventKind,
+    ItemKind,
     Person,
     asdict,
 )
@@ -240,6 +241,70 @@ def test_the_coach_groups_three_events_as_the_user_own_grouping(family):
     stored = clusters_of(family)
     assert [c["eventIds"] for c in stored.values()] == [[10, 11, 12]]
     assert [c["source"] for c in stored.values()] == [ClusterSource.User.value]
+
+
+def _grandfathered(diagram):
+    """A grouping the owner made when two events were enough."""
+    data = diagram.get_diagram_data()
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="c1",
+                title="When he left",
+                summary="",
+                name="When he left",
+                eventIds=[10, 11],
+                source=ClusterSource.User,
+            )
+        )
+    ]
+    diagram.set_diagram_data(data)
+    db.session.commit()
+
+
+def test_renaming_a_grouping_stuck_under_the_floor_says_what_to_do(family):
+    """The coach reads a sentence it can act on, never a stack trace: a rename
+    carries no events, so nothing catches it before the write."""
+    _grandfathered(family)
+    tools = Toolbox(family.id, turn_id="t1")
+
+    with pytest.raises(ToolError, match="Add an event to it, or remove the grouping"):
+        tools.call(ToolName.EditCluster.value, {"id": "c1", "name": "That autumn"})
+    assert clusters_of(family)["c1"]["name"] == "When he left"
+
+
+def test_a_third_event_lifts_a_grouping_out_from_under_the_floor(family):
+    _grandfathered(family)
+    tools = Toolbox(family.id, turn_id="t1")
+
+    tools.call(
+        ToolName.EditCluster.value,
+        {"id": "c1", "name": "That autumn", "event_ids": [10, 11, 12]},
+    )
+    assert clusters_of(family)["c1"]["eventIds"] == [10, 11, 12]
+
+
+def test_a_grouping_stuck_under_the_floor_can_still_be_removed(family):
+    _grandfathered(family)
+    tools = Toolbox(family.id, turn_id="t1")
+
+    tools.call(
+        ToolName.Remove.value, {"item_kind": ItemKind.Cluster.value, "item_id": "c1"}
+    )
+    assert clusters_of(family) == {}
+
+
+def test_undoing_the_removal_of_such_a_grouping_reads_as_words_too(family):
+    """Undo commits without going through the apply path, so it needs the same
+    translation: the coach is told why, not handed an exception."""
+    _grandfathered(family)
+    Toolbox(family.id, turn_id="t1").call(
+        ToolName.Remove.value, {"item_kind": ItemKind.Cluster.value, "item_id": "c1"}
+    )
+
+    with pytest.raises(ToolError, match="Putting that back would leave"):
+        Toolbox(family.id, turn_id="t2").call(ToolName.Undo.value, {})
+    assert clusters_of(family) == {}
 
 
 def test_a_grouping_of_unknown_provenance_is_left_alone(discussion, family):

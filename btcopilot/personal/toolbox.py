@@ -412,6 +412,8 @@ class Toolbox:
                 "That has already been changed since, so it cannot be put back "
                 f"as it was: {e}"
             )
+        except record.Invalid as e:
+            raise ToolError(f"Putting that back would leave {e}")
         self.deltas.extend(change.deltas)
         return ("Put back what the last turn changed.", self._patch(change))
 
@@ -513,14 +515,19 @@ class Toolbox:
         return (f"{verb} {kind.value} {item_id}.", self._patch(change))
 
     def _apply(self, deltas: list[dict]):
-        change = record.apply(
-            self.diagram_id,
-            deltas,
-            author=Author.Coach,
-            turn_id=self.turn_id,
-            user_id=self.user_id,
-            session_id=self.session_id,
-        )
+        try:
+            change = record.apply(
+                self.diagram_id,
+                deltas,
+                author=Author.Coach,
+                turn_id=self.turn_id,
+                user_id=self.user_id,
+                session_id=self.session_id,
+            )
+        except record.Invalid as e:
+            raise ToolError(
+                f"That would leave {e}. Add an event to it, or remove the grouping."
+            )
         self.deltas.extend(change.deltas)
         return change
 

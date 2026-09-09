@@ -158,7 +158,19 @@ they give, not for the guarantee:
   events", the second of which drops the leftovers silently.
 
 The coach's `edit_cluster` tool refuses a group under the minimum, and refuses a
-new cluster with no events at all, with words the model can act on.
+new cluster with no events at all, with words the model can act on. The tools
+also translate the write's refusal into those words, in both the apply and the
+undo path, so a turn that trips the floor comes back as a sentence rather than a
+5xx. That matters for a grouping stored under the older floor: renaming it
+carries no events, so nothing catches it until the write, and the coach is told
+to add an event or remove the grouping.
+
+What the floor does NOT do: it cannot protect a record from a server running
+older code, which is what caused the incident below. The invariant lives in the
+same codebase as everything else, so a process that predates it does not have
+it. It closes the undo path, the coach's tools and the detection path for any
+process running current code. Making staleness itself impossible is separate
+work, and not funded.
 
 Fixture and seed data written through `set_diagram_data` bypasses `record`
 entirely and is not covered. Those are dev fixtures, and the fix there is the
