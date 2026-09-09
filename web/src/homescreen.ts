@@ -84,16 +84,25 @@ const SHARE_ICON =
 function appleWords(): string[] {
   const chrome = /CriOS/i.test(navigator.userAgent);
   const firefox = /FxiOS/i.test(navigator.userAgent);
-  const where = chrome
-    ? "at the top right of the screen, next to the web address"
+  const find = chrome
+    ? [
+        "Look at the top of this screen, at the bar with the web address in it.",
+        `At the right end of that bar is a small square with an arrow pointing up out of it ${SHARE_ICON}. Tap it.`,
+      ]
     : firefox
-      ? "inside the menu behind the three lines at the bottom right"
-      : "in the middle of the bar at the bottom of the screen";
+      ? [
+          "Look at the bottom right of this screen and tap the three short lines. A menu opens.",
+          `In that menu tap <b>Share</b> — the row with a square and an arrow pointing up ${SHARE_ICON}.`,
+        ]
+      : [
+          "Look at the very bottom of this screen, at the bar with the web address in it. If you do not see it, scroll up a little and it comes back.",
+          `In the middle of that bar, under the address, is a small square with an arrow pointing up out of it ${SHARE_ICON}. Tap it.`,
+        ];
   return [
-    `Tap the Share button ${SHARE_ICON} — a square with an arrow pointing up, ${where}`,
-    "A list slides up. Scroll down it until you see <b>Add to Home Screen</b>, and tap that",
-    "Tap <b>Add</b> at the top right",
-    "From now on, open Family Diagram from the icon on your home screen, like any app",
+    ...find,
+    "A list slides up from the bottom. Slide it upward with your finger until you see a row that says <b>Add to Home Screen</b>, with a plus sign in a square beside it. Tap that row.",
+    "At the top right of the screen, tap <b>Add</b>.",
+    "Close the browser. There is now a Family Diagram icon on your home screen. From now on, open it from there, like any app.",
   ];
 }
 
@@ -139,10 +148,10 @@ function card(): HTMLElement {
   } else {
     box.append(
       steps([
-        "Tap the three dots at the top right of the screen",
-        "Tap <b>Add to Home screen</b> in the menu that opens",
-        "Tap <b>Add</b>",
-        "From now on, open Family Diagram from the icon on your home screen",
+        "Look at the top right of this screen and tap the three dots stacked on top of each other. A menu opens.",
+        "In that menu tap <b>Add to Home screen</b>.",
+        "Tap <b>Add</b>.",
+        "Close the browser. There is now a Family Diagram icon on your home screen. From now on, open it from there, like any app.",
       ]),
     );
     const got = el("button", "hs-go", "Got it");
