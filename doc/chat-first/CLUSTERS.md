@@ -25,8 +25,10 @@ Computed from `DiagramData` alone, no model call, in `btcopilot/personal/cluster
 - Candidates sharing any event **merge**.
 - Two years with no nodal event and no shift inside a merged candidate **split**
   it, at the widest silence between the two seeding events either side.
-- A candidate left with one event is **not a cluster** — a lone shift with no
-  related move stays a dot on the line.
+- A candidate holding fewer than **three** events is **not a cluster** — a lone
+  shift with no related move, or a bare pair, stays dots on the line. The
+  minimum is `MIN_EVENTS`, and it binds the rules, the model's regrouping, and
+  the write: `sync` raises rather than store a grouping under it.
 
 Parameters `SPAN_DAYS` and `CALM_GAP_DAYS` are module constants. Undated events
 never enter a candidate.
@@ -59,6 +61,10 @@ entry per final group: `eventIds`, `name`, `reason`, and `change`.
   members.]
 - A name, reason, or change containing a diagnostic or popular-psychology word
   the prompt's terms do not contain (`OUTSIDE_WORDS`) is rejected too.
+
+- A group holding fewer than `MIN_EVENTS` events is rejected. A group that only
+  falls under the minimum because a grouping the user made takes its events is
+  dropped instead, silently — those events go back to being dots.
 
 Validation rejects a violation with a sentence; the prompt is re-asked once with
 that sentence and then the failure propagates.
@@ -123,6 +129,17 @@ whole record even though no event itself changed.
 The owner ruled: "let's just play with it and see how it works in the Beta."
 [Oracle: R-0208] Selective invalidation is not being built now — revisit only
 if whole-record recompute shows a problem in use.
+
+## Only a restarted server groups by the current rules (learned 2026-09-08)
+
+`DETECTION_VERSION` makes a *stored* grouping stale; it cannot make a *running
+process* stale. A long-running sandbox server keeps the module it imported at
+start, so a rules or prompt change reaches real turns only after that server is
+restarted. On 2026-09-08 a server started before the minimum-size change stored
+one-event clusters on the owner's record hours after the change was committed,
+and wrote the cache key its older code computed. Restart the sandbox after every
+commit that touches this module, and read a surprising stored grouping as a
+question about which code the server was running before treating it as a rules bug.
 
 ## How to re-run clustering on a record by hand
 

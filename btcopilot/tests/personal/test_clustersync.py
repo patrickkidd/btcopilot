@@ -9,7 +9,7 @@ from btcopilot.personal.timeline import build_timeline
 from btcopilot.extensions import db
 from btcopilot.personal import chips, recordtext
 from btcopilot.personal.chips import ChipKind
-from btcopilot.personal.clusters import sync
+from btcopilot.personal.clusters import ClusterError, sync
 from btcopilot.personal.coachturn import CoachTurn
 from btcopilot.personal.models import Author, Change
 from btcopilot.personal.toolbox import ToolName
@@ -59,9 +59,9 @@ def family(test_user):
                 anxiety="up",
             )
         )
-        for n in range(4)
+        for n in range(6)
     ]
-    data.lastItemId = 13
+    data.lastItemId = 15
     diagram.set_diagram_data(data)
     db.session.commit()
     return diagram
@@ -86,7 +86,7 @@ def clusters_of(diagram) -> dict:
 
 
 def test_a_turn_that_adds_an_event_stores_the_grouping(discussion, family):
-    with detects(("The hard spring", [10, 11, 12, 13, 14])):
+    with detects(("The hard spring", [10, 11, 12, 13, 14, 15, 16])):
         CoachTurn(
             discussion,
             "That winter she got sick too.",
@@ -94,7 +94,7 @@ def test_a_turn_that_adds_an_event_stores_the_grouping(discussion, family):
                 called(
                     ToolName.EditEvent,
                     kind="shift",
-                    date="1994-05-01",
+                    date="1994-07-01",
                     description="got sick",
                     person=1,
                     symptom="up",
@@ -108,13 +108,13 @@ def test_a_turn_that_adds_an_event_stores_the_grouping(discussion, family):
     cluster = next(iter(stored.values()))
     assert cluster["name"] == "The hard spring"
     assert cluster["source"] == ClusterSource.Model.value
-    assert cluster["eventIds"] == [10, 11, 12, 13, 14]
-    assert (cluster["startDate"], cluster["endDate"]) == ("1994-01-01", "1994-05-01")
+    assert cluster["eventIds"] == [10, 11, 12, 13, 14, 15, 16]
+    assert (cluster["startDate"], cluster["endDate"]) == ("1994-01-01", "1994-07-01")
     assert family.get_diagram_data().clusterCacheKey
 
 
 def test_a_turn_that_changes_no_event_does_not_regroup(discussion, family):
-    with detects(("Never asked for", [10, 11])) as detect:
+    with detects(("Never asked for", [10, 11, 12])) as detect:
         CoachTurn(
             discussion, "Tell me about that.", model=Model(said("It was hard."))
         ).run()
@@ -123,7 +123,7 @@ def test_a_turn_that_changes_no_event_does_not_regroup(discussion, family):
 
 
 def test_the_grouping_is_written_by_the_coach_in_the_same_turn(discussion, family):
-    with detects(("The hard spring", [10, 11])):
+    with detects(("The hard spring", [10, 11, 12])):
         reply = CoachTurn(
             discussion,
             "She got sick.",
@@ -150,7 +150,7 @@ def test_a_grouping_the_user_made_survives_regrouping(discussion, family):
                 title="When he left",
                 summary="",
                 name="When he left",
-                eventIds=[10, 11],
+                eventIds=[10, 11, 12],
                 source=ClusterSource.User,
             )
         )
@@ -158,24 +158,24 @@ def test_a_grouping_the_user_made_survives_regrouping(discussion, family):
     family.set_diagram_data(data)
     db.session.commit()
 
-    with detects(("Everything at once", [10, 11, 12, 13])):
+    with detects(("Everything at once", [10, 11, 12, 13, 14, 15])):
         sync(family.id, turn_id="t1")
 
     stored = clusters_of(family)
     theirs = stored["c1"]
     assert theirs["name"] == "When he left"
-    assert theirs["eventIds"] == [10, 11]
+    assert theirs["eventIds"] == [10, 11, 12]
     assert theirs["source"] == ClusterSource.User.value
 
     mine = [c for c in stored.values() if c["source"] == ClusterSource.Model.value]
     assert len(mine) == 1
-    assert mine[0]["eventIds"] == [12, 13]
+    assert mine[0]["eventIds"] == [13, 14, 15]
 
 
-def test_an_event_left_alone_by_a_split_is_a_dot_not_a_cluster(discussion, family):
-    """A grouping the user made takes one event out of a model grouping of two.
-    The event left over is not stored as a grouping of its own, and the other
-    model grouping is stored as it was."""
+def test_events_left_over_by_a_split_are_dots_not_a_cluster(discussion, family):
+    """A grouping the user made takes two events out of a model grouping of
+    three. The one event left over is not stored as a grouping of its own, and
+    the other model grouping is stored as it was."""
     data = family.get_diagram_data()
     data.clusters = [
         asdict(
@@ -184,7 +184,7 @@ def test_an_event_left_alone_by_a_split_is_a_dot_not_a_cluster(discussion, famil
                 title="When he left",
                 summary="",
                 name="When he left",
-                eventIds=[11],
+                eventIds=[11, 12],
                 source=ClusterSource.User,
             )
         )
@@ -192,34 +192,48 @@ def test_an_event_left_alone_by_a_split_is_a_dot_not_a_cluster(discussion, famil
     family.set_diagram_data(data)
     db.session.commit()
 
-    with detects(("The hard spring", [10, 11]), ("The winter after", [12, 13])):
+    with detects(("The hard spring", [10, 11, 12]), ("The winter after", [13, 14, 15])):
         sync(family.id, turn_id="t1")
 
     stored = clusters_of(family)
-    assert stored["c1"]["eventIds"] == [11]
+    assert stored["c1"]["eventIds"] == [11, 12]
     mine = [c for c in stored.values() if c["source"] == ClusterSource.Model.value]
-    assert [c["eventIds"] for c in mine] == [[12, 13]]
+    assert [c["eventIds"] for c in mine] == [[13, 14, 15]]
+
+
+def test_a_grouping_under_the_minimum_is_never_stored(discussion, family):
+    """The write is the last gate: whatever hands `sync` a grouping of two —
+    a model answer that slipped validation, or a server still running the rules
+    of an older version — the record refuses it rather than storing a pair."""
+    with detects(("The hard spring", [10, 11])):
+        with pytest.raises(ClusterError, match="fewer than 3"):
+            sync(family.id, turn_id="t1")
+
+    assert clusters_of(family) == {}
+    assert not family.get_diagram_data().clusterCacheKey
 
 
 def test_a_grouping_of_unknown_provenance_is_left_alone(discussion, family):
     """A row written before provenance was recorded is treated as the user's:
     guessing that the model made it would lose a name the user chose."""
     data = family.get_diagram_data()
-    stale = asdict(Cluster(id="c1", title="When he left", summary="", eventIds=[10, 11]))
+    stale = asdict(
+        Cluster(id="c1", title="When he left", summary="", eventIds=[10, 11, 12])
+    )
     del stale["source"]
     data.clusters = [stale]
     family.set_diagram_data(data)
     db.session.commit()
 
-    with detects(("Everything at once", [10, 11, 12, 13])):
+    with detects(("Everything at once", [10, 11, 12, 13, 14, 15])):
         sync(family.id, turn_id="t1")
 
     stored = clusters_of(family)
-    assert stored["c1"]["eventIds"] == [10, 11]
+    assert stored["c1"]["eventIds"] == [10, 11, 12]
     assert "source" not in stored["c1"]
     mine = [c for c in stored.values() if c.get("source") == ClusterSource.Model.value]
     assert len(mine) == 1
-    assert mine[0]["eventIds"] == [12, 13]
+    assert mine[0]["eventIds"] == [13, 14, 15]
 
 
 def test_the_coach_is_never_told_the_model_made_a_grouping_it_may_not_have(family):
@@ -230,7 +244,7 @@ def test_the_coach_is_never_told_the_model_made_a_grouping_it_may_not_have(famil
 
 
 def test_regrouping_keeps_the_id_the_coach_already_pointed_at(family):
-    with detects(("The hard spring", [10, 11])):
+    with detects(("The hard spring", [10, 11, 12])):
         sync(family.id, turn_id="t1")
     first = next(iter(clusters_of(family)))
 
@@ -239,31 +253,31 @@ def test_regrouping_keeps_the_id_the_coach_already_pointed_at(family):
     family.set_diagram_data(data)
     db.session.commit()
 
-    with detects(("The hard spring", [10, 11, 12])):
+    with detects(("The hard spring", [10, 11, 12, 13])):
         sync(family.id, turn_id="t2")
     assert list(clusters_of(family)) == [first]
 
 
 def test_the_same_events_are_not_regrouped_twice(family):
-    with detects(("The hard spring", [10, 11])):
+    with detects(("The hard spring", [10, 11, 12])):
         sync(family.id, turn_id="t1")
-    with detects(("Something else", [12, 13])) as detect:
+    with detects(("Something else", [13, 14, 15])) as detect:
         assert sync(family.id, turn_id="t2") is None
     detect.assert_not_called()
 
 
 def test_a_grouping_made_by_the_older_rules_is_regrouped(family, monkeypatch):
     monkeypatch.setattr("btcopilot.personal.clusters.DETECTION_VERSION", 1)
-    with detects(("The hard spring", [10, 11])):
+    with detects(("The hard spring", [10, 11, 12])):
         sync(family.id, turn_id="t1")
     was = family.get_diagram_data().clusterCacheKey
 
     monkeypatch.setattr("btcopilot.personal.clusters.DETECTION_VERSION", 2)
-    with detects(("Something else", [12, 13])) as detect:
+    with detects(("Something else", [13, 14, 15])) as detect:
         assert sync(family.id, turn_id="t2") is not None
     detect.assert_called_once()
     assert family.get_diagram_data().clusterCacheKey != was
-    assert [c["eventIds"] for c in clusters_of(family).values()] == [[12, 13]]
+    assert [c["eventIds"] for c in clusters_of(family).values()] == [[13, 14, 15]]
 
 
 def test_a_chip_to_a_stored_cluster_resolves_and_the_picture_can_aim_at_it(family):

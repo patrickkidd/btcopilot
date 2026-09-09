@@ -35,10 +35,10 @@ _log = logging.getLogger(__name__)
 
 # Bumped whenever the candidate rules or the naming prompt change, so a record
 # grouped by the older rules re-groups on its next event-changing turn.
-DETECTION_VERSION = 3
+DETECTION_VERSION = 4
 
-# A single event is a dot on the line, never a cluster.
-MIN_EVENTS = 2
+# Fewer moments than this is a dot or a pair on the line, never a cluster.
+MIN_EVENTS = 3
 
 # How far either side of a nodal event or shift a related event may sit and
 # still be part of the same cluster.
@@ -304,7 +304,7 @@ def _check(
         if len(cluster.eventIds) < MIN_EVENTS:
             raise ClusterError(
                 f"Group {cluster.eventIds} holds fewer than {MIN_EVENTS} events; "
-                "one event on its own is never a cluster."
+                "anything smaller is never a cluster."
             )
         repeated = seen & set(cluster.eventIds)
         if repeated:
@@ -428,8 +428,9 @@ def _reuse(mine: list[dict], event_ids: list[int], used: set[str]) -> str | None
 def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
     """The model's grouping, with every event a grouping it may not touch owns
     held out, and each group carrying the id of the stored grouping it
-    continues. An event left on its own once the held-out events are taken out
-    stays a dot on the line rather than becoming a cluster of one."""
+    continues. A grouping that arrives under the minimum is a bug in whatever
+    produced it and raises; one that only falls under it once the held-out
+    events are taken out stays dots on the line."""
     mine = [c for c in stored if _regroupable(c)]
     theirs = {
         event_id
@@ -440,6 +441,11 @@ def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
     taken = {str(c["id"]) for c in stored}
     kept: dict[str, Cluster] = {}
     for cluster in detected:
+        if len(cluster.eventIds) < MIN_EVENTS:
+            raise ClusterError(
+                f"Grouping {cluster.eventIds} arrived holding fewer than "
+                f"{MIN_EVENTS} events."
+            )
         event_ids = [e for e in cluster.eventIds if e in dates and e not in theirs]
         if len(event_ids) < MIN_EVENTS:
             continue
@@ -484,6 +490,23 @@ def _deltas(stored: list[dict], detected: list[Cluster], dates: dict) -> list[di
     return deltas
 
 
+def _guard(deltas: list[dict]) -> list[dict]:
+    """The last gate before the write: this path never stores a cluster holding
+    fewer than MIN_EVENTS events, whatever the rules made or the model said."""
+    small = [
+        delta["item_id"]
+        for delta in deltas
+        if delta["item_kind"] == ItemKind.Cluster.value
+        and delta["field"] == "eventIds"
+        and len(delta["after"] or []) < MIN_EVENTS
+    ]
+    if small:
+        raise ClusterError(
+            f"Clusters {small} would be stored holding fewer than {MIN_EVENTS} events."
+        )
+    return deltas
+
+
 def sync(
     diagram_id: int,
     *,
@@ -511,7 +534,7 @@ def sync(
         return None
 
     dates = {e.id: e.dateTime for e in events if e.dateTime}
-    deltas = _deltas(data.clusters, detect_clusters(data).clusters, dates)
+    deltas = _guard(_deltas(data.clusters, detect_clusters(data).clusters, dates))
     deltas.append(
         {
             "item_kind": ItemKind.Diagram.value,
