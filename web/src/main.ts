@@ -428,8 +428,12 @@ function actions(): void {
   const sel = pic.sel;
   const open = picture.openCluster();
   // The board has its own controls, and two rows saying explain is one too
-  // many.
-  if (picture.onBoard()) {
+  // many. Entering the board is the one level change allowed to move what is
+  // under the picture, so the row goes outright rather than sitting there as
+  // an empty strip with a hairline under it (owner ruling 2026-09-08).
+  const onBoard = picture.onBoard();
+  host.classList.toggle("gone", onBoard);
+  if (onBoard) {
     host.innerHTML = "";
     return;
   }

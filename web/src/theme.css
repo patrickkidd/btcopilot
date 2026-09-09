@@ -692,6 +692,8 @@ button { font-family: inherit; }
   touch-action: pan-x;
   overscroll-behavior: contain;
 }
+/* On the board the row is not there at all: no strip, no hairline. */
+.caption.gone { display: none; }
 .caption::-webkit-scrollbar { display: none; }
 .caption > * { flex: none; }
 /* The chat's own chip, in the row (picked plate F): one mark and one word, a
