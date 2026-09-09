@@ -176,25 +176,17 @@ breathing, and the chat fading on a session swap):
 - **The one thing only he can answer**: whether each move reads without a legend, and
   whether the coach's words and the drawings tell the same story.
 
-**Review sandbox — READ BEFORE TOUCHING.** The durable script and database are
-`/Users/patrick/worktrees/fd362-sandbox/serve.sh` and its `.db` files in that same
-directory — never an agent job's tmp directory. That rule exists because it was broken
-once already: a prior job directory was deleted on a session restart and took the
-owner's `beta.db` with it. The stranded record from that database survives nowhere
-except inside the still-running process on port 8889, pid 86248 — that process must NOT
-be restarted, killed, or reused until Patrick decides how (or whether) to recover the
-data from it. All new sandbox work goes on port 8890 against the durable script and
-database above, with fixtures `play` and `dense60` installed and invite links
-single-use.
-
-**Sandbox recipe (port 8890, durable location).**
-`/Users/patrick/worktrees/fd362-sandbox/serve.sh 8890 <db>` runs it. From ~/theapp:
-`PYTHONPATH=<btcopilot worktree> FLASK_APP=btcopilot.app:create_app
-FLASK_CONFIG=development FLASK_SQLALCHEMY_DATABASE_URI=sqlite:///<db>
-FDSERVER_PROMPTS_PATH=<fdserver worktree>/prompts/private_prompts.py uv run python -m
-flask run -p 8890 --no-reload` after `npm --prefix web run build`; then `flask personal
-migrate` if the database predates a schema change, and `python -m btcopilot.auth.invite
-<email>` for a single-use link. No auto-auth.
+**Review sandbox (revised 2026-09-08).** Durable scripts live in
+`/Users/patrick/worktrees/fd362-sandbox/`: `serve.sh` runs the Flask API on port 8890
+from the worktree, no-reload — a code change needs a rebuild and a restart to take
+effect. `dev.sh` runs the Vite dev server on port 8891, bound to all interfaces,
+proxying to 8890, with the host header forwarded so sign-in and cookies mint correctly
+for 8891; the service worker is off in dev. **The owner reviews at
+http://turin.local:8891/personal/** — every saved edit shows on refresh, no build
+needed during review. `invite.sh <email>` mints a turin.local invite. `env.sh` holds
+the settings. The review database, `beta2.db`, is never seeded or wiped, is backed up
+before any restart, and is migrated with `flask personal migrate`. A device already
+signed in needs no new invite.
 
 ## Prototyping status (honest)
 
@@ -526,6 +518,9 @@ phone.
 **Cluster detection**: [doc/chat-first/CLUSTERS.md](CLUSTERS.md) (rules-first, model
 names + reason; owner examples pending).
 
+**Grandfathered**: the owner's own two-event cluster predates the three-event floor —
+pending his ruling whether the floor binds user groupings.
+
 ## A/B-test list
 
 Kept for when there are enough users to run one.
@@ -629,5 +624,11 @@ test script through the Pro app's own loading code plus his eyeball beats an age
 the released app. Every multi-agent run spawns a persistent goal auditor before the
 workers start. Read this file to start; read HISTORY only for a specific fact. One
 worktree per builder next round — shared-index sweeps and gap-file clobbers cost hours.
+An eyeball round covers at most three items: edit, then one headless screenshot at
+393×852 for the coordinator to check, then the owner refreshes to see it himself.
+Goldens, gates, suites and CI run once, at the end of the day, not per round. The
+auditor's contract during a round is the clock and the cost first — a ten-minute stall
+alarm, checking the sandbox is reachable, and flagging any verification beyond the one
+screenshot — and an auditor that misses a stall is replaced.
 
 Pinned (not next): the corpus/subset sessions in [NEXT_SESSIONS.md](NEXT_SESSIONS.md).
