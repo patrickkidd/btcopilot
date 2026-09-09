@@ -17,7 +17,7 @@ import {
  * pick). Every value here has exactly one home; the speak-replies row on the
  * chat view is the one named shortcut, and it writes this same value. */
 
-const PANE_MS = 220;
+const PANE_MS = 240;
 const SEARCH_AT = 6;
 
 const SILHOUETTE =
@@ -109,11 +109,18 @@ export class Settings {
 
   private async raise(): Promise<void> {
     if (this.open) return;
-    await this.load();
+    // The account is already in hand from the load at start-up, so the view
+    // opens on the tap rather than after two round trips. What comes back
+    // redraws the page where it stands.
+    const first = !this.account;
+    if (first) await this.load();
     this.open = true;
     this.host.hidden = false;
     this.stack = [];
     this.push(Page.Root);
+    // ...and the fresh account arrives after the page has landed: redrawing it
+    // mid-slide replaces the pane that is moving and the slide stops dead.
+    if (!first) window.setTimeout(() => void this.load(), PANE_MS);
   }
 
   private push(page: Page): void {
@@ -152,7 +159,10 @@ export class Settings {
     this.handlers.onTitle(null);
     const panes = this.stack.map((entry) => entry.pane);
     this.stack = [];
-    for (const pane of panes) pane.classList.remove("in");
+    // every page leaves to the right, the one underneath included, so what
+    // was on screen is uncovered rather than revealed behind a page parked
+    // off to the left
+    for (const pane of panes) pane.classList.remove("in", "under");
     window.setTimeout(() => {
       if (this.open) return;
       this.host.replaceChildren();

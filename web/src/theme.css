@@ -1555,6 +1555,11 @@ button { font-family: inherit; }
 }
 .sn-back:active { background: var(--tint); }
 
+/* The box the settings pages travel in has no ground of its own: what is
+   already on screen stays there and the page slides in over it, rather than
+   the app blanking first and the page arriving onto nothing (owner ruling
+   2026-09-08). The pages themselves are opaque, so nothing shows through one
+   that has landed. */
 .sn-stack {
   position: absolute;
   left: 0;
@@ -1562,7 +1567,7 @@ button { font-family: inherit; }
   top: 44px;
   bottom: 0;
   overflow: hidden;
-  background: var(--bg);
+  background: transparent;
 }
 .sn-pane {
   position: absolute;
@@ -1571,7 +1576,7 @@ button { font-family: inherit; }
   overflow-x: hidden;
   background: var(--bg);
   transform: translateX(100%);
-  transition: transform 0.22s ease;
+  transition: transform 0.24s ease;
   touch-action: pan-y;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
