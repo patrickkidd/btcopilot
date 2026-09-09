@@ -20,6 +20,12 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+/** The card and the badge are for a phone or tablet in a browser; a desktop
+ * window gets neither. */
+function handheld(): boolean {
+  return navigator.maxTouchPoints > 0 && window.matchMedia("(max-width: 1024px)").matches;
+}
+
 function installed(): boolean {
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
@@ -95,7 +101,7 @@ function appleWords(): string[] {
           `In that menu tap <b>Share</b> — the row with a square and an arrow pointing up ${SHARE_ICON}.`,
         ]
       : [
-          "Look at the very bottom of this screen, at the bar with the web address in it. If you do not see it, scroll up a little and it comes back.",
+          "Look at the very bottom of this screen, at the bar with the web address in it.",
           `At the right end of that bar, tap the three dots in a circle <b>···</b>. A menu opens. If it has a row that says <b>Add to Home Screen</b>, tap that and go to step 4. If not, tap <b>Share</b> — the row with a small square and an arrow pointing up out of it ${SHARE_ICON}.`,
         ];
   return [
@@ -125,10 +131,18 @@ function card(): HTMLElement {
   const later = el("button", "hs-later", "Not now");
   later.type = "button";
 
+  // A tap anywhere but the card closes it and still reaches what it tapped.
+  // It listens for the finished tap, not its start: taking the card out of
+  // the page under a finger makes iOS drop the tap it was part of.
+  const away = (event: Event) => {
+    if (!box.contains(event.target as Node)) close();
+  };
   const close = () => {
+    document.removeEventListener("click", away, true);
     remember();
     scrim.remove();
   };
+  setTimeout(() => document.addEventListener("click", away, true));
 
   if (isApple()) {
     box.append(steps(appleWords()), appleSteps());
@@ -163,19 +177,11 @@ function card(): HTMLElement {
   later.addEventListener("click", close);
   box.append(buttons);
   scrim.append(box);
-  // A tap anywhere but the card closes it, and still reaches what it tapped.
-  const away = (event: Event) => {
-    if (!box.contains(event.target as Node)) {
-      document.removeEventListener("pointerdown", away, true);
-      close();
-    }
-  };
-  setTimeout(() => document.addEventListener("pointerdown", away, true));
   return scrim;
 }
 
 export function offerHomeScreen(): void {
-  if (installed()) return;
+  if (installed() || !handheld()) return;
   const last = asked();
   if (last && Date.now() - last < AGAIN_AFTER_DAYS * 86_400_000) return;
   document.body.append(card());
@@ -190,6 +196,6 @@ export function showHomeScreen(): void {
 
 /** The badge lives while the app runs in a browser and goes once installed. */
 export function homeScreenBadge(button: HTMLElement, open: () => void): void {
-  button.hidden = installed();
+  button.hidden = installed() || !handheld();
   button.addEventListener("click", open);
 }
