@@ -188,6 +188,16 @@ the settings. The review database, `beta2.db`, is never seeded or wiped, is back
 before any restart, and is migrated with `flask personal migrate`. A device already
 signed in needs no new invite.
 
+### Pre-merge blockers (from doc/chat-first/ISOLATION_OPTIONS.md, 2026-09-09; the isolation decision itself is PARKED by the owner until the prototype is done)
+
+1. Pro-owned diagrams are converted pickle→JSON in place on their next save with no
+   explicit migration or backup — before merge: Pro rows stay pickle until an explicit
+   backed-up migration; only chat-app rows are JSON.
+2. The Pro save endpoint imports Personal-app code — remove before merge.
+3. schema.py dropped the ClusterPattern enum and the pattern/dominantVariable fields the
+   desktop app still reads — restore as tolerated unused fields before merge (never
+   written by the Personal app).
+
 ## Prototyping status (honest)
 
 - **FD-360 page** (PR #133, draft, worktree ~/theapp/btcopilot/.claude/worktrees/FD-360):

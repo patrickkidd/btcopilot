@@ -218,3 +218,5 @@ items, so each is logged FIXED without a commit citation.
 61. Owner: "this is ready for me to start using it like an app on the phone with the home
     screen trick"; next phase = code organization / isolation of the Personal app from
     existing infra (ISOLATION_OPTIONS.md in progress). RULED.
+62. Isolation discussion parked until the prototype is done (owner); the three pre-merge
+    blockers recorded in STATE.md.
