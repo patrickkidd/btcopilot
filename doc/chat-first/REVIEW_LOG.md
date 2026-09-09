@@ -196,3 +196,25 @@ items, so each is logged FIXED without a commit citation.
     cluster (his own two-event grouping, grandfathered). OPEN for the owner: does the
     three-event rule bind a grouping the user made; if so, that one gains an event or is
     dropped.
+
+## Round 4 (2026-09-09)
+
+55. The grey mono label is the title of the current view ("Family timeline" at rest, not
+    tappable; cluster name when open; board title on the board); the back arrow shows
+    beside it; tapping either goes up one level. FIXED @bb64f2a.
+56. Drill-down slides in from the right over the higher view, back slides out to the
+    right, user- or coach-initiated, ~240ms, reduced-motion instant. FIXED @4d4ba1e.
+57. Six pixels between the year label and the button row; region now 138 (rows
+    28/66/44). FIXED @2042eac.
+58. The account view slides over the content (content stays rendered), opens on the tap
+    using the loaded account, refresh deferred. FIXED @ae8a14c.
+59. With a cluster open and nothing picked, the band shows the coach's reason only; the
+    name lives in the title row. FIXED @ab26a1b.
+60. Round 3 landed (@1adb168, @80400fd, @fe0dc6a): plate F row with "in chat", states
+    per selection, selected dot emphasized, "tap a cluster" at rest, board hides the row
+    (collapsed), list button in the chip row, avatar without outline, "edit by chatting"
+    line removed, event→statement link so "in chat" and the title jump work on real
+    records; dev server on 8891. FIXED.
+61. Owner: "this is ready for me to start using it like an app on the phone with the home
+    screen trick"; next phase = code organization / isolation of the Personal app from
+    existing infra (ISOLATION_OPTIONS.md in progress). RULED.
