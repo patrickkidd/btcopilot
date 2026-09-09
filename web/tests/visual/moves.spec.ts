@@ -209,7 +209,7 @@ test.describe("the timeline behind the menu", () => {
 /** The editor shows a second person, a child and the shift block only for the
  * kinds `EventForm.qml` shows them for. These assert behaviour, not pixels. */
 test.describe("the editor's fields by kind", () => {
-  test.use({ storageState: stateFor("three40") });
+  test.use({ storageState: stateFor("editable") });
 
   const openEditor = async (page: import("@playwright/test").Page) => {
     await page.goto("/personal/");
@@ -260,6 +260,9 @@ test.describe("the editor's fields by kind", () => {
   }) => {
     await openEditor(page);
     await pick(page, "kind", "shift");
+    // these tests write to the record they open, so the one that saves leaves a
+    // relationship behind for the next run: start from none whatever is there
+    await pick(page, "relationship", "");
     await expect(block(page, "targets")).toBeHidden();
     await pick(page, "relationship", "conflict");
     await expect(block(page, "targets")).toBeVisible();
@@ -278,6 +281,11 @@ test.describe("the editor's fields by kind", () => {
     await pick(page, "kind", "shift");
     await pick(page, "relationship", "conflict");
     const targets = page.locator('.segs[data-name="relationshipTargets"] .seg');
+    // whatever a previous run left on comes off first, so two is two
+    for (const chip of await page
+      .locator('.segs[data-name="relationshipTargets"] .seg.on')
+      .all())
+      await chip.click();
     await targets.nth(0).click();
     await targets.nth(1).click();
     const saved = page.waitForResponse(

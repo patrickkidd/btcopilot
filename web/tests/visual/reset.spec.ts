@@ -89,6 +89,13 @@ test.describe("a tap on a label", () => {
 
   test("a dot picks its moment and never travels", async ({ page }) => {
     await settle(page);
+    // whether the picture opens on the whole line or on one cluster depends on
+    // what the coach last named, so the cluster is opened when there is one
+    const box = page.locator('.ss-hit[data-target="cluster"]');
+    if (await box.first().isVisible().catch(() => false)) {
+      await box.first().click();
+      await page.waitForTimeout(400);
+    }
     await page.locator('.ss-hit[data-target="zone"]').first().click();
     await expect(page.locator(".ss-t.meta")).toHaveCount(1);
     // the same dot again: still picked, and the thread has not moved

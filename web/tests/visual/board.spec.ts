@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { EXACT, stateFor } from "./setup";
+import { stateFor, steady } from "./setup";
 
 /** The moves board: the level a cluster opens into, and the chrome around the
  * drawings. The drawings themselves have their own goldens in moves.spec.ts;
@@ -58,7 +58,7 @@ test.describe("the moves board", () => {
     await settle(page);
     await pickCluster(page);
     await expect(page.locator("#cap-play")).toHaveText("\u25b6");
-    await expect(picture(page)).toHaveScreenshot("board-entry-offer.png", EXACT);
+    await expect(picture(page)).toHaveScreenshot("board-entry-offer.png", steady(page));
   });
 
   test("the board opens on the first move", async ({ page }) => {
@@ -67,7 +67,7 @@ test.describe("the moves board", () => {
     // the words under the board name the move, and never count them
     await expect(page.locator(".bcap")).toHaveText("Ada · toward");
     await freeze(page);
-    await expect(picture(page)).toHaveScreenshot("board-first-move.png", EXACT);
+    await expect(picture(page)).toHaveScreenshot("board-first-move.png", steady(page));
   });
 
   test("earlier moves stay behind the one being drawn", async ({ page }) => {
@@ -77,7 +77,7 @@ test.describe("the moves board", () => {
       await page.locator('.pctl [data-target="next"]').click();
     await expect(page.locator(".bcap")).toHaveText("Ada · conflict");
     await freeze(page);
-    await expect(picture(page)).toHaveScreenshot("board-fifth-move.png", EXACT);
+    await expect(picture(page)).toHaveScreenshot("board-fifth-move.png", steady(page));
   });
 
   test("the last move has nowhere further to go", async ({ page }) => {
@@ -87,7 +87,7 @@ test.describe("the moves board", () => {
     while (await next.isEnabled()) await next.click();
     await expect(page.locator('.pctl [data-target="prev"]')).toBeEnabled();
     await freeze(page);
-    await expect(picture(page)).toHaveScreenshot("board-last-move.png", EXACT);
+    await expect(picture(page)).toHaveScreenshot("board-last-move.png", steady(page));
   });
 
   test("back returns to the resting wire", async ({ page }) => {
@@ -101,6 +101,6 @@ test.describe("the moves board", () => {
     const after = await picture(page).boundingBox();
     // the resting picture is one fixed height whatever it has been showing
     expect(after?.height).toBe(before?.height);
-    await expect(picture(page)).toHaveScreenshot("board-back-to-wire.png", EXACT);
+    await expect(picture(page)).toHaveScreenshot("board-back-to-wire.png", steady(page));
   });
 });

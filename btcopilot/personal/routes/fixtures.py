@@ -366,6 +366,13 @@ HOSTILE_CHAT = [
     ("user", "🙂🎉😀🔥🌍💡🥲🫠🧠🌱🕰️🪞 " * 12),
 ]
 
+def editable() -> DiagramData:
+    """A copy of the sparse record for the tests that write through the editor.
+    They change what they open, so they need a record of their own or every
+    picture taken after them is of a record they altered."""
+    return three_over_forty()
+
+
 def long_name() -> DiagramData:
     """An ordinary small record; what is under test is its diagram's name."""
     return three_over_forty()
@@ -382,6 +389,7 @@ FIXTURES = {
     "play": (play, PLAY_CHAT),
     "longmove": (long_move, None),
     "longname": (long_name, None),
+    "editable": (editable, None),
 }
 
 # the diagram name each fixture's record carries, when it is not the default

@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import {
   closeSync,
@@ -100,6 +101,7 @@ export const KEYS = [
   "play",
   "longmove",
   "longname",
+  "editable",
 ] as const;
 export type Key = (typeof KEYS)[number];
 
@@ -112,6 +114,17 @@ export const stateFor = (key: Key) => join(AUTH, `${key}.json`);
  * The ratio is set wide so it cannot be the binding limit, because the
  * stricter of the two applies. */
 export const EXACT = { maxDiffPixels: 8, maxDiffPixelRatio: 1 };
+
+/** The strict count, plus the one part of the picture that cannot be compared.
+ * The row under it holds the coded-in chip, which says how long ago a moment
+ * was written down, so it reads differently every run and every time the
+ * fixtures are installed — and its width changes with its words, which moves
+ * everything beside it. The whole row is covered rather than compared, and what
+ * it holds is asserted in words in layout.spec and board.spec. */
+export const steady = (page: Page) => ({
+  ...EXACT,
+  mask: [page.locator("#caption")],
+});
 
 export default async function setup() {
   await takeLock();

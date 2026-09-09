@@ -160,5 +160,8 @@ export function zones<T extends { x: number }>(
  * nothing (the converged mockup's cycle). */
 export function cycle<T>(inZone: T[], current: T | null): T | null {
   const at = current === null ? -1 : inZone.indexOf(current);
-  return at < 0 ? (inZone[0] ?? null) : (inZone[at + 1] ?? null);
+  // Past the last one it comes round to the first rather than picking nothing:
+  // a tap on a moment picks a moment, and putting the picture down is a tap on
+  // the ground beside it.
+  return at < 0 ? (inZone[0] ?? null) : (inZone[at + 1] ?? inZone[0] ?? null);
 }
