@@ -637,7 +637,7 @@ Kept for when there are enough users to run one.
    files (see session report); (e) his feature-grouped ratification pass over the
    initial 64-ruling set.
 
-## What's next — the architectural step back (CLOSED 2026-09-07)
+## The architectural step back (CLOSED 2026-09-07)
 
 All six items are ruled. Where each one landed:
 
