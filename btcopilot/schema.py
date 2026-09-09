@@ -393,6 +393,18 @@ class TraceKey(enum.StrEnum):
     Statement = "codedInStatement"
 
 
+class ClusterPattern(enum.StrEnum):
+    """Deprecated 2026-09-09: nothing writes or reads it. Kept only so the
+    released desktop app's import of it keeps working."""
+
+    AnxietyCascade = "anxiety_cascade"
+    TriangleActivation = "triangle_activation"
+    ConflictResolution = "conflict_resolution"
+    ReciprocalDisturbance = "reciprocal_disturbance"
+    FunctioningGain = "functioning_gain"
+    WorkFamilySpillover = "work_family_spillover"
+
+
 class ClusterSource(enum.StrEnum):
     Model = "model"
     User = "user"

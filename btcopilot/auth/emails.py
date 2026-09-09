@@ -9,9 +9,10 @@ _log = logging.getLogger(__name__)
 
 
 def _deliver(recipient: str, subject: str, body: str):
-    """Development never sends: the link or the code goes to the log so a
-    sandbox can be driven without a mail server."""
-    if current_app.config["CONFIG"] == "development":
+    """A development server with no mail server configured writes the link or
+    the code to the log instead, so a sandbox can be driven without one."""
+    config = current_app.config
+    if config["CONFIG"] == "development" and "MAIL_SERVER" not in config:
         _log.warning(f"[dev mail] {recipient} — {subject}\n{body}")
         return
     message = Message(
