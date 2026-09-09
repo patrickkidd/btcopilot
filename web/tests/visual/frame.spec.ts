@@ -37,6 +37,10 @@ const boxes = (page: Page): Promise<Box[]> =>
     take("the list button", document.getElementById("menu-open")!);
     for (const box of document.querySelectorAll(".ss .ep")) take("a cluster box", box);
     for (const words of document.querySelectorAll(".ss-t")) take("the words", words);
+    // the year under the moment picked, and anything else written over the line
+    // (the years inside a cluster box belong to that box and are not counted)
+    for (const said of document.querySelectorAll(".ss-yr, .ss .brkl"))
+      take("what the band says", said);
     const hint = document.querySelector(".ss-hint");
     if (hint) take("what to tap", hint);
     return seen;

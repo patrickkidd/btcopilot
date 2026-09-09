@@ -804,8 +804,7 @@ export class Picture {
       `markerWidth="5.5" markerHeight="5.5" orient="auto">` +
       `<path d="M0 0 L10 5 L0 10 Z" class="tipfill"/></marker></defs>` +
       this.bandMark(wire) +
-      `<line class="wire" x1="${x0}" y1="${wire}" x2="${x1}" y2="${wire}"/>` +
-      this.bracket(wire, x0, x1);
+      `<line class="wire" x1="${x0}" y1="${wire}" x2="${x1}" y2="${wire}"/>`;
 
     // one dot per moment; moments sharing a date stack instead of merging
     const byDate = new Map<string, Mark[]>();
@@ -988,21 +987,6 @@ export class Picture {
 
   /** The bracket over the cluster the coach aimed at. It is only drawn when no
    * words are on the picture, because the words sit where it would go. */
-  private bracket(wire: number, x0: number, x1: number): string {
-    if (!this.focus || this.selected !== null || this.laid.rows.length) return "";
-    const a = Math.max(x0, this.x(this.focus.start) - 5);
-    const b = Math.min(x1, this.x(this.focus.end) + 5);
-    const top = wire - 12;
-    // a bracket with no label says a cluster is there but not which one
-    const years = `${this.focus.start.slice(0, 4)}–${this.focus.end.slice(0, 4)}`;
-    return (
-      `<path class="brk" d="M${a.toFixed(1)} ${wire - 8} L${a.toFixed(1)} ${top} ` +
-      `L${b.toFixed(1)} ${top} L${b.toFixed(1)} ${wire - 8}"/>` +
-      `<text class="brkl" x="${((a + b) / 2).toFixed(1)}" y="${top - 5}" ` +
-      `text-anchor="middle">${esc(years)}</text>`
-    );
-  }
-
   private bandMark(wire: number): string {
     if (!this.band) return "";
     const a = this.x(this.band.start);
