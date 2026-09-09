@@ -131,3 +131,21 @@ items, so each is logged FIXED without a commit citation.
     touched; a recomputed cluster keeps its old id on overlap so earlier chips keep
     resolving; nothing selective exists. RULED (owner: "let's just play with it and see how
     it works in the Beta").
+35. Only stored clusters draw as clusters; the timeline's gap-grouped derived
+    pseudo-clusters and the play fallback are removed; an unclaimed event is a bare dot
+    with sentence + ask chip, no walk. FIXED @2db8faa.
+36. Phone layout picks (mockups_phone.html): row 1 A — picture region fixed 132px in
+    rest and open-cluster states (crumb 28 + wire 60 + label/caption 44), no dead band;
+    row 2 A+C — labels words only, year once under the selected dot, month prefix only
+    when two labelled events share a year, label rows capped at three (spotlight rule),
+    the top-right date-range text removed (collided with the list button); row 3 C —
+    status-bar and Safari-bar areas in the picture's off-white with a hairline
+    (viewport-fit=cover, theme-color, safe-area insets; Android unverified, no hardware —
+    check in an emulator before beta users). OPEN (building).
+37. The button row under the picture is identical whether a cluster is open or an event
+    inside it is selected, items dimmed when not applicable (extends the board's
+    same-controls ruling); a mockup round for restyling that row is in progress; the
+    coded-in button is not redundant with the title tap (title → editor; coded-in → the
+    chat bubble where it was said) but its label must say what it does. RULED/MOCKUP.
+38. Screenshot tolerance: the picture spec adopts the board spec's strict 8-pixel
+    allowance; desktop goldens stay unmaintained until the phone review is done. RULED.
