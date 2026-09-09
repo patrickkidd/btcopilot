@@ -1989,17 +1989,23 @@ button { font-family: inherit; }
 
 /* The home-screen card: shown once per device after signing in, over the chat
    rather than in front of it — tapping the ground behind it puts it away. */
+/* The card sits over the bottom of the page but never takes the page away:
+   no backdrop, the page behind still scrolls and answers taps (owner review
+   2026-09-09). The card scrolls inside itself when the steps run long. */
 .hs-scrim {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: var(--scrim);
+  pointer-events: none;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   padding: 16px;
 }
 .hs-card {
+  pointer-events: auto;
+  max-height: 70vh;
+  overflow-y: auto;
   width: 100%;
   max-width: 360px;
   background: var(--panel);

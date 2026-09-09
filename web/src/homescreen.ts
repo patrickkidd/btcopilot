@@ -96,7 +96,7 @@ function appleWords(): string[] {
         ]
       : [
           "Look at the very bottom of this screen, at the bar with the web address in it. If you do not see it, scroll up a little and it comes back.",
-          `In the middle of that bar, under the address, is a small square with an arrow pointing up out of it ${SHARE_ICON}. Tap it.`,
+          `At the right end of that bar, tap the three dots in a circle <b>···</b>. A menu opens. If it has a row that says <b>Add to Home Screen</b>, tap that and go to step 4. If not, tap <b>Share</b> — the row with a small square and an arrow pointing up out of it ${SHARE_ICON}.`,
         ];
   return [
     ...find,
@@ -163,9 +163,14 @@ function card(): HTMLElement {
   later.addEventListener("click", close);
   box.append(buttons);
   scrim.append(box);
-  scrim.addEventListener("click", (event) => {
-    if (event.target === scrim) close();
-  });
+  // A tap anywhere but the card closes it, and still reaches what it tapped.
+  const away = (event: Event) => {
+    if (!box.contains(event.target as Node)) {
+      document.removeEventListener("pointerdown", away, true);
+      close();
+    }
+  };
+  setTimeout(() => document.addEventListener("pointerdown", away, true));
   return scrim;
 }
 
