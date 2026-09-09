@@ -969,15 +969,24 @@ button { font-family: inherit; }
 .field .chip::before { inset: -12px -6px; }
 .send {
   flex: none;
+  position: relative;
   width: 44px;
   height: 44px;
+  padding: 0;
   border: none;
-  border-radius: 22px;
-  background: var(--data);
+  background: none;
   color: var(--onaccent);
-  font: 600 19px/1 var(--sans);
+  font: 600 22px/1 var(--sans);
   cursor: pointer;
 }
+.send::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: var(--data);
+}
+.send > * { position: relative; }
 .send:active { filter: brightness(0.9); }
 
 /* ---- menu: the list and the editor ---- */
@@ -1234,13 +1243,13 @@ button { font-family: inherit; }
 .fs-glyph::before {
   content: "";
   position: absolute;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1px solid var(--line);
   background: var(--bg);
 }
-.fs-glyph svg { position: relative; display: block; opacity: 0.8; }
+.fs-glyph svg { position: relative; display: block; opacity: 0.8; width: 20px; height: 15px; }
 .fs-glyph:active::before { background: var(--tint); }
 /* The way into the lists: the three lines alone, no ring, no fill (owner
    review 2026-09-09), in the ruled 44px target flush with the row's edge. */
@@ -1257,13 +1266,14 @@ button { font-family: inherit; }
   color: var(--ink);
   cursor: pointer;
 }
-.listglyph svg { display: block; width: 18px; height: 14px; }
+.listglyph svg { display: block; width: 20px; height: 15px; }
 .listglyph:active { color: var(--data); }
 /* The home-screen badge: a quiet phone outline beside the account button,
    only while the app runs inside a browser. */
 /* Two 44px targets side by side would put 30px of air between the marks; the
    targets overlap so the phone sits 12px from the account mark. */
-.avatar.homescreen { color: var(--faint); margin-right: -18px; }
+.avatar.homescreen { color: var(--faint); margin-right: -8px; }
+.avatar.homescreen::before { content: none; }
 .avatar.homescreen:active { color: var(--data); }
 
 .overlay { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
@@ -1556,10 +1566,20 @@ button { font-family: inherit; }
   font: 500 15px var(--mono);
   cursor: pointer;
 }
-/* The glyph alone in the ruled 44px target: there is no room around it for a
-   ring, so it does not have one (owner review round 3). */
+/* One size for every icon button (owner, 2026-09-09): a 44px target, a 40px
+   visible mark, a 20–24px glyph — the account mark, the home-screen badge,
+   the sessions button, the list button and send all read as the same weight. */
+.avatar::before {
+  content: "";
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--data);
+  background: var(--panel);
+}
 .avatar > * , .avatar svg { position: relative; }
-.avatar svg { width: 22px; height: 22px; display: block; }
+.avatar svg { width: 24px; height: 24px; display: block; }
 .avatar:active { color: var(--data-press); }
 .sn-back {
   flex: none;

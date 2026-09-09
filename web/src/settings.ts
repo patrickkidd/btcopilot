@@ -23,7 +23,7 @@ const PANE_MS = 240;
 const SEARCH_AT = 6;
 
 const SILHOUETTE =
-  `<svg viewBox="0 0 22 22" width="22" height="22" aria-hidden="true">` +
+  `<svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true">` +
   `<circle cx="11" cy="7.5" r="4" fill="currentColor"/>` +
   `<path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"/></svg>`;
 
