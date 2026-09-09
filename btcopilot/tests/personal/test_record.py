@@ -150,6 +150,27 @@ def test_a_write_that_only_renames_a_cluster_is_not_held_to_events_it_did_not_to
     assert diagram.get_diagram_data().clusters[0]["name"] == "The year after"
 
 
+def test_a_grouping_stored_under_the_older_floor_blocks_nothing_else(subscriber):
+    """A record can hold a grouping made when two events were enough. The write
+    answers for what it touches, so unrelated work still commits."""
+    diagram = _diagram(
+        subscriber.user,
+        {
+            "people": [{"id": 1, "name": "Ada"}],
+            "clusters": [{"id": "c1", "name": "Cutoff", "eventIds": [1, 2]}],
+        },
+    )
+
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Person, "item_id": 1, "field": "name", "after": "Bea"}],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    assert diagram.get_diagram_data().people == [{"id": 1, "name": "Bea"}]
+    assert diagram.get_diagram_data().clusters[0]["eventIds"] == [1, 2]
+
+
 def test_undo_may_not_put_back_a_cluster_under_three_events(subscriber):
     """Undo reaches the record without going through apply, so the floor has to
     live where both of them commit; otherwise undoing the removal of a pair puts
