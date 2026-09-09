@@ -96,7 +96,7 @@ the home screen. Every finding, round by round, with the commit that fixed it:
 R-0165..R-0228.
 
 **His own record is small**: seven events, and one cluster he made himself holding two events.
-It predates the three-event floor and is grandfathered — see the open decisions below.
+It predates the three-event floor and is grandfathered; see Open issues.
 
 **Review sandbox.** Durable scripts live in `/Users/patrick/worktrees/fd362-sandbox/`, outside
 every job directory on purpose: a database inside a job directory is deleted with the job, and
@@ -117,14 +117,8 @@ that has already cost one sandbox.
   [Oracle: R-0191].
 
 **Suites.** Backend: 905 passed, 33 skipped, run in this worktree. Web unit tests and 95 visual
-tests were last recorded green on a Mac. **Neither suite has ever been watched green on CI, and
-CI fails on this branch today** for three understood reasons:
-
-1. Two web unit tests assert a reload event the turn handler no longer sends.
-2. Every screenshot test fails by construction: the approved images are recorded on macOS and
-   CI runs Ubuntu, which looks for images that were never recorded.
-3. The spotlight selector now matches two elements, so the tests using it error before
-   comparing anything.
+tests were last recorded green on a Mac. Continuous integration fails on this branch, and
+neither suite has ever been watched green on a runner; the three causes are under Open issues.
 
 **Spec and gap.** UI_SPEC.md carries 444 value rows, 52 resolutions and 3 open items.
 UI_GAP.md sets every one against the build: MET 318, PARTIAL 11, CHANGED 12, MISSING 5,
@@ -132,82 +126,115 @@ NEEDS-OWNER 13, UNCHECKED 16, N/A 76, over 451 rows. UI_GAP is hand-maintained n
 generator is retired and must never be run again — it silently reverted other people's
 corrections three times.
 
-**Still open in the build, no judgment needed to close it**: the event editor lacks the
-relationship field with its target and triangle lists, and the person, spouse and child fields
-are not hidden by event kind the way the Pro app hides them.
+## Open issues
 
-## Open owner decisions (nothing moves on these without his word)
+Each entry below is a whole issue, readable on its own. The build is not blocked on any of
+them except where an entry says so.
 
-1. **Does the three-event floor bind a grouping the user made himself?** His own record holds a
-   two-event cluster he made. Either the floor binds it, and that cluster gains an event or is
-   dropped, or user groupings are exempt from the floor. The floor is one number in the schema,
-   enforced at the write for every writer.
-2. **The nodal ring drawn on a dot** — keep it or drop it.
-3. **The 13 rows marked NEEDS-OWNER in [UI_GAP.md](UI_GAP.md)**, where the build is defensibly
-   different rather than wrong. Three of them no rule reaches at all, stated with their
-   alternatives at the foot of UI_SPEC.md: what "+" does on a family the app is not currently
-   on, how a close-up triangle is drawn, and how two moments are compared.
-4. **The felt call** — whether each move on the board reads without a legend, and whether the
-   coach's words and the drawings tell the same story. Only he can answer it.
-5. Anything still marked OPEN in [REVIEW_LOG.md](REVIEW_LOG.md).
+### Isolation and beta deployment
 
-## Next phase — isolation and deployment, so others can start using it
+The Personal app shares a database, a process, a deploy and one migration chain with the Pro
+desktop app and the Training app, and daily churn on the chat app can break either of them.
+[ISOLATION_OPTIONS.md](ISOLATION_OPTIONS.md) maps what this branch touches — 249 files in
+btcopilot, 29 of them shared with Pro, one with Training, one the public schema — and holds
+the full detail behind everything in this entry. The owner has parked the isolation
+discussion itself until the prototype is done; the three blockers below are not parked,
+because they are conditions on merging this branch at all.
 
-His words closing round 4: the app is ready to use from the phone's home screen, and the next
-phase is a closer look at code organization and potential isolation from the existing
-infrastructure, to minimise impact and churn while still maximising rapid prototyping on this
-app [Oracle: R-0226].
+**Three things must come out of the Pro app's path before this branch merges.**
 
-### Three things must come out of the Pro app's path before this branch merges
+1. Every Pro diagram is rewritten from pickle to JSON in place on its next save, through an
+   encoder written for the chat app, with no migration step and no backup. A bug there
+   silently damages the only copy of a Pro user's family diagram. Pro rows stay pickle until
+   an explicit, backed-up migration; only chat-app rows are JSON.
+2. The Pro save endpoint imports Personal code and writes a row to the Personal change table,
+   so an exception there fails a desktop save. It comes out; the Personal package registers a
+   hook instead.
+3. The shared schema dropped the cluster pattern list and the pattern and dominant-variable
+   fields, which the desktop app still reads. They are restored as tolerated fields the
+   Personal app never writes. Standing rule from here: no symbol the desktop app reads
+   changes without its desktop change in the same pull request.
 
-1. **Every Pro diagram is rewritten from pickle to JSON in place on its next save**, through an
-   encoder written for the chat app, with no migration step and no backup. A bug there silently
-   damages the only copy of a Pro user's family diagram. Before merge: Pro rows stay pickle
-   until an explicit, backed-up migration, and only chat-app rows are JSON.
-2. **The Pro save endpoint imports Personal code** and writes a row to the Personal change
-   table, so an exception there fails a desktop save. Remove it; let the Personal package
-   register a hook instead.
-3. **The shared schema dropped symbols the desktop app reads** — the cluster pattern list and
-   the pattern and dominant-variable fields. Restore them as tolerated fields the Personal app
-   never writes. Standing rule from here: no symbol the desktop app reads changes without its
-   desktop change in the same pull request.
+**The isolation recommendation is A now, B later, never C.** A is a package boundary inside
+btcopilot, where one adapter module is the only thing reaching Pro models and the shared
+schema, held by a lint rule in continuous integration — one to two days, mechanical. B is a
+second service with its own tables, which waits until the chat app's shape stops moving. C is
+its own repository, which is the wrong trade while speed is the point.
 
-### Isolation — the recommendation, with the discussion itself parked
+**Deployment.** The shape is ruled: one Docker image with the web bundle inside it, pushed to
+GHCR, pulled by one SSH compose command; passwordless invite links for the app working group
+of three clinicians; the coaching prompts staying in the private fdserver repo and read
+through a path in the environment. The release workflow already builds an image and pushes it
+to GHCR on every push to master. The gap is that **the image contains no browser app**: the
+bundle is written to a gitignored directory, the Dockerfile has no Node step to build it, and
+`pyproject.toml` does not name the Personal package's static files as package data. Deploying
+today serves the API with no page. Three edits, one place each.
 
-[ISOLATION_OPTIONS.md](ISOLATION_OPTIONS.md) maps what this branch touches (249 files in
-btcopilot, 29 of them shared with the Pro app, one shared with Training, one the public schema)
-and sets three ways to isolate against each other. The recommendation is **A now, B later,
-never C**: a package boundary inside btcopilot, where one adapter module is the only thing
-reaching Pro models and the shared schema, held by a lint rule in CI — one to two days,
-mechanical. B, a second service with its own tables, waits until the chat app's shape stops
-moving. C, its own repository, is the wrong trade while speed is the point. **The owner parked
-the isolation discussion until the prototype is done.** The three blockers above are not
-parked; they are merge conditions.
+**Continuous integration is failing on this branch**, for three understood reasons: two web
+unit tests assert a reload event the turn handler no longer sends; every screenshot test
+fails by construction, because the approved images are recorded on macOS while the runner is
+Ubuntu and looks for images that were never recorded; and the spotlight selector now matches
+two elements, so the tests using it error before comparing anything. Neither the backend nor
+the visual suite has ever been watched green on a runner.
 
-### Deployment — what exists and what does not
+**Also true before other people's records are on a server**: the secrets committed in the
+compose file need rotating.
 
-Ruled: one Docker image with the web bundle inside it, pushed to GHCR, pulled by one SSH
-compose command; passwordless invite links for the working group; the coaching prompts staying
-in the private fdserver repo and read through a path in the environment.
+### The three-event floor and groupings the user makes himself
 
-What is actually built: the release workflow already builds an image and pushes it to GHCR on
-every push to master. What is missing is the whole gap — **that image contains no browser
-app.** The bundle is written to a directory that is gitignored, the Dockerfile has no Node step
-to build it, and `pyproject.toml` does not name the Personal package's static files as package
-data. Deploying today serves the API with no page. Three edits, one place each.
+A cluster needs three events, one number in the schema enforced at the record's commit for
+every writer including undo and the coach's own grouping tool. The owner's own record holds a
+two-event cluster he made himself, which predates the floor and is grandfathered. **His
+decision:** does the floor bind a grouping the user made? If it does, that cluster gains an
+event or is dropped. If it does not, user groupings are exempt and the write path needs a
+second door.
 
-### What must be true before beta users are invited
+### The nodal ring on a dot
 
-- **Rule by example on clusters.** The rules make the candidates and the model names them, but
-  the owner ruled that the judgment calls linking events which are not adjacent in time cannot
-  be written as a rule yet and must wait for real examples he marks [Oracle: R-0193, R-0194].
-  Until he has marked some, cluster quality on somebody else's record is unmeasured.
-- **CI green, watched by a person.** The three failures above, then a run someone sees finish.
-- **The desktop app and Android are both unverified.** Nobody has opened a chat-app record in
-  the released Pro app — journey 7 is deferred on the auto-arrange evidence — and nobody has
-  opened the page on an Android phone.
-- **Secrets committed in the compose file need rotating** before anyone else's data is on that
-  server.
+**His decision:** keep it or drop it.
+
+### Rule by example on clusters
+
+The rules make the candidates and the model only names them and gives a reason. The owner
+ruled that the judgment calls linking events which are not adjacent in time cannot be written
+as a rule yet and must wait for real examples he marks [Oracle: R-0193, R-0194]. Until he has
+marked some, cluster quality on anyone else's record is unmeasured. This gates inviting beta
+users, not the build.
+
+### Thirteen interface rows where the build is defensibly different
+
+[UI_GAP.md](UI_GAP.md) marks thirteen rows NEEDS-OWNER: the build differs from a value that
+is a team default or an unruled call rather than from a ruling, so acting on the row without
+asking would be guessing. Three of those no rule in the corpus reaches at all, and they are
+stated with their alternatives at the foot of UI_SPEC.md: what "+" does on a family the app is
+not currently on, how a close-up triangle is drawn, and how two moments are compared.
+
+### The felt call on the board
+
+Whether each move reads without a legend, and whether the coach's words and the drawings tell
+the same story. Only the owner can answer it, by playing a stretch through.
+
+### The event editor's missing fields
+
+The editor lacks the relationship field with its target and triangle lists, and the person,
+spouse and child fields are not hidden by event kind the way the Pro app hides them. No
+judgment is needed; it is unbuilt work.
+
+### The desktop app and Android are unverified
+
+Nobody has opened a chat-app record in the released Pro desktop app — journey 7 is deferred
+on the auto-arrange evidence, which never met the owner's approval. Nobody has opened the page
+on an Android phone; there is no hardware, and the review log calls for an emulator check
+before beta users.
+
+### Rows still open in the review log
+
+[REVIEW_LOG.md](REVIEW_LOG.md) carries the row-by-row record and rows are never deleted, so
+some rows still read OPEN although a later row records the fix. The ones with no later row
+against them: the coach must never reply with a bare list of chips, and the canned reply comes
+out of the play fixture; the symptom and functioning arrows must not disappear as the
+animation loop fades them; and the timeline list lives behind the menu button, where the owner
+did not find it.
 
 ## Prototyping status (honest)
 
@@ -477,12 +504,11 @@ chat-generated family structure auto-arranges. The evidence: auto-arrange shippe
 layouts, 974 px today, with cross-family marriages and large extended families unsolved and
 the Personal app not wired to it. No ruling of his ever called auto-arrange satisfactory.
 
-**Build brief.** An Opus session starts from this file alone. It works in the FD-362
-worktrees, code in btcopilot and prompts in fdserver, and builds the Vite/TypeScript page on
-the ruled front-end shape: passwordless login, the real database, JSON diagram data through
-the converter, the Change and Interaction models, tool calls, chips, the play-by-play, and
-the timeline and editor behind a menu. It checks itself against journeys 1 through 6. The
-draft PRs already exist: btcopilot #135 and fdserver #29.
+**What was built against this.** The Vite/TypeScript page on the ruled front-end shape:
+passwordless login, the real database, JSON diagram data through the converter, the Change and
+Interaction models, tool calls, chips, the play-by-play, and the timeline and editor behind a
+menu. Code in btcopilot, prompts in fdserver, both on branch FD-362. Journeys 1 through 6
+walked PASS on 2026-09-08.
 
 ### Owner review rounds 1–4 (2026-09-08 and 09) — the standing rulings
 
@@ -622,7 +648,7 @@ All six items are ruled. Where each one landed:
 5. **The data format** — [Architecture and data](#architecture-and-data-ruled-2026-09-07): JSON record, change log, additive shapes.
 6. **Front-end shape** — the Vite page in the build brief under [Beta build](#beta-build-ruled).
 
-The next session is the build, not another brainstorm. Its brief is under Beta build.
+That build is done and reviewed; where it stands is at the head of this file.
 
 **Session discipline (ruled 2026-09-07 R-0088, extended through the review rounds of
 2026-09-08 and 09).** The full process rules are binding and live in
@@ -645,6 +671,6 @@ The next session is the build, not another brainstorm. Its brief is under Beta b
 - Rulings are written to the store as they are made, not batched to the end of a session.
 - Every claim is labelled evidence or assumption. Plain sentences, his own terms, no coined
   labels, no multiple-choice when he asked to brainstorm.
-- Read this file to start. Read HISTORY only for a specific fact.
+- Read this file first. Read HISTORY only for a specific fact.
 
-Pinned (not next): the corpus/subset sessions in [NEXT_SESSIONS.md](NEXT_SESSIONS.md).
+Pinned, not active: the corpus/subset sessions in [NEXT_SESSIONS.md](NEXT_SESSIONS.md).

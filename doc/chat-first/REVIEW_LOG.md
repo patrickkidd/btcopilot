@@ -229,6 +229,6 @@ items, so each is logged FIXED without a commit citation.
 65. A cluster or board sliding in showed the level underneath through it; it needs an
     opaque background so it reads as a card sliding in. FIXED @b7bae33.
 66. Owner, closing the day: the app is ready for him to start using like an app on the
-    phone. Next phase is isolation of the Personal app and deployment so others can start
-    using it — the three pre-merge blockers, the isolation recommendation and the
-    deployment gap are in STATE.md. HANDOFF.
+    phone. Isolation of the Personal app and beta deployment are one named open issue in
+    STATE.md, carrying the three pre-merge blockers, the isolation recommendation and the
+    deployment gap. OPEN.
