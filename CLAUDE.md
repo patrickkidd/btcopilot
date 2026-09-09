@@ -2,6 +2,15 @@
 
 Backend for Pro/Personal apps, training app, AI extraction system.
 
+## Owner corrections that bind every reply (2026-09-09)
+
+- **Never coin a term.** Say the thing in common words every time ("signing in with an email
+  code also creates the account", never "login-is-signup"). A phrase from a doc is not his term
+  unless he used it.
+- **Cost estimates are for the work, not for validation.** Squashing seven migrations is a few
+  tool calls, not an hour. Verify only what changed, once, at the cheapest level that proves it;
+  never re-verify before a merge is even in sight.
+
 ---
 
 ## Confidential Data Rules
