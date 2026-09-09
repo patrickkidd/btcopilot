@@ -123,6 +123,22 @@ export enum Target {
 
 const OWN = new Set<string>([Target.Prev, Target.Next]);
 
+/** How long one level takes to slide over the one it came from. */
+const SLIDE_MS = 240;
+
+/** How deep each level sits. Drilling in slides the arriving view over the one
+ * it came from; coming back slides the current one off it. Two moments face to
+ * face is a level of the same depth as an open cluster: the coach puts it up
+ * in place of one. */
+const DEPTH: Record<Level, number> = {
+  [Level.Rest]: 0,
+  [Level.Wire]: 1,
+  [Level.Compare]: 1,
+  [Level.Board]: 2,
+};
+
+const STILL = window.matchMedia("(prefers-reduced-motion: reduce)");
+
 export interface Tap {
   target: Target;
   /** For a zone, which one. */
@@ -176,6 +192,13 @@ export class Picture {
     zones: [],
     rows: [],
   };
+  /** How deep the view on screen is, so a render that changes levels knows
+   * which way it is travelling. */
+  private depth = DEPTH[Level.Rest];
+  private flight: Animation | null = null;
+  /** What is left to do once the slide is over, held so a render arriving
+   * mid-flight can finish it early rather than stack a second pair of layers. */
+  private landing: (() => void) | null = null;
 
   constructor(
     private host: HTMLElement,
@@ -775,6 +798,73 @@ export class Picture {
 
   private render(): void {
     if (!this.data) return;
+    const to = DEPTH[this.level];
+    const from = this.depth;
+    this.depth = to;
+    this.land();
+    if (to === from || !this.host.firstChild || STILL.matches) {
+      this.draw();
+      return;
+    }
+    this.slide(to > from ? 1 : -1);
+  }
+
+  /** One level in or one level out. Drilling down, the arriving view slides in
+   * from the right over the one it came from; going back, the view being left
+   * slides out to the right and uncovers it. Both stand at the height the
+   * region already had, so nothing under the picture moves while they travel;
+   * a level with a height of its own takes it once the slide is over
+   * (owner ruling 2026-09-08). */
+  private slide(dir: 1 | -1): void {
+    const held = this.host.getBoundingClientRect().height;
+    this.host.classList.add("sliding");
+    const leaving = document.createElement("div");
+    leaving.className = "lay";
+    leaving.style.height = `${held}px`;
+    while (this.host.firstChild) leaving.appendChild(this.host.firstChild);
+
+    this.draw();
+    const taking = parseFloat(this.host.style.height) || held;
+    const arriving = document.createElement("div");
+    arriving.className = "lay";
+    arriving.style.height = `${held}px`;
+    while (this.host.firstChild) arriving.appendChild(this.host.firstChild);
+
+    this.pin(held);
+    // the one that moves is drawn over the one that stays
+    this.host.append(...(dir === 1 ? [leaving, arriving] : [arriving, leaving]));
+    const mover = dir === 1 ? arriving : leaving;
+    const off = { transform: "translateX(100%)" };
+    const on = { transform: "translateX(0)" };
+    this.flight = mover.animate(dir === 1 ? [off, on] : [on, off], {
+      duration: SLIDE_MS,
+      easing: "ease",
+    });
+    this.landing = () => {
+      leaving.remove();
+      while (arriving.firstChild) this.host.appendChild(arriving.firstChild);
+      arriving.remove();
+      this.host.classList.remove("sliding");
+      this.pin(taking);
+    };
+    this.flight.finished.then(
+      () => this.land(),
+      () => undefined,
+    );
+  }
+
+  /** Put the arriving view down where it belongs, whether the slide finished
+   * or was overtaken. */
+  private land(): void {
+    const finish = this.landing;
+    if (!finish) return;
+    this.landing = null;
+    this.flight?.cancel();
+    this.flight = null;
+    finish();
+  }
+
+  private draw(): void {
     if (this.level === Level.Board && (this.moves.length || this.cast.length)) {
       this.renderBoard();
       return;

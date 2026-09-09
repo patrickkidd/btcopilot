@@ -236,6 +236,18 @@ button { font-family: inherit; }
   height: 44px;
 }
 .view { position: relative; transition: height 0.25s ease; }
+/* One level in or one level out. The two views stand side by side for the
+   length of the slide, each at the height the region already had, so nothing
+   under the picture moves while they travel; the region takes a new height
+   only once they have landed. */
+.view.sliding { overflow: hidden; transition: none; }
+.view.sliding .lay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  will-change: transform;
+}
 .ss { position: relative; width: 100%; height: 100%; }
 .ss svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
 /* The resting drawing is 78 tall inside the picture's fixed box, top-aligned,
