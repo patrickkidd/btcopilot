@@ -69,6 +69,21 @@ export function wrap2(text: string, wide: number): [string, string] {
  * under the moment picked — unless two of the moments on screen fall in the
  * same year, when each of those says which month it was (picked mockup,
  * 2026-09-08: A with C).  */
+/** Who a moment is about, as the person whose record this is would read it:
+ * themselves left out, and the other side of a pair kept with the "&" or the
+ * arrow that says how they are joined. */
+export function whoText(who: string, protagonist: string): string {
+  if (!who || who === protagonist) return "";
+  for (const join of [" & ", " → "]) {
+    if (who.startsWith(protagonist + join)) {
+      return join.trim() + " " + who.slice((protagonist + join).length);
+    }
+    const tail = join + protagonist;
+    if (who.endsWith(tail)) return who.slice(0, who.length - tail.length);
+  }
+  return who;
+}
+
 export function words(
   date: string,
   certainty: string | null,
@@ -77,7 +92,7 @@ export function words(
   label: string,
   month = false,
 ): string {
-  const person = who && who !== protagonist ? `${who} · ` : "";
+  const person = whoText(who, protagonist) ? `${whoText(who, protagonist)} · ` : "";
   const when = month ? `${monthText(date, certainty)} · ` : "";
   return `${when}${person}${label.trim()}`;
 }

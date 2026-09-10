@@ -131,6 +131,69 @@ def test_the_write_refuses_a_cluster_under_three_events(subscriber):
     assert Change.query.filter_by(diagram_id=diagram.id).count() == 0
 
 
+def test_the_write_refuses_a_description_that_names_a_person_the_event_links(
+    subscriber,
+):
+    """Owner ruling 2026-09-09: the links say who, so the words may not say the
+    same person again."""
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Elizabeth"}]})
+
+    with pytest.raises(record.Invalid, match="already its child"):
+        record.apply(
+            diagram.id,
+            [
+                {"item_kind": ItemKind.Event, "item_id": 20, "field": "kind", "after": "birth"},
+                {"item_kind": ItemKind.Event, "item_id": 20, "field": "child", "after": 1},
+                {
+                    "item_kind": ItemKind.Event,
+                    "item_id": 20,
+                    "field": "description",
+                    "after": "Elizabeth born in Anchorage",
+                },
+            ],
+            author=Author.Coach,
+            turn_id="t1",
+        )
+    assert diagram.get_diagram_data().events == []
+
+
+def test_the_write_refuses_a_birth_hung_on_the_person_instead_of_the_child(subscriber):
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Elizabeth"}]})
+
+    with pytest.raises(record.Invalid, match="set child, not person"):
+        record.apply(
+            diagram.id,
+            [
+                {"item_kind": ItemKind.Event, "item_id": 20, "field": "kind", "after": "birth"},
+                {"item_kind": ItemKind.Event, "item_id": 20, "field": "person", "after": 1},
+            ],
+            author=Author.Coach,
+            turn_id="t1",
+        )
+    assert diagram.get_diagram_data().events == []
+
+
+def test_a_birth_about_the_child_with_words_of_its_own_commits(subscriber):
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Elizabeth"}]})
+
+    record.apply(
+        diagram.id,
+        [
+            {"item_kind": ItemKind.Event, "item_id": 20, "field": "kind", "after": "birth"},
+            {"item_kind": ItemKind.Event, "item_id": 20, "field": "child", "after": 1},
+            {
+                "item_kind": ItemKind.Event,
+                "item_id": 20,
+                "field": "description",
+                "after": "in Anchorage, AK",
+            },
+        ],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    assert diagram.get_diagram_data().events[0]["description"] == "in Anchorage, AK"
+
+
 def test_a_write_that_only_renames_a_cluster_is_not_held_to_events_it_did_not_touch(
     subscriber,
 ):
@@ -213,7 +276,7 @@ def _family(user) -> Diagram:
             ],
             "pair_bonds": [{"id": 10, "person_a": 1, "person_b": 2}],
             "events": [
-                {"id": 20, "person": 1, "kind": "birth"},
+                {"id": 20, "child": 1, "kind": "birth"},
                 {"id": 21, "person": 2, "kind": "shift"},
             ],
             "emotions": [{"id": 30, "person": 1, "target": 2, "event": 20}],

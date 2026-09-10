@@ -9,6 +9,7 @@ import {
   dateText,
   dotRadius,
   rows,
+  whoText,
   words,
   wrap2,
   zones,
@@ -30,6 +31,14 @@ describe("the words a moment says about itself", () => {
     expect(words("2001-03-01", Certainty.Certain, "Ben", "Ada", "Moved out")).toBe(
       "Mar 2001 · Ben · Moved out",
     );
+  });
+
+  it("a pair keeps the other person and leaves out the one reading", () => {
+    expect(whoText("Ada & Ben", "Ada")).toBe("& Ben");
+    expect(whoText("Ben & Ada", "Ada")).toBe("Ben");
+    expect(whoText("Ada \u2192 Ben", "Ada")).toBe("\u2192 Ben");
+    expect(whoText("Ben & Cal", "Ada")).toBe("Ben & Cal");
+    expect(whoText("Ada", "Ada")).toBe("");
   });
 
   it("a long line wraps onto a second row at a space", () => {

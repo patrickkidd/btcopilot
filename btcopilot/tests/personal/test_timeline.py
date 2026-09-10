@@ -389,3 +389,65 @@ def test_an_event_carries_the_fields_whoever_stored_it_left_out():
     assert event["relationshipTargets"] == []
     assert event["relationshipTriangles"] == []
     assert event["spouse"] is None
+
+
+def _named(ids_and_names, events):
+    return DiagramData(
+        people=[asdict(Person(id=i, name=n)) for i, n in ids_and_names],
+        events=events,
+    )
+
+
+def test_a_moment_says_who_from_its_links_and_what_without_the_name():
+    """Owner ruling 2026-09-09: who comes from the links, what never repeats a
+    linked person's name."""
+    events = [
+        asdict(
+            Event(
+                id=10,
+                kind=EventKind.Birth,
+                child=1,
+                person=2,
+                dateTime="1980-06-01",
+                description="in Anchorage, AK",
+            )
+        ),
+        asdict(
+            Event(
+                id=11,
+                kind=EventKind.Divorced,
+                person=2,
+                spouse=3,
+                dateTime="1990-01-01",
+            )
+        ),
+        asdict(
+            Event(
+                id=12,
+                kind=EventKind.Shift,
+                person=1,
+                spouse=3,
+                anxiety=VariableShift.Up,
+                dateTime="1992-01-01",
+            )
+        ),
+        asdict(
+            Event(
+                id=13,
+                kind=EventKind.Shift,
+                person=1,
+                relationship=RelationshipKind.Conflict,
+                relationshipTargets=[2],
+                dateTime="1994-01-01",
+            )
+        ),
+    ]
+    timeline = _named([(1, "Elizabeth"), (2, "Ray"), (3, "Nora")], events)
+    said = {
+        e["id"]: (e["person_name"], e["label"])
+        for e in build_timeline(timeline)["events"]
+    }
+    assert said[10] == ("Elizabeth", "born · in Anchorage, AK")
+    assert said[11] == ("Ray & Nora", "divorced")
+    assert said[12] == ("Elizabeth & Nora", "anxiety went up")
+    assert said[13] == ("Elizabeth → Ray", "conflict")

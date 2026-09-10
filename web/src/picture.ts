@@ -25,6 +25,7 @@ import {
   sharedYears,
   dotRadius,
   rows,
+  whoText,
   words,
   wrap2,
   zones,
@@ -1150,10 +1151,8 @@ export class Picture {
     const wide = Math.floor((x1 - x0) / CH);
     if (chosen) {
       const event = chosen.event;
-      const who =
-        event.person_name && event.person_name !== this.protagonist()
-          ? `${event.person_name} · `
-          : "";
+      const said = whoText(event.person_name, this.protagonist());
+      const who = said ? `${said} · ` : "";
       const lines = wrap2(
         clip(who + event.label.trim(), Math.min(88, wide * ROWS.length)),
         wide,

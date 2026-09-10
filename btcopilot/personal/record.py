@@ -7,6 +7,7 @@ compare-and-set on each value.
 """
 
 import logging
+import re
 
 from sqlalchemy import update as sql_update
 
@@ -14,7 +15,12 @@ from btcopilot import diagramjson
 from btcopilot.extensions import db
 from btcopilot.personal.models import Author, Change
 from btcopilot.pro.models import Diagram
-from btcopilot.schema import ITEM_COLLECTIONS, MIN_CLUSTER_EVENTS, ItemKind
+from btcopilot.schema import (
+    ITEM_COLLECTIONS,
+    MIN_CLUSTER_EVENTS,
+    EventKind,
+    ItemKind,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -293,6 +299,67 @@ def _validate(data: dict, deltas: list[dict]):
         raise Invalid(
             f"clusters {small} would hold fewer than {MIN_CLUSTER_EVENTS} events"
         )
+    _words(data, deltas)
+
+
+LINKS = (
+    ("person", "person"),
+    ("spouse", "spouse"),
+    ("child", "child"),
+    ("relationshipTargets", "target"),
+    ("relationshipTriangles", "third person"),
+)
+
+
+def _role(event: dict, person_id) -> str | None:
+    for field, role in LINKS:
+        value = event.get(field)
+        ids = value if isinstance(value, list) else [value]
+        if any(str(x) == str(person_id) for x in ids if x is not None):
+            return role
+    return None
+
+
+def _words(data: dict, deltas: list[dict]):
+    """A moment's words are who and what (owner ruling, 2026-09-09): the
+    description says what happened and never names a person the event already
+    links, and a birth is about the child. Checked on the events this write
+    touches, the way the cluster floor is."""
+    for event_id in dict.fromkeys(
+        str(delta["item_id"])
+        for delta in deltas
+        if delta["item_kind"] == ItemKind.Event.value
+    ):
+        event = _find(data, ItemKind.Event, event_id)
+        if event is None:
+            continue
+        kind = getattr(event.get("kind"), "value", event.get("kind"))
+        if (
+            kind in (EventKind.Birth.value, EventKind.Adopted.value)
+            and event.get("person") is not None
+            and event.get("child") is None
+        ):
+            raise Invalid(
+                f"event {event_id}: a birth is about the child: "
+                "set child, not person"
+            )
+        description = event.get("description") or ""
+        if not description:
+            continue
+        for person in _collection(data, ItemKind.Person):
+            role = _role(event, person.get("id"))
+            if role is None:
+                continue
+            first = (person.get("name") or "").strip()
+            full = f"{first} {(person.get('last_name') or '').strip()}".strip()
+            for name in (full, first):
+                if name and re.search(
+                    rf"\b{re.escape(name)}\b", description, re.IGNORECASE
+                ):
+                    raise Invalid(
+                        f"event {event_id}'s description names {name}, who is "
+                        f"already its {role}; say what happened without the name"
+                    )
 
 
 def _commit(

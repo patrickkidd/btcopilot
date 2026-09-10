@@ -40,6 +40,26 @@ PHRASES = {
     "functioning": {"up": "improved", "down": "slipped", "same": "held steady"},
 }
 
+# A moment's words are who and what (owner ruling, 2026-09-09): the who comes
+# from the event's links alone, and the what never says a linked person's name.
+# For the kinds that describe themselves, the kind IS what happened.
+KIND_WORDS = {
+    EventKind.Birth.value: "born",
+    EventKind.Adopted.value: "adopted",
+    EventKind.Married.value: "married",
+    EventKind.Separated.value: "separated",
+    EventKind.Divorced.value: "divorced",
+    EventKind.Bonded.value: "bonded",
+    EventKind.Moved.value: "moved",
+    EventKind.Death.value: "died",
+}
+PAIR_KINDS = (
+    EventKind.Married.value,
+    EventKind.Bonded.value,
+    EventKind.Separated.value,
+    EventKind.Divorced.value,
+)
+
 
 def _date_phrase(date: datetime.date, certainty: str) -> str:
     if certainty == DateCertainty.Approximate.value:
@@ -87,24 +107,26 @@ def _person_label(person: dict | None) -> str:
     return name or "Someone"
 
 
+def _shift_words(variable: str, direction: str) -> str:
+    return f"{dict(VARIABLES)[variable]} {PHRASES[variable][direction]}"
+
+
 def _event_base(event: dict, variable: str, direction: str, name: str) -> str:
     description = event.get("description")
     if description:
         return description
-    noun = dict(VARIABLES)[variable]
-    return f"{name}'s {noun} {PHRASES[variable][direction]}"
+    return f"{name}'s {_shift_words(variable, direction)}"
 
 
 def _structural_base(event: dict, kind: str, people_by_id: dict) -> str:
-    description = event.get("description")
-    if description:
-        return description
+    """A whole sentence about one structural event, for the places that stand
+    alone (the order question, a couple's lane) rather than beside a who."""
     person = people_by_id.get(event.get("person"))
     spouse = people_by_id.get(event.get("spouse"))
     child = people_by_id.get(event.get("child"))
+    label = KIND_WORDS.get(kind) or EventKind(kind).menuLabel().lower()
     if kind in (EventKind.Birth.value, EventKind.Adopted.value) and child:
-        return f"{_person_label(child)} was born"
-    label = EventKind(kind).menuLabel().lower()
+        return f"{_person_label(child)} was {label}"
     if person and spouse:
         return f"{_person_label(person)} and {_person_label(spouse)} {label}"
     if person:
@@ -137,31 +159,40 @@ def _event_defaults():
 
 
 def _label(event: dict, people_by_id: dict) -> str:
-    """The words the picture and the list show for one event."""
-    name = _person_label(people_by_id.get(event.get("person")))
+    """What happened, with no linked person's name in it: the who is said by
+    the event's links, not twice (owner ruling, 2026-09-09)."""
+    description = (event.get("description") or "").strip()
+    kind = _enum_val(event.get("kind"))
+    if kind in KIND_WORDS:
+        word = KIND_WORDS[kind]
+        return f"{word} \u00b7 {description}" if description else word
     for variable, _ in VARIABLES:
         direction = _enum_val(event.get(variable))
         if direction:
-            return _event_base(event, variable, direction, name)
-    kind = _enum_val(event.get("kind"))
-    if kind and kind != EventKind.Shift.value:
-        return _structural_base(event, kind, people_by_id)
-    description = event.get("description")
+            return description or _shift_words(variable, direction)
     if description:
         return description
     relationship = _enum_val(event.get("relationship"))
     if relationship:
-        return f"{name}: {RelationshipKind(relationship).menuLabel().lower()}"
+        return RelationshipKind(relationship).menuLabel().lower()
     return "Something happened"
 
 
-def _subject(event: dict, people_by_id: dict) -> dict | None:
-    """Birth and adoption are about the child; every other kind is about the
-    person (btcopilot/CLAUDE.md, Event Field Semantics)."""
+def _who(event: dict, people_by_id: dict) -> str:
+    """Who the moment is about, from the event's links alone. Birth and
+    adoption are about the child; a pair-bond kind and a shift with a spouse
+    are about both; a shift aimed at someone is about that pair."""
     kind = _enum_val(event.get("kind"))
-    if kind in (EventKind.Birth.value, EventKind.Adopted.value) and event.get("child"):
-        return people_by_id.get(event["child"])
-    return people_by_id.get(event.get("person"))
+    if kind in (EventKind.Birth.value, EventKind.Adopted.value):
+        return _person_label(people_by_id.get(event.get("child")))
+    person = _person_label(people_by_id.get(event.get("person")))
+    spouse = event.get("spouse")
+    if spouse is not None and (kind in PAIR_KINDS or kind == EventKind.Shift.value):
+        return f"{person} & {_person_label(people_by_id.get(spouse))}"
+    targets = event.get("relationshipTargets") or []
+    if kind == EventKind.Shift.value and targets:
+        return f"{person} \u2192 {_person_label(people_by_id.get(targets[0]))}"
+    return person
 
 
 def _undated(chunk: dict) -> bool:
@@ -178,7 +209,7 @@ def _events_payload(data: DiagramData, people_by_id: dict) -> list[dict]:
             continue
         chunk = event_payload(event)
         chunk["label"] = _label(event, people_by_id)
-        chunk["person_name"] = _person_label(_subject(event, people_by_id))
+        chunk["person_name"] = _who(event, people_by_id)
         chunk["sentence"] = _sentence(
             chunk["label"],
             None if _undated(chunk) else _parse_iso_date(chunk["dateTime"]),

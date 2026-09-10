@@ -133,10 +133,25 @@ SCHEMAS = [
                 "date_certainty": _enum_param(
                     DateCertainty, "How sure the date is. Default certain."
                 ),
-                "description": {"type": "string"},
+                "description": {
+                    "type": "string",
+                    "description": (
+                        "What happened, with no names of the people this event "
+                        "links: the person, spouse, child and targets are said "
+                        "by their fields. 'in Oklahoma' for a birth, 'when "
+                        "Patrick was about 3' for a divorce, 'relationship "
+                        "became difficult around puberty' for a shift."
+                    ),
+                },
                 "person": {"type": "integer"},
                 "spouse": {"type": "integer"},
-                "child": {"type": "integer"},
+                "child": {
+                    "type": "integer",
+                    "description": (
+                        "For a birth or adoption, who was born: set child, not "
+                        "person."
+                    ),
+                },
                 "anxiety": _enum_param(VariableShift, "Which way anxiety moved."),
                 "symptom": _enum_param(VariableShift, "Which way symptom moved."),
                 "functioning": _enum_param(

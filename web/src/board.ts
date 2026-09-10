@@ -367,7 +367,7 @@ export function board(
     `</g>` +
     (dated ? axis(steps, at, width, stage) : "") +
     `</svg>`;
-  return { svg, caption: caption(steps, at, people), height };
+  return { svg, caption: caption(steps, at), height };
 }
 
 /** Who the move is about and what they said happened, in their own words.
@@ -375,15 +375,13 @@ export function board(
  * No count and no clinical term: the reader is told a person and a thing that
  * happened, never "15/17" or "symptom down". The date is written once, under
  * the dot on the years line. */
-function caption(steps: Step[], at: number, people: Person[]): string {
+function caption(steps: Step[], at: number): string {
   const step = steps[at];
   if (!step) return "";
   const event = step.event;
-  const who =
-    people.find((p) => p.id === (event.child ?? event.person))?.name ??
-    event.person_name;
-  // the description is the person's own words; the label is the record talking
-  // about itself, so it is only the fallback
-  const words = event.description?.trim() || event.label;
+  // who comes from the event's links and the words never repeat a name
+  // (owner ruling, 2026-09-09), so the two go side by side as they are
+  const who = event.person_name;
+  const words = event.label;
   return who ? `${who} · ${words}` : words;
 }
