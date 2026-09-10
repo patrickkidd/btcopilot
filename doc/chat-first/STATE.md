@@ -204,6 +204,23 @@ the visual suite has ever been watched green on a runner.
 **Also true before other people's records are on a server**: the secrets committed in the
 compose file need rotating.
 
+### The coach writes the record without the clinical definitions
+
+The agent loop is the innovation of the rewrite, and it is the only writer of events in
+the chat app: the old batch extraction is not in its path. But the coach is handed no
+definition of an event, a shift, a variable, a nodal event or a relationship move — the
+agent prompt is the coaching voice plus tool rules, and the tool fields say one line each.
+Everything that defines the data clinically lives only in the extraction prompts (the two
+passes, the coding guide, the distinctions, the examples) and in rulings no prompt carries.
+The owner's direction [Oracle: R-0236]: put that knowledge into the loop so the coach knows
+how and when to add, change and remove events by the clinical definitions. No data exists
+yet on how well an agent loop does this; the only numbers are for single-call extraction.
+Four ways in and the measurement to build beside them are laid out for his decision
+(artifact "What the Coach Knows", 2026-09-09): definitions into the agent prompt, meanings
+into the tool fields, the deterministic rules into the commit function, and a
+reference-manual tool later; plus a replay harness that runs a conversation through the
+loop and scores the record with the existing F1 code.
+
 ### The three-event floor and groupings the user makes himself
 
 A cluster needs three events, one number in the schema enforced at the record's commit for

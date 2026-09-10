@@ -693,3 +693,17 @@ workflows of both repos, and a second shape for the beta was put to him: a separ
 stack from a branch-tagged image, which lets the three clinicians use the branch without a
 merge and keeps Pro users off it entirely. The stale test count was measured (one backend
 page test, ten web unit tests, all written before rounds 2–4) rather than guessed.
+
+## 2026-09-09 (late) — the coach has no clinical definitions
+
+While fixing how a moment's words are built (who from the links, what without names,
+refused at the write), the owner asked which prompt writes events. The answer exposed the
+omission: the agent loop is the sole writer and was never given the data model's clinical
+definitions; a first misreading (that batch extraction had been ruled to stay) was
+corrected by the owner — no data exists for an agent loop with tools, and the loop is the
+point of the rewrite [Oracle: R-0236]. Four ways to put the knowledge in and a replay
+harness to measure it were put to him. Same day: the picked-moment words on the timeline
+(option A), the about page behind an i, the ✕ in the arrow's place, the full-region slide,
+the tap-target fix that had made clusters unopenable on phones, and the beta sign-in work
+(app-path login, home-screen card, passkeys, https sandbox).
+
