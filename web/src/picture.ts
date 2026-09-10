@@ -180,6 +180,12 @@ interface Mark {
   x: number;
 }
 
+/** The dated moments no cluster claims. */
+function loose(dated: TimelineEvent[], clusters: { event_ids: number[] }[]): TimelineEvent[] {
+  const claimed = new Set(clusters.flatMap((cluster) => cluster.event_ids));
+  return dated.filter((event) => !claimed.has(event.id));
+}
+
 export class Picture {
   private data: Timeline | null = null;
   /** The moments the coach's latest message named — the spotlight. */
@@ -651,6 +657,13 @@ export class Picture {
     }
 
     const clusters = this.restClusters();
+    // A picked loose moment gets the words, dot and year the open cluster gives
+    // one — the same two lines above the wire — so the wire drops to where the
+    // words leave room and the boxes, which live where the words go, become
+    // brackets under the wire until the moment is put down (owner, option A,
+    // 2026-09-09).
+    const picked = this.selected !== null && loose(dated, clusters).some((e) => e.id === this.selected);
+    const wireY = picked ? WIRE : REST_WIRE;
     const first = years(dated[0].dateTime as string);
     const last = years(dated[dated.length - 1].dateTime as string);
     const span = last - first || 1;
@@ -661,7 +674,7 @@ export class Picture {
 
     let svg =
       `<svg viewBox="0 0 ${width} ${REST_H}" height="${REST_H}" preserveAspectRatio="xMinYMin meet">` +
-      `<line class="wire" x1="${x0}" y1="${REST_WIRE}" x2="${x1}" y2="${REST_WIRE}"/>`;
+      `<line class="wire" x1="${x0}" y1="${wireY}" x2="${x1}" y2="${wireY}"/>`;
     let hits = "";
     let clusterHits = "";
     // A box reaches a little past the moments it holds, and two clusters a
@@ -685,32 +698,40 @@ export class Picture {
       const left = edges[i].left;
       const boxWidth = Math.max(6, edges[i].right - edges[i].left);
       const middle = (a + b) / 2;
-      svg +=
-        `<rect class="ep" x="${left.toFixed(1)}" y="8" ` +
-        `width="${boxWidth.toFixed(1)}" height="40" rx="8"/>` +
-        `<rect class="ep-edge" x="${left.toFixed(1)}" y="8" ` +
-        `width="${boxWidth.toFixed(1)}" height="40" rx="8"/>`;
+      if (picked) {
+        // the bracket stays inside the wire's ends, where a box may reach past
+        const bl = Math.max(x0, left);
+        const br = Math.min(x1, left + boxWidth);
+        svg += `<path class="brk" d="M${bl.toFixed(1)} ${wireY + 6}v5h${(br - bl).toFixed(1)}v-5"/>`;
+      }
+      else
+        svg +=
+          `<rect class="ep" x="${left.toFixed(1)}" y="8" ` +
+          `width="${boxWidth.toFixed(1)}" height="40" rx="8"/>` +
+          `<rect class="ep-edge" x="${left.toFixed(1)}" y="8" ` +
+          `width="${boxWidth.toFixed(1)}" height="40" rx="8"/>`;
       if (cluster.count > DENSE)
         svg +=
-          `<circle class="ep-many" cx="${middle.toFixed(1)}" cy="${REST_WIRE}" r="11"/>` +
-          `<text class="ep-count" x="${middle.toFixed(1)}" y="${REST_WIRE + 4}" ` +
+          `<circle class="ep-many" cx="${middle.toFixed(1)}" cy="${wireY}" r="11"/>` +
+          `<text class="ep-count" x="${middle.toFixed(1)}" y="${wireY + 4}" ` +
           `text-anchor="middle">${cluster.count}</text>`;
       else
         for (let j = 0; j < cluster.count; j += 1) {
           const spread = cluster.count > 1 ? j / (cluster.count - 1) : 0.5;
           svg +=
             `<circle class="dot" cx="${(a + (b - a) * spread).toFixed(1)}" ` +
-            `cy="${REST_WIRE}" r="4.5"/>`;
+            `cy="${wireY}" r="4.5"/>`;
         }
-      svg +=
-        `<text class="ep-yrs" x="${middle.toFixed(1)}" y="21" text-anchor="middle">` +
-        `${esc(shortYears(cluster.start, cluster.end))}</text>`;
+      if (!picked)
+        svg +=
+          `<text class="ep-yrs" x="${middle.toFixed(1)}" y="21" text-anchor="middle">` +
+          `${esc(shortYears(cluster.start, cluster.end))}</text>`;
 
       const next = clusters[i + 1];
       if (next && years(next.start) - years(cluster.end) >= GAP_YEARS) {
         const gap = (at(next.start) + b) / 2;
         svg +=
-          `<text class="qm small" x="${gap.toFixed(1)}" y="${REST_WIRE + 4}" ` +
+          `<text class="qm small" x="${gap.toFixed(1)}" y="${wireY + 4}" ` +
           `text-anchor="middle">?</text>`;
       }
 
@@ -719,30 +740,42 @@ export class Picture {
       clusterHits +=
         `<button class="ss-hit" data-target="${Target.Cluster}" data-index="${i}" ` +
         `aria-label="${esc(cluster.title || shortYears(cluster.start, cluster.end))}" ` +
-        `style="left:${(middle - target / 2).toFixed(1)}px;top:${REST_WIRE - ZONE / 2}px;` +
+        `style="left:${(middle - target / 2).toFixed(1)}px;top:${wireY - ZONE / 2}px;` +
         `width:${target.toFixed(1)}px;height:${ZONE}px"></button>`;
     });
     // A moment no cluster claims is drawn as itself: a dot on the wire where it
     // happened, with no box around it and nothing else bundled into it.
-    const claimed = new Set(clusters.flatMap((cluster) => cluster.event_ids));
-    const loose = dated.filter((event) => !claimed.has(event.id));
-    this.laid.zones = loose.map((event) => [{ event, x: at(event.dateTime as string) }]);
-    loose.forEach((event, i) => {
-      const x = at(event.dateTime as string);
+    const marks: Mark[] = loose(dated, clusters).map((event) => ({
+      event,
+      x: at(event.dateTime as string),
+    }));
+    this.laid.zones = marks.map((mark) => [mark]);
+    marks.forEach(({ event, x }, i) => {
       const on = event.id === this.selected ? " on" : "";
-      svg += `<circle class="dot${on}" cx="${x.toFixed(1)}" cy="${REST_WIRE}" r="${on ? 7 : 4.5}"/>`;
+      svg += `<circle class="dot${on}" cx="${x.toFixed(1)}" cy="${wireY}" r="${on ? 7 : 4.5}"/>`;
       hits +=
         `<button class="ss-hit" data-target="${Target.Zone}" data-index="${i}" ` +
         `aria-label="${esc(event.label)}" ` +
-        `style="left:${(x - ZONE / 2).toFixed(1)}px;top:${REST_WIRE - ZONE / 2}px;` +
+        `style="left:${(x - ZONE / 2).toFixed(1)}px;top:${wireY - ZONE / 2}px;` +
         `width:${ZONE}px;height:${ZONE}px"></button>`;
     });
 
     svg += `</svg>`;
 
+    let words = "";
+    if (picked) {
+      const laid = this.labels(marks, x0, x1, wireY);
+      this.laid.rows = laid.rowsLaid;
+      const mark = marks.find((m) => m.event.id === this.selected) as Mark;
+      words =
+        laid.text +
+        `<div class="ss-yr on" style="left:${(mark.x - 30).toFixed(1)}px;` +
+        `top:${YEAR_TOP}px;width:60px;text-align:center">${esc(this.yearOf(mark.event))}</div>`;
+    }
+
     // A cluster's target goes down last so it wins where a loose moment's
     // thumb-sized target reaches over its box: a tap on a box opens the box.
-    this.host.innerHTML = `<div class="ss">${svg}${hits}${clusterHits}${shelf}</div>`;
+    this.host.innerHTML = `<div class="ss">${svg}${words}${hits}${clusterHits}${shelf}</div>`;
   }
 
   /** The clusters the resting level draws, in time order. They are the ones
