@@ -127,7 +127,7 @@ export enum Target {
 const OWN = new Set<string>([Target.Prev, Target.Next]);
 
 /** How long one level takes to slide over the one it came from. */
-const SLIDE_MS = 240;
+const SLIDE_MS = 320;
 
 /** How deep each level sits. Drilling in slides the arriving view over the one
  * it came from; coming back slides the current one off it. Two moments face to
@@ -141,6 +141,20 @@ const DEPTH: Record<Level, number> = {
 };
 
 const STILL = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+/** A still picture of the region as it is now, laid over it: the live rows
+ * are cloned without their ids so nothing on the page can find the copies. */
+function snapshot(region: HTMLElement, ...skip: Element[]): HTMLElement {
+  const lay = document.createElement("div");
+  lay.className = "slide-lay";
+  for (const child of [...region.children]) {
+    if (skip.includes(child) || child.classList.contains("slide-lay")) continue;
+    const copy = child.cloneNode(true) as HTMLElement;
+    for (const el of [copy, ...copy.querySelectorAll("[id]")]) el.removeAttribute("id");
+    lay.append(copy);
+  }
+  return lay;
+}
 
 export interface Tap {
   target: Target;
@@ -715,7 +729,8 @@ export class Picture {
     this.laid.zones = loose.map((event) => [{ event, x: at(event.dateTime as string) }]);
     loose.forEach((event, i) => {
       const x = at(event.dateTime as string);
-      svg += `<circle class="dot" cx="${x.toFixed(1)}" cy="${REST_WIRE}" r="4.5"/>`;
+      const on = event.id === this.selected ? " on" : "";
+      svg += `<circle class="dot${on}" cx="${x.toFixed(1)}" cy="${REST_WIRE}" r="${on ? 7 : 4.5}"/>`;
       hits +=
         `<button class="ss-hit" data-target="${Target.Zone}" data-index="${i}" ` +
         `aria-label="${esc(event.label)}" ` +
@@ -840,41 +855,36 @@ export class Picture {
    * a level with a height of its own takes it once the slide is over
    * (owner ruling 2026-09-08). */
   private slide(dir: 1 | -1): void {
-    const held = this.host.getBoundingClientRect().height;
-    this.host.classList.add("sliding");
-    const leaving = document.createElement("div");
-    leaving.className = "lay";
-    leaving.style.height = `${held}px`;
-    while (this.host.firstChild) leaving.appendChild(this.host.firstChild);
-
+    // The card is the whole picture region — title line, drawing and the row
+    // of chips — not the drawing alone (owner, 2026-09-09). The level that is
+    // leaving is photographed now; the one arriving is photographed once the
+    // page has written its title and chips, a frame later; the two pictures
+    // travel over the live region, which is already showing the new level.
+    const region = this.host.parentElement as HTMLElement;
+    const leaving = snapshot(region);
     this.draw();
-    const taking = parseFloat(this.host.style.height) || held;
-    const arriving = document.createElement("div");
-    arriving.className = "lay";
-    arriving.style.height = `${held}px`;
-    while (this.host.firstChild) arriving.appendChild(this.host.firstChild);
-
-    this.pin(held);
-    // the one that moves is drawn over the one that stays
-    this.host.append(...(dir === 1 ? [leaving, arriving] : [arriving, leaving]));
-    const mover = dir === 1 ? arriving : leaving;
-    const off = { transform: "translateX(100%)" };
-    const on = { transform: "translateX(0)" };
-    this.flight = mover.animate(dir === 1 ? [off, on] : [on, off], {
-      duration: SLIDE_MS,
-      easing: "ease",
+    region.classList.add("sliding");
+    region.append(leaving);
+    requestAnimationFrame(() => {
+      const arriving = snapshot(region, leaving);
+      region.append(dir === 1 ? arriving : leaving);
+      const mover = dir === 1 ? arriving : leaving;
+      const off = { transform: "translateX(100%)" };
+      const on = { transform: "translateX(0)" };
+      this.flight = mover.animate(dir === 1 ? [off, on] : [on, off], {
+        duration: SLIDE_MS,
+        easing: "ease",
+      });
+      this.landing = () => {
+        leaving.remove();
+        arriving.remove();
+        region.classList.remove("sliding");
+      };
+      this.flight.finished.then(
+        () => this.land(),
+        () => undefined,
+      );
     });
-    this.landing = () => {
-      leaving.remove();
-      while (arriving.firstChild) this.host.appendChild(arriving.firstChild);
-      arriving.remove();
-      this.host.classList.remove("sliding");
-      this.pin(taking);
-    };
-    this.flight.finished.then(
-      () => this.land(),
-      () => undefined,
-    );
   }
 
   /** Put the arriving view down where it belongs, whether the slide finished
@@ -900,7 +910,10 @@ export class Picture {
         return;
       }
     }
-    if (this.level === Level.Rest && this.selected === null) {
+    // A tap on a loose moment picks it where it is: the clusters stay, the
+    // dot reads as picked (owner, 2026-09-09). The spotlight below is for
+    // what the coach's words name, not for a tap.
+    if (this.level === Level.Rest && (this.selected === null || !this.focus)) {
       this.renderRest();
       return;
     }

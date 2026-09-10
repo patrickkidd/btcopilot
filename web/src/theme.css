@@ -251,16 +251,17 @@ button { font-family: inherit; }
    length of the slide, each at the height the region already had, so nothing
    under the picture moves while they travel; the region takes a new height
    only once they have landed. */
-.view.sliding { overflow: hidden; transition: none; }
-.view.sliding .lay {
+.pic.sliding { overflow: hidden; }
+.pic.sliding .view { transition: none; }
+/* a level arrives as a card over the one it came from: the whole region, on
+   the picture's own ground, so its words never cross the other level's words */
+.pic .slide-lay {
   position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  /* the picture's own ground, so a level arrives as a card over the one it
-     came from rather than its words crossing the other level's words */
+  inset: 0;
+  z-index: 5;
   background: var(--panel);
   will-change: transform;
+  pointer-events: none;
 }
 .ss { position: relative; width: 100%; height: 100%; }
 .ss svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
