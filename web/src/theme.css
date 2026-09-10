@@ -186,6 +186,33 @@ button { font-family: inherit; }
   font: inherit;
   cursor: pointer;
 }
+/* the two small controls on the title line: the i after an open cluster's
+   name, and the ✕ at the row's end while a moment is picked at rest */
+.pl-btn {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--faint);
+  font: 400 14px var(--sans);
+  cursor: pointer;
+}
+.pl-btn:active { color: var(--data); }
+.pl-btn svg { display: block; }
+.pl-x { margin-left: auto; margin-right: -8px; }
+/* the about page: words, at the height they need */
+.ss.about { padding: 4px 16px 10px; box-sizing: border-box; }
+.ab-why { margin: 0 0 8px; font: 400 14px/1.4 var(--sans); color: var(--ink); }
+.ab-span { margin: 0 0 6px; font: 400 13px var(--mono); color: var(--faint); }
+.ab-list { list-style: none; margin: 0; padding: 0; }
+.ab-list li { display: flex; gap: 10px; align-items: baseline; padding: 3px 0; font: 400 13px/1.35 var(--mono); }
+.ab-yr { flex: none; width: 44px; color: var(--data); }
+.ab-what { color: var(--ink); }
 .pin-label {
   display: flex;
   align-items: center;

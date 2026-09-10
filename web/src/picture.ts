@@ -88,6 +88,9 @@ enum Level {
   Rest = "rest",
   Wire = "wire",
   Board = "board",
+  /** What the open cluster is: the coach's reason, its span, its moments. A
+   * level of its own behind the small i beside the title (owner, 2026-09-09). */
+  About = "about",
   /** Two moments face to face, which is how the record asks a question about
    * a pair. No mockup fixes this drawing; it is built from the approved
    * "Pairs, face to face" concept and the at-rest vocabulary. */
@@ -138,6 +141,7 @@ const DEPTH: Record<Level, number> = {
   [Level.Wire]: 1,
   [Level.Compare]: 1,
   [Level.Board]: 2,
+  [Level.About]: 2,
 };
 
 const STILL = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -478,13 +482,29 @@ export class Picture {
 
   /** A view below the whole line is open, so there is somewhere to go up to. */
   deep(): boolean {
-    return this.level === Level.Board || this.opened();
+    return this.level === Level.Board || this.level === Level.About || this.opened();
+  }
+
+  /** The open cluster's own page, a level in from the cluster. */
+  about(): void {
+    if (!this.opened()) return;
+    this.level = Level.About;
+    this.render();
+  }
+
+  aboutOpen(): boolean {
+    return this.level === Level.About;
   }
 
   /** Up exactly one level: the board to the cluster it is showing, an open
    * cluster to the whole line. The title row is the only way up (owner ruling
    * 2026-09-08), so the board carries no corner arrow of its own. */
   up(): void {
+    if (this.level === Level.About) {
+      this.level = Level.Wire;
+      this.render();
+      return;
+    }
     if (this.level !== Level.Board) {
       this.dismiss();
       return;
@@ -637,6 +657,31 @@ export class Picture {
    * moments as dots inside it, and the amber question where the record has a
    * long gap it cannot account for. A tap opens a cluster. Converged mockup:
    * crowded-cluster/timeline-converged.html renderRest. */
+  /** Everything the record and the coach can say about one cluster, as words:
+   * the reason it is one episode, its span, and each moment with its year. The
+   * page takes the height its words need. */
+  private renderAbout(cluster: Cluster): void {
+    this.laid = { zones: [], rows: [] };
+    const why = (cluster.reason ?? cluster.summary ?? "").trim();
+    const moments = (this.data?.events ?? [])
+      .filter((e) => cluster.event_ids.includes(e.id))
+      .sort((a, b) => (a.dateTime ?? "").localeCompare(b.dateTime ?? ""));
+    const rows = moments
+      .map(
+        (e) =>
+          `<li><span class="ab-yr">${esc(this.yearOf(e))}</span>` +
+          `<span class="ab-what">${esc(e.label)}</span></li>`,
+      )
+      .join("");
+    this.host.innerHTML =
+      `<div class="ss about">` +
+      (why ? `<p class="ab-why">${esc(why)}</p>` : "") +
+      `<p class="ab-span">${esc(shortYears(cluster.start, cluster.end))} · ` +
+      `${moments.length} moment${moments.length === 1 ? "" : "s"}</p>` +
+      `<ul class="ab-list">${rows}</ul></div>`;
+    this.pin(this.host.scrollHeight);
+  }
+
   private renderRest(): void {
     const width = this.width;
     const x0 = X_PAD;
@@ -932,6 +977,10 @@ export class Picture {
   }
 
   private draw(): void {
+    if (this.level === Level.About && this.focus) {
+      this.renderAbout(this.focus);
+      return;
+    }
     if (this.level === Level.Board && (this.moves.length || this.cast.length)) {
       this.renderBoard();
       return;
@@ -1115,28 +1164,10 @@ export class Picture {
           .map(({ id, row, left, width }) => ({ id, row, left, width })),
       };
     }
-    // One cluster open and nothing picked in it: the band says the coach's own
-    // sentence for why these moments are one episode, over two rows and cut to
-    // fit. The cluster's name is not repeated here — it is the title of the
-    // view, and the row above says it (owner ruling 2026-09-08). Never a list
-    // of the moments: they are the dots, and fifteen would not fit anyway.
-    if (this.focus) {
-      const why = (this.focus.reason ?? this.focus.summary ?? "").trim();
-      const lines = why
-        ? wrap2(clip(why, Math.min(88, wide * ROWS.length)), wide)
-        : [];
-      return {
-        text: lines
-          .map((line, i) =>
-            line
-              ? `<div class="ss-t why" style="left:${x0}px;` +
-                `top:${ROWS[i]}px;width:${x1 - x0}px">${esc(line)}</div>`
-              : "",
-          )
-          .join(""),
-        rowsLaid: [],
-      };
-    }
+    // One cluster open and nothing picked in it: no words on the drawing. The
+    // cluster's name is the title of the view, and its reason is behind the i
+    // beside it (owner, 2026-09-09).
+    if (this.focus) return { text: "", rowsLaid: [] };
     const spotlit = marks.filter((m) => this.named.includes(m.event.id));
     if (!spotlit.length) return { text: "", rowsLaid: [] };
     // A line says which month it was only where it has to: where two of the

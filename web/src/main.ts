@@ -639,6 +639,8 @@ function crumb(): void {
     name.removeAttribute("tabindex");
   }
   $("up").hidden = !deep;
+  $("info").hidden = !picture.opened();
+  $("clear").hidden = deep || picture.selection() === null;
 }
 
 /** Up exactly one level: the board to the cluster it is showing, an open
@@ -666,6 +668,12 @@ function putDown(): void {
 }
 
 $("up").addEventListener("click", upOne);
+$("info").addEventListener("click", () => {
+  picture.about();
+  pic = REST;
+  actions();
+});
+$("clear").addEventListener("click", putDown);
 $("crumb").addEventListener("click", () => {
   if (picture.deep()) upOne();
 });
