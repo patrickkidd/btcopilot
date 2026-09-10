@@ -184,6 +184,13 @@ interface Mark {
   x: number;
 }
 
+/** "2006", or "2004–2006": the span in full years, for a page with room. */
+function fullYears(start: string, end: string): string {
+  const a = Math.floor(years(start));
+  const b = Math.floor(years(end));
+  return a === b ? String(a) : `${a}\u2013${b}`;
+}
+
 /** The dated moments no cluster claims. */
 function loose(dated: TimelineEvent[], clusters: { event_ids: number[] }[]): TimelineEvent[] {
   const claimed = new Set(clusters.flatMap((cluster) => cluster.event_ids));
@@ -676,7 +683,7 @@ export class Picture {
     this.host.innerHTML =
       `<div class="ss about">` +
       (why ? `<p class="ab-why">${esc(why)}</p>` : "") +
-      `<p class="ab-span">${esc(shortYears(cluster.start, cluster.end))} · ` +
+      `<p class="ab-span">${esc(fullYears(cluster.start, cluster.end))} · ` +
       `${moments.length} moment${moments.length === 1 ? "" : "s"}</p>` +
       `<ul class="ab-list">${rows}</ul></div>`;
     this.pin(this.host.scrollHeight);

@@ -443,7 +443,9 @@ function actions(): void {
   // Nothing open and nothing picked: there is nothing to act on, so the row
   // says what a tap will do instead.
   if (!sel && !open) {
-    host.innerHTML = `<span class="cta">tap a cluster</span>` + LIST_BUTTON;
+    // the about page is words already; no hint under it
+    const hint = picture.aboutOpen() ? "" : "tap a cluster";
+    host.innerHTML = `<span class="cta">${hint}</span>` + LIST_BUTTON;
     wireList();
     return;
   }
