@@ -726,6 +726,12 @@ export class Picture {
 
     let svg =
       `<svg viewBox="0 0 ${width} ${REST_H}" height="${REST_H}" preserveAspectRatio="xMinYMin meet">` +
+      (picked
+        ? `<defs><linearGradient id="epfade" gradientUnits="userSpaceOnUse" ` +
+          `x1="0" x2="0" y1="${wireY + 20}" y2="${wireY - 20}">` +
+          `<stop offset="0" class="epfade-in"/><stop offset="0.45" class="epfade-in"/>` +
+          `<stop offset="1" class="epfade-out"/></linearGradient></defs>`
+        : "") +
       `<line class="wire" x1="${x0}" y1="${wireY}" x2="${x1}" y2="${wireY}"/>`;
     let hits = "";
     let clusterHits = "";
@@ -750,18 +756,17 @@ export class Picture {
       const left = edges[i].left;
       const boxWidth = Math.max(6, edges[i].right - edges[i].left);
       const middle = (a + b) / 2;
-      if (picked) {
-        // the bracket stays inside the wire's ends, where a box may reach past
-        const bl = Math.max(x0, left);
-        const br = Math.min(x1, left + boxWidth);
-        svg += `<path class="brk" d="M${bl.toFixed(1)} ${wireY + 6}v5h${(br - bl).toFixed(1)}v-5"/>`;
-      }
-      else
-        svg +=
-          `<rect class="ep" x="${left.toFixed(1)}" y="8" ` +
-          `width="${boxWidth.toFixed(1)}" height="40" rx="8"/>` +
-          `<rect class="ep-edge" x="${left.toFixed(1)}" y="8" ` +
-          `width="${boxWidth.toFixed(1)}" height="40" rx="8"/>`;
+      // The box rides the wire wherever the wire is. While a moment is picked
+      // the box fades to nothing going up, so it never reaches the words above
+      // (owner, 2026-09-09).
+      const boxY = wireY - 20;
+      const fade = picked ? ` style="fill:url(#epfade)"` : "";
+      const fadeEdge = picked ? ` style="stroke:url(#epfade)"` : "";
+      svg +=
+        `<rect class="ep" x="${left.toFixed(1)}" y="${boxY}" ` +
+        `width="${boxWidth.toFixed(1)}" height="40" rx="8"${fade}/>` +
+        `<rect class="ep-edge" x="${left.toFixed(1)}" y="${boxY}" ` +
+        `width="${boxWidth.toFixed(1)}" height="40" rx="8"${fadeEdge}/>`;
       if (cluster.count > DENSE)
         svg +=
           `<circle class="ep-many" cx="${middle.toFixed(1)}" cy="${wireY}" r="11"/>` +

@@ -204,7 +204,10 @@ button { font-family: inherit; }
 }
 .pl-btn:active { color: var(--data); }
 .pl-btn svg { display: block; }
-.pl-x { margin-left: auto; margin-right: -8px; }
+/* the box's fade while a moment is picked: the wire's colour at the wire,
+   nothing at the top edge, so the box stops short of the words */
+.ss .epfade-in { stop-color: var(--data); stop-opacity: 1; }
+.ss .epfade-out { stop-color: var(--data); stop-opacity: 0; }
 /* the about page: words, at the height they need */
 .ss.about { padding: 4px 16px 10px; box-sizing: border-box; }
 .ab-why { margin: 0 0 8px; font: 400 14px/1.4 var(--sans); color: var(--ink); }

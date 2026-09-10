@@ -630,7 +630,10 @@ async function load(): Promise<Timeline> {
 function crumb(): void {
   const deep = picture.deep();
   const name = $("crumb");
-  name.textContent = picture.title() ?? "Family timeline";
+  // a picked moment at rest takes the title line: the ✕ that puts it down
+  // stands where the back arrow stands one level in, and the label goes
+  const picked = !deep && picture.selection() !== null;
+  name.textContent = picked ? "" : (picture.title() ?? "Family timeline");
   name.classList.toggle("deep", deep);
   name.setAttribute("aria-hidden", "false");
   if (deep) {
@@ -642,7 +645,7 @@ function crumb(): void {
   }
   $("up").hidden = !deep;
   $("info").hidden = !picture.opened();
-  $("clear").hidden = deep || picture.selection() === null;
+  $("clear").hidden = !picked;
 }
 
 /** Up exactly one level: the board to the cluster it is showing, an open
