@@ -173,6 +173,19 @@ button { font-family: inherit; }
 /* One line, always: the state text on the right changes with the selection and
    must never push the label on the left onto a second line, which would move
    the picture and everything under it. */
+/* The back arrow's tap target is the ruled 44, not the glyph's 9px. */
+.up {
+  flex: none;
+  width: 44px;
+  height: 28px;
+  margin-left: -14px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--move);
+  font: inherit;
+  cursor: pointer;
+}
 .pin-label {
   display: flex;
   align-items: center;

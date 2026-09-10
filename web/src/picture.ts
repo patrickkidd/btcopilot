@@ -649,6 +649,7 @@ export class Picture {
       `<svg viewBox="0 0 ${width} ${REST_H}" height="${REST_H}" preserveAspectRatio="xMinYMin meet">` +
       `<line class="wire" x1="${x0}" y1="${REST_WIRE}" x2="${x1}" y2="${REST_WIRE}"/>`;
     let hits = "";
+    let clusterHits = "";
     // A box reaches a little past the moments it holds, and two clusters a
     // month apart would then draw over one another. Where that happens the two
     // boxes give way to each other and leave a gap between them.
@@ -701,7 +702,7 @@ export class Picture {
 
       // the box may be narrower than a thumb, so the target is grown to the floor
       const target = Math.max(ZONE, boxWidth);
-      hits +=
+      clusterHits +=
         `<button class="ss-hit" data-target="${Target.Cluster}" data-index="${i}" ` +
         `aria-label="${esc(cluster.title || shortYears(cluster.start, cluster.end))}" ` +
         `style="left:${(middle - target / 2).toFixed(1)}px;top:${REST_WIRE - ZONE / 2}px;` +
@@ -724,7 +725,9 @@ export class Picture {
 
     svg += `</svg>`;
 
-    this.host.innerHTML = `<div class="ss">${svg}${hits}${shelf}</div>`;
+    // A cluster's target goes down last so it wins where a loose moment's
+    // thumb-sized target reaches over its box: a tap on a box opens the box.
+    this.host.innerHTML = `<div class="ss">${svg}${hits}${clusterHits}${shelf}</div>`;
   }
 
   /** The clusters the resting level draws, in time order. They are the ones
