@@ -201,3 +201,28 @@ session end is `/flush` and is idempotent.
 .claude/skills/flush/SKILL.md; bin/flushcheck.py.
 **Next action:** none.
 **Updated:** 2026-09-11.
+
+## T-10 · Project memory: the two clocks, the flush, the trace
+
+**Status:** built in first form; names are mechanical until a flush rewrites them.
+**Decided:** one thought-and-decision trace in the order of the owner's own statements,
+mined statement by statement from the transcripts, branching where a thread starts; a node at
+rest is a name plus one line, his words behind a click; shape B — threads as stacked lines
+across time, his trace stepping between them; dates, commits and artifacts are secondary
+under the statement that caused them [R-0244]; the flush is idempotent and topics are picked
+up by name; he never runs a command — he reads pages or files.
+**Open:** (1) 253 of 723 statements are not yet placed on a thread (the word lists are the
+mechanism; the flush's judgement step is the other) and every name and summary is
+script-made until a flush session rewrites this session's; (2) the session filter pulled in
+~14 statements from two unrelated sessions that mention "coach" — tighten the filter;
+(3) revision chains between rulings do not draw yet — the store marks SUPERSEDED in a column
+the ledger does not read; (4) the opening view sits at the newest statements; "fit" shows the
+whole; (5) the flush step that rewrites names has never been run in anger.
+**Lives in:** bin/{trace.py,tracepage.py,ledger.py,eventpage.py,topicpage.py,flushcheck.py},
+doc/chat-first/{trace.json,events.json,TOPICS.md,HISTORY.md}, .claude/skills/flush/SKILL.md;
+the trace page https://claude.ai/code/artifact/be081e64-9efa-45de-b329-42e82f9d4857; the
+shape mockups https://claude.ai/code/artifact/fefb75e5-dade-4cf9-8892-eb7e61af6dc7.
+**Next action:** a fresh session runs `/flush` for real — assigns the unplaced statements,
+rewrites this session's names, tightens the filter — then he reviews the page for fidelity.
+**Updated:** 2026-09-11.
+

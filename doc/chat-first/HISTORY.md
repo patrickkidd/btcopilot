@@ -724,7 +724,11 @@ his pick. Corrections that now bind: no coined terms; estimate the work, not the
 build only on an explicit go; one place for content; mockups drawn with the app's own
 stylesheet; sub-agents token- and model-optimised. The flush became a skill (`/flush`) with a
 topic register (TOPICS.md) as the state clock and tagged HISTORY entries as the event clock,
-checked by bin/flushcheck.py.
+checked by bin/flushcheck.py. Later the same day the owner corrected the dashboard's shape: not
+dates first, not dot grids, but his single thought-and-decision trace in the order of his own
+statements, branching by thread; he picked shape B from three drawn from this session's real
+sequence [R-0244]; a miner now pulls his 723 statements from 21 local transcripts into
+trace.json and the page draws them, zoom clamped to the whole trace.
 ## 2026-09-11 (afternoon) — the coding page drawn and tabled; the IRR review became a three-stage ground-truth process [T-3, T-9]
 <!-- session: session_01D4vJ3BK6BgHxA9TzRHdw6Z -->
 

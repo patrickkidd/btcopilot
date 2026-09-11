@@ -53,14 +53,26 @@ changes nothing.
 8. Commit and push both worktrees, one git mutation per command, corpus commits titled
    `FD-362 flush: <date>`.
 9. Refresh the owner's two pages, same links every time (URLs at the top of TOPICS.md, passed
-   to the Artifact tool as `url`): the ledger `python bin/ledger.py` (rewrites
-   doc/chat-first/events.json from every dated source — history, rulings, decision log,
-   review log, commits in both worktrees, artifacts), then `python bin/eventpage.py <tmp>/fd362-clocks.html`
-   (the two-clock dashboard) and `python bin/topicpage.py <tmp>/fd362-topics.html` (the topic
-   register as a page). Commit events.json with the corpus. Records the ledger could not
-   assign to a topic land in the audit lane; assign them by adding the missing words to the
-   topic block or the ledger's word list — never by hand-editing events.json. He never runs
-   a command; he reads the pages, or the files in VS Code, or asks in plain words.
+   to the Artifact tool as `url`), in this order:
+   a. `python bin/ledger.py` — rewrites doc/chat-first/events.json from every dated source
+      (history, rulings, decision log, review log, commits in both worktrees, artifacts).
+   b. `python bin/trace.py` — mines the owner's own statements out of the local transcripts
+      into doc/chat-first/trace.json, one row per thing he typed, in order. It writes nothing
+      but his words.
+   c. **The judgement step, and it is this session's job, not the script's.** trace.py gives
+      every new row a mechanical short name and a one-line summary and marks it `named_by`
+      "script". Before rendering, rewrite this session's own rows in trace.json — the name in
+      3–5 plain words for what he asked for, the summary in one line under 90 characters, the
+      piece of work corrected if the word match put it in the wrong one — and set `named_by`
+      to "session" on each row you rewrite. Rows marked "session" are never recomputed, so a
+      row left as "script" reads as a machine guess on his page.
+   d. `python bin/tracepage.py <tmp>/fd362-clocks.html` (the dashboard: his one line of thought,
+      each piece of work a horizontal line, and a second view of where every piece stands) and
+      `python bin/topicpage.py <tmp>/fd362-topics.html` (the topic register as a page).
+   Commit events.json and trace.json with the corpus. Records the ledger could not assign to a
+   topic land in the audit lane; assign them by adding the missing words to the topic block or
+   the ledger's word list — never by hand-editing events.json. He never runs a command; he
+   reads the pages, or the files in VS Code, or asks in plain words.
 10. Report in one message: the topics touched by name, one line of next action each, the audit
     page link, and what needs his word. Nothing else.
 
