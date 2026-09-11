@@ -15,7 +15,7 @@ th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-t
 </style>
 
 <h1>Database scope of the pull request, against master</h1>
-<p class="lead">Every table the branch adds or changes, in one list. Everything else in the database is untouched, including the desktop app's read and write paths. Ids are the shared integer primary key with created_at and updated_at; timestamps are DateTime; JSON columns are JSONB with the SQLite variant. Every reference to a user is <span class="m">user_id</span>. The five <span class="m">review_</span> tables are prefixed so their names stay out of the global namespace.</p>
+<p class="lead">Every table the branch adds or changes, in one list. Everything else in the database is untouched, including the desktop app's read and write paths. Ids are the shared integer primary key with created_at and updated_at; timestamps are DateTime; JSON columns are JSONB with the SQLite variant. Every reference to a user is <span class="m">user_id</span>. The five <span class="m">review_</span> tables and the two <span class="m">diagram_</span> tables are prefixed so their names stay out of the global namespace.</p>
 
 <div class="wrap"><table>
 <tr><th>Table</th><th>Change</th><th>Columns</th><th>What it holds</th></tr>
@@ -28,9 +28,9 @@ th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-t
 
 <tr><td class="m">statements</td><td class="chg">3 columns added</td><td class="m">views JSON null · kind Enum(turn, …) default turn · cluster_id String(64) null</td><td>A turn. views is what the coach asked the picture to show with that turn.</td></tr>
 
-<tr><td class="m">changes</td><td class="new">new</td><td class="m">diagram_id FK · statement_id FK null · turn_id String(64) · user_id FK null · session_id String(64) null · author Enum(user, coach, pro, review) · deltas JSONB</td><td>Every edit to any record: item, field, before and after, with the turn it came from. The scribe's edits during coding, and each settle the meeting makes on the case's record, are rows here.</td></tr>
+<tr><td class="m">diagram_changes</td><td class="new">new</td><td class="m">diagram_id FK · statement_id FK null · turn_id String(64) · user_id FK null · session_id String(64) null · author Enum(user, coach, pro, review) · deltas JSONB</td><td>Every edit to any record: item, field, before and after, with the turn it came from. The scribe's edits during coding, and each settle the meeting makes on the case's record, are rows here.</td></tr>
 
-<tr><td class="m">interactions</td><td class="new">new</td><td class="m">diagram_id FK · user_id FK null · session_id String(64) null · statement_id FK null · kind Enum(look, say, chip_tap, play) · item_kind Enum(ItemKind) · item_id String(64) null</td><td>Every tap on the picture and in the thread, as learning data.</td></tr>
+<tr><td class="m">diagram_interactions</td><td class="new">new</td><td class="m">diagram_id FK · user_id FK null · session_id String(64) null · statement_id FK null · kind Enum(look, say, chip_tap, play) · item_kind Enum(ItemKind) · item_id String(64) null</td><td>Every tap on the picture and in the thread, as learning data.</td></tr>
 
 <tr><td class="m">web_sessions</td><td class="new">new</td><td class="m">user_id · token String(64) · last_seen_at · expires_at · revoked_at null · user_agent String(255)</td><td>Passwordless sign-ins, 180 days.</td></tr>
 
@@ -44,7 +44,7 @@ th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-t
 
 <tr><td class="m">review_codings</td><td class="new">new</td><td class="m">cut_id FK review_cuts.id · user_id FK · diagram_id FK diagrams.id · agent JSON null · done_at DateTime null · unique (cut_id, user_id)</td><td>The link between a cut, a coder and the coder's own diagrams row, with Done. agent is set only when the coach coded (model, prompt version); null means a person.</td></tr>
 
-<tr><td class="m">review_items</td><td class="new">new</td><td class="m">cut_id FK · item_kind Enum(ItemKind) · item_id String(64) null · takes JSON · status Enum(agreed, disputed, settled, unresolved) · settle_change_id FK changes.id null · user_id FK null</td><td>One event (or person, or pair bond) as every coder saw it: takes is the list of {coding_id, item_id, item} the F1 matcher paired across codings, each item stored as the schema's Event, Person or PairBond dict; a snapshot taken when the vote opens, never maintained. item_id is the item on the case's record once settled; user_id is who settled it.</td></tr>
+<tr><td class="m">review_items</td><td class="new">new</td><td class="m">cut_id FK · item_kind Enum(ItemKind) · item_id String(64) null · takes JSON · status Enum(agreed, disputed, settled, unresolved) · settle_change_id FK diagram_changes.id null · user_id FK null</td><td>One event (or person, or pair bond) as every coder saw it: takes is the list of {coding_id, item_id, item} the F1 matcher paired across codings, each item stored as the schema's Event, Person or PairBond dict; a snapshot taken when the vote opens, never maintained. item_id is the item on the case's record once settled; user_id is who settled it.</td></tr>
 
 <tr><td class="m">review_votes</td><td class="new">new</td><td class="m">review_item_id FK · user_id FK · choice Enum(take, change, drop) · value JSON null · reason Text null · unique (review_item_id, user_id)</td><td>One coder's vote before the meeting. value is {coding_id} for take, or the coder's own Event dict for change. Names never shown until the meeting.</td></tr>
 

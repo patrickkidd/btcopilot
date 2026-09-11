@@ -150,8 +150,10 @@ Done in the top bar with a confirmation sheet; the next task card [R-0270, R-027
 compare view already drawn folds into the ballot or the meeting screen; (10) [build] Pro
 "notes" has no mockup; (11) [ruling] the tables, after an adversarial pass, await his check before the build
 (doc/chat-first/REVIEW_TABLES.html): one column on discussions (kind: chat, recording, note),
-five new tables (cuts, codings, review_items, votes, rules), a coding is a diagram row, a settle
-is a change row on the case's diagram, JSON for what changes shape, the agenda derived, nothing
+five new tables prefixed review_ (cuts, codings, items, votes, rules), cuts as two-cursor
+windows, user_id everywhere, the branch's change and interaction tables renamed
+diagram_changes and diagram_interactions [R-0296, R-0297, R-0299], a coding is a diagram row,
+a settle is a diagram_changes row on the case's diagram, JSON for what changes shape, the agenda derived, nothing
 the desktop app reads touched [R-0294]; then the build in the order he saw: tables and
 endpoints, the coding screens, his screens, the vote, the meeting and result, Pro, the small
 items, each step eyeballed on the sandbox; the migration of last year's rules runs once on
