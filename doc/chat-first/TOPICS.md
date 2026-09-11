@@ -58,8 +58,8 @@ private prompt file, which is his clinical content rewritten for the loop; the a
 what was dropped is the newest entry in the prompt engineering log; (2) [waiting] the first
 measurement cannot run: the replay harness has nothing to score against until his two
 conversations are coded as ground truth; (3) [build] the induction instructions have not yet
-been retargeted at the agent path; (4) [ruling] whether the coach should code the clinical
-variables itself in conversation or leave them to a review pass.
+been retargeted at the agent path; (4) [build] the coach codes the clinical variables in session, and the goal is that its coding
+matches the review's agreement — the F1 outcome of the project [R-0293].
 **Lives in:** btcopilot/personal/{record.py,toolbox.py,timeline.py}, training/run_agent_f1.py;
 the private prompt section (`git -C ~/theapp/fdserver/.claude/worktrees/FD-362 show HEAD~3 --
 prompts/private_prompts.py`, or the file's section by that title); the induction instructions
