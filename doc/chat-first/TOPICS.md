@@ -124,13 +124,16 @@ card, the transcript up to the cut with the last ratified cut marked and the cod
 chips above it, the scribe in the composer, Done, the next task card) — four choices on the
 page: the coder's words kept in the thread or only the scribe's edit line; Done as a plain
 button or the green pill; the amber "coding" mark or none; turns before the last ratified cut
-shown in full or folded away; (9) [build] the two-sided
+shown in full or folded away — the first is ruled (words kept, inline coding chat) [R-0270],
+three remain; (9) [build] the two-sided
 compare view already drawn folds into the ballot or the meeting screen; (10) [build] Pro
 "notes" has no mockup; (11) [build] build order once the six rulings land: codings, cuts,
 ballots, votes and scores tables; endpoints; replay as a task; export of ratified items to the
 ground-truth files; the session menu items; the coding mode; the review module isolated;
 (12) [build] the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238].
-**Lives in:** the ballot-and-meeting page, version 5, approved
+**Lives in:** the spec sheet for beta users, every screen's behaviour in plain words, kept by the
+flush: https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba (source
+doc/chat-first/SCREENS.md, renderer bin/screenspage.py); the review screens, version 5, approved
 https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9 (source
 /Users/patrick/.claude/jobs/16d9eee6/tmp/ballot-meeting.html, ephemeral — the artifact is the
 durable copy); the coding loop plan

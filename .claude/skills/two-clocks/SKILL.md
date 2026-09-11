@@ -111,3 +111,12 @@ that block's Open and Next action. If two blocks could match, it asks which in o
 
 Binding throughout: plain words, no coined terms; his terms only; no raw transcripts; no
 clinical content or real names in the public repo.
+
+## The spec sheet for beta users (added 2026-09-11, Patrick's ask)
+`doc/chat-first/SCREENS.md` is the state clock of every screen's behaviour in plain words, one
+sentence per item tagged `[built]`, `[drawn]` or `[open]` with ruling ids in braces, written for
+the beta users. Every flush revises its items for the session's rulings (an `[open]` item whose
+choice landed becomes `[drawn]` or `[built]` with its id; a new ruled behaviour gets a new item),
+sets its `Updated:` line to today, renders it with `python bin/screenspage.py <tmp>/fd362-screens.html`
+and republishes it to the same link every time — **https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba**.
+`bin/flushcheck.py` fails if it is not updated today or an item lacks a tag.

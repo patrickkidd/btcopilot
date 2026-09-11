@@ -61,6 +61,13 @@ def main() -> int:
         rf"{today.year}-{today.month:02d}-\d\d(?: and \d\d)*\b.*\b{today.day:02d}\b", newest
     ):
         errors.append(f"newest HISTORY entry is not dated today ({today.isoformat()})")
+    screens = (DOC / "SCREENS.md").read_text()
+    m = re.search(r"^Updated:\s*(\d{4}-\d{2}-\d{2})", screens, re.M)
+    if not m or m.group(1) != today.isoformat():
+        errors.append("SCREENS.md is not marked Updated today")
+    for line in screens.splitlines():
+        if line.startswith("- ") and not re.search(r"\[(built|drawn|open)\]", line):
+            errors.append(f"SCREENS.md item without a status tag: {line[:60]!r}")
     for e in errors:
         print("flushcheck:", e)
     print("flushcheck: ok" if not errors else f"flushcheck: {len(errors)} problem(s)")

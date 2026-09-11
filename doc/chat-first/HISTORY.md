@@ -755,4 +755,8 @@ decisions on them, never text [R-0255]; UI options with descriptions, never a re
 [R-0256, R-0260]; he is Patrick, never "the owner" [R-0261]. After the flush Patrick asked where the project stands, challenged "settled" — three
 items were inference, not his words — and ruled that every screen is planned pixel for pixel
 before any code review [R-0269]; the coding screens were redrawn to today's rulings as the
-next step.
+next step. He approved the coding screens with the inline coding chat [R-0270] and asked for one
+shareable spec sheet, the state clock of every screen's behaviour for the beta users: written as
+doc/chat-first/SCREENS.md (22 screens, 285 items tagged built, drawn or open, ruling ids
+behind a toggle), rendered by bin/screenspage.py, refreshed by the flush and checked by
+flushcheck.

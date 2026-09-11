@@ -1,0 +1,406 @@
+# Family Diagram — what every screen does
+
+This is the current truth about every screen in the app and how it behaves, written for the
+people who are about to use it rather than for the people building it. Each line is one
+behaviour, tagged `[built]` if it is in the app today, `[drawn]` if it is approved on a drawing
+but not built, and `[open]` if it is a choice Patrick has not made yet. It is rewritten as
+decisions land; the exact sizes and colours live in the internal interface spec, not here.
+
+Updated: 2026-09-11
+
+---
+
+## Signing in
+
+What it is for: getting into the app without a password.
+
+- You get an emailed link and tapping it signs you in, so there is no password to make or remember. [built]
+- Signing in with an emailed code also creates the account, so there is no separate sign-up step. [built]
+- A sign-in lasts about six months, so you rarely sign in twice on the same phone. [built]
+- After the first sign-in the app offers to let you use Face ID or a fingerprint instead, and asks only once per phone. [built]
+- If you say no to Face ID it waits a month before offering again. [built]
+- On a phone the app offers, once, to add itself to your home screen, and shows the exact button to tap. [built]
+- If you dismiss the home-screen card it comes back no sooner than a week later. [built]
+- The card never blocks the conversation; you can ignore it and keep typing. [built]
+- Signed out, you see the app name, who you are signing in as, and one button to sign in. [drawn]
+- Invite links sent for review use the machine name rather than a numeric address, so they open on a phone. [built] {R-0234}
+- The app is called Family Diagram wherever you can see it. [built] {R-0216}
+
+## The chat
+
+What it is for: talking to the coach, which is how everything else in the app gets made.
+
+- You type to the coach the way you would talk to someone trained in Bowen theory, and it answers. [built]
+- Dictation on your phone covers talking instead of typing; there is no separate voice mode. [built]
+- There are no modes to switch between: coaching, correcting the record, asking how the app works and thinking out loud are all the same conversation. [built] {R-0015}
+- The coach adds, changes and removes people, pair-bonds, events and shifts as you talk, and says in the thread what it did. [built] {R-0185}
+- Those lines saying what it changed are set apart from the coach's own words, deliberately, and are staying. [built] {R-0186}
+- Each line of what it did lights the thing it made in the picture as that line lands. [built] {R-0185}
+- Three dots appear in the coach's bubble the moment you send, so the bubble is never blank while it thinks. [built] {R-0184}
+- The thread stays at the bottom on the newest words while the coach types. [built] {R-0172, R-0231}
+- Opening the app again puts you at the bottom of the thread, on the newest words. [built] {R-0231}
+- Everything the app says can be selected and copied, including the coach's replies and the lines about what it changed. [built] {R-0183}
+- The first time you open it, the coach says it is there whenever you want to think out loud about your family and asks who is on your mind. [built]
+- Sending a second message while the coach is still answering does nothing, so your words are never stored twice. [built]
+- The coach does not message you first unless you ask it to. [built] {R-0017}
+- Correcting something in conversation changes the record in place, and older references still point at the right thing. [built]
+- You can also undo the last thing the coach did by telling it to. [built]
+
+## The picture at rest
+
+What it is for: the one picture, always above the chat, that is the app's memory of your family.
+
+- One picture sits pinned above the chat and never appears and disappears. [built] {R-0002}
+- It keeps a fixed height whatever it is showing, so the chat below it never jumps. [built] {R-0210}
+- At rest it shows your clusters over time on one line: a horizontal line with marks on it and nothing else. [built]
+- Only three kinds of mark exist at this size: the line, the marks on it, and an amber question mark. [built] {R-0005}
+- The band under the picture reads "tap a cluster" when nothing is picked. [built]
+- Tapping a mark once shows its words; nothing is sent to the coach and it costs you nothing. [built] {R-0073}
+- Tapping it again sends it to the coach as something you are asking about. [built] {R-0072, R-0073}
+- Tapping empty space, or the picture's own name, puts the picture down and clears what was picked. [built]
+- A picked moment shows its date and its own words in two lines above the line, and the year is written once under the mark. [built] {R-0210, R-0235}
+- A picked loose moment that is not in any cluster reads exactly like a picked moment inside a cluster. [built] {R-0235}
+- Tapping the words of the moment already picked jumps to where it was coded in the chat. [built] {R-0192}
+- An amber question mark appears where the record has a question, and only in three situations: an order it cannot tell, an open state it cannot confirm, and facts with no date at all. [built] {R-0005}
+- Facts with no date sit on a shelf at the end of the line rather than being placed on it. [built] {R-0013}
+- Tapping a shelf item says the fact out loud and offers to ask the coach when it happened; a shelf item that does nothing is a defect. [built] {R-0047}
+- There are no legends anywhere; every mark says itself in a plain sentence when you tap it. [built] {R-0005}
+- There is no progress bar and no sense of being finished; what more information would buy is shown as specific questions instead. [built] {R-0007}
+- There are no filter buttons and no way to hide parts of the picture by hand. [built] {R-0046}
+- The coach aims the picture: its latest message lights the moments it names and the rest stay dim. [built]
+- At most three moments are lit at once, with their words tied to their marks by thin lines. [built]
+- A new answer from the coach clears what you had picked and lights the new set. [built]
+- When the record is empty the picture says nothing is on your line yet and that it draws itself as you talk. [built]
+- A line is only drawn through points when there are at least three of them; below that you see marks, because two points invent a trend. [built] {R-0008}
+- A guessed date is drawn as a band rather than a point, so you can see it is a guess and correct it. [built] {R-0009}
+- A stretch with no information is dotted, and a stretch you told it did not change is solid, so silence never reads as stability. [built] {R-0010}
+- An open-ended state fades after the last time you confirmed it, rather than running to today. [built] {R-0012}
+- A death stops everything about that person at that date. [built] {R-0012}
+- Order between two guesses is only drawn when the two guessed ranges do not overlap. [built]
+- The picture never announces that it is about to change; the invitation is always in the coach's words. [built]
+- The warning badge saying the picture might be behind the conversation was removed. [built] {R-0203}
+- Whether the double ring marking an unusually significant moment stays or goes is a choice Patrick has not made. [open]
+
+## A cluster opened
+
+What it is for: one group of related moments, opened from the line.
+
+- Tapping a cluster opens it, and the opened cluster slides in from the right over the whole line like a card. [built] {R-0224, R-0230}
+- The card it slides in on has its own background, so it reads as a card and not as words over words. [built] {R-0230}
+- The grey line above the picture becomes the name of what you are looking at, with a back arrow beside it. [built] {R-0223}
+- Tapping either the name or the back arrow goes up one level. [built] {R-0223}
+- An open cluster shows its name and the reason it is a cluster, never a list of its events, because a cluster can hold fifteen. [built] {R-0213}
+- The moments inside stay as marks; tapping one shows its words. [built] {R-0213}
+- A cluster needs at least three moments to exist. [built] {R-0215}
+- Whether that three-moment floor also binds a grouping you made yourself is a choice Patrick has not made; today his own two-moment grouping is allowed to stay. [open]
+- A stored cluster carries only its name, its reason, where it came from, and the moments in it. [built] {R-0205}
+- The coach may group and name moments but may never invent a moment to put in one. [built] {R-0076}
+- The word for these is clusters, in the app and in the code. [built] {R-0197}
+- Whether tapping a moment's words inside an open cluster should jump straight to its editor is unconfirmed, and Patrick will say after testing it. [open] {R-0207}
+
+## The moves board
+
+What it is for: a play-by-play of what people did, one move at a time.
+
+- The board is reached from the picture by the play mark alone, with no words beside it. [built]
+- The board grows to fit what it is showing rather than sitting at a fixed height. [built] {R-0173}
+- It draws the people involved on a simple ring and the moves between them, not your family's real layout. [built]
+- The family will eventually be drawn as more than a circle of people, and you will never have to arrange it by hand. [drawn] {R-0187}
+- One row of controls sits under it, always back, explain and forward, whichever way you arrived. [built] {R-0180}
+- The button says "explain", because it makes the coach answer rather than playing an animation. [built] {R-0166}
+- Explain is dead only while the coach is still answering the last time you tapped it. [built] {R-0180}
+- Each move holds until the sentence about it has finished typing plus about two seconds. [built] {R-0171}
+- Every move's own animation runs for eight seconds and is never stretched to match the words. [built] {R-0171}
+- The words under the board are a person's name and what they said happened, with no count and no clinical term. [built] {R-0178, R-0162}
+- That block keeps room for two lines whether or not it needs them, so the board never changes height. [built] {R-0178}
+- The date is written once, under the mark. [built] {R-0178}
+- The moment being played is drawn last, in the action green, and nothing is drawn behind it. [built] {R-0177}
+- The line from the mark up to the words is what tells you which moment is being played. [built] {R-0177}
+- Moves already played stay on the board, faint and still, so what a move left behind stays visible. [built]
+- The grey line above says only the family timeline; the moment's own label stays above its mark. [built] {R-0179}
+- Tapping a move's chip moves the board and never sends you back to the line. [built] {R-0170}
+- You never see the internal names of the symbols; you see what you said. [built] {R-0161}
+- The up and down arrows for symptoms and functioning never disappear mid-play. [built] {R-0163}
+- The arrow beside a symptom stands exactly as tall as the cross it sits next to. [built] {R-0190}
+- Every move mark is drawn in one green, and green means action. [built]
+- Amber never marks a move or a symptom, because amber means the record is asking. [built]
+- Whether the whole thing reads without a legend, and whether the words and drawings tell the same story, is a judgement only Patrick can make by playing a stretch through. [open]
+
+## The row of chips under the picture
+
+What it is for: the four things you can do with whatever is picked.
+
+- One row sits under the picture and reads the same whether a cluster is open or a moment inside it is picked. [built] {R-0211, R-0212}
+- The row is ask, explain, in chat, and the button that opens the lists. [built] {R-0212, R-0221}
+- The chips use the chat's own chip style, and ask carries only the word. [built] {R-0212}
+- The list button sits at the right-hand end of that row. [built] {R-0221}
+- Ask puts the thing you picked into your message so you can type your own words around it. [built] {R-0072}
+- In chat jumps to the message where that moment was coded. [built] {R-0192}
+- In chat only works when the moment actually has a message behind it. [built] {R-0220}
+- Explain asks the coach to walk you through the cluster, and costs a coach reply. [built] {R-0166}
+- The room under the picture is reserved whether or not anything is in it, so nothing below moves when you tap. [built]
+
+## Chips in messages
+
+What it is for: the coach's references to real things in your record, and yours back to it.
+
+- A chip is a reference to something real: a moment, a cluster or a person. [built] {R-0072}
+- Chips appear inside the coach's messages and inside your own. [built] {R-0072}
+- Tapping one drops that reference into your message and you type your own words around it. [built] {R-0072}
+- Sending a reference on its own means "tell me about this". [built] {R-0072}
+- Tapping a chip is you speaking, never you steering the coach. [built] {R-0072}
+- A chip is the one visual that means "this puts words in the chat", so nothing else ever costs you a turn. [built] {R-0073}
+- Chips are one size and show their whole label; they are never cut short and never expand. [built] {R-0169}
+- Labels are kept short where they are written rather than trimmed afterwards, and the coach is asked once to shorten an over-long one. [built] {R-0169}
+- Every chip shows that it has been pressed. [built] {R-0169}
+- A reference the coach writes that does not resolve to anything real is dropped rather than left pointing at nothing. [built]
+- Messages from earlier sessions carry no chips; references only come back on a live reply. [built]
+- The coach never answers with a bare list of chips; a walk-through reads like a person explaining. [built] {R-0160}
+
+## The lists (events and people)
+
+What it is for: seeing and editing everything in the record by hand.
+
+- One button in the row under the picture opens a drawer holding everything in the record. [built] {R-0198}
+- The events list and the people list are two tabs in that one drawer, not a filter. [built] {R-0199}
+- The button sits inside the picture's own frame, matching the sessions button beside the chat input. [built] {R-0198}
+- Events are grouped under their cluster, with a heading that stays in view as you scroll so you always know which cluster you are in. [built]
+- A cluster of one moment reads "1 moment", not "1 moments". [built]
+- Moments with no date are grouped under their own heading. [built]
+- The lists can be searched. [built]
+- Each row shows what happened on one line and the date and people on a second. [built]
+- A row's summary uses short codes rather than running off the side of the phone. [built]
+- The scrollbar is never covered by a cluster heading. [built] {R-0218}
+- Tapping a row opens the editor for that item in place. [built]
+- The line saying you can also edit by chatting was removed from these lists. [built] {R-0219}
+- There is a button to add an event. [built]
+- Editing by hand is possible but is not what the app is being tested on. [built]
+
+## The event editor
+
+What it is for: correcting or adding one moment by hand.
+
+- The editor holds everything an event carries: its kind, the people on it, a summary, details, where it happened, when, an optional end, and how sure you are. [built]
+- Its fields are big enough to tap comfortably. [built] {R-0174}
+- The kinds are shift, birth, adopted, bonded, married, separated, divorced, moved and death. [built]
+- How sure you are is one of unknown, approximate or certain. [built]
+- Symptom, anxiety and functioning are each set to up, down, same or not said. [built]
+- A relationship change sits at the same level as those three, under one heading, never in its own section. [built]
+- A relationship change is a kind plus the people involved, from the person who moved to the people it was aimed at. [drawn]
+- The list of people a relationship points at is labelled differently by kind, so a conflict asks for the others and an overfunctioning asks who was underfunctioning. [drawn]
+- A third list of people appears only for the inside and outside positions of a triangle. [drawn]
+- The shift fields and the relationship field only appear for a shift; the spouse field only for a bonding, marriage, separation or divorce; the child field only for a birth or adoption. [drawn]
+- Saving drops values that no longer apply to the kind, so changing a shift into a death clears the shift values. [built]
+- Saving re-sorts the list by time and redraws the lists and the picture. [built]
+- Delete appears only when you are editing something that already exists. [built]
+- The relationship fields and the hiding of fields by kind are the unbuilt part of this screen; no decision is needed, only the work. [drawn]
+
+## The person editor
+
+What it is for: one person's own details.
+
+- The person's kind field is labelled Kind rather than sex, to keep the category right. [built] {R-0200}
+- A person carries buttons to their birth and their death when those exist, jumping to that event's editor. [built] {R-0201}
+- The jump works in reverse, from an event back to the person. [built] {R-0201}
+- Your own birthdate anchors your own line on the picture. [built]
+- Every diagram that ever had a chat on it carries a person called Assistant, which is a defect and not yet fixed. [built]
+
+## The sessions sheet
+
+What it is for: your past conversations.
+
+- A button beside the chat input opens a sheet holding your past sessions. [built]
+- The sheet rises from the input bar and can be dragged back down to close. [built]
+- Sessions are searchable by their titles, their summaries and the family they belong to. [built]
+- Each row shows a title, the coach's one-line summary of that session, and when it was. [built]
+- Rows are grouped under today, yesterday, this week, this month, and then by month. [built]
+- The coach titles a session after the first exchange, and you can rename it by hand. [built]
+- A session you renamed by hand is marked as such. [built]
+- Emptying a rename puts the coach's own title back and says so. [built]
+- The session you are in is marked. [built]
+- Newest activity is first, and the order never changes while you are looking at it. [built]
+- A button at the foot starts a new session, and refuses while the current one is still empty. [built]
+- With no sessions at all it says past conversations collect here. [built]
+- When you have several families, sessions are grouped under the family they belong to, each showing its three most recent. [built]
+- What tapping "+" should do on a family the app is not currently on is a choice Patrick has not made; today it refuses and says to open that family first. [open]
+- Someone else's session is simply not found rather than refused, so the app never confirms a session it will not show you. [built]
+- The history in the review database is kept across code changes rather than reset. [built] {R-0191}
+- Existing diagrams and conversations made before this app must open in it as sessions; old training transcripts are kept out of the list. [built]
+- Clearing a record's coding and re-running the coach over the same conversation is a feature still to build. [drawn]
+- After such a re-run, chips in the old thread point at moments that no longer exist and read as plain words; the re-run is meant to re-link the ones that match. [drawn]
+
+## The account page
+
+What it is for: you, your families, your plan, and signing out.
+
+- Your account is reached by the mark at the top right of the title row. [built]
+- That mark has no circle drawn around it, because there is no room. [built] {R-0222}
+- Tapping it slides the account page smoothly over the app rather than making the app disappear. [built] {R-0225}
+- The account page is a list where each row opens its own page with a back arrow, like the phone's own settings. [built]
+- The top of it shows your name, your email and your plan. [built]
+- Your profile page holds your first name, last name and birthdate. [built]
+- There is a row for whether the coach speaks its replies out loud. [built]
+- The same speaking switch appears once in the chat as a named shortcut, writing the same setting. [built]
+- No other setting appears in two places. [built]
+- There is a row for how often the coach may message you first, and it says the coach never messages first unless you ask. [built]
+- There is a row for light, dark or matching your phone. [built]
+- Your families are listed, with the number of sessions and when each was last used, and a tick on the one you are in. [built]
+- Tapping a family opens it, and one is open at a time. [built] {R-0175}
+- A search box appears in that list once you have six or more families. [built]
+- Licences and the plan are listed; nothing on that page implies a price yet. [built]
+- Sign out sits alone at the bottom and signs you out immediately, with no confirmation step. [built]
+- Every icon button in the app is the same size: a forty-four point target with a forty point mark inside it. [built] {R-0234}
+
+## The about page
+
+What it is for: what the app is, one level in from the picture.
+
+- An "i" opens it, and a close mark takes the arrow's place while it is open. [built] {R-0234}
+- It slides in over the picture the same way every other lower level does. [built] {R-0224}
+- It is words, so no hint line is drawn under it. [built]
+- Going back from it returns you to the whole line. [built]
+
+## When something goes wrong
+
+What it is for: knowing what happened when a message does not go through.
+
+- A message that does not go through leaves your words in the thread with a warning under them and a way to send them again. [built] {R-0182}
+- The warning says which of three things happened: nothing came back, the server refused it, or the server broke. [built] {R-0182}
+- The warning clears when the next attempt works, and comes back if it still applies. [built] {R-0182}
+- Your words are only stored once the coach's answer lands, so sending again never stores them twice. [built]
+- The coach's bubble is never left blank waiting. [built] {R-0184}
+- A record edit the app cannot make on your behalf fails and says so rather than writing something invented. [built]
+
+## On a desktop (Pro)
+
+What it is for: the same app, wider, for professionals.
+
+- It is one app on the phone and on the desktop, with features turned on by your licence, your role and which view you are in. [drawn] {R-0237}
+- A wider screen pins the events and people drawer open on the right instead of sliding it over the chat. [drawn] {R-0243}
+- A professional gets the same chat screen with things added to it, never a different app. [drawn] {R-0243}
+- Nothing gets a new screen where an existing screen can carry it. [drawn] {R-0243}
+- Nothing is ruled about how the existing desktop app fits in, and the chat app is not allowed to corner that decision. [open] {R-0081}
+- Opening a record made in this app in the released desktop app has never been tried. [open]
+
+## Cases (Pro)
+
+What it is for: a professional's several client records.
+
+- A professional's cases are the same family switcher on the account page, not a new screen. [drawn] {R-0243}
+- Each case has its own sessions and its own picture. [drawn] {R-0243}
+- A client owns their own record and a clinician is granted access to it, so the record outlives the work they do together. [built] {R-0080}
+- Notes on a case are named as a Pro feature and have no drawing yet. [open]
+
+## Upload a recording (Pro)
+
+What it is for: getting a recorded session into the app as a conversation.
+
+- Uploading a recording is an item in the sessions sheet, beside starting a new session. [drawn] {R-0243}
+- After upload, a sheet asks who each speaker is, and the approved drawing of it stands. [drawn] {R-0243}
+- Once mapped, the recording reads as a conversation like any other and can be coded. [drawn] {R-0267}
+- Colleagues' earlier sessions come in through this same path. [drawn]
+
+## Coding a conversation
+
+What it is for: saying what each line of a conversation tells you happened, so we can agree on what the record should be.
+
+- Coding is stage one of reaching agreement, and it is done blind: you never see anyone else's coding of that conversation until you press Done. [drawn] {R-0242, R-0250}
+- You are given one task at a time and never a list to choose from. [drawn] {R-0265}
+- The task names the conversation, the point it is frozen at, how many turns are new since you last pressed Done, and roughly how long it will take. [drawn] {R-0267}
+- One green button starts it, and under it is a faint record of the tasks you have already finished. [drawn] {R-0265}
+- Starting opens the conversation as a thread you cannot type into. [drawn]
+- You tap a line and it is outlined in green. [drawn]
+- You then type, in your own words, what that line tells you happened. [drawn]
+- A cheap scribe turns your words into an event in the record, and the line it wrote appears under your words. [drawn]
+- The new event appears in the events drawer and lights in the picture as it lands. [drawn]
+- If the scribe cannot tell which person you mean, nothing is written and one amber line asks which person, and you answer by typing again. [drawn]
+- A faint hairline marks the last point that was already agreed, and everything below it is what this task is about. [drawn] {R-0267}
+- Your own earlier coding of the turns above that line is shown as small marks; nobody else's is. [drawn] {R-0242}
+- The bottom of the thread is marked with the point the conversation is frozen at, and turns after it are not shown at all. [drawn] {R-0267}
+- Done ends the task, and the next single task card takes its place. [drawn] {R-0265}
+- A task you cannot start yet is shown greyed with what it is waiting for, rather than leaving you an empty screen. [drawn]
+- On a phone it is the same screen, with the drawer sliding over instead of pinned, and the sessions button giving way to Done. [drawn]
+- Your own typed words stay in the thread under the line you coded, with the scribe's edit line beneath them, so the thread reads as a coding conversation. [drawn] {R-0270}
+- Whether Done is a plain button in the composer bar or a green pill is a choice Patrick has not made. [open] {R-0247}
+- Whether an amber "coding" mark sits beside the title, or nothing does because the read-only thread already says it, is a choice Patrick has not made. [open] {R-0247}
+- Whether turns before the last agreed point are shown in full or folded behind a "show earlier turns" link is a choice Patrick has not made. [open] {R-0247}
+- Nobody is assigned; any coder may code any conversation at any time, and each finished coding joins the pool and recomputes the agreement figures. [drawn] {R-0242}
+- Agreement is measured on the finished records, not on individual turns. [drawn] {R-0242}
+- The coach's own pass over a conversation is one coding among the others and is hidden the same way. [drawn] {R-0242}
+- Nobody is paid and there is no quota; the work is a rolling window and conversations keep growing. [drawn] {R-0251}
+- The old coding page becomes a link marked as legacy and is deleted once its material has been coded again. [drawn] {R-0238}
+
+## Your one task
+
+What it is for: Patrick choosing what gets coded, and everyone seeing one thing to do.
+
+- Patrick opens the sessions sheet like anyone else, swipes the conversation he wants, and taps to put it on the table. [drawn] {R-0267}
+- That opens the conversation so he can place the cut: the point everyone codes up to. [drawn] {R-0267}
+- The cut starts at the last turn, and tapping any line moves it there. [drawn] {R-0267}
+- The cut can never be moved back past the last point that was already ratified. [drawn] {R-0267}
+- Turns after the cut are dimmed and wait for a later cut. [drawn] {R-0267}
+- A cut placed at the end of a finished conversation or recording takes in the whole thing, so a whole transcript is not a different kind of task. [drawn] {R-0267}
+- Anything that changed since the last cut is coded again. [drawn] {R-0267}
+- The table screen is the whole of Patrick's administration: the meeting date, what is on the table, and who is done. [drawn] {R-0259, R-0267}
+- Each coder's state is shown as not started, coding, done or voted, with a count of who is closed out. [drawn] {R-0258}
+- One control nudges the people who are not done. [drawn] {R-0258}
+- Taking a conversation off the table is one tap, before anyone has started. [drawn]
+- Every coder's single task card is derived from that screen. [drawn] {R-0265}
+- Asking a coder to correct the coach's pass instead of coding from scratch was dropped, because coding is blind. [drawn] {R-0250}
+
+## The vote before the meeting
+
+What it is for: settling as much as possible on your own phone, so the meeting only handles what is left.
+
+- Once enough coders have finished, a ballot opens on each coder's phone. [drawn] {R-0250}
+- The ballot shows one disputed moment per screen. [drawn] {R-0257}
+- Each screen shows the date, who it happened to, what happened, and the transcript line it came from. [drawn]
+- The takes are shown without names, so nobody defers to the most senior person in the room. [drawn] {R-0252}
+- Nothing the coach or any other AI thinks is in the ballot at all. [drawn] {R-0254}
+- Tapping a take votes for it exactly as written. [drawn] {R-0257}
+- "Change" opens the app's own event editor over the ballot, prefilled, so you can write a take nobody wrote, and it joins the count as one more take. [drawn] {R-0257}
+- "Drop" votes that this should not be a moment in the record at all. [drawn] {R-0257}
+- A count of coders who left the item out is shown, but leaving it out is not a vote. [drawn]
+- You may say why you voted as you did, and you may skip it. [drawn]
+- An item you skip stays on your list until the ballot closes. [drawn]
+- You can open the transcript at the line in question from the ballot. [drawn]
+- The transcript line and the session it came from stay attached to the moment and are not edited here. [drawn]
+- Which margin settles an item before the meeting is a choice Patrick has not made: all but one, two thirds, or a simple majority with a named tie-break. [open]
+- Whether names stay hidden in the ballot, appear at the meeting, and whether who-was-right is kept per coder, is a choice Patrick has not made. [open]
+- Whether the ballot opens at three finished coders or some other number is a choice Patrick has not made. [open]
+
+## The meeting
+
+What it is for: closing what the vote could not, and ratifying the record.
+
+- The meeting screen carries only the items the ballot left open. [drawn] {R-0250}
+- Names and counts appear here for the first time. [drawn] {R-0252}
+- The items the vote settled are listed separately and are not read aloud, each with a way to reopen it. [drawn]
+- Every open item must be given one of three choices: keep a take, change it, or mark it unresolved. [drawn] {R-0257}
+- The ratify button stays dead until every open item has a choice, and says how many still need one. [drawn] {R-0257}
+- An item marked unresolved is kept as data and left out of the agreed record. [drawn] {R-0250}
+- The screen shows the agreement figures from the first pass and how much time is left. [drawn]
+- The moment in front of the room is shown on the picture as well as in the list. [drawn]
+- Only moments that are new or changed since the last ratified cut are in dispute; earlier ones stand unless a new turn reopened one. [drawn] {R-0267}
+- Convergence is required but nobody is forced to converge, and settling a whole kind of disagreement with one rule is one of the tools for getting there. [drawn] {R-0251}
+- Each meeting tries an approach and teaches the next one; there is no review before the meeting beyond the ballot. [drawn] {R-0244, R-0250}
+- Whether the timeline, cards and chat views stay as extra ways to look at the same items, or the meeting is the list alone, is a choice Patrick has not made. [open] {R-0246}
+- The two-sided comparison of two codings already drawn has to fold into either the ballot or this screen, and where is unbuilt work. [drawn]
+- The review screens are built as their own isolated piece, so changing them can never break the chat or the professional features. [drawn] {R-0245}
+
+## After ratification
+
+What it is for: what the meeting produced, with nothing left to choose.
+
+- The result screen shows how many moments were ratified and how many were left unresolved. [drawn]
+- It shows agreement before the ballot and after ratification, side by side. [drawn]
+- It shows how the coach's own pass scored against the agreed record. [drawn] {R-0242}
+- The word for the agreed record is ratified; what the coach proposes is a proposal and is never called gold. [drawn] {R-0249}
+- The AI writes the guideline changes itself out of what the room settled, and they are live; there is nothing to choose on this screen. [drawn] {R-0259}
+- Each new rule shows the settled item it came from and the margin it was settled by. [drawn] {R-0259}
+- Where the AI's reading differed from the room is listed afterwards, with its reason, as an audit rather than a vote. [drawn] {R-0254}
+- What each coder tends to do differently from the others is shown. [drawn]
+- Every vote, settlement and ratification is a row in the app's own tables with who did it and when. [drawn] {R-0262}
+- Whether one "flag for next meeting" link per rule exists, or there is no way to contest a rule until someone raises it, is a choice Patrick has not made. [open]
+- Whether the guidelines file in the code is generated from those tables and never edited by hand is a choice Patrick has not made. [open]
+- How last year's coding material is carried over is a choice Patrick has not made; the plan on the table keeps the rules and the agreement tables as rows and the written deliberations as text. [open] {R-0262}
