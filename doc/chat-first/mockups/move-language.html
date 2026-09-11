@@ -227,15 +227,15 @@ svg{width:100%;height:auto;display:block}
 
 <div class="opt"><svg viewBox="0 0 230 130">
 <!-- OUTSIDE: the mover walks out; the two who remain stay close, nothing drawn between them -->
-<circle cx="88" cy="40" r="13" class="A"/>
-<text class="lb" x="88" y="22">Delphine</text>
-<rect x="128" y="27" width="26" height="26" class="A"/>
-<text class="lb" x="141" y="19">Marcus</text>
+<circle cx="88" cy="40" r="13" class="A"><animate attributeName="cx" values="88;88;104;104" keyTimes="0;.2;.55;1" dur="8s" repeatCount="indefinite"/></circle>
+<text class="lb" x="88" y="22">Delphine<animate attributeName="x" values="88;88;104;104" keyTimes="0;.2;.55;1" dur="8s" repeatCount="indefinite"/></text>
+<rect x="128" y="27" width="26" height="26" class="A"><animate attributeName="x" values="128;128;112;112" keyTimes="0;.2;.55;1" dur="8s" repeatCount="indefinite"/></rect>
+<text class="lb" x="141" y="19">Marcus<animate attributeName="x" values="141;141;125;125" keyTimes="0;.2;.55;1" dur="8s" repeatCount="indefinite"/></text>
 <g style="animation:walkout 8s ease-in-out infinite">
 <circle cx="112" cy="96" r="13" class="A d" stroke-width="2.2"/>
 <text class="lb" x="112" y="118">Corinne</text>
 </g>
-</svg><p>OUTSIDE — the mover walks out; nothing is drawn between the two who stay</p></div>
+</svg><p>OUTSIDE — the mover walks out; the two who stay draw together, both moving, and end overlapped as the inside pair does</p></div>
 </div>
 
 <h2>Triangle — positions</h2>
