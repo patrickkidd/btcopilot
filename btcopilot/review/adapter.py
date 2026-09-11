@@ -1,0 +1,187 @@
+"""The one door between the review and the two apps it reads.
+
+Nothing else under btcopilot/review may import btcopilot.personal or
+btcopilot.pro; the import test in the review tests enforces it. Keeping the
+whole surface in one file means the review can be read, moved or replaced
+without hunting for the places it reached into the apps.
+"""
+
+import datetime
+
+import btcopilot
+from btcopilot import diagramjson
+from btcopilot.extensions import db
+from btcopilot.personal import record
+from btcopilot.personal.coachmodel import CoachModel
+from btcopilot.personal.coachturn import CoachTurn
+from btcopilot.personal.models import (
+    Author,
+    Change,
+    Discussion,
+    DiscussionKind,
+    Speaker,
+    SpeakerType,
+    Statement,
+)
+from btcopilot.personal.recordtext import date_text
+from btcopilot.pro.models import Diagram, User
+from btcopilot.schema import PDP, Event, PairBond, Person, from_dict
+
+__all__ = [
+    "Author",
+    "Change",
+    "Diagram",
+    "Discussion",
+    "DiscussionKind",
+    "Statement",
+    "User",
+    "case_diagram",
+    "coach_model",
+    "coding_diagram",
+    "commit",
+    "grant_write",
+    "pdp_of",
+    "record_of",
+    "to_json",
+    "statements_between",
+    "statement_order",
+]
+
+
+def case_diagram(discussion: Discussion) -> Diagram:
+    return discussion.diagram
+
+
+def to_json(value):
+    """A plain Python value in the record's own tagged JSON form."""
+    return diagramjson.to_json(value)
+
+
+def record_of(diagram: Diagram) -> dict:
+    return diagramjson.loads(diagram.data)
+
+
+def pdp_of(diagram: Diagram) -> PDP:
+    """The record as typed items, which is what the F1 matcher compares."""
+    data = record_of(diagram)
+    return PDP(
+        people=[from_dict(Person, p) for p in data.get("people") or []],
+        events=[from_dict(Event, _dated(e)) for e in data.get("events") or []],
+        pair_bonds=[from_dict(PairBond, b) for b in data.get("pair_bonds") or []],
+    )
+
+
+def _dated(event: dict) -> dict:
+    return dict(
+        event,
+        dateTime=date_text(event.get("dateTime")),
+        endDateTime=date_text(event.get("endDateTime")),
+    )
+
+
+def coding_diagram(user, name: str, source: Diagram | None = None) -> Diagram:
+    """A coder's own record for a case: the one they built last time carried
+    forward, or a fresh empty one."""
+    diagram = Diagram(
+        user_id=user.id,
+        name=name,
+        data=diagramjson.dumps(record_of(source) if source is not None else {}),
+    )
+    db.session.add(diagram)
+    db.session.flush()
+    return diagram
+
+
+def grant_write(diagram: Diagram, user):
+    diagram.grant_access(user, btcopilot.ACCESS_READ_WRITE)
+
+
+def commit(diagram_id: int, deltas: list[dict], user_id: int, turn_id: str) -> Change:
+    """A settle written onto the case's record, logged as the review's own."""
+    return record.apply(
+        diagram_id,
+        deltas,
+        author=Author.Review,
+        turn_id=turn_id,
+        user_id=user_id,
+    )
+
+
+def statements_between(
+    discussion_id: int, start_id: int, end_id: int
+) -> list[Statement]:
+    orders = statement_order(discussion_id)
+    lo, hi = orders.get(start_id), orders.get(end_id)
+    if lo is None or hi is None:
+        raise ValueError("a cut's start and end must be statements of its session")
+    return [
+        s
+        for s in _ordered(discussion_id)
+        if lo <= (s.order or 0) <= hi  # noqa: E501
+    ]
+
+
+def _ordered(discussion_id: int) -> list[Statement]:
+    found = Statement.query.filter_by(discussion_id=discussion_id).all()
+    return sorted(found, key=lambda s: (s.order or 0, s.id or 0))
+
+
+def statement_order(discussion_id: int) -> dict[int, int]:
+    return {s.id: (s.order or 0) for s in _ordered(discussion_id)}
+
+
+def first_statement(discussion_id: int) -> Statement | None:
+    found = _ordered(discussion_id)
+    return found[0] if found else None
+
+
+def next_statement(discussion_id: int, after_id: int) -> Statement | None:
+    orders = statement_order(discussion_id)
+    after = orders.get(after_id)
+    if after is None:
+        return None
+    for statement in _ordered(discussion_id):
+        if (statement.order or 0) > after:
+            return statement
+    return None
+
+
+def coach_model(name: str | None = None) -> CoachModel:
+    return CoachModel(model=name)
+
+
+def replay_into(diagram: Diagram, discussion: Discussion, statements, model=None):
+    """Run the coach over a cut's turns, writing what it codes onto `diagram`.
+
+    The replay harness owns the loop; this only points it at the review's own
+    diagram and hands back what the coach was."""
+    copy = Discussion(
+        user_id=discussion.user_id,
+        diagram_id=diagram.id,
+        title=discussion.title,
+        title_set_by_user=True,
+        discussion_date=discussion.discussion_date,
+        speakers=[
+            Speaker(name="Client", type=SpeakerType.Subject, person_id=1),
+            Speaker(name="Coach", type=SpeakerType.Expert),
+        ],
+    )
+    db.session.add(copy)
+    db.session.flush()
+    copy.chat_user_speaker_id = copy.speakers[0].id
+    copy.chat_ai_speaker_id = copy.speakers[1].id
+    db.session.commit()
+
+    said = [
+        s.text
+        for s in statements
+        if s.text and s.speaker and s.speaker.type == SpeakerType.Subject
+    ]
+    turn_id = f"review-replay-{discussion.id}"
+    for text in said:
+        CoachTurn(copy, text, model=model, session_id=turn_id).run()
+    return copy
+
+
+def utcnow() -> datetime.datetime:
+    return datetime.datetime.utcnow()

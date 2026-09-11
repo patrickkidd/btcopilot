@@ -7,6 +7,7 @@ from btcopilot import auth
 from btcopilot.extensions import csrf, db
 from btcopilot.personal.models import Discussion
 from btcopilot.personal.discussions import create_discussion
+from btcopilot.review.freeze import frozen
 
 _log = logging.getLogger(__name__)
 
@@ -101,9 +102,14 @@ def diagram():
 
 def require_write_access(dia):
     """The write gate every mutating route shares: a diagram reached only
-    through a read-only grant refuses the write outright."""
-    if dia is not None and not dia.check_write_access(auth.current_user()):
+    through a read-only grant refuses the write outright, and so does one a
+    coder has already called done in the review."""
+    if dia is None:
+        return dia
+    if not dia.check_write_access(auth.current_user()):
         abort(403)
+    if frozen(dia.id):
+        abort(409, "that coding is done and its record no longer takes edits")
     return dia
 
 
