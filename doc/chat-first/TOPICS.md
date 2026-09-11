@@ -8,6 +8,11 @@ is never deleted; when it closes its status says CLOSED and the block stays.
 
 Fields every block carries: **Status · Decided · Open · Lives in · Next action · Updated.**
 
+The owner audits this file as a page, never by command: the flush renders it with
+`bin/topicpage.py` and republishes it to the same artifact every time —
+**https://claude.ai/code/artifact/8a56716d-dca5-4123-ae2e-572da33a392c** (pass that URL to the
+Artifact tool as `url`). In VS Code the file itself is this one.
+
 ---
 
 ## T-1 · Ship the personal app to the first beta users

@@ -52,8 +52,12 @@ changes nothing.
 7. Run `python bin/flushcheck.py` from the btcopilot worktree; fix what it reports.
 8. Commit and push both worktrees, one git mutation per command, corpus commits titled
    `FD-362 flush: <date>`.
-9. Report in one message: the topics touched by name, one line of next action each, and what
-   needs his word. Nothing else.
+9. Refresh the owner's audit page: `python bin/topicpage.py <tmp>/fd362-topics.html`, then
+   publish that file with the Artifact tool to the URL recorded at the top of TOPICS.md
+   (`url` parameter) so the link never changes. He never runs a command; he reads that page,
+   or the files in VS Code, or asks in plain words.
+10. Report in one message: the topics touched by name, one line of next action each, the audit
+    page link, and what needs his word. Nothing else.
 
 ## Picking a topic up in a later session
 
