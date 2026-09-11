@@ -10,7 +10,7 @@ Artifacts referenced throughout (private to Patrick's account):
 - "Flowing Through It" storyboard: https://claude.ai/code/artifact/fad00c92-685e-4c7d-ba1d-2e18d999d623
 - FD-360 draft PR: https://github.com/patrickkidd/btcopilot/pull/133
 
-## 2026-08-25/26 — prior session ("FD-341 Vision & Plan"), inherited context
+## 2026-08-25/26 — prior session ("FD-341 Vision & Plan"), inherited context [T-2, T-9]
 
 Returning from a ~5-week break, Patrick reconstructed project state adversarially.
 Rulings that carried into this work: MVP done-condition = a user returns and chats
@@ -23,7 +23,7 @@ result — per-turn extraction lost 2x to batch — puts the burden of proof on 
 extraction); a reference-manual tool for the agent (SARF model, app usage, concepts);
 tier table decides ask-first vs auto-apply, the model never picks the write path.
 
-## 2026-08-28 — the pivot brainstorm ("Claude Code for Family Diagram")
+## 2026-08-28 — the pivot brainstorm ("Claude Code for Family Diagram") [T-3, T-9]
 
 Patrick's framing: chat as the main UI for everything (intake, editing, learning);
 maybe rebuild the Pro app ground-up, agentic-dev-first, leaving the PyQt5 tech debt
@@ -49,7 +49,7 @@ substrate driven through tools. Ruling: build the tool surface / guards / manual
 layout as a headless engine; any front end is a client. Don't decide the rebuild on
 zero retention evidence.
 
-## 2026-08-28 — research: does the interactive loop remove the extraction problem?
+## 2026-08-28 — research: does the interactive loop remove the extraction problem? [T-2]
 
 22-agent adversarial run (4 evidence readers, 3 judges, synthesis, refuters on every
 claim). Verdict: **holds for family structure, fails for the timeline** (judges
@@ -69,7 +69,7 @@ claim). Verdict: **holds for family structure, fails for the timeline** (judges
 - Cheapest pre-agent experiment (never run): five commit-time guards on the existing
   path, rerun the real rebuild on his diagram 3x against the 32 assertions (~1–2 days).
 
-## 2026-08-29 — architecture panel
+## 2026-08-29 — architecture panel [T-1, T-8]
 
 22 agents (2 ground readers, 4 biased proposals, 3 judges, synthesis, 12 refuters).
 Shape that survived: keep Flask/Celery/Postgres/Redis; a diagram becomes a JSON
@@ -100,7 +100,7 @@ Refuters killed the synthesis's numbers, not its shape — corrections are bindi
 - Found in passing: API keys committed in the compose file → rotation belongs to the
   release collapse.
 
-## 2026-08-29/30 — concept panel and the vision
+## 2026-08-29/30 — concept panel and the vision [T-3, T-5]
 
 One sentence (Patrick-confirmed): **"A coach who never forgets your family."**
 Conversation is central; the picture is secondary visualization that keeps people
@@ -127,7 +127,7 @@ packaging step around the same code, only when store presence / locked-screen
 recording / a hostile Apple move forces it; OTA web-payload swaps are Apple-legal for
 interpreted code. Cheapest BAA-able hosting ~$99/mo (Fly) or self-managed big-cloud VM.
 
-## 2026-08-30 — tooling plan and business model (both adversarially checked)
+## 2026-08-30 — tooling plan and business model (both adversarially checked) [T-1, T-9]
 
 Tooling (13 agents): tooling is NOT separate — admin/eval/debug live in the product
 repo behind role gates (the training app already proves the pattern). What agentic dev
@@ -163,7 +163,7 @@ would open the wrong browser). Passwordless login IS signup, so self-serve and
 Stripe-checkout charging bolt onto the same flow later. Android is the easy platform
 (real install prompt).
 
-## 2026-08-30/31 — FD-359/360/361 and the build
+## 2026-08-30/31 — FD-359/360/361 and the build [T-1, T-5]
 
 Parallel epic created on Patrick's yes (kept separate from FD-341 as the June plan of
 record): FD-359 "Chat-first web app — a coach who never forgets your family";
@@ -207,7 +207,7 @@ mid-flight, then REVERTED to honor mockups-first; it remains recoverable at comm
 35dd13b — which is ALSO one of the two contaminated commits, so a history purge
 deletes that work too (it would need re-implementing from its spec in this doc).
 
-## 2026-08-31 — drawability ruled on real data
+## 2026-08-31 — drawability ruled on real data [T-5]
 
 Patrick's journal (78 points, 14 months, 96% day-certain) and his two coaching-chat
 transcripts (84 datable moments, 1957–2026, mostly year-grade) were hand-structured by
@@ -299,7 +299,7 @@ scale; every mark speaks a plain sentence on tap; no legends ever. Styling must 
 tokens-only for theme A/B testing (semantics stable across themes: teal=data,
 amber=asking).
 
-## 2026-09-01 — the cart-before-horse correction and the corpus pivot
+## 2026-09-01 — the cart-before-horse correction and the corpus pivot [T-6, T-9]
 
 An era-compression bake-off and then an interactive prototype (proto.html: "Chapter
 Shelf" + "Quiet Threads", from a 19-agent creative-adversarial run over six visual
@@ -381,7 +381,7 @@ store is IP; the public repo carries only the regime and R-id citations; no raw
 transcripts anywhere). The initial mined set (R-0001..R-0064) is a proposed
 consolidation awaiting his feature-grouped ratification pass per SPEC §10.
 
-## FUNCTION-subset session: the active basis is itself an illusion
+## FUNCTION-subset session: the active basis is itself an illusion [T-6]
 
 Recomputed from index.json and the case files 2026-09-01 (Session 1 opening step).
 The active-basis tiers reproduce exactly as recorded (11 / 13 / 4 / 28 zero-active
@@ -426,7 +426,7 @@ These are computed facts, not rulings. The subset itself remains unruled: the ti
 lists, the marker-count reordering, the four 1-9-active cases, the duplicate pairs,
 and the zero-active-may-be-coding-style question all wait on Patrick.
 
-## Notability thread opens: handwritten cases join the corpus plan
+## Notability thread opens: handwritten cases join the corpus plan [T-6]
 
 Patrick recalled a body of handwritten case diagrams in Notability — cases he saw
 while developing the app, existing only in handwriting; many have good structure in
@@ -450,7 +450,7 @@ model → extraction to a normalized format decided with Patrick (candidate: the
 existing anonymized corpus schema, so hand cases become case_NN files alongside the
 app-derived ones) → Claude works only with the anonymized output, same as today.
 
-## Notability thread ruled: .fd files are the single source of truth
+## Notability thread ruled: .fd files are the single source of truth [T-6, T-7]
 
 Patrick redirected the pipeline design and it got simpler. The app already stores a
 unique random alias per person and substitutes name+nickname with the alias in all
@@ -491,7 +491,7 @@ design for that class awaits his ruling. He also ruled the archival transcriptio
 question: keep verbatim per-PDF transcripts as separate output, never as a chained
 extraction step. Cursory .md review does not scale; the app is the review surface.
 
-## The move language is ratified; the visual concept phase closes
+## The move language is ratified; the visual concept phase closes [T-5]
 
 The creative rounds converged and Patrick ratified a complete visual vocabulary
 (the "move language") for the picture above the chat: ten relationship moves and
@@ -510,7 +510,7 @@ episode clusters → zoom into the episode (words readable) → the moves played
 step-by-step in the ruled language; claims live in chat; loop engineering is the
 organizing principle (every tap/correction collected).
 
-## 2026-09-03 — the architectural step back begins
+## 2026-09-03 — the architectural step back begins [T-1, T-2, T-8]
 
 Patrick corrected the record's framing: the corpus (phases A/B, the subset sessions,
 notability) was a branch of the stream, not the main stream, and was pinned in favor of
@@ -617,7 +617,7 @@ golden tolerance loose enough that five wrong drawings passed unchanged.
 Three follow-ups from the beta walk closed: derived clusters are stored, the "Assistant"
 speaker is no longer written as a person, and a sign-in lasts the ruled 180 days.
 
-## 2026-09-08 — owner review round 1
+## 2026-09-08 — owner review round 1 [T-5, T-1]
 
 Patrick ruled on selection state, chip sizing/labels, play-by-play step routing and
 timing, chat scroll pin, the moves board fitting its content (superseding RESOLVED #28's
@@ -627,7 +627,7 @@ into the oracle store. Left open: the event editor's relationship fields and con
 visibility, step-chip routing verification, board SVG's fixed height, a stray chip-clipping
 line, and citing rulings in tests.
 
-## 2026-09-08 (night) — consolidation, open rows, stall
+## 2026-09-08 (night) — consolidation, open rows, stall [T-5, T-9]
 
 The old Qt Personal app's routes were archived and unregistered; the chat app's own
 routes became the personal API at /personal/, and a cold-start circular import in the
@@ -643,7 +643,7 @@ an untouched running process, decision pending. UI_GAP.md folded all three passe
 NEEDS-OWNER grew to 13 as builders surfaced unruled defensible differences rather than
 guessing at them.
 
-## 2026-09-08 and 09 — four owner review rounds on his phone
+## 2026-09-08 and 09 — four owner review rounds on his phone [T-5, T-1, T-6, T-9]
 
 He reviewed the running app on his own phone in four rounds and ruled row by row; every
 finding and its commit is in REVIEW_LOG.md, and the rulings are R-0165..R-0228 in the store.
@@ -676,7 +676,7 @@ both pull requests produced ISOLATION_OPTIONS.md with three ways to isolate the 
 and three things that must come out of the Pro app's path before merge; he parked the
 isolation discussion itself until the prototype is done.
 
-## 2026-09-09 (evening) — the owner tests alone; isolation and beta deployment re-opened
+## 2026-09-09 (evening) — the owner tests alone; isolation and beta deployment re-opened [T-1, T-8, T-4]
 
 The owner kept testing on his phone after round 4 and hit the Anthropic account's credit
 limit; the failed sends showed that the server stored his words before asking the coach, so
@@ -694,7 +694,7 @@ stack from a branch-tagged image, which lets the three clinicians use the branch
 merge and keeps Pro users off it entirely. The stale test count was measured (one backend
 page test, ten web unit tests, all written before rounds 2–4) rather than guessed.
 
-## 2026-09-09 (late) — the coach has no clinical definitions
+## 2026-09-09 (late) — the coach has no clinical definitions [T-2]
 
 While fixing how a moment's words are built (who from the links, what without names,
 refused at the write), the owner asked which prompt writes events. The answer exposed the
