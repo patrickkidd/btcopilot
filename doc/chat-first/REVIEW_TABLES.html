@@ -16,7 +16,7 @@ th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-t
 </style>
 
 <h1>The review's tables, laid over what exists</h1>
-<p class="lead">One column added to an existing table and five new tables, after an adversarial pass that cut the first draft by a third. <span class="re">Teal</span> = an existing table, type or enum used as it is. <span class="new">Amber</span> = new. Ids are the existing integer primary keys with created_at and updated_at from the shared model base; timestamps are DateTime; JSON columns are JSONB with the SQLite variant, the way the change log already does it. Nothing the desktop app reads changes: no column on diagrams, the pickle path untouched.</p>
+<p class="lead">One column added to an existing table and five new tables, after an adversarial pass that cut the first draft by a third. <span class="re">Teal</span> = an existing table, type or enum used as it is. <span class="new">Amber</span> = new. Ids are the existing integer primary keys with created_at and updated_at from the shared model base; timestamps are DateTime; JSON columns are JSONB with the SQLite variant, the way the change log already does it. Every reference to a user is named user_id, as in every existing table; no table here holds more than one. Nothing the desktop app reads changes: no column on diagrams, the pickle path untouched.</p>
 
 <h2>The screen's words and the tables they mean</h2>
 <div class="wrap"><table>
@@ -68,7 +68,7 @@ th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-t
 <tr><th>Column</th><th>Type</th><th>Reuses</th><th>Meaning</th></tr>
 <tr><td class="m">discussion_id</td><td class="m">FK discussions.id</td><td class="re">discussions</td><td>the session; the case through it</td></tr>
 <tr><td class="m">statement_id</td><td class="m">FK statements.id</td><td class="re">statements</td><td>the last turn included; never before the last ratified cut of the same session</td></tr>
-<tr><td class="m">opened_by</td><td class="m">FK users.id</td><td class="re">users</td><td>Patrick</td></tr>
+<tr><td class="m">user_id</td><td class="m">FK users.id</td><td class="re">users</td><td>who put it on the table</td></tr>
 <tr><td class="m">meeting_date</td><td class="m">Date</td><td></td><td>the meeting it is for</td></tr>
 <tr><td class="m">vote_opened_at</td><td class="m">DateTime, null</td><td></td><td>set when Patrick opens the vote; the review items are frozen at that moment</td></tr>
 <tr><td class="m">ratified_at</td><td class="m">DateTime, null</td><td></td><td>set when the meeting ratifies</td></tr>
@@ -79,11 +79,11 @@ th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-t
 <div class="wrap"><table>
 <tr><th>Column</th><th>Type</th><th>Reuses</th><th>Meaning</th></tr>
 <tr><td class="m">cut_id</td><td class="m">FK cuts.id</td><td></td><td></td></tr>
-<tr><td class="m">coder_id</td><td class="m">FK users.id</td><td class="re">users</td><td>the coder, or the account the coach codes under</td></tr>
+<tr><td class="m">user_id</td><td class="m">FK users.id</td><td class="re">users</td><td>the coder, or the account the coach codes under</td></tr>
 <tr><td class="m">diagram_id</td><td class="m">FK diagrams.id</td><td class="re">diagrams</td><td>the coder's own record of the case</td></tr>
 <tr><td class="m">agent</td><td class="m">JSON, null</td><td></td><td>set only for the coach's replay: model, prompt version, whatever else it needs later; null means a person coded</td></tr>
 <tr><td class="m">done_at</td><td class="m">DateTime, null</td><td></td><td>Done pressed; frozen from then on</td></tr>
-<tr><td colspan="4" class="m">unique (cut_id, coder_id)</td></tr>
+<tr><td colspan="4" class="m">unique (cut_id, user_id)</td></tr>
 </table></div>
 
 <h3><span class="m new">review_items</span> — one item as every coder saw it, frozen when the vote opens</h3>
@@ -94,18 +94,18 @@ th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-t
 <tr><td class="m">takes</td><td class="m">JSON: [{coding_id, item_id, item}]</td><td class="re">schema.Event / Person / PairBond as dicts</td><td>the matched items across codings, from the existing F1 matcher's pairs. A snapshot: built when Patrick opens the vote, never maintained; a coder finishing later joins the agreement figures, not this vote</td></tr>
 <tr><td class="m">status</td><td class="m">Enum(ReviewStatus: agreed, disputed, settled, unresolved)</td><td></td><td>unresolved is a kept decision, not derivable</td></tr>
 <tr><td class="m">settle_change_id</td><td class="m">FK changes.id, null</td><td class="re">changes</td><td>the change row on the case's diagram that the meeting's choice made</td></tr>
-<tr><td class="m">settled_by</td><td class="m">FK users.id, null</td><td class="re">users</td><td>who pressed keep / change / unresolved at the meeting</td></tr>
+<tr><td class="m">user_id</td><td class="m">FK users.id, null</td><td class="re">users</td><td>who pressed keep / change / unresolved at the meeting</td></tr>
 </table></div>
 
 <h3><span class="m new">votes</span> — one coder's vote on one review item, before the meeting</h3>
 <div class="wrap"><table>
 <tr><th>Column</th><th>Type</th><th>Reuses</th><th>Meaning</th></tr>
 <tr><td class="m">review_item_id</td><td class="m">FK review_items.id</td><td></td><td></td></tr>
-<tr><td class="m">coder_id</td><td class="m">FK users.id</td><td class="re">users</td><td>never shown until the meeting</td></tr>
+<tr><td class="m">user_id</td><td class="m">FK users.id</td><td class="re">users</td><td>the coder; never shown until the meeting</td></tr>
 <tr><td class="m">choice</td><td class="m">Enum(VoteChoice: take, change, drop)</td><td></td><td>tallied by query</td></tr>
 <tr><td class="m">value</td><td class="m">JSON, null</td><td class="re">schema.Event as dict inside</td><td>the payload of the choice: which coding's take, or the coder's own changed item; its shape is the least settled thing here, so it is JSON</td></tr>
 <tr><td class="m">reason</td><td class="m">Text, null</td><td></td><td>"say why", optional</td></tr>
-<tr><td colspan="4" class="m">unique (review_item_id, coder_id)</td></tr>
+<tr><td colspan="4" class="m">unique (review_item_id, user_id)</td></tr>
 </table></div>
 
 <h3><span class="m new">rules</span> — the coding guidelines, one row per rule</h3>
