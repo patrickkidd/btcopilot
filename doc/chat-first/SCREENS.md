@@ -109,7 +109,7 @@ What it is for: one group of related events, opened from the line.
 - The word for these is clusters, in the app and in the code. [built] {R-0197}
 - Whether tapping an event's words inside an open cluster should jump straight to its editor is unconfirmed, and Patrick will say after testing it. [open] {R-0207}
 
-## The moves board
+## The play-by-play
 
 @frame built#f9 | The board playing the first move: the people on a ring, the move drawn in green, and one sentence saying who did what.
 

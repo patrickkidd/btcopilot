@@ -200,13 +200,18 @@ session-menu item.
 **Decided:** the picked-moment words on the timeline (option A) [R-0235]; the about page
 behind an i, ✕ in the arrow's place; one icon-button size [R-0234]; the card slides the whole
 region; who·what words [T-2].
-**Open:** (1) [ruling] does the three-event cluster floor bind a grouping the user made himself,
-which is row 54 of the review log; (2) [ruling] the nodal ring on a dot, keep or drop;
-(3) [ruling] thirteen rows in the interface gap list are marked as needing his word;
-(4) [build] the event editor's relationship fields and its hiding of fields by event kind;
-(5) [ruling] the felt call on the moves board.
+**Open:** (1) [build] grouping is the coach's judgement with a one-line scope and the floor
+binds only the automatic draft [R-0287]; the nodal ring stays and its flag follows the clinical
+definition [R-0283]; the thirteen interface rows are closed as built [R-0291]; no trend lines
+until real data [R-0284]; (2) [build] the event editor's relationship fields and its hiding of
+fields by event kind; (3) [build] the play-by-play defect: on a cluster with three events
+"explain" reveals only one (review log's newest row) [R-0292]; (4) [build] "moment" becomes
+"event" and "moves board" becomes "play-by-play" in the app's own copy [R-0289, R-0292];
+(5) [build] the sessions sheet loses its per-case "+", and a personal user never sees the word
+case [R-0285]; (6) [ruling] whether tapping an event's words inside an open cluster jumps to
+its editor, which he will say after testing [R-0207].
 **Lives in:** doc/chat-first/UI_GAP.md, REVIEW_LOG.md, STATE.md.
-**Next action:** his rulings, in any order.
+**Next action:** build items; one ruling after he tests the cluster tap.
 **Updated:** 2026-09-11.
 
 ## T-6 · Clusters by example

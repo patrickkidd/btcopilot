@@ -277,3 +277,4 @@ These two are still genuinely open:
 - **#68**: one learning-data post with no item kind, tap not identified.
 - **#69**: the Anthropic account behind the sandbox key is out of credit; the coach cannot
   answer until it is topped up.
+| 70 | 2026-09-11 | play-by-play | On a cluster with three events (the 2006 one on his record), "explain" reveals only a single event on the play-by-play; the first cluster plays all of its events and looks great | OPEN | — |
