@@ -221,6 +221,31 @@ into the tool fields, the deterministic rules into the commit function, and a
 reference-manual tool later; plus a replay harness that runs a conversation through the
 loop and scores the record with the existing F1 code.
 
+### Open with the owner, 2026-09-10 (tracked here until each is closed)
+
+1. **His review of the coach's new prompt section** — the 168 lines added to the private
+   prompt file ("What goes in the record"), his clinical content rewritten for the loop. Diff:
+   `git -C ~/theapp/fdserver/.claude/worktrees/FD-362 show HEAD -- prompts/private_prompts.py`.
+   The author's account of what was dropped from the batch prompts is the newest entry in
+   doc/PROMPT_ENGINEERING_LOG.md. Unreviewed; unmeasured until his conversations are coded.
+2. **Deploy on the existing production server, merge first** [his direction 2026-09-10]: a
+   read-only review of every table and endpoint change against master is being written to
+   doc/chat-first/MERGE_REVIEW.md; nothing merges before he has read it.
+3. **Existing rows must work in the new app** — diagrams and discussions made on master
+   (including colleagues' earlier sessions) load as sessions; old Personal app releases do
+   not matter. Part of the merge review.
+4. **Wipe and re-code as a feature** — clear a record's coding and re-run the agent loop
+   over its existing conversation, the way the old training app cleared and re-extracted.
+   Done once by hand on his sandbox record (2026-09-10) into a new session under the same
+   record. Open question he raised: chips in the old thread point at events that no longer
+   exist after a wipe; a chip carries its own words, so it reads as plain text, and the
+   re-code can re-link the ones that match on kind, date and people.
+5. **One app** [Oracle: R-0237] — coding as Pro features on desktop, training as
+   auditor/admin features, one Vite page with features by licence, role and view. He is
+   reviewing the coding-tool mockups; no build until he has.
+6. **Sub-agents are token- and model-optimised** — judgement on Opus, mechanics on Sonnet
+   or Haiku, smallest file set each; a standing check on every spawn.
+
 ### The three-event floor and groupings the user makes himself
 
 A cluster needs three events, one number in the schema enforced at the record's commit for
