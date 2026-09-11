@@ -9,7 +9,7 @@ for here is one of those.
 from flask import jsonify, request
 
 from btcopilot import auth
-from btcopilot.personal.routes import bp, current_session, diagram
+from btcopilot.personal.routes import bp, current_session, writable_diagram
 from btcopilot.personal.playturn import PlayTurn
 from btcopilot.personal.discussions import sync_chat_speakers
 from btcopilot.schema import DiagramData
@@ -29,7 +29,7 @@ def play():
     if unknown:
         raise ValueError(f"Unknown play field(s): {', '.join(sorted(unknown))}")
 
-    dia = diagram()
+    dia = writable_diagram()
     data = dia.get_diagram_data() if dia else DiagramData()
     discussion = current_session(auth.current_user(), create=True)
     sync_chat_speakers(discussion)

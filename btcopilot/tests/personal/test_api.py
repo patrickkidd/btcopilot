@@ -4,6 +4,8 @@ import datetime
 
 import pytest
 
+import btcopilot
+from btcopilot import diagramjson
 from btcopilot.personal.routes.settings import PLAN_PLACEHOLDER
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement
@@ -88,6 +90,21 @@ def test_session_list(web, token):
     assert sessions[0]["message_count"] == 2
     assert sessions[0]["summary"]
     assert sessions[0]["last_activity"]
+
+
+def test_session_list_omits_a_transcript_import(web, token, test_user):
+    """A discussion brought in from a recording has no chat speaker ids and
+    is not a session the chat app can open."""
+    imported = Discussion(
+        user_id=test_user.id,
+        diagram_id=test_user.free_diagram_id,
+        summary="Induction transcript",
+    )
+    db.session.add(imported)
+    db.session.commit()
+
+    assert web.get("/personal/sessions").get_json() == []
+    assert web.get(f"/personal/sessions/{imported.id}").status_code == 404
 
 
 def test_session_create(web, token, test_user):
@@ -369,6 +386,33 @@ def test_account_license_status_follows_the_license(web, test_user):
 
     body = web.get("/personal/account").get_json()
     assert body["licenses"][0]["status"] == LicenseStatus.Canceled.value
+
+
+# ── diagram access ──────────────────────────────────────────────────────────
+
+
+def test_read_only_grant_is_not_listed_or_writable(web, token, test_user, test_user_2):
+    shared = Diagram(
+        user_id=test_user_2.id, name="Shared Family", data=diagramjson.dumps({})
+    )
+    db.session.add(shared)
+    db.session.commit()
+    shared.grant_access(test_user, btcopilot.ACCESS_READ_ONLY, _commit=True)
+
+    listed = web.get("/personal/diagrams").get_json()
+    assert shared.id not in {d["id"] for d in listed}
+
+    response = post(web, token, f"/personal/diagrams/{shared.id}/select", {})
+    assert response.status_code == 404
+    assert test_user.current_diagram_id is None
+
+    # Force the app onto the read-only diagram the way a stale current_diagram_id
+    # would, bypassing the switcher, and confirm the writing routes still refuse.
+    test_user.current_diagram_id = shared.id
+    db.session.commit()
+
+    assert post(web, token, "/personal/people", {"name": "Nova"}).status_code == 403
+    assert shared.get_diagram_data().people == []
 
 
 # ── event CRUD ──────────────────────────────────────────────────────────────

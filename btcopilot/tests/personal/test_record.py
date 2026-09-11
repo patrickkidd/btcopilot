@@ -19,7 +19,7 @@ def _diagram(user, data: dict) -> Diagram:
     return diagram
 
 
-def test_pickle_row_reads_and_rewrites_as_json(subscriber):
+def test_pickle_row_reads_and_stays_pickle(subscriber):
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
     assert not diagramjson.is_json(diagram.data)
 
@@ -33,7 +33,7 @@ def test_pickle_row_reads_and_rewrites_as_json(subscriber):
         user_id=subscriber.user.id,
     )
     db.session.refresh(diagram)
-    assert diagramjson.is_json(diagram.data)
+    assert not diagramjson.is_json(diagram.data)
     assert diagram.get_diagram_data().people == [{"id": 1, "name": "Bea"}]
 
 
@@ -363,7 +363,7 @@ def test_pro_put_round_trip_and_logs_a_change(flask_app, test_user):
     assert pickle.loads(body["data"]) == {"people": [{"id": 1, "name": "Bea"}]}
 
     db.session.refresh(diagram)
-    assert diagramjson.is_json(diagram.data)
+    assert diagram.data == payload
 
     change = Change.query.filter_by(diagram_id=diagram.id).one()
     assert change.author == Author.Pro

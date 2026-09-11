@@ -13,7 +13,7 @@ from flask import abort, jsonify, request
 from btcopilot import auth
 from btcopilot.personal import record
 from btcopilot.personal.models import Author
-from btcopilot.personal.routes import bp, diagram
+from btcopilot.personal.routes import bp, diagram, writable_diagram
 from btcopilot.schema import ItemKind, PersonKind
 
 WRITABLE = ("name", "last_name", "gender")
@@ -44,7 +44,7 @@ def _find(data, person_id: int) -> dict:
 
 
 def _apply(deltas: list[dict]):
-    dia = diagram()
+    dia = writable_diagram()
     if dia is None:
         abort(404)
     return record.apply(

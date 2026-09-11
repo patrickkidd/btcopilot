@@ -9,11 +9,11 @@ Usage: FLASK_CONFIG=development flask personal fixtures [key ...]
 """
 
 import datetime
-import pickle
 import traceback
 
 import click
 
+from btcopilot import diagramjson
 from btcopilot.personal.models import StatementKind
 from btcopilot.personal.routes import bp
 from btcopilot.schema import (
@@ -465,7 +465,7 @@ def install(key: str):
     diagram = Diagram(
         user_id=user.id,
         name=DIAGRAM_NAMES.get(key, DIAGRAM_NAME),
-        data=pickle.dumps({}),
+        data=diagramjson.dumps({}),
     )
     diagram.set_diagram_data(builder())
     db.session.add(diagram)

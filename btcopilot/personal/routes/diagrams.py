@@ -29,6 +29,13 @@ def readable(user) -> list[Diagram]:
     return found
 
 
+def writable(user) -> list[Diagram]:
+    """The diagrams the user may put the app on: owned, or granted read-write.
+    A diagram shared read-only is readable but never lands here — the switcher
+    and the writing routes both key off this same check."""
+    return [d for d in readable(user) if d.check_write_access(user)]
+
+
 def diagram_payload(diagram: Diagram, user) -> dict:
     """A diagram as the switcher and the settings list need it: what it is
     called, how much has been said on it, and when that last happened."""
@@ -51,8 +58,9 @@ def diagram_payload(diagram: Diagram, user) -> dict:
 
 def diagrams_payload(user) -> list[dict]:
     """Most recently active first, so the switcher opens on what you were
-    last in."""
-    payload = [diagram_payload(d, user) for d in readable(user)]
+    last in. Only the diagrams the user may write to — this is the switcher's
+    list, and a diagram shared read-only is never a place the app can be put."""
+    payload = [diagram_payload(d, user) for d in writable(user)]
     return sorted(
         payload,
         key=lambda d: (d["last_activity"] or "", d["id"]),
@@ -67,12 +75,12 @@ def diagram_index():
 
 @bp.route("/diagrams/<int:diagram_id>/select", methods=["POST"])
 def diagram_select(diagram_id: int):
-    """Put the app on one of the user's readable diagrams. This never writes
+    """Put the app on one of the user's writable diagrams. This never writes
     free_diagram_id: which diagram is free of charge is a billing fact, not a
     record of where the reader is."""
     user = auth.current_user()
-    if diagram_id not in {d.id for d in readable(user)}:
+    if diagram_id not in {d.id for d in writable(user)}:
         abort(404)
     user.current_diagram_id = diagram_id
     db.session.commit()
-    return jsonify(diagram_payload(next(d for d in readable(user) if d.id == diagram_id), user))
+    return jsonify(diagram_payload(next(d for d in writable(user) if d.id == diagram_id), user))

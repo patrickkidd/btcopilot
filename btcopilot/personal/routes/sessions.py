@@ -7,11 +7,12 @@ from flask import abort, jsonify, request
 from btcopilot import auth
 from btcopilot.personal.routes import (
     bp,
-    diagram,
     current_session,
     last_activity,
     owned_session,
+    require_write_access,
     user_sessions,
+    writable_diagram,
 )
 from btcopilot.personal.routes.diagrams import readable
 from btcopilot.extensions import db
@@ -53,6 +54,7 @@ def _reply(discussion: Discussion, statement: str) -> dict:
     """One agent-loop turn. The words carry their own chips; `events` carries
     what the coach did behind them, in the order it happened, so the page can
     move the picture and the list from the same reply."""
+    require_write_access(discussion.diagram)
     sync_chat_speakers(discussion)
     db.session.commit()
     reply = CoachTurn(discussion, statement, session_id=str(discussion.id)).run()
@@ -90,7 +92,7 @@ def session_index():
 def session_create():
     """A new session belongs to the diagram the app is on, not to whichever one
     happens to be free."""
-    return jsonify(session_payload(create_discussion({}, diagram()))), 201
+    return jsonify(session_payload(create_discussion({}, writable_diagram()))), 201
 
 
 @bp.route("/sessions/<int:session_id>")

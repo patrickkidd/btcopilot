@@ -102,9 +102,9 @@ def create_app(config: dict = None, **kwargs):
     @app.errorhandler(403)
     def _(e):
         from flask import redirect, url_for, request
-        from btcopilot.auth import is_pro_app_request
+        from btcopilot.auth import is_chat_app_request, is_pro_app_request
 
-        if is_pro_app_request():
+        if is_pro_app_request() or is_chat_app_request():
             return "Forbidden", 403
         else:
             return redirect(url_for("training.auth.login", next=request.url))

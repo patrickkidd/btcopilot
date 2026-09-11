@@ -8,9 +8,9 @@ diagram it did not create.
 Usage: FLASK_CONFIG=development python -m btcopilot.personal.seed [username]
 """
 
-import pickle
 import sys
 
+from btcopilot import diagramjson
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
@@ -200,7 +200,7 @@ def seed(username: str, diagram_data: DiagramData | None = None):
         db.session.delete(old)
     db.session.flush()
 
-    diagram = Diagram(user_id=user.id, name=SEED_DIAGRAM_NAME, data=pickle.dumps({}))
+    diagram = Diagram(user_id=user.id, name=SEED_DIAGRAM_NAME, data=diagramjson.dumps({}))
     diagram.set_diagram_data(diagram_data or seed_diagram_data())
     db.session.add(diagram)
     db.session.flush()

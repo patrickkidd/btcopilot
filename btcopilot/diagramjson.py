@@ -23,10 +23,10 @@ with data. Anything else raises.
 import enum
 import json
 import pickle
+import sys
 
 import PyQt5.sip  # noqa: F401  registers QtCore types for pickle
 from PyQt5.QtCore import QDate, QDateTime, QPoint, QPointF, QSize, QSizeF, QTime, Qt
-from PyQt5.QtGui import QColor
 
 from btcopilot import schema
 
@@ -49,6 +49,25 @@ def from_json(doc: dict) -> dict:
 
 def _tag(kind, v):
     return {TAG: kind, "v": v}
+
+
+def _color_type():
+    """QColor's class, or None when the Qt GUI module was never loaded.
+
+    Colours are the only value here needing PyQt5.QtGui, and the server the Pro
+    app talks to runs without that module's system libraries. A QColor cannot
+    exist in a payload unless the module is already loaded, so looking the class
+    up rather than importing it keeps the GUI module out of startup.
+    """
+    gui = sys.modules.get("PyQt5.QtGui")
+    return getattr(gui, "QColor", None) if gui else None
+
+
+def _color(v):
+    """The one place that imports the Qt GUI module: a stored colour becoming a QColor."""
+    from PyQt5.QtGui import QColor
+
+    return QColor(v) if v else QColor()
 
 
 def _enc(v):
@@ -78,8 +97,9 @@ def _enc(v):
         return _tag("QSizeF", [v.width(), v.height()])
     if isinstance(v, QSize):
         return _tag("QSize", [v.width(), v.height()])
-    if isinstance(v, QColor):
-        return _tag("QColor", v.name(QColor.HexArgb) if v.isValid() else None)
+    color = _color_type()
+    if color is not None and isinstance(v, color):
+        return _tag("QColor", v.name(color.HexArgb) if v.isValid() else None)
     raise TypeError(f"cannot encode {type(v)}")
 
 
@@ -104,12 +124,12 @@ _DEC = {
     "QPoint": lambda v: QPoint(*v),
     "QSizeF": lambda v: QSizeF(*v),
     "QSize": lambda v: QSize(*v),
-    "QColor": lambda v: QColor(v) if v else QColor(),
+    "QColor": _color,
 }
 
 
 def loads(blob: bytes | None) -> dict:
-    """Decode a stored diagram blob, which is JSON now and pickle for old rows."""
+    """Decode a stored blob: JSON for a row the chat app made, pickle for an older one."""
     if not blob:
         return {}
     if blob[:1] == b"{":
@@ -126,10 +146,15 @@ def is_json(blob: bytes | None) -> bool:
 
 
 def store(blob: bytes | None) -> bytes:
-    """Normalize any incoming blob to the stored JSON form."""
+    """Convert an incoming pickled blob to the stored JSON form."""
     return dumps(loads(blob))
 
 
-def wire(blob: bytes | None) -> bytes:
-    """The pickled form the Pro and Personal apps speak."""
-    return pickle.dumps(loads(blob))
+def encode(data: dict, stored: bytes | None) -> bytes:
+    """Re-encode in the format the row already holds: JSON stays JSON, pickle stays pickle."""
+    return dumps(data) if is_json(stored) else pickle.dumps(data)
+
+
+def wire(blob: bytes | None) -> bytes | None:
+    """The pickled form the Pro and Personal apps speak; a pickle row passes through."""
+    return pickle.dumps(loads(blob)) if is_json(blob) else blob

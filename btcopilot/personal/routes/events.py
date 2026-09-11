@@ -10,7 +10,7 @@ from dataclasses import fields
 
 from flask import abort, jsonify, request
 
-from btcopilot.personal.routes import bp, diagram
+from btcopilot.personal.routes import bp, writable_diagram
 from btcopilot.personal.timeline import DATE_FIELDS, event_payload
 from btcopilot.extensions import db
 from btcopilot.personal.intake import _enum_val, _parse_iso_date
@@ -103,7 +103,7 @@ def _write(mutate):
     """Every write takes the diagram's optimistic lock: a background extraction
     can commit to the same diagram while the user is editing an event, and
     whichever writer loses the race must re-read rather than clobber."""
-    dia = diagram()
+    dia = writable_diagram()
     if dia is None:
         abort(404)
     for _ in range(32):

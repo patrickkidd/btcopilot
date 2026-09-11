@@ -1,9 +1,8 @@
 """Discussion lifecycle shared by every surface that starts or continues a
 session."""
 
-import pickle
 
-from btcopilot import auth
+from btcopilot import auth, diagramjson
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram
 from btcopilot.personal.models import Discussion, Speaker, SpeakerType
@@ -19,7 +18,7 @@ def create_discussion(data: dict, diagram: Diagram | None = None) -> Discussion:
         diagram = Diagram(
             user_id=user.id,
             name=f"{user.username} Personal Case File",
-            data=pickle.dumps({}),
+            data=diagramjson.dumps({}),
         )
         db.session.add(diagram)
         db.session.flush()

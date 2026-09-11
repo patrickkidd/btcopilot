@@ -52,10 +52,21 @@ def last_activity(discussion: Discussion):
 def user_sessions(user, diagram_id: int | None = None) -> list[Discussion]:
     """The user's sessions on one diagram, most recently active first — which
     makes the session they last spoke in the one they return to. Without a
-    diagram it is the one the app is on."""
-    found = Discussion.query.filter_by(
-        user_id=user.id, diagram_id=diagram_id or user.diagram_in_use()
-    ).all()
+    diagram it is the one the app is on.
+
+    A discussion imported from a recording has no chat speaker ids and is not
+    a session the chat app can open: its speakers are Subject/Expert, not the
+    two chat roles, so every line would render as the user's."""
+    found = (
+        Discussion.query.filter_by(
+            user_id=user.id, diagram_id=diagram_id or user.diagram_in_use()
+        )
+        .filter(
+            Discussion.chat_user_speaker_id.isnot(None),
+            Discussion.chat_ai_speaker_id.isnot(None),
+        )
+        .all()
+    )
     return sorted(found, key=lambda d: (last_activity(d), d.id), reverse=True)
 
 
@@ -63,14 +74,20 @@ def current_session(user, create: bool = False) -> Discussion | None:
     found = user_sessions(user)
     if found:
         return found[0]
-    return create_discussion({}, diagram()) if create else None
+    return create_discussion({}, writable_diagram()) if create else None
 
 
 def owned_session(session_id: int) -> Discussion:
     """Another user's session is a 404, not a 403: the app never confirms that
-    a session it will not show exists."""
+    a session it will not show exists. A discussion missing either chat
+    speaker id is not a session either — see `user_sessions`."""
     discussion = db.session.get(Discussion, session_id)
-    if discussion is None or discussion.user_id != auth.current_user().id:
+    if (
+        discussion is None
+        or discussion.user_id != auth.current_user().id
+        or discussion.chat_user_speaker_id is None
+        or discussion.chat_ai_speaker_id is None
+    ):
         abort(404)
     return discussion
 
@@ -80,6 +97,20 @@ def diagram():
     on, which is the free one until the user switches."""
     user = auth.current_user()
     return user.current_diagram or user.free_diagram
+
+
+def require_write_access(dia):
+    """The write gate every mutating route shares: a diagram reached only
+    through a read-only grant refuses the write outright."""
+    if dia is not None and not dia.check_write_access(auth.current_user()):
+        abort(403)
+    return dia
+
+
+def writable_diagram():
+    """The diagram every writing route mutates, refused if the app is on one
+    the user may only read."""
+    return require_write_access(diagram())
 
 
 from btcopilot.personal.routes import (  # noqa: E402  bp must exist first

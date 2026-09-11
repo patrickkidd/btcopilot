@@ -485,7 +485,9 @@ def _commit(
     db.session.execute(
         sql_update(Diagram)
         .where(Diagram.id == diagram.id)
-        .values(data=diagramjson.dumps(data), version=Diagram.version + 1)
+        .values(
+            data=diagramjson.encode(data, diagram.data), version=Diagram.version + 1
+        )
     )
     change = Change(
         diagram_id=diagram.id,

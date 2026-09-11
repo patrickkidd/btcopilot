@@ -87,7 +87,8 @@ class Diagram(db.Model, ModelMixin):
 
     @pickled.setter
     def pickled(self, blob: bytes):
-        self.data = diagramjson.store(blob)
+        """A JSON row stays JSON; a pickle row, and a new row, keep the blob as it arrived."""
+        self.data = diagramjson.store(blob) if diagramjson.is_json(self.data) else blob
 
     def get_diagram_data(self) -> DiagramData:
         data = diagramjson.loads(self.data)
@@ -111,7 +112,7 @@ class Diagram(db.Model, ModelMixin):
         data["clusters"] = diagram_data.clusters
         data["clusterCacheKey"] = diagram_data.clusterCacheKey
 
-        self.data = diagramjson.dumps(data)
+        self.data = diagramjson.encode(data, self.data)
 
     def grant_access(self, user, right, _commit=False):
         from btcopilot.pro.models import AccessRight
@@ -192,7 +193,7 @@ class Diagram(db.Model, ModelMixin):
             end = last_id + count
             data["lastItemId"] = end
 
-            new_data = diagramjson.dumps(data)
+            new_data = diagramjson.encode(data, locked.data)
             stmt = (
                 sql_update(Diagram)
                 .where(Diagram.id == self.id)
@@ -218,7 +219,13 @@ class Diagram(db.Model, ModelMixin):
         self, expected_version, new_data=None, diagram_data=None
     ):
         if new_data is not None:
-            data_to_save = diagramjson.store(new_data)
+            # The row decides the format. A JSON row takes the incoming pickle
+            # converted, and a failure to convert raises rather than writing.
+            data_to_save = (
+                diagramjson.store(new_data)
+                if diagramjson.is_json(self.data)
+                else new_data
+            )
         elif diagram_data is not None:
             from btcopilot.schema import asdict
 
@@ -228,7 +235,7 @@ class Diagram(db.Model, ModelMixin):
             data["people"] = diagram_data.people
             data["events"] = diagram_data.events
             data["pair_bonds"] = diagram_data.pair_bonds
-            data_to_save = diagramjson.dumps(data)
+            data_to_save = diagramjson.encode(data, self.data)
         else:
             return (False, None)
 
