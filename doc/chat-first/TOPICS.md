@@ -66,7 +66,7 @@ in the editor); run the harness once.
 
 ## T-3 · One app: Pro and Training as thin layers on the chat
 
-**Status:** designed and ruled; nothing built yet.
+**Status:** designed and ruled; the coding page is now drawn for the owner's eyeball; nothing built.
 **Decided:** one Vite app, features by licence, role and view; coding is documenting a case,
 Pro on desktop; training is auditor/admin features on top [R-0237]; never a new view where an
 existing surface can carry the addition [R-0243]; Pro adds cases (= the family switcher on the
@@ -79,15 +79,30 @@ pool and recomputes agreement, results visible only to contributors, blind until
 approved as drawn.
 **Open:** (1) the IRR review surface for five codings — four concepts await his pick
 (https://claude.ai/code/artifact/a7637a73-8ebc-4166-8b5b-c6a3269aa973: A stave, B tally list,
-C deck, D moderator; recommended B+C); (2) build order once picked: codings + scores tables,
-endpoints, replay as a task, export of finished codings to the ground-truth files, the session
-menu items, the coding mode, the pool statistics, the compare view; (3) the old SARF coding
-page becomes a legacy link, deleted after re-coding [R-0238]; (4) desktop-first, phone later.
+C deck, D moderator; recommended B+C); (2) the coding page as drawn
+(https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a) needs his eyeball, with
+these forks inside it: (a) the coder's own words stay in the thread under the line they coded
+(frame 1) or only the scribe's edit line stays (frame 6); (b) the three training items —
+"Code this session", "Re-code with the coach", "Compare codings" — are drawn as a small card
+over the sessions sheet because the swipe-row menu as built has room for only two buttons;
+(c) Done is a plain button in the composer bar, not the green pill, so it does not read as
+"add"; (d) the "coding" mark beside the session title is amber mono text, a style the app does
+not have yet; (3) the two-sided compare view already drawn assumes two codings and must be
+reconciled with whichever five-sided concept he picks; (4) Pro "notes" (a session where the
+coach listens and records) has no mockup; (5) build order once picked: codings + scores
+tables, endpoints, replay as a task, export of finished codings to the ground-truth files, the
+session menu items, the coding mode, the pool statistics, the compare view; (6) the old SARF
+coding page becomes a legacy link, deleted after re-coding [R-0238]; (7) desktop-first, phone
+later.
 **Lives in:** plan https://claude.ai/code/artifact/7a033173-bff2-41ca-bbde-39385d4ab7f3;
 layers https://claude.ai/code/artifact/daeb8856-4a5b-42d4-ab62-4c14bc3784b4; new surfaces
-https://claude.ai/code/artifact/c5040b6a-75e3-47de-aba7-54aabbda69f4; mockups are drawn with
-web/src/theme.css and the app's markup from here on (his rule 2026-09-10).
-**Next action:** he picks the IRR review concept; then build in this PR.
+https://claude.ai/code/artifact/c5040b6a-75e3-47de-aba7-54aabbda69f4; the coding page
+https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a (source
+/Users/patrick/.claude/jobs/16d9eee6/tmp/coding-page.html, ephemeral — the artifact is the
+durable copy); mockups are drawn with web/src/theme.css and the app's markup from here on
+(his rule 2026-09-10).
+**Next action:** he looks at the coding page and rules on its four forks; he picks the IRR
+review concept; then build in this PR.
 **Updated:** 2026-09-11.
 
 ## T-4 · Existing records and conversations in the new app; wipe and re-code

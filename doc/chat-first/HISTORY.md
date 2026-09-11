@@ -726,3 +726,15 @@ stylesheet; sub-agents token- and model-optimised. The flush became a skill (`/f
 topic register (TOPICS.md) as the state clock and tagged HISTORY entries as the event clock,
 checked by bin/flushcheck.py.
 
+## 2026-09-11 (afternoon) — the coding page drawn for his eyeball [T-3]
+<!-- session: session_01D4vJ3BK6BgHxA9TzRHdw6Z -->
+
+The owner resumed the one-app design, asking whether Pro was settled (it is, by R-0243) and
+to continue the coding pages and the IRR review pages. The approved coding mode — a read-only
+transcript as the thread, a cheap scribe in the composer, Done — had been approved in words
+only, with no mockup. One builder (Opus) drew it with the app's stylesheet inlined verbatim
+and the app's own classes, six frames: mid-coding on desktop with the drawer pinned, the empty
+opening state, the scribe refusing an ambiguous "he", the phone, the sessions sheet after
+Done with the three training items, and the alternative where only the edit line stays in the
+thread. Four guesses the references did not settle are logged as forks in the topic block.
+The IRR review pick (four concepts) still waits on him. No rulings were made this session.
