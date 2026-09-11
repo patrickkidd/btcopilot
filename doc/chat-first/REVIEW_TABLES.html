@@ -49,16 +49,21 @@ th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-t
 <tr><td class="m new">login_codes</td><td class="new">new table</td><td class="m">email String(255) · code_hash String(255) · expires_at · used_at null · tries Integer</td></tr>
 <tr><td class="m re">diagrams</td><td>no schema change</td><td>the data column now holds JSON for records this app writes and pickle for the desktop app's, told apart by the first byte; the desktop app's rows are never rewritten</td></tr>
 </table></div>
-<h2>Existing tables, used as they are</h2>
+<h2>Tables the review uses without changing them — in production today</h2>
 <div class="wrap"><table>
 <tr><th>Table</th><th>What it is in the review</th></tr>
 <tr><td class="m re">users</td><td>Coders, and Patrick. Roles as today.</td></tr>
-<tr><td class="m re">diagrams</td><td>A <b>case</b> is a diagram row. A <b>coding</b> is also a diagram row: the coder's own record of the case, JSON in the same data column, built with the same tools and editors, carried forward cut to cut. The ratified record is the case's own diagram. Coding rows are told apart from cases by the join to <span class="m new">codings</span>, never by a column.</td></tr>
-<tr><td class="m re">discussions</td><td>A session of a case: a chat, an uploaded recording, or a note. The case is reached through the session's diagram, so a cut does not repeat it.</td></tr>
+<tr><td class="m re">diagrams</td><td>A <b>case</b> is a diagram row. A <b>coding</b> is also a diagram row: the coder's own record of the case, JSON in the same data column, built with the same tools and editors, carried forward cut to cut. The ratified record is the case's own diagram. Coding rows are told apart from cases by the join to <span class="m new">review_codings</span>, never by a column.</td></tr>
+<tr><td class="m re">discussions</td><td>A session of a case: a chat, an uploaded recording, or a note. The case is reached through the session's diagram, so a cut does not repeat it. (The branch adds two columns and the review a third; see above.)</td></tr>
 <tr><td class="m re">statements</td><td>The turns. A <b>cut</b> is a window of them: a start and an end statement id.</td></tr>
-<tr><td class="m re">changes</td><td>Every edit, with the statement it came from. The scribe's edits during coding land here on the coding's diagram, so each coded event already says which line it came from. A <b>settle</b> at the meeting is a change row on the case's diagram, so ratification has the same audit trail as every other edit. The author enum gains one member, <span class="m new">review</span>. This table is new on this branch — created by the branch's single migration with interactions, web_sessions, passkeys, invitations and login_codes, none of them in production yet — so the change costs nothing and touches nothing the desktop app reads.</td></tr>
-<tr><td class="m re">interactions</td><td>Taps, as today. Votes are not interactions.</td></tr>
 <tr><td class="m re">feedbacks, reconciliation_notes</td><td>Last year's per-statement ground truth. Read-only until each conversation has been re-coded, then retired, as ruled.</td></tr>
+</table></div>
+
+<h2>Tables the review uses — new on this branch, not in production</h2>
+<div class="wrap"><table>
+<tr><th>Table</th><th>What it is in the review</th><th>The review changes</th></tr>
+<tr><td class="m new">changes</td><td>Every edit, with the statement it came from. The scribe's edits during coding land here on the coding's diagram, so each coded event already says which line it came from. A <b>settle</b> at the meeting is a change row on the case's diagram, so ratification has the same audit trail as every other edit.</td><td>the author enum gains one member, <span class="m new">review</span>; free, since the enum is not in production</td></tr>
+<tr><td class="m new">interactions</td><td>Taps, as today. Votes are not interactions.</td><td>nothing</td></tr>
 </table></div>
 
 <h2>Existing types reused inside the new rows</h2>
