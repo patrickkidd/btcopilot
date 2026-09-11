@@ -1,6 +1,6 @@
 # Open topics — the state clock, one block per topic
 
-This file is rewritten in full by the flush at the end of every session (`/flush`). Each block
+This file is rewritten in full by the flush at the end of every session (`/two-clocks`). Each block
 is the current truth for one topic and stands on its own: what is decided (ruling ids in the
 private oracle store), what is open, where the work lives, and the next action. The event
 clock is [HISTORY.md](HISTORY.md), whose entries are tagged with the topic ids below. A topic
@@ -8,11 +8,11 @@ is never deleted; when it closes its status says CLOSED and the block stays.
 
 Fields every block carries: **Status · Decided · Open · Lives in · Next action · Updated.**
 Every numbered item under **Open** begins with one of four tags in square brackets: `[ruling]`
-needs the owner's word, `[build]` is work not yet done, `[verify]` is built but unchecked or
+needs Patrick's word, `[build]` is work not yet done, `[verify]` is built but unchecked or
 unmeasured, `[waiting]` is blocked on something outside the topic; an item that mixes two is
 split into two items.
 
-The owner audits this file as a page, never by command: the flush renders it with
+Patrick audits this file as a page, never by command: the flush renders it with
 `bin/topicpage.py` and republishes it to the same artifact every time —
 **https://claude.ai/code/artifact/8a56716d-dca5-4123-ae2e-572da33a392c** (pass that URL to the
 Artifact tool as `url`), and the two-clock dashboard — every dated event since the first
@@ -25,7 +25,7 @@ is this one.
 
 ## T-1 · Ship the personal app to the first beta users
 
-**Status:** ready for the owner's review before merge; deploying on the existing production
+**Status:** ready for Patrick's review before merge; deploying on the existing production
 server, merge-first (his direction 2026-09-10).
 **Decided:** one server for Pro, training and the chat app; old Pro diagrams stay pickle and
 new rows are JSON in the same column [Oracle: R-0241]; the beta users are the app working
@@ -41,16 +41,16 @@ unmeasured until the coding loop produces numbers.
 **Lives in:** btcopilot PR #136, fdserver PR #30; merge-risk review with the seven fixes
 landed: doc/chat-first/MERGE_REVIEW.md (fix commit 9f1707a); review log
 doc/chat-first/REVIEW_LOG.md; sandbox scripts /Users/patrick/worktrees/fd362-sandbox/.
-**Next action:** the owner reviews; then merge, deploy, invite the three.
+**Next action:** Patrick reviews; then merge, deploy, invite the three.
 **Updated:** 2026-09-11.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
 
-**Status:** built on the sandbox, unreviewed by the owner, unmeasured.
+**Status:** built on the sandbox, unreviewed by Patrick, unmeasured.
 **Decided:** the agent loop is the only writer and must carry the data model and clinical
 definitions [R-0236]; placement rule — a rule the computer can test becomes a refusal in the
 record's commit function, a field's meaning goes on the tool parameter, judgement goes in the
-system prompt; the owner's own prompt-improvement process does not change: Claude Code is the
+system prompt; Patrick's own prompt-improvement process does not change: Claude Code is the
 entry point and finds the instructions itself [R-0239]; IRR compares final records, not
 per-statement deltas [R-0242].
 **Open:** (1) [ruling] his review of the 168-line "What goes in the record" section in the
@@ -72,70 +72,77 @@ in the editor); run the harness once.
 
 ## T-3 · One app: Pro and Training as thin layers on the chat
 
-**Status:** designed and ruled; the IRR review is a three-stage ground-truth process, drawn as
-screens with the six open decisions on the page; the coding page is tabled; nothing built.
+**Status:** designed and ruled; the IRR review is a three-stage ground-truth process whose
+screens are approved as drawn (version 5); the coding page is tabled; nothing built.
 **Decided:** one Vite app, features by licence, role and view; coding is documenting a case,
 Pro on desktop; training is auditor/admin features on top [R-0237]; never a new view where an
 existing surface can carry the addition [R-0243]; Pro adds cases (= the family switcher on the
 account page), sessions (= the sessions sheet + "upload a recording" with a speaker-mapping
 sheet), notes, and a wider desktop layout with the drawer pinned; coding is a read-only session
-whose composer bar becomes "select a line, type an instruction, a cheap scribe records it"
-(option D) with Done; coding protocol: no assignments, any coder any time, each Done joins the
-pool and recomputes agreement, results visible only to contributors, blind until your own Done
-[R-0242]; the coach's replay is one coding among others; the upload/speaker-mapping sheet is
-approved as drawn. **IRR review (2026-09-11):** the approaches are tried in the meetings
-themselves and each meeting teaches the next [R-0244, its no-pre-review clause superseded];
-the review front end is isolated so it can never break Personal or Pro [R-0245]; two families,
-data-oriented slices and an AI-guided walk; the AI helping the room is important; he likes the
-one-timeline-per-coder view [R-0246]; the coding page is tabled except where it overlaps the
-review [R-0247]; "gold" means ratified — the AI's set is the proposed record, the ratified record
-is ground truth [R-0249]; **three stages**: code blind from scratch, then vote before the meeting
-on every outstanding disagreement once a checkpoint's worth of coders have finished, then the
-meeting reviews the vote with a thin chance of correction and ratifies; at each stage a voter
-makes a decision that finalizes a record [R-0250]; nobody is paid, so the work is a rolling
-window with no quota, many sessions stay unfinished, coding keeps going on the same session as
-more is added, and convergence is required because human ground truth is finite; forcing
-convergence is undecided; settle-by-kind is one tool among a few [R-0251]; original opinions
-are preserved in full fidelity; leaning yes to hiding who chose what until the final review
-[R-0252]; the vote is strictly human — no AI takes or recommendations in the ballot; where the
-AI's suggestion goes is open, the AI must still carry all tedious work [R-0254]. Ruled on the
-ballot-and-meeting drawing, version 5: one item per screen; the meeting's three choices; every
-item chosen before ratify; coders have one task at a time and never a queue; the AI writes the
-guideline changes itself; the AI's opinion is shown only after ratification.
-**Open:** (1) [ruling] the ballot rule on the ballot-and-meeting drawing, version 5: all but
-one, two thirds, or a majority with a tie-break; (2) [ruling] whether names are hidden in the
-ballot, shown at the meeting, and who was right stored; (3) [ruling] whether the ballot opens
-once three coders are done; (4) [ruling] whether the meeting's records live in the app's tables
-with the guidelines file generated from them; (5) [ruling] whether every rule the AI writes
-carries a link that flags it for the next meeting; (6) [ruling] whether the four lenses stay as
-extra meeting views or the list is the only view; (7) [ruling] his verdict on the plan for
-migrating last year's inter-rater material [R-0262] — the inventory of 2026-09-11 found 25 rules
-in tables keyed to meeting number with unanimity and confidence, six meetings' agreement,
-disagreement and action tables keyed to statement ids of last year's discussions at roughly 40
-to 60 rows, six deliberation records in prose, and six raw transcripts; (8) [build] migrate that
-material once he approves the plan: the 25 rules as rows with the meeting as provenance, the 40
-to 60 rows as settle rows once those discussions are imported through the upload path, the
-deliberation records kept as text to mine for rationale later, the raw transcripts kept as they
-are and never migrated, and the old per-statement feedback staying the batch harness's ground
-truth until re-coded; (9) [waiting] the coding page as drawn is tabled with its four forks,
-except where it overlaps the review; (10) [build] fold the two-sided compare view into the
-ballot or the meeting screen; (11) [build] draw a mockup for Pro notes; (12) [build] the build
-order once he has picked: codings and scores tables, endpoints, replay as a task, ballots and
-votes tables, export of ratified items to the ground-truth files, the session menu items, the
-coding mode, the pool statistics, and the review module isolated; (13) [build] turn the old
-clinical coding page into a legacy link and delete it after re-coding [R-0238].
-**Lives in:** plan https://claude.ai/code/artifact/7a033173-bff2-41ca-bbde-39385d4ab7f3;
-layers https://claude.ai/code/artifact/daeb8856-4a5b-42d4-ab62-4c14bc3784b4; new surfaces
+whose composer bar becomes "select a line, type an instruction, a cheap scribe records it" with
+Done; coding protocol: no assignments, any coder any time, each Done joins the pool and
+recomputes agreement, results visible only to contributors, blind until your own Done [R-0242];
+the coach's replay is one coding among others; the upload/speaker-mapping sheet is approved as
+drawn; the coding-page design is tabled except where it overlaps the review [R-0247].
+**The IRR review, ruled 2026-09-11:** the approaches are tried in the meetings and each meeting
+teaches the next [R-0244]; the review front end is isolated so it can never break Personal or
+Pro [R-0245]; two families, data slices and an AI-guided walk, with the AI's help important
+[R-0246]; "gold" means ratified — the AI's set is the proposed record, the ratified record is
+ground truth [R-0249]; **three stages** — code blind from scratch; once three coders are done,
+each votes on a phone before the meeting on every disputed item, takes shown without names and
+with no AI takes at all; the meeting sees only what the vote left open, with names and tallies,
+every item given one of keep / change / unresolved before ratify, and ratifies with unresolved
+items kept as data [R-0250, R-0254, R-0257]; nobody is paid, the work is a rolling window, and
+convergence is required but not forced [R-0251]; original opinions are kept in full fidelity,
+leaning yes to hiding who chose what until ratification [R-0252]; **the unit** is a
+conversation up to a cut Patrick selects — the cut is the last turn when he puts it on the
+table, he can move it back by tapping a line but never before the last ratified cut, a cut at
+the end of a finished conversation or recording is the whole thing, and anything changed since
+the last cut is re-coded [R-0267]; the coder's screen is one card for the one task and history
+under it, never a list [R-0258, R-0265]; Patrick's administration is the table screen — date,
+what is on the table, who is done, nudge; the AI writes the guideline changes itself from the
+settles and a result screen shows them with their provenance, nothing to choose [R-0259]; the
+page is approved as drawn [R-0268].
+**Open:** (1) [ruling] the ballot rule that settles an item before the meeting — all but one
+(4 to 1 of five; recommended), two thirds, or majority with a named tie-break; (2) [ruling]
+names hidden in the ballot, shown at the meeting, who-was-right stored per coder: yes or no;
+(3) [ruling] the ballot opens at three finished coders, or another number; (4) [ruling] the
+meeting's records live in the app's tables and the guidelines file in the repository is
+generated from them, never hand-edited: yes or no; (5) [ruling] one "flag for next meeting"
+link per AI-written rule, or no way to contest a rule until someone raises it; (6) [ruling]
+the four lenses (timeline, list, cards, chat) kept as extra views on the meeting screen, or the
+list only; (7) [ruling] migrating last year's IRR material [R-0262] — inventory 2026-09-11 of
+doc/irr/: 25 rules in tables keyed to meeting number with unanimity and confidence (migrate as
+rows with the meeting as provenance); six meetings' agreement/disagreement/action tables keyed
+to statement ids of last year's discussions, about 40–60 rows (migrate as settle rows once
+those discussions are imported through the upload path); six deliberation records in prose
+(keep as text, mine for rationale later); six raw transcripts (irreplaceable, never migrated);
+the old per-statement feedback stays the batch harness's ground truth until re-coded — his yes
+or no on that plan; (8) [waiting] the coding page as drawn
+(https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a) is tabled with its four
+forks — the coder's words kept or not in the thread, the three training items as a card over
+the sessions sheet, Done as a plain button, the amber "coding" mark; (9) [build] the two-sided
+compare view already drawn folds into the ballot or the meeting screen; (10) [build] Pro
+"notes" has no mockup; (11) [build] build order once the six rulings land: codings, cuts,
+ballots, votes and scores tables; endpoints; replay as a task; export of ratified items to the
+ground-truth files; the session menu items; the coding mode; the review module isolated;
+(12) [build] the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238].
+**Lives in:** the ballot-and-meeting page, version 5, approved
+https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9 (source
+/Users/patrick/.claude/jobs/16d9eee6/tmp/ballot-meeting.html, ephemeral — the artifact is the
+durable copy); the coding loop plan
+https://claude.ai/code/artifact/7a033173-bff2-41ca-bbde-39385d4ab7f3; thin layers
+https://claude.ai/code/artifact/daeb8856-4a5b-42d4-ab62-4c14bc3784b4; upload and compare
 https://claude.ai/code/artifact/c5040b6a-75e3-47de-aba7-54aabbda69f4; IRR concepts round 1
 https://claude.ai/code/artifact/a7637a73-8ebc-4166-8b5b-c6a3269aa973; review-room ideas
 https://claude.ai/code/artifact/40ba5500-7be3-4bc2-82ed-193f8367448f; the three-stage analysis
-(text; he ruled artifacts are UI drawings from here on)
-https://claude.ai/code/artifact/67988998-6e49-4924-a9b3-579979901eaf; the ballot and meeting
-screens https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9; the coding page
+(text; superseded in form by R-0255)
+https://claude.ai/code/artifact/67988998-6e49-4924-a9b3-579979901eaf; the coding page
 https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a; mockups are drawn with
-web/src/theme.css and the app's markup (his rule 2026-09-10).
-**Next action:** he rules on the six decisions on the ballot-and-meeting drawing; then build
-the review module in this PR.
+web/src/theme.css and the app's markup (his rule 2026-09-10); last year's material in
+doc/irr/.
+**Next action:** Patrick answers the six decisions on the page and the migration plan; then
+build the review module in this PR, tables first.
 **Updated:** 2026-09-11.
 
 ## T-4 · Existing records and conversations in the new app; wipe and re-code
@@ -161,7 +168,7 @@ session-menu item.
 
 ## T-5 · Picture and interface rulings still open
 
-**Status:** waiting on the owner; none block the beta.
+**Status:** waiting on Patrick; none block the beta.
 **Decided:** the picked-moment words on the timeline (option A) [R-0235]; the about page
 behind an i, ✕ in the arrow's place; one icon-button size [R-0234]; the card slides the whole
 region; who·what words [T-2].
@@ -212,23 +219,27 @@ repository.
 
 ## T-9 · How sessions run (process)
 
-**Status:** binding; extended 2026-09-09/10.
+**Status:** binding; extended 2026-09-09/10/11.
 **Decided:** everything in doc/chat-first/HOW_THIS_PROJECT_WORKS.md plus: never coin a term;
 estimate the work not the validation; build only on an explicit go — a question about an
-estimate or a plan is part of the brainstorm; one place for content (artifact or message, not
-both); mockups are drawn with the app's own stylesheet; sub-agents are token- and
-model-optimised (judgement on Opus, mechanics on Sonnet/Haiku, smallest file set); the flush at
-session end is `/flush` and is idempotent.
+estimate or a plan is part of the brainstorm; mockups are drawn with the app's own stylesheet;
+the flush at session end is `/two-clocks` and is idempotent. Added 2026-09-11: sub-agents do the
+work, one status line only, one short final reply per turn, model and effort chosen per agent
+[R-0248]; he is Patrick, never "Patrick" [R-0261]; artifacts are UI drawings in the app's
+style, never text documents, and the open decisions live on the drawing in one numbered list,
+never repeated in the reply [R-0255]; every turn on a design topic shows drawn options with
+descriptions long enough to explain what is not self-evident, never a research project
+[R-0256, R-0260]; every question mark is covered somewhere, not recited [R-0253, R-0264].
 **Open:** none.
-**Lives in:** doc/chat-first/HOW_THIS_PROJECT_WORKS.md; btcopilot/CLAUDE.md (owner corrections);
-.claude/skills/flush/SKILL.md; bin/flushcheck.py.
+**Lives in:** doc/chat-first/HOW_THIS_PROJECT_WORKS.md; btcopilot/CLAUDE.md (his corrections);
+.claude/skills/two-clocks/SKILL.md; bin/flushcheck.py.
 **Next action:** none.
 **Updated:** 2026-09-11.
 
 ## T-10 · Project memory: the two clocks, the flush, the trace
 
 **Status:** built in first form; names are mechanical until a flush rewrites them.
-**Decided:** one thought-and-decision trace in the order of the owner's own statements,
+**Decided:** one thought-and-decision trace in the order of Patrick's own statements,
 mined statement by statement from the transcripts, branching where a thread starts; a node at
 rest is a name plus one line, his words behind a click; shape B — threads as stacked lines
 across time, his trace stepping between them; dates, commits and artifacts are secondary
@@ -243,10 +254,10 @@ marks a superseded ruling in a column the ledger does not read; (4) [ruling] whe
 view should sit at the newest statements, with "fit" showing the whole; (5) [verify] the flush
 step that rewrites names has never been run in anger.
 **Lives in:** bin/{trace.py,tracepage.py,ledger.py,eventpage.py,topicpage.py,flushcheck.py},
-doc/chat-first/{trace.json,events.json,TOPICS.md,HISTORY.md}, .claude/skills/flush/SKILL.md;
+doc/chat-first/{trace.json,events.json,TOPICS.md,HISTORY.md}, .claude/skills/two-clocks/SKILL.md;
 the trace page https://claude.ai/code/artifact/be081e64-9efa-45de-b329-42e82f9d4857; the
 shape mockups https://claude.ai/code/artifact/fefb75e5-dade-4cf9-8892-eb7e61af6dc7.
-**Next action:** a fresh session runs `/flush` for real — assigns the unplaced statements,
+**Next action:** a fresh session runs `/two-clocks` for real — assigns the unplaced statements,
 rewrites this session's names, tightens the filter — then he reviews the page for fidelity.
 **Updated:** 2026-09-11.
 

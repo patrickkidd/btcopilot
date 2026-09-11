@@ -225,7 +225,7 @@ main{display:grid;grid-template-columns:1fr 380px;min-height:0}
 #state{overflow:auto;padding:14px 18px 80px;display:none}
 #state .k,#detail .k{font:11px var(--mono);color:var(--faint);letter-spacing:.06em;text-transform:uppercase}
 #state .k{margin:9px 0 1px}
-#state section,#state details.grp,#state details.blk{max-width:86ch}
+#state section,#state details.grp,#state details.blk{max-width:none}
 #state h2,#state summary .h2{font:600 17px var(--sans);margin:0;display:inline}
 #state section{margin:0 0 26px}
 #state .n{font:11.5px var(--mono);color:var(--faint);border:1px solid var(--line);border-radius:999px;padding:1px 7px;margin-left:7px;vertical-align:2px}
@@ -235,7 +235,7 @@ main{display:grid;grid-template-columns:1fr 380px;min-height:0}
   border-bottom:1px solid var(--line);padding:8px 3px;cursor:pointer}
 #state .row:hover{background:var(--tint)}
 #state .rtext{line-height:1.5}
-#state .rtopic{font-size:11.5px;color:var(--faint);white-space:nowrap;flex:0 0 auto;max-width:34ch;overflow:hidden;text-overflow:ellipsis}
+#state .rtopic{font-size:11.5px;color:var(--faint);white-space:normal;flex:0 0 26ch;text-align:right}
 #state details.grp,#state details.blk{border-top:1px solid var(--line);padding:11px 0}
 #state details.grp>summary,#state details.blk>summary{cursor:pointer;list-style:none}
 #state details.blk>summary{font:600 15px var(--sans)}

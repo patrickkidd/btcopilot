@@ -1,9 +1,9 @@
 ---
-name: flush
-description: Flush this session's decisions, learnings, rationale and code state into the FD-362 corpus so any topic can be picked up later by name — idempotent; run at the end of every session and whenever the owner says flush.
+name: two-clocks
+description: Flush this session's decisions, learnings, rationale and code state into the FD-362 corpus so any topic can be picked up later by name — idempotent; run at the end of every session and whenever Patrick says flush.
 ---
 
-# /flush — the idempotent end-of-session flush (FD-362)
+# /two-clocks — the idempotent end-of-session flush (FD-362)
 
 Two clocks per topic. The **state clock** is `doc/chat-first/TOPICS.md`: one block per topic,
 headed by the topic's plain name, rewritten in full. The **event clock** is
@@ -15,7 +15,7 @@ changes nothing.
 ## What makes it idempotent — follow these exactly
 
 - **A topic is identified by its name**, the heading of its block ("Ship the personal app to
-  the first beta users"). The `T-n` id beside the name is for tagging only; the owner never
+  the first beta users"). The `T-n` id beside the name is for tagging only; Patrick never
   uses it. Before opening a new block, match this session's work against every existing
   block by meaning; if it belongs there, update that block. Never rename a topic; never
   create a second block for the same thread of work.
@@ -23,7 +23,7 @@ changes nothing.
   the heading: `<!-- session: <id> -->`. If an entry with this session's marker already
   exists, rewrite that entry in place; otherwise append. Entries of earlier sessions are
   never touched.
-- **A ruling is appended once.** Before appending, search `evidence.md` for the owner's
+- **A ruling is appended once.** Before appending, search `evidence.md` for Patrick's
   words; if they are there, the ruling exists — do not add another. Never author a ruling he
   did not say.
 - **Topic blocks are replaced whole**, not appended to: rewrite the touched block from the
@@ -41,7 +41,7 @@ changes nothing.
 3. Rewrite every touched block with its six fields — **Status · Decided** (ruling ids) ·
    **Open** (numbered, each self-contained with its example inline) · **Lives in** (files,
    commits, PRs, artifact URLs, sandbox paths) · **Next action · Updated** (today). Every
-   numbered Open item starts with one of four tags — `[ruling]` needs the owner's word,
+   numbered Open item starts with one of four tags — `[ruling]` needs Patrick's word,
    `[build]` is work not yet done, `[verify]` is built but unchecked or unmeasured, `[waiting]`
    is blocked on something outside the topic — and an item that mixes two is split in two. A
    closed topic keeps its block with Status CLOSED.
@@ -50,16 +50,16 @@ changes nothing.
 5. Revise STATE.md where the product truth changed (what the app does, where the build
    stands, suites, the sandbox recipe). STATE carries the product; TOPICS carries the work.
 6. Sync the rest: `decisions/log.md` for significant decisions; `doc/PROMPT_ENGINEERING_LOG.md`
-   for prompt changes; `REVIEW_LOG.md` for what the owner found testing; `MERGE_REVIEW.md` if
+   for prompt changes; `REVIEW_LOG.md` for what Patrick found testing; `MERGE_REVIEW.md` if
    merge risks changed; the Jira epic's description only with his one-line yes.
 7. Run `python bin/flushcheck.py` from the btcopilot worktree; fix what it reports.
 8. Commit and push both worktrees, one git mutation per command, corpus commits titled
    `FD-362 flush: <date>`.
-9. Refresh the owner's two pages, same links every time (URLs at the top of TOPICS.md, passed
+9. Refresh Patrick's two pages, same links every time (URLs at the top of TOPICS.md, passed
    to the Artifact tool as `url`), in this order:
    a. `python bin/ledger.py` — rewrites doc/chat-first/events.json from every dated source
       (history, rulings, decision log, review log, commits in both worktrees, artifacts).
-   b. `python bin/trace.py` — mines the owner's own statements out of the local transcripts
+   b. `python bin/trace.py` — mines Patrick's own statements out of the local transcripts
       into doc/chat-first/trace.json, one row per thing he typed, in order. It writes nothing
       but his words.
    c. **The judgement step, and it is this session's job, not the script's.** trace.py gives
@@ -81,7 +81,7 @@ changes nothing.
 
 ## Picking a topic up in a later session
 
-The owner names topics in plain words — "let's continue designing the pro and training
+Patrick names topics in plain words — "let's continue designing the pro and training
 features in FD-362", "in FD-362 list the open issues, I forgot". The session reads STATE.md,
 then TOPICS.md, matches his words to a block by its name and contents, and continues from
 that block's Open and Next action. If two blocks could match, it asks which in one line.

@@ -89,7 +89,7 @@ fails says which of three things happened and offers to go again. Three dots sho
 coach is thinking. Every word the app says is selectable and copyable. Users see the name
 "Family Diagram" everywhere; "Personal app" is the internal name only.
 
-**The owner reviewed it on his phone over four rounds, 2026-09-08 and 09**, and his word at
+**Patrick reviewed it on his phone over four rounds, 2026-09-08 and 09**, and his word at
 the end of round 4 was that it is ready for him to start using like an app on the phone from
 the home screen. Every finding, round by round, with the commit that fixed it:
 [REVIEW_LOG.md](REVIEW_LOG.md), 66 rows. Rounds 1–4 are folded into the oracle store as
@@ -105,7 +105,7 @@ that has already cost one sandbox.
 - `serve.sh 8890 beta2.db` — the Flask API from this worktree, bound to every interface, no
   reload, so a Python change needs a restart.
 - `dev.sh` — the Vite dev server on 8891 proxying to 8890, host header forwarded so sign-in and
-  cookies mint for 8891; the service worker is off. **The owner reviews at
+  cookies mint for 8891; the service worker is off. **Patrick reviews at
   http://turin.local:8891/personal/** and every saved front-end edit shows on refresh, no
   build. This is the dev mode he asked for [Oracle: R-0227].
 - `invite.sh <email>` — a sign-in link at turin.local, not 127.0.0.1, so his phone can open it.
@@ -125,7 +125,7 @@ tests were last recorded green on a Mac. Continuous integration fails on this br
 tests and visual both red on the pull request), and neither suite has ever been watched green
 on a runner; the causes are under Open issues.
 
-**Found by the owner testing alone, 2026-09-09 evening** (rows 67–69 of the review log): a
+**Found by Patrick testing alone, 2026-09-09 evening** (rows 67–69 of the review log): a
 failed coach turn used to leave the user's words stored, so a retry stored them again — fixed,
 the words now land only with the coach's answer, and a second send while one is in flight does
 nothing. One tap posted learning data with no item kind and is not yet identified. The coach in
@@ -140,7 +140,7 @@ corrections three times.
 ## Open issues
 
 **The register of open topics is [TOPICS.md](TOPICS.md)** — one block per topic with its
-decisions, open questions, where it lives and the next action, rewritten by `/flush` at the
+decisions, open questions, where it lives and the next action, rewritten by `/two-clocks` at the
 end of every session. The entries below are the older, longer form and are kept until each is
 folded into its topic block.
 
@@ -153,7 +153,7 @@ The Personal app shares a database, a process, a deploy and one migration chain 
 desktop app and the Training app, and daily churn on the chat app can break either of them.
 [ISOLATION_OPTIONS.md](ISOLATION_OPTIONS.md) maps what this branch touches — 249 files in
 btcopilot, 29 of them shared with Pro, one with Training, one the public schema — and holds
-the full detail behind everything in this entry. The owner has parked the isolation
+the full detail behind everything in this entry. Patrick has parked the isolation
 discussion itself until the prototype is done; the three blockers below are not parked,
 because they are conditions on merging this branch at all.
 
@@ -189,7 +189,7 @@ Dockerfile has no Node step to build it, and `pyproject.toml` names package data
 Training and Pro packages but not the Personal one, so even a built bundle is left out of the
 wheel. Deploying today serves the API with no page. Three edits, one place each.
 
-**Where the beta runs is not yet ruled.** Two shapes, decision pending with the owner:
+**Where the beta runs is not yet ruled.** Two shapes, decision pending with Patrick:
 (a) a second compose stack beside production — its own Postgres, its own hostname, the
 image built by hand from this branch under a branch tag — so the three clinicians use the
 branch without it ever merging, Pro users share nothing with it, and the three pre-merge
@@ -217,7 +217,7 @@ definition of an event, a shift, a variable, a nodal event or a relationship mov
 agent prompt is the coaching voice plus tool rules, and the tool fields say one line each.
 Everything that defines the data clinically lives only in the extraction prompts (the two
 passes, the coding guide, the distinctions, the examples) and in rulings no prompt carries.
-The owner's direction [Oracle: R-0236]: put that knowledge into the loop so the coach knows
+Patrick's direction [Oracle: R-0236]: put that knowledge into the loop so the coach knows
 how and when to add, change and remove events by the clinical definitions. No data exists
 yet on how well an agent loop does this; the only numbers are for single-call extraction.
 Four ways in and the measurement to build beside them are laid out for his decision
@@ -226,7 +226,7 @@ into the tool fields, the deterministic rules into the commit function, and a
 reference-manual tool later; plus a replay harness that runs a conversation through the
 loop and scores the record with the existing F1 code.
 
-### Open with the owner, 2026-09-10 (tracked here until each is closed)
+### Open with Patrick, 2026-09-10 (tracked here until each is closed)
 
 1. **His review of the coach's new prompt section** — the 168 lines added to the private
    prompt file ("What goes in the record"), his clinical content rewritten for the loop. Diff:
@@ -246,15 +246,19 @@ loop and scores the record with the existing F1 code.
    exist after a wipe; a chip carries its own words, so it reads as plain text, and the
    re-code can re-link the ones that match on kind, date and people.
 5. **One app** [Oracle: R-0237] — coding as Pro features on desktop, training as
-   auditor/admin features, one Vite page with features by licence, role and view. He is
-   reviewing the coding-tool mockups; no build until he has.
+   auditor/admin features, one Vite page with features by licence, role and view. The coding
+   page is drawn and tabled [R-0247]. The IRR review is a three-stage ground-truth process —
+   blind coding of a conversation up to a cut Patrick selects, a blind human-only vote on a
+   phone before the meeting, a ratifying meeting — approved as drawn 2026-09-11 [R-0250,
+   R-0267, R-0268]; six decisions and the migration of last year's IRR material stay open in
+   the topic register. No build until those land.
 6. **Sub-agents are token- and model-optimised** — judgement on Opus, mechanics on Sonnet
    or Haiku, smallest file set each; a standing check on every spawn.
 
 ### The three-event floor and groupings the user makes himself
 
 A cluster needs three events, one number in the schema enforced at the record's commit for
-every writer including undo and the coach's own grouping tool. The owner's own record holds a
+every writer including undo and the coach's own grouping tool. Patrick's own record holds a
 two-event cluster he made himself, which predates the floor and is grandfathered. **His
 decision:** does the floor bind a grouping the user made? If it does, that cluster gains an
 event or is dropped. If it does not, user groupings are exempt and the write path needs a
@@ -266,7 +270,7 @@ second door.
 
 ### Rule by example on clusters
 
-The rules make the candidates and the model only names them and gives a reason. The owner
+The rules make the candidates and the model only names them and gives a reason. Patrick
 ruled that the judgment calls linking events which are not adjacent in time cannot be written
 as a rule yet and must wait for real examples he marks [Oracle: R-0193, R-0194]. Until he has
 marked some, cluster quality on anyone else's record is unmeasured. This gates inviting beta
@@ -283,7 +287,7 @@ not currently on, how a close-up triangle is drawn, and how two moments are comp
 ### The felt call on the board
 
 Whether each move reads without a legend, and whether the coach's words and the drawings tell
-the same story. Only the owner can answer it, by playing a stretch through.
+the same story. Only Patrick can answer it, by playing a stretch through.
 
 ### The event editor's missing fields
 
@@ -294,7 +298,7 @@ judgment is needed; it is unbuilt work.
 ### The desktop app and Android are unverified
 
 Nobody has opened a chat-app record in the released Pro desktop app — journey 7 is deferred
-on the auto-arrange evidence, which never met the owner's approval. Nobody has opened the page
+on the auto-arrange evidence, which never met Patrick's approval. Nobody has opened the page
 on an Android phone; there is no hardware, and the review log calls for an emulator check
 before beta users.
 
@@ -304,7 +308,7 @@ before beta users.
 Reconciled 2026-09-09 against `git log` and later rows in the same log; every row this found
 a commit or a later ruling for is now marked FIXED or RULED in place. Two rows are still
 genuinely open, both already named above: row 54 (does the three-event cluster floor bind a
-grouping the owner made himself, see "The three-event floor and groupings the user makes
+grouping Patrick made himself, see "The three-event floor and groupings the user makes
 himself") and row 66 (isolating and deploying the Personal app, see "Isolation and beta
 deployment").
 
@@ -459,7 +463,7 @@ UI_SPEC.md (doc/chat-first/) is the exhaustive canonical record of every
 approved UI element — 441 rows, each with the exact value and its owner source.
 UI_GAP.md is the live approved-vs-built table. Every front-end build works row by row
 from UI_SPEC, and is verified against it — prose in this file never outranks UI_SPEC on
-a UI question. 36 rows in UI_SPEC are marked "Needs the owner's ruling" and are open.
+a UI question. 36 rows in UI_SPEC are marked "Needs Patrick's ruling" and are open.
 - Manual editing is NOT under test. The MVP is feature-complete only with the agent loop
   and real-time tool-call edits (R-0055 restored); an include/defer feature list is
   confirmed by Patrick before build. [R-0067]
@@ -729,15 +733,15 @@ That build is done and reviewed; where it stands is at the head of this file.
 - The big model rules and drafts concepts. Sub-agents do every read, write, git command and
   build — Opus for work to a spec, Sonnet or Haiku for mechanics.
 - **An eyeball round covers at most three items**: edit, one headless screenshot at 393x852
-  for the coordinator to check, then the owner refreshes the dev server and sees it himself.
+  for the coordinator to check, then Patrick refreshes the dev server and sees it himself.
   Goldens, gates, suites and CI run once at the end of the day, never per round.
-- **The owner looks before anything is polished.** The moment a build is believed to work he
+- **Patrick looks before anything is polished.** The moment a build is believed to work he
   gets the link and a list of what he will notice. CI, coverage and re-walks come after.
 - **Every multi-agent run spawns a persistent auditor before the workers start.** Its job is
   the clock and the cost first — a ten-minute stall alarm, checking the sandbox is reachable,
   and flagging any verification beyond the one screenshot. An auditor that misses a stall is
   replaced.
-- **Nothing an agent says reaches the owner.** No interim reports, no sign-offs, no
+- **Nothing an agent says reaches Patrick.** No interim reports, no sign-offs, no
   coordination chatter — one deliverable message when the work is ready for his action.
 - One worktree per builder. Shared-index sweeps and gap-file clobbers have cost hours.
 - Rulings are written to the store as they are made, not batched to the end of a session.

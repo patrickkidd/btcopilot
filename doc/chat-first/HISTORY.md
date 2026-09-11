@@ -722,56 +722,34 @@ protocol for a publishable blind IRR study: any coder any time, results only for
 upload/speaker-mapping sheet were approved; four IRR-review concepts for five codings await
 his pick. Corrections that now bind: no coined terms; estimate the work, not the validation;
 build only on an explicit go; one place for content; mockups drawn with the app's own
-stylesheet; sub-agents token- and model-optimised. The flush became a skill (`/flush`) with a
+stylesheet; sub-agents token- and model-optimised. The flush became a skill (`/two-clocks`) with a
 topic register (TOPICS.md) as the state clock and tagged HISTORY entries as the event clock,
 checked by bin/flushcheck.py. Later the same day the owner corrected the dashboard's shape: not
 dates first, not dot grids, but his single thought-and-decision trace in the order of his own
 statements, branching by thread; he picked shape B from three drawn from this session's real
 sequence [R-0244]; a miner now pulls his 723 statements from 21 local transcripts into
 trace.json and the page draws them, zoom clamped to the whole trace.
-## 2026-09-11 (afternoon) — the coding page drawn and tabled; the IRR review became a three-stage ground-truth process [T-3, T-9]
+## 2026-09-11 (afternoon) — the coding page drawn and tabled; the IRR review became a three-stage ground-truth process with cuts [T-3, T-9]
 <!-- session: session_01D4vJ3BK6BgHxA9TzRHdw6Z -->
 
-Pro confirmed settled by R-0243. The approved coding mode had no mockup; one builder drew it
-with the app's stylesheet, then the owner tabled it [R-0247]. He turned to the IRR review:
-approaches are tried in the meetings [R-0244]; the review front end is isolated [R-0245]; two
-families, data slices and an AI-guided walk, with the AI's help ruled important and the
-candidate of an AI-proposed set that the room accepts, overrides or tweaks [R-0246]. A second
-builder drew the meeting-room ideas: four lenses, the proposed record in three groups, settle by
-kind, phone voting with a big-screen tally, what the meeting leaves behind. He then corrected
-the words — gold means ratified [R-0249] — and reshaped the process into three stages: blind
-coding, a blind vote before the meeting once a checkpoint's worth of coders are done, and a
-ratifying meeting [R-0250]; nobody is paid, so the work is a rolling window and convergence is
-required but not yet forced [R-0251]; original opinions are kept in full fidelity, leaning
-toward hiding who chose what until ratification [R-0252]. A written analysis of how other
-fields make ground truth (annotation cycles, crowd labelling, clinical adjudication, negotiated
-agreement, Delphi, software teams, model-assisted labelling) checked his stages against them and
-proposed per-item settlement with "unresolved" kept, the AI's recommendation after the vote,
-a written decision rule, checkpoints of three, and first-pass-only agreement numbers. Process
-corrections logged: sub-agents with one status line and one short final reply [R-0248]; every
-question mark answered explicitly [R-0253]. He then ruled the vote strictly human with the AI's place open [R-0254], that
-decisions live on the drawing and artifacts are UI drawings, not text [R-0255], and that each
-turn shows UI options with one-line descriptions [R-0256]; a third builder drew the three stages
-as screens — the phone ballot without names or AI, the coder's queue, the ratifying meeting, and
-the AI as an audit card after ratification or as a line under each tally — with the six open
-decisions listed once at the top. His review of that page: the one-item ballot approved, "change" and "drop"
-needed explaining; the queue not understood and replaced by a punchlist per coder before each
-meeting that he manages by picking the sessions and the date [R-0258]; the meeting screen and
-its three choices approved, every item chosen before ratify [R-0257]; no meeting time for
-choosing guideline additions — the AI writes them itself, and a result screen is needed, with
-the question open whether the app's tables replace the repository's markdown as the meeting's
-record [R-0259]; captions may explain what is not self-evident [R-0260]. The page was redrawn
-in place (version 2) with the editor "change" opens, the two punchlist phones, the ratify gate
-and the result screen. Patrick then corrected the name ("Patrick", never "the owner") [R-0261], asked where
-the data lives and ruled last year's IRR markdown must be migrated or mined [R-0262], rejected
-the assumption of discrete sessions — the unit of coding is to be brainstormed, coders have one
-task at a time and never a queue, and he needs a simple way to assign the next task [R-0263],
-and amended the question-mark rule to "covered, not recited" [R-0264]. Version 3 of the page
-redrew the punchlist as one task at a time with the unit of coding as three drawn options and
-Patrick's assigning phone; a read-only inventory of doc/irr/ (Sonnet) sized the migration. He then ruled one element is never a list [R-0265] and that what is codable between
-meetings had not been brainstormed and comes first [R-0266]; version 4 drew it as three options
-(the same conversation up to the same cut, one whole transcript, correcting the coach's coding
-dropped) with the coder's one-card screen, Patrick's table, and what the meeting reviews. He ruled cuts in — a conversation up to a cut he selects, a whole one if the cut is at
-its end, anything changed since the last cut re-coded — and asked for his own screens
-[R-0267]; version 5 drew them: swipe and "put on the table", the cut placed on the thread,
-the cut moved, and the table with date, items and who is done.
+Patrick resumed the one-app design. Pro was confirmed settled by R-0243. The approved coding
+mode had no mockup; one builder drew it with the app's stylesheet, and Patrick tabled it
+[R-0247]. He turned to the IRR review and, over seven rounds on one page, shaped the whole
+process: approaches are tried in the meetings [R-0244]; the review front end is isolated
+[R-0245]; two families, data slices and an AI-guided walk [R-0246]; "gold" means ratified
+[R-0249]; three stages — blind coding, a blind human-only vote on a phone before the meeting,
+a ratifying meeting that sees only what the vote left open and must give every item a choice
+[R-0250, R-0254, R-0257]; nobody is paid, so a rolling window with convergence required but not
+forced [R-0251]; original opinions kept in fidelity [R-0252]; each coder has one task at a
+time, never a list [R-0258, R-0265]; the AI writes the guideline changes itself and a result
+screen shows them [R-0259]; last year's IRR markdown is to be migrated [R-0262], and a read-only
+inventory sized it; the unit of coding was rejected as assumed and brainstormed [R-0263,
+R-0266], landing on a conversation up to a cut Patrick selects on the thread itself, anything
+changed since the last cut re-coded [R-0267]; and his own screens — swipe and put on the table,
+place the cut, the table with date and who is done — were drawn and the page approved
+[R-0268]. Rejected on the way: the AI's line under each tally at the meeting, a queue of
+tasks, whole transcripts as a separate kind, and correcting the coach's coding first. Process
+corrections that now bind: sub-agents with one status line and one short reply [R-0248]; every
+question mark covered, not recited [R-0253, R-0264]; artifacts are UI drawings with the
+decisions on them, never text [R-0255]; UI options with descriptions, never a research project
+[R-0256, R-0260]; he is Patrick, never "the owner" [R-0261].

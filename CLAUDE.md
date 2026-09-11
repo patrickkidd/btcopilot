@@ -90,7 +90,7 @@ runtime copy is needed, update this section.
 
 The chat-first rebuild ("a coach who never forgets your family") is documented under
 the two-clocks regime in [doc/chat-first/](doc/chat-first/):
-- **Read [doc/chat-first/STATE.md](doc/chat-first/STATE.md) FIRST in every session touching this work** — it is the current system of record — **then [doc/chat-first/TOPICS.md](doc/chat-first/TOPICS.md)**, the register of open topics by plain name; the owner names a topic in his own words and the session continues from its block. **End every session with `/flush`.**
+- **Read [doc/chat-first/STATE.md](doc/chat-first/STATE.md) FIRST in every session touching this work** — it is the current system of record — **then [doc/chat-first/TOPICS.md](doc/chat-first/TOPICS.md)**, the register of open topics by plain name; the owner names a topic in his own words and the session continues from its block. **End every session with `/two-clocks`.**
 - [doc/chat-first/HISTORY.md](doc/chat-first/HISTORY.md) — the event clock: decision/brainstorm history; append, never rewrite.
 - [doc/chat-first/NEXT_SESSIONS.md](doc/chat-first/NEXT_SESSIONS.md) — kickoff briefs for the corpus FUNCTION/STRUCTURE sessions.
 - [doc/DRAWABILITY.md](doc/DRAWABILITY.md) — ruled drawing/asking rules.

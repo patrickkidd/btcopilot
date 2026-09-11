@@ -13,54 +13,6 @@
 "source": "btcopilot git log"
 },
 {
-"id": "btcopilot@c2939f7",
-"kind": "build",
-"date": "2026-08-25",
-"session": "",
-"topics": [
-"T-1"
-],
-"title": "docs: cross-reference first-beta epic FD-341 in decision log and direction brainstorm",
-"text": "docs: cross-reference first-beta epic FD-341 in decision log and direction brainstorm",
-"source": "btcopilot git log"
-},
-{
-"id": "btcopilot@ae92bcf",
-"kind": "build",
-"date": "2026-08-25",
-"session": "",
-"topics": [
-"T-9"
-],
-"title": "decisions: MVP done condition = returning long-horizon chat with diagram improved through chat; re-sequence Fa",
-"text": "decisions: MVP done condition = returning long-horizon chat with diagram improved through chat; re-sequence Fall plan",
-"source": "btcopilot git log"
-},
-{
-"id": "btcopilot@7e3f805",
-"kind": "build",
-"date": "2026-08-25",
-"session": "",
-"topics": [
-"T-9"
-],
-"title": "docs: Fall 2026 direction — voice ruling (fine for now)",
-"text": "docs: Fall 2026 direction — voice ruling (fine for now)",
-"source": "btcopilot git log"
-},
-{
-"id": "btcopilot@fd756f0",
-"kind": "build",
-"date": "2026-08-25",
-"session": "",
-"topics": [
-"T-7"
-],
-"title": "docs: Fall 2026 direction — round 4 (agent-local arrangement, reference resolution patterns, voice)",
-"text": "docs: Fall 2026 direction — round 4 (agent-local arrangement, reference resolution patterns, voice)",
-"source": "btcopilot git log"
-},
-{
 "id": "fdserver@c4e2b95",
 "kind": "build",
 "date": "2026-08-25",
@@ -8949,6 +8901,170 @@
 "source": "fdserver doc/oracle/rulings.md"
 },
 {
+"id": "btcopilot@39aaaa1",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "FD-362 memory: the state view leads with what needs the owner's word; open items tagged ruling/build/verify/wa",
+"text": "FD-362 memory: the state view leads with what needs the owner's word; open items tagged ruling/build/verify/waiting",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@c33f79a",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-6"
+],
+"title": "FD-362 corpus: ballot-and-meeting v5 — cuts ruled, Patrick's own screens drawn; R-0267",
+"text": "FD-362 corpus: ballot-and-meeting v5 — cuts ruled, Patrick's own screens drawn; R-0267",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@fcaa657",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362 memory: the trace page zooms at one redraw per frame, labels measured once, only the visible window dra",
+"text": "FD-362 memory: the trace page zooms at one redraw per frame, labels measured once, only the visible window drawn",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@dcb3b97",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-6"
+],
+"title": "FD-362 corpus: ballot-and-meeting v4 — what is coded between meetings as options; R-0265, R-0266",
+"text": "FD-362 corpus: ballot-and-meeting v4 — what is coded between meetings as options; R-0265, R-0266",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@6983761",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362 memory: the trace opens on seven story arcs and zooms into sessions, statements, summaries",
+"text": "FD-362 memory: the trace opens on seven story arcs and zooms into sessions, statements, summaries",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@8dcaece",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-1",
+"T-3",
+"T-4",
+"T-6"
+],
+"title": "FD-362 corpus: ballot-and-meeting v3 — one task at a time, unit of coding open, IRR migration inventory; R-026",
+"text": "FD-362 corpus: ballot-and-meeting v3 — one task at a time, unit of coding open, IRR migration inventory; R-0261..R-0264",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@c1c9f1c",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-6"
+],
+"title": "FD-362 corpus: ballot-and-meeting v2 — punchlist, ratify gate, result screen; R-0257..R-0260",
+"text": "FD-362 corpus: ballot-and-meeting v2 — punchlist, ratify gate, result screen; R-0257..R-0260",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@bf066a5",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 memory: the trace of the owner's statements (shape B), miner, page, flush step",
+"text": "FD-362 memory: the trace of the owner's statements (shape B), miner, page, flush step",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@8664196",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-6"
+],
+"title": "FD-362 corpus: ballot-and-meeting screens, R-0254..R-0256, decisions on the drawing",
+"text": "FD-362 corpus: ballot-and-meeting screens, R-0254..R-0256, decisions on the drawing",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@5bac4cf",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-6"
+],
+"title": "FD-362 corpus: three-stage ground truth (R-0249..R-0253), analysis artifact, owner corrections in CLAUDE.md",
+"text": "FD-362 corpus: three-stage ground truth (R-0249..R-0253), analysis artifact, owner corrections in CLAUDE.md",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@cae90f2",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-6",
+"T-9"
+],
+"title": "FD-362 corpus: IRR review as a meeting-room brainstorm, rulings R-0244..R-0248 cited, coding page tabled",
+"text": "FD-362 corpus: IRR review as a meeting-room brainstorm, rulings R-0244..R-0248 cited, coding page tabled",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@c0483b1",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-6",
+"T-9"
+],
+"title": "FD-362 corpus: the coding page drawn for the owner's eyeball; one-app topic block updated",
+"text": "FD-362 corpus: the coding page drawn for the owner's eyeball; one-app topic block updated",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@7598428",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362 two clocks: goals and decisions first, dates second; every record placed",
+"text": "FD-362 two clocks: goals and decisions first, dates second; every record placed",
+"source": "btcopilot git log"
+},
+{
 "id": "btcopilot@de1e11e",
 "kind": "build",
 "date": "2026-09-11",
@@ -9010,6 +9126,565 @@
 "source": "btcopilot git log"
 },
 {
+"id": "fdserver@8e3b424",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0268 — ballot-and-meeting v5 approved as drawn",
+"text": "FD-362 oracle: R-0268 — ballot-and-meeting v5 approved as drawn",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@1481b15",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0267 — cuts ruled; Patrick's own screens must be drawn",
+"text": "FD-362 oracle: R-0267 — cuts ruled; Patrick's own screens must be drawn",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@2553cc4",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-9"
+],
+"title": "FD-362 oracle: R-0265 one element is never a list, R-0266 the unit of coding comes first",
+"text": "FD-362 oracle: R-0265 one element is never a list, R-0266 the unit of coding comes first",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@a2f3fda",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-4",
+"T-9"
+],
+"title": "FD-362 oracle: R-0261..R-0264 — Patrick by name, migrate old IRR results, the unit of coding is open, question",
+"text": "FD-362 oracle: R-0261..R-0264 — Patrick by name, migrate old IRR results, the unit of coding is open, question marks covered not recited",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@906cecf",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "FD-362 oracle: R-0257..R-0260 — ballot approved, punchlist, AI writes the guidelines, description length",
+"text": "FD-362 oracle: R-0257..R-0260 — ballot approved, punchlist, AI writes the guidelines, description length",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@6b8b9c3",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: project memory as one statement-by-statement trace, shape B",
+"text": "FD-362 oracle: project memory as one statement-by-statement trace, shape B",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@d31e6c4",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "FD-362 oracle: R-0256 — UI options with short descriptions, never a research project",
+"text": "FD-362 oracle: R-0256 — UI options with short descriptions, never a research project",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@377db45",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0254 strictly human vote, R-0255 decisions on the drawing",
+"text": "FD-362 oracle: R-0254 strictly human vote, R-0255 decisions on the drawing",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@270f9bf",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0253 — every question mark gets an explicit answer",
+"text": "FD-362 oracle: R-0253 — every question mark gets an explicit answer",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@4532bc7",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0249..R-0252 — gold means ratified, three-stage ground truth, rolling window, fidelity of ori",
+"text": "FD-362 oracle: R-0249..R-0252 — gold means ratified, three-stage ground truth, rolling window, fidelity of original opinions",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@ca9af83",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-5",
+"T-9"
+],
+"title": "FD-362 oracle: R-0244..R-0248 — IRR review prototyped in meetings, isolated front end, AI-guided review, codin",
+"text": "FD-362 oracle: R-0244..R-0248 — IRR review prototyped in meetings, isolated front end, AI-guided review, coding tabled, sub-agent discipline",
+"source": "fdserver git log"
+},
+{
+"id": "D:2026-09-11: Ground truth in three stages, coded up to cuts; ",
+"kind": "decision",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-2",
+"T-3",
+"T-9"
+],
+"title": "2026-09-11: Ground truth in three stages, coded up to cuts; the AI out of the vote",
+"text": "**Context:** Last year's IRR meetings never converged: a tool too complicated for therapists,\nno pre-meeting work, every dispute argued live. The new app makes every coding a diagram, so a\nreview process could be designed from scratch. Patrick ruled it over seven rounds on one drawn\npage (oracle R-0244..R-0268).\n\n**Decision:** Three stages. Each coder codes a conversation up to a cut Patrick selects on the\nthread, blind, adding to their own earlier coding of it; once three are done, each votes on a\nphone on every disputed item, takes shown without names and with no AI take or recommendation\nin the ballot; the meeting sees only what the vote left open, with names and tallies, gives\nevery item keep / change / unresolved, and ratifies with unresolved items kept as data. Coders\nhave one task a",
+"source": "decisions/log.md"
+},
+{
+"id": "H:2026-09-11 (afternoon) — the coding page drawn and tabled; t",
+"kind": "history",
+"date": "2026-09-11",
+"session": "session_01D4vJ3BK6BgHxA9TzRHdw6Z",
+"topics": [
+"T-3",
+"T-9"
+],
+"title": "2026-09-11 (afternoon) — the coding page drawn and tabled; the IRR review became a three-stage ground-truth process with cuts",
+"text": "Patrick resumed the one-app design. Pro was confirmed settled by R-0243. The approved coding\nmode had no mockup; one builder drew it with the app's stylesheet, and Patrick tabled it\n[R-0247]. He turned to the IRR review and, over seven rounds on one page, shaped the whole\nprocess: approaches are tried in the meetings [R-0244]; the review front end is isolated\n[R-0245]; two families, data slices and an AI-guided walk [R-0246]; \"gold\" means ratified\n[R-0249]; three stages — blind coding, a blind human-only vote on a phone before the meeting,\na ratifying meeting that sees only what the vote left open and must give every item a choice\n[R-0250, R-0254, R-0257]; nobody is paid, so a rolling window with convergence required but not\nforced [R-0251]; original opinions kept in fidelity [R-0252]; each coder has one task at a\ntime, never a list [R-0258, R-0265]; the AI writes the guideline changes itself and a result\nscreen shows them [R-0259]; last year's IRR markdown is to be migrated [R-0262], and a read-only\ninventory sized it; the unit of coding was rejected as assumed and brainstormed [R-0263,\nR-0266], landing on a conversation up to a cut Patrick selects on the thread itself, anything\nc",
+"source": "doc/chat-first/HISTORY.md"
+},
+{
+"id": "R-0244",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-9"
+],
+"title": "The IRR review surface is worked out in the review meetings themselves: several approaches go into the app, on",
+"text": "The IRR review surface is worked out in the review meetings themselves: several approaches go into the app, one is tried for a few minutes, the next if it does not work, and each meeting teaches the next. No pre-review by anyone; all of the review happens in the meeting, with no more time than that",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0245",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3"
+],
+"title": "The IRR review front-end code must be easy to change and isolated in the code so adding or changing it can nev",
+"text": "The IRR review front-end code must be easy to change and isolated in the code so adding or changing it can never break the core use case in the Personal and Pro features",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0246",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-5"
+],
+"title": "Two families of review approach, both to be tried: data-oriented (the codings sliced in different ways — one t",
+"text": "Two families of review approach, both to be tried: data-oriented (the codings sliced in different ways — one timeline per coder, one list of every moment) and guided (prioritised items in an opinionated order led by an AI evaluation). The AI helping the room through the review is important; what it looks like is open. Candidate to explore: the AI pre-evaluates every coding and proposes a final data set from agreements, disagreements and its own resolutions; the meeting agrees, disagrees or tweaks each item; the result becomes ground truth. He likes the one-timeline-per-coder view for showing the whole coding set and each coder's slice at once",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0247",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-5",
+"T-9"
+],
+"title": "The coding-page design is tabled except where it overlaps the IRR review; the UI stays simple and streamlined ",
+"text": "The coding-page design is tabled except where it overlaps the IRR review; the UI stays simple and streamlined under progressive enhancement while allowing experimentation, data generation and the ground-truth review",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0248",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-9"
+],
+"title": "Sub-agents do the work; their status is never echoed beyond one line; the owner gets one final-turn reply per ",
+"text": "Sub-agents do the work; their status is never echoed beyond one line; the owner gets one final-turn reply per turn, short and without redundancy — the reading goes in the artifact; model and effort are chosen per sub-agent to spend the least without losing quality",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0249",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-1",
+"T-3",
+"T-5",
+"T-9"
+],
+"title": "\"Gold\" means ratified, as a golden master in software release. What the AI proposes from the codings is not go",
+"text": "\"Gold\" means ratified, as a golden master in software release. What the AI proposes from the codings is not gold and needs another word (suggested, recommended, proposed); the ratified record is the ground truth",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0250",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-9"
+],
+"title": "Ground truth is reached in three stages: (1) each coder codes the case from scratch, blind; (2) once everyone,",
+"text": "Ground truth is reached in three stages: (1) each coder codes the case from scratch, blind; (2) once everyone, or a checkpoint's worth of coders, has finished, each votes before the meeting on every outstanding disagreement; (3) the IRR meeting reviews the vote results with a thin chance for final corrections, then ratifies. At each stage a voter must make a decision that results in a finalized record; agreement converges progressively. Supersedes the no-pre-review clause of R-0244; its prototype-in-meetings clause stands",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0251",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-2",
+"T-3",
+"T-5",
+"T-9"
+],
+"title": "Nobody is paid: no quota of chatting or coding between meetings; the work is a rolling window. Many sessions w",
+"text": "Nobody is paid: no quota of chatting or coding between meetings; the work is a rolling window. Many sessions will be left unfinished and coding keeps going on the same session even as people add more to it; but human-only ground truth is finite, so convergence is required. Whether to force convergence is undecided; the cost of not forcing it is never converging, which is what happened last year, when most of the time went to teaching a tool too complicated for non-technical therapists. Settling a whole kind of disagreement with one rule is one tool among a few to keep",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0252",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-9"
+],
+"title": "Original opinions are preserved in full fidelity without sacrificing the ability to converge. Raised, leaning ",
+"text": "Original opinions are preserved in full fidelity without sacrificing the ability to converge. Raised, leaning yes: nobody sees who chose what until the final review, so less experienced coders do not defer to the two most senior people during the vote",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0253",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-9"
+],
+"title": "Every question mark the owner types is a question he wants answered explicitly, one plain answer each, in the ",
+"text": "Every question mark the owner types is a question he wants answered explicitly, one plain answer each, in the reply",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0254",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-9"
+],
+"title": "The stage-2 vote is strictly human: the AI's takes and recommendations are not in the ballot. Where the AI's s",
+"text": "The stage-2 vote is strictly human: the AI's takes and recommendations are not in the ballot. Where the AI's suggestion belongs is open (perhaps an evaluation at the end); the AI must still be used as much as possible, because brain cycles are precious and nobody will do tedious work",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0255",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "Decisions go on the artifact, in one place, never repeated in the reply; artifacts are UI drawings in the app'",
+"text": "Decisions go on the artifact, in one place, never repeated in the reply; artifacts are UI drawings in the app's own style, not text documents; reading is kept to a minimum because it is mentally taxing",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0256",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "Each turn presents UI options with short descriptions so he knows what he is looking at, never a research proj",
+"text": "Each turn presents UI options with short descriptions so he knows what he is looking at, never a research project",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0244",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-4",
+"T-9"
+],
+"title": "Project memory: one thought-and-decision trace in the order of the owner's own statements, statement by statem",
+"text": "Project memory: one thought-and-decision trace in the order of the owner's own statements, statement by statement from the transcripts, branching where a thread of work starts and returning where he comes back; a node at rest is a name plus one line, his original words behind a click, never forced; the graphic is shape B — threads as stacked lines across time, his trace stepping between them; dates, commits and artifacts are secondary detail under the statement that caused them",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0257",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-5"
+],
+"title": "The ballot is one disputed item per screen (concept approved). At the meeting every item must have a choice — ",
+"text": "The ballot is one disputed item per screen (concept approved). At the meeting every item must have a choice — keep, change or unresolved — before the meeting is done; ratifying with unresolved items kept follows from that. The meeting screen's button set is approved: simple, straightforward, self-evident, as every level of the app must be",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0258",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-9"
+],
+"title": "Each coder has a punchlist before each meeting; whatever is on it must be finished before the next meeting; th",
+"text": "Each coder has a punchlist before each meeting; whatever is on it must be finished before the next meeting; the owner manages it, and it must be simple with little administration. What he does, what coders see and what \"closed out\" means are to be proposed",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0259",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-5",
+"T-9"
+],
+"title": "No time in a final meeting pass to choose what goes into the guidelines: the AI writes the guideline changes a",
+"text": "No time in a final meeting pass to choose what goes into the guidelines: the AI writes the guideline changes automatically and correctly from what the meeting did. A result screen is needed. Open: whether the app becomes the place the meeting's records live (the app as single source of truth and surface for everything) instead of the markdown documents in the repository, whose integrity today depends on model discipline from meeting to meeting",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0260",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-9"
+],
+"title": "Descriptions under drawn options are not forced to be extremely short: not verbose, but enough that he knows w",
+"text": "Descriptions under drawn options are not forced to be extremely short: not verbose, but enough that he knows what every non-self-evident item does",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0261",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-9"
+],
+"title": "He is Patrick in every document and reply, never \"the owner\", which is confusing and ambiguous",
+"text": "He is Patrick in every document and reply, never \"the owner\", which is confusing and ambiguous",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0262",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-4"
+],
+"title": "The meeting's records live in the database. Last year's IRR markdown must be migrated into the new format, or ",
+"text": "The meeting's records live in the database. Last year's IRR markdown must be migrated into the new format, or what is useful in it carried over, so the hard-earned results are not lost; the new format is fully traceable, which the old was not. Advice on what to do with the old lessons and artifacts is Claude's to give",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0263",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-9"
+],
+"title": "What is coded and reviewed each meeting is an open question to brainstorm, not assumed: the human chat convers",
+"text": "What is coded and reviewed each meeting is an open question to brainstorm, not assumed: the human chat conversations are few and will probably continue from meeting to meeting; discrete sessions are not the unit. Coders only ever have one task at a time, never a queue across sessions, everything extremely simple and straightforward; Patrick still needs a way to assign what each person must do before the next meeting",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0264",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-9"
+],
+"title": "Question marks need not be answered one by one; each must be covered somewhere, implicitly or explicitly, with",
+"text": "Question marks need not be answered one by one; each must be covered somewhere, implicitly or explicitly, with nothing repeated between the reply and the drawing. Amends R-0253",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0265",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-5"
+],
+"title": "Never a list for something that only ever has one element: the coder's screen is one single source of truth fo",
+"text": "Never a list for something that only ever has one element: the coder's screen is one single source of truth for what they are working on now, then what they have done in the past; never a to-do list",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0266",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-9"
+],
+"title": "What is codable between meetings has not been brainstormed and must be settled first; it determines what the o",
+"text": "What is codable between meetings has not been brainstormed and must be settled first; it determines what the one task is, how Patrick assigns it, and what the meeting reviews",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0267",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-4",
+"T-5",
+"T-9"
+],
+"title": "The unit coded between meetings is a conversation up to a cut Patrick selects; a cut may take in the whole con",
+"text": "The unit coded between meetings is a conversation up to a cut Patrick selects; a cut may take in the whole conversation, so a whole transcript is not a separate kind; anything changed since the last cut is re-coded; the coder's one-card task screen is approved. Patrick's own screens — how he selects a cut and puts it on the table — must be drawn, not only status and ratification",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0268",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-4",
+"T-5"
+],
+"title": "The ballot-and-meeting page, version 5, is approved as drawn: the coder's one task with history, Patrick's cut",
+"text": "The ballot-and-meeting page, version 5, is approved as drawn: the coder's one task with history, Patrick's cut flow (swipe and put on the table, the cut on the thread, the table screen), the phone ballot with change and drop, the ratifying meeting with its gate, and the result screen. The six decisions listed on it stay open",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
 "id": "8a56716d",
 "kind": "artifact",
 "date": "",
@@ -9036,16 +9711,33 @@
 "source": "doc/chat-first/TOPICS.md"
 },
 {
-"id": "a7637a73",
+"id": "62abcc8b",
 "kind": "artifact",
 "date": "",
 "session": "",
 "topics": [
-"T-3"
+"T-2",
+"T-3",
+"T-4"
 ],
-"title": "pping sheet is approved as drawn. **Open:** (1) the IRR review surface for five codings — four concepts await his pick (",
-"text": "https://claude.ai/code/artifact/a7637a73-8ebc-4166-8b5b-c6a3269aa973",
-"link": "https://claude.ai/code/artifact/a7637a73-8ebc-4166-8b5b-c6a3269aa973",
+"title": "s the batch harness's ground truth until re-coded — his yes or no on that plan; (8) [waiting] the coding page as drawn (",
+"text": "https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a",
+"link": "https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a",
+"source": "doc/chat-first/TOPICS.md"
+},
+{
+"id": "78a2f31e",
+"kind": "artifact",
+"date": "",
+"session": "",
+"topics": [
+"T-2",
+"T-3",
+"T-5"
+],
+"title": " becomes a legacy link, deleted after re-coding [R-0238]. **Lives in:** the ballot-and-meeting page, version 5, approved",
+"text": "https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9",
+"link": "https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9",
 "source": "doc/chat-first/TOPICS.md"
 },
 {
@@ -9054,10 +9746,9 @@
 "date": "",
 "session": "",
 "topics": [
-"T-2",
 "T-3"
 ],
-"title": " coding page becomes a legacy link, deleted after re-coding [R-0238]; (4) desktop-first, phone later. **Lives in:** plan",
+"title": "trick/.claude/jobs/16d9eee6/tmp/ballot-meeting.html, ephemeral — the artifact is the durable copy); the coding loop plan",
 "text": "https://claude.ai/code/artifact/7a033173-bff2-41ca-bbde-39385d4ab7f3",
 "link": "https://claude.ai/code/artifact/7a033173-bff2-41ca-bbde-39385d4ab7f3",
 "source": "doc/chat-first/TOPICS.md"
@@ -9071,7 +9762,7 @@
 "T-1",
 "T-3"
 ],
-"title": "ktop-first, phone later. **Lives in:** plan https://claude.ai/code/artifact/7a033173-bff2-41ca-bbde-39385d4ab7f3; layers",
+"title": "he durable copy); the coding loop plan https://claude.ai/code/artifact/7a033173-bff2-41ca-bbde-39385d4ab7f3; thin layers",
 "text": "https://claude.ai/code/artifact/daeb8856-4a5b-42d4-ab62-4c14bc3784b4",
 "link": "https://claude.ai/code/artifact/daeb8856-4a5b-42d4-ab62-4c14bc3784b4",
 "source": "doc/chat-first/TOPICS.md"
@@ -9085,9 +9776,63 @@
 "T-1",
 "T-3"
 ],
-"title": "3-bff2-41ca-bbde-39385d4ab7f3; layers https://claude.ai/code/artifact/daeb8856-4a5b-42d4-ab62-4c14bc3784b4; new surfaces",
+"title": "-bbde-39385d4ab7f3; thin layers https://claude.ai/code/artifact/daeb8856-4a5b-42d4-ab62-4c14bc3784b4; upload and compare",
 "text": "https://claude.ai/code/artifact/c5040b6a-75e3-47de-aba7-54aabbda69f4",
 "link": "https://claude.ai/code/artifact/c5040b6a-75e3-47de-aba7-54aabbda69f4",
+"source": "doc/chat-first/TOPICS.md"
+},
+{
+"id": "a7637a73",
+"kind": "artifact",
+"date": "",
+"session": "",
+"topics": [
+"T-1",
+"T-3"
+],
+"title": "4bc3784b4; upload and compare https://claude.ai/code/artifact/c5040b6a-75e3-47de-aba7-54aabbda69f4; IRR concepts round 1",
+"text": "https://claude.ai/code/artifact/a7637a73-8ebc-4166-8b5b-c6a3269aa973",
+"link": "https://claude.ai/code/artifact/a7637a73-8ebc-4166-8b5b-c6a3269aa973",
+"source": "doc/chat-first/TOPICS.md"
+},
+{
+"id": "40ba5500",
+"kind": "artifact",
+"date": "",
+"session": "",
+"topics": [
+"T-1"
+],
+"title": "aabbda69f4; IRR concepts round 1 https://claude.ai/code/artifact/a7637a73-8ebc-4166-8b5b-c6a3269aa973; review-room ideas",
+"text": "https://claude.ai/code/artifact/40ba5500-7be3-4bc2-82ed-193f8367448f",
+"link": "https://claude.ai/code/artifact/40ba5500-7be3-4bc2-82ed-193f8367448f",
+"source": "doc/chat-first/TOPICS.md"
+},
+{
+"id": "67988998",
+"kind": "artifact",
+"date": "",
+"session": "",
+"topics": [
+"T-1"
+],
+"title": "ude.ai/code/artifact/40ba5500-7be3-4bc2-82ed-193f8367448f; the three-stage analysis (text; superseded in form by R-0255)",
+"text": "https://claude.ai/code/artifact/67988998-6e49-4924-a9b3-579979901eaf",
+"link": "https://claude.ai/code/artifact/67988998-6e49-4924-a9b3-579979901eaf",
+"source": "doc/chat-first/TOPICS.md"
+},
+{
+"id": "fefb75e5",
+"kind": "artifact",
+"date": "",
+"session": "",
+"topics": [
+"T-1",
+"T-9"
+],
+"title": "s/flush/SKILL.md; the trace page https://claude.ai/code/artifact/be081e64-9efa-45de-b329-42e82f9d4857; the shape mockups",
+"text": "https://claude.ai/code/artifact/fefb75e5-dade-4cf9-8892-eb7e61af6dc7",
+"link": "https://claude.ai/code/artifact/fefb75e5-dade-4cf9-8892-eb7e61af6dc7",
 "source": "doc/chat-first/TOPICS.md"
 },
 {
