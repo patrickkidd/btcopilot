@@ -16,7 +16,7 @@ th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-t
 </style>
 
 <h1>The review's tables, laid over what exists</h1>
-<p class="lead">One column added to an existing table and five new tables, after an adversarial pass that cut the first draft by a third. <span class="re">Teal</span> = an existing table, type or enum used as it is. <span class="new">Amber</span> = new. Ids are the existing integer primary keys with created_at and updated_at from the shared model base; timestamps are DateTime; JSON columns are JSONB with the SQLite variant, the way the change log already does it. Every reference to a user is named user_id, as in every existing table; no table here holds more than one. Nothing the desktop app reads changes: no column on diagrams, the pickle path untouched.</p>
+<p class="lead">Two parts: what the branch already adds against master, then what the review design adds on top. For the review design: one column added to an existing table and five new tables, after an adversarial pass that cut the first draft by a third. <span class="re">Teal</span> = an existing table, type or enum used as it is. <span class="new">Amber</span> = new. Ids are the existing integer primary keys with created_at and updated_at from the shared model base; timestamps are DateTime; JSON columns are JSONB with the SQLite variant, the way the change log already does it. Every reference to a user is named user_id, as in every existing table; no table here holds more than one. Nothing the desktop app reads changes: no column on diagrams, the pickle path untouched.</p>
 
 <h2>The screen's words and the tables they mean</h2>
 <div class="wrap"><table>
@@ -34,6 +34,21 @@ th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-t
 <h2>The rule the design follows</h2>
 <p>Real columns only for the three things the screens ask by name: who has finished coding a cut, what is unresolved, and how the vote fell. Everything else that will change shape lives in a JSON field on a row that already exists, so a change of shape is a code change, not a migration.</p>
 
+<h2>What this branch already adds to the database, against master</h2>
+<p>All of it in the branch's single migration; none of it is in production yet. The review design above sits on top of this.</p>
+<div class="wrap"><table>
+<tr><th>Table</th><th>Added by this branch</th><th>Columns</th></tr>
+<tr><td class="m re">users</td><td class="new">three columns</td><td class="m">preferences JSON (default {}) · birthdate Date · current_diagram_id FK diagrams.id</td></tr>
+<tr><td class="m re">discussions</td><td class="new">two columns, and the review adds a third</td><td class="m">title Text · title_set_by_user Boolean · (review: kind Enum)</td></tr>
+<tr><td class="m re">statements</td><td class="new">three columns</td><td class="m">views JSON · kind Enum(turn, …) default turn · cluster_id String(64)</td></tr>
+<tr><td class="m new">changes</td><td class="new">new table</td><td class="m">diagram_id FK · statement_id FK null · turn_id String(64) · user_id FK null · session_id String(64) null · author Enum(user, coach, pro; review adds review) · deltas JSONB</td></tr>
+<tr><td class="m new">interactions</td><td class="new">new table</td><td class="m">diagram_id FK · user_id FK null · session_id String(64) null · statement_id FK null · kind Enum(look, say, chip_tap, play) · item_kind Enum(ItemKind) · item_id String(64) null</td></tr>
+<tr><td class="m new">web_sessions</td><td class="new">new table</td><td class="m">user_id · token String(64) · last_seen_at · expires_at · revoked_at null · user_agent String(255)</td></tr>
+<tr><td class="m new">passkeys</td><td class="new">new table</td><td class="m">user_id · credential_id String(255) · public_key LargeBinary · sign_count Integer · transports JSON · name String(255) · last_used_at null · revoked_at null</td></tr>
+<tr><td class="m new">invitations</td><td class="new">new table</td><td class="m">email String(255) · token String(64) · expires_at · used_at null</td></tr>
+<tr><td class="m new">login_codes</td><td class="new">new table</td><td class="m">email String(255) · code_hash String(255) · expires_at · used_at null · tries Integer</td></tr>
+<tr><td class="m re">diagrams</td><td>no schema change</td><td>the data column now holds JSON for records this app writes and pickle for the desktop app's, told apart by the first byte; the desktop app's rows are never rewritten</td></tr>
+</table></div>
 <h2>Existing tables, used as they are</h2>
 <div class="wrap"><table>
 <tr><th>Table</th><th>What it is in the review</th></tr>
