@@ -82,7 +82,7 @@ build. Every interface build ends with an approved-versus-built deviation table 
 may call it done.
 
 **Every multi-agent run spawns a persistent auditor before the workers start (2026-09-08).**
-It runs on Opus with the goal statement and the references, and stays alive until stood down.
+It runs on the cheapest model that can poll the clock and read a diff (Sonnet), with the goal statement and the references, and stays alive until stood down [R-0301, 2026-09-11]; only judgement-heavy work runs on Opus.
 Its first job is the clock and the cost: a ten-minute stall alarm, checking the sandbox is
 reachable, and flagging any verification beyond the one screenshot [Oracle: R-0228]. Its
 second is goal alignment — within the first check, read each worker's early output and
