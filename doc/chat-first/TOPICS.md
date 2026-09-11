@@ -103,15 +103,23 @@ under it, never a list [R-0258, R-0265]; Patrick's administration is the table s
 what is on the table, who is done, nudge; the AI writes the guideline changes itself from the
 settles and a result screen shows them with their provenance, nothing to choose [R-0259]; the
 page is approved as drawn [R-0268].
-**Open:** (1) [ruling] the ballot rule that settles an item before the meeting — all but one
-(4 to 1 of five; recommended), two thirds, or majority with a named tie-break; (2) [ruling]
-names hidden in the ballot, shown at the meeting, who-was-right stored per coder: yes or no;
-(3) [ruling] the ballot opens at three finished coders, or another number; (4) [ruling] the
-meeting's records live in the app's tables and the guidelines file in the repository is
-generated from them, never hand-edited: yes or no; (5) [ruling] one "flag for next meeting"
-link per AI-written rule, or no way to contest a rule until someone raises it; (6) [ruling]
-the four lenses (timeline, list, cards, chat) kept as extra views on the meeting screen, or the
-list only; (7) [ruling] migrating last year's IRR material [R-0262] — inventory 2026-09-11 of
+**Open:** (1) [ruling] on the review screens, version 6
+(https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9): the agreement timeline
+above the meeting's list — A, one dot per moment, teal agreed and amber disputed with a count,
+or B, one dot with a column of coder squares under it; (2) [ruling] where the coding
+guidelines are reached in the app — the help row on the account page as drawn, or the sessions
+sheet. Ruled today and drawn: names hidden whenever people vote and shown only at the meeting
+[R-0272]; the vote opens when Patrick opens it [R-0273]; no numerical rule settles an item, the
+meeting sees every disputed item most split first with the unanimous ones collapsed [R-0274];
+the database is the record and the coding guidelines are the one written output, readable in
+the app [R-0275]; flags, unresolved items and unfinished tasks fill the next meeting's agenda
+by themselves, with a close link each [R-0276]; one timeline shows agreement and disagreement,
+never a lane per coder [R-0277]; (3) [build] the spec sheet for beta users is a picture
+catalogue (https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba): built views
+are the app's test goldens of 2026-09-09 (some show test data), five screens have no picture
+(signing in, the person editor, the account page, the about page, when something goes wrong) —
+fresh renders from a fictional fixture record are the next fix, blocked on the fixture
+sign-in links returning 404 against a fixture sandbox; (7) [waiting] migrating last year's IRR material, the last follow-up item of this unit [R-0262, R-0273] — inventory 2026-09-11 of
 doc/irr/: 25 rules in tables keyed to meeting number with unanimity and confidence (migrate as
 rows with the meeting as provenance); six meetings' agreement/disagreement/action tables keyed
 to statement ids of last year's discussions, about 40–60 rows (migrate as settle rows once

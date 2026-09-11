@@ -762,4 +762,10 @@ behind a toggle), rendered by bin/screenspage.py, refreshed by the flush and che
 flushcheck. He then moved Done to the top bar with a confirmation sheet, kept the composer for single
 codes, showed earlier turns in full but codable only within the cut, and dropped the "coding"
 mark [R-0271]; the coding screens closed at version 3. He asked that the spec sheet lead with
-the pixel renderings of every ruled view, like a page shown to a customer.
+the pixel renderings of every ruled view, like a page shown to a customer. The review screens then closed most of their choices in one exchange: names only at the
+meeting [R-0272], Patrick opens the vote [R-0273], no numerical settling rule [R-0274], the
+database as the record with the guidelines readable in the app [R-0275], the self-filling
+agenda [R-0276], one agreement timeline [R-0277]; version 6 drew them, with the agreement
+timeline as two options and the guidelines page. The spec sheet became a picture catalogue:
+every mockup frame and the app's goldens rendered into doc/chat-first/screens by
+bin/screenshots.py, the catalogue by bin/screenspage.py, published with its images.
