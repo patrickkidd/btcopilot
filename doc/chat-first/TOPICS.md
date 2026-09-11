@@ -148,17 +148,18 @@ transcript up to the cut with the last ratified cut as a hairline, earlier turns
 but not codable; the coder's own words in the thread with the scribe's edit line under them;
 Done in the top bar with a confirmation sheet; the next task card [R-0270, R-0271]; (9) [build] the two-sided
 compare view already drawn folds into the ballot or the meeting screen; (10) [build] Pro
-"notes" has no mockup; (11) [ruling] the tables, after an adversarial pass, await his check before the build
-(doc/chat-first/REVIEW_TABLES.html): one column on discussions (kind: chat, recording, note),
-five new tables prefixed review_ (cuts, codings, items, votes, rules), cuts as two-cursor
-windows, user_id everywhere, the branch's change and interaction tables renamed
-diagram_changes and diagram_interactions [R-0296, R-0297, R-0299], a coding is a diagram row,
-a settle is a diagram_changes row on the case's diagram, JSON for what changes shape, the agenda derived, nothing
-the desktop app reads touched [R-0294]; then the build in the order he saw: tables and
-endpoints, the coding screens, his screens, the vote, the meeting and result, Pro, the small
-items, each step eyeballed on the sandbox; the migration of last year's rules runs once on
-production after the merge, rehearsed on the July dump;
-(12) [build] the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238].
+"notes" has no mockup; (11) [build] step one landed 2026-09-11 (commits c391068, 5a8cb4d, 03f20c2): the tables
+renamed to diagram_changes and diagram_interactions inside the branch's single migration,
+discussions.kind, the review author, the five review_ tables as a new package btcopilot/review
+with one adapter module (isolation asserted by a test), table-shaped endpoints under /review,
+the coach's replay as a background task, the export on ratification, 26 tests, the review and
+personal suites at 430 passed; deviations from the brief the builder chose: creating a cut is
+admin-only; a coder's record is frozen while every coding on it is done and the next cut thaws
+it; a role refusal is a 302 to login by the app's convention; the migration test runs this
+revision's operations against SQLite because the older revisions assume Postgres; the replay
+task is not exercised against a live coach. Next steps in order: the coding screens, Patrick's
+screens, the vote, the meeting and result, Pro, the small items, each eyeballed on the sandbox
+[R-0300]; (12) [build] the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238].
 **Lives in:** the spec sheet for beta users, every screen's behaviour in plain words, kept by the
 flush: https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba (source
 doc/chat-first/SCREENS.md, renderer bin/screenspage.py); the review screens, version 5, approved

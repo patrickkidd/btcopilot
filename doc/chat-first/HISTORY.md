@@ -796,4 +796,7 @@ tables and columns are never added freely, for four reasons: sensitivity, Pro un
 migrations for fast-changing data, agility [R-0294]. An inventory of every model and the
 shared schema was taken, a draft laid over it, and an adversarial pass cut it by a third: one
 column on discussions, five new tables, JSON for what changes shape; the coach codes variables
-in session [R-0293]; the migration runs once on production after the merge.
+in session [R-0293]; the migration runs once on production after the merge. He gave the go on the database scope and the build order [R-0300], asked that sub-agents
+be cost- and wall-clock-optimised [R-0301], and step one was built by one Opus builder under
+a Sonnet auditor: the renames, discussions.kind, the five review_ tables in a new isolated
+package, endpoints, replay task, export and 26 tests, pushed green.
