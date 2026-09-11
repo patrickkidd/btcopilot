@@ -2,12 +2,14 @@
 
 What this is: a read-only comparison of branch `FD-362` against `master` in the btcopilot
 repo, written for deploying onto the existing production server that already serves the Pro
-desktop app, the training app, and the old Personal mobile app.
+desktop app and the training app. Compatibility with previously released Personal app
+versions is out of scope by the owner's direction and is not assessed.
 
 Evidence base: `git diff master...HEAD`, the alembic revision the branch adds, the route
-tables of both branches, and `grep` over the read-only Pro/Personal client at
-`~/theapp/familydiagram`. The Pro test suite and the diagram-encoding tests were run from
-this worktree and pass (126 passed, 11 skipped). Nothing was changed or committed.
+tables of both branches, and `grep` over the read-only desktop client at
+`~/theapp/familydiagram`. Tests were run from this worktree and pass: the Pro suite plus the
+diagram-encoding tests (126 passed, 11 skipped) and the Personal and schema suites (506
+passed, 23 skipped). Nothing was changed or committed.
 
 What could not be checked: the production database has no local copy running (Docker is
 not up), so no real diagram row was put through the new encoder. The production container
@@ -171,47 +173,20 @@ Route table compared against master: **identical**. The only change to
 
 ### Personal — `/personal/*`
 
-Every route the old Personal mobile app calls is gone. The files were moved to
+The whole `/personal` surface is replaced. The old route files moved to
 `btcopilot/personal/archive/` and that blueprint is no longer registered
-(`btcopilot/personal/routes/__init__.py:97`, which registers only the new one). The archive
-README states this is deliberate, citing the 2026-09-08 ruling that the Qt Personal app is
-superseded.
+(`btcopilot/personal/routes/__init__.py:97` registers only the new one). Compatibility with
+released Personal app versions is out of scope by the owner's direction, so the removals are
+not treated as breakage here.
 
-| Route on master | Called by | On the branch |
-|---|---|---|
-| `GET /personal/assemblyai-key` | `personalappcontroller.py:740` | gone, 404 |
-| `POST`, `GET /personal/discussions/` | `personalappcontroller.py:1113` | gone, 404 |
-| `GET /personal/discussions/<id>` | via the above | gone, 404 |
-| `POST /personal/discussions/<id>/statements` | `personalappcontroller.py:1175` | gone, 404 |
-| `POST /personal/discussions/<id>/extract` | `personalappcontroller.py:1986` | gone, 404 |
-| `POST /personal/discussions/<id>/commit-pdp` | `personalappcontroller.py:1277` | gone, 404 |
-| `POST /personal/discussions/<id>/deep-reextract` | `personalappcontroller.py:2032` | gone, 404 |
-| `GET /personal/discussions/<id>/deep-reextract-status/<task>` | `personalappcontroller.py:2096` | gone, 404 |
-| `POST /personal/discussions/<id>/deep-reextract/<task>/cancel` | `personalappcontroller.py:2130` | gone, 404 |
-| `POST`, `GET /personal/diagrams/` | `personalappcontroller.py:910`, `:1052` | replaced by `GET /personal/diagrams`, different shape and auth |
-| `GET`, `PUT /personal/diagrams/<id>` | `personalappcontroller.py:979`, `server_types.py:223` | gone, 404 |
-| `GET /personal/diagrams/<id>/discussions` | not found in the client | gone |
-| `POST /personal/diagrams/<id>/import-text` | `personalappcontroller.py:1928` | gone, 404 |
-| `POST /personal/diagrams/<id>/clusters` | `clustermodel.py:244` | gone, 404 |
+Authentication under this prefix changes: it used to be by signed header and is now by
+cookie session (`btcopilot/personal/routes/__init__.py:28`), with CSRF protection on every
+write method.
 
-The client reaches these with `from_root=True`, so the paths are `/personal/...` with no
-`/v1` prefix (`familydiagram/pkdiagram/util.py:144`). They are real routes on master and
-absent on the branch.
-
-Even if a path had survived, the authentication changed underneath it: `/personal/*` used
-to authenticate by signed header and now authenticates by cookie session
-(`btcopilot/personal/routes/__init__.py:28`), and every write method is now CSRF-protected,
-which the Qt client sends no token for.
-
-**A copy of the Personal mobile app still installed on a phone stops working at the next
-launch.** Whether that matters is a question about who is running it, not a question about
-the code.
-
-New routes added, all under `/personal/`, all cookie-authenticated and CSRF-protected on
-writes: the chat page and its assets (`/`, `/sw.js`, `/apple-touch-icon.png`,
-`/manifest.webmanifest`, `/timeline`), sessions and chat (`/chat`, `/sessions`,
-`/sessions/<id>` with GET/PATCH/DELETE, `/sessions/<id>/statements`), record editing
-(`/people`, `/people/<id>`, `/events`, `/events/<id>`), `/play`, `/interactions`,
+New routes, all under `/personal/`: the chat page and its assets (`/`, `/sw.js`,
+`/apple-touch-icon.png`, `/manifest.webmanifest`, `/timeline`), sessions and chat (`/chat`,
+`/sessions`, `/sessions/<id>` with GET/PATCH/DELETE, `/sessions/<id>/statements`), record
+editing (`/people`, `/people/<id>`, `/events`, `/events/<id>`), `/play`, `/interactions`,
 `/preferences`, `/account`, `/diagrams`, `/diagrams/<id>/select`.
 
 Sign-in routes added under the same prefix: `/personal/login`, `/login/verify`, `/logout`,
@@ -223,7 +198,114 @@ database it is pointed at, so it must never be run against production.
 
 ---
 
-## 4. Shared code the Pro app imports
+## 4. Existing rows in the new app
+
+The question here is different from the migration question: not "does the database accept
+the new schema" but "does a row written on master behave correctly when the chat app opens
+it". The short answer is that nothing crashes, one thing is wrong on screen, one thing is
+silently unreachable, and one thing lets a reader write where they should not.
+
+### Which old rows the new app can even reach
+
+The switcher lists every diagram the user owns plus every diagram granted to them
+(`btcopilot/personal/routes/diagrams.py:19-29`). For a Pro clinician signing into the chat
+app, that is every client diagram they have. Selecting one puts the app on it
+(`/diagrams/<id>/select`).
+
+Sessions are filtered to the signed-in user and the selected diagram
+(`btcopilot/personal/routes/__init__.py:63-70`). So an old Personal-app discussion appears
+as soon as the app is on its diagram, and a training-app discussion appears only if the same
+user owns the diagram and selects it.
+
+### Diagrams written by the Pro app or on master
+
+| What old rows carry | What the new code expects | Result |
+|---|---|---|
+| pickle blob | JSON or pickle | fine; `diagramjson.loads` sniffs the first byte |
+| no `clusters` key | `data.clusters` | empty, and the picture draws no boxes — see below |
+| no `clusterCacheKey` | a cache key | absent, so the next sync recomputes |
+| a person with id 2 named "Assistant" | id 2 reserved, never a person | the Assistant shows up as a family member — see below |
+| `pdp` with uncommitted items | nothing reads it | unreachable — see below |
+| `people`, `events`, `pair_bonds` | same field names | fine |
+
+**Clusters.** Master never stored clusters in the diagram row: `set_diagram_data` on master
+writes only `pdp`, `lastItemId`, `people`, `events` and `pair_bonds`. Clusters were computed
+on demand and returned by an endpoint. The new picture draws only stored clusters
+(`btcopilot/personal/timeline.py:250`), so **every diagram carried over opens as a flat line
+of loose dots with no boxes.** The lazy fix exists but does not fire on its own: cluster
+detection runs from `CoachTurn._regroup` at `btcopilot/personal/coachturn.py:258`, which
+returns early unless that same turn wrote an event. A reader can therefore talk for several
+turns about an old family and never see the picture group anything. Either call
+`clusters.sync` once per diagram as a one-shot step, or drop the early return so the first
+turn on a diagram with no stored cache key syncs.
+
+**The Assistant person.** Master's `ensure_chat_defaults` always created a person with id 2
+named "Assistant" (`schema.py` on master). The branch reserves id 2 and never creates one,
+but it never removes the existing one either. Nothing filters it: the people list handed to
+the page is every person on the diagram (`btcopilot/personal/timeline.py:590-605`). So any
+diagram that ever had a Personal-app or training-app chat on it **shows "Assistant" as a
+member of the family.** It has no events, so it draws no lane, but it is in the people list
+and in the person picker. One-shot fix: delete the person with id 2 from every diagram whose
+people list has one, where no event links to it.
+
+**Pending extractions.** Uncommitted PDP items live on old rows under `data["pdp"]` with
+negative ids. The new app reads only the committed collections, and the endpoint that used
+to commit them is archived. The remaining callers of `commit_pdp_items` are the background
+re-extraction task and a training connectivity check, neither of which a chat reader can
+trigger. **Anything extracted but never committed on an old diagram is invisible and
+uncommittable from the new app.** Decide whether to commit it in a one-shot step or accept
+losing it.
+
+### Discussions and statements
+
+| Origin | `chat_user_speaker_id` / `chat_ai_speaker_id` | `title` | Behaviour in the new app |
+|---|---|---|---|
+| old Personal app | both set | null | loads correctly as a session |
+| training app import | both null, many Subject speakers | null | **every existing message renders as the user talking** |
+
+`title` being null is handled: the coach names the session on the first turn, because
+`CoachTurn` calls `update_title()` whenever the title is null
+(`btcopilot/personal/coachturn.py:247`). `title_set_by_user` gets the `false` server default.
+`kind` gets the `turn` server default. `views` and `cluster_id` are null and both readers
+tolerate null. None of those need a migration step.
+
+The speaker problem does. Both the page and the model prompt decide who said what by
+comparing `statement.speaker_id` to `discussion.chat_ai_speaker_id`
+(`btcopilot/personal/routes/sessions.py:41`, `btcopilot/personal/coachturn.py:302`). A
+training discussion has that column null and its statements point at real speakers, so every
+line reads as the user. Worse, `sync_chat_speakers`
+(`btcopilot/personal/discussions.py:56`) takes the first Subject-type speaker it finds, in no
+defined order, and overwrites its `person_id` and its `name` — **it renames a speaker inside
+a clinical transcript.** New coach statements on such a discussion are written with a null
+speaker (`btcopilot/personal/coachturn.py:237`), which then compares equal to the null
+`chat_ai_speaker_id` and happens to render as the coach.
+
+The smallest fix is to refuse rather than repair: treat a discussion with no
+`chat_ai_speaker_id` as not a chat session, and leave it out of the session list. If those
+transcripts are meant to be openable as sessions, they need a real one-shot step that adds a
+Coach speaker, stamps the two chat speaker columns, and maps the existing speakers, which is
+a bigger piece of work than this deploy.
+
+### Two smaller things on the same path
+
+Editing an event through the new editor writes with
+`update_with_version_check(diagram_data=...)`
+(`btcopilot/personal/routes/events.py:114`), and that path does not write `clusters` or
+`clusterCacheKey` (`btcopilot/pro/models/diagram.py:225-231`). Existing stored clusters are
+preserved, because the other keys of the blob are left alone, but they are not updated, so
+the boxes on the picture go stale against the edited events until a coach turn re-syncs them.
+
+And the record-writing routes check nothing about write access. `diagram()` returns whichever
+diagram the user selected, and `readable()` includes diagrams granted read-only
+(`btcopilot/personal/routes/diagrams.py:16`). `record.apply` and the event and person routes
+never check the grant (`btcopilot/personal/routes/people.py:46-56`,
+`btcopilot/personal/routes/events.py:102-119`). **An existing read-only access grant becomes
+write access through the chat app.** That is an authorization hole reached entirely through
+rows that already exist in production.
+
+---
+
+## 5. Shared code the Pro app imports
 
 The desktop app imports from `btcopilot` (the package constants and `sign` /
 `httpAuthHeader`), from `btcopilot.schema`, and lazily from `btcopilot.arrange.layout`.
@@ -238,12 +320,9 @@ explicitly for that reason, with a comment saying so at `btcopilot/schema.py:396
 Two shape changes, neither of which reaches the desktop app:
 
 - `Cluster` loses the fields `pattern` and `dominantVariable` and gains `name`, `source`,
-  `reason`. Two QML files in the old Personal app read `pattern` and `dominantVariable`
-  (`familydiagram/pkdiagram/resources/qml/Personal/VignetteCard.qml:111,157`), both behind
-  an `undefined` check, so they render as absent rather than error. The Pro app does not
-  read either field. Old stored clusters that still carry the two dropped fields are safe:
-  `from_dict` iterates the dataclass fields and ignores unknown keys
-  (`btcopilot/schema.py:108`).
+  `reason`. The Pro app reads none of these. Old stored clusters that still carry the two
+  dropped fields are safe: `from_dict` iterates the dataclass fields and ignores unknown
+  keys (`btcopilot/schema.py:108`).
 - `DiagramData.ensure_chat_defaults()` returns a 2-tuple instead of a 3-tuple. Every caller
   is server-side; the three training-app callers ignore the return value entirely
   (`training/routes/admin.py:448`, `training/routes/discussions.py:73`,
@@ -266,7 +345,7 @@ must be settled before merge.
 
 ---
 
-## 5. Auth
+## 6. Auth
 
 **Pro, signed-header path: unchanged in effect.** `_authenticate_pro_personal_apps` was
 renamed to `_authenticate_pro_app` and now matches only paths starting with `/v1/`
@@ -304,7 +383,7 @@ it is worth stating plainly.
 
 ---
 
-## 6. Verdict
+## 7. Verdict
 
 | What breaks | For whom | Severity | Smallest fix, or the proof it is safe |
 |---|---|---|---|
@@ -314,7 +393,12 @@ it is worth stating plainly.
 | Personal-app code runs inside the Pro save transaction; if it raises, the save is rolled back | Pro clinicians | high | Move the change-log insert after the commit, or wrap it so its failure cannot undo the save |
 | Existing Pro rows are rewritten from pickle to JSON on first save, with no migration and no backup | Pro clinicians | high | Take a database backup, then run `python -m btcopilot.diagrams.migrate_json` before opening the app to users, and read its failed count |
 | Every Pro save writes clinical before/after values into a new `changes` table, unbounded | storage and confidentiality | medium | A decision, not a fix: keep it, limit it to the chat app, or set a retention rule |
-| The old Personal mobile app's endpoints are all gone | anyone still running that app | medium, deliberate | Confirm nobody is running it. The code is kept at `btcopilot/personal/archive/` if it must come back |
+| An existing read-only access grant becomes write access through the chat app | anyone sharing a diagram | high | Check the grant in the record-writing routes before applying a change |
+| An old training discussion renders as if the user said everything, and the first turn renames a transcript speaker | anyone who selects a training diagram | high | Leave discussions with no chat coach speaker out of the session list |
+| Diagrams carried over have no stored clusters, and detection only runs on a turn that writes an event | every existing diagram | medium | Sync clusters once per diagram, or drop the early return in the coach turn's regroup step |
+| Old diagrams show an "Assistant" person as a family member | every diagram that ever had a chat on it | medium | One-shot delete of the person with id 2 where nothing links to it |
+| Extracted-but-uncommitted items on old diagrams are invisible and uncommittable | old Personal diagrams | medium | Commit them in a one-shot step, or accept losing them |
+| Event edits do not refresh stored clusters, so the boxes go stale | chat app | low | Re-sync clusters on the event write path |
 | CSRF tokens never expire, server-wide | training app | low | Set the limit on the chat blueprint alone rather than in the app config |
 | Chat sign-in creates a subscriber account in the shared users table | shared user base | low, deliberate | Confirm the intent |
 | Every Pro diagram read decodes JSON and re-pickles it | Pro read latency, one worker with two threads | low | Measure once on the largest diagram after deploy |
@@ -333,15 +417,26 @@ it is worth stating plainly.
 4. Keep the change-log insert from being able to roll back a Pro save.
 5. Back up the database and run the one-off pickle-to-JSON conversion before users reach it,
    and read the failed count.
+6. Check write access in the record-writing routes, so a read-only grant cannot be written
+   through.
+7. Keep discussions with no chat coach speaker out of the session list, so a training
+   transcript cannot be opened as a session and have a speaker renamed.
 
 ### Should fix
 
-6. Decide what the `changes` table keeps from Pro saves, and for how long.
-7. Narrow the never-expiring CSRF token to the chat app.
-8. Confirm the old Personal mobile app has no users left.
+8. Make clusters appear on a diagram carried over, either by a one-shot sync or by letting
+   the first coach turn sync when there is no stored cache key.
+9. Delete the leftover "Assistant" person from diagrams that have one.
+10. Decide what happens to extracted-but-uncommitted items on old diagrams.
+11. Decide what the `changes` table keeps from Pro saves, and for how long.
+12. Re-sync clusters when an event is edited, so the boxes do not go stale.
+13. Narrow the never-expiring CSRF token to the chat app.
 
 ### Safe as is
 
 The alembic revision. The Pro and training route tables. The schema symbols the desktop
 imports. The pickle protocol on the wire. The one-off conversion script's own failure
-handling. The training app's session authentication.
+handling. The training app's session authentication. Old diagram blobs still reading as
+pickle. Old discussion titles, and the `kind`, `views` and `cluster_id` columns on old
+statements. Old Personal-app discussions, which carry both chat speaker columns and load as
+sessions unchanged.
