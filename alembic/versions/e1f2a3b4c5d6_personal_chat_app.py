@@ -16,12 +16,22 @@ down_revision = "c8f1a2d3e4b5"
 branch_labels = None
 depends_on = None
 
-AUTHOR = sa.Enum("user", "coach", "pro", name="author")
+AUTHOR = sa.Enum("user", "coach", "pro", "review", name="author")
 INTERACTION_KIND = sa.Enum("look", "say", "chip_tap", "play", name="interactionkind")
 ITEM_KIND = sa.Enum(
     "person", "event", "pair_bond", "emotion", "cluster", "diagram", name="itemkind"
 )
 KIND = sa.Enum("turn", "play", name="statementkind")
+DISCUSSION_KIND = sa.Enum("chat", "recording", "note", name="discussionkind")
+REVIEW_STATUS = sa.Enum(
+    "agreed", "disputed", "settled", "unresolved", name="reviewstatus"
+)
+VOTE_CHOICE = sa.Enum("take", "change", "drop", name="votechoice")
+RULE_SOURCE = sa.Enum("ai", "migration", "human", name="rulesource")
+
+
+def _json():
+    return JSONB().with_variant(sa.JSON(), "sqlite")
 
 
 def upgrade():
@@ -33,7 +43,7 @@ def upgrade():
     op.add_column("discussions", sa.Column("title", sa.Text(), nullable=True))
 
     op.create_table(
-        "changes",
+        "diagram_changes",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
@@ -54,7 +64,7 @@ def upgrade():
         sa.Column("deltas", JSONB().with_variant(sa.JSON(), "sqlite"), nullable=False),
     )
     op.create_table(
-        "interactions",
+        "diagram_interactions",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
@@ -170,8 +180,138 @@ def upgrade():
     )
     op.add_column("statements", sa.Column("cluster_id", sa.String(64), nullable=True))
 
+    DISCUSSION_KIND.create(op.get_bind(), checkfirst=True)
+    op.add_column(
+        "discussions",
+        sa.Column("kind", DISCUSSION_KIND, nullable=False, server_default="chat"),
+    )
+
+    op.create_table(
+        "review_cuts",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=True),
+        sa.Column(
+            "discussion_id",
+            sa.Integer(),
+            sa.ForeignKey("discussions.id"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column(
+            "start_statement_id",
+            sa.Integer(),
+            sa.ForeignKey("statements.id"),
+            nullable=False,
+        ),
+        sa.Column(
+            "end_statement_id",
+            sa.Integer(),
+            sa.ForeignKey("statements.id"),
+            nullable=False,
+        ),
+        sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("meeting_date", sa.Date(), nullable=True),
+        sa.Column("vote_opened_at", sa.DateTime(), nullable=True),
+        sa.Column("ratified_at", sa.DateTime(), nullable=True),
+        sa.Column("agreement", _json(), nullable=True),
+    )
+
+    op.create_table(
+        "review_codings",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=True),
+        sa.Column(
+            "cut_id",
+            sa.Integer(),
+            sa.ForeignKey("review_cuts.id"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=False),
+        sa.Column(
+            "diagram_id", sa.Integer(), sa.ForeignKey("diagrams.id"), nullable=False
+        ),
+        sa.Column("agent", _json(), nullable=True),
+        sa.Column("done_at", sa.DateTime(), nullable=True),
+        sa.UniqueConstraint("cut_id", "user_id", name="uq_review_codings_cut_user"),
+    )
+
+    op.create_table(
+        "review_items",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=True),
+        sa.Column(
+            "cut_id",
+            sa.Integer(),
+            sa.ForeignKey("review_cuts.id"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column("item_kind", ITEM_KIND, nullable=False),
+        sa.Column("item_id", sa.String(64), nullable=True),
+        sa.Column("takes", _json(), nullable=False),
+        sa.Column("status", REVIEW_STATUS, nullable=False),
+        sa.Column(
+            "settle_change_id",
+            sa.Integer(),
+            sa.ForeignKey("diagram_changes.id"),
+            nullable=True,
+        ),
+        sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=True),
+    )
+
+    op.create_table(
+        "review_votes",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=True),
+        sa.Column(
+            "review_item_id",
+            sa.Integer(),
+            sa.ForeignKey("review_items.id"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("choice", VOTE_CHOICE, nullable=False),
+        sa.Column("value", _json(), nullable=True),
+        sa.Column("reason", sa.Text(), nullable=True),
+        sa.UniqueConstraint(
+            "review_item_id", "user_id", name="uq_review_votes_item_user"
+        ),
+    )
+
+    op.create_table(
+        "review_rules",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=True),
+        sa.Column("text", sa.Text(), nullable=False),
+        sa.Column("source", _json(), nullable=False),
+        sa.Column("drafted_by", RULE_SOURCE, nullable=False),
+        sa.Column("flags", _json(), nullable=False),
+        sa.Column("ratified_at", sa.DateTime(), nullable=True),
+        sa.Column("retired_at", sa.DateTime(), nullable=True),
+    )
+
 
 def downgrade():
+    op.drop_table("review_rules")
+    op.drop_table("review_votes")
+    op.drop_table("review_items")
+    op.drop_table("review_codings")
+    op.drop_table("review_cuts")
+    bind = op.get_bind()
+    RULE_SOURCE.drop(bind, checkfirst=True)
+    VOTE_CHOICE.drop(bind, checkfirst=True)
+    REVIEW_STATUS.drop(bind, checkfirst=True)
+
+    op.drop_column("discussions", "kind")
+    DISCUSSION_KIND.drop(bind, checkfirst=True)
+
     op.drop_column("statements", "cluster_id")
     op.drop_column("statements", "kind")
     KIND.drop(op.get_bind(), checkfirst=True)
@@ -189,8 +329,8 @@ def downgrade():
     op.drop_table("passkeys")
     op.drop_table("web_sessions")
 
-    op.drop_table("interactions")
-    op.drop_table("changes")
+    op.drop_table("diagram_interactions")
+    op.drop_table("diagram_changes")
     bind = op.get_bind()
     ITEM_KIND.drop(bind, checkfirst=True)
     INTERACTION_KIND.drop(bind, checkfirst=True)

@@ -12,6 +12,7 @@ class Author(enum.StrEnum):
     User = "user"
     Coach = "coach"
     Pro = "pro"
+    Review = "review"
 
 
 class Change(db.Model, ModelMixin):
@@ -20,7 +21,7 @@ class Change(db.Model, ModelMixin):
     A turn groups the commands of one macro: a coach reply, or a Pro save.
     """
 
-    __tablename__ = "changes"
+    __tablename__ = "diagram_changes"
 
     diagram_id = Column(Integer, ForeignKey("diagrams.id"), nullable=False, index=True)
     statement_id = Column(Integer, ForeignKey("statements.id"), nullable=True)

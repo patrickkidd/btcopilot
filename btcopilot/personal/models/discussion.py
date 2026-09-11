@@ -9,6 +9,14 @@ from btcopilot.modelmixin import ModelMixin
 from btcopilot.personal.prompts import DISCUSSION_TITLE_PROMPT
 
 
+class DiscussionKind(enum.StrEnum):
+    """A note is a session of its own and is coded like a chat (R-0281)."""
+
+    Chat = "chat"
+    Recording = "recording"
+    Note = "note"
+
+
 class DiscussionStatus(enum.StrEnum):
     Pending = "pending"
     Generating = "generating"
@@ -30,6 +38,12 @@ class Discussion(db.Model, ModelMixin):
         default=False,
         nullable=False,
         comment="Whether the title was given by hand rather than written by the coach",
+    )
+    kind = Column(
+        Enum(DiscussionKind, values_callable=lambda e: [x.value for x in e]),
+        default=DiscussionKind.Chat,
+        nullable=False,
+        server_default=DiscussionKind.Chat.value,
     )
     summary = Column(Text)
     discussion_date = Column(

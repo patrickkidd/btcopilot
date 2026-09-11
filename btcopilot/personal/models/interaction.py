@@ -18,7 +18,7 @@ class InteractionKind(enum.StrEnum):
 class Interaction(db.Model, ModelMixin):
     """Who looked at, spoke about, tapped or played an item of the record."""
 
-    __tablename__ = "interactions"
+    __tablename__ = "diagram_interactions"
 
     diagram_id = Column(Integer, ForeignKey("diagrams.id"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
