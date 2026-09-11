@@ -29,6 +29,67 @@ COLORS = {
 }
 FOLLOW_KINDS = ("ruling", "defect", "decision", "build", "artifact", "review", "history")
 DATED = re.compile(r"^\d{4}-\d{2}-\d{2}[^—]*—\s*")
+TAGS = ("ruling", "build", "verify", "waiting")
+RULING_ID = re.compile(r"\[(?:Oracle:\s*)?(R-\d+(?:\s*,\s*R-\d+)*)[^\]]*\]")
+TOPIC_ID = re.compile(r"\[T-\d+(?:\s*,\s*T-\d+)*\]")
+URL = re.compile(r"\(?\bhttps?://[^\s)]+\)?")
+
+
+def sentence(text: str) -> str:
+    """One open item or one settled bullet, as a plain sentence with no ids and no links."""
+    t = URL.sub("", TOPIC_ID.sub("", RULING_ID.sub("", text)))
+    t = re.sub(r"\(\s*[,;:]?\s*\)", "", t)
+    t = " ".join(t.split()).strip(" ;,·—-")
+    if t and t[0].islower():
+        t = t[0].upper() + t[1:]
+    return t + "." if t and t[-1] not in ".?!" else t
+
+
+def tagged_items(field: str) -> list[tuple[str, str]]:
+    """The numbered items of an Open field, each as (tag, its words)."""
+    field = " ".join((field or "").split())
+    if not field or field.rstrip(".").lower() == "none":
+        return []
+    parts = re.split(r"\(\d+\)\s*", field)
+    out = []
+    for part in parts[1:] or [field]:
+        m = re.match(rf"\[({'|'.join(TAGS)})\]\s*(.+)", part.strip())
+        if m:
+            out.append((m.group(1), m.group(2)))
+    return out
+
+
+def open_rows(topics: list[dict]) -> list[dict]:
+    rows = []
+    for t in topics:
+        if t["id"] == "untagged":
+            continue
+        for tag, words in tagged_items(t["Open"]):
+            rows.append({"tag": tag, "text": sentence(words), "tid": t["id"], "topic": t["name"]})
+    return rows
+
+
+def settled(topics: list[dict]) -> list[dict]:
+    """Per topic, what is decided: one bullet each, its ruling ids kept for the end of the line."""
+    out = []
+    for t in topics:
+        if t["id"] == "untagged" or not t["Decided"]:
+            continue
+        bullets = []
+        for part in re.split(r";\s+", t["Decided"]):
+            if not part.strip():
+                continue
+            ids = [i for group in RULING_ID.findall(part) for i in re.split(r"\s*,\s*", group)]
+            line = sentence(part)
+            if line:
+                bullets.append({"text": line, "rid": ", ".join(ids)})
+        if bullets:
+            out.append(
+                {"id": t["id"], "name": t["name"],
+                 "closed": "CLOSED" in t["Status"], "bullets": bullets}
+            )
+    out.sort(key=lambda s: not s["closed"])
+    return out
 
 
 def threads(statements: list[dict], topics: list[dict]) -> list[dict]:
@@ -161,11 +222,29 @@ input[type=search]{font:13px var(--sans);padding:5px 11px;border:1px solid var(-
 #caption{padding:7px 16px;border-bottom:1px solid var(--line);color:var(--faint);font-size:12.5px}
 main{display:grid;grid-template-columns:1fr 380px;min-height:0}
 #stage{overflow:hidden;position:relative;min-width:0}
-#state{overflow:auto;padding:14px 18px 60px;display:none}
-#state .blk{border-top:1px solid var(--line);padding:12px 0 6px;max-width:82ch}
-#state h3{font:600 15px var(--sans);margin:0 0 4px}
+#state{overflow:auto;padding:14px 18px 80px;display:none}
 #state .k,#detail .k{font:11px var(--mono);color:var(--faint);letter-spacing:.06em;text-transform:uppercase}
 #state .k{margin:9px 0 1px}
+#state section,#state details.grp,#state details.blk{max-width:86ch}
+#state h2,#state summary .h2{font:600 17px var(--sans);margin:0;display:inline}
+#state section{margin:0 0 26px}
+#state .n{font:11.5px var(--mono);color:var(--faint);border:1px solid var(--line);border-radius:999px;padding:1px 7px;margin-left:7px;vertical-align:2px}
+#state .sub{color:var(--faint);font-size:12.5px;margin:4px 0 9px}
+#state h3.tag-h{font:600 13px var(--sans);color:var(--faint);margin:16px 0 3px}
+#state .row{display:flex;gap:14px;align-items:baseline;justify-content:space-between;
+  border-bottom:1px solid var(--line);padding:8px 3px;cursor:pointer}
+#state .row:hover{background:var(--tint)}
+#state .rtext{line-height:1.5}
+#state .rtopic{font-size:11.5px;color:var(--faint);white-space:nowrap;flex:0 0 auto;max-width:34ch;overflow:hidden;text-overflow:ellipsis}
+#state details.grp,#state details.blk{border-top:1px solid var(--line);padding:11px 0}
+#state details.grp>summary,#state details.blk>summary{cursor:pointer;list-style:none}
+#state details.blk>summary{font:600 15px var(--sans)}
+#state details.grp>summary::-webkit-details-marker,#state details.blk>summary::-webkit-details-marker{display:none}
+#state details.grp>summary::before,#state details.blk>summary::before{content:"▸ ";color:var(--faint)}
+#state details[open]>summary::before{content:"▾ "}
+#state .stop h3{font:600 13.5px var(--sans);margin:13px 0 2px}
+#state .tag{font:10.5px var(--mono);color:var(--faint);border:1px solid var(--line);border-radius:999px;padding:1px 6px;margin-right:7px;white-space:nowrap}
+#state .alltop{display:block;margin:30px 0 0}
 ul.bul{margin:2px 0 0;padding-left:19px}
 ul.bul li{margin:3px 0;line-height:1.5}
 .rid{font:11px var(--mono);color:var(--faint);white-space:nowrap}
@@ -222,7 +301,12 @@ const ARCS = __ARCS__;
 const SESSIONS = __SESSIONS__;
 const AFTER = __AFTER__;
 const TOPICS = __TOPICS__;
-const KIND = {ruling:"ruling",defect:"correction",decision:"decision",history:"session entry",review:"review finding",build:"commit",artifact:"artifact"};
+const OPEN_ROWS = __OPENROWS__;
+const SETTLED = __SETTLED__;
+const TAGS_ORDER = ["ruling", "build", "verify", "waiting"];
+const TAGLABEL = {ruling:"Needs your word", build:"Not built yet",
+                  verify:"Built but never checked", waiting:"Blocked on something else"};
+const KIND ={ruling:"ruling",defect:"correction",decision:"decision",history:"session entry",review:"review finding",build:"commit",artifact:"artifact"};
 const T = Object.fromEntries(THREADS.map(t => [t.id, t]));
 const TOPIC = Object.fromEntries(TOPICS.map(t => [t.id, t]));
 const esc = s => (s||"").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
@@ -566,6 +650,12 @@ const aLine = s => `<div>${rids(linkify(s))}</div>`;
 const bullets = parts => `<ul class="bul">${parts.map(p => `<li>${rids(linkify(p))}</li>`).join("")}</ul>`;
 const bySemi = s => s.split(/;\s+/).map(p => p.trim()).filter(Boolean);
 const byNumber = s => s.split(/\s*\(\d+\)\s*/).map(p => p.trim().replace(/;$/,"")).filter(Boolean);
+const TAGRE = /^\[(ruling|build|verify|waiting)\]\s*/;
+const openBullets = s => `<ul class="bul">${byNumber(s).map(p => {
+  const m = p.match(TAGRE);
+  return `<li>${m ? `<span class="tag">${TAGLABEL[m[1]].toLowerCase()}</span>` : ""}`
+       + `${rids(linkify(m ? p.slice(m[0].length) : p))}</li>`;
+}).join("")}</ul>`;
 const swatch = id => `<span class="sw" style="background:${T[id] ? T[id].color : "#8b9792"}"></span>`;
 
 function selectArc(a){
@@ -609,18 +699,19 @@ function selectTopic(id){
   detail.innerHTML = `<div class="k">where it stands</div><h3>${swatch(id)}${esc(t.name)}</h3>`
     + `<div class="k">status</div>` + aLine(t.Status)
     + (t.Decided ? `<div class="k">settled</div>` + bullets(bySemi(t.Decided)) : "")
-    + (t.Open ? `<div class="k">still open</div>` + bullets(byNumber(t.Open)) : "")
+    + (t.Open ? `<div class="k">still open</div>` + openBullets(t.Open) : "")
     + (t["Lives in"] ? `<div class="k">lives in</div>` + bullets(bySemi(t["Lives in"])) : "")
     + (t["Next action"] ? `<div class="k">next</div>` + aLine(t["Next action"]) : "");
 }
 
-/* search dims whatever the current level is showing */
+/* search dims whatever the trace is showing, and hides rows in the other view */
 document.getElementById("q").addEventListener("input", ev => {
   const q = ev.target.value.trim().toLowerCase();
   const hit = s => (s.name+" "+s.summary+" "+s.text).toLowerCase().includes(q);
   nodes.classed("dim", s => q && !hit(s));
   sess.classed("dim", s => q && !(s.title+" "+s.text).toLowerCase().includes(q));
   arcs.classed("dim", a => q && !(a.name+" "+a.line).toLowerCase().includes(q));
+  filterState(q);
 });
 
 /* the two views */
@@ -633,16 +724,67 @@ document.querySelectorAll("#mode button").forEach(b => b.addEventListener("click
   document.getElementById("lvl").style.display = trace ? "" : "none";
   if (trace) reset();
   else document.getElementById("caption").textContent =
-    "Where each piece of work stands right now: what is settled, what is still open, and the next thing to do.";
+    "What is open and what is settled. The top list is everything waiting on you; under it is the "
+    + "work already decided but not finished; everything settled is folded away at the bottom.";
 }));
-document.getElementById("state").innerHTML = TOPICS.map(t =>
-  `<div class="blk"><h3>${esc(t.name)}</h3>`
-  + `<div class="k">status</div>` + aLine(t.Status)
-  + (t.Decided ? `<div class="k">settled</div>` + bullets(bySemi(t.Decided)) : "")
-  + (t.Open ? `<div class="k">still open</div>` + bullets(byNumber(t.Open)) : "")
-  + (t["Lives in"] ? `<div class="k">lives in</div>` + bullets(bySemi(t["Lives in"])) : "")
-  + (t["Next action"] ? `<div class="k">next</div>` + aLine(t["Next action"]) : "")
-  + `</div>`).join("");
+
+/* the second view: open first, settled folded, then a block per topic to drill into */
+const stateEl = document.getElementById("state");
+const ROWS = {};
+TAGS_ORDER.forEach(tag => ROWS[tag] = OPEN_ROWS.filter(r => r.tag === tag));
+const nWork = OPEN_ROWS.length - ROWS.ruling.length;
+const nSettled = SETTLED.reduce((n,s) => n + s.bullets.length, 0);
+const stateRow = r => `<div class="row" data-t="${r.tid}">`
+  + `<span class="rtext">${esc(r.text)}</span><span class="rtopic">${esc(r.topic)}</span></div>`;
+const openTopics = TOPICS.filter(t => t.id !== "untagged");
+
+stateEl.innerHTML =
+  `<section><h2>Needs your word</h2><span class="n">${ROWS.ruling.length}</span>`
+  + `<div class="sub">Nothing on this list moves until you say which way it goes.</div>`
+  + ROWS.ruling.map(stateRow).join("")
+  + `</section><section><h2>Open work</h2><span class="n">${nWork}</span>`
+  + `<div class="sub">Already decided, not yet finished.</div>`
+  + ["build","verify","waiting"].filter(t => ROWS[t].length).map(tag =>
+      `<h3 class="tag-h">${TAGLABEL[tag]}<span class="n">${ROWS[tag].length}</span></h3>`
+      + ROWS[tag].map(stateRow).join("")).join("")
+  + `</section>`
+  + `<details class="grp"><summary><span class="h2">Settled</span><span class="n">${nSettled}</span></summary>`
+  + SETTLED.map(s => `<div class="stop"><h3>${esc(s.name)}`
+      + (s.closed ? `<span class="n">finished</span>` : "") + `</h3>`
+      + `<ul class="bul">${s.bullets.map(b => `<li>${esc(b.text)}`
+          + (b.rid ? ` <span class="rid">${esc(b.rid)}</span>` : "") + `</li>`).join("")}</ul></div>`).join("")
+  + `</details>`
+  + `<h2 class="alltop">Every topic</h2>`
+  + openTopics.map(t => `<details class="blk" id="blk-${t.id}"><summary>${esc(t.name)}</summary>`
+      + `<div class="k">status</div>` + aLine(t.Status)
+      + (t.Decided ? `<div class="k">settled</div>` + bullets(bySemi(t.Decided)) : "")
+      + (t.Open ? `<div class="k">still open</div>` + openBullets(t.Open) : "")
+      + (t["Lives in"] ? `<div class="k">lives in</div>` + bullets(bySemi(t["Lives in"])) : "")
+      + (t["Next action"] ? `<div class="k">next</div>` + aLine(t["Next action"]) : "")
+      + `</details>`).join("");
+
+stateEl.addEventListener("click", ev => {
+  const row = ev.target.closest(".row");
+  if (!row) return;
+  const blk = document.getElementById("blk-" + row.dataset.t);
+  if (!blk) return;
+  blk.open = true;
+  blk.scrollIntoView({behavior:"smooth", block:"start"});
+});
+
+function filterState(q){
+  const show = el => { el.style.display = !q || el.textContent.toLowerCase().includes(q) ? "" : "none"; };
+  stateEl.querySelectorAll(".row, .stop li, details.blk").forEach(show);
+  stateEl.querySelectorAll("h3.tag-h").forEach(h => {
+    let n = 0;
+    for (let el = h.nextElementSibling; el && el.classList.contains("row"); el = el.nextElementSibling)
+      if (el.style.display !== "none") n++;
+    h.style.display = n ? "" : "none";
+  });
+  stateEl.querySelectorAll(".stop").forEach(g => {
+    g.style.display = [...g.querySelectorAll("li")].some(li => li.style.display !== "none") ? "" : "none";
+  });
+}
 
 document.getElementById("theme").onclick = () => {
   const cur = document.documentElement.getAttribute("data-theme");
@@ -675,6 +817,8 @@ def main(out: str) -> int:
         .replace("__SESSIONS__", json.dumps(sittings, ensure_ascii=False))
         .replace("__AFTER__", json.dumps(followed(statements, events), ensure_ascii=False))
         .replace("__TOPICS__", json.dumps(topics, ensure_ascii=False))
+        .replace("__OPENROWS__", json.dumps(open_rows(topics), ensure_ascii=False))
+        .replace("__SETTLED__", json.dumps(settled(topics), ensure_ascii=False))
     )
     Path(out).write_text(page)
     print(f"{out}: {len(story)} arcs, {len(sittings)} sessions, {len(slim)} statements, {len(lanes)} pieces of work")

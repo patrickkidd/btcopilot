@@ -7,6 +7,10 @@ clock is [HISTORY.md](HISTORY.md), whose entries are tagged with the topic ids b
 is never deleted; when it closes its status says CLOSED and the block stays.
 
 Fields every block carries: **Status · Decided · Open · Lives in · Next action · Updated.**
+Every numbered item under **Open** begins with one of four tags in square brackets: `[ruling]`
+needs the owner's word, `[build]` is work not yet done, `[verify]` is built but unchecked or
+unmeasured, `[waiting]` is blocked on something outside the topic; an item that mixes two is
+split into two items.
 
 The owner audits this file as a page, never by command: the flush renders it with
 `bin/topicpage.py` and republishes it to the same artifact every time —
@@ -27,11 +31,13 @@ server, merge-first (his direction 2026-09-10).
 new rows are JSON in the same column [Oracle: R-0241]; the beta users are the app working
 group of three clinicians [R-0079]; sign-in is passwordless with Face ID on a capable phone;
 the sandbox is https at turin:8891 with a dev CA the phone trusts once.
-**Open:** (1) his code review of the branch, and of the coach's prompt section (see T-2);
-(2) continuous integration is red — ten web unit tests written before rounds 2–4, screenshot
-goldens recorded only on macOS, nine older extraction tests that fail only when the whole
-backend suite runs in one process; (3) Android never opened; (4) passkeys never tried on a
-real https domain; (5) cluster quality on anyone else's record is unmeasured (T-6).
+**Open:** (1) [ruling] his code review of the branch, and of the coach's prompt section, which
+is the first open item on the coach topic; (2) [build] continuous integration is red — ten web
+unit tests written before rounds 2–4, screenshot goldens recorded only on macOS, and nine older
+extraction tests that fail only when the whole backend suite runs in one process;
+(3) [verify] the app has never been opened on Android; (4) [verify] passkeys have never been
+tried on a real https domain; (5) [waiting] cluster quality on anyone else's record stays
+unmeasured until the coding loop produces numbers.
 **Lives in:** btcopilot PR #136, fdserver PR #30; merge-risk review with the seven fixes
 landed: doc/chat-first/MERGE_REVIEW.md (fix commit 9f1707a); review log
 doc/chat-first/REVIEW_LOG.md; sandbox scripts /Users/patrick/worktrees/fd362-sandbox/.
@@ -47,18 +53,18 @@ record's commit function, a field's meaning goes on the tool parameter, judgemen
 system prompt; the owner's own prompt-improvement process does not change: Claude Code is the
 entry point and finds the instructions itself [R-0239]; IRR compares final records, not
 per-statement deltas [R-0242].
-**Open:** (1) the owner's review of the 168-line "What goes in the record" section in the
-private prompt file (`git -C ~/theapp/fdserver/.claude/worktrees/FD-362 show HEAD~3 --
-prompts/private_prompts.py` or the file's section by that title) — it is his clinical
-content rewritten for the loop; the author's list of what was dropped is the newest entry in
-doc/PROMPT_ENGINEERING_LOG.md; (2) the first measurement: the replay harness
-(btcopilot/training/run_agent_f1.py) has nothing to score against until his two
-conversations are coded as ground truth; (3) the induction instructions
-(btcopilot/training/prompts/induction_agent.md, doc/PROMPT_OPTIMIZATION.md, the strategy doc)
-have NOT yet been retargeted at the agent path — that is unbuilt; (4) whether the coach should
-code SARF variables itself in conversation or leave them to a review pass — not ruled.
-**Lives in:** btcopilot/personal/{record.py,toolbox.py,timeline.py}, training/run_agent_f1.py,
-the private prompt section; his sandbox record re-coded once by the loop (session "Living
+**Open:** (1) [ruling] his review of the 168-line "What goes in the record" section in the
+private prompt file, which is his clinical content rewritten for the loop; the author's list of
+what was dropped is the newest entry in the prompt engineering log; (2) [waiting] the first
+measurement cannot run: the replay harness has nothing to score against until his two
+conversations are coded as ground truth; (3) [build] the induction instructions have not yet
+been retargeted at the agent path; (4) [ruling] whether the coach should code the clinical
+variables itself in conversation or leave them to a review pass.
+**Lives in:** btcopilot/personal/{record.py,toolbox.py,timeline.py}, training/run_agent_f1.py;
+the private prompt section (`git -C ~/theapp/fdserver/.claude/worktrees/FD-362 show HEAD~3 --
+prompts/private_prompts.py`, or the file's section by that title); the induction instructions
+(btcopilot/training/prompts/induction_agent.md, doc/PROMPT_OPTIMIZATION.md, the strategy doc);
+doc/PROMPT_ENGINEERING_LOG.md; his sandbox record re-coded once by the loop (session "Living
 With Chronic Insomnia (re-coded)").
 **Next action:** his prompt review; code his two conversations (T-3's coding mode, or by hand
 in the editor); run the harness once.
@@ -92,29 +98,32 @@ more is added, and convergence is required because human ground truth is finite;
 convergence is undecided; settle-by-kind is one tool among a few [R-0251]; original opinions
 are preserved in full fidelity; leaning yes to hiding who chose what until the final review
 [R-0252]; the vote is strictly human — no AI takes or recommendations in the ballot; where the
-AI's suggestion goes is open, the AI must still carry all tedious work [R-0254].
-**Open:** (1) the six decisions on the ballot-and-meeting drawing, version 5
-(https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9): the ballot rule (all but
-one / two thirds / majority with tie-break); names hidden in the ballot, shown at the meeting,
-who-was-right stored; the ballot opens once three coders are done; the meeting's records live in the app's tables with the guidelines file
-generated from them; a "flag for next meeting" link per AI-written rule; the four lenses kept
-as extra meeting views or the list only. Ruled on that page: one item per screen, the meeting's
-three choices, every item chosen before ratify, coders have one task at a time and never a
-queue, the AI writes the guideline changes itself, the AI's opinion only after ratification;
-(1b) **migrating last year's IRR material** [R-0262] — inventory 2026-09-11 of doc/irr/: 25
-rules in tables keyed to meeting number with unanimity and confidence (migrate as rows with the
-meeting as provenance); six meetings' agreement/disagreement/action tables keyed to statement
-ids of last year's discussions, roughly 40–60 rows (migrate as settle rows once those
-discussions are imported through the upload path); six deliberation records in prose (keep as
-text, mine for rationale later); six raw transcripts (irreplaceable, kept as they are, never
-migrated); the old per-statement feedback stays the batch harness's ground truth until re-coded.
-Patrick's verdict on that plan is open; (2) the coding page as drawn
-(https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a) is TABLED with its four
-forks; (3) the two-sided compare view must be folded into the ballot or the meeting screen;
-(4) Pro "notes" has no mockup; (5) build order once picked: codings + scores tables, endpoints,
-replay as a task, ballots and votes tables, export of ratified items to the ground-truth files,
-the session menu items, the coding mode, the pool statistics, the review module isolated;
-(6) the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238].
+AI's suggestion goes is open, the AI must still carry all tedious work [R-0254]. Ruled on the
+ballot-and-meeting drawing, version 5: one item per screen; the meeting's three choices; every
+item chosen before ratify; coders have one task at a time and never a queue; the AI writes the
+guideline changes itself; the AI's opinion is shown only after ratification.
+**Open:** (1) [ruling] the ballot rule on the ballot-and-meeting drawing, version 5: all but
+one, two thirds, or a majority with a tie-break; (2) [ruling] whether names are hidden in the
+ballot, shown at the meeting, and who was right stored; (3) [ruling] whether the ballot opens
+once three coders are done; (4) [ruling] whether the meeting's records live in the app's tables
+with the guidelines file generated from them; (5) [ruling] whether every rule the AI writes
+carries a link that flags it for the next meeting; (6) [ruling] whether the four lenses stay as
+extra meeting views or the list is the only view; (7) [ruling] his verdict on the plan for
+migrating last year's inter-rater material [R-0262] — the inventory of 2026-09-11 found 25 rules
+in tables keyed to meeting number with unanimity and confidence, six meetings' agreement,
+disagreement and action tables keyed to statement ids of last year's discussions at roughly 40
+to 60 rows, six deliberation records in prose, and six raw transcripts; (8) [build] migrate that
+material once he approves the plan: the 25 rules as rows with the meeting as provenance, the 40
+to 60 rows as settle rows once those discussions are imported through the upload path, the
+deliberation records kept as text to mine for rationale later, the raw transcripts kept as they
+are and never migrated, and the old per-statement feedback staying the batch harness's ground
+truth until re-coded; (9) [waiting] the coding page as drawn is tabled with its four forks,
+except where it overlaps the review; (10) [build] fold the two-sided compare view into the
+ballot or the meeting screen; (11) [build] draw a mockup for Pro notes; (12) [build] the build
+order once he has picked: codings and scores tables, endpoints, replay as a task, ballots and
+votes tables, export of ratified items to the ground-truth files, the session menu items, the
+coding mode, the pool statistics, and the review module isolated; (13) [build] turn the old
+clinical coding page into a legacy link and delete it after re-coding [R-0238].
 **Lives in:** plan https://claude.ai/code/artifact/7a033173-bff2-41ca-bbde-39385d4ab7f3;
 layers https://claude.ai/code/artifact/daeb8856-4a5b-42d4-ab62-4c14bc3784b4; new surfaces
 https://claude.ai/code/artifact/c5040b6a-75e3-47de-aba7-54aabbda69f4; IRR concepts round 1
@@ -136,15 +145,17 @@ the review module in this PR.
 discussions must work in the new app; colleagues' earlier sessions must be migrated in; "wipe
 all coding and re-run the agent loop over the conversation" is a feature to build, like the
 old training app's clear-and-re-extract.
-**Open:** (1) old training transcripts are now kept out of the session list (fix landed) but
-not yet importable on purpose — that is the upload/speaker-mapping path in T-3; (2) diagrams
-carried over have no stored clusters until a turn writes an event; every diagram that ever had
-a chat carries an "Assistant" person; items extracted but never committed on old diagrams are
-unreachable (MERGE_REVIEW.md §4, should-fix); (3) after a wipe, chips in the old thread point
-at deleted events and read as plain words — the re-code could re-link matches on kind, date
-and people; (4) the by-hand re-code script is /Users/patrick/.claude/jobs/33d688bb/tmp/recode.py
-(ephemeral) — the feature needs the same as a session-menu item.
-**Lives in:** MERGE_REVIEW.md §4; run_agent_f1.replay.
+**Open:** (1) [build] old training transcripts are now kept out of the session list, the fix
+having landed, but they are not yet importable on purpose — that is the upload and
+speaker-mapping path on the one-app topic; (2) [build] three carry-over defects: diagrams
+carried over have no stored clusters until a turn writes an event, every diagram that ever had
+a chat carries an "Assistant" person, and items extracted but never committed on old diagrams
+are unreachable; (3) [build] after a wipe, chips in the old thread point at deleted events and
+read as plain words, so the re-code should re-link matches on kind, date and people;
+(4) [build] the by-hand re-code script is ephemeral and the feature needs the same thing as a
+session-menu item.
+**Lives in:** MERGE_REVIEW.md §4; run_agent_f1.replay; the by-hand script
+/Users/patrick/.claude/jobs/33d688bb/tmp/recode.py.
 **Next action:** build "re-code with the coach" in the session menu (T-3 build).
 **Updated:** 2026-09-11.
 
@@ -154,10 +165,11 @@ and people; (4) the by-hand re-code script is /Users/patrick/.claude/jobs/33d688
 **Decided:** the picked-moment words on the timeline (option A) [R-0235]; the about page
 behind an i, ✕ in the arrow's place; one icon-button size [R-0234]; the card slides the whole
 region; who·what words [T-2].
-**Open:** (1) does the three-event cluster floor bind a grouping the user made himself
-(review-log row 54); (2) the nodal ring on a dot, keep or drop; (3) thirteen NEEDS-OWNER rows
-in UI_GAP.md; (4) the event editor's relationship fields and kind-based hiding, unbuilt;
-(5) the felt call on the moves board.
+**Open:** (1) [ruling] does the three-event cluster floor bind a grouping the user made himself,
+which is row 54 of the review log; (2) [ruling] the nodal ring on a dot, keep or drop;
+(3) [ruling] thirteen rows in the interface gap list are marked as needing his word;
+(4) [build] the event editor's relationship fields and its hiding of fields by event kind;
+(5) [ruling] the felt call on the moves board.
 **Lives in:** doc/chat-first/UI_GAP.md, REVIEW_LOG.md, STATE.md.
 **Next action:** his rulings, in any order.
 **Updated:** 2026-09-11.
@@ -168,8 +180,9 @@ in UI_GAP.md; (4) the event editor's relationship fields and kind-based hiding, 
 **Decided:** the rules make the candidates, the model names them and gives a reason
 [R-0193, R-0194]; the floor is three events, enforced at the commit; user groupings under the
 old floor are grandfathered.
-**Open:** he has marked no examples yet; cluster quality on anyone else's record is unmeasured
-until the coding loop (T-3) produces numbers.
+**Open:** (1) [ruling] he has marked no example clusters yet, and the examples are the input
+only he can give; (2) [waiting] cluster quality on anyone else's record stays unmeasured until
+the coding loop produces numbers.
 **Lives in:** btcopilot/personal/clusters.py; the cluster prompt in the private prompt file.
 **Next action:** none until T-3 yields coded conversations.
 **Updated:** 2026-09-11.
@@ -179,7 +192,8 @@ until the coding loop (T-3) produces numbers.
 **Status:** off the path, on the list [R-0240].
 **Decided:** family-structure data from the agent loop comes first; the drawn family arrives
 later as one more picture level, auto-arranged first, hand layout after.
-**Open:** whether auto-arrange works well enough on agent-loop data — untested.
+**Open:** (1) [waiting] whether auto-arrange works well enough on agent-loop data is untested,
+and cannot be tested until the coding work produces structure data.
 **Lives in:** btcopilot/arrange/, the training app's SVG renderer, familydiagram plan doc
 2026-05-02--auto-arrange-layout.md.
 **Next action:** none until T-3 produces structure data.
@@ -191,7 +205,7 @@ later as one more picture level, auto-arranged first, hand layout after.
 **Decided:** a package boundary inside btcopilot — one adapter module is the only importer of
 Pro code and the shared schema, held by a lint rule; a second service later; never a separate
 repository.
-**Open:** unbuilt; one to two days when scheduled.
+**Open:** (1) [build] the package boundary is unbuilt, one to two days when it is scheduled.
 **Lives in:** doc/chat-first/ISOLATION_OPTIONS.md.
 **Next action:** after the beta is up.
 **Updated:** 2026-09-11.
@@ -220,13 +234,14 @@ rest is a name plus one line, his words behind a click; shape B — threads as s
 across time, his trace stepping between them; dates, commits and artifacts are secondary
 under the statement that caused them [R-0244]; the flush is idempotent and topics are picked
 up by name; he never runs a command — he reads pages or files.
-**Open:** (1) 253 of 723 statements are not yet placed on a thread (the word lists are the
-mechanism; the flush's judgement step is the other) and every name and summary is
-script-made until a flush session rewrites this session's; (2) the session filter pulled in
-~14 statements from two unrelated sessions that mention "coach" — tighten the filter;
-(3) revision chains between rulings do not draw yet — the store marks SUPERSEDED in a column
-the ledger does not read; (4) the opening view sits at the newest statements; "fit" shows the
-whole; (5) the flush step that rewrites names has never been run in anger.
+**Open:** (1) [build] 253 of 723 statements are not yet placed on a piece of work, and every
+name and summary is script-made until a flush session rewrites this session's; the word lists
+are one mechanism and the flush's judgement step is the other; (2) [build] the session filter
+pulled in about 14 statements from two unrelated sessions that mention "coach", so the filter
+needs tightening; (3) [build] revision chains between rulings do not draw yet, because the store
+marks a superseded ruling in a column the ledger does not read; (4) [ruling] whether the opening
+view should sit at the newest statements, with "fit" showing the whole; (5) [verify] the flush
+step that rewrites names has never been run in anger.
 **Lives in:** bin/{trace.py,tracepage.py,ledger.py,eventpage.py,topicpage.py,flushcheck.py},
 doc/chat-first/{trace.json,events.json,TOPICS.md,HISTORY.md}, .claude/skills/flush/SKILL.md;
 the trace page https://claude.ai/code/artifact/be081e64-9efa-45de-b329-42e82f9d4857; the

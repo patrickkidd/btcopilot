@@ -1,5 +1,6 @@
-"""The flush check: every topic block carries its fields, every HISTORY tag names a
-topic, and the newest HISTORY entry is dated today. Run from the btcopilot worktree."""
+"""The flush check: every topic block carries its fields, every open item is tagged with
+what it is waiting on, every HISTORY tag names a topic, and the newest HISTORY entry is
+dated today. Run from the btcopilot worktree."""
 import datetime
 import re
 import sys
@@ -7,6 +8,16 @@ from pathlib import Path
 
 DOC = Path(__file__).resolve().parent.parent / "doc" / "chat-first"
 FIELDS = ("Status", "Decided", "Open", "Lives in", "Next action", "Updated")
+TAGS = ("ruling", "build", "verify", "waiting")
+
+
+def open_items(block: str) -> list[str]:
+    m = re.search(r"^\*\*Open:\*\*\s*(.*?)(?=\n\*\*|\Z)", block, re.M | re.S)
+    field = " ".join(m.group(1).split()) if m else ""
+    if not field or field.rstrip(".").lower() == "none":
+        return []
+    parts = re.split(r"\(\d+\)\s*", field)
+    return [p.strip() for p in parts[1:] if p.strip()] or [field]
 
 
 def main() -> int:
@@ -27,6 +38,12 @@ def main() -> int:
                 field in ("Decided", "Open") and "CLOSED" in block
             ):
                 errors.append(f"{m.group(1)} lacks the field {field}")
+        for item in open_items(block):
+            if not re.match(rf"\[({'|'.join(TAGS)})\]\s+\S", item):
+                errors.append(
+                    f"{m.group(1)} has an open item without a "
+                    f"[{']/['.join(TAGS)}] tag: {item[:60]!r}"
+                )
     names = re.findall(r"^## T-\d+\s+·\s+(.+)$", topics, re.M)
     for name in {n for n in names if names.count(n) > 1}:
         errors.append(f"two topic blocks share the name {name!r}")

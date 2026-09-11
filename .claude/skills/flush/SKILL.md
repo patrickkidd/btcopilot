@@ -40,8 +40,11 @@ changes nothing.
    unless the words are already there.
 3. Rewrite every touched block with its six fields — **Status · Decided** (ruling ids) ·
    **Open** (numbered, each self-contained with its example inline) · **Lives in** (files,
-   commits, PRs, artifact URLs, sandbox paths) · **Next action · Updated** (today). A closed
-   topic keeps its block with Status CLOSED.
+   commits, PRs, artifact URLs, sandbox paths) · **Next action · Updated** (today). Every
+   numbered Open item starts with one of four tags — `[ruling]` needs the owner's word,
+   `[build]` is work not yet done, `[verify]` is built but unchecked or unmeasured, `[waiting]`
+   is blocked on something outside the topic — and an item that mixes two is split in two. A
+   closed topic keeps its block with Status CLOSED.
 4. Write or rewrite this session's HISTORY entry: `## <date> — <what happened> [T-n, T-m]`,
    the session marker on the next line, then plain words on what happened and why.
 5. Revise STATE.md where the product truth changed (what the app does, where the build
