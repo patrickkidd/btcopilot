@@ -103,18 +103,16 @@ under it, never a list [R-0258, R-0265]; Patrick's administration is the table s
 what is on the table, who is done, nudge; the AI writes the guideline changes itself from the
 settles and a result screen shows them with their provenance, nothing to choose [R-0259]; the
 page is approved as drawn [R-0268].
-**Open:** (1) [ruling] on the review screens, version 6
-(https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9): the agreement timeline
-above the meeting's list — A, one dot per moment, teal agreed and amber disputed with a count,
-or B, one dot with a column of coder squares under it; (2) [ruling] where the coding
-guidelines are reached in the app — the help row on the account page as drawn, or the sessions
-sheet. Ruled today and drawn: names hidden whenever people vote and shown only at the meeting
-[R-0272]; the vote opens when Patrick opens it [R-0273]; no numerical rule settles an item, the
-meeting sees every disputed item most split first with the unanimous ones collapsed [R-0274];
-the database is the record and the coding guidelines are the one written output, readable in
-the app [R-0275]; flags, unresolved items and unfinished tasks fill the next meeting's agenda
-by themselves, with a close link each [R-0276]; one timeline shows agreement and disagreement,
-never a lane per coder [R-0277]; (3) [build] the spec sheet for beta users is a picture
+**Open:** (1) [build] the review screens are approved as drawn, version 7, nothing open
+(https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9): names hidden whenever
+people vote and shown only at the meeting [R-0272]; the vote opens when Patrick opens it
+[R-0273]; no numerical rule settles an item, the meeting sees every disputed item most split
+first with the unanimous ones collapsed [R-0274]; the database is the record and the coding
+guidelines are the one written output, readable from an (i) at the top of the coding screen
+[R-0275, R-0278]; flags, unresolved items and unfinished tasks fill the next meeting's agenda
+by themselves, each with a close link [R-0276]; one agreement timeline — one dot per moment,
+teal agreed, amber disputed with a count — in the vote and the meeting [R-0277, R-0278];
+(2) [build] the coding screens carry the (i) button beside Done, version 4; (3) [build] the spec sheet for beta users is a picture
 catalogue (https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba): built views
 are the app's test goldens of 2026-09-09 (some show test data), five screens have no picture
 (signing in, the person editor, the account page, the about page, when something goes wrong) —
@@ -152,10 +150,9 @@ https://claude.ai/code/artifact/67988998-6e49-4924-a9b3-579979901eaf; the coding
 https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a; mockups are drawn with
 web/src/theme.css and the app's markup (his rule 2026-09-10); last year's material in
 doc/irr/.
-**Next action:** Patrick rules on the review screens' six choices, confirms Pro's surfaces one
-by one (notes undrawn), and answers the migration plan; the spec sheet for beta users becomes
-a picture catalogue of every ruled view; then any remaining screens are drawn pixel for pixel
-before code review [R-0269].
+**Next action:** the coding and review screens are closed; Patrick confirms Pro's surfaces one
+by one (notes undrawn) and the five interface calls; the migration of last year's material is
+the last follow-up of this unit; then code review [R-0269].
 **Updated:** 2026-09-11.
 
 ## T-4 · Existing records and conversations in the new app; wipe and re-code

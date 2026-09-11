@@ -768,4 +768,7 @@ database as the record with the guidelines readable in the app [R-0275], the sel
 agenda [R-0276], one agreement timeline [R-0277]; version 6 drew them, with the agreement
 timeline as two options and the guidelines page. The spec sheet became a picture catalogue:
 every mockup frame and the app's goldens rendered into doc/chat-first/screens by
-bin/screenshots.py, the catalogue by bin/screenspage.py, published with its images.
+bin/screenshots.py, the catalogue by bin/screenspage.py, published with its images. He then picked the agreement timeline (one dot per moment, teal agreed, amber disputed
+with a count) for the vote and the meeting and put the guidelines behind an (i) at the top of
+the coding screen [R-0278]; both drawings were revised and the coding-and-review design closed
+with nothing open but the migration follow-up.
