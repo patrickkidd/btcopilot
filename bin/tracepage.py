@@ -236,6 +236,7 @@ main{display:grid;grid-template-columns:1fr 380px;min-height:0}
 #state .row:hover{background:var(--tint)}
 #state .rtext{line-height:1.5}
 #state .rtopic{font-size:11.5px;color:var(--faint);white-space:normal;flex:0 0 26ch;text-align:right}
+.ldot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:-1px}
 #state details.grp,#state details.blk{border-top:1px solid var(--line);padding:11px 0}
 #state details.grp>summary,#state details.blk>summary{cursor:pointer;list-style:none}
 #state details.blk>summary{font:600 15px var(--sans)}
@@ -734,8 +735,10 @@ const ROWS = {};
 TAGS_ORDER.forEach(tag => ROWS[tag] = OPEN_ROWS.filter(r => r.tag === tag));
 const nWork = OPEN_ROWS.length - ROWS.ruling.length;
 const nSettled = SETTLED.reduce((n,s) => n + s.bullets.length, 0);
+// the topic carries its lane colour everywhere it is named: a dot before the name
+const laneDot = tid => `<i class="ldot" style="background:${(T[tid] || {}).color || "var(--faint)"}"></i>`;
 const stateRow = r => `<div class="row" data-t="${r.tid}">`
-  + `<span class="rtext">${esc(r.text)}</span><span class="rtopic">${esc(r.topic)}</span></div>`;
+  + `<span class="rtext">${esc(r.text)}</span><span class="rtopic">${laneDot(r.tid)}${esc(r.topic)}</span></div>`;
 const openTopics = TOPICS.filter(t => t.id !== "untagged");
 
 stateEl.innerHTML =
@@ -755,7 +758,7 @@ stateEl.innerHTML =
           + (b.rid ? ` <span class="rid">${esc(b.rid)}</span>` : "") + `</li>`).join("")}</ul></div>`).join("")
   + `</details>`
   + `<h2 class="alltop">Every topic</h2>`
-  + openTopics.map(t => `<details class="blk" id="blk-${t.id}"><summary>${esc(t.name)}</summary>`
+  + openTopics.map(t => `<details class="blk" id="blk-${t.id}"><summary>${laneDot(t.id)}${esc(t.name)}</summary>`
       + `<div class="k">status</div>` + aLine(t.Status)
       + (t.Decided ? `<div class="k">settled</div>` + bullets(bySemi(t.Decided)) : "")
       + (t.Open ? `<div class="k">still open</div>` + openBullets(t.Open) : "")
