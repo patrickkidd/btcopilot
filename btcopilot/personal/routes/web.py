@@ -1,12 +1,13 @@
 import json
 import os
 
-from flask import jsonify, send_from_directory
+from flask import abort, jsonify, request, send_from_directory
 from flask_wtf.csrf import generate_csrf
 from markupsafe import escape
 
 from btcopilot import auth
 from btcopilot.personal.routes import bp, current_session, diagram
+from btcopilot.personal.routes.diagrams import readable
 from btcopilot.personal.routes.sessions import session_payload, statements_payload
 from btcopilot.personal import record
 from btcopilot.personal.timeline import build_timeline
@@ -48,6 +49,14 @@ def _page() -> str:
     return page.replace("</head>", head + "</head>", 1)
 
 
+def _readable(diagram_id: int):
+    user = auth.current_user()
+    found = next((d for d in readable(user) if d.id == diagram_id), None)
+    if found is None:
+        abort(404)
+    return found
+
+
 @bp.route("/")
 def index():
     return _page()
@@ -74,7 +83,11 @@ def manifest():
 
 @bp.route("/timeline")
 def timeline():
-    in_use = diagram()
+    """The record the app is on, or `?diagram_id=` for another one the reader
+    can open — which is how a coding shows its own record rather than the
+    reader's own family."""
+    asked = request.args.get("diagram_id", type=int)
+    in_use = _readable(asked) if asked else diagram()
     data = in_use.get_diagram_data() if in_use else DiagramData()
     payload = build_timeline(data)
     # Where each moment was written down comes from the command log, which is

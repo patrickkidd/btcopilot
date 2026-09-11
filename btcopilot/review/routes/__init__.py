@@ -92,6 +92,7 @@ from btcopilot.review.routes import (  # noqa: E402  bp must exist first
     cuts,
     items,
     rules,
+    tasks,
     votes,
 )
 

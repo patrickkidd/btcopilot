@@ -1,0 +1,184 @@
+"""The scribe: one coder's words about one turn, written into their record.
+
+It is not the coach. There is no conversation, no coaching and no reply: a
+cheap model reads the turn and what the coder said about it, and calls the
+record-writing tools. When it cannot tell which person is meant it writes
+nothing and asks, in one line, which person (R-0270).
+"""
+
+import logging
+import uuid
+
+from btcopilot.review import adapter
+
+_log = logging.getLogger(__name__)
+
+MODEL = "haiku-4.5"
+MAX_STEPS = 3
+
+PROMPT = """You are a scribe for a research team coding transcripts of family \
+conversations. You are given one turn of a transcript and, in their own words, \
+what a coder says that turn tells them happened. Write that into the record \
+with the tools, and nothing else.
+
+Rules:
+- Write only what the coder said. Never add events, people or detail they did \
+not give you.
+- Every event is about a person already in the record, or a person you add \
+first. Never guess who a pronoun means. If you cannot tell which person the \
+coder means, call no tool at all and reply with one short question naming the \
+people it could be.
+- Say nothing when the writing worked. Words are for asking only.
+
+The record as it stands:
+{record}
+"""
+
+TURN = """The turn the coder tapped, said by {who}:
+{turn}
+
+What the coder says it tells them happened:
+{said}
+"""
+
+
+class Refused(Exception):
+    """The record would not take what the scribe wrote. Its words go to the
+    coder as they are, since they already say what is wrong."""
+
+
+def write(coding, statement, said: str, model=None) -> dict:
+    """One coding turn. Returns the edit lines it wrote, or the one question it
+    asked instead."""
+    turn_id = uuid.uuid4().hex
+    toolbox = adapter.scribe_toolbox(
+        coding.diagram_id, coding.user_id, statement.id, turn_id
+    )
+    coach = model or adapter.coach_model(MODEL)
+    system = PROMPT.format(record=adapter.render_record(coding.diagram_id))
+    messages = [
+        {
+            "role": "user",
+            "content": TURN.format(
+                who=_who(statement), turn=statement.text or "", said=said
+            ),
+        }
+    ]
+    tools = adapter.write_tools()
+    asked = ""
+
+    for step in range(MAX_STEPS):
+        turn = _say(coach, system, messages, tools)
+        asked = turn.text.strip()
+        if not turn.calls:
+            break
+        results = []
+        for call in turn.calls:
+            text, refused = _call(toolbox, call)
+            results.append(
+                {
+                    "type": "tool_result",
+                    "tool_use_id": call.id,
+                    "content": text,
+                    "is_error": refused,
+                }
+            )
+        messages.append({"role": "assistant", "content": turn.blocks})
+        messages.append({"role": "user", "content": results})
+        if not any(r["is_error"] for r in results):
+            asked = ""
+            break
+        _log.warning(f"Scribe step {step} was refused: {results}")
+
+    lines = edit_lines(coding.diagram_id, toolbox.deltas)
+    if not lines and not asked:
+        raise Refused("the scribe wrote nothing and said nothing")
+    return {"lines": lines, "asked": "" if lines else asked, "turn_id": turn_id}
+
+
+def _who(statement) -> str:
+    speaker = statement.speaker
+    return (speaker.name if speaker and speaker.name else None) or "someone"
+
+
+def _say(model, system: str, messages: list[dict], tools: list[dict]):
+    words = model.turn(system, messages, tools)
+    while True:
+        try:
+            next(words)
+        except StopIteration as stop:
+            return stop.value
+
+
+def _call(toolbox, call) -> tuple[str, bool]:
+    try:
+        text, _ = toolbox.call(call.name, call.args)
+    except adapter.ToolError as e:
+        return str(e), True
+    return text, False
+
+
+def edit_lines(diagram_id: int, deltas: list[dict]) -> list[str]:
+    """What this scribe turn put in the record, one line each."""
+    data = adapter.record_of(adapter.diagram_of(diagram_id))
+    events = {str(e.get("id")): e for e in data.get("events") or []}
+    named = {
+        str(event.get(key))
+        for event in events.values()
+        for key in ("person", "child", "spouse")
+        if event.get(key) is not None
+    }
+    return written(
+        data,
+        _touched(deltas, "event"),
+        [one for one in _touched(deltas, "person") if one not in named],
+    )
+
+
+def written(data: dict, event_ids, person_ids=()) -> list[str]:
+    """The record's own words for what a coder wrote: who it is about, what
+    kind of thing it is, and when."""
+    people = {str(p.get("id")): p for p in data.get("people") or []}
+    events = {str(e.get("id")): e for e in data.get("events") or []}
+    out: list[str] = []
+    for one in event_ids:
+        event = events.get(str(one))
+        if event is not None:
+            _add(out, _event_words(event, people))
+    for one in person_ids:
+        person = people.get(str(one))
+        if person is not None:
+            _add(out, f"+ {_name(person)}")
+    return out
+
+
+def _add(out: list[str], line: str):
+    if line not in out:
+        out.append(line)
+
+
+def _event_words(event: dict, people: dict) -> str:
+    about = event.get("child")
+    if about is None:
+        about = event.get("person")
+    who = _name(people.get(str(about), {})) if about is not None else "the family"
+    kind = _plain(event.get("kind")) or "event"
+    when = adapter.date_text(event.get("dateTime")) or "no date yet"
+    return f"+ {who} · {kind} · {when}"
+
+
+def _plain(value) -> str:
+    return str(getattr(value, "value", value) or "")
+
+
+def _name(person: dict) -> str:
+    return (person.get("name") or "").strip() or "someone"
+
+
+def _touched(deltas: list[dict], kind: str) -> list[str]:
+    out: list[str] = []
+    for delta in deltas:
+        if delta.get("item_kind") != kind or delta.get("item_id") is None:
+            continue
+        _add(out, str(delta["item_id"]))
+    return out

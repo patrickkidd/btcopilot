@@ -323,11 +323,15 @@ class Toolbox:
         *,
         user_id: int | None = None,
         session_id: str | None = None,
+        author: Author = Author.Coach,
+        statement_id: int | None = None,
     ):
         self.diagram_id = diagram_id
         self.turn_id = turn_id
         self.user_id = user_id
         self.session_id = session_id
+        self.author = author
+        self.statement_id = statement_id
         self.deltas: list[dict] = []
         self.views: list[dict] = []
 
@@ -485,7 +489,7 @@ class Toolbox:
             change = record.undo(
                 self.diagram_id,
                 previous,
-                author=Author.Coach,
+                author=self.author,
                 user_id=self.user_id,
                 session_id=self.session_id,
             )
@@ -601,10 +605,11 @@ class Toolbox:
             change = record.apply(
                 self.diagram_id,
                 deltas,
-                author=Author.Coach,
+                author=self.author,
                 turn_id=self.turn_id,
                 user_id=self.user_id,
                 session_id=self.session_id,
+                statement_id=self.statement_id,
             )
         except record.Invalid as e:
             # the record says what is wrong in the coach's own words already

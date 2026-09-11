@@ -34,6 +34,7 @@ CLAUDE_THINKING_ENABLED = True
 MODEL_ALIASES = {
     "opus-4.6": "claude-opus-4-6",
     "gemini-2.5-flash": "gemini-2.5-flash",
+    "haiku-4.5": "claude-haiku-4-5-20251001",
 }
 
 DEFAULT_RESPONSE_MODEL_ALIAS = "opus-4.6"
