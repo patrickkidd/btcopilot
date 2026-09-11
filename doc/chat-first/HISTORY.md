@@ -754,4 +754,12 @@ decisions live on the drawing and artifacts are UI drawings, not text [R-0255], 
 turn shows UI options with one-line descriptions [R-0256]; a third builder drew the three stages
 as screens — the phone ballot without names or AI, the coder's queue, the ratifying meeting, and
 the AI as an audit card after ratification or as a line under each tally — with the six open
-decisions listed once at the top.
+decisions listed once at the top. His review of that page: the one-item ballot approved, "change" and "drop"
+needed explaining; the queue not understood and replaced by a punchlist per coder before each
+meeting that he manages by picking the sessions and the date [R-0258]; the meeting screen and
+its three choices approved, every item chosen before ratify [R-0257]; no meeting time for
+choosing guideline additions — the AI writes them itself, and a result screen is needed, with
+the question open whether the app's tables replace the repository's markdown as the meeting's
+record [R-0259]; captions may explain what is not self-evident [R-0260]. The page was redrawn
+in place (version 2) with the editor "change" opens, the two punchlist phones, the ratify gate
+and the result screen.
