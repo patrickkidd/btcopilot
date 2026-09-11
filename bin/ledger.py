@@ -19,15 +19,15 @@ YEAR = "2026"
 # Topic keywords: the same words the topic blocks use. A record that matches none stays
 # untagged and shows as its own lane, so nothing is hidden by a bad guess.
 TOPIC_WORDS = {
-    "T-1": ["beta", "deploy", "merge", "sign-in", "signin", "login", "passkey", "invite", "home screen", "https", "release", "sandbox", "migration", "pickle", "isolation options", "must fix", "production"],
-    "T-2": ["coach", "prompt", "extraction", "extract", "tool", "who·what", "who from the links", "harness", "f1", "definition", "sarf", "agent loop", "refus", "shift", "variable"],
-    "T-3": ["pro", "training", "coding", "coder", "irr", "one app", "layer", "case", "upload", "recording", "compare", "gold record", "protocol"],
+    "T-1": ["beta", "deploy", "merge", "sign-in", "signin", "login", "passkey", "invite", "home screen", "https", "release", "sandbox", "migration", "pickle", "isolation options", "must fix", "production", "stored blob", "json record", "change log", "schema comparison", "cascade", "one send at a time"],
+    "T-2": ["coach", "prompt", "extraction", "extract", "tool", "who·what", "who from the links", "harness", "f1", "definition", "sarf", "agent loop", "refus", "shift", "variable", "loop engineering", "optimistic lock", "agent:", "/personal/", "markdown links", "personal api", "interaction store", "unknown provenance"],
+    "T-3": ["pro app", "pro's", "pro save", "pro user", "pro loop", "pro drawer", "pro routes", "pro code", "pro reads", "pro chat", "pro users", "pro migration", "pro session", "pro statements", "pro-embed", "in-pro", "training", "coding", "coder", "irr study", "irr review", "irr compares", "one app", "layer", "case properties", "professional case", "documenting a case", "family switcher", "adds cases", "upload", "recording", "compare", "gold record", "protocol", "sessions need", "sessions accumulate", "session summaries", "session list", "settings-nested", "preferences hold", "stacked-cards"],
     "T-4": ["wipe", "re-code", "recode", "existing rows", "old rows", "transcript", "migrat"],
-    "T-5": ["picture", "board", "cluster view", "chip", "title", "drawer", "editor", "slide", "button", "badge", "hamburger", "spotlight", "dot", "wire", "drawab", "move language", "ui", "shell", "navigation", "sessions sheet", "account", "avatar"],
-    "T-6": ["cluster", "corpus", "case_", "clinic", "notability", "function-subset", "by example", "floor"],
-    "T-7": ["arrange", "drawn family", "layout", "genogram"],
-    "T-8": ["package boundary", "isolation option", "adapter", "lint"],
-    "T-9": ["process", "auditor", "sub-agent", "subagent", "flush", "corpus regime", "oracle", "ruling", "no coined", "estimate", "token", "eyeball", "worktree", "jira"],
+    "T-5": ["picture", "board", "cluster view", "chip", "title", "drawer", "editor", "slide", "button", "badge", "hamburger", "spotlight", "dot", "wire", "drawab", "move language", "ui", "shell", "navigation", "sessions sheet", "account", "avatar", "play-by-play", "play-through", "symbols", "timing", "legend", "arrow", "moment", "fixture", "golden", "vocabulary", "speaks", "voice is fine", "newest words", "drag-to-scroll", "selectable", "selected and copied", "warning", "caret", "offers to go again", "about page", "gallery", "scroll bar", "the app is called", "events and people lists", "diagram row", "one open at a time", "birth and death", "never ruled and is removed"],
+    "T-6": ["cluster", "corpus", "case_", "clinic", "notability", "function-subset", "by example", "floor", "phase a", "bake-off", "mechanical grouping", "anonymization"],
+    "T-7": ["arrange", "drawn family", "genogram"],
+    "T-8": ["package boundary", "isolation option", "adapter", "lint", "auth module"],
+    "T-9": ["process", "auditor", "sub-agent", "subagent", "flush", "corpus regime", "oracle", "ruling", "no coined", "estimate", "token", "eyeball", "worktree", "jira", "pivot", "two-clocks", "review log", "open items", "non-happy-path", "session discipline", "one epic", "keeps them in line", "handoff", "architecture session", "the owner's words", "mvp done condition", "early hook"],
 }
 
 

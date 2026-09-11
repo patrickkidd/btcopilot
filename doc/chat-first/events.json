@@ -30,7 +30,7 @@
 "date": "2026-08-25",
 "session": "",
 "topics": [
-"T-3"
+"T-9"
 ],
 "title": "decisions: MVP done condition = returning long-horizon chat with diagram improved through chat; re-sequence Fa",
 "text": "decisions: MVP done condition = returning long-horizon chat with diagram improved through chat; re-sequence Fall plan",
@@ -58,19 +58,6 @@
 ],
 "title": "docs: Fall 2026 direction — round 4 (agent-local arrangement, reference resolution patterns, voice)",
 "text": "docs: Fall 2026 direction — round 4 (agent-local arrangement, reference resolution patterns, voice)",
-"source": "btcopilot git log"
-},
-{
-"id": "btcopilot@276ca25",
-"kind": "build",
-"date": "2026-08-25",
-"session": "",
-"topics": [
-"T-5",
-"T-7"
-],
-"title": "docs: Fall 2026 direction — round 3 (chat-as-UI, derived vs authored layout, constraint hints)",
-"text": "docs: Fall 2026 direction — round 3 (chat-as-UI, derived vs authored layout, constraint hints)",
 "source": "btcopilot git log"
 },
 {
@@ -206,7 +193,6 @@
 "date": "2026-08-28",
 "session": "S 08-28/08-30",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "Business model designed then TABLED; not reopened until PMF signal",
@@ -221,7 +207,6 @@
 "date": "2026-08-28",
 "session": "S 08-28 21:25Z; 09-01 14:49Z",
 "topics": [
-"T-3",
 "T-6"
 ],
 "title": "LLM-provider BAAs already EXIST; the Anthropic BAA is pending — until it exists, clinical content is used with",
@@ -269,7 +254,6 @@
 "session": "S 08-28 21:29Z",
 "topics": [
 "T-2",
-"T-3",
 "T-5"
 ],
 "title": "Manual diagram tweaking stays; chat tool calls control EVERYTHING in the app; full bidirectional reactivity be",
@@ -284,7 +268,6 @@
 "date": "2026-08-28",
 "session": "S 08-28 21:07Z/21:25Z",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "Pivot motivation: an architectural singularity where all feedback loops point the same direction (usage -> dat",
@@ -329,7 +312,8 @@
 "session": "",
 "topics": [
 "T-2",
-"T-5"
+"T-5",
+"T-9"
 ],
 "title": "2026-08-29: Pivot — chat-first web app (\"Claude Code for Family Diagram\"), parallel epic",
 "text": "**Context:** Aug 28–30 brainstorm session. Adversarial 22-agent check of \"interactive agent removes upfront extraction precision\": holds for structure, fails for shift/SARF timeline. Architecture panel: keep Flask backend, JSON doc + command log, one web page (Vite/TS SVG, PWA), no Qt. Concept ruled: chat + one timeline picture above it; chat = event clock, record = state clock; lanes only person/couple/household; no diagram drawn at first; proactive near-zero default.\n\n**Options considered:** (a) continue FD-341 as sequenced (Pro drawer first); (b) fold the pivot into FD-341; (c) parallel epic, FD-341 kept separate as the June plan of record.\n\n**Decision:** (c). New epic: chat-first web app against the existing backend. Story 1 = web page (chat + timeline picture, existing endpoints, brow",
@@ -382,8 +366,7 @@
 "date": "2026-08-29",
 "session": "S 08-29",
 "topics": [
-"T-2",
-"T-3"
+"T-2"
 ],
 "title": "Vision: a coach who never forgets your family; conversation central; the diagram is secondary visualization th",
 "text": "Vision: a coach who never forgets your family; conversation central; the diagram is secondary visualization that keeps family focus; the timeline is the innovation",
@@ -397,7 +380,6 @@
 "date": "2026-08-29",
 "session": "S 08-29",
 "topics": [
-"T-3",
 "T-6"
 ],
 "title": "Audience: therapists/working group first, then clinicians' clients, eventually the general public",
@@ -428,7 +410,6 @@
 "date": "2026-08-29",
 "session": "S 08-29 15:51Z",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "Anti-overfit: keep it simple and chat-focused; do not add surfaces overfitted to individual examples (it is no",
@@ -456,7 +437,7 @@
 "date": "2026-08-30",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "docs: Claude Code for Family Diagram pivot — concept, architecture, tabled business model; decision-log entry;",
 "text": "docs: Claude Code for Family Diagram pivot — concept, architecture, tabled business model; decision-log entry; parallel epic FD-359",
@@ -495,7 +476,6 @@
 "date": "2026-08-30",
 "session": "S 08-30 (his two-clocks/context-graphs framing)",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "Chat is the append-only log; the record is current state; corrections change the record, never the log",
@@ -511,7 +491,6 @@
 "session": "S 08-30 05:34Z; 08-31 17:40Z",
 "topics": [
 "T-2",
-"T-3",
 "T-5",
 "T-6"
 ],
@@ -587,7 +566,6 @@
 "date": "2026-08-31",
 "session": "",
 "topics": [
-"T-3",
 "T-5",
 "T-6",
 "T-9"
@@ -603,7 +581,6 @@
 "session": "",
 "topics": [
 "T-2",
-"T-3",
 "T-5"
 ],
 "title": "2026-08-31: UI shape ruled from real-data mockups — conversation-led, always-on strip, quiet questions; cartoon rule",
@@ -617,7 +594,6 @@
 "date": "2026-08-31",
 "session": "S 08-31 19:58Z",
 "topics": [
-"T-3",
 "T-5",
 "T-6",
 "T-9"
@@ -647,7 +623,6 @@
 "session": "S 08-31",
 "topics": [
 "T-2",
-"T-3",
 "T-5"
 ],
 "title": "Conversation drives everything; the UI is a secondary way to fill gaps, and the coach aims attention via inlin",
@@ -677,7 +652,6 @@
 "session": "S 08-31",
 "topics": [
 "T-2",
-"T-3",
 "T-5"
 ],
 "title": "No survey/questionnaire register anywhere; everything flows naturally",
@@ -692,7 +666,6 @@
 "date": "2026-08-31",
 "session": "S 08-31 17:40Z",
 "topics": [
-"T-3",
 "T-5"
 ],
 "title": "Cartoon-level simplicity: the product produces one or two impactful correlations, never a data project",
@@ -708,7 +681,6 @@
 "session": "S 08-31 22:31Z",
 "topics": [
 "T-2",
-"T-3",
 "T-5"
 ],
 "title": "Tracked unknowns that could impact the case formulation are the engagement engine: visually apparent, tappable",
@@ -723,7 +695,6 @@
 "date": "2026-08-31",
 "session": "S 08-31",
 "topics": [
-"T-3",
 "T-5"
 ],
 "title": "No progress bar, no notion of finished; what-more-data-buys shows in place",
@@ -823,8 +794,7 @@
 "date": "2026-08-31",
 "session": "S 08-31",
 "topics": [
-"T-2",
-"T-3"
+"T-2"
 ],
 "title": "No modes: one agent; registers route from context",
 "text": "No modes: one agent; registers route from context",
@@ -852,7 +822,7 @@
 "date": "2026-08-31",
 "session": "S 08-31/09-01 (two corrections)",
 "topics": [
-"T-3",
+"T-5",
 "T-9"
 ],
 "title": "Communication: plain common words, his terms, no invented vocabulary; decision questions self-contained in one",
@@ -867,7 +837,6 @@
 "date": "2026-08-31",
 "session": "S 08-31",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "Use subagents to preserve the main context window in high-value sessions",
@@ -898,7 +867,6 @@
 "topics": [
 "T-1",
 "T-2",
-"T-3",
 "T-5",
 "T-6",
 "T-9"
@@ -915,8 +883,7 @@
 "date": "2026-08-31",
 "session": "S 08-31 04:20Z",
 "topics": [
-"T-2",
-"T-3"
+"T-2"
 ],
 "title": "The app self-files friction reports when the model detects user friction (even in background), alongside users",
 "text": "The app self-files friction reports when the model detects user friction (even in background), alongside users asking the chat how to use the app from the reference manual",
@@ -943,7 +910,6 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"T-3",
 "T-5"
 ],
 "title": "Gate build behind approved pixel mockup of the app screen; mockup shipped",
@@ -980,7 +946,7 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"untagged"
+"T-2"
 ],
 "title": "Decision: loop engineering is the organizing principle; visuals serve retention + auto data collection",
 "text": "Decision: loop engineering is the organizing principle; visuals serve retention + auto data collection",
@@ -992,7 +958,8 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"T-3"
+"T-3",
+"T-6"
 ],
 "title": "Phase A ratified with corrections: nodal ignored, palettes=coding history, hold loosely, questions closed",
 "text": "Phase A ratified with corrections: nodal ignored, palettes=coding history, hold loosely, questions closed",
@@ -1004,7 +971,7 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"untagged"
+"T-6"
 ],
 "title": "Phase A doc: rewrite open questions in plain words with inline examples",
 "text": "Phase A doc: rewrite open questions in plain words with inline examples",
@@ -1017,7 +984,6 @@
 "session": "",
 "topics": [
 "T-2",
-"T-3",
 "T-6"
 ],
 "title": "Phase A doc: adversarial-review fixes (ratio, recency retraction, nodal composition gradient, couples marks, s",
@@ -1030,7 +996,7 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"T-3"
+"T-6"
 ],
 "title": "Phase A: NATURE_OF_THE_DATA.md draft from the seven marker-densest cases",
 "text": "Phase A: NATURE_OF_THE_DATA.md draft from the seven marker-densest cases",
@@ -1042,6 +1008,7 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
+"T-6",
 "T-9"
 ],
 "title": "FUNCTION subset ruled: marker-densest seven, eyeball gate waived; phase A unblocked",
@@ -1055,8 +1022,7 @@
 "session": "",
 "topics": [
 "T-1",
-"T-2",
-"T-3"
+"T-2"
 ],
 "title": "Field conventions from journal-merge dogfood: short descriptions, prose in notes, no variable text; personal t",
 "text": "Field conventions from journal-merge dogfood: short descriptions, prose in notes, no variable text; personal timeline parked",
@@ -1082,6 +1048,7 @@
 "session": "",
 "topics": [
 "T-2",
+"T-5",
 "T-9"
 ],
 "title": "Ruling: baseline configuration = undated relationship symbols; definitions from SARF lit review; fusion/toward",
@@ -1095,6 +1062,7 @@
 "session": "",
 "topics": [
 "T-4",
+"T-6",
 "T-9"
 ],
 "title": "STATE/HISTORY: bake-off verdict, transcription ruling, two open rulings",
@@ -1108,8 +1076,8 @@
 "session": "",
 "topics": [
 "T-1",
-"T-3",
-"T-4"
+"T-4",
+"T-6"
 ],
 "title": "Bake-off verdict: synthesis (A+B+image-checked merge) wins; transcription archival-only; baseline-configuratio",
 "text": "Bake-off verdict: synthesis (A+B+image-checked merge) wins; transcription archival-only; baseline-configuration case class flagged",
@@ -1133,7 +1101,7 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"untagged"
+"T-6"
 ],
 "title": "STATE: bake-off two-armed, PDFs local, mapping ratified, samples picked, spec drafted",
 "text": "STATE: bake-off two-armed, PDFs local, mapping ratified, samples picked, spec drafted",
@@ -1145,7 +1113,8 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"T-3"
+"T-3",
+"T-6"
 ],
 "title": "Notes→diagram pipeline spec draft: stages, interpretation schema v0, two-armed bake-off protocol",
 "text": "Notes→diagram pipeline spec draft: stages, interpretation schema v0, two-armed bake-off protocol",
@@ -1169,7 +1138,6 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"T-3",
 "T-5"
 ],
 "title": "Pipeline ruled reusable product tech (notes→PDF→diagram); build as documented module, surfaces deferred",
@@ -1182,7 +1150,7 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"T-3"
+"T-6"
 ],
 "title": "Correction: no anonymization machinery — BAA providers on raw content; scope = PDFs to new .fd files, then via",
 "text": "Correction: no anonymization machinery — BAA providers on raw content; scope = PDFs to new .fd files, then viability filter",
@@ -1194,7 +1162,6 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"T-3",
 "T-6"
 ],
 "title": "Notability thread ruled: .fd single source of truth, app aliases verified, translator plan; two approvals pend",
@@ -1207,7 +1174,6 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"T-3",
 "T-6",
 "T-9"
 ],
@@ -1221,7 +1187,6 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"T-3",
 "T-6"
 ],
 "title": "Notability thread: local ollama option (text-only today, Qwen-VL pullable); three-armed bake-off proposal",
@@ -1234,7 +1199,6 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"T-3",
 "T-6"
 ],
 "title": "Notability handwritten-cases thread: diagnosis (own-cloud sync, empty iCloud containers) and proposed corpus-i",
@@ -1296,7 +1260,7 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "Chat-first handoff package: HISTORY/STATE/NEXT_SESSIONS (two-clocks regime), CLAUDE.md index, family-name sani",
 "text": "Chat-first handoff package: HISTORY/STATE/NEXT_SESSIONS (two-clocks regime), CLAUDE.md index, family-name sanitization",
@@ -1321,7 +1285,7 @@
 "date": "2026-09-01",
 "session": "",
 "topics": [
-"T-3",
+"T-2",
 "T-9"
 ],
 "title": "2026-09-01 — Loop engineering is the project's organizing principle",
@@ -1349,7 +1313,6 @@
 "date": "2026-09-01",
 "session": "S 09-01",
 "topics": [
-"T-3",
 "T-5"
 ],
 "title": "Lane-filter buttons rejected: hiding lanes is a data project nobody wants",
@@ -1405,8 +1368,7 @@
 "date": "2026-09-01",
 "session": "S 09-01",
 "topics": [
-"T-2",
-"T-3"
+"T-2"
 ],
 "title": "Proactive messaging is core; notifications default to fewer/near-zero and are tuned upward by experiment",
 "text": "Proactive messaging is core; notifications default to fewer/near-zero and are tuned upward by experiment",
@@ -1420,8 +1382,7 @@
 "date": "2026-09-01",
 "session": "S 09-01",
 "topics": [
-"T-2",
-"T-3"
+"T-2"
 ],
 "title": "\"While it's calm\" prompting is valuable and an A/B test candidate",
 "text": "\"While it's calm\" prompting is valuable and an A/B test candidate",
@@ -1450,7 +1411,6 @@
 "date": "2026-09-01",
 "session": "S 09-01 14:29Z",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "Agent work batches into one final deliverable; no interim chatter; never ask review before subagents finish",
@@ -1465,7 +1425,6 @@
 "date": "2026-09-01",
 "session": "S 09-01 (incl. two killed-run corrections)",
 "topics": [
-"T-3",
 "T-6",
 "T-9"
 ],
@@ -1481,7 +1440,6 @@
 "date": "2026-09-01",
 "session": "S 09-01",
 "topics": [
-"T-3",
 "T-6",
 "T-9"
 ],
@@ -1527,7 +1485,6 @@
 "date": "2026-09-01",
 "session": "S 09-01 14:49Z",
 "topics": [
-"T-3",
 "T-6"
 ],
 "title": "The clinic cases (his iCloud folder) are THE corpus; prod diagrams are not",
@@ -1542,7 +1499,6 @@
 "date": "2026-09-01",
 "session": "S 09-01",
 "topics": [
-"T-3",
 "T-6"
 ],
 "title": "Clinic cases vary widely in quality; richer vs thinner is inferable from structure",
@@ -1587,7 +1543,6 @@
 "date": "2026-09-01",
 "session": "S 09-01",
 "topics": [
-"T-3",
 "T-6"
 ],
 "title": "Prod diagrams get a floor scan, then (email, diagram_id) pairs presented for his own review",
@@ -1647,7 +1602,6 @@
 "session": "S 09-01",
 "topics": [
 "T-2",
-"T-3",
 "T-9"
 ],
 "title": "Handoff docs follow the two-clocks regime, indexed so every session picks them up and refines them",
@@ -1678,7 +1632,6 @@
 "date": "2026-09-01",
 "session": "S 09-01 18:39Z (via coordinator relay)",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "The human oracle is among the most valuable inputs to the whole agentic process; canonicalize and continually ",
@@ -1693,7 +1646,6 @@
 "date": "2026-09-01",
 "session": "S 09-01",
 "topics": [
-"T-3",
 "T-5",
 "T-9"
 ],
@@ -1709,7 +1661,6 @@
 "date": "2026-09-01",
 "session": "S 09-01",
 "topics": [
-"T-3",
 "T-5"
 ],
 "title": "Pan/zoom must genuinely work over irregular spans without dead space; do not assume the existing app code is r",
@@ -1725,9 +1676,7 @@
 "session": "S 09-01 16:12Z; 08-29 14:46Z",
 "topics": [
 "T-2",
-"T-3",
 "T-5",
-"T-7",
 "T-9"
 ],
 "title": "UI ideas derive from analyzing the CODE base too — mine the existing app's visual vocabulary; his current diag",
@@ -1742,7 +1691,6 @@
 "date": "2026-09-01",
 "session": "S 09-01 (via coordinator relay)",
 "topics": [
-"T-3",
 "T-4",
 "T-9"
 ],
@@ -1797,7 +1745,7 @@
 "date": "2026-09-02",
 "session": "",
 "topics": [
-"untagged"
+"T-2"
 ],
 "title": "companion event CRUD: take the diagram's optimistic lock on every write",
 "text": "companion event CRUD: take the diagram's optimistic lock on every write",
@@ -1869,7 +1817,8 @@
 "date": "2026-09-02",
 "session": "",
 "topics": [
-"T-5"
+"T-5",
+"T-9"
 ],
 "title": "Handoff: design-refinement session brief (app shell surfaces, method rules, open questions)",
 "text": "Handoff: design-refinement session brief (app shell surfaces, method rules, open questions)",
@@ -1981,7 +1930,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-3"
 ],
 "title": "The stacked-cards look is liked but is not for sessions; keep it on file for another surface",
 "text": "The stacked-cards look is liked but is not for sessions; keep it on file for another surface",
@@ -1995,7 +1944,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-3"
 ],
 "title": "Sessions need per-session summaries and manual renaming, modelled on Claude's own session list",
 "text": "Sessions need per-session summaries and manual renaming, modelled on Claude's own session list",
@@ -2009,7 +1958,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-3"
 ],
 "title": "Preferences hold first name, last name and birthdate, a chat-view checkbox to speak responses, and a way to si",
 "text": "Preferences hold first name, last name and birthdate, a chat-view checkbox to speak responses, and a way to sign out",
@@ -2098,7 +2047,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Symbols must be self-evident without a legend, and must be shown as visuals rather than tables",
 "text": "Symbols must be self-evident without a legend, and must be shown as visuals rather than tables",
@@ -2112,7 +2061,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Conflict: option two, but it must read as high-frequency energy, not a couple of segments on a line",
 "text": "Conflict: option two, but it must read as high-frequency energy, not a couple of segments on a line",
@@ -2126,7 +2075,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Toward: the mover walks over and lands beside the target; the arrow shows during the walk, its tail follows th",
 "text": "Toward: the mover walks over and lands beside the target; the arrow shows during the walk, its tail follows the mover, and it disappears on arrival",
@@ -2140,7 +2089,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Cutoff: the actor puts up a wall that stops the other's emotional field; the field stays present and obstructe",
 "text": "Cutoff: the actor puts up a wall that stops the other's emotional field; the field stays present and obstructed, not faded",
@@ -2154,7 +2103,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Cutoff final: the wall extends further in front of the actor, the actor never disappears, and the field casts ",
 "text": "Cutoff final: the wall extends further in front of the actor, the actor never disappears, and the field casts a shadow behind the wall instead of being clipped at a straight line",
@@ -2168,7 +2117,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Distance is the cutoff drawing without the line struck through the wall",
 "text": "Distance is the cutoff drawing without the line struck through the wall",
@@ -2182,7 +2131,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Over and underfunctioning: an up arrow beside the over-functioner and a down arrow beside the under-functioner",
 "text": "Over and underfunctioning: an up arrow beside the over-functioner and a down arrow beside the under-functioner, at half to two-thirds the earlier size",
@@ -2196,7 +2145,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"T-3"
+"T-5"
 ],
 "title": "Triangles: no warm glow, use overlap. The inside move is approved. The outside move's tension clears when the ",
 "text": "Triangles: no warm glow, use overlap. The inside move is approved. The outside move's tension clears when the actor walks, with none left between the two who remain",
@@ -2210,7 +2159,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Fusion: Bowen's first frame with the three horizontal lines included, the bars part of the animation, shrinkin",
 "text": "Fusion: Bowen's first frame with the three horizontal lines included, the bars part of the animation, shrinking into their final position",
@@ -2224,7 +2173,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Defined self: the actor turns green only once stable, in the same green as every other move, with a delay befo",
 "text": "Defined self: the actor turns green only once stable, in the same green as every other move, with a delay before the other person settles",
@@ -2238,7 +2187,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"T-3"
+"T-5"
 ],
 "title": "Projection ratified as variant four: anxiety flows through the arrow as a smooth gradient, agitation shown wit",
 "text": "Projection ratified as variant four: anxiety flows through the arrow as a smooth gradient, agitation shown with blur at half strength, the peak showing one normal plus one blurred outline",
@@ -2253,7 +2202,7 @@
 "session": "S 09-02",
 "topics": [
 "T-2",
-"T-3"
+"T-5"
 ],
 "title": "Anxiety uses one visual language everywhere; the projection anxiety visual is reused for the A variable",
 "text": "Anxiety uses one visual language everywhere; the projection anxiety visual is reused for the A variable",
@@ -2267,7 +2216,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Symptom, interim: a health cross with an up arrow beside it for worse and a down arrow for better",
 "text": "Symptom, interim: a health cross with an up arrow beside it for worse and a down arrow for better",
@@ -2281,7 +2230,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Functioning: option three, with no second circle; the existing white circle keeps its animation and fades to g",
 "text": "Functioning: option three, with no second circle; the existing white circle keeps its animation and fades to green",
@@ -2295,7 +2244,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "All moves use the same green and every move animation runs the same length",
 "text": "All moves use the same green and every move animation runs the same length",
@@ -2309,7 +2258,6 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"T-3",
 "T-5",
 "T-6"
 ],
@@ -2370,8 +2318,7 @@
 "session": "S 09-02",
 "topics": [
 "T-5",
-"T-6",
-"T-7"
+"T-6"
 ],
 "title": "Vertical space is wasted in the zoomed-out timeline and cluster views; only the play-by-play may expand",
 "text": "Vertical space is wasted in the zoomed-out timeline and cluster views; only the play-by-play may expand",
@@ -2385,7 +2332,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"T-3",
+"T-5",
 "T-9"
 ],
 "title": "Symbols must be shown inside the real design, and pixel-perfect interactive mockups come before code",
@@ -2400,7 +2347,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"T-7"
+"T-5"
 ],
 "title": "Keep the simple circular layout for the play-by-play rather than drawing the family diagram structure",
 "text": "Keep the simple circular layout for the play-by-play rather than drawing the family diagram structure",
@@ -2414,7 +2361,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "The play-by-play must show direction: one person makes a move in relation to others, and that has to be clear",
 "text": "The play-by-play must show direction: one person makes a move in relation to others, and that has to be clear",
@@ -2428,7 +2375,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Each move must be apparent in the drawing itself; a text label is not enough, and cutoff must show who is cut ",
 "text": "Each move must be apparent in the drawing itself; a text label is not enough, and cutoff must show who is cut off from",
@@ -2485,7 +2432,8 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5",
+"T-9"
 ],
 "title": "No mid-animation pivot: the emotional field must not change frequency or behaviour when the cutoff lands",
 "text": "No mid-animation pivot: the emotional field must not change frequency or behaviour when the cutoff lands",
@@ -2499,7 +2447,7 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "A delay is needed between the defined-self move and the other person settling so cause and effect reads",
 "text": "A delay is needed between the defined-self move and the other person settling so cause and effect reads",
@@ -2513,7 +2461,6 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "Design rounds show mockups with one-line captions, widely divergent first, converging later",
@@ -2528,7 +2475,6 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "No converging on a single symbol without first showing divergent options",
@@ -2557,7 +2503,6 @@
 "date": "2026-09-02",
 "session": "S 09-02",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "Mockup sections and boxes must be numbered so they are easy to refer to",
@@ -2583,7 +2528,7 @@
 "date": "2026-09-03",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "STATE: ordered step-back agenda, model split, and session discipline",
 "text": "STATE: ordered step-back agenda, model split, and session discipline",
@@ -2607,7 +2552,8 @@
 "date": "2026-09-03",
 "session": "",
 "topics": [
-"T-5"
+"T-5",
+"T-9"
 ],
 "title": "STATE: carry the live build status, so no handoff file is needed",
 "text": "STATE: carry the live build status, so no handoff file is needed",
@@ -2619,7 +2565,7 @@
 "date": "2026-09-03",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "FD-362: one epic, one branch, and the rule that keeps them in line",
 "text": "FD-362: one epic, one branch, and the rule that keeps them in line",
@@ -2655,7 +2601,7 @@
 "date": "2026-09-03",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "Handoff: anchor the architecture session in the original ruled vision",
 "text": "Handoff: anchor the architecture session in the original ruled vision",
@@ -2667,7 +2613,7 @@
 "date": "2026-09-03",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "Architecture session handoff: scope, measurements and open questions",
 "text": "Architecture session handoff: scope, measurements and open questions",
@@ -2703,7 +2649,7 @@
 "date": "2026-09-03",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "chat-first phase 4: the play-by-play steps as one continuous stage",
 "text": "chat-first phase 4: the play-by-play steps as one continuous stage",
@@ -2741,8 +2687,7 @@
 "date": "2026-09-03",
 "session": "",
 "topics": [
-"T-2",
-"T-3"
+"T-2"
 ],
 "title": "Carry the coach reference instruction into the private prompt",
 "text": "Carry the coach reference instruction into the private prompt",
@@ -2754,7 +2699,6 @@
 "date": "2026-09-03",
 "session": "",
 "topics": [
-"T-3",
 "T-5",
 "T-6"
 ],
@@ -2811,7 +2755,6 @@
 "date": "2026-09-03",
 "session": "S 09-03",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "Font size is a live problem in the chapter view",
@@ -2826,7 +2769,7 @@
 "date": "2026-09-03",
 "session": "S 09-03",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Defect: clicking loop on a gallery example does not start the animation",
 "text": "Defect: clicking loop on a gallery example does not start the animation",
@@ -2840,7 +2783,7 @@
 "date": "2026-09-03",
 "session": "S 09-03",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Defect: the gallery page scrolls itself after a while, from a demo's scroll target applied to the outer page",
 "text": "Defect: the gallery page scrolls itself after a while, from a demo's scroll target applied to the outer page",
@@ -2869,7 +2812,6 @@
 "session": "S 09-03",
 "topics": [
 "T-2",
-"T-3",
 "T-5",
 "T-9"
 ],
@@ -2900,7 +2842,6 @@
 "session": "S 09-03",
 "topics": [
 "T-2",
-"T-3",
 "T-5",
 "T-9"
 ],
@@ -2932,7 +2873,6 @@
 "date": "2026-09-03",
 "session": "S 09-03",
 "topics": [
-"T-3",
 "T-5"
 ],
 "title": "The full timeline + event editor stays as designed in the prototype, off the main journey as the fallback, wit",
@@ -2947,7 +2887,6 @@
 "date": "2026-09-03",
 "session": "S 09-03",
 "topics": [
-"T-3",
 "T-5",
 "T-9"
 ],
@@ -2979,7 +2918,6 @@
 "session": "S 09-03",
 "topics": [
 "T-2",
-"T-3",
 "T-5",
 "T-6",
 "T-9"
@@ -3028,7 +2966,6 @@
 "session": "S 09-03",
 "topics": [
 "T-2",
-"T-3",
 "T-9"
 ],
 "title": "Every tap, including looks that send nothing, is recorded as learning data and visible to the coach as context",
@@ -3063,7 +3000,6 @@
 "date": "2026-09-03",
 "session": "S 09-03",
 "topics": [
-"T-3",
 "T-6",
 "T-9"
 ],
@@ -3107,7 +3043,7 @@
 "date": "2026-09-03",
 "session": "S 09-03",
 "topics": [
-"untagged"
+"T-3"
 ],
 "title": "The app-level view is settings-nested, an iOS-Settings list where each row pushes its own page",
 "text": "The app-level view is settings-nested, an iOS-Settings list where each row pushes its own page",
@@ -3135,7 +3071,6 @@
 "date": "2026-09-03",
 "session": "S 09-03",
 "topics": [
-"T-3",
 "T-5"
 ],
 "title": "Scroll areas support wheel and drag on phone and web, and nothing programmatic scrolls the outer page",
@@ -3164,7 +3099,7 @@
 "date": "2026-09-03",
 "session": "S 09-03",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "The play-by-play is the priority; fix timing and symbol gaps before adding anything",
 "text": "The play-by-play is the priority; fix timing and symbol gaps before adding anything",
@@ -3192,7 +3127,6 @@
 "date": "2026-09-03",
 "session": "S 09-03",
 "topics": [
-"T-3",
 "T-5"
 ],
 "title": "Symptom, anxiety and functioning fields in the event editor are approved; the relationship field must break ou",
@@ -3208,8 +3142,7 @@
 "session": "S 09-03",
 "topics": [
 "T-3",
-"T-5",
-"T-7"
+"T-5"
 ],
 "title": "The relationship field must match the backend Event shape and the Pro app editor, following its conditional vi",
 "text": "The relationship field must match the backend Event shape and the Pro app editor, following its conditional visibility rules; layout may be simplified",
@@ -3223,7 +3156,7 @@
 "date": "2026-09-03",
 "session": "S 09-03",
 "topics": [
-"T-3",
+"T-5",
 "T-9"
 ],
 "title": "Options must be described in common words, explicitly and specifically, with no coined vocabulary or clever fr",
@@ -3370,7 +3303,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-8"
 ],
 "title": "FD-362 api: bind the auth module, not the name, in the personal blueprint",
 "text": "FD-362 api: bind the auth module, not the name, in the personal blueprint",
@@ -3406,7 +3339,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-2"
 ],
 "title": "FD-362 api: STATE and the API doc follow the routes to /personal/",
 "text": "FD-362 api: STATE and the API doc follow the routes to /personal/",
@@ -3418,7 +3351,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-2"
 ],
 "title": "FD-362 api: the chat app's routes become the personal API",
 "text": "FD-362 api: the chat app's routes become the personal API",
@@ -3515,7 +3448,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-2"
 ],
 "title": "FD-362 agent: an over-long label is asked again, and a walk says it is one",
 "text": "FD-362 agent: an over-long label is asked again, and a walk says it is one",
@@ -3527,6 +3460,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
+"T-2",
 "T-5"
 ],
 "title": "FD-362 agent: a chip label is at most 28 characters",
@@ -3551,7 +3485,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"T-3"
+"T-2"
 ],
 "title": "FD-362 agent: prove the forced reply is not the working out",
 "text": "FD-362 agent: prove the forced reply is not the working out",
@@ -3685,6 +3619,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
+"T-3",
 "T-5"
 ],
 "title": "FD-362 UI_GAP: the family switcher is PARTIAL, not MET",
@@ -3697,7 +3632,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"T-3"
+"T-2"
 ],
 "title": "FD-362 backend: unknown provenance is treated as the user's, not the model's",
 "text": "FD-362 backend: unknown provenance is treated as the user's, not the model's",
@@ -3733,7 +3668,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-6"
 ],
 "title": "FD-362 backend: name the mechanical grouping Derived, on the line as well as in play",
 "text": "FD-362 backend: name the mechanical grouping Derived, on the line as well as in play",
@@ -3745,7 +3680,6 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"T-3",
 "T-6"
 ],
 "title": "FD-362 backend: honest provenance on a gap-grouped stretch, and log a stale cluster",
@@ -3758,7 +3692,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 visual: name the database the fixture installer has to share",
 "text": "FD-362 visual: name the database the fixture installer has to share",
@@ -3858,6 +3792,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
+"T-3",
 "T-5"
 ],
 "title": "FD-362 ui fix (shell): a diagrams resource, the family switcher, the board button",
@@ -4149,7 +4084,6 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"T-3",
 "T-5"
 ],
 "title": "FD-362 UI_SPEC: re-resolve 31 and 34 by rule 1; projection ghost deltas",
@@ -4198,7 +4132,6 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"T-3",
 "T-5"
 ],
 "title": "FD-362 ui fix (list): the timeline list the owner approved",
@@ -4236,7 +4169,6 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"T-3",
 "T-5"
 ],
 "title": "FD-362 UI_SPEC: canonical approved UI, exhaustive, + UI_GAP vs build",
@@ -4249,7 +4181,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 web fix: every move in the ratified vocabulary, and a move that moves",
 "text": "FD-362 web fix: every move in the ratified vocabulary, and a move that moves",
@@ -4261,6 +4193,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
+"T-2",
 "T-5"
 ],
 "title": "FD-362 agent: the offer to look somewhere next is a chip too",
@@ -4297,7 +4230,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 web fix: fixture records for the visual goldens",
 "text": "FD-362 web fix: fixture records for the visual goldens",
@@ -4322,7 +4255,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-2"
 ],
 "title": "FD-362 agent: the events land too, and the working out stays private",
 "text": "FD-362 agent: the events land too, and the working out stays private",
@@ -4383,7 +4316,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 integrate: the tap that speaks, the whole event, and coming back",
 "text": "FD-362 integrate: the tap that speaks, the whole event, and coming back",
@@ -4395,7 +4328,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-1"
 ],
 "title": "FD-362 integrate: read the stored blob as JSON in the diagram model test",
 "text": "FD-362 integrate: read the stored blob as JSON in the diagram model test",
@@ -4419,7 +4352,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-2"
 ],
 "title": "FD-362 agent: the turn returns its events with the words, not over a stream",
 "text": "FD-362 agent: the turn returns its events with the words, not over a stream",
@@ -4455,7 +4388,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-2"
 ],
 "title": "FD-362 web: record taps through the Interaction store, and fix the page tests",
 "text": "FD-362 web: record taps through the Interaction store, and fix the page tests",
@@ -4467,7 +4400,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-1"
 ],
 "title": "FD-362 storage: removal as a delta, with the scene's cascade",
 "text": "FD-362 storage: removal as a delta, with the scene's cascade",
@@ -4491,7 +4424,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-1"
 ],
 "title": "FD-362 storage: JSON record, change log, interactions",
 "text": "FD-362 storage: JSON record, change log, interactions",
@@ -4541,7 +4474,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-1"
 ],
 "title": "FD-362 doc: schema comparison, existing vs chat-first additions",
 "text": "FD-362 doc: schema comparison, existing vs chat-first additions",
@@ -4553,7 +4486,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-2"
 ],
 "title": "FD-362 agent: an over-long label is asked again, and a walk says it is one",
 "text": "FD-362 agent: an over-long label is asked again, and a walk says it is one",
@@ -4565,6 +4498,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
+"T-2",
 "T-5"
 ],
 "title": "FD-362 agent: a chip label is at most 28 characters",
@@ -4577,7 +4511,6 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"T-3",
 "T-5",
 "T-9"
 ],
@@ -4591,6 +4524,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
+"T-2",
 "T-5"
 ],
 "title": "FD-362 agent: the offer to look somewhere next is a chip too",
@@ -4603,7 +4537,7 @@
 "date": "2026-09-07",
 "session": "",
 "topics": [
-"untagged"
+"T-2"
 ],
 "title": "FD-362 agent: say the event rule out loud, and keep the working out private",
 "text": "FD-362 agent: say the event rule out loud, and keep the working out private",
@@ -4686,7 +4620,6 @@
 "date": "2026-09-07",
 "session": "S 09-07",
 "topics": [
-"T-3",
 "T-6"
 ],
 "title": "The client owns their record; a clinician is granted access; the client pays for their own chat and keeps the ",
@@ -4734,7 +4667,8 @@
 "T-1",
 "T-2",
 "T-3",
-"T-4"
+"T-4",
+"T-5"
 ],
 "title": "Record format: diagrams.data becomes pure JSON (Qt values as tagged plain types); the server converts to pickl",
 "text": "Record format: diagrams.data becomes pure JSON (Qt values as tagged plain types); the server converts to pickle whenever the released Pro app asks, so Pro is unchanged; open formats, statically typed, reuse the existing structure for a clear migration path; better features outrank backward compatibility and he judges those himself. Proven: round trip exact on 3 fixtures and 1997 of 1998 real diagrams (the one failure never unpickled before either); loads through Pro's own read path; converter at btcopilot/diagramjson.py (commit f32eb2c)",
@@ -4748,6 +4682,7 @@
 "date": "2026-09-07",
 "session": "S 09-07",
 "topics": [
+"T-1",
 "T-2",
 "T-3",
 "T-5"
@@ -4833,7 +4768,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-1"
 ],
 "title": "FD-362 turn: a failed send leaves no words behind, and one send at a time",
 "text": "FD-362 turn: a failed send leaves no words behind, and one send at a time",
@@ -4845,7 +4780,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "FD-362 review log: reconcile OPEN markers with later rows",
 "text": "FD-362 review log: reconcile OPEN markers with later rows",
@@ -4881,7 +4816,8 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-6"
+"T-6",
+"T-9"
 ],
 "title": "FD-362 corpus: session handoff 2026-09-09",
 "text": "FD-362 corpus: session handoff 2026-09-09",
@@ -4905,7 +4841,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 thread: a reload opens on the newest words, not just above them",
 "text": "FD-362 thread: a reload opens on the newest words, not just above them",
@@ -4954,7 +4890,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "FD-362 review log: round 4",
 "text": "FD-362 review log: round 4",
@@ -5026,7 +4962,6 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "FD-362 STATE: dev-server review recipe; eyeball-round process rules",
@@ -5064,7 +4999,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "FD-362 r3 review: the row says the owner's words, in his states",
 "text": "FD-362 r3 review: the row says the owner's words, in his states",
@@ -5088,7 +5023,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "FD-362 review log: rows 48–54",
 "text": "FD-362 review log: rows 48–54",
@@ -5125,7 +5060,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 r3: a list heading stops short of the scroll bar",
 "text": "FD-362 r3: a list heading stops short of the scroll bar",
@@ -5137,7 +5072,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 r3: the app is called Family Diagram",
 "text": "FD-362 r3: the app is called Family Diagram",
@@ -5209,6 +5144,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
+"T-5",
 "T-6"
 ],
 "title": "FD-362 clusters: three moments make a cluster, and the write is the gate",
@@ -5221,7 +5157,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "FD-362 review log: round 3",
 "text": "FD-362 review log: round 3",
@@ -5270,7 +5206,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "FD-362 review log: rows 35–38",
 "text": "FD-362 review log: rows 35–38",
@@ -5331,7 +5267,8 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-6"
+"T-6",
+"T-9"
 ],
 "title": "FD-362 review log: cluster round closed",
 "text": "FD-362 review log: cluster round closed",
@@ -5367,7 +5304,8 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-6"
+"T-6",
+"T-9"
 ],
 "title": "FD-362 clusters: the owner's words for what seeds a cluster, and nobody else's",
 "text": "FD-362 clusters: the owner's words for what seeds a cluster, and nobody else's",
@@ -5379,7 +5317,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 r2: the two ways from a moment's words, one branch each",
 "text": "FD-362 r2: the two ways from a moment's words, one branch each",
@@ -5440,7 +5378,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 r2: a person is a kind, and their birth and death are within reach",
 "text": "FD-362 r2: a person is a kind, and their birth and death are within reach",
@@ -5452,7 +5390,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "FD-362 review log: rows 23–30",
 "text": "FD-362 review log: rows 23–30",
@@ -5464,7 +5402,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 r2: a person lights the same way a moment does",
 "text": "FD-362 r2: a person lights the same way a moment does",
@@ -5476,7 +5414,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 r2: one word for a run of moments, and it is the record's",
 "text": "FD-362 r2: one word for a run of moments, and it is the record's",
@@ -5524,6 +5462,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
+"T-5",
 "T-9"
 ],
 "title": "FD-362 r2: the arrow ruling supersedes the symbol sheet, in writing",
@@ -5549,7 +5488,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 r2: the symptom arrow stands as tall as the cross beside it",
 "text": "FD-362 r2: the symptom arrow stands as tall as the cross beside it",
@@ -5561,7 +5500,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "FD-362 review log: rows 14–22",
 "text": "FD-362 review log: rows 14–22",
@@ -5585,7 +5524,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 r2: the words of the moment already picked go to where it was said",
 "text": "FD-362 r2: the words of the moment already picked go to where it was said",
@@ -5622,7 +5561,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 r2: the drag-to-scroll test aims off the words",
 "text": "FD-362 r2: the drag-to-scroll test aims off the words",
@@ -5646,7 +5585,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 r2: every word the app says can be selected and copied",
 "text": "FD-362 r2: every word the app says can be selected and copied",
@@ -5658,7 +5597,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 r2: a warning goes when anything lands, not only when it is retried",
 "text": "FD-362 r2: a warning goes when anything lands, not only when it is retried",
@@ -5682,7 +5621,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 r2: name the caught error, and turn the caret off once",
 "text": "FD-362 r2: name the caught error, and turn the caret off once",
@@ -5694,7 +5633,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 r2: a send that does not go through says so, and offers to go again",
 "text": "FD-362 r2: a send that does not go through says so, and offers to go again",
@@ -5731,7 +5670,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "FD-362 review log: rows 11–13",
 "text": "FD-362 review log: rows 11–13",
@@ -5779,7 +5718,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "FD-362 review log: round-2 picks",
 "text": "FD-362 review log: round-2 picks",
@@ -5804,7 +5743,8 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-6"
+"T-6",
+"T-9"
 ],
 "title": "FD-362 corpus: owner review log (rounds 1–2)",
 "text": "FD-362 corpus: owner review log (rounds 1–2)",
@@ -5914,7 +5854,8 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-6"
+"T-6",
+"T-9"
 ],
 "title": "FD-362 corpus: session handoff 2026-09-09",
 "text": "FD-362 corpus: session handoff 2026-09-09",
@@ -5926,7 +5867,6 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "FD-362 oracle: round 4 + process",
@@ -5952,7 +5892,7 @@
 "session": "",
 "topics": [
 "T-2",
-"T-3",
+"T-5",
 "T-6"
 ],
 "title": "FD-362 clusters: the naming prompt asks for three moments, not two",
@@ -5977,7 +5917,6 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-7",
 "T-9"
 ],
 "title": "FD-362 oracle: phone layout picks",
@@ -6016,6 +5955,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
+"T-5",
 "T-6",
 "T-9"
 ],
@@ -6069,7 +6009,6 @@
 "session": "",
 "topics": [
 "T-2",
-"T-3",
 "T-6"
 ],
 "title": "FD-362 r2: the prompts say cluster too",
@@ -6082,6 +6021,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
+"T-5",
 "T-9"
 ],
 "title": "FD-362 r2: the arrow-height ruling names the ratified value it replaces",
@@ -6237,7 +6177,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "A play-through holds each move until its narration line has finished typing plus about two seconds; the owner ",
 "text": "A play-through holds each move until its narration line has finished typing plus about two seconds; the owner tunes the feel directly, and the eight-second loop stays a separate clock, never stretched to match. FIXED",
@@ -6290,7 +6230,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Tapping a diagram row opens that diagram, one open at a time (User.current_diagram_id). FIXED",
 "text": "Tapping a diagram row opens that diagram, one open at a time (User.current_diagram_id). FIXED",
@@ -6318,7 +6258,6 @@
 "session": "",
 "topics": [
 "T-2",
-"T-3",
 "T-5"
 ],
 "title": "Coach must never reply with a bare list of chips (seen: fixture's canned \"walk me through it\" reply); remove t",
@@ -6345,7 +6284,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Up/down arrows (symptom/functioning up/down) must never disappear; the animation loop fades them; show movemen",
 "text": "Up/down arrows (symptom/functioning up/down) must never disappear; the animation loop fades them; show movement another way. FIXED @60a39c3.",
@@ -6358,8 +6297,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-5",
-"T-7"
+"T-5"
 ],
 "title": "Summary line above prev/next (\"15/17 | April 2004 | Ada | symptom down\"): no symbol names, no move count; show",
 "text": "Summary line above prev/next (\"15/17 | April 2004 | Ada | symptom down\"): no symbol names, no move count; show what the user reported; date shown once (year under dots, date in line — pick one); layout must survive hostile content. RULED: variant A \"Name · their own words\", no symbol names, no move count, date only under the dots; the summary block reserves a fixed two-line height and clips (the board never changes height when text wraps).",
@@ -6398,8 +6336,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-5",
-"T-7"
+"T-5"
 ],
 "title": "Convergence rule: no visual/layout-hierarchy change without a quick mockup confirmed by the owner; changes sur",
 "text": "Convergence rule: no visual/layout-hierarchy change without a quick mockup confirmed by the owner; changes surgical, not sweeping; clarify ambiguity before acting. RULED",
@@ -6439,7 +6376,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "Mockups must simulate wrapped/long text; non-happy-path rendering is a known blind spot — every mockup carries",
 "text": "Mockups must simulate wrapped/long text; non-happy-path rendering is a known blind spot — every mockup carries a long-text state and every new region joins the overflow gates. RULED",
@@ -6453,6 +6390,7 @@
 "session": "",
 "topics": [
 "T-2",
+"T-5",
 "T-9"
 ],
 "title": "Failed or unanswered sends show a static warning label with a retry control instead of an empty coach bubble; ",
@@ -6466,7 +6404,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "All text in the app is selectable and copyable; only controls keep user-select none. FIXED @708d7dd.",
 "text": "All text in the app is selectable and copyable; only controls keep user-select none. FIXED @708d7dd.",
@@ -6534,6 +6472,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
+"T-5",
 "T-9"
 ],
 "title": "Symptom-up arrow height = cross height (owner ruling supersedes the ratified 32px). FIXED @542c06b (ruling wri",
@@ -6548,7 +6487,6 @@
 "session": "",
 "topics": [
 "T-2",
-"T-3",
 "T-5"
 ],
 "title": "The agentic tool-call summaries and their formatting apart from the reply are liked and preserved; each tool-c",
@@ -6588,7 +6526,6 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-3",
 "T-5"
 ],
 "title": "People list under the ≡ menu mirroring the timeline list (name, birth year, relationship; ordered by birthdate",
@@ -6630,7 +6567,6 @@
 "topics": [
 "T-1",
 "T-2",
-"T-3",
 "T-5",
 "T-6"
 ],
@@ -6714,7 +6650,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-2"
 ],
 "title": "Links in replies are written as markdown links so they are tappable in the Claude iOS app; hostname turin.loca",
 "text": "Links in replies are written as markdown links so they are tappable in the Claude iOS app; hostname turin.local. RULED.",
@@ -6728,6 +6664,7 @@
 "session": "",
 "topics": [
 "T-2",
+"T-5",
 "T-6"
 ],
 "title": "Vocabulary: \"cluster\" = \"episode\" (one thing); \"anchor\" is not the owner's word and is removed; \"shift\" is the",
@@ -6799,8 +6736,7 @@
 "topics": [
 "T-1",
 "T-5",
-"T-6",
-"T-7"
+"T-6"
 ],
 "title": "Phone layout picks (mockups_phone.html): row 1 A — picture region fixed 132px in rest and open-cluster states ",
 "text": "Phone layout picks (mockups_phone.html): row 1 A — picture region fixed 132px in rest and open-cluster states (crumb 28 + wire 60 + label/caption 44), no dead band; row 2 A+C — labels words only, year once under the selected dot, month prefix only when two labelled events share a year, label rows capped at three (spotlight rule), the top-right date-range text removed (collided with the list button); row 3 C — status-bar and Safari-bar areas in the picture's off-white with a hairline (viewport-fit=cover, theme-color, safe-area insets; Android unverified, no hardware — check in an emulator befor",
@@ -6813,7 +6749,6 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-3",
 "T-5",
 "T-6",
 "T-9"
@@ -6856,8 +6791,7 @@
 "session": "",
 "topics": [
 "T-5",
-"T-6",
-"T-7"
+"T-6"
 ],
 "title": "The built layout did not match the picked mockup (list button over the cluster boxes, boxes over the CTA text)",
 "text": "The built layout did not match the picked mockup (list button over the cluster boxes, boxes over the CTA text); redo to the mockup with a no-overlap gate; screenshots reviewed by the coordinator before the owner sees it. FIXED @29cf81e.",
@@ -6911,7 +6845,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Naming: \"Family Diagram\" everywhere users see it; \"Companion\" was never ruled and is removed; the internal nam",
 "text": "Naming: \"Family Diagram\" everywhere users see it; \"Companion\" was never ruled and is removed; the internal name is \"Personal app\". RULED.",
@@ -6924,7 +6858,6 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-3",
 "T-6",
 "T-9"
 ],
@@ -6952,8 +6885,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-5",
-"T-7"
+"T-5"
 ],
 "title": "Layout picks landed @9e47da8 (region 137px pending the button row's 4px margin; 60px band fits two rows of wor",
 "text": "Layout picks landed @9e47da8 (region 137px pending the button row's 4px margin; 60px band fits two rows of words, a third named moment is a lit dot). FIXED.",
@@ -6966,7 +6898,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "Remove the \"You can also edit just by chatting.\" line from the Events and People lists. RULED.",
 "text": "Remove the \"You can also edit just by chatting.\" line from the Events and People lists. RULED.",
@@ -7033,7 +6965,6 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-3",
 "T-5",
 "T-9"
 ],
@@ -7049,7 +6980,6 @@
 "session": "",
 "topics": [
 "T-2",
-"T-3",
 "T-6",
 "T-9"
 ],
@@ -7147,8 +7077,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-1",
-"T-3"
+"T-1"
 ],
 "title": "Owner: \"this is ready for me to start using it like an app on the phone with the home screen trick\"; next phas",
 "text": "Owner: \"this is ready for me to start using it like an app on the phone with the home screen trick\"; next phase = code organization / isolation of the Personal app from existing infra (ISOLATION_OPTIONS.md in progress). RULED.",
@@ -7161,8 +7090,7 @@
 "date": "2026-09-08",
 "session": "",
 "topics": [
-"T-1",
-"T-3"
+"T-1"
 ],
 "title": "Isolation discussion parked until the prototype is done (owner); the three pre-merge blockers recorded in STAT",
 "text": "Isolation discussion parked until the prototype is done (owner); the three pre-merge blockers recorded in STATE.md.",
@@ -7219,7 +7147,7 @@
 "date": "2026-09-08",
 "session": "S 09-08",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "The up/down arrows (symptom, functioning) must never disappear",
 "text": "The up/down arrows (symptom, functioning) must never disappear",
@@ -7233,9 +7161,7 @@
 "date": "2026-09-08",
 "session": "S 09-08",
 "topics": [
-"T-3",
 "T-5",
-"T-7",
 "T-9"
 ],
 "title": "Convergence rule: no visual/layout-hierarchy change without a quick mockup confirmed by him first; changes are",
@@ -7250,7 +7176,6 @@
 "date": "2026-09-08",
 "session": "S 09-08",
 "topics": [
-"T-3",
 "T-5",
 "T-9"
 ],
@@ -7282,7 +7207,7 @@
 "session": "S 09-08",
 "topics": [
 "T-1",
-"T-3",
+"T-5",
 "T-9"
 ],
 "title": "Warning: over-clever, over-complex display gets rigid when non-happy-path content emerges or anything has to c",
@@ -7341,7 +7266,7 @@
 "date": "2026-09-08",
 "session": "S 09-08 (rule wording agent-derived from STATE.md \"Owner review round 1\"; not directly quoted)",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "A play-through holds each move until its narration line has finished typing plus about two seconds; the eight-",
 "text": "A play-through holds each move until its narration line has finished typing plus about two seconds; the eight-second loop stays a separate clock, never stretched to match",
@@ -7370,8 +7295,7 @@
 "date": "2026-09-08",
 "session": "S 09-08 (rule wording agent-derived from STATE.md \"Owner review round 1\"; not directly quoted)",
 "topics": [
-"T-5",
-"T-7"
+"T-5"
 ],
 "title": "The moves board fits its content, superseding the fixed 264px rows",
 "text": "The moves board fits its content, superseding the fixed 264px rows",
@@ -7443,8 +7367,7 @@
 "date": "2026-09-08",
 "session": "S 09-08",
 "topics": [
-"T-5",
-"T-7"
+"T-5"
 ],
 "title": "The play-by-play summary line is variant A, \"Name · their own words\": no symbol names, no move count, date sho",
 "text": "The play-by-play summary line is variant A, \"Name · their own words\": no symbol names, no move count, date shown once under the dots; the summary block reserves a fixed two-line height and clips so the board never changes height when text wraps",
@@ -7487,7 +7410,6 @@
 "date": "2026-09-08",
 "session": "S 09-08",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "Mockups must simulate wrapped/long text; non-happy-path rendering is a known blind spot, so every mockup carri",
@@ -7547,7 +7469,6 @@
 "session": "S 09-08",
 "topics": [
 "T-2",
-"T-3",
 "T-5"
 ],
 "title": "Each tool call in a response should visibly populate the family picture in lock-step with the chat, so chattin",
@@ -7577,7 +7498,6 @@
 "date": "2026-09-08",
 "session": "S 09-08",
 "topics": [
-"T-3",
 "T-5",
 "T-7"
 ],
@@ -7593,7 +7513,6 @@
 "date": "2026-09-08",
 "session": "S 09-08",
 "topics": [
-"T-3",
 "T-5"
 ],
 "title": "Whether showing any data before there is enough of it to make sense is confusing or useful is the guiding ques",
@@ -7608,7 +7527,7 @@
 "date": "2026-09-08",
 "session": "S 09-08",
 "topics": [
-"T-3"
+"T-9"
 ],
 "title": "Most first-time users of any app are looking for an early hook to decide whether they will keep using it",
 "text": "Most first-time users of any app are looking for an early hook to decide whether they will keep using it",
@@ -7637,7 +7556,6 @@
 "session": "S 09-08",
 "topics": [
 "T-2",
-"T-3",
 "T-9"
 ],
 "title": "The session history for the review database (port 8890) is kept across code changes, not reset",
@@ -7667,7 +7585,6 @@
 "date": "2026-09-08",
 "session": "S 09-08",
 "topics": [
-"T-3",
 "T-5",
 "T-6",
 "T-9"
@@ -7728,7 +7645,6 @@
 "date": "2026-09-08",
 "session": "S 09-08",
 "topics": [
-"T-3",
 "T-6",
 "T-9"
 ],
@@ -7830,7 +7746,7 @@
 "session": "S 09-08",
 "topics": [
 "T-2",
-"T-3",
+"T-5",
 "T-6",
 "T-9"
 ],
@@ -7860,7 +7776,6 @@
 "date": "2026-09-08",
 "session": "S 09-08",
 "topics": [
-"T-3",
 "T-6",
 "T-9"
 ],
@@ -7892,7 +7807,6 @@
 "session": "S 09-08",
 "topics": [
 "T-1",
-"T-3",
 "T-6",
 "T-9"
 ],
@@ -7908,10 +7822,8 @@
 "date": "2026-09-08",
 "session": "S 09-08",
 "topics": [
-"T-3",
 "T-5",
 "T-6",
-"T-7",
 "T-9"
 ],
 "title": "Phone vertical space is tight and much of it is wasted in the initial cluster view; the layout needs mockups b",
@@ -7927,8 +7839,7 @@
 "session": "S 09-08",
 "topics": [
 "T-5",
-"T-6",
-"T-7"
+"T-6"
 ],
 "title": "Phone layout picks: row 1 picks option A (fixed 132px picture region, no dead band in rest and open-cluster st",
 "text": "Phone layout picks: row 1 picks option A (fixed 132px picture region, no dead band in rest and open-cluster states); row 2 picks A combined with C (labels are words only, year shown once under the selected dot, a month prefix added only when two labelled events share a year); row 3 picks option C (status-bar/Safari-bar areas match the picture's off-white with a hairline); the upper-right date-range text is removed because it collided with the list button",
@@ -7942,7 +7853,6 @@
 "date": "2026-09-08",
 "session": "S 09-08 (recorded as extended to the caption row by the coordinator; awaiting his confirmation)",
 "topics": [
-"T-3",
 "T-5",
 "T-6",
 "T-9"
@@ -8018,7 +7928,6 @@
 "date": "2026-09-08",
 "session": "S 09-08",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "The mobile app is never called Companion — that name was invented, not ruled; it is called Family Diagram to u",
@@ -8033,7 +7942,6 @@
 "date": "2026-09-08",
 "session": "S 09-08",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "Chrome and screenshots must be used to evaluate the art and rendering here overall",
@@ -8099,7 +8007,7 @@
 "date": "2026-09-09",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "FD-362 about page: the span in full years, no hint under it",
 "text": "FD-362 about page: the span in full years, no hint under it",
@@ -8335,8 +8243,7 @@
 "session": "",
 "topics": [
 "T-1",
-"T-2",
-"T-3"
+"T-2"
 ],
 "title": "FD-362 sign-in: the app's own login page, and a home-screen prompt",
 "text": "FD-362 sign-in: the app's own login page, and a home-screen prompt",
@@ -8375,8 +8282,7 @@
 "date": "2026-09-09",
 "session": "",
 "topics": [
-"T-2",
-"T-3"
+"T-2"
 ],
 "title": "FD-362 prompt: the description says what happened and names no linked person; a birth links the child",
 "text": "FD-362 prompt: the description says what happened and names no linked person; a birth links the child",
@@ -8388,6 +8294,7 @@
 "date": "2026-09-09",
 "session": "",
 "topics": [
+"T-5",
 "T-9"
 ],
 "title": "FD-362 oracle: picked moment on the timeline, option A",
@@ -8481,7 +8388,7 @@
 "date": "2026-09-09",
 "session": "",
 "topics": [
-"untagged"
+"T-5"
 ],
 "title": "On reload the chat opened a little above the newest words instead of at the bottom of the thread. FIXED @821e1",
 "text": "On reload the chat opened a little above the newest words instead of at the bottom of the thread. FIXED @821e10b.",
@@ -8661,7 +8568,6 @@
 "date": "2026-09-09",
 "session": "S 09-09",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "The app is ready to use like a phone home-screen app; the next phase is a closer look at code organization and",
@@ -8677,7 +8583,6 @@
 "session": "S 09-09",
 "topics": [
 "T-2",
-"T-3",
 "T-9"
 ],
 "title": "A dev mode is needed where code changes on disk instantly refresh the page, rather than working without one",
@@ -8693,7 +8598,6 @@
 "session": "S 09-09",
 "topics": [
 "T-2",
-"T-3",
 "T-9"
 ],
 "title": "The whole point of the auditor is to audit cost and speed",
@@ -8708,7 +8612,6 @@
 "date": "2026-09-09",
 "session": "S 09-09",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "The isolation discussion is parked until the prototype code is done",
@@ -8738,7 +8641,6 @@
 "date": "2026-09-09",
 "session": "S 09-09",
 "topics": [
-"T-3",
 "T-9"
 ],
 "title": "Everything affecting design, decisions and development process is flushed to the project context and the pull ",
@@ -8800,7 +8702,6 @@
 "session": "S 09-09",
 "topics": [
 "T-2",
-"T-3",
 "T-6"
 ],
 "title": "The only data on turn-by-turn extraction is for a single-call prompt producing PDP deltas; none exists for an ",
@@ -8865,7 +8766,7 @@
 "date": "2026-09-10",
 "session": "",
 "topics": [
-"untagged"
+"T-9"
 ],
 "title": "FD-362 STATE: open items with the owner, 2026-09-10",
 "text": "FD-362 STATE: open items with the owner, 2026-09-10",
@@ -8916,7 +8817,6 @@
 "session": "",
 "topics": [
 "T-2",
-"T-3",
 "T-9"
 ],
 "title": "FD-362: the coach's prompt gains what goes in the record; rulings R-0237..R-0240",
@@ -8978,7 +8878,6 @@
 "session": "S 09-10",
 "topics": [
 "T-2",
-"T-3",
 "T-9"
 ],
 "title": "The prompt-improvement process does not change: Claude Code is the entry point; told a new model is out or F1 ",
@@ -8994,7 +8893,6 @@
 "session": "S 09-10",
 "topics": [
 "T-2",
-"T-3",
 "T-5",
 "T-7"
 ],
@@ -9043,13 +8941,25 @@
 "session": "S 09-10",
 "topics": [
 "T-3",
-"T-5",
-"T-7"
+"T-5"
 ],
 "title": "One app, progressively enhanced: the chat screen as built is the app; Pro adds cases (the family switcher), se",
 "text": "One app, progressively enhanced: the chat screen as built is the app; Pro adds cases (the family switcher), sessions (the sessions sheet plus upload a recording with speaker mapping), notes, and a wider desktop layout with the drawer pinned; Training adds coding actions in the session menu and agreement under sessions; never a new view where an existing surface can carry the addition",
 "supersedes": [],
 "source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "btcopilot@de1e11e",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "FD-362 flush: the event ledger and the two-clock dashboard, rebuilt and republished by every flush",
+"text": "FD-362 flush: the event ledger and the two-clock dashboard, rebuilt and republished by every flush",
+"source": "btcopilot git log"
 },
 {
 "id": "btcopilot@737bca3",
@@ -9110,6 +9020,19 @@
 "title": ", never by command: the flush renders it with `bin/topicpage.py` and republishes it to the same artifact every time — **",
 "text": "https://claude.ai/code/artifact/8a56716d-dca5-4123-ae2e-572da33a392c",
 "link": "https://claude.ai/code/artifact/8a56716d-dca5-4123-ae2e-572da33a392c",
+"source": "doc/chat-first/TOPICS.md"
+},
+{
+"id": "be081e64",
+"kind": "artifact",
+"date": "",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "ated event since the first session as a branching timeline or tree, toggled with this register as the state view — to **",
+"text": "https://claude.ai/code/artifact/be081e64-9efa-45de-b329-42e82f9d4857",
+"link": "https://claude.ai/code/artifact/be081e64-9efa-45de-b329-42e82f9d4857",
 "source": "doc/chat-first/TOPICS.md"
 },
 {
@@ -9216,6 +9139,7 @@
 "date": "",
 "session": "",
 "topics": [
+"T-5",
 "T-9"
 ],
 "title": "a test script through the app's own loading code and leave the eyeball to him. Artifacts: the play-by-play A/B mockup at",
@@ -9293,7 +9217,7 @@
 "date": "",
 "session": "S41",
 "topics": [
-"T-3"
+"T-5"
 ],
 "title": "Voice is fine for now; keep watching improvement vs cost",
 "text": "Voice is fine for now; keep watching improvement vs cost",
@@ -9307,7 +9231,6 @@
 "date": "",
 "session": "repo-rule (Confidential Data Rules) + the FD-360 incident as reproduced defect",
 "topics": [
-"T-3",
 "T-6"
 ],
 "title": "Personal/clinical data never appears in the public repo — extended: user emails, case filenames, prod identifi",
