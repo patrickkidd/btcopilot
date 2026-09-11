@@ -40,8 +40,8 @@ th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-t
 <tr><td class="m re">users</td><td>Coders, and Patrick. Roles as today.</td></tr>
 <tr><td class="m re">diagrams</td><td>A <b>case</b> is a diagram row. A <b>coding</b> is also a diagram row: the coder's own record of the case, JSON in the same data column, built with the same tools and editors, carried forward cut to cut. The ratified record is the case's own diagram. Coding rows are told apart from cases by the join to <span class="m new">codings</span>, never by a column.</td></tr>
 <tr><td class="m re">discussions</td><td>A session of a case: a chat, an uploaded recording, or a note. The case is reached through the session's diagram, so a cut does not repeat it.</td></tr>
-<tr><td class="m re">statements</td><td>The turns. A <b>cut</b> is a statement id: the last turn included.</td></tr>
-<tr><td class="m re">changes</td><td>Every edit, with the statement it came from. The scribe's edits during coding land here on the coding's diagram, so each coded event already says which line it came from. A <b>settle</b> at the meeting is a change row on the case's diagram, so ratification has the same audit trail as every other edit. The author enum gains one member, <span class="m new">review</span>; the table is new on this branch, so that touches nothing the desktop app reads.</td></tr>
+<tr><td class="m re">statements</td><td>The turns. A <b>cut</b> is a window of them: a start and an end statement id.</td></tr>
+<tr><td class="m re">changes</td><td>Every edit, with the statement it came from. The scribe's edits during coding land here on the coding's diagram, so each coded event already says which line it came from. A <b>settle</b> at the meeting is a change row on the case's diagram, so ratification has the same audit trail as every other edit. The author enum gains one member, <span class="m new">review</span>. This table is new on this branch — created by the branch's single migration with interactions, web_sessions, passkeys, invitations and login_codes, none of them in production yet — so the change costs nothing and touches nothing the desktop app reads.</td></tr>
 <tr><td class="m re">interactions</td><td>Taps, as today. Votes are not interactions.</td></tr>
 <tr><td class="m re">feedbacks, reconciliation_notes</td><td>Last year's per-statement ground truth. Read-only until each conversation has been re-coded, then retired, as ruled.</td></tr>
 </table></div>
@@ -61,13 +61,14 @@ th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-t
 <tr><td class="m re">discussions</td><td class="m new">kind</td><td class="m">Enum(DiscussionKind: chat, recording, note)</td><td>A note is a session of its own and must be listed and coded as one. Sessions made so far are chat. Adding a kind later is the one migration this design accepts.</td></tr>
 </table></div>
 
-<h2>New tables</h2>
+<h2>New tables — prefixed <span class="m">review_</span></h2>
+<p>All five carry the prefix so generic names stay out of the global namespace: <span class="m">review_cuts, review_codings, review_items, review_votes, review_rules</span>. The prefix is written once here and left off the headings below for reading.</p>
 
 <h3><span class="m new">cuts</span> — a session frozen at a turn, put on the table</h3>
 <div class="wrap"><table>
 <tr><th>Column</th><th>Type</th><th>Reuses</th><th>Meaning</th></tr>
 <tr><td class="m">discussion_id</td><td class="m">FK discussions.id</td><td class="re">discussions</td><td>the session; the case through it</td></tr>
-<tr><td class="m">statement_id</td><td class="m">FK statements.id</td><td class="re">statements</td><td>the last turn included; never before the last ratified cut of the same session</td></tr>
+<tr><td class="m">start_statement_id, end_statement_id</td><td class="m">FK statements.id, FK statements.id</td><td class="re">statements</td><td>the window: first and last turn included. The app sets the start to the previous cut's end by default and refuses overlapping windows in code, so a re-code of any stretch later needs no migration</td></tr>
 <tr><td class="m">user_id</td><td class="m">FK users.id</td><td class="re">users</td><td>who put it on the table</td></tr>
 <tr><td class="m">meeting_date</td><td class="m">Date</td><td></td><td>the meeting it is for</td></tr>
 <tr><td class="m">vote_opened_at</td><td class="m">DateTime, null</td><td></td><td>set when Patrick opens the vote; the review items are frozen at that moment</td></tr>
