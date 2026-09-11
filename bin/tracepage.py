@@ -243,13 +243,41 @@ const CAPTION = {
 let stageW = 0, stageH = 0, GUTTER = 250, TOPY = 74, LANE_H = 78;
 let K_FIT = .02, K_SESS = .2, K_STMT = 1, K_SUM = 3, K_MAX = 5, level = 0;
 let NAME_PX = NAME_W, SUM_PX = SUM_W, SUM_ROOM = SUM_LINES, selKind = "", selId = "";
+let shownA = 0, shownB = STATEMENTS.length - 1;   /* the run of marks on screen right now */
 const laneY = {};
 
 const stage = document.getElementById("stage");
+const caption = document.getElementById("caption");
 const svg = d3.select("#svg");
 const gBands = svg.append("g"), gLanes = svg.append("g"), gTrace = svg.append("g");
 const gArcs = svg.append("g"), gSess = svg.append("g"), gNodes = svg.append("g");
 const pinned = svg.append("g");
+
+/* Every label is measured once, on a canvas, and the width kept. Asking the drawing itself
+   how wide a word is stops the browser mid-frame to lay the whole picture out again, which is
+   what made zooming crawl, so no frame ever asks. Each ruler is checked once against the real
+   drawing and carries the correction. */
+const PAPER = document.createElement("canvas").getContext("2d");
+const PROBE = "Handgloves 0123456789 the quick brown fox jumps";
+function ruler(cls, inside){
+  const host = inside ? svg.append("g").attr("class", inside) : svg;
+  const probe = host.append("text").attr("class", cls || null).text(PROBE);
+  const css = getComputedStyle(probe.node());
+  const font = `${css.fontStyle} ${css.fontWeight} ${css.fontSize} ${css.fontFamily}`;
+  PAPER.font = font;
+  const fix = probe.node().getComputedTextLength() / (PAPER.measureText(PROBE).width || 1);
+  (inside ? host : probe).remove();
+  const seen = new Map();
+  return s => {
+    s = s || "";
+    let w = seen.get(s);
+    if (w === undefined){ PAPER.font = font; w = PAPER.measureText(s).width * fix; seen.set(s, w); }
+    return w;
+  };
+}
+const wName = ruler("node-name"), wSum = ruler("node-sum"), wLane = ruler("lane-name");
+const wDate = ruler("date"), wArc = ruler(null, "arc"), wSess = ruler(null, "sess");
+let wrapW = 0;   /* the widest row the last wrap() laid out */
 
 /* the name of each piece of work stays at the left edge; the column is as wide as the longest */
 const gutterBg = pinned.append("rect").attr("x",0).attr("y",38).attr("fill","var(--bg)");
@@ -262,7 +290,10 @@ const laneBg = laneTags.append("rect").attr("x",0).attr("fill","var(--bg)").attr
 laneTags.append("circle").attr("cx",10).attr("cy",0).attr("r",4.5).style("fill",t => t.color);
 const LANE_W = 236;
 const laneText = laneTags.append("text").attr("class","lane-name").attr("x",22);
-laneText.each(function(t){ t.lines = wrap(d3.select(this), t.name, LANE_W, 13, 3, 22); });
+laneText.each(function(t){
+  t.lines = wrap(d3.select(this), t.name, LANE_W, 13, 3, 22, wLane);
+  t.wide = wrapW;
+});
 const laneNum = laneTags.append("text").attr("class","num").attr("x",22).text(t => t.said + " said");
 laneTags.append("title").text(t => t.name);
 const dayTags = pinned.selectAll("g.day").data(BANDS).enter().append("g").attr("class","day");
@@ -279,7 +310,7 @@ const arcs = gArcs.selectAll("g").data(ARCS).enter().append("g").attr("class","a
   .on("click", (e,a) => selectArc(a))
   .on("mousemove", (e,a) => tipHTML(e, `<b>${esc(a.name)}</b>${esc(a.line)}<span> · ${a.start} to ${a.end} · ${a.said} said</span>`))
   .on("mouseleave", hideTip);
-arcs.append("rect").attr("height",30).attr("rx",15).style("stroke",a => T[a.thread].color);
+const arcRects = arcs.append("rect").attr("height",30).attr("rx",15).style("stroke",a => T[a.thread].color);
 const arcText = arcs.append("text").attr("text-anchor","middle");
 arcs.append("title").text(a => a.name + " — " + a.line);
 
@@ -289,7 +320,7 @@ const sess = gSess.selectAll("g").data(sessBlocks).enter().append("g").attr("cla
   .on("click", (e,s) => selectSession(s))
   .on("mousemove", (e,s) => tipHTML(e, `<b>${esc(s.label)}</b>${esc(T[s.lane].name)}<span> · ${s.date}</span>`))
   .on("mouseleave", hideTip);
-sess.append("rect").attr("height",26).attr("rx",13).style("stroke",s => T[s.lane].color);
+const sessRects = sess.append("rect").attr("height",26).attr("rx",13).style("stroke",s => T[s.lane].color);
 const sessText = sess.append("text").attr("text-anchor","middle").attr("dy",4).text(s => s.label);
 sess.append("title").text(s => s.title);
 
@@ -305,37 +336,42 @@ labs.each(function(s,i){
   s.below = i % 2 === 1;
   const g = d3.select(this);
   s.nameLines = wrap(g.append("text").attr("class","node-name").attr("x",0).attr("text-anchor","middle"),
-                     s.name, NAME_W, NAME_LH, 2);
+                     s.name, NAME_W, NAME_LH, 2, 0, wName);
+  NAME_PX = Math.max(NAME_PX, wrapW);
   s.sumLines = wrap(g.append("text").attr("class","node-sum").attr("x",0).attr("text-anchor","middle"),
-                    s.summary, SUM_W, SUM_LH, SUM_LINES);
+                    s.summary, SUM_W, SUM_LH, SUM_LINES, 0, wSum);
+  SUM_PX = Math.max(SUM_PX, wrapW);
 });
-labs.each(function(s){
-  NAME_PX = Math.max(NAME_PX, this.querySelector("text.node-name").getBBox().width);
-  SUM_PX = Math.max(SUM_PX, this.querySelector("text.node-sum").getBBox().width);
-});
-sessText.each(function(s){ s.tw = this.getComputedTextLength(); });
+const nodeEls = nodes.nodes();
+sessBlocks.forEach(s => s.tw = wSess(s.label));
+BANDS.forEach(b => { b.wFull = wDate(b.label); b.wDay = wDate(b.day); });
 
-function wrap(sel, text, width, lh, maxLines, atX){
+function wrap(sel, text, width, lh, maxLines, atX, w){
   atX = atX || 0;
   const words = (text||"").split(/\s+/).reverse();
-  let line = [], lineNo = 0;
-  let tspan = sel.append("tspan").attr("x", atX).attr("dy", 0);
-  let word;
+  const rows = [];
+  let line = [], cur = "", word;
   while ((word = words.pop())){
     line.push(word);
-    tspan.text(line.join(" "));
-    if (tspan.node().getComputedTextLength() > width && line.length > 1){
-      line.pop(); tspan.text(line.join(" "));
-      if (++lineNo >= maxLines){ tspan.text(tspan.text()+"…"); return maxLines; }
-      line = [word];
-      tspan = sel.append("tspan").attr("x", atX).attr("dy", lh).text(word);
+    cur = line.join(" ");
+    if (w(cur) > width && line.length > 1){
+      line.pop(); cur = line.join(" ");
+      if (rows.length + 1 >= maxLines){ cur += "…"; break; }
+      rows.push(cur);
+      line = [word]; cur = word;
     }
-    while (tspan.node().getComputedTextLength() > width && tspan.text().length > 2){
-      tspan.text(tspan.text().slice(0,-2) + "…");       /* one word wider than the row */
-      line = [tspan.text()];
+    while (w(cur) > width && cur.length > 2){
+      cur = cur.slice(0,-2) + "…";                      /* one word wider than the row */
+      line = [cur];
     }
   }
-  return lineNo + 1;
+  rows.push(cur);
+  wrapW = 0;
+  rows.forEach((r,i) => {
+    wrapW = Math.max(wrapW, w(r));
+    sel.append("tspan").attr("x", atX).attr("dy", i ? lh : 0).text(r);
+  });
+  return rows.length;
 }
 
 /* the room each level needs, measured: a label must fit the gap to the next mark across and
@@ -343,8 +379,7 @@ function wrap(sel, text, width, lh, maxLines, atX){
 function measure(){
   const box = stage.getBoundingClientRect();
   stageW = box.width; stageH = box.height;
-  let widest = 0;
-  laneText.each(function(){ this.querySelectorAll("tspan").forEach(n => widest = Math.max(widest, n.getComputedTextLength())); });
+  const widest = d3.max(THREADS, t => t.wide) || 0;
   GUTTER = Math.min(Math.max(widest + 40, 170), Math.max(stageW*0.34, 200));
   laneText.attr("y", t => -(t.lines-1)*6.5 - 2).selectAll("tspan").attr("x", 22);
   laneNum.attr("y", t => -(t.lines-1)*6.5 + (t.lines-1)*13 + 13);
@@ -357,12 +392,21 @@ function measure(){
   K_STMT = Math.max(NAME_PX/(2*DX), K_FIT*3);
   K_SUM = Math.max(Math.max(NAME_PX, SUM_PX)/DX, K_STMT*1.3);
   SUM_ROOM = Math.max(1, Math.min(SUM_LINES, Math.floor((LANE_H - 16 - NAME_LH*2)/SUM_LH)));
+  gNodes.classed("thin", SUM_ROOM < SUM_LINES);
   const needs = sessBlocks.map(s => (s.tw + 18)/Math.max((s.to - s.from)*DX, DX)).sort((a,b) => a-b);
   K_SESS = Math.min(Math.max(needs[Math.floor(needs.length*0.25)] || K_FIT*2, K_FIT*1.7), K_STMT*0.5);
   K_MAX = Math.max(K_SUM*1.6, 4);
 }
 
-const zoom = d3.zoom().on("zoom", () => draw());
+/* a wheel or a drag fires far faster than the screen refreshes, so the picture is drawn
+   once per frame and the events in between are dropped */
+let waiting = false;
+function schedule(){
+  if (waiting) return;
+  waiting = true;
+  requestAnimationFrame(() => { waiting = false; draw(); });
+}
+const zoom = d3.zoom().on("zoom", schedule);
 function setZoom(){
   zoom.scaleExtent([K_FIT, K_MAX])
       .extent([[GUTTER, 0], [Math.max(stageW, GUTTER+10), Math.max(stageH,10)]])
@@ -384,9 +428,15 @@ function step(points){
 
 function draw(){
   const t = tr(), k = t.k, X = i => t.applyX(i*DX);
+  const was = level;
   level = k >= K_SUM ? 4 : k >= K_STMT ? 3 : k >= K_SESS ? 2 : 1;
-  document.getElementById("caption").textContent = CAPTION[level];
-  d3.selectAll("#lvl button").classed("on", function(){ return +this.dataset.l === level; });
+  if (level !== was){
+    caption.textContent = CAPTION[level];
+    d3.selectAll("#lvl button").classed("on", function(){ return +this.dataset.l === level; });
+    gArcs.style("display", level === 1 ? null : "none");
+    gSess.style("display", level === 2 ? null : "none");
+    gNodes.style("display", level >= 3 ? null : "none");
+  }
 
   bandRects.attr("x", b => X(b.from) - DX*k/2).attr("y", 42)
     .attr("width", b => Math.max((b.to-b.from)*DX*k + DX*k, 2)).attr("height", Math.max(stageH - 60, 10));
@@ -398,35 +448,30 @@ function draw(){
   dayTags.each(function(b){
     const a = Math.max(X(b.from) - DX*k/2, GUTTER + 6), z = X(b.to) + DX*k/2;
     const room = z - a;
-    const label = this.firstChild;
-    label.textContent = b.label;
-    if (label.getComputedTextLength() > room) label.textContent = b.day;
-    const wide = label.getComputedTextLength();
+    const short = b.wFull > room;
+    const wide = short ? b.wDay : b.wFull;
     const fits = room > wide + 10 && a >= taken && z < stageW;
-    this.style.display = fits ? null : "none";
+    if (fits !== b.on){ this.style.display = fits ? null : "none"; b.on = fits; }
     if (!fits) return;
+    if (short !== b.short){ this.firstChild.textContent = short ? b.day : b.label; b.short = short; }
     this.setAttribute("transform", `translate(${a},2)`);
     taken = a + wide + 16;
   });
 
-  gArcs.style("display", level === 1 ? null : "none");
-  gSess.style("display", level === 2 ? null : "none");
-  gNodes.style("display", level >= 3 ? null : "none").classed("thin", SUM_ROOM < SUM_LINES);
-
   if (level === 1){
     arcs.attr("transform", a => `translate(0,${laneY[a.thread]})`);
-    arcs.select("rect").attr("x", a => X(a.from) - DX*k/2).attr("y", -15)
+    arcRects.attr("x", a => X(a.from) - DX*k/2).attr("y", -15)
       .attr("width", a => Math.max((a.to-a.from+1)*DX*k, 30));
     const placed = [];
-    arcs.each(function(a){
+    arcText.each(function(a){
       const a0 = Math.max(X(a.from) - DX*k/2, GUTTER + 4), a1 = Math.min(X(a.to) + DX*k/2, stageW - 4);
-      const room = Math.max(a1 - a0 - 10, 150);
-      const t2 = d3.select(this).select("text");
+      const room = Math.round(Math.max(a1 - a0 - 10, 150)/8)*8;   /* re-broken only when the room really changes */
+      const t2 = d3.select(this);
       if (a.room !== room){
         t2.selectAll("tspan").remove();
-        a.lines = wrap(t2, a.name, room, 14, 3);
+        a.lines = wrap(t2, a.name, room, 14, 3, 0, wArc);
         a.room = room;
-        a.wide = t2.node().getBBox().width;
+        a.wide = wrapW;
       }
       const y = laneY[a.thread], half = a.wide/2 + 8;
       const cx = Math.min(Math.max((a0+a1)/2, GUTTER + half), Math.max(stageW - half, GUTTER + half));
@@ -442,7 +487,7 @@ function draw(){
     tracePath.attr("d", step(ARCS.map(a => [(X(a.from)+X(a.to))/2, laneY[a.thread]])));
   } else if (level === 2){
     sess.attr("transform", s => `translate(0,${laneY[s.lane]})`);
-    sess.select("rect").attr("x", s => X(s.from) - DX*k/2).attr("y", -13)
+    sessRects.attr("x", s => X(s.from) - DX*k/2).attr("y", -13)
       .attr("width", s => Math.max((s.to-s.from+1)*DX*k, 26));
     sessText.each(function(s){
       const a0 = Math.max(X(s.from) - DX*k/2, GUTTER + 4), a1 = Math.min(X(s.to) + DX*k/2, stageW - 4);
@@ -452,28 +497,30 @@ function draw(){
   } else {
     const first = Math.max(0, Math.floor((GUTTER - t.x)/(DX*k)) - 2);
     const last = Math.min(STATEMENTS.length - 1, Math.ceil((stageW - t.x)/(DX*k)) + 2);
-    nodes.each(function(s){
-      const on = s.i >= first && s.i <= last;
-      this.style.display = on ? null : "none";
-      if (!on) return;
+    for (let i = shownA; i <= shownB; i++){
+      if (i < first || i > last) nodeEls[i].style.display = "none";   /* only the ones that just left */
+    }
+    shownA = first; shownB = last;
+    for (let i = first; i <= last; i++){
+      const s = STATEMENTS[i], el = nodeEls[i];
+      el.style.display = null;
       const px = X(s.i), py = laneY[s.thread];
-      this.firstChild.setAttribute("cx", px);
-      this.firstChild.setAttribute("cy", py);
+      el.firstChild.setAttribute("cx", px);
+      el.firstChild.setAttribute("cy", py);
       const tall = s.nameLines*NAME_LH + (level === 4 ? Math.min(s.sumLines, SUM_ROOM)*SUM_LH : 0);
       const below = level === 4 ? true : s.below;
       const top = below ? 20 : -14 - tall + NAME_LH;
-      const lab = this.lastChild;
+      const lab = el.lastChild;
       lab.setAttribute("transform", `translate(${px},${py})`);
       lab.style.display = px - NAME_W/2 < GUTTER + 6 || px + NAME_W/2 > stageW - 6 ? "none" : null;
       lab.firstChild.setAttribute("y", top);
       lab.lastChild.setAttribute("y", top + s.nameLines*NAME_LH);
       lab.lastChild.style.display = level === 4 ? null : "none";
-    });
+    }
     const pts = [];
     for (let i = first; i <= last; i++) pts.push([X(i), laneY[STATEMENTS[i].thread]]);
     tracePath.attr("d", step(pts));
   }
-  markSelected();
 }
 
 function markSelected(){
