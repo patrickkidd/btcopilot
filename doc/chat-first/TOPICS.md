@@ -148,9 +148,14 @@ transcript up to the cut with the last ratified cut as a hairline, earlier turns
 but not codable; the coder's own words in the thread with the scribe's edit line under them;
 Done in the top bar with a confirmation sheet; the next task card [R-0270, R-0271]; (9) [build] the two-sided
 compare view already drawn folds into the ballot or the meeting screen; (10) [build] Pro
-"notes" has no mockup; (11) [build] build order once the six rulings land: codings, cuts,
-ballots, votes and scores tables; endpoints; replay as a task; export of ratified items to the
-ground-truth files; the session menu items; the coding mode; the review module isolated;
+"notes" has no mockup; (11) [ruling] the tables, after an adversarial pass, await his check before the build
+(doc/chat-first/REVIEW_TABLES.html): one column on discussions (kind: chat, recording, note),
+five new tables (cuts, codings, review_items, votes, rules), a coding is a diagram row, a settle
+is a change row on the case's diagram, JSON for what changes shape, the agenda derived, nothing
+the desktop app reads touched [R-0294]; then the build in the order he saw: tables and
+endpoints, the coding screens, his screens, the vote, the meeting and result, Pro, the small
+items, each step eyeballed on the sandbox; the migration of last year's rules runs once on
+production after the merge, rehearsed on the July dump;
 (12) [build] the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238].
 **Lives in:** the spec sheet for beta users, every screen's behaviour in plain words, kept by the
 flush: https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba (source

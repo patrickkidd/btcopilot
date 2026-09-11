@@ -791,4 +791,9 @@ is the coach's judgement with a one-line scope rationale [R-0287] and confirmed 
 concept [R-0288]; the move language was republished at its link with the outside move stripped
 of tension marks and a triangle-positions entry added, and the durable reference copy refreshed. He then ruled event everywhere [R-0289], sandbox addresses use turin and every move is
 green [R-0290], and in the outside move the two who stay draw together while the pixel defaults
-stand as built [R-0291]; the move language was republished twice more and the calls page closed.
+stand as built [R-0291]; the move language was republished twice more and the calls page closed. Before the build he asked to see the tables against the existing model and ruled that
+tables and columns are never added freely, for four reasons: sensitivity, Pro untouched, few
+migrations for fast-changing data, agility [R-0294]. An inventory of every model and the
+shared schema was taken, a draft laid over it, and an adversarial pass cut it by a third: one
+column on discussions, five new tables, JSON for what changes shape; the coach codes variables
+in session [R-0293]; the migration runs once on production after the merge.
