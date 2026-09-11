@@ -725,16 +725,22 @@ build only on an explicit go; one place for content; mockups drawn with the app'
 stylesheet; sub-agents token- and model-optimised. The flush became a skill (`/flush`) with a
 topic register (TOPICS.md) as the state clock and tagged HISTORY entries as the event clock,
 checked by bin/flushcheck.py.
-
-## 2026-09-11 (afternoon) — the coding page drawn for his eyeball [T-3]
+## 2026-09-11 (afternoon) — the coding page drawn, then the IRR review turned into a meeting-room brainstorm [T-3, T-9]
 <!-- session: session_01D4vJ3BK6BgHxA9TzRHdw6Z -->
 
-The owner resumed the one-app design, asking whether Pro was settled (it is, by R-0243) and
-to continue the coding pages and the IRR review pages. The approved coding mode — a read-only
-transcript as the thread, a cheap scribe in the composer, Done — had been approved in words
-only, with no mockup. One builder (Opus) drew it with the app's stylesheet inlined verbatim
-and the app's own classes, six frames: mid-coding on desktop with the drawer pinned, the empty
-opening state, the scribe refusing an ambiguous "he", the phone, the sessions sheet after
-Done with the three training items, and the alternative where only the edit line stays in the
-thread. Four guesses the references did not settle are logged as forks in the topic block.
-The IRR review pick (four concepts) still waits on him. No rulings were made this session.
+The owner resumed the one-app design. Pro was confirmed settled by R-0243. The approved
+coding mode (read-only transcript, a scribe in the composer, Done) had no mockup, so one
+builder drew it with the app's stylesheet, six frames, four forks logged. He then tabled the
+coding page [R-0247] and turned to the IRR review: it will be worked out by prototyping in
+the review meetings themselves, no pre-review, one approach tried for minutes then the next
+[R-0244]; the review front end must be isolated so it cannot break Personal or Pro [R-0245];
+two families of approach, data-oriented slices and an AI-guided walk, with the AI's help
+through the review ruled important and its shape open — candidate: the AI proposes a final
+data set from all codings and the room accepts, overrides or tweaks it into ground truth
+[R-0246]. He liked the one-timeline-per-coder view and asked whether the list view differs
+(same data; sortable, scales, loses the time axis). A second builder drew the meeting-room
+ideas with the app's stylesheet: four switchable lenses over one gold record, the AI's
+proposed record in three groups, settling a whole kind of disagreement with one rule, voting
+on phones with a tally on the big screen and a meeting clock, and what the meeting leaves
+behind (rules, guideline drafts, coder tendencies). Process correction logged: sub-agents do
+the work, one status line only, one final reply, model and effort chosen per agent [R-0248].

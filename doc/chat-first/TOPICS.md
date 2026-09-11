@@ -66,7 +66,8 @@ in the editor); run the harness once.
 
 ## T-3 · One app: Pro and Training as thin layers on the chat
 
-**Status:** designed and ruled; the coding page is now drawn for the owner's eyeball; nothing built.
+**Status:** designed and ruled; the IRR review is being worked out by prototyping in the review
+meetings; the coding page is tabled; nothing built.
 **Decided:** one Vite app, features by licence, role and view; coding is documenting a case,
 Pro on desktop; training is auditor/admin features on top [R-0237]; never a new view where an
 existing surface can carry the addition [R-0243]; Pro adds cases (= the family switcher on the
@@ -76,33 +77,43 @@ whose composer bar becomes "select a line, type an instruction, a cheap scribe r
 (option D) with Done; coding protocol: no assignments, any coder any time, each Done joins the
 pool and recomputes agreement, results visible only to contributors, blind until your own Done
 [R-0242]; the coach's replay is one coding among others; the upload/speaker-mapping sheet is
-approved as drawn.
-**Open:** (1) the IRR review surface for five codings — four concepts await his pick
-(https://claude.ai/code/artifact/a7637a73-8ebc-4166-8b5b-c6a3269aa973: A stave, B tally list,
-C deck, D moderator; recommended B+C); (2) the coding page as drawn
-(https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a) needs his eyeball, with
-these forks inside it: (a) the coder's own words stay in the thread under the line they coded
-(frame 1) or only the scribe's edit line stays (frame 6); (b) the three training items —
-"Code this session", "Re-code with the coach", "Compare codings" — are drawn as a small card
-over the sessions sheet because the swipe-row menu as built has room for only two buttons;
-(c) Done is a plain button in the composer bar, not the green pill, so it does not read as
-"add"; (d) the "coding" mark beside the session title is amber mono text, a style the app does
-not have yet; (3) the two-sided compare view already drawn assumes two codings and must be
-reconciled with whichever five-sided concept he picks; (4) Pro "notes" (a session where the
-coach listens and records) has no mockup; (5) build order once picked: codings + scores
-tables, endpoints, replay as a task, export of finished codings to the ground-truth files, the
-session menu items, the coding mode, the pool statistics, the compare view; (6) the old SARF
-coding page becomes a legacy link, deleted after re-coding [R-0238]; (7) desktop-first, phone
-later.
+approved as drawn. **IRR review (2026-09-11):** worked out in the meetings themselves — several
+approaches in the app, try one for minutes, jump to the next, learn per meeting; no pre-review,
+all review in the meeting [R-0244]; its front-end code must be easy to change and isolated so it
+can never break Personal or Pro [R-0245]; two families to try, data-oriented (slices: one
+timeline per coder, one list of every moment) and guided (prioritised items led by an AI
+evaluation); the AI helping the room through the review is important and its shape is open;
+candidate: the AI proposes a final data set from all codings and the room accepts, overrides or
+tweaks it into ground truth; he likes the one-timeline-per-coder view [R-0246]. The coding-page
+design is tabled except where it overlaps the review; simple, progressive enhancement [R-0247].
+**Open:** (1) the review-meeting ideas drawn for his eyeball
+(https://claude.ai/code/artifact/40ba5500-7be3-4bc2-82ed-193f8367448f): one session with four
+switchable lenses (timeline, list, cards, chat) over the same matched moments and one gold
+record; the AI's proposed record in three groups (agreed, disputed with the AI's pick, reason
+and transcript quote, only-the-coach-saw) with accept/override/tweak; settling a whole kind of
+disagreement with one rule; the room voting on phones with the tally on the big screen and a
+meeting clock; and after the meeting, settles tagged as rules, drafted guideline amendments,
+and what each coder tends to do — which of these go into the first meeting build is his call;
+(2) whether the one-list-of-every-moment view adds anything over the one-timeline-per-coder
+view (answered: same matched data; the list sorts by disagreement, shows differing values
+inline and scales past five coders, but loses the time axis); (3) the coding page as drawn
+(https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a) is TABLED with its four
+forks — the coder's words kept or not in the thread; the three training items as a card over
+the sessions sheet; Done as a plain button; the amber "coding" mark; (4) the two-sided compare
+view already drawn must be reconciled with whichever review lens is built first; (5) Pro
+"notes" has no mockup; (6) build order once picked: codings + scores tables, endpoints, replay
+as a task, export of finished codings to the ground-truth files, the session menu items, the
+coding mode, the pool statistics, the review lenses as one isolated module; (7) the old SARF
+coding page becomes a legacy link, deleted after re-coding [R-0238]; (8) desktop-first.
 **Lives in:** plan https://claude.ai/code/artifact/7a033173-bff2-41ca-bbde-39385d4ab7f3;
 layers https://claude.ai/code/artifact/daeb8856-4a5b-42d4-ab62-4c14bc3784b4; new surfaces
-https://claude.ai/code/artifact/c5040b6a-75e3-47de-aba7-54aabbda69f4; the coding page
-https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a (source
-/Users/patrick/.claude/jobs/16d9eee6/tmp/coding-page.html, ephemeral — the artifact is the
-durable copy); mockups are drawn with web/src/theme.css and the app's markup from here on
-(his rule 2026-09-10).
-**Next action:** he looks at the coding page and rules on its four forks; he picks the IRR
-review concept; then build in this PR.
+https://claude.ai/code/artifact/c5040b6a-75e3-47de-aba7-54aabbda69f4; IRR concepts round 1
+https://claude.ai/code/artifact/a7637a73-8ebc-4166-8b5b-c6a3269aa973; review-meeting ideas
+https://claude.ai/code/artifact/40ba5500-7be3-4bc2-82ed-193f8367448f; the coding page
+https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a; mockups are drawn with
+web/src/theme.css and the app's markup (his rule 2026-09-10).
+**Next action:** he looks at the review-meeting ideas and says which go into the first
+meeting build and which lens to build first; then build the review module in this PR.
 **Updated:** 2026-09-11.
 
 ## T-4 · Existing records and conversations in the new app; wipe and re-code
