@@ -768,4 +768,7 @@ the assumption of discrete sessions — the unit of coding is to be brainstormed
 task at a time and never a queue, and he needs a simple way to assign the next task [R-0263],
 and amended the question-mark rule to "covered, not recited" [R-0264]. Version 3 of the page
 redrew the punchlist as one task at a time with the unit of coding as three drawn options and
-Patrick's assigning phone; a read-only inventory of doc/irr/ (Sonnet) sized the migration.
+Patrick's assigning phone; a read-only inventory of doc/irr/ (Sonnet) sized the migration. He then ruled one element is never a list [R-0265] and that what is codable between
+meetings had not been brainstormed and comes first [R-0266]; version 4 drew it as three options
+(the same conversation up to the same cut, one whole transcript, correcting the coach's coding
+dropped) with the coder's one-card screen, Patrick's table, and what the meeting reviews.

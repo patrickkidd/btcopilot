@@ -93,15 +93,17 @@ convergence is undecided; settle-by-kind is one tool among a few [R-0251]; origi
 are preserved in full fidelity; leaning yes to hiding who chose what until the final review
 [R-0252]; the vote is strictly human — no AI takes or recommendations in the ballot; where the
 AI's suggestion goes is open, the AI must still carry all tedious work [R-0254].
-**Open:** (1) the eight decisions on the ballot-and-meeting drawing, version 3
+**Open:** (1) the seven decisions on the ballot-and-meeting drawing, version 4
 (https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9): the ballot rule (all but
 one / two thirds / majority with tie-break); names hidden in the ballot, shown at the meeting,
-who-was-right stored; **the unit of coding before a meeting** — bring your coding of a continuing
-conversation up to date since your last Done, or code a stretch of turns Patrick picks, or code
-a whole recorded session (he ruled discrete sessions are not assumed and this is to be
-brainstormed [R-0263]); how Patrick assigns — he picks the conversation and the date and every
-coder gets the same single task, or he types one line per coder; the ballot opens once three
-coders are done; the meeting's records live in the app's tables with the guidelines file
+who-was-right stored; **what is coded between meetings, to be settled first [R-0266]** — A:
+everyone codes the same conversation up to the same cut, the cut being the last turn when
+Patrick puts it on the table, each coder adding to their own earlier coding; B: one whole
+transcript per task (recordings, finished conversations, last year's six); C: correct the
+coach's coding, dropped as not blind; the recommendation is A, with B when a transcript exists;
+Patrick assigns by putting a conversation on the table and setting the date, every coder gets
+the same single task, and the coder's screen is one card then history, never a list [R-0265];
+the ballot opens once three coders are done; the meeting's records live in the app's tables with the guidelines file
 generated from them; a "flag for next meeting" link per AI-written rule; the four lenses kept
 as extra meeting views or the list only. Ruled on that page: one item per screen, the meeting's
 three choices, every item chosen before ratify, coders have one task at a time and never a
