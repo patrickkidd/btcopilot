@@ -752,4 +752,7 @@ tasks, whole transcripts as a separate kind, and correcting the coach's coding f
 corrections that now bind: sub-agents with one status line and one short reply [R-0248]; every
 question mark covered, not recited [R-0253, R-0264]; artifacts are UI drawings with the
 decisions on them, never text [R-0255]; UI options with descriptions, never a research project
-[R-0256, R-0260]; he is Patrick, never "the owner" [R-0261].
+[R-0256, R-0260]; he is Patrick, never "the owner" [R-0261]. After the flush Patrick asked where the project stands, challenged "settled" — three
+items were inference, not his words — and ruled that every screen is planned pixel for pixel
+before any code review [R-0269]; the coding screens were redrawn to today's rulings as the
+next step.
