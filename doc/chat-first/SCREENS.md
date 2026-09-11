@@ -348,11 +348,13 @@ What it is for: getting a recorded session into the app as a conversation.
 
 ## Coding a conversation
 
-![A conversation opened to be coded: the talk on one side, the record it produces on the other, and a prompt to tap a line.](screens/coding-f3.png)
-![When the writer cannot tell which person you mean, it asks rather than guessing.](screens/coding-f4.png)
-![The same moment on a phone, one line at a time.](screens/coding-f5.png)
 
 What it is for: saying what each line of a conversation tells you happened, so we can agree on what the record should be.
+
+![Coding on a desktop: the conversation up to the cut on the left, your own words under the line you tapped with the scribe's edit beneath, the events list pinned on the right, Done in the top bar.](screens/coding-f2.png)
+![The same on a phone.](screens/coding-f5.png)
+![Tapping Done asks once and explains that your coding will be saved and submitted for the meeting.](screens/coding-f7.png)
+![Tapping a turn above the last agreed line: nothing is selected, and one faint line says that part was already agreed.](screens/coding-f8.png)
 
 - Coding is stage one of reaching agreement, and it is done blind: you never see anyone else's coding of that conversation until you press Done. [drawn] {R-0242, R-0250}
 - You are given one task at a time and never a list to choose from. [drawn] {R-0265}
@@ -384,11 +386,12 @@ What it is for: saying what each line of a conversation tells you happened, so w
 
 ## Your one task
 
-![The one thing to do before the next meeting, with how much is new and roughly how long it takes.](screens/coding-f1.png)
-![The same card when the task is to correct the coach's own coding instead.](screens/review-f4.png)
-![After you press Done the card becomes the next thing to wait for.](screens/coding-f6.png)
 
 What it is for: Patrick choosing what gets coded, and everyone seeing one thing to do.
+
+![Your phone before a meeting: one card, one button, and under it what you have already finished.](screens/coding-f1.png)
+![After Done the next single card takes its place, greyed until Patrick opens the vote.](screens/coding-f6.png)
+![Patrick's screen: the date, what is on the table, who is done, the button that opens the vote, and the agenda that fills itself.](screens/review-f10.png)
 
 - Patrick opens the sessions sheet like anyone else, swipes the conversation he wants, and taps to put it on the table. [drawn] {R-0267}
 - That opens the conversation so he can place the cut: the point everyone codes up to. [drawn] {R-0267}
@@ -406,11 +409,11 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 
 ## The vote before the meeting
 
-![The vote on a phone, one disputed moment per screen, with what each coder said.](screens/review-f1.png)
-![Voting for something none of the takes got right: you write the moment yourself.](screens/review-f2.png)
-![Your own vote beside the coach's, with the line of talk it came from.](screens/review-ideas-f5.png)
 
 What it is for: settling as much as possible on your own phone, so the meeting only handles what is left.
+
+![The vote on a phone, one disputed moment per screen, the takes shown without names.](screens/review-f1.png)
+![Choosing "change…": the editor opens prefilled so you can write a take none of the coders wrote.](screens/review-f2.png)
 
 - Once enough coders have finished, a ballot opens on each coder's phone. [drawn] {R-0250}
 - The ballot shows one disputed moment per screen. [drawn] {R-0257}
@@ -428,14 +431,17 @@ What it is for: settling as much as possible on your own phone, so the meeting o
 - Which margin settles an item before the meeting is a choice Patrick has not made: all but one, two thirds, or a simple majority with a named tie-break. [open]
 - Whether names stay hidden in the ballot, appear at the meeting, and whether who-was-right is kept per coder, is a choice Patrick has not made. [open]
 - Whether the ballot opens at three finished coders or some other number is a choice Patrick has not made. [open]
+- Names are hidden whenever anyone is voting; only the meeting shows who coded what. [drawn] {R-0272}
+- The vote opens when Patrick opens it, never at a coder count. [drawn] {R-0273}
+- No rule settles an item before the meeting; the vote's tallies inform the meeting and the meeting settles. [drawn] {R-0274}
 
 ## The meeting
 
-![The meeting screen: only what the vote could not settle, with the item in front of the room on the line.](screens/review-f10.png)
-![Disagreements gathered by kind, so a whole kind can be settled in one go.](screens/review-ideas-f3.png)
-![The room votes and the tally shows on the screen as it comes in.](screens/review-ideas-f4.png)
 
 What it is for: closing what the vote could not, and ratifying the record.
+
+![The meeting screen, option A: every disputed moment with its tally, most split first; on the timeline above, teal dots agreed, amber dots disputed with a count.](screens/review-f11.png)
+![Option B: the same screen, but each dot on the timeline carries a short column of squares, one per coder, filled where that coder has it.](screens/review-f12.png)
 
 - The meeting screen carries only the items the ballot left open. [drawn] {R-0250}
 - Names and counts appear here for the first time. [drawn] {R-0252}
@@ -451,13 +457,17 @@ What it is for: closing what the vote could not, and ratifying the record.
 - Whether the timeline, cards and chat views stay as extra ways to look at the same items, or the meeting is the list alone, is a choice Patrick has not made. [open] {R-0246}
 - The two-sided comparison of two codings already drawn has to fold into either the ballot or this screen, and where is unbuilt work. [drawn]
 - The review screens are built as their own isolated piece, so changing them can never break the chat or the professional features. [drawn] {R-0245}
+- The meeting sees every disputed moment with its tally, the most split first, and the unanimous ones collapsed below to confirm or reopen. [drawn] {R-0274}
+- One timeline above the list shows agreement and disagreement at a glance; which of two drawn marks is used is a choice Patrick has not made. [open] {R-0277}
 
 ## After ratification
 
-![What the meeting produced: how many moments were ratified, how many are left, and how much agreement improved.](screens/review-f11.png)
-![Every settled item offered as a rule, so the next coding starts further along.](screens/review-ideas-f6.png)
 
 What it is for: what the meeting produced, with nothing left to choose.
+
+![The result screen: what was ratified, the guideline changes the AI wrote with where each came from, where the AI disagreed with the room, and what each coder tends to do.](screens/review-f13.png)
+![The coding guidelines inside the app, always current, each rule with the settle it came from and a flag link.](screens/review-f15.png)
+![Where you find them: a Help row on the account page.](screens/review-f14.png)
 
 - The result screen shows how many moments were ratified and how many were left unresolved. [drawn]
 - It shows agreement before the ballot and after ratification, side by side. [drawn]
@@ -468,6 +478,8 @@ What it is for: what the meeting produced, with nothing left to choose.
 - Where the AI's reading differed from the room is listed afterwards, with its reason, as an audit rather than a vote. [drawn] {R-0254}
 - What each coder tends to do differently from the others is shown. [drawn]
 - Every vote, settlement and ratification is a row in the app's own tables with who did it and when. [drawn] {R-0262}
-- Whether one "flag for next meeting" link per rule exists, or there is no way to contest a rule until someone raises it, is a choice Patrick has not made. [open]
 - Whether the guidelines file in the code is generated from those tables and never edited by hand is a choice Patrick has not made. [open]
 - How last year's coding material is carried over is a choice Patrick has not made; the plan on the table keeps the rules and the agreement tables as rows and the written deliberations as text. [open] {R-0262}
+- Every rule the AI wrote carries a "flag for next meeting" link, and flagged rules, unresolved moments and unfinished tasks go on the next meeting's agenda by themselves. [drawn] {R-0276}
+- The meeting's results are rows in the database — codings, votes, settles, rules with the settle each came from — so everything is traceable; the coding guidelines are the one written output. [drawn] {R-0275}
+- Anyone can read the current coding guidelines inside the app from a help button; where that button lives is a choice Patrick has not made. [open] {R-0275}

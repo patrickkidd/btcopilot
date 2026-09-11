@@ -2274,18 +2274,33 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 .rcard .prov { margin: 4px 0 0 13px; font: 400 13px/1.4 var(--mono); color: var(--faint); }
 .rcard .flag { margin-left: 13px; color: var(--faint); font: 400 13px var(--mono); text-decoration: underline; cursor: pointer; }
 .rcard .who2 { font: 400 14px/1.5 var(--sans); color: var(--ink); margin-top: 6px; }
+/* what the next meeting will start from, filled in by itself */
+.agbox { margin: 14px 16px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.aghd { padding: 10px 12px 6px; font: 500 13px var(--mono); color: var(--faint); }
+.agrow { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border-top: 1px solid var(--line); font: 400 14px/1.3 var(--sans); color: var(--ink); }
+.agt { flex: 1; min-width: 0; }
+.agx { flex: none; color: var(--data); font: 400 13px var(--mono); text-decoration: underline; cursor: pointer; }
+/* the agreement timeline over the meeting's list */
+.tl .wire2 { stroke: var(--line); stroke-width: 1.5; }
+.tl .d-ok { fill: var(--data); }
+.tl .d-no { fill: var(--ask); }
+.tl .d-n { font: 400 12px var(--mono); fill: var(--ask-text); }
+.tl .sq { fill: none; stroke: var(--line); stroke-width: 1.2; }
+.tl .sq.has { fill: var(--data); stroke: var(--data); }
+.tl .sq.has.no { fill: var(--ask); stroke: var(--ask); }
+/* one written guideline, as anyone reads it in the app */
+.glrow { padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.glrow .g1 { font: 400 15px/1.4 var(--sans); color: var(--ink); }
+.glrow .g2 { margin-top: 4px; font: 400 12px/1.4 var(--mono); color: var(--faint); }
+.glrow .gflag { color: var(--faint); font: 400 12px var(--mono); text-decoration: underline; cursor: pointer; }
 </style>
 <div class="mk-h1">Ballot and Meeting &mdash; three coders code blind, everyone votes on a phone, the meeting sees only what the vote left open</div>
 <div class="mk-lead">One recorded session, coded from scratch by three people who have not read each other. When the third coding lands, a ballot opens on every coder's phone: one disputed item per screen, the takes shown without names, and nothing from the AI. The meeting then opens with only the items the ballot did not settle, names and counts now shown, and ends when the room ratifies. The AI's own reading arrives afterwards, as an audit against ground truth. Drawn with the app's own stylesheet and markup. Fictional people only.</div>
 <div class="mk-key"><i></i>dashed amber outline = does not exist in the app yet.</div>
 
 <ol class="mk-dec">
-  <li><b>Ballot rule.</b> Frame 4's item at 3 to 2: unsettled under &ldquo;all but one&rdquo; (recommended), settled under &ldquo;majority&rdquo;. Pick one.</li>
-  <li><b>Names</b> hidden in the ballot (frame 1), shown at the meeting (frame 4), who-was-right stored (frame 5): yes or no.</li>
-  <li><b>The ballot opens once three coders have finished the task</b>: three, or another number.</li>
-  <li><b>The meeting's records live in the app's tables</b> and the guidelines file in the repository is generated from them, never hand-edited (frame 5): yes or no.</li>
-  <li><b>One &ldquo;flag for next meeting&rdquo; link per rule the AI wrote</b> (frame 5), or no way to contest a rule until someone raises it.</li>
-  <li><b>The four lenses</b> (timeline, list, cards, chat) stay as extra views on the meeting screen, or the meeting is frame 4's list only.</li>
+  <li><b>The agreement timeline above the meeting's list</b> (frame 4, options A and B): A &mdash; every moment is one dot, teal when the vote agreed, amber when it did not, a small count of takes beside a disputed dot; B &mdash; every moment is one dot with a short column of small squares under it, one per coder, filled where that coder has it, so the count and the gap are visible without a tap. Pick A or B.</li>
+  <li><b>The coding guidelines inside the app</b> (frame 8): reached from the help button on the account page as drawn, or from the sessions sheet. Pick one.</li>
 </ol>
 
 <div class="mk-sec"><h2><span>1</span>The ballot, one item per screen</h2>
@@ -2358,6 +2373,18 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 <div class="frame phone" id="f4"><div class="app">
 <div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Before Thu Sep 18</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
 <div class="fs-body mk-add" style="display:flex;flex-direction:column">
+<div class="row" style="cursor:default;gap:8px;padding:14px 16px;opacity:0.45"><div class="r1" style="white-space:normal">Vote on the disputed moments of Robert&rsquo;s conversation</div><div class="r2" style="white-space:normal">opens when Patrick opens the vote &middot; about 10 min</div><button class="addbtn" type="button" style="margin-top:8px">start</button></div>
+<div class="plprog" style="border-bottom:none;background:none">done before</div>
+<div class="plrow done" style="opacity:0.5"><span class="ck">&#10003;</span><div class="pm"><div class="r1" style="white-space:normal">Code Robert&rsquo;s conversation up to Sep 4</div><div class="r2" style="white-space:normal">done Sep 12</div></div></div>
+<div class="plrow done" style="opacity:0.5"><span class="ck">&#10003;</span><div class="pm"><div class="r1" style="white-space:normal">Robert&rsquo;s conversation up to Aug 21</div><div class="r2" style="white-space:normal">ratified Aug 25</div></div></div>
+</div>
+</div></div>
+<div class="mk-cap">2b &mdash; the next card, after you press Done. The card that takes the finished task's place is the vote, and it is greyed until Patrick opens the vote. No count of coders opens it; the line says so. The task you just finished drops under &ldquo;done before&rdquo; with the date you pressed Done.</div>
+</div>
+<div>
+<div class="frame phone" id="f5"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Before Thu Sep 18</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="fs-body mk-add" style="display:flex;flex-direction:column">
 <div class="row" style="cursor:default;gap:8px;padding:14px 16px;opacity:0.4"><div class="r1" style="white-space:normal">Correct the coach&rsquo;s coding of Robert&rsquo;s conversation</div><button class="addbtn" type="button" style="margin-top:8px">start</button></div>
 </div>
 </div></div>
@@ -2366,7 +2393,7 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 </div>
 <div class="mk-row" style="margin-top:22px">
 <div>
-<div class="frame phone" id="f5"><div class="app">
+<div class="frame phone" id="f6"><div class="app">
 <div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Sep 18 meeting &mdash; ratify</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
 <div class="pic"><div class="pin-label"><span>Robert&rsquo;s conversation &middot; cut Sep 4 &middot; 3 unsettled of 9 new &middot; 12 ratified before</span></div></div>
 <div class="scroller mk-add">
@@ -2391,7 +2418,7 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 <div class="mk-row">
 
 <div>
-<div class="frame phone" id="f6"><div class="app">
+<div class="frame phone" id="f7"><div class="app">
 <div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Robert &mdash; sessions</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
 <div class="fs-scrim in"></div>
 <div class="fs-sheet in" style="height:88%">
@@ -2419,7 +2446,7 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 </div>
 
 <div>
-<div class="frame phone" id="f7"><div class="app">
+<div class="frame phone" id="f8"><div class="app">
 <div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Robert&rsquo;s conversation</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
 <div class="chat" style="justify-content:flex-end">
   <div class="bub coach"><div class="who">COACH</div>And when he came back, who did he talk to first?</div>
@@ -2440,7 +2467,7 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 </div>
 
 <div>
-<div class="frame phone" id="f8"><div class="app">
+<div class="frame phone" id="f9"><div class="app">
 <div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Robert&rsquo;s conversation</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
 <div class="chat" style="justify-content:flex-end">
   <div class="bub coach"><div class="who">COACH</div>And when he came back, who did he talk to first?</div>
@@ -2461,7 +2488,7 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 </div>
 
 <div>
-<div class="frame phone" id="f9"><div class="app">
+<div class="frame phone" id="f10"><div class="app">
 <div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Next meeting &middot; Thu Sep 18</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
 <div class="fs-body mk-add">
   <div class="sn-row push"><div class="sn-m"><div class="sn-t">Meeting date</div><div class="sn-s">Thu Sep 18</div></div><span class="sn-chev">&rsaquo;</span></div>
@@ -2476,33 +2503,43 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
   <div class="srow"><span class="s1">S.A.</span><span class="s2">voted</span></div>
   <div class="plnote">closed out: 2 of 5</div>
   <button class="nudge" type="button">nudge the 2 who are not done</button>
+  <button class="nudge" type="button" style="margin-top:10px">open the vote</button>
+  <div class="agbox mk-add">
+    <div class="aghd">Next meeting&rsquo;s agenda &middot; 3</div>
+    <div class="agrow"><span class="agt">Rule 2 flagged by L.W.</span><span class="agx">close</span></div>
+    <div class="agrow"><span class="agt">1975 &middot; started on the pipeline &middot; unresolved</span><span class="agx">close</span></div>
+    <div class="agrow"><span class="agt">R.T. has not finished coding</span><span class="agx">close</span></div>
+  </div>
 </div>
 </div></div>
-<div class="mk-cap">3d &mdash; the table. This is the whole of Patrick&rsquo;s administration: the date, what is on the table, and who is done. Tapping the meeting date row opens the phone&rsquo;s own date picker. The &#10005; takes a conversation off the table before anyone starts, and every coder&rsquo;s one card is derived from this screen.</div>
+<div class="mk-cap">3d &mdash; the table. This is the whole of Patrick&rsquo;s administration: the date, what is on the table, who is done, and the one tap that opens the vote. Nothing opens the vote but Patrick pressing &ldquo;open the vote&rdquo;. The agenda under it fills itself from flagged rules, items left unresolved and coding nobody finished, and anyone can close their own line. Tapping the meeting date row opens the phone&rsquo;s own date picker, and the &#10005; takes a conversation off the table before anyone starts.</div>
 </div>
 
 </div>
 </div>
 
-<div class="mk-sec"><h2><span>4</span>The meeting: only what the vote did not settle</h2>
-<div class="mk-row"><div>
-<div class="frame" style="height:1020px" id="f10"><div class="app">
-<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Session 3 &mdash; ratify</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
-<div class="stats mk-add"><span>41 min left</span><span>4 unsettled of 17</span><span>first-pass agreement events <b>0.74</b></span><span>&kappa; <b>0.61</b></span></div>
-<div class="pic"><div class="pin-label"><span>Family timeline &middot; the item in front of the room</span></div><div class="view" style="height:72px"><div class="ss"><svg viewBox="0 0 840 72" height="72"><line class="wire" x1="16" y1="34" x2="824" y2="34"/><circle class="dot" cx="60" cy="34" r="4.5"/><circle class="dot" cx="110" cy="34" r="4.5"/><rect class="ep" x="200" y="12" width="90" height="44" rx="8"/><rect class="ep-edge" x="200" y="12" width="90" height="44" rx="8"/><text class="ep-yrs" x="245" y="9" text-anchor="middle">71&ndash;75</text><circle class="dot" cx="215" cy="34" r="4.5"/><circle class="dot" cx="245" cy="34" r="4.5"/><circle class="dot" cx="275" cy="34" r="4.5"/><circle class="dot" cx="420" cy="34" r="4.5"/><circle class="dot on" cx="560" cy="34" r="7"/><circle class="dot" cx="700" cy="34" r="4.5"/><circle class="dot" cx="780" cy="34" r="4.5"/></svg></div></div></div>
-<div class="scroller mk-add">
-  <div class="div">Unsettled &middot; 4 <span class="dcount">the ballot did not close these</span></div>
-  <div class="drow">
-    <div class="top"><span class="tally"><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt"></i><i class="vt"></i></span><span class="pick">1992 &middot; &rarr; Elizabeth &middot; relationship became difficult</span></div>
-    <div class="tline"><span><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i> anxiety up &middot; you, M.K., R.T. = 3</span><span><i class="vt"></i><i class="vt"></i> relationship: distance &middot; L.W., S.A. = 2</span><span class="verdict">3 to 2 &mdash; talk</span></div>
-    <div class="quote"><b>CLIENT:</b> "it stayed that way through high school"</div>
-    <div class="acts2"><button class="btn primary" type="button">keep</button><button class="btn" type="button">change&hellip;</button><button class="btn" type="button">mark unresolved</button></div>
-  </div>
+<div class="mk-sec"><h2><span>4</span>The meeting: one timeline, every disputed item, the room settles each one</h2>
+<div class="mk-row"><div><div class="frame" style="height:1980px" id="f11"><div class="app"><div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Session 3 &mdash; ratify &middot; A</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="stats mk-add"><span>41 min left</span><span>17 moments in this cut</span><span>6 disputed</span><span>11 agreed</span></div>
+<div class="pic mk-add"><div class="pin-label"><span>Every moment in this cut &middot; teal where the vote agreed, amber where it did not</span></div><div class="view" style="height:72px"><div class="ss tl"><svg viewBox="0 0 840 72" height="72"><line class="wire2" x1="16" y1="40" x2="824" y2="40"/><circle class="d-ok" cx="40" cy="40" r="4.5"/><circle class="d-ok" cx="86" cy="40" r="4.5"/><circle class="d-no" cx="132" cy="40" r="5.5"/><text class="d-n" x="140" y="30">3</text><circle class="d-ok" cx="178" cy="40" r="4.5"/><circle class="d-ok" cx="224" cy="40" r="4.5"/><circle class="d-no" cx="270" cy="40" r="5.5"/><text class="d-n" x="278" y="30">2</text><circle class="d-no" cx="316" cy="40" r="5.5"/><text class="d-n" x="324" y="30">4</text><circle class="d-ok" cx="362" cy="40" r="4.5"/><circle class="d-ok" cx="408" cy="40" r="4.5"/><circle class="d-no" cx="454" cy="40" r="5.5"/><text class="d-n" x="462" y="30">2</text><circle class="d-ok" cx="500" cy="40" r="4.5"/><circle class="d-ok" cx="546" cy="40" r="4.5"/><circle class="d-no" cx="592" cy="40" r="5.5"/><text class="d-n" x="600" y="30">3</text><circle class="d-ok" cx="638" cy="40" r="4.5"/><circle class="d-no" cx="684" cy="40" r="5.5"/><text class="d-n" x="692" y="30">2</text><circle class="d-ok" cx="730" cy="40" r="4.5"/><circle class="d-ok" cx="776" cy="40" r="4.5"/></svg></div></div></div><div class="scroller mk-add">
+  <div class="div">Disputed &middot; 6 <span class="dcount">most split first</span></div>
   <div class="drow">
     <div class="top"><span class="tally"><i class="vt on"></i><i class="vt on"></i><i class="vt"></i><i class="vt"></i><i class="vt"></i></span><span class="pick">1971 &middot; Robert &middot; moved to Alaska</span></div>
     <div class="tline"><span><i class="vt on"></i><i class="vt on"></i> May 1971 &middot; you, L.W. = 2</span><span><i class="vt"></i><i class="vt"></i> June 1975 &middot; M.K., S.A. = 2</span><span><i class="vt"></i> not coded &middot; R.T. = 1</span><span class="verdict">2 to 2 &mdash; talk</span></div>
     <div class="quote"><b>CLIENT:</b> "May of 1971. He'd just graduated."</div>
     <div class="acts2"><button class="btn primary on" type="button">keep</button><button class="btn" type="button">change&hellip;</button><button class="btn" type="button">mark unresolved</button></div>
+  </div>
+  <div class="drow">
+    <div class="top"><span class="tally"><i class="vt on"></i><i class="vt on"></i><i class="vt"></i><i class="vt"></i><i class="vt"></i></span><span class="pick">2008 &middot; the client &middot; moved out of the family home</span></div>
+    <div class="tline"><span><i class="vt on"></i><i class="vt on"></i> 2008 &middot; you, S.A. = 2</span><span><i class="vt"></i><i class="vt"></i> 2009 &middot; L.W., M.K. = 2</span><span><i class="vt"></i> not coded &middot; R.T. = 1</span><span class="verdict">2 to 2 &mdash; talk</span></div>
+    <div class="quote"><b>CLIENT:</b> "I was out of the house by the time she got sick"</div>
+    <div class="acts2"><button class="btn primary" type="button">keep</button><button class="btn" type="button">change&hellip;</button><button class="btn" type="button">mark unresolved</button></div>
+  </div>
+  <div class="drow">
+    <div class="top"><span class="tally"><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt"></i><i class="vt"></i></span><span class="pick">1992 &middot; &rarr; Elizabeth &middot; relationship became difficult</span></div>
+    <div class="tline"><span><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i> anxiety up &middot; you, M.K., R.T. = 3</span><span><i class="vt"></i><i class="vt"></i> relationship: distance &middot; L.W., S.A. = 2</span><span class="verdict">3 to 2 &mdash; talk</span></div>
+    <div class="quote"><b>CLIENT:</b> "it stayed that way through high school"</div>
+    <div class="acts2"><button class="btn primary" type="button">keep</button><button class="btn" type="button">change&hellip;</button><button class="btn" type="button">mark unresolved</button></div>
   </div>
   <div class="drow">
     <div class="top"><span class="tally"><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt"></i><i class="vt"></i></span><span class="pick">1975 &middot; Robert &middot; started on the pipeline</span></div>
@@ -2511,27 +2548,92 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
     <div class="acts2"><button class="btn primary" type="button">keep</button><button class="btn" type="button">change&hellip;</button><button class="btn on" type="button">mark unresolved</button></div>
   </div>
   <div class="drow">
-    <div class="top"><span class="tally"><i class="vt on"></i><i class="vt on"></i><i class="vt"></i><i class="vt"></i><i class="vt"></i></span><span class="pick">2008 &middot; the client &middot; moved out of the family home</span></div>
-    <div class="tline"><span><i class="vt on"></i><i class="vt on"></i> 2008 &middot; you, S.A. = 2</span><span><i class="vt"></i><i class="vt"></i> 2009 &middot; L.W., M.K. = 2</span><span><i class="vt"></i> not coded &middot; R.T. = 1</span><span class="verdict">2 to 2 &mdash; talk</span></div>
-    <div class="quote"><b>CLIENT:</b> "I was out of the house by the time she got sick"</div>
+    <div class="top"><span class="tally"><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt"></i></span><span class="pick">1969 &middot; Robert &middot; left home for the first time</span></div>
+    <div class="tline"><span><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i> 1969 &middot; you, L.W., M.K., S.A. = 4</span><span><i class="vt"></i> 1970 &middot; R.T. = 1</span><span class="verdict">4 to 1 &mdash; talk</span></div>
+    <div class="quote"><b>CLIENT:</b> "he was nineteen when he went"</div>
     <div class="acts2"><button class="btn primary" type="button">keep</button><button class="btn" type="button">change&hellip;</button><button class="btn" type="button">mark unresolved</button></div>
   </div>
-  <div class="div">Settled by the vote &middot; 13 <span class="dcount">the room does not read these aloud</span></div>
+  <div class="drow">
+    <div class="top"><span class="tally"><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt"></i></span><span class="pick">1994 &middot; Elizabeth &middot; went back to work</span></div>
+    <div class="tline"><span><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i> anxiety down &middot; you, M.K., R.T., S.A. = 4</span><span><i class="vt"></i> not said &middot; L.W. = 1</span><span class="verdict">4 to 1 &mdash; talk</span></div>
+    <div class="quote"><b>CLIENT:</b> "she seemed lighter after that"</div>
+    <div class="acts2"><button class="btn primary" type="button">keep</button><button class="btn" type="button">change&hellip;</button><button class="btn" type="button">mark unresolved</button></div>
+  </div>
+  <div class="div">Everyone agreed &middot; 11 <span class="dcount">confirm or reopen</span></div>
   <div class="collapsed">1953 &middot; Robert &middot; born &middot; Oklahoma<span class="reopen">reopen</span></div>
   <div class="collapsed">1971 &middot; Robert &amp; Elizabeth &middot; met at a house party<span class="reopen">reopen</span></div>
   <div class="collapsed">1983 &middot; Robert &amp; Elizabeth &middot; divorced<span class="reopen">reopen</span></div>
   <div class="collapsed">2006 &middot; the client &middot; insomnia became a recognized problem<span class="reopen">reopen</span></div>
   <div class="collapsed">2007 &middot; the client &middot; started therapy<span class="reopen">reopen</span></div>
+  <div class="collapsed">1955 &middot; Elizabeth &middot; born &middot; Kansas<span class="reopen">reopen</span></div>
+  <div class="collapsed">1972 &middot; Robert &amp; Elizabeth &middot; married<span class="reopen">reopen</span></div>
+  <div class="collapsed">1977 &middot; the client &middot; born<span class="reopen">reopen</span></div>
+  <div class="collapsed">1989 &middot; Robert &middot; left Alaska<span class="reopen">reopen</span></div>
+  <div class="collapsed">1998 &middot; the client &middot; left for college<span class="reopen">reopen</span></div>
+  <div class="collapsed">2011 &middot; Elizabeth &middot; diagnosed<span class="reopen">reopen</span></div>
 </div>
-<div class="ratbar mk-add"><button class="btn" type="button" disabled>ratify &middot; 2 items still need a choice</button><span class="note">2 of 4 chosen</span></div>
-</div></div>
-<div class="mk-cap">The meeting screen carries only the items the vote left open. Names and counts appear here for the first time. Every open item needs one of three choices &mdash; keep a take, change it, or mark it unresolved &mdash; and two of the four already have one. The ratify button stays dead until all four do; ratifying ends the session. An item marked unresolved is kept as data and left out of ground truth.</div>
-</div></div>
+<div class="ratbar mk-add"><button class="btn" type="button" disabled>ratify &middot; 4 items still need a choice</button><span class="note">2 of 6 chosen</span></div>
+</div></div><div class="mk-cap">4A &mdash; dots and counts.</div></div><div><div class="frame" style="height:1980px" id="f12"><div class="app"><div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Session 3 &mdash; ratify &middot; B</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="stats mk-add"><span>41 min left</span><span>17 moments in this cut</span><span>6 disputed</span><span>11 agreed</span></div>
+<div class="pic mk-add"><div class="pin-label"><span>Every moment in this cut &middot; a square per coder under each dot, filled where that coder has it</span></div><div class="view" style="height:104px"><div class="ss tl"><svg viewBox="0 0 840 104" height="104"><line class="wire2" x1="16" y1="40" x2="824" y2="40"/><circle class="d-ok" cx="40" cy="40" r="4.5"/><rect class="sq has" x="37" y="54" width="6" height="6" rx="1"/><rect class="sq has" x="37" y="62" width="6" height="6" rx="1"/><rect class="sq has" x="37" y="70" width="6" height="6" rx="1"/><rect class="sq has" x="37" y="78" width="6" height="6" rx="1"/><rect class="sq has" x="37" y="86" width="6" height="6" rx="1"/><circle class="d-ok" cx="86" cy="40" r="4.5"/><rect class="sq has" x="83" y="54" width="6" height="6" rx="1"/><rect class="sq has" x="83" y="62" width="6" height="6" rx="1"/><rect class="sq has" x="83" y="70" width="6" height="6" rx="1"/><rect class="sq has" x="83" y="78" width="6" height="6" rx="1"/><rect class="sq has" x="83" y="86" width="6" height="6" rx="1"/><circle class="d-no" cx="132" cy="40" r="5.5"/><rect class="sq has no" x="129" y="54" width="6" height="6" rx="1"/><rect class="sq has no" x="129" y="62" width="6" height="6" rx="1"/><rect class="sq has no" x="129" y="70" width="6" height="6" rx="1"/><rect class="sq has no" x="129" y="78" width="6" height="6" rx="1"/><rect class="sq" x="129" y="86" width="6" height="6" rx="1"/><circle class="d-ok" cx="178" cy="40" r="4.5"/><rect class="sq has" x="175" y="54" width="6" height="6" rx="1"/><rect class="sq has" x="175" y="62" width="6" height="6" rx="1"/><rect class="sq has" x="175" y="70" width="6" height="6" rx="1"/><rect class="sq has" x="175" y="78" width="6" height="6" rx="1"/><rect class="sq has" x="175" y="86" width="6" height="6" rx="1"/><circle class="d-ok" cx="224" cy="40" r="4.5"/><rect class="sq has" x="221" y="54" width="6" height="6" rx="1"/><rect class="sq has" x="221" y="62" width="6" height="6" rx="1"/><rect class="sq has" x="221" y="70" width="6" height="6" rx="1"/><rect class="sq has" x="221" y="78" width="6" height="6" rx="1"/><rect class="sq has" x="221" y="86" width="6" height="6" rx="1"/><circle class="d-no" cx="270" cy="40" r="5.5"/><rect class="sq has no" x="267" y="54" width="6" height="6" rx="1"/><rect class="sq has no" x="267" y="62" width="6" height="6" rx="1"/><rect class="sq has no" x="267" y="70" width="6" height="6" rx="1"/><rect class="sq" x="267" y="78" width="6" height="6" rx="1"/><rect class="sq" x="267" y="86" width="6" height="6" rx="1"/><circle class="d-no" cx="316" cy="40" r="5.5"/><rect class="sq has no" x="313" y="54" width="6" height="6" rx="1"/><rect class="sq has no" x="313" y="62" width="6" height="6" rx="1"/><rect class="sq has no" x="313" y="70" width="6" height="6" rx="1"/><rect class="sq has no" x="313" y="78" width="6" height="6" rx="1"/><rect class="sq has no" x="313" y="86" width="6" height="6" rx="1"/><circle class="d-ok" cx="362" cy="40" r="4.5"/><rect class="sq has" x="359" y="54" width="6" height="6" rx="1"/><rect class="sq has" x="359" y="62" width="6" height="6" rx="1"/><rect class="sq has" x="359" y="70" width="6" height="6" rx="1"/><rect class="sq has" x="359" y="78" width="6" height="6" rx="1"/><rect class="sq has" x="359" y="86" width="6" height="6" rx="1"/><circle class="d-ok" cx="408" cy="40" r="4.5"/><rect class="sq has" x="405" y="54" width="6" height="6" rx="1"/><rect class="sq has" x="405" y="62" width="6" height="6" rx="1"/><rect class="sq has" x="405" y="70" width="6" height="6" rx="1"/><rect class="sq has" x="405" y="78" width="6" height="6" rx="1"/><rect class="sq has" x="405" y="86" width="6" height="6" rx="1"/><circle class="d-no" cx="454" cy="40" r="5.5"/><rect class="sq has no" x="451" y="54" width="6" height="6" rx="1"/><rect class="sq has no" x="451" y="62" width="6" height="6" rx="1"/><rect class="sq" x="451" y="70" width="6" height="6" rx="1"/><rect class="sq" x="451" y="78" width="6" height="6" rx="1"/><rect class="sq" x="451" y="86" width="6" height="6" rx="1"/><circle class="d-ok" cx="500" cy="40" r="4.5"/><rect class="sq has" x="497" y="54" width="6" height="6" rx="1"/><rect class="sq has" x="497" y="62" width="6" height="6" rx="1"/><rect class="sq has" x="497" y="70" width="6" height="6" rx="1"/><rect class="sq has" x="497" y="78" width="6" height="6" rx="1"/><rect class="sq has" x="497" y="86" width="6" height="6" rx="1"/><circle class="d-ok" cx="546" cy="40" r="4.5"/><rect class="sq has" x="543" y="54" width="6" height="6" rx="1"/><rect class="sq has" x="543" y="62" width="6" height="6" rx="1"/><rect class="sq has" x="543" y="70" width="6" height="6" rx="1"/><rect class="sq has" x="543" y="78" width="6" height="6" rx="1"/><rect class="sq has" x="543" y="86" width="6" height="6" rx="1"/><circle class="d-no" cx="592" cy="40" r="5.5"/><rect class="sq has no" x="589" y="54" width="6" height="6" rx="1"/><rect class="sq has no" x="589" y="62" width="6" height="6" rx="1"/><rect class="sq has no" x="589" y="70" width="6" height="6" rx="1"/><rect class="sq has no" x="589" y="78" width="6" height="6" rx="1"/><rect class="sq" x="589" y="86" width="6" height="6" rx="1"/><circle class="d-ok" cx="638" cy="40" r="4.5"/><rect class="sq has" x="635" y="54" width="6" height="6" rx="1"/><rect class="sq has" x="635" y="62" width="6" height="6" rx="1"/><rect class="sq has" x="635" y="70" width="6" height="6" rx="1"/><rect class="sq has" x="635" y="78" width="6" height="6" rx="1"/><rect class="sq has" x="635" y="86" width="6" height="6" rx="1"/><circle class="d-no" cx="684" cy="40" r="5.5"/><rect class="sq has no" x="681" y="54" width="6" height="6" rx="1"/><rect class="sq has no" x="681" y="62" width="6" height="6" rx="1"/><rect class="sq has no" x="681" y="70" width="6" height="6" rx="1"/><rect class="sq" x="681" y="78" width="6" height="6" rx="1"/><rect class="sq" x="681" y="86" width="6" height="6" rx="1"/><circle class="d-ok" cx="730" cy="40" r="4.5"/><rect class="sq has" x="727" y="54" width="6" height="6" rx="1"/><rect class="sq has" x="727" y="62" width="6" height="6" rx="1"/><rect class="sq has" x="727" y="70" width="6" height="6" rx="1"/><rect class="sq has" x="727" y="78" width="6" height="6" rx="1"/><rect class="sq has" x="727" y="86" width="6" height="6" rx="1"/><circle class="d-ok" cx="776" cy="40" r="4.5"/><rect class="sq has" x="773" y="54" width="6" height="6" rx="1"/><rect class="sq has" x="773" y="62" width="6" height="6" rx="1"/><rect class="sq has" x="773" y="70" width="6" height="6" rx="1"/><rect class="sq has" x="773" y="78" width="6" height="6" rx="1"/><rect class="sq has" x="773" y="86" width="6" height="6" rx="1"/></svg></div></div></div><div class="scroller mk-add">
+  <div class="div">Disputed &middot; 6 <span class="dcount">most split first</span></div>
+  <div class="drow">
+    <div class="top"><span class="tally"><i class="vt on"></i><i class="vt on"></i><i class="vt"></i><i class="vt"></i><i class="vt"></i></span><span class="pick">1971 &middot; Robert &middot; moved to Alaska</span></div>
+    <div class="tline"><span><i class="vt on"></i><i class="vt on"></i> May 1971 &middot; you, L.W. = 2</span><span><i class="vt"></i><i class="vt"></i> June 1975 &middot; M.K., S.A. = 2</span><span><i class="vt"></i> not coded &middot; R.T. = 1</span><span class="verdict">2 to 2 &mdash; talk</span></div>
+    <div class="quote"><b>CLIENT:</b> "May of 1971. He'd just graduated."</div>
+    <div class="acts2"><button class="btn primary on" type="button">keep</button><button class="btn" type="button">change&hellip;</button><button class="btn" type="button">mark unresolved</button></div>
+  </div>
+  <div class="drow">
+    <div class="top"><span class="tally"><i class="vt on"></i><i class="vt on"></i><i class="vt"></i><i class="vt"></i><i class="vt"></i></span><span class="pick">2008 &middot; the client &middot; moved out of the family home</span></div>
+    <div class="tline"><span><i class="vt on"></i><i class="vt on"></i> 2008 &middot; you, S.A. = 2</span><span><i class="vt"></i><i class="vt"></i> 2009 &middot; L.W., M.K. = 2</span><span><i class="vt"></i> not coded &middot; R.T. = 1</span><span class="verdict">2 to 2 &mdash; talk</span></div>
+    <div class="quote"><b>CLIENT:</b> "I was out of the house by the time she got sick"</div>
+    <div class="acts2"><button class="btn primary" type="button">keep</button><button class="btn" type="button">change&hellip;</button><button class="btn" type="button">mark unresolved</button></div>
+  </div>
+  <div class="drow">
+    <div class="top"><span class="tally"><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt"></i><i class="vt"></i></span><span class="pick">1992 &middot; &rarr; Elizabeth &middot; relationship became difficult</span></div>
+    <div class="tline"><span><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i> anxiety up &middot; you, M.K., R.T. = 3</span><span><i class="vt"></i><i class="vt"></i> relationship: distance &middot; L.W., S.A. = 2</span><span class="verdict">3 to 2 &mdash; talk</span></div>
+    <div class="quote"><b>CLIENT:</b> "it stayed that way through high school"</div>
+    <div class="acts2"><button class="btn primary" type="button">keep</button><button class="btn" type="button">change&hellip;</button><button class="btn" type="button">mark unresolved</button></div>
+  </div>
+  <div class="drow">
+    <div class="top"><span class="tally"><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt"></i><i class="vt"></i></span><span class="pick">1975 &middot; Robert &middot; started on the pipeline</span></div>
+    <div class="tline"><span><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i> drop, same year as the move &middot; you, L.W., R.T. = 3</span><span><i class="vt"></i><i class="vt"></i> keep &middot; M.K., S.A. = 2</span><span class="verdict">3 to 2 &mdash; talk</span></div>
+    <div class="quote"><b>CLIENT:</b> "he went up on the pipeline the same summer"</div>
+    <div class="acts2"><button class="btn primary" type="button">keep</button><button class="btn" type="button">change&hellip;</button><button class="btn on" type="button">mark unresolved</button></div>
+  </div>
+  <div class="drow">
+    <div class="top"><span class="tally"><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt"></i></span><span class="pick">1969 &middot; Robert &middot; left home for the first time</span></div>
+    <div class="tline"><span><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i> 1969 &middot; you, L.W., M.K., S.A. = 4</span><span><i class="vt"></i> 1970 &middot; R.T. = 1</span><span class="verdict">4 to 1 &mdash; talk</span></div>
+    <div class="quote"><b>CLIENT:</b> "he was nineteen when he went"</div>
+    <div class="acts2"><button class="btn primary" type="button">keep</button><button class="btn" type="button">change&hellip;</button><button class="btn" type="button">mark unresolved</button></div>
+  </div>
+  <div class="drow">
+    <div class="top"><span class="tally"><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt"></i></span><span class="pick">1994 &middot; Elizabeth &middot; went back to work</span></div>
+    <div class="tline"><span><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i><i class="vt on"></i> anxiety down &middot; you, M.K., R.T., S.A. = 4</span><span><i class="vt"></i> not said &middot; L.W. = 1</span><span class="verdict">4 to 1 &mdash; talk</span></div>
+    <div class="quote"><b>CLIENT:</b> "she seemed lighter after that"</div>
+    <div class="acts2"><button class="btn primary" type="button">keep</button><button class="btn" type="button">change&hellip;</button><button class="btn" type="button">mark unresolved</button></div>
+  </div>
+  <div class="div">Everyone agreed &middot; 11 <span class="dcount">confirm or reopen</span></div>
+  <div class="collapsed">1953 &middot; Robert &middot; born &middot; Oklahoma<span class="reopen">reopen</span></div>
+  <div class="collapsed">1971 &middot; Robert &amp; Elizabeth &middot; met at a house party<span class="reopen">reopen</span></div>
+  <div class="collapsed">1983 &middot; Robert &amp; Elizabeth &middot; divorced<span class="reopen">reopen</span></div>
+  <div class="collapsed">2006 &middot; the client &middot; insomnia became a recognized problem<span class="reopen">reopen</span></div>
+  <div class="collapsed">2007 &middot; the client &middot; started therapy<span class="reopen">reopen</span></div>
+  <div class="collapsed">1955 &middot; Elizabeth &middot; born &middot; Kansas<span class="reopen">reopen</span></div>
+  <div class="collapsed">1972 &middot; Robert &amp; Elizabeth &middot; married<span class="reopen">reopen</span></div>
+  <div class="collapsed">1977 &middot; the client &middot; born<span class="reopen">reopen</span></div>
+  <div class="collapsed">1989 &middot; Robert &middot; left Alaska<span class="reopen">reopen</span></div>
+  <div class="collapsed">1998 &middot; the client &middot; left for college<span class="reopen">reopen</span></div>
+  <div class="collapsed">2011 &middot; Elizabeth &middot; diagnosed<span class="reopen">reopen</span></div>
+</div>
+<div class="ratbar mk-add"><button class="btn" type="button" disabled>ratify &middot; 4 items still need a choice</button><span class="note">2 of 6 chosen</span></div>
+</div></div><div class="mk-cap">4B &mdash; dots and a square per coder.</div></div></div>
+<div class="mk-cap" style="width:840px">The same meeting screen drawn twice. One timeline runs across the top of both: every moment in the cut, in order, agreement and disagreement in the same row rather than a lane per coder. In 4A a disputed moment is an amber dot with the number of different takes beside it, and you tap it to see who wrote what. In 4B the same dot carries a short column of five small squares, one per coder, filled where that coder has the moment, so you see at a glance how many coded it and who is missing without tapping. Below the timeline both screens are identical: the disputed moments first, most split at the top, each with its tally and the three choices, then the moments everyone agreed on, collapsed, for the room to confirm or reopen. Nothing is settled before the meeting by a count; the room settles every disputed item and the ratify button stays dead until each one has a choice.</div>
 </div>
 
 <div class="mk-sec"><h2><span>5</span>After ratification: the result screen</h2>
 <div class="mk-row"><div>
-<div class="frame" style="height:900px" id="f11"><div class="app">
+<div class="frame" style="height:900px" id="f13"><div class="app">
 <div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Session 3 &mdash; ratified Sep 18</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
 <div class="stats mk-add" style="height:auto;flex-wrap:wrap;padding:8px 16px"><span>17 moments</span><span>13 ratified</span><span>4 unresolved</span><span>agreement first pass <b>0.74</b></span><span>after ratification <b>0.91</b></span><span>the coach's replay against ground truth: events <b>0.71</b> &middot; people <b>0.96</b> &middot; variables &kappa; <b>0.58</b></span></div>
 <div class="scroller">
@@ -2543,6 +2645,7 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
   <div class="rule">When coders split between anxiety up and a relationship move on the same moment, both hold unless the transcript names one.</div>
   <div class="prov">from 1992 &middot; relationship became difficult &middot; settled 4 to 1</div>
   <div><span class="flag">flag for next meeting</span></div>
+  <div class="prov" style="margin-top:12px">flagged rules and unresolved items go on the next meeting&rsquo;s agenda by themselves</div>
 </div>
 <div class="acard mk-add">
   <h4>Where the AI's proposal differed from the room &middot; 3</h4>
@@ -2559,4 +2662,38 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 </div></div>
 <div class="mk-cap">There is nothing to choose on this screen. The AI has already written the two guideline changes out of what the room settled, and they are live; each rule shows the settle it came from. &ldquo;flag for next meeting&rdquo; does one thing: it puts that rule on the next meeting's agenda. This screen is the meeting's record &mdash; every vote, settle and ratification is a row with who did it and when, and the current guidelines and ground truth are the state that record adds up to. The markdown files in the repository become an export of these tables rather than something anyone edits by hand.</div>
 </div></div>
+</div>
+
+<div class="mk-sec"><h2><span>8</span>The coding guidelines in the app</h2>
+<div class="mk-row">
+<div>
+<div class="frame phone" id="f14"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Account</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="fs-body">
+  <div class="sn-row push"><div class="sn-m"><div class="sn-t">Name</div><div class="sn-s">M. Kerrigan</div></div><span class="sn-chev">&rsaquo;</span></div>
+  <div class="sn-row push"><div class="sn-m"><div class="sn-t">Email</div><div class="sn-s">mk@example.org</div></div><span class="sn-chev">&rsaquo;</span></div>
+  <div class="sn-row push"><div class="sn-m"><div class="sn-t">Notifications</div><div class="sn-s">meetings and votes</div></div><span class="sn-chev">&rsaquo;</span></div>
+  <div class="sn-hd">Help</div>
+  <div class="sn-row push mk-add"><div class="sn-m"><div class="sn-t">Help &middot; coding guidelines</div><div class="sn-s">what the meetings have settled</div></div><span class="sn-chev">&rsaquo;</span></div>
+  <div class="sn-row push"><div class="sn-m"><div class="sn-t">About</div><div class="sn-s">version 1.4</div></div><span class="sn-chev">&rsaquo;</span></div>
+</div>
+</div></div>
+<div class="mk-cap">8a &mdash; the account page, with one new row under Help.</div>
+</div>
+<div>
+<div class="frame phone" id="f15"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Coding guidelines</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="scroller mk-add">
+  <div class="plprog">current as of the meeting of Sep 18</div>
+  <div class="glrow"><div class="g1">1. One shift per event, one event per atomic shift.</div><div class="g2">from the meeting of Aug 25 &middot; 1971 &middot; moved to Alaska</div><div><span class="gflag">flag</span></div></div>
+  <div class="glrow"><div class="g1">2. When a move and a new job are within a year for the same person, code one moment; the move is the moment.</div><div class="g2">from the meeting of Sep 18 &middot; 1975 &middot; started on the pipeline</div><div><span class="gflag">flag</span></div></div>
+  <div class="glrow"><div class="g1">3. When coders split between anxiety up and a relationship move on the same moment, both hold unless the transcript names one.</div><div class="g2">from the meeting of Sep 18 &middot; 1992 &middot; relationship became difficult</div><div><span class="gflag">flag</span></div></div>
+  <div class="glrow"><div class="g1">4. Date a moment from what the client says, not from what the dates around it imply.</div><div class="g2">from the meeting of Aug 11 &middot; 2008 &middot; moved out of the family home</div><div><span class="gflag">flag</span></div></div>
+  <div class="glrow"><div class="g1">5. A moment nobody can date stays in the record undated rather than being dropped.</div><div class="g2">from the meeting of Aug 11 &middot; 1969 &middot; left home for the first time</div><div><span class="gflag">flag</span></div></div>
+</div>
+</div></div>
+<div class="mk-cap">8b &mdash; the guidelines themselves.</div>
+</div>
+</div>
+<div class="mk-cap" style="width:840px">The one written output of the meetings, always current, readable by anyone inside the app. Every rule says which settle it came from, so you can go back to the moment the room argued about. &ldquo;flag&rdquo; puts that rule on the next meeting&rsquo;s agenda. Nothing here is typed by hand; the rules are written out of what the room settled, and this page is what the database says today.</div>
 </div>
