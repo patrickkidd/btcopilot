@@ -708,6 +708,7 @@ the tap-target fix that had made clusters unopenable on phones, and the beta sig
 (app-path login, home-screen card, passkeys, https sandbox).
 
 ## 2026-09-10 and 11 — merge fixes, the coding loop designed, the flush made a skill [T-1, T-2, T-3, T-4, T-9]
+<!-- session: session_01K8QPKojERHpy2znLb9Qrxv -->
 
 The owner ruled the beta deploys on the existing production server, merge-first, with old Pro
 diagrams left as pickle and new rows JSON in the same column [R-0241]. A read-only merge-risk
