@@ -47,7 +47,7 @@ def main() -> int:
     names = re.findall(r"^## T-\d+\s+·\s+(.+)$", topics, re.M)
     for name in {n for n in names if names.count(n) > 1}:
         errors.append(f"two topic blocks share the name {name!r}")
-    markers = re.findall(r"<!-- session: (\S+) -->", history)
+    markers = re.findall(r"<!-- session: (\S+)", history)
     for marker in {m for m in markers if markers.count(m) > 1}:
         errors.append(f"HISTORY has two entries for session {marker}")
     for tag in re.findall(r"\[(T-\d+(?:,\s*T-\d+)*)\]", history):

@@ -19,8 +19,8 @@ changes nothing.
   uses it. Before opening a new block, match this session's work against every existing
   block by meaning; if it belongs there, update that block. Never rename a topic; never
   create a second block for the same thread of work.
-- **One HISTORY entry per session**, marked with the session id on its own line right under
-  the heading: `<!-- session: <id> -->`. If an entry with this session's marker already
+- **One HISTORY entry per session**, marked with the session id and the time of the last flush on its own line right under
+  the heading: `<!-- session: <id> · flushed: <ISO time> -->`. If an entry with this session's marker already
   exists, rewrite that entry in place; otherwise append. Entries of earlier sessions are
   never touched.
 - **A ruling is appended once.** Before appending, search `evidence.md` for Patrick's
@@ -29,6 +29,28 @@ changes nothing.
 - **Topic blocks are replaced whole**, not appended to: rewrite the touched block from the
   session's full transcript so a rerun produces the same block.
 - **STATE.md sections are revised in place**, never appended to.
+
+## Mid-session flushes — the same skill, incremental
+
+The owner calls `/two-clocks` whenever he likes, not only at the end. To keep a repeat
+run from rewording what an earlier run already captured:
+
+- The session's HISTORY entry carries `<!-- session: <id> · flushed: <ISO time> -->`. A
+  flush reads that time and works only from the owner's statements after it (the trace
+  holds each statement's time); earlier statements were already captured. A topic block
+  is touched only if a statement since then belongs to it — otherwise it is left
+  byte-for-byte as it was.
+- Rows in trace.json already named by a session (`named_by: "session"`) keep their name and
+  summary; a flush names only script-named rows from this session.
+- A ruling is appended only if no row in `evidence.md` already carries those words, and
+  no ruling id already cited in the topic's Decided field states the same decision. When
+  the owner restates a ruling in new words, note the restatement under the existing id
+  in evidence.md rather than adding a second ruling.
+- The HISTORY entry for this session is rewritten as a whole from all of the session's
+  statements, so a later flush in the same session extends it; its marker's time moves
+  forward; earlier sessions' entries are never touched.
+- Pages are regenerated from the files, so running twice with nothing new republishes an
+  identical page.
 
 ## Steps, in order
 
