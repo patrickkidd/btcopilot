@@ -2,8 +2,8 @@
 
 Wholly invented. No person, place, date, or wording here comes from anyone's real
 record. Every frame in `built.html`, `coding.html`, `review.html`, `review-ideas.html`,
-`upload-and-compare.html` and `pro.html` draws its names, years and moment words from
-this file. The same moment must read with the same words and the same year in every
+`upload-and-compare.html` and `pro.html` draws its names, years and event words from
+this file. The same event must read with the same words and the same year in every
 frame.
 
 The case is **Marcus Whitlock**. The region is the Upper Peninsula of Michigan and
@@ -23,7 +23,7 @@ southern Arizona. The presenting issue is **Corinne's migraines**.
 Three generations, six people, one pair-bond that ends (Marcus and Delphine), one that
 does not (Errol and Odile).
 
-## The moments — 35 dated, 1924 to 2006
+## The events — 35 dated, 1924 to 2006
 
 | # | Date | Who | What happened | Variables |
 |---|---|---|---|---|
@@ -67,18 +67,18 @@ does not (Errol and Odile).
 
 | Name | Span | Holds | Why these belong together |
 |---|---|---|---|
-| The first hard year in Arizona | 1969–1972 | 4 moments | Marcus arrived alone, met Delphine, married her and went underground at the mine inside three years. |
-| Leaving and losing | 1993–1998 | 3 moments | Corinne left for college, stopped calling home, and then lost her grandmother. |
-| The year the headaches started | 1994–1995 | 20 moments | The migraines and the pulling away from Theo run through the same two years. |
-| After the diagnosis | 1995–1998 | 40 moments | Everything that follows Delphine's illness, dense because Corinne talked about it most. |
+| The first hard year in Arizona | 1969–1972 | 4 events | Marcus arrived alone, met Delphine, married her and went underground at the mine inside three years. |
+| Leaving and losing | 1993–1998 | 3 events | Corinne left for college, stopped calling home, and then lost her grandmother. |
+| The year the headaches started | 1994–1995 | 20 events | The migraines and the pulling away from Theo run through the same two years. |
+| After the diagnosis | 1995–1998 | 40 events | Everything that follows Delphine's illness, dense because Corinne talked about it most. |
 
 ## The dense stretch, 1995 to 1998 — the twelve the coach names at once
 
 When Corinne asks what happened in the years after her mother got sick, the coach answers
 with these twelve, in this order and these words. Four of them are only here; the other
-eight are moments 25 to 31 above and the diagnosis.
+eight are events 25 to 31 above and the diagnosis.
 
-| Moment, in the coach's words | Date |
+| Event, in the coach's words | Date |
 |---|---|
 | Mother's diagnosis | 1995 |
 | Started therapy | 1995 |
@@ -110,7 +110,7 @@ the case every other frame draws), **Ortega** (last session Oct 11) and **Lindqv
 sessions yet). The first thing in the Whitlock case is a call from the referring doctor:
 `Presenting migraines since 1994, worse after her father left the state.`
 
-The last two are the dense fixture: 60 moments across five years, drawn as two boxes on
+The last two are the dense fixture: 60 events across five years, drawn as two boxes on
 one phone-width line.
 
 ## Coach exchanges, in the app's register
@@ -131,7 +131,7 @@ one phone-width line.
 **3 — the whole record counted**
 
 - Client: `how much have I told you?`
-- Coach: `Sixty moments across five years, in two runs: The year the headaches started and After the diagnosis.`
+- Coach: `Sixty events across five years, in two runs: The year the headaches started and After the diagnosis.`
 
 **4 — a coder's line, in the coding screen**
 
@@ -144,7 +144,7 @@ one phone-width line.
 
 ## Disputed items, as different coders would write them
 
-| Moment | Take 1 | Take 2 | Take 3 | Left out |
+| Event | Take 1 | Take 2 | Take 3 | Left out |
 |---|---|---|---|---|
 | 1988 · → Delphine · relationship became difficult | anxiety up (3 coders) | relationship: distance (1) | anxiety up · relationship: distance (1) | 1 |
 | Mar 1969 · Marcus · moved to Arizona | Mar 1969 (2) | Aug 1973 (2) | — | 1 |
@@ -164,9 +164,9 @@ Transcript lines the disputes rest on:
 
 ## Guideline rules the AI drafts out of those settles
 
-1. When a move and a new job fall within a year for the same person, code one moment;
-   the move is the moment. *(from 1973 · started at the copper mine · settled 3 to 2)*
-2. When coders split between anxiety up and a relationship move on the same moment, both
+1. When a move and a new job fall within a year for the same person, code one event;
+   the move is the event. *(from 1973 · started at the copper mine · settled 3 to 2)*
+2. When coders split between anxiety up and a relationship move on the same event, both
    hold unless the transcript names one. *(from 1988 · relationship became difficult ·
    settled 4 to 1)*
 

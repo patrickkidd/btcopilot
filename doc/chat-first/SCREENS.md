@@ -53,8 +53,8 @@ What it is for: talking to the coach, which is how everything else in the app ge
 
 ## The picture at rest
 
-@frame built#f5 | One moment on the line: a single dot, no box around it.
-@frame built#f6 | A dense record: moments that belong together are boxes on the line, each showing how many it holds.
+@frame built#f5 | One event on the line: a single dot, no box around it.
+@frame built#f6 | A dense record: events that belong together are boxes on the line, each showing how many it holds.
 @frame built#f4 | A brand new record: nothing is on the line yet, with an amber question mark where the record has something to ask.
 
 What it is for: the one picture, always above the chat, that is the app's memory of your family.
@@ -67,17 +67,17 @@ What it is for: the one picture, always above the chat, that is the app's memory
 - Tapping a mark once shows its words; nothing is sent to the coach and it costs you nothing. [built] {R-0073}
 - Tapping it again sends it to the coach as something you are asking about. [built] {R-0072, R-0073}
 - Tapping empty space, or the picture's own name, puts the picture down and clears what was picked. [built]
-- A picked moment shows its date and its own words in two lines above the line, and the year is written once under the mark. [built] {R-0210, R-0235}
-- A picked loose moment that is not in any cluster reads exactly like a picked moment inside a cluster. [built] {R-0235}
-- Tapping the words of the moment already picked jumps to where it was coded in the chat. [built] {R-0192}
+- A picked event shows its date and its own words in two lines above the line, and the year is written once under the mark. [built] {R-0210, R-0235}
+- A picked loose event that is not in any cluster reads exactly like a picked event inside a cluster. [built] {R-0235}
+- Tapping the words of the event already picked jumps to where it was coded in the chat. [built] {R-0192}
 - An amber question mark appears where the record has a question, and only in three situations: an order it cannot tell, an open state it cannot confirm, and facts with no date at all. [built] {R-0005}
 - Facts with no date sit on a shelf at the end of the line rather than being placed on it. [built] {R-0013}
 - Tapping a shelf item says the fact out loud and offers to ask the coach when it happened; a shelf item that does nothing is a defect. [built] {R-0047}
 - There are no legends anywhere; every mark says itself in a plain sentence when you tap it. [built] {R-0005}
 - There is no progress bar and no sense of being finished; what more information would buy is shown as specific questions instead. [built] {R-0007}
 - There are no filter buttons and no way to hide parts of the picture by hand. [built] {R-0046}
-- The coach aims the picture: its latest message lights the moments it names and the rest stay dim. [built]
-- At most three moments are lit at once, with their words tied to their marks by thin lines. [built]
+- The coach aims the picture: its latest message lights the events it names and the rest stay dim. [built]
+- At most three events are lit at once, with their words tied to their marks by thin lines. [built]
 - A new answer from the coach clears what you had picked and lights the new set. [built]
 - When the record is empty the picture says nothing is on your line yet and that it draws itself as you talk. [built]
 - A line is only drawn through points when there are at least three of them; below that you see marks, because two points invent a trend. [built] {R-0008}
@@ -88,26 +88,26 @@ What it is for: the one picture, always above the chat, that is the app's memory
 - Order between two guesses is only drawn when the two guessed ranges do not overlap. [built]
 - The picture never announces that it is about to change; the invitation is always in the coach's words. [built]
 - The warning badge saying the picture might be behind the conversation was removed. [built] {R-0203}
-- A nodal event, Bowen theory's term for a moment that shifts the family's emotional process, carries a ring on its dot; the coach sets that flag by the clinical definition, never by guesswork. [built] {R-0283}
+- A nodal event, Bowen theory's term for an event that shifts the family's emotional process, carries a ring on its dot; the coach sets that flag by the clinical definition, never by guesswork. [built] {R-0283}
 
 ## A cluster opened
 
-@frame built#f8 | A group of related moments opened over the line, with its name, why it is a group, and its moments still as marks.
+@frame built#f8 | A group of related events opened over the line, with its name, why it is a group, and its events still as marks.
 
-What it is for: one group of related moments, opened from the line.
+What it is for: one group of related events, opened from the line.
 
 - Tapping a cluster opens it, and the opened cluster slides in from the right over the whole line like a card. [built] {R-0224, R-0230}
 - The card it slides in on has its own background, so it reads as a card and not as words over words. [built] {R-0230}
 - The grey line above the picture becomes the name of what you are looking at, with a back arrow beside it. [built] {R-0223}
 - Tapping either the name or the back arrow goes up one level. [built] {R-0223}
 - An open cluster shows its name and the reason it is a cluster, never a list of its events, because a cluster can hold fifteen. [built] {R-0213}
-- The moments inside stay as marks; tapping one shows its words. [built] {R-0213}
-- A cluster needs at least three moments to exist. [built] {R-0215}
-- Whether that three-moment floor also binds a grouping you made yourself is a choice Patrick has not made; today his own two-moment grouping is allowed to stay. [open]
-- A stored cluster carries only its name, its reason, where it came from, and the moments in it. [built] {R-0205}
-- The coach may group and name moments but may never invent a moment to put in one. [built] {R-0076}
+- The events inside stay as marks; tapping one shows its words. [built] {R-0213}
+- A cluster needs at least three events to exist. [built] {R-0215}
+- Grouping is the coach's judgement, made from what you say as you say it; every grouping carries a one-line reason that says what is in it and what is not; the automatic grouping is only a first draft the coach may overwrite. [drawn] {R-0287}
+- A stored cluster carries only its name, its reason, where it came from, and the events in it. [built] {R-0205}
+- The coach may group and name events but may never invent an event to put in one. [built] {R-0076}
 - The word for these is clusters, in the app and in the code. [built] {R-0197}
-- Whether tapping a moment's words inside an open cluster should jump straight to its editor is unconfirmed, and Patrick will say after testing it. [open] {R-0207}
+- Whether tapping an event's words inside an open cluster should jump straight to its editor is unconfirmed, and Patrick will say after testing it. [open] {R-0207}
 
 ## The moves board
 
@@ -128,10 +128,10 @@ What it is for: a play-by-play of what people did, one move at a time.
 - The words under the board are a person's name and what they said happened, with no count and no clinical term. [built] {R-0178, R-0162}
 - That block keeps room for two lines whether or not it needs them, so the board never changes height. [built] {R-0178}
 - The date is written once, under the mark. [built] {R-0178}
-- The moment being played is drawn last, in the action green, and nothing is drawn behind it. [built] {R-0177}
-- The line from the mark up to the words is what tells you which moment is being played. [built] {R-0177}
+- The event being played is drawn last, in the action green, and nothing is drawn behind it. [built] {R-0177}
+- The line from the mark up to the words is what tells you which event is being played. [built] {R-0177}
 - Moves already played stay on the board, faint and still, so what a move left behind stays visible. [built]
-- The grey line above says only the family timeline; the moment's own label stays above its mark. [built] {R-0179}
+- The grey line above says only the family timeline; the event's own label stays above its mark. [built] {R-0179}
 - Tapping a move's chip moves the board and never sends you back to the line. [built] {R-0170}
 - You never see the internal names of the symbols; you see what you said. [built] {R-0161}
 - The up and down arrows for symptoms and functioning never disappear mid-play. [built] {R-0163}
@@ -142,18 +142,18 @@ What it is for: a play-by-play of what people did, one move at a time.
 
 ## The row of chips under the picture
 
-@frame built#f7 | A moment picked: the row underneath turns into ask about it, have it explained, or find where you said it.
+@frame built#f7 | An event picked: the row underneath turns into ask about it, have it explained, or find where you said it.
 @frame built#f11 | The list of everything in the record, reached from the button at the end of that row.
 
 What it is for: the four things you can do with whatever is picked.
 
-- One row sits under the picture and reads the same whether a cluster is open or a moment inside it is picked. [built] {R-0211, R-0212}
+- One row sits under the picture and reads the same whether a cluster is open or an event inside it is picked. [built] {R-0211, R-0212}
 - The row is ask, explain, in chat, and the button that opens the lists. [built] {R-0212, R-0221}
 - The chips use the chat's own chip style, and ask carries only the word. [built] {R-0212}
 - The list button sits at the right-hand end of that row. [built] {R-0221}
 - Ask puts the thing you picked into your message so you can type your own words around it. [built] {R-0072}
-- In chat jumps to the message where that moment was coded. [built] {R-0192}
-- In chat only works when the moment actually has a message behind it. [built] {R-0220}
+- In chat jumps to the message where that event was coded. [built] {R-0192}
+- In chat only works when the event actually has a message behind it. [built] {R-0220}
 - Explain asks the coach to walk you through the cluster, and costs a coach reply. [built] {R-0166}
 - The room under the picture is reserved whether or not anything is in it, so nothing below moves when you tap. [built]
 
@@ -163,7 +163,7 @@ What it is for: the four things you can do with whatever is picked.
 
 What it is for: the coach's references to real things in your record, and yours back to it.
 
-- A chip is a reference to something real: a moment, a cluster or a person. [built] {R-0072}
+- A chip is a reference to something real: an event, a cluster or a person. [built] {R-0072}
 - Chips appear inside the coach's messages and inside your own. [built] {R-0072}
 - Tapping one drops that reference into your message and you type your own words around it. [built] {R-0072}
 - Sending a reference on its own means "tell me about this". [built] {R-0072}
@@ -188,8 +188,8 @@ What it is for: seeing and editing everything in the record by hand.
 - The events list and the people list are two tabs in that one drawer, not a filter. [built] {R-0199}
 - The button sits inside the picture's own frame, matching the sessions button beside the chat input. [built] {R-0198}
 - Events are grouped under their cluster, with a heading that stays in view as you scroll so you always know which cluster you are in. [built]
-- A cluster of one moment reads "1 moment", not "1 moments". [built]
-- Moments with no date are grouped under their own heading. [built]
+- A cluster of one event reads "1 event", not "1 events". [built]
+- Events with no date are grouped under their own heading. [built]
 - The lists can be searched. [built]
 - Each row shows what happened on one line and the date and people on a second. [built]
 - A row's summary uses short codes rather than running off the side of the phone. [built]
@@ -201,9 +201,9 @@ What it is for: seeing and editing everything in the record by hand.
 
 ## The event editor
 
-@frame built#f14 | One moment opened for correction by hand: its kind, who it happened to, its words, its date and how sure the date is.
+@frame built#f14 | One event opened for correction by hand: its kind, who it happened to, its words, its date and how sure the date is.
 
-What it is for: correcting or adding one moment by hand.
+What it is for: correcting or adding one event by hand.
 
 - The editor holds everything an event carries: its kind, the people on it, a summary, details, where it happened, when, an optional end, and how sure you are. [built]
 - Its fields are big enough to tap comfortably. [built] {R-0174}
@@ -256,7 +256,7 @@ What it is for: your past conversations.
 - The history in the review database is kept across code changes rather than reset. [built] {R-0191}
 - Existing diagrams and conversations made before this app must open in it as sessions; old training transcripts are kept out of the list. [built]
 - Clearing a record's coding and re-running the coach over the same conversation is a feature still to build. [drawn]
-- After such a re-run, chips in the old thread point at moments that no longer exist and read as plain words; the re-run is meant to re-link the ones that match. [drawn]
+- After such a re-run, chips in the old thread point at events that no longer exist and read as plain words; the re-run is meant to re-link the ones that match. [drawn]
 
 ## The account page
 
@@ -284,7 +284,7 @@ What it is for: you, your families, your plan, and signing out.
 
 ## The about page
 
-@frame built#f18 | Everything the record holds about one opened group, in words: why these moments are one stretch, the years, and each moment.
+@frame built#f18 | Everything the record holds about one opened group, in words: why these events are one stretch, the years, and each event.
 
 What it is for: what the app is, one level in from the picture.
 
@@ -333,7 +333,7 @@ What it is for: a professional's several client records.
 - A client owns their own record and a clinician is granted access to it, so the record outlives the work they do together. [built] {R-0080}
 - A note is a session of its own: the clinician talks to the coach about the case after the fact, the coach records what it hears, and the note is listed with the sessions and labelled as a note. [drawn] {R-0281}
 - Notes can be coded in the IRR study exactly like chat sessions. [drawn] {R-0281}
-- People and moments keep a notes field in their editors, the same notes the desktop app already stores. [drawn] {R-0281}
+- People and events keep a notes field in their editors, the same notes the desktop app already stores. [drawn] {R-0281}
 - The drawn family diagram stays in the plan and arrives once auto-arrange proves itself on real data. [drawn] {R-0240, R-0281}
 
 ## Upload a recording (Pro)
@@ -413,33 +413,33 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 
 What it is for: settling as much as possible on your own phone, so the meeting only handles what is left.
 
-@frame review#f1 | The vote on a phone, one disputed moment per screen, the takes shown without names.
+@frame review#f1 | The vote on a phone, one disputed event per screen, the takes shown without names.
 @frame review#f2 | Choosing change: the editor opens prefilled so you can write a take none of the coders wrote.
 
 - Once enough coders have finished, a ballot opens on each coder's phone. [drawn] {R-0250}
-- The ballot shows one disputed moment per screen. [drawn] {R-0257}
+- The ballot shows one disputed event per screen. [drawn] {R-0257}
 - Each screen shows the date, who it happened to, what happened, and the transcript line it came from. [drawn]
 - The takes are shown without names, so nobody defers to the most senior person in the room. [drawn] {R-0252}
 - Nothing the coach or any other AI thinks is in the ballot at all. [drawn] {R-0254}
 - Tapping a take votes for it exactly as written. [drawn] {R-0257}
 - "Change" opens the app's own event editor over the ballot, prefilled, so you can write a take nobody wrote, and it joins the count as one more take. [drawn] {R-0257}
-- "Drop" votes that this should not be a moment in the record at all. [drawn] {R-0257}
+- "Drop" votes that this should not be an event in the record at all. [drawn] {R-0257}
 - A count of coders who left the item out is shown, but leaving it out is not a vote. [drawn]
 - You may say why you voted as you did, and you may skip it. [drawn]
 - An item you skip stays on your list until the ballot closes. [drawn]
 - You can open the transcript at the line in question from the ballot. [drawn]
-- The transcript line and the session it came from stay attached to the moment and are not edited here. [drawn]
+- The transcript line and the session it came from stay attached to the event and are not edited here. [drawn]
 - Names are hidden whenever anyone is voting; only the meeting shows who coded what. [drawn] {R-0272}
 - The vote opens when Patrick opens it, never at a coder count. [drawn] {R-0273}
 - No rule settles an item before the meeting; the vote's tallies inform the meeting and the meeting settles. [drawn] {R-0274}
-- The same agreement timeline sits above the item you are voting on, with the moment you are on enlarged in green. [drawn] {R-0278}
+- The same agreement timeline sits above the item you are voting on, with the event you are on enlarged in green. [drawn] {R-0278}
 
 ## The meeting
 
 
 What it is for: closing what the vote could not, and ratifying the record.
 
-@frame review#f11 | The meeting screen: every disputed moment with its tally, most split first, and the timeline above showing agreed and disputed moments.
+@frame review#f11 | The meeting screen: every disputed event with its tally, most split first, and the timeline above showing agreed and disputed events.
 
 - The meeting screen carries only the items the ballot left open. [drawn] {R-0250}
 - Names and counts appear here for the first time. [drawn] {R-0252}
@@ -448,14 +448,14 @@ What it is for: closing what the vote could not, and ratifying the record.
 - The ratify button stays dead until every open item has a choice, and says how many still need one. [drawn] {R-0257}
 - An item marked unresolved is kept as data and left out of the agreed record. [drawn] {R-0250}
 - The screen shows the agreement figures from the first pass and how much time is left. [drawn]
-- The moment in front of the room is shown on the picture as well as in the list. [drawn]
-- Only moments that are new or changed since the last ratified cut are in dispute; earlier ones stand unless a new turn reopened one. [drawn] {R-0267}
+- The event in front of the room is shown on the picture as well as in the list. [drawn]
+- Only events that are new or changed since the last ratified cut are in dispute; earlier ones stand unless a new turn reopened one. [drawn] {R-0267}
 - Convergence is required but nobody is forced to converge, and settling a whole kind of disagreement with one rule is one of the tools for getting there. [drawn] {R-0251}
 - Each meeting tries an approach and teaches the next one; there is no review before the meeting beyond the ballot. [drawn] {R-0244, R-0250}
 - The two-sided comparison of two codings already drawn has to fold into either the ballot or this screen, and where is unbuilt work. [drawn]
 - The review screens are built as their own isolated piece, so changing them can never break the chat or the professional features. [drawn] {R-0245}
-- The meeting sees every disputed moment with its tally, the most split first, and the unanimous ones collapsed below to confirm or reopen. [drawn] {R-0274}
-- One timeline above the list shows agreement and disagreement at a glance: one dot per moment, teal where the vote agreed, amber where it did not, with a small count beside a disputed dot. [drawn] {R-0277, R-0278}
+- The meeting sees every disputed event with its tally, the most split first, and the unanimous ones collapsed below to confirm or reopen. [drawn] {R-0274}
+- One timeline above the list shows agreement and disagreement at a glance: one dot per event, teal where the vote agreed, amber where it did not, with a small count beside a disputed dot. [drawn] {R-0277, R-0278}
 
 ## After ratification
 
@@ -466,7 +466,7 @@ What it is for: what the meeting produced, with nothing left to choose.
 @frame review#f15 | The coding guidelines inside the app, always current, each rule with the settle it came from and a flag link.
 @frame review#f14 | Where you find them: tap the (i) at the top of the coding screen and the guidelines slide in over your coding.
 
-- The result screen shows how many moments were ratified and how many were left unresolved. [drawn]
+- The result screen shows how many events were ratified and how many were left unresolved. [drawn]
 - It shows agreement before the ballot and after ratification, side by side. [drawn]
 - It shows how the coach's own pass scored against the agreed record. [drawn] {R-0242}
 - The word for the agreed record is ratified; what the coach proposes is a proposal and is never called gold. [drawn] {R-0249}
@@ -476,7 +476,7 @@ What it is for: what the meeting produced, with nothing left to choose.
 - What each coder tends to do differently from the others is shown. [drawn]
 - Every vote, settlement and ratification is a row in the app's own tables with who did it and when. [drawn] {R-0262}
 - How last year's coding material is carried over is a choice Patrick has not made; the plan on the table keeps the rules and the agreement tables as rows and the written deliberations as text. [open] {R-0262}
-- Every rule the AI wrote carries a "flag for next meeting" link, and flagged rules, unresolved moments and unfinished tasks go on the next meeting's agenda by themselves. [drawn] {R-0276}
+- Every rule the AI wrote carries a "flag for next meeting" link, and flagged rules, unresolved events and unfinished tasks go on the next meeting's agenda by themselves. [drawn] {R-0276}
 - The meeting's results are rows in the database — codings, votes, settles, rules with the settle each came from — so everything is traceable; the coding guidelines are the one written output. [drawn] {R-0275}
 - Anyone can read the current coding guidelines inside the app from an (i) button at the top of the coding screen. [drawn] {R-0275, R-0278}
 - The coding guidelines file in the code is generated from the rules the app holds and is never edited by hand. [drawn] {R-0275}

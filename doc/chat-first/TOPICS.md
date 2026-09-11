@@ -110,7 +110,7 @@ people vote and shown only at the meeting [R-0272]; the vote opens when Patrick 
 first with the unanimous ones collapsed [R-0274]; the database is the record and the coding
 guidelines are the one written output, readable from an (i) at the top of the coding screen
 [R-0275, R-0278]; flags, unresolved items and unfinished tasks fill the next meeting's agenda
-by themselves, each with a close link [R-0276]; one agreement timeline — one dot per moment,
+by themselves, each with a close link [R-0276]; one agreement timeline — one dot per event,
 teal agreed, amber disputed with a count — in the vote and the meeting [R-0277, R-0278];
 (2) [build] the coding screens carry the (i) button beside Done, version 4; (3) [build] the catalogue for beta users
 (https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba) shows every screen as a
@@ -121,15 +121,15 @@ replacing them with captures from a fixture sandbox is the next fix; (4) [build]
 (https://claude.ai/code/artifact/fdb8a5b5-d043-46f4-afea-700a886210a3): cases on the account
 page, the sessions sheet with upload and the speaker-mapping sheet, the desktop layout, notes
 both as a session of its own (codable in the IRR study like a chat session) and as the existing
-notes field on people and moments; the drawn family diagram stays in the plan behind the
+notes field on people and events; the drawn family diagram stays in the plan behind the
 auto-arrange question; (5) [ruling] the interface calls drawn both ways as whole screens
-(https://claude.ai/code/artifact/14ca039a-b28e-4d01-95fb-93ba403bf19e): the two-moment grouping as a box or two dots; the
+(https://claude.ai/code/artifact/14ca039a-b28e-4d01-95fb-93ba403bf19e): the two-event grouping as a box or two dots; the
 double ring kept or dropped; the step line on an alternating stretch as a zigzag or dots only;
-the moment chip outlined or filled; "+" on another family switching or refusing; the triangle
+the event chip outlined or filled; "+" on another family switching or refusing; the triangle
 and the compare views as built; the remaining pixel defaults accepted or not; ruled from it 2026-09-11: the nodal
 ring stays and the flag follows the clinical definition [R-0283]; no trend lines until real
 data [R-0284]; "case" is the word for Pro only, one case selected at a time, sessions added
-from within the case, no per-case "+" in the sessions sheet [R-0285]; the two-moments-compared
+from within the case, no per-case "+" in the sessions sheet [R-0285]; the two-events-compared
 boxes dropped, and the triangle view and the outside move must be redrawn without conflict
 marks once the concept is confirmed [R-0286]; the chip stays outlined [R-0282]; ruled since:
 grouping is the coach's judgement, every grouping with a one-line scope, the rules only a first

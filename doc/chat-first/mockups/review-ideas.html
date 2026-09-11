@@ -2223,19 +2223,19 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 .ph { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--faint); font: 400 15px var(--sans); background: repeating-linear-gradient(45deg, transparent, transparent 10px, var(--tint) 10px, var(--tint) 20px); }
 </style>
 <div class="mk-h1">Review Room — one meeting, five codings, one gold record</div>
-<div class="mk-lead">One recorded session coded by four people and by the coach's replay. Nobody has read the codings before the meeting; the AI has read all five and the transcript. The moments are already matched across codings, so every row on screen is one moment as each coder saw it. Drawn with the app's own stylesheet and markup, so what you see is what the build produces.</div>
+<div class="mk-lead">One recorded session coded by four people and by the coach's replay. Nobody has read the codings before the meeting; the AI has read all five and the transcript. The events are already matched across codings, so every row on screen is one event as each coder saw it. Drawn with the app's own stylesheet and markup, so what you see is what the build produces.</div>
 <div class="mk-key"><i></i>dashed amber outline = does not exist in the app yet. Fictional people only.</div>
 
 <div class="mk-sec"><h2><span>0</span>One session, four lenses</h2>
-<p>The meeting screen opens with the four ways of reading the same matched moments. The room can switch mid-meeting and lose nothing.</p>
+<p>The meeting screen opens with the four ways of reading the same matched events. The room can switch mid-meeting and lose nothing.</p>
 <div class="mk-row"><div>
 <div class="frame" id="f1"><div class="app">
 <div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Session 3 &mdash; recording &middot; 5 codings</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
-<div class="stats mk-add"><span>agreement over 5</span><span>events <b>0.74</b></span><span>people <b>0.96</b></span><span>variables &kappa; <b>0.61</b></span><span style="margin-left:auto">17 moments &middot; 6 to settle</span></div>
+<div class="stats mk-add"><span>agreement over 5</span><span>events <b>0.74</b></span><span>people <b>0.96</b></span><span>variables &kappa; <b>0.61</b></span><span style="margin-left:auto">17 events &middot; 6 to settle</span></div>
 <div class="tabs mk-add" role="tablist"><button class="tab" type="button" role="tab">Timeline</button><button class="tab" type="button" role="tab">List</button><button class="tab on" type="button" role="tab" aria-selected="true">Cards</button><button class="tab" type="button" role="tab">Chat</button></div>
 <div class="ph" style="min-height:180px">Cards lens</div>
 </div></div>
-<div class="mk-cap">Four lenses on the same matched moments, all writing the same gold record: a timeline with one lane per coder, a list of every moment once, one card per disputed moment, or the coach walking the room through it in chat. Tap a lens to switch; nothing is lost. In the code this is one module on top of the compare data and the core app is untouched.</div>
+<div class="mk-cap">Four lenses on the same matched events, all writing the same gold record: a timeline with one lane per coder, a list of every event once, one card per disputed event, or the coach walking the room through it in chat. Tap a lens to switch; nothing is lost. In the code this is one module on top of the compare data and the core app is untouched.</div>
 </div></div>
 </div>
 
@@ -2281,7 +2281,7 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
   </div>
 </div>
 </div></div>
-<div class="mk-cap">The AI pre-evaluates every coding and proposes the final set: nine moments everyone agreed on stay collapsed and are accepted unless someone objects, six are disputed and open, two only the coach's replay found. Each disputed row shows the five coders as squares (filled = coded it, round one = the coach), the AI's pick in the app's own words, one line of reason, the transcript line it rests on, and accept, override or tweak. Every tap writes a change row on the gold record. What you give up: nine moments nobody reads aloud.</div>
+<div class="mk-cap">The AI pre-evaluates every coding and proposes the final set: nine events everyone agreed on stay collapsed and are accepted unless someone objects, six are disputed and open, two only the coach's replay found. Each disputed row shows the five coders as squares (filled = coded it, round one = the coach), the AI's pick in the app's own words, one line of reason, the transcript line it rests on, and accept, override or tweak. Every tap writes a change row on the gold record. What you give up: nine events nobody reads aloud.</div>
 </div></div>
 </div>
 
@@ -2292,23 +2292,23 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 <div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Session 3 &mdash; by kind of disagreement</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
 <div class="stats mk-add"><span>34 min left</span><span>6 to settle</span><span style="margin-left:auto">3 kinds</span></div>
 <div class="scroller mk-add">
-  <div class="div">Someone missed it &middot; 3 <span class="dcount">not everyone coded the moment</span></div>
+  <div class="div">Someone missed it &middot; 3 <span class="dcount">not everyone coded the event</span></div>
   <div class="krule"><span class="gname">rule</span><div class="segs"><button class="seg on" type="button">majority</button><button class="seg" type="button">anyone kept it</button><button class="seg" type="button">the coach's</button><button class="seg" type="button">one by one</button></div><button class="btn" type="button">settle all 3 this way</button></div>
   <div class="drow amber"><div class="top"><span class="tally"><i class="tk"></i><i class="tk no"></i><i class="tk"></i><i class="tk no"></i><i class="tk coach"></i></span><span class="pick">1969 &middot; met at a church social &mdash; <span class="diff">keep (3 of 5)</span></span></div></div>
   <div class="drow amber"><div class="top"><span class="tally"><i class="tk no"></i><i class="tk"></i><i class="tk no"></i><i class="tk no"></i><i class="tk coach"></i></span><span class="pick">1973 &middot; started at the copper mine &mdash; <span class="diff">drop (2 of 5)</span></span></div></div>
   <div class="drow amber"><div class="top"><span class="tally"><i class="tk"></i><i class="tk"></i><i class="tk no"></i><i class="tk"></i><i class="tk coach"></i></span><span class="pick">1995 &middot; the client started therapy &mdash; <span class="diff">keep (4 of 5)</span></span></div></div>
 
-  <div class="div">Date differs &middot; 2 <span class="dcount">same moment, different date</span></div>
+  <div class="div">Date differs &middot; 2 <span class="dcount">same event, different date</span></div>
   <div class="krule"><span class="gname">rule</span><div class="segs"><button class="seg on" type="button">majority</button><button class="seg" type="button">earliest</button><button class="seg" type="button">the coach's</button><button class="seg" type="button">one by one</button></div><button class="btn" type="button">settle all 2 this way</button></div>
   <div class="drow amber"><div class="top"><span class="tally"><i class="tk"></i><i class="tk"></i><i class="tk"></i><i class="tk"></i><i class="tk coach"></i></span><span class="pick">Marcus moved to Arizona &mdash; <span class="diff">Mar 1969 (3 of 5)</span></span></div></div>
   <div class="drow amber"><div class="top"><span class="tally"><i class="tk"></i><i class="tk"></i><i class="tk"></i><i class="tk"></i><i class="tk coach"></i></span><span class="pick">the client moved out &mdash; <span class="diff">1996 (3 of 5)</span></span></div></div>
 
-  <div class="div">Value differs &middot; 1 <span class="dcount">same moment, different variables</span></div>
+  <div class="div">Value differs &middot; 1 <span class="dcount">same event, different variables</span></div>
   <div class="krule"><span class="gname">rule</span><div class="segs"><button class="seg" type="button">majority</button><button class="seg on" type="button">both hold</button><button class="seg" type="button">the coach's</button><button class="seg" type="button">one by one</button></div><button class="btn" type="button">settle all 1 this way</button></div>
   <div class="drow amber"><div class="top"><span class="tally"><i class="tk"></i><i class="tk"></i><i class="tk"></i><i class="tk no"></i><i class="tk coach"></i></span><span class="pick">1988 &middot; relationship became difficult &mdash; <span class="diff">anxiety up AND relationship: distance</span></span></div></div>
 </div>
 </div></div>
-<div class="mk-cap">The six disputes sorted into three kinds: someone missed it, the date differs, the value differs. Pick one rule for a kind and tap settle: the rows under it already show what the rule would do, in amber until it is settled. The choice is written to the coding guidelines as a candidate rule. Any single row can still be opened on its own. What you give up: the room stops looking at each moment.</div>
+<div class="mk-cap">The six disputes sorted into three kinds: someone missed it, the date differs, the value differs. Pick one rule for a kind and tap settle: the rows under it already show what the rule would do, in amber until it is settled. The choice is written to the coding guidelines as a candidate rule. Any single row can still be opened on its own. What you give up: the room stops looking at each event.</div>
 </div></div>
 </div>
 
@@ -2321,7 +2321,7 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 <div class="stats mk-add"><span>disputed 3 of 6</span><span style="margin-left:auto">31 min left</span></div>
 <div class="deck mk-add">
 <div><div class="card">
-  <div class="progress">disputed moment 3 of 6 &middot; 1988</div>
+  <div class="progress">disputed event 3 of 6 &middot; 1988</div>
   <h3>&rarr; Delphine &middot; relationship became difficult</h3>
   <div class="take"><span class="w">you</span><span class="v">relationship became difficult around puberty &middot; <span class="diff">anxiety up</span></span><span></span></div>
   <div class="take"><span class="w">L.W.</span><span class="v">relationship with mother became difficult &middot; <span class="diff">relationship: distance</span></span><span></span></div>
@@ -2343,7 +2343,7 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 </div>
 </div>
 </div></div>
-<div class="mk-cap">The big screen: the moment as each coder wrote it, identical takes greyed, the differences in amber, the transcript line it turns on, the coach's recommendation with its reason, and the live count from the room. Four circles, one per person present, three filled on "both" and one on "distance", verdict "3 of 4 &mdash; settled". A two-two split reads "2&ndash;2 &mdash; talk" and the room discusses it. What you give up: one person can be outvoted without saying a word.</div>
+<div class="mk-cap">The big screen: the event as each coder wrote it, identical takes greyed, the differences in amber, the transcript line it turns on, the coach's recommendation with its reason, and the live count from the room. Four circles, one per person present, three filled on "both" and one on "distance", verdict "3 of 4 &mdash; settled". A two-two split reads "2&ndash;2 &mdash; talk" and the room discusses it. What you give up: one person can be outvoted without saying a word.</div>
 </div>
 
 <div>
@@ -2363,7 +2363,7 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 <div class="say">say why (optional)</div>
 </div>
 </div></div>
-<div class="mk-cap">The same moment on your own phone, cut down to the takes that differ. Four buttons and an optional line of why. The phone app already exists, so everyone in the room votes on their own phone while the big screen shows only the count.</div>
+<div class="mk-cap">The same event on your own phone, cut down to the takes that differ. Four buttons and an optional line of why. The phone app already exists, so everyone in the room votes on their own phone while the big screen shows only the count.</div>
 </div>
 </div>
 </div>
@@ -2373,7 +2373,7 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 <div class="mk-row"><div>
 <div class="frame" id="f6"><div class="app">
 <div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Session 3 &mdash; what the meeting produced</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
-<div class="stats mk-add"><span>17 moments in the gold record</span><span>6 settled</span><span style="margin-left:auto">meeting 41 min</span></div>
+<div class="stats mk-add"><span>17 events in the gold record</span><span>6 settled</span><span style="margin-left:auto">meeting 41 min</span></div>
 <div class="teach mk-add">
 <div class="scroller">
   <div class="div">Settled &middot; 6 <span class="dcount">switch on the ones that should become a rule</span></div>
@@ -2387,15 +2387,15 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 <div class="side">
   <div class="gcard">
     <h4>Drafted for the coding guidelines</h4>
-    <div class="rule">When a move and a new job are within a year for the same person, code one moment; the move is the moment.</div>
-    <div class="rule">When coders split between anxiety up and a relationship move on the same moment, both hold unless the transcript names one.</div>
+    <div class="rule">When a move and a new job are within a year for the same person, code one event; the move is the event.</div>
+    <div class="rule">When coders split between anxiety up and a relationship move on the same event, both hold unless the transcript names one.</div>
     <button class="btn primary" type="button">add to the guidelines</button>
     <button class="btn" type="button">add as an example in the coach's prompt</button>
   </div>
   <div class="gcard">
     <h4>What each coder tends to do</h4>
     <div class="who2">L.W. codes a relationship move where others code anxiety (4 of 6).</div>
-    <div class="who2">R.T. leaves out moments the others code (5 of 17).</div>
+    <div class="who2">R.T. leaves out events the others code (5 of 17).</div>
   </div>
 </div>
 </div>
