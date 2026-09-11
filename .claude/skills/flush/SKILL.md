@@ -52,10 +52,15 @@ changes nothing.
 7. Run `python bin/flushcheck.py` from the btcopilot worktree; fix what it reports.
 8. Commit and push both worktrees, one git mutation per command, corpus commits titled
    `FD-362 flush: <date>`.
-9. Refresh the owner's audit page: `python bin/topicpage.py <tmp>/fd362-topics.html`, then
-   publish that file with the Artifact tool to the URL recorded at the top of TOPICS.md
-   (`url` parameter) so the link never changes. He never runs a command; he reads that page,
-   or the files in VS Code, or asks in plain words.
+9. Refresh the owner's two pages, same links every time (URLs at the top of TOPICS.md, passed
+   to the Artifact tool as `url`): the ledger `python bin/ledger.py` (rewrites
+   doc/chat-first/events.json from every dated source — history, rulings, decision log,
+   review log, commits in both worktrees, artifacts), then `python bin/eventpage.py <tmp>/fd362-clocks.html`
+   (the two-clock dashboard) and `python bin/topicpage.py <tmp>/fd362-topics.html` (the topic
+   register as a page). Commit events.json with the corpus. Records the ledger could not
+   assign to a topic land in the audit lane; assign them by adding the missing words to the
+   topic block or the ledger's word list — never by hand-editing events.json. He never runs
+   a command; he reads the pages, or the files in VS Code, or asks in plain words.
 10. Report in one message: the topics touched by name, one line of next action each, the audit
     page link, and what needs his word. Nothing else.
 

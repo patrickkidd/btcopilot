@@ -11,7 +11,11 @@ Fields every block carries: **Status · Decided · Open · Lives in · Next acti
 The owner audits this file as a page, never by command: the flush renders it with
 `bin/topicpage.py` and republishes it to the same artifact every time —
 **https://claude.ai/code/artifact/8a56716d-dca5-4123-ae2e-572da33a392c** (pass that URL to the
-Artifact tool as `url`). In VS Code the file itself is this one.
+Artifact tool as `url`), and the two-clock dashboard — every dated event since the first
+session as a branching timeline or tree, toggled with this register as the state view — to
+**https://claude.ai/code/artifact/be081e64-9efa-45de-b329-42e82f9d4857**. The ledger behind
+it is `events.json` beside this file, rebuilt by `bin/ledger.py`. In VS Code the file itself
+is this one.
 
 ---
 
