@@ -131,9 +131,10 @@ ring stays and the flag follows the clinical definition [R-0283]; no trend lines
 data [R-0284]; "case" is the word for Pro only, one case selected at a time, sessions added
 from within the case, no per-case "+" in the sessions sheet [R-0285]; the two-moments-compared
 boxes dropped, and the triangle view and the outside move must be redrawn without conflict
-marks once the concept is confirmed [R-0286]; the chip stays outlined [R-0282]; still open:
-whether the coach owns groupings as a tool like any other edit with the rules only as a first
-draft, and the triangle concept; the event editor's relationship fields are build work with no call; the feel of the
+marks once the concept is confirmed [R-0286]; the chip stays outlined [R-0282]; ruled since:
+grouping is the coach's judgement, every grouping with a one-line scope, the rules only a first
+draft, correctness unmeasured until the beta [R-0287]; triangles confirmed and the outside move
+and triangle positions redrawn on the move language page [R-0288]; the event editor's relationship fields are build work with no call; the feel of the
 moves board is his to make on his phone at https://turin.local:8891/personal/; (7) [waiting] migrating last year's IRR material, the last follow-up item of this unit [R-0262, R-0273] — inventory 2026-09-11 of
 doc/irr/: 25 rules in tables keyed to meeting number with unanimity and confidence (migrate as
 rows with the meeting as provenance); six meetings' agreement/disagreement/action tables keyed

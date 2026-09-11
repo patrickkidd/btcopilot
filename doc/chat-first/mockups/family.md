@@ -58,7 +58,7 @@ does not (Errol and Odile).
 | 29 | 1997 | Theo | left for Phoenix | |
 | 30 | Mar 1998 | Odile | died | |
 | 31 | Sep 1998 | the family | left the house on Bluff Street | |
-| 32 | 1999 | Delphine | diagnosed | |
+| 32 | 1995 | Delphine | diagnosed | |
 | 33 | 2001 | Corinne & Marcus | spoke again after six years | relationship: toward |
 | 34 | Nov 2004 | Theo | stopped calling | relationship: cutoff |
 | 35 | 2006 | Corinne | moved back to Michigan | |
@@ -71,6 +71,44 @@ does not (Errol and Odile).
 | Leaving and losing | 1993–1998 | 3 moments | Corinne left for college, stopped calling home, and then lost her grandmother. |
 | The year the headaches started | 1994–1995 | 20 moments | The migraines and the pulling away from Theo run through the same two years. |
 | After the diagnosis | 1995–1998 | 40 moments | Everything that follows Delphine's illness, dense because Corinne talked about it most. |
+
+## The dense stretch, 1995 to 1998 — the twelve the coach names at once
+
+When Corinne asks what happened in the years after her mother got sick, the coach answers
+with these twelve, in this order and these words. Four of them are only here; the other
+eight are moments 25 to 31 above and the diagnosis.
+
+| Moment, in the coach's words | Date |
+|---|---|
+| Mother's diagnosis | 1995 |
+| Started therapy | 1995 |
+| Pulled away from Theo | 1995 |
+| The first winter of treatment | Jan 1996 |
+| The winter she stopped calling home | Feb 1996 |
+| Moved out of the family home | 1996 |
+| Took over the driving to appointments | 1996 |
+| Marcus came back for a week | Feb 1997 |
+| Theo left for Phoenix | 1997 |
+| The last summer on Bluff Street | Jul 1997 |
+| Grandmother died | Mar 1998 |
+| Left the house on Bluff Street | Sep 1998 |
+
+## What the app calls things, in the personal app
+
+- Corinne signs in as `corinne.whitlock@northmail.net`.
+- Her records are **Your family** (her own household) and **Marcus's side**.
+- Her past conversations are named `The winter I stopped calling` (14 messages, today),
+  `My mother's diagnosis` (6 messages, Tue) and `Theo and the phone calls` (21 messages,
+  Mar 4). On Marcus's side the one conversation is `The mine years` (9 messages, Mar 4).
+- A message that fails to send: `we left in the September after my grandmother died`.
+
+## The clinician, for the Pro screens
+
+Nadine Okafor, a family therapist in Two Harbors, signs in as
+`n.okafor@twoharborscounseling.net`. Her cases are **Whitlock** (open, Corinne's family,
+the case every other frame draws), **Ortega** (last session Oct 11) and **Lindqvist** (no
+sessions yet). The first thing in the Whitlock case is a call from the referring doctor:
+`Presenting migraines since 1994, worse after her father left the state.`
 
 The last two are the dense fixture: 60 moments across five years, drawn as two boxes on
 one phone-width line.

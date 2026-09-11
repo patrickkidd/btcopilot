@@ -785,4 +785,8 @@ the nodal ring stays and the flag follows the clinical definition [R-0283]; no t
 until real data [R-0284]; "case" for Pro only, one selected, sessions added within it [R-0285];
 two-moments-compared dropped, and the triangle view and the outside move carry no conflict marks
 [R-0286]. He asked whether the coach should own groupings like any other edit; and the move
-language was linked under the moves board in the catalogue.
+language was linked under the moves board in the catalogue. Patrick found the first content pass had only swapped names; a second pass rewrote every
+placeholder line in every drawing from the stand-in family, guard zero hits. He ruled grouping
+is the coach's judgement with a one-line scope rationale [R-0287] and confirmed the triangle
+concept [R-0288]; the move language was republished at its link with the outside move stripped
+of tension marks and a triangle-positions entry added, and the durable reference copy refreshed.
