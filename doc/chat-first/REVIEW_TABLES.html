@@ -4,146 +4,52 @@
 :root{--bg:#f7f6f2;--panel:#fff;--ink:#26312f;--faint:#67746f;--line:#d8d5cc;--data:#0e7d78;--ask:#9e6d15;--tint:rgba(14,125,120,.08);--sans:"Libre Franklin",-apple-system,system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171d1c;--panel:#1f2725;--ink:#e6e8e4;--faint:#9aa5a0;--line:#39443f;--data:#3fc4bc;--ask:#e0a83f;--tint:rgba(63,196,188,.13)}}
 :root[data-theme="dark"]{--bg:#171d1c;--panel:#1f2725;--ink:#e6e8e4;--faint:#9aa5a0;--line:#39443f;--data:#3fc4bc;--ask:#e0a83f;--tint:rgba(63,196,188,.13)}
-body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);margin:0;padding-block:28px 56px;padding-inline:20px;max-width:96ch}
-h1{font:600 22px var(--sans);margin:0 0 6px}h2{font:600 17px var(--sans);margin:28px 0 8px}h3{font:600 15px var(--sans);margin:18px 0 4px}
-p{margin:0 0 10px;max-width:84ch}.lead{color:var(--faint)}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);margin:0;padding-block:28px 56px;padding-inline:20px;max-width:100ch}
+h1{font:600 22px var(--sans);margin:0 0 6px}
+p{margin:0 0 10px;max-width:90ch}.lead{color:var(--faint)}
 table{border-collapse:collapse;width:100%;font-size:13.5px;margin:4px 0 14px}
 th,td{text-align:left;vertical-align:top;padding:6px 8px;border-bottom:1px solid var(--line)}
 th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
-.m{font:400 12.5px var(--mono)}.re{color:var(--data)}.new{color:var(--ask)}
+.m{font:400 12.5px var(--mono)}.new{color:var(--ask);font-weight:600}.chg{color:var(--data);font-weight:600}
 .wrap{overflow-x:auto}
-.note{border-left:3px solid var(--data);padding:8px 12px;margin:10px 0 0;background:var(--tint);max-width:84ch}
 </style>
 
-<h1>The review's tables, laid over what exists</h1>
-<p class="lead">Two parts: what the branch already adds against master, then what the review design adds on top. For the review design: one column added to an existing table and five new tables, after an adversarial pass that cut the first draft by a third. <span class="re">Teal</span> = an existing table, type or enum used as it is. <span class="new">Amber</span> = new. Ids are the existing integer primary keys with created_at and updated_at from the shared model base; timestamps are DateTime; JSON columns are JSONB with the SQLite variant, the way the change log already does it. Every reference to a user is named user_id, as in every existing table; no table here holds more than one. Nothing the desktop app reads changes: no column on diagrams, the pickle path untouched.</p>
+<h1>Database scope of the pull request, against master</h1>
+<p class="lead">Every table the branch adds or changes, in one list. Everything else in the database is untouched, including the desktop app's read and write paths. Ids are the shared integer primary key with created_at and updated_at; timestamps are DateTime; JSON columns are JSONB with the SQLite variant. Every reference to a user is <span class="m">user_id</span>. The five <span class="m">review_</span> tables are prefixed so their names stay out of the global namespace.</p>
 
-<h2>The screen's words and the tables they mean</h2>
 <div class="wrap"><table>
-<tr><th>On screen</th><th>In the database</th></tr>
-<tr><td>a case, or a personal user's own family</td><td class="m re">one row in diagrams</td></tr>
-<tr><td>a session (a chat, an uploaded recording, or a note)</td><td class="m re">one row in discussions</td></tr>
-<tr><td>a turn of a session</td><td class="m re">one row in statements</td></tr>
-<tr><td>a coder's coding of a case</td><td class="m re">one row in diagrams, plus one row in <span class="new">codings</span> pointing at it</td></tr>
-<tr><td>an edit to any record, including a settle at the meeting</td><td class="m re">one row in changes</td></tr>
-<tr><td>a cut</td><td class="m new">one row in cuts</td></tr>
-<tr><td>an event as each coder saw it</td><td class="m new">one row in review_items</td></tr>
-<tr><td>a coder's vote</td><td class="m new">one row in votes</td></tr>
-<tr><td>a rule in the coding guidelines</td><td class="m new">one row in rules</td></tr>
-</table></div>
-<h2>The rule the design follows</h2>
-<p>Real columns only for the three things the screens ask by name: who has finished coding a cut, what is unresolved, and how the vote fell. Everything else that will change shape lives in a JSON field on a row that already exists, so a change of shape is a code change, not a migration.</p>
+<tr><th>Table</th><th>Change</th><th>Columns</th><th>What it holds</th></tr>
 
-<h2>What this branch already adds to the database, against master</h2>
-<p>All of it in the branch's single migration; none of it is in production yet. The review design above sits on top of this.</p>
-<div class="wrap"><table>
-<tr><th>Table</th><th>Added by this branch</th><th>Columns</th></tr>
-<tr><td class="m re">users</td><td class="new">three columns</td><td class="m">preferences JSON (default {}) · birthdate Date · current_diagram_id FK diagrams.id</td></tr>
-<tr><td class="m re">discussions</td><td class="new">two columns, and the review adds a third</td><td class="m">title Text · title_set_by_user Boolean · (review: kind Enum)</td></tr>
-<tr><td class="m re">statements</td><td class="new">three columns</td><td class="m">views JSON · kind Enum(turn, …) default turn · cluster_id String(64)</td></tr>
-<tr><td class="m new">changes</td><td class="new">new table</td><td class="m">diagram_id FK · statement_id FK null · turn_id String(64) · user_id FK null · session_id String(64) null · author Enum(user, coach, pro; review adds review) · deltas JSONB</td></tr>
-<tr><td class="m new">interactions</td><td class="new">new table</td><td class="m">diagram_id FK · user_id FK null · session_id String(64) null · statement_id FK null · kind Enum(look, say, chip_tap, play) · item_kind Enum(ItemKind) · item_id String(64) null</td></tr>
-<tr><td class="m new">web_sessions</td><td class="new">new table</td><td class="m">user_id · token String(64) · last_seen_at · expires_at · revoked_at null · user_agent String(255)</td></tr>
-<tr><td class="m new">passkeys</td><td class="new">new table</td><td class="m">user_id · credential_id String(255) · public_key LargeBinary · sign_count Integer · transports JSON · name String(255) · last_used_at null · revoked_at null</td></tr>
-<tr><td class="m new">invitations</td><td class="new">new table</td><td class="m">email String(255) · token String(64) · expires_at · used_at null</td></tr>
-<tr><td class="m new">login_codes</td><td class="new">new table</td><td class="m">email String(255) · code_hash String(255) · expires_at · used_at null · tries Integer</td></tr>
-<tr><td class="m re">diagrams</td><td>no schema change</td><td>the data column now holds JSON for records this app writes and pickle for the desktop app's, told apart by the first byte; the desktop app's rows are never rewritten</td></tr>
-</table></div>
-<h2>Tables the review uses without changing them — in production today</h2>
-<div class="wrap"><table>
-<tr><th>Table</th><th>What it is in the review</th></tr>
-<tr><td class="m re">users</td><td>Coders, and Patrick. Roles as today.</td></tr>
-<tr><td class="m re">diagrams</td><td>A <b>case</b> is a diagram row. A <b>coding</b> is also a diagram row: the coder's own record of the case, JSON in the same data column, built with the same tools and editors, carried forward cut to cut. The ratified record is the case's own diagram. Coding rows are told apart from cases by the join to <span class="m new">review_codings</span>, never by a column.</td></tr>
-<tr><td class="m re">discussions</td><td>A session of a case: a chat, an uploaded recording, or a note. The case is reached through the session's diagram, so a cut does not repeat it. (The branch adds two columns and the review a third; see above.)</td></tr>
-<tr><td class="m re">statements</td><td>The turns. A <b>cut</b> is a window of them: a start and an end statement id.</td></tr>
-<tr><td class="m re">feedbacks, reconciliation_notes</td><td>Last year's per-statement ground truth. Read-only until each conversation has been re-coded, then retired, as ruled.</td></tr>
+<tr><td class="m">diagrams</td><td>no schema change</td><td class="m">—</td><td>The data column now holds JSON for records this app writes and pickle for the desktop app's, told apart by the first byte; desktop rows are never rewritten. A case is a row; each coder's coding of a case is also a row, carried forward cut to cut; the ratified record is the case's own row.</td></tr>
+
+<tr><td class="m">users</td><td class="chg">3 columns added</td><td class="m">preferences JSON not null default {} · birthdate Date null · current_diagram_id FK diagrams.id null</td><td>Settings, the birthdate the coach asks for, the family or case the app is on.</td></tr>
+
+<tr><td class="m">discussions</td><td class="chg">3 columns added</td><td class="m">title Text null · title_set_by_user Boolean · kind Enum(chat, recording, note) default chat</td><td>A session of a case. Notes are sessions of their own and are coded like chats; recordings arrive through upload.</td></tr>
+
+<tr><td class="m">statements</td><td class="chg">3 columns added</td><td class="m">views JSON null · kind Enum(turn, …) default turn · cluster_id String(64) null</td><td>A turn. views is what the coach asked the picture to show with that turn.</td></tr>
+
+<tr><td class="m">changes</td><td class="new">new</td><td class="m">diagram_id FK · statement_id FK null · turn_id String(64) · user_id FK null · session_id String(64) null · author Enum(user, coach, pro, review) · deltas JSONB</td><td>Every edit to any record: item, field, before and after, with the turn it came from. The scribe's edits during coding, and each settle the meeting makes on the case's record, are rows here.</td></tr>
+
+<tr><td class="m">interactions</td><td class="new">new</td><td class="m">diagram_id FK · user_id FK null · session_id String(64) null · statement_id FK null · kind Enum(look, say, chip_tap, play) · item_kind Enum(ItemKind) · item_id String(64) null</td><td>Every tap on the picture and in the thread, as learning data.</td></tr>
+
+<tr><td class="m">web_sessions</td><td class="new">new</td><td class="m">user_id · token String(64) · last_seen_at · expires_at · revoked_at null · user_agent String(255)</td><td>Passwordless sign-ins, 180 days.</td></tr>
+
+<tr><td class="m">passkeys</td><td class="new">new</td><td class="m">user_id · credential_id String(255) · public_key LargeBinary · sign_count Integer · transports JSON · name String(255) · last_used_at null · revoked_at null</td><td>Face ID and fingerprint sign-in.</td></tr>
+
+<tr><td class="m">invitations</td><td class="new">new</td><td class="m">email String(255) · token String(64) · expires_at · used_at null</td><td>The emailed sign-in links.</td></tr>
+
+<tr><td class="m">login_codes</td><td class="new">new</td><td class="m">email String(255) · code_hash String(255) · expires_at · used_at null · tries Integer</td><td>The six-digit emailed code for recovery.</td></tr>
+
+<tr><td class="m">review_cuts</td><td class="new">new</td><td class="m">discussion_id FK · start_statement_id FK statements.id · end_statement_id FK statements.id · user_id FK · meeting_date Date · vote_opened_at DateTime null · ratified_at DateTime null · agreement JSON</td><td>A session frozen at a window of turns and put on the table. The app sets the start to the previous cut's end and refuses overlap in code. The vote opens when user_id (Patrick) opens it; agreement holds the figures first pass and after ratification, recomputed whenever a coding finishes.</td></tr>
+
+<tr><td class="m">review_codings</td><td class="new">new</td><td class="m">cut_id FK review_cuts.id · user_id FK · diagram_id FK diagrams.id · agent JSON null · done_at DateTime null · unique (cut_id, user_id)</td><td>The link between a cut, a coder and the coder's own diagrams row, with Done. agent is set only when the coach coded (model, prompt version); null means a person.</td></tr>
+
+<tr><td class="m">review_items</td><td class="new">new</td><td class="m">cut_id FK · item_kind Enum(ItemKind) · item_id String(64) null · takes JSON · status Enum(agreed, disputed, settled, unresolved) · settle_change_id FK changes.id null · user_id FK null</td><td>One event (or person, or pair bond) as every coder saw it: takes is the list of {coding_id, item_id, item} the F1 matcher paired across codings, each item stored as the schema's Event, Person or PairBond dict; a snapshot taken when the vote opens, never maintained. item_id is the item on the case's record once settled; user_id is who settled it.</td></tr>
+
+<tr><td class="m">review_votes</td><td class="new">new</td><td class="m">review_item_id FK · user_id FK · choice Enum(take, change, drop) · value JSON null · reason Text null · unique (review_item_id, user_id)</td><td>One coder's vote before the meeting. value is {coding_id} for take, or the coder's own Event dict for change. Names never shown until the meeting.</td></tr>
+
+<tr><td class="m">review_rules</td><td class="new">new</td><td class="m">text Text · source JSON · drafted_by Enum(ai, migration, human) · flags JSON · ratified_at DateTime null · retired_at DateTime null</td><td>The coding guidelines, one row per rule. source is the review item and cut it came from, or last year's meeting number for migrated rows. flags holds who flagged it for the next meeting and who closed their own flag. Never deleted; retired instead.</td></tr>
 </table></div>
 
-<h2>Tables the review uses — new on this branch, not in production</h2>
-<div class="wrap"><table>
-<tr><th>Table</th><th>What it is in the review</th><th>The review changes</th></tr>
-<tr><td class="m new">changes</td><td>Every edit, with the statement it came from. The scribe's edits during coding land here on the coding's diagram, so each coded event already says which line it came from. A <b>settle</b> at the meeting is a change row on the case's diagram, so ratification has the same audit trail as every other edit.</td><td>the author enum gains one member, <span class="m new">review</span>; free, since the enum is not in production</td></tr>
-<tr><td class="m new">interactions</td><td>Taps, as today. Votes are not interactions.</td><td>nothing</td></tr>
-</table></div>
-
-<h2>Existing types reused inside the new rows</h2>
-<div class="wrap"><table>
-<tr><th>From btcopilot.schema</th><th>Where it is used</th></tr>
-<tr><td class="m re">Event, Person, PairBond (as dicts)</td><td>A <b>take</b> — one coder's version of an item — is stored exactly as the item is stored in a diagram's JSON, so the editors, the picture and the F1 matcher read it without conversion.</td></tr>
-<tr><td class="m re">ItemKind</td><td>Which kind of item a review item is about, the enum the interactions table already uses.</td></tr>
-<tr><td class="m re">EventKind, VariableShift, RelationshipKind, DateCertainty, ClusterSource</td><td>Inside every take, unchanged.</td></tr>
-<tr><td class="m re">item ids (int per diagram; cluster ids str)</td><td><span class="m">item_id String(64)</span> beside the kind, as interactions already do.</td></tr>
-</table></div>
-
-<h2>One column added to an existing table</h2>
-<div class="wrap"><table>
-<tr><th>Table</th><th>Column</th><th>Type</th><th>Why</th></tr>
-<tr><td class="m re">discussions</td><td class="m new">kind</td><td class="m">Enum(DiscussionKind: chat, recording, note)</td><td>A note is a session of its own and must be listed and coded as one. Sessions made so far are chat. Adding a kind later is the one migration this design accepts.</td></tr>
-</table></div>
-
-<h2>New tables — prefixed <span class="m">review_</span></h2>
-<p>All five carry the prefix so generic names stay out of the global namespace: <span class="m">review_cuts, review_codings, review_items, review_votes, review_rules</span>. The prefix is written once here and left off the headings below for reading.</p>
-
-<h3><span class="m new">cuts</span> — a session frozen at a turn, put on the table</h3>
-<div class="wrap"><table>
-<tr><th>Column</th><th>Type</th><th>Reuses</th><th>Meaning</th></tr>
-<tr><td class="m">discussion_id</td><td class="m">FK discussions.id</td><td class="re">discussions</td><td>the session; the case through it</td></tr>
-<tr><td class="m">start_statement_id, end_statement_id</td><td class="m">FK statements.id, FK statements.id</td><td class="re">statements</td><td>the window: first and last turn included. The app sets the start to the previous cut's end by default and refuses overlapping windows in code, so a re-code of any stretch later needs no migration</td></tr>
-<tr><td class="m">user_id</td><td class="m">FK users.id</td><td class="re">users</td><td>who put it on the table</td></tr>
-<tr><td class="m">meeting_date</td><td class="m">Date</td><td></td><td>the meeting it is for</td></tr>
-<tr><td class="m">vote_opened_at</td><td class="m">DateTime, null</td><td></td><td>set when Patrick opens the vote; the review items are frozen at that moment</td></tr>
-<tr><td class="m">ratified_at</td><td class="m">DateTime, null</td><td></td><td>set when the meeting ratifies</td></tr>
-<tr><td class="m">agreement</td><td class="m">JSON</td><td class="re">as discussions.calibration_report</td><td>the figures, first pass and after ratification, recomputed whenever a coding finishes</td></tr>
-</table></div>
-
-<h3><span class="m new">codings</span> — one coder's coding of one cut</h3>
-<div class="wrap"><table>
-<tr><th>Column</th><th>Type</th><th>Reuses</th><th>Meaning</th></tr>
-<tr><td class="m">cut_id</td><td class="m">FK cuts.id</td><td></td><td></td></tr>
-<tr><td class="m">user_id</td><td class="m">FK users.id</td><td class="re">users</td><td>the coder, or the account the coach codes under</td></tr>
-<tr><td class="m">diagram_id</td><td class="m">FK diagrams.id</td><td class="re">diagrams</td><td>the coder's own record of the case</td></tr>
-<tr><td class="m">agent</td><td class="m">JSON, null</td><td></td><td>set only for the coach's replay: model, prompt version, whatever else it needs later; null means a person coded</td></tr>
-<tr><td class="m">done_at</td><td class="m">DateTime, null</td><td></td><td>Done pressed; frozen from then on</td></tr>
-<tr><td colspan="4" class="m">unique (cut_id, user_id)</td></tr>
-</table></div>
-
-<h3><span class="m new">review_items</span> — one item as every coder saw it, frozen when the vote opens</h3>
-<div class="wrap"><table>
-<tr><th>Column</th><th>Type</th><th>Reuses</th><th>Meaning</th></tr>
-<tr><td class="m">cut_id</td><td class="m">FK cuts.id</td><td></td><td></td></tr>
-<tr><td class="m">item_kind, item_id</td><td class="m">Enum(ItemKind), String(64) null</td><td class="re">schema.ItemKind; as interactions</td><td>the item on the case's record once settled, so a settle traces back without reading the change row</td></tr>
-<tr><td class="m">takes</td><td class="m">JSON: [{coding_id, item_id, item}]</td><td class="re">schema.Event / Person / PairBond as dicts</td><td>the matched items across codings, from the existing F1 matcher's pairs. A snapshot: built when Patrick opens the vote, never maintained; a coder finishing later joins the agreement figures, not this vote</td></tr>
-<tr><td class="m">status</td><td class="m">Enum(ReviewStatus: agreed, disputed, settled, unresolved)</td><td></td><td>unresolved is a kept decision, not derivable</td></tr>
-<tr><td class="m">settle_change_id</td><td class="m">FK changes.id, null</td><td class="re">changes</td><td>the change row on the case's diagram that the meeting's choice made</td></tr>
-<tr><td class="m">user_id</td><td class="m">FK users.id, null</td><td class="re">users</td><td>who pressed keep / change / unresolved at the meeting</td></tr>
-</table></div>
-
-<h3><span class="m new">votes</span> — one coder's vote on one review item, before the meeting</h3>
-<div class="wrap"><table>
-<tr><th>Column</th><th>Type</th><th>Reuses</th><th>Meaning</th></tr>
-<tr><td class="m">review_item_id</td><td class="m">FK review_items.id</td><td></td><td></td></tr>
-<tr><td class="m">user_id</td><td class="m">FK users.id</td><td class="re">users</td><td>the coder; never shown until the meeting</td></tr>
-<tr><td class="m">choice</td><td class="m">Enum(VoteChoice: take, change, drop)</td><td></td><td>tallied by query</td></tr>
-<tr><td class="m">value</td><td class="m">JSON, null</td><td class="re">schema.Event as dict inside</td><td>the payload of the choice: which coding's take, or the coder's own changed item; its shape is the least settled thing here, so it is JSON</td></tr>
-<tr><td class="m">reason</td><td class="m">Text, null</td><td></td><td>"say why", optional</td></tr>
-<tr><td colspan="4" class="m">unique (review_item_id, user_id)</td></tr>
-</table></div>
-
-<h3><span class="m new">rules</span> — the coding guidelines, one row per rule</h3>
-<div class="wrap"><table>
-<tr><th>Column</th><th>Type</th><th>Reuses</th><th>Meaning</th></tr>
-<tr><td class="m">text</td><td class="m">Text</td><td></td><td>the rule in plain words</td></tr>
-<tr><td class="m">source</td><td class="m">JSON</td><td></td><td>provenance: the review item and cut it came from, or last year's meeting number for migrated rows</td></tr>
-<tr><td class="m">drafted_by</td><td class="m">Enum(RuleSource: ai, migration, human)</td><td></td><td>the agenda filters on AI-drafted</td></tr>
-<tr><td class="m">flags</td><td class="m">JSON</td><td class="re">users ids inside</td><td>who flagged it for the next meeting and when, and who closed their own flag; several coders can flag the same rule</td></tr>
-<tr><td class="m">ratified_at</td><td class="m">DateTime, null</td><td></td><td>an AI draft and a rule the meeting adopted must look different</td></tr>
-<tr><td class="m">retired_at</td><td class="m">DateTime, null</td><td></td><td>a rule the meeting withdrew; never deleted</td></tr>
-</table></div>
-
-<h2>Not tables, on purpose</h2>
-<p><b>The next meeting's agenda</b> is a query: rules with an open flag, review items still unresolved, codings without Done. Closing an item is clearing your flag, settling the item, or pressing Done.</p>
-<p><b>The guidelines file</b> in the repository is generated from the rules table on every ratification, never edited by hand.</p>
-<p><b>The ground-truth export</b> the harness reads is generated from the case diagrams' ratified items, in the shape the batch harness already reads.</p>
-<p><b>The kind of a coding</b> (a person or the coach) is whether the agent field is set, not a column.</p>
-
-<div class="note"><b>What the adversarial pass cut from the first draft.</b> The case id on a cut (reachable through the session). A kind column on codings (told by the agent field). Two narrow model columns on codings, folded into one JSON field. Two vote payload columns, folded into one. Four provenance columns on rules, folded into one JSON field. Two single-valued flag columns on rules, folded into a JSON field that can hold several coders' flags and their own closings. It added three things the rulings needed: the item id on a review item, a ratified mark on rules, and the statement that review items are a snapshot taken when the vote opens.</div>
+<p><b>Derived, not stored:</b> the next meeting's agenda (rules with an open flag, items unresolved, codings without Done); the guidelines file in the repository, generated from review_rules on every ratification; the ground-truth export the harness reads, generated from the ratified items on the case diagrams; whether a coding is the coach's, told by agent being set.</p>
+<p><b>Types reused from btcopilot.schema inside JSON:</b> Event, Person, PairBond as dicts, with EventKind, VariableShift, RelationshipKind, DateCertainty and ClusterSource unchanged; ItemKind as the enum for item_kind.</p>
