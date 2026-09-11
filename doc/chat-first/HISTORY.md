@@ -771,4 +771,7 @@ redrew the punchlist as one task at a time with the unit of coding as three draw
 Patrick's assigning phone; a read-only inventory of doc/irr/ (Sonnet) sized the migration. He then ruled one element is never a list [R-0265] and that what is codable between
 meetings had not been brainstormed and comes first [R-0266]; version 4 drew it as three options
 (the same conversation up to the same cut, one whole transcript, correcting the coach's coding
-dropped) with the coder's one-card screen, Patrick's table, and what the meeting reviews.
+dropped) with the coder's one-card screen, Patrick's table, and what the meeting reviews. He ruled cuts in — a conversation up to a cut he selects, a whole one if the cut is at
+its end, anything changed since the last cut re-coded — and asked for his own screens
+[R-0267]; version 5 drew them: swipe and "put on the table", the cut placed on the thread,
+the cut moved, and the table with date, items and who is done.
