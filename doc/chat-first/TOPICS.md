@@ -122,7 +122,13 @@ replacing them with captures from a fixture sandbox is the next fix; (4) [build]
 page, the sessions sheet with upload and the speaker-mapping sheet, the desktop layout, notes
 both as a session of its own (codable in the IRR study like a chat session) and as the existing
 notes field on people and moments; the drawn family diagram stays in the plan behind the
-auto-arrange question; (5) [ruling] the five interface calls; (7) [waiting] migrating last year's IRR material, the last follow-up item of this unit [R-0262, R-0273] — inventory 2026-09-11 of
+auto-arrange question; (5) [ruling] the interface calls drawn both ways as whole screens
+(https://claude.ai/code/artifact/14ca039a-b28e-4d01-95fb-93ba403bf19e): the two-moment grouping as a box or two dots; the
+double ring kept or dropped; the step line on an alternating stretch as a zigzag or dots only;
+the moment chip outlined or filled; "+" on another family switching or refusing; the triangle
+and the compare views as built; the remaining pixel defaults accepted or not — seven choices on
+the page; the event editor's relationship fields are build work with no call; the feel of the
+moves board is his to make on his phone at https://turin.local:8891/personal/; (7) [waiting] migrating last year's IRR material, the last follow-up item of this unit [R-0262, R-0273] — inventory 2026-09-11 of
 doc/irr/: 25 rules in tables keyed to meeting number with unanimity and confidence (migrate as
 rows with the meeting as provenance); six meetings' agreement/disagreement/action tables keyed
 to statement ids of last year's discussions, about 40–60 rows (migrate as settle rows once

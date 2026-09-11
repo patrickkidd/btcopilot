@@ -775,4 +775,9 @@ with nothing open but the migration follow-up. Patrick ruled the catalogue must 
 rebuilt so: mockups/built.html holds the built screens as whole frames (hand-drawn from the
 app's markup, since no database was running to capture them), SCREENS.md points at frames by
 id, and the renderer lifts them live. The Pro surfaces were drawn on the existing screens with
-five choices on the page.
+five choices on the page. Patrick approved every Pro surface as drawn, notes both as sessions (codable in the study)
+and as the existing field, and kept the drawn family diagram in the plan behind auto-arrange
+[R-0281]. He asked for real-feeling content from his own record as inspiration, fully
+anonymized with the issues and timeline changed [R-0280]: a stand-in family was written to
+mockups/family.md and every frame of every drawing rewritten with it, guarded by a name check
+with zero hits. The interface calls still open were drawn both ways as whole screens.
