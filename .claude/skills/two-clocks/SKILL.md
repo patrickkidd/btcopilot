@@ -117,6 +117,6 @@ clinical content or real names in the public repo.
 sentence per item tagged `[built]`, `[drawn]` or `[open]` with ruling ids in braces, written for
 the beta users. Every flush revises its items for the session's rulings (an `[open]` item whose
 choice landed becomes `[drawn]` or `[built]` with its id; a new ruled behaviour gets a new item),
-sets its `Updated:` line to today, renders it with `python bin/screenspage.py <tmp>/fd362-screens.html`
+sets its `Updated:` line to today, re-renders its pictures with `python bin/screenshots.py` (every mockup frame in doc/chat-first/mockups/ and the built views' goldens into doc/chat-first/screens/), renders the catalogue with `python bin/screenspage.py <tmp>/fd362-screens.html`, publishes it with the `screens/*.png` files alongside (Artifact `files`, `root` doc/chat-first)
 and republishes it to the same link every time — **https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba**.
 `bin/flushcheck.py` fails if it is not updated today or an item lacks a tag.

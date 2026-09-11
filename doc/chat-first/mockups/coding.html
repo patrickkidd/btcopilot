@@ -1,0 +1,2469 @@
+<title>The Coding Page</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Tokens only, so themes stay A/B-testable with stable semantics:
+   teal = data, amber = asking (DRAWABILITY). */
+:root {
+  --bg: #f7f6f2;
+  --panel: #fff;
+  --ink: #26312f;
+  /* The mockup's #9aa5a1 measures 2.35:1 on the page, and this token carries
+     most of the app's small text. Darkened along its own hue to clear 4.5:1. */
+  --faint: #67746f;
+  --line: #d8d5cc;
+  --data: #0e7d78;
+  --ask: #c98a1b;
+  --move: #2e9e57;
+  /* The mark hues above are ratified and stay. Where amber or green colours
+     TEXT rather than a mark, these darker twins of the same hue are used, so
+     the words clear 4.5:1 while the marks keep the 3:1 a graphic needs
+     (resolution 52). In dark mode the mark hues already clear the floor. */
+  --ask-text: #9e6d15;
+  --move-text: #27874b;
+  /* one step darker again, for the moment a chip is under the thumb */
+  --data-press: #0a5b57;
+  --ask-press: #7c560f;
+  --tint: rgba(14, 125, 120, 0.08);
+  --ask-tint: rgba(201, 138, 27, 0.1);
+  /* a guessed date's band, the one place amber has an area (DRAWABILITY 2) */
+  --band: rgba(201, 148, 65, 0.3);
+  --onaccent: #fff;
+  --shadow: rgba(38, 49, 47, 0.1);
+  --scrim: rgba(38, 49, 47, 0.3);
+  /* Libre Franklin for words, IBM Plex Mono for data and chips. */
+  /* what a scroll bar takes on the right of a list */
+  --gutter: 12px;
+  --sans: "Libre Franklin", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #171d1c;
+    --panel: #1f2725;
+    --ink: #e6e9e6;
+    --faint: #818f8a;
+    --line: #31403c;
+    --data: #3fc4bc;
+    --ask: #e0a83f;
+    --move: #5fce85;
+    --tint: rgba(63, 196, 188, 0.13);
+    --ask-tint: rgba(224, 168, 63, 0.14);
+    --band: rgba(216, 168, 83, 0.26);
+    --ask-text: var(--ask);
+    --move-text: var(--move);
+    --data-press: #7fdcd5;
+    --ask-press: #f0c26a;
+    --onaccent: #0d1413;
+    --shadow: rgba(0, 0, 0, 0.4);
+    --scrim: rgba(0, 0, 0, 0.28);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #171d1c;
+  --panel: #1f2725;
+  --ink: #e6e9e6;
+  --faint: #818f8a;
+  --line: #31403c;
+  --data: #3fc4bc;
+  --ask: #e0a83f;
+  --move: #5fce85;
+  --tint: rgba(63, 196, 188, 0.13);
+  --ask-tint: rgba(224, 168, 63, 0.14);
+  --band: rgba(216, 168, 83, 0.26);
+  --ask-text: var(--ask);
+  --move-text: var(--move);
+  --data-press: #7fdcd5;
+  --ask-press: #f0c26a;
+  --onaccent: #0d1413;
+  --shadow: rgba(0, 0, 0, 0.4);
+  --scrim: rgba(0, 0, 0, 0.28);
+}
+
+* { box-sizing: border-box; }
+/* The outer page never scrolls. Without this the document can gain a
+   scrollbar, the viewport narrows, and the centred frame steps 2px sideways —
+   the whole app moving because a caption appeared. */
+/* The ground reaches the ends of the screen, under the phone's own furniture:
+   Android paints its bars from the root element rather than from the body. */
+html, body { height: 100%; overflow: hidden; background: var(--bg); }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 17px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+button { font-family: inherit; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--data); outline-offset: 1px; }
+
+/* At phone width the frame is 400 centred, so every mockup value transfers
+   without rescaling. Above that it widens to the 840 the desktop drawings are
+   drawn at, and is fluid between the two. */
+.app {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  /* never wider than the window: a child that overflows must be clipped, not
+     allowed to stretch the frame and step it sideways under the centring */
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  background: var(--panel);
+  overflow: hidden;
+}
+@media (min-width: 900px) {
+  .app { max-width: 840px; }
+}
+@media (min-width: 401px) {
+  .app { border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+}
+.screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.24s ease, filter 0.24s ease;
+}
+.titlerow {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* 40px marks need air: 8px above and below, so the row is 56 (the standard
+     top bar), not the 44 that left the account ring touching both edges. */
+  height: 56px;
+  padding: env(safe-area-inset-top) 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+/* A long family name must not push the controls beside it, or spill over the
+   picture below: min-width 0 lets a flex child shrink, and the name ellipsises
+   (both converged mockups' .ttl). 17px is the ruled floor, not the mockups' 15. */
+.ttl {
+  flex: 1;
+  min-width: 0;
+  font: 600 17px/1.2 var(--sans);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.iconbtn {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.iconbtn:active { background: var(--tint); }
+
+/* ---- the picture: the sentence spotlight (converged, ruled 2026-09-02) ---- */
+/* 138 of the phone, and no more (picked mockup 2026-09-08, band grown by six
+   2026-09-08 so the year clears the controls): the name row 28, the band the
+   line is drawn in 66, and the row of controls under it 44. */
+.pic { flex: none; padding: 0; }
+/* the hairline under the picture is drawn inside its 138 rather than added to
+   it, so the region is the three rows and nothing more */
+.pic .caption { border-bottom: 1px solid var(--line); }
+/* One line, always: the state text on the right changes with the selection and
+   must never push the label on the left onto a second line, which would move
+   the picture and everything under it. */
+/* The back arrow's tap target is the ruled 44, not the glyph's 9px. */
+.up {
+  flex: none;
+  width: 44px;
+  height: 28px;
+  margin-left: -14px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--move);
+  font: inherit;
+  cursor: pointer;
+}
+/* the two small controls on the title line: the i after an open cluster's
+   name, and the ✕ at the row's end while a moment is picked at rest */
+.pl-btn {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--faint);
+  font: 400 14px var(--sans);
+  cursor: pointer;
+}
+.pl-btn:active { color: var(--data); }
+.pl-btn svg { display: block; }
+/* the box's fade while a moment is picked: the wire's colour at the wire,
+   nothing at the top edge, so the box stops short of the words */
+.ss .epfade-in { stop-color: var(--data); stop-opacity: 1; }
+.ss .epfade-out { stop-color: var(--data); stop-opacity: 0; }
+/* the about page: words, at the height they need */
+.ss.about { padding: 4px 16px 10px; box-sizing: border-box; }
+.ab-why { margin: 0 0 8px; font: 400 14px/1.4 var(--sans); color: var(--ink); }
+.ab-span { margin: 0 0 6px; font: 400 13px var(--mono); color: var(--faint); }
+.ab-list { list-style: none; margin: 0; padding: 0; }
+.ab-list li { display: flex; gap: 10px; align-items: baseline; padding: 3px 0; font: 400 13px/1.35 var(--mono); }
+.ab-yr { flex: none; width: 44px; color: var(--data); }
+.ab-what { color: var(--ink); }
+.pin-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  font: 400 13px/1.2 var(--mono);
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+/* One line, cut with an ellipsis: a cluster's own name can be longer than the
+   row and must never push it onto a second line. */
+.pin-label span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: none;
+  letter-spacing: 0;
+  min-width: 0;
+}
+/* The row names the view the reader is in, and once a lower view is open it is
+   also the way up out of it. At rest it is a label: no pointer, no press, and
+   nothing to answer a tap. The row is 28 tall, so the words keep their place
+   and the target is grown around them. */
+#crumb { position: relative; }
+#crumb.deep { cursor: pointer; }
+#crumb.deep::before {
+  content: "";
+  position: absolute;
+  inset: -13px -16px;
+}
+#crumb.deep:active { color: var(--ink); }
+/* One way up, beside the name it is leaving, in the colour of a thing that
+   acts. The board has none of its own. */
+.pin-label .up {
+  position: relative;
+  flex: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 400 15px/1 var(--mono);
+  color: var(--move);
+  cursor: pointer;
+}
+.pin-label .up::before {
+  content: "";
+  position: absolute;
+  inset: -13px -14px;
+}
+.pin-label .up:active { opacity: 0.55; }
+/* The list button sits inside the thing it lists, in the same circle as the
+   one beside the message bar. The picture's own box is what it sits in, so it
+   is taken out of the flow and nothing below it moves. */
+.pic { position: relative; }
+/* The list button sits at the end of the row of chips, in the same circle as
+   the one beside the message bar, and nothing else is over there. */
+.caption .listglyph { margin-left: auto; margin-right: -13px; }
+.view { position: relative; transition: height 0.25s ease; }
+/* One level in or one level out. The two views stand side by side for the
+   length of the slide, each at the height the region already had, so nothing
+   under the picture moves while they travel; the region takes a new height
+   only once they have landed. */
+.pic.sliding { overflow: hidden; }
+.pic.sliding .view { transition: none; }
+/* a level arrives as a card over the one it came from: the whole region, on
+   the picture's own ground, so its words never cross the other level's words */
+.pic .slide-lay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--panel);
+  will-change: transform;
+  pointer-events: none;
+}
+.ss { position: relative; width: 100%; height: 100%; }
+.ss svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+/* The resting drawing is 78 tall inside the picture's fixed box, top-aligned,
+   so a tap that opens a chapter changes nothing below it. */
+.ss svg[height] { height: auto; }
+
+/* the wire, and the years at its ends */
+.ss .wire { stroke: var(--line); stroke-width: 1.5; }
+.ss .wire.empty { stroke-dasharray: 3 6; }
+.ss-yr {
+  position: absolute;
+  /* the line box is the glyphs and nothing over: the six under the year is
+     space between it and the row of controls, not leading inside it */
+  font: 400 13px/13px var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
+}
+/* the year of the moment picked, written once, under its own dot */
+.ss-yr.on { color: var(--data); }
+
+/* one dot per moment; the ones the coach named are solid, the rest recede */
+.ss .dot { fill: var(--data); }
+/* the moment picked, drawn last so it is on top of whatever crowds it, larger
+   than the rest, in the one action green (picked mockup Q1) */
+.ss .dot.on { fill: var(--move); }
+.ss .dot.nodal { fill: none; stroke: var(--data); stroke-width: 1.5; }
+.ss .dot.core { fill: var(--data); }
+.ss .halo { fill: none; stroke: var(--data); stroke-width: 1; opacity: 0.35; }
+.ss .brk { fill: none; stroke: var(--data); stroke-width: 1.2; }
+.ss .brkl { font: 400 13px var(--mono); fill: var(--data); letter-spacing: 0.04em; }
+/* two moments face to face: no axis, one asking mark between them */
+.ss .ss-w { font: 400 13px var(--mono); fill: var(--ink); }
+.ss .ss-w.meta { fill: var(--faint); }
+.ss .seam { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 5; }
+.ss .span { fill: var(--data); fill-opacity: 0.14; stroke: var(--data); stroke-width: 1.2; }
+
+/* the words: what the coach named, or the moment under the thumb */
+.ss-t {
+  position: absolute;
+  font: 400 13px/15px var(--mono);
+  color: var(--ink);
+  height: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ss-t.meta { color: var(--faint); }
+.ss-t.on { color: var(--data); font-weight: 500; }
+/* why the moments in an open cluster are one episode, in the coach's sentence */
+.ss-t.why { color: var(--faint); }
+.ss-lead {
+  position: absolute;
+  width: 1px;
+  background: var(--data);
+  opacity: 0.5;
+}
+
+/* every tap target on the picture is a 44px zone (UI_STANDARDS) */
+.ss-hit {
+  position: absolute;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  border-radius: 6px;
+  color: var(--ask-text);
+  font: 500 15px var(--mono);
+  -webkit-tap-highlight-color: transparent;
+}
+.ss-hit:active { background: var(--tint); }
+.ss-hit:focus-visible { outline: 2px solid var(--data); outline-offset: -2px; }
+
+/* the one amber treatment: the record asking */
+/* the record asking breathes, so an amber mark reads as a live question rather
+   than a printed one */
+.ss .qm {
+  fill: var(--ask);
+  font: 500 15px var(--mono);
+  animation: ask 2.8s ease-in-out infinite;
+}
+@keyframes ask {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.ss .qm.small { font-size: 13px; }
+
+/* ---- the drawability marks (DRAWABILITY.md rules 1-5), drawn only where the
+   coach has named something and its words are beside them ---- */
+/* a guessed date is as wide as the guess */
+.ss .band { fill: var(--band); }
+/* silence is dotted and never flat */
+.ss .gap {
+  stroke: var(--faint);
+  stroke-width: 1.6;
+  stroke-dasharray: 1.5 5;
+  opacity: 0.55;
+}
+/* a recorded no-change is solid, and stays told apart from silence */
+.ss .flat { stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; }
+/* a moment with no direction at all */
+.ss .tick { stroke: var(--ink); stroke-width: 1.8; }
+/* named by the coach: the same mark, in the colour the spotlight uses */
+.ss .tick.lit, .ss .flat.lit { stroke: var(--data); }
+/* three directed points earn a line; below three they stay dots */
+.ss .step {
+  fill: none;
+  stroke: var(--data);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* what lasted: a quiet band under the wire, dated at both ends */
+.ss .lane { stroke: var(--data); stroke-width: 3; opacity: 0.3; stroke-linecap: round; }
+/* an open state fades past its last confirmation rather than stopping dead */
+.ss .fade { stroke: url(#openfade); stroke-width: 2.2; stroke-linecap: round; }
+
+/* ---- the moves board: Bowen's chalkboard, the deepest level ---- */
+/* screen one zooms into screen two: the board arrives scaled up and settles */
+.ss.board { position: relative; }
+.ss.board.in svg { animation: boardin 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes boardin {
+  from { transform: scale(1.35); opacity: 0.25; }
+  to { transform: scale(1); opacity: 1; }
+}
+/* people arrive on the board rather than being simply there (play-by-play) */
+.ss.board.in .node {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+@keyframes pop {
+  from { transform: scale(0.2); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+/* the years under the people: the axis, its decade ticks, one dot per move,
+   a blob where moves bunch and the pool under the move being drawn */
+.ss .axis .ax { stroke: var(--line); stroke-width: 1.4; }
+.ss .axis .ax-tick { stroke: var(--line); stroke-width: 1.2; }
+.ss .axis .ax-yr { font: 400 13px var(--mono); fill: var(--faint); }
+.ss .axis .ax-blob { fill: var(--faint); opacity: 0.22; }
+.ss .axis .ax-dot { fill: var(--faint); transition: fill 0.3s, r 0.3s; }
+.ss .axis .ax-dot.played { fill: var(--data); }
+/* the move being drawn: the dot itself, on top of whatever it is crowded by,
+   in the one action green. Nothing sits behind it. */
+.ss .axis .ax-now { fill: var(--move); }
+.ss .axis .ax-yr.on { fill: var(--move-text); }
+.ss .bond { stroke: var(--line); stroke-width: 1.2; }
+.ss .hist { opacity: 0.16; animation: histin 0.32s ease; }
+.ss .hist * { animation: none !important; }
+@keyframes histin { from { opacity: 0; } to { opacity: 0.16; } }
+/* The picture's own nav slot. Empty at rest and at chapter level; the board
+   level puts its back arrow in the left one. */
+.ss .corner {
+  position: absolute;
+  top: 2px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 18px/1 system-ui, -apple-system, sans-serif;
+  color: var(--data);
+  border: none;
+  background: none;
+}
+.ss .corner.l { left: 4px; }
+.ss .corner.r { right: 4px; }
+/* Two lines of room, always: the words under the board are a person and what
+   happened to them, and a long one must not push the board up the screen. What
+   does not fit is cut. */
+.bcap {
+  height: 30px;
+  padding: 2px 16px 0;
+  font: 400 13px/15px var(--mono);
+  color: var(--faint);
+  text-align: center;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.pctl {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 16px 2px;
+}
+.pctl .btn { border-radius: 4px; }
+/* the way onto the board carries the same mark as the control that steps it,
+   and no words: three controls with words do not fit across a phone */
+.btn.icon { min-width: 44px; padding: 0; }
+.pctl .btn[disabled] { opacity: 0.4; cursor: default; }
+.btn.primary { border-color: var(--data); color: var(--data); }
+
+/* ---- the move language (ratified 2026-09-01): one green, never amber ----
+   Every stroke width, dash array, duration and key time below is copied from
+   the ratified demos; nothing here is redrawn from memory. */
+.ss .cast { color: var(--move); }
+.ss .node .disc { fill: var(--panel); stroke: currentColor; stroke-width: 1.5; }
+.ss .node .ini { font: 600 13px var(--sans); fill: var(--ink); }
+.ss .node .nm { font: 400 13px var(--mono); fill: var(--faint); }
+.ss .node .nm.on { fill: var(--move); font-weight: 600; }
+/* someone the coach has just put in the record, while the line saying so is
+   read: the same green their moves are drawn in, on the figure itself */
+.ss .node.lit { color: var(--move); }
+.ss .node.lit .nm { fill: var(--move); font-weight: 600; }
+.ss .node { color: var(--faint); }
+.ss .node .ghost .gh {
+  fill: none;
+  stroke: var(--move);
+  stroke-width: 2;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.ss .node .ghost.g-out .gh { animation: pshakeC 1.1s infinite, ghostout 8s infinite; }
+.ss .node .ghost.g-in .gh { animation: cshakeC 1.1s infinite, ghostin 8s infinite; }
+.ss .node .ghost.g-solo .gh { animation: pshakeC 1.1s infinite, ghostsolo 8s infinite; }
+
+/* the body carries a move's own beat; the walk it makes lives on .node */
+.ss .body { transform-box: fill-box; transform-origin: center; }
+.ss .body.pshake { animation: pshakeC 1.1s infinite; }
+.ss .body.cshake { animation: cshakeC 1.1s infinite; }
+/* a move overrides the outline of whoever it touches, at its own ratified
+   width and in the ink the demos draw the sharp self in */
+.ss .body.anx .disc { stroke: var(--ink); stroke-width: 2.2; }
+.ss .body.sym .disc { stroke: var(--ink); stroke-width: 2.2; }
+.ss .body.proj .disc { stroke: var(--ink); stroke-width: 2; }
+.ss .body.tremble10 { animation: tremble10 10s infinite; }
+.ss .body.buzz { animation: buzz 0.28s infinite; }
+.ss .body.buzz.rev { animation: buzz 0.28s infinite reverse; }
+.ss .body.btrem2 { animation: btrem2 12s infinite; }
+.ss .body.tremout { animation: tremout 10s infinite; }
+.ss .body.domup { animation: domup 3s ease-in-out infinite; }
+.ss .body.subdown { animation: subdown 3s ease-in-out infinite; }
+.ss .body.dself { animation: hitsync 12s infinite; }
+.ss .body.dself .disc { animation: selfswap 8s infinite; }
+.ss .body.fused .disc { stroke: var(--move); stroke-width: 2.4; }
+.ss .body.joining .disc { stroke: var(--move); stroke-width: 2.2; }
+
+/* an emotional field: rings that never fade or bounce */
+.ss .fld { fill: none; stroke: var(--move); }
+.ss .preA { animation: preA 10s infinite; }
+.ss .postA { animation: postA 10s infinite; }
+.ss .stormlong { animation: stormlong 12s infinite; }
+.ss .stormcalm { animation: stormcalm 12s infinite; }
+
+.ss .mv-wall {
+  stroke: var(--move);
+  stroke-width: 6;
+  animation: oneslabb 10s ease-in-out infinite;
+}
+.ss .mv-strike { stroke: var(--move); stroke-width: 3; }
+.ss .mv-trace { stroke: var(--move); stroke-width: 1.6; stroke-dasharray: 3 5; }
+
+.ss .tarrow { animation: tarrow 8s linear infinite; }
+.ss .mv-arrow {
+  fill: none;
+  stroke: var(--move);
+  stroke-width: 2.4;
+  stroke-dasharray: 10 8;
+  animation: flow 1s linear infinite;
+}
+.ss .mv-arrow.back { animation: flow 1s linear infinite reverse; }
+.ss .tipfill { fill: var(--move); }
+
+.ss .mv-spark { fill: none; stroke: var(--move); stroke-width: 2.4; stroke-linejoin: round; }
+.ss .mv-burst { stroke: var(--move); stroke-width: 2; stroke-linecap: round; }
+.ss .mv-sparks { animation: sparkp 0.5s infinite; }
+
+.ss .mv-spike { stroke: var(--move); stroke-width: 1.8; stroke-linecap: round; }
+.ss .spk { transform-box: view-box; transform-origin: 0 0; }
+.ss .spk.s-out { animation: spikeout 8s infinite; }
+.ss .spk.s-in { animation: spikein 8s infinite; }
+.ss .spk.s-solo { animation: spikesolo 8s infinite; }
+
+.ss .mv-flow {
+  fill: none;
+  stroke: var(--move);
+  stroke-width: 2.8;
+  stroke-dasharray: 9 7;
+  animation: flow 0.45s linear infinite;
+}
+
+.ss .mv-band { stroke: var(--move); stroke-width: 2.6; }
+.ss .mv-shared { fill: none; stroke: var(--move); stroke-width: 2; }
+.ss .mv-clear { fill: none; stroke: var(--move); stroke-width: 2.4; }
+
+.ss .mv-flank line { fill: none; stroke: var(--move); stroke-width: 2.4; stroke-linecap: round; }
+.ss .mv-flank.up { animation: domup 3s ease-in-out infinite; }
+.ss .mv-flank.down { animation: subdown 3s ease-in-out infinite; }
+
+.ss .mv-tension { fill: none; stroke: var(--move); stroke-width: 2; }
+.ss .mv-tension.spark { animation: sparkp 0.5s infinite; transform-box: fill-box; transform-origin: center; }
+.ss .tenspre { animation: tenspre 10s infinite; }
+
+.ss .mv-dir { stroke: var(--move); stroke-width: 2.6; stroke-linecap: round; }
+/* The direction mark stays on screen for the whole loop: it is the one thing
+   saying which way the symptom went, and a reader who looks away must not find
+   it gone. Movement is its travel along its own axis, not its appearing. */
+.ss .sym-arrow { transform-box: view-box; }
+.ss .sym-arrow.worse { animation: symworse 8s ease-in-out infinite; }
+.ss .sym-arrow.better { animation: symbetter 8s ease-in-out infinite; }
+
+.ss .mv-func { fill: none; stroke-width: 2.6; }
+.ss .mv-func.up { stroke: var(--move); }
+.ss .mv-func.down { stroke: var(--move); animation: fcolor 8s infinite; }
+
+/* the ratified keyframes, verbatim */
+@keyframes buzz {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-2px, 1px); }
+  40% { transform: translate(2px, -1px); }
+  60% { transform: translate(-2px, -1px); }
+  80% { transform: translate(2px, 1px); }
+}
+@keyframes sparkp {
+  0%, 100% { transform: scale(0.7); opacity: 0.5; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+@keyframes flow { to { stroke-dashoffset: -40; } }
+@keyframes tarrow {
+  0%, 8% { opacity: 0; }
+  12%, 50% { opacity: 1; }
+  60%, 100% { opacity: 0; }
+}
+@keyframes preA { 0%, 26% { opacity: 1; } 30%, 100% { opacity: 0; } }
+@keyframes postA { 0%, 38% { opacity: 0; } 42%, 100% { opacity: 1; } }
+@keyframes oneslabb {
+  0%, 26% { transform: translateX(-48px); opacity: 0; }
+  30% { opacity: 1; }
+  40%, 100% { transform: translateX(0); opacity: 1; }
+}
+@keyframes tremble10 {
+  0%, 2% { transform: translate(0, 0); }
+  4% { transform: translate(-2.5px, 1px); }
+  8% { transform: translate(2.5px, -1px); }
+  12% { transform: translate(-2px, 1px); }
+  16% { transform: translate(2px, -1px); }
+  20% { transform: translate(-2px, 1px); }
+  24% { transform: translate(2px, 0); }
+  28%, 100% { transform: translate(0, 0); }
+}
+@keyframes pshakeC {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-2.5px, 1.5px); }
+  45% { transform: translate(2.5px, -1.5px); }
+  70% { transform: translate(-2px, 1px); }
+  85% { transform: translate(2px, -1px); }
+}
+/* the child inherits the identical shake, and the reference gives it its own
+   name rather than reusing the parent's */
+@keyframes cshakeC {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-2.5px, 1.5px); }
+  45% { transform: translate(2.5px, -1.5px); }
+  70% { transform: translate(-2px, 1px); }
+  85% { transform: translate(2px, -1px); }
+}
+@keyframes domup { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes subdown { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+@keyframes tenspre { 0%, 32% { opacity: 1; } 40%, 100% { opacity: 0; } }
+@keyframes tremout {
+  0% { transform: translate(0, 0); }
+  4% { transform: translate(-2px, 1px); }
+  8% { transform: translate(2px, -1px); }
+  12% { transform: translate(-2px, 1px); }
+  16% { transform: translate(2px, -1px); }
+  20% { transform: translate(-2px, 0); }
+  24% { transform: translate(2px, 1px); }
+  28% { transform: translate(-1.5px, -1px); }
+  32% { transform: translate(1.5px, 1px); }
+  36%, 100% { transform: translate(0, 0); }
+}
+@keyframes btrem2 {
+  0% { transform: translate(0, 0); }
+  4% { transform: translate(-2px, 1px); }
+  9% { transform: translate(2px, -1px); }
+  14% { transform: translate(-2px, 1px); }
+  19% { transform: translate(2px, -1px); }
+  24% { transform: translate(-2px, 0); }
+  29% { transform: translate(2px, 1px); }
+  34% { transform: translate(-2px, -1px); }
+  39% { transform: translate(2px, 1px); }
+  44% { transform: translate(-2px, 0); }
+  49% { transform: translate(2px, 0); }
+  54% { transform: translate(-1.5px, 1px); }
+  59% { transform: translate(1.5px, -1px); }
+  64% { transform: translate(-1px, 0); }
+  70%, 100% { transform: translate(0, 0); }
+}
+@keyframes hitsync {
+  0% { transform: translateX(0); }
+  2% { transform: translateX(-4px); }
+  4% { transform: translateX(1px); }
+  6.6% { transform: translateX(-4px); }
+  8.6% { transform: translateX(1px); }
+  11.2% { transform: translateX(-4px); }
+  13.2% { transform: translateX(1px); }
+  15.8% { transform: translateX(-4px); }
+  17.8% { transform: translateX(1px); }
+  20.4% { transform: translateX(-4px); }
+  22.4% { transform: translateX(1px); }
+  25% { transform: translateX(-4px); }
+  27% { transform: translateX(1px); }
+  29.6% { transform: translateX(-4px); }
+  31.6% { transform: translateX(1px); }
+  34.2% { transform: translateX(-4px); }
+  36.2% { transform: translateX(1px); }
+  38%, 100% { transform: translateX(0); }
+}
+@keyframes stormlong { 0%, 64% { opacity: 1; } 70%, 100% { opacity: 0; } }
+@keyframes stormcalm { 0%, 68% { opacity: 0; } 74%, 100% { opacity: 1; } }
+@keyframes fcolor {
+  0%, 12% { stroke: var(--move); }
+  34%, 58% { stroke: var(--ink); }
+  80%, 100% { stroke: var(--move); }
+}
+
+/* the same key times as the ratified SVG animations, as CSS */
+@keyframes ghostout { 0%, 15% { opacity: 0.85; } 75%, 100% { opacity: 0; } }
+@keyframes ghostin { 0%, 15% { opacity: 0; } 75%, 100% { opacity: 0.85; } }
+@keyframes ghostsolo {
+  0%, 10% { opacity: 0; }
+  28%, 60% { opacity: 0.85; }
+  85%, 100% { opacity: 0; }
+}
+@keyframes spikeout { 0%, 15% { transform: scale(1); } 75%, 100% { transform: scale(0.12); } }
+@keyframes spikein { 0%, 15% { transform: scale(0.12); } 75%, 100% { transform: scale(1); } }
+@keyframes spikesolo {
+  0%, 10% { transform: scale(0.1); }
+  28%, 60% { transform: scale(1); }
+  85%, 100% { transform: scale(0.1); }
+}
+@keyframes selfswap {
+  0%, 37.5% { stroke: var(--ink); stroke-width: 2.2; }
+  38.5%, 100% { stroke: var(--move); stroke-width: 2.6; }
+}
+/* the same key times as the fade they replace, travelling instead of fading */
+@keyframes symworse {
+  0%, 8% { transform: translateY(2.5px); }
+  14%, 48% { transform: translateY(-2px); }
+  54%, 100% { transform: translateY(2.5px); }
+}
+@keyframes symbetter {
+  0%, 50% { transform: translateY(-2.5px); }
+  56%, 90% { transform: translateY(2px); }
+  96%, 100% { transform: translateY(-2.5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ss *, .view { animation: none !important; transition: none !important; }
+}
+
+/* The actions a selected moment offers. Its words are on the picture; this row
+   is only the tap that speaks and the tap that plays. */
+.caption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 16px;
+  font: 400 13px/1.35 var(--mono);
+  color: var(--faint);
+  /* The caption is one strip and stays one strip: it scrolls sideways rather
+     than wrapping, so its height never changes (LAYOUT CONTRACT). */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  overscroll-behavior: contain;
+}
+/* On the board the row is not there at all: no strip, no hairline. */
+.caption.gone { display: none; }
+.caption::-webkit-scrollbar { display: none; }
+.caption > * { flex: none; }
+/* The chat's own chip, in the row (picked plate F): one mark and one word, a
+   thin outline in its own colour and nothing filled in, 26 tall in the middle
+   of the 44 band. What answers the thumb is the whole band, the way the chat
+   chip already grows its own target. */
+.caption .tok {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 1px 8px;
+  border: 1px solid var(--ask);
+  border-radius: 8px;
+  background: none;
+  color: var(--ask-text);
+  font: 500 13px/22px var(--mono);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.caption .tok::before { content: ""; position: absolute; inset: -9px -2px; }
+.caption .tok svg { flex: none; }
+/* while nothing is picked there is nothing to act on, so the row says what a
+   tap will do instead (owner review round 3) */
+.caption .cta { font: 400 13px/1.35 var(--mono); color: var(--faint); }
+.caption .tok.g { color: var(--move-text); border-color: var(--move); border-radius: 10px; }
+.caption .tok.data { color: var(--data); border-color: var(--data); border-radius: 10px; }
+/* nothing to do with it here, so it is still shown and plainly not offered */
+.caption .tok.dim { opacity: 0.34; cursor: default; }
+.caption .tok:not(.dim):active { background: var(--tint); }
+
+/* ---- chat ---- */
+.chat {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 12px;
+  background: var(--bg);
+  /* the thread fades out and back as another session takes its place */
+  transition: opacity 0.15s;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  /* the thread is pinned to its newest words in code; the browser's own
+     anchoring fights that as a bubble grows while it is typed */
+  overflow-anchor: none;
+}
+.bub {
+  max-width: 82%;
+  min-width: 0;
+  padding: 9px 12px;
+  border-radius: 14px;
+  font: 400 17px/1.45 var(--sans);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.bub.coach {
+  align-self: flex-start;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 4px;
+}
+.bub.user {
+  align-self: flex-end;
+  background: var(--data);
+  color: var(--onaccent);
+  border-bottom-right-radius: 4px;
+}
+/* The caret the mockups blink while the words are being written out. */
+.bub.typing::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--data);
+  vertical-align: -2px;
+  animation: blink 0.7s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+/* Waiting, before there is anything to write. The mockups blink the caret here
+   too; the owner ruled that too dead to read as thinking, so it is three dots
+   at text height instead, and his ruling supersedes the mockup. */
+.bub.typing.dots::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-bottom: 2px;
+  border-radius: 50%;
+  background: var(--faint);
+  box-shadow: 11px 0 var(--faint), 22px 0 var(--faint);
+  animation: think 1.2s ease-in-out infinite;
+}
+/* one shadow at a time carries the beat, so three dots rise in turn from one
+   box: the element itself, then each shadow, a third of the loop apart */
+@keyframes think {
+  0%, 100% {
+    box-shadow: 11px 0 var(--faint), 22px 0 var(--faint);
+    transform: translateY(0);
+  }
+  16% { transform: translateY(-3px); }
+  33% {
+    box-shadow: 11px -3px var(--faint), 22px 0 var(--faint);
+    transform: translateY(0);
+  }
+  66% {
+    box-shadow: 11px 0 var(--faint), 22px -3px var(--faint);
+    transform: translateY(0);
+  }
+}
+/* who is speaking, on the coach's side (approved play-by-play) */
+.bub .who {
+  font: 500 13px/1.2 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 4px;
+}
+/* one plain line per edit the coach made, inside its own bubble */
+.bub .did {
+  position: relative;
+  margin-top: 6px;
+  padding-left: 14px;
+  font: 400 13px/1.5 var(--mono);
+  color: var(--faint);
+}
+.bub .did::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--move);
+}
+
+/* the question that closes a reply, set apart from the narration above it */
+.bub > .ask {
+  margin-top: 9px;
+  color: var(--ask-text);
+  font-weight: 500;
+}
+/* the answers the coach holds out, under the question */
+.bub > .offer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.bub > .offer .chip { margin: 0; }
+
+/* A chip never leaves its bubble: it may be as wide as the bubble and no
+   wider, and it wraps to more lines rather than being cut. Labels are capped
+   at 28 graphemes by the server, so wrapping is for the ordinary long label,
+   not a guard against an unbounded one. */
+.chip {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  font: 500 13px/22px var(--mono);
+  color: var(--data);
+  border: 1px solid var(--data);
+  border-radius: 10px;
+  padding: 1px 8px;
+  margin: 2px 2px 0 0;
+  cursor: pointer;
+  text-align: left;
+  /* The converged chip is nowrap. This one wraps, because a chip must never
+     leave its bubble however long the record's words are, which is asserted
+     in tests/visual/chat.spec.ts. */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  vertical-align: bottom;
+  background: none;
+}
+/* A chip sits inside flowing words, so its box stays the size of its words and
+   its TARGET is grown to the 44px floor around it (UI_STANDARDS). */
+.chip::before {
+  content: "";
+  position: absolute;
+  inset: -9px -4px;
+}
+/* A chip answers the thumb: the converged chip colour one step darker under
+   the finger, for as long as the press lasts. */
+.chip:active { background: var(--tint); color: var(--data-press); }
+.chip.ask:active { background: var(--ask-tint); color: var(--ask-press); }
+.bub.user .chip:active { background: rgba(255, 255, 255, 0.18); color: inherit; }
+
+/* the chip lights while the move it names is drawn (approved play-by-play) */
+.chip.lit {
+  color: var(--ask-text);
+  border-color: var(--ask);
+  background: var(--ask-tint);
+}
+/* what the coach offers to talk about next, in its own square-cornered brackets */
+.chip.ask {
+  color: var(--ask-text);
+  border: 1px solid var(--ask);
+  border-radius: 8px;
+  background: none;
+}
+.bub.user .chip { color: var(--onaccent); border-color: currentColor; }
+
+.inbar {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+}
+.field {
+  flex: 1;
+  min-height: 44px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding: 9px 16px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 17px/1.4 var(--sans);
+  outline: none;
+}
+.field:focus { border-color: var(--data); }
+.field:empty::before { content: attr(data-ph); color: var(--faint); }
+/* A token in the composer sits ON the line of words, not above it: the chip's
+   own 26px box would make the field taller than its 44px resting height, and
+   the message bar growing pushes every bubble up the screen. */
+.field .chip {
+  font: 500 13px/18px var(--mono);
+  border-radius: 6px;
+  padding: 1px 6px;
+  margin: 0 3px 0 0;
+  vertical-align: baseline;
+}
+/* the target still meets the floor, grown around the smaller pill */
+.field .chip::before { inset: -12px -6px; }
+.send {
+  flex: none;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--onaccent);
+  font: 600 22px/1 var(--sans);
+  cursor: pointer;
+}
+.send::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: var(--data);
+}
+.send > * { position: relative; }
+.send:active { filter: brightness(0.9); }
+
+/* ---- menu: the list and the editor ---- */
+.ovbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: env(safe-area-inset-top) 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ovt {
+  flex: 1;
+  min-width: 0;
+  font: 600 17px/1.2 var(--sans);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* the button that comes back from the list */
+.backbtn {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-left: -10px;
+  border: none;
+  background: none;
+  color: var(--data);
+  cursor: pointer;
+}
+.backbtn:active { background: var(--tint); border-radius: 50%; }
+.backbtn svg { pointer-events: none; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font: 500 15px/1 var(--sans);
+  cursor: pointer;
+}
+.btn:active { background: var(--tint); }
+.btn.play { border-color: var(--data); color: var(--data); }
+.btn.link { border: none; color: var(--data); }
+.scroller {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+/* Two ways into the same record, side by side above the list: what happened,
+   and who it happened to. The row is one 44px target, like every other. */
+.tabs {
+  flex: none;
+  display: flex;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.tabs .tab {
+  flex: 1;
+  height: 44px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--faint);
+  font: 500 15px var(--sans);
+  cursor: pointer;
+}
+.tabs .tab.on { color: var(--ink); border-bottom-color: var(--data); }
+.tabs .tab:active { background: var(--tint); }
+
+.search {
+  flex: none;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.search input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 17px var(--sans);
+  outline: none;
+}
+.search input:focus { border-color: var(--data); }
+/* one divider per cluster, sticky, so you always know which one you are in */
+.div {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 40px;
+  /* clear of the scroll bar on the right: it draws over the content on the
+     phones and desktops that overlay it, and a sticky heading is exactly what
+     it lands on */
+  padding: 0 calc(16px + var(--gutter)) 0 16px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font: 600 15px/1.2 var(--sans);
+  color: var(--ink);
+}
+.dcount { font: 400 13px/1.2 var(--mono); color: var(--faint); }
+.row {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  min-height: 56px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  cursor: pointer;
+}
+.row.on, .row:active { background: var(--tint); }
+.r1 { font: 400 17px/1.3 var(--sans); color: var(--ink); }
+.r2 { font: 400 13px/1.3 var(--mono); color: var(--faint); }
+.r1, .r2 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.none, .err { padding: 22px 16px; font: 400 15px/1.4 var(--sans); color: var(--faint); }
+.foot {
+  flex: none;
+  padding: 8px 16px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+.addbtn {
+  width: 100%;
+  height: 44px;
+  border: 1.5px solid var(--move);
+  border-radius: 22px;
+  background: none;
+  color: var(--move-text);
+  font: 500 15px var(--sans);
+  cursor: pointer;
+}
+
+.editor {
+  padding: 12px 16px 16px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.editor .sec { margin: 16px 0 4px; font: 600 15px/1.2 var(--sans); }
+/* what the record keeps somewhere else, said once rather than left missing */
+.editor .hint { font: 400 13px/1.4 var(--mono); color: var(--faint); }
+.editor .lab {
+  font: 500 13px/1.4 var(--mono);
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-top: 6px;
+}
+.editor .f, .editor textarea {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font: 400 17px var(--sans);
+  outline: none;
+}
+/* The textarea also carries .f, so this must out-rank `.editor .f` above it:
+   selecting on the tag alone loses and the field renders unpadded. */
+.editor textarea.f {
+  height: auto;
+  min-height: 44px;
+  padding: 11px 12px;
+  line-height: 1.3;
+  resize: none;
+  overflow: hidden;
+  font-family: var(--sans);
+}
+.editor .f:focus, .editor textarea:focus { border-color: var(--data); }
+.segs { display: flex; flex-wrap: wrap; gap: 12px 8px; padding: 6px 0; }
+.seg {
+  height: 32px;
+  min-width: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--ink);
+  font: 500 13px var(--mono);
+  cursor: pointer;
+}
+.seg.on { border-color: var(--data); color: var(--data); background: var(--tint); }
+.acts { display: flex; gap: 12px; margin-top: 6px; }
+.acts .save {
+  flex: 1;
+  height: 44px;
+  border: 1px solid var(--data);
+  border-radius: 8px;
+  background: var(--data);
+  color: var(--onaccent);
+  font: 500 15px var(--sans);
+  cursor: pointer;
+}
+.acts .del {
+  flex: none;
+  min-width: 92px;
+  height: 44px;
+  border: 1px solid var(--ask);
+  border-radius: 8px;
+  background: none;
+  color: var(--ask-text);
+  font: 500 15px var(--sans);
+  cursor: pointer;
+}
+
+/* ---- the session door: the button beside the message box, and the sheet it
+   raises (family-sections, the owner's pick 2026-09-02 23:33) ---- */
+.fs-glyph {
+  flex: none;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+/* the visible mark is a 34px circle; the target around it is the ruled 44 */
+.fs-glyph::before {
+  content: "";
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+.fs-glyph svg { position: relative; display: block; opacity: 0.8; width: 20px; height: 15px; }
+.fs-glyph:active::before { background: var(--tint); }
+/* The way into the lists: the three lines alone, no ring, no fill (owner
+   review 2026-09-09), in the ruled 44px target flush with the row's edge. */
+.listglyph {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.listglyph svg { display: block; width: 20px; height: 15px; }
+.listglyph:active { color: var(--data); }
+/* The home-screen badge: a quiet phone outline beside the account button,
+   only while the app runs inside a browser. */
+/* Two 44px targets side by side would put 30px of air between the marks; the
+   targets overlap so the phone sits 12px from the account mark. */
+.avatar.homescreen { color: var(--faint); margin-right: -8px; }
+.avatar.homescreen::before { content: none; }
+.avatar.homescreen:active { color: var(--data); }
+
+.overlay { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
+.overlay > * { pointer-events: auto; }
+
+/* Signing out is a state of the app, not leaving it: the shell stays and this
+   covers it until someone signs in again. */
+.signedout {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.so-app { font: 800 21px var(--sans); color: var(--ink); }
+.so-who { font: 500 13px var(--mono); color: var(--faint); }
+.so-in {
+  font: 500 13px var(--mono);
+  color: var(--data);
+  background: none;
+  border: 1px solid var(--data);
+  border-radius: 16px;
+  padding: 7px 18px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.so-in:active { background: var(--tint); }
+.fs-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+  opacity: 0;
+  transition: opacity 0.26s ease;
+}
+.fs-scrim.in { opacity: 1; }
+.fs-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 92%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -8px 30px var(--shadow);
+  transform: translateY(100%);
+  transition: transform 0.26s cubic-bezier(0.4, 0, 0.7, 0.5);
+}
+.fs-sheet.in {
+  transform: none;
+  transition-timing-function: cubic-bezier(0.3, 1.25, 0.5, 1);
+}
+.fs-handle {
+  flex: none;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+}
+.fs-grab { width: 36px; height: 5px; border-radius: 3px; background: var(--line); }
+.fs-search { flex: none; padding: 2px 12px 8px; border-bottom: 1px solid var(--line); }
+.fs-search input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 17px/1.4 var(--sans);
+  outline: none;
+}
+.fs-search input:focus { border-color: var(--data); }
+.fs-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+/* Swipe a session row left and its two actions come out from behind it. */
+.fs-body .row { position: relative; transition: transform 0.18s ease; }
+.fs-body .row.swiped { transform: translateX(-150px); }
+.fs-acts {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  bottom: -1px;
+  width: 150px;
+  display: flex;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.fs-act {
+  flex: 1;
+  min-height: 44px;
+  border: none;
+  background: none;
+  font: 600 13px var(--sans);
+  color: var(--faint);
+  cursor: pointer;
+}
+.fs-act.ren { color: var(--move-text); }
+.fs-act:active { background: var(--tint); }
+
+.fs-fhead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 0 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.fs-fmain { flex: 1; min-width: 0; }
+.fs-fname {
+  font: 600 15px/1.25 var(--sans);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-flast {
+  font: 400 13px/1.25 var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-plus {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--move-text);
+  font: 600 22px/1 var(--sans);
+  cursor: pointer;
+}
+.fs-plus:active { background: var(--tint); }
+.fs-more {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+  font: 500 13px var(--mono);
+  color: var(--faint);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.fs-more:active { background: var(--tint); }
+.fs-hint {
+  padding: 18px 16px;
+  text-align: center;
+  font: 500 13px var(--mono);
+  color: var(--faint);
+}
+.fs-foot {
+  flex: none;
+  padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+.fs-new {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 1.5px solid var(--move);
+  border-radius: 22px;
+  background: none;
+  color: var(--move-text);
+  font: 600 15px var(--sans);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-new:active { background: var(--tint); }
+
+/* a session row is the app's list row with a date beside it */
+.row.side { flex-direction: row; align-items: center; gap: 10px; }
+.row.side .rmain { flex: 1; min-width: 0; }
+.row.side .rwhen {
+  flex: none;
+  max-width: 44%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.row.cur { position: relative; }
+.row.cur::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--data);
+}
+.row .untitled { color: var(--faint); }
+/* a title someone gave by hand, so the coach's own titles read apart from it */
+.pencil { margin-left: 4px; font-size: 13px; color: var(--faint); }
+.row input.rename {
+  width: 100%;
+  padding: 1px 6px;
+  border: 1px solid var(--data);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 17px/1.3 var(--sans);
+  outline: none;
+}
+/* the day the sessions under it fall on */
+.ghead {
+  position: sticky;
+  top: 44px;
+  z-index: 1;
+  height: 24px;
+  line-height: 24px;
+  padding: 0 16px;
+  background: var(--panel);
+  font: 500 13px var(--mono);
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* what the app says about what it just did */
+.toasts {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 76px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.toast {
+  max-width: 88%;
+  padding: 6px 12px;
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--panel);
+  font: 500 13px var(--mono);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.toast.in { opacity: 0.92; }
+@media (prefers-reduced-motion: reduce) {
+  .fs-sheet, .fs-scrim, .toast, .screen { transition: none !important; }
+}
+
+/* ---- settings: an iOS-Settings list where every row pushes its own page
+   (settings-nested, the owner's pick 2026-09-03 00:27) ---- */
+.avatar {
+  flex: none;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--data);
+  font: 500 15px var(--mono);
+  cursor: pointer;
+}
+/* One size for every icon button (owner, 2026-09-09): a 44px target, a 40px
+   visible mark, a 20–24px glyph — the account mark, the home-screen badge,
+   the sessions button, the list button and send all read as the same weight. */
+.avatar::before {
+  content: "";
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--data);
+  background: var(--panel);
+}
+.avatar > * , .avatar svg { position: relative; }
+.avatar svg { width: 24px; height: 24px; display: block; }
+.avatar:active { color: var(--data-press); }
+.sn-back {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 2px 2px 12px;
+  margin-left: -12px;
+  border: none;
+  background: none;
+  color: var(--data);
+  font: 500 19px/1 var(--mono);
+  cursor: pointer;
+}
+.sn-back:active { background: var(--tint); }
+
+/* The box the settings pages travel in has no ground of its own: what is
+   already on screen stays there and the page slides in over it, rather than
+   the app blanking first and the page arriving onto nothing (owner ruling
+   2026-09-08). The pages themselves are opaque, so nothing shows through one
+   that has landed. */
+.sn-stack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 44px;
+  bottom: 0;
+  overflow: hidden;
+  background: transparent;
+}
+.sn-pane {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg);
+  transform: translateX(100%);
+  transition: transform 0.24s ease;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.sn-pane.in { transform: none; }
+.sn-pane.under { transform: translateX(-28%); }
+.sn-grp {
+  margin: 0;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.sn-hd {
+  margin-top: 14px;
+  padding: 0 16px 5px;
+  font: 500 13px var(--mono);
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.sn-hd + .sn-grp { margin-top: 0; }
+.sn-grp + .sn-grp, div > .sn-grp { margin-top: 0; }
+.sn-pane > div + div > .sn-grp { margin-top: 14px; }
+.sn-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 7px 16px;
+  border-top: 1px solid var(--line);
+}
+.sn-row:first-child { border-top: none; }
+.sn-row.push { cursor: pointer; }
+.sn-row.push:active { background: var(--tint); }
+.sn-lbl {
+  max-width: 52%;
+  font: 400 17px/1.3 var(--sans);
+  color: var(--ink);
+}
+.sn-val {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font: 500 13px var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sn-val.ink { font: 400 17px/1.3 var(--sans); color: var(--ink); }
+.sn-chev { flex: none; color: var(--faint); font: 400 17px/1 var(--mono); }
+.sn-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 13px 16px;
+  cursor: pointer;
+}
+.sn-cell:active { background: var(--tint); }
+.sn-face {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--data);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--data);
+  font: 500 19px var(--mono);
+  overflow: hidden;
+}
+.sn-face svg { width: 26px; height: 26px; display: block; }
+.sn-who { flex: 1; min-width: 0; }
+.sn-name {
+  font: 600 17px/1.3 var(--sans);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sn-name.empty { font-weight: 400; color: var(--faint); }
+.sn-sub {
+  font: 500 13px/1.3 var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sn-in {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 0;
+  border: none;
+  border-bottom: 1px solid transparent;
+  background: none;
+  color: var(--ink);
+  font: 400 17px/1.3 var(--sans);
+  text-align: right;
+  text-overflow: ellipsis;
+  outline: none;
+}
+.sn-in::placeholder { color: var(--faint); }
+.sn-in.typing { border-bottom-color: var(--data); }
+.sn-seg { flex: 1; display: flex; justify-content: flex-end; min-width: 0; }
+.sn-seg button {
+  min-width: 44px;
+  height: 32px;
+  padding: 4px 8px;
+  margin-left: -1px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--faint);
+  font: 500 13px var(--mono);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sn-seg button:first-child { border-radius: 4px 0 0 4px; margin-left: 0; }
+.sn-seg button:last-child { border-radius: 0 4px 4px 0; }
+.sn-seg button.on {
+  position: relative;
+  z-index: 1;
+  color: var(--data);
+  border-color: var(--data);
+  background: var(--tint);
+}
+/* the ruled boolean: an iOS switch, never a native checkbox */
+.sw {
+  flex: none;
+  position: relative;
+  width: 51px;
+  height: 31px;
+  padding: 0;
+  border: none;
+  border-radius: 16px;
+  background: var(--line);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.sw.on { background: var(--data); }
+.sw-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px var(--shadow);
+  transition: left 0.15s ease;
+}
+.sw.on .sw-thumb { left: 22px; }
+.sn-m { flex: 1; min-width: 0; }
+.sn-t {
+  font: 400 17px/1.3 var(--sans);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sn-s {
+  font: 500 13px/1.3 var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sn-tick { flex: none; color: var(--data); font: 500 17px/1 var(--mono); }
+/* the diagram in use, marked the same way the current session is */
+.sn-row.cur, .fs-fhead.cur { position: relative; }
+.sn-row.cur::before, .fs-fhead.cur::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--data);
+}
+.sn-hint {
+  padding: 8px 16px 0;
+  font: 500 13px/1.4 var(--mono);
+  color: var(--faint);
+}
+.sn-srch { padding: 10px 16px; }
+.sn-srch input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--panel);
+  color: var(--ink);
+  font: 400 17px/1.4 var(--sans);
+  outline: none;
+}
+.sn-srch input:focus { border-color: var(--data); }
+.sn-plan { padding: 13px 16px; }
+.sn-badge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 3px 9px;
+  border: 1px solid var(--data);
+  border-radius: 10px;
+  color: var(--data);
+  font: 500 13px var(--mono);
+  white-space: nowrap;
+}
+.sn-price { margin-top: 8px; font: 600 17px/1.3 var(--sans); color: var(--ink); }
+.sn-manage {
+  margin-top: 12px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--data);
+  border-radius: 14px;
+  background: none;
+  color: var(--data);
+  font: 500 15px var(--sans);
+  cursor: pointer;
+}
+.sn-manage:active { background: var(--tint); }
+.sn-chip {
+  flex: none;
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: 500 13px var(--mono);
+}
+.sn-chip.on { color: var(--move-text); border-color: var(--move); }
+.sn-chip.off { color: var(--ask-text); border-color: var(--ask); }
+.sn-out {
+  width: 100%;
+  min-height: 44px;
+  padding: 13px 16px;
+  border: none;
+  background: none;
+  color: var(--ask-text);
+  font: 500 13px var(--mono);
+  text-align: center;
+  cursor: pointer;
+}
+.sn-out:active { background: var(--ask-tint); }
+.sn-foot {
+  padding: 12px 16px 22px;
+  text-align: center;
+  font: 500 13px var(--mono);
+  color: var(--faint);
+}
+
+/* the one ruled duplicate: a named shortcut writing the same value as the
+   coach settings page */
+.speakrow {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 6px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--faint);
+  font: 500 17px var(--mono);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.speakrow input {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--data);
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sn-pane, .sw, .sw-thumb { transition: none !important; }
+}
+
+/* two-way traceability: the moment says which session coded it, and the words
+   it came from light when you go there */
+.chip.trace {
+  border-radius: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60vw;
+}
+.bub.traced {
+  outline: 2px solid var(--move);
+  outline-offset: 2px;
+  animation: tracefade 2.2s ease-out forwards;
+}
+@keyframes tracefade {
+  0% { outline-color: var(--move); }
+  70% { outline-color: var(--move); }
+  100% { outline-color: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bub.traced { animation: none; }
+}
+
+/* while a mouse drag is scrolling, the surface is being moved, not read */
+.dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; }
+/* Every word the app says can be selected and copied. Only the controls that
+   carry no prose of their own are held back, so a press on one is a press and
+   never a half-selected label. A chip inside a bubble is part of the sentence
+   it sits in, so it stays selectable and comes with the words around it. */
+.btn, .iconbtn, .send, .navbtn { user-select: none; -webkit-user-select: none; }
+
+/* ---- the resting level: the whole line, one box per chapter (converged
+   mockup, crowded-chapter/timeline-converged.html renderRest) ---- */
+.ss .ep { fill: var(--data); opacity: 0.07; }
+.ss .ep-edge {
+  fill: none;
+  stroke: var(--data);
+  stroke-width: 1;
+  opacity: 0.35;
+  animation: chapter 2.2s ease-in-out infinite;
+}
+@keyframes chapter {
+  50% { opacity: 1; }
+}
+.ss .ep-many { fill: none; stroke: var(--data); stroke-width: 1.6; }
+/* a resting-wire data label keeps its ratified size, under the UI text floor */
+.ss .ep-count { font: 500 10px var(--mono); fill: var(--data); }
+.ss .ep-yrs { font: 400 10.5px var(--mono); fill: var(--faint); }
+.ss .ss-hint { font: 400 13px var(--mono); fill: var(--faint); }
+.ss-empty {
+  margin: 0;
+  padding: 10px 16px;
+  font: 400 13px/1.4 var(--sans);
+  color: var(--faint);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ss .ep-edge { animation: none; }
+}
+
+/* A line the app says rather than either speaker: what just happened to the
+   thread. The mockup's 10.5px is below the binding 13px floor, so it is set at
+   the floor. */
+.sys {
+  align-self: center;
+  max-width: 92%;
+  font: 500 13px/1.35 var(--mono);
+  color: var(--faint);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Something did not go through. It is the app talking, so it is a system line;
+   it is amber because it is asking for something, and it holds still until the
+   reader deals with it. */
+.sys.warn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ask-text);
+  white-space: normal;
+  overflow: visible;
+}
+.sys.warn .chip.retry { flex: none; margin: 0; }
+
+/* The home-screen card: shown once per device after signing in, over the chat
+   rather than in front of it — tapping the ground behind it puts it away. */
+/* The card sits over the bottom of the page but never takes the page away:
+   no backdrop, the page behind still scrolls and answers taps (owner review
+   2026-09-09). The card scrolls inside itself when the steps run long. */
+.hs-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+}
+.hs-card {
+  pointer-events: auto;
+  max-height: 70vh;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 360px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px var(--shadow);
+  padding: 18px;
+}
+.hs-ttl { font: 600 16px var(--sans); color: var(--ink); }
+.hs-say { font: 400 14px var(--sans); color: var(--faint); margin-top: 6px; }
+.hs-steps {
+  margin: 10px 0 0;
+  padding-left: 22px;
+  font: 400 15px/1.45 var(--sans);
+  color: var(--ink);
+}
+.hs-steps li { margin-top: 6px; }
+.hs-steps li::marker { color: var(--data); font-weight: 600; }
+.hs-inline { vertical-align: -3px; color: var(--data); margin: 0 2px; }
+.hs-acts { display: flex; gap: 10px; margin-top: 16px; }
+.hs-later,
+.hs-go {
+  flex: 1;
+  font: 500 14px var(--sans);
+  border-radius: 12px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--faint);
+}
+.hs-go { border-color: var(--data); background: var(--data); color: var(--onaccent); }
+
+/* A phone with its toolbar at the foot: the share button lifts out of the bar,
+   then the row it opens lights up, on a loop. */
+.hs-show { margin-top: 14px; display: flex; justify-content: center; }
+.hs-phone {
+  position: relative;
+  width: 132px;
+  height: 104px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.hs-sheet {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 40px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.hs-row {
+  font: 500 9px var(--sans);
+  color: var(--ink);
+  border-radius: 4px;
+  padding: 2px 4px;
+  animation: hs-lit 4s ease-in-out infinite;
+}
+.hs-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+.hs-share {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  margin-left: -9px;
+  color: var(--data);
+  animation: hs-lift 4s ease-in-out infinite;
+}
+@keyframes hs-lift {
+  0%, 12% { transform: translateY(0); opacity: 1; }
+  38%, 100% { transform: translateY(-14px); opacity: 0.2; }
+}
+@keyframes hs-lit {
+  0%, 40% { background: none; }
+  55%, 88% { background: var(--tint); }
+  100% { background: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs-share, .hs-row { animation: none; }
+}
+
+/* ---- mockup frames only ---- */
+html, body { height: auto !important; overflow: visible !important; display: block !important; }
+body { padding: 28px 20px 48px !important; background: var(--bg); }
+.mk-h1 { font: 600 21px var(--sans); color: var(--ink); margin: 0 0 4px; }
+.mk-lead { color: var(--faint); font: 14px/1.45 var(--sans); margin: 0 0 22px; max-width: 86ch; }
+.mk-sec { margin-bottom: 40px; }
+.mk-sec h2 { font: 600 16px var(--sans); color: var(--ink); margin: 0 0 4px; }
+.mk-sec h2 span { color: var(--data); font: 12px var(--mono); margin-right: 8px; }
+.mk-sec p { color: var(--faint); font: 13.5px/1.45 var(--sans); margin: 0 0 12px; max-width: 86ch; }
+.mk-row { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; overflow-x: auto; max-width: 100%; padding-bottom: 4px; }
+.frame { position: relative; width: 400px; height: 780px; overflow: hidden; border: 1px solid var(--line); border-radius: 28px; background: var(--bg); box-shadow: 0 8px 24px var(--shadow); }
+.frame.desk { width: 840px; flex: none; height: 700px; border-radius: 12px; }
+.frame .app { max-width: none; height: 100%; }
+.mk-cap { font: 12px/1.45 var(--mono); color: var(--faint); margin: 6px 0 0; width: 400px; max-width: 100%; }
+.frame.desk + .mk-cap { width: 840px; max-width: 100%; }
+.mk-add { position: relative; }
+.mk-add::after { content: ""; position: absolute; inset: -2px; border: 2px dashed var(--ask); border-radius: 10px; pointer-events: none; }
+
+/* ---- the only styling that does not exist in the app yet ---- */
+/* desktop: the same screen with the drawer pinned open on the right */
+.split { flex: 1; min-height: 0; display: flex; }
+.split > .screen { flex: 1; min-width: 0; }
+.pinned { flex: none; width: 300px; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: var(--panel); }
+.pinned .scroller { flex: 1; }
+/* a transcript line cannot be edited; the one you picked is outlined in the action colour */
+.bub.line { align-self: stretch; max-width: 100%; cursor: default; }
+.bub.line.sel { outline: 2px solid var(--move); outline-offset: 2px; }
+/* the scribe asking instead of writing: the same edit line, in the asking colour */
+.bub .did.q { color: var(--ask-text); }
+.bub .did.q::before { background: var(--ask); }
+/* the open questions listed above the frames */
+.mk-dec { margin: 0 0 26px; padding-left: 22px; max-width: 92ch; font: 400 14px/1.6 var(--sans); color: var(--ink); }
+.mk-dec li { margin-bottom: 4px; }
+.mk-dec b { color: var(--data); font-weight: 600; }
+/* a task already finished, on the one-task card */
+.plrow { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.plrow .ck { flex: none; width: 20px; text-align: center; color: var(--move-text); font: 500 15px var(--mono); }
+.plrow .pm { flex: 1; min-width: 0; }
+.plrow.done .r1 { color: var(--faint); }
+.plprog { padding: 8px 16px; font: 400 13px var(--mono); color: var(--faint); border-bottom: 1px solid var(--line); background: var(--bg); }
+/* the two lines across the thread: the last ratified cut, and this cut */
+.cutline { display: flex; align-items: center; gap: 8px; margin: 2px 0; }
+.cutline .ln { flex: 1; border-top: 1px dashed var(--line); }
+.cutline .lb { font: 400 13px var(--mono); color: var(--faint); }
+.cutline.now .ln { border-top: 2px dashed var(--ask); }
+.cutline.now .lb { font-weight: 500; color: var(--ask-text); }
+/* Done, in the title row beside the account mark */
+.donebtn { flex: none; min-width: 44px; height: 44px; padding: 0 8px; border: none; background: none; color: var(--move-text); font: 600 15px var(--sans); cursor: pointer; }
+.donebtn:active { opacity: 0.55; }
+/* the confirmation sheet Done opens */
+.cf-sheet { height: auto; padding: 4px 20px calc(20px + env(safe-area-inset-bottom)); }
+.cf-t { margin: 6px 0 10px; font: 600 21px/1.2 var(--sans); color: var(--ink); }
+.cf-p { margin: 0 0 10px; font: 400 15px/1.45 var(--sans); color: var(--ink); }
+.cf-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.cf-go { min-height: 44px; border: none; border-radius: 22px; background: var(--data); color: var(--onaccent); font: 600 15px var(--sans); cursor: pointer; }
+.cf-no { min-height: 44px; border: none; background: none; color: var(--ink); font: 500 15px var(--sans); cursor: pointer; }
+/* a turn above the last agreed line, tapped: one faint line, no outline */
+.abv { align-self: flex-start; max-width: 82%; margin: -4px 0 0 2px; font: 400 13px/1.4 var(--mono); color: var(--faint); }
+</style>
+<div class="mk-h1">The coding page</div>
+<div class="mk-lead">Drawn with the app's own stylesheet and markup, so what you see is what the build produces. Dashed amber marks the parts that are new; everything else is the chat screen, the picture, the rows and the sessions sheet as built. Coding is stage one of the review. A coder is given one task at a time: read one conversation up to the cut Patrick put on the table, and say what each line tells you happened. The thread is the transcript and cannot be edited, you pick a line and say in your own words what it tells you happened, and Done at the top right ends the task.</div>
+<div class="mk-lead">Everything on this page is ruled; nothing is open.</div>
+
+<div class="mk-sec"><h2><span>0</span>The one task</h2>
+<p>What a coder sees when they open the app. One card, one button.</p>
+<div class="mk-row"><div><div class="frame" id="f1"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Before Thu Sep 18</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="fs-body mk-add" style="display:flex;flex-direction:column">
+<div class="row" style="cursor:default;gap:8px;padding:14px 16px"><div class="r1" style="white-space:normal">Code Robert&rsquo;s conversation up to Sep 4</div><div class="r2" style="white-space:normal">turns 41 to 72 are new since you pressed Done on Aug 21 &middot; about 25 min</div><button class="addbtn" type="button" style="margin-top:8px">start</button></div>
+<div class="plprog" style="border-bottom:none;background:none">done before</div>
+<div class="plrow done" style="opacity:0.5"><span class="ck">&#10003;</span><div class="pm"><div class="r1" style="white-space:normal">Robert&rsquo;s conversation up to Aug 21</div><div class="r2" style="white-space:normal">ratified Aug 25</div></div></div>
+</div>
+</div></div>
+<div class="mk-cap">Where coding begins. There is one card and one button: the task names the conversation, the cut it is frozen at, and how many turns are new since the last time you pressed Done. Tapping start opens the conversation as the read-only thread in the next drawing. Under &ldquo;done before&rdquo; is the one task you have already finished, faint, so the card never becomes a list to choose from. What you give up is any way to pick your own next piece of work &mdash; what to code comes from what Patrick puts on the table.</div></div></div>
+</div>
+
+<div class="mk-sec"><h2><span>1</span>Part way through the task &mdash; desktop</h2>
+<p>The screen is 840 wide with the Events and People drawer pinned open on the right instead of sliding over it. You tapped a line the client said; it is outlined in green. You typed what it tells you happened, and the scribe put one event into the record. The new event is the tinted row in the drawer and the lit dot in the picture.</p>
+<div class="frame desk" id="f2"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Robert&rsquo;s conversation &#183; up to Sep 4</div><span class="mk-add" style="margin-right:4px"><button class="donebtn" type="button">Done</button></span><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="split">
+<div class="screen">
+<div class="pic">
+<div class="pin-label"><span>Family timeline</span></div>
+<div class="view" style="height:66px"><div class="ss"><svg viewBox="0 0 520 66" height="66"><line class="wire" x1="16" y1="34" x2="504" y2="34"/><circle class="dot" cx="60" cy="34" r="4.5"/><circle class="dot" cx="110" cy="34" r="4.5"/><text class="ep-yrs" x="210" y="21" text-anchor="middle">71&#8211;74</text><rect class="ep" x="170" y="12" width="80" height="40" rx="8"/><rect class="ep-edge" x="170" y="12" width="80" height="40" rx="8"/><circle class="dot on" cx="196" cy="34" r="5.5"/><circle class="dot" cx="228" cy="34" r="4.5"/><circle class="dot" cx="340" cy="34" r="4.5"/><circle class="dot" cx="430" cy="34" r="4.5"/></svg></div></div>
+<div class="caption"><button type="button" class="tok"><svg width="15" height="15" viewBox="0 0 18 18" aria-hidden="true"><rect x="1.3" y="7" width="15.4" height="9" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="4" y="9.8" width="7" height="3.4" rx="1.7" fill="currentColor"/><path d="M9 1v3.6M9 4.9 7.2 3.1M9 4.9l1.8-1.8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>ask</button><button type="button" class="tok g"><svg width="12" height="12" viewBox="0 0 18 18" aria-hidden="true"><path d="M4.8 2.6 15.2 9 4.8 15.4Z" fill="currentColor"/></svg>explain</button><button type="button" class="tok data"><svg width="14" height="14" viewBox="0 0 18 18" aria-hidden="true"><rect x="1.6" y="2.4" width="14.8" height="10.2" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.6 12.6 4.6 16.2 8.6 12.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>in chat</button><button class="listglyph" type="button" aria-label="open the timeline list"><svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg></button></div>
+</div>
+<div class="chat">
+<div class="bub coach line"><div class="who">Client</div>They were all in Oklahoma. My grandmother was born there in 1928.<div class="did">+ Elizabeth &#183; born &#183; 1928 <span class="chip">Elizabeth</span></div></div>
+<div class="bub coach line"><div class="who">Client</div>My father was born there too, in the spring of 1953.<div class="did">+ Robert &#183; born &#183; Apr 1953</div></div>
+<div class="cutline"><div class="ln"></div><span class="lb">last cut &#183; turn 40 &#183; ratified Aug 25</span><div class="ln"></div></div>
+<div class="bub coach line"><div class="who">Clinician</div>And when did your father come up to Alaska, roughly?</div>
+<div class="bub coach line sel"><div class="who">Client</div>May of 1971. He'd just graduated, and he drove the whole way up.</div>
+<div class="bub user">father moved up to Alaska, May 1971, right after graduating</div>
+<div class="bub coach"><div class="did">+ Robert &#183; moved &#183; May 1971</div></div>
+<div class="cutline now mk-add"><div class="ln"></div><span class="lb">cut here &#183; turn 72 &#183; Sep 4</span><div class="ln"></div></div>
+</div>
+<div class="inbar">
+<div class="field" data-ph="say what this line tells you happened"></div>
+<button class="send" type="button" aria-label="Send"><span>&#8593;</span></button>
+</div>
+</div>
+<aside class="pinned">
+<div class="tabs" role="tablist"><button class="tab on" type="button">Events</button><button class="tab" type="button">People</button></div>
+<div class="search"><input type="text" placeholder="Search events"></div>
+<div class="scroller">
+<div class="div">1928&#8211;1970<span class="dcount">2</span></div>
+<div class="row"><div class="r1">born &#183; in Oklahoma</div><div class="r2">1928 &#183; Elizabeth</div></div>
+<div class="row"><div class="r1">born &#183; in Oklahoma</div><div class="r2">Apr 1953 &#183; Robert</div></div>
+<div class="div">1971&#8211;1974<span class="dcount">2</span></div>
+<div class="row on"><div class="r1">moved &#183; from Oklahoma to Alaska</div><div class="r2">May 1971 &#183; Robert</div></div>
+<div class="row"><div class="r1">met at a house party</div><div class="r2">1971 &#183; Robert &amp; Elizabeth</div></div>
+</div>
+<div class="foot"><button class="addbtn" type="button">+ Add event</button></div>
+</aside>
+</div>
+</div></div>
+<div class="mk-cap">Part way through the task. The transcript lines cannot be typed into; tapping one outlines it in green. Your words go in the box at the bottom, and the line with a green dot under them is what the scribe wrote into the record. The faint hairline marks the last ratified cut: everything under it is what this task is about, and the small chips above it are your own earlier coding, nobody else's. The dashed amber line at the bottom is the cut &mdash; turns after Sep 4 are not shown at all. Done sits at the top right, beside your account mark, and ends the task.</div>
+</div>
+
+<div class="mk-sec"><h2><span>2</span>The same screen when you open a session to code</h2>
+<p>Nothing picked yet. Same screen, same drawer, and the box at the bottom tells you what to do first.</p>
+<div class="frame desk" id="f3"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Robert&rsquo;s conversation &#183; up to Sep 4</div><span class="mk-add" style="margin-right:4px"><button class="donebtn" type="button">Done</button></span><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="split">
+<div class="screen">
+<div class="pic">
+<div class="pin-label"><span>Family timeline</span></div>
+<div class="view" style="height:66px"><div class="ss"><svg viewBox="0 0 520 66" height="66"><line class="wire" x1="16" y1="34" x2="504" y2="34"/><circle class="dot" cx="60" cy="34" r="4.5"/><circle class="dot" cx="110" cy="34" r="4.5"/><circle class="dot" cx="340" cy="34" r="4.5"/></svg></div></div>
+<div class="caption"><span class="cta">tap a line</span><button class="listglyph" type="button" aria-label="open the timeline list"><svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg></button></div>
+</div>
+<div class="chat">
+<div class="bub coach line"><div class="who">Clinician</div>Tell me about your father's family, where they were.</div>
+<div class="bub coach line"><div class="who">Client</div>They were all in Oklahoma. My grandmother was born there in 1928.</div>
+<div class="bub coach line"><div class="who">Clinician</div>And when did your father come up to Alaska, roughly?</div>
+<div class="bub coach line"><div class="who">Client</div>May of 1971. He'd just graduated, and he drove the whole way up.</div>
+</div>
+<div class="inbar">
+<div class="field" data-ph="tap a line, then say what happened"></div>
+<button class="send" type="button" aria-label="Send"><span>&#8593;</span></button>
+</div>
+</div>
+<aside class="pinned">
+<div class="tabs" role="tablist"><button class="tab on" type="button">Events</button><button class="tab" type="button">People</button></div>
+<div class="search"><input type="text" placeholder="Search events"></div>
+<div class="scroller"><div class="none">Nothing coded yet.</div></div>
+<div class="foot"><button class="addbtn" type="button">+ Add event</button></div>
+</aside>
+</div>
+</div></div>
+<div class="mk-cap">What a coder sees on opening a session to code: the whole recording as a thread, nothing picked, and the box saying to tap a line then say what happened. Nobody else's coding of this session is visible until you press Done.</div>
+</div>
+
+<div class="mk-sec"><h2><span>3</span>When the writer cannot tell who you mean</h2>
+<p>You wrote "he moved to Alaska". The record will not accept an event whose person is uncertain, so nothing is written and one amber line asks which person you mean. You answer by typing again.</p>
+<div class="frame desk" id="f4"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Robert&rsquo;s conversation &#183; up to Sep 4</div><span class="mk-add" style="margin-right:4px"><button class="donebtn" type="button">Done</button></span><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="split">
+<div class="screen">
+<div class="pic">
+<div class="pin-label"><span>Family timeline</span></div>
+<div class="view" style="height:66px"><div class="ss"><svg viewBox="0 0 520 66" height="66"><line class="wire" x1="16" y1="34" x2="504" y2="34"/><circle class="dot" cx="60" cy="34" r="4.5"/><circle class="dot" cx="110" cy="34" r="4.5"/><circle class="dot" cx="340" cy="34" r="4.5"/></svg></div></div>
+<div class="caption"><span class="cta">tap a line</span><button class="listglyph" type="button" aria-label="open the timeline list"><svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg></button></div>
+</div>
+<div class="chat">
+<div class="bub coach line"><div class="who">Clinician</div>And when did your father come up to Alaska, roughly?</div>
+<div class="bub coach line sel"><div class="who">Client</div>May of 1971. He'd just graduated, and he drove the whole way up.</div>
+<div class="bub user">he moved to Alaska</div>
+<div class="bub coach"><div class="did q">which person is he &#8212; Robert, or the client?</div></div>
+</div>
+<div class="inbar">
+<div class="field" data-ph="say what this line tells you happened"></div>
+<button class="send" type="button" aria-label="Send"><span>&#8593;</span></button>
+</div>
+</div>
+<aside class="pinned">
+<div class="tabs" role="tablist"><button class="tab on" type="button">Events</button><button class="tab" type="button">People</button></div>
+<div class="search"><input type="text" placeholder="Search events"></div>
+<div class="scroller"><div class="none">Nothing coded yet.</div></div>
+<div class="foot"><button class="addbtn" type="button">+ Add event</button></div>
+</aside>
+</div>
+</div></div>
+<div class="mk-cap">Nothing was written. The amber line is the writer asking, in the same place an edit line would have appeared; the drawer is unchanged. You type "Robert moved to Alaska, May 1971" and it writes the event.</div>
+</div>
+
+<div class="mk-sec"><h2><span>4</span>The same moment on a phone</h2>
+<p>400 wide. Same screen, same read-only transcript; the drawer slides over instead of being pinned.</p>
+<div class="mk-row"><div><div class="frame" id="f5"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Robert&rsquo;s conversation</div><span class="mk-add" style="margin-right:4px"><button class="donebtn" type="button">Done</button></span><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="screen">
+<div class="pic">
+<div class="pin-label"><span>Family timeline</span></div>
+<div class="view" style="height:66px"><div class="ss"><svg viewBox="0 0 400 66" height="66"><line class="wire" x1="16" y1="34" x2="384" y2="34"/><circle class="dot" cx="50" cy="34" r="4.5"/><circle class="dot" cx="88" cy="34" r="4.5"/><text class="ep-yrs" x="175" y="21" text-anchor="middle">71&#8211;74</text><rect class="ep" x="140" y="12" width="70" height="40" rx="8"/><rect class="ep-edge" x="140" y="12" width="70" height="40" rx="8"/><circle class="dot on" cx="162" cy="34" r="5.5"/><circle class="dot" cx="190" cy="34" r="4.5"/><circle class="dot" cx="290" cy="34" r="4.5"/></svg></div></div>
+<div class="caption"><button type="button" class="tok"><svg width="15" height="15" viewBox="0 0 18 18" aria-hidden="true"><rect x="1.3" y="7" width="15.4" height="9" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="4" y="9.8" width="7" height="3.4" rx="1.7" fill="currentColor"/><path d="M9 1v3.6M9 4.9 7.2 3.1M9 4.9l1.8-1.8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>ask</button><button type="button" class="tok g"><svg width="12" height="12" viewBox="0 0 18 18" aria-hidden="true"><path d="M4.8 2.6 15.2 9 4.8 15.4Z" fill="currentColor"/></svg>explain</button><button type="button" class="tok data"><svg width="14" height="14" viewBox="0 0 18 18" aria-hidden="true"><rect x="1.6" y="2.4" width="14.8" height="10.2" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.6 12.6 4.6 16.2 8.6 12.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>in chat</button><button class="listglyph" type="button" aria-label="open the timeline list"><svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg></button></div>
+</div>
+<div class="chat">
+<div class="bub coach line"><div class="who">Client</div>My father was born there too, in the spring of 1953.<div class="did">+ Robert &#183; born &#183; Apr 1953</div></div>
+<div class="cutline"><div class="ln"></div><span class="lb">last cut &#183; turn 40 &#183; ratified Aug 25</span><div class="ln"></div></div>
+<div class="bub coach line"><div class="who">Clinician</div>And when did your father come up to Alaska, roughly?</div>
+<div class="bub coach line sel"><div class="who">Client</div>May of 1971. He'd just graduated, and he drove the whole way up.</div>
+<div class="bub user">father moved up to Alaska, May 1971, right after graduating</div>
+<div class="bub coach"><div class="did">+ Robert &#183; moved &#183; May 1971</div></div>
+<div class="cutline now mk-add"><div class="ln"></div><span class="lb">cut here &#183; turn 72 &#183; Sep 4</span><div class="ln"></div></div>
+</div>
+<div class="inbar">
+<div class="field" data-ph="say what this line tells you happened"></div>
+<button class="send" type="button" aria-label="Send"><span>&#8593;</span></button>
+</div>
+</div>
+</div></div>
+<div class="mk-cap">Phone, same state as the first drawing. Done is at the top right beside your account mark, and the box at the bottom holds only the field and the send button. The list is still one tap away on the row under the picture. The faint hairline and the dashed amber cut line read the same here as on the desktop.</div></div></div>
+</div>
+
+<div class="mk-sec"><h2><span>5</span>After you press Done</h2>
+<p>The task closes and the next single card takes its place.</p>
+<div class="mk-row"><div><div class="frame" id="f6"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Before Thu Sep 18</div><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="fs-body mk-add" style="display:flex;flex-direction:column">
+<div class="row" style="cursor:default;gap:8px;padding:14px 16px;opacity:0.45"><div class="r1" style="white-space:normal">Vote on the disputed moments of Robert&rsquo;s conversation</div><div class="r2" style="white-space:normal">opens when a third coder is done &middot; about 10 min</div><button class="addbtn" type="button" style="margin-top:8px">start</button></div>
+<div class="plprog" style="border-bottom:none;background:none">done before</div>
+<div class="plrow done" style="opacity:0.5"><span class="ck">&#10003;</span><div class="pm"><div class="r1" style="white-space:normal">Code Robert&rsquo;s conversation up to Sep 4</div><div class="r2" style="white-space:normal">done Sep 12</div></div></div>
+<div class="plrow done" style="opacity:0.5"><span class="ck">&#10003;</span><div class="pm"><div class="r1" style="white-space:normal">Robert&rsquo;s conversation up to Aug 21</div><div class="r2" style="white-space:normal">ratified Aug 25</div></div></div>
+</div>
+</div></div>
+<div class="mk-cap">Done ends the task and the next single card appears in its place. The task you just finished drops under &ldquo;done before&rdquo; with the date you pressed Done. The next card is greyed until a third coder finishes, so start does nothing yet; you are told what is coming rather than left with an empty screen. There is no list and no menu &mdash; what to code next comes from what Patrick puts on the table.</div></div></div>
+</div>
+<div class="mk-sec"><h2><span>6</span>Finish coding?</h2>
+<p>The same screen, the moment after Done is tapped. The sheet comes up over it and asks once.</p>
+<div class="frame desk" id="f7"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Robert&rsquo;s conversation &#183; up to Sep 4</div><span class="mk-add" style="margin-right:4px"><button class="donebtn" type="button">Done</button></span><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="split">
+<div class="screen">
+<div class="pic">
+<div class="pin-label"><span>Family timeline</span></div>
+<div class="view" style="height:66px"><div class="ss"><svg viewBox="0 0 520 66" height="66"><line class="wire" x1="16" y1="34" x2="504" y2="34"/><circle class="dot" cx="60" cy="34" r="4.5"/><circle class="dot" cx="110" cy="34" r="4.5"/><text class="ep-yrs" x="210" y="21" text-anchor="middle">71&#8211;74</text><rect class="ep" x="170" y="12" width="80" height="40" rx="8"/><rect class="ep-edge" x="170" y="12" width="80" height="40" rx="8"/><circle class="dot on" cx="196" cy="34" r="5.5"/><circle class="dot" cx="228" cy="34" r="4.5"/><circle class="dot" cx="340" cy="34" r="4.5"/><circle class="dot" cx="430" cy="34" r="4.5"/></svg></div></div>
+<div class="caption"><button type="button" class="tok"><svg width="15" height="15" viewBox="0 0 18 18" aria-hidden="true"><rect x="1.3" y="7" width="15.4" height="9" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="4" y="9.8" width="7" height="3.4" rx="1.7" fill="currentColor"/><path d="M9 1v3.6M9 4.9 7.2 3.1M9 4.9l1.8-1.8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>ask</button><button type="button" class="tok g"><svg width="12" height="12" viewBox="0 0 18 18" aria-hidden="true"><path d="M4.8 2.6 15.2 9 4.8 15.4Z" fill="currentColor"/></svg>explain</button><button type="button" class="tok data"><svg width="14" height="14" viewBox="0 0 18 18" aria-hidden="true"><rect x="1.6" y="2.4" width="14.8" height="10.2" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.6 12.6 4.6 16.2 8.6 12.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>in chat</button><button class="listglyph" type="button" aria-label="open the timeline list"><svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg></button></div>
+</div>
+<div class="chat">
+<div class="bub coach line"><div class="who">Client</div>They were all in Oklahoma. My grandmother was born there in 1928.<div class="did">+ Elizabeth &#183; born &#183; 1928 <span class="chip">Elizabeth</span></div></div>
+<div class="bub coach line"><div class="who">Client</div>My father was born there too, in the spring of 1953.<div class="did">+ Robert &#183; born &#183; Apr 1953</div></div>
+<div class="cutline"><div class="ln"></div><span class="lb">last cut &#183; turn 40 &#183; ratified Aug 25</span><div class="ln"></div></div>
+<div class="bub coach line"><div class="who">Clinician</div>And when did your father come up to Alaska, roughly?</div>
+<div class="bub coach line sel"><div class="who">Client</div>May of 1971. He'd just graduated, and he drove the whole way up.</div>
+<div class="bub user">father moved up to Alaska, May 1971, right after graduating</div>
+<div class="bub coach"><div class="did">+ Robert &#183; moved &#183; May 1971</div></div>
+<div class="cutline now mk-add"><div class="ln"></div><span class="lb">cut here &#183; turn 72 &#183; Sep 4</span><div class="ln"></div></div>
+</div>
+<div class="inbar">
+<div class="field" data-ph="say what this line tells you happened"></div>
+<button class="send" type="button" aria-label="Send"><span>&#8593;</span></button>
+</div>
+</div>
+<aside class="pinned">
+<div class="tabs" role="tablist"><button class="tab on" type="button">Events</button><button class="tab" type="button">People</button></div>
+<div class="search"><input type="text" placeholder="Search events"></div>
+<div class="scroller">
+<div class="div">1928&#8211;1970<span class="dcount">2</span></div>
+<div class="row"><div class="r1">born &#183; in Oklahoma</div><div class="r2">1928 &#183; Elizabeth</div></div>
+<div class="row"><div class="r1">born &#183; in Oklahoma</div><div class="r2">Apr 1953 &#183; Robert</div></div>
+<div class="div">1971&#8211;1974<span class="dcount">2</span></div>
+<div class="row on"><div class="r1">moved &#183; from Oklahoma to Alaska</div><div class="r2">May 1971 &#183; Robert</div></div>
+<div class="row"><div class="r1">met at a house party</div><div class="r2">1971 &#183; Robert &amp; Elizabeth</div></div>
+</div>
+<div class="foot"><button class="addbtn" type="button">+ Add event</button></div>
+</aside>
+</div>
+<div class="fs-scrim in"></div>
+<div class="fs-sheet cf-sheet in mk-add">
+<div class="fs-handle"><div class="fs-grab"></div></div>
+<div class="cf-t">Finish coding?</div>
+<p class="cf-p">Your coding of Robert&rsquo;s conversation up to Sep 4 will be saved and submitted for the meeting on Thu Sep 18.</p>
+<p class="cf-p">You will not be able to change it after this, and you will see the other coders&rsquo; takes only after the vote.</p>
+<div class="cf-btns"><button class="cf-go" type="button">Submit for the meeting</button><button class="cf-no" type="button">Keep coding</button></div>
+</div>
+</div></div>
+<div class="mk-cap">Done asks once before it ends the task. The sheet names the conversation, the cut it is frozen at, and the meeting the coding goes to. Submitting saves your coding and sends it to that meeting. After that it cannot be changed, and the other coders&rsquo; takes stay hidden until the vote. Keep coding closes the sheet and leaves everything as it was.</div>
+</div>
+
+<div class="mk-sec"><h2><span>7</span>Above the line</h2>
+<p>The same screen, with a turn from before the last agreed line tapped instead.</p>
+<div class="frame desk" id="f8"><div class="app">
+<div class="titlerow"><button class="sn-back" type="button">&#8249;</button><div class="ttl">Robert&rsquo;s conversation &#183; up to Sep 4</div><span class="mk-add" style="margin-right:4px"><button class="donebtn" type="button">Done</button></span><button class="avatar" type="button"><svg viewBox="0 0 22 22" width="24" height="24" aria-hidden="true"><circle cx="11" cy="7.5" r="4" fill="currentColor"></circle><path d="M3 20c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"></path></svg></button></div>
+<div class="split">
+<div class="screen">
+<div class="pic">
+<div class="pin-label"><span>Family timeline</span></div>
+<div class="view" style="height:66px"><div class="ss"><svg viewBox="0 0 520 66" height="66"><line class="wire" x1="16" y1="34" x2="504" y2="34"/><circle class="dot" cx="60" cy="34" r="4.5"/><circle class="dot" cx="110" cy="34" r="4.5"/><text class="ep-yrs" x="210" y="21" text-anchor="middle">71&#8211;74</text><rect class="ep" x="170" y="12" width="80" height="40" rx="8"/><rect class="ep-edge" x="170" y="12" width="80" height="40" rx="8"/><circle class="dot on" cx="196" cy="34" r="5.5"/><circle class="dot" cx="228" cy="34" r="4.5"/><circle class="dot" cx="340" cy="34" r="4.5"/><circle class="dot" cx="430" cy="34" r="4.5"/></svg></div></div>
+<div class="caption"><button type="button" class="tok"><svg width="15" height="15" viewBox="0 0 18 18" aria-hidden="true"><rect x="1.3" y="7" width="15.4" height="9" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="4" y="9.8" width="7" height="3.4" rx="1.7" fill="currentColor"/><path d="M9 1v3.6M9 4.9 7.2 3.1M9 4.9l1.8-1.8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>ask</button><button type="button" class="tok g"><svg width="12" height="12" viewBox="0 0 18 18" aria-hidden="true"><path d="M4.8 2.6 15.2 9 4.8 15.4Z" fill="currentColor"/></svg>explain</button><button type="button" class="tok data"><svg width="14" height="14" viewBox="0 0 18 18" aria-hidden="true"><rect x="1.6" y="2.4" width="14.8" height="10.2" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.6 12.6 4.6 16.2 8.6 12.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>in chat</button><button class="listglyph" type="button" aria-label="open the timeline list"><svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg></button></div>
+</div>
+<div class="chat">
+<div class="bub coach line"><div class="who">Client</div>They were all in Oklahoma. My grandmother was born there in 1928.<div class="did">+ Elizabeth &#183; born &#183; 1928 <span class="chip">Elizabeth</span></div></div>
+<div class="abv mk-add">this part was agreed on Aug 25 &mdash; code below the line</div>
+<div class="bub coach line"><div class="who">Client</div>My father was born there too, in the spring of 1953.<div class="did">+ Robert &#183; born &#183; Apr 1953</div></div>
+<div class="cutline"><div class="ln"></div><span class="lb">last cut &#183; turn 40 &#183; ratified Aug 25</span><div class="ln"></div></div>
+<div class="bub coach line"><div class="who">Clinician</div>And when did your father come up to Alaska, roughly?</div>
+<div class="bub coach line"><div class="who">Client</div>May of 1971. He'd just graduated, and he drove the whole way up.</div>
+<div class="bub user">father moved up to Alaska, May 1971, right after graduating</div>
+<div class="bub coach"><div class="did">+ Robert &#183; moved &#183; May 1971</div></div>
+<div class="cutline now mk-add"><div class="ln"></div><span class="lb">cut here &#183; turn 72 &#183; Sep 4</span><div class="ln"></div></div>
+</div>
+<div class="inbar">
+<div class="field" data-ph="say what this line tells you happened"></div>
+<button class="send" type="button" aria-label="Send"><span>&#8593;</span></button>
+</div>
+</div>
+<aside class="pinned">
+<div class="tabs" role="tablist"><button class="tab on" type="button">Events</button><button class="tab" type="button">People</button></div>
+<div class="search"><input type="text" placeholder="Search events"></div>
+<div class="scroller">
+<div class="div">1928&#8211;1970<span class="dcount">2</span></div>
+<div class="row"><div class="r1">born &#183; in Oklahoma</div><div class="r2">1928 &#183; Elizabeth</div></div>
+<div class="row"><div class="r1">born &#183; in Oklahoma</div><div class="r2">Apr 1953 &#183; Robert</div></div>
+<div class="div">1971&#8211;1974<span class="dcount">2</span></div>
+<div class="row on"><div class="r1">moved &#183; from Oklahoma to Alaska</div><div class="r2">May 1971 &#183; Robert</div></div>
+<div class="row"><div class="r1">met at a house party</div><div class="r2">1971 &#183; Robert &amp; Elizabeth</div></div>
+</div>
+<div class="foot"><button class="addbtn" type="button">+ Add event</button></div>
+</aside>
+</div>
+</div></div>
+<div class="mk-cap">Turns from before the last agreed line are still there to read in full, and they still carry the small chips from your own earlier coding. Tapping one does not outline it in green and gives you nothing to type: one faint line under it says the part was agreed on Aug 25. Coding happens only between that agreed line and the cut at the bottom.</div>
+</div>
