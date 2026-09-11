@@ -330,7 +330,10 @@ What it is for: a professional's several client records.
 - A professional's cases are the same family switcher on the account page, not a new screen. [drawn] {R-0243}
 - Each case has its own sessions and its own picture. [drawn] {R-0243}
 - A client owns their own record and a clinician is granted access to it, so the record outlives the work they do together. [built] {R-0080}
-- Notes on a case are named as a Pro feature and have no drawing yet. [open]
+- A note is a session of its own: the clinician talks to the coach about the case after the fact, the coach records what it hears, and the note is listed with the sessions and labelled as a note. [drawn] {R-0281}
+- Notes can be coded in the IRR study exactly like chat sessions. [drawn] {R-0281}
+- People and moments keep a notes field in their editors, the same notes the desktop app already stores. [drawn] {R-0281}
+- The drawn family diagram stays in the plan and arrives once auto-arrange proves itself on real data. [drawn] {R-0240, R-0281}
 
 ## Upload a recording (Pro)
 

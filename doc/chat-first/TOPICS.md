@@ -117,11 +117,12 @@ teal agreed, amber disputed with a count — in the vote and the meeting [R-0277
 whole phone or desktop frame in live code, the app's markup and stylesheet, never an image
 [R-0279]; the 19 built screens are hand-drawn from the shell and the TypeScript renderers
 (checked against six goldens) because no database was running to capture the real app —
-replacing them with captures from a fixture sandbox is the next fix; (4) [ruling] Pro's
-surfaces drawn (https://claude.ai/code/artifact/fdb8a5b5-d043-46f4-afea-700a886210a3): cases
-on the account page, the sessions sheet with upload and the speaker-mapping sheet, the desktop
-layout, notes as a session of its own or as a field on a person and a moment — five choices on
-the page; (5) [ruling] the five interface calls; (7) [waiting] migrating last year's IRR material, the last follow-up item of this unit [R-0262, R-0273] — inventory 2026-09-11 of
+replacing them with captures from a fixture sandbox is the next fix; (4) [build] Pro's surfaces approved as drawn [R-0281]
+(https://claude.ai/code/artifact/fdb8a5b5-d043-46f4-afea-700a886210a3): cases on the account
+page, the sessions sheet with upload and the speaker-mapping sheet, the desktop layout, notes
+both as a session of its own (codable in the IRR study like a chat session) and as the existing
+notes field on people and moments; the drawn family diagram stays in the plan behind the
+auto-arrange question; (5) [ruling] the five interface calls; (7) [waiting] migrating last year's IRR material, the last follow-up item of this unit [R-0262, R-0273] — inventory 2026-09-11 of
 doc/irr/: 25 rules in tables keyed to meeting number with unanimity and confidence (migrate as
 rows with the meeting as provenance); six meetings' agreement/disagreement/action tables keyed
 to statement ids of last year's discussions, about 40–60 rows (migrate as settle rows once
