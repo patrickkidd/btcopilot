@@ -12,7 +12,7 @@ Updated: 2026-09-11
 
 ## Signing in
 
-_No rendering yet._
+@frame built#f1 | Signed out: the app name, the address you are signing in as, and one button.
 
 What it is for: getting into the app without a password.
 
@@ -30,8 +30,8 @@ What it is for: getting into the app without a password.
 
 ## The chat
 
-![A coach message on a phone naming twelve things it just changed, each one a chip you can tap to see it in the picture.](screens/twelve-chips-phone.png)
-![The same message in a desktop window, where the chips sit several to a row instead of one under another.](screens/twelve-chips-desktop.png)
+@frame built#f2 | A coach reply on a phone naming twelve things it just changed, each one a pill you can tap.
+@frame built#f3 | The same reply in a desktop window, where the pills sit several to a row.
 
 What it is for: talking to the coach, which is how everything else in the app gets made.
 
@@ -53,9 +53,9 @@ What it is for: talking to the coach, which is how everything else in the app ge
 
 ## The picture at rest
 
-![The picture at rest on a phone: one line across time with a mark for every moment, and the moment you tapped named above it with its year.](screens/tap-moment-phone.png)
-![A denser record: moments that belong together are drawn as boxes on the line, each showing how many it holds.](screens/rest-dense60-phone.png)
-![A brand new record: the picture says nothing is on your line yet, with an amber question mark where it has something to ask.](screens/rest-empty-phone.png)
+@frame built#f5 | One moment on the line: a single dot, no box around it.
+@frame built#f6 | A dense record: moments that belong together are boxes on the line, each showing how many it holds.
+@frame built#f4 | A brand new record: nothing is on the line yet, with an amber question mark where the record has something to ask.
 
 What it is for: the one picture, always above the chat, that is the app's memory of your family.
 
@@ -92,8 +92,7 @@ What it is for: the one picture, always above the chat, that is the app's memory
 
 ## A cluster opened
 
-![A group of related moments opened over the line, with its name, why it is a group, and its moments still as marks.](screens/cluster-open-phone.png)
-![The same opened group in a desktop window.](screens/cluster-open-desktop.png)
+@frame built#f8 | A group of related moments opened over the line, with its name, why it is a group, and its moments still as marks.
 
 What it is for: one group of related moments, opened from the line.
 
@@ -112,9 +111,7 @@ What it is for: one group of related moments, opened from the line.
 
 ## The moves board
 
-![The coach offers to play what people did, and the play mark is the only way in.](screens/board-entry-offer-phone.png)
-![The board playing the first move: the people on a ring, the move drawn in green, and one sentence saying who did what.](screens/board-first-move-phone.png)
-![Later in the same play-by-play, with earlier moves left faint behind the one being played.](screens/board-fifth-move-desktop.png)
+@frame built#f9 | The board playing the first move: the people on a ring, the move drawn in green, and one sentence saying who did what.
 
 What it is for: a play-by-play of what people did, one move at a time.
 
@@ -144,8 +141,8 @@ What it is for: a play-by-play of what people did, one move at a time.
 
 ## The row of chips under the picture
 
-![The row under the picture with a moment picked: ask about it, have it explained, or put it into the chat.](screens/spotlight-at-rest-phone.png)
-![The list of everything in the record, reached from the button at the end of that row.](screens/menu-list-phone.png)
+@frame built#f7 | A moment picked: the row underneath turns into ask about it, have it explained, or find where you said it.
+@frame built#f11 | The list of everything in the record, reached from the button at the end of that row.
 
 What it is for: the four things you can do with whatever is picked.
 
@@ -161,8 +158,7 @@ What it is for: the four things you can do with whatever is picked.
 
 ## Chips in messages
 
-![A thing from your record carried into the box you are typing in, so the coach knows exactly what you mean.](screens/chip-in-composer-phone.png)
-![The coach's offer sitting in the box, ready to send or to ignore.](screens/offer-in-composer-phone.png)
+@frame built#f10 | A thing from your record carried into the box you are typing in, with the coach's question in amber above the answers it is holding out.
 
 What it is for: the coach's references to real things in your record, and yours back to it.
 
@@ -181,8 +177,9 @@ What it is for: the coach's references to real things in your record, and yours 
 
 ## The lists (events and people)
 
-![Everything in the record as a plain list on a phone, newest at the bottom.](screens/menu-list-phone.png)
-![The same list in a desktop window.](screens/menu-list-desktop.png)
+@frame built#f11 | Everything in the record as a plain list on a phone, oldest at the top.
+@frame built#f12 | The same list switched to people, with the order it is in at the top.
+@frame built#f13 | The events list in a desktop window.
 
 What it is for: seeing and editing everything in the record by hand.
 
@@ -203,8 +200,7 @@ What it is for: seeing and editing everything in the record by hand.
 
 ## The event editor
 
-![One moment opened for correction by hand: its date, who it happened to, and what happened.](screens/menu-editor-phone.png)
-![The same editor in a desktop window.](screens/menu-editor-desktop.png)
+@frame built#f14 | One moment opened for correction by hand: its kind, who it happened to, its words, its date and how sure the date is.
 
 What it is for: correcting or adding one moment by hand.
 
@@ -225,7 +221,7 @@ What it is for: correcting or adding one moment by hand.
 
 ## The person editor
 
-_No rendering yet._
+@frame built#f15 | A person opened the same way: a name, a kind, and a line saying births and deaths come from talking to the coach.
 
 What it is for: one person's own details.
 
@@ -237,7 +233,7 @@ What it is for: one person's own details.
 
 ## The sessions sheet
 
-![Your past conversations, newest first, with one button to add a recording.](screens/upload-and-compare-f1.png)
+@frame built#f16 | Your past conversations, newest first, with one button to start a new one.
 
 What it is for: your past conversations.
 
@@ -263,7 +259,7 @@ What it is for: your past conversations.
 
 ## The account page
 
-_No rendering yet._
+@frame built#f17 | Your name and address, the coach and appearance settings, your records and plan, and signing out.
 
 What it is for: you, your families, your plan, and signing out.
 
@@ -287,7 +283,7 @@ What it is for: you, your families, your plan, and signing out.
 
 ## The about page
 
-_No rendering yet._
+@frame built#f18 | Everything the record holds about one opened group, in words: why these moments are one stretch, the years, and each moment.
 
 What it is for: what the app is, one level in from the picture.
 
@@ -298,7 +294,7 @@ What it is for: what the app is, one level in from the picture.
 
 ## When something goes wrong
 
-_No rendering yet._
+@frame built#f19 | A message that did not go through: the notice sits where the reply would have been and stays until you tap try again.
 
 What it is for: knowing what happened when a message does not go through.
 
@@ -311,8 +307,9 @@ What it is for: knowing what happened when a message does not go through.
 
 ## On a desktop (Pro)
 
-![The picture in a desktop window: the same line, wider, with more room between the marks.](screens/rest-three40-desktop.png)
-![A coach message in a desktop window with the things it just changed named beneath its words.](screens/twelve-chips-desktop.png)
+@frame built#f3 | The chat in a desktop window: the same screen, wider, with more room between the marks on the line.
+@frame built#f13 | The events list in a desktop window.
+@frame pro#f5 | The phone screen made wider: the drawer stays open beside the picture instead of sliding over it.
 
 What it is for: the same app, wider, for professionals.
 
@@ -325,7 +322,8 @@ What it is for: the same app, wider, for professionals.
 
 ## Cases (Pro)
 
-![One client's record opened to its conversations, which is how a professional moves between people.](screens/upload-and-compare-f1.png)
+@frame pro#f1 | The account page for a professional: the list of families is headed cases, and the tick says which one the app is on.
+@frame pro#f2 | The chat screen for the case you switched to; the title row names the case you are on.
 
 What it is for: a professional's several client records.
 
@@ -336,8 +334,8 @@ What it is for: a professional's several client records.
 
 ## Upload a recording (Pro)
 
-![The sessions sheet gains one button for putting a recording in.](screens/upload-and-compare-f1.png)
-![After the recording lands you say which voice is the clinician and which is the client, and give the date.](screens/upload-and-compare-f2.png)
+@frame pro#f3 | The sessions sheet gains one button for putting a recording in.
+@frame pro#f4 | After the recording lands you say which voice is the clinician and which is the client, and give the date.
 
 What it is for: getting a recorded session into the app as a conversation.
 
@@ -351,10 +349,9 @@ What it is for: getting a recorded session into the app as a conversation.
 
 What it is for: saying what each line of a conversation tells you happened, so we can agree on what the record should be.
 
-![Coding on a desktop: the conversation up to the cut on the left, your own words under the line you tapped with the scribe's edit beneath, the events list pinned on the right, Done in the top bar.](screens/coding-f2.png)
-![The same on a phone.](screens/coding-f5.png)
-![Tapping Done asks once and explains that your coding will be saved and submitted for the meeting.](screens/coding-f7.png)
-![Tapping a turn above the last agreed line: nothing is selected, and one faint line says that part was already agreed.](screens/coding-f8.png)
+@frame coding#f5 | Coding on a phone: the conversation up to the cut, your own words under the line you tapped, Done in the top bar.
+@frame coding#f2 | The same on a desktop, with the events list pinned open on the right.
+@frame coding#f7 | Tapping Done asks once and explains that your coding will be saved and submitted for the meeting.
 
 - Coding is stage one of reaching agreement, and it is done blind: you never see anyone else's coding of that conversation until you press Done. [drawn] {R-0242, R-0250}
 - You are given one task at a time and never a list to choose from. [drawn] {R-0265}
@@ -389,9 +386,9 @@ What it is for: saying what each line of a conversation tells you happened, so w
 
 What it is for: Patrick choosing what gets coded, and everyone seeing one thing to do.
 
-![Your phone before a meeting: one card, one button, and under it what you have already finished.](screens/coding-f1.png)
-![After Done the next single card takes its place, greyed until Patrick opens the vote.](screens/coding-f6.png)
-![Patrick's screen: the date, what is on the table, who is done, the button that opens the vote, and the agenda that fills itself.](screens/review-f10.png)
+@frame coding#f1 | Your phone before a meeting: one card, one button, and under it what you have already finished.
+@frame coding#f6 | After Done the next single card takes its place, greyed until Patrick opens the vote.
+@frame review#f10 | Patrick's screen: the date, what is on the table, who is done, the button that opens the vote, and the agenda that fills itself.
 
 - Patrick opens the sessions sheet like anyone else, swipes the conversation he wants, and taps to put it on the table. [drawn] {R-0267}
 - That opens the conversation so he can place the cut: the point everyone codes up to. [drawn] {R-0267}
@@ -412,8 +409,8 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 
 What it is for: settling as much as possible on your own phone, so the meeting only handles what is left.
 
-![The vote on a phone, one disputed moment per screen, the takes shown without names.](screens/review-f1.png)
-![Choosing "change…": the editor opens prefilled so you can write a take none of the coders wrote.](screens/review-f2.png)
+@frame review#f1 | The vote on a phone, one disputed moment per screen, the takes shown without names.
+@frame review#f2 | Choosing change: the editor opens prefilled so you can write a take none of the coders wrote.
 
 - Once enough coders have finished, a ballot opens on each coder's phone. [drawn] {R-0250}
 - The ballot shows one disputed moment per screen. [drawn] {R-0257}
@@ -438,7 +435,7 @@ What it is for: settling as much as possible on your own phone, so the meeting o
 
 What it is for: closing what the vote could not, and ratifying the record.
 
-![The meeting screen: every disputed moment with its tally, most split first; on the timeline above, teal dots agreed, amber dots disputed with a count.](screens/review-f11.png)
+@frame review#f11 | The meeting screen: every disputed moment with its tally, most split first, and the timeline above showing agreed and disputed moments.
 
 - The meeting screen carries only the items the ballot left open. [drawn] {R-0250}
 - Names and counts appear here for the first time. [drawn] {R-0252}
@@ -461,9 +458,9 @@ What it is for: closing what the vote could not, and ratifying the record.
 
 What it is for: what the meeting produced, with nothing left to choose.
 
-![The result screen: what was ratified, the guideline changes the AI wrote with where each came from, where the AI disagreed with the room, and what each coder tends to do.](screens/review-f13.png)
-![The coding guidelines inside the app, always current, each rule with the settle it came from and a flag link.](screens/review-f15.png)
-![Where you find them: tap the (i) at the top of the coding screen and the guidelines slide in over your coding.](screens/review-f14.png)
+@frame review#f13 | The result screen: what was ratified, the guideline changes the AI wrote, where it disagreed with the room, and what each coder tends to do.
+@frame review#f15 | The coding guidelines inside the app, always current, each rule with the settle it came from and a flag link.
+@frame review#f14 | Where you find them: tap the (i) at the top of the coding screen and the guidelines slide in over your coding.
 
 - The result screen shows how many moments were ratified and how many were left unresolved. [drawn]
 - It shows agreement before the ballot and after ratification, side by side. [drawn]

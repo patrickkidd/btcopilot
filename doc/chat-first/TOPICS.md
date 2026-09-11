@@ -112,12 +112,16 @@ guidelines are the one written output, readable from an (i) at the top of the co
 [R-0275, R-0278]; flags, unresolved items and unfinished tasks fill the next meeting's agenda
 by themselves, each with a close link [R-0276]; one agreement timeline — one dot per moment,
 teal agreed, amber disputed with a count — in the vote and the meeting [R-0277, R-0278];
-(2) [build] the coding screens carry the (i) button beside Done, version 4; (3) [build] the spec sheet for beta users is a picture
-catalogue (https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba): built views
-are the app's test goldens of 2026-09-09 (some show test data), five screens have no picture
-(signing in, the person editor, the account page, the about page, when something goes wrong) —
-fresh renders from a fictional fixture record are the next fix, blocked on the fixture
-sign-in links returning 404 against a fixture sandbox; (7) [waiting] migrating last year's IRR material, the last follow-up item of this unit [R-0262, R-0273] — inventory 2026-09-11 of
+(2) [build] the coding screens carry the (i) button beside Done, version 4; (3) [build] the catalogue for beta users
+(https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba) shows every screen as a
+whole phone or desktop frame in live code, the app's markup and stylesheet, never an image
+[R-0279]; the 19 built screens are hand-drawn from the shell and the TypeScript renderers
+(checked against six goldens) because no database was running to capture the real app —
+replacing them with captures from a fixture sandbox is the next fix; (4) [ruling] Pro's
+surfaces drawn (https://claude.ai/code/artifact/fdb8a5b5-d043-46f4-afea-700a886210a3): cases
+on the account page, the sessions sheet with upload and the speaker-mapping sheet, the desktop
+layout, notes as a session of its own or as a field on a person and a moment — five choices on
+the page; (5) [ruling] the five interface calls; (7) [waiting] migrating last year's IRR material, the last follow-up item of this unit [R-0262, R-0273] — inventory 2026-09-11 of
 doc/irr/: 25 rules in tables keyed to meeting number with unanimity and confidence (migrate as
 rows with the meeting as provenance); six meetings' agreement/disagreement/action tables keyed
 to statement ids of last year's discussions, about 40–60 rows (migrate as settle rows once

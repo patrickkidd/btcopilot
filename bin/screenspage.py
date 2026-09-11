@@ -1,38 +1,41 @@
-"""Render SCREENS.md as a picture catalogue: every screen as it actually renders, one caption
-under each picture, and the list of behaviours folded away beneath it.
+"""Render SCREENS.md as a catalogue of whole screens in live code: every screen is the real
+frame lifted out of a mockup file, drawn with the app's own stylesheet, with one caption under
+it and the list of behaviours folded away beneath.
 
   python bin/screenspage.py <out.html>
 
-The images are referenced as screens/<file>.png, so the page must be opened from a directory
-that holds a screens/ folder — doc/chat-first/ or a copy of it.
+No images anywhere. The app stylesheet is inlined once; each mockup's own page-only styles are
+inlined once and scoped so two mockups cannot fight over the same class.
 """
 import html
 import re
-import struct
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
 DOC = HERE / "doc" / "chat-first"
+MOCKUPS = DOC / "mockups"
+THEME = HERE / "web" / "src" / "theme.css"
 
-STYLE = """:root{--bg:#f7f6f2;--panel:#fff;--ink:#26312f;--faint:#67746f;--line:#d8d5cc;--data:#0e7d78;--ask:#a8720f;--sans:"Libre Franklin",-apple-system,system-ui,sans-serif;--mono:ui-monospace,Menlo,monospace}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171d1c;--panel:#1f2725;--ink:#e6e8e4;--faint:#9aa5a0;--line:#39443f;--data:#3fc4bc;--ask:#e0a83f}}:root[data-theme="dark"]{--bg:#171d1c;--panel:#1f2725;--ink:#e6e8e4;--faint:#9aa5a0;--line:#39443f;--data:#3fc4bc;--ask:#e0a83f}
-body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);margin:0;padding-block:28px 60px;padding-left:20px;padding-right:20px;max-width:1000px}
+# where a mockup file stops being the app stylesheet and starts being its own page
+SPLIT = "/* ---- mockup frames only ---- */"
+
+STYLE = """html,body{height:auto!important;overflow:visible!important;display:block!important}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);margin:0;padding-block:28px 60px;padding-left:20px;padding-right:20px;max-width:none}
 h1{font:600 22px var(--sans);margin:0 0 4px}.lead{color:var(--faint);margin:0 0 10px;max-width:84ch}
 code{font:12.5px var(--mono);color:var(--data)}
 .counts{font:500 13px var(--mono);color:var(--faint);margin:0 0 14px}
 nav{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 24px;font-size:14px}nav a{color:var(--data);text-decoration:none}
 h2{font:600 17px var(--sans);margin:34px 0 2px;padding-top:10px;border-top:1px solid var(--line)}
 .for{color:var(--faint);font-size:14px;margin:0 0 14px;max-width:84ch}
-.shots{display:flex;flex-wrap:wrap;gap:18px;margin:0 0 14px;align-items:flex-start}
-figure{margin:0;max-width:100%}
-figure img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:4px;background:var(--panel)}
-figcaption{font-size:13px;line-height:1.45;color:var(--faint);margin-top:6px}
+.shots{display:flex;flex-wrap:wrap;gap:22px;margin:0 0 16px;align-items:flex-start;overflow-x:auto;max-width:100%;padding-bottom:6px}
+figure{margin:0;flex:none;max-width:100%}
+figcaption{font:12px/1.45 var(--mono);color:var(--faint);margin-top:8px}
 .none{font-size:14px;color:var(--faint);margin:0 0 14px}
 details{border-top:1px solid var(--line);padding-top:8px}
 summary{cursor:pointer;font:500 13.5px var(--sans);color:var(--data);list-style:none}
 summary::-webkit-details-marker{display:none}
-summary::before{content:"▸ ";}details[open] summary::before{content:"▾ ";}
+summary::before{content:"\\25b8 ";}details[open] summary::before{content:"\\25be ";}
 ul{margin:10px 0 0;padding:0 0 0 20px}li{margin:0 0 7px}
 .pill{display:inline-block;font:500 11.5px var(--mono);border-radius:9px;padding:0 7px;margin-left:6px;white-space:nowrap;vertical-align:1px}
 .built{border:1px solid var(--data);color:var(--data)}.drawn{border:1px solid var(--ask);color:var(--ask)}
@@ -43,9 +46,10 @@ small.src{display:none;font:500 11.5px var(--mono);color:var(--faint);margin-lef
 label.toggle{font-size:13px;color:var(--faint)}"""
 
 TAG = re.compile(r"\[(built|drawn|open)\]\s*(\{[^}]*\})?\s*$")
-PIC = re.compile(r"^!\[(.*)\]\((.+?)\)$")
-PHONE_CSS_WIDTH = 393
-DESK_MAX_WIDTH = 840
+FRAME = re.compile(r"^@frame\s+([a-z0-9-]+)#(f\d+)\s*\|\s*(.+)$")
+ID_ATTR = re.compile(r'\b(id|for|aria-labelledby|aria-controls)="([^"]+)"')
+SELECTOR = re.compile(r"([^{}]+)\{([^{}]*)\}")
+SCRIPT = re.compile(r"<script\b.*?</script>", re.S | re.I)
 
 
 def inline(s: str) -> str:
@@ -54,12 +58,55 @@ def inline(s: str) -> str:
     return re.sub(r"`(.+?)`", r"<code>\1</code>", s)
 
 
-def css_width(rel: str) -> int:
-    """The width to show a screenshot at: phone renders stay at phone size, wider renders are
-    capped at the desktop width. Read from the PNG header, which is written at scale 2."""
-    data = (DOC / rel).read_bytes()[16:24]
-    native = struct.unpack(">I", data[:4])[0]
-    return min(max(native // 2, PHONE_CSS_WIDTH), DESK_MAX_WIDTH)
+def page_css(text: str, mockup: str) -> str:
+    """A mockup's own styles, scoped under the class its frames are wrapped in. The rules that
+    reshape the whole document belong to that mockup's page, not to this one, so they go."""
+    block = text.split(SPLIT, 1)[1].split("</style>", 1)[0]
+    out = []
+    for selectors, body in SELECTOR.findall(block):
+        kept = [
+            f".from-{mockup} {one.strip()}"
+            for one in selectors.split(",")
+            if one.strip() and one.strip().split()[0] not in ("html", "body", "html,")
+        ]
+        if kept:
+            out.append(f"{','.join(kept)}{{{body.strip()}}}")
+    return "\n".join(out)
+
+
+def frame(text: str, mockup: str, fid: str, seq: int) -> tuple[str, str]:
+    """The frame element with that id, lifted whole, and the classes on it. Every id inside is
+    made unique to this mockup and frame so two copies on one page never share one."""
+    at = text.find(f'id="{fid}"')
+    if at < 0:
+        raise SystemExit(f"{mockup}.html has no frame {fid}")
+    start = text.rfind("<div", 0, at)
+    depth, end = 0, len(text)
+    for match in re.finditer(r"</?div\b[^>]*>", text[start:]):
+        depth += 1 if match.group().startswith("<div") else -1
+        if depth == 0:
+            end = start + match.end()
+            break
+    markup = SCRIPT.sub("", text[start:end])
+    classes = re.search(r'class="([^"]*)"', markup[: markup.find(">")])
+    markup = ID_ATTR.sub(lambda m: f'{m.group(1)}="{mockup}-{fid}-{seq}-{m.group(2)}"', markup)
+    return markup, classes.group(1) if classes else ""
+
+
+def frame_widths(text: str) -> list[tuple[frozenset, int]]:
+    """What each of a mockup's frame rules sets the frame's width to, so the caption under a
+    copied frame can be as wide as the frame itself."""
+    block = text.split(SPLIT, 1)[1].split("</style>", 1)[0]
+    found = []
+    for selectors, body in SELECTOR.findall(block):
+        width = re.search(r"\bwidth:\s*(\d+)px", body)
+        if not width:
+            continue
+        for one in selectors.split(","):
+            one = one.strip()
+            if re.fullmatch(r"\.frame(\.[a-z0-9-]+)*", one):
+                found.append((frozenset(one.split(".")[1:]), int(width.group(1))))
+    return sorted(found, key=lambda pair: len(pair[0]))
 
 
 def parse():
@@ -74,12 +121,12 @@ def parse():
     for block in rest.split("\n## ") if rest else []:
         name, _, body = block.partition("\n")
         name = name.strip()
-        purpose, items, pics = "", [], []
+        purpose, items, frames = "", [], []
         for line in body.splitlines():
             line = line.strip()
-            pic = PIC.match(line)
-            if pic:
-                pics.append((pic.group(2), pic.group(1)))
+            shot = FRAME.match(line)
+            if shot:
+                frames.append((shot.group(1), shot.group(2), shot.group(3).strip()))
             elif line.startswith("What it is for:"):
                 purpose = line[len("What it is for:") :].strip()
             elif line.startswith("- "):
@@ -95,43 +142,62 @@ def parse():
                 f'<li>{inline(TAG.sub("", item).strip())}'
                 f'<span class="pill {status}">{status}</span>{src}</li>'
             )
-        sections.append((name, purpose, pics, rows))
+        sections.append((name, purpose, frames, rows))
     return blurb, updated, counts, sections
 
 
 def main(out: str) -> int:
     blurb, updated, counts, sections = parse()
+    used = sorted({m for _, _, frames, _ in sections for m, _, _ in frames})
+    files = {m: (MOCKUPS / f"{m}.html").read_text() for m in used}
+    widths = {m: frame_widths(files[m]) for m in used}
+    seq = [0]
     slug = lambda n: re.sub(r"[^a-z0-9]+", "-", n.lower()).strip("-")
+
     parts = [
         "<title>Family Diagram Screens</title>",
-        f"<style>{STYLE}</style>",
-        "<h1>Family Diagram — every screen, as it looks</h1>",
-        '<p class="lead">Each screen below is its real rendering, not a description of one. '
-        f"{inline(blurb)}</p>",
-        f'<p class="counts">{counts["built"]} built · {counts["drawn"]} drawn · '
-        f'{counts["open"]} open · {html.escape(updated)}</p>',
+        '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?'
+        "family=Libre+Franklin:wght@400;500;600;800&family=IBM+Plex+Mono:wght@400;500"
+        '&display=swap">',
+        "<style>",
+        THEME.read_text(),
+        STYLE,
+        "\n".join(page_css(files[m], m) for m in used),
+        "</style>",
+        "<h1>Family Diagram &mdash; every screen, as it looks</h1>",
+        '<p class="lead">Every screen below is the running app\'s own markup and stylesheet, '
+        f"drawn here as a whole screen. {inline(blurb)}</p>",
+        f'<p class="counts">{counts["built"]} built &middot; {counts["drawn"]} drawn &middot; '
+        f'{counts["open"]} open &middot; {html.escape(updated)}</p>',
         '<input type="checkbox" id="sources">'
         '<label class="toggle" for="sources">show sources</label>',
         "<nav>"
         + "".join(f'<a href="#{slug(n)}">{html.escape(n)}</a>' for n, _, _, _ in sections)
         + "</nav>",
     ]
-    for name, purpose, pics, rows in sections:
+    for name, purpose, frames, rows in sections:
         parts.append(f'<h2 id="{slug(name)}">{html.escape(name)}</h2>')
         if purpose:
             parts.append(f'<p class="for">{inline(purpose)}</p>')
-        if pics:
-            shots = "".join(
-                f'<figure style="width:{css_width(src)}px">'
-                f'<img src="{html.escape(src)}" alt="{html.escape(cap)}" loading="lazy">'
-                f"<figcaption>{html.escape(cap)}</figcaption></figure>"
-                for src, cap in pics
-            )
+        if frames:
+            shots = ""
+            for mockup, fid, caption in frames:
+                seq[0] += 1
+                markup, classes = frame(files[mockup], mockup, fid, seq[0])
+                on = set(classes.split())
+                width = next(
+                    (w for names, w in reversed(widths[mockup]) if names <= on), 400
+                )
+                shots += (
+                    f'<figure class="from-{mockup}" style="width:{width}px">{markup}'
+                    f'<figcaption style="max-width:{width}px">'
+                    f"{html.escape(caption)}</figcaption></figure>"
+                )
             parts.append(f'<div class="shots">{shots}</div>')
         else:
             parts.append('<p class="none">No rendering yet.</p>')
         parts.append(
-            f'<details><summary>what it does · {len(rows)} behaviours</summary>'
+            f"<details><summary>what it does &middot; {len(rows)} behaviours</summary>"
             f'<ul>{"".join(rows)}</ul></details>'
         )
     Path(out).write_text("\n".join(parts))

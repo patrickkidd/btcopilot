@@ -771,4 +771,8 @@ every mockup frame and the app's goldens rendered into doc/chat-first/screens by
 bin/screenshots.py, the catalogue by bin/screenspage.py, published with its images. He then picked the agreement timeline (one dot per moment, teal agreed, amber disputed
 with a count) for the vote and the meeting and put the guidelines behind an (i) at the top of
 the coding screen [R-0278]; both drawings were revised and the coding-and-review design closed
-with nothing open but the migration follow-up.
+with nothing open but the migration follow-up. Patrick ruled the catalogue must be full screens as live code, never images [R-0279]; it was
+rebuilt so: mockups/built.html holds the built screens as whole frames (hand-drawn from the
+app's markup, since no database was running to capture them), SCREENS.md points at frames by
+id, and the renderer lifts them live. The Pro surfaces were drawn on the existing screens with
+five choices on the page.
