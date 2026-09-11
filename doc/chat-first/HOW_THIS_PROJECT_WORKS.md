@@ -21,6 +21,13 @@ This is not optional and not deferred to the end of a session:
   Patrick's one-line yes for the operation, not for the content.
 - **decisions/log.md** — every significant decision, immediately.
 
+## The flush: every session ends with `/flush`
+The corpus keeps two clocks per topic — [TOPICS.md](TOPICS.md) is the state clock (one block
+per topic, rewritten in full), [HISTORY.md](HISTORY.md) the event clock (append only, tagged
+with topic ids). The skill `.claude/skills/flush/SKILL.md` runs the flush idempotently and
+`bin/flushcheck.py` verifies it. A new session reads STATE.md, then TOPICS.md, and can pick up
+any topic from its block alone.
+
 ## Sessions start at any altitude, from any angle
 Patrick will start sessions this week to learn and to pivot, sometimes at product
 altitude, sometimes at architecture, sometimes on a single surface. The corpus is what

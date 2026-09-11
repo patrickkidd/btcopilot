@@ -707,3 +707,21 @@ harness to measure it were put to him. Same day: the picked-moment words on the 
 the tap-target fix that had made clusters unopenable on phones, and the beta sign-in work
 (app-path login, home-screen card, passkeys, https sandbox).
 
+## 2026-09-10 and 11 — merge fixes, the coding loop designed, the flush made a skill [T-1, T-2, T-3, T-4, T-9]
+
+The owner ruled the beta deploys on the existing production server, merge-first, with old Pro
+diagrams left as pickle and new rows JSON in the same column [R-0241]. A read-only merge-risk
+review (MERGE_REVIEW.md) found seven must-fix items; all seven landed in one commit (9f1707a)
+and the suites are green run alone. His record was wiped and re-coded through the agent loop
+with the new clinical knowledge: 23 turns, 27 tool calls, two refusals corrected by the coach,
+10 events with variables. He re-planned the product as one app in thin layers — Pro and
+Training as additions to the chat screen, never new views [R-0237, R-0243] — with a coding
+protocol for a publishable blind IRR study: any coder any time, results only for contributors
+[R-0242]. Coding mode D (read-only session, a cheap scribe in the composer) and the
+upload/speaker-mapping sheet were approved; four IRR-review concepts for five codings await
+his pick. Corrections that now bind: no coined terms; estimate the work, not the validation;
+build only on an explicit go; one place for content; mockups drawn with the app's own
+stylesheet; sub-agents token- and model-optimised. The flush became a skill (`/flush`) with a
+topic register (TOPICS.md) as the state clock and tagged HISTORY entries as the event clock,
+checked by bin/flushcheck.py.
+

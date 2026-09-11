@@ -139,6 +139,11 @@ corrections three times.
 
 ## Open issues
 
+**The register of open topics is [TOPICS.md](TOPICS.md)** — one block per topic with its
+decisions, open questions, where it lives and the next action, rewritten by `/flush` at the
+end of every session. The entries below are the older, longer form and are kept until each is
+folded into its topic block.
+
 Each entry below is a whole issue, readable on its own. The build is not blocked on any of
 them except where an entry says so.
 
