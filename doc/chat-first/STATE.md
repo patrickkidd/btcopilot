@@ -106,9 +106,9 @@ that has already cost one sandbox.
   reload, so a Python change needs a restart.
 - `dev.sh` — the Vite dev server on 8891 proxying to 8890, host header forwarded so sign-in and
   cookies mint for 8891; the service worker is off. **Patrick reviews at
-  http://turin.local:8891/personal/** and every saved front-end edit shows on refresh, no
+  https://turin:8891/personal/** and every saved front-end edit shows on refresh, no
   build. This is the dev mode he asked for [Oracle: R-0227].
-- `invite.sh <email>` — a sign-in link at turin.local, not 127.0.0.1, so his phone can open it.
+- `invite.sh <email>` — a sign-in link at turin, not 127.0.0.1, so his phone can open it.
   A phone already signed in needs no new invite.
 - `env.sh` — the settings both scripts source, including the path to the private prompts in the
   fdserver worktree.
@@ -631,7 +631,7 @@ the oracle store as R-0165..R-0228; what follows is only what constrains future 
   only names them and gives a reason. The floor is three events, one number in the schema,
   enforced at the record's commit for every writer including undo and the coach's own grouping
   tool.
-- **Invite links use `turin.local`**, never 127.0.0.1, so he can open them from his phone.
+- **Invite links use `turin`**, never 127.0.0.1, so he can open them from his phone.
 
 ## A/B-test list
 

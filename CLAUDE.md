@@ -8,6 +8,8 @@ Backend for Pro/Personal apps, training app, AI extraction system.
   code also creates the account", never "login-is-signup"). A phrase from a doc is not his term
   unless he used it.
 - **He is Patrick (2026-09-11).** Never "the owner" in a document or a reply; it is ambiguous.
+- **Sandbox addresses use `turin`, never `turin.local` (2026-09-11).** The review app is
+  https://turin:8891/personal/.
 - **Every question mark is a question (2026-09-11).** Each "?" he types is covered somewhere,
   explicitly or implicitly, never recited one by one and never repeated between the reply and
   the drawing.
