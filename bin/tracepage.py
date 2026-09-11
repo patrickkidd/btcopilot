@@ -2,13 +2,18 @@
 owner made, in the order he made it, with each piece of work drawn as its own horizontal
 line and his trace stepping between them.
 
-Statements come from doc/chat-first/trace.json (written by bin/trace.py); what followed
-each statement comes from doc/chat-first/events.json; the second view is the topic
-register from TOPICS.md.
+Zooming changes what a lane shows, not how far away it is: the whole project as seven
+story arcs, then the sessions inside an arc, then his single statements, then a summary
+under each one.
+
+Statements come from doc/chat-first/trace.json (written by bin/trace.py); the arcs from
+doc/chat-first/arcs.json; the sessions and what followed each statement from
+doc/chat-first/events.json; the second view is the topic register from TOPICS.md.
 
   python bin/tracepage.py <out.html>
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -23,6 +28,7 @@ COLORS = {
     "T-9": "#8b9792", "unplaced": "#a9b0ad",
 }
 FOLLOW_KINDS = ("ruling", "defect", "decision", "build", "artifact", "review", "history")
+DATED = re.compile(r"^\d{4}-\d{2}-\d{2}[^—]*—\s*")
 
 
 def threads(statements: list[dict], topics: list[dict]) -> list[dict]:
@@ -52,6 +58,61 @@ def bands(statements: list[dict]) -> list[dict]:
     for band in out:
         titles = sorted(band.pop("titles"))
         band["label"] = f"{band['day']} · " + ", ".join(t[:34] for t in titles[:3])
+    return out
+
+
+def span(statements: list[dict], start: str, end: str) -> tuple[int, int, dict]:
+    """The run of statements between two days, and how many of them each piece of work holds."""
+    hits = [i for i, s in enumerate(statements) if start <= s["time"][:10] <= end]
+    counted = {}
+    for i in hits:
+        thread = statements[i]["thread"]
+        counted[thread] = counted.get(thread, 0) + 1
+    return (hits[0], hits[-1], counted) if hits else (-1, -1, {})
+
+
+def arcs(statements: list[dict]) -> list[dict]:
+    """The story arcs, each on the piece of work it mostly lived on.
+
+    Where two pieces of work are within a fifth of each other in an arc's days, the one that
+    is not the arc before it wins, so the trace shows the story changing subject.
+    """
+    out, previous = [], ""
+    for arc in json.loads((DOC / "arcs.json").read_text()):
+        first, last, counted = span(statements, arc["start"], arc["end"])
+        if first < 0:
+            continue
+        placed = {t: n for t, n in counted.items() if t != "unplaced"} or counted
+        top = max(placed.values())
+        close = sorted((t for t, n in placed.items() if n >= top * 0.8), key=lambda t: -placed[t])
+        thread = next((t for t in close if t != previous), close[0])
+        previous = thread
+        if out:
+            first = max(first, out[-1]["to"] + 1)
+        out.append(
+            {**arc, "from": first, "to": max(last, first), "said": sum(counted.values()), "thread": thread}
+        )
+    return out
+
+
+def sessions(statements: list[dict], events: list[dict]) -> list[dict]:
+    """One block per session entry, on every lane its entry is tagged with."""
+    days = {}
+    for i, s in enumerate(statements):
+        day = s["time"][:10]
+        days.setdefault(day, [i, i])[1] = i
+    out = []
+    for e in events:
+        if e["kind"] != "history" or not e.get("date") or e["date"] not in days:
+            continue
+        first, last = days[e["date"]]
+        lanes = [t for t in (e.get("topics") or []) if t in {s["thread"] for s in statements}]
+        out.append(
+            {"title": e["title"], "label": DATED.sub("", e["title"]), "date": e["date"],
+             "text": e.get("text") or "", "from": first, "to": last,
+             "lanes": lanes or ["unplaced"], "thread": (lanes or ["unplaced"])[0]}
+        )
+    out.sort(key=lambda s: (s["date"], s["title"]))
     return out
 
 
@@ -95,39 +156,51 @@ header h1{font:600 16px var(--sans);margin:0 8px 0 0}
 .seg button.on{background:var(--data);color:#fff}
 button.plain{font:500 13px var(--sans);color:var(--faint);background:none;border:1px solid var(--line);border-radius:16px;padding:5px 12px;cursor:pointer}
 button.plain:hover{border-color:var(--faint)}
-input[type=search]{font:13px var(--sans);padding:5px 11px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);min-width:210px}
+input[type=search]{font:13px var(--sans);padding:5px 11px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);min-width:180px}
 .count{font:12px var(--mono);color:var(--faint);margin-left:auto}
 #caption{padding:7px 16px;border-bottom:1px solid var(--line);color:var(--faint);font-size:12.5px}
 main{display:grid;grid-template-columns:1fr 380px;min-height:0}
 #stage{overflow:hidden;position:relative;min-width:0}
 #state{overflow:auto;padding:14px 18px 60px;display:none}
-#state .blk{border-top:1px solid var(--line);padding:12px 0 6px;max-width:80ch}
+#state .blk{border-top:1px solid var(--line);padding:12px 0 6px;max-width:82ch}
 #state h3{font:600 15px var(--sans);margin:0 0 4px}
-#state .k{font:11px var(--mono);color:var(--faint);letter-spacing:.06em;text-transform:uppercase;margin:8px 0 1px}
+#state .k,#detail .k{font:11px var(--mono);color:var(--faint);letter-spacing:.06em;text-transform:uppercase}
+#state .k{margin:9px 0 1px}
+ul.bul{margin:2px 0 0;padding-left:19px}
+ul.bul li{margin:3px 0;line-height:1.5}
+.rid{font:11px var(--mono);color:var(--faint);white-space:nowrap}
 #detail{border-left:1px solid var(--line);background:var(--panel);padding:14px 16px;overflow:auto;font-size:13.5px}
 #detail h3{font:600 15px var(--sans);margin:0 0 6px;line-height:1.25}
-#detail .k{font:11px var(--mono);color:var(--faint);letter-spacing:.06em;text-transform:uppercase;margin:12px 0 3px}
+#detail .k{margin:12px 0 3px}
 #detail a{color:var(--data)}
 #detail details{border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin:10px 0 4px}
 #detail summary{cursor:pointer;font-size:13px;color:var(--faint)}
 #detail blockquote{margin:9px 0 0;padding-left:11px;border-left:3px solid var(--line);white-space:pre-wrap;font-size:13.5px}
-#detail ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:7px}
-#detail ul li{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px}
-#detail ul .kk{font:10.5px var(--mono);color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-right:6px}
+#detail ul.pills{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:7px}
+#detail ul.pills li{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+#detail ul.pills .kk{font:10.5px var(--mono);color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-right:6px}
 #detail .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 svg{display:block;touch-action:none;cursor:grab;width:100%;height:100%}
 svg:active{cursor:grabbing}
 text{font-family:var(--sans)}
 .num,.lane-name,.date{font-family:var(--mono)}
-.node-name{fill:var(--ink);font-weight:600}
+.node-name{fill:var(--ink);font-weight:600;font-size:12px}
+.node-sum{fill:var(--faint);font-size:10.5px}
+.thin text.node-sum tspan:nth-child(n+2){display:none}
 .num{fill:var(--faint);font-size:10.5px}
 .date{fill:var(--faint);font-size:11px}
 .lane-name{fill:var(--ink);font-size:12.5px}
+.lane{cursor:pointer}
+.lane:hover .lane-name{fill:var(--data)}
 .band{fill:var(--band)}
-.trace{fill:none;stroke:var(--ink);stroke-width:1.6;opacity:.75;stroke-linecap:round}
-.hit{cursor:pointer}
-.hit.dim{opacity:.12}
-.hit.sel .dot{stroke-width:5}
+.trace{fill:none;stroke:var(--ink);stroke-width:1.6;opacity:.75;stroke-linecap:round;stroke-linejoin:round}
+.hit,.arc,.sess{cursor:pointer}
+.dim{opacity:.12}
+.arc rect,.sess rect{fill:var(--panel);stroke-width:2.5}
+.sess rect{stroke-width:2}
+.arc text{font:600 12.5px var(--sans);fill:var(--ink)}
+.sess text{font:12px var(--sans);fill:var(--ink)}
+.sel rect{fill:var(--tint)}
 #tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;
   box-shadow:0 6px 18px var(--shadow);padding:8px 10px;max-width:330px;font-size:12.5px;display:none;z-index:5}
 #tip b{display:block;font-size:13px;margin-bottom:3px}
@@ -135,179 +208,372 @@ text{font-family:var(--sans)}
 </style>
 <header><h1>FD-362 · one line of thought</h1>
 <span class="seg" id="mode"><button class="on" data-v="trace">The trace</button><button data-v="state">Where it stands</button></span>
-<button class="plain" id="fit">Fit</button>
-<button class="plain" id="read">Zoom in to read</button>
+<span class="seg" id="lvl"><button data-l="1">Arcs</button><button data-l="2">Sessions</button><button data-l="3">What he said</button><button data-l="4">With summaries</button></span>
 <input type="search" id="q" placeholder="search his words">
 <button class="plain" id="theme">Light / dark</button>
 <span class="count" id="counts"></span></header>
-<div id="caption">There is one person working, so there is one line of thought through time. Each coloured line is a piece of work he keeps coming back to; the dark line is him, moving between them. Every mark is one thing he said. Point at a mark for its one-line summary, click it for his own words and what followed. Drag to move, scroll to zoom.</div>
+<div id="caption"></div>
 <main><div id="stage"><svg id="svg"></svg><div id="tip"></div></div><div id="state"></div><aside id="detail"></aside></main>
 <script>
 const STATEMENTS = __STATEMENTS__;
 const THREADS = __THREADS__;
 const BANDS = __BANDS__;
+const ARCS = __ARCS__;
+const SESSIONS = __SESSIONS__;
 const AFTER = __AFTER__;
 const TOPICS = __TOPICS__;
 const KIND = {ruling:"ruling",defect:"correction",decision:"decision",history:"session entry",review:"review finding",build:"commit",artifact:"artifact"};
 const T = Object.fromEntries(THREADS.map(t => [t.id, t]));
+const TOPIC = Object.fromEntries(TOPICS.map(t => [t.id, t]));
 const esc = s => (s||"").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 const linkify = s => esc(s).replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank">$1</a>');
 const clip = (s,n) => (s||"").length > n ? s.slice(0,n-1).trimEnd()+"…" : (s||"");
+const day = s => (s||"").slice(0,10);
 
-const DX = 64, LANE_H = 78, LEFT = 250, TOP = 74, PAD = 150;
-const laneY = {}; THREADS.forEach((t,i) => laneY[t.id] = TOP + i*LANE_H);
-const x = i => LEFT + i*DX;
-const W = LEFT + STATEMENTS.length*DX + PAD;
-const H = TOP + THREADS.length*LANE_H + 70;
+/* the drawing is in screen pixels and is redrawn as you zoom, so a label never changes size
+   and the lanes keep their spacing however far out you are */
+const DX = 64, NAME_W = 124, SUM_W = 190, NAME_LH = 13, SUM_LH = 12, SUM_LINES = 2;
+const WX = Math.max((STATEMENTS.length-1)*DX, 1);
+const CAPTION = {
+  1: "The whole project, start to finish, as seven story arcs. The dark line is him moving from arc to arc, so a curve up or down is the story changing what it was about.",
+  2: "Each arc has opened into its sessions: one block per session entry, on every piece of work that session touched.",
+  3: "Every mark is one thing he typed, in his own words, on the line of the piece of work it belongs to.",
+  4: "Every mark carries the start of what he said under his words. Click a mark for the whole thing and for what followed it."
+};
+let stageW = 0, stageH = 0, GUTTER = 250, TOPY = 74, LANE_H = 78;
+let K_FIT = .02, K_SESS = .2, K_STMT = 1, K_SUM = 3, K_MAX = 5, level = 0;
+let NAME_PX = NAME_W, SUM_PX = SUM_W, SUM_ROOM = SUM_LINES, selKind = "", selId = "";
+const laneY = {};
 
+const stage = document.getElementById("stage");
 const svg = d3.select("#svg");
-const root = svg.append("g");
-const gBands = root.append("g"), gLanes = root.append("g"), gTrace = root.append("g"), gNodes = root.append("g");
+const gBands = svg.append("g"), gLanes = svg.append("g"), gTrace = svg.append("g");
+const gArcs = svg.append("g"), gSess = svg.append("g"), gNodes = svg.append("g");
+const pinned = svg.append("g");
 
-/* session bands, one per stretch of statements from the same session on the same day */
-BANDS.forEach((b,i) => {
-  const x0 = x(b.from) - DX/2, x1 = x(b.to) + DX/2;
-  if (i % 2) gBands.append("rect").attr("class","band").attr("x",x0).attr("y",44).attr("width",x1-x0).attr("height",H-70).attr("rx",7);
-  gBands.append("line").attr("x1",x0).attr("x2",x0).attr("y1",44).attr("y2",H-26).style("stroke","var(--line)").style("stroke-width",1);
-});
-
-/* one line per piece of work, from its first statement to its last */
-THREADS.forEach(t => {
-  const idx = STATEMENTS.map((s,i) => s.thread === t.id ? i : -1).filter(i => i >= 0);
-  gLanes.append("line").attr("x1",x(idx[0])).attr("x2",x(idx[idx.length-1]))
-    .attr("y1",laneY[t.id]).attr("y2",laneY[t.id])
-    .style("stroke",t.color).style("stroke-width",6).style("opacity",.3).attr("stroke-linecap","round");
-  t.said = idx.length;
-});
-
-/* the name of each piece of work stays at the left edge, and the date at the top, while you pan */
-const pinned = svg.append("g").attr("class","pinned");
-const laneTags = pinned.selectAll("g.lane").data(THREADS).enter().append("g").attr("class","lane");
-laneTags.append("rect").attr("x",0).attr("y",-13).attr("width",214).attr("height",30).attr("fill","var(--bg)").attr("opacity",.88);
+/* the name of each piece of work stays at the left edge; the column is as wide as the longest */
+const gutterBg = pinned.append("rect").attr("x",0).attr("y",38).attr("fill","var(--bg)");
+const laneTags = pinned.selectAll("g.lane").data(THREADS).enter().append("g").attr("class","lane")
+  .on("click", (e,t) => selectTopic(t.id))
+  .on("mousemove", (e,t) => tipHTML(e, `<b>${esc(t.name)}</b>${t.said} things he said<span> · click for where it stands</span>`))
+  .on("mouseleave", hideTip);
+THREADS.forEach(t => t.said = STATEMENTS.filter(s => s.thread === t.id).length);
+const laneBg = laneTags.append("rect").attr("x",0).attr("fill","var(--bg)").attr("opacity",.88);
 laneTags.append("circle").attr("cx",10).attr("cy",0).attr("r",4.5).style("fill",t => t.color);
-laneTags.append("text").attr("class","lane-name").attr("x",22).attr("y",4).text(t => clip(t.name,32));
-laneTags.append("text").attr("class","num").attr("x",22).attr("y",16).text(t => t.said + " said");
+const LANE_W = 236;
+const laneText = laneTags.append("text").attr("class","lane-name").attr("x",22);
+laneText.each(function(t){ t.lines = wrap(d3.select(this), t.name, LANE_W, 13, 3, 22); });
+const laneNum = laneTags.append("text").attr("class","num").attr("x",22).text(t => t.said + " said");
+laneTags.append("title").text(t => t.name);
 const dayTags = pinned.selectAll("g.day").data(BANDS).enter().append("g").attr("class","day");
 dayTags.append("text").attr("class","date").attr("x",6).attr("y",13).text(b => b.label);
 
-/* his single trace, stepping from line to line */
-let d = "";
-STATEMENTS.forEach((s,i) => {
-  const px = x(i), py = laneY[s.thread];
-  if (!i) { d += `M${px},${py}`; return; }
-  const qx = x(i-1), qy = laneY[STATEMENTS[i-1].thread];
-  d += (qy === py) ? ` L${px},${py}` : ` C${qx+DX*.45},${qy} ${px-DX*.45},${py} ${px},${py}`;
-});
-gTrace.append("path").attr("class","trace").attr("d",d);
+/* the three kinds of thing a lane can show */
+const bandRects = gBands.selectAll("rect").data(BANDS.filter((b,i) => i % 2)).enter().append("rect").attr("class","band").attr("rx",7);
+const bandLines = gBands.selectAll("line").data(BANDS).enter().append("line").style("stroke","var(--line)").style("stroke-width",1);
+const laneLines = gLanes.selectAll("line").data(THREADS).enter().append("line")
+  .style("stroke",t => t.color).style("stroke-width",6).style("opacity",.3).attr("stroke-linecap","round");
+const tracePath = gTrace.append("path").attr("class","trace");
 
-/* one mark per statement, name above or below its line */
-const nodes = gNodes.selectAll("g").data(STATEMENTS).enter().append("g")
-  .attr("class","hit").attr("data-id",s => s.id)
-  .on("click", (e,s) => select(s))
-  .on("mousemove", (e,s) => tip(e,s))
+const arcs = gArcs.selectAll("g").data(ARCS).enter().append("g").attr("class","arc")
+  .on("click", (e,a) => selectArc(a))
+  .on("mousemove", (e,a) => tipHTML(e, `<b>${esc(a.name)}</b>${esc(a.line)}<span> · ${a.start} to ${a.end} · ${a.said} said</span>`))
   .on("mouseleave", hideTip);
-nodes.append("rect").attr("x",(s,i) => x(i)-DX/2).attr("y",s => laneY[s.thread]-40)
-  .attr("width",DX).attr("height",80).attr("fill","transparent");
-nodes.append("circle").attr("class","dot").attr("cx",(s,i) => x(i)).attr("cy",s => laneY[s.thread]).attr("r",5.5)
-  .style("fill","var(--panel)").style("stroke",s => T[s.thread].color).style("stroke-width",3);
-const labels = nodes.append("text").attr("class","node-name labelled")
-  .attr("x",(s,i) => x(i)).attr("text-anchor","middle").style("font-size","12px")
-  .attr("y",(s,i) => laneY[s.thread] + (i % 2 ? 24 : -16));
-labels.each(function(s){ wrap(d3.select(this), s.name, DX+30, 13, 2); });
+arcs.append("rect").attr("height",30).attr("rx",15).style("stroke",a => T[a.thread].color);
+const arcText = arcs.append("text").attr("text-anchor","middle");
+arcs.append("title").text(a => a.name + " — " + a.line);
 
-function wrap(sel, text, width, lh, maxLines){
+const sessBlocks = [];
+SESSIONS.forEach(s => s.lanes.forEach(lane => sessBlocks.push({...s, lane})));
+const sess = gSess.selectAll("g").data(sessBlocks).enter().append("g").attr("class","sess")
+  .on("click", (e,s) => selectSession(s))
+  .on("mousemove", (e,s) => tipHTML(e, `<b>${esc(s.label)}</b>${esc(T[s.lane].name)}<span> · ${s.date}</span>`))
+  .on("mouseleave", hideTip);
+sess.append("rect").attr("height",26).attr("rx",13).style("stroke",s => T[s.lane].color);
+const sessText = sess.append("text").attr("text-anchor","middle").attr("dy",4).text(s => s.label);
+sess.append("title").text(s => s.title);
+
+const nodes = gNodes.selectAll("g").data(STATEMENTS).enter().append("g").attr("class","hit")
+  .on("click", (e,s) => selectStatement(s))
+  .on("mousemove", (e,s) => tipHTML(e, `<b>${esc(s.name)}</b>${esc(s.summary)}<span> · ${esc(T[s.thread].name)} · ${esc(s.time.slice(0,16).replace("T"," "))}</span>`))
+  .on("mouseleave", hideTip);
+nodes.append("circle").attr("class","dot").attr("r",5.5).style("fill","var(--panel)")
+  .style("stroke",s => T[s.thread].color).style("stroke-width",3);
+const labs = nodes.append("g").attr("class","lab");
+labs.each(function(s,i){
+  s.i = i;
+  s.below = i % 2 === 1;
+  const g = d3.select(this);
+  s.nameLines = wrap(g.append("text").attr("class","node-name").attr("x",0).attr("text-anchor","middle"),
+                     s.name, NAME_W, NAME_LH, 2);
+  s.sumLines = wrap(g.append("text").attr("class","node-sum").attr("x",0).attr("text-anchor","middle"),
+                    s.summary, SUM_W, SUM_LH, SUM_LINES);
+});
+labs.each(function(s){
+  NAME_PX = Math.max(NAME_PX, this.querySelector("text.node-name").getBBox().width);
+  SUM_PX = Math.max(SUM_PX, this.querySelector("text.node-sum").getBBox().width);
+});
+sessText.each(function(s){ s.tw = this.getComputedTextLength(); });
+
+function wrap(sel, text, width, lh, maxLines, atX){
+  atX = atX || 0;
   const words = (text||"").split(/\s+/).reverse();
   let line = [], lineNo = 0;
-  let tspan = sel.append("tspan").attr("x", sel.attr("x")).attr("dy", 0);
+  let tspan = sel.append("tspan").attr("x", atX).attr("dy", 0);
   let word;
   while ((word = words.pop())){
     line.push(word);
     tspan.text(line.join(" "));
     if (tspan.node().getComputedTextLength() > width && line.length > 1){
       line.pop(); tspan.text(line.join(" "));
-      if (++lineNo >= maxLines){ tspan.text(tspan.text()+"…"); return; }
+      if (++lineNo >= maxLines){ tspan.text(tspan.text()+"…"); return maxLines; }
       line = [word];
-      tspan = sel.append("tspan").attr("x", sel.attr("x")).attr("dy", lh).text(word);
+      tspan = sel.append("tspan").attr("x", atX).attr("dy", lh).text(word);
+    }
+    while (tspan.node().getComputedTextLength() > width && tspan.text().length > 2){
+      tspan.text(tspan.text().slice(0,-2) + "…");       /* one word wider than the row */
+      line = [tspan.text()];
     }
   }
+  return lineNo + 1;
 }
 
-/* pan and zoom: never further out than the whole trace, never closer than six times */
-let fitK = 1, fit = d3.zoomIdentity;
-const zoom = d3.zoom().on("zoom", e => {
-  root.attr("transform", e.transform);
-  gNodes.selectAll(".labelled").style("display", e.transform.k < .42 ? "none" : null);
-  repin(e.transform);
-});
-function repin(tr){
-  const box = document.getElementById("stage").getBoundingClientRect();
-  laneTags.attr("transform", t => `translate(4,${tr.applyY(laneY[t.id])})`)
-    .style("display", t => { const y = tr.applyY(laneY[t.id]); return y < 24 || y > box.height - 8 ? "none" : null; });
-  dayTags.attr("transform", b => `translate(${Math.max(tr.applyX(x(b.from) - DX/2), 258)},2)`)
-    .style("display", b => {
-      const a = tr.applyX(x(b.from)), z = tr.applyX(x(b.to));
-      return z < 0 || a > box.width || (z - a) < 80 ? "none" : null;
-    });
+/* the room each level needs, measured: a label must fit the gap to the next mark across and
+   the gap to the next lane down */
+function measure(){
+  const box = stage.getBoundingClientRect();
+  stageW = box.width; stageH = box.height;
+  let widest = 0;
+  laneText.each(function(){ this.querySelectorAll("tspan").forEach(n => widest = Math.max(widest, n.getComputedTextLength())); });
+  GUTTER = Math.min(Math.max(widest + 40, 170), Math.max(stageW*0.34, 200));
+  laneText.attr("y", t => -(t.lines-1)*6.5 - 2).selectAll("tspan").attr("x", 22);
+  laneNum.attr("y", t => -(t.lines-1)*6.5 + (t.lines-1)*13 + 13);
+  gutterBg.attr("width", GUTTER - 10).attr("height", Math.max(stageH - 38, 10));
+  laneBg.attr("width", GUTTER - 16)
+    .attr("y", t => -(t.lines-1)*6.5 - 13).attr("height", t => 20 + t.lines*13);
+  LANE_H = Math.max(44, Math.min(116, (stageH - TOPY - 84) / Math.max(THREADS.length - 1, 1)));
+  THREADS.forEach((t,i) => laneY[t.id] = TOPY + i*LANE_H);
+  K_FIT = (stageW - GUTTER - 46) / WX;
+  K_STMT = Math.max(NAME_PX/(2*DX), K_FIT*3);
+  K_SUM = Math.max(Math.max(NAME_PX, SUM_PX)/DX, K_STMT*1.3);
+  SUM_ROOM = Math.max(1, Math.min(SUM_LINES, Math.floor((LANE_H - 16 - NAME_LH*2)/SUM_LH)));
+  const needs = sessBlocks.map(s => (s.tw + 18)/Math.max((s.to - s.from)*DX, DX)).sort((a,b) => a-b);
+  K_SESS = Math.min(Math.max(needs[Math.floor(needs.length*0.25)] || K_FIT*2, K_FIT*1.7), K_STMT*0.5);
+  K_MAX = Math.max(K_SUM*1.6, 4);
 }
-function sizeView(){
-  const box = document.getElementById("stage").getBoundingClientRect();
-  fitK = Math.min(box.width / W, box.height / H);
-  fit = d3.zoomIdentity.translate((box.width - W*fitK)/2, (box.height - H*fitK)/2).scale(fitK);
-  zoom.scaleExtent([fitK, 6]).translateExtent([[-40,-40],[W+40,H+40]]);
+
+const zoom = d3.zoom().on("zoom", () => draw());
+function setZoom(){
+  zoom.scaleExtent([K_FIT, K_MAX])
+      .extent([[GUTTER, 0], [Math.max(stageW, GUTTER+10), Math.max(stageH,10)]])
+      .translateExtent([[-60, -1e5], [WX + 60, 1e5]]);
   svg.call(zoom);
 }
-function latest(){
-  const box = document.getElementById("stage").getBoundingClientRect();
-  const k = Math.max(Math.min(box.height / H, 1.1), fitK);
-  return d3.zoomIdentity.translate(box.width - 90 - x(STATEMENTS.length-1)*k, (box.height - H*k)/2).scale(k);
-}
-sizeView();
-svg.call(zoom.transform, latest());
-window.addEventListener("resize", () => { sizeView(); svg.call(zoom.transform, latest()); });
-document.getElementById("fit").onclick = () => svg.transition().duration(300).call(zoom.transform, fit);
-document.getElementById("read").onclick = () => {
-  const s = STATEMENTS.findIndex(x2 => x2.id === sel_id);
-  const i = s >= 0 ? s : 0;
-  const box = document.getElementById("stage").getBoundingClientRect();
-  const k = 1.4;
-  svg.transition().duration(350).call(zoom.transform,
-    d3.zoomIdentity.translate(box.width/2 - x(i)*k, box.height/2 - laneY[STATEMENTS[i].thread]*k).scale(k));
-};
+const tr = () => d3.zoomTransform(svg.node());
+const sx = i => tr().applyX(i*DX);
 
-/* hover: the one-line summary */
+function step(points){
+  let d = "";
+  points.forEach((p,i) => {
+    if (!i) { d += `M${p[0]},${p[1]}`; return; }
+    const q = points[i-1], bend = Math.min(90, Math.abs(p[0]-q[0])*.45);
+    d += (q[1] === p[1]) ? ` L${p[0]},${p[1]}` : ` C${q[0]+bend},${q[1]} ${p[0]-bend},${p[1]} ${p[0]},${p[1]}`;
+  });
+  return d;
+}
+
+function draw(){
+  const t = tr(), k = t.k, X = i => t.applyX(i*DX);
+  level = k >= K_SUM ? 4 : k >= K_STMT ? 3 : k >= K_SESS ? 2 : 1;
+  document.getElementById("caption").textContent = CAPTION[level];
+  d3.selectAll("#lvl button").classed("on", function(){ return +this.dataset.l === level; });
+
+  bandRects.attr("x", b => X(b.from) - DX*k/2).attr("y", 42)
+    .attr("width", b => Math.max((b.to-b.from)*DX*k + DX*k, 2)).attr("height", Math.max(stageH - 60, 10));
+  bandLines.attr("x1", b => X(b.from) - DX*k/2).attr("x2", b => X(b.from) - DX*k/2).attr("y1", 42).attr("y2", stageH - 12);
+  laneLines.attr("y1", t2 => laneY[t2.id]).attr("y2", t2 => laneY[t2.id])
+    .attr("x1", t2 => Math.max(X(t2.first), GUTTER)).attr("x2", t2 => Math.min(X(t2.last), stageW));
+  laneTags.attr("transform", t2 => `translate(4,${laneY[t2.id]})`);
+  let taken = GUTTER;
+  dayTags.each(function(b){
+    const a = Math.max(X(b.from) - DX*k/2, GUTTER + 6), z = X(b.to) + DX*k/2;
+    const room = z - a;
+    const label = this.firstChild;
+    label.textContent = b.label;
+    if (label.getComputedTextLength() > room) label.textContent = b.day;
+    const wide = label.getComputedTextLength();
+    const fits = room > wide + 10 && a >= taken && z < stageW;
+    this.style.display = fits ? null : "none";
+    if (!fits) return;
+    this.setAttribute("transform", `translate(${a},2)`);
+    taken = a + wide + 16;
+  });
+
+  gArcs.style("display", level === 1 ? null : "none");
+  gSess.style("display", level === 2 ? null : "none");
+  gNodes.style("display", level >= 3 ? null : "none").classed("thin", SUM_ROOM < SUM_LINES);
+
+  if (level === 1){
+    arcs.attr("transform", a => `translate(0,${laneY[a.thread]})`);
+    arcs.select("rect").attr("x", a => X(a.from) - DX*k/2).attr("y", -15)
+      .attr("width", a => Math.max((a.to-a.from+1)*DX*k, 30));
+    const placed = [];
+    arcs.each(function(a){
+      const a0 = Math.max(X(a.from) - DX*k/2, GUTTER + 4), a1 = Math.min(X(a.to) + DX*k/2, stageW - 4);
+      const room = Math.max(a1 - a0 - 10, 150);
+      const t2 = d3.select(this).select("text");
+      if (a.room !== room){
+        t2.selectAll("tspan").remove();
+        a.lines = wrap(t2, a.name, room, 14, 3);
+        a.room = room;
+        a.wide = t2.node().getBBox().width;
+      }
+      const y = laneY[a.thread], half = a.wide/2 + 8;
+      const cx = Math.min(Math.max((a0+a1)/2, GUTTER + half), Math.max(stageW - half, GUTTER + half));
+      const above = {l: cx-half, r: cx+half, t: y - 22 - a.lines*14, b: y - 16};
+      const under = {l: cx-half, r: cx+half, t: y + 20, b: y + 24 + a.lines*14};
+      const clear = b => !placed.some(p => p.l < b.r + 6 && b.l < p.r + 6 && p.t < b.b + 4 && b.t < p.b + 4);
+      const low = !clear(above) && clear(under);
+      placed.push(low ? under : above);
+      t2.attr("x", cx).attr("y", low ? 32 : -22 - (a.lines-1)*14)
+        .style("display", a1 - a0 < 26 ? "none" : null)
+        .selectAll("tspan").attr("x", cx);
+    });
+    tracePath.attr("d", step(ARCS.map(a => [(X(a.from)+X(a.to))/2, laneY[a.thread]])));
+  } else if (level === 2){
+    sess.attr("transform", s => `translate(0,${laneY[s.lane]})`);
+    sess.select("rect").attr("x", s => X(s.from) - DX*k/2).attr("y", -13)
+      .attr("width", s => Math.max((s.to-s.from+1)*DX*k, 26));
+    sessText.each(function(s){
+      const a0 = Math.max(X(s.from) - DX*k/2, GUTTER + 4), a1 = Math.min(X(s.to) + DX*k/2, stageW - 4);
+      d3.select(this).attr("x", (a0+a1)/2).style("display", a1 - a0 < s.tw + 14 ? "none" : null);
+    });
+    tracePath.attr("d", step(SESSIONS.map(s => [(X(s.from)+X(s.to))/2, laneY[s.thread]])));
+  } else {
+    const first = Math.max(0, Math.floor((GUTTER - t.x)/(DX*k)) - 2);
+    const last = Math.min(STATEMENTS.length - 1, Math.ceil((stageW - t.x)/(DX*k)) + 2);
+    nodes.each(function(s){
+      const on = s.i >= first && s.i <= last;
+      this.style.display = on ? null : "none";
+      if (!on) return;
+      const px = X(s.i), py = laneY[s.thread];
+      this.firstChild.setAttribute("cx", px);
+      this.firstChild.setAttribute("cy", py);
+      const tall = s.nameLines*NAME_LH + (level === 4 ? Math.min(s.sumLines, SUM_ROOM)*SUM_LH : 0);
+      const below = level === 4 ? true : s.below;
+      const top = below ? 20 : -14 - tall + NAME_LH;
+      const lab = this.lastChild;
+      lab.setAttribute("transform", `translate(${px},${py})`);
+      lab.style.display = px - NAME_W/2 < GUTTER + 6 || px + NAME_W/2 > stageW - 6 ? "none" : null;
+      lab.firstChild.setAttribute("y", top);
+      lab.lastChild.setAttribute("y", top + s.nameLines*NAME_LH);
+      lab.lastChild.style.display = level === 4 ? null : "none";
+    });
+    const pts = [];
+    for (let i = first; i <= last; i++) pts.push([X(i), laneY[STATEMENTS[i].thread]]);
+    tracePath.attr("d", step(pts));
+  }
+  markSelected();
+}
+
+function markSelected(){
+  arcs.classed("sel", a => selKind === "arc" && a.name === selId);
+  sess.classed("sel", s => selKind === "session" && s.title + s.lane === selId);
+  nodes.classed("sel", s => selKind === "statement" && s.id === selId);
+}
+
+/* start on the whole project, and keep that as the furthest out you can go */
+function reset(){
+  measure(); setZoom();
+  svg.call(zoom.transform, d3.zoomIdentity.translate(GUTTER + 22, 0).scale(K_FIT));
+  draw();
+}
+THREADS.forEach(t => {
+  const idx = STATEMENTS.map((s,i) => s.thread === t.id ? i : -1).filter(i => i >= 0);
+  t.first = idx[0]; t.last = idx[idx.length-1];
+});
+reset();
+window.addEventListener("resize", reset);
+document.querySelectorAll("#lvl button").forEach(b => b.addEventListener("click", () => {
+  const want = {1: K_FIT, 2: K_SESS*1.05, 3: K_STMT*1.05, 4: K_SUM*1.05}[+b.dataset.l];
+  const t = tr(), mid = (GUTTER + stageW)/2, i = (mid - t.x)/(DX*t.k);
+  svg.transition().duration(400).call(zoom.transform,
+    d3.zoomIdentity.translate(mid - i*DX*want, 0).scale(want));
+}));
+
+/* hover */
 const tipEl = document.getElementById("tip");
-function tip(e, s){
-  const box = document.getElementById("stage").getBoundingClientRect();
-  tipEl.innerHTML = `<b>${esc(s.name)}</b>${esc(s.summary)}<span> · ${esc(T[s.thread].name)} · ${esc(s.time.slice(0,16).replace("T"," "))}</span>`;
+function tipHTML(e, html){
+  tipEl.innerHTML = html;
   tipEl.style.display = "block";
-  tipEl.style.left = Math.min(e.clientX - box.left + 14, box.width - 350) + "px";
-  tipEl.style.top = Math.min(e.clientY - box.top + 14, box.height - 90) + "px";
+  tipEl.style.left = Math.min(e.clientX - stage.getBoundingClientRect().left + 14, stageW - 350) + "px";
+  tipEl.style.top = Math.min(e.clientY - stage.getBoundingClientRect().top + 14, stageH - 90) + "px";
 }
 function hideTip(){ tipEl.style.display = "none"; }
 
-/* click: his own words and what followed */
-let sel_id = null;
-function select(s){
-  sel_id = s.id;
-  gNodes.selectAll(".hit").classed("sel", n => n.id === s.id);
-  const n = STATEMENTS.indexOf(s) + 1;
+/* the side panel: an arc, a session, a statement, or where a piece of work stands */
+const detail = document.getElementById("detail");
+const RID = /\[(?:Oracle:\s*)?R-\d+[^\]]*\]/g;
+const rids = h => h.replace(RID, m => `<span class="rid">${m}</span>`);
+const aLine = s => `<div>${rids(linkify(s))}</div>`;
+const bullets = parts => `<ul class="bul">${parts.map(p => `<li>${rids(linkify(p))}</li>`).join("")}</ul>`;
+const bySemi = s => s.split(/;\s+/).map(p => p.trim()).filter(Boolean);
+const byNumber = s => s.split(/\s*\(\d+\)\s*/).map(p => p.trim().replace(/;$/,"")).filter(Boolean);
+const swatch = id => `<span class="sw" style="background:${T[id] ? T[id].color : "#8b9792"}"></span>`;
+
+function selectArc(a){
+  selKind = "arc"; selId = a.name; markSelected();
+  const mine = SESSIONS.filter(s => s.date >= a.start && s.date <= a.end);
+  detail.innerHTML = `<div class="k">story arc ${ARCS.indexOf(a)+1} of ${ARCS.length}</div><h3>${esc(a.name)}</h3>`
+    + `<div>${swatch(a.thread)}${esc(T[a.thread].name)}</div>`
+    + `<div class="k">when</div><div>${a.start} to ${a.end} · ${a.said} things he said</div>`
+    + `<div class="k">what it was</div><div>${esc(a.line)}</div>`
+    + `<div class="k">sessions inside it</div>`
+    + (mine.length ? bullets(mine.map(s => s.date + " — " + s.label))
+                   : `<div style="color:var(--faint)">no session entry written for these days yet</div>`);
+}
+function selectSession(s){
+  selKind = "session"; selId = s.title + s.lane; markSelected();
+  detail.innerHTML = `<div class="k">session entry</div><h3>${esc(s.label)}</h3>`
+    + `<div>${s.lanes.map(l => swatch(l) + esc(T[l].name)).join("<br>")}</div>`
+    + `<div class="k">when</div><div>${s.date}</div>`
+    + `<div class="k">what happened</div><blockquote>${esc(s.text)}</blockquote>`;
+}
+function selectStatement(s){
+  selKind = "statement"; selId = s.id; markSelected();
   const after = AFTER[s.id] || [];
-  document.getElementById("detail").innerHTML =
-    `<div class="k">statement ${n} of ${STATEMENTS.length}</div><h3>${esc(s.name)}</h3>`
-    + `<div><span class="sw" style="background:${T[s.thread].color}"></span>${esc(T[s.thread].name)}</div>`
+  detail.innerHTML = `<div class="k">statement ${s.i+1} of ${STATEMENTS.length}</div><h3>${esc(s.name)}</h3>`
+    + `<div>${swatch(s.thread)}${esc(T[s.thread].name)}</div>`
     + `<div class="k">when</div><div>${esc(s.time.slice(0,16).replace("T"," "))} · ${esc(s.session_title || s.session)}</div>`
     + `<div class="k">what he asked for</div><div>${esc(s.summary)}</div>`
     + `<details><summary>His words</summary><blockquote>${esc(s.text)}</blockquote></details>`
     + `<div class="k">what followed</div>`
     + (after.length
-        ? `<ul>${after.map(a => `<li><span class="kk">${esc(KIND[a.k]||a.k)}</span>${esc(clip(a.l,90))}${a.d?` <span style="color:var(--faint)">${esc(a.d)}</span>`:""}</li>`).join("")}</ul>`
+        ? `<ul class="pills">${after.map(a => `<li><span class="kk">${esc(KIND[a.k]||a.k)}</span>${esc(clip(a.l,90))}${a.d?` <span style="color:var(--faint)">${esc(a.d)}</span>`:""}</li>`).join("")}</ul>`
         : `<div style="color:var(--faint)">nothing recorded in this piece of work between here and the next thing he said about it</div>`);
 }
+function selectTopic(id){
+  const t = TOPIC[id];
+  selKind = "topic"; selId = id; markSelected();
+  if (!t){
+    detail.innerHTML = `<h3>${esc(T[id].name)}</h3><div style="color:var(--faint)">These are the things he said that no piece of work has claimed yet.</div>`;
+    return;
+  }
+  detail.innerHTML = `<div class="k">where it stands</div><h3>${swatch(id)}${esc(t.name)}</h3>`
+    + `<div class="k">status</div>` + aLine(t.Status)
+    + (t.Decided ? `<div class="k">settled</div>` + bullets(bySemi(t.Decided)) : "")
+    + (t.Open ? `<div class="k">still open</div>` + bullets(byNumber(t.Open)) : "")
+    + (t["Lives in"] ? `<div class="k">lives in</div>` + bullets(bySemi(t["Lives in"])) : "")
+    + (t["Next action"] ? `<div class="k">next</div>` + aLine(t["Next action"]) : "");
+}
 
-/* search dims the rest */
+/* search dims whatever the current level is showing */
 document.getElementById("q").addEventListener("input", ev => {
   const q = ev.target.value.trim().toLowerCase();
-  gNodes.selectAll(".hit").classed("dim", s => q && !(s.name+" "+s.summary+" "+s.text).toLowerCase().includes(q));
+  const hit = s => (s.name+" "+s.summary+" "+s.text).toLowerCase().includes(q);
+  nodes.classed("dim", s => q && !hit(s));
+  sess.classed("dim", s => q && !(s.title+" "+s.text).toLowerCase().includes(q));
+  arcs.classed("dim", a => q && !(a.name+" "+a.line).toLowerCase().includes(q));
 });
 
 /* the two views */
@@ -315,34 +581,31 @@ document.querySelectorAll("#mode button").forEach(b => b.addEventListener("click
   document.querySelectorAll("#mode button").forEach(x2 => x2.classList.remove("on"));
   b.classList.add("on");
   const trace = b.dataset.v === "trace";
-  document.getElementById("stage").style.display = trace ? "" : "none";
+  stage.style.display = trace ? "" : "none";
   document.getElementById("state").style.display = trace ? "none" : "block";
-  document.getElementById("caption").textContent = trace
-    ? "There is one person working, so there is one line of thought through time. Each coloured line is a piece of work he keeps coming back to; the dark line is him, moving between them. Point at a mark for its summary, click it for his words."
-    : "Where each piece of work stands right now: what is settled, what is still open, and the next thing to do.";
-  if (trace) { sizeView(); svg.call(zoom.transform, latest()); }
+  document.getElementById("lvl").style.display = trace ? "" : "none";
+  if (trace) reset();
+  else document.getElementById("caption").textContent =
+    "Where each piece of work stands right now: what is settled, what is still open, and the next thing to do.";
 }));
 document.getElementById("state").innerHTML = TOPICS.map(t =>
   `<div class="blk"><h3>${esc(t.name)}</h3>`
-  + `<div class="k">status</div><div>${esc(t.Status)}</div>`
-  + (t.Decided ? `<div class="k">settled</div><div>${esc(t.Decided)}</div>` : "")
-  + (t.Open ? `<div class="k">still open</div><div>${esc(t.Open)}</div>` : "")
-  + (t["Next action"] ? `<div class="k">next</div><div>${esc(t["Next action"])}</div>` : "")
-  + (t["Lives in"] ? `<div class="k">lives in</div><div>${linkify(t["Lives in"])}</div>` : "")
+  + `<div class="k">status</div>` + aLine(t.Status)
+  + (t.Decided ? `<div class="k">settled</div>` + bullets(bySemi(t.Decided)) : "")
+  + (t.Open ? `<div class="k">still open</div>` + bullets(byNumber(t.Open)) : "")
+  + (t["Lives in"] ? `<div class="k">lives in</div>` + bullets(bySemi(t["Lives in"])) : "")
+  + (t["Next action"] ? `<div class="k">next</div>` + aLine(t["Next action"]) : "")
   + `</div>`).join("");
 
 document.getElementById("theme").onclick = () => {
   const cur = document.documentElement.getAttribute("data-theme");
   const dark = cur ? cur === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
   document.documentElement.setAttribute("data-theme", dark ? "light" : "dark");
+  reset();
 };
 document.getElementById("counts").textContent =
-  `${STATEMENTS.length} statements · ${THREADS.length} pieces of work · ${BANDS.length} sittings`;
-document.getElementById("detail").innerHTML =
-  `<h3>His own line of thought</h3><p style="color:var(--faint)">Every mark is one thing he typed, in order. `
-  + `A mark sits on the line of the piece of work it belongs to, so a jump up or down is him changing what he was working on. `
-  + `Click any mark for his words and for the rulings, commits and findings that came after it in that same piece of work.</p>`;
-select(STATEMENTS[STATEMENTS.length-1]);
+  `${ARCS.length} arcs · ${SESSIONS.length} sessions · ${STATEMENTS.length} statements · ${THREADS.length} pieces of work`;
+selectArc(ARCS[ARCS.length-1]);
 </script>
 '''
 
@@ -356,15 +619,18 @@ def main(out: str) -> int:
         {k: s[k] for k in ("id", "time", "session", "session_title", "thread", "name", "summary", "text")}
         for s in statements
     ]
+    story, sittings = arcs(statements), sessions(statements, events)
     page = (
         PAGE.replace("__STATEMENTS__", json.dumps(slim, ensure_ascii=False))
         .replace("__THREADS__", json.dumps(lanes, ensure_ascii=False))
         .replace("__BANDS__", json.dumps(bands(statements)))
+        .replace("__ARCS__", json.dumps(story, ensure_ascii=False))
+        .replace("__SESSIONS__", json.dumps(sittings, ensure_ascii=False))
         .replace("__AFTER__", json.dumps(followed(statements, events), ensure_ascii=False))
         .replace("__TOPICS__", json.dumps(topics, ensure_ascii=False))
     )
     Path(out).write_text(page)
-    print(f"{out}: {len(slim)} statements, {len(lanes)} pieces of work, {len(bands(statements))} sittings")
+    print(f"{out}: {len(story)} arcs, {len(sittings)} sessions, {len(slim)} statements, {len(lanes)} pieces of work")
     return 0
 
 

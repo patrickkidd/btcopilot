@@ -29,11 +29,11 @@ DIRS = [
 SINCE = "2026-08-25"
 SUBJECTS = ("fd-362", "fd-360", "chat-first", "personal app", "coach")
 MIN_CHARS = 12
-FILLERS = {
-    "ok", "okay", "and", "also", "so", "i", "think", "the", "a", "an", "but", "well",
-    "yes", "no", "now", "just", "then", "we", "you", "it", "that", "this", "please",
-    "lets", "let's", "can", "could", "would", "should", "is", "are", "to", "of", "for",
-}
+OPENERS = (
+    "i think", "i guess", "i mean", "ok", "okay", "yes", "yeah", "yep", "no", "and",
+    "also", "so", "honestly", "again", "but", "well", "now", "just", "actually",
+    "please", "hey", "right", "sure",
+)
 INJECTED = (
     "<task-notification>",
     "<command-name>",
@@ -82,18 +82,33 @@ def thread_of(text: str) -> str:
     return "unplaced"
 
 
+def opening(text: str) -> str:
+    """His phrase, minus the words he opens with; the phrase itself stays verbatim."""
+    while True:
+        low = text.lower()
+        for word in OPENERS:
+            if low.startswith(word) and (len(low) == len(word) or not low[len(word)].isalnum()):
+                text = text[len(word):].lstrip(" ,.:;-—")
+                break
+        else:
+            return text
+
+
 def name_of(text: str) -> str:
-    words = re.findall(r"[A-Za-z0-9'/.-]+", text)
-    kept = [w for w in words if w.lower() not in FILLERS][:5]
-    return " ".join(kept[:5]) or " ".join(words[:5]) or "(no words)"
+    body = opening(" ".join(text.split()))
+    head = re.split(r"(?<=[,.;:!?])(?:\s|$)", body)[0].strip()
+    words = head.split()
+    if len(words) < 4:
+        words = body.split()
+    return " ".join(words[:7]).rstrip(" ,;:-") or "(no words)"
 
 
 def summary_of(text: str) -> str:
     one = " ".join(text.split())
     first = re.split(r"(?<=[.?!])\s", one)[0]
-    if len(first) <= 90:
+    if len(first) <= 110:
         return first
-    return first[:89].rsplit(" ", 1)[0] + "…"
+    return first[:109].rsplit(" ", 1)[0] + "…"
 
 
 def relevant(path: Path) -> bool:
