@@ -205,6 +205,27 @@ the new schema" but "does a row written on master behave correctly when the chat
 it". The short answer is that nothing crashes, one thing is wrong on screen, one thing is
 silently unreachable, and one thing lets a reader write where they should not.
 
+### Field by field
+
+Every field the new code reads that an old row may lack, what reads it, and what happens.
+
+| Field | Read at | Old rows carry | Handled how |
+|---|---|---|---|
+| `users.current_diagram_id` | `btcopilot/pro/models/user.py:69`, `personal/routes/__init__.py:82` | null | falls back to the free diagram; a user with neither gets one created on the first chat turn (`personal/discussions.py:31`) |
+| `diagrams.data` as JSON | `btcopilot/diagramjson.py:110` | pickle | sniffed by first byte, reads either; converted on first write |
+| `data["clusters"]` | `personal/timeline.py:250` | absent | empty, so no boxes are drawn; detection is gated at `personal/coachturn.py:258` and does not fire on its own |
+| `data["clusterCacheKey"]` | `personal/clusters.py:514` | absent | compares unequal, so the next sync recomputes; correct |
+| person id 2 reserved | `btcopilot/schema.py:470`, `schema.py:1473` | an "Assistant" person | never removed, and nothing filters the people list at `personal/timeline.py:590` |
+| `data["pdp"]` uncommitted items | nothing in the chat app | negative-id items | unreachable; no surface commits them |
+| `discussions.title` | `personal/routes/sessions.py:31` | null | lazy: the coach names it on the first turn (`personal/coachturn.py:247`) |
+| `discussions.title_set_by_user` | `personal/routes/sessions.py:33` | server default `false` | correct |
+| `discussions.chat_ai_speaker_id` | `personal/routes/sessions.py:41`, `personal/coachturn.py:302`, `:237` | null on training imports, set on old Personal rows | **fails on training imports**: every message reads as the user |
+| `discussions.chat_user_speaker_id` | `personal/coachturn.py:161` | null on training imports | new user statements get a null speaker |
+| `speakers.type` | `personal/discussions.py:65` | training imports are all `Subject`, no `Expert` | `sync_chat_speakers` picks the first Subject in no defined order and **overwrites its name and person link** |
+| `statements.kind` | `personal/routes/sessions.py:46` | server default `turn` | correct, and the read is null-tolerant |
+| `statements.cluster_id` | `personal/routes/sessions.py:47` | null | correct; only play-by-play messages use it |
+| `statements.views` | written at `personal/coachturn.py:239`, never read back | null | no gap — the page gets views from the live turn response only, so past turns lose them for new and old rows alike |
+
 ### Which old rows the new app can even reach
 
 The switcher lists every diagram the user owns plus every diagram granted to them
