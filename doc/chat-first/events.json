@@ -8788,7 +8788,7 @@
 "T-9"
 ],
 "title": "2026-09-10 and 11 — merge fixes, the coding loop designed, the flush made a skill",
-"text": "The owner ruled the beta deploys on the existing production server, merge-first, with old Pro\ndiagrams left as pickle and new rows JSON in the same column [R-0241]. A read-only merge-risk\nreview (MERGE_REVIEW.md) found seven must-fix items; all seven landed in one commit (9f1707a)\nand the suites are green run alone. His record was wiped and re-coded through the agent loop\nwith the new clinical knowledge: 23 turns, 27 tool calls, two refusals corrected by the coach,\n10 events with variables. He re-planned the product as one app in thin layers — Pro and\nTraining as additions to the chat screen, never new views [R-0237, R-0243] — with a coding\nprotocol for a publishable blind IRR study: any coder any time, results only for contributors\n[R-0242]. Coding mode D (read-only session, a cheap scribe in the composer) and the\nupload/speaker-mapping sheet were approved; four IRR-review concepts for five codings await\nhis pick. Corrections that now bind: no coined terms; estimate the work, not the validation;\nbuild only on an explicit go; one place for content; mockups drawn with the app's own\nstylesheet; sub-agents token- and model-optimised. The flush became a skill (`/flush`) with a\ntopic re",
+"text": "The owner ruled the beta deploys on the existing production server, merge-first, with old Pro\ndiagrams left as pickle and new rows JSON in the same column [R-0241]. A read-only merge-risk\nreview (MERGE_REVIEW.md) found seven must-fix items; all seven landed in one commit (9f1707a)\nand the suites are green run alone. His record was wiped and re-coded through the agent loop\nwith the new clinical knowledge: 23 turns, 27 tool calls, two refusals corrected by the coach,\n10 events with variables. He re-planned the product as one app in thin layers — Pro and\nTraining as additions to the chat screen, never new views [R-0237, R-0243] — with a coding\nprotocol for a publishable blind IRR study: any coder any time, results only for contributors\n[R-0242]. Coding mode D (read-only session, a cheap scribe in the composer) and the\nupload/speaker-mapping sheet were approved; four IRR-review concepts for five codings await\nhis pick. Corrections that now bind: no coined terms; estimate the work, not the validation;\nbuild only on an explicit go; one place for content; mockups drawn with the app's own\nstylesheet; sub-agents token- and model-optimised. The flush became a skill (`/two-clocks`) with a\ntop",
 "source": "doc/chat-first/HISTORY.md"
 },
 {
@@ -8899,6 +8899,31 @@
 "text": "One app, progressively enhanced: the chat screen as built is the app; Pro adds cases (the family switcher), sessions (the sessions sheet plus upload a recording with speaker mapping), notes, and a wider desktop layout with the drawer pinned; Training adds coding actions in the session menu and agreement under sessions; never a new view where an existing surface can carry the addition",
 "supersedes": [],
 "source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "btcopilot@1c0c414",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-9"
+],
+"title": "FD-362 flush: 2026-09-11 — three-stage ground truth with cuts, the coding page tabled, Patrick by name, ruling",
+"text": "FD-362 flush: 2026-09-11 — three-stage ground truth with cuts, the coding page tabled, Patrick by name, rulings R-0244..R-0268",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@8f59a0a",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 memory: the state view uses the whole width; the flush skill is /two-clocks",
+"text": "FD-362 memory: the state view uses the whole width; the flush skill is /two-clocks",
+"source": "btcopilot git log"
 },
 {
 "id": "btcopilot@39aaaa1",
@@ -9830,7 +9855,7 @@
 "T-1",
 "T-9"
 ],
-"title": "s/flush/SKILL.md; the trace page https://claude.ai/code/artifact/be081e64-9efa-45de-b329-42e82f9d4857; the shape mockups",
+"title": "-clocks/SKILL.md; the trace page https://claude.ai/code/artifact/be081e64-9efa-45de-b329-42e82f9d4857; the shape mockups",
 "text": "https://claude.ai/code/artifact/fefb75e5-dade-4cf9-8892-eb7e61af6dc7",
 "link": "https://claude.ai/code/artifact/fefb75e5-dade-4cf9-8892-eb7e61af6dc7",
 "source": "doc/chat-first/TOPICS.md"
