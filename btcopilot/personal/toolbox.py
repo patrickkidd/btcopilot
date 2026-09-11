@@ -127,11 +127,24 @@ SCHEMAS = [
             "type": "object",
             "properties": {
                 "id": {"type": "integer"},
-                "kind": _enum_param(EventKind, "What kind of event this is."),
+                "kind": _enum_param(
+                    EventKind,
+                    "Birth, adopted, married, bonded, separated, divorced, "
+                    "moved and death say themselves: the kind is the meaning "
+                    "and the description only adds what the kind does not "
+                    "say. A shift is one particular thing that happened at a "
+                    "point in time and moved one of the four variables — not "
+                    "a general characterisation and not the texture of a "
+                    "pattern already in the record.",
+                ),
                 "date": {"type": "string", "description": "YYYY-MM-DD"},
                 "end_date": {"type": "string", "description": "YYYY-MM-DD"},
                 "date_certainty": _enum_param(
-                    DateCertainty, "How sure the date is. Default certain."
+                    DateCertainty,
+                    "Certain for a date they stated, approximate for within a "
+                    "year or so — an age, a season, a year after something "
+                    "else — and unknown for a guess. Default certain. Never "
+                    "leave the date itself out: a vague date beats none.",
                 ),
                 "description": {
                     "type": "string",
@@ -143,32 +156,86 @@ SCHEMAS = [
                         "became difficult around puberty' for a shift."
                     ),
                 },
-                "person": {"type": "integer"},
-                "spouse": {"type": "integer"},
+                "person": {
+                    "type": "integer",
+                    "description": (
+                        "Who the event is about: who died, who moved, who "
+                        "made the move on a shift. On a marriage, bonding, "
+                        "separation or divorce it is one of the two partners "
+                        "and spouse is the other. On a birth or adoption it "
+                        "is a parent, and is left out when the parents are "
+                        "not known — never the same id as child."
+                    ),
+                },
+                "spouse": {
+                    "type": "integer",
+                    "description": (
+                        "The other partner. Required with person on married, "
+                        "bonded, separated and divorced; on a birth it is the "
+                        "second parent."
+                    ),
+                },
                 "child": {
                     "type": "integer",
                     "description": (
-                        "For a birth or adoption, who was born: set child, not "
-                        "person."
+                        "For a birth or adoption, who was born or taken in: "
+                        "set child, not person. On a shift whose relationship "
+                        "is projection, the child the anxious attention is "
+                        "on."
                     ),
                 },
-                "anxiety": _enum_param(VariableShift, "Which way anxiety moved."),
-                "symptom": _enum_param(VariableShift, "Which way symptom moved."),
+                "anxiety": _enum_param(
+                    VariableShift,
+                    "The automatic response to a threat, real or imagined. "
+                    "Nervous, worried, on edge is up, and so is a memory that "
+                    "goes vague around something stressful. Down only when "
+                    "they say it eased.",
+                ),
+                "symptom": _enum_param(
+                    VariableShift,
+                    "A change in physical or mental health, or in meeting "
+                    "one's own goals: sleep, pain, fatigue, a diagnosis, "
+                    "drinking, eating. Nearly always up, meaning it appeared "
+                    "or worsened; down only when they say it improved.",
+                ),
                 "functioning": _enum_param(
-                    VariableShift, "Which way functioning moved."
+                    VariableShift,
+                    "The ability to hold emotion and thinking together toward "
+                    "longer-term goals. Down when they were overwhelmed or "
+                    "could not cope, up when they managed well under "
+                    "pressure. Doing too much for everyone is "
+                    "overfunctioning, not functioning down.",
                 ),
                 "relationship": _enum_param(
-                    RelationshipKind, "The relationship move this event is."
+                    RelationshipKind,
+                    "What this person did toward others, and the most common "
+                    "thing a shift carries. Distance is avoiding contact and "
+                    "cutoff is severing it; conflict is open argument; "
+                    "overfunctioning and underfunctioning are the two halves "
+                    "of one imbalance; projection is anxious attention to a "
+                    "problem in a child, which goes in the child field; "
+                    "toward seeks closeness and away pulls back; "
+                    "defined-self is holding a principled position; fusion is "
+                    "emotional merging. Inside and outside are the triangle "
+                    "moves: inside lines up with the targets against the "
+                    "triangles, outside puts this person out. An argument "
+                    "about a third person is inside, not conflict.",
                 ),
                 "relationship_targets": {
                     "type": "array",
                     "items": {"type": "integer"},
-                    "description": "The people the move is aimed at.",
+                    "description": (
+                        "Who the move was aimed at. Required whenever "
+                        "relationship is set, and never empty."
+                    ),
                 },
                 "relationship_triangles": {
                     "type": "array",
                     "items": {"type": "integer"},
-                    "description": "The third people the move triangles in.",
+                    "description": (
+                        "The third people left on the outside of the move. "
+                        "Required when relationship is inside or outside."
+                    ),
                 },
             },
         },
@@ -540,9 +607,8 @@ class Toolbox:
                 session_id=self.session_id,
             )
         except record.Invalid as e:
-            raise ToolError(
-                f"That would leave {e}. Add an event to it, or remove the grouping."
-            )
+            # the record says what is wrong in the coach's own words already
+            raise ToolError(str(e))
         self.deltas.extend(change.deltas)
         return change
 

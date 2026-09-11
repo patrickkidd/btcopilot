@@ -20,6 +20,8 @@ from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
     EventKind,
     ItemKind,
+    RelationshipKind,
+    VariableShift,
 )
 
 _log = logging.getLogger(__name__)
@@ -297,9 +299,12 @@ def _validate(data: dict, deltas: list[dict]):
             small.append(cluster_id)
     if small:
         raise Invalid(
-            f"clusters {small} would hold fewer than {MIN_CLUSTER_EVENTS} events"
+            f"that would leave clusters {small} with fewer than {MIN_CLUSTER_EVENTS} "
+            "events: add an event to the cluster, or remove the grouping"
         )
     _words(data, deltas)
+    _moves(data, deltas)
+    _twins(data, deltas)
 
 
 LINKS = (
@@ -320,16 +325,50 @@ def _role(event: dict, person_id) -> str | None:
     return None
 
 
+VARIABLES = ("symptom", "anxiety", "functioning")
+SHIFTS = {shift.value for shift in VariableShift}
+RELATIONSHIPS = {relationship.value for relationship in RelationshipKind}
+MATCH_LINKS = ("person", "spouse", "child", "relationshipTargets", "relationshipTriangles")
+
+
+def _val(value):
+    return getattr(value, "value", value)
+
+
+def _touched(deltas: list[dict]) -> list[str]:
+    return list(
+        dict.fromkeys(
+            str(delta["item_id"])
+            for delta in deltas
+            if delta["item_kind"] == ItemKind.Event.value
+        )
+    )
+
+
+def _moved(event: dict) -> bool:
+    """The event says something moved: a variable went up, down or stayed the
+    same, or a relationship took a direction."""
+    if any(_val(event.get(field)) in SHIFTS for field in VARIABLES):
+        return True
+    return _val(event.get("relationship")) in RELATIONSHIPS
+
+
+def _day(value) -> str | None:
+    if not value:
+        return None
+    if hasattr(value, "toString"):
+        return value.toString("yyyy-MM-dd") or None
+    if hasattr(value, "isoformat"):
+        return value.isoformat()[:10]
+    return str(value)[:10]
+
+
 def _words(data: dict, deltas: list[dict]):
     """A moment's words are who and what (owner ruling, 2026-09-09): the
     description says what happened and never names a person the event already
     links, and a birth is about the child. Checked on the events this write
     touches, the way the cluster floor is."""
-    for event_id in dict.fromkeys(
-        str(delta["item_id"])
-        for delta in deltas
-        if delta["item_kind"] == ItemKind.Event.value
-    ):
+    for event_id in _touched(deltas):
         event = _find(data, ItemKind.Event, event_id)
         if event is None:
             continue
@@ -360,6 +399,83 @@ def _words(data: dict, deltas: list[dict]):
                         f"event {event_id}'s description names {name}, who is "
                         f"already its {role}; say what happened without the name"
                     )
+
+
+def _moves(data: dict, deltas: list[dict]):
+    """A shift says which way something moved, and an early birth says nothing
+    but when someone was born (owner ruling R-0037). Checked on the events this
+    write touches, the way the cluster floor is."""
+    events = _collection(data, ItemKind.Event)
+    for event_id in _touched(deltas):
+        event = _find(data, ItemKind.Event, event_id)
+        if event is None:
+            continue
+        kind = _val(event.get("kind"))
+        if kind == EventKind.Shift.value and not _moved(event):
+            raise Invalid(
+                f"event {event_id} is a shift with no variable and no "
+                "relationship move: say which of symptom, anxiety, functioning "
+                "or relationship moved, and which way"
+            )
+        if kind not in (EventKind.Birth.value, EventKind.Adopted.value):
+            continue
+        # early = before the first moment that moved anything: that is where
+        # the diagnostic period starts (R-0038); births before it are scaffolding
+        day = _day(event.get("dateTime"))
+        days = [
+            other_day
+            for other in events
+            if str(other.get("id")) != event_id
+            and _moved(other)
+            and (other_day := _day(other.get("dateTime")))
+        ]
+        if day and (not days or day < min(days)) and _moved(event):
+            raise Invalid(
+                f"event {event_id} is an early birth: it anchors age and "
+                "carries no symptom, anxiety, functioning or relationship"
+            )
+
+
+def _links(event: dict) -> tuple:
+    out = []
+    for field in MATCH_LINKS:
+        value = event.get(field)
+        if isinstance(value, list):
+            out.append(tuple(sorted(str(x) for x in value if x is not None)))
+        else:
+            out.append(str(value) if value is not None else None)
+    return tuple(out)
+
+
+def _twins(data: dict, deltas: list[dict]):
+    """The same moment is not written down twice: an event this write adds that
+    matches one already in the record is refused, naming the one that is there."""
+    added = {
+        str(delta["item_id"])
+        for delta in deltas
+        if delta["item_kind"] == ItemKind.Event.value
+        and delta["field"] in (None, "kind")
+        and delta["before"] is None
+    }
+    events = _collection(data, ItemKind.Event)
+    for event_id in _touched(deltas):
+        if event_id not in added:
+            continue
+        event = _find(data, ItemKind.Event, event_id)
+        if event is None:
+            continue
+        for other in events:
+            if str(other.get("id")) == event_id:
+                continue
+            if (
+                _val(other.get("kind")) == _val(event.get("kind"))
+                and _day(other.get("dateTime")) == _day(event.get("dateTime"))
+                and _links(other) == _links(event)
+            ):
+                raise Invalid(
+                    f"that moment is already event {other.get('id')}: change it "
+                    f"with edit_event(id={other.get('id')}) rather than adding it"
+                )
 
 
 def _commit(

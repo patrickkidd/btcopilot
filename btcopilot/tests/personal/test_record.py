@@ -376,3 +376,111 @@ def test_pro_put_round_trip_and_logs_a_change(flask_app, test_user):
             "after": "Bea",
         }
     ]
+
+
+def test_the_write_refuses_a_shift_that_says_nothing_moved(subscriber):
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
+
+    with pytest.raises(record.Invalid, match="shift with no variable"):
+        record.apply(
+            diagram.id,
+            [
+                {"item_kind": ItemKind.Event, "item_id": 30, "field": "kind", "after": "shift"},
+                {"item_kind": ItemKind.Event, "item_id": 30, "field": "person", "after": 1},
+                {
+                    "item_kind": ItemKind.Event,
+                    "item_id": 30,
+                    "field": "description",
+                    "after": "a hard week",
+                },
+            ],
+            author=Author.Coach,
+            turn_id="t1",
+        )
+    assert diagram.get_diagram_data().events == []
+
+
+def test_the_write_refuses_an_early_birth_that_carries_a_variable(subscriber):
+    """Owner ruling R-0037: a birth before the story starts anchors age only."""
+    diagram = _diagram(
+        subscriber.user,
+        {
+            "people": [{"id": 1, "name": "Ada"}],
+            "events": [
+                {"id": 10, "kind": "shift", "person": 1, "dateTime": "1990-04-02", "anxiety": "up"}
+            ],
+        },
+    )
+
+    with pytest.raises(record.Invalid, match="early birth"):
+        record.apply(
+            diagram.id,
+            [
+                {"item_kind": ItemKind.Event, "item_id": 31, "field": "kind", "after": "birth"},
+                {"item_kind": ItemKind.Event, "item_id": 31, "field": "child", "after": 1},
+                {
+                    "item_kind": ItemKind.Event,
+                    "item_id": 31,
+                    "field": "dateTime",
+                    "after": "1962-01-05",
+                },
+                {"item_kind": ItemKind.Event, "item_id": 31, "field": "anxiety", "after": "up"},
+            ],
+            author=Author.Coach,
+            turn_id="t1",
+        )
+    assert len(diagram.get_diagram_data().events) == 1
+
+
+def test_the_write_refuses_a_moment_already_in_the_record(subscriber):
+    diagram = _diagram(
+        subscriber.user,
+        {
+            "people": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}],
+            "events": [
+                {"id": 10, "kind": "married", "person": 1, "spouse": 2, "dateTime": "1988-06-11"}
+            ],
+        },
+    )
+
+    with pytest.raises(record.Invalid, match="already event 10"):
+        record.apply(
+            diagram.id,
+            [
+                {"item_kind": ItemKind.Event, "item_id": 32, "field": "kind", "after": "married"},
+                {"item_kind": ItemKind.Event, "item_id": 32, "field": "person", "after": 1},
+                {"item_kind": ItemKind.Event, "item_id": 32, "field": "spouse", "after": 2},
+                {
+                    "item_kind": ItemKind.Event,
+                    "item_id": 32,
+                    "field": "dateTime",
+                    "after": "1988-06-11",
+                },
+            ],
+            author=Author.Coach,
+            turn_id="t1",
+        )
+    assert len(diagram.get_diagram_data().events) == 1
+
+
+def test_a_shift_that_names_its_move_beside_an_anchoring_birth_commits(subscriber):
+    diagram = _diagram(
+        subscriber.user,
+        {
+            "people": [{"id": 1, "name": "Ada"}],
+            "events": [{"id": 10, "kind": "birth", "child": 1, "dateTime": "1962-01-05"}],
+        },
+    )
+
+    record.apply(
+        diagram.id,
+        [
+            {"item_kind": ItemKind.Event, "item_id": 33, "field": "kind", "after": "shift"},
+            {"item_kind": ItemKind.Event, "item_id": 33, "field": "person", "after": 1},
+            {"item_kind": ItemKind.Event, "item_id": 33, "field": "dateTime", "after": "1990-04-02"},
+            {"item_kind": ItemKind.Event, "item_id": 33, "field": "anxiety", "after": "up"},
+        ],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    assert len(diagram.get_diagram_data().events) == 2

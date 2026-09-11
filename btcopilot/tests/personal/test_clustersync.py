@@ -130,7 +130,7 @@ def test_the_grouping_is_written_by_the_coach_in_the_same_turn(discussion, famil
             "She got sick.",
             model=Model(
                 called(ToolName.EditEvent, kind="shift", date="1994-05-01",
-                       description="got sick", person=1),
+                       description="got sick", person=1, symptom="up"),
                 said("Noted."),
             ),
         ).run()
@@ -268,7 +268,7 @@ def test_renaming_a_grouping_stuck_under_the_floor_says_what_to_do(family):
     _grandfathered(family)
     tools = Toolbox(family.id, turn_id="t1")
 
-    with pytest.raises(ToolError, match="Add an event to it, or remove the grouping"):
+    with pytest.raises(ToolError, match="add an event to the cluster, or remove the grouping"):
         tools.call(ToolName.EditCluster.value, {"id": "c1", "name": "That autumn"})
     assert clusters_of(family)["c1"]["name"] == "When he left"
 
