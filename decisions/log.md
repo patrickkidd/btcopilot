@@ -1232,3 +1232,30 @@ before this rule keep meaning the same thing.
 **Revisit trigger:** the turn's latency or model spend makes synchronous detection untenable (move it
 to the worker that already runs the agent loop); or the user gains a way to name a stretch without
 going through the coach, which would need its own provenance.
+
+## 2026-09-11: Ground truth in three stages, coded up to cuts; the AI out of the vote
+
+**Context:** Last year's IRR meetings never converged: a tool too complicated for therapists,
+no pre-meeting work, every dispute argued live. The new app makes every coding a diagram, so a
+review process could be designed from scratch. Patrick ruled it over seven rounds on one drawn
+page (oracle R-0244..R-0268).
+
+**Decision:** Three stages. Each coder codes a conversation up to a cut Patrick selects on the
+thread, blind, adding to their own earlier coding of it; once three are done, each votes on a
+phone on every disputed item, takes shown without names and with no AI take or recommendation
+in the ballot; the meeting sees only what the vote left open, with names and tallies, gives
+every item keep / change / unresolved, and ratifies with unresolved items kept as data. Coders
+have one task at a time, never a list. The AI does the clerical work (matching, grouping,
+quoting, ordering, drafting the guideline changes after ratification) and is scored, never
+consulted, on the human decisions. Rejected: the AI's recommendation in the ballot or at the
+meeting (anchoring); a queue of tasks; whole transcripts as a separate unit (a cut at the end
+is the whole thing); correcting the coach's coding first (not blind).
+
+**Open:** the ballot's settling rule; whether names are revealed at ratification and
+who-was-right stored; whether the meeting's records replace the repository's markdown as the
+system of record with the guidelines file generated from the tables; the migration of last
+year's rules and ledgers.
+
+**Revisit trigger:** the first two meetings — if the pre-meeting vote is not being done, the
+stages collapse back to one and the design is wrong.
+
