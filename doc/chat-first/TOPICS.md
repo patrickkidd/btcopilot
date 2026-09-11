@@ -126,8 +126,14 @@ auto-arrange question; (5) [ruling] the interface calls drawn both ways as whole
 (https://claude.ai/code/artifact/14ca039a-b28e-4d01-95fb-93ba403bf19e): the two-moment grouping as a box or two dots; the
 double ring kept or dropped; the step line on an alternating stretch as a zigzag or dots only;
 the moment chip outlined or filled; "+" on another family switching or refusing; the triangle
-and the compare views as built; the remaining pixel defaults accepted or not — seven choices on
-the page; the event editor's relationship fields are build work with no call; the feel of the
+and the compare views as built; the remaining pixel defaults accepted or not; ruled from it 2026-09-11: the nodal
+ring stays and the flag follows the clinical definition [R-0283]; no trend lines until real
+data [R-0284]; "case" is the word for Pro only, one case selected at a time, sessions added
+from within the case, no per-case "+" in the sessions sheet [R-0285]; the two-moments-compared
+boxes dropped, and the triangle view and the outside move must be redrawn without conflict
+marks once the concept is confirmed [R-0286]; the chip stays outlined [R-0282]; still open:
+whether the coach owns groupings as a tool like any other edit with the rules only as a first
+draft, and the triangle concept; the event editor's relationship fields are build work with no call; the feel of the
 moves board is his to make on his phone at https://turin.local:8891/personal/; (7) [waiting] migrating last year's IRR material, the last follow-up item of this unit [R-0262, R-0273] — inventory 2026-09-11 of
 doc/irr/: 25 rules in tables keyed to meeting number with unanimity and confidence (migrate as
 rows with the meeting as provenance); six meetings' agreement/disagreement/action tables keyed

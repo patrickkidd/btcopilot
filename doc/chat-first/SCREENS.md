@@ -88,7 +88,7 @@ What it is for: the one picture, always above the chat, that is the app's memory
 - Order between two guesses is only drawn when the two guessed ranges do not overlap. [built]
 - The picture never announces that it is about to change; the invitation is always in the coach's words. [built]
 - The warning badge saying the picture might be behind the conversation was removed. [built] {R-0203}
-- Whether the double ring marking an unusually significant moment stays or goes is a choice Patrick has not made. [open]
+- A nodal event, Bowen theory's term for a moment that shifts the family's emotional process, carries a ring on its dot; the coach sets that flag by the clinical definition, never by guesswork. [built] {R-0283}
 
 ## A cluster opened
 
@@ -114,6 +114,7 @@ What it is for: one group of related moments, opened from the line.
 @frame built#f9 | The board playing the first move: the people on a ring, the move drawn in green, and one sentence saying who did what.
 
 What it is for: a play-by-play of what people did, one move at a time.
+@link https://claude.ai/code/artifact/c523a1c9-b298-49e8-807b-142a8a7470f7 | The ratified move language: every relationship move and variable shift, animated, as the board plays them.
 
 - The board is reached from the picture by the play mark alone, with no words beside it. [built]
 - The board grows to fit what it is showing rather than sitting at a fixed height. [built] {R-0173}
@@ -250,7 +251,7 @@ What it is for: your past conversations.
 - A button at the foot starts a new session, and refuses while the current one is still empty. [built]
 - With no sessions at all it says past conversations collect here. [built]
 - When you have several families, sessions are grouped under the family they belong to, each showing its three most recent. [built]
-- What tapping "+" should do on a family the app is not currently on is a choice Patrick has not made; today it refuses and says to open that family first. [open]
+- Sessions are started from within the case you are on; there is no "+" beside other cases in the sessions sheet, and a personal user never sees the word case at all. [drawn] {R-0285}
 - Someone else's session is simply not found rather than refused, so the app never confirms a session it will not show you. [built]
 - The history in the review database is kept across code changes rather than reset. [built] {R-0191}
 - Existing diagrams and conversations made before this app must open in it as sessions; old training transcripts are kept out of the list. [built]

@@ -780,4 +780,9 @@ and as the existing field, and kept the drawn family diagram in the plan behind 
 [R-0281]. He asked for real-feeling content from his own record as inspiration, fully
 anonymized with the issues and timeline changed [R-0280]: a stand-in family was written to
 mockups/family.md and every frame of every drawing rewritten with it, guarded by a name check
-with zero hits. The interface calls still open were drawn both ways as whole screens.
+with zero hits. The interface calls still open were drawn both ways as whole screens. From the calls page he ruled: the outlined chip stays and the term is nodal event [R-0282];
+the nodal ring stays and the flag follows the clinical definition [R-0283]; no trend lines
+until real data [R-0284]; "case" for Pro only, one selected, sessions added within it [R-0285];
+two-moments-compared dropped, and the triangle view and the outside move carry no conflict marks
+[R-0286]. He asked whether the coach should own groupings like any other edit; and the move
+language was linked under the moves board in the catalogue.

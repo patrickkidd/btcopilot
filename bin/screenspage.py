@@ -47,6 +47,7 @@ label.toggle{font-size:13px;color:var(--faint)}"""
 
 TAG = re.compile(r"\[(built|drawn|open)\]\s*(\{[^}]*\})?\s*$")
 FRAME = re.compile(r"^@frame\s+([a-z0-9-]+)#(f\d+)\s*\|\s*(.+)$")
+LINK = re.compile(r"^@link\s+(\S+)\s*\|\s*(.+)$")
 ID_ATTR = re.compile(r'\b(id|for|aria-labelledby|aria-controls)="([^"]+)"')
 SELECTOR = re.compile(r"([^{}]+)\{([^{}]*)\}")
 SCRIPT = re.compile(r"<script\b.*?</script>", re.S | re.I)
@@ -121,11 +122,14 @@ def parse():
     for block in rest.split("\n## ") if rest else []:
         name, _, body = block.partition("\n")
         name = name.strip()
-        purpose, items, frames = "", [], []
+        purpose, items, frames, links = "", [], [], []
         for line in body.splitlines():
             line = line.strip()
+            link = LINK.match(line)
             shot = FRAME.match(line)
-            if shot:
+            if link:
+                links.append((link.group(1), link.group(2).strip()))
+            elif shot:
                 frames.append((shot.group(1), shot.group(2), shot.group(3).strip()))
             elif line.startswith("What it is for:"):
                 purpose = line[len("What it is for:") :].strip()
@@ -142,13 +146,13 @@ def parse():
                 f'<li>{inline(TAG.sub("", item).strip())}'
                 f'<span class="pill {status}">{status}</span>{src}</li>'
             )
-        sections.append((name, purpose, frames, rows))
+        sections.append((name, purpose, frames, rows, links))
     return blurb, updated, counts, sections
 
 
 def main(out: str) -> int:
     blurb, updated, counts, sections = parse()
-    used = sorted({m for _, _, frames, _ in sections for m, _, _ in frames})
+    used = sorted({m for _, _, frames, _, _ in sections for m, _, _ in frames})
     files = {m: (MOCKUPS / f"{m}.html").read_text() for m in used}
     widths = {m: frame_widths(files[m]) for m in used}
     seq = [0]
@@ -172,10 +176,10 @@ def main(out: str) -> int:
         '<input type="checkbox" id="sources">'
         '<label class="toggle" for="sources">show sources</label>',
         "<nav>"
-        + "".join(f'<a href="#{slug(n)}">{html.escape(n)}</a>' for n, _, _, _ in sections)
+        + "".join(f'<a href="#{slug(n)}">{html.escape(n)}</a>' for n, _, _, _, _ in sections)
         + "</nav>",
     ]
-    for name, purpose, frames, rows in sections:
+    for name, purpose, frames, rows, links in sections:
         parts.append(f'<h2 id="{slug(name)}">{html.escape(name)}</h2>')
         if purpose:
             parts.append(f'<p class="for">{inline(purpose)}</p>')
@@ -196,6 +200,8 @@ def main(out: str) -> int:
             parts.append(f'<div class="shots">{shots}</div>')
         else:
             parts.append('<p class="none">No rendering yet.</p>')
+        for url, cap in links:
+            parts.append(f'<p class="for"><a href="{html.escape(url)}">{html.escape(cap)}</a></p>')
         parts.append(
             f"<details><summary>what it does &middot; {len(rows)} behaviours</summary>"
             f'<ul>{"".join(rows)}</ul></details>'
