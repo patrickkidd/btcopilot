@@ -759,4 +759,7 @@ next step. He approved the coding screens with the inline coding chat [R-0270] a
 shareable spec sheet, the state clock of every screen's behaviour for the beta users: written as
 doc/chat-first/SCREENS.md (22 screens, 285 items tagged built, drawn or open, ruling ids
 behind a toggle), rendered by bin/screenspage.py, refreshed by the flush and checked by
-flushcheck.
+flushcheck. He then moved Done to the top bar with a confirmation sheet, kept the composer for single
+codes, showed earlier turns in full but codable only within the cut, and dropped the "coding"
+mark [R-0271]; the coding screens closed at version 3. He asked that the spec sheet lead with
+the pixel renderings of every ruled view, like a page shown to a customer.

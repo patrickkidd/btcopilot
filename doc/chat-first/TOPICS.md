@@ -118,14 +118,11 @@ to statement ids of last year's discussions, about 40–60 rows (migrate as sett
 those discussions are imported through the upload path); six deliberation records in prose
 (keep as text, mine for rationale later); six raw transcripts (irreplaceable, never migrated);
 the old per-statement feedback stays the batch harness's ground truth until re-coded — his yes
-or no on that plan; (8) [ruling] the coding screens, redrawn 2026-09-11 to the review rulings
-(https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a, version 2: the one-task
-card, the transcript up to the cut with the last ratified cut marked and the coder's own earlier
-chips above it, the scribe in the composer, Done, the next task card) — four choices on the
-page: the coder's words kept in the thread or only the scribe's edit line; Done as a plain
-button or the green pill; the amber "coding" mark or none; turns before the last ratified cut
-shown in full or folded away — the first is ruled (words kept, inline coding chat) [R-0270],
-three remain; (9) [build] the two-sided
+or no on that plan; (8) [build] the coding screens are approved as drawn, version 3, nothing open
+(https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a): the one-task card; the
+transcript up to the cut with the last ratified cut as a hairline, earlier turns shown in full
+but not codable; the coder's own words in the thread with the scribe's edit line under them;
+Done in the top bar with a confirmation sheet; the next task card [R-0270, R-0271]; (9) [build] the two-sided
 compare view already drawn folds into the ballot or the meeting screen; (10) [build] Pro
 "notes" has no mockup; (11) [build] build order once the six rulings land: codings, cuts,
 ballots, votes and scores tables; endpoints; replay as a task; export of ratified items to the
@@ -147,9 +144,10 @@ https://claude.ai/code/artifact/67988998-6e49-4924-a9b3-579979901eaf; the coding
 https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a; mockups are drawn with
 web/src/theme.css and the app's markup (his rule 2026-09-10); last year's material in
 doc/irr/.
-**Next action:** Patrick rules on the coding screens' four choices and the review screens' six,
-confirms Pro's surfaces one by one (notes undrawn), and answers the migration plan; then the
-remaining screens are drawn pixel for pixel before any code review [R-0269].
+**Next action:** Patrick rules on the review screens' six choices, confirms Pro's surfaces one
+by one (notes undrawn), and answers the migration plan; the spec sheet for beta users becomes
+a picture catalogue of every ruled view; then any remaining screens are drawn pixel for pixel
+before code review [R-0269].
 **Updated:** 2026-09-11.
 
 ## T-4 · Existing records and conversations in the new app; wipe and re-code
