@@ -66,8 +66,8 @@ in the editor); run the harness once.
 
 ## T-3 · One app: Pro and Training as thin layers on the chat
 
-**Status:** designed and ruled; the IRR review is being worked out by prototyping in the review
-meetings; the coding page is tabled; nothing built.
+**Status:** designed and ruled; the IRR review is now a three-stage ground-truth process with a
+written analysis awaiting his eyeball; the coding page is tabled; nothing built.
 **Decided:** one Vite app, features by licence, role and view; coding is documenting a case,
 Pro on desktop; training is auditor/admin features on top [R-0237]; never a new view where an
 existing surface can carry the addition [R-0243]; Pro adds cases (= the family switcher on the
@@ -77,43 +77,50 @@ whose composer bar becomes "select a line, type an instruction, a cheap scribe r
 (option D) with Done; coding protocol: no assignments, any coder any time, each Done joins the
 pool and recomputes agreement, results visible only to contributors, blind until your own Done
 [R-0242]; the coach's replay is one coding among others; the upload/speaker-mapping sheet is
-approved as drawn. **IRR review (2026-09-11):** worked out in the meetings themselves — several
-approaches in the app, try one for minutes, jump to the next, learn per meeting; no pre-review,
-all review in the meeting [R-0244]; its front-end code must be easy to change and isolated so it
-can never break Personal or Pro [R-0245]; two families to try, data-oriented (slices: one
-timeline per coder, one list of every moment) and guided (prioritised items led by an AI
-evaluation); the AI helping the room through the review is important and its shape is open;
-candidate: the AI proposes a final data set from all codings and the room accepts, overrides or
-tweaks it into ground truth; he likes the one-timeline-per-coder view [R-0246]. The coding-page
-design is tabled except where it overlaps the review; simple, progressive enhancement [R-0247].
-**Open:** (1) the review-meeting ideas drawn for his eyeball
-(https://claude.ai/code/artifact/40ba5500-7be3-4bc2-82ed-193f8367448f): one session with four
-switchable lenses (timeline, list, cards, chat) over the same matched moments and one gold
-record; the AI's proposed record in three groups (agreed, disputed with the AI's pick, reason
-and transcript quote, only-the-coach-saw) with accept/override/tweak; settling a whole kind of
-disagreement with one rule; the room voting on phones with the tally on the big screen and a
-meeting clock; and after the meeting, settles tagged as rules, drafted guideline amendments,
-and what each coder tends to do — which of these go into the first meeting build is his call;
-(2) whether the one-list-of-every-moment view adds anything over the one-timeline-per-coder
-view (answered: same matched data; the list sorts by disagreement, shows differing values
-inline and scales past five coders, but loses the time axis); (3) the coding page as drawn
+approved as drawn. **IRR review (2026-09-11):** the approaches are tried in the meetings
+themselves and each meeting teaches the next [R-0244, its no-pre-review clause superseded];
+the review front end is isolated so it can never break Personal or Pro [R-0245]; two families,
+data-oriented slices and an AI-guided walk; the AI helping the room is important; he likes the
+one-timeline-per-coder view [R-0246]; the coding page is tabled except where it overlaps the
+review [R-0247]; "gold" means ratified — the AI's set is the proposed record, the ratified record
+is ground truth [R-0249]; **three stages**: code blind from scratch, then vote before the meeting
+on every outstanding disagreement once a checkpoint's worth of coders have finished, then the
+meeting reviews the vote with a thin chance of correction and ratifies; at each stage a voter
+makes a decision that finalizes a record [R-0250]; nobody is paid, so the work is a rolling
+window with no quota, many sessions stay unfinished, coding keeps going on the same session as
+more is added, and convergence is required because human ground truth is finite; forcing
+convergence is undecided; settle-by-kind is one tool among a few [R-0251]; original opinions
+are preserved in full fidelity; leaning yes to hiding who chose what until the final review
+[R-0252].
+**Open:** (1) the written analysis
+(https://claude.ai/code/artifact/67988998-6e49-4924-a9b3-579979901eaf) proposes: settle per item
+not per session, with "unresolved" a kept outcome; the AI's recommendation shown only after a
+coder's own vote; the meeting reopens settled items only by exception; names revealed at
+ratification and who-was-right stored; a decision rule written before the first ballot (all
+but one / two thirds / majority with tie-break); checkpoints of three codings open the ballot
+and a late coding reopens only what it disputes; each coder's queue ordered by what finishes
+soonest; the paper's agreement number comes from stage-1 codings only — his verdict on each is
+open; (2) the review-room drawings
+(https://claude.ai/code/artifact/40ba5500-7be3-4bc2-82ed-193f8367448f) need re-cutting to the
+three stages: the proposed record becomes the phone ballot, one item per screen, takes without
+names; voting moves before the meeting; the tally screen, settle-by-kind and the
+what-the-meeting-produced page stay as meeting tools; (3) the coding page as drawn
 (https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a) is TABLED with its four
-forks — the coder's words kept or not in the thread; the three training items as a card over
-the sessions sheet; Done as a plain button; the amber "coding" mark; (4) the two-sided compare
-view already drawn must be reconciled with whichever review lens is built first; (5) Pro
-"notes" has no mockup; (6) build order once picked: codings + scores tables, endpoints, replay
-as a task, export of finished codings to the ground-truth files, the session menu items, the
-coding mode, the pool statistics, the review lenses as one isolated module; (7) the old SARF
-coding page becomes a legacy link, deleted after re-coding [R-0238]; (8) desktop-first.
+forks; (4) the two-sided compare view must be folded into the ballot or the meeting screen;
+(5) Pro "notes" has no mockup; (6) build order once picked: codings + scores tables, endpoints,
+replay as a task, ballots and votes tables, export of ratified items to the ground-truth files,
+the session menu items, the coding mode, the pool statistics, the review module isolated;
+(7) the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238].
 **Lives in:** plan https://claude.ai/code/artifact/7a033173-bff2-41ca-bbde-39385d4ab7f3;
 layers https://claude.ai/code/artifact/daeb8856-4a5b-42d4-ab62-4c14bc3784b4; new surfaces
 https://claude.ai/code/artifact/c5040b6a-75e3-47de-aba7-54aabbda69f4; IRR concepts round 1
-https://claude.ai/code/artifact/a7637a73-8ebc-4166-8b5b-c6a3269aa973; review-meeting ideas
-https://claude.ai/code/artifact/40ba5500-7be3-4bc2-82ed-193f8367448f; the coding page
+https://claude.ai/code/artifact/a7637a73-8ebc-4166-8b5b-c6a3269aa973; review-room ideas
+https://claude.ai/code/artifact/40ba5500-7be3-4bc2-82ed-193f8367448f; the three-stage analysis
+https://claude.ai/code/artifact/67988998-6e49-4924-a9b3-579979901eaf; the coding page
 https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a; mockups are drawn with
 web/src/theme.css and the app's markup (his rule 2026-09-10).
-**Next action:** he looks at the review-meeting ideas and says which go into the first
-meeting build and which lens to build first; then build the review module in this PR.
+**Next action:** he reads the analysis and rules on its proposals and the decision rule; then
+the ballot and meeting screens are drawn to the three stages; then build.
 **Updated:** 2026-09-11.
 
 ## T-4 · Existing records and conversations in the new app; wipe and re-code

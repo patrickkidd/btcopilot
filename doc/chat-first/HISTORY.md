@@ -725,22 +725,24 @@ build only on an explicit go; one place for content; mockups drawn with the app'
 stylesheet; sub-agents token- and model-optimised. The flush became a skill (`/flush`) with a
 topic register (TOPICS.md) as the state clock and tagged HISTORY entries as the event clock,
 checked by bin/flushcheck.py.
-## 2026-09-11 (afternoon) — the coding page drawn, then the IRR review turned into a meeting-room brainstorm [T-3, T-9]
+## 2026-09-11 (afternoon) — the coding page drawn and tabled; the IRR review became a three-stage ground-truth process [T-3, T-9]
 <!-- session: session_01D4vJ3BK6BgHxA9TzRHdw6Z -->
 
-The owner resumed the one-app design. Pro was confirmed settled by R-0243. The approved
-coding mode (read-only transcript, a scribe in the composer, Done) had no mockup, so one
-builder drew it with the app's stylesheet, six frames, four forks logged. He then tabled the
-coding page [R-0247] and turned to the IRR review: it will be worked out by prototyping in
-the review meetings themselves, no pre-review, one approach tried for minutes then the next
-[R-0244]; the review front end must be isolated so it cannot break Personal or Pro [R-0245];
-two families of approach, data-oriented slices and an AI-guided walk, with the AI's help
-through the review ruled important and its shape open — candidate: the AI proposes a final
-data set from all codings and the room accepts, overrides or tweaks it into ground truth
-[R-0246]. He liked the one-timeline-per-coder view and asked whether the list view differs
-(same data; sortable, scales, loses the time axis). A second builder drew the meeting-room
-ideas with the app's stylesheet: four switchable lenses over one gold record, the AI's
-proposed record in three groups, settling a whole kind of disagreement with one rule, voting
-on phones with a tally on the big screen and a meeting clock, and what the meeting leaves
-behind (rules, guideline drafts, coder tendencies). Process correction logged: sub-agents do
-the work, one status line only, one final reply, model and effort chosen per agent [R-0248].
+Pro confirmed settled by R-0243. The approved coding mode had no mockup; one builder drew it
+with the app's stylesheet, then the owner tabled it [R-0247]. He turned to the IRR review:
+approaches are tried in the meetings [R-0244]; the review front end is isolated [R-0245]; two
+families, data slices and an AI-guided walk, with the AI's help ruled important and the
+candidate of an AI-proposed set that the room accepts, overrides or tweaks [R-0246]. A second
+builder drew the meeting-room ideas: four lenses, the proposed record in three groups, settle by
+kind, phone voting with a big-screen tally, what the meeting leaves behind. He then corrected
+the words — gold means ratified [R-0249] — and reshaped the process into three stages: blind
+coding, a blind vote before the meeting once a checkpoint's worth of coders are done, and a
+ratifying meeting [R-0250]; nobody is paid, so the work is a rolling window and convergence is
+required but not yet forced [R-0251]; original opinions are kept in full fidelity, leaning
+toward hiding who chose what until ratification [R-0252]. A written analysis of how other
+fields make ground truth (annotation cycles, crowd labelling, clinical adjudication, negotiated
+agreement, Delphi, software teams, model-assisted labelling) checked his stages against them and
+proposed per-item settlement with "unresolved" kept, the AI's recommendation after the vote,
+a written decision rule, checkpoints of three, and first-pass-only agreement numbers. Process
+corrections logged: sub-agents with one status line and one short final reply [R-0248]; every
+question mark answered explicitly [R-0253].

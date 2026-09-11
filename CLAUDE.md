@@ -7,6 +7,9 @@ Backend for Pro/Personal apps, training app, AI extraction system.
 - **Never coin a term.** Say the thing in common words every time ("signing in with an email
   code also creates the account", never "login-is-signup"). A phrase from a doc is not his term
   unless he used it.
+- **Every question mark is a question (2026-09-11).** Each "?" he types gets its own explicit
+  answer in the reply, one plain sentence, even when the reasoning lives in an artifact.
+- **The reading goes in the artifact; the reply stays short and non-redundant (2026-09-11).**
 - **Cost estimates are for the work, not for validation.** Squashing seven migrations is a few
   tool calls, not an hour. Verify only what changed, once, at the cheapest level that proves it;
   never re-verify before a merge is even in sight.
