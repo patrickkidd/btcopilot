@@ -122,7 +122,7 @@ replacing them with captures from a fixture sandbox is the next fix; (4) [build]
 page, the sessions sheet with upload and the speaker-mapping sheet, the desktop layout, notes
 both as a session of its own (codable in the IRR study like a chat session) and as the existing
 notes field on people and events; the drawn family diagram stays in the plan behind the
-auto-arrange question; (5) [ruling] the interface calls drawn both ways as whole screens
+auto-arrange question; (5) [waiting] the interface calls, all ruled on the page
 (https://claude.ai/code/artifact/14ca039a-b28e-4d01-95fb-93ba403bf19e): the two-event grouping as a box or two dots; the
 double ring kept or dropped; the step line on an alternating stretch as a zigzag or dots only;
 the event chip outlined or filled; "+" on another family switching or refusing; the triangle

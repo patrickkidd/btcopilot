@@ -789,4 +789,6 @@ language was linked under the moves board in the catalogue. Patrick found the fi
 placeholder line in every drawing from the stand-in family, guard zero hits. He ruled grouping
 is the coach's judgement with a one-line scope rationale [R-0287] and confirmed the triangle
 concept [R-0288]; the move language was republished at its link with the outside move stripped
-of tension marks and a triangle-positions entry added, and the durable reference copy refreshed.
+of tension marks and a triangle-positions entry added, and the durable reference copy refreshed. He then ruled event everywhere [R-0289], sandbox addresses use turin and every move is
+green [R-0290], and in the outside move the two who stay draw together while the pixel defaults
+stand as built [R-0291]; the move language was republished twice more and the calls page closed.
