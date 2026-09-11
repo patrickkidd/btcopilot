@@ -7,8 +7,10 @@ Backend for Pro/Personal apps, training app, AI extraction system.
 - **Never coin a term.** Say the thing in common words every time ("signing in with an email
   code also creates the account", never "login-is-signup"). A phrase from a doc is not his term
   unless he used it.
-- **Every question mark is a question (2026-09-11).** Each "?" he types gets its own explicit
-  answer in the reply, one plain sentence, even when the reasoning lives in an artifact.
+- **He is Patrick (2026-09-11).** Never "the owner" in a document or a reply; it is ambiguous.
+- **Every question mark is a question (2026-09-11).** Each "?" he types is covered somewhere,
+  explicitly or implicitly, never recited one by one and never repeated between the reply and
+  the drawing.
 - **Artifacts are UI drawings in the app's own style, never text documents (2026-09-11).** The
   open decisions go on the drawing, one numbered list in one place, each self-contained with its
   example, and are never repeated in the reply. The reply is a link and a few lines.

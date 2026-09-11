@@ -93,17 +93,27 @@ convergence is undecided; settle-by-kind is one tool among a few [R-0251]; origi
 are preserved in full fidelity; leaning yes to hiding who chose what until the final review
 [R-0252]; the vote is strictly human — no AI takes or recommendations in the ballot; where the
 AI's suggestion goes is open, the AI must still carry all tedious work [R-0254].
-**Open:** (1) the seven decisions on the ballot-and-meeting drawing, version 2
+**Open:** (1) the eight decisions on the ballot-and-meeting drawing, version 3
 (https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9): the ballot rule (all but
 one / two thirds / majority with tie-break); names hidden in the ballot, shown at the meeting,
-who-was-right stored; the ballot opens at three finished codings; the punchlist derived by the
-app from the sessions and date he picks, or assigned by hand; the meeting's records live in the
-app's tables with the guidelines file generated from them; a "flag for next meeting" link per
-AI-written rule; the four lenses kept as extra meeting views or the list only. Ruled on that
-page today: one item per screen, the meeting's three choices, every item chosen before ratify,
-the punchlist, the AI writes the guideline changes itself, the AI's opinion only after
-ratification; frame 4b (the AI's line under each tally) was dropped as indistinguishable from
-the meeting screen; (2) the coding page as drawn
+who-was-right stored; **the unit of coding before a meeting** — bring your coding of a continuing
+conversation up to date since your last Done, or code a stretch of turns Patrick picks, or code
+a whole recorded session (he ruled discrete sessions are not assumed and this is to be
+brainstormed [R-0263]); how Patrick assigns — he picks the conversation and the date and every
+coder gets the same single task, or he types one line per coder; the ballot opens once three
+coders are done; the meeting's records live in the app's tables with the guidelines file
+generated from them; a "flag for next meeting" link per AI-written rule; the four lenses kept
+as extra meeting views or the list only. Ruled on that page: one item per screen, the meeting's
+three choices, every item chosen before ratify, coders have one task at a time and never a
+queue, the AI writes the guideline changes itself, the AI's opinion only after ratification;
+(1b) **migrating last year's IRR material** [R-0262] — inventory 2026-09-11 of doc/irr/: 25
+rules in tables keyed to meeting number with unanimity and confidence (migrate as rows with the
+meeting as provenance); six meetings' agreement/disagreement/action tables keyed to statement
+ids of last year's discussions, roughly 40–60 rows (migrate as settle rows once those
+discussions are imported through the upload path); six deliberation records in prose (keep as
+text, mine for rationale later); six raw transcripts (irreplaceable, kept as they are, never
+migrated); the old per-statement feedback stays the batch harness's ground truth until re-coded.
+Patrick's verdict on that plan is open; (2) the coding page as drawn
 (https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a) is TABLED with its four
 forks; (3) the two-sided compare view must be folded into the ballot or the meeting screen;
 (4) Pro "notes" has no mockup; (5) build order once picked: codings + scores tables, endpoints,

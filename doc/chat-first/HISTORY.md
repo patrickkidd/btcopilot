@@ -762,4 +762,10 @@ choosing guideline additions — the AI writes them itself, and a result screen 
 the question open whether the app's tables replace the repository's markdown as the meeting's
 record [R-0259]; captions may explain what is not self-evident [R-0260]. The page was redrawn
 in place (version 2) with the editor "change" opens, the two punchlist phones, the ratify gate
-and the result screen.
+and the result screen. Patrick then corrected the name ("Patrick", never "the owner") [R-0261], asked where
+the data lives and ruled last year's IRR markdown must be migrated or mined [R-0262], rejected
+the assumption of discrete sessions — the unit of coding is to be brainstormed, coders have one
+task at a time and never a queue, and he needs a simple way to assign the next task [R-0263],
+and amended the question-mark rule to "covered, not recited" [R-0264]. Version 3 of the page
+redrew the punchlist as one task at a time with the unit of coding as three drawn options and
+Patrick's assigning phone; a read-only inventory of doc/irr/ (Sonnet) sized the migration.
