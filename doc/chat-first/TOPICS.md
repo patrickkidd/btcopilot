@@ -66,8 +66,8 @@ in the editor); run the harness once.
 
 ## T-3 · One app: Pro and Training as thin layers on the chat
 
-**Status:** designed and ruled; the IRR review is now a three-stage ground-truth process with a
-written analysis awaiting his eyeball; the coding page is tabled; nothing built.
+**Status:** designed and ruled; the IRR review is a three-stage ground-truth process, drawn as
+screens with the six open decisions on the page; the coding page is tabled; nothing built.
 **Decided:** one Vite app, features by licence, role and view; coding is documenting a case,
 Pro on desktop; training is auditor/admin features on top [R-0237]; never a new view where an
 existing surface can carry the addition [R-0243]; Pro adds cases (= the family switcher on the
@@ -91,36 +91,33 @@ window with no quota, many sessions stay unfinished, coding keeps going on the s
 more is added, and convergence is required because human ground truth is finite; forcing
 convergence is undecided; settle-by-kind is one tool among a few [R-0251]; original opinions
 are preserved in full fidelity; leaning yes to hiding who chose what until the final review
-[R-0252].
-**Open:** (1) the written analysis
-(https://claude.ai/code/artifact/67988998-6e49-4924-a9b3-579979901eaf) proposes: settle per item
-not per session, with "unresolved" a kept outcome; the AI's recommendation shown only after a
-coder's own vote; the meeting reopens settled items only by exception; names revealed at
-ratification and who-was-right stored; a decision rule written before the first ballot (all
-but one / two thirds / majority with tie-break); checkpoints of three codings open the ballot
-and a late coding reopens only what it disputes; each coder's queue ordered by what finishes
-soonest; the paper's agreement number comes from stage-1 codings only — his verdict on each is
-open; (2) the review-room drawings
-(https://claude.ai/code/artifact/40ba5500-7be3-4bc2-82ed-193f8367448f) need re-cutting to the
-three stages: the proposed record becomes the phone ballot, one item per screen, takes without
-names; voting moves before the meeting; the tally screen, settle-by-kind and the
-what-the-meeting-produced page stay as meeting tools; (3) the coding page as drawn
+[R-0252]; the vote is strictly human — no AI takes or recommendations in the ballot; where the
+AI's suggestion goes is open, the AI must still carry all tedious work [R-0254].
+**Open:** (1) the six decisions on the ballot-and-meeting drawing
+(https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9): the ballot rule (all
+but one / two thirds / majority with tie-break); ratify with unresolved items kept or hold the
+session; names hidden in the ballot and shown at the meeting with who-was-right stored; the
+ballot opens at three finished codings; where the AI's suggestion goes (audit card after
+ratification / a line under each tally at the meeting / nowhere); go or no-go on re-cutting the
+review-room lenses to these screens; (2) the coding page as drawn
 (https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a) is TABLED with its four
-forks; (4) the two-sided compare view must be folded into the ballot or the meeting screen;
-(5) Pro "notes" has no mockup; (6) build order once picked: codings + scores tables, endpoints,
+forks; (3) the two-sided compare view must be folded into the ballot or the meeting screen;
+(4) Pro "notes" has no mockup; (5) build order once picked: codings + scores tables, endpoints,
 replay as a task, ballots and votes tables, export of ratified items to the ground-truth files,
 the session menu items, the coding mode, the pool statistics, the review module isolated;
-(7) the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238].
+(6) the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238].
 **Lives in:** plan https://claude.ai/code/artifact/7a033173-bff2-41ca-bbde-39385d4ab7f3;
 layers https://claude.ai/code/artifact/daeb8856-4a5b-42d4-ab62-4c14bc3784b4; new surfaces
 https://claude.ai/code/artifact/c5040b6a-75e3-47de-aba7-54aabbda69f4; IRR concepts round 1
 https://claude.ai/code/artifact/a7637a73-8ebc-4166-8b5b-c6a3269aa973; review-room ideas
 https://claude.ai/code/artifact/40ba5500-7be3-4bc2-82ed-193f8367448f; the three-stage analysis
-https://claude.ai/code/artifact/67988998-6e49-4924-a9b3-579979901eaf; the coding page
+(text; he ruled artifacts are UI drawings from here on)
+https://claude.ai/code/artifact/67988998-6e49-4924-a9b3-579979901eaf; the ballot and meeting
+screens https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9; the coding page
 https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a; mockups are drawn with
 web/src/theme.css and the app's markup (his rule 2026-09-10).
-**Next action:** he reads the analysis and rules on its proposals and the decision rule; then
-the ballot and meeting screens are drawn to the three stages; then build.
+**Next action:** he rules on the six decisions on the ballot-and-meeting drawing; then build
+the review module in this PR.
 **Updated:** 2026-09-11.
 
 ## T-4 · Existing records and conversations in the new app; wipe and re-code

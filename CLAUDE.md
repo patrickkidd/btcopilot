@@ -9,7 +9,11 @@ Backend for Pro/Personal apps, training app, AI extraction system.
   unless he used it.
 - **Every question mark is a question (2026-09-11).** Each "?" he types gets its own explicit
   answer in the reply, one plain sentence, even when the reasoning lives in an artifact.
-- **The reading goes in the artifact; the reply stays short and non-redundant (2026-09-11).**
+- **Artifacts are UI drawings in the app's own style, never text documents (2026-09-11).** The
+  open decisions go on the drawing, one numbered list in one place, each self-contained with its
+  example, and are never repeated in the reply. The reply is a link and a few lines.
+- **UI options with one-line descriptions, never a research project (2026-09-11).** Every turn
+  on a design topic shows him drawn options and says in one line what each is.
 - **Cost estimates are for the work, not for validation.** Squashing seven migrations is a few
   tool calls, not an hour. Verify only what changed, once, at the cheapest level that proves it;
   never re-verify before a merge is even in sight.

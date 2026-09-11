@@ -745,4 +745,9 @@ agreement, Delphi, software teams, model-assisted labelling) checked his stages 
 proposed per-item settlement with "unresolved" kept, the AI's recommendation after the vote,
 a written decision rule, checkpoints of three, and first-pass-only agreement numbers. Process
 corrections logged: sub-agents with one status line and one short final reply [R-0248]; every
-question mark answered explicitly [R-0253].
+question mark answered explicitly [R-0253]. He then ruled the vote strictly human with the AI's place open [R-0254], that
+decisions live on the drawing and artifacts are UI drawings, not text [R-0255], and that each
+turn shows UI options with one-line descriptions [R-0256]; a third builder drew the three stages
+as screens — the phone ballot without names or AI, the coder's queue, the ratifying meeting, and
+the AI as an audit card after ratification or as a line under each tally — with the six open
+decisions listed once at the top.
