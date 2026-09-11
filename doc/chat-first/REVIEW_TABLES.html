@@ -18,6 +18,19 @@ th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-t
 <h1>The review's tables, laid over what exists</h1>
 <p class="lead">One column added to an existing table and five new tables, after an adversarial pass that cut the first draft by a third. <span class="re">Teal</span> = an existing table, type or enum used as it is. <span class="new">Amber</span> = new. Ids are the existing integer primary keys with created_at and updated_at from the shared model base; timestamps are DateTime; JSON columns are JSONB with the SQLite variant, the way the change log already does it. Nothing the desktop app reads changes: no column on diagrams, the pickle path untouched.</p>
 
+<h2>The screen's words and the tables they mean</h2>
+<div class="wrap"><table>
+<tr><th>On screen</th><th>In the database</th></tr>
+<tr><td>a case, or a personal user's own family</td><td class="m re">one row in diagrams</td></tr>
+<tr><td>a session (a chat, an uploaded recording, or a note)</td><td class="m re">one row in discussions</td></tr>
+<tr><td>a turn of a session</td><td class="m re">one row in statements</td></tr>
+<tr><td>a coder's coding of a case</td><td class="m re">one row in diagrams, plus one row in <span class="new">codings</span> pointing at it</td></tr>
+<tr><td>an edit to any record, including a settle at the meeting</td><td class="m re">one row in changes</td></tr>
+<tr><td>a cut</td><td class="m new">one row in cuts</td></tr>
+<tr><td>an event as each coder saw it</td><td class="m new">one row in review_items</td></tr>
+<tr><td>a coder's vote</td><td class="m new">one row in votes</td></tr>
+<tr><td>a rule in the coding guidelines</td><td class="m new">one row in rules</td></tr>
+</table></div>
 <h2>The rule the design follows</h2>
 <p>Real columns only for the three things the screens ask by name: who has finished coding a cut, what is unresolved, and how the vote fell. Everything else that will change shape lives in a JSON field on a row that already exists, so a change of shape is a code change, not a migration.</p>
 
