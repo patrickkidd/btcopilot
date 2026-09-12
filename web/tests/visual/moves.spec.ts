@@ -298,4 +298,25 @@ test.describe("the editor's fields by kind", () => {
     // The row is redrawn from the record, so the codes prove the write stuck.
     await expect(page.locator("#menu-body .r2").first()).toContainText("R conflict");
   });
+
+  /** A kind that does not use the shift fields does not save them either: the
+   * editor keeps what was picked so switching back restores it, but the write
+   * carries only the fields the chosen kind uses. */
+  test("a kind with no shift fields saves none of them", async ({ page }) => {
+    await openEditor(page);
+    await pick(page, "kind", "shift");
+    await pick(page, "relationship", "conflict");
+    await page.locator('.segs[data-name="relationshipTargets"] .seg').nth(0).click();
+    await pick(page, "anxiety", "up");
+    await pick(page, "kind", "married");
+    const saved = page.waitForResponse(
+      (r) => /\/personal\/events/.test(r.url()) && r.request().method() === "PATCH",
+    );
+    await page.locator(".editor .save").click();
+    const body = (await saved).request().postDataJSON();
+    expect(body.kind).toBe("married");
+    expect(body.relationship).toBeNull();
+    expect(body.relationshipTargets).toEqual([]);
+    expect(body.anxiety).toBeNull();
+  });
 });

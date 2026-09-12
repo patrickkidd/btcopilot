@@ -313,16 +313,26 @@ const chosen = (editor: HTMLElement, name: string): string =>
   editor.querySelector<HTMLElement>(`.segs[data-name="${name}"] .seg.on`)?.dataset
     .value ?? "";
 
-/** What the editor is saying now, in the record's own field names. */
+/** What the editor is saying now, in the record's own field names.
+ *
+ * A group the chosen kind does not use is not read: the editor keeps what was
+ * picked there so switching back restores it, but a marriage must not be saved
+ * carrying the relationship shift the event used to be. */
 export function values(editor: HTMLElement): Partial<TimelineEvent> {
+  const group = (name: string): HTMLElement | null => {
+    const found = editor.querySelector<HTMLElement>(`.segs[data-name="${name}"]`);
+    // any hidden block above it, because the relationship groups sit inside
+    // the shift block
+    return found?.closest("[data-block][hidden]") ? null : found;
+  };
   const one = (name: string): string | null => {
-    const on = editor.querySelector<HTMLElement>(`.segs[data-name="${name}"] .seg.on`);
+    const on = group(name)?.querySelector<HTMLElement>(".seg.on");
     return on && on.dataset.value ? on.dataset.value : null;
   };
   const many = (name: string): number[] =>
-    [
-      ...editor.querySelectorAll<HTMLElement>(`.segs[data-name="${name}"] .seg.on`),
-    ].map((button) => Number(button.dataset.value));
+    [...(group(name)?.querySelectorAll<HTMLElement>(".seg.on") ?? [])].map(
+      (button) => Number(button.dataset.value),
+    );
   const text = (name: string): string | null => {
     const node = editor.querySelector<HTMLInputElement>(`[data-name="${name}"]`);
     return node && node.value.trim() ? node.value.trim() : null;

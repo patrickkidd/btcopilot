@@ -92,4 +92,17 @@ test.describe("the sessions sheet", () => {
     );
     expect(small).toEqual([]);
   });
+
+  /** A reader without the professional licence never meets the word case, and
+   * the plus beside a family starts a session on that family [R-0285]. */
+  test("the sheet never says case, and each family carries its own plus", async ({
+    page,
+  }) => {
+    await settle(page);
+    await openSheet(page);
+    const sheet = page.locator(".fs-sheet");
+    expect(await sheet.innerText()).not.toMatch(/\bcases?\b/i);
+    const families = await page.locator(".fs-fhead").count();
+    expect(await page.locator(".fs-fhead .fs-plus").count()).toBe(families);
+  });
 });
