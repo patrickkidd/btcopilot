@@ -171,7 +171,7 @@ opens when Patrick opens the vote. A fix pass followed (d1a9b55, bd8b360, 25298c
 the coding drawer writes to the coding's own record; the row under the picture always carries
 words; "ask" and "in chat" are hidden on the coding screen and the play-by-play carries no
 "explain", since coding has no coach turn (deviation from the drawing). Patrick's sandbox
-account was given the admin role directly (backup beta2.db.bak-2038-adminrole) under R-0302. Next steps: Patrick's screens, the vote, the meeting and result, Pro,
+account was given the admin role directly (backup beta2.db.bak-2043-adminrole) under R-0302. Next steps: Patrick's screens, the vote, the meeting and result, Pro,
 the small items, each eyeballed on the sandbox [R-0300]; (12) [build] the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238].
 **Lives in:** the spec sheet for beta users, every screen's behaviour in plain words, kept by the
 flush: https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba (source
