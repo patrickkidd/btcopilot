@@ -380,7 +380,9 @@ export class Coding {
     const last = mine[mine.length - 1];
     if (last) last.after(node);
     else this.list.append(node);
-    this.list.scrollTop = this.list.scrollHeight;
+    // The new line belongs under the turn the coder tapped, which may be far
+    // above the cut: bring it into view there, never jump to the end.
+    node.scrollIntoView({ block: "nearest" });
   }
 
 }

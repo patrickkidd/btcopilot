@@ -152,7 +152,9 @@ export default defineConfig({
     strictPort: true,
     // the review is opened at this machine's name on the network, not at
     // localhost, and the dev server turns away a host it was not told about
-    allowedHosts: ["turin.local", "localhost", ".local"],
+    // DEV_HOST is the bare name a phone opens (turin, R-0290); without it the
+    // live-reload socket is refused with a 400 and an open page never refreshes
+    allowedHosts: [DEV_HOST, "turin.local", "localhost", ".local"],
     proxy,
   },
   // Playwright owns tests/visual; vitest owns the pure unit tests only.
