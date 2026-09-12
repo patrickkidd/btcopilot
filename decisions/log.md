@@ -1140,6 +1140,34 @@ the earlier friction auto-report ruling.
 
 ## 2026-09
 
+### 2026-09-12: FD-362 Pro surfaces — one licence gate, no second app
+
+**Context:** Building the Pro screens drawn in `doc/chat-first/mockups/pro.html` (frames f1–f7):
+cases, uploading a recording, notes, and the drawer pinned open on a wide window.
+
+**Decisions accepted:**
+- **One gate, read from the licence, not the role.** `personal/licence.py:professional()` is true
+  when the user holds an active licence whose policy product is the professional one. It is in the
+  bootstrap and on the account payload, and the front end reads it once (`web/src/pro.ts`). Every
+  Pro-only route refuses as 404, never 403: a reader without the licence is never told the surface
+  exists (R-0237, R-0285).
+- **"Case" is a word, not a data model.** A case is a Diagram. The Pro surfaces rename the same
+  switcher, the same sessions and the same picture. A personal reader never sees the word.
+- **A note is `Discussion.kind = note`, not a new table.** It is listed with the sessions and
+  labelled, and the coach is told the register it is in through a new overridable callable
+  `note_register()` with a neutral default in btcopilot and the real wording in fdserver (R-0305).
+- **Recordings reuse the transcription path the training app already has.** The browser sends the
+  audio straight to AssemblyAI and posts the diarized transcript back; the audio never touches our
+  server. The utterance-to-speakers-and-statements loop was lifted out of the training route into
+  `personal/discussions.py:transcript_statements()` and both callers now share it.
+- **The clinician's voice becomes the coach's side of the thread.** A mapped recording sets
+  `chat_ai_speaker` to the Expert voice and `chat_user_speaker` to the Subject voice, which is what
+  makes it read and code like any other session rather than needing a second kind of reader.
+- **One sheet at a time.** Uploading lowers the sessions sheet rather than standing the who-is-who
+  sheet on top of it; two stacked sheets read through each other.
+- **`Person.notes` joins the shared schema.** The desktop app has always kept notes on a person;
+  the record now carries the field so both apps mean the same thing by it.
+
 ### 2026-09-02: Chat-first companion API — chip contract, save semantics, session switching
 
 **Context:** Phase 2 of the chat-first companion build (`doc/chat-first/BUILD_SPEC.md`): the REST

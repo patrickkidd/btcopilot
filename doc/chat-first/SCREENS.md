@@ -251,7 +251,7 @@ What it is for: your past conversations.
 - A button at the foot starts a new session, and refuses while the current one is still empty. [built]
 - With no sessions at all it says past conversations collect here. [built]
 - When you have several families, sessions are grouped under the family they belong to, each showing its three most recent. [built]
-- Sessions are started from within the case you are on; there is no "+" beside other cases in the sessions sheet, and a personal user never sees the word case at all. [drawn] {R-0285}
+- Sessions are started from within the case you are on; there is no "+" beside other cases in the sessions sheet, and a personal user never sees the word case at all. [built] {R-0285}
 - Someone else's session is simply not found rather than refused, so the app never confirms a session it will not show you. [built]
 - The history in the review database is kept across code changes rather than reset. [built] {R-0191}
 - Existing diagrams and conversations made before this app must open in it as sessions; old training transcripts are kept out of the list. [built]
@@ -314,9 +314,9 @@ What it is for: knowing what happened when a message does not go through.
 
 What it is for: the same app, wider, for professionals.
 
-- It is one app on the phone and on the desktop, with features turned on by your licence, your role and which view you are in. [drawn] {R-0237}
-- A wider screen pins the events and people drawer open on the right instead of sliding it over the chat. [drawn] {R-0243}
-- A professional gets the same chat screen with things added to it, never a different app. [drawn] {R-0243}
+- It is one app on the phone and on the desktop, with features turned on by your licence, your role and which view you are in. [built] {R-0237}
+- A wider screen pins the events and people drawer open on the right instead of sliding it over the chat. [built] {R-0243}
+- A professional gets the same chat screen with things added to it, never a different app. [built] {R-0243}
 - Nothing gets a new screen where an existing screen can carry it. [drawn] {R-0243}
 - Nothing is ruled about how the existing desktop app fits in, and the chat app is not allowed to corner that decision. [open] {R-0081}
 - Opening a record made in this app in the released desktop app has never been tried. [open]
@@ -328,12 +328,12 @@ What it is for: the same app, wider, for professionals.
 
 What it is for: a professional's several client records.
 
-- A professional's cases are the same family switcher on the account page, not a new screen. [drawn] {R-0243}
-- Each case has its own sessions and its own picture. [drawn] {R-0243}
+- A professional's cases are the same family switcher on the account page, not a new screen. [built] {R-0243}
+- Each case has its own sessions and its own picture. [built] {R-0243}
 - A client owns their own record and a clinician is granted access to it, so the record outlives the work they do together. [built] {R-0080}
-- A note is a session of its own: the clinician talks to the coach about the case after the fact, the coach records what it hears, and the note is listed with the sessions and labelled as a note. [drawn] {R-0281}
+- A note is a session of its own: the clinician talks to the coach about the case after the fact, the coach records what it hears, and the note is listed with the sessions and labelled as a note. [built] {R-0281}
 - Notes can be coded in the IRR study exactly like chat sessions. [drawn] {R-0281}
-- People and events keep a notes field in their editors, the same notes the desktop app already stores. [drawn] {R-0281}
+- People and events keep a notes field in their editors, the same notes the desktop app already stores. [built] {R-0281}
 - The drawn family diagram stays in the plan and arrives once auto-arrange proves itself on real data. [drawn] {R-0240, R-0281}
 
 ## Upload a recording (Pro)
@@ -343,9 +343,9 @@ What it is for: a professional's several client records.
 
 What it is for: getting a recorded session into the app as a conversation.
 
-- Uploading a recording is an item in the sessions sheet, beside starting a new session. [drawn] {R-0243}
-- After upload, a sheet asks who each speaker is, and the approved drawing of it stands. [drawn] {R-0243}
-- Once mapped, the recording reads as a conversation like any other and can be coded. [drawn] {R-0267}
+- Uploading a recording is an item in the sessions sheet, beside starting a new session. [built] {R-0243}
+- After upload, a sheet asks who each speaker is, and the approved drawing of it stands. [built] {R-0243}
+- Once mapped, the recording reads as a conversation like any other and can be coded. [built] {R-0267}
 - Colleagues' earlier sessions come in through this same path. [drawn]
 
 ## Coding a conversation
