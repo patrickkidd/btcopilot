@@ -1,5 +1,5 @@
 import * as api from "./api";
-import { esc } from "./dom";
+import { esc, type Title } from "./dom";
 import { toast } from "./toast";
 import {
   CoderState,
@@ -28,7 +28,7 @@ export interface TableHandlers {
    * ratify (R-0250). */
   onMeeting(cutId: number): void;
   /** What the screen is called, which the title row shows. */
-  onTitle(title: string): void;
+  onTitle(title: string | Title): void;
 }
 
 const CROSS = "&#10005;";

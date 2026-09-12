@@ -1,5 +1,5 @@
 import * as api from "./api";
-import { el, esc } from "./dom";
+import { el, esc, type Title } from "./dom";
 import { dragScroll } from "./drag";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
@@ -27,7 +27,7 @@ export interface CodingHandlers {
   /** The (i) in the title row: the guidelines. */
   onGuidelines(): void;
   /** What the screen is called, which the title row shows. */
-  onTitle(title: string): void;
+  onTitle(title: string | Title): void;
 }
 
 const PLACEHOLDER = {
@@ -81,7 +81,10 @@ export class Coding {
     // family, so it is built on that record's id (R-0267).
     this.drawer = new Menu(this.rows, () => this.reread(), this.thread.diagram_id);
     this.drawer.onTab = (tab) => this.markTab(tab);
-    this.handlers.onTitle(`${this.thread.session} · up to ${this.thread.cut_day}`);
+    this.handlers.onTitle({
+      name: this.thread.session,
+      tail: `up to ${this.thread.cut_day}`,
+    });
     this.render();
     await this.refresh();
     // The ballot opens the transcript at the line an item came from, which is

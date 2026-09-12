@@ -8,7 +8,7 @@ import {
   when,
   words,
 } from "./ballot";
-import { esc, el } from "./dom";
+import { esc, el, type Title } from "./dom";
 import { openEditor } from "./editor";
 import { toast } from "./toast";
 import {
@@ -34,7 +34,7 @@ import {
  */
 
 export interface MeetingHandlers {
-  onTitle(title: string): void;
+  onTitle(title: string | Title): void;
   /** Ratified: on to what the meeting produced. */
   onRatified(cutId: number): void;
 }
@@ -136,7 +136,7 @@ export class Meeting {
   private render(): void {
     const cut = this.cut;
     if (!cut) return;
-    this.handlers.onTitle(`${cut.session} · ratify`);
+    this.handlers.onTitle({ name: cut.session, tail: "ratify" });
     const open = this.open_();
     const settled = this.settled();
     this.stats.innerHTML = this.figures(open.length, settled.length);

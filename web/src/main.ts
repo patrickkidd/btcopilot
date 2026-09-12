@@ -25,7 +25,7 @@ import {
   type PicState,
   type Sel,
 } from "./caption";
-import { $ } from "./dom";
+import { $, setTitle } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { ASK_MARK, IN_CHAT_MARK, LIST_BUTTON, PLAY_MARK, tok } from "./tokens";
@@ -275,7 +275,7 @@ const coding = new Coding(
     onDone: () => void openTask(),
     onGuidelines: () => void openRules(),
     onTitle: (title) => {
-      $("title").textContent = title;
+      setTitle(title);
     },
   },
 );
@@ -310,7 +310,7 @@ const ballot = new Ballot(
   $("overlay"),
   {
     onTitle: (title) => {
-      $("title").textContent = title;
+      setTitle(title);
     },
     onDone: () => void openTask(),
     onTranscript: (statementId) => void openLine(statementId),
@@ -342,7 +342,7 @@ async function openLine(statementId: number): Promise<void> {
 const placing = new Cut($("cut-chat"), $("cut-bar"), {
   onPlaced: () => void openTable(),
   onTitle: (title) => {
-    $("title").textContent = title;
+    setTitle(title);
   },
 });
 
@@ -351,7 +351,7 @@ const table = new Table($("table-body"), {
   onPlace: (discussionId) => void placeCut(discussionId),
   onMeeting: (cutId) => void openMeeting(cutId),
   onTitle: (title) => {
-    $("title").textContent = title;
+    setTitle(title);
   },
 });
 
@@ -365,7 +365,7 @@ const meeting = new Meeting(
   $("overlay"),
   {
     onTitle: (title) => {
-      $("title").textContent = title;
+      setTitle(title);
     },
     onRatified: (cutId) => void openResult(cutId),
   },
@@ -375,7 +375,7 @@ const meeting = new Meeting(
  * cut is ratified (R-0275). */
 const result = new ResultScreen($("result-stats"), $("result-body"), {
   onTitle: (title) => {
-    $("title").textContent = title;
+    setTitle(title);
   },
 });
 

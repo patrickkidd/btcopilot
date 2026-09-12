@@ -1,5 +1,5 @@
 import * as api from "./api";
-import { esc } from "./dom";
+import { esc, type Title } from "./dom";
 import { toast } from "./toast";
 import type { Differed, Result, Rule, Tendency } from "./types";
 
@@ -13,7 +13,7 @@ import type { Differed, Result, Rule, Tendency } from "./types";
  */
 
 export interface ResultHandlers {
-  onTitle(title: string): void;
+  onTitle(title: string | Title): void;
 }
 
 const day = (value: string): string =>

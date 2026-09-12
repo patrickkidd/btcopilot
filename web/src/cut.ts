@@ -1,5 +1,5 @@
 import * as api from "./api";
-import { el, esc } from "./dom";
+import { el, esc, type Title } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import type { SessionTurn, SessionTurns } from "./types";
@@ -16,7 +16,7 @@ export interface CutHandlers {
   /** The cut is on the table: the table screen takes over. */
   onPlaced(): void;
   /** What the screen is called, which the title row shows. */
-  onTitle(title: string): void;
+  onTitle(title: string | Title): void;
 }
 
 export class Cut {

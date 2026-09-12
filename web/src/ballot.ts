@@ -1,5 +1,5 @@
 import * as api from "./api";
-import { esc, el } from "./dom";
+import { esc, el, type Title } from "./dom";
 import { openEditor } from "./editor";
 import { toast } from "./toast";
 import {
@@ -20,7 +20,7 @@ import {
  * (R-0274). */
 
 export interface BallotHandlers {
-  onTitle(title: string): void;
+  onTitle(title: string | Title): void;
   /** The last item is voted on: back to the one task card. */
   onDone(): void;
   /** Open the conversation at the line this item came from (R-0278). */
@@ -237,9 +237,10 @@ export class Ballot {
       this.caption.innerHTML = "";
       return;
     }
-    this.handlers.onTitle(
-      `${this.session} · ballot · ${this.at + 1} of ${this.ballot.length}`,
-    );
+    this.handlers.onTitle({
+      name: this.session,
+      tail: `ballot · ${this.at + 1} of ${this.ballot.length}`,
+    });
     this.drawLine(item);
     this.body.innerHTML = this.card(item);
   }

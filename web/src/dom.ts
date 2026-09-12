@@ -22,3 +22,25 @@ export function $(id: string): HTMLElement {
   if (!node) throw new Error(`No element #${id}`);
   return node;
 }
+
+/** A screen's title in two parts. The name is the part that gives way when the
+ * row runs out of width; the tail says which stretch of the conversation is on
+ * screen and has to stay readable, so at phone width a long name ellipsises
+ * and "· up to Sep 4" stays. */
+export interface Title {
+  name: string;
+  tail: string;
+}
+
+export function setTitle(title: string | Title): void {
+  const host = $("title");
+  if (typeof title === "string") {
+    host.textContent = title;
+    return;
+  }
+  const name = el("span", "ttl-name");
+  name.textContent = title.name;
+  const tail = el("span", "ttl-tail");
+  tail.textContent = ` · ${title.tail}`;
+  host.replaceChildren(name, tail);
+}

@@ -148,6 +148,15 @@ button { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* A title in two parts stays one line: the name gives way first and the tail,
+   which says how far through the conversation the screen is, never does. */
+.ttl:has(.ttl-tail) { display: flex; align-items: baseline; }
+.ttl-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ttl-tail { flex: none; }
 .iconbtn {
   flex: none;
   width: 44px;
