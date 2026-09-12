@@ -119,6 +119,25 @@
       {% endif %}
     </main>
     <script>
+      // A sent form is finished. Signing in replaces the session, so a second
+      // submit carries a code already consumed and a token the new session has
+      // never heard of, and the reader is shown a CSRF failure instead of the
+      // app they just signed in to.
+      (function () {
+        for (var i = 0; i < document.forms.length; i++) {
+          document.forms[i].addEventListener("submit", function (sent) {
+            if (this.dataset.sent) {
+              sent.preventDefault();
+              return;
+            }
+            this.dataset.sent = "1";
+            var go = this.querySelector('button[type="submit"]');
+            if (go) window.setTimeout(function () { go.disabled = true; }, 0);
+          });
+        }
+      })();
+    </script>
+    <script>
       // The key already on the phone signs the reader in without an email round
       // trip. The button only appears where the phone can actually do it.
       (function () {
