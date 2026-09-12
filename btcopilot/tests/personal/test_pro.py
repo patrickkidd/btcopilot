@@ -5,9 +5,11 @@ have it is never told the surface exists (R-0237, R-0285)."""
 import pytest
 
 from btcopilot.extensions import db
-from btcopilot.personal.models import Discussion, SpeakerType
+from btcopilot.personal.coachturn import CoachTurn
+from btcopilot.personal.models import Discussion, DiscussionKind, SpeakerType
+from btcopilot.personal.prompts import note_register
 from btcopilot.schema import Person, PersonKind, asdict
-from btcopilot.tests.personal.conftest import csrf_token
+from btcopilot.tests.personal.conftest import Model, csrf_token, said
 
 UTTERANCES = [
     {"speaker": "A", "text": "When did your father go down to Arizona, roughly?"},
@@ -176,3 +178,18 @@ def test_a_person_keeps_notes(web, family):
     assert changed["notes"] == "Dates everything from the divorce."
     people = web.get("/personal/timeline").get_json()["people"]
     assert people[0]["notes"] == "Dates everything from the divorce."
+
+
+@pytest.mark.chat_flow
+def test_a_note_tells_the_coach_who_it_is_talking_to(discussion):
+    """A note is the clinician talking about the case after the fact, so the
+    coach is told the register it is in; a chat is told nothing extra."""
+    model = Model(said("Noted."))
+    CoachTurn(discussion, "she never says the word divorce", model=model).run()
+    assert note_register() not in model.systems[0]
+
+    discussion.kind = DiscussionKind.Note
+    db.session.commit()
+    model = Model(said("Noted."))
+    CoachTurn(discussion, "she never says the word divorce", model=model).run()
+    assert note_register() in model.systems[0]

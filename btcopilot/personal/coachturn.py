@@ -15,8 +15,14 @@ import uuid
 from btcopilot.extensions import ai_log, db
 from btcopilot.personal import chips, clusters, recordtext
 from btcopilot.personal.coachmodel import CoachModel
-from btcopilot.personal.models import Change, Discussion, Statement, StatementKind
-from btcopilot.personal.prompts import get_agent_prompt
+from btcopilot.personal.models import (
+    Change,
+    Discussion,
+    DiscussionKind,
+    Statement,
+    StatementKind,
+)
+from btcopilot.personal.prompts import get_agent_prompt, note_register
 from btcopilot.personal.interactions import recent
 from btcopilot.personal.toolbox import ToolError, Toolbox, schemas
 from btcopilot.schema import DiagramData, ItemKind
@@ -173,6 +179,8 @@ class CoachTurn:
                 recent(self.diagram.id, RECENT_INTERACTIONS)
             ),
         )
+        if DiscussionKind(self.discussion.kind) is DiscussionKind.Note:
+            system = f"{system}\n\n{note_register()}"
         messages = self._history()
         spoken = ""
         events = []

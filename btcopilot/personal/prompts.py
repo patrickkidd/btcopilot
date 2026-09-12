@@ -124,6 +124,20 @@ def get_agent_prompt(record: str = "", interactions: str = "") -> str:
     return "\n\n".join(parts)
 
 
+def note_register() -> str:
+    """What changes when the session is a note rather than a chat: the clinician
+    is talking to the coach about the case after the fact and the client is not
+    in the room (R-0281). What a coach should do differently is clinical, so the
+    wording here is neutral and production deployments override this callable
+    via FDSERVER_PROMPTS_PATH (R-0305)."""
+    return (
+        "This session is a note. The person writing is the clinician, talking "
+        "about the case rather than about their own family, and the client is "
+        "not present. Record what you are told about the case the same way you "
+        "do in any other session."
+    )
+
+
 # ── What a tool parameter means ──────────────────────────────────────────────
 #
 # The tool schemas are read by the coach and by the review scribe. A parameter
@@ -442,6 +456,7 @@ if _prompts_path:
             for _callable in (
                 "get_conversation_flow_prompt",
                 "get_agent_prompt",
+                "note_register",
                 "tool_meanings",
             ):
                 if hasattr(_private, _callable):
