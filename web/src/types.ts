@@ -332,6 +332,8 @@ export interface FinishedTask {
   cut_id: number;
   title: string;
   detail: string;
+  /** Its cut is ratified, so the line opens what the meeting produced. */
+  ratified: boolean;
 }
 
 export interface Tasks {
@@ -431,6 +433,12 @@ export interface Cut {
   cut_day: string | null;
   /** Somebody has a coding of it, so it can no longer be taken off. */
   started: boolean;
+  /** How much of the cut the coders read the same way, on the first pass and
+   * again after the room ratified it. */
+  agreement: {
+    first_pass?: Agreement | null;
+    ratified?: Agreement | null;
+  } | null;
 }
 
 export enum CoderState {
@@ -498,6 +506,10 @@ export interface Take {
   statement_id?: number | null;
   /** The person this take is about, named on the record it was written on. */
   person_name?: string | null;
+  /** Who wrote this take, which appears at the meeting and nowhere before it
+   * (R-0252). */
+  coder?: string;
+  user_id?: number;
   item: Record<string, unknown>;
 }
 
@@ -526,6 +538,8 @@ export interface BallotItem {
   people: { id: number; name: string }[];
   /** The transcript line the item came from, which is never edited here. */
   line: { statement_id: number; who: string; text: string } | null;
+  /** Who settled it, which only the meeting's own reading carries. */
+  user_id?: number | null;
 }
 
 /** The three things a vote can say (R-0257). */
@@ -541,4 +555,87 @@ export interface Vote {
   choice: VoteChoice;
   value: Record<string, unknown> | null;
   reason: string | null;
+}
+
+/** ── The meeting ───────────────────────────────────────────────────────
+ * Where the vote is counted out loud, names appear for the first time and
+ * every open item is given a choice before the cut is ratified (R-0252,
+ * R-0257, R-0274). */
+
+/** What the room does with one open item. Reopen puts a settled or agreed one
+ * back in front of everybody. */
+export enum Settle {
+  Keep = "keep",
+  Change = "change",
+  Unresolved = "unresolved",
+  Reopen = "reopen",
+}
+
+/** One vote as the meeting reads it: with the name of whoever cast it. */
+export interface CastVote {
+  user_id: number;
+  name: string;
+  choice: VoteChoice;
+  value: Record<string, unknown> | null;
+  reason: string | null;
+}
+
+export interface Tally {
+  review_item_id: number;
+  counts: Record<VoteChoice, number>;
+  votes: CastVote[];
+}
+
+/** How the coach's own pass scored against the ratified record (R-0242). */
+export interface CoachScore {
+  agent: { model: string | null; prompt_version: unknown } | null;
+  people: number;
+  events: number;
+  variables: number | null;
+  by_variable: Record<string, number>;
+}
+
+/** How much of the cut the coders read the same way. */
+export interface Agreement {
+  codings: number;
+  items: number;
+  by_status: Record<string, number>;
+  percent: number | null;
+}
+
+/** One place the coach read the cut differently from the room, with its own
+ * reason. An audit, never a vote (R-0254). */
+export interface Differed {
+  review_item_id: number;
+  item_kind: string;
+  label: string;
+  room: string;
+  coach: string;
+  reason: string | null;
+}
+
+/** What one coder tends to do differently from the others. */
+export interface Tendency {
+  user_id: number;
+  name: string;
+  items: number;
+  left_out: number;
+  apart: number;
+  leans: string | null;
+  leans_count: number;
+}
+
+/** What the meeting produced, with nothing left to choose. */
+export interface Result {
+  cut_id: number;
+  ratified_at: string;
+  items: number;
+  ratified: number;
+  unresolved: number;
+  first_pass: Agreement | null;
+  after: Agreement | null;
+  coach: CoachScore | null;
+  rules: Rule[];
+  differed: Differed[];
+  coders: Tendency[];
 }

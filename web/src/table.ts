@@ -24,6 +24,9 @@ export interface TableHandlers {
   onAdd(): void;
   /** Open one cut again to move its line. */
   onPlace(discussionId: number): void;
+  /** Run the meeting on what is on the table: settle the open items and
+   * ratify (R-0250). */
+  onMeeting(cutId: number): void;
   /** What the screen is called, which the title row shows. */
   onTitle(title: string): void;
 }
@@ -119,6 +122,11 @@ export class Table {
       await this.openVote();
       return;
     }
+    const meet = target.closest<HTMLElement>(".tb-meet");
+    if (meet) {
+      this.handlers.onMeeting(Number(meet.dataset.cut));
+      return;
+    }
     const close = target.closest<HTMLElement>(".agx");
     if (close) {
       await api.flagClosed(Number(close.dataset.rule));
@@ -180,7 +188,21 @@ export class Table {
         : "") +
       `<button class="nudge tb-vote" type="button"${open ? " disabled" : ""}>` +
       `${open ? "the vote is open" : "open the vote"}</button>` +
+      this.meetingButtons() +
       this.agendaBox();
+  }
+
+  /** Once the vote is open the meeting can be run on that cut: the room
+   * settles what the ballot left and ratifies (R-0250, R-0273). */
+  private meetingButtons(): string {
+    return this.cuts
+      .filter((cut) => cut.vote_opened_at !== null)
+      .map(
+        (cut) =>
+          `<button class="nudge tb-meet" type="button" data-cut="${cut.id}">` +
+          `run the meeting on ${esc(cut.session)}</button>`,
+      )
+      .join("");
   }
 
   private nudged(): string {

@@ -118,6 +118,9 @@ def _finished(coding: Coding) -> dict:
         "detail": (
             f"ratified {_day(ratified)}" if ratified else f"done {_day(coding.done_at)}"
         ),
+        # A ratified cut opens what the meeting produced, which everyone who
+        # took part can read (R-0275).
+        "ratified": ratified is not None,
     }
 
 

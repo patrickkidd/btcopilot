@@ -21,7 +21,10 @@ import type {
   PasskeyCreationOptions,
   Preferences,
   Reply,
+  Result,
   Session,
+  Settle,
+  Tally,
   Statement,
   Timeline,
   TimelineEvent,
@@ -287,6 +290,33 @@ export const castVote = (
   value: Record<string, unknown> | null,
   reason: string | null,
 ) => ask<Vote>("PUT", `/items/${itemId}/vote`, { choice, value, reason });
+
+/** ── The meeting ───────────────────────────────────────────────────────
+ * The same items read with the names on, which is where they first appear,
+ * the tally beside each, the choice the room makes and the one button that
+ * ratifies (R-0252, R-0257, R-0273). */
+
+export const namedItems = (cutId: number) =>
+  ask<BallotItem[]>("GET", `/items?cut_id=${cutId}&named=true`);
+
+export const tallies = (cutId: number) =>
+  ask<Tally[]>("GET", `/tallies?cut_id=${cutId}`);
+
+/** What the room does with one open item: keep a take, change it to something
+ * written out, leave it unresolved, or put a settled one back. */
+export const settle = (
+  itemId: number,
+  choice: Settle,
+  value: Record<string, unknown> | null = null,
+) => ask<BallotItem>("PATCH", `/items/${itemId}`, { choice, value });
+
+/** Ratifying, which is refused while any open item has no choice. */
+export const ratify = (cutId: number) =>
+  ask<Cut>("PATCH", `/cuts/${cutId}`, { ratified_at: true });
+
+/** What the meeting produced, readable by everyone who took part. */
+export const result = (cutId: number) =>
+  ask<Result>("GET", `/result?cut_id=${cutId}`);
 
 export const agenda = () => ask<Agenda>("GET", "/agenda");
 

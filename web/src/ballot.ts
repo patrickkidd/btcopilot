@@ -28,7 +28,7 @@ export interface BallotHandlers {
 }
 
 /** The fields a take can differ from the others by, in the order they read. */
-const TELLING = [
+export const TELLING = [
   "dateTime",
   "person_name",
   "kind",
@@ -47,9 +47,53 @@ const WORDS: Record<string, (value: string) => string> = {
 };
 
 /** One dot per event, as the picture draws a line of them. */
-const LINE = { width: 400, height: 66, y: 34, edge: 16 };
+export const LINE = { width: 400, height: 66, y: 34, edge: 16 };
 
-const when = (value: unknown): string => {
+/** The agreement timeline, which the ballot and the meeting both stand under:
+ * one dot per event of the cut in order, teal where the vote agreed, amber
+ * where it did not with a small count beside it, and the event in front of the
+ * room enlarged in green (R-0277, R-0278). */
+export function drawTimeline(
+  events: BallotItem[],
+  current: number | null,
+): string {
+  const step = (LINE.width - LINE.edge * 2) / Math.max(events.length, 1);
+  const dots = events
+    .map((one, index) => {
+      const x = LINE.edge + step * (index + 0.5);
+      if (one.id === current)
+        return `<circle class="d-on" cx="${x}" cy="${LINE.y}" r="7.5" data-item="${one.id}"/>`;
+      if (one.status === ItemStatus.Agreed)
+        return `<circle class="d-ok" cx="${x}" cy="${LINE.y}" r="4.5" data-item="${one.id}"/>`;
+      // The small number says how many different takes there are, so it is
+      // only there when there is more than one to tell apart.
+      const takes = group(one).length;
+      return (
+        `<circle class="d-no" cx="${x}" cy="${LINE.y}" r="5.5" data-item="${one.id}"/>` +
+        (takes > 1
+          ? `<text class="d-n" x="${x + 8}" y="${LINE.y - 12}">${takes}</text>`
+          : "")
+      );
+    })
+    .join("");
+  return (
+    `<div class="ss tl"><svg viewBox="0 0 ${LINE.width} ${LINE.height}" ` +
+    `height="${LINE.height}">` +
+    `<line class="wire2" x1="${LINE.edge}" y1="${LINE.y}" ` +
+    `x2="${LINE.width - LINE.edge}" y2="${LINE.y}"/>${dots}</svg></div>`
+  );
+}
+
+/** Every event of a cut in the order they happened, which is the order both
+ * screens walk them in. */
+export function eventsOf(items: BallotItem[]): BallotItem[] {
+  const day = (item: BallotItem) => String(item.takes[0]?.item.dateTime ?? "");
+  return items
+    .filter((one) => one.item_kind === ItemKind.Event)
+    .sort((a, b) => day(a).localeCompare(day(b)));
+}
+
+export const when = (value: unknown): string => {
   if (typeof value !== "string" || !value) return "undated";
   if (/^\d{4}$/.test(value)) return value;
   const day = new Date(`${value}T00:00:00`);
@@ -62,7 +106,7 @@ const when = (value: unknown): string => {
 };
 
 /** What one take says, in the record's own words, for the fields given. */
-function words(take: Take, fields: readonly string[]): string {
+export function words(take: Take, fields: readonly string[]): string {
   const said = fields
     .map((field) => {
       const value =
@@ -90,7 +134,7 @@ const REST = [
 /** The fields the coders read differently, which is what a take is chosen by.
  * When they wrote the same thing and only differ by who left it out, the whole
  * take is shown instead. */
-function telling(takes: Take[]): readonly string[] {
+export function telling(takes: Take[]): readonly string[] {
   const differs = TELLING.filter((field) => {
     const seen = new Set(
       takes.map((take) =>
@@ -106,13 +150,13 @@ function telling(takes: Take[]): readonly string[] {
 
 /** Takes worded the same way are one take with a count beside it: the ballot
  * is about the readings, not about how many people are in the room. */
-interface Grouped {
+export interface Grouped {
   label: string;
   coders: number;
   take: Take;
 }
 
-function group(item: BallotItem): Grouped[] {
+export function group(item: BallotItem): Grouped[] {
   const fields = telling(item.takes);
   const found = new Map<string, Grouped>();
   for (const take of item.takes) {
@@ -200,36 +244,10 @@ export class Ballot {
     this.body.innerHTML = this.card(item);
   }
 
-  /** The agreement timeline: one dot per event of the cut in order, teal where
-   * the coders agreed, amber where they did not with how many takes there are,
-   * and the event being voted on enlarged in green (R-0277, R-0278). */
+  /** The agreement timeline, and under it what is left to vote on. */
   private drawLine(current: BallotItem): void {
-    const events = this.events();
-    const step = (LINE.width - LINE.edge * 2) / Math.max(events.length, 1);
-    const dots = events
-      .map((one, index) => {
-        const x = LINE.edge + step * (index + 0.5);
-        if (one.id === current.id)
-          return `<circle class="d-on" cx="${x}" cy="${LINE.y}" r="7.5" data-item="${one.id}"/>`;
-        if (one.status === ItemStatus.Agreed)
-          return `<circle class="d-ok" cx="${x}" cy="${LINE.y}" r="4.5" data-item="${one.id}"/>`;
-        // The small number says how many different takes there are, so it is
-        // only there when there is more than one to tell apart.
-        const takes = group(one).length;
-        return (
-          `<circle class="d-no" cx="${x}" cy="${LINE.y}" r="5.5" data-item="${one.id}"/>` +
-          (takes > 1
-            ? `<text class="d-n" x="${x + 8}" y="${LINE.y - 12}">${takes}</text>`
-            : "")
-        );
-      })
-      .join("");
     this.view.style.height = `${LINE.height}px`;
-    this.view.innerHTML =
-      `<div class="ss tl"><svg viewBox="0 0 ${LINE.width} ${LINE.height}" ` +
-      `height="${LINE.height}">` +
-      `<line class="wire2" x1="${LINE.edge}" y1="${LINE.y}" ` +
-      `x2="${LINE.width - LINE.edge}" y2="${LINE.y}"/>${dots}</svg></div>`;
+    this.view.innerHTML = drawTimeline(this.events(), current.id);
     const left = this.ballot.filter((one) => !this.mine.has(one.id)).length;
     this.caption.innerHTML =
       `<span class="cta">tap a dot to jump</span>` +
@@ -238,16 +256,8 @@ export class Ballot {
       `<button class="tok" type="button">${left} open</button>`;
   }
 
-  /** Every event of the cut in the order they happened, which is the order the
-   * ballot walks them in. */
   private events(): BallotItem[] {
-    return this.items
-      .filter((one) => one.item_kind === ItemKind.Event)
-      .sort((a, b) => this.day(a).localeCompare(this.day(b)));
-  }
-
-  private day(item: BallotItem): string {
-    return String(item.takes[0]?.item.dateTime ?? "");
+    return eventsOf(this.items);
   }
 
   private card(item: BallotItem): string {

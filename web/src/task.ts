@@ -9,6 +9,9 @@ import { TaskKind, type FinishedTask, type Task, type Tasks } from "./types";
 export interface TaskHandlers {
   /** Start this task: the conversation opens as the coding screen. */
   onStart(task: Task): void;
+  /** A finished task whose cut the room has ratified opens what the meeting
+   * produced (R-0275). */
+  onResult(cutId: number): void;
 }
 
 /** The meeting a task is for, which is what the title row says. */
@@ -33,7 +36,13 @@ export class OneTask {
   ) {
     this.body.addEventListener("click", (e) => {
       const start = (e.target as Element).closest(".addbtn");
-      if (start && this.task?.ready) this.handlers.onStart(this.task);
+      if (start && this.task?.ready) {
+        this.handlers.onStart(this.task);
+        return;
+      }
+      const done = (e.target as Element).closest<HTMLElement>(".plrow.done");
+      if (done?.dataset.result)
+        this.handlers.onResult(Number(done.dataset.result));
     });
   }
 
@@ -70,8 +79,9 @@ export class OneTask {
   }
 
   private finished(one: FinishedTask): string {
+    const opens = one.ratified ? ` data-result="${one.cut_id}"` : "";
     return (
-      `<div class="plrow done"><span class="ck">${CHECK}</span>` +
+      `<div class="plrow done"${opens}><span class="ck">${CHECK}</span>` +
       `<div class="pm"><div class="r1">${esc(one.title)}</div>` +
       `<div class="r2">${esc(one.detail)}</div></div></div>`
     );

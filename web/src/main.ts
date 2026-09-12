@@ -7,6 +7,8 @@ import { Ballot } from "./ballot";
 import { Coding } from "./coding";
 import { Cut } from "./cut";
 import { Table } from "./table";
+import { Meeting } from "./meeting";
+import { ResultScreen } from "./result";
 import { OneTask, beforeMeeting } from "./task";
 import { Rules } from "./rules";
 import { Sessions, sessionTitle, summaryOf } from "./sessions";
@@ -70,6 +72,8 @@ enum Screen {
   Rules = "rules",
   Cut = "cut",
   Table = "table",
+  Meeting = "meeting",
+  Result = "result",
 }
 
 /** Which screens the coding title row belongs to. */
@@ -80,6 +84,8 @@ const CODING_SCREENS = [
   Screen.Rules,
   Screen.Cut,
   Screen.Table,
+  Screen.Meeting,
+  Screen.Result,
 ];
 
 let timeline: Timeline = emptyTimeline();
@@ -248,6 +254,7 @@ const sessions = new Sessions(
 
 const oneTask = new OneTask($("task-body"), {
   onStart: (task) => void startTask(task),
+  onResult: (cutId) => void openResult(cutId),
 });
 
 const rules = new Rules($("rules-body"));
@@ -341,10 +348,45 @@ const placing = new Cut($("cut-chat"), $("cut-bar"), {
 const table = new Table($("table-body"), {
   onAdd: () => sessions.show(),
   onPlace: (discussionId) => void placeCut(discussionId),
+  onMeeting: (cutId) => void openMeeting(cutId),
   onTitle: (title) => {
     $("title").textContent = title;
   },
 });
+
+/** The meeting: the room settles what the vote left open and ratifies the cut
+ * (R-0250, R-0257). Patrick's screen, reached from the table. */
+const meeting = new Meeting(
+  $("meeting-stats"),
+  $("meeting-view"),
+  $("meeting-body"),
+  $("meeting-bar"),
+  $("overlay"),
+  {
+    onTitle: (title) => {
+      $("title").textContent = title;
+    },
+    onRatified: (cutId) => void openResult(cutId),
+  },
+);
+
+/** What the meeting produced, which everyone who took part can read once the
+ * cut is ratified (R-0275). */
+const result = new ResultScreen($("result-stats"), $("result-body"), {
+  onTitle: (title) => {
+    $("title").textContent = title;
+  },
+});
+
+async function openMeeting(cutId: number): Promise<void> {
+  await meeting.open(cutId);
+  screen(Screen.Meeting);
+}
+
+async function openResult(cutId: number): Promise<void> {
+  await result.open(cutId);
+  screen(Screen.Result);
+}
 
 async function placeCut(discussionId: number): Promise<void> {
   await placing.open(discussionId);
@@ -369,7 +411,8 @@ $("coding-back").addEventListener("click", () => {
   // it on the item it was left on.
   if (here === Screen.Coding && voting) void openBallot(voting.cutId, voting.codingId);
   else if (here === Screen.Coding || here === Screen.Ballot) void openTask();
-  else if (here === Screen.Cut) void openTable();
+  else if (here === Screen.Cut || here === Screen.Meeting) void openTable();
+  else if (here === Screen.Result) void openTask();
   else {
     $("title").textContent = familyTitle;
     screen(Screen.Chat);
@@ -795,6 +838,8 @@ function screen(which: Screen): void {
   $("ballot-screen").hidden = which !== Screen.Ballot;
   $("cut-screen").hidden = which !== Screen.Cut;
   $("table-screen").hidden = which !== Screen.Table;
+  $("meeting-screen").hidden = which !== Screen.Meeting;
+  $("result-screen").hidden = which !== Screen.Result;
   $("coding-screen").hidden = which !== Screen.Coding;
   $("rules-screen").hidden = which !== Screen.Rules;
   document.querySelector<HTMLElement>(".titlerow")!.hidden =
