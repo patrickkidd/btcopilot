@@ -115,9 +115,19 @@ restarted sandbox; the one failing check is the Vite dev server's own hot-reload
 (a console error on every page load in dev mode, not the app). The coding screen is ready for
 Patrick's own test. The design
 of every screen is ruled and drawn in `doc/chat-first/mockups/` and the catalogue for beta
-users; `doc/chat-first/REVIEW_TABLES.html` is the database scope of the pull request. Next:
-Patrick tests the coding screen at https://turin:8891/personal/ (the one-task card is the first
-screen), then the remaining build steps in the ruled order.
+users; `doc/chat-first/REVIEW_TABLES.html` is the database scope of the pull request.
+
+**Built overnight 2026-09-12, unreviewed by Patrick:** the rest of the review loop and Pro —
+his table, cut and vote-opening screens; the ballot; the meeting; the result; Pro's cases,
+recording upload (through the training app's transcription path), notes and pinned desktop
+drawer; the small items; and the clinical tool text moved back to fdserver behind an
+overridable callable [R-0305]. An independent verifier ran 366 checks in Chromium and WebKit
+at phone size and Chromium at desktop; the 24 failures were fixed at the cause; 9 checks
+remain that are fixture or walk artefacts (VERIFY_2026-09-12.md). Suites: review and
+personal 495 passed, web units 58 passed (the ten stale ones rewritten), type check clean.
+Patrick's coding-screen eyeball on 2026-09-11 night: works; the bubbles were reshaped to his
+pick (C6). Next: Patrick walks `doc/chat-first/TEST_2026-09-12.md` (nine walks with their
+sign-in links) and rules on the three questions in T-3's Next action.
 
 **His own record is small**: seven events, and one cluster he made himself holding two events.
 It predates the three-event floor and is grandfathered; see Open issues.

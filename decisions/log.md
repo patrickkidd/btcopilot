@@ -1287,6 +1287,18 @@ year's rules and ledgers.
 **Revisit trigger:** the first two meetings — if the pre-meeting vote is not being done, the
 stages collapse back to one and the design is wrong.
 
+## 2026-09-12: Tool schemas say the shape, fdserver says the meaning
+
+**Decision**: the clinical wording on the record-writing tools' parameters (variables,
+event kinds, relationship moves, the child-focus case) lives in fdserver's private prompt
+module and reaches btcopilot through one overridable callable keyed by an enum of tool
+parameters; btcopilot's defaults are data-shape text only. The coach and the review scribe
+read the same schemas. Under R-0305.
+**Rejected**: leaving the text on the tools in btcopilot (public repo; it is the IP);
+duplicating a second schema for the scribe.
+**Open**: the scribe's own prompt (ruled behaviours of the coding loop, never in fdserver)
+stays in btcopilot pending Patrick's word.
+
 ## 2026-09-11: The scribe never pretends — a loop that runs out says what it wrote
 
 **Decision**: the review scribe's tool loop is capped at eight steps (was three). When the

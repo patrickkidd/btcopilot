@@ -6,7 +6,7 @@ behaviour, tagged `[built]` if it is in the app today, `[drawn]` if it is approv
 but not built, and `[open]` if it is a choice Patrick has not made yet. It is rewritten as
 decisions land; the exact sizes and colours live in the internal interface spec, not here.
 
-Updated: 2026-09-11
+Updated: 2026-09-12
 
 ---
 

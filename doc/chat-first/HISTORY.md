@@ -841,3 +841,54 @@ all in view). Two sandbox facts recorded: the dev server refused its live-reload
 host name turin, only turin.local being allowed, so an open page on his phone never refreshed
 — allowed now; and iOS gives a home-screen app its own cookie store, so it opens signed out
 and the email code signs it in once.
+
+Patrick then tested the coding screen from his phone and said it was awesome to see it work.
+He ruled the visual change: the thread reads as the normal chat (client turns as the user's
+teal bubbles on the right, clinician turns as the coach's white bubbles, no role labels), and
+the coder's own words sit under the tapped bubble as a subordinate message in the same visual
+language, with the scribe's tool-call bubble unchanged in kind but smaller. He asked for
+mockups, picked option C, then its stemmed variant C6 (a small pale-teal bubble on a stem under
+the tapped turn, the scribe's white tool-call bubble on a second stem under it, both on the
+client's side). Built and live. His attempt to code the cutoff was asked about instead of
+written: the pronoun check in code counted only a capitalised word as a name, so "grandmother"
+did not count and "him" was asked about between father and mother; relation words now count
+as names, a pronoun is matched by recorded gender, and the scribe's questions are logged. He
+asked whether that was a rules bug or a prompting bug (rules), whether the scribe knows the
+SARF types (only through the tool parameter text), and where the prompt fragments live. He
+ruled that every variable definition and prompt fragment that lived in fdserver before the
+branch stays in fdserver [R-0305]. He corrected the reply length [R-0304] and asked that
+worktree switches and shell commands never block on permission. Then he went to bed and asked
+for the whole build overnight with a testing document in the morning.
+
+## 2026-09-12 (overnight) — the whole review loop built, walked in three browsers, and a walk written for Patrick [T-3, T-2, T-5]
+
+Five Opus builders in sequence under a Sonnet auditor, then an independent Opus verifier and
+an Opus fixer, all in the one btcopilot worktree. Landed on FD-362: the clinical tool text
+moved out of btcopilot into fdserver's private prompts behind a new overridable callable, so
+the tool schemas say the shape and fdserver says the meaning, coach and scribe alike
+[R-0305]; Patrick's screens — put a conversation on the table from the sessions sheet, place
+the cut (never before the last ratified line, later turns dimmed), the table with each
+coder's state, the nudge by mail, taking a cut off before anyone starts, the meeting day, and
+the one button that opens the vote; the ballot — one disputed event per screen, takes without
+names or counts, the agreement timeline above, drop, skip, change through the app's own event
+editor, a count of coders who left the item out, an optional reason, the transcript opened at
+the line; the meeting — items most split first with names and tallies for the first time,
+keep / change / unresolved on each, the settled ones collapsed, ratify dead until every open
+item has a choice, the coach scored against the ratified record and never counted as a voter,
+unanimous items ratified too; the result — counts, both agreement figures, the coach's score,
+the AI's guideline changes with the settle each came from and a flag link, the audit of where
+the AI differed, what each coder tends to do; Pro — a professional licence turns on cases on
+the account page, the recording upload reusing the training app's transcription path with the
+speaker-mapping sheet, notes as a session and on people and events, the drawer pinned on a
+desktop; the small items — every event of a cluster steps the play-by-play (row 70), "event"
+for "moment" everywhere, the title's name gives way and the stretch stays, hidden editor
+fields are not saved. The verifier ran 366 checks in Chromium and WebKit at 393x852 and
+Chromium at 1280x800: 24 failed, and the fixer closed all of them at the cause (the sessions
+button off the chat, the task card and the guidelines reachable between meetings, ratify with
+feedback, no counts on the ballot, one naming rule, the two missing ballot controls); 9 checks
+remain that are fixture or walk artefacts. Ten stale web unit tests were rewritten to the
+rulings. Suites at the end: review and personal 495 passed, web units 58, type check clean.
+Three questions for Patrick came out of the night (in T-3's Next action). The sandbox mail was
+off during the walks so nudges would not send, and is on again for his sign-in code; the
+sandbox stands at Walk 1's start: cut 3 on the table for 18 September, three fixture coders
+finished, the vote not yet opened.

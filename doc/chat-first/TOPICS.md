@@ -67,8 +67,15 @@ in the editor); run the harness once.
 
 ## T-3 · One app: Pro and Training as thin layers on the chat
 
-**Status:** designed and ruled; the IRR review is a three-stage ground-truth process whose
-screens are approved as drawn (version 5); the coding page is tabled; nothing built.
+**Status:** built on the sandbox through the whole loop, unreviewed by Patrick beyond the
+coding screen: the coding screen (his eyeball 2026-09-11 night: works; bubbles reshaped to
+C6 at his pick), his table / cut / vote-opening screens, the ballot, the meeting, the result,
+Pro's cases / recording upload / notes / desktop drawer, the small items, and the clinical
+tool text moved back to fdserver (R-0305) — all built overnight 2026-09-12 by five builders
+under a Sonnet auditor, walked by an independent verifier in Chromium and WebKit at phone
+size and Chromium at desktop (366 checks; 24 failures, all fixed at the cause; 9 left that
+are fixture or walk artefacts, listed in VERIFY_2026-09-12.md). Patrick's walk:
+doc/chat-first/TEST_2026-09-12.md.
 **Decided:** one Vite app, features by licence, role and view; coding is documenting a case,
 Pro on desktop; training is auditor/admin features on top [R-0237]; never a new view where an
 existing surface can carry the addition [R-0243]; Pro adds cases (= the family switcher on the
@@ -187,9 +194,13 @@ https://claude.ai/code/artifact/67988998-6e49-4924-a9b3-579979901eaf; the coding
 https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a; mockups are drawn with
 web/src/theme.css and the app's markup (his rule 2026-09-10); last year's material in
 doc/irr/.
-**Next action:** next session — read the last browser re-check's result if it landed, then
-Patrick tests the coding screen on his phone (one thing: code the fixture conversation and press
-Done); then build step three, his own screens (put on the table, place the cut, open the vote).
+**Next action:** Patrick walks doc/chat-first/TEST_2026-09-12.md on his phone (nine walks,
+each with its sign-in link) and rules on the three questions it raised: (a) a professional
+signing in lands on a coding task card rather than their chat, because nobody is assigned
+and every subscriber is offered what is on the table; (b) ratifying takes about eleven
+seconds because the guideline drafting runs inside the request (a background task needs a
+worker the sandbox does not run); (c) whether the scribe's own prompt, which never lived in
+fdserver, also moves behind the private override.
 **Updated:** 2026-09-11.
 
 ## T-4 · Existing records and conversations in the new app; wipe and re-code
