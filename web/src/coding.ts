@@ -275,6 +275,8 @@ export class Coding {
         el("div", "bub coach", `<div class="did q">${esc(whatFailed(error))}</div>`),
         turn,
       );
+      // A scribe that stopped part way has still written that part.
+      await this.refresh();
       return;
     } finally {
       this.sending = false;

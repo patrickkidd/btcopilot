@@ -16,7 +16,9 @@ from btcopilot.review import adapter
 _log = logging.getLogger(__name__)
 
 MODEL = "haiku-4.5"
-MAX_STEPS = 3
+#: One tool call per step is how the cheap model works: a sentence that names
+#: two new people and one event needs three, and a wasted guess a fourth.
+MAX_STEPS = 8
 
 PROMPT = """You are a scribe for a research team coding transcripts of family \
 conversations. You are given one turn of a transcript and, in their own words, \
@@ -34,7 +36,13 @@ then write the event. A name is enough to write from; never ask whether to add \
 someone the coder named.
 - Add the person first and wait for the id the tool gives you back, then write \
 the event in your next turn. Never guess an id for a person you have just \
-added.
+added. An id comes only from the record below or from a tool result in this \
+exchange; when the record has nobody in it there is no id yet.
+- A person the coder names only by their relation to someone — Marcus's \
+father — is added under that relation as the name, never as "someone".
+- Write the date the coder gave at the precision they gave it: a year alone \
+or a month and year become the first day of that span, marked approximate. \
+Never drop a date the coder said, and keep it when you rewrite a refused call.
 - Only when the coder points at a person without naming them, and two or more \
 people already in the record could be meant, call no tool at all and reply \
 with one short question naming the people it could be. That is the only thing \
@@ -59,9 +67,9 @@ What the coder says it tells them happened:
 """
 
 
-class Refused(Exception):
-    """The record would not take what the scribe wrote. Its words go to the
-    coder as they are, since they already say what is wrong."""
+class Refused(ValueError):
+    """The scribe could not finish. Its words go to the coder as they are,
+    since they already say what is wrong (a ValueError is a 400 here)."""
 
 
 class Pronoun(enum.StrEnum):
@@ -141,10 +149,12 @@ def write(coding, statement, said: str, model=None) -> dict:
     ]
     tools = adapter.write_tools()
     asked = ""
+    unfinished = False
 
     for step in range(MAX_STEPS):
         turn = _say(coach, system, messages, tools)
         asked = turn.text.strip()
+        unfinished = bool(turn.calls)
         if not turn.calls:
             break
         results = []
@@ -167,6 +177,11 @@ def write(coding, statement, said: str, model=None) -> dict:
             _log.warning(f"Scribe step {step} was refused: {results}")
 
     lines = edit_lines(coding.diagram_id, toolbox.deltas)
+    # Every call is committed as it lands, so a loop that ran out of steps has
+    # written part of the sentence; the coder is told which part, never shown
+    # it as done (R-0302: no silent loss).
+    if unfinished:
+        raise Refused(_short(lines))
     if not lines and not asked:
         raise Refused("the scribe wrote nothing and said nothing")
     return {
@@ -175,6 +190,12 @@ def write(coding, statement, said: str, model=None) -> dict:
         "made": made(toolbox.deltas),
         "turn_id": turn_id,
     }
+
+
+def _short(lines: list[str]) -> str:
+    wrote = ", ".join(line.removeprefix("+ ") for line in lines)
+    kept = f" after adding {wrote}" if wrote else ""
+    return f"The scribe stopped before it finished{kept}. Say it again in one sentence."
 
 
 def made(deltas: list[dict]) -> list[dict]:
