@@ -3,6 +3,7 @@ import * as api from "./api";
 import { Chat, wait, type PlayTap } from "./chat";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
+import { Ballot } from "./ballot";
 import { Coding } from "./coding";
 import { Cut } from "./cut";
 import { Table } from "./table";
@@ -65,6 +66,7 @@ enum Screen {
   Menu = "menu",
   Task = "task",
   Coding = "coding",
+  Ballot = "ballot",
   Rules = "rules",
   Cut = "cut",
   Table = "table",
@@ -74,6 +76,7 @@ enum Screen {
 const CODING_SCREENS = [
   Screen.Task,
   Screen.Coding,
+  Screen.Ballot,
   Screen.Rules,
   Screen.Cut,
   Screen.Table,
@@ -272,6 +275,7 @@ const coding = new Coding(
 /** The one task card, which is what Done returns to and what a coder sees
  * first. */
 async function openTask(): Promise<void> {
+  voting = null;
   const task = await oneTask.load();
   $("title").textContent = beforeMeeting(task);
   sessions.task(task ? "Your coding task" : null);
@@ -283,10 +287,43 @@ async function openTask(): Promise<void> {
 async function startTask(task: Task): Promise<void> {
   const mine = task.coding_id ?? (await api.startCoding(task.cut_id)).id;
   if (task.kind === TaskKind.Vote) {
-    toast("The vote opens when Patrick opens it");
+    await openBallot(task.cut_id, mine);
     return;
   }
   await coding.open(mine);
+  screen(Screen.Coding);
+}
+
+/** The vote before the meeting: one disputed event per screen (R-0257). */
+const ballot = new Ballot(
+  $("ballot-view"),
+  $("ballot-caption"),
+  $("ballot-body"),
+  $("overlay"),
+  {
+    onTitle: (title) => {
+      $("title").textContent = title;
+    },
+    onDone: () => void openTask(),
+    onTranscript: (statementId) => void openLine(statementId),
+  },
+);
+
+/** Which coding the ballot on screen belongs to, so the transcript it opens is
+ * this coder's own thread of the same conversation. */
+let voting: { cutId: number; codingId: number } | null = null;
+
+async function openBallot(cutId: number, codingId: number): Promise<void> {
+  voting = { cutId, codingId };
+  await ballot.open(cutId);
+  screen(Screen.Ballot);
+}
+
+/** The transcript at the line an item came from, which is the coder's own
+ * thread of that conversation, read and not added to. */
+async function openLine(statementId: number): Promise<void> {
+  if (!voting) return;
+  await coding.open(voting.codingId, statementId);
   screen(Screen.Coding);
 }
 
@@ -328,7 +365,10 @@ $("coding-done").addEventListener("click", () => coding.confirm());
 $("coding-info").addEventListener("click", () => void openRules());
 $("rules-close").addEventListener("click", () => screen(Screen.Coding));
 $("coding-back").addEventListener("click", () => {
-  if (here === Screen.Coding) void openTask();
+  // Reading the transcript is a step out of the ballot, so it steps back into
+  // it on the item it was left on.
+  if (here === Screen.Coding && voting) void openBallot(voting.cutId, voting.codingId);
+  else if (here === Screen.Coding || here === Screen.Ballot) void openTask();
   else if (here === Screen.Cut) void openTable();
   else {
     $("title").textContent = familyTitle;
@@ -752,6 +792,7 @@ function screen(which: Screen): void {
   $("chat-screen").hidden = which !== Screen.Chat;
   $("menu-screen").hidden = which !== Screen.Menu;
   $("task-screen").hidden = which !== Screen.Task;
+  $("ballot-screen").hidden = which !== Screen.Ballot;
   $("cut-screen").hidden = which !== Screen.Cut;
   $("table-screen").hidden = which !== Screen.Table;
   $("coding-screen").hidden = which !== Screen.Coding;

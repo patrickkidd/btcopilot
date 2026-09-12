@@ -157,6 +157,9 @@ export function openEditor(
   done: () => void,
   goToPerson?: (personId: number) => void,
   diagramId?: number,
+  /** Where Save goes when the event is not being written to a record: the
+   * ballot takes the words themselves and makes a take of them (R-0257). */
+  onSave?: (body: Partial<TimelineEvent>) => void,
 ): HTMLElement {
   const kind = event?.kind ?? EventKind.Shift;
   const relationship = event?.relationship ?? "";
@@ -282,9 +285,10 @@ export function openEditor(
     });
   });
 
-  editor
-    .querySelector(".save")
-    ?.addEventListener("click", () => void save(event, editor, done, diagramId));
+  editor.querySelector(".save")?.addEventListener("click", () => {
+    if (onSave) onSave(values(editor));
+    else void save(event, editor, done, diagramId);
+  });
   editor.querySelector(".del")?.addEventListener("click", () => {
     if (event) void api.deleteEvent(event.id, diagramId).then(done);
   });
@@ -303,12 +307,8 @@ const chosen = (editor: HTMLElement, name: string): string =>
   editor.querySelector<HTMLElement>(`.segs[data-name="${name}"] .seg.on`)?.dataset
     .value ?? "";
 
-async function save(
-  event: TimelineEvent | null,
-  editor: HTMLElement,
-  done: () => void,
-  diagramId?: number,
-): Promise<void> {
+/** What the editor is saying now, in the record's own field names. */
+export function values(editor: HTMLElement): Partial<TimelineEvent> {
   const one = (name: string): string | null => {
     const on = editor.querySelector<HTMLElement>(`.segs[data-name="${name}"] .seg.on`);
     return on && on.dataset.value ? on.dataset.value : null;
@@ -325,28 +325,33 @@ async function save(
     const value = one(name);
     return value === null ? null : Number(value);
   };
-  await api.saveEvent(
-    event ? event.id : null,
-    {
-      kind: one("kind"),
-      person: number("person"),
-      spouse: number("spouse"),
-      child: number("child"),
-      description: text("description"),
-      notes: text("notes"),
-      location: text("location"),
-      dateTime: text("dateTime"),
-      endDateTime: text("endDateTime"),
-      dateCertainty: one("dateCertainty") ?? Certainty.Certain,
-      symptom: one("symptom"),
-      anxiety: one("anxiety"),
-      functioning: one("functioning"),
-      relationship: one("relationship"),
-      relationshipTargets: many("relationshipTargets"),
-      relationshipTriangles: many("relationshipTriangles"),
-    },
-    diagramId,
-  );
+  return {
+    kind: one("kind"),
+    person: number("person"),
+    spouse: number("spouse"),
+    child: number("child"),
+    description: text("description"),
+    notes: text("notes"),
+    location: text("location"),
+    dateTime: text("dateTime"),
+    endDateTime: text("endDateTime"),
+    dateCertainty: one("dateCertainty") ?? Certainty.Certain,
+    symptom: one("symptom"),
+    anxiety: one("anxiety"),
+    functioning: one("functioning"),
+    relationship: one("relationship"),
+    relationshipTargets: many("relationshipTargets"),
+    relationshipTriangles: many("relationshipTriangles"),
+  };
+}
+
+async function save(
+  event: TimelineEvent | null,
+  editor: HTMLElement,
+  done: () => void,
+  diagramId?: number,
+): Promise<void> {
+  await api.saveEvent(event ? event.id : null, values(editor), diagramId);
   done();
 }
 

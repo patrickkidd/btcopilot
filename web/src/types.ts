@@ -490,6 +490,55 @@ export interface Agenda {
   unfinished_codings: { id: number; cut_id: number }[];
 }
 
+/** One coder's reading of one item, without their name (R-0252). */
 export interface Take {
+  coding_id?: number;
+  item_id?: number | string | null;
+  /** The turn of the conversation this take was written from. */
+  statement_id?: number | null;
+  /** The person this take is about, named on the record it was written on. */
+  person_name?: string | null;
   item: Record<string, unknown>;
+}
+
+/** How the snapshot found the coders reading one item: the same way, or not.
+ * Settled and unresolved are what the meeting makes of it afterwards. */
+export enum ItemStatus {
+  Agreed = "agreed",
+  Disputed = "disputed",
+  Settled = "settled",
+  Unresolved = "unresolved",
+}
+
+/** What one screen of the ballot is about. */
+export interface BallotItem {
+  id: number;
+  cut_id: number;
+  item_kind: ItemKind;
+  item_id: string | null;
+  status: ItemStatus;
+  takes: Take[];
+  /** How many coders finished, and how many of them left this item out. */
+  coders: number;
+  not_coded: number;
+  /** The people of the record the first take was written on, so a take of your
+   * own can name one of them. */
+  people: { id: number; name: string }[];
+  /** The transcript line the item came from, which is never edited here. */
+  line: { statement_id: number; who: string; text: string } | null;
+}
+
+/** The three things a vote can say (R-0257). */
+export enum VoteChoice {
+  Take = "take",
+  Change = "change",
+  Drop = "drop",
+}
+
+export interface Vote {
+  id: number;
+  review_item_id: number;
+  choice: VoteChoice;
+  value: Record<string, unknown> | null;
+  reason: string | null;
 }

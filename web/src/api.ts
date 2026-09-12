@@ -1,6 +1,9 @@
 import type {
   Account,
   Agenda,
+  BallotItem,
+  Vote,
+  VoteChoice,
   CoderLine,
   Coding,
   Cut,
@@ -264,6 +267,26 @@ export const coders = () => ask<CoderLine[]>("GET", "/coders");
 
 export const nudge = () =>
   ask<{ nudged: number[]; nudged_at: string }>("POST", "/nudges", {});
+
+/** ── The ballot ────────────────────────────────────────────────────────
+ * Every item of a cut as every coder saw it, and this coder's own votes on
+ * them. Names are not in either answer while people are voting (R-0272). */
+
+export const cut = (cutId: number) => ask<Cut>("GET", `/cuts/${cutId}`);
+
+export const items = (cutId: number) =>
+  ask<BallotItem[]>("GET", `/items?cut_id=${cutId}`);
+
+export const votes = (cutId: number) => ask<Vote[]>("GET", `/votes?cut_id=${cutId}`);
+
+/** One vote on one item: a take as it was written, a take of your own, or that
+ * this should not be an event in the record at all (R-0257). */
+export const castVote = (
+  itemId: number,
+  choice: VoteChoice,
+  value: Record<string, unknown> | null,
+  reason: string | null,
+) => ask<Vote>("PUT", `/items/${itemId}/vote`, { choice, value, reason });
 
 export const agenda = () => ask<Agenda>("GET", "/agenda");
 

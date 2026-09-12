@@ -74,7 +74,7 @@ export class Coding {
 
   /** Open one coding: its conversation, and the record it is being coded
    * onto. */
-  async open(codingId: number): Promise<void> {
+  async open(codingId: number, atStatement?: number): Promise<void> {
     this.thread = await api.codingThread(codingId);
     this.picked = null;
     // The drawer edits the record this coding is of, never the coder's own
@@ -84,6 +84,12 @@ export class Coding {
     this.handlers.onTitle(`${this.thread.session} · up to ${this.thread.cut_day}`);
     this.render();
     await this.refresh();
+    // The ballot opens the transcript at the line an item came from, which is
+    // a turn far above the cut (R-0278).
+    if (atStatement !== undefined)
+      this.list
+        .querySelector(`[data-turn="${atStatement}"]`)
+        ?.scrollIntoView({ block: "center" });
   }
 
   /** The record after something was written into it: the picture, the drawer
