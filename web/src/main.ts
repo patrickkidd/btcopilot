@@ -685,8 +685,9 @@ function pinDrawer(): void {
   $("chat-drawer").hidden = !on;
   const host = on ? $("chat-drawer") : $("menu-screen");
   for (const id of DRAWER) host.append($(id));
-  if (on && here === Screen.Menu) screen(Screen.Chat);
-  if (here === Screen.Chat) screen(Screen.Chat);
+  // The full-screen list has nothing left in it once the drawer is pinned, and
+  // the app's own width follows which screen is up.
+  if (here === Screen.Chat || (on && here === Screen.Menu)) screen(Screen.Chat);
 }
 
 wide.addEventListener("change", () => pinDrawer());
@@ -869,8 +870,9 @@ function screen(which: Screen): void {
   $("rules-screen").hidden = which !== Screen.Rules;
   document.querySelector<HTMLElement>(".titlerow")!.hidden =
     which === Screen.Menu || which === Screen.Rules;
-  // The drawer only stands beside the thread on the coding screen, so only
-  // that screen widens the app past a phone.
+  // The app is a phone everywhere else; it widens only where the drawer
+  // stands beside the thread — the coding screen, and the chat screen for a
+  // professional on a wide window.
   document.querySelector<HTMLElement>(".app")!.classList.toggle(
     "wide",
     which === Screen.Coding || (which === Screen.Chat && pinned()),
