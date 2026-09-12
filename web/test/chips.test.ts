@@ -37,7 +37,7 @@ describe("tokenize", () => {
       chip: {
         kind: ChipKind.Cluster,
         target: "c-mid90s",
-        label: "this stretch",
+        label: "this cluster",
         tone: ChipTone.Data,
         bare: true,
       },
@@ -59,7 +59,7 @@ describe("tokenize", () => {
 
   it("narrows the coach's wider markup to the three kinds a chip may name", () => {
     expect(chips("[[events:11,13|both]]")[0].kind).toBe(ChipKind.Event);
-    expect(chips("[[chapter:ch1|then]]")[0].kind).toBe(ChipKind.Cluster);
+    expect(chips("[[cluster:ch1|then]]")[0].kind).toBe(ChipKind.Cluster);
     expect(chips("[[person:4|her]]")[0].kind).toBe(ChipKind.Person);
   });
 
@@ -97,11 +97,11 @@ describe("aimedEvents", () => {
     expect(itemKind(ChipKind.Person)).toBe(ItemKind.Person);
   });
 
-  it("aims a cluster chip at the whole cluster, by cluster id or chapter id", () => {
+  it("aims a cluster chip at the whole cluster, by cluster id or its own id", () => {
     expect(aimedEvents(chips("[[cluster:c-mid90s]]")[0], chapters)).toEqual([
       11, 12, 13,
     ]);
-    expect(aimedEvents(chips("[[chapter:ch1]]")[0], chapters)).toEqual([20]);
+    expect(aimedEvents(chips("[[cluster:ch1]]")[0], chapters)).toEqual([20]);
   });
 
   it("aims nothing when the chip names something the picture has not got", () => {

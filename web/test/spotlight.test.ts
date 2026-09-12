@@ -26,10 +26,10 @@ describe("the words a moment says about itself", () => {
 
   it("the person is named only when the record is not about them", () => {
     expect(words("2001-03-01", Certainty.Certain, "Ada", "Ada", "Moved out")).toBe(
-      "Mar 2001 · Moved out",
+      "Moved out",
     );
     expect(words("2001-03-01", Certainty.Certain, "Ben", "Ada", "Moved out")).toBe(
-      "Mar 2001 · Ben · Moved out",
+      "Ben · Moved out",
     );
   });
 
@@ -73,7 +73,7 @@ describe("the spotlight: dense and sparse", () => {
     expect(baseOpacity(60, 0)).toBe(0.6);
   });
 
-  it("three named moments take one row each, in time order", () => {
+  it("with more named moments than rows, the first and last take one row each", () => {
     const laid = rows(
       [
         { id: 3, x: 300, text: "third" },
@@ -83,8 +83,8 @@ describe("the spotlight: dense and sparse", () => {
       16,
       374,
     );
-    expect(laid.map((r) => r.id)).toEqual([1, 2, 3]);
-    expect(laid.map((r) => r.row)).toEqual([0, 1, 2]);
+    expect(laid.map((r) => r.id)).toEqual([1, 3]);
+    expect(laid.map((r) => r.row)).toEqual([0, 1]);
     expect(laid.length).toBeLessThanOrEqual(ROWS.length);
   });
 
@@ -110,13 +110,13 @@ describe("the spotlight: dense and sparse", () => {
     expect(laid[1].x).toBe(370);
   });
 
-  it("more named moments than rows keeps the first three", () => {
+  it("more named moments than rows keeps the first and last", () => {
     const laid = rows(
       Array.from({ length: 6 }, (_, i) => ({ id: i, x: 20 + i * 50, text: "x" })),
       16,
       374,
     );
-    expect(laid).toHaveLength(3);
+    expect(laid).toHaveLength(2);
   });
 
   it("every tap zone is at least the 44px floor and holds its own moments", () => {
@@ -133,11 +133,11 @@ describe("the spotlight: dense and sparse", () => {
     expect(zones([{ x: 200 }], 16, 374)).toHaveLength(1);
   });
 
-  it("a tap steps through the moments under it, then lets go", () => {
+  it("a tap steps through the moments under it, then comes back to the first", () => {
     const inZone = [7, 8, 9];
     expect(cycle(inZone, null)).toBe(7);
     expect(cycle(inZone, 7)).toBe(8);
-    expect(cycle(inZone, 9)).toBeNull();
+    expect(cycle(inZone, 9)).toBe(7);
     expect(cycle(inZone, 99)).toBe(7);
   });
 });

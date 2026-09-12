@@ -37,11 +37,15 @@ describe("two taps on the picture", () => {
     );
   });
 
-  it("tapping the same moment again lets go of it and records nothing", () => {
+  it("tapping the same moment again leaves it picked and records another look", () => {
     const open = reduce(REST, PicEvent.Tap, moment).state;
     const out = reduce(open, PicEvent.Tap, moment);
-    expect(out.state).toEqual(REST);
-    expect(out.record).toBeNull();
+    expect(out.state).toEqual({ sel: moment, playing: null });
+    expect(out.record).toEqual({
+      kind: InteractionKind.Look,
+      item_kind: ItemKind.Event,
+      item_id: "42",
+    });
   });
 
   it("tapping the next moment moves the words to it", () => {

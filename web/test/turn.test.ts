@@ -25,10 +25,9 @@ const patch = (): TurnEvent => ({
 });
 
 describe("what the page does with one turn", () => {
-  it("says what the coach did, then re-reads the record", () => {
+  it("says what the coach did and attaches what it made, without a separate re-read", () => {
     expect(steps(reply([call(ToolName.EditPerson, { name: "Dad" }), patch()]))).toEqual([
-      { kind: StepKind.Note, line: "Added Dad" },
-      { kind: StepKind.Reload },
+      { kind: StepKind.Note, line: "Added Dad", made: [] },
     ]);
   });
 
@@ -46,11 +45,7 @@ describe("what the page does with one turn", () => {
         { type: TurnEventKind.View, view: { kind: ViewKind.Span, start: "1990-01-01", end: "1999-12-31" } },
       ]),
     );
-    expect(out.map((s) => s.kind)).toEqual([
-      StepKind.Note,
-      StepKind.Reload,
-      StepKind.Show,
-    ]);
+    expect(out.map((s) => s.kind)).toEqual([StepKind.Note, StepKind.Show]);
   });
 
   it("does nothing for a turn where the coach only read and talked", () => {
