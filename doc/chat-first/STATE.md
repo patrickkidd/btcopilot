@@ -101,10 +101,19 @@ R-0165..R-0228.
 `diagram_interactions`) in an isolated package `btcopilot/review` with endpoints, the coach's
 replay as a task and the export; and the coding screens — the one-task card, the read-only
 thread up to the cut, the scribe on a cheap model with the record's tools, Done in the title
-row with a confirmation, the guidelines behind (i). Review and personal suites 431 passed. Two
-independent browser walks on a fixture account found and closed three defects; the last browser
-re-check passed both fixed steps on a fixture account with zero console errors and zero failed
-requests, so the coding screen is ready for Patrick's own test. The design
+row with a confirmation, the guidelines behind (i). Review suite 32 passed (2026-09-11 night;
+the personal suite was last recorded at 401 and not re-run tonight). Three rounds of
+independent browser walks on fixture accounts found and closed four defects. The fourth, found
+2026-09-11 night at phone and desktop size: when the record starts empty, the scribe lost the
+event — its tool loop was capped at three steps, the cheap model spent them guessing a person
+id, being refused, and adding two people, and the coder was shown "+ Marcus" as if it had
+worked. The cap is eight now; a loop that still runs out answers with what it did write and the
+screen re-reads the record; three prompt lines went in (ids only from the record or a tool
+result; a relative named by relation is added under that relation, never "someone"; the coder's
+date is kept at its precision). The re-walk on a fresh coder passed 74 of 75 checks on the
+restarted sandbox; the one failing check is the Vite dev server's own hot-reload socket
+(a console error on every page load in dev mode, not the app). The coding screen is ready for
+Patrick's own test. The design
 of every screen is ruled and drawn in `doc/chat-first/mockups/` and the catalogue for beta
 users; `doc/chat-first/REVIEW_TABLES.html` is the database scope of the pull request. Next:
 Patrick tests the coding screen at https://turin:8891/personal/ (the one-task card is the first

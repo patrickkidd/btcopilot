@@ -2,9 +2,32 @@
 
 **Purpose**: Authoritative record of prompt engineering decisions, experiments, and lessons learned for the SARF data extraction system. Prevents regressions by documenting what works, what doesn't, and why.
 
-**Last Updated**: 2026-06-10 (FD-338 GT learning loop round: consolidated scoreboard + 3-run F1 confirmation)
+**Last Updated**: 2026-09-11 (FD-362 review scribe: loop cap and three prompt rules)
 
 ---
+
+## FD-362 review scribe — loop cap and three prompt rules (2026-09-11)
+
+**Scope**: `btcopilot/review/scribe.py`, the cheap-model scribe behind the coding screen
+(haiku-4.5, record-writing tools only). Not an induction run; an ad-hoc fix to a defect found by
+a browser walk, unmeasured beyond the walk and two stubbed-model tests.
+
+**Defect**: on an empty record, "Marcus's father moved from Michigan to Arizona in March 1969"
+produced people and no event, shown to the coder as written. Log: step 0 `edit_event`
+with a guessed `person: 1` → refused "No person 1 in the record"; steps 1–2 added two people;
+`MAX_STEPS = 3` ended the loop before the event. Reproduced twice (phone and desktop walks).
+
+**Changes**: `MAX_STEPS` 3 → 8; a loop that still ends on tool calls raises a 400 with what it
+wrote ("The scribe stopped before it finished after adding …. Say it again in one sentence").
+Three prompt rules: an id comes only from the record or a tool result in this exchange (the
+record starts with none); a person named only by relation ("Marcus's father") is added under
+that relation, never "someone" (one of two runs had written "Someone"); the coder's date is
+kept at the precision given — a year or month-year becomes the first day of that span, marked
+approximate — and kept when a refused call is rewritten (both runs dropped "March 1969" on the
+rewrite after the description guard refused a name in the description).
+
+**Result**: re-walk on a fresh coder: the move landed dated Mar 1969 under "Marcus's father";
+the cutoff landed dated Mar 1969. Two samples, not a measurement.
 
 ## Fable 5 extraction experiment — induction findings (2026-06-09)
 

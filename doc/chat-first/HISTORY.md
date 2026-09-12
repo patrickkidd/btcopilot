@@ -806,3 +806,30 @@ deviations logged and one block — the admin role on Patrick's sandbox account.
 instead of asked); all three were fixed with tests. A restart of the sandbox API with a
 relative database path opened an empty file for twelve minutes and the sandbox's error mailer
 emailed Patrick; the path is absolute now and the sandbox's error recipient is blank.
+
+## 2026-09-11 (night) — the coding screen walked at both sizes; the scribe's silent loss fixed [T-3, T-2]
+<!-- session: session_01Y2tN76fgnoJ9pFbjbieQkB · flushed: 2026-09-12T06:45:00Z -->
+
+Patrick asked for the coding screen to be tested. The Chrome extension was not connected, so
+two independent Playwright walks ran on fresh fixture coders — a phone at 393x852 and a desktop
+at 1280x800, with gates for console errors, failed requests, horizontal scroll and the page
+changing after every click. Every ruled behaviour passed: the one task card first, the thread
+up to the cut with the agreed hairline and the cut line, a tap above the hairline told and not
+selected, the refusal to send with no line picked, the pronoun ask before any model call, the
+guidelines behind (i), the back arrow, Done in the title row with its sheet and Keep coding,
+the greyed vote card after Done, and a finished coding refusing further writes. Both walks
+found the same defect: on an empty record, "Marcus's father moved from Michigan to Arizona in
+March 1969" produced people and no event, shown to the coder as "+ Marcus" as if it had worked.
+The cause was in the code, not the prompt: the scribe's loop was capped at three steps and the
+cheap model spent them guessing a person id, being refused, and adding two people. The cap is
+eight now; a loop that still runs out answers with what it did write and the screen re-reads
+the record; three prompt lines went in (ids only from the record or a tool result; a relative
+named by relation is added under that relation, never "someone"; the coder's date kept at its
+precision, also when a refused call is rewritten) with two stubbed-model tests, review suite 32
+passed. The sandbox API was restarted on the fix after a backup, and the re-walk on a fresh
+coder passed 74 of 75 checks, the failing check being the Vite dev server's hot-reload socket,
+not the app. Mid-run Patrick asked how far the coach's coding accuracy could go with
+Fable-level effort on the prompts and tool descriptions, and whether this was induction or ad
+hoc: the answer was ad hoc by design (a code defect), and that prompt work on the coach is
+unmeasured until his two conversations are coded as ground truth, which the coding screen is
+what produces. No ruling was made.

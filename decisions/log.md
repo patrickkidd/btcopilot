@@ -1259,6 +1259,19 @@ year's rules and ledgers.
 **Revisit trigger:** the first two meetings — if the pre-meeting vote is not being done, the
 stages collapse back to one and the design is wrong.
 
+## 2026-09-11: The scribe never pretends — a loop that runs out says what it wrote
+
+**Decision**: the review scribe's tool loop is capped at eight steps (was three). When the
+model still wants to call tools at the cap, the request fails with the list of what was written
+and "say it again", and the coding screen re-reads the record, since every tool call is
+committed as it lands.
+**Rejected**: rolling back the partial writes (the record's commit path commits per call so the
+picture moves while the coach speaks; deferring that is a change to the coach's own loop);
+returning the partial lines as success (the defect found: the coder saw "+ Marcus" as done while
+the event was never written).
+**Context**: found by the 2026-09-11 night walks of the coding screen; two fixture runs at phone
+and desktop size both lost the event on an empty record.
+
 ## 2026-09-11: Every screen ruled and drawn; the review's data model minimal; build begun
 
 **Decision:** The coding, review, Pro and interface screens are all ruled and drawn on one
