@@ -107,3 +107,9 @@ gate. Only code gets the full loop.
 trade-off lines and option names use common words and name concrete things on screen: what
 you are looking at, what to tap, what happens, what you give up. Never a term coined during
 the work, never a reference to a rule the reader has not read.
+
+**Fixtures are Claude's to stand up; bugs are fixed before he looks (2026-09-11).** If a
+harness, a role or a permission blocks a test fixture, fix the harness — never hand the block
+to Patrick. Every known bug is fixed before he is asked to test, and the ask names one clear
+thing to test [R-0302]. His words: "You need total freedom to stand up test fixtures" and
+"why not fix all the bugs before asking me to test?"
