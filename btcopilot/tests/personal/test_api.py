@@ -462,6 +462,50 @@ def test_event_round_trip(web, token, family):
     assert family.get_diagram_data().events == []
 
 
+def test_a_named_record_takes_the_write_and_a_stranger_s_does_not(
+    web, token, family, test_user, test_user_2
+):
+    """The coding screen writes onto the record its coding is of, which it names
+    on the request; a record the user may not write is refused."""
+    mine = Diagram(user_id=test_user.id, name="Coding", data=diagramjson.dumps({}))
+    mine.set_diagram_data(family.get_diagram_data())
+    theirs = Diagram(
+        user_id=test_user_2.id, name="Theirs", data=diagramjson.dumps({})
+    )
+    db.session.add_all([mine, theirs])
+    db.session.commit()
+
+    created = post(web, token, f"/personal/events?diagram_id={mine.id}", SHIFT)
+    assert created.status_code == 201
+    assert [e["description"] for e in mine.get_diagram_data().events] == [
+        "Sleep got worse"
+    ]
+    assert family.get_diagram_data().events == []
+
+    event_id = created.get_json()["id"]
+    assert (
+        patch(
+            web,
+            token,
+            f"/personal/events/{event_id}?diagram_id={mine.id}",
+            {"description": "Sleep improved"},
+        ).get_json()["description"]
+        == "Sleep improved"
+    )
+    assert (
+        web.delete(
+            f"/personal/events/{event_id}?diagram_id={mine.id}",
+            headers={"X-CSRFToken": token},
+        ).status_code
+        == 204
+    )
+    assert mine.get_diagram_data().events == []
+
+    refused = post(web, token, f"/personal/people?diagram_id={theirs.id}", {"name": "Nova"})
+    assert refused.status_code == 403
+    assert theirs.get_diagram_data().people == []
+
+
 def test_event_write_takes_the_diagram_lock(web, token, family):
     before = family.version
     post(web, token, "/personal/events", SHIFT)
