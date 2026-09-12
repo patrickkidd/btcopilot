@@ -156,6 +156,7 @@ export function openEditor(
   people: Person[],
   done: () => void,
   goToPerson?: (personId: number) => void,
+  diagramId?: number,
 ): HTMLElement {
   const kind = event?.kind ?? EventKind.Shift;
   const relationship = event?.relationship ?? "";
@@ -283,9 +284,9 @@ export function openEditor(
 
   editor
     .querySelector(".save")
-    ?.addEventListener("click", () => void save(event, editor, done));
+    ?.addEventListener("click", () => void save(event, editor, done, diagramId));
   editor.querySelector(".del")?.addEventListener("click", () => {
-    if (event) void api.deleteEvent(event.id).then(done);
+    if (event) void api.deleteEvent(event.id, diagramId).then(done);
   });
   return editor;
 }
@@ -306,6 +307,7 @@ async function save(
   event: TimelineEvent | null,
   editor: HTMLElement,
   done: () => void,
+  diagramId?: number,
 ): Promise<void> {
   const one = (name: string): string | null => {
     const on = editor.querySelector<HTMLElement>(`.segs[data-name="${name}"] .seg.on`);
@@ -323,24 +325,28 @@ async function save(
     const value = one(name);
     return value === null ? null : Number(value);
   };
-  await api.saveEvent(event ? event.id : null, {
-    kind: one("kind"),
-    person: number("person"),
-    spouse: number("spouse"),
-    child: number("child"),
-    description: text("description"),
-    notes: text("notes"),
-    location: text("location"),
-    dateTime: text("dateTime"),
-    endDateTime: text("endDateTime"),
-    dateCertainty: one("dateCertainty") ?? Certainty.Certain,
-    symptom: one("symptom"),
-    anxiety: one("anxiety"),
-    functioning: one("functioning"),
-    relationship: one("relationship"),
-    relationshipTargets: many("relationshipTargets"),
-    relationshipTriangles: many("relationshipTriangles"),
-  });
+  await api.saveEvent(
+    event ? event.id : null,
+    {
+      kind: one("kind"),
+      person: number("person"),
+      spouse: number("spouse"),
+      child: number("child"),
+      description: text("description"),
+      notes: text("notes"),
+      location: text("location"),
+      dateTime: text("dateTime"),
+      endDateTime: text("endDateTime"),
+      dateCertainty: one("dateCertainty") ?? Certainty.Certain,
+      symptom: one("symptom"),
+      anxiety: one("anxiety"),
+      functioning: one("functioning"),
+      relationship: one("relationship"),
+      relationshipTargets: many("relationshipTargets"),
+      relationshipTriangles: many("relationshipTriangles"),
+    },
+    diagramId,
+  );
   done();
 }
 
@@ -362,6 +368,7 @@ export function openPersonEditor(
   person: Person | null,
   done: () => void,
   goToEvent?: (eventId: number) => void,
+  diagramId?: number,
 ): HTMLElement {
   const life = [
     ["birth_event", "Their birth"],
@@ -418,15 +425,19 @@ export function openPersonEditor(
       editor.querySelector<HTMLElement>('.segs[data-name="gender"] .seg.on')?.dataset
         .value ?? PersonKind.Unknown;
     void api
-      .savePerson(person ? person.id : null, {
-        name: text("name"),
-        last_name: text("last_name"),
-        gender,
-      } as Partial<Person>)
+      .savePerson(
+        person ? person.id : null,
+        {
+          name: text("name"),
+          last_name: text("last_name"),
+          gender,
+        } as Partial<Person>,
+        diagramId,
+      )
       .then(done);
   });
   editor.querySelector(".del")?.addEventListener("click", () => {
-    if (person) void api.deletePerson(person.id).then(done);
+    if (person) void api.deletePerson(person.id, diagramId).then(done);
   });
   return editor;
 }

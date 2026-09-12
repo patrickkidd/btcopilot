@@ -2,16 +2,14 @@ import * as api from "./api";
 import { el, esc } from "./dom";
 import { dragScroll } from "./drag";
 import { Picture, Target, type Tap } from "./picture";
-import { eventDivider, eventRow, fullName, personRow } from "./rows";
+import { Menu, Tab } from "./menu";
 import { toast } from "./toast";
+import { PLAY_MARK, tok } from "./tokens";
 import {
   emptyTimeline,
-  type Cluster,
   type CodingThread,
   type CodingTurn,
-  type Person,
   type Timeline,
-  type TimelineEvent,
 } from "./types";
 
 /** The coding screen: one conversation, read-only, up to the cut Patrick put
@@ -32,11 +30,6 @@ export interface CodingHandlers {
   onTitle(title: string): void;
 }
 
-enum Which {
-  Events = "events",
-  People = "people",
-}
-
 const PLACEHOLDER = {
   none: "tap a line, then say what happened",
   picked: "say what this line tells you happened",
@@ -46,8 +39,7 @@ export class Coding {
   private thread: CodingThread | null = null;
   private timeline: Timeline = emptyTimeline();
   private picked: number | null = null;
-  private tab = Which.Events;
-  private query = "";
+  private drawer: Menu | null = null;
   private sending = false;
   private picture: Picture;
   private scrim = el("div", "fs-scrim");
@@ -61,11 +53,17 @@ export class Coding {
     private rows: HTMLElement,
     private search: HTMLInputElement,
     private tabs: HTMLElement,
+    private addRow: HTMLElement,
     view: HTMLElement,
     private overlay: HTMLElement,
     private handlers: CodingHandlers,
   ) {
-    this.picture = new Picture(view, { onTap: (tap: Tap) => this.onPicture(tap) });
+    // No coach turn in a coding, so the board it opens carries the two step
+    // arrows and nothing to ask with.
+    this.picture = new Picture(view, {
+      onTap: (tap: Tap) => this.onPicture(tap),
+      canExplain: false,
+    });
     this.overlay.append(this.scrim, this.sheet);
     this.scrim.hidden = true;
     this.sheet.hidden = true;
@@ -79,9 +77,13 @@ export class Coding {
   async open(codingId: number): Promise<void> {
     this.thread = await api.codingThread(codingId);
     this.picked = null;
+    // The drawer edits the record this coding is of, never the coder's own
+    // family, so it is built on that record's id (R-0267).
+    this.drawer = new Menu(this.rows, () => this.reread(), this.thread.diagram_id);
+    this.drawer.onTab = (tab) => this.markTab(tab);
     this.handlers.onTitle(`${this.thread.session} · up to ${this.thread.cut_day}`);
     this.render();
-    await this.reread();
+    this.drawer.show(await this.reread());
   }
 
   showing(): CodingThread | null {
@@ -153,25 +155,32 @@ export class Coding {
       if (target.closest(".cf-go")) void this.finish();
       else if (target.closest(".cf-no")) this.close();
     });
-    this.search.addEventListener("input", () => {
-      this.query = this.search.value;
-      this.drawer();
-    });
+    this.search.addEventListener("input", () =>
+      this.drawer?.search(this.search.value),
+    );
+    this.addRow.addEventListener("click", () => this.drawer?.add());
     this.tabs.addEventListener("click", (e) => {
       const tab = (e.target as Element).closest<HTMLElement>(".tab");
       if (!tab) return;
-      this.tab = tab.id.endsWith("people") ? Which.People : Which.Events;
-      this.query = "";
+      const which = tab.id.endsWith("people") ? Tab.People : Tab.Events;
       this.search.value = "";
-      this.search.placeholder =
-        this.tab === Which.People ? "Search people" : "Search events";
-      for (const one of this.tabs.querySelectorAll<HTMLElement>(".tab")) {
-        const on = one === tab;
-        one.classList.toggle("on", on);
-        one.setAttribute("aria-selected", String(on));
-      }
-      this.drawer();
+      this.drawer?.search("");
+      this.drawer?.open(which);
+      this.markTab(which);
     });
+  }
+
+  /** The two tab buttons say which list the drawer is on, including when the
+   * drawer changes it itself. */
+  private markTab(which: Tab): void {
+    const people = which === Tab.People;
+    this.search.placeholder = people ? "Search people" : "Search events";
+    this.addRow.textContent = people ? "+ Add person" : "+ Add event";
+    for (const one of this.tabs.querySelectorAll<HTMLElement>(".tab")) {
+      const on = one.id.endsWith("people") === (which === Tab.People);
+      one.classList.toggle("on", on);
+      one.setAttribute("aria-selected", String(on));
+    }
   }
 
   /** A turn above the last agreed line is there to read, and tapping it says
@@ -197,9 +206,42 @@ export class Coding {
       bubble.classList.toggle("sel", Number(bubble.dataset.turn) === this.picked);
     this.composer.dataset.ph =
       this.picked === null ? PLACEHOLDER.none : PLACEHOLDER.picked;
-    // the row under the picture says what a tap will do, until one is picked
-    this.caption.innerHTML =
-      this.picked === null ? `<span class="cta">tap a line</span>` : "";
+    this.marks();
+  }
+
+  /** The row under the picture. Nothing in a coding speaks to the coach, so
+   * the chat's "ask", "in chat" and the board's "explain" are not here: the
+   * one thing the row offers is the walk through an open cluster's moves, on
+   * the record this coding is being written onto.
+   *
+   * The board has its own controls, so the row goes outright while it is up
+   * rather than sitting there as an empty strip (owner ruling 2026-09-08). */
+  private marks(): void {
+    const onBoard = this.picture.onBoard();
+    this.caption.classList.toggle("gone", onBoard);
+    if (onBoard) {
+      this.caption.innerHTML = "";
+      return;
+    }
+    const open = this.picture.openCluster();
+    if (!open) {
+      const say = this.picked === null ? "tap a line" : "tap a cluster";
+      this.caption.innerHTML = `<span class="cta">${say}</span>`;
+      return;
+    }
+    const moves = this.picture.countMoves(open.event_ids);
+    this.caption.innerHTML = tok(
+      "coding-play",
+      "g",
+      PLAY_MARK,
+      "play-by-play",
+      moves > 0,
+    );
+    if (moves)
+      this.caption.querySelector("#coding-play")?.addEventListener("click", () => {
+        this.picture.openBoard(open.event_ids, open.id);
+        this.marks();
+      });
   }
 
   /** What the coder typed, sent to the scribe: their own words go into the
@@ -234,22 +276,29 @@ export class Coding {
       : written.lines.map((line) => `<div class="did">${esc(line)}</div>`).join("");
     this.after(turn, el("div", "bub coach", lines), turn);
     if (!written.asked) {
-      await this.reread();
+      this.drawer?.show(await this.reread());
       this.picture.light(written.made);
     }
   }
 
   /** The record this coding is being written onto, which the picture and the
    * drawer both read. */
-  private async reread(): Promise<void> {
-    if (!this.thread) return;
+  private async reread(): Promise<Timeline> {
+    if (!this.thread) return this.timeline;
     this.timeline = await api.timeline(this.thread.diagram_id);
     this.picture.setData(this.timeline);
-    this.drawer();
+    return this.timeline;
   }
 
+  /** The picture on this screen is the record being coded: a tap opens one
+   * cluster, and a tap on the ground beside it puts it down. */
   private onPicture(tap: Tap): void {
     if (tap.target === Target.Ground) this.picture.dismiss();
+    else if (tap.target === Target.Cluster) {
+      const ids = this.picture.inCluster(tap.index);
+      if (ids.length) this.picture.spotlight(ids);
+    }
+    this.marks();
   }
 
   private render(): void {
@@ -324,41 +373,6 @@ export class Coding {
     this.list.scrollTop = this.list.scrollHeight;
   }
 
-  private drawer(): void {
-    const words = this.query.trim().toLowerCase();
-    this.rows.innerHTML =
-      this.tab === Which.People ? this.people(words) : this.events(words);
-  }
-
-  private events(words: string): string {
-    const names = new Map(this.timeline.people.map((p: Person) => [p.id, p.name]));
-    const shown = this.timeline.events.filter((event: TimelineEvent) =>
-      `${event.label} ${event.person_name}`.toLowerCase().includes(words),
-    );
-    if (!shown.length) return `<div class="none">Nothing coded yet.</div>`;
-    let html = "";
-    let last: string | null | undefined;
-    for (const event of shown) {
-      const cluster = this.timeline.clusters.find((c: Cluster) =>
-        c.event_ids.includes(event.id),
-      );
-      const key = cluster ? cluster.id : null;
-      if (key !== last) {
-        last = key;
-        html += eventDivider(cluster);
-      }
-      html += eventRow(event, names);
-    }
-    return html;
-  }
-
-  private people(words: string): string {
-    const shown = this.timeline.people.filter((person: Person) =>
-      fullName(person).toLowerCase().includes(words),
-    );
-    if (!shown.length) return `<div class="none">Nobody coded yet.</div>`;
-    return shown.map((person: Person) => personRow(person)).join("");
-  }
 }
 
 /** What went wrong, in the words the coder needs. */

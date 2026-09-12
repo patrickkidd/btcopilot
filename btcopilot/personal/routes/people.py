@@ -13,7 +13,7 @@ from flask import abort, jsonify, request
 from btcopilot import auth
 from btcopilot.personal import record
 from btcopilot.personal.models import Author
-from btcopilot.personal.routes import bp, diagram, writable_diagram
+from btcopilot.personal.routes import asked_diagram, bp, writable_diagram
 from btcopilot.schema import ItemKind, PersonKind
 
 WRITABLE = ("name", "last_name", "gender")
@@ -70,7 +70,7 @@ def create_person():
     values = _fields(request.get_json())
     if not values.get("name"):
         raise ValueError("A person needs a name")
-    dia = diagram()
+    dia = asked_diagram()
     if dia is None:
         abort(404)
     data = dia.get_diagram_data()
@@ -85,23 +85,23 @@ def create_person():
         }
     )
     _apply(deltas)
-    return jsonify(_payload(_find(diagram().get_diagram_data(), person_id))), 201
+    return jsonify(_payload(_find(asked_diagram().get_diagram_data(), person_id))), 201
 
 
 @bp.route("/people/<int:person_id>", methods=["PATCH"])
 def update_person(person_id: int):
     values = _fields(request.get_json())
-    _find(diagram().get_diagram_data(), person_id)
+    _find(asked_diagram().get_diagram_data(), person_id)
     if not values:
         raise ValueError("Nothing to change on that person")
     _apply([_delta(person_id, field, value) for field, value in values.items()])
-    return jsonify(_payload(_find(diagram().get_diagram_data(), person_id)))
+    return jsonify(_payload(_find(asked_diagram().get_diagram_data(), person_id)))
 
 
 @bp.route("/people/<int:person_id>", methods=["DELETE"])
 def delete_person(person_id: int):
     """Removing someone cascades the way the app's own scene does: the record
     takes their bonds and the events that name them with them."""
-    _find(diagram().get_diagram_data(), person_id)
+    _find(asked_diagram().get_diagram_data(), person_id)
     _apply([_delta(person_id, None, None)])
     return "", 204

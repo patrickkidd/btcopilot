@@ -122,21 +122,36 @@ export const record = (
 export const session = (id: number) =>
   call<{ statements: Statement[] }>("GET", `/sessions/${id}`);
 
-export const saveEvent = (id: number | null, body: Partial<TimelineEvent>) =>
-  id === null
-    ? call<TimelineEvent>("POST", "/events", body)
-    : call<TimelineEvent>("PATCH", `/events/${id}`, body);
+/** Which record a write lands on: the one the app is on, or the one a coding
+ * is of. Every writing route takes the same query. */
+const onDiagram = (path: string, diagramId?: number) =>
+  diagramId === undefined ? path : `${path}?diagram_id=${diagramId}`;
 
-export const deleteEvent = (id: number) => call<void>("DELETE", `/events/${id}`);
+export const saveEvent = (
+  id: number | null,
+  body: Partial<TimelineEvent>,
+  diagramId?: number,
+) =>
+  id === null
+    ? call<TimelineEvent>("POST", onDiagram("/events", diagramId), body)
+    : call<TimelineEvent>("PATCH", onDiagram(`/events/${id}`, diagramId), body);
+
+export const deleteEvent = (id: number, diagramId?: number) =>
+  call<void>("DELETE", onDiagram(`/events/${id}`, diagramId));
 
 /** The record's Person: a name, a last name and a gender. When someone was
  * born, and whether they have died, are events about them. */
-export const savePerson = (id: number | null, body: Partial<Person>) =>
+export const savePerson = (
+  id: number | null,
+  body: Partial<Person>,
+  diagramId?: number,
+) =>
   id === null
-    ? call<Person>("POST", "/people", body)
-    : call<Person>("PATCH", `/people/${id}`, body);
+    ? call<Person>("POST", onDiagram("/people", diagramId), body)
+    : call<Person>("PATCH", onDiagram(`/people/${id}`, diagramId), body);
 
-export const deletePerson = (id: number) => call<void>("DELETE", `/people/${id}`);
+export const deletePerson = (id: number, diagramId?: number) =>
+  call<void>("DELETE", onDiagram(`/people/${id}`, diagramId));
 
 /** Sessions, newest activity first. The server has no current-session pointer:
  * posting into a session is what makes it the one you come back to. */

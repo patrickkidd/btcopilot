@@ -172,6 +172,9 @@ export interface Tap {
 
 export interface PictureHandlers {
   onTap(tap: Tap): void;
+  /** Whether the board may ask the coach to talk the cluster through. A coding
+   * has no coach turn, so its board carries only the two step arrows. */
+  canExplain?: boolean;
 }
 
 const YEAR = 365.25 * 24 * 3600 * 1000;
@@ -873,8 +876,10 @@ export class Picture {
           `${this.at === 0 ? "disabled" : ""} aria-label="the move before">&#9664;</button>` +
           // One row, whichever way the board was opened. Explain is dead only
           // while the coach is still answering the last one.
-          `<button type="button" class="btn primary" data-target="${Target.Explain}" ` +
-          `${this.explaining ? "disabled" : ""}>&#9654; explain</button>` +
+          (this.handlers.canExplain === false
+            ? ""
+            : `<button type="button" class="btn primary" data-target="${Target.Explain}" ` +
+              `${this.explaining ? "disabled" : ""}>&#9654; explain</button>`) +
           `<button type="button" class="btn" data-target="${Target.Next}" ` +
           `${this.at >= last ? "disabled" : ""} aria-label="the move after">&#9654;</button>` +
           `</div>`

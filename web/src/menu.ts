@@ -37,6 +37,9 @@ export class Menu {
   constructor(
     private body: HTMLElement,
     private reload: () => Promise<Timeline>,
+    /** The record being edited, when it is not the one the app is on: the
+     * coding screen edits the record its own coding is of. */
+    private diagramId?: number,
   ) {}
 
   add(): void {
@@ -204,6 +207,7 @@ export class Menu {
         void this.reload().then((data) => this.show(data));
       },
       (eventId) => this.goTo(Tab.Events, eventId),
+      this.diagramId,
     );
   }
 
@@ -217,6 +221,7 @@ export class Menu {
         void this.reload().then((data) => this.show(data));
       },
       (personId) => this.goTo(Tab.People, personId),
+      this.diagramId,
     );
   }
 }

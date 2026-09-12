@@ -6,6 +6,7 @@ from flask_wtf.csrf import CSRFError, generate_csrf
 from btcopilot import auth
 from btcopilot.extensions import csrf, db
 from btcopilot.personal.models import Discussion
+from btcopilot.pro.models import Diagram
 from btcopilot.personal.discussions import create_discussion
 from btcopilot.review.freeze import frozen
 
@@ -100,6 +101,19 @@ def diagram():
     return user.current_diagram or user.free_diagram
 
 
+def asked_diagram():
+    """The diagram a request names with `?diagram_id=`, which is how the coding
+    screen writes onto the record that coding is of rather than onto the
+    coder's own family. Without one it is the diagram the app is on."""
+    asked = request.args.get("diagram_id", type=int)
+    if asked is None:
+        return diagram()
+    found = db.session.get(Diagram, asked)
+    if found is None:
+        abort(404)
+    return found
+
+
 def require_write_access(dia):
     """The write gate every mutating route shares: a diagram reached only
     through a read-only grant refuses the write outright, and so does one a
@@ -114,9 +128,9 @@ def require_write_access(dia):
 
 
 def writable_diagram():
-    """The diagram every writing route mutates, refused if the app is on one
-    the user may only read."""
-    return require_write_access(diagram())
+    """The diagram every writing route mutates — the one the request names, or
+    the one the app is on — refused if the user may only read it."""
+    return require_write_access(asked_diagram())
 
 
 from btcopilot.personal.routes import (  # noqa: E402  bp must exist first
