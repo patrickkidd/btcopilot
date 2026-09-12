@@ -29,8 +29,13 @@ CLOSED = CoderState.Voted
 def roster(cuts: list[Cut]) -> list[User]:
     """Everyone who codes: the auditors, Patrick, who codes too, and anyone
     who has already started on what is on the table."""
+    # The coach codes but is never a voter (R-0242, R-0254), so it is not one
+    # of the people the table is waiting on.
     started = {
-        coding.user_id for cut in cuts for coding in cut.codings
+        coding.user_id
+        for cut in cuts
+        for coding in cut.codings
+        if coding.agent is None
     }
     return [
         user

@@ -84,6 +84,15 @@ export function drawTimeline(
   );
 }
 
+/** What a coder votes on: a disputed event that at least one person wrote. An
+ * item only the coach wrote carries no take here, and is the meeting's to take
+ * up rather than the room's to vote on (R-0254); the server refuses a vote on
+ * one, so it never reaches the ballot. */
+export const onBallot = (one: BallotItem) =>
+  one.item_kind === ItemKind.Event &&
+  one.status === ItemStatus.Disputed &&
+  one.takes.length > 0;
+
 /** Every event of a cut in the order they happened, which is the order both
  * screens walk them in. */
 export function eventsOf(items: BallotItem[]): BallotItem[] {
@@ -206,10 +215,7 @@ export class Ballot {
     ]);
     this.session = cut.session;
     this.items = items;
-    this.ballot = items.filter(
-      (one) =>
-        one.item_kind === ItemKind.Event && one.status === ItemStatus.Disputed,
-    );
+    this.ballot = items.filter(onBallot);
     this.mine = new Map(votes.map((vote) => [vote.review_item_id, vote]));
     this.at = Math.max(this.unvoted(0), 0);
     this.render();

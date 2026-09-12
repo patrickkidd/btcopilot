@@ -302,6 +302,18 @@ def test_the_agenda_gathers_what_the_meeting_must_take_up(
     assert unfinished.id in [c["id"] for c in agenda["unfinished_codings"]]
 
 
+def test_an_unfinished_coding_names_who_it_waits_on_and_which_conversation(
+    patrick, coder, test_user, test_user_2, cut
+):
+    test_user_2.first_name = "Lena"
+    db.session.commit()
+    coded(test_user_2, cut, {}, done=False)
+
+    line = patrick.get("/review/agenda").get_json()["unfinished_codings"][0]
+    assert line["coder"] == "Lena"
+    assert line["session"]
+
+
 def test_the_coachs_replay_is_a_coding_with_its_model(patrick, test_user, cut):
     coding = Coding(
         cut_id=cut.id,
@@ -332,6 +344,14 @@ def test_a_coder_who_pressed_done_reads_as_done(patrick, test_user_2, cut):
     rows = patrick.get("/review/coders").get_json()
     assert {r["user_id"]: r["state"] for r in rows}[test_user_2.id] == "done"
     assert not any(row["closed_out"] for row in rows)
+
+
+def test_the_coach_is_not_one_of_the_coders_the_table_waits_on(
+    patrick, test_user_2, cut
+):
+    coded(test_user_2, cut, {}, agent={"model": "claude-sonnet-5"})
+    rows = patrick.get("/review/coders").get_json()
+    assert test_user_2.id not in [row["user_id"] for row in rows]
 
 
 def test_taking_a_conversation_off_the_table(patrick, cut):

@@ -495,7 +495,9 @@ export class Sessions {
       this.thumb(family) +
       `<div class="fs-fmain">` +
       `<div class="fs-fname">${esc(name)}</div>` +
-      `<div class="fs-flast">last: ${esc(last ? summaryOf(last) : "nothing yet")}</div>` +
+      `<div class="fs-flast">${
+        last ? `last: ${esc(summaryOf(last))}` : "no sessions yet"
+      }</div>` +
       `</div>` +
       (PRO
         ? ""

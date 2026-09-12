@@ -170,7 +170,11 @@ export class Table {
   private render(): void {
     const closed = this.coders.filter((one) => one.closed_out).length;
     const behind = this.waiting().length;
-    const open = this.cuts.some((cut) => cut.vote_opened_at !== null);
+    // The button stands while anything on the table still needs the vote
+    // opening on it; once every one of them is open it becomes a plain line.
+    const open =
+      this.cuts.length > 0 &&
+      this.cuts.every((cut) => cut.vote_opened_at !== null);
     this.body.innerHTML =
       this.dateRow() +
       `<div class="sn-hd">On the table</div>` +
