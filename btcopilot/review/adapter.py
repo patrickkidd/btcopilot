@@ -53,7 +53,9 @@ __all__ = [
     "coding_diagram",
     "commit",
     "grant_write",
+    "initials",
     "pdp_of",
+    "pdp_from",
     "record_of",
     "to_json",
     "statements_between",
@@ -103,6 +105,17 @@ def cut_day(discussion_id: int, statement_id: int):
     return end.created_at if end else None
 
 
+def initials(user: User | None) -> str:
+    """Initials where a coder has a name, and the name part of their address
+    otherwise: a whole email address does not fit a phone's line."""
+    if user is None:
+        return "someone"
+    letters = [part[0] for part in (user.first_name, user.last_name) if part]
+    if letters:
+        return ".".join(letters) + "."
+    return user.username.split("@")[0]
+
+
 def diagram_of(diagram_id: int) -> Diagram:
     return db.session.get(Diagram, diagram_id)
 
@@ -127,7 +140,10 @@ def record_of(diagram: Diagram) -> dict:
 
 def pdp_of(diagram: Diagram) -> PDP:
     """The record as typed items, which is what the F1 matcher compares."""
-    data = record_of(diagram)
+    return pdp_from(record_of(diagram))
+
+
+def pdp_from(data: dict) -> PDP:
     return PDP(
         people=[from_dict(Person, p) for p in data.get("people") or []],
         events=[from_dict(Event, _dated(e)) for e in data.get("events") or []],

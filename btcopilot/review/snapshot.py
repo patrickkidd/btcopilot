@@ -6,8 +6,15 @@ written with the take each coding had. The snapshot is never maintained after
 that: the rows are the event clock (R-0275).
 
 Agreement is recomputed from the rows whenever a coding finishes and again
-after ratification (R-0242).
+after ratification (R-0242). Both figures are kept, because the result screen
+shows the first pass and the ratified record side by side.
+
+The coach's replay is snapshotted like any other coding so the result screen
+can say where it differed from the room, but it is never a voter: it does not
+make an item disputed and it is not counted in the agreement figures (R-0242).
 """
+
+import enum
 
 from btcopilot.extensions import db
 from btcopilot.review import adapter
@@ -27,20 +34,38 @@ COLLECTION = {
 }
 
 
+class AgreementPhase(enum.StrEnum):
+    FirstPass = "first_pass"
+    Ratified = "ratified"
+
+
 def done_codings(cut) -> list[Coding]:
     found = [c for c in cut.codings if c.done_at is not None]
     return sorted(found, key=lambda c: (c.done_at, c.id))
 
 
+def voters(cut) -> list[Coding]:
+    """The people who coded: the coach's replay is a coding but never a voter."""
+    return [c for c in done_codings(cut) if c.agent is None]
+
+
+def coach_coding(cut) -> Coding | None:
+    return next((c for c in done_codings(cut) if c.agent is not None), None)
+
+
 def build(cut) -> list[Item]:
     """One row per item of the cut, with every coding's take on it."""
     Item.query.filter_by(cut_id=cut.id).delete()
-    codings = done_codings(cut)
-    if not codings:
+    people = voters(cut)
+    if not people:
         return []
+    # The coach is matched in last so its take is on the row without ever
+    # standing as the reference the others are paired against.
+    codings = people + [c for c in done_codings(cut) if c.agent is not None]
+    voter_ids = {c.id for c in people}
 
     records = {c.id: adapter.pdp_of(_diagram(c)) for c in codings}
-    reference = codings[0]
+    reference = people[0]
     rows = []
     for kind in KINDS:
         for takes in _groups(kind, reference, codings, records):
@@ -49,7 +74,7 @@ def build(cut) -> list[Item]:
                     cut_id=cut.id,
                     item_kind=kind,
                     takes=takes,
-                    status=_status(takes, len(codings)),
+                    status=_status(takes, voter_ids),
                 )
             )
     db.session.add_all(rows)
@@ -100,12 +125,14 @@ def _match(kind, pdp, reference):
     return result.matched_pairs, result.ai_unmatched
 
 
-def _status(takes: list[dict], coders: int) -> ReviewStatus:
-    """Agreed when every coder has this item and wrote it the same way."""
-    if len(takes) < coders:
+def _status(takes: list[dict], voter_ids: set[int]) -> ReviewStatus:
+    """Agreed when every coder has this item and wrote it the same way. What
+    the coach wrote is on the row but never decides it (R-0254)."""
+    theirs = [t for t in takes if t["coding_id"] in voter_ids]
+    if len(theirs) < len(voter_ids) or not theirs:
         return ReviewStatus.Disputed
-    first = _comparable(takes[0]["item"])
-    if all(_comparable(t["item"]) == first for t in takes[1:]):
+    first = _comparable(theirs[0]["item"])
+    if all(_comparable(t["item"]) == first for t in theirs[1:]):
         return ReviewStatus.Agreed
     return ReviewStatus.Disputed
 
@@ -118,7 +145,7 @@ def _comparable(item: dict) -> dict:
 
 def agreement(cut) -> dict:
     """The figures the cut carries: how many items every coder read the same
-    way, out of how many, over how many finished codings."""
+    way, out of how many, over how many people coded it."""
     rows = Item.query.filter_by(cut_id=cut.id).all()
     counts = {status.value: 0 for status in ReviewStatus}
     for row in rows:
@@ -126,14 +153,18 @@ def agreement(cut) -> dict:
     total = len(rows)
     agreed = counts[ReviewStatus.Agreed.value] + counts[ReviewStatus.Settled.value]
     return {
-        "codings": len(done_codings(cut)),
+        "codings": len(voters(cut)),
         "items": total,
         "by_status": counts,
         "percent": round(100.0 * agreed / total, 1) if total else None,
     }
 
 
-def recompute(cut) -> dict:
-    cut.agreement = agreement(cut)
+def recompute(cut, phase: AgreementPhase = AgreementPhase.FirstPass) -> dict:
+    """Both figures are kept: the first pass is what the coders reached on
+    their own, the ratified one is what the room reached together."""
+    figures = dict(cut.agreement or {})
+    figures[phase.value] = agreement(cut)
+    cut.agreement = figures
     db.session.flush()
-    return cut.agreement
+    return figures

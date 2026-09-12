@@ -1,6 +1,8 @@
 """Items: one event, person or pair bond as every coder saw it, and the
 settle the meeting makes on it."""
 
+import enum
+
 from flask import jsonify, request
 
 from btcopilot.extensions import db
@@ -17,10 +19,18 @@ from btcopilot.review.routes import (
     sees_others,
 )
 
+class Settle(enum.StrEnum):
+    Keep = "keep"
+    Change = "change"
+    Unresolved = "unresolved"
+    Reopen = "reopen"
+
+
 SETTLE_STATUS = {
-    "keep": ReviewStatus.Settled,
-    "change": ReviewStatus.Settled,
-    "unresolved": ReviewStatus.Unresolved,
+    Settle.Keep: ReviewStatus.Settled,
+    Settle.Change: ReviewStatus.Settled,
+    Settle.Unresolved: ReviewStatus.Unresolved,
+    Settle.Reopen: ReviewStatus.Disputed,
 }
 
 
@@ -48,15 +58,18 @@ def read(cut) -> dict:
         found[coding.id] = {
             "turns": adapter.coded_in(coding.diagram_id),
             "people": record.get("people") or [],
+            "user_id": coding.user_id,
+            "coder": adapter.initials(db.session.get(adapter.User, coding.user_id)),
         }
     return found
 
 
-def voting_payload(item: Item, records: dict) -> dict:
+def voting_payload(item: Item, records: dict, named: bool = False) -> dict:
     """One item as the ballot reads it: the takes without names, each with the
     turn it came from and the name of the person it is about, and how many
-    coders left the item out (R-0252, R-0257)."""
-    data = payload(item, named=False)
+    coders left the item out (R-0252, R-0257). The meeting reads the same item
+    with the names on, which is where they first appear (R-0252)."""
+    data = payload(item, named=named)
     raws = [one for one in item.takes or [] if one["coding_id"] in records]
     data["takes"] = [
         take
@@ -70,6 +83,9 @@ def voting_payload(item: Item, records: dict) -> dict:
         record = records[raw["coding_id"]]
         take["statement_id"] = _turn_of(item, raw, record)
         take["person_name"] = _name_of(raw["item"], record)
+        if named:
+            take["user_id"] = record["user_id"]
+            take["coder"] = record["coder"]
     data["people"] = _people_of(item, records)
     data["line"] = _line(data["takes"])
     return data
@@ -130,14 +146,22 @@ def _line(takes: list[dict]) -> dict | None:
 @bp.route("/items")
 def item_index():
     user = coder()
+    # Names appear at the meeting and never before it (R-0252, R-0272): the
+    # meeting screen asks for them, and only Patrick may ask.
+    named = request.args.get("named") == "true"
+    if named:
+        admin()
     cut = cut_or_404(request.args.get("cut_id", type=int) or 0)
     if not sees_others(cut, user):
         return jsonify([])
     rows = sorted(cut.items, key=lambda i: i.id)
-    if cut.ratified_at is not None:
-        return jsonify([payload(i, True) for i in rows])
     records = read(cut)
-    return jsonify([voting_payload(i, records) for i in rows])
+    return jsonify(
+        [
+            voting_payload(i, records, named or cut.ratified_at is not None)
+            for i in rows
+        ]
+    )
 
 
 @bp.route("/items/<int:item_id>", methods=["PATCH"])
@@ -146,15 +170,20 @@ def item_patch(item_id: int):
     unresolved. Every item must carry one before a cut is ratified (R-0257)."""
     user = admin()
     item = item_or_404(item_id)
+    if item.cut.ratified_at is not None:
+        raise ValueError("that cut is ratified and cannot be settled again")
     body = request.get_json() or {}
-    choice = body.get("choice")
-    if choice not in SETTLE_STATUS:
-        raise ValueError("a settle is keep, change or unresolved")
+    try:
+        choice = Settle(body.get("choice"))
+    except ValueError:
+        raise ValueError("a settle is keep, change, unresolved or reopen")
 
     item.status = SETTLE_STATUS[choice]
-    item.user_id = user.id
+    item.user_id = None if choice is Settle.Reopen else user.id
 
-    if choice != "unresolved":
+    if choice is Settle.Reopen:
+        item.settle_change_id = None
+    elif choice is not Settle.Unresolved:
         value = _value(item, body.get("value"))
         change = _write(item, value, user)
         item.settle_change_id = change.id

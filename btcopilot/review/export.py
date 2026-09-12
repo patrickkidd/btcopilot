@@ -22,9 +22,11 @@ def path_for(cut) -> Path:
     return folder / FILENAME.format(cut_id=cut.id)
 
 
-def cases(cut) -> list[dict]:
-    discussion = db.session.get(adapter.Discussion, cut.discussion_id)
-    case = adapter.case_diagram(discussion)
+def ratified_record(cut) -> dict:
+    """The agreed record of one cut: the case as it stands, kept to the items
+    the meeting settled. An item left unresolved is data and is not in it
+    (R-0250)."""
+    case = adapter.case_diagram(db.session.get(adapter.Discussion, cut.discussion_id))
     record = adapter.record_of(case)
     settled = {
         str(item.item_id)
@@ -33,6 +35,17 @@ def cases(cut) -> list[dict]:
         ).all()
         if item.item_id
     }
+    return {
+        collection: [
+            entry
+            for entry in record.get(collection) or []
+            if str(entry.get("id")) in settled
+        ]
+        for collection in ("people", "events", "pair_bonds")
+    }
+
+
+def cases(cut) -> list[dict]:
     statements = adapter.statements_between(
         cut.discussion_id, cut.start_statement_id, cut.end_statement_id
     )
@@ -49,14 +62,7 @@ def cases(cut) -> list[dict]:
                 f"{s.speaker.name if s.speaker else 'Unknown'}: {s.text}"
                 for s in statements
             ),
-            "gt_extraction": {
-                collection: [
-                    entry
-                    for entry in record.get(collection) or []
-                    if str(entry.get("id")) in settled
-                ]
-                for collection in ("people", "events", "pair_bonds")
-            },
+            "gt_extraction": ratified_record(cut),
         }
     ]
 

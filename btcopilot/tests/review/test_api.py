@@ -112,6 +112,21 @@ def two_codings(test_user, test_user_2, cut):
     return a, b
 
 
+def settle_everything(patrick, cut):
+    """Every open item given a choice, which is what the ratify button waits
+    for."""
+    for item in list(cut.items):
+        if item.status is not ReviewStatus.Disputed:
+            continue
+        patrick.patch(
+            f"/review/items/{item.id}",
+            json={
+                "choice": "keep",
+                "value": {"coding_id": item.takes[0]["coding_id"]},
+            },
+        )
+
+
 def disputed_event(cut) -> Item:
     """What a ballot screen is about: one disputed event of the cut."""
     return next(
@@ -137,7 +152,7 @@ def test_agreement_lands_on_the_cut(patrick, test_user, test_user_2, cut):
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
 
-    agreement = db.session.get(Cut, cut.id).agreement
+    agreement = db.session.get(Cut, cut.id).agreement["first_pass"]
     assert agreement["codings"] == 2
     assert agreement["by_status"]["disputed"] >= 1
 
@@ -196,15 +211,16 @@ def test_ratifying_writes_the_ground_truth_export(
 ):
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
-    item = next(
+    agreed = next(
         i
         for i in Item.query.filter_by(cut_id=cut.id, item_kind="event").all()
         if i.status is ReviewStatus.Agreed
     )
     patrick.patch(
-        f"/review/items/{item.id}",
-        json={"choice": "keep", "value": {"coding_id": item.takes[0]["coding_id"]}},
+        f"/review/items/{agreed.id}",
+        json={"choice": "keep", "value": {"coding_id": agreed.takes[0]["coding_id"]}},
     )
+    settle_everything(patrick, db.session.get(Cut, cut.id))
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
 
     written = export.path_for(db.session.get(Cut, cut.id))
@@ -218,6 +234,7 @@ def test_ratifying_asks_the_coach_for_a_first_draft_of_the_rules(
 ):
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    settle_everything(patrick, db.session.get(Cut, cut.id))
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
     assert no_coach.called
 
@@ -229,7 +246,9 @@ def test_the_coachs_draft_lands_as_ai_rules(patrick, test_user, test_user_2, cut
     item.status = ReviewStatus.Settled
     db.session.commit()
 
-    with patch.object(ruledraft, "draft", return_value=["Date a shift by its start"]):
+    with patch.object(
+        ruledraft, "draft", return_value={1: "Date a shift by its start"}
+    ):
         ruledraft.draft_for(db.session.get(Cut, cut.id))
     db.session.commit()
     drafted = Rule.query.filter_by(drafted_by=RuleSource.Ai).all()

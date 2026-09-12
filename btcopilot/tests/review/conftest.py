@@ -23,7 +23,7 @@ def no_csrf(flask_app):
 @pytest.fixture(autouse=True)
 def no_coach():
     """No test reaches the real coach; the drafting test scripts its own."""
-    with patch.object(ruledraft, "draft", return_value=[]) as drafted:
+    with patch.object(ruledraft, "draft", return_value={}) as drafted:
         yield drafted
 
 
@@ -105,8 +105,9 @@ def cut(test_user, session, turns):
     return cut
 
 
-def coded(user, cut, record: dict, done=True) -> Coding:
-    """A finished coding on a record with the given people and events."""
+def coded(user, cut, record: dict, done=True, agent=None) -> Coding:
+    """A finished coding on a record with the given people and events. An
+    `agent` makes it the coach's replay rather than a person's (R-0242)."""
     diagram = Diagram(
         user_id=user.id, name=f"coding by {user.id}", data=diagramjson.dumps(record)
     )
@@ -117,6 +118,7 @@ def coded(user, cut, record: dict, done=True) -> Coding:
         user_id=user.id,
         diagram_id=diagram.id,
         done_at=datetime.datetime.utcnow() if done else None,
+        agent=agent,
     )
     db.session.add(coding)
     db.session.commit()

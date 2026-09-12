@@ -27,6 +27,9 @@ class Cut(db.Model, ModelMixin):
     nudged_at = Column(DateTime, nullable=True)
     ratified_at = Column(DateTime, nullable=True)
     agreement = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=True)
+    #: Where the coach read this cut differently from the room, written once at
+    #: ratification because it costs a model call to say why (R-0254).
+    audit = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=True)
 
     codings = relationship(
         "Coding", back_populates="cut", cascade="all, delete-orphan"

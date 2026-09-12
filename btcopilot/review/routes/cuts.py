@@ -5,9 +5,9 @@ import datetime
 from flask import jsonify, request
 
 from btcopilot.extensions import db
-from btcopilot.review import adapter, export, ruledraft, snapshot
+from btcopilot.review import adapter, divergence, export, ruledraft, snapshot
 from btcopilot.review.models import Cut
-from btcopilot.review.routes import admin, bp, coder, cut_or_404
+from btcopilot.review.routes import admin, bp, coder, cut_or_404, open_items
 
 
 def payload(cut: Cut) -> dict:
@@ -120,10 +120,14 @@ def cut_patch(cut_id: int):
         admin()
         if cut.vote_opened_at is None:
             raise ValueError("a cut is ratified after its vote, not before")
+        waiting = len(open_items(cut))
+        if waiting:
+            raise ValueError(f"{waiting} items still need a choice")
         cut.ratified_at = adapter.utcnow()
-        snapshot.recompute(cut)
+        snapshot.recompute(cut, snapshot.AgreementPhase.Ratified)
         export.write(cut)
         ruledraft.draft_for(cut)
+        cut.audit = divergence.reasons(divergence.rows(cut))
 
     db.session.commit()
     return jsonify(payload(cut))

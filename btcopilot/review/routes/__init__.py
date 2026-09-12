@@ -12,6 +12,7 @@ from flask_wtf.csrf import CSRFError, generate_csrf
 import btcopilot
 from btcopilot import auth
 from btcopilot.extensions import csrf, db
+from btcopilot.review import snapshot
 from btcopilot.review.models import Coding, Cut, Item, ReviewStatus, Vote
 from btcopilot.schema import ItemKind
 
@@ -81,11 +82,21 @@ def my_coding(cut: Cut, user) -> Coding | None:
 def human_codings(cut: Cut) -> set[int]:
     """The finished codings people made. The coach's replay is a coding like
     any other, but nothing it thinks is in the ballot at all (R-0254)."""
-    return {
-        coding.id
-        for coding in cut.codings
-        if coding.done_at is not None and coding.agent is None
-    }
+    return {coding.id for coding in snapshot.voters(cut)}
+
+
+def open_items(cut: Cut) -> list[Item]:
+    """What the meeting has to settle: every disputed item of the cut that a
+    person wrote, of any kind. People and pair bonds never reach the ballot;
+    they wait for the room (R-0250). An item only the coach wrote is not the
+    room's to settle (R-0254)."""
+    people = human_codings(cut)
+    return [
+        item
+        for item in cut.items
+        if item.status is ReviewStatus.Disputed
+        and any(take.get("coding_id") in people for take in item.takes or [])
+    ]
 
 
 def on_ballot(cut: Cut) -> list[Item]:
@@ -93,13 +104,8 @@ def on_ballot(cut: Cut) -> list[Item]:
     (R-0257). What the coders already read the same way is not voted on,
     people and pair bonds are settled at the meeting, and an item only the
     coach wrote down is not on the ballot."""
-    people = human_codings(cut)
     return [
-        item
-        for item in cut.items
-        if item.status is ReviewStatus.Disputed
-        and item.item_kind is ItemKind.Event
-        and any(take.get("coding_id") in people for take in item.takes or [])
+        item for item in open_items(cut) if item.item_kind is ItemKind.Event
     ]
 
 
@@ -131,6 +137,7 @@ from btcopilot.review.routes import (  # noqa: E402  bp must exist first
     cuts,
     nudges,
     items,
+    result,
     rules,
     tasks,
     turns,

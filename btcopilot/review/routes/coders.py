@@ -9,7 +9,7 @@ import enum
 from flask import jsonify, request
 
 from btcopilot import ROLE_ADMIN, ROLE_AUDITOR
-from btcopilot.review.adapter import User
+from btcopilot.review.adapter import User, initials
 from btcopilot.review.models import Coding, Cut
 from btcopilot.review.routes import bp, coder, voted
 from btcopilot.review.routes.cuts import table_cuts
@@ -39,15 +39,6 @@ def roster(cuts: list[Cut]) -> list[User]:
         or user.has_role(ROLE_ADMIN)
         or user.id in started
     ]
-
-
-def initials(user) -> str:
-    """Initials where a coder has a name, and the name part of their address
-    otherwise: a whole email address does not fit a phone's line."""
-    letters = [part[0] for part in (user.first_name, user.last_name) if part]
-    if letters:
-        return ".".join(letters) + "."
-    return user.username.split("@")[0]
 
 
 def state_of(user, cuts: list[Cut]) -> CoderState:
