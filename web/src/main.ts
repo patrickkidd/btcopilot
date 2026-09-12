@@ -4,6 +4,8 @@ import { Chat, wait, type PlayTap } from "./chat";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
 import { Coding } from "./coding";
+import { Cut } from "./cut";
+import { Table } from "./table";
 import { OneTask, beforeMeeting } from "./task";
 import { Rules } from "./rules";
 import { Sessions, sessionTitle, summaryOf } from "./sessions";
@@ -49,6 +51,8 @@ import {
 declare global {
   interface Window {
     BOOTSTRAP: {
+      /** Patrick alone puts conversations on the table and opens the vote. */
+      user: { username: string; admin: boolean } | null;
       diagram: { id: number; name: string } | null;
       session: { id: number } | null;
       statements: Statement[];
@@ -62,10 +66,18 @@ enum Screen {
   Task = "task",
   Coding = "coding",
   Rules = "rules",
+  Cut = "cut",
+  Table = "table",
 }
 
 /** Which screens the coding title row belongs to. */
-const CODING_SCREENS = [Screen.Task, Screen.Coding, Screen.Rules];
+const CODING_SCREENS = [
+  Screen.Task,
+  Screen.Coding,
+  Screen.Rules,
+  Screen.Cut,
+  Screen.Table,
+];
 
 let timeline: Timeline = emptyTimeline();
 let pic: PicState = REST;
@@ -221,6 +233,8 @@ const sessions = new Sessions(
     },
     onDiagram: (diagram, how) => onDiagram(diagram, how),
     onTask: () => void openTask(),
+    onTable: (picked) => void placeCut(picked.id),
+    onTableScreen: () => void openTable(),
   },
 );
 
@@ -276,6 +290,35 @@ async function startTask(task: Task): Promise<void> {
   screen(Screen.Coding);
 }
 
+/** ── Patrick's own screens ────────────────────────────────────────────────
+ * Putting a conversation on the table, placing the cut everyone codes up to,
+ * and the table itself (R-0258, R-0267). Nobody but Patrick sees these. */
+
+const placing = new Cut($("cut-chat"), $("cut-bar"), {
+  onPlaced: () => void openTable(),
+  onTitle: (title) => {
+    $("title").textContent = title;
+  },
+});
+
+const table = new Table($("table-body"), {
+  onAdd: () => sessions.show(),
+  onPlace: (discussionId) => void placeCut(discussionId),
+  onTitle: (title) => {
+    $("title").textContent = title;
+  },
+});
+
+async function placeCut(discussionId: number): Promise<void> {
+  await placing.open(discussionId);
+  screen(Screen.Cut);
+}
+
+async function openTable(): Promise<void> {
+  await table.load();
+  screen(Screen.Table);
+}
+
 async function openRules(): Promise<void> {
   await rules.load();
   screen(Screen.Rules);
@@ -286,6 +329,7 @@ $("coding-info").addEventListener("click", () => void openRules());
 $("rules-close").addEventListener("click", () => screen(Screen.Coding));
 $("coding-back").addEventListener("click", () => {
   if (here === Screen.Coding) void openTask();
+  else if (here === Screen.Cut) void openTable();
   else {
     $("title").textContent = familyTitle;
     screen(Screen.Chat);
@@ -708,6 +752,8 @@ function screen(which: Screen): void {
   $("chat-screen").hidden = which !== Screen.Chat;
   $("menu-screen").hidden = which !== Screen.Menu;
   $("task-screen").hidden = which !== Screen.Task;
+  $("cut-screen").hidden = which !== Screen.Cut;
+  $("table-screen").hidden = which !== Screen.Table;
   $("coding-screen").hidden = which !== Screen.Coding;
   $("rules-screen").hidden = which !== Screen.Rules;
   document.querySelector<HTMLElement>(".titlerow")!.hidden =

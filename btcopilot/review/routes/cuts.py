@@ -94,6 +94,17 @@ def cut_patch(cut_id: int):
         coder()
         cut.meeting_date = _date(body["meeting_date"])
 
+    if "end_statement_id" in body:
+        admin()
+        if cut.codings:
+            raise ValueError("someone is already coding to that line")
+        end_statement_id = body["end_statement_id"]
+        orders = adapter.statement_order(cut.discussion_id)
+        _refuse_before_ratified(cut.discussion_id, orders, end_statement_id)
+        window = _window(orders, cut.start_statement_id, end_statement_id)
+        _refuse_overlap(cut.discussion_id, orders, window, except_id=cut.id)
+        cut.end_statement_id = end_statement_id
+
     if body.get("vote_opened_at"):
         admin()
         if cut.vote_opened_at is not None:
@@ -169,9 +180,13 @@ def _refuse_before_ratified(discussion_id: int, orders: dict[int, int], end_id: 
         raise ValueError("that line was already ratified; cut below it")
 
 
-def _refuse_overlap(discussion_id: int, orders: dict[int, int], window):
+def _refuse_overlap(
+    discussion_id: int, orders: dict[int, int], window, except_id: int | None = None
+):
     start, end = window
     for other in Cut.query.filter_by(discussion_id=discussion_id).all():
+        if other.id == except_id:
+            continue
         theirs = (
             orders.get(other.start_statement_id),
             orders.get(other.end_statement_id),

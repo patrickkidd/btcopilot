@@ -2329,3 +2329,84 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 .fs-task:active { background: var(--tint); }
+
+/* ── The table ────────────────────────────────────────────────────────────
+ * Patrick's own screens: putting a conversation on the table, placing the cut
+ * and the one screen that carries the whole of his administration (f7–f10). */
+
+/* His swipe offers a third action, and "Put on the table" is too many words
+ * for a strip of three, so his actions stack the way the drawing has them. */
+.fs-body .row.swiped.wide { transform: translateX(-216px); }
+.fs-acts.wide { width: 216px; flex-direction: column; padding: 6px 8px; }
+.fs-acts.wide .fs-act { text-align: left; padding: 4px 6px; min-height: 36px; }
+.fs-act.tbl { color: var(--ask-text); }
+
+/* Placing the cut: the thread read-only, turns after the cut dimmed. */
+.ct-bar { flex-direction: column; align-items: stretch; gap: 6px; }
+.ct-hint { font: 400 13px var(--mono); color: var(--faint); text-align: center; }
+.ct-go { height: 44px; border-color: var(--ask); color: var(--ask-text); }
+.bub.line.after { opacity: 0.4; }
+
+/* One line per coder, and what they are doing. */
+.srow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.srow .s1 { flex: 1; font: 400 17px/1.3 var(--sans); color: var(--ink); }
+.srow .s2 { font: 400 13px var(--mono); color: var(--faint); }
+.plnote { padding: 12px 16px 18px; font: 400 13px/1.5 var(--mono); color: var(--faint); }
+.nudge {
+  display: block;
+  width: calc(100% - 32px);
+  margin: 14px 16px 0;
+  min-height: 44px;
+  border: 2px dashed var(--ask);
+  border-radius: 8px;
+  background: none;
+  color: var(--ask-text);
+  font: 500 15px var(--sans);
+  cursor: pointer;
+}
+.nudge:disabled { border-color: var(--line); color: var(--faint); cursor: default; }
+
+/* The agenda, which fills itself. */
+.agbox {
+  margin: 14px 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.aghd { padding: 10px 12px 6px; font: 500 13px var(--mono); color: var(--faint); }
+.agrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-top: 1px solid var(--line);
+  font: 400 14px/1.3 var(--sans);
+  color: var(--ink);
+}
+.agt { flex: 1; min-width: 0; }
+.agx {
+  flex: none;
+  color: var(--data);
+  font: 400 13px var(--mono);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* The meeting date row holds the phone's own picker, which shows as the value
+ * beside the label rather than as a field of its own. */
+.tb-date {
+  flex: none;
+  border: none;
+  background: none;
+  color: var(--faint);
+  font: 400 15px var(--mono);
+}

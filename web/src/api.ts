@@ -1,6 +1,10 @@
 import type {
   Account,
+  Agenda,
+  CoderLine,
   Coding,
+  Cut,
+  SessionTurns,
   CodingThread,
   Rule,
   Scribed,
@@ -223,7 +227,51 @@ export const scribe = (codingId: number, statementId: number, text: string) =>
 export const finishCoding = (codingId: number) =>
   ask<Coding>("PATCH", `/codings/${codingId}`, { done_at: true });
 
+/** ── The table ──────────────────────────────────────────────────────────
+ * What Patrick put on the table, who is coding it and the one tap that opens
+ * the vote (R-0258, R-0267). */
+
+export const onTable = () => ask<Cut[]>("GET", "/cuts?on_table=true");
+
+/** The whole conversation, so the cut can be placed on any line of it. */
+export const sessionTurns = (discussionId: number) =>
+  ask<SessionTurns>("GET", `/turns?discussion_id=${discussionId}`);
+
+/** Putting a conversation on the table: the cut ends on the turn tapped, and
+ * starts where the last cut left off. */
+export const putOnTable = (discussionId: number, endStatementId: number) =>
+  ask<Cut>("POST", "/cuts", {
+    discussion_id: discussionId,
+    end_statement_id: endStatementId,
+  });
+
+export const moveCut = (cutId: number, endStatementId: number) =>
+  ask<Cut>("PATCH", `/cuts/${cutId}`, { end_statement_id: endStatementId });
+
+export const setMeetingDate = (cutId: number, meetingDate: string) =>
+  ask<Cut>("PATCH", `/cuts/${cutId}`, { meeting_date: meetingDate });
+
+/** Nothing opens the vote but Patrick pressing it (R-0273). */
+export const openVote = (cutId: number) =>
+  ask<Cut>("PATCH", `/cuts/${cutId}`, { vote_opened_at: true });
+
+/** Off the table again, which only works before anyone has started. */
+export const offTable = (cutId: number) =>
+  ask<void>("DELETE", `/cuts/${cutId}`);
+
+/** One line per coder: not started, coding, done or voted (R-0258). */
+export const coders = () => ask<CoderLine[]>("GET", "/coders");
+
+export const nudge = () =>
+  ask<{ nudged: number[]; nudged_at: string }>("POST", "/nudges", {});
+
+export const agenda = () => ask<Agenda>("GET", "/agenda");
+
 export const rules = () => ask<Rule[]>("GET", "/rules");
+
+/** Closing your own line on the agenda: the flag you put on a rule (R-0276). */
+export const flagClosed = (id: number) =>
+  ask<Rule>("PATCH", `/rules/${id}`, { close_flag: true });
 
 export const flagRule = (id: number) =>
   ask<Rule>("PATCH", `/rules/${id}`, { flag: true });

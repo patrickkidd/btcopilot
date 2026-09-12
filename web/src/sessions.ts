@@ -30,6 +30,11 @@ export interface SessionsHandlers {
   onList(sessions: Session[]): void;
   /** The coder's one task, reached from the foot of the sheet (R-0265). */
   onTask(): void;
+  /** Patrick putting a conversation on the table: it opens so he can place
+   * the cut (R-0267). Admins only. */
+  onTable(session: Session): void;
+  /** The table itself, which is Patrick's whole administration (R-0259). */
+  onTableScreen(): void;
 }
 
 const untitled = (session: Session) => !session.title?.trim();
@@ -64,6 +69,8 @@ export class Sessions {
   /** True between the swipe revealing the actions and the click it ends with. */
   private opening = false;
   private drag: { kind: "open" | "close"; y0: number; dy: number } | null = null;
+  /** Only Patrick puts a conversation on the table, so only he is offered it. */
+  private admin = window.BOOTSTRAP.user?.admin === true;
 
   private scrim = el("div", "fs-scrim");
   private sheet = el(
@@ -76,13 +83,15 @@ export class Sessions {
      </div>
      <div class="fs-body"></div>
      <div class="fs-foot"><button class="fs-new" type="button"></button>
-       <button class="fs-task" type="button" hidden></button></div>`,
+       <button class="fs-task" type="button" hidden></button>
+       <button class="fs-task fs-table" type="button" hidden>The table</button></div>`,
   );
 
   private body: HTMLElement;
   private search: HTMLInputElement;
   private newButton: HTMLButtonElement;
   private taskButton: HTMLButtonElement;
+  private tableButton: HTMLButtonElement;
 
   constructor(
     private button: HTMLElement,
@@ -98,8 +107,16 @@ export class Sessions {
     this.search = this.sheet.querySelector<HTMLInputElement>(".fs-search input")!;
     this.newButton = this.sheet.querySelector<HTMLButtonElement>(".fs-new")!;
     this.taskButton = this.sheet.querySelector<HTMLButtonElement>(".fs-task")!;
+    this.tableButton = this.sheet.querySelector<HTMLButtonElement>(".fs-table")!;
+    this.tableButton.hidden = !this.admin;
     this.wire();
     dragScroll(this.body);
+  }
+
+  /** Raise the sheet from somewhere other than its own button — which is how
+   * the table puts another conversation on. */
+  show(): void {
+    void this.raise(false);
   }
 
   /** The way to the coding task, when the signed-in coder has one. */
@@ -166,6 +183,10 @@ export class Sessions {
       this.lower();
       this.handlers.onTask();
     });
+    this.tableButton.addEventListener("click", () => {
+      this.lower();
+      this.handlers.onTableScreen();
+    });
     this.body.addEventListener("click", (e) => this.onBodyClick(e));
     this.pressToRename();
     this.swipeForActions();
@@ -178,7 +199,10 @@ export class Sessions {
     if (action) {
       e.stopPropagation();
       const row = action.closest<HTMLElement>(".row")!;
-      if (action.classList.contains("ren")) {
+      if (action.classList.contains("tbl")) {
+        this.closeActions();
+        this.table(row);
+      } else if (action.classList.contains("ren")) {
         this.closeActions();
         this.rename(row);
       } else void this.remove(row);
@@ -253,20 +277,33 @@ export class Sessions {
     this.closeActions();
     row.insertAdjacentHTML(
       "beforeend",
-      `<div class="fs-acts">` +
+      `<div class="fs-acts${this.admin ? " wide" : ""}">` +
+        (this.admin
+          ? `<button class="fs-act tbl" type="button">Put on the table</button>`
+          : "") +
         `<button class="fs-act ren" type="button">Rename</button>` +
         `<button class="fs-act del" type="button">Delete</button></div>`,
     );
     row.classList.add("swiped");
+    if (this.admin) row.classList.add("wide");
     this.swiped = row;
     this.opening = true;
   }
 
   private closeActions(): void {
     if (!this.swiped) return;
-    this.swiped.classList.remove("swiped");
+    this.swiped.classList.remove("swiped", "wide");
     this.swiped.querySelector(".fs-acts")?.remove();
     this.swiped = null;
+  }
+
+  /** Patrick's swipe action: the conversation opens so he can place the cut
+   * everyone will code up to. */
+  private table(row: HTMLElement): void {
+    const session = this.find(Number(row.dataset.id));
+    if (!session) return;
+    this.lower();
+    this.handlers.onTable(session);
   }
 
   private async remove(row: HTMLElement): Promise<void> {

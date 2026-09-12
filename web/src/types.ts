@@ -411,3 +411,85 @@ export interface Rule {
   ratified_at: string | null;
   retired_at: string | null;
 }
+
+/** ── The table ──────────────────────────────────────────────────────────
+ * Patrick's whole administration: what is on the table, who is done, and the
+ * one tap that opens the vote (R-0258, R-0259, R-0267). */
+
+/** One window of a conversation, frozen and put on the table. */
+export interface Cut {
+  id: number;
+  discussion_id: number;
+  start_statement_id: number;
+  end_statement_id: number;
+  meeting_date: string | null;
+  vote_opened_at: string | null;
+  ratified_at: string | null;
+  nudged_at: string | null;
+  session: string;
+  end_order: number | null;
+  cut_day: string | null;
+  /** Somebody has a coding of it, so it can no longer be taken off. */
+  started: boolean;
+}
+
+export enum CoderState {
+  NotStarted = "not started",
+  Coding = "coding",
+  Done = "done",
+  Voted = "voted",
+}
+
+export interface CoderLine {
+  user_id: number;
+  name: string;
+  state: CoderState;
+  closed_out: boolean;
+}
+
+/** Where a line falls across a conversation: the last ratified cut, or the one
+ * on the table now. */
+export interface CutLine {
+  statement_id: number;
+  order: number;
+  day: string;
+  ratified: string | null;
+}
+
+export interface SessionTurn {
+  id: number;
+  order: number;
+  client: boolean;
+  text: string;
+  day: string;
+}
+
+/** A whole conversation as the cut-placing screen reads it. */
+export interface SessionTurns {
+  discussion_id: number;
+  session: string;
+  agreed: CutLine | null;
+  on_table: CutLine | null;
+  cut_id: number | null;
+  turns: SessionTurn[];
+}
+
+/** One line of the next meeting's agenda, which fills itself from flagged
+ * rules, items left unresolved and coding nobody finished (R-0276). */
+export interface AgendaLine {
+  text: string;
+  /** A flagged rule is the reader's own line to close; the rest are not. */
+  rule_id: number | null;
+}
+
+export interface Agenda {
+  meeting_date: string | null;
+  cut_ids: number[];
+  flagged_rules: Rule[];
+  unresolved_items: { id: number; item_kind: string; takes: Take[] }[];
+  unfinished_codings: { id: number; cut_id: number }[];
+}
+
+export interface Take {
+  item: Record<string, unknown>;
+}
