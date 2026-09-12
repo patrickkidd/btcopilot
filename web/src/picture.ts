@@ -650,6 +650,15 @@ export class Picture {
     return this.host.clientWidth || 360;
   }
 
+  /** Where a tap target of this size sits when it is meant to be centred on a
+   * point: a target for a thumb is wider than the gap at the ends of the wire,
+   * so one near an end is slid inside rather than left hanging off the edge. */
+  private hitLeft(middle: number, size: number): string {
+    return Math.min(Math.max(middle - size / 2, 0), this.width - size).toFixed(
+      1,
+    );
+  }
+
   private x(iso: string): number {
     const { min, max } = this.range;
     const x1 = this.width - X_PAD;
@@ -801,7 +810,7 @@ export class Picture {
       clusterHits +=
         `<button class="ss-hit" data-target="${Target.Cluster}" data-index="${i}" ` +
         `aria-label="${esc(cluster.title || shortYears(cluster.start, cluster.end))}" ` +
-        `style="left:${(middle - target / 2).toFixed(1)}px;top:${wireY - ZONE / 2}px;` +
+        `style="left:${this.hitLeft(middle, target)}px;top:${wireY - ZONE / 2}px;` +
         `width:${target.toFixed(1)}px;height:${ZONE}px"></button>`;
     });
     // A moment no cluster claims is drawn as itself: a dot on the wire where it
@@ -817,7 +826,7 @@ export class Picture {
       hits +=
         `<button class="ss-hit" data-target="${Target.Zone}" data-index="${i}" ` +
         `aria-label="${esc(event.label)}" ` +
-        `style="left:${(x - ZONE / 2).toFixed(1)}px;top:${wireY - ZONE / 2}px;` +
+        `style="left:${this.hitLeft(x, ZONE)}px;top:${wireY - ZONE / 2}px;` +
         `width:${ZONE}px;height:${ZONE}px"></button>`;
     });
 
