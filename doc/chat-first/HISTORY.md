@@ -801,4 +801,8 @@ be cost- and wall-clock-optimised [R-0301], and step one was built by one Opus b
 a Sonnet auditor: the renames, discussions.kind, the five review_ tables in a new isolated
 package, endpoints, replay task, export and 26 tests, pushed green. Step two followed the same night: the coding screens built to the drawing on the review
 sandbox, the scribe live, the sandbox database migrated by a kept script after a backup, three
-deviations logged and one block — the admin role on Patrick's sandbox account.
+deviations logged and one block — the admin role on Patrick's sandbox account. Two independent walks on a fixture account found three defects in the coding screen
+(the scribe not adding a named person, no refresh after a write, a bare pronoun written
+instead of asked); all three were fixed with tests. A restart of the sandbox API with a
+relative database path opened an empty file for twelve minutes and the sandbox's error mailer
+emailed Patrick; the path is absolute now and the sandbox's error recipient is blank.
