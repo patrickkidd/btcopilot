@@ -9,8 +9,8 @@ import datetime
 from flask import jsonify
 
 from btcopilot.review import adapter
-from btcopilot.review.models import Coding, Cut, Vote
-from btcopilot.review.routes import bp, coder, my_coding
+from btcopilot.review.models import Coding, Cut
+from btcopilot.review.routes import bp, coder, my_coding, voted
 
 #: Roughly how long one turn takes to code, for the card's estimate.
 MINUTES_PER_TURN = 0.8
@@ -36,7 +36,7 @@ def _task(user) -> dict | None:
             if mine is None or mine.done_at is None:
                 return _to_code(cut, mine, user)
             return _to_vote(cut, mine, ready=False)
-        if mine is not None and mine.done_at is not None and not _voted(cut, user):
+        if mine is not None and mine.done_at is not None and not voted(cut, user):
             return _to_vote(cut, mine, ready=True)
     return None
 
@@ -119,16 +119,6 @@ def _finished(coding: Coding) -> dict:
             f"ratified {_day(ratified)}" if ratified else f"done {_day(coding.done_at)}"
         ),
     }
-
-
-def _voted(cut: Cut, user) -> bool:
-    item_ids = [item.id for item in cut.items]
-    if not item_ids:
-        return False
-    open_items = Vote.query.filter(
-        Vote.review_item_id.in_(item_ids), Vote.user_id == user.id
-    ).count()
-    return open_items >= len(item_ids)
 
 
 def _session_name(cut: Cut) -> str:

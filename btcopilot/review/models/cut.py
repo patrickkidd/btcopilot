@@ -24,6 +24,7 @@ class Cut(db.Model, ModelMixin):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     meeting_date = Column(Date, nullable=True)
     vote_opened_at = Column(DateTime, nullable=True)
+    nudged_at = Column(DateTime, nullable=True)
     ratified_at = Column(DateTime, nullable=True)
     agreement = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=True)
 

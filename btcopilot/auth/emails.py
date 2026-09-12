@@ -32,6 +32,16 @@ def send_invitation(email: str, url: str):
     )
 
 
+def send_nudge(email: str, sessions: list[str], meeting: str):
+    what = "\n".join(f"- {one}" for one in sessions)
+    _deliver(
+        email,
+        "Coding still open before the next meeting",
+        f"The meeting on {meeting} is waiting on your coding of:\n\n{what}\n\n"
+        "Open the app and your task is the first thing on the screen.\n",
+    )
+
+
 def send_login_code(email: str, code: str, minutes: int):
     _deliver(
         email,

@@ -285,3 +285,76 @@ def test_the_coachs_replay_is_a_coding_with_its_model(patrick, test_user, cut):
 
     assert snapshot.done_codings(db.session.get(Cut, cut.id)) == [coding]
     assert coding.agent["model"] == "claude-sonnet-5"
+
+
+def test_the_table_says_what_each_coder_is_doing(patrick, coder, cut, test_user_2):
+    """Patrick has not started; the other coder has a coding under way."""
+    coder.post("/review/codings", json={"cut_id": cut.id})
+    rows = patrick.get("/review/coders").get_json()
+    by_id = {row["user_id"]: row for row in rows}
+    assert by_id[patrick.user.id]["state"] == "not started"
+    assert by_id[test_user_2.id]["state"] == "coding"
+    assert by_id[patrick.user.id]["name"] == "you"
+
+
+def test_a_coder_who_pressed_done_reads_as_done(patrick, test_user_2, cut):
+    coded(test_user_2, cut, {})
+    rows = patrick.get("/review/coders").get_json()
+    assert {r["user_id"]: r["state"] for r in rows}[test_user_2.id] == "done"
+    assert not any(row["closed_out"] for row in rows)
+
+
+def test_taking_a_conversation_off_the_table(patrick, cut):
+    gone = patrick.delete(f"/review/cuts/{cut.id}")
+    assert gone.status_code == 204
+    assert db.session.get(Cut, cut.id) is None
+
+
+def test_a_cut_someone_started_cannot_be_taken_off_the_table(patrick, coder, cut):
+    coder.post("/review/codings", json={"cut_id": cut.id})
+    refused = patrick.delete(f"/review/cuts/{cut.id}")
+    assert refused.status_code == 400
+    assert "already started" in refused.get_data(as_text=True)
+    assert db.session.get(Cut, cut.id) is not None
+
+
+def test_a_cut_cannot_be_placed_before_the_last_ratified_one(
+    patrick, session, turns, cut
+):
+    cut.ratified_at = datetime.datetime.utcnow()
+    db.session.commit()
+    refused = patrick.post(
+        "/review/cuts",
+        json={"discussion_id": session.id, "end_statement_id": turns[0].id},
+    )
+    assert refused.status_code == 400
+    assert "already ratified" in refused.get_data(as_text=True)
+
+
+def test_a_nudge_reaches_everyone_not_done(patrick, coder, test_user_2, cut):
+    coder.post("/review/codings", json={"cut_id": cut.id})
+    with patch("btcopilot.review.routes.nudges.send_nudge") as sent:
+        made = patrick.post("/review/nudges", json={})
+    assert made.status_code == 201
+    assert made.get_json()["nudged"] == [patrick.user.id, test_user_2.id]
+    assert sent.call_count == 2
+    assert db.session.get(Cut, cut.id).nudged_at is not None
+
+
+def test_a_coder_cannot_nudge(coder, cut):
+    refused = coder.post("/review/nudges", json={})
+    assert refused.status_code == 302
+
+
+def test_the_turns_of_a_session_carry_the_ratified_line(patrick, session, turns, cut):
+    cut.ratified_at = datetime.datetime.utcnow()
+    db.session.commit()
+    read = patrick.get(f"/review/turns?discussion_id={session.id}").get_json()
+    assert len(read["turns"]) == len(turns)
+    assert read["agreed"]["statement_id"] == turns[1].id
+    assert read["on_table"] is None
+
+
+def test_a_coder_cannot_read_a_session_whole(coder, session):
+    refused = coder.get(f"/review/turns?discussion_id={session.id}")
+    assert refused.status_code == 302

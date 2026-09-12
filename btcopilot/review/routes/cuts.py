@@ -11,7 +11,25 @@ from btcopilot.review.routes import admin, bp, coder, cut_or_404
 
 
 def payload(cut: Cut) -> dict:
-    return cut.as_dict()
+    """The row, plus what the table screen names it by: the session it cuts,
+    the turn it ends on and whether anyone has started coding it."""
+    data = cut.as_dict()
+    discussion = adapter.discussion_of(cut.discussion_id)
+    end = adapter.statement(cut.end_statement_id)
+    when = adapter.cut_day(cut.discussion_id, cut.end_statement_id)
+    data["session"] = (discussion.title or "").strip() or "an untitled conversation"
+    data["end_order"] = end.order if end else None
+    data["cut_day"] = when.strftime("%b %-d") if when else None
+    data["started"] = len(cut.codings) > 0
+    return data
+
+
+def table_cuts(meeting_date: str | None) -> list[Cut]:
+    """What is on the table for one meeting, or everything not yet ratified."""
+    query = Cut.query.filter(Cut.ratified_at.is_(None))
+    if meeting_date:
+        query = query.filter(Cut.meeting_date == _date(meeting_date))
+    return query.order_by(Cut.id).all()
 
 
 @bp.route("/cuts")
@@ -21,6 +39,11 @@ def cut_index():
     discussion_id = request.args.get("discussion_id", type=int)
     if discussion_id is not None:
         query = query.filter_by(discussion_id=discussion_id)
+    meeting_date = request.args.get("meeting_date")
+    if meeting_date is not None:
+        query = query.filter_by(meeting_date=_date(meeting_date))
+    if request.args.get("on_table") == "true":
+        query = query.filter(Cut.ratified_at.is_(None))
     return jsonify([payload(c) for c in query.order_by(Cut.id).all()])
 
 
@@ -46,6 +69,7 @@ def cut_create():
         raise ValueError("that session has no turns to cut")
 
     orders = adapter.statement_order(discussion_id)
+    _refuse_before_ratified(discussion_id, orders, end_statement_id)
     window = _window(orders, start_statement_id, end_statement_id)
     _refuse_overlap(discussion_id, orders, window)
 
@@ -91,6 +115,19 @@ def cut_patch(cut_id: int):
     return jsonify(payload(cut))
 
 
+@bp.route("/cuts/<int:cut_id>", methods=["DELETE"])
+def cut_delete(cut_id: int):
+    """Taking a conversation off the table, which is one tap and only before
+    anyone has started coding it."""
+    admin()
+    cut = cut_or_404(cut_id)
+    if cut.codings:
+        raise ValueError("someone has already started coding that one")
+    db.session.delete(cut)
+    db.session.commit()
+    return "", 204
+
+
 def _default_start(discussion_id: int) -> int | None:
     """The turn after the last cut's end, or the session's first turn."""
     previous = (
@@ -112,6 +149,24 @@ def _window(orders: dict[int, int], start_id: int, end_id: int) -> tuple[int, in
     if start > end:
         raise ValueError("a cut cannot end before it starts")
     return start, end
+
+
+def _refuse_before_ratified(discussion_id: int, orders: dict[int, int], end_id: int):
+    """A cut can never be placed before the last point already ratified
+    (R-0267)."""
+    ratified = (
+        Cut.query.filter(
+            Cut.discussion_id == discussion_id, Cut.ratified_at.isnot(None)
+        )
+        .order_by(Cut.id.desc())
+        .first()
+    )
+    if ratified is None:
+        return
+    line = orders.get(ratified.end_statement_id)
+    here = orders.get(end_id)
+    if line is not None and here is not None and here <= line:
+        raise ValueError("that line was already ratified; cut below it")
 
 
 def _refuse_overlap(discussion_id: int, orders: dict[int, int], window):

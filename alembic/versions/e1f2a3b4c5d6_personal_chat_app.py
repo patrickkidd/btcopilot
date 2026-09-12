@@ -213,6 +213,7 @@ def upgrade():
         sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=False),
         sa.Column("meeting_date", sa.Date(), nullable=True),
         sa.Column("vote_opened_at", sa.DateTime(), nullable=True),
+        sa.Column("nudged_at", sa.DateTime(), nullable=True),
         sa.Column("ratified_at", sa.DateTime(), nullable=True),
         sa.Column("agreement", _json(), nullable=True),
     )

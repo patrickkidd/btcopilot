@@ -5,6 +5,7 @@ from flask import abort, jsonify, request, send_from_directory
 from flask_wtf.csrf import generate_csrf
 from markupsafe import escape
 
+import btcopilot
 from btcopilot import auth
 from btcopilot.personal.routes import bp, current_session, diagram
 from btcopilot.personal.routes.diagrams import readable
@@ -35,6 +36,7 @@ def _page() -> str:
             "first_name": user.first_name,
             "last_name": user.last_name,
             "username": user.username,
+            "admin": user.has_role(btcopilot.ROLE_ADMIN),
         },
         "session": session_payload(discussion) if discussion else None,
         "statements": statements_payload(discussion) if discussion else [],

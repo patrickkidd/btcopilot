@@ -12,7 +12,7 @@ from flask_wtf.csrf import CSRFError, generate_csrf
 import btcopilot
 from btcopilot import auth
 from btcopilot.extensions import csrf, db
-from btcopilot.review.models import Coding, Cut, Item
+from btcopilot.review.models import Coding, Cut, Item, Vote
 
 _log = logging.getLogger(__name__)
 
@@ -77,6 +77,18 @@ def my_coding(cut: Cut, user) -> Coding | None:
     return Coding.query.filter_by(cut_id=cut.id, user_id=user.id).first()
 
 
+def voted(cut: Cut, user) -> bool:
+    """Voted on every disputed item of that cut, which is what closes a coder
+    out of the meeting's work."""
+    item_ids = [item.id for item in cut.items]
+    if not item_ids:
+        return False
+    mine = Vote.query.filter(
+        Vote.review_item_id.in_(item_ids), Vote.user_id == user.id
+    ).count()
+    return mine >= len(item_ids)
+
+
 def sees_others(cut: Cut, user) -> bool:
     """Blind until your own Done: a coder sees the pool only once their own
     coding of that cut is finished (R-0242). Patrick sees it throughout."""
@@ -88,11 +100,14 @@ def sees_others(cut: Cut, user) -> bool:
 
 from btcopilot.review.routes import (  # noqa: E402  bp must exist first
     agenda,
+    coders,
     codings,
     cuts,
+    nudges,
     items,
     rules,
     tasks,
+    turns,
     votes,
 )
 
