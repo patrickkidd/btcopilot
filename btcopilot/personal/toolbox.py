@@ -10,7 +10,7 @@ the call fails with words the model can act on [Oracle: R-0075].
 import enum
 import logging
 
-from btcopilot.personal import clusters, record, views
+from btcopilot.personal import clusters, prompts, record, views
 from btcopilot.personal.models import Author, Change
 from btcopilot.personal.recordtext import date_text, event_line, person_line
 from btcopilot.extensions import db
@@ -62,251 +62,193 @@ def _enum_param(cls, description: str) -> dict:
     return {"type": "string", "enum": _values(cls), "description": description}
 
 
-SCHEMAS = [
-    {
-        "name": ToolName.ReadPeople.value,
-        "description": "Everyone in the record, with their ids, names and parents.",
-        "input_schema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": ToolName.ReadEvents.value,
-        "description": (
-            "Events in the record, in date order. Narrow by a date span, one "
-            "person, or one cluster; with no filter it returns everything."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "start": {"type": "string", "description": "YYYY-MM-DD"},
-                "end": {"type": "string", "description": "YYYY-MM-DD"},
-                "person": {"type": "integer"},
-                "cluster": {"type": "string"},
-            },
+def schemas() -> list[dict]:
+    """The coach's tool schemas. What a field means clinically comes from
+    `prompts.tool_meanings()`, which fdserver overrides (R-0305); everything
+    here is the shape of the value, not what it means to a clinician."""
+    means = prompts.tool_meanings()
+    return [
+        {
+            "name": ToolName.ReadPeople.value,
+            "description": "Everyone in the record, with their ids, names and parents.",
+            "input_schema": {"type": "object", "properties": {}},
         },
-    },
-    {
-        "name": ToolName.EditPerson.value,
-        "description": (
-            "Add a person, or change one. Give id to change an existing person; "
-            "leave it out to add one."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "id": {"type": "integer"},
-                "name": {"type": "string"},
-                "last_name": {"type": "string"},
-                "gender": _enum_param(PersonKind, "The person's gender."),
-                "parents": {
-                    "type": "integer",
-                    "description": "The id of the pair bond this person was born into.",
+        {
+            "name": ToolName.ReadEvents.value,
+            "description": (
+                "Events in the record, in date order. Narrow by a date span, one "
+                "person, or one cluster; with no filter it returns everything."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "start": {"type": "string", "description": "YYYY-MM-DD"},
+                    "end": {"type": "string", "description": "YYYY-MM-DD"},
+                    "person": {"type": "integer"},
+                    "cluster": {"type": "string"},
                 },
             },
         },
-    },
-    {
-        "name": ToolName.EditPairBond.value,
-        "description": "Add or change the bond between two people.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "id": {"type": "integer"},
-                "person_a": {"type": "integer"},
-                "person_b": {"type": "integer"},
-                "married": {"type": "boolean"},
+        {
+            "name": ToolName.EditPerson.value,
+            "description": (
+                "Add a person, or change one. Give id to change an existing person; "
+                "leave it out to add one."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "last_name": {"type": "string"},
+                    "gender": _enum_param(PersonKind, "The person's gender."),
+                    "parents": {
+                        "type": "integer",
+                        "description": "The id of the pair bond this person was born into.",
+                    },
+                },
             },
         },
-    },
-    {
-        "name": ToolName.EditEvent.value,
-        "description": (
-            "Add an event, or change one. Give id to change an existing event; "
-            "leave it out to add one. A shift carries the variables that moved."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "id": {"type": "integer"},
-                "kind": _enum_param(
-                    EventKind,
-                    "Birth, adopted, married, bonded, separated, divorced, "
-                    "moved and death say themselves: the kind is the meaning "
-                    "and the description only adds what the kind does not "
-                    "say. A shift is one particular thing that happened at a "
-                    "point in time and moved one of the four variables — not "
-                    "a general characterisation and not the texture of a "
-                    "pattern already in the record.",
-                ),
-                "date": {"type": "string", "description": "YYYY-MM-DD"},
-                "end_date": {"type": "string", "description": "YYYY-MM-DD"},
-                "date_certainty": _enum_param(
-                    DateCertainty,
-                    "Certain for a date they stated, approximate for within a "
-                    "year or so — an age, a season, a year after something "
-                    "else — and unknown for a guess. Default certain. Never "
-                    "leave the date itself out: a vague date beats none.",
-                ),
-                "description": {
-                    "type": "string",
-                    "description": (
-                        "What happened, with no names of the people this event "
-                        "links: the person, spouse, child and targets are said "
-                        "by their fields. 'in Oklahoma' for a birth, 'when "
-                        "Patrick was about 3' for a divorce, 'relationship "
-                        "became difficult around puberty' for a shift."
+        {
+            "name": ToolName.EditPairBond.value,
+            "description": "Add or change the bond between two people.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "person_a": {"type": "integer"},
+                    "person_b": {"type": "integer"},
+                    "married": {"type": "boolean"},
+                },
+            },
+        },
+        {
+            "name": ToolName.EditEvent.value,
+            "description": (
+                "Add an event, or change one. Give id to change an existing event; "
+                "leave it out to add one."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "kind": _enum_param(EventKind, means[prompts.ToolText.EventKind]),
+                    "date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "end_date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "date_certainty": _enum_param(
+                        DateCertainty,
+                        "Certain for a date they stated, approximate for within a "
+                        "year or so, unknown for a guess. Default certain. Never "
+                        "leave the date itself out: a vague date beats none.",
                     ),
-                },
-                "person": {
-                    "type": "integer",
-                    "description": (
-                        "Who the event is about: who died, who moved, who "
-                        "made the move on a shift. On a marriage, bonding, "
-                        "separation or divorce it is one of the two partners "
-                        "and spouse is the other. On a birth or adoption it "
-                        "is a parent, and is left out when the parents are "
-                        "not known — never the same id as child."
+                    "description": {
+                        "type": "string",
+                        "description": means[prompts.ToolText.Description],
+                    },
+                    "person": {
+                        "type": "integer",
+                        "description": means[prompts.ToolText.Person],
+                    },
+                    "spouse": {
+                        "type": "integer",
+                        "description": means[prompts.ToolText.Spouse],
+                    },
+                    "child": {
+                        "type": "integer",
+                        "description": means[prompts.ToolText.Child],
+                    },
+                    "anxiety": _enum_param(
+                        VariableShift, means[prompts.ToolText.Anxiety]
                     ),
-                },
-                "spouse": {
-                    "type": "integer",
-                    "description": (
-                        "The other partner. Required with person on married, "
-                        "bonded, separated and divorced; on a birth it is the "
-                        "second parent."
+                    "symptom": _enum_param(
+                        VariableShift, means[prompts.ToolText.Symptom]
                     ),
-                },
-                "child": {
-                    "type": "integer",
-                    "description": (
-                        "For a birth or adoption, who was born or taken in: "
-                        "set child, not person. On a shift whose relationship "
-                        "is projection, the child the anxious attention is "
-                        "on."
+                    "functioning": _enum_param(
+                        VariableShift, means[prompts.ToolText.Functioning]
                     ),
-                },
-                "anxiety": _enum_param(
-                    VariableShift,
-                    "The automatic response to a threat, real or imagined. "
-                    "Nervous, worried, on edge is up, and so is a memory that "
-                    "goes vague around something stressful. Down only when "
-                    "they say it eased.",
-                ),
-                "symptom": _enum_param(
-                    VariableShift,
-                    "A change in physical or mental health, or in meeting "
-                    "one's own goals: sleep, pain, fatigue, a diagnosis, "
-                    "drinking, eating. Nearly always up, meaning it appeared "
-                    "or worsened; down only when they say it improved.",
-                ),
-                "functioning": _enum_param(
-                    VariableShift,
-                    "The ability to hold emotion and thinking together toward "
-                    "longer-term goals. Down when they were overwhelmed or "
-                    "could not cope, up when they managed well under "
-                    "pressure. Doing too much for everyone is "
-                    "overfunctioning, not functioning down.",
-                ),
-                "relationship": _enum_param(
-                    RelationshipKind,
-                    "What this person did toward others, and the most common "
-                    "thing a shift carries. Distance is avoiding contact and "
-                    "cutoff is severing it; conflict is open argument; "
-                    "overfunctioning and underfunctioning are the two halves "
-                    "of one imbalance; projection is anxious attention to a "
-                    "problem in a child, which goes in the child field; "
-                    "toward seeks closeness and away pulls back; "
-                    "defined-self is holding a principled position; fusion is "
-                    "emotional merging. Inside and outside are the triangle "
-                    "moves: inside lines up with the targets against the "
-                    "triangles, outside puts this person out. An argument "
-                    "about a third person is inside, not conflict.",
-                ),
-                "relationship_targets": {
-                    "type": "array",
-                    "items": {"type": "integer"},
-                    "description": (
-                        "Who the move was aimed at. Required whenever "
-                        "relationship is set, and never empty."
+                    "relationship": _enum_param(
+                        RelationshipKind, means[prompts.ToolText.Relationship]
                     ),
-                },
-                "relationship_triangles": {
-                    "type": "array",
-                    "items": {"type": "integer"},
-                    "description": (
-                        "The third people left on the outside of the move. "
-                        "Required when relationship is inside or outside."
-                    ),
+                    "relationship_targets": {
+                        "type": "array",
+                        "items": {"type": "integer"},
+                        "description": means[prompts.ToolText.RelationshipTargets],
+                    },
+                    "relationship_triangles": {
+                        "type": "array",
+                        "items": {"type": "integer"},
+                        "description": means[prompts.ToolText.RelationshipTriangles],
+                    },
                 },
             },
         },
-    },
-    {
-        "name": ToolName.EditCluster.value,
-        "description": (
-            "Group events into a named cluster, or rename one. A cluster holds "
-            "at least three events. You may group and name; you may never name "
-            "an event that is not in the record."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "id": {"type": "string"},
-                "name": {"type": "string"},
-                "summary": {"type": "string"},
-                "event_ids": {"type": "array", "items": {"type": "integer"}},
-            },
-        },
-    },
-    {
-        "name": ToolName.Remove.value,
-        "description": "Remove one item from the record.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "item_kind": _enum_param(ItemKind, "What kind of item to remove."),
-                "item_id": {"type": "string"},
-            },
-            "required": ["item_kind", "item_id"],
-        },
-    },
-    {
-        "name": ToolName.Undo.value,
-        "description": (
-            "Put back what the last turn changed. Use it when the user says to "
-            "undo, or that you got it wrong and should reverse it."
-        ),
-        "input_schema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": ToolName.Show.value,
-        "description": (
-            "Aim the picture at something in the record. Every id must be one "
-            "the record holds."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "kind": _enum_param(views.ViewKind, "Which view to draw."),
-                "persons": {
-                    "type": "array",
-                    "items": {"type": "integer"},
-                    "description": "triangle: exactly three people.",
+        {
+            "name": ToolName.EditCluster.value,
+            "description": (
+                "Group events into a named cluster, or rename one. A cluster holds "
+                f"at least {MIN_CLUSTER_EVENTS} events. You may group and name; you "
+                "may never name an event that is not in the record."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "name": {"type": "string"},
+                    "summary": {"type": "string"},
+                    "event_ids": {"type": "array", "items": {"type": "integer"}},
                 },
-                "start": {"type": "string", "description": "span: YYYY-MM-DD"},
-                "end": {"type": "string", "description": "span: YYYY-MM-DD"},
-                "event_a": {"type": "integer", "description": "compare: one event."},
-                "event_b": {"type": "integer", "description": "compare: the other."},
-                "events": {
-                    "type": "array",
-                    "items": {"type": "integer"},
-                    "description": "sequence: the events in the order to step.",
-                },
-                "cluster": {"type": "string", "description": "cluster: its id."},
             },
-            "required": ["kind"],
         },
-    },
-]
+        {
+            "name": ToolName.Remove.value,
+            "description": "Remove one item from the record.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "item_kind": _enum_param(ItemKind, "What kind of item to remove."),
+                    "item_id": {"type": "string"},
+                },
+                "required": ["item_kind", "item_id"],
+            },
+        },
+        {
+            "name": ToolName.Undo.value,
+            "description": (
+                "Put back what the last turn changed. Use it when the user says to "
+                "undo, or that you got it wrong and should reverse it."
+            ),
+            "input_schema": {"type": "object", "properties": {}},
+        },
+        {
+            "name": ToolName.Show.value,
+            "description": (
+                "Aim the picture at something in the record. Every id must be one "
+                "the record holds."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "kind": _enum_param(views.ViewKind, "Which view to draw."),
+                    "persons": {
+                        "type": "array",
+                        "items": {"type": "integer"},
+                        "description": "triangle: exactly three people.",
+                    },
+                    "start": {"type": "string", "description": "span: YYYY-MM-DD"},
+                    "end": {"type": "string", "description": "span: YYYY-MM-DD"},
+                    "event_a": {"type": "integer", "description": "compare: one event."},
+                    "event_b": {"type": "integer", "description": "compare: the other."},
+                    "events": {
+                        "type": "array",
+                        "items": {"type": "integer"},
+                        "description": "sequence: the events in the order to step.",
+                    },
+                    "cluster": {"type": "string", "description": "cluster: its id."},
+                },
+                "required": ["kind"],
+            },
+        },
+    ]
 
 
 class ToolError(Exception):

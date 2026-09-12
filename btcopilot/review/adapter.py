@@ -24,14 +24,14 @@ from btcopilot.personal.models import (
     Statement,
 )
 from btcopilot.personal.recordtext import date_text, render
-from btcopilot.personal.toolbox import EDITS, SCHEMAS, ToolError, Toolbox
+from btcopilot.personal.toolbox import EDITS, ToolError, Toolbox, schemas
 from btcopilot.pro.models import Diagram, User
 from btcopilot.schema import PDP, Event, PairBond, Person, from_dict
 
 __all__ = [
     "Author",
     "Change",
-    "SCHEMAS",
+    "schemas",
     "ToolError",
     "Toolbox",
     "coded_in",
@@ -65,7 +65,7 @@ def write_tools() -> list[dict]:
     """Only the tools that write the record. The scribe has no reply to make
     and nothing to show, so reading and showing are not on its table."""
     names = {tool.value for tool in EDITS}
-    return [schema for schema in SCHEMAS if schema["name"] in names]
+    return [schema for schema in schemas() if schema["name"] in names]
 
 
 def coded_in(diagram_id: int) -> dict[int, dict]:
@@ -197,6 +197,11 @@ def statement_order(discussion_id: int) -> dict[int, int]:
 def first_statement(discussion_id: int) -> Statement | None:
     found = _ordered(discussion_id)
     return found[0] if found else None
+
+
+def last_statement(discussion_id: int) -> Statement | None:
+    found = _ordered(discussion_id)
+    return found[-1] if found else None
 
 
 def next_statement(discussion_id: int, after_id: int) -> Statement | None:

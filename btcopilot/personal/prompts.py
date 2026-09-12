@@ -124,6 +124,70 @@ def get_agent_prompt(record: str = "", interactions: str = "") -> str:
     return "\n\n".join(parts)
 
 
+# ── What a tool parameter means ──────────────────────────────────────────────
+#
+# The tool schemas are read by the coach and by the review scribe. A parameter
+# that only says what shape the value takes is architecture and lives here; the
+# clinical meaning of an event kind, a variable or a relationship move is
+# private IP and is supplied by fdserver overriding tool_meanings() (R-0305).
+
+import enum as _enum
+
+
+class ToolText(_enum.StrEnum):
+    """The tool parameters whose wording fdserver may replace."""
+
+    EventKind = "kind"
+    Description = "description"
+    Person = "person"
+    Spouse = "spouse"
+    Child = "child"
+    Anxiety = "anxiety"
+    Symptom = "symptom"
+    Functioning = "functioning"
+    Relationship = "relationship"
+    RelationshipTargets = "relationship_targets"
+    RelationshipTriangles = "relationship_triangles"
+
+
+def tool_meanings() -> dict[ToolText, str]:
+    """Neutral, data-shape wording for each tool parameter. Production
+    deployments override this callable via FDSERVER_PROMPTS_PATH."""
+    return {
+        ToolText.EventKind: "Which kind of event this is.",
+        ToolText.Description: (
+            "What happened, with no names of the people this event links: the "
+            "person, spouse, child and targets are said by their fields."
+        ),
+        ToolText.Person: (
+            "The person the event is about. On a marriage, bonding, separation "
+            "or divorce it is one of the two partners and spouse is the other. "
+            "On a birth or adoption it is a parent, and is left out when the "
+            "parents are not known — never the same id as child."
+        ),
+        ToolText.Spouse: (
+            "The other partner. Required with person on married, bonded, "
+            "separated and divorced; on a birth it is the second parent."
+        ),
+        ToolText.Child: (
+            "For a birth or adoption, who was born or taken in: set child, not "
+            "person."
+        ),
+        ToolText.Anxiety: "Which way this variable moved, if it moved.",
+        ToolText.Symptom: "Which way this variable moved, if it moved.",
+        ToolText.Functioning: "Which way this variable moved, if it moved.",
+        ToolText.Relationship: "Which relationship value this event carries.",
+        ToolText.RelationshipTargets: (
+            "The other people this event's relationship links. Required "
+            "whenever relationship is set, and never empty."
+        ),
+        ToolText.RelationshipTriangles: (
+            "A second list of people the relationship links. Required when "
+            "relationship is inside or outside."
+        ),
+    }
+
+
 # ── Play-by-play ─────────────────────────────────────────────────────────────
 #
 # One cluster, narrated in date order, one chip per event (R-0074). The moves
@@ -375,7 +439,11 @@ if _prompts_path:
                     globals()[_var] = getattr(_private, _var)
 
             # Override callable — fdserver provides full assembly logic.
-            for _callable in ("get_conversation_flow_prompt", "get_agent_prompt"):
+            for _callable in (
+                "get_conversation_flow_prompt",
+                "get_agent_prompt",
+                "tool_meanings",
+            ):
                 if hasattr(_private, _callable):
                     globals()[_callable] = getattr(_private, _callable)
 

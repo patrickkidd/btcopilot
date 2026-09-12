@@ -18,7 +18,7 @@ from btcopilot.personal.coachmodel import CoachModel
 from btcopilot.personal.models import Change, Discussion, Statement, StatementKind
 from btcopilot.personal.prompts import get_agent_prompt
 from btcopilot.personal.interactions import recent
-from btcopilot.personal.toolbox import SCHEMAS, ToolError, Toolbox
+from btcopilot.personal.toolbox import ToolError, Toolbox, schemas
 from btcopilot.schema import DiagramData, ItemKind
 
 _log = logging.getLogger(__name__)
@@ -178,7 +178,7 @@ class CoachTurn:
         events = []
 
         for step in range(MAX_STEPS):
-            turn = self._say(system, messages, SCHEMAS)
+            turn = self._say(system, messages, schemas())
             # A turn ends on words, never on a tool call. Text written before a
             # call is the model working out what to do and the user never sees
             # it, so only a step that calls nothing is the coach speaking.
