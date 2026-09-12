@@ -157,9 +157,20 @@ personal suites at 430 passed; deviations from the brief the builder chose: crea
 admin-only; a coder's record is frozen while every coding on it is done and the next cut thaws
 it; a role refusal is a 302 to login by the app's convention; the migration test runs this
 revision's operations against SQLite because the older revisions assume Postgres; the replay
-task is not exercised against a live coach. Next steps in order: the coding screens, Patrick's
-screens, the vote, the meeting and result, Pro, the small items, each eyeballed on the sandbox
-[R-0300]; (12) [build] the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238].
+task is not exercised against a live coach. step two landed 2026-09-12 (commits 5384d18, 014d4a3, cfd1fd0): the coding screens as
+drawn — the one-task card, the read-only thread up to the cut with the agreed hairline and the
+cut line, the scribe on a cheap tier with only the record-writing tools, Done in the title row
+with its confirmation, the guidelines behind (i), the drawer pinned at 840 — new routes
+/review/tasks, /review/codings/<id>/thread and /scribe, the sandbox database migrated by
+bin/reviewdb.py after backup beta2.db.bak-1602 and the API restarted; suites 430 passed; ten
+web unit tests were already failing before; awaiting Patrick's eyeball at
+https://turin:8891/personal/ (the one-task card is the first screen). Deviations: no "+ Add
+event" in the coding drawer (the editor writes to the reader's own record, not the coding's);
+the ask, explain and in-chat chips are not wired on the coding screen; the vote card says it
+opens when Patrick opens the vote. Blocked on Patrick: putting a cut on the table and opening
+the vote need the admin role and his sandbox account is a subscriber; the builder was refused
+permission to change it. Next steps: Patrick's screens, the vote, the meeting and result, Pro,
+the small items, each eyeballed on the sandbox [R-0300]; (12) [build] the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238].
 **Lives in:** the spec sheet for beta users, every screen's behaviour in plain words, kept by the
 flush: https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba (source
 doc/chat-first/SCREENS.md, renderer bin/screenspage.py); the review screens, version 5, approved

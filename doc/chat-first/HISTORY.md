@@ -799,4 +799,6 @@ column on discussions, five new tables, JSON for what changes shape; the coach c
 in session [R-0293]; the migration runs once on production after the merge. He gave the go on the database scope and the build order [R-0300], asked that sub-agents
 be cost- and wall-clock-optimised [R-0301], and step one was built by one Opus builder under
 a Sonnet auditor: the renames, discussions.kind, the five review_ tables in a new isolated
-package, endpoints, replay task, export and 26 tests, pushed green.
+package, endpoints, replay task, export and 26 tests, pushed green. Step two followed the same night: the coding screens built to the drawing on the review
+sandbox, the scribe live, the sandbox database migrated by a kept script after a backup, three
+deviations logged and one block — the admin role on Patrick's sandbox account.
