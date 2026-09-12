@@ -102,8 +102,9 @@ R-0165..R-0228.
 replay as a task and the export; and the coding screens — the one-task card, the read-only
 thread up to the cut, the scribe on a cheap model with the record's tools, Done in the title
 row with a confirmation, the guidelines behind (i). Review and personal suites 431 passed. Two
-independent browser walks on a fixture account found and closed three defects; a last browser
-re-check of the drawer refresh and the pronoun guard was still running at the flush. The design
+independent browser walks on a fixture account found and closed three defects; the last browser
+re-check passed both fixed steps on a fixture account with zero console errors and zero failed
+requests, so the coding screen is ready for Patrick's own test. The design
 of every screen is ruled and drawn in `doc/chat-first/mockups/` and the catalogue for beta
 users; `doc/chat-first/REVIEW_TABLES.html` is the database scope of the pull request. Next:
 Patrick tests the coding screen at https://turin:8891/personal/ (the one-task card is the first
