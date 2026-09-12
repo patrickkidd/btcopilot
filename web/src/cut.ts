@@ -102,6 +102,10 @@ export class Cut {
       `<div class="ct-hint">tap any line to move the cut</div>` +
       `<button class="btn ct-go" type="button">put on the table at turn ` +
       `${this.order()}</button>`;
+    // The cut is what the screen is about, so it is what the screen opens on.
+    this.list
+      .querySelector(".cutline.now")
+      ?.scrollIntoView({ block: "center" });
   }
 
   private order(): number {

@@ -17,6 +17,9 @@ def payload(cut: Cut) -> dict:
     discussion = adapter.discussion_of(cut.discussion_id)
     end = adapter.statement(cut.end_statement_id)
     when = adapter.cut_day(cut.discussion_id, cut.end_statement_id)
+    # The day the meeting falls on, as a day and nothing else: the screen puts
+    # it straight into the phone's own date picker.
+    data["meeting_date"] = cut.meeting_date.isoformat() if cut.meeting_date else None
     data["session"] = (discussion.title or "").strip() or "an untitled conversation"
     data["end_order"] = end.order if end else None
     data["cut_day"] = when.strftime("%b %-d") if when else None
@@ -136,7 +139,7 @@ def cut_delete(cut_id: int):
         raise ValueError("someone has already started coding that one")
     db.session.delete(cut)
     db.session.commit()
-    return "", 204
+    return jsonify({"id": cut_id})
 
 
 def _default_start(discussion_id: int) -> int | None:

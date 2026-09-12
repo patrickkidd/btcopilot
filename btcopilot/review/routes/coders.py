@@ -42,8 +42,12 @@ def roster(cuts: list[Cut]) -> list[User]:
 
 
 def initials(user) -> str:
+    """Initials where a coder has a name, and the name part of their address
+    otherwise: a whole email address does not fit a phone's line."""
     letters = [part[0] for part in (user.first_name, user.last_name) if part]
-    return ".".join(letters) + "." if letters else user.username
+    if letters:
+        return ".".join(letters) + "."
+    return user.username.split("@")[0]
 
 
 def state_of(user, cuts: list[Cut]) -> CoderState:

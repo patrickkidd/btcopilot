@@ -306,7 +306,7 @@ def test_a_coder_who_pressed_done_reads_as_done(patrick, test_user_2, cut):
 
 def test_taking_a_conversation_off_the_table(patrick, cut):
     gone = patrick.delete(f"/review/cuts/{cut.id}")
-    assert gone.status_code == 204
+    assert gone.status_code == 200
     assert db.session.get(Cut, cut.id) is None
 
 

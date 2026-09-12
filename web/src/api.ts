@@ -257,7 +257,7 @@ export const openVote = (cutId: number) =>
 
 /** Off the table again, which only works before anyone has started. */
 export const offTable = (cutId: number) =>
-  ask<void>("DELETE", `/cuts/${cutId}`);
+  ask<{ id: number }>("DELETE", `/cuts/${cutId}`);
 
 /** One line per coder: not started, coding, done or voted (R-0258). */
 export const coders = () => ask<CoderLine[]>("GET", "/coders");

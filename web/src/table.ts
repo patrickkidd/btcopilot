@@ -65,15 +65,20 @@ export class Table {
     return this.cuts.find((cut) => cut.meeting_date)?.meeting_date ?? null;
   }
 
-  private title(): string {
+  /** The meeting's day in words, or nothing when no date is set yet. */
+  private day(): string | null {
     const meeting = this.meeting();
-    if (!meeting) return "Next meeting";
-    const when = new Date(`${meeting}T00:00:00`);
-    return `Next meeting · ${when.toLocaleDateString(undefined, {
+    if (!meeting) return null;
+    return new Date(`${meeting}T00:00:00`).toLocaleDateString(undefined, {
       weekday: "short",
       month: "short",
       day: "numeric",
-    })}`;
+    });
+  }
+
+  private title(): string {
+    const day = this.day();
+    return day === null ? "Next meeting" : `Next meeting · ${day}`;
   }
 
   private waiting(): CoderLine[] {
@@ -192,10 +197,11 @@ export class Table {
   private dateRow(): string {
     const meeting = this.meeting();
     return (
-      `<label class="sn-row push"><div class="sn-m">` +
+      `<label class="sn-row push tb-when"><div class="sn-m">` +
       `<div class="sn-t">Meeting date</div>` +
-      `<div class="sn-s">${esc(this.title().replace("Next meeting · ", "") || "not set")}</div>` +
-      `</div><input class="tb-date" type="date" value="${esc(meeting ?? "")}"` +
+      `<div class="sn-s">${esc(this.day() ?? "not set")}</div>` +
+      `</div><span class="sn-chev">&rsaquo;</span>` +
+      `<input class="tb-date" type="date" value="${esc(meeting ?? "")}"` +
       ` aria-label="Meeting date"></label>`
     );
   }

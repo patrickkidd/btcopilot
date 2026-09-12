@@ -2401,12 +2401,14 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 
-/* The meeting date row holds the phone's own picker, which shows as the value
- * beside the label rather than as a field of its own. */
+/* Tapping the meeting date row opens the phone's own date picker: the field
+ * covers the whole row and is not drawn, so the row reads as any other. */
+.tb-when { position: relative; }
 .tb-date {
-  flex: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
   border: none;
   background: none;
-  color: var(--faint);
-  font: 400 15px var(--mono);
 }
