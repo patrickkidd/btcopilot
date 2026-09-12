@@ -111,6 +111,15 @@ def two_codings(test_user, test_user_2, cut):
     return a, b
 
 
+def disputed_event(cut) -> Item:
+    """What a ballot screen is about: one disputed event of the cut."""
+    return next(
+        i
+        for i in Item.query.filter_by(cut_id=cut.id, item_kind="event").all()
+        if i.status is ReviewStatus.Disputed
+    )
+
+
 def test_snapshot_marks_the_shared_event_agreed_and_the_lone_one_disputed(
     patrick, test_user, test_user_2, cut
 ):
@@ -135,7 +144,7 @@ def test_agreement_lands_on_the_cut(patrick, test_user, test_user_2, cut):
 def test_one_vote_per_coder_per_item(patrick, coder, test_user, test_user_2, cut):
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
-    item = Item.query.filter_by(cut_id=cut.id).first()
+    item = disputed_event(cut)
 
     coder.put(f"/review/items/{item.id}/vote", json={"choice": "take"})
     coder.put(f"/review/items/{item.id}/vote", json={"choice": "drop"})
@@ -147,13 +156,13 @@ def test_one_vote_per_coder_per_item(patrick, coder, test_user, test_user_2, cut
 def test_a_coder_reads_only_their_own_votes(patrick, coder, test_user, test_user_2, cut):
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
-    item = Item.query.filter_by(cut_id=cut.id).first()
+    item = disputed_event(cut)
     patrick.put(f"/review/items/{item.id}/vote", json={"choice": "take"})
 
     assert coder.get(f"/review/votes?cut_id={cut.id}").get_json() == []
-    assert patrick.get("/review/tallies?cut_id=%d" % cut.id).get_json()[0]["counts"][
-        "take"
-    ] == 1
+    tallies = patrick.get(f"/review/tallies?cut_id={cut.id}").get_json()
+    counted = next(t for t in tallies if t["review_item_id"] == item.id)
+    assert counted["counts"]["take"] == 1
 
 
 def test_settle_writes_a_change_on_the_case_record(
@@ -358,3 +367,100 @@ def test_the_turns_of_a_session_carry_the_ratified_line(patrick, session, turns,
 def test_a_coder_cannot_read_a_session_whole(coder, session):
     refused = coder.get(f"/review/turns?discussion_id={session.id}")
     assert refused.status_code == 302
+
+
+def wrote_from(coding, event_id: int, statement_id: int, user_id: int):
+    """The coder's record stamped with the turn one event was written from."""
+    db.session.add(
+        Change(
+            diagram_id=coding.diagram_id,
+            statement_id=statement_id,
+            turn_id=f"turn-{statement_id}",
+            user_id=user_id,
+            author=Author.Review,
+            deltas=[
+                {
+                    "item_kind": "event",
+                    "item_id": str(event_id),
+                    "field": "description",
+                    "after": "said so",
+                }
+            ],
+        )
+    )
+    db.session.commit()
+
+
+def test_the_ballot_carries_the_turn_and_the_person_of_each_take(
+    patrick, test_user, test_user_2, cut, turns
+):
+    first, _ = two_codings(test_user, test_user_2, cut)
+    wrote_from(first, 10, turns[1].id, test_user.id)
+    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+
+    rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
+    agreed = next(
+        r for r in rows if r["item_kind"] == "event" and r["status"] == "agreed"
+    )
+    assert agreed["coders"] == 2
+    assert agreed["not_coded"] == 0
+    assert agreed["takes"][0]["person_name"] == "Ann"
+    assert agreed["takes"][0]["statement_id"] == turns[1].id
+    assert agreed["line"]["text"] == "turn 1"
+    assert [one["name"] for one in agreed["people"]] == ["Ann"]
+
+
+def test_an_item_one_coder_left_out_says_how_many_left_it_out(
+    patrick, test_user, test_user_2, cut
+):
+    two_codings(test_user, test_user_2, cut)
+    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+
+    rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
+    lone = next(
+        r for r in rows if r["item_kind"] == "event" and r["status"] == "disputed"
+    )
+    assert lone["not_coded"] == 1
+
+
+def test_no_name_reaches_the_ballot(patrick, test_user, test_user_2, cut):
+    two_codings(test_user, test_user_2, cut)
+    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+
+    rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
+    assert all("user_id" not in row for row in rows)
+    assert all("user_id" not in take for row in rows for take in row["takes"])
+
+
+def test_an_agreed_item_cannot_be_voted_on(patrick, test_user, test_user_2, cut):
+    two_codings(test_user, test_user_2, cut)
+    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    agreed = next(
+        i
+        for i in Item.query.filter_by(cut_id=cut.id, item_kind="event").all()
+        if i.status is ReviewStatus.Agreed
+    )
+
+    refused = patrick.put(f"/review/items/{agreed.id}/vote", json={"choice": "take"})
+    assert refused.status_code == 400
+    assert "not on the ballot" in refused.get_data(as_text=True)
+
+
+def test_the_vote_task_goes_when_every_disputed_event_has_a_vote(
+    patrick, coder, test_user, test_user_2, cut
+):
+    two_codings(test_user, test_user_2, cut)
+    coder.post("/review/codings", json={"cut_id": cut.id})
+    mine = Coding.query.filter_by(cut_id=cut.id, user_id=coder.user.id).first()
+    mine.done_at = datetime.datetime.utcnow()
+    db.session.commit()
+    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+
+    card = coder.get("/review/tasks").get_json()["task"]
+    assert card["kind"] == "vote"
+    assert card["ready"]
+
+    for item in Item.query.filter_by(cut_id=cut.id, item_kind="event").all():
+        if item.status is ReviewStatus.Disputed:
+            coder.put(f"/review/items/{item.id}/vote", json={"choice": "drop"})
+    assert coder.get("/review/tasks").get_json()["task"] is None

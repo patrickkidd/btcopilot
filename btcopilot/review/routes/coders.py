@@ -58,7 +58,7 @@ def state_of(user, cuts: list[Cut]) -> CoderState:
         return CoderState.NotStarted
     if any(one is None or one.done_at is None for one in codings):
         return CoderState.Coding
-    if all(voted(cut, user) for cut in cuts):
+    if all(cut.vote_opened_at is not None and voted(cut, user) for cut in cuts):
         return CoderState.Voted
     return CoderState.Done
 

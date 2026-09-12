@@ -5,7 +5,14 @@ from flask import jsonify, request
 
 from btcopilot.extensions import db
 from btcopilot.review.models import Item, Vote, VoteChoice
-from btcopilot.review.routes import admin, bp, coder, cut_or_404, item_or_404
+from btcopilot.review.routes import (
+    admin,
+    bp,
+    coder,
+    cut_or_404,
+    item_or_404,
+    on_ballot,
+)
 
 
 def payload(vote: Vote) -> dict:
@@ -32,6 +39,8 @@ def vote_put(item_id: int):
     item = item_or_404(item_id)
     if item.cut.vote_opened_at is None:
         raise ValueError("that vote is not open")
+    if item not in on_ballot(item.cut):
+        raise ValueError("that item is not on the ballot")
     body = request.get_json() or {}
     choice = VoteChoice(body.get("choice"))
 
