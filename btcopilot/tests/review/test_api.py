@@ -5,6 +5,7 @@ from btcopilot.personal.models import Author, Change
 from mock import patch
 
 from btcopilot.review import export, ruledraft, snapshot
+from btcopilot.review.adapter import initials
 from btcopilot.pro.models import User
 from btcopilot.review.freeze import frozen
 from btcopilot.review.models import Coding, Cut, Item, ReviewStatus, Rule, RuleSource
@@ -505,3 +506,11 @@ def test_the_vote_task_goes_when_every_disputed_event_has_a_vote(
         if item.status is ReviewStatus.Disputed:
             coder.put(f"/review/items/{item.id}/vote", json={"choice": "drop"})
     assert coder.get("/review/tasks").get_json()["task"] is None
+
+
+def test_a_coder_without_a_name_is_still_shown_as_initials(flask_app):
+    named = User(username="s.a@example.com", first_name="Sam", last_name="Ang")
+    assert initials(named) == "S.A."
+    assert initials(User(username="ballot1@fd362-fixture.invalid")) == "B1."
+    assert initials(User(username="ballot3@fd362-fixture.invalid")) == "B3."
+    assert initials(User(username="patrickkidd+beta@gmail.com")) == "P.B."

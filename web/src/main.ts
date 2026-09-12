@@ -9,7 +9,7 @@ import { Cut } from "./cut";
 import { Table } from "./table";
 import { Meeting } from "./meeting";
 import { ResultScreen } from "./result";
-import { OneTask, beforeMeeting } from "./task";
+import { OneTask, beforeMeeting, coder } from "./task";
 import { Rules } from "./rules";
 import { Sessions, sessionTitle, summaryOf } from "./sessions";
 import { Settings } from "./settings";
@@ -284,9 +284,9 @@ const coding = new Coding(
  * first. */
 async function openTask(): Promise<void> {
   voting = null;
-  const task = await oneTask.load();
-  $("title").textContent = beforeMeeting(task);
-  sessions.task(task ? "Your coding task" : null);
+  const found = await oneTask.load();
+  $("title").textContent = beforeMeeting(found.task);
+  sessions.task(coder(found) ? "Your coding task" : null);
   screen(Screen.Task);
 }
 
@@ -399,14 +399,19 @@ async function openTable(): Promise<void> {
   screen(Screen.Table);
 }
 
+/** Where the guidelines were opened from, so closing them goes back there:
+ * the coding screen mid-task, the one task card between meetings. */
+let readingFrom = Screen.Coding;
+
 async function openRules(): Promise<void> {
+  readingFrom = here;
   await rules.load();
   screen(Screen.Rules);
 }
 
 $("coding-done").addEventListener("click", () => coding.confirm());
 $("coding-info").addEventListener("click", () => void openRules());
-$("rules-close").addEventListener("click", () => screen(Screen.Coding));
+$("rules-close").addEventListener("click", () => screen(readingFrom));
 $("coding-back").addEventListener("click", () => {
   // Reading the transcript is a step out of the ballot, so it steps back into
   // it on the item it was left on.
@@ -884,10 +889,15 @@ function screen(which: Screen): void {
   const writing = which === Screen.Coding && !coding.finished();
   $("coding-done").hidden = !writing;
   $("coding-inbar").hidden = !writing;
-  $("coding-info").hidden = which !== Screen.Coding;
+  // The guidelines are read from the (i) at the top of the coding screen, and
+  // from the one task card too, so they are still reachable in the window after
+  // a meeting when nothing is on the table (R-0275, R-0278).
+  $("coding-info").hidden = which !== Screen.Coding && which !== Screen.Task;
   $("coding-back").hidden = !CODING_SCREENS.includes(which);
   $("account").hidden = which === Screen.Rules;
-  $("sessions-open").hidden = false;
+  // The sessions door stands in the chat's own input bar, so it is only on the
+  // chat; every other screen carries the back arrow the frames draw instead.
+  $("sessions-open").hidden = which !== Screen.Chat;
   here = which;
 }
 
@@ -1003,14 +1013,15 @@ if (import.meta.env.PROD && "serviceWorker" in navigator)
     navigator.serviceWorker.register("/personal/sw.js", { scope: "/personal/" }),
   );
 
-// A coder opens on their one task rather than on the chat (R-0265, frame f1).
-// A reader with nothing on the table never sees it, and a server without the
+// A coder opens on their one task rather than on the chat (R-0265, frame f1),
+// and still does between meetings, when the card carries what they finished
+// instead. A reader who has never coded never sees it, and a server without the
 // review tables leaves the chat exactly as it was.
 void api
   .tasks()
   .then((found) => {
-    sessions.task(found.task ? "Your coding task" : null);
-    if (found.task) void openTask();
+    sessions.task(coder(found) ? "Your coding task" : null);
+    if (coder(found)) void openTask();
   })
   .catch((error) => {
     if (!(error instanceof api.Failed)) throw error;

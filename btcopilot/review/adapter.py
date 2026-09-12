@@ -7,6 +7,7 @@ without hunting for the places it reached into the apps.
 """
 
 import datetime
+import re
 
 import btcopilot
 from btcopilot import diagramjson
@@ -108,14 +109,17 @@ def cut_day(discussion_id: int, statement_id: int):
 
 
 def initials(user: User | None) -> str:
-    """Initials where a coder has a name, and the name part of their address
-    otherwise: a whole email address does not fit a phone's line."""
+    """One coder reads as one kind of name everywhere: initials from their name,
+    or, with no name, initials of the parts of their address before the @, each
+    keeping any digits that tell two coders apart. A whole address is never put
+    on a screen."""
     if user is None:
         return "someone"
     letters = [part[0] for part in (user.first_name, user.last_name) if part]
     if letters:
         return ".".join(letters) + "."
-    return user.username.split("@")[0]
+    parts = [part for part in re.split(r"[^A-Za-z0-9]+", user.username.split("@")[0]) if part]
+    return "".join(part[0].upper() + re.sub(r"\D", "", part) + "." for part in parts)
 
 
 def diagram_of(diagram_id: int) -> Diagram:

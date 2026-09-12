@@ -25,6 +25,12 @@ export function beforeMeeting(task: Task | null): string {
   })}`;
 }
 
+/** A coder is anyone with a task to do or a task already finished, and they
+ * keep the one task card between meetings so what they finished, and the
+ * result of the last meeting under it, stays reachable (R-0265). */
+export const coder = (found: Tasks): boolean =>
+  Boolean(found.task) || found.done.length > 0;
+
 const CHECK = "&#10003;";
 
 export class OneTask {
@@ -46,12 +52,12 @@ export class OneTask {
     });
   }
 
-  /** What the coder has to do now, or nothing when the table is empty. */
-  async load(): Promise<Task | null> {
+  /** What the coder has to do now, and what they have already finished. */
+  async load(): Promise<Tasks> {
     const found: Tasks = await api.tasks();
     this.task = found.task;
     this.render(found);
-    return this.task;
+    return found;
   }
 
   showing(): Task | null {

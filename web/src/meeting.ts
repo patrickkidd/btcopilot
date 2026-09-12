@@ -394,13 +394,23 @@ export class Meeting {
     }, 280);
   }
 
+  /** Ratifying writes the agreed record and asks the coach for the guideline
+   * changes, which takes about ten seconds. The button goes dead and the app's
+   * own three dots say it is working, so a second tap does nothing. */
   private async onBar(clicked: Event): Promise<void> {
-    if (!(clicked.target as Element).closest(".mt-ratify")) return;
+    const button = (clicked.target as Element).closest<HTMLButtonElement>(
+      ".mt-ratify",
+    );
+    if (!button || button.disabled) return;
     const cut = this.cut;
     if (!cut) return;
+    button.disabled = true;
+    button.textContent = "ratifying";
+    button.classList.add("dots3");
     try {
       await api.ratify(cut.id);
     } catch (error) {
+      this.bar.innerHTML = this.ratifyBar(0);
       toast(
         error instanceof api.Failed && error.status === 400
           ? "Every open item needs a choice first"

@@ -270,22 +270,24 @@ export class Ballot {
       .map((one, index) => {
         const on =
           chosen && chosen.coding_id === one.take.coding_id ? " on" : "";
+        // How many coders backed a take is not shown here: names and counts
+        // appear for the first time at the meeting, so nobody votes with the
+        // room in view (R-0252, R-0272).
         return (
           `<div class="take tap${on}" data-coding="${one.take.coding_id}">` +
-          `<span>take ${index + 1} · ${esc(one.label)}</span>` +
-          `<span class="n">${one.coders === 1 ? "1" : `${one.coders} coders`}</span></div>`
+          `<span>take ${index + 1} · ${esc(one.label)}</span></div>`
         );
       })
       .join("");
     const ownTake = mine
       ? `<div class="take tap on"><span>your take · ` +
-        `${esc(words({ item: mine } as Take, TELLING))}</span>` +
-        `<span class="n">1</span></div>`
+        `${esc(words({ item: mine } as Take, TELLING))}</span></div>`
       : "";
-    const left = item.not_coded
-      ? `<div class="take tap off"><span>not coded</span>` +
-        `<span class="n">${item.not_coded}</span></div>`
-      : "";
+    // The one count the ballot does show, because leaving an item out is not a
+    // vote for any take and the room needs to know it happened.
+    const left =
+      `<div class="take off"><span>left out by ${item.not_coded} ` +
+      `coder${item.not_coded === 1 ? "" : "s"}</span></div>`;
     const line = item.line
       ? `<div class="quote"><b>${esc(item.line.who)}:</b> ` +
         `&ldquo;${esc(item.line.text)}&rdquo;</div>` +
@@ -305,8 +307,10 @@ export class Ballot {
       `<div class="phbtns">` +
       `<button class="btn" id="bl-change" type="button">change&hellip;</button>` +
       `<button class="btn${dropped}" id="bl-drop" type="button">drop</button></div>` +
+      `<label class="saylab" for="bl-say">Say why you voted as you did ` +
+      `(optional — you may skip it)</label>` +
       `<input class="say" id="bl-say" type="text" placeholder="say why (optional)" ` +
-      `value="${esc(vote?.reason ?? "")}" aria-label="say why (optional)">` +
+      `value="${esc(vote?.reason ?? "")}">` +
       `<div class="nextrow"><button class="btn" id="bl-next" type="button">` +
       `${this.last() ? "done" : "next ›"}</button></div>`
     );
