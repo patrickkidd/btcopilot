@@ -83,7 +83,15 @@ export class Coding {
     this.drawer.onTab = (tab) => this.markTab(tab);
     this.handlers.onTitle(`${this.thread.session} · up to ${this.thread.cut_day}`);
     this.render();
-    this.drawer.show(await this.reread());
+    await this.refresh();
+  }
+
+  /** The record after something was written into it: the picture, the drawer
+   * beside it and the row under it all read the one re-read, the way the chat
+   * screen does after a coach turn. */
+  private async refresh(): Promise<void> {
+    this.drawer?.show(await this.reread());
+    this.marks();
   }
 
   showing(): CodingThread | null {
@@ -275,8 +283,8 @@ export class Coding {
       ? `<div class="did q">${esc(written.asked)}</div>`
       : written.lines.map((line) => `<div class="did">${esc(line)}</div>`).join("");
     this.after(turn, el("div", "bub coach", lines), turn);
-    if (!written.asked) {
-      this.drawer?.show(await this.reread());
+    if (written.made.length) {
+      await this.refresh();
       this.picture.light(written.made);
     }
   }

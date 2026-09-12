@@ -74,19 +74,54 @@ def test_adds_the_person_the_coder_names(coder, cut, turns):
     assert len(changes) == 2
 
 
-def test_asks_when_two_people_could_be_meant(coder, cut, turns):
+class Never:
+    """A model the scribe must not reach."""
+
+    def turn(self, system, messages, tools):
+        raise AssertionError("the scribe called the model")
+        yield
+
+
+def test_asks_when_the_coder_points_without_naming(coder, cut, turns):
+    """A bare pronoun with more than one person in the record is asked about
+    before any model call, so nothing can be written (R-0270)."""
     coding = coded(
         coder.user,
         cut,
         {"people": [person(1, "Marcus"), person(2, "Delphine")]},
         done=False,
     )
-    model = Scripted(said="Do you mean Marcus or Delphine?")
-    response = scribe(coder, coding, turns[0], model, "he moved in 1971")
+    response = scribe(coder, coding, turns[0], Never(), "he moved away that year")
     assert response.status_code == 200
-    assert response.json["asked"] == "Do you mean Marcus or Delphine?"
+    assert response.json["asked"] == "Which person is this about — Marcus or Delphine?"
     assert response.json["lines"] == []
 
     record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     assert record.get("events") in (None, [])
     assert Change.query.filter_by(diagram_id=coding.diagram_id).count() == 0
+
+
+def test_asks_when_one_name_could_be_two_people(coder, cut, turns):
+    coding = coded(
+        coder.user,
+        cut,
+        {"people": [person(1, "Marcus Webb"), person(2, "Marcus Cooper")]},
+        done=False,
+    )
+    response = scribe(coder, coding, turns[0], Never(), "Marcus moved in 1971")
+    assert (
+        response.json["asked"]
+        == "Which person is this about — Marcus Webb or Marcus Cooper?"
+    )
+    assert Change.query.filter_by(diagram_id=coding.diagram_id).count() == 0
+
+
+def test_a_turn_that_names_nobody_still_reaches_the_model(coder, cut, turns):
+    """No name and no pronoun is not ambiguity: the model reads the turn."""
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted(
+        [("edit_event", {"kind": "moved", "date": "1971-01-01", "person": 1})]
+    )
+    response = scribe(coder, coding, turns[0], model, "the family moved in 1971")
+    assert response.json["asked"] == ""
+    assert response.json["lines"]

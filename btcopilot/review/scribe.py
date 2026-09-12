@@ -6,7 +6,9 @@ record-writing tools. When it cannot tell which person is meant it writes
 nothing and asks, in one line, which person (R-0270).
 """
 
+import enum
 import logging
+import re
 import uuid
 
 from btcopilot.review import adapter
@@ -37,6 +39,10 @@ added.
 people already in the record could be meant, call no tool at all and reply \
 with one short question naming the people it could be. That is the only thing \
 you may ask about.
+- Never change an event the record already holds unless the coder names that \
+event: whose it is and what happened. A statement about something that \
+happened adds an event; it never edits one. Never change the certainty, the \
+date, or any other value of an event the coder did not name.
 - The coder cannot see this exchange as a conversation, so never ask about \
 anything you could work out, and never ask twice.
 - Say nothing when the writing worked. Words are for asking only.
@@ -58,10 +64,68 @@ class Refused(Exception):
     coder as they are, since they already say what is wrong."""
 
 
+class Pronoun(enum.StrEnum):
+    """The words a coder points at a person with instead of naming them."""
+
+    He = "he"
+    She = "she"
+    They = "they"
+    Him = "him"
+    Her = "her"
+    His = "his"
+    Their = "their"
+
+
+WORDS = re.compile(r"[A-Za-z][A-Za-z']*")
+
+
+def unclear(said: str, people: list[dict]) -> str:
+    """The question to ask instead of writing, or nothing. A coder who points
+    at a person without naming one, or names one that could be two people in
+    the record, is asked which before any word of it is written (R-0270)."""
+    words = WORDS.findall(said)
+    spoken = {word.lower() for word in words}
+    matched = [
+        person
+        for person in people
+        if spoken & {word.lower() for word in WORDS.findall(_name(person))}
+    ]
+    if len(matched) > 1:
+        return _which(matched)
+    if matched:
+        return ""
+    pointed = spoken & {p.value for p in Pronoun}
+    if pointed and not _new_name(words):
+        return _which(people)
+    return ""
+
+
+def _new_name(words: list[str]) -> bool:
+    """A name the record does not hold yet: a capitalised word the coder wrote
+    inside the sentence rather than at the start of it."""
+    return any(
+        word[:1].isupper() and word.lower() not in {p.value for p in Pronoun}
+        for word in words[1:]
+    )
+
+
+def _which(people: list[dict]) -> str:
+    named = [_name(person) for person in people]
+    if not named:
+        return "Which person is this about? The record has nobody in it yet."
+    if len(named) == 1:
+        return f"Is this about {named[0]}?"
+    return f"Which person is this about — {', '.join(named[:-1])} or {named[-1]}?"
+
+
 def write(coding, statement, said: str, model=None) -> dict:
     """One coding turn. Returns the edit lines it wrote, or the one question it
     asked instead."""
     turn_id = uuid.uuid4().hex
+    record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
+    question = unclear(said, record.get("people") or [])
+    if question:
+        return {"lines": [], "asked": question, "made": [], "turn_id": turn_id}
     toolbox = adapter.scribe_toolbox(
         coding.diagram_id, coding.user_id, statement.id, turn_id
     )
