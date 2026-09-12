@@ -12,14 +12,9 @@ needs Patrick's word, `[build]` is work not yet done, `[verify]` is built but un
 unmeasured, `[waiting]` is blocked on something outside the topic; an item that mixes two is
 split into two items.
 
-Patrick audits this file as a page, never by command: the flush renders it with
-`bin/topicpage.py` and republishes it to the same artifact every time —
-**https://claude.ai/code/artifact/8a56716d-dca5-4123-ae2e-572da33a392c** (pass that URL to the
-Artifact tool as `url`), and the two-clock dashboard — every dated event since the first
-session as a branching timeline or tree, toggled with this register as the state view — to
-**https://claude.ai/code/artifact/be081e64-9efa-45de-b329-42e82f9d4857**. The ledger behind
-it is `events.json` beside this file, rebuilt by `bin/ledger.py`. In VS Code the file itself
-is this one.
+Patrick never reads a page generated from this file; the register and the dashboard pages are
+retired (his word, 2026-09-11: too verbose to read). The ledger `events.json` is kept for the
+record only.
 
 ---
 

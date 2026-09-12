@@ -16,6 +16,8 @@ Backend for Pro/Personal apps, training app, AI extraction system.
 - **Artifacts are UI drawings in the app's own style, never text documents (2026-09-11).** The
   open decisions go on the drawing, one numbered list in one place, each self-contained with its
   example, and are never repeated in the reply. The reply is a link and a few lines.
+- **No topic page, no dashboard, no audit page (2026-09-11).** Never generate or link a page
+  built from the register or the ledger; he will not read it.
 - **UI options with one-line descriptions, never a research project (2026-09-11).** Every turn
   on a design topic shows him drawn options and says what each is. Captions are not forced
   short: not verbose, but enough that every non-self-evident control is explained.

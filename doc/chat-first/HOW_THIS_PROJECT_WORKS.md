@@ -26,6 +26,7 @@ The corpus keeps two clocks per topic — [TOPICS.md](TOPICS.md) is the state cl
 per topic, headed by its plain name, rewritten in full), [HISTORY.md](HISTORY.md) the event
 clock (one entry per session, never rewritten by a later session). The skill
 `.claude/skills/two-clocks/SKILL.md` runs the flush idempotently; `bin/flushcheck.py` verifies it.
+No page is generated or shown to Patrick from the register or the ledger (retired 2026-09-11).
 A new session reads STATE.md, then TOPICS.md. Patrick names a topic in plain words — "let's
 continue designing the pro and training features", "list the open issues" — and the session
 matches the words to a block and continues from its Open and Next action; ids are for tags

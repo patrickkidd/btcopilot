@@ -98,8 +98,8 @@ run from rewording what an earlier run already captured:
    topic land in the audit lane; assign them by adding the missing words to the topic block or
    the ledger's word list — never by hand-editing events.json. He never runs a command; he
    reads the pages, or the files in VS Code, or asks in plain words.
-10. Report in one message: the topics touched by name, one line of next action each, the audit
-    page link, and what needs his word. Nothing else.
+10. Report in one message: the topics touched by name, one line of next action each, and what
+    needs his word. No page links. Nothing else.
 
 ## Picking a topic up in a later session
 
