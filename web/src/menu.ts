@@ -1,5 +1,5 @@
-import { esc } from "./dom";
-import { Direction, openEditor, openPersonEditor } from "./editor";
+import { openEditor, openPersonEditor } from "./editor";
+import { eventDivider, eventRow, fullName, personRow } from "./rows";
 import { emptyTimeline, type Cluster, type Person, type Timeline, type TimelineEvent } from "./types";
 
 /** The full timeline list behind the menu: full screen, searched, and divided
@@ -25,56 +25,6 @@ function byBirth(a: Person, b: Person): number {
 }
 
 const byName = (a: Person, b: Person) => a.name.localeCompare(b.name);
-
-/** What the record calls someone, both names when it holds both. */
-const fullName = (person: Person) =>
-  [person.name, person.last_name].filter(Boolean).join(" ");
-
-const UNPLACED = "unplaced";
-const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-
-const ARROW: Record<string, string> = {
-  [Direction.Up]: "↑",
-  [Direction.Down]: "↓",
-  [Direction.Same]: "=",
-};
-
-const SHIFTS: [keyof TimelineEvent, string][] = [
-  ["symptom", "S"],
-  ["anxiety", "A"],
-  ["functioning", "F"],
-];
-
-function when(event: TimelineEvent): string {
-  if (!event.dateTime) return "no date yet";
-  const [year, month] = event.dateTime.split("-");
-  return month ? `${MONTHS[Number(month) - 1]} ${year}` : year;
-}
-
-/** The row's second line must not overflow the phone, so the shifts and the
- * move are abbreviated: `S↑ A↑ F= R conflict→mom` (owner ruling 2026-09-03). */
-function codes(event: TimelineEvent, names: Map<number, string>): string {
-  const out: string[] = [];
-  for (const [field, letter] of SHIFTS) {
-    const value = event[field] as string | null;
-    if (value) out.push(letter + (ARROW[value] ?? ` ${value}`));
-  }
-  if (event.relationship) {
-    const named = (ids: number[]) =>
-      ids.map((id) => names.get(id) ?? "?").join(",");
-    const targets = event.relationshipTargets.length
-      ? `→${named(event.relationshipTargets)}`
-      : "";
-    const triangles = event.relationshipTriangles.length
-      ? ` △${named(event.relationshipTriangles)}`
-      : "";
-    out.push(`R ${event.relationship}${targets}${triangles}`);
-  }
-  return out.join("  ");
-}
 
 export class Menu {
   private editing: number | null = null;
@@ -177,9 +127,9 @@ export class Menu {
       const key = cluster ? cluster.id : null;
       if (key !== last) {
         last = key;
-        html += this.divider(cluster);
+        html += eventDivider(cluster);
       }
-      html += this.row(event, names);
+      html += eventRow(event, names, this.editing === event.id);
     }
     if (!shown.length)
       html = `<div class="none">${
@@ -216,7 +166,8 @@ export class Menu {
     }</span><span class="dcount" data-order="1" role="button" tabindex="0">${
       this.byName ? "order by birth" : "order by name"
     }</span></div>`;
-    for (const person of shown) html += this.personRow(person);
+    for (const person of shown)
+      html += personRow(person, this.editing === person.id);
     if (!shown.length)
       html = `<div class="none">${
         this.data.people.length ? "Nobody matches that search." : "Nobody on your record yet."
@@ -244,22 +195,6 @@ export class Menu {
     }
   }
 
-  private personRow(person: Person): string {
-    const meta = [
-      person.birth ? `born ${person.birth.slice(0, 4)}` : "no birth on the record",
-      person.gender,
-      person.primary ? "you" : "",
-    ]
-      .filter(Boolean)
-      .join(" · ");
-    return (
-      `<div class="row${this.editing === person.id ? " on" : ""}" data-person="${person.id}" ` +
-      `role="button" tabindex="0">` +
-      `<div class="r1">${esc(fullName(person))}</div>` +
-      `<div class="r2">${esc(meta)}</div></div>`
-    );
-  }
-
   private personEditor(person: Person | null): HTMLElement {
     return openPersonEditor(
       person,
@@ -269,16 +204,6 @@ export class Menu {
         void this.reload().then((data) => this.show(data));
       },
       (eventId) => this.goTo(Tab.Events, eventId),
-    );
-  }
-
-  private divider(cluster: Cluster | undefined): string {
-    const count = cluster
-      ? `${cluster.count} moment${cluster.count === 1 ? "" : "s"}`
-      : "";
-    return (
-      `<div class="div"><span>${esc(cluster ? cluster.label : UNPLACED)}</span>` +
-      `<span class="dcount">${esc(count)}</span></div>`
     );
   }
 
@@ -292,18 +217,6 @@ export class Menu {
         void this.reload().then((data) => this.show(data));
       },
       (personId) => this.goTo(Tab.People, personId),
-    );
-  }
-
-  private row(event: TimelineEvent, names: Map<number, string>): string {
-    const meta = [when(event), event.person_name, codes(event, names)]
-      .filter(Boolean)
-      .join(" · ");
-    return (
-      `<div class="row${this.editing === event.id ? " on" : ""}" data-event="${event.id}" ` +
-      `role="button" tabindex="0">` +
-      `<div class="r1">${esc(event.label)}</div>` +
-      `<div class="r2">${esc(meta)}</div></div>`
     );
   }
 }

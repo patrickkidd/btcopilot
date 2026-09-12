@@ -3,6 +3,9 @@ import * as api from "./api";
 import { Chat, wait, type PlayTap } from "./chat";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
+import { Coding } from "./coding";
+import { OneTask, beforeMeeting } from "./task";
+import { Rules } from "./rules";
 import { Sessions, sessionTitle, summaryOf } from "./sessions";
 import { Settings } from "./settings";
 import { aimedEvents, chips, itemKind } from "./chips";
@@ -26,6 +29,8 @@ import { shortDate } from "./when";
 import {
   ChipKind,
   ChipTone,
+  TaskKind,
+  type Task,
   InteractionKind,
   ItemKind,
   emptyTimeline,
@@ -53,7 +58,13 @@ declare global {
 enum Screen {
   Chat = "chat",
   Menu = "menu",
+  Task = "task",
+  Coding = "coding",
+  Rules = "rules",
 }
+
+/** Which screens the coding title row belongs to. */
+const CODING_SCREENS = [Screen.Task, Screen.Coding, Screen.Rules];
 
 let timeline: Timeline = emptyTimeline();
 let pic: PicState = REST;
@@ -208,8 +219,75 @@ const sessions = new Sessions(
       actions();
     },
     onDiagram: (diagram, how) => onDiagram(diagram, how),
+    onTask: () => void openTask(),
   },
 );
+
+/** ── Coding ───────────────────────────────────────────────────────────────
+ * A coder is given one task at a time: read one conversation up to the cut
+ * Patrick put on the table, and say what each line tells you happened
+ * (R-0265, R-0267). Done is in the title row, never in the composer (R-0271). */
+
+const oneTask = new OneTask($("task-body"), {
+  onStart: (task) => void startTask(task),
+});
+
+const rules = new Rules($("rules-body"));
+
+const coding = new Coding(
+  $("coding-chat"),
+  $("coding-composer"),
+  $("coding-send"),
+  $("coding-rows"),
+  $("coding-search") as HTMLInputElement,
+  $("coding-tabs"),
+  $("coding-view"),
+  $("overlay"),
+  {
+    onDone: () => void openTask(),
+    onGuidelines: () => void openRules(),
+    onTitle: (title) => {
+      $("title").textContent = title;
+    },
+  },
+);
+
+/** The one task card, which is what Done returns to and what a coder sees
+ * first. */
+async function openTask(): Promise<void> {
+  const task = await oneTask.load();
+  $("title").textContent = beforeMeeting(task);
+  sessions.task(task ? "Your coding task" : null);
+  screen(Screen.Task);
+}
+
+/** Starting a task is making your own coding of that cut, then opening the
+ * conversation as a thread you cannot type into. */
+async function startTask(task: Task): Promise<void> {
+  const mine = task.coding_id ?? (await api.startCoding(task.cut_id)).id;
+  if (task.kind === TaskKind.Vote) {
+    toast("The vote opens when Patrick opens it");
+    return;
+  }
+  await coding.open(mine);
+  screen(Screen.Coding);
+}
+
+async function openRules(): Promise<void> {
+  await rules.load();
+  screen(Screen.Rules);
+}
+
+$("coding-done").addEventListener("click", () => coding.confirm());
+$("coding-info").addEventListener("click", () => void openRules());
+$("rules-close").addEventListener("click", () => screen(Screen.Coding));
+$("coding-back").addEventListener("click", () => {
+  if (here === Screen.Coding) void openTask();
+  else {
+    $("title").textContent = familyTitle;
+    screen(Screen.Chat);
+  }
+});
 
 /** Another family is another record and another set of sessions, so the chat,
  * the picture and the title all start again on it. Opening on a family only
@@ -661,8 +739,29 @@ function upOne(): void {
 function screen(which: Screen): void {
   $("chat-screen").hidden = which !== Screen.Chat;
   $("menu-screen").hidden = which !== Screen.Menu;
-  document.querySelector<HTMLElement>(".titlerow")!.hidden = which === Screen.Menu;
+  $("task-screen").hidden = which !== Screen.Task;
+  $("coding-screen").hidden = which !== Screen.Coding;
+  $("rules-screen").hidden = which !== Screen.Rules;
+  document.querySelector<HTMLElement>(".titlerow")!.hidden =
+    which === Screen.Menu || which === Screen.Rules;
+  // The drawer only stands beside the thread on the coding screen, so only
+  // that screen widens the app past a phone.
+  document.querySelector<HTMLElement>(".app")!.classList.toggle(
+    "wide",
+    which === Screen.Coding,
+  );
+  // Done and the guidelines belong to the coding screen; the back arrow also
+  // stands on the one task card, which is where Done returns to.
+  $("coding-done").hidden = which !== Screen.Coding;
+  $("coding-info").hidden = which !== Screen.Coding;
+  $("coding-back").hidden = !CODING_SCREENS.includes(which);
+  $("account").hidden = which === Screen.Rules;
+  $("sessions-open").hidden = false;
+  here = which;
 }
+
+/** Which screen is up, so the title row and the back arrow say the same. */
+let here = Screen.Chat;
 
 /** The name of the picture is also the way back to it: tapping it puts the
  * picture down, the same as tapping empty ground on it. */
@@ -770,6 +869,20 @@ if (import.meta.env.PROD && "serviceWorker" in navigator)
   window.addEventListener("load", () =>
     navigator.serviceWorker.register("/personal/sw.js", { scope: "/personal/" }),
   );
+
+// A coder opens on their one task rather than on the chat (R-0265, frame f1).
+// A reader with nothing on the table never sees it, and a server without the
+// review tables leaves the chat exactly as it was.
+void api
+  .tasks()
+  .then((found) => {
+    sessions.task(found.task ? "Your coding task" : null);
+    if (found.task) void openTask();
+  })
+  .catch((error) => {
+    if (!(error instanceof api.Failed)) throw error;
+    console.warn(error.message);
+  });
 
 // The page is only served to a signed-in reader, so this is the moment to ask
 // about a key on this device, and then about the home screen — one card at a

@@ -25,9 +25,11 @@ export interface SessionsHandlers {
   onPick(session: Session): void;
   /** The app moved to another family. */
   onDiagram(diagram: Diagram, how: { switched: boolean }): void;
-  /** The sessions as last read, so a moment tracing back to the one that coded
+  /** The sessions as last read, so an event tracing back to the one that coded
    * it can name it. */
   onList(sessions: Session[]): void;
+  /** The coder's one task, reached from the foot of the sheet (R-0265). */
+  onTask(): void;
 }
 
 const untitled = (session: Session) => !session.title?.trim();
@@ -73,12 +75,14 @@ export class Sessions {
               aria-label="Search sessions and families">
      </div>
      <div class="fs-body"></div>
-     <div class="fs-foot"><button class="fs-new" type="button"></button></div>`,
+     <div class="fs-foot"><button class="fs-new" type="button"></button>
+       <button class="fs-task" type="button" hidden></button></div>`,
   );
 
   private body: HTMLElement;
   private search: HTMLInputElement;
   private newButton: HTMLButtonElement;
+  private taskButton: HTMLButtonElement;
 
   constructor(
     private button: HTMLElement,
@@ -93,8 +97,15 @@ export class Sessions {
     this.body = this.sheet.querySelector<HTMLElement>(".fs-body")!;
     this.search = this.sheet.querySelector<HTMLInputElement>(".fs-search input")!;
     this.newButton = this.sheet.querySelector<HTMLButtonElement>(".fs-new")!;
+    this.taskButton = this.sheet.querySelector<HTMLButtonElement>(".fs-task")!;
     this.wire();
     dragScroll(this.body);
+  }
+
+  /** The way to the coding task, when the signed-in coder has one. */
+  task(label: string | null): void {
+    this.taskButton.hidden = label === null;
+    this.taskButton.textContent = label ?? "";
   }
 
   /** The record the sheet lists, re-read whenever the chat has moved on. The
@@ -151,6 +162,10 @@ export class Sessions {
       this.render();
     });
     this.newButton.addEventListener("click", () => void this.start());
+    this.taskButton.addEventListener("click", () => {
+      this.lower();
+      this.handlers.onTask();
+    });
     this.body.addEventListener("click", (e) => this.onBodyClick(e));
     this.pressToRename();
     this.swipeForActions();

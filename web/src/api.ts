@@ -1,5 +1,10 @@
 import type {
   Account,
+  Coding,
+  CodingThread,
+  Rule,
+  Scribed,
+  Tasks,
   Diagram,
   InteractionKind,
   ItemKind,
@@ -16,6 +21,8 @@ import type {
 } from "./types";
 
 const ROOT = "/personal";
+/** The review is its own door, beside the app's own (R-0296). */
+const REVIEW = "/review";
 
 /** How long the page waits for an answer before it tells the reader nothing
  * came back. A server that never answers must not leave a caret blinking. */
@@ -46,9 +53,18 @@ export class Failed extends Error {
 }
 
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
+  return send(method, ROOT + path, body);
+}
+
+/** The same request against the review's own endpoints. */
+async function ask<T>(method: string, path: string, body?: unknown): Promise<T> {
+  return send(method, REVIEW + path, body);
+}
+
+async function send<T>(method: string, url: string, body?: unknown): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(ROOT + path, {
+    response = await fetch(url, {
       method,
       headers: {
         "Content-Type": "application/json",
@@ -62,14 +78,20 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
     // running out. Anything else thrown here is a mistake in this code and has
     // to surface as itself rather than as the server being unreachable.
     if (!(error instanceof TypeError || error instanceof DOMException)) throw error;
-    throw new Failed(0, `${method} ${path}: ${error.message}`);
+    throw new Failed(0, `${method} ${url}: ${error.message}`);
   }
   if (!response.ok)
-    throw new Failed(response.status, `${method} ${path}: ${await response.text()}`);
+    throw new Failed(response.status, `${method} ${url}: ${await response.text()}`);
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
 }
 
-export const timeline = () => call<Timeline>("GET", "/timeline");
+/** The record the app is on, or another one the reader can open — which is how
+ * the coding screen shows the record it is being coded onto. */
+export const timeline = (diagramId?: number) =>
+  call<Timeline>(
+    "GET",
+    diagramId === undefined ? "/timeline" : `/timeline?diagram_id=${diagramId}`,
+  );
 
 /** One agent-loop turn. The coach answers with its words and, behind them, the
  * tool calls, the deltas already applied and the views it asked for. */
@@ -162,3 +184,31 @@ export const addPasskey = (credential: unknown) =>
 
 export const revokePasskey = (id: number) =>
   call<{ revoked: boolean }>("POST", `/passkeys/${id}/revoke`);
+
+/** The one thing to code now, and what is already finished (R-0265). */
+export const tasks = () => ask<Tasks>("GET", "/tasks");
+
+/** Starting a task is making your own coding of that cut; asking twice gives
+ * back the one you already have. */
+export const startCoding = (cutId: number) =>
+  ask<Coding>("POST", "/codings", { cut_id: cutId });
+
+export const codingThread = (codingId: number) =>
+  ask<CodingThread>("GET", `/codings/${codingId}/thread`);
+
+/** What the coder says one turn tells them happened. The scribe writes it into
+ * their record, or asks which person they mean. */
+export const scribe = (codingId: number, statementId: number, text: string) =>
+  ask<Scribed>("POST", `/codings/${codingId}/scribe`, {
+    statement_id: statementId,
+    text,
+  });
+
+/** Done: the coding is submitted for the meeting and cannot change (R-0271). */
+export const finishCoding = (codingId: number) =>
+  ask<Coding>("PATCH", `/codings/${codingId}`, { done_at: true });
+
+export const rules = () => ask<Rule[]>("GET", "/rules");
+
+export const flagRule = (id: number) =>
+  ask<Rule>("PATCH", `/rules/${id}`, { flag: true });

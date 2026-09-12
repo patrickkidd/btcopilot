@@ -305,3 +305,107 @@ export interface PasskeyCreationOptions {
   authenticatorSelection?: Record<string, string>;
   excludeCredentials?: { id: string; type: "public-key"; transports?: string[] }[];
 }
+
+/** ── The review ─────────────────────────────────────────────────────────
+ * Coding is stage one of reaching agreement: one task at a time, done blind,
+ * on the conversation up to the cut Patrick put on the table (R-0265, R-0267). */
+
+export enum TaskKind {
+  Code = "code",
+  Vote = "vote",
+}
+
+/** The one card on the coder's screen. It is never a list. */
+export interface Task {
+  kind: TaskKind;
+  cut_id: number;
+  coding_id: number | null;
+  meeting_date: string | null;
+  title: string;
+  detail: string;
+  /** False while the task is waiting on something, which is shown greyed. */
+  ready: boolean;
+}
+
+export interface FinishedTask {
+  coding_id: number;
+  cut_id: number;
+  title: string;
+  detail: string;
+}
+
+export interface Tasks {
+  task: Task | null;
+  done: FinishedTask[];
+}
+
+export interface Coding {
+  id: number;
+  cut_id: number;
+  diagram_id: number;
+  done_at: string | null;
+}
+
+/** One turn of the transcript, with what this coder has already written from
+ * it. Nobody else's coding is ever here (R-0242). */
+export interface CodingTurn {
+  id: number;
+  order: number;
+  who: string;
+  text: string;
+  lines: string[];
+  /** Before the last ratified cut: read it, but coding happens below it. */
+  above: boolean;
+}
+
+/** Where the last ratified cut ended, which is the faint hairline. */
+export interface Agreed {
+  order: number | null;
+  day: string;
+  ratified: string;
+}
+
+export interface CodingThread {
+  coding_id: number;
+  cut_id: number;
+  diagram_id: number;
+  done_at: string | null;
+  meeting_date: string | null;
+  session: string;
+  cut_day: string;
+  agreed: Agreed | null;
+  turns: CodingTurn[];
+}
+
+/** What the scribe did with the coder's words: the lines it wrote, or the one
+ * question it asks when it cannot tell which person is meant. */
+export interface Scribed {
+  lines: string[];
+  asked: string;
+  /** What the record now holds, so the picture lights it as the line lands. */
+  made: { kind: ItemKind; id: string }[];
+  turn_id: string;
+}
+
+export enum RuleSource {
+  Ai = "ai",
+  Migration = "migration",
+  Human = "human",
+}
+
+export interface RuleFlag {
+  user_id: number;
+  reason: string | null;
+  flagged_at: string;
+  closed_at?: string;
+}
+
+export interface Rule {
+  id: number;
+  text: string;
+  source: Record<string, unknown>;
+  drafted_by: RuleSource;
+  flags: RuleFlag[];
+  ratified_at: string | null;
+  retired_at: string | null;
+}

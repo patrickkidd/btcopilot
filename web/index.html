@@ -24,7 +24,12 @@
 <div class="app">
   <div class="titlerow">
     <button class="sn-back" id="settings-back" type="button" aria-label="back" hidden>&#8249;</button>
+    <button class="sn-back" id="coding-back" type="button" aria-label="back" hidden>&#8249;</button>
     <div class="ttl" id="title">Your family</div>
+    <button class="iconbtn" id="coding-info" type="button" aria-label="Coding guidelines" hidden>
+      <svg viewBox="0 0 22 22" width="22" height="22" aria-hidden="true"><circle cx="11" cy="11" r="9" fill="none" stroke="currentColor" stroke-width="1.5"></circle><circle cx="11" cy="6.6" r="1.15" fill="currentColor"></circle><rect x="10.1" y="9.4" width="1.8" height="7" rx="0.9" fill="currentColor"></rect></svg>
+    </button>
+    <button class="donebtn" id="coding-done" type="button" hidden>Done</button>
     <button class="avatar homescreen" id="homescreen" type="button" aria-label="Put Family Diagram on your home screen" hidden>
       <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="10" height="18" rx="2"/><path d="M9.5 17.5h3"/><path d="M11 6.5v6M8.8 10.3 11 12.5l2.2-2.2"/></svg>
     </button>
@@ -77,6 +82,47 @@
     <div class="foot">
       <button class="addbtn" id="menu-add" type="button">+ Add event</button>
     </div>
+  </div>
+
+  <div class="screen" id="task-screen" hidden>
+    <div class="fs-body" id="task-body"></div>
+  </div>
+
+  <div class="split" id="coding-screen" hidden>
+    <div class="screen">
+      <div class="pic">
+        <div class="pin-label"><span id="coding-crumb">Family timeline</span></div>
+        <div class="view" id="coding-view"></div>
+        <div class="caption" id="coding-caption"></div>
+      </div>
+      <div class="chat" id="coding-chat"></div>
+      <div class="inbar" id="coding-inbar">
+        <div class="field" id="coding-composer" contenteditable="true" role="textbox"
+             aria-label="Say what this line tells you happened"
+             data-ph="tap a line, then say what happened"></div>
+        <button class="send" id="coding-send" type="button" aria-label="Send"><span>&#8593;</span></button>
+      </div>
+    </div>
+    <aside class="pinned">
+      <div class="tabs" id="coding-tabs" role="tablist">
+        <button class="tab on" id="coding-tab-events" type="button" role="tab" aria-selected="true">Events</button>
+        <button class="tab" id="coding-tab-people" type="button" role="tab" aria-selected="false">People</button>
+      </div>
+      <div class="search">
+        <input id="coding-search" type="text" placeholder="Search events" aria-label="Search events">
+      </div>
+      <div class="scroller" id="coding-rows"></div>
+    </aside>
+  </div>
+
+  <div class="screen" id="rules-screen" hidden>
+    <div class="ovbar">
+      <button class="backbtn" id="rules-close" type="button" aria-label="back">
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M13.5 4.5 7 11l6.5 6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      </button>
+      <span class="ovt">Coding guidelines</span>
+    </div>
+    <div class="scroller" id="rules-body"></div>
   </div>
 
   <div class="signedout" id="signedout" hidden>
