@@ -297,6 +297,7 @@ class Person:
     name: str | None = None
     last_name: str | None = None
     gender: PersonKind | None = None
+    notes: str | None = None
     parents: int | None = None
     confidence: float | None = None  # PDP
 

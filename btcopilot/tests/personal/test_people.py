@@ -47,7 +47,13 @@ def test_changing_someone_keeps_their_id(web, family):
         json={"name": "Wren", "last_name": "Ellis"},
         headers={"X-CSRFToken": token},
     ).get_json()
-    assert changed == {"id": 1, "name": "Wren", "last_name": "Ellis", "gender": "female"}
+    assert changed == {
+        "id": 1,
+        "name": "Wren",
+        "last_name": "Ellis",
+        "gender": "female",
+        "notes": None,
+    }
 
 
 def test_a_field_the_record_has_no_room_for_is_refused(web, family):

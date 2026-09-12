@@ -34,6 +34,7 @@ from btcopilot.schema import (
     asdict,
 )
 from btcopilot.personal.models import Discussion, DiscussionStatus, Statement, Speaker, SpeakerType
+from btcopilot.personal.discussions import transcript_statements
 from btcopilot.training.models import Feedback
 from btcopilot.training.utils import get_breadcrumbs, get_auditor_id, get_discussion_breadcrumbs
 
@@ -138,26 +139,9 @@ def _create_assembly_ai_transcript(data: dict):
     speakers_map = {}
 
     if transcript_data.get("utterances"):
-        # Create speakers and statements from utterances
-        for order, utterance in enumerate(transcript_data["utterances"]):
-            speaker_label = utterance.get("speaker", "Unknown")
-            if speaker_label not in speakers_map:
-                speaker = Speaker(
-                    discussion_id=discussion.id,
-                    name=speaker_label,
-                    type=SpeakerType.Subject,  # Default to Subject
-                )
-                db.session.add(speaker)
-                db.session.flush()
-                speakers_map[speaker_label] = speaker
-
-            statement = Statement(
-                discussion_id=discussion.id,
-                speaker_id=speakers_map[speaker_label].id,
-                text=utterance.get("text", ""),
-                order=order,  # Use enumerate order for reliable sorting
-            )
-            db.session.add(statement)
+        speakers_map = transcript_statements(
+            discussion, transcript_data["utterances"], {}
+        )
     else:
         # No speaker diarization, create single speaker with full text
         speaker = Speaker(

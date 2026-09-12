@@ -8,6 +8,7 @@ from flask import jsonify, request
 
 from btcopilot import auth
 from btcopilot.personal.routes import bp
+from btcopilot.personal.licence import professional
 from btcopilot.personal.routes.diagrams import diagrams_payload
 from btcopilot.extensions import db
 from btcopilot.pro.models.preferences import PrefKey
@@ -67,6 +68,7 @@ def account():
             "email": user.username,
             "sign_in_method": SignInMethod.Password,
             "plan": PLAN_PLACEHOLDER,
+            "pro": professional(user),
             "diagrams": diagrams_payload(user),
             "licenses": [
                 {

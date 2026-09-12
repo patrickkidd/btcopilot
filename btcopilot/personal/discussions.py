@@ -2,10 +2,18 @@
 session."""
 
 
+import datetime
+
 from btcopilot import auth, diagramjson
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram
-from btcopilot.personal.models import Discussion, Speaker, SpeakerType
+from btcopilot.personal.models import (
+    Discussion,
+    DiscussionKind,
+    Speaker,
+    SpeakerType,
+    Statement,
+)
 
 def create_discussion(data: dict, diagram: Diagram | None = None) -> Discussion:
     """A caller that knows which diagram the session belongs on says so; the
@@ -71,3 +79,78 @@ def sync_chat_speakers(discussion: Discussion):
         subject_name = diagram_data.subject_display_name()
         if user_speaker.name != subject_name:
             user_speaker.name = subject_name
+
+
+def transcript_voices(utterances: list[dict]) -> list[dict]:
+    """The voices a diarized transcript holds, each with the first thing it
+    says — which is what the reader is shown when saying who is who."""
+    found: dict[str, dict] = {}
+    for utterance in utterances:
+        label = utterance.get("speaker", "Unknown")
+        if label not in found:
+            found[label] = {"label": label, "said": utterance.get("text", "")}
+    return list(found.values())
+
+
+def transcript_statements(
+    discussion: Discussion, utterances: list[dict], voices: dict[str, dict]
+) -> dict[str, Speaker]:
+    """Turn a diarized transcript into the discussion's speakers and
+    statements. `voices` says what each voice label is; a label the caller did
+    not name is a subject called by its own label."""
+    speakers: dict[str, Speaker] = {}
+    for order, utterance in enumerate(utterances):
+        label = utterance.get("speaker", "Unknown")
+        if label not in speakers:
+            said = voices.get(label, {})
+            speaker = Speaker(
+                discussion_id=discussion.id,
+                name=said.get("name") or label,
+                type=SpeakerType(said.get("type", SpeakerType.Subject)),
+                person_id=said.get("person_id"),
+            )
+            db.session.add(speaker)
+            db.session.flush()
+            speakers[label] = speaker
+        db.session.add(
+            Statement(
+                discussion_id=discussion.id,
+                speaker_id=speakers[label].id,
+                text=utterance.get("text", ""),
+                order=order,
+            )
+        )
+    return speakers
+
+
+def create_recording(
+    diagram: Diagram,
+    utterances: list[dict],
+    voices: dict[str, dict],
+    title: str,
+    date: datetime.date | None,
+) -> Discussion:
+    """A recorded session read into the record as a conversation like any other
+    (R-0267). The clinician's voice becomes the coach's side of the thread, so
+    the thread reads the way a chat session does and can be coded."""
+    discussion = Discussion(
+        user_id=auth.current_user().id,
+        diagram_id=diagram.id,
+        title=title,
+        title_set_by_user=True,
+        kind=DiscussionKind.Recording,
+        discussion_date=date,
+    )
+    db.session.add(discussion)
+    db.session.flush()
+    speakers = transcript_statements(discussion, utterances, voices)
+    expert = next((s for s in speakers.values() if s.type == SpeakerType.Expert), None)
+    subject = next(
+        (s for s in speakers.values() if s.type == SpeakerType.Subject), None
+    )
+    if expert is None or subject is None:
+        raise ValueError("A recording needs one clinician voice and one client voice")
+    discussion.chat_ai_speaker_id = expert.id
+    discussion.chat_user_speaker_id = subject.id
+    db.session.commit()
+    return discussion

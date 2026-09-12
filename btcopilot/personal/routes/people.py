@@ -16,7 +16,7 @@ from btcopilot.personal.models import Author
 from btcopilot.personal.routes import asked_diagram, bp, writable_diagram
 from btcopilot.schema import ItemKind, PersonKind
 
-WRITABLE = ("name", "last_name", "gender")
+WRITABLE = ("name", "last_name", "gender", "notes")
 
 
 def _payload(person: dict) -> dict:
@@ -30,7 +30,7 @@ def _fields(body: dict) -> dict:
     values = {key: body[key] for key in WRITABLE if key in body}
     if values.get("gender") is not None:
         values["gender"] = PersonKind(values["gender"]).value
-    for key in ("name", "last_name"):
+    for key in ("name", "last_name", "notes"):
         if isinstance(values.get(key), str) and not values[key].strip():
             values[key] = None
     return values

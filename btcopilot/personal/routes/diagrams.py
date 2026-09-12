@@ -3,10 +3,11 @@ granted. One resource per table, so the account page, the settings stack and the
 family switcher all read the same list rather than each growing an endpoint of
 its own."""
 
-from flask import abort, jsonify
+from flask import abort, jsonify, request
 
 import btcopilot
-from btcopilot import auth
+from btcopilot import auth, diagramjson
+from btcopilot.personal.licence import require_professional
 from btcopilot.personal.routes import bp, last_activity
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion
@@ -71,6 +72,24 @@ def diagrams_payload(user) -> list[dict]:
 @bp.route("/diagrams")
 def diagram_index():
     return jsonify(diagrams_payload(auth.current_user()))
+
+
+@bp.route("/diagrams", methods=["POST"])
+def diagram_create():
+    """A new case: an empty record the app is put on straight away, so the
+    title row names it before anything is said into it. Only a professional
+    keeps several records, so only a professional can make one (R-0285)."""
+    require_professional()
+    user = auth.current_user()
+    name = (request.get_json().get("name") or "").strip()
+    if not name:
+        raise ValueError("A case needs a name")
+    made = Diagram(user_id=user.id, name=name, data=diagramjson.dumps({}))
+    db.session.add(made)
+    db.session.flush()
+    user.current_diagram_id = made.id
+    db.session.commit()
+    return jsonify(diagram_payload(made, user)), 201
 
 
 @bp.route("/diagrams/<int:diagram_id>/select", methods=["POST"])

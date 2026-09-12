@@ -141,6 +141,7 @@ from btcopilot.personal.routes import (  # noqa: E402  bp must exist first
     migrate,
     people,
     play,
+    recordings,
     sessions,
     settings,
     web,

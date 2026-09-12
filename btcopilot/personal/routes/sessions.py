@@ -17,7 +17,8 @@ from btcopilot.personal.routes import (
 from btcopilot.personal.routes.diagrams import readable
 from btcopilot.extensions import db
 from btcopilot.personal.coachturn import CoachTurn
-from btcopilot.personal.models import Discussion, StatementKind
+from btcopilot.personal.licence import require_professional
+from btcopilot.personal.models import Discussion, DiscussionKind, StatementKind
 from btcopilot.personal.discussions import (
     create_discussion,
     sync_chat_speakers,
@@ -32,6 +33,12 @@ def session_payload(discussion: Discussion) -> dict:
         "title_set_by_user": discussion.title_set_by_user,
         "last_activity": last_activity(discussion).isoformat(),
         "message_count": len(discussion.statements),
+        "kind": DiscussionKind(discussion.kind).value,
+        "date": (
+            discussion.discussion_date.isoformat()
+            if discussion.discussion_date
+            else None
+        ),
     }
 
 
@@ -91,8 +98,22 @@ def session_index():
 @bp.route("/sessions", methods=["POST"])
 def session_create():
     """A new session belongs to the diagram the app is on, not to whichever one
-    happens to be free."""
-    return jsonify(session_payload(create_discussion({}, writable_diagram()))), 201
+    happens to be free. A note is a session of its own, which only a
+    professional starts (R-0281); a recording arrives by its own route because
+    it carries a transcript with it."""
+    body = request.get_json(silent=True) or {}
+    unknown = set(body) - {"kind"}
+    if unknown:
+        raise ValueError(f"Unknown session field(s): {', '.join(sorted(unknown))}")
+    kind = DiscussionKind(body.get("kind", DiscussionKind.Chat))
+    if kind is DiscussionKind.Recording:
+        raise ValueError("A recording is created from its transcript")
+    if kind is DiscussionKind.Note:
+        require_professional()
+    made = create_discussion({}, writable_diagram())
+    made.kind = kind
+    db.session.commit()
+    return jsonify(session_payload(made)), 201
 
 
 @bp.route("/sessions/<int:session_id>")

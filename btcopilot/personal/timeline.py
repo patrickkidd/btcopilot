@@ -593,6 +593,7 @@ def build_timeline(data: DiagramData) -> dict:
                 "name": _person_label(p),
                 "last_name": p.get("last_name"),
                 "gender": _enum_val(p.get("gender")),
+                "notes": p.get("notes"),
                 "primary": bool(p.get("primary")),
                 # when someone was born is an event about them, not a field on
                 # them, so the list is handed the date its rows are ordered by

@@ -11,6 +11,7 @@ from btcopilot.personal.routes import bp, current_session, diagram
 from btcopilot.personal.routes.diagrams import readable
 from btcopilot.personal.routes.sessions import session_payload, statements_payload
 from btcopilot.personal import record
+from btcopilot.personal.licence import professional
 from btcopilot.personal.timeline import build_timeline
 from btcopilot.schema import DiagramData
 
@@ -37,6 +38,7 @@ def _page() -> str:
             "last_name": user.last_name,
             "username": user.username,
             "admin": user.has_role(btcopilot.ROLE_ADMIN),
+            "pro": professional(user),
         },
         "session": session_payload(discussion) if discussion else None,
         "statements": statements_payload(discussion) if discussion else [],
