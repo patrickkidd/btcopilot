@@ -104,6 +104,12 @@ export class Coding {
     return this.thread;
   }
 
+  /** A coding that has been submitted cannot be added to (R-0271), which is
+   * how the ballot reads it: the conversation and what was written from it. */
+  finished(): boolean {
+    return this.thread?.done_at != null;
+  }
+
   /** Done asks once, in a sheet, and says where the coding goes (R-0271). */
   confirm(): void {
     const thread = this.thread;

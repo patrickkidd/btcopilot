@@ -807,7 +807,11 @@ function screen(which: Screen): void {
   );
   // Done and the guidelines belong to the coding screen; the back arrow also
   // stands on the one task card, which is where Done returns to.
-  $("coding-done").hidden = which !== Screen.Coding;
+  // A submitted coding is read, not added to: no Done and nothing to type
+  // into (R-0271). The ballot opens the transcript that way.
+  const writing = which === Screen.Coding && !coding.finished();
+  $("coding-done").hidden = !writing;
+  $("coding-inbar").hidden = !writing;
   $("coding-info").hidden = which !== Screen.Coding;
   $("coding-back").hidden = !CODING_SCREENS.includes(which);
   $("account").hidden = which === Screen.Rules;
