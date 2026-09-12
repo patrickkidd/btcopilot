@@ -1,0 +1,92 @@
+"""The scribe writes what a coder says, adding the people they name (R-0270)."""
+
+import re
+
+from mock import patch
+
+from btcopilot.personal.coachmodel import ModelTurn, ToolCall
+from btcopilot.personal.models import Change
+from btcopilot.review import adapter
+from btcopilot.tests.review.conftest import coded, person
+
+
+class Scripted:
+    """A model that makes the calls it was given, one turn at a time, and ends
+    in words. `{person}` stands for the id the record just handed back."""
+
+    def __init__(self, *steps, said=""):
+        self.steps = list(steps)
+        self.said = said
+
+    def turn(self, system, messages, tools):
+        if False:
+            yield
+        if not self.steps:
+            return ModelTurn(text=self.said)
+        calls = [
+            ToolCall(id=f"call-{i}", name=name, args=self._filled(args, messages))
+            for i, (name, args) in enumerate(self.steps.pop(0))
+        ]
+        return ModelTurn(calls=calls, blocks=[])
+
+    def _filled(self, args, messages) -> dict:
+        return {
+            key: self._added(messages) if value == "{person}" else value
+            for key, value in args.items()
+        }
+
+    def _added(self, messages) -> int:
+        for message in reversed(messages):
+            for block in message["content"]:
+                found = re.search(r"Added person (\d+)", str(block.get("content")))
+                if found:
+                    return int(found.group(1))
+        raise AssertionError("no person was added for the event to be about")
+
+
+def scribe(client, coding, statement, model, said="what happened"):
+    with patch.object(adapter, "coach_model", return_value=model):
+        return client.post(
+            f"/review/codings/{coding.id}/scribe",
+            json={"statement_id": statement.id, "text": said},
+        )
+
+
+def test_adds_the_person_the_coder_names(coder, cut, turns):
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted(
+        [("edit_person", {"name": "James Cooper"})],
+        [("edit_event", {"kind": "moved", "date": "1971-01-01", "person": "{person}"})],
+    )
+    response = scribe(
+        coder, coding, turns[0], model, "James Cooper moved to Ohio in 1971"
+    )
+    assert response.status_code == 200
+    assert response.json["asked"] == ""
+
+    record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
+    assert [p["name"] for p in record["people"]] == ["Marcus", "James Cooper"]
+    assert [(e["kind"], adapter.date_text(e["dateTime"])) for e in record["events"]] == [
+        ("moved", "1971-01-01")
+    ]
+    changes = Change.query.filter_by(diagram_id=coding.diagram_id).all()
+    assert [c.statement_id for c in changes] == [turns[0].id] * len(changes)
+    assert len(changes) == 2
+
+
+def test_asks_when_two_people_could_be_meant(coder, cut, turns):
+    coding = coded(
+        coder.user,
+        cut,
+        {"people": [person(1, "Marcus"), person(2, "Delphine")]},
+        done=False,
+    )
+    model = Scripted(said="Do you mean Marcus or Delphine?")
+    response = scribe(coder, coding, turns[0], model, "he moved in 1971")
+    assert response.status_code == 200
+    assert response.json["asked"] == "Do you mean Marcus or Delphine?"
+    assert response.json["lines"] == []
+
+    record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
+    assert record.get("events") in (None, [])
+    assert Change.query.filter_by(diagram_id=coding.diagram_id).count() == 0
