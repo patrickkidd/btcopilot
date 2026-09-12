@@ -1542,6 +1542,34 @@ button { font-family: inherit; }
 .row .untitled { color: var(--faint); }
 /* a title someone gave by hand, so the coach's own titles read apart from it */
 .pencil { margin-left: 4px; font-size: 13px; color: var(--faint); }
+/* a session that is not a chat says which kind it is, because the list mixes
+   notes, recordings and chats and only the label tells them apart (R-0281) */
+.kindtag {
+  margin-left: 6px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--tint);
+  font: 500 11px/16px var(--mono);
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: 1px;
+}
+/* the answer a row is asking for, typed into the row itself: the date and the
+   title of a recording, on the side its value sits on */
+.row.side input.rwhen {
+  flex: none;
+  width: 44%;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--data);
+  font: 400 15px/1.3 var(--sans);
+  text-align: right;
+}
+.row.side .rwhen.said { color: var(--data); }
 .row input.rename {
   width: 100%;
   padding: 1px 6px;

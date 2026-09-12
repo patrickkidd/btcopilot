@@ -4,6 +4,7 @@ import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { shortDate } from "./when";
 import { addPasskey, available, deviceWords } from "./passkey";
+import { PRO, RECORD, RECORDS, Records } from "./pro";
 import {
   Mode,
   Proactive,
@@ -351,7 +352,7 @@ export class Settings {
       ]),
       this.group([
         this.pushRow(
-          "Your diagrams",
+          PRO ? Records : "Your diagrams",
           String(account.diagrams.length),
           Page.Diagrams,
         ),
@@ -523,12 +524,14 @@ export class Settings {
       box.append(row);
     }
 
+    if (PRO) box.append(this.newCaseRow());
+
     if (account.diagrams.length >= SEARCH_AT) {
       const wrap = el("div", "sn-srch");
       const field = document.createElement("input");
       field.type = "search";
-      field.placeholder = "Search diagrams";
-      field.setAttribute("aria-label", "Search diagrams");
+      field.placeholder = `Search ${RECORDS}`;
+      field.setAttribute("aria-label", `Search ${RECORDS}`);
       field.addEventListener("input", () => {
         const query = field.value.trim().toLowerCase();
         for (const row of [...box.children] as HTMLElement[])
@@ -542,13 +545,46 @@ export class Settings {
         el(
           "div",
           "sn-hint",
-          account.diagrams.length
-            ? "One family, one record — it grows as you talk."
-            : "No diagrams yet.",
+          PRO
+            ? "Each case has its own sessions and its own picture."
+            : account.diagrams.length
+              ? "One family, one record — it grows as you talk."
+              : "No diagrams yet.",
         ),
       );
     }
-    return { title: "Your diagrams", pane };
+    return { title: PRO ? Records : "Your diagrams", pane };
+  }
+
+  /** A new case: an empty record the app is put on straight away, so the title
+   * row names it before anything is said into it (R-0243). */
+  private newCaseRow(): HTMLElement {
+    const row = el("div", "sn-row push");
+    const label = el("div", "sn-lbl", `+ new ${RECORD}`);
+    row.append(label, el("div", "sn-chev", "\u203a"));
+    row.addEventListener("click", () => {
+      if (row.querySelector("input")) return;
+      const field = document.createElement("input");
+      field.className = "rename";
+      field.placeholder = `What is this ${RECORD} called?`;
+      label.replaceChildren(field);
+      field.focus({ preventScroll: true });
+      field.addEventListener("keydown", (e) => {
+        const key = (e as KeyboardEvent).key;
+        if (key === "Enter") void this.addCase(field.value.trim());
+        else if (key === "Escape") label.textContent = `+ new ${RECORD}`;
+      });
+    });
+    return row;
+  }
+
+  private async addCase(name: string): Promise<void> {
+    if (!name) return;
+    const made = await api.newDiagram(name);
+    await this.load();
+    this.close();
+    this.handlers.onDiagram(made, { switched: true });
+    toast(`Now on ${made.name}`);
   }
 
   /** Put the app on another family. Everything the app shows is about one

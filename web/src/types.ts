@@ -65,6 +65,8 @@ export interface Person {
   name: string;
   last_name: string | null;
   gender: string | null;
+  /** What the desktop app has always kept on a person, and keeps here. */
+  notes: string | null;
   primary: boolean;
   /** When they were born, which the record holds as an event about them
    * rather than a field on them. Null when it holds none. */
@@ -226,9 +228,42 @@ export interface PlayReply {
 
 /** A session is a Discussion. The sheet lists them by recency; the coach titles
  * one after the first exchange and a hand-given title replaces that. */
+/** One line of a transcript as the transcription service returns it: which
+ * voice said it, and the words. */
+export interface Utterance {
+  speaker: string;
+  text: string;
+}
+
+/** A voice in a recording before the reader has said who it is: its label and
+ * the first thing it said. */
+export interface Voice {
+  label: string;
+  said: string;
+}
+
+/** Who a voice turns out to be. The clinician's lines become the coach's side
+ * of the thread; the client's become the reader's. */
+export enum VoiceRole {
+  Clinician = "expert",
+  Client = "subject",
+}
+
+/** A session is a chat with the coach, a recording read in, or a note the
+ * clinician made about the case after the fact (R-0281). */
+export enum SessionKind {
+  Chat = "chat",
+  Recording = "recording",
+  Note = "note",
+}
+
 export interface Session {
   id: number;
   title: string | null;
+  kind: SessionKind;
+  /** The day the session happened, which a recording carries and a chat does
+   * not. */
+  date: string | null;
   /** A hand-given title, which the coach will not overwrite and the row marks
    * with a pencil. */
   title_set_by_user: boolean;
@@ -256,6 +291,8 @@ export interface Account {
   plan: string;
   diagrams: Diagram[];
   licenses: { id: number; policy: string; status: string }[];
+  /** A professional licence: cases, recordings and notes (R-0237). */
+  pro: boolean;
 }
 
 export enum Proactive {

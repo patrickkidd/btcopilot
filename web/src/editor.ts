@@ -5,6 +5,11 @@ import type { Person, TimelineEvent } from "./types";
 /** The event editor, markup unchanged from the page this replaces: it is behind
  * the menu, off the main journey, and is not being redesigned (R-0069). */
 
+/** Notes are a place to write something you are not ready to put in the
+ * record, so the coach leaves them alone unless it is asked (R-0281). */
+const NOTES_HINT =
+  "Notes stay with this and are not read back to you in the thread unless you ask for them.";
+
 export enum EventKind {
   Shift = "shift",
   Birth = "birth",
@@ -184,7 +189,8 @@ export function openEditor(
       chips("child", persons(true), event?.child ?? "") +
       `</div><div class="sec">Words</div>` +
       field("Summary", "description", event?.description, "text") +
-      field("Details", "notes", event?.notes, "text") +
+      field("Notes", "notes", event?.notes, "text") +
+      `<div class="hint">${NOTES_HINT}</div>` +
       field("Where", "location", event?.location) +
       `<div class="sec">When</div>` +
       field("When", "dateTime", event?.dateTime, "date") +
@@ -391,6 +397,8 @@ export function openPersonEditor(
         plain(Object.values(PersonKind)),
         person?.gender ?? PersonKind.Unknown,
       ) +
+      field("Notes", "notes", person?.notes, "text") +
+      `<div class="hint">${NOTES_HINT}</div>` +
       `<div class="sec">When</div>` +
       `<div class="hint">Add birth and death events by chatting with the coach.</div>` +
       life
@@ -435,6 +443,7 @@ export function openPersonEditor(
         {
           name: text("name"),
           last_name: text("last_name"),
+          notes: text("notes"),
           gender,
         } as Partial<Person>,
         diagramId,

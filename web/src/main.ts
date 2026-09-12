@@ -31,6 +31,7 @@ import { toast } from "./toast";
 import { ASK_MARK, IN_CHAT_MARK, LIST_BUTTON, PLAY_MARK, tok } from "./tokens";
 import { offerHomeScreen, showHomeScreen, homeScreenBadge } from "./homescreen";
 import { offerPasskey } from "./passkey";
+import { PRO, WIDE } from "./pro";
 import { shortDate } from "./when";
 import {
   ChipKind,
@@ -55,7 +56,7 @@ declare global {
   interface Window {
     BOOTSTRAP: {
       /** Patrick alone puts conversations on the table and opens the vote. */
-      user: { username: string; admin: boolean } | null;
+      user: { username: string; admin: boolean; pro: boolean } | null;
       diagram: { id: number; name: string } | null;
       session: { id: number } | null;
       statements: Statement[];
@@ -663,8 +664,32 @@ function actions(): void {
 }
 
 function wireList(): void {
-  $("menu-open").addEventListener("click", () => screen(Screen.Menu));
+  $("menu-open").addEventListener("click", () => {
+    if (pinned()) $("menu-search").focus({ preventScroll: true });
+    else screen(Screen.Menu);
+  });
 }
+
+/** A wider window stands the events and people drawer beside the thread
+ * instead of sliding it over, for a professional (R-0243). The one drawer
+ * moves between the full screen and the pinned column, so both carry the same
+ * list, the same search and the same editors rather than two of each. */
+const wide = window.matchMedia(WIDE);
+
+const pinned = () => PRO && wide.matches;
+
+const DRAWER = ["menu-tabs", "menu-searchrow", "menu-body", "menu-foot"];
+
+function pinDrawer(): void {
+  const on = pinned();
+  $("chat-drawer").hidden = !on;
+  const host = on ? $("chat-drawer") : $("menu-screen");
+  for (const id of DRAWER) host.append($(id));
+  if (on && here === Screen.Menu) screen(Screen.Chat);
+  if (here === Screen.Chat) screen(Screen.Chat);
+}
+
+wide.addEventListener("change", () => pinDrawer());
 
 /** The board is its own level, and entering it is the one deliberate act that
  * changes the picture's height. It goes up before the coach's words are
@@ -832,7 +857,7 @@ function upOne(): void {
 /** The list is full screen with its own back button, so it takes the title row
  * over rather than stacking a second bar under it (ruling 2026-09-03 05:53). */
 function screen(which: Screen): void {
-  $("chat-screen").hidden = which !== Screen.Chat;
+  $("chat-split").hidden = which !== Screen.Chat;
   $("menu-screen").hidden = which !== Screen.Menu;
   $("task-screen").hidden = which !== Screen.Task;
   $("ballot-screen").hidden = which !== Screen.Ballot;
@@ -848,7 +873,7 @@ function screen(which: Screen): void {
   // that screen widens the app past a phone.
   document.querySelector<HTMLElement>(".app")!.classList.toggle(
     "wide",
-    which === Screen.Coding,
+    which === Screen.Coding || (which === Screen.Chat && pinned()),
   );
   // Done and the guidelines belong to the coding screen; the back arrow also
   // stands on the one task card, which is where Done returns to.
@@ -943,6 +968,8 @@ for (const [id, tab] of TABS)
 
 // the drawer changes tab on its own when one thing sends the reader to another
 menu.onTab = onTab;
+
+pinDrawer();
 
 for (const statement of window.BOOTSTRAP.statements) addStatement(statement);
 chat.toEnd();

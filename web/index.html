@@ -36,6 +36,7 @@
     <button class="avatar" id="account" type="button" aria-label="Account and settings"></button>
   </div>
 
+  <div class="split" id="chat-split">
   <div class="screen" id="chat-screen">
     <div class="pic">
       <div class="pin-label">
@@ -63,6 +64,8 @@
       <button class="send" id="send" type="button" aria-label="Send"><span>&#8593;</span></button>
     </div>
   </div>
+  <aside class="pinned" id="chat-drawer" hidden></aside>
+  </div>
 
   <div class="screen" id="menu-screen" hidden>
     <div class="ovbar">
@@ -75,11 +78,11 @@
       <button class="tab on" id="tab-events" type="button" role="tab" aria-selected="true">Events</button>
       <button class="tab" id="tab-people" type="button" role="tab" aria-selected="false">People</button>
     </div>
-    <div class="search">
+    <div class="search" id="menu-searchrow">
       <input id="menu-search" type="text" placeholder="Search events" aria-label="Search events">
     </div>
     <div class="scroller" id="menu-body"></div>
-    <div class="foot">
+    <div class="foot" id="menu-foot">
       <button class="addbtn" id="menu-add" type="button">+ Add event</button>
     </div>
   </div>

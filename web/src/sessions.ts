@@ -3,7 +3,9 @@ import { $, el, esc } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { clockTime, dayKey, groupLabel, whenText } from "./when";
-import type { Diagram, Session } from "./types";
+import { SessionKind, type Diagram, type Session } from "./types";
+import { PRO, RECORDS } from "./pro";
+import { Recording } from "./recording";
 
 /** The session door: the button beside the message box, and the searchable
  * bottom sheet it raises — the `family-sections` option the owner picked. Every
@@ -78,11 +80,13 @@ export class Sessions {
     "fs-sheet",
     `<div class="fs-handle"><div class="fs-grab"></div></div>
      <div class="fs-search">
-       <input type="search" placeholder="Search sessions and families"
-              aria-label="Search sessions and families">
+       <input type="search" placeholder="Search sessions and ${RECORDS}"
+              aria-label="Search sessions and ${RECORDS}">
      </div>
      <div class="fs-body"></div>
      <div class="fs-foot"><button class="fs-new" type="button"></button>
+       <button class="fs-new fs-upload" type="button" hidden>Upload a recording</button>
+       <button class="fs-new fs-note" type="button" hidden>+ new note</button>
        <button class="fs-task" type="button" hidden></button>
        <button class="fs-task fs-table" type="button" hidden>The table</button></div>`,
   );
@@ -90,8 +94,11 @@ export class Sessions {
   private body: HTMLElement;
   private search: HTMLInputElement;
   private newButton: HTMLButtonElement;
+  private uploadButton: HTMLButtonElement;
+  private noteButton: HTMLButtonElement;
   private taskButton: HTMLButtonElement;
   private tableButton: HTMLButtonElement;
+  private recording: Recording;
 
   constructor(
     private button: HTMLElement,
@@ -106,9 +113,17 @@ export class Sessions {
     this.body = this.sheet.querySelector<HTMLElement>(".fs-body")!;
     this.search = this.sheet.querySelector<HTMLInputElement>(".fs-search input")!;
     this.newButton = this.sheet.querySelector<HTMLButtonElement>(".fs-new")!;
+    this.uploadButton = this.sheet.querySelector<HTMLButtonElement>(".fs-upload")!;
+    this.noteButton = this.sheet.querySelector<HTMLButtonElement>(".fs-note")!;
     this.taskButton = this.sheet.querySelector<HTMLButtonElement>(".fs-task")!;
     this.tableButton = this.sheet.querySelector<HTMLButtonElement>(".fs-table")!;
     this.tableButton.hidden = !this.admin;
+    this.uploadButton.hidden = !PRO;
+    this.noteButton.hidden = !PRO;
+    this.recording = new Recording(this.overlay, (made) => {
+      this.current = made.id;
+      this.handlers.onPick(made);
+    });
     this.wire();
     dragScroll(this.body);
   }
@@ -179,6 +194,15 @@ export class Sessions {
       this.render();
     });
     this.newButton.addEventListener("click", () => void this.start());
+    // One sheet is up at a time: the upload sheet takes the sessions sheet's
+    // place rather than standing on top of it.
+    this.uploadButton.addEventListener("click", () => {
+      this.lower();
+      this.recording.pick();
+    });
+    this.noteButton.addEventListener("click", () =>
+      void this.start(undefined, SessionKind.Note),
+    );
     this.taskButton.addEventListener("click", () => {
       this.lower();
       this.handlers.onTask();
@@ -477,8 +501,10 @@ export class Sessions {
       `<div class="fs-fname">${esc(name)}</div>` +
       `<div class="fs-flast">last: ${esc(last ? summaryOf(last) : "nothing yet")}</div>` +
       `</div>` +
-      `<button class="fs-plus" type="button" data-family="${family.diagram.id}" ` +
-      `aria-label="New session with ${esc(name)}">+</button>` +
+      (PRO
+        ? ""
+        : `<button class="fs-plus" type="button" data-family="${family.diagram.id}" ` +
+          `aria-label="New session with ${esc(name)}">+</button>`) +
       `</div>`
     );
   }
@@ -515,6 +541,9 @@ export class Sessions {
       `<div class="rmain">` +
       `<div class="r1 rtitle">${title}` +
       (session.title_set_by_user ? `<span class="pencil">&#9998;</span>` : "") +
+      (session.kind === SessionKind.Chat
+        ? ""
+        : `<span class="kindtag">${esc(session.kind)}</span>`) +
       `</div>` +
       `<div class="r2">${esc(summaryOf(session))}</div>` +
       `</div>` +
@@ -536,7 +565,10 @@ export class Sessions {
    * empty sessions say nothing the first one does not. A new session can only
    * start on the family the app is on, because that is the diagram the coach
    * writes to. */
-  private async start(familyId?: number): Promise<void> {
+  private async start(
+    familyId?: number,
+    kind: SessionKind = SessionKind.Chat,
+  ): Promise<void> {
     let home = this.home();
     // The "+" on another family moves the app there first: the coach writes to
     // the diagram the app is on, so there is nowhere else to put the session.
@@ -555,7 +587,7 @@ export class Sessions {
       $("composer").focus({ preventScroll: true });
       return;
     }
-    const session = await api.newSession();
+    const session = await api.newSession(kind);
     if (home) home.sessions = [session, ...home.sessions];
     this.current = session.id;
     this.lower();

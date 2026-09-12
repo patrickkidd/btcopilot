@@ -23,11 +23,14 @@ import type {
   Reply,
   Result,
   Session,
+  SessionKind,
   Settle,
   Tally,
   Statement,
   Timeline,
   TimelineEvent,
+  Utterance,
+  Voice,
 } from "./types";
 
 const ROOT = "/personal";
@@ -171,7 +174,8 @@ export const sessionIndex = (diagramId?: number) =>
     diagramId === undefined ? "/sessions" : `/sessions?diagram_id=${diagramId}`,
   );
 
-export const newSession = () => call<Session>("POST", "/sessions");
+export const newSession = (kind?: SessionKind) =>
+  call<Session>("POST", "/sessions", kind ? { kind } : {});
 
 export const deleteSession = (id: number) =>
   call<void>("DELETE", `/sessions/${id}`);
@@ -194,6 +198,28 @@ export const diagrams = () => call<Diagram[]>("GET", "/diagrams");
  * billing fact and is never written by switching. */
 export const selectDiagram = (id: number) =>
   call<Diagram>("POST", `/diagrams/${id}/select`);
+
+/** A new case: an empty record the app is put on straight away (R-0243). */
+export const newDiagram = (name: string) =>
+  call<Diagram>("POST", "/diagrams", { name });
+
+/** The key the browser uploads a recording with, so the audio never passes
+ * through this server. */
+export const transcriptionKey = () =>
+  call<{ key: string }>("GET", "/transcription").then((r) => r.key);
+
+/** The voices a transcript holds, each with the first thing it said. */
+export const recordingVoices = (utterances: Utterance[]) =>
+  call<Voice[]>("POST", "/recordings/voices", { utterances });
+
+/** The point of no return: the thread exists after this and the coach can read
+ * it, so the voices are named before it is called. */
+export const newRecording = (body: {
+  utterances: Utterance[];
+  voices: Record<string, { type: string; name?: string; person_id?: number }>;
+  title: string;
+  date: string | null;
+}) => call<Session>("POST", "/recordings", body);
 
 /** The devices this account can sign in from without an emailed code. */
 export const passkeys = () =>
