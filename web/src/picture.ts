@@ -688,7 +688,7 @@ export class Picture {
       `<div class="ss about">` +
       (why ? `<p class="ab-why">${esc(why)}</p>` : "") +
       `<p class="ab-span">${esc(fullYears(cluster.start, cluster.end))} · ` +
-      `${moments.length} moment${moments.length === 1 ? "" : "s"}</p>` +
+      `${moments.length} event${moments.length === 1 ? "" : "s"}</p>` +
       `<ul class="ab-list">${rows}</ul></div>`;
     this.pin(this.host.scrollHeight);
   }
@@ -1114,7 +1114,7 @@ export class Picture {
     zoned.forEach((zone, i) => {
       hits +=
         `<button class="ss-hit" data-target="${Target.Zone}" data-index="${i}" ` +
-        `aria-label="moments around ${this.yearOf(zone.marks[0].event)}" ` +
+        `aria-label="events around ${this.yearOf(zone.marks[0].event)}" ` +
         `style="left:${zone.left.toFixed(1)}px;top:${wire - ZONE / 2}px;` +
         `width:${zone.width.toFixed(1)}px;height:${ZONE}px"></button>`;
     });

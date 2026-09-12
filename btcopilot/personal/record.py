@@ -473,7 +473,7 @@ def _twins(data: dict, deltas: list[dict]):
                 and _links(other) == _links(event)
             ):
                 raise Invalid(
-                    f"that moment is already event {other.get('id')}: change it "
+                    f"that event is already event {other.get('id')}: change it "
                     f"with edit_event(id={other.get('id')}) rather than adding it"
                 )
 

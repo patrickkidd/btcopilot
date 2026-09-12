@@ -53,7 +53,7 @@ NARRATE = (
     "That reply is a list of chips, not something you said. Write it again as "
     "sentences: name the people, say what happened in order and what it meant, "
     "and put each chip inside a sentence that is already talking about that "
-    "moment. Keep the same ids and the same events."
+    "event. Keep the same ids and the same events."
 )
 
 

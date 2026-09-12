@@ -567,7 +567,7 @@ function apply(outcome: Outcome): void {
 function selLabel(sel: Sel): string {
   if (sel.kind === SelKind.Event)
     return (
-      timeline.events.find((e) => String(e.id) === sel.id)?.label ?? "this moment"
+      timeline.events.find((e) => String(e.id) === sel.id)?.label ?? "this event"
     );
   if (sel.kind === SelKind.Cluster)
     return timeline.clusters.find((c) => c.id === sel.id)?.title ?? "this cluster";
