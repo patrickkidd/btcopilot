@@ -2170,19 +2170,41 @@ button { font-family: inherit; }
 .bub.line.sel { outline: 2px solid var(--move); outline-offset: 2px; }
 /* The coder's own words: a subordinate line under the bubble they tapped, on
  * the same side as it, with the scribe's edit lines beneath (R-0270). */
-.bub.said {
+.bub.said,
+.bub.coach.sub {
+  position: relative;
   align-self: flex-end;
-  max-width: 76%;
-  margin: -2px 10px 0 0;
-  padding: 6px 10px;
+  max-width: 72%;
+  margin-right: 14px;
+  border-radius: 12px;
+  border-top-right-radius: 3px;
+}
+.bub.said {
+  padding: 7px 11px;
   font: 400 15px/1.4 var(--sans);
   color: var(--ink);
-  background: transparent;
-  border: 0;
-  border-right: 3px solid var(--move);
-  border-radius: 0;
+  background: color-mix(in srgb, var(--data) 12%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--data) 35%, var(--line));
 }
-.bub.said.left { align-self: flex-start; margin: -2px 0 0 10px; border-right: 0; border-left: 3px solid var(--move); }
+/* the scribe's edit lines: the coach's own tool-call bubble, smaller and
+ * hung under the coder's words; a stem ties each to the one above it (C6) */
+.bub.coach.sub { padding: 4px 10px 6px; }
+.bub.coach.sub .did { margin-top: 2px; }
+.bub.said::before,
+.bub.coach.sub::before {
+  content: "";
+  position: absolute;
+  right: 14px;
+  top: -11px;
+  width: 2px;
+  height: 10px;
+  background: color-mix(in srgb, var(--data) 35%, var(--line));
+}
+.bub.coach.sub::before { background: var(--line); }
+.bub.said.left,
+.bub.coach.sub.left { align-self: flex-start; margin: 0 0 0 14px; border-top-right-radius: 12px; border-top-left-radius: 3px; }
+.bub.said.left::before,
+.bub.coach.sub.left::before { right: auto; left: 14px; }
 
 /* the scribe asking instead of writing: the same edit line, in the asking
    colour */

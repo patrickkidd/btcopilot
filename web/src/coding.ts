@@ -264,8 +264,8 @@ export class Coding {
     }
     const turn = this.picked;
     this.composer.innerHTML = "";
-    const tapped = thread.turns.find((t) => t.id === turn);
-    this.after(turn, el("div", `bub said${tapped?.client ? "" : " left"}`, esc(said)), turn);
+    const side = this.side(turn);
+    this.after(turn, el("div", `bub said${side}`, esc(said)), turn);
     this.sending = true;
     let written;
     try {
@@ -273,7 +273,7 @@ export class Coding {
     } catch (error) {
       this.after(
         turn,
-        el("div", "bub coach", `<div class="did q">${esc(whatFailed(error))}</div>`),
+        el("div", `bub coach sub${side}`, `<div class="did q">${esc(whatFailed(error))}</div>`),
         turn,
       );
       // A scribe that stopped part way has still written that part.
@@ -285,7 +285,7 @@ export class Coding {
     const lines = written.asked
       ? `<div class="did q">${esc(written.asked)}</div>`
       : written.lines.map((line) => `<div class="did">${esc(line)}</div>`).join("");
-    this.after(turn, el("div", "bub coach", lines), turn);
+    this.after(turn, el("div", `bub coach sub${side}`, lines), turn);
     if (written.made.length) {
       await this.refresh();
       this.picture.light(written.made);
@@ -324,7 +324,12 @@ export class Coding {
       }
       this.list.append(this.bubble(turn));
       for (const line of turn.lines)
-        this.list.append(this.tagged(el("div", "bub coach", `<div class="did">${esc(line)}</div>`), turn.id));
+        this.list.append(
+          this.tagged(
+            el("div", `bub coach sub${this.side(turn.id)}`, `<div class="did">${esc(line)}</div>`),
+            turn.id,
+          ),
+        );
     }
     this.list.append(this.cutline(thread, true));
     this.paint();
@@ -346,6 +351,11 @@ export class Coding {
   private bubble(turn: CodingTurn): HTMLElement {
     const node = el("div", `bub line ${turn.client ? "user" : "coach"}`, esc(turn.text));
     return this.tagged(node, turn.id);
+  }
+
+  /** What hangs under a turn hangs on that turn's side of the thread. */
+  private side(turnId: number): string {
+    return this.thread?.turns.find((t) => t.id === turnId)?.client ? "" : " left";
   }
 
   private tagged(node: HTMLElement, turnId: number): HTMLElement {
