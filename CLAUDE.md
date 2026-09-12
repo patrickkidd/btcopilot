@@ -2,6 +2,29 @@
 
 Backend for Pro/Personal apps, training app, AI extraction system.
 
+## Owner corrections that bind every reply (2026-09-09)
+
+- **Never coin a term.** Say the thing in common words every time ("signing in with an email
+  code also creates the account", never "login-is-signup"). A phrase from a doc is not his term
+  unless he used it.
+- **He is Patrick (2026-09-11).** Never "the owner" in a document or a reply; it is ambiguous.
+- **Sandbox addresses use `turin`, never `turin.local` (2026-09-11).** The review app is
+  https://turin:8891/personal/.
+- **Every question mark is a question (2026-09-11).** Each "?" he types is covered somewhere,
+  explicitly or implicitly, never recited one by one and never repeated between the reply and
+  the drawing.
+- **Artifacts are UI drawings in the app's own style, never text documents (2026-09-11).** The
+  open decisions go on the drawing, one numbered list in one place, each self-contained with its
+  example, and are never repeated in the reply. The reply is a link and a few lines.
+- **No topic page, no dashboard, no audit page (2026-09-11).** Never generate or link a page
+  built from the register or the ledger; he will not read it.
+- **UI options with one-line descriptions, never a research project (2026-09-11).** Every turn
+  on a design topic shows him drawn options and says what each is. Captions are not forced
+  short: not verbose, but enough that every non-self-evident control is explained.
+- **Cost estimates are for the work, not for validation.** Squashing seven migrations is a few
+  tool calls, not an hour. Verify only what changed, once, at the cheapest level that proves it;
+  never re-verify before a merge is even in sight.
+
 ---
 
 ## Confidential Data Rules
@@ -44,6 +67,8 @@ runtime copy is needed, update this section.
 | Prompt engineering decisions | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) |
 | Prompt optimization process | [doc/PROMPT_OPTIMIZATION.md](doc/PROMPT_OPTIMIZATION.md) |
 | Bowen theory concepts | [CONTEXT.md](CONTEXT.md) |
+| Drawability — when the timeline picture may draw vs must ask (5 rules, ruled 2026-08-31) | [doc/DRAWABILITY.md](doc/DRAWABILITY.md) |
+
 | Diagram layout/rendering/SVG | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) |
 | F1 metrics, evaluation | [doc/F1_METRICS.md](doc/F1_METRICS.md) |
 | Chat flow, personal app AI | [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md) |
@@ -64,6 +89,19 @@ runtime copy is needed, update this section.
 | **Auto-arrange algorithm implementation — READ FIRST before changing `btcopilot/arrange/`**. Lives at `btcopilot/btcopilot/arrange/{layout,refine}.py`. Workstream history, decision log D-1..D-26, MVP context, GT calibration, painter analogy, tried-and-rejected paths, watchdog protocol, dev workflow. | [familydiagram doc/plans/2026-05-02--auto-arrange-layout.md](../familydiagram/doc/plans/2026-05-02--auto-arrange-layout.md) |
 | Audio upload (AssemblyAI, Celery) | [doc/AUDIO_UPLOAD_FLOW.md](doc/AUDIO_UPLOAD_FLOW.md) |
 | Probabilistic extraction issues (watch list) | [doc/EXTRACTION_QUALITY.md](doc/EXTRACTION_QUALITY.md) |
+
+## Chat-first rebuild (CANONICAL)
+
+The chat-first rebuild ("a coach who never forgets your family") is documented under
+the two-clocks regime in [doc/chat-first/](doc/chat-first/):
+- **Read [doc/chat-first/STATE.md](doc/chat-first/STATE.md) FIRST in every session touching this work** — it is the current system of record — **then [doc/chat-first/TOPICS.md](doc/chat-first/TOPICS.md)**, the register of open topics by plain name; the owner names a topic in his own words and the session continues from its block. **End every session with `/two-clocks`.**
+- [doc/chat-first/HISTORY.md](doc/chat-first/HISTORY.md) — the event clock: decision/brainstorm history; append, never rewrite.
+- [doc/chat-first/NEXT_SESSIONS.md](doc/chat-first/NEXT_SESSIONS.md) — kickoff briefs for the corpus FUNCTION/STRUCTURE sessions.
+- [doc/DRAWABILITY.md](doc/DRAWABILITY.md) — ruled drawing/asking rules.
+- **The human oracle (MANDATORY regime; store lives in the PRIVATE fdserver repo)**: Patrick's direction is the binding input to all agentic development on this app and is maintained as a BKM store — fdserver `doc/oracle/` (SPEC + rulings index + evidence). Public docs cite rulings by id (`[Oracle: R-0001]`) and never restate quotes. Mining ops are append/merge/split/reword ONLY; withdrawal = status SUPERSEDED naming the successor (newest statement wins); never author a ruling the human did not say; capture his new statements into the store immediately. No raw transcripts anywhere — mine and maintain, never archive (R-0064). Nothing store-shaped may live in this public repo (the SPEC's oracle-outside-the-store guard will police this once built).
+These are living documents: every session refines them as part of its work (append to
+HISTORY, revise STATE).
+The clinical corpus itself lives OUTSIDE all repos at ~/fd-corpus (see STATE.md).
 
 Other: [README.md](README.md), [doc/plans/](doc/plans/)
 

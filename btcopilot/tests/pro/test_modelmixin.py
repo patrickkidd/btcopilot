@@ -33,8 +33,11 @@ def user(flask_app):
 def test_nothing(user):
     assert user.as_dict() == {
         "active": True,
+        "birthdate": None,
         "first_name": "",
+        "preferences": {},
         "free_diagram_id": None,
+        "current_diagram_id": None,
         "id": 1,
         "last_name": "",
         "roles": ["subscriber"],
@@ -49,8 +52,11 @@ def test_nothing(user):
 def test_only_blank(user):
     assert user.as_dict() == {
         "active": True,
+        "birthdate": None,
         "first_name": "",
+        "preferences": {},
         "free_diagram_id": None,
+        "current_diagram_id": None,
         "id": 1,
         "last_name": "",
         "roles": ["subscriber"],
@@ -66,8 +72,11 @@ def test_include_one_level(user):
     assert user.as_dict(include={"licenses": {"only": ["id"]}}) == {
         "active": True,
         "created_at": FIXED_TIME,
+        "birthdate": None,
         "first_name": "",
+        "preferences": {},
         "free_diagram_id": None,
+        "current_diagram_id": None,
         "id": 1,
         "last_name": "",
         "licenses": [
@@ -89,8 +98,11 @@ def test_include_one_level_2_attrs(user):
     assert user.as_dict(include={"licenses": {"only": ["id"]}, "full_name": {}}) == {
         "active": True,
         "created_at": FIXED_TIME,
+        "birthdate": None,
         "first_name": "",
+        "preferences": {},
         "free_diagram_id": None,
+        "current_diagram_id": None,
         "full_name": " ",
         "id": 1,
         "last_name": "",
@@ -111,8 +123,11 @@ def test_include_blank(user):
     assert user.as_dict(include="") == {
         "active": True,
         "created_at": FIXED_TIME,
+        "birthdate": None,
         "first_name": "",
+        "preferences": {},
         "free_diagram_id": None,
+        "current_diagram_id": None,
         "id": 1,
         "last_name": "",
         "roles": ["subscriber"],
@@ -142,6 +157,7 @@ def test_exclude_sub(user):
             "user_role",
             "full_name",
             "free_diagram_id",
+            "current_diagram_id",
             "password",
             "stripe_id",
             "reset_password_code",
@@ -149,7 +165,9 @@ def test_exclude_sub(user):
     ) == {
         "active": True,
         "created_at": FIXED_TIME,
+        "birthdate": None,
         "first_name": "",
+        "preferences": {},
         "id": 1,
         "last_name": "",
         "licenses": [
@@ -194,8 +212,11 @@ def test_include_and_exclude_one_level(user):
     ) == {
         "active": True,
         "created_at": FIXED_TIME,
+        "birthdate": None,
         "first_name": "",
+        "preferences": {},
         "free_diagram_id": None,
+        "current_diagram_id": None,
         "id": 1,
         "last_name": "",
         "licenses": [
@@ -223,8 +244,11 @@ def test_include_and_only_one_level(user):
         },
         exclude=[
             "active",
+            "birthdate",
             "first_name",
+            "preferences",
             "free_diagram_id",
+            "current_diagram_id",
             "last_name",
             "secret",
             "status",

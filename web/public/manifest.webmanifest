@@ -1,0 +1,23 @@
+{
+  "name": "Family Diagram",
+  "short_name": "Family Diagram",
+  "start_url": "/personal/",
+  "scope": "/personal/",
+  "display": "standalone",
+  "background_color": "#f7f6f2",
+  "theme_color": "#f7f6f2",
+  "icons": [
+    {
+      "src": "/personal/static/web/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/personal/static/web/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

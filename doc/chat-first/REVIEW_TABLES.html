@@ -1,0 +1,55 @@
+<title>Review Tables</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600&family=IBM+Plex+Mono&display=swap">
+<style>
+:root{--bg:#f7f6f2;--panel:#fff;--ink:#26312f;--faint:#67746f;--line:#d8d5cc;--data:#0e7d78;--ask:#9e6d15;--tint:rgba(14,125,120,.08);--sans:"Libre Franklin",-apple-system,system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171d1c;--panel:#1f2725;--ink:#e6e8e4;--faint:#9aa5a0;--line:#39443f;--data:#3fc4bc;--ask:#e0a83f;--tint:rgba(63,196,188,.13)}}
+:root[data-theme="dark"]{--bg:#171d1c;--panel:#1f2725;--ink:#e6e8e4;--faint:#9aa5a0;--line:#39443f;--data:#3fc4bc;--ask:#e0a83f;--tint:rgba(63,196,188,.13)}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);margin:0;padding-block:28px 56px;padding-inline:20px;max-width:100ch}
+h1{font:600 22px var(--sans);margin:0 0 6px}
+p{margin:0 0 10px;max-width:90ch}.lead{color:var(--faint)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;margin:4px 0 14px}
+th,td{text-align:left;vertical-align:top;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--faint);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+.m{font:400 12.5px var(--mono)}.new{color:var(--ask);font-weight:600}.chg{color:var(--data);font-weight:600}
+.wrap{overflow-x:auto}
+</style>
+
+<h1>Database scope of the pull request, against master</h1>
+<p class="lead">Every table the branch adds or changes, in one list. Everything else in the database is untouched, including the desktop app's read and write paths. Ids are the shared integer primary key with created_at and updated_at; timestamps are DateTime; JSON columns are JSONB with the SQLite variant. Every reference to a user is <span class="m">user_id</span>. The five <span class="m">review_</span> tables and the two <span class="m">diagram_</span> tables are prefixed so their names stay out of the global namespace.</p>
+
+<div class="wrap"><table>
+<tr><th>Table</th><th>Change</th><th>Columns</th><th>What it holds</th></tr>
+
+<tr><td class="m">diagrams</td><td>no schema change</td><td class="m">—</td><td>The data column now holds JSON for records this app writes and pickle for the desktop app's, told apart by the first byte; desktop rows are never rewritten. A case is a row; each coder's coding of a case is also a row, carried forward cut to cut; the ratified record is the case's own row.</td></tr>
+
+<tr><td class="m">users</td><td class="chg">3 columns added</td><td class="m">preferences JSON not null default {} · birthdate Date null · current_diagram_id FK diagrams.id null</td><td>Settings, the birthdate the coach asks for, the family or case the app is on.</td></tr>
+
+<tr><td class="m">discussions</td><td class="chg">3 columns added</td><td class="m">title Text null · title_set_by_user Boolean · kind Enum(chat, recording, note) default chat</td><td>A session of a case. Notes are sessions of their own and are coded like chats; recordings arrive through upload.</td></tr>
+
+<tr><td class="m">statements</td><td class="chg">3 columns added</td><td class="m">views JSON null · kind Enum(turn, …) default turn · cluster_id String(64) null</td><td>A turn. views is what the coach asked the picture to show with that turn.</td></tr>
+
+<tr><td class="m">diagram_changes</td><td class="new">new</td><td class="m">diagram_id FK · statement_id FK null · turn_id String(64) · user_id FK null · session_id String(64) null · author Enum(user, coach, pro, review) · deltas JSONB</td><td>Every edit to any record: item, field, before and after, with the turn it came from. The scribe's edits during coding, and each settle the meeting makes on the case's record, are rows here.</td></tr>
+
+<tr><td class="m">diagram_interactions</td><td class="new">new</td><td class="m">diagram_id FK · user_id FK null · session_id String(64) null · statement_id FK null · kind Enum(look, say, chip_tap, play) · item_kind Enum(ItemKind) · item_id String(64) null</td><td>Every tap on the picture and in the thread, as learning data.</td></tr>
+
+<tr><td class="m">web_sessions</td><td class="new">new</td><td class="m">user_id · token String(64) · last_seen_at · expires_at · revoked_at null · user_agent String(255)</td><td>Passwordless sign-ins, 180 days.</td></tr>
+
+<tr><td class="m">passkeys</td><td class="new">new</td><td class="m">user_id · credential_id String(255) · public_key LargeBinary · sign_count Integer · transports JSON · name String(255) · last_used_at null · revoked_at null</td><td>Face ID and fingerprint sign-in.</td></tr>
+
+<tr><td class="m">invitations</td><td class="new">new</td><td class="m">email String(255) · token String(64) · expires_at · used_at null</td><td>The emailed sign-in links.</td></tr>
+
+<tr><td class="m">login_codes</td><td class="new">new</td><td class="m">email String(255) · code_hash String(255) · expires_at · used_at null · tries Integer</td><td>The six-digit emailed code for recovery.</td></tr>
+
+<tr><td class="m">review_cuts</td><td class="new">new</td><td class="m">discussion_id FK · start_statement_id FK statements.id · end_statement_id FK statements.id · user_id FK · meeting_date Date · vote_opened_at DateTime null · ratified_at DateTime null · agreement JSON</td><td>A session frozen at a window of turns and put on the table. The app sets the start to the previous cut's end and refuses overlap in code. The vote opens when user_id (Patrick) opens it; agreement holds the figures first pass and after ratification, recomputed whenever a coding finishes.</td></tr>
+
+<tr><td class="m">review_codings</td><td class="new">new</td><td class="m">cut_id FK review_cuts.id · user_id FK · diagram_id FK diagrams.id · agent JSON null · done_at DateTime null · unique (cut_id, user_id)</td><td>The link between a cut, a coder and the coder's own diagrams row, with Done. agent is set only when the coach coded (model, prompt version); null means a person.</td></tr>
+
+<tr><td class="m">review_items</td><td class="new">new</td><td class="m">cut_id FK · item_kind Enum(ItemKind) · item_id String(64) null · takes JSON · status Enum(agreed, disputed, settled, unresolved) · settle_change_id FK diagram_changes.id null · user_id FK null</td><td>One event (or person, or pair bond) as every coder saw it: takes is the list of {coding_id, item_id, item} the F1 matcher paired across codings, each item stored as the schema's Event, Person or PairBond dict; a snapshot taken when the vote opens, never maintained. item_id is the item on the case's record once settled; user_id is who settled it.</td></tr>
+
+<tr><td class="m">review_votes</td><td class="new">new</td><td class="m">review_item_id FK · user_id FK · choice Enum(take, change, drop) · value JSON null · reason Text null · unique (review_item_id, user_id)</td><td>One coder's vote before the meeting. value is {coding_id} for take, or the coder's own Event dict for change. Names never shown until the meeting.</td></tr>
+
+<tr><td class="m">review_rules</td><td class="new">new</td><td class="m">text Text · source JSON · drafted_by Enum(ai, migration, human) · flags JSON · ratified_at DateTime null · retired_at DateTime null</td><td>The coding guidelines, one row per rule. source is the review item and cut it came from, or last year's meeting number for migrated rows. flags holds who flagged it for the next meeting and who closed their own flag. Never deleted; retired instead.</td></tr>
+</table></div>
+
+<p><b>Derived, not stored:</b> the next meeting's agenda (rules with an open flag, items unresolved, codings without Done); the guidelines file in the repository, generated from review_rules on every ratification; the ground-truth export the harness reads, generated from the ratified items on the case diagrams; whether a coding is the coach's, told by agent being set.</p>
+<p><b>Types reused from btcopilot.schema inside JSON:</b> Event, Person, PairBond as dicts, with EventKind, VariableShift, RelationshipKind, DateCertainty and ClusterSource unchanged; ItemKind as the enum for item_kind.</p>

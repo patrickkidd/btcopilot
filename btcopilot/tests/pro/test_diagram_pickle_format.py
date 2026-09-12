@@ -1,4 +1,6 @@
 import pickle
+
+from btcopilot import diagramjson
 import json
 import pytest
 
@@ -36,6 +38,8 @@ def test_pickle_contains_json_serializable_dicts(db_session, test_user):
         "people": [{"id": 1, "name": "Alice"}],
         "events": [{"id": 2, "kind": "shift", "person": 1}],
         "pair_bonds": [],
+        "clusters": [],
+        "clusterCacheKey": None,
         "pdp": {
             "people": [
                 {
@@ -76,7 +80,7 @@ def test_pickle_contains_json_serializable_dicts(db_session, test_user):
         "pair_bonds": [],
     }
 
-    pickled_data = pickle.loads(diagram.data)
+    pickled_data = diagramjson.loads(diagram.data)
 
     try:
         json.dumps(pickled_data)

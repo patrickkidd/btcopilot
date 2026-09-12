@@ -23,6 +23,8 @@ app = [
     "ddtrace",
     "gunicorn",
     "flask",
+    "webauthn",
+    "cbor2<6",  # newer cbor2 needs a C build on macOS x86_64
     "flask-bcrypt",
     "flask-graphql",
     "flask-mail",
@@ -31,6 +33,7 @@ app = [
     # "graphene-sqlalchemy",
     "openai",
     "psycopg2-binary",
+    "regex",
     "numpy<2",
 
     # pro
@@ -90,6 +93,8 @@ package-dir = {"" = "."}
 [tool.setuptools.package-data]
 "btcopilot.training" = ["templates/**/*", "static/**/*"]
 "btcopilot.pro" = ["templates/**/*", "static/**/*"]
+"btcopilot.personal" = ["static/**/*"]
+"btcopilot.auth" = ["templates/**/*"]
 
 [tool.uv]
 constraint-dependencies = ["onnxruntime<1.24.0"]

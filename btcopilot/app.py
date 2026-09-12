@@ -11,6 +11,8 @@ _log = logging.getLogger(__name__)
 def create_app(config: dict = None, **kwargs):
     from btcopilot.pro.copilot.engine import Engine
     from btcopilot import auth, extensions, pro, personal, training
+    from btcopilot.review import routes as review_routes
+    from btcopilot.auth import signin
 
     # Flask CLI may pass script_info as a kwarg, we ignore it
     kwargs.pop("script_info", None)
@@ -32,6 +34,10 @@ def create_app(config: dict = None, **kwargs):
         CELERY_BROKER_URL="redis://localhost:6379/0",
         CELERY_RESULT_BACKEND="redis://localhost:6379/0",
         WTF_CSRF_CHECK_DEFAULT=False,
+        # A token stamped into a page lives as long as the session that page
+        # belongs to. The default hour expires it under a reader who is still
+        # signed in and still typing, and every post after that is refused.
+        WTF_CSRF_TIME_LIMIT=None,
     )
 
     if config and config.get("CONFIG"):
@@ -97,9 +103,9 @@ def create_app(config: dict = None, **kwargs):
     @app.errorhandler(403)
     def _(e):
         from flask import redirect, url_for, request
-        from btcopilot.auth import is_pro_app_request, is_personal_app_request
+        from btcopilot.auth import is_chat_app_request, is_pro_app_request
 
-        if is_pro_app_request() or is_personal_app_request():
+        if is_pro_app_request() or is_chat_app_request():
             return "Forbidden", 403
         else:
             return redirect(url_for("training.auth.login", next=request.url))
@@ -148,12 +154,18 @@ def create_app(config: dict = None, **kwargs):
     ## Initialize Modules
 
     extensions.init_app(app)
+    auth.init_app(app)
     pro.init_app(app)
     personal.init_app(app)
     training.init_app(app)
+    review_routes.init_app(app)
 
     @app.route("/")
     def root():
+        """Someone who comes back to the site with a live chat session belongs
+        in their chat, not at the training app's login."""
+        if signin.current_web_session():
+            return redirect(app.config["CHAT_HOME"])
         return redirect(url_for("training.auth.login"))
 
     _log.debug("btcopilot.create_app() complete")

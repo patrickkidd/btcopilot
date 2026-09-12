@@ -6,6 +6,8 @@ Plan: familydiagram/doc/plans/2026-05-01--mvp-merge-fix/README.md
 
 import pickle
 
+from btcopilot import diagramjson
+
 import pytest
 
 import PyQt5.sip  # required for unpickling QtCore types in diagram blobs
@@ -25,7 +27,7 @@ def test_reserve_id_block_basic(flask_app, test_user):
     assert start == 11
     assert end == 110
     assert new_version == starting_version + 1
-    pickled = pickle.loads(diagram.data)
+    pickled = diagramjson.loads(diagram.data)
     assert pickled["lastItemId"] == 110
 
 
@@ -52,7 +54,7 @@ def test_reserve_id_block_persists_across_reads(flask_app, test_user):
     db.session.commit()
 
     refreshed = Diagram.query.get(diagram.id)
-    assert pickle.loads(refreshed.data)["lastItemId"] == 25
+    assert diagramjson.loads(refreshed.data)["lastItemId"] == 25
 
 
 def test_reserve_id_block_zero_count_rejected(flask_app, test_user):
@@ -179,7 +181,7 @@ def test_reserve_id_block_serial_calls_distinct_blocks(flask_app, test_user):
 
     # Final lastItemId on disk matches the cumulative reservation.
     refreshed = Diagram.query.get(diagram_id)
-    assert pickle.loads(refreshed.data)["lastItemId"] == N * BLOCK
+    assert diagramjson.loads(refreshed.data)["lastItemId"] == N * BLOCK
 
 
 def test_reserve_id_block_optimistic_locking_retries_on_conflict(

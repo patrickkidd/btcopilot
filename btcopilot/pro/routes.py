@@ -37,7 +37,7 @@ from sqlalchemy.orm import defer
 
 import btcopilot
 
-from btcopilot import version, auth
+from btcopilot import version, auth, diagramjson
 from btcopilot.extensions import (
     db,
     mail,
@@ -72,6 +72,38 @@ bp = Blueprint("v1", __name__, url_prefix="/v1", template_folder="templates")
 
 def init_app(app):
     app.register_blueprint(bp)
+
+
+def record_pro_change(diagram, new_version, user_id, was: bytes | None):
+    """Log what a Pro save changed, in a transaction of its own, after the save.
+
+    The Personal package is imported here rather than at module scope so that
+    loading the Pro blueprint never depends on it. Any failure is logged and
+    swallowed: a clinician's save must not be lost because the change record
+    could not be written.
+    """
+    from btcopilot.personal import record
+    from btcopilot.personal.models import Author, Change
+
+    try:
+        deltas = record.diff(diagramjson.loads(was), diagramjson.loads(diagram.data))
+        if not deltas:
+            return
+        db.session.add(
+            Change(
+                diagram_id=diagram.id,
+                turn_id=f"pro:{new_version}",
+                user_id=user_id,
+                author=Author.Pro,
+                deltas=record.compress(deltas),
+            )
+        )
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        _log.exception(
+            f"Change record not written for diagram {diagram.id} version {new_version}"
+        )
 
 
 def to_bool(x):
@@ -202,11 +234,8 @@ def diagrams(id=None):
             return pickle.dumps(data)
         elif request.method == "POST":  # create
             args = pickle.loads(request.data)
-            diagram = Diagram(
-                user_id=g.user.id,
-                name=args["name"],
-                data=args["data"],
-            )
+            diagram = Diagram(user_id=g.user.id, name=args["name"])
+            diagram.pickled = args["data"]
             db.session.add(diagram)
             db.session.commit()
             _log.info(f"Created new diagram, id: {diagram.id}")
@@ -241,6 +270,7 @@ def diagrams(id=None):
             # someone else wrote to the server every time it itself writes to the server.
             diagram.updated_at = data["updated_at"]
 
+            was = diagram.data
             success, new_version = diagram.update_with_version_check(
                 expected_version, new_data=data["data"]
             )
@@ -250,7 +280,7 @@ def diagrams(id=None):
                     f"Conflict updating diagram {diagram.id} for user: {g.user.username}, expected_version: {expected_version}, current_version: {diagram.version}"
                 )
                 response_data = pickle.dumps(
-                    {"version": diagram.version, "data": diagram.data}
+                    {"version": diagram.version, "data": diagram.pickled}
                 )
                 return response_data, 409
 
@@ -265,10 +295,11 @@ def diagrams(id=None):
                 f"bytes: {len(diagram.data)} updated_at: {diagram.updated_at} "
                 f"version: {new_version}"
             )
+            record_pro_change(diagram, new_version, g.user.id, was)
             # Returns canonical post-write blob so client can refresh its
             # snapshot (latent fix 3a in 2026-05-01--mvp-merge-fix).
             return pickle.dumps(
-                {"version": new_version, "data": diagram.data}
+                {"version": new_version, "data": diagram.pickled}
             )
         elif request.method == "DELETE":  # delete
             if not diagram.check_write_access(g.user):
@@ -452,7 +483,7 @@ def users_free_diagram(user_id):
             # user.set_free_diagram(None, _commit=True)
             return ("No Content", 204)  # Sort of like a HEAD
         else:
-            response = Response(user.free_diagram.data, status=200)
+            response = Response(user.free_diagram.pickled, status=200)
             response.last_modified = user.free_diagram.updated_at
             return response
     elif request.method == "POST":
@@ -471,7 +502,7 @@ def users_free_diagram(user_id):
             _log.info("Created free diagram for user: %s" % user)
             user.set_free_diagram(args["data"], _commit=True)
     if user.free_diagram.data:
-        return user.free_diagram.data
+        return user.free_diagram.pickled
     else:
         return b""
 

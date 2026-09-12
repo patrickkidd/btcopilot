@@ -272,7 +272,7 @@ def test_users_get_free_diagram_none(flask_app, test_session, test_user):
     bdata = pickle.dumps(args)
     with flask_app.test_client(user=test_user) as client:
         response = client.get(f"/v1/users/{test_user.id}/free_diagram", data=bdata)
-    assert response.data == test_user.free_diagram.data
+    assert response.data == test_user.free_diagram.pickled
 
 
 def test_users_get_free_diagram_data(flask_app, test_user, test_session):
@@ -294,13 +294,13 @@ def test_users_update_free_diagram_data(flask_app, test_user, test_session):
     test_user.set_free_diagram(b"")
     args = {
         "session": test_session.token,
-        "data": pickle.dumps(pickle.dumps({"with": "more"})),
+        "data": pickle.dumps({"with": "more"}),
     }
     with flask_app.test_client(user=test_user) as client:
         response = client.put(
             f"/v1/users/{test_user.id}/free_diagram", data=pickle.dumps(args)
         )
-    assert response.data == User.query.get(test_user.id).free_diagram.data
+    assert response.data == User.query.get(test_user.id).free_diagram.pickled
 
 
 ## Policies

@@ -1,4 +1,3 @@
-import pickle
 import re
 
 from flask import g
@@ -9,6 +8,7 @@ from dataclasses import fields as dc_fields
 
 
 import btcopilot
+from btcopilot import diagramjson
 from btcopilot.schema import DiagramData, PDP, from_dict
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
@@ -80,10 +80,18 @@ class Diagram(db.Model, ModelMixin):
 
     discussions = relationship("Discussion", back_populates="diagram")
 
-    def get_diagram_data(self) -> DiagramData:
-        import PyQt5.sip  # Required for unpickling QtCore objects
+    @property
+    def pickled(self) -> bytes:
+        """The pickled blob the Pro and Personal apps speak on the wire."""
+        return diagramjson.wire(self.data)
 
-        data = pickle.loads(self.data) if self.data else {}
+    @pickled.setter
+    def pickled(self, blob: bytes):
+        """A JSON row stays JSON; a pickle row, and a new row, keep the blob as it arrived."""
+        self.data = diagramjson.store(blob) if diagramjson.is_json(self.data) else blob
+
+    def get_diagram_data(self) -> DiagramData:
+        data = diagramjson.loads(self.data)
         pdp_dict = data.get("pdp", {})
         known = {f.name for f in dc_fields(DiagramData)} - {"pdp"}
         kwargs = {k: data[k] for k in known if k in data}
@@ -91,20 +99,20 @@ class Diagram(db.Model, ModelMixin):
         return DiagramData(**kwargs)
 
     def set_diagram_data(self, diagram_data: DiagramData):
-        import PyQt5.sip  # Required for pickling QtCore objects
         from btcopilot.schema import asdict
 
-        data = pickle.loads(self.data) if self.data else {}
+        data = diagramjson.loads(self.data)
 
-        # Convert PDP dataclass to dict before pickling (JSON-compatible)
         data["pdp"] = asdict(diagram_data.pdp)
         data["lastItemId"] = diagram_data.lastItemId
 
         data["people"] = diagram_data.people
         data["events"] = diagram_data.events
         data["pair_bonds"] = diagram_data.pair_bonds
+        data["clusters"] = diagram_data.clusters
+        data["clusterCacheKey"] = diagram_data.clusterCacheKey
 
-        self.data = pickle.dumps(data)
+        self.data = diagramjson.encode(data, self.data)
 
     def grant_access(self, user, right, _commit=False):
         from btcopilot.pro.models import AccessRight
@@ -150,7 +158,7 @@ class Diagram(db.Model, ModelMixin):
         Atomically reserve `count` ids in the diagram's lastItemId space.
 
         Returns (start, end, new_version) where ids in [start, end] inclusive
-        are reserved for the caller. Bumps `lastItemId` in the pickled blob
+        are reserved for the caller. Bumps `lastItemId` in the stored blob
         and the row's `version`.
 
         Concurrency: uses SELECT FOR UPDATE row lock (works on PostgreSQL)
@@ -168,8 +176,6 @@ class Diagram(db.Model, ModelMixin):
         if count <= 0:
             raise ValueError(f"count must be > 0, got {count}")
 
-        import PyQt5.sip  # noqa: F401  side-effect: registers QtCore unpickle types
-
         for _ in range(max_retries):
             db.session.expire(self)
             # Acquire row lock (PostgreSQL); on SQLite this is a no-op but
@@ -181,16 +187,13 @@ class Diagram(db.Model, ModelMixin):
                 .one()
             )
             expected_version = locked.version
-            if not locked.data:
-                data = {}
-            else:
-                data = pickle.loads(locked.data)
+            data = diagramjson.loads(locked.data)
             last_id = int(data.get("lastItemId", 0) or 0)
             start = last_id + 1
             end = last_id + count
             data["lastItemId"] = end
 
-            new_data = pickle.dumps(data)
+            new_data = diagramjson.encode(data, locked.data)
             stmt = (
                 sql_update(Diagram)
                 .where(Diagram.id == self.id)
@@ -216,18 +219,23 @@ class Diagram(db.Model, ModelMixin):
         self, expected_version, new_data=None, diagram_data=None
     ):
         if new_data is not None:
-            data_to_save = new_data
+            # The row decides the format. A JSON row takes the incoming pickle
+            # converted, and a failure to convert raises rather than writing.
+            data_to_save = (
+                diagramjson.store(new_data)
+                if diagramjson.is_json(self.data)
+                else new_data
+            )
         elif diagram_data is not None:
-            import PyQt5.sip
             from btcopilot.schema import asdict
 
-            data = pickle.loads(self.data) if self.data else {}
+            data = diagramjson.loads(self.data)
             data["pdp"] = asdict(diagram_data.pdp)
             data["lastItemId"] = diagram_data.lastItemId
             data["people"] = diagram_data.people
             data["events"] = diagram_data.events
             data["pair_bonds"] = diagram_data.pair_bonds
-            data_to_save = pickle.dumps(data)
+            data_to_save = diagramjson.encode(data, self.data)
         else:
             return (False, None)
 
@@ -263,5 +271,7 @@ class Diagram(db.Model, ModelMixin):
         for field in FIELD_MIN_VERSIONS:
             if not clientSupportsField(field):
                 exclude.append(field)
+        if "data" not in exclude:
+            update.setdefault("data", self.pickled)
 
         return super().as_dict(update=update, include=include, exclude=exclude)

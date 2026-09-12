@@ -1,5 +1,8 @@
 from datetime import datetime
 import pickle
+
+from btcopilot import diagramjson
+from btcopilot.personal import record
 from urllib.parse import quote
 
 import pytest
@@ -25,7 +28,7 @@ def test_diagrams_create(flask_app, test_user):
 
     diagram = Diagram.query.get(diagram_id)
     assert diagram != None
-    assert pickle.loads(diagram.data)["something"] == "fake"
+    assert diagramjson.loads(diagram.data)["something"] == "fake"
 
 
 def test_diagrams_index_as_anonymous(flask_app):
@@ -126,9 +129,32 @@ def test_diagrams_patch_own_diagram(flask_app, test_user):
             ),
         )
         assert response.status_code == 200
-    bdata = Diagram.query.get(test_user.free_diagram_id).data
-    data = pickle.loads(bdata)
+    data = diagramjson.loads(Diagram.query.get(test_user.free_diagram_id).data)
     assert data["some"] == "fake"
+
+
+def test_change_record_failure_leaves_the_save_committed(
+    flask_app, test_user, monkeypatch
+):
+    """A clinician's save must survive the change record failing to write."""
+
+    def raise_it(*args, **kwargs):
+        raise RuntimeError("change record unavailable")
+
+    monkeypatch.setattr(record, "diff", raise_it)
+    with flask_app.test_client(user=test_user) as client:
+        response = client.patch(
+            f"/v1/diagrams/{test_user.free_diagram_id}",
+            data=pickle.dumps(
+                {
+                    "updated_at": datetime.utcnow(),
+                    "data": pickle.dumps({"some": "saved"}),
+                }
+            ),
+        )
+    assert response.status_code == 200
+    data = diagramjson.loads(Diagram.query.get(test_user.free_diagram_id).data)
+    assert data["some"] == "saved"
 
 
 def test_diagrams_optimistic_locking_success(flask_app, test_user):

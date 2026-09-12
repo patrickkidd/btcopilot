@@ -122,7 +122,7 @@ def test_pattern_b_shallow_cycling_opus(returning_user_setup):
     user_turns = [
         "Hey, I've been having a rough week. My boss has been on my case and I haven't been sleeping well.",
         "I dunno, just stuff piling up.",
-        "It's whatever. Just been a bad stretch.",
+        "It's whatever. Just been a bad cluster.",
         "Yeah, I guess. Same kind of stuff.",
         "It is what it is.",
     ]
@@ -137,7 +137,7 @@ def test_pattern_b_shallow_cycling_gemini(returning_user_setup):
     user_turns = [
         "Hey, I've been having a rough week. My boss has been on my case and I haven't been sleeping well.",
         "I dunno, just stuff piling up.",
-        "It's whatever. Just been a bad stretch.",
+        "It's whatever. Just been a bad cluster.",
         "Yeah, I guess. Same kind of stuff.",
         "It is what it is.",
     ]

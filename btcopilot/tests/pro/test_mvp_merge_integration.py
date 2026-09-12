@@ -11,6 +11,8 @@ Journeys: familydiagram/doc/plans/2026-05-01--mvp-merge-fix/JOURNEYS.md
 """
 
 import pickle
+
+from btcopilot import diagramjson
 from datetime import datetime
 
 import PyQt5.sip  # for unpickling QtCore types
@@ -67,10 +69,10 @@ def test_j1a_pro_stale_save_preserves_personal_edit(flask_app, test_user):
         ],
     )
     base_version = diagram.version
-    pro_open_snapshot = pickle.loads(diagram.data)
+    pro_open_snapshot = diagramjson.loads(diagram.data)
 
     # Personal saves an edit to A: cutoff=True.
-    personal_local = pickle.loads(diagram.data)
+    personal_local = diagramjson.loads(diagram.data)
     personal_local["people"] = [
         {"id": 1, "name": "A", "cutoff": True},
         {"id": 2, "name": "B"},
@@ -96,7 +98,7 @@ def test_j1a_pro_stale_save_preserves_personal_edit(flask_app, test_user):
     # Apply the snapshot-diff merge as Pro's applyChange does.
     from btcopilot.schema import DiagramData
 
-    server_state = pickle.loads(diagram.data)  # what server has now (after Personal's save)
+    server_state = diagramjson.loads(diagram.data)  # what server has now (after Personal's save)
     server_state["people"] = canonical_after_personal["people"]
     merged_people = DiagramData.apply_local_changes(
         server_state["people"],
@@ -138,10 +140,10 @@ def test_j2a_personal_delete_survives_pro_save(flask_app, test_user):
     )
     db.session.commit()
     base_version = diagram.version
-    pro_open_snapshot = pickle.loads(diagram.data)
+    pro_open_snapshot = diagramjson.loads(diagram.data)
 
     # Personal deletes event 10.
-    personal_local = pickle.loads(diagram.data)
+    personal_local = diagramjson.loads(diagram.data)
     personal_local["events"] = []
     with flask_app.test_client(user=test_user) as client:
         r = _put_diagram(
@@ -159,7 +161,7 @@ def test_j2a_personal_delete_survives_pro_save(flask_app, test_user):
 
     from btcopilot.schema import DiagramData
 
-    server_state = pickle.loads(diagram.data)
+    server_state = diagramjson.loads(diagram.data)
     server_state["events"] = []  # server has no event 10 after Personal's delete
 
     merged_events = DiagramData.apply_local_changes(
@@ -219,7 +221,7 @@ def test_j3_block_allocation_prevents_id_collision(flask_app, test_user):
 
     # Verify server's stored lastItemId reflects both reservations.
     refreshed = Diagram.query.get(diagram.id)
-    assert pickle.loads(refreshed.data)["lastItemId"] == 210
+    assert diagramjson.loads(refreshed.data)["lastItemId"] == 210
 
 
 def test_canonical_blob_returned_on_200(flask_app, test_user):

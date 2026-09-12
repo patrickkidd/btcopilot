@@ -28,7 +28,245 @@ Summarize the following discussion.
 # ── Conversation flow ─────────────────────────────────────────────────────────
 #
 # fdserver overrides get_conversation_flow_prompt() with a production
-# implementation that has full per-model assembly control.
+# implementation that has full per-model assembly control. An override that
+# drops COACH_REFERENCE_INSTRUCTION turns the chips off; the parser then finds
+# no references and the client shows none.
+
+COACH_REFERENCE_INSTRUCTION = """
+When your reply points at something already in the record, mark it inline as
+[[kind:target|the words to show]] and write nothing else about the markup:
+
+  [[cluster:<cluster id>|the words to show]]
+  [[events:<event id>,<event id>|the words to show]]
+  [[person:<person id>|the words to show]]
+  [[range:<YYYY-MM-DD>..<YYYY-MM-DD>|the words to show]]
+
+Use only ids listed in the reference index you were given. Mark at most three
+references in a reply, and none at all when your reply points at nothing.
+"""
+
+
+# ── The agent loop ───────────────────────────────────────────────────────────
+#
+# One loop per user message, with tools that read, change and show the record.
+# The fidelity rule below is the architecture, not coaching wording, so it
+# stays here; fdserver overrides get_agent_prompt() with the real coaching
+# voice and keeps this rule inside it.
+
+AGENT_FIDELITY_RULE = """
+You keep this person's family record while you talk to them. Every fact they
+give you goes into the record on the turn they give it, with a tool call,
+before you reply. The order for something new is the people first, then the
+bond between them, then the event, because an event needs a person id. Adding
+the people is half the job: the events are what the record is for, so a turn
+that adds a person and stops has lost the thing that was said.
+
+You are not finished while something you have just heard, or are about to say,
+is missing from the record. Keep calling tools until it is all in — the ids you
+need come back from the calls you have already made — and only then write your
+reply. Never describe an event in your reply that has no id in the record.
+
+The record is the only thing that is true. Never state, name or show anything
+that is not in it, and never invent an id. When the user tells you something
+new, put it in the record with a tool call before you talk about it; when they
+correct you, change the record — never just agree in the chat. When they ask
+you to put something back, use the undo tool. If a tool refuses, say plainly
+what it refused and ask for what is missing.
+
+Your reply is only what you say to the person. Never write out your plan, your
+reasoning, or what you are about to do with a tool — make the calls and then
+speak.
+
+Mark a reference to something in the record inline as [[event:ID]],
+[[cluster:ID]] or [[person:ID]], or [[event:ID|the words to show]] when it has
+words of its own. Use only ids that appear in the record below.
+
+A chip is one size on the page and never truncates, so every label is at most
+28 characters as a reader counts them — a noun phrase, never a sentence and
+never a clause. A label that does not fit is sent back for you to rewrite.
+
+When you offer somewhere to look next, write each offer as [[ask:the words]] —
+two or three of them, at the very end, nothing after them. An offer carries its
+own words rather than an id, so it may name a time or a thread that has no id
+yet. Write it as the person would say it about their own family, a short noun
+phrase in their voice of at most 28 characters: [[ask:the winter Mum got ill]],
+not a question and not an answer to pick from.
+"""
+
+# Both the turn and the walk are speech, and a list of chips is not speech.
+NARRATION_RULE = """
+Never answer with a bare list of chips. When you are asked to walk through or
+explain a cluster, narrate it the way a person would: name the people, say what
+happened in order, and say what it meant. Every chip sits inside one of those
+sentences and refers to an event the sentence is already talking about.
+"""
+
+AGENT_RECORD_HEADER = "THE RECORD"
+
+
+def get_agent_prompt(record: str = "", interactions: str = "") -> str:
+    """The coach's system prompt for one agent-loop turn.
+
+    `record` is the whole family record rendered by
+    `btcopilot.personal.recordtext`; `interactions` is what the user has been
+    looking at. Production deployments override this callable via
+    FDSERVER_PROMPTS_PATH.
+    """
+    parts = [
+        "You are a family systems consultant talking with someone about their "
+        "family. You keep their family record as you talk.",
+        AGENT_FIDELITY_RULE,
+        NARRATION_RULE,
+        f"{AGENT_RECORD_HEADER}\n{record}" if record else "The record is empty.",
+    ]
+    if interactions:
+        parts.append(interactions)
+    return "\n\n".join(parts)
+
+
+def note_register() -> str:
+    """What changes when the session is a note rather than a chat: the clinician
+    is talking to the coach about the case after the fact and the client is not
+    in the room (R-0281). What a coach should do differently is clinical, so the
+    wording here is neutral and production deployments override this callable
+    via FDSERVER_PROMPTS_PATH (R-0305)."""
+    return (
+        "This session is a note. The person writing is the clinician, talking "
+        "about the case rather than about their own family, and the client is "
+        "not present. Record what you are told about the case the same way you "
+        "do in any other session."
+    )
+
+
+# ── What a tool parameter means ──────────────────────────────────────────────
+#
+# The tool schemas are read by the coach and by the review scribe. A parameter
+# that only says what shape the value takes is architecture and lives here; the
+# clinical meaning of an event kind, a variable or a relationship move is
+# private IP and is supplied by fdserver overriding tool_meanings() (R-0305).
+
+import enum as _enum
+
+
+class ToolText(_enum.StrEnum):
+    """The tool parameters whose wording fdserver may replace."""
+
+    EventKind = "kind"
+    Description = "description"
+    Person = "person"
+    Spouse = "spouse"
+    Child = "child"
+    Anxiety = "anxiety"
+    Symptom = "symptom"
+    Functioning = "functioning"
+    Relationship = "relationship"
+    RelationshipTargets = "relationship_targets"
+    RelationshipTriangles = "relationship_triangles"
+
+
+def tool_meanings() -> dict[ToolText, str]:
+    """Neutral, data-shape wording for each tool parameter. Production
+    deployments override this callable via FDSERVER_PROMPTS_PATH."""
+    return {
+        ToolText.EventKind: "Which kind of event this is.",
+        ToolText.Description: (
+            "What happened, with no names of the people this event links: the "
+            "person, spouse, child and targets are said by their fields."
+        ),
+        ToolText.Person: (
+            "The person the event is about. On a marriage, bonding, separation "
+            "or divorce it is one of the two partners and spouse is the other. "
+            "On a birth or adoption it is a parent, and is left out when the "
+            "parents are not known — never the same id as child."
+        ),
+        ToolText.Spouse: (
+            "The other partner. Required with person on married, bonded, "
+            "separated and divorced; on a birth it is the second parent."
+        ),
+        ToolText.Child: (
+            "For a birth or adoption, who was born or taken in: set child, not "
+            "person."
+        ),
+        ToolText.Anxiety: "Which way this variable moved, if it moved.",
+        ToolText.Symptom: "Which way this variable moved, if it moved.",
+        ToolText.Functioning: "Which way this variable moved, if it moved.",
+        ToolText.Relationship: "Which relationship value this event carries.",
+        ToolText.RelationshipTargets: (
+            "The other people this event's relationship links. Required "
+            "whenever relationship is set, and never empty."
+        ),
+        ToolText.RelationshipTriangles: (
+            "A second list of people the relationship links. Required when "
+            "relationship is inside or outside."
+        ),
+    }
+
+
+# ── Play-by-play ─────────────────────────────────────────────────────────────
+#
+# One cluster, narrated in date order, one chip per event (R-0074). The moves
+# are data; the coach writes the words around them and cannot invent one.
+
+PLAY_BY_PLAY_PROMPT = NARRATION_RULE + """
+Walk through this cluster of the record in date order. Name every event you
+speak about as a chip, [[event:ID|the words to show]], and never name one that
+is not listed. You may skip an event and you may dwell on one, but you may not
+invent anything. Keep it short. End with two or three offers of where to look
+next, each written as [[ask:the words]] and nothing after them — noun phrases
+in the person's own voice, at most 28 characters, never sentences.
+
+THE STRETCH
+{cluster}
+
+THE EVENTS IN DATE ORDER
+{events}
+"""
+
+
+# ── Clusters ─────────────────────────────────────────────────────────────────
+#
+# The candidates come from the rules in clusters.py, never from here. This stub
+# asks only for the naming; the definitions the model is allowed to use live in
+# the private prompts.
+
+CLUSTER_PROMPT = """
+Each candidate below is a group of events from one person's record. Name each
+group and say in one sentence what the record shows its events have in common.
+
+Keep the groups as given unless one is clearly wrong. You may join two of them,
+break one apart, or pull in an event from the unclustered list — and whenever
+you do, say why in `change`. Without that sentence the change is thrown out.
+
+Never write an id that is not listed below, and never leave out an event listed
+under `nodalOrShiftIds`.
+
+Every group you return holds at least three events. One or two events on their
+own are never a group, so never break a candidate into pieces smaller than that.
+
+Return one entry per final group: `eventIds`, `name`, `reason`, and `change`
+when the group is not one of the candidates exactly as given.
+
+CANDIDATES
+{candidates}
+
+UNCLUSTERED EVENTS
+{unclustered}
+"""
+
+CLUSTER_REJECTED = """
+
+Your last answer was thrown out: {why}
+Answer again, fixing only that.
+"""
+
+
+# ── Session title ────────────────────────────────────────────────────────────
+
+DISCUSSION_TITLE_PROMPT = """
+Give this conversation a title of at most six words. Reply with the title only.
+
+{conversation_history}
+"""
 
 
 def get_conversation_flow_prompt(
@@ -41,7 +279,10 @@ def get_conversation_flow_prompt(
     a fresh user; non-empty means a returning user with prior session(s).
     Production deployments override this callable via FDSERVER_PROMPTS_PATH.
     """
-    return "You are a family systems consultant. Help the user tell their family's story across three generations."
+    return (
+        "You are a family systems consultant. Help the user tell their family's "
+        "story across three generations." + COACH_REFERENCE_INSTRUCTION
+    )
 
 
 # ── Data extraction — 2-pass (structure then SARF shifts) ────────────────────
@@ -192,6 +433,8 @@ if _prompts_path:
             # Override prompt constants from private file.
             for _var in (
                 "SUMMARIZE_MESSAGES_PROMPT",
+                "COACH_REFERENCE_INSTRUCTION",
+                "DISCUSSION_TITLE_PROMPT",
                 "DATA_EXTRACTION_CORRECTION",
                 "DATA_EXTRACTION_PASS1_PROMPT",
                 "DATA_EXTRACTION_PASS1_CONTEXT",
@@ -201,15 +444,23 @@ if _prompts_path:
                 "CURSOR_MARKER_TEMPLATE",
                 "CURSOR_EXTRACTION_RULE_TEMPLATE",
                 "DOCK_PROMPT",
+                "AGENT_FIDELITY_RULE",
+                "PLAY_BY_PLAY_PROMPT",
+                "CLUSTER_PROMPT",
+                "CLUSTER_REJECTED",
             ):
                 if hasattr(_private, _var):
                     globals()[_var] = getattr(_private, _var)
 
             # Override callable — fdserver provides full assembly logic.
-            if hasattr(_private, "get_conversation_flow_prompt"):
-                globals()[
-                    "get_conversation_flow_prompt"
-                ] = _private.get_conversation_flow_prompt
+            for _callable in (
+                "get_conversation_flow_prompt",
+                "get_agent_prompt",
+                "note_register",
+                "tool_meanings",
+            ):
+                if hasattr(_private, _callable):
+                    globals()[_callable] = getattr(_private, _callable)
 
             _log.info(f"Loaded private prompts from {_prompts_path}")
 

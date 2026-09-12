@@ -6,6 +6,15 @@ from sqlalchemy.orm import relationship
 from btcopilot.extensions import db
 from btcopilot.llmutil import response_text_sync
 from btcopilot.modelmixin import ModelMixin
+from btcopilot.personal.prompts import DISCUSSION_TITLE_PROMPT
+
+
+class DiscussionKind(enum.StrEnum):
+    """A note is a session of its own and is coded like a chat (R-0281)."""
+
+    Chat = "chat"
+    Recording = "recording"
+    Note = "note"
 
 
 class DiscussionStatus(enum.StrEnum):
@@ -23,6 +32,19 @@ class Discussion(db.Model, ModelMixin):
 
     user_id = Column(Integer, db.ForeignKey("users.id"))
     diagram_id = Column(Integer, db.ForeignKey("diagrams.id"))
+    title = Column(Text)
+    title_set_by_user = Column(
+        Boolean,
+        default=False,
+        nullable=False,
+        comment="Whether the title was given by hand rather than written by the coach",
+    )
+    kind = Column(
+        Enum(DiscussionKind, values_callable=lambda e: [x.value for x in e]),
+        default=DiscussionKind.Chat,
+        nullable=False,
+        server_default=DiscussionKind.Chat.value,
+    )
     summary = Column(Text)
     discussion_date = Column(
         Date,
@@ -144,6 +166,16 @@ class Discussion(db.Model, ModelMixin):
                 conversation_history=self.conversation_history()
             ),
         )
+
+    def update_title(self):
+        """The coach never overwrites a title someone gave by hand."""
+        if self.title_set_by_user:
+            return
+        self.title = response_text_sync(
+            DISCUSSION_TITLE_PROMPT.format(
+                conversation_history=self.conversation_history()
+            ),
+        ).strip()
 
     def next_order(self) -> int:
         from btcopilot.personal.models import Statement
