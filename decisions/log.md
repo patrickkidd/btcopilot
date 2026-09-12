@@ -1259,3 +1259,18 @@ year's rules and ledgers.
 **Revisit trigger:** the first two meetings — if the pre-meeting vote is not being done, the
 stages collapse back to one and the design is wrong.
 
+## 2026-09-11: Every screen ruled and drawn; the review's data model minimal; build begun
+
+**Decision:** The coding, review, Pro and interface screens are all ruled and drawn on one
+fictional family in the app's own markup (mockups/, the catalogue for beta users). The review's
+data model, after an adversarial pass: one column on discussions, five prefixed review tables,
+the branch's history tables renamed diagram_changes and diagram_interactions, JSON for what will
+change shape, nothing the desktop app reads touched (REVIEW_TABLES.html). Steps one and two of
+the ruled build order landed the same night with independent browser walks closing three defects.
+
+**Rejected:** a numerical settling rule before the meeting; the AI's take in the vote; whole
+transcripts as a separate coding unit; correcting the coach's coding first; two-boxes compare;
+conflict marks in triangles; a per-case "+" in the sessions sheet; trend lines before real data.
+
+**Revisit trigger:** the first two review meetings.
+

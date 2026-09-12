@@ -1,31 +1,5 @@
 [
 {
-"id": "btcopilot@fc52fd3",
-"kind": "build",
-"date": "2026-08-25",
-"session": "",
-"topics": [
-"T-5",
-"T-9"
-],
-"title": "Jira rules → root CLAUDE.md; ignore built-in worktree dir; log lifecycle decision (#130)",
-"text": "Jira rules → root CLAUDE.md; ignore built-in worktree dir; log lifecycle decision (#130)",
-"source": "btcopilot git log"
-},
-{
-"id": "fdserver@c4e2b95",
-"kind": "build",
-"date": "2026-08-25",
-"session": "",
-"topics": [
-"T-5",
-"T-9"
-],
-"title": "Ignore built-in Claude Code worktree dir (#27)",
-"text": "Ignore built-in Claude Code worktree dir (#27)",
-"source": "fdserver git log"
-},
-{
 "id": "D:2026-08-25: MVP done condition = returning long-horizon chat",
 "kind": "decision",
 "date": "2026-08-25",
@@ -8779,7 +8753,7 @@
 "id": "H:2026-09-10 and 11 — merge fixes, the coding loop designed, t",
 "kind": "history",
 "date": "2026-09-10",
-"session": "session_01K8QPKojERHpy2znLb9Qrxv",
+"session": "",
 "topics": [
 "T-1",
 "T-2",
@@ -8899,6 +8873,670 @@
 "text": "One app, progressively enhanced: the chat screen as built is the app; Pro adds cases (the family switcher), sessions (the sessions sheet plus upload a recording with speaker mapping), notes, and a wider desktop layout with the drawer pinned; Training adds coding actions in the session menu and agreement under sessions; never a new view where an existing surface can carry the addition",
 "supersedes": [],
 "source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "btcopilot@10b4c5e",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-1",
+"T-3",
+"T-6"
+],
+"title": "FD-362 corpus: the two coding-screen defects fixed; the sandbox mail and path incident recorded",
+"text": "FD-362 corpus: the two coding-screen defects fixed; the sandbox mail and path incident recorded",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@3c23753",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3"
+],
+"title": "FD-362 coding: an unclear instruction is asked about, never written",
+"text": "FD-362 coding: an unclear instruction is asked about, never written",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@b7297ce",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-6"
+],
+"title": "FD-362 corpus: the independent walk and the scribe fix recorded",
+"text": "FD-362 corpus: the independent walk and the scribe fix recorded",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@692ee35",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3"
+],
+"title": "FD-362 coding: the scribe adds the person a coder names",
+"text": "FD-362 coding: the scribe adds the person a coder names",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@3ad7533",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-6"
+],
+"title": "FD-362 corpus: correct backup name",
+"text": "FD-362 corpus: correct backup name",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@254c48e",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-6"
+],
+"title": "FD-362 corpus: coding fix pass and the admin role recorded",
+"text": "FD-362 corpus: coding fix pass and the admin role recorded",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@25298c8",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-2",
+"T-3"
+],
+"title": "FD-362 coding: a test that a named record takes the write and a stranger's is refused",
+"text": "FD-362 coding: a test that a named record takes the write and a stranger's is refused",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@bd8b360",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-5"
+],
+"title": "FD-362 coding: the drawer edits the coding's own record, and its row under the picture offers only the walk",
+"text": "FD-362 coding: the drawer edits the coding's own record, and its row under the picture offers only the walk",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@d1a9b55",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-1",
+"T-3"
+],
+"title": "FD-362 coding: the sign-in form sends once, so a signed-in reader never sees a CSRF failure",
+"text": "FD-362 coding: the sign-in form sends once, so a signed-in reader never sees a CSRF failure",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@ae3bd0f",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "FD-362 process: fixtures are Claude's to stand up; bugs fixed before he looks (R-0302)",
+"text": "FD-362 process: fixtures are Claude's to stand up; bugs fixed before he looks (R-0302)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@6304c95",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "FD-362 corpus: build step two landed; deviations and the admin-role block recorded",
+"text": "FD-362 corpus: build step two landed; deviations and the admin-role block recorded",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@cfd1fd0",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-1",
+"T-3"
+],
+"title": "FD-362 coding: the sandbox schema script, and what the sandbox showed",
+"text": "FD-362 coding: the sandbox schema script, and what the sandbox showed",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@014d4a3",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3"
+],
+"title": "FD-362 coding: the coder's screens as drawn (R-0265, R-0267, R-0270, R-0271)",
+"text": "FD-362 coding: the coder's screens as drawn (R-0265, R-0267, R-0270, R-0271)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@5384d18",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3"
+],
+"title": "FD-362 coding: the scribe, the one task, and the coding thread (R-0265, R-0270)",
+"text": "FD-362 coding: the scribe, the one task, and the coding thread (R-0265, R-0270)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@6320ee6",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "FD-362 corpus: build step one landed; deviations recorded",
+"text": "FD-362 corpus: build step one landed; deviations recorded",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@ce45916",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 process: auditor on the cheapest capable model (R-0301)",
+"text": "FD-362 process: auditor on the cheapest capable model (R-0301)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@03f20c2",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-1",
+"T-4"
+],
+"title": "FD-362 review: tests for the migration, the cut window, the blind rule, settles and the agenda",
+"text": "FD-362 review: tests for the migration, the cut window, the blind rule, settles and the agenda",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@5a8cb4d",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362 review: the five review_ tables, the review package and its endpoints (R-0296, R-0297)",
+"text": "FD-362 review: the five review_ tables, the review package and its endpoints (R-0296, R-0297)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@c391068",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362 review: diagram_changes, diagram_interactions, discussions.kind, review author (R-0299, R-0281)",
+"text": "FD-362 review: diagram_changes, diagram_interactions, discussions.kind, review author (R-0299, R-0281)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@06a7ea5",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: diagram_changes and diagram_interactions on the scope page and in the topic block (R-0299)",
+"text": "FD-362: diagram_changes and diagram_interactions on the scope page and in the topic block (R-0299)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@da1dd56",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: the database scope of the PR against master, one list (R-0298)",
+"text": "FD-362: the database scope of the PR against master, one list (R-0298)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@2ffdca4",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-1"
+],
+"title": "FD-362: review tables page — reuse list split into production tables and branch-new tables",
+"text": "FD-362: review tables page — reuse list split into production tables and branch-new tables",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@627daf2",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: review tables page marks everything the branch adds against master (R-0297)",
+"text": "FD-362: review tables page marks everything the branch adds against master (R-0297)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@2485bf7",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: review tables — two-cursor cuts, review_ prefix, changes marked new on this branch (R-0296)",
+"text": "FD-362: review tables — two-cursor cuts, review_ prefix, changes marked new on this branch (R-0296)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@412cc60",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: review tables — user_id everywhere, as precedent",
+"text": "FD-362: review tables — user_id everywhere, as precedent",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@4f83d52",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: review tables page names every table exactly (R-0295)",
+"text": "FD-362: review tables page names every table exactly (R-0295)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@cf58203",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-1",
+"T-4",
+"T-5",
+"T-6"
+],
+"title": "FD-362 corpus: tables awaiting Patrick's check; build order and migration recorded",
+"text": "FD-362 corpus: tables awaiting Patrick's check; build order and migration recorded",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@c93a519",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: review tables after the adversarial pass — one column, five tables, JSON for what changes shape",
+"text": "FD-362: review tables after the adversarial pass — one column, five tables, JSON for what changes shape",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@ad3e0fa",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "FD-362: the review's tables laid over the existing model, for Patrick's check before the build",
+"text": "FD-362: the review's tables laid over the existing model, for Patrick's check before the build",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@b8cfd94",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-2",
+"T-6"
+],
+"title": "FD-362 corpus: R-0293 recorded on the coach topic",
+"text": "FD-362 corpus: R-0293 recorded on the coach topic",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@50f620c",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "FD-362 corpus: play-by-play term, the explain defect, interface topic rewritten to build items; R-0292",
+"text": "FD-362 corpus: play-by-play term, the explain defect, interface topic rewritten to build items; R-0292",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@4ed2b28",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-6"
+],
+"title": "FD-362 corpus: calls closed; R-0289..R-0291 recorded",
+"text": "FD-362 corpus: calls closed; R-0289..R-0291 recorded",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@e6d113e",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: outside move — the two who stay draw together (R-0291); calls page closes the pixel defaults",
+"text": "FD-362: outside move — the two who stay draw together (R-0291); calls page closes the pixel defaults",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@bb4ee54",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-1"
+],
+"title": "FD-362: outside mover in the one green (R-0290); sandbox addresses use turin",
+"text": "FD-362: outside mover in the one green (R-0290); sandbox addresses use turin",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@915d340",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362: event everywhere (R-0289); grouping ruling in the spec sheet",
+"text": "FD-362: event everywhere (R-0289); grouping ruling in the spec sheet",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@33193bd",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: every drawing on the stand-in family's story, no placeholders; R-0287, R-0288 recorded",
+"text": "FD-362: every drawing on the stand-in family's story, no placeholders; R-0287, R-0288 recorded",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@f52b63d",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "FD-362: move language — outside move without tension marks, triangle positions added (R-0288)",
+"text": "FD-362: move language — outside move without tension marks, triangle positions added (R-0288)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@992cc00",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "FD-362: calls ruled (R-0282..R-0286) in the spec sheet and topic block; move language linked in the catalogue",
+"text": "FD-362: calls ruled (R-0282..R-0286) in the spec sheet and topic block; move language linked in the catalogue",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@ee75e6b",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-6"
+],
+"title": "FD-362: interface calls drawn both ways; corpus updated for Pro approval and the stand-in family",
+"text": "FD-362: interface calls drawn both ways; corpus updated for Pro approval and the stand-in family",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@846ee53",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: the stand-in family in every frame (fully fictional); Pro page closed",
+"text": "FD-362: the stand-in family in every frame (fully fictional); Pro page closed",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@c744424",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-6"
+],
+"title": "FD-362 corpus: Pro surfaces approved (R-0281) in the spec sheet and topic block",
+"text": "FD-362 corpus: Pro surfaces approved (R-0281) in the spec sheet and topic block",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@5cfd99f",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362: the catalogue as full screens in live code (R-0279); Pro surfaces recorded",
+"text": "FD-362: the catalogue as full screens in live code (R-0279); Pro surfaces recorded",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@46110d8",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3"
+],
+"title": "FD-362: Pro screens drawn — cases, sessions with upload and speaker mapping, desktop layout, notes as options",
+"text": "FD-362: Pro screens drawn — cases, sessions with upload and speaker mapping, desktop layout, notes as options",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@f40b693",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-5"
+],
+"title": "FD-362: coding and review screens closed — agreement timeline A, guidelines behind (i); catalogue re-rendered;",
+"text": "FD-362: coding and review screens closed — agreement timeline A, guidelines behind (i); catalogue re-rendered; R-0278",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@576c81c",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-6",
+"T-9"
+],
+"title": "FD-362 corpus: review screens v6 rulings and the catalogue recorded in the topic block",
+"text": "FD-362 corpus: review screens v6 rulings and the catalogue recorded in the topic block",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@e8406e6",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "FD-362: review screens v6 in the corpus, spec sheet as a picture catalogue with all frames rendered; R-0272..R",
+"text": "FD-362: review screens v6 in the corpus, spec sheet as a picture catalogue with all frames rendered; R-0272..R-0277",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@397f3ba",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "FD-362: the spec sheet as a picture catalogue — mockups and screens in the corpus, screenshots.py, catalogue r",
+"text": "FD-362: the spec sheet as a picture catalogue — mockups and screens in the corpus, screenshots.py, catalogue renderer",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@8cdc662",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-5",
+"T-6"
+],
+"title": "FD-362 corpus: coding screens closed at version 3 (R-0271); spec sheet to become a picture catalogue",
+"text": "FD-362 corpus: coding screens closed at version 3 (R-0271); spec sheet to become a picture catalogue",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@df2faf6",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-1",
+"T-5",
+"T-9"
+],
+"title": "FD-362: the spec sheet for beta users — SCREENS.md, its renderer, wired into the flush and its checker; R-0270",
+"text": "FD-362: the spec sheet for beta users — SCREENS.md, its renderer, wired into the flush and its checker; R-0270",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@f346d11",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-6",
+"T-9"
+],
+"title": "FD-362 corpus: coding screens redrawn to the review rulings; screens before code review (R-0269)",
+"text": "FD-362 corpus: coding screens redrawn to the review rulings; screens before code review (R-0269)",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@33014d5",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 two-clocks: mid-session flushes are incremental from the last flush time",
+"text": "FD-362 two-clocks: mid-session flushes are incremental from the last flush time",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@8c7c5de",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"untagged"
+],
+"title": "FD-362 memory: a topic carries its lane colour wherever it is named",
+"text": "FD-362 memory: a topic carries its lane colour wherever it is named",
+"source": "btcopilot git log"
+},
+{
+"id": "btcopilot@6406239",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "FD-362 flush: ledger rebuilt after the 2026-09-11 afternoon session",
+"text": "FD-362 flush: ledger rebuilt after the 2026-09-11 afternoon session",
+"source": "btcopilot git log"
 },
 {
 "id": "btcopilot@1c0c414",
@@ -9151,6 +9789,347 @@
 "source": "btcopilot git log"
 },
 {
+"id": "fdserver@527bde5",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-2",
+"T-9"
+],
+"title": "FD-362 oracle: R-0302 — fix the harness, fix known bugs first, one clear thing to test",
+"text": "FD-362 oracle: R-0302 — fix the harness, fix known bugs first, one clear thing to test",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@46acf83",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0301 — sub-agents cost- and wall-clock-optimised; auditor on Sonnet",
+"text": "FD-362 oracle: R-0301 — sub-agents cost- and wall-clock-optimised; auditor on Sonnet",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@1cf62da",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "FD-362 oracle: R-0300 — go on the database scope and the build order",
+"text": "FD-362 oracle: R-0300 — go on the database scope and the build order",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@ef19f1c",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0299 — diagram_changes and diagram_interactions",
+"text": "FD-362 oracle: R-0299 — diagram_changes and diagram_interactions",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@6b4718d",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0298 — a data review is one list, the whole PR against master",
+"text": "FD-362 oracle: R-0298 — a data review is one list, the whole PR against master",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@950827b",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0297 — review_ prefix; data reviews cover the whole branch against master",
+"text": "FD-362 oracle: R-0297 — review_ prefix; data reviews cover the whole branch against master",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@6a5bb47",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0296 — cuts as two-cursor windows; user_id rule; a prefix for review-only tables",
+"text": "FD-362 oracle: R-0296 — cuts as two-cursor windows; user_id rule; a prefix for review-only tables",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@fcba1b3",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0295 — database tables named exactly, never re-framed",
+"text": "FD-362 oracle: R-0295 — database tables named exactly, never re-framed",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@d1f75c6",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-1",
+"T-4",
+"T-9"
+],
+"title": "FD-362 oracle: R-0294 — the reasons: sensitivity, Pro untouched, few migrations, agility",
+"text": "FD-362 oracle: R-0294 — the reasons: sensitivity, Pro untouched, few migrations, agility",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@87dc549",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0294 — no flagrant tables or columns; streamlined, precedent-consistent, adversarially review",
+"text": "FD-362 oracle: R-0294 — no flagrant tables or columns; streamlined, precedent-consistent, adversarially reviewed",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@368fc6e",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-2",
+"T-9"
+],
+"title": "FD-362 oracle: R-0293 — the coach codes variables in session; F1 against the review's agreement",
+"text": "FD-362 oracle: R-0293 — the coach codes variables in session; F1 against the review's agreement",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@f7adec7",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "FD-362 oracle: R-0292 — triangles ratified; play-by-play is the term; explain shows one event of three (defect",
+"text": "FD-362 oracle: R-0292 — triangles ratified; play-by-play is the term; explain shows one event of three (defect)",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@2ad276b",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0291 — outside move: the two who stay draw together; pixel defaults stand",
+"text": "FD-362 oracle: R-0291 — outside move: the two who stay draw together; pixel defaults stand",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@6d75175",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-1",
+"T-9"
+],
+"title": "FD-362 oracle: R-0290 — outside mover in green; sandbox addresses use turin",
+"text": "FD-362 oracle: R-0290 — outside mover in green; sandbox addresses use turin",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@e410334",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "FD-362 oracle: R-0289 — event everywhere, moment retired",
+"text": "FD-362 oracle: R-0289 — event everywhere, moment retired",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@041266f",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-2",
+"T-9"
+],
+"title": "FD-362 oracle: R-0287 grouping is the coach's judgement with a one-line scope; R-0288 triangles confirmed",
+"text": "FD-362 oracle: R-0287 grouping is the coach's judgement with a one-line scope; R-0288 triangles confirmed",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@8438f08",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0283..R-0286 — nodal ring stays, no trend lines yet, case wording, triangle is not conflict",
+"text": "FD-362 oracle: R-0283..R-0286 — nodal ring stays, no trend lines yet, case wording, triangle is not conflict",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@020315e",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-6",
+"T-9"
+],
+"title": "FD-362 oracle: R-0282 — outlined chip stays; nodal event is the term; clusters implied in conversation, never ",
+"text": "FD-362 oracle: R-0282 — outlined chip stays; nodal event is the term; clusters implied in conversation, never edited directly",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@4170dd9",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-7",
+"T-9"
+],
+"title": "FD-362 oracle: R-0281 — Pro surfaces approved; notes as sessions and as fields; drawn family stays in the plan",
+"text": "FD-362 oracle: R-0281 — Pro surfaces approved; notes as sessions and as fields; drawn family stays in the plan",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@58d134b",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0280 — catalogue content from Patrick's record as inspiration, fully anonymized",
+"text": "FD-362 oracle: R-0280 — catalogue content from Patrick's record as inspiration, fully anonymized",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@9c8f52d",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0279 — the catalogue is full screens as live code",
+"text": "FD-362 oracle: R-0279 — the catalogue is full screens as live code",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@fc5c950",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-5",
+"T-9"
+],
+"title": "FD-362 oracle: R-0278 — agreement timeline A; guidelines behind an (i) on the coding screen",
+"text": "FD-362 oracle: R-0278 — agreement timeline A; guidelines behind an (i) on the coding screen",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@17046f1",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "FD-362 oracle: R-0274..R-0277 — no numerical rule, database + guidelines page, agenda tracking, one agreement ",
+"text": "FD-362 oracle: R-0274..R-0277 — no numerical rule, database + guidelines page, agenda tracking, one agreement timeline",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@4b716d0",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0272 names only at the meeting, R-0273 Patrick opens the vote",
+"text": "FD-362 oracle: R-0272 names only at the meeting, R-0273 Patrick opens the vote",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@1f7020c",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-9"
+],
+"title": "FD-362 oracle: R-0271 — Done in the top bar with confirmation; coding only within the cut",
+"text": "FD-362 oracle: R-0271 — Done in the top bar with confirmation; coding only within the cut",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@d871cc8",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-3",
+"T-9"
+],
+"title": "FD-362 oracle: R-0270 — coding screens approved, inline coding chat kept",
+"text": "FD-362 oracle: R-0270 — coding screens approved, inline coding chat kept",
+"source": "fdserver git log"
+},
+{
+"id": "fdserver@2c734a6",
+"kind": "build",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-9"
+],
+"title": "FD-362 oracle: R-0269 — screens planned pixel for pixel before code review; settled means confirmed in his wor",
+"text": "FD-362 oracle: R-0269 — screens planned pixel for pixel before code review; settled means confirmed in his words",
+"source": "fdserver git log"
+},
+{
 "id": "fdserver@8e3b424",
 "kind": "build",
 "date": "2026-09-11",
@@ -9301,6 +10280,20 @@
 ],
 "title": "2026-09-11: Ground truth in three stages, coded up to cuts; the AI out of the vote",
 "text": "**Context:** Last year's IRR meetings never converged: a tool too complicated for therapists,\nno pre-meeting work, every dispute argued live. The new app makes every coding a diagram, so a\nreview process could be designed from scratch. Patrick ruled it over seven rounds on one drawn\npage (oracle R-0244..R-0268).\n\n**Decision:** Three stages. Each coder codes a conversation up to a cut Patrick selects on the\nthread, blind, adding to their own earlier coding of it; once three are done, each votes on a\nphone on every disputed item, takes shown without names and with no AI take or recommendation\nin the ballot; the meeting sees only what the vote left open, with names and tallies, gives\nevery item keep / change / unresolved, and ratifies with unresolved items kept as data. Coders\nhave one task a",
+"source": "decisions/log.md"
+},
+{
+"id": "D:2026-09-11: Every screen ruled and drawn; the review's data ",
+"kind": "decision",
+"date": "2026-09-11",
+"session": "",
+"topics": [
+"T-1",
+"T-3",
+"T-5"
+],
+"title": "2026-09-11: Every screen ruled and drawn; the review's data model minimal; build begun",
+"text": "**Decision:** The coding, review, Pro and interface screens are all ruled and drawn on one\nfictional family in the app's own markup (mockups/, the catalogue for beta users). The review's\ndata model, after an adversarial pass: one column on discussions, five prefixed review tables,\nthe branch's history tables renamed diagram_changes and diagram_interactions, JSON for what will\nchange shape, nothing the desktop app reads touched (REVIEW_TABLES.html). Steps one and two of\nthe ruled build order landed the same night with independent browser walks closing three defects.\n\n**Rejected:** a numerical settling rule before the meeting; the AI's take in the vote; whole\ntranscripts as a separate coding unit; correcting the coach's coding first; two-boxes compare;\nconflict marks in triangles; a per-case",
 "source": "decisions/log.md"
 },
 {
@@ -9710,6 +10703,531 @@
 "source": "fdserver doc/oracle/rulings.md"
 },
 {
+"id": "R-0269",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-5",
+"T-9"
+],
+"title": "The design continues screen by screen until every screen of the app is planned pixel for pixel, before any cod",
+"text": "The design continues screen by screen until every screen of the app is planned pixel for pixel, before any code review; the coding screens come next, redrawn to today's rulings (cuts, one task at a time, blind, the scribe). \"Settled\" means Patrick confirmed it in his own words; anything else is a proposal and is labelled so",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0270",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-5"
+],
+"title": "The coding screens are approved as drawn (version 2): the coder's own words stay in the thread under the line ",
+"text": "The coding screens are approved as drawn (version 2): the coder's own words stay in the thread under the line they coded, with the scribe's edit line beneath them, as an inline coding chat; the alternative that keeps only the edit line is dropped",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0271",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-5"
+],
+"title": "On the coding screen Done lives in the top bar, where the \"coding\" mark was, so it never reads as \"add\"; the c",
+"text": "On the coding screen Done lives in the top bar, where the \"coding\" mark was, so it never reads as \"add\"; the chat input and its send button belong to individual codes, not to submitting the task; tapping Done opens a confirmation explaining that the changes will be saved and submitted for the meeting; turns before the last ratified cut are shown in full but coding is allowed only within the cut. The \"coding\" mark is dropped",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0272",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-9"
+],
+"title": "Coder names are hidden whenever people are voting; the review meeting is the only place anyone sees who coded ",
+"text": "Coder names are hidden whenever people are voting; the review meeting is the only place anyone sees who coded what",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0273",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-4",
+"T-9"
+],
+"title": "The vote opens when Patrick opens it, not when a number of coders have submitted. Migrating last year's IRR ma",
+"text": "The vote opens when Patrick opens it, not when a number of coders have submitted. Migrating last year's IRR material is the last follow-up item of this unit",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0274",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-2",
+"T-3",
+"T-9"
+],
+"title": "No numerical rule settles a disputed item before the meeting: the data model is not clear enough (what the SAR",
+"text": "No numerical rule settles a disputed item before the meeting: the data model is not clear enough (what the SARF variable values mean is still being worked out) to set thresholds. The vote informs the meeting; the meeting settles",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0275",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-5"
+],
+"title": "The meeting's results live in the database so everything is automatically traceable; the one output artifact i",
+"text": "The meeting's results live in the database so everything is automatically traceable; the one output artifact is the coding guidelines, which people can refer to inside the app from an info or help button. The rows (codings, votes, settles) are the event clock; the current guidelines are the state clock",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0276",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-5",
+"T-9"
+],
+"title": "Everything that happens in the meeting is tracked automatically, and there is a UI for people to close items f",
+"text": "Everything that happens in the meeting is tracked automatically, and there is a UI for people to close items for themselves or for the items to come up on the next meeting's agenda; flagging an AI-written rule for the next meeting is approved. Streamlining follow-ups into a form is what gets them done",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0277",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-5"
+],
+"title": "The meeting's view is one timeline in which agreement and disagreement are both obvious — not one timeline per",
+"text": "The meeting's view is one timeline in which agreement and disagreement are both obvious — not one timeline per coder, which would be five timelines",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0278",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-5"
+],
+"title": "The agreement timeline is option A — one dot per moment, teal where the vote agreed, amber where it did not, a",
+"text": "The agreement timeline is option A — one dot per moment, teal where the vote agreed, amber where it did not, a small count beside a disputed dot — in the vote and in the meeting. The coding guidelines are reached from an (i) button at the top of the coding screen",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0279",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-1",
+"T-5",
+"T-9"
+],
+"title": "The catalogue for beta users shows full screens, never widgets or crops, and as real code — live frames in the",
+"text": "The catalogue for beta users shows full screens, never widgets or crops, and as real code — live frames in the app's own markup and stylesheet, as the mockups are — never PNGs or JPEGs",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0280",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-1",
+"T-5",
+"T-9"
+],
+"title": "The catalogue's example content comes from Patrick's own sandbox record used as inspiration only: fully anonym",
+"text": "The catalogue's example content comes from Patrick's own sandbox record used as inspiration only: fully anonymized, the actual issues and timeline changed, the sensitive material left out entirely; real-feeling chat, timeline and chips instead of placeholder text",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0281",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-2",
+"T-3",
+"T-5",
+"T-6",
+"T-7"
+],
+"title": "Pro surfaces approved as drawn: cases on the account page with the case name in the title row; upload a record",
+"text": "Pro surfaces approved as drawn: cases on the account page with the case name in the title row; upload a recording with the speaker-mapping sheet; the desktop layout with the drawer pinned. Notes are both: a note is a session of its own, the clinician talking to the coach about the case after the fact, and notes are codable in the IRR study exactly like chat sessions; and the notes field on people and moments stays, reusing the existing database columns and concept. Nothing else from the desktop app for the first three clinicians except the drawn family diagram, which waits on whether auto-arrange works once there is data, and stays in the plan",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0282",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-2",
+"T-5",
+"T-6"
+],
+"title": "The moment chip inside coach prose stays the outlined pill as built. The term for an unusually significant mom",
+"text": "The moment chip inside coach prose stays the outlined pill as built. The term for an unusually significant moment is \"nodal event\", Bowen theory's own word; the app's words and the corpus use it. Users do not edit clusters directly; they imply facts about a grouping in conversation (\"that was a crazy time and my mother's death was part of it\") and the coach records it",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0283",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-2",
+"T-3",
+"T-5",
+"T-6"
+],
+"title": "The ring for a nodal event stays on the picture; it looks right. The nodal flag must be set for the correct ki",
+"text": "The ring for a nodal event stays on the picture; it looks right. The nodal flag must be set for the correct kind of moment by the clinical definition of a nodal event, never by something derived from the model's training data — the definition goes into the coach's clinical knowledge and is checked in coding",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0284",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-5"
+],
+"title": "No trend lines are drawn on the picture at all until real data shows what trends are worth showing; it is too ",
+"text": "No trend lines are drawn on the picture at all until real data shows what trends are worth showing; it is too hard to generalise beforehand. The three-directed-points step line is deferred; this deferral is on the record",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0285",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-5"
+],
+"title": "The word is \"case\", the database table stays Diagram. Only professional licence holders see cases; a personal ",
+"text": "The word is \"case\", the database table stays Diagram. Only professional licence holders see cases; a personal user only ever has their own and never sees the word. One case is selected at a time; sessions are added from within that case's views, never from the case selector; no buttons for things not being worked on. Supersedes the per-family \"+\" in the sessions sheet",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0286",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-3",
+"T-5",
+"T-6"
+],
+"title": "\"Two moments compared\" as a drawing of two boxes of words is dropped. Triangle and conflict are distinct clini",
+"text": "\"Two moments compared\" as a drawing of two boxes of words is dropped. Triangle and conflict are distinct clinical terms with separate drawings: a triangle view must not carry the conflict mark, and the outside move must not carry conflict symbols either; the inside and outside moves share one concept with different relative positions. The triangle view and the outside move are to be redrawn once the concept is confirmed",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0287",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-1",
+"T-2",
+"T-5",
+"T-6"
+],
+"title": "Grouping is the coach's judgement call, like any other edit: it groups moments that are emotionally or anxiety",
+"text": "Grouping is the coach's judgement call, like any other edit: it groups moments that are emotionally or anxiety salient together, edits groupings from what the user says as they say it, and every grouping carries its rationale — a one-line definition of the scope, what is in it and what is not, never a paragraph. The rules survive only as a first draft the coach may overwrite. Correctness is not measured yet; the beta will show how it goes",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0288",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-2",
+"T-5"
+],
+"title": "Triangles confirmed: three people hold positions, an inside pair close together and one outside; an inside mov",
+"text": "Triangles confirmed: three people hold positions, an inside pair close together and one outside; an inside move is the mover coming in to overlap the one they want and pushing the old insider out; an outside move is the mover walking out, leaving the two; neither carries a zigzag; conflict is a separate two-person move that appears in a triangle only if coded between two of the three; the triangle view shows the three positions at the moment in question and a played move shifts them. The outside move and the triangle view are redrawn that way",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0289",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-5",
+"T-9"
+],
+"title": "The word is \"event\" everywhere, in the screens, the drawings, the catalogue and the guidelines; \"moment\" is re",
+"text": "The word is \"event\" everywhere, in the screens, the drawings, the catalogue and the guidelines; \"moment\" is retired",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0290",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-1",
+"T-2",
+"T-5",
+"T-9"
+],
+"title": "Every move is drawn in the one green, the outside move included; a mover in plain ink is wrong. Sandbox addres",
+"text": "Every move is drawn in the one green, the outside move included; a mover in plain ink is wrong. Sandbox addresses use `turin`, never `turin.local` — supersedes the turin.local form in the invite-link ruling",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0291",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-5"
+],
+"title": "In the outside move the two who are left together move together — both move toward each other and end overlapp",
+"text": "In the outside move the two who are left together move together — both move toward each other and end overlapped as the pair does at the end of the inside move, where only one moves. The build's unruled pixel defaults (title row height, picture padding, chat gutters, drawability mark sizes, old messages keeping chips) stand as built, accepted by four review rounds without objection",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0292",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-5",
+"T-6"
+],
+"title": "The triangle positions and the redrawn outside move are ratified. The view is called the play-by-play, never \"",
+"text": "The triangle positions and the redrawn outside move are ratified. The view is called the play-by-play, never \"the moves board\". Its feel on the first cluster of the timeline is approved. Defect: on a cluster with three events, \"explain\" reveals only a single event on the play-by-play",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0293",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-2",
+"T-3",
+"T-6"
+],
+"title": "The coach codes the clinical variables in session; the ultimate goal is that its coding matches the IRR review",
+"text": "The coach codes the clinical variables in session; the ultimate goal is that its coding matches the IRR review's agreement — that is the F1 outcome of the project. Nothing is left to a separate review pass",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0294",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-1",
+"T-3",
+"T-4",
+"T-9"
+],
+"title": "New tables and columns are never added freely: data storage stays streamlined and elegant, reusing existing ta",
+"text": "New tables and columns are never added freely: data storage stays streamlined and elegant, reusing existing tables, datatypes and the shared schema wherever possible and following precedent; an adversarial review is used to cut what is not needed before Patrick reads a data design. The reasons: data is the one terribly sensitive thing; existing Pro users must not be disrupted; the new data will change a lot, so migrations for it are to be avoided; the approach must stay agile — a data model both simple and flexible",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0295",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-9"
+],
+"title": "When talking about database tables, name them exactly as they are (`discussions`, `diagrams`, `changes`) and n",
+"text": "When talking about database tables, name them exactly as they are (`discussions`, `diagrams`, `changes`) and never re-frame them with the screen's words; summaries use clear, common language with no invented terms",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0296",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-2",
+"T-3"
+],
+"title": "A cut is stored as a window with two cursors, a start and an end statement id, so windows can be arbitrary lat",
+"text": "A cut is stored as a window with two cursors, a start and an end statement id, so windows can be arbitrary later; the app sets the start to the previous cut's end by default and refuses overlap in code, never in the schema. A foreign key keeps the referenced table's name (`user_id`) and is renamed only when a table holds more than one such reference. Tables used only by the review, coding and training get a prefix to keep generic names out of the global namespace",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0297",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-9"
+],
+"title": "The prefix is `review_`. Any data-model review covers the whole branch against master: every table and column ",
+"text": "The prefix is `review_`. Any data-model review covers the whole branch against master: every table and column the branch adds is marked as such, never only the part of the current design",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0298",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-9"
+],
+"title": "A data-model review is one list: the entire scope of the pull request against master, every table and column a",
+"text": "A data-model review is one list: the entire scope of the pull request against master, every table and column added or changed, with no sectioning by when it was added or which feature uses it; this is the first phase of the code review",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0299",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"untagged"
+],
+"title": "The two tables that hold a diagram's history are named `diagram_changes` and `diagram_interactions`, not `chan",
+"text": "The two tables that hold a diagram's history are named `diagram_changes` and `diagram_interactions`, not `changes` and `interactions`, on the same namespace logic as the `review_` prefix; class names may stay",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0300",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-1",
+"T-3",
+"T-5",
+"T-9"
+],
+"title": "Go: the database scope of the pull request as listed (diagram_changes, diagram_interactions, discussions.kind,",
+"text": "Go: the database scope of the pull request as listed (diagram_changes, diagram_interactions, discussions.kind, the five review_ tables) and the build order — tables and endpoints, the coding screens, Patrick's screens, the vote, the meeting and result screens, Pro, the small items — each step eyeballed on the sandbox before the next",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0301",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-9"
+],
+"title": "Every sub-agent is cost- and wall-clock-optimised: the cheapest model that can do the job (an auditor that pol",
+"text": "Every sub-agent is cost- and wall-clock-optimised: the cheapest model that can do the job (an auditor that polls the clock and reads a diff runs on Sonnet, not Opus), the smallest file set, no repeated verification, and independent work in parallel where the worktree allows. Amends the 2026-09-08 rule that put the auditor on Opus",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
+"id": "R-0302",
+"kind": "ruling",
+"status": "OK",
+"date": "2026-09-11",
+"session": "S 09-11",
+"topics": [
+"T-2",
+"T-5",
+"T-9"
+],
+"title": "Claude has total freedom to stand up test fixtures: if the harness or a permission blocks a fixture (a role, a",
+"text": "Claude has total freedom to stand up test fixtures: if the harness or a permission blocks a fixture (a role, a row, a cut on the table), fix the harness — never hand it to Patrick. Fix every known bug before asking him to test, and the ask names one clear thing to test",
+"supersedes": [],
+"source": "fdserver doc/oracle/rulings.md"
+},
+{
 "id": "8a56716d",
 "kind": "artifact",
 "date": "",
@@ -9736,6 +11254,62 @@
 "source": "doc/chat-first/TOPICS.md"
 },
 {
+"id": "78a2f31e",
+"kind": "artifact",
+"date": "",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "is approved as drawn [R-0268]. **Open:** (1) [build] the review screens are approved as drawn, version 7, nothing open (",
+"text": "https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9",
+"link": "https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9",
+"source": "doc/chat-first/TOPICS.md"
+},
+{
+"id": "4d218257",
+"kind": "artifact",
+"date": "",
+"session": "",
+"topics": [
+"T-1",
+"T-3",
+"T-5"
+],
+"title": "; (2) [build] the coding screens carry the (i) button beside Done, version 4; (3) [build] the catalogue for beta users (",
+"text": "https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba",
+"link": "https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba",
+"source": "doc/chat-first/TOPICS.md"
+},
+{
+"id": "fdb8a5b5",
+"kind": "artifact",
+"date": "",
+"session": "",
+"topics": [
+"T-1",
+"T-3",
+"T-5"
+],
+"title": "acing them with captures from a fixture sandbox is the next fix; (4) [build] Pro's surfaces approved as drawn [R-0281] (",
+"text": "https://claude.ai/code/artifact/fdb8a5b5-d043-46f4-afea-700a886210a3",
+"link": "https://claude.ai/code/artifact/fdb8a5b5-d043-46f4-afea-700a886210a3",
+"source": "doc/chat-first/TOPICS.md"
+},
+{
+"id": "14ca039a",
+"kind": "artifact",
+"date": "",
+"session": "",
+"topics": [
+"T-7"
+],
+"title": "y diagram stays in the plan behind the auto-arrange question; (5) [waiting] the interface calls, all ruled on the page (",
+"text": "https://claude.ai/code/artifact/14ca039a-b28e-4d01-95fb-93ba403bf19e",
+"link": "https://claude.ai/code/artifact/14ca039a-b28e-4d01-95fb-93ba403bf19e",
+"source": "doc/chat-first/TOPICS.md"
+},
+{
 "id": "62abcc8b",
 "kind": "artifact",
 "date": "",
@@ -9743,26 +11317,12 @@
 "topics": [
 "T-2",
 "T-3",
-"T-4"
-],
-"title": "s the batch harness's ground truth until re-coded — his yes or no on that plan; (8) [waiting] the coding page as drawn (",
-"text": "https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a",
-"link": "https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a",
-"source": "doc/chat-first/TOPICS.md"
-},
-{
-"id": "78a2f31e",
-"kind": "artifact",
-"date": "",
-"session": "",
-"topics": [
-"T-2",
-"T-3",
+"T-4",
 "T-5"
 ],
-"title": " becomes a legacy link, deleted after re-coding [R-0238]. **Lives in:** the ballot-and-meeting page, version 5, approved",
-"text": "https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9",
-"link": "https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9",
+"title": "l re-coded — his yes or no on that plan; (8) [build] the coding screens are approved as drawn, version 3, nothing open (",
+"text": "https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a",
+"link": "https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a",
 "source": "doc/chat-first/TOPICS.md"
 },
 {
@@ -9916,6 +11476,19 @@
 "text": "https://claude.ai/code/artifact/3fb3b475-a26a-485f-a554-10a9913a22b6",
 "link": "https://claude.ai/code/artifact/3fb3b475-a26a-485f-a554-10a9913a22b6",
 "source": "doc/chat-first/HISTORY.md"
+},
+{
+"id": "c523a1c9",
+"kind": "artifact",
+"date": "",
+"session": "",
+"topics": [
+"T-5"
+],
+"title": "reen, and one sentence saying who did what. What it is for: a play-by-play of what people did, one move at a time. @link",
+"text": "https://claude.ai/code/artifact/c523a1c9-b298-49e8-807b-142a8a7470f7",
+"link": "https://claude.ai/code/artifact/c523a1c9-b298-49e8-807b-142a8a7470f7",
+"source": "doc/chat-first/SCREENS.md"
 },
 {
 "id": "H:FUNCTION-subset session: the active basis is itself an illus",

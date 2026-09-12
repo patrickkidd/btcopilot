@@ -95,10 +95,24 @@ the home screen. Every finding, round by round, with the commit that fixed it:
 [REVIEW_LOG.md](REVIEW_LOG.md), 66 rows. Rounds 1–4 are folded into the oracle store as
 R-0165..R-0228.
 
+**Built 2026-09-11/12 on the same branch, unreviewed by Patrick:** the review's tables
+(`review_cuts`, `review_codings`, `review_items`, `review_votes`, `review_rules`, one column
+`discussions.kind`, the branch's `changes` and `interactions` renamed `diagram_changes` and
+`diagram_interactions`) in an isolated package `btcopilot/review` with endpoints, the coach's
+replay as a task and the export; and the coding screens — the one-task card, the read-only
+thread up to the cut, the scribe on a cheap model with the record's tools, Done in the title
+row with a confirmation, the guidelines behind (i). Review and personal suites 431 passed. Two
+independent browser walks on a fixture account found and closed three defects; a last browser
+re-check of the drawer refresh and the pronoun guard was still running at the flush. The design
+of every screen is ruled and drawn in `doc/chat-first/mockups/` and the catalogue for beta
+users; `doc/chat-first/REVIEW_TABLES.html` is the database scope of the pull request. Next:
+Patrick tests the coding screen at https://turin:8891/personal/ (the one-task card is the first
+screen), then the remaining build steps in the ruled order.
+
 **His own record is small**: seven events, and one cluster he made himself holding two events.
 It predates the three-event floor and is grandfathered; see Open issues.
 
-**Review sandbox.** Durable scripts live in `/Users/patrick/worktrees/fd362-sandbox/`, outside
+**Review sandbox** (addresses use `turin`, never `turin.local`; the API is started with the ABSOLUTE database path; the sandbox's error mailer recipient is blank). Durable scripts live in `/Users/patrick/worktrees/fd362-sandbox/`, outside
 every job directory on purpose: a database inside a job directory is deleted with the job, and
 that has already cost one sandbox.
 

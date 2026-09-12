@@ -192,9 +192,9 @@ https://claude.ai/code/artifact/67988998-6e49-4924-a9b3-579979901eaf; the coding
 https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a; mockups are drawn with
 web/src/theme.css and the app's markup (his rule 2026-09-10); last year's material in
 doc/irr/.
-**Next action:** the coding and review screens are closed; Patrick confirms Pro's surfaces one
-by one (notes undrawn) and the five interface calls; the migration of last year's material is
-the last follow-up of this unit; then code review [R-0269].
+**Next action:** next session — read the last browser re-check's result if it landed, then
+Patrick tests the coding screen on his phone (one thing: code the fixture conversation and press
+Done); then build step three, his own screens (put on the table, place the cut, open the vote).
 **Updated:** 2026-09-11.
 
 ## T-4 · Existing records and conversations in the new app; wipe and re-code
