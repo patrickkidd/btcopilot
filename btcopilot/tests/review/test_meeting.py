@@ -8,7 +8,7 @@ from mock import patch
 
 from btcopilot.extensions import db
 from btcopilot.pro.models import User
-from btcopilot.review import divergence, ruledraft, snapshot
+from btcopilot.review import divergence, export, ruledraft, snapshot
 from btcopilot.review.models import Cut, Item, ReviewStatus, Rule, RuleSource
 from btcopilot.tests.review.conftest import coded, person, shift
 
@@ -202,6 +202,31 @@ def test_both_agreement_figures_are_kept(patrick, test_user, test_user_2, cut):
     assert result["first_pass"]["percent"] < result["after"]["percent"]
 
 
+def test_what_every_coder_read_the_same_way_is_ratified_too(
+    patrick, flask_app, test_user, test_user_2, cut
+):
+    """An agreed item is never argued over, so ratifying is what confirms it
+    onto the record."""
+    same = {"people": [person(1, "Ann")], "events": [shift(10, 1, "a shift")]}
+    coded(test_user, cut, same)
+    coded(test_user_2, cut, dict(same, events=[dict(same["events"][0], id=20)]))
+    open_vote(patrick, cut)
+    agreed = [
+        item
+        for item in db.session.get(Cut, cut.id).items
+        if item.status is ReviewStatus.Agreed
+    ]
+    assert agreed
+    assert all(item.item_id is None for item in agreed)
+
+    settle_all(patrick, cut)
+    patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
+
+    record = export.ratified_record(db.session.get(Cut, cut.id))
+    assert record["people"]
+    assert record["events"]
+
+
 def test_the_result_scores_the_coachs_own_pass(
     patrick, test_user, test_user_2, coach_user, cut
 ):
@@ -256,6 +281,47 @@ def test_the_result_says_what_each_coder_tends_to_do(
     result = patrick.get(f"/review/result?cut_id={cut.id}").get_json()
     left_out = {row["name"]: row["left_out"] for row in result["coders"]}
     assert max(left_out.values()) >= 1
+
+
+def test_changing_a_take_rewords_the_same_moment(patrick, test_user, test_user_2, cut):
+    """A change is a rewording, not a second event beside the first: it lands
+    on the moment the takes already name."""
+    coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
+    coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
+    open_vote(patrick, cut)
+    item = next(
+        i
+        for i in db.session.get(Cut, cut.id).items
+        if i.status is ReviewStatus.Disputed and i.item_kind.value == "event"
+    )
+    written = dict(item.takes[0]["item"], description="what the room said")
+    written.pop("id")
+    patrick.patch(
+        f"/review/items/{item.id}", json={"choice": "change", "value": written}
+    )
+
+    assert db.session.get(Item, item.id).item_id == "10"
+
+
+def test_a_settle_the_record_refuses_is_the_rooms_fault(
+    patrick, test_user, test_user_2, cut
+):
+    """A shift with no variable is refused in the record's own words, not as a
+    server error."""
+    coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
+    coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
+    open_vote(patrick, cut)
+    item = next(
+        i
+        for i in db.session.get(Cut, cut.id).items
+        if i.status is ReviewStatus.Disputed and i.item_kind.value == "event"
+    )
+    bare = {k: v for k, v in item.takes[0]["item"].items() if k != "symptom"}
+    refused = patrick.patch(
+        f"/review/items/{item.id}", json={"choice": "change", "value": bare}
+    )
+    assert refused.status_code == 400
+    assert "variable" in refused.get_data(as_text=True)
 
 
 def test_a_cut_that_is_not_ratified_has_no_result(patrick, cut):

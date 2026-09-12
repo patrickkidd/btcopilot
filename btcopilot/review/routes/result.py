@@ -10,7 +10,7 @@ from flask import jsonify, request
 
 from btcopilot.review import coachscore, snapshot, tendencies
 from btcopilot.review.models import ReviewStatus, Rule
-from btcopilot.review.routes import bp, coder, cut_or_404
+from btcopilot.review.routes import bp, coder, cut_or_404, human_codings
 from btcopilot.review.routes.rules import payload as rule_payload
 
 
@@ -20,15 +20,23 @@ def result_read():
     cut = cut_or_404(request.args.get("cut_id", type=int) or 0)
     if cut.ratified_at is None:
         raise ValueError("that cut is not ratified yet")
+    # The room's own items: what only the coach wrote is read below as an
+    # audit and is never counted as ratified or unresolved (R-0254).
+    people = human_codings(cut)
+    theirs = [
+        item
+        for item in cut.items
+        if any(take.get("coding_id") in people for take in item.takes or [])
+    ]
     counts = {status.value: 0 for status in ReviewStatus}
-    for item in cut.items:
+    for item in theirs:
         counts[item.status.value] += 1
     figures = cut.agreement or {}
     return jsonify(
         {
             "cut_id": cut.id,
             "ratified_at": cut.ratified_at.isoformat(),
-            "items": len(cut.items),
+            "items": len(theirs),
             "ratified": counts[ReviewStatus.Settled.value]
             + counts[ReviewStatus.Agreed.value],
             "unresolved": counts[ReviewStatus.Unresolved.value],

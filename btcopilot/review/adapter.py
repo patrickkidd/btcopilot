@@ -12,6 +12,7 @@ import btcopilot
 from btcopilot import diagramjson
 from btcopilot.extensions import db
 from btcopilot.personal import record
+from btcopilot.personal.record import Invalid
 from btcopilot.personal.coachmodel import CoachModel
 from btcopilot.personal.coachturn import CoachTurn
 from btcopilot.personal.models import (
@@ -52,6 +53,7 @@ __all__ = [
     "coach_model",
     "coding_diagram",
     "commit",
+    "Invalid",
     "grant_write",
     "initials",
     "pdp_of",

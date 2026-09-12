@@ -72,7 +72,9 @@ def source_of(cut, item: Item) -> dict:
     counts: dict[str, int] = {}
     for vote in item.votes:
         counts[vote.choice.value] = counts.get(vote.choice.value, 0) + 1
-    margin = sorted(counts.values(), reverse=True)
+    # The two biggest sides, which is how the room hears a settle: "3 to 2", or
+    # "3 to 0" when nobody said anything else.
+    margin = (sorted(counts.values(), reverse=True) + [0, 0])[:2] if counts else []
     return {
         "cut_id": cut.id,
         "meeting_date": cut.meeting_date.isoformat() if cut.meeting_date else None,

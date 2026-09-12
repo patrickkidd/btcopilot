@@ -6,7 +6,7 @@ import enum
 from flask import jsonify, request
 
 from btcopilot.extensions import db
-from btcopilot.review import adapter, snapshot
+from btcopilot.review import adapter, settle, snapshot
 from btcopilot.review.models import Item, ReviewStatus
 from btcopilot.schema import ItemKind
 from btcopilot.review.routes import (
@@ -18,6 +18,7 @@ from btcopilot.review.routes import (
     item_or_404,
     sees_others,
 )
+
 
 class Settle(enum.StrEnum):
     Keep = "keep"
@@ -184,56 +185,9 @@ def item_patch(item_id: int):
     if choice is Settle.Reopen:
         item.settle_change_id = None
     elif choice is not Settle.Unresolved:
-        value = _value(item, body.get("value"))
-        change = _write(item, value, user)
+        value = settle.value_of(item, body.get("value"))
+        change = settle.write(item, value, user)
         item.settle_change_id = change.id
 
     db.session.commit()
     return jsonify(payload(item, True))
-
-
-def _value(item: Item, given) -> dict:
-    """What the meeting settled on: a coder's take picked by its coding, or a
-    written-out item of its own."""
-    if isinstance(given, dict) and "coding_id" in given and "item" not in given:
-        for take in item.takes or []:
-            if take.get("coding_id") == given["coding_id"]:
-                return take["item"]
-        raise ValueError("no take on this item from that coding")
-    if isinstance(given, dict) and given:
-        return given.get("item", given)
-    takes = item.takes or []
-    if len(takes) != 1:
-        raise ValueError("say which take or what to write")
-    return takes[0]["item"]
-
-
-def _write(item: Item, value: dict, user):
-    case = adapter.case_diagram(
-        db.session.get(adapter.Discussion, item.cut.discussion_id)
-    )
-    data = adapter.record_of(case)
-    target = str(item.item_id or value.get("id") or _next_id(data))
-    deltas = [
-        {
-            "item_kind": item.item_kind.value,
-            "item_id": target,
-            "field": field,
-            "after": adapter.to_json(field_value),
-        }
-        for field, field_value in value.items()
-        if field != "id"
-    ]
-    change = adapter.commit(case.id, deltas, user.id, f"review-settle-{item.id}")
-    item.item_id = target
-    return change
-
-
-def _next_id(data: dict) -> int:
-    ids = [
-        int(entry.get("id"))
-        for collection in ("people", "events", "pair_bonds")
-        for entry in data.get(collection) or []
-        if str(entry.get("id")).lstrip("-").isdigit()
-    ]
-    return max(ids, default=0) + 1

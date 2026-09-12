@@ -7,7 +7,6 @@ import {
   telling,
   when,
   words,
-  type Grouped,
 } from "./ballot";
 import { esc, el } from "./dom";
 import { openEditor } from "./editor";
@@ -48,13 +47,25 @@ function choiceOf(item: BallotItem): Settle | null {
   return null;
 }
 
-/** The margin a row was voted by, as the room hears it: the two biggest
- * groups, or the one group when everybody said the same. */
-function verdict(groups: Grouped[]): string {
-  const sizes = groups.map((one) => one.coders).sort((a, b) => b - a);
+/** One side of an item as the room hears it: the reading, who is behind it and
+ * how many that is. */
+interface Side {
+  label: string;
+  names: string[];
+  take: Take;
+}
+
+/** The margin a row stands at, as the room hears it: the two biggest sides, or
+ * the one side when nobody said anything else. */
+function verdict(sides: Side[]): string {
+  const sizes = sides.map((one) => one.names.length).sort((a, b) => b - a);
   if (sizes.length < 2) return "nobody voted against";
   return `${sizes[0]} to ${sizes[1]} — talk`;
 }
+
+const dots = (filled: number, empty: number): string =>
+  `<i class="vt on"></i>`.repeat(Math.max(filled, 0)) +
+  `<i class="vt"></i>`.repeat(Math.max(empty, 0));
 
 export class Meeting {
   private cut: Cut | null = null;
@@ -95,21 +106,31 @@ export class Meeting {
    * agreed on is read before one that only one coder read differently. */
   private open_(): BallotItem[] {
     return this.items
-      .filter((one) => one.status === ItemStatus.Disputed)
+      .filter((one) => one.status === ItemStatus.Disputed && this.theirs(one))
       .sort((a, b) => this.split(b) - this.split(a));
   }
 
-  /** How split an item is: the smaller the biggest group of coders reading it
-   * the same way, the more split the room is on it. */
+  /** An item somebody in the room wrote. What only the coach wrote down is
+   * never the room's to settle; it is read afterwards as an audit
+   * (R-0254). The reading only carries the room's own takes, so an item with
+   * none is the coach's alone. */
+  private theirs(item: BallotItem): boolean {
+    return item.takes.length > 0;
+  }
+
+  /** How split an item is: the more sides it has, and the smaller the biggest
+   * of them, the more split the room is on it. */
   private split(item: BallotItem): number {
-    const groups = group(item);
-    const biggest = Math.max(...groups.map((one) => one.coders), 0);
-    return groups.length * 100 - biggest;
+    const sides = this.sides(item);
+    const biggest = Math.max(...sides.map((one) => one.names.length), 0);
+    return sides.length * 100 - biggest;
   }
 
   /** What the vote settled, which is not read aloud but can be reopened. */
   private settled(): BallotItem[] {
-    return this.items.filter((one) => one.status !== ItemStatus.Disputed);
+    return this.items.filter(
+      (one) => one.status !== ItemStatus.Disputed && this.theirs(one),
+    );
   }
 
   private render(): void {
@@ -159,21 +180,19 @@ export class Meeting {
   /** One disputed item: its tally, what each side wrote with who wrote it, the
    * line it came from, and the three choices. */
   private row(item: BallotItem): string {
-    const groups = group(item);
     const chosen = choiceOf(item);
     const first = item.takes[0];
-    const dots = groups
-      .map((one) => `<i class="vt on"></i>`.repeat(one.coders))
-      .join("");
-    const sides = groups
+    const sides = this.sides(item);
+    const biggest = Math.max(...sides.map((one) => one.names.length), 0);
+    const lines = sides
       .map(
         (one) =>
-          `<span>${`<i class="vt on"></i>`.repeat(one.coders)} ` +
-          `${esc(one.label)} · ${esc(this.who(item, one))} = ${one.coders}</span>`,
+          `<span>${dots(one.names.length, 0)} ${esc(one.label)} · ` +
+          `${esc(one.names.join(", "))} = ${one.names.length}</span>`,
       )
       .join("");
     const missing = item.not_coded
-      ? `<span><i class="vt"></i> not coded = ${item.not_coded}</span>`
+      ? `<span>${dots(0, item.not_coded)} not coded = ${item.not_coded}</span>`
       : "";
     const line = item.line
       ? `<div class="quote"><b>${esc(item.line.who)}:</b> ` +
@@ -181,13 +200,14 @@ export class Meeting {
       : "";
     return (
       `<div class="drow" data-item="${item.id}">` +
-      `<div class="top"><span class="tally">${dots}</span>` +
+      `<div class="top"><span class="tally">` +
+      `${dots(biggest, item.coders - biggest)}</span>` +
       `<span class="pick">${esc(when(first?.item.dateTime))} · ` +
       `${first?.person_name ? `${esc(first.person_name)} · ` : ""}` +
       `${esc(String(first?.item.description ?? first?.item.kind ?? "an item"))}` +
       `</span></div>` +
-      `<div class="tline">${sides}${missing}` +
-      `<span class="verdict">${esc(verdict(groups))}</span></div>` +
+      `<div class="tline">${lines}${missing}` +
+      `<span class="verdict">${esc(verdict(sides))}</span></div>` +
       line +
       `<div class="acts2">` +
       this.choice(Settle.Keep, "keep", chosen) +
@@ -205,18 +225,40 @@ export class Meeting {
     );
   }
 
-  /** Who wrote one side of an item, by the names on the takes and the votes
-   * cast for it. The meeting is where the names appear (R-0252). */
-  private who(item: BallotItem, one: Grouped): string {
+  /** Each reading of an item with everybody behind it: whoever wrote it and
+   * whoever voted for it. The meeting is where the names appear, and the count
+   * beside a reading is how many people it is, not how many takes (R-0252,
+   * R-0274). */
+  private sides(item: BallotItem): Side[] {
     const fields = telling(item.takes);
-    const wrote = item.takes
-      .filter((take) => (words(take, fields) || "as written") === one.label)
-      .map((take) => take.coder)
-      .filter(Boolean) as string[];
-    const voted = (this.tallies.get(item.id)?.votes ?? [])
-      .filter((vote) => this.votedFor(vote, one.take))
-      .map((vote) => vote.name);
-    return [...new Set([...wrote, ...voted])].join(", ") || "nobody";
+    const votes = this.tallies.get(item.id)?.votes ?? [];
+    // A vote is a coder's last word: whoever voted counts on the side they
+    // voted for, not on the one they first wrote.
+    const decided = new Map(
+      votes.map((vote) => [vote.name, vote.value?.coding_id ?? null]),
+    );
+    return group(item)
+      .map((one) => {
+        const wrote = item.takes
+          .filter((take) => (words(take, fields) || "as written") === one.label)
+          .map((take) => take.coder)
+          .filter(
+            (name) =>
+              name !== undefined &&
+              (!decided.has(name) || decided.get(name) === one.take.coding_id),
+          ) as string[];
+        const voted = votes
+          .filter((vote) => this.votedFor(vote, one.take))
+          .map((vote) => vote.name);
+        return {
+          label: one.label,
+          names: [...new Set([...wrote, ...voted])],
+          take: one.take,
+        };
+      })
+      // A reading everybody who wrote it has since voted away from is not a
+      // side of the argument any more.
+      .filter((one) => one.names.length > 0);
   }
 
   private votedFor(vote: CastVote, take: Take): boolean {
@@ -281,9 +323,11 @@ export class Meeting {
     try {
       await api.settle(item.id, choice, value);
     } catch (error) {
+      // The record refuses some takes — a shift with no variable, say — and
+      // says why in its own words, which is what the room needs to hear.
       toast(
         error instanceof api.Failed && error.status === 400
-          ? "That item could not be settled"
+          ? error.detail.replace(/^\w+ [^:]+: /, "")
           : "Nothing came back",
       );
       return;

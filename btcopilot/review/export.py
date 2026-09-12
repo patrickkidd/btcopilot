@@ -22,16 +22,21 @@ def path_for(cut) -> Path:
     return folder / FILENAME.format(cut_id=cut.id)
 
 
+#: What the ratified record is made of: what the room settled, and what every
+#: coder had already read the same way. An item left unresolved is kept as data
+#: and is not in it (R-0250).
+RATIFIED = (ReviewStatus.Settled, ReviewStatus.Agreed)
+
+
 def ratified_record(cut) -> dict:
     """The agreed record of one cut: the case as it stands, kept to the items
-    the meeting settled. An item left unresolved is data and is not in it
-    (R-0250)."""
+    the meeting ratified."""
     case = adapter.case_diagram(db.session.get(adapter.Discussion, cut.discussion_id))
     record = adapter.record_of(case)
     settled = {
         str(item.item_id)
-        for item in Item.query.filter_by(
-            cut_id=cut.id, status=ReviewStatus.Settled
+        for item in Item.query.filter(
+            Item.cut_id == cut.id, Item.status.in_(RATIFIED)
         ).all()
         if item.item_id
     }

@@ -12,7 +12,7 @@ from flask_wtf.csrf import CSRFError, generate_csrf
 import btcopilot
 from btcopilot import auth
 from btcopilot.extensions import csrf, db
-from btcopilot.review import snapshot
+from btcopilot.review import adapter, snapshot
 from btcopilot.review.models import Coding, Cut, Item, ReviewStatus, Vote
 from btcopilot.schema import ItemKind
 
@@ -38,6 +38,14 @@ def _csrf_error(e):
 def _value_error(e):
     """A rejected value is the client's fault: every endpoint here validates
     by raising ValueError."""
+    return str(e), 400
+
+
+@bp.errorhandler(adapter.Invalid)
+def _invalid_record(e):
+    """A settle the record itself refuses — a shift with no variable, say. The
+    room chose it, so it is told in the record's own words rather than shown a
+    server error."""
     return str(e), 400
 
 
