@@ -109,6 +109,10 @@ trade-off lines and option names use common words and name concrete things on sc
 you are looking at, what to tap, what happens, what you give up. Never a term coined during
 the work, never a reference to a rule the reader has not read.
 
+**A reply is a quarter of what feels complete (2026-09-11).** The answer, the one thing he
+does next, nothing restated, no evidence walk unless he asks [R-0304]. His words after a
+three-screen report on a scroll bug: "You could have given me that in 25% of the length."
+
 **Fixtures are Claude's to stand up; bugs are fixed before he looks (2026-09-11).** If a
 harness, a role or a permission blocks a test fixture, fix the harness — never hand the block
 to Patrick. Every known bug is fixed before he is asked to test, and the ask names one clear
