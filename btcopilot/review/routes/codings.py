@@ -147,6 +147,7 @@ def coding_thread(coding_id: int):
                     "id": turn.id,
                     "order": turn.order or 0,
                     "who": _who(turn),
+                    "client": _client(turn),
                     "text": turn.text or "",
                     "lines": written.get(turn.id, []),
                     "above": agreed_order is not None
@@ -229,6 +230,13 @@ def _written_by_turn(diagram_id: int, data: dict) -> dict[int, list[str]]:
 def _who(statement) -> str:
     speaker = statement.speaker
     return (speaker.name if speaker and speaker.name else None) or "Someone"
+
+
+def _client(statement) -> bool:
+    """The client's turns read as the user's bubbles, the clinician's as the
+    coach's, so a coded thread looks like any chat."""
+    speaker = statement.speaker
+    return speaker is not None and speaker.type == adapter.SpeakerType.Subject
 
 
 def _day(discussion_id: int, statement_id: int) -> str:

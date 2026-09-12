@@ -264,7 +264,8 @@ export class Coding {
     }
     const turn = this.picked;
     this.composer.innerHTML = "";
-    this.after(turn, el("div", "bub user", esc(said)), turn);
+    const tapped = thread.turns.find((t) => t.id === turn);
+    this.after(turn, el("div", `bub said${tapped?.client ? "" : " left"}`, esc(said)), turn);
     this.sending = true;
     let written;
     try {
@@ -343,11 +344,7 @@ export class Coding {
   }
 
   private bubble(turn: CodingTurn): HTMLElement {
-    const node = el(
-      "div",
-      "bub coach line",
-      `<div class="who">${esc(turn.who)}</div>${esc(turn.text)}`,
-    );
+    const node = el("div", `bub line ${turn.client ? "user" : "coach"}`, esc(turn.text));
     return this.tagged(node, turn.id);
   }
 

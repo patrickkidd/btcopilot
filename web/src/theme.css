@@ -2166,8 +2166,23 @@ button { font-family: inherit; }
 
 /* a transcript line cannot be edited; the one you picked is outlined in the
    action colour */
-.bub.line { align-self: stretch; max-width: 100%; cursor: default; }
+.bub.line { cursor: default; }
 .bub.line.sel { outline: 2px solid var(--move); outline-offset: 2px; }
+/* The coder's own words: a subordinate line under the bubble they tapped, on
+ * the same side as it, with the scribe's edit lines beneath (R-0270). */
+.bub.said {
+  align-self: flex-end;
+  max-width: 76%;
+  margin: -2px 10px 0 0;
+  padding: 6px 10px;
+  font: 400 15px/1.4 var(--sans);
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-right: 3px solid var(--move);
+  border-radius: 0;
+}
+.bub.said.left { align-self: flex-start; margin: -2px 0 0 10px; border-right: 0; border-left: 3px solid var(--move); }
 
 /* the scribe asking instead of writing: the same edit line, in the asking
    colour */

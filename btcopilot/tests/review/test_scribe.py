@@ -116,6 +116,22 @@ def test_asks_when_one_name_could_be_two_people(coder, cut, turns):
     assert Change.query.filter_by(diagram_id=coding.diagram_id).count() == 0
 
 
+def test_a_whole_name_settles_shared_words(coder, cut, turns):
+    """"Marcus's father" against "Marcus's grandmother" is not ambiguity."""
+    coding = coded(
+        coder.user,
+        cut,
+        {"people": [person(1, "Marcus's father"), person(2, "Marcus's grandmother")]},
+        done=False,
+    )
+    model = Scripted(
+        [("edit_event", {"kind": "moved", "date": "1969-03-01", "person": 1})]
+    )
+    response = scribe(coder, coding, turns[0], model, "Marcus's father drove to Arizona")
+    assert response.json["asked"] == ""
+    assert response.json["lines"]
+
+
 def test_a_turn_that_names_nobody_still_reaches_the_model(coder, cut, turns):
     """No name and no pronoun is not ambiguity: the model reads the turn."""
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)

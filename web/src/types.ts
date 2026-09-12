@@ -352,6 +352,8 @@ export interface CodingTurn {
   id: number;
   order: number;
   who: string;
+  /** The client's turn, drawn as the user's bubble; otherwise the coach's. */
+  client: boolean;
   text: string;
   lines: string[];
   /** Before the last ratified cut: read it, but coding happens below it. */

@@ -93,7 +93,15 @@ def unclear(said: str, people: list[dict]) -> str:
     the record, is asked which before any word of it is written (R-0270)."""
     words = WORDS.findall(said)
     spoken = {word.lower() for word in words}
-    matched = [
+    # A whole name said outright settles it ("Marcus's father" against
+    # "Marcus's grandmother"); only then do shared words count.
+    lowered = " ".join(spoken_word.lower() for spoken_word in words)
+    whole = [
+        person
+        for person in people
+        if " ".join(WORDS.findall(_name(person))).lower() in lowered
+    ]
+    matched = whole or [
         person
         for person in people
         if spoken & {word.lower() for word in WORDS.findall(_name(person))}
