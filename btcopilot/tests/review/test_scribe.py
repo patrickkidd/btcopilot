@@ -132,6 +132,37 @@ def test_a_whole_name_settles_shared_words(coder, cut, turns):
     assert response.json["lines"]
 
 
+def test_a_relation_word_names_a_person(coder, cut, turns):
+    """"grandmother stopped speaking to him" names one person and, by gender,
+    points at the other: no question."""
+    coding = coded(
+        coder.user,
+        cut,
+        {"people": [{"id": 1, "name": "father"}, person(2, "mother")]},
+        done=False,
+    )
+    model = Scripted(
+        [("edit_person", {"name": "grandmother", "gender": "female"})],
+        [("edit_event", {"kind": "shift", "date": "1969-03-01", "person": "{person}"})],
+    )
+    response = scribe(
+        coder, coding, turns[0], model, "grandmother stopped speaking to him for a year"
+    )
+    assert response.json["asked"] == ""
+    assert response.json["lines"]
+
+
+def test_a_gendered_pronoun_with_one_candidate_is_not_asked(coder, cut, turns):
+    coding = coded(
+        coder.user, cut, {"people": [{"id": 1, "name": "father"}, person(2, "mother")]}, done=False
+    )
+    model = Scripted(
+        [("edit_event", {"kind": "moved", "date": "1970-01-01", "person": 1})]
+    )
+    response = scribe(coder, coding, turns[0], model, "he came round the next year")
+    assert response.json["asked"] == ""
+
+
 def test_a_turn_that_names_nobody_still_reaches_the_model(coder, cut, turns):
     """No name and no pronoun is not ambiguity: the model reads the turn."""
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)

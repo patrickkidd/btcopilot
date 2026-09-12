@@ -38,8 +38,11 @@ someone the coder named.
 the event in your next turn. Never guess an id for a person you have just \
 added. An id comes only from the record below or from a tool result in this \
 exchange; when the record has nobody in it there is no id yet.
-- A person the coder names only by their relation to someone — Marcus's \
-father — is added under that relation as the name, never as "someone".
+- A person the coder names only by their relation — Marcus's father, \
+grandmother, mother — is named: add them under that word if the record does \
+not hold them, never as "someone", and never ask whether to. A pronoun beside \
+such a word means the other person in the sentence or the one the turn is \
+about; work it out from the turn, do not ask.
 - Write the date the coder gave at the precision they gave it: a year alone \
 or a month and year become the first day of that span, marked approximate. \
 Never drop a date the coder said, and keep it when you rewrite a refused call.
@@ -112,16 +115,42 @@ def unclear(said: str, people: list[dict]) -> str:
         return ""
     pointed = spoken & {p.value for p in Pronoun}
     if pointed and not _new_name(words):
-        return _which(people)
+        could = [p for p in people if _fits(pointed, p)]
+        if len(could) != 1:
+            return _which(could or people)
     return ""
+
+
+#: Words that name a person by their place in the family, which a coder uses
+#: the way they would a name ("grandmother stopped speaking to him").
+RELATIONS = {
+    "father", "mother", "dad", "mom", "grandmother", "grandfather", "grandma",
+    "grandpa", "brother", "sister", "son", "daughter", "wife", "husband",
+    "partner", "aunt", "uncle", "cousin", "niece", "nephew", "stepfather",
+    "stepmother", "parents", "grandparents",
+}
+MALE = {Pronoun.He.value, Pronoun.Him.value, Pronoun.His.value}
+FEMALE = {Pronoun.She.value, Pronoun.Her.value}
+
+
+def _fits(pointed: set[str], person: dict) -> bool:
+    """Whether a pronoun could mean this person, going by the gender the
+    record holds; a person with none recorded could be anyone."""
+    gender = person.get("gender")
+    if pointed & MALE and gender == "female":
+        return False
+    if pointed & FEMALE and gender == "male":
+        return False
+    return True
 
 
 def _new_name(words: list[str]) -> bool:
     """A name the record does not hold yet: a capitalised word the coder wrote
     inside the sentence rather than at the start of it."""
     return any(
-        word[:1].isupper() and word.lower() not in {p.value for p in Pronoun}
-        for word in words[1:]
+        (word[:1].isupper() and word.lower() not in {p.value for p in Pronoun})
+        or word.lower() in RELATIONS
+        for word in words
     )
 
 
@@ -141,6 +170,7 @@ def write(coding, statement, said: str, model=None) -> dict:
     record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     question = unclear(said, record.get("people") or [])
     if question:
+        _log.info(f"Scribe asked before the model: {question}")
         return {"lines": [], "asked": question, "made": [], "turn_id": turn_id}
     toolbox = adapter.scribe_toolbox(
         coding.diagram_id, coding.user_id, statement.id, turn_id
@@ -192,6 +222,8 @@ def write(coding, statement, said: str, model=None) -> dict:
         raise Refused(_short(lines))
     if not lines and not asked:
         raise Refused("the scribe wrote nothing and said nothing")
+    if asked and not lines:
+        _log.info(f"Scribe asked instead of writing: {asked}")
     return {
         "lines": lines,
         "asked": "" if lines else asked,
