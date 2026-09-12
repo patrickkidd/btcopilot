@@ -12,6 +12,7 @@ from btcopilot.review.routes import (
     bp,
     coder,
     cut_or_404,
+    human_codings,
     item_or_404,
     sees_others,
 )
@@ -36,9 +37,13 @@ def payload(item: Item, named: bool) -> dict:
 
 def read(cut) -> dict:
     """What every take needs beside its own words: the turn the coder wrote it
-    from, and the people of the record they wrote it on. Read once per cut."""
+    from, and the people of the record they wrote it on. Read once per cut, and
+    only for the codings people made (R-0254)."""
+    people = human_codings(cut)
     found = {}
     for coding in snapshot.done_codings(cut):
+        if coding.id not in people:
+            continue
         record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
         found[coding.id] = {
             "turns": adapter.coded_in(coding.diagram_id),
@@ -52,11 +57,17 @@ def voting_payload(item: Item, records: dict) -> dict:
     turn it came from and the name of the person it is about, and how many
     coders left the item out (R-0252, R-0257)."""
     data = payload(item, named=False)
+    raws = [one for one in item.takes or [] if one["coding_id"] in records]
+    data["takes"] = [
+        take
+        for raw, take in zip(item.takes or [], data["takes"])
+        if raw["coding_id"] in records
+    ]
     coders = len(records)
     data["coders"] = coders
-    data["not_coded"] = max(coders - len(item.takes or []), 0)
-    for raw, take in zip(item.takes or [], data["takes"]):
-        record = records.get(raw["coding_id"]) or {}
+    data["not_coded"] = max(coders - len(raws), 0)
+    for raw, take in zip(raws, data["takes"]):
+        record = records[raw["coding_id"]]
         take["statement_id"] = _turn_of(item, raw, record)
         take["person_name"] = _name_of(raw["item"], record)
     data["people"] = _people_of(item, records)
@@ -89,10 +100,10 @@ def _name_of(value: dict, record: dict) -> str | None:
 def _people_of(item: Item, records: dict) -> list[dict]:
     """The people of the record the first take was written on, so a take of
     your own can name one of them (R-0257)."""
-    takes = item.takes or []
+    takes = [one for one in item.takes or [] if one["coding_id"] in records]
     if not takes:
         return []
-    record = records.get(takes[0]["coding_id"]) or {}
+    record = records[takes[0]["coding_id"]]
     return [
         {"id": one.get("id"), "name": one.get("name")}
         for one in record.get("people") or []

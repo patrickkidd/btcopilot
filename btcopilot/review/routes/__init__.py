@@ -78,14 +78,28 @@ def my_coding(cut: Cut, user) -> Coding | None:
     return Coding.query.filter_by(cut_id=cut.id, user_id=user.id).first()
 
 
+def human_codings(cut: Cut) -> set[int]:
+    """The finished codings people made. The coach's replay is a coding like
+    any other, but nothing it thinks is in the ballot at all (R-0254)."""
+    return {
+        coding.id
+        for coding in cut.codings
+        if coding.done_at is not None and coding.agent is None
+    }
+
+
 def on_ballot(cut: Cut) -> list[Item]:
     """What a coder votes on: the disputed events of the cut, one per screen
-    (R-0257). What the coders already read the same way is not voted on, and
-    people and pair bonds are settled at the meeting."""
+    (R-0257). What the coders already read the same way is not voted on,
+    people and pair bonds are settled at the meeting, and an item only the
+    coach wrote down is not on the ballot."""
+    people = human_codings(cut)
     return [
         item
         for item in cut.items
-        if item.status is ReviewStatus.Disputed and item.item_kind is ItemKind.Event
+        if item.status is ReviewStatus.Disputed
+        and item.item_kind is ItemKind.Event
+        and any(take.get("coding_id") in people for take in item.takes or [])
     ]
 
 

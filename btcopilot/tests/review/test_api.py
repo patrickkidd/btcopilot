@@ -5,6 +5,7 @@ from btcopilot.personal.models import Author, Change
 from mock import patch
 
 from btcopilot.review import export, ruledraft, snapshot
+from btcopilot.pro.models import User
 from btcopilot.review.freeze import frozen
 from btcopilot.review.models import Coding, Cut, Item, ReviewStatus, Rule, RuleSource
 from btcopilot.tests.review.conftest import coded, person, shift
@@ -430,6 +431,27 @@ def test_no_name_reaches_the_ballot(patrick, test_user, test_user_2, cut):
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     assert all("user_id" not in row for row in rows)
     assert all("user_id" not in take for row in rows for take in row["takes"])
+
+
+def test_the_coachs_own_reading_is_not_on_the_ballot(
+    patrick, test_user, test_user_2, cut
+):
+    two_codings(test_user, test_user_2, cut)
+    robot = User(username="coach@example.com", roles="subscriber")
+    db.session.add(robot)
+    db.session.commit()
+    coach = coded(robot, cut, {"people": [person(1, "Ann")], "events": []})
+    coach.agent = {"model": "a model", "prompt_version": 1}
+    db.session.commit()
+    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+
+    rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
+    shared = next(
+        r for r in rows if r["item_kind"] == "event" and len(r["takes"]) > 1
+    )
+    assert shared["coders"] == 2
+    assert len(shared["takes"]) == 2
+    assert shared["not_coded"] == 0
 
 
 def test_an_agreed_item_cannot_be_voted_on(patrick, test_user, test_user_2, cut):
