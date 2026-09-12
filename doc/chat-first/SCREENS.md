@@ -441,21 +441,22 @@ What it is for: closing what the vote could not, and ratifying the record.
 
 @frame review#f11 | The meeting screen: every disputed event with its tally, most split first, and the timeline above showing agreed and disputed events.
 
-- The meeting screen carries only the items the ballot left open. [drawn] {R-0250}
-- Names and counts appear here for the first time. [drawn] {R-0252}
-- The items the vote settled are listed separately and are not read aloud, each with a way to reopen it. [drawn]
-- Every open item must be given one of three choices: keep a take, change it, or mark it unresolved. [drawn] {R-0257}
-- The ratify button stays dead until every open item has a choice, and says how many still need one. [drawn] {R-0257}
-- An item marked unresolved is kept as data and left out of the agreed record. [drawn] {R-0250}
-- The screen shows the agreement figures from the first pass and how much time is left. [drawn]
-- The event in front of the room is shown on the picture as well as in the list. [drawn]
+- The meeting screen carries only the items the ballot left open. [built] {R-0250}
+- Names and counts appear here for the first time. [built] {R-0252}
+- The items the vote settled are listed separately and are not read aloud, each with a way to reopen it. [built]
+- Every open item must be given one of three choices: keep a take, change it, or mark it unresolved. [built] {R-0257}
+- The ratify button stays dead until every open item has a choice, and says how many still need one. [built] {R-0257}
+- An item marked unresolved is kept as data and left out of the agreed record. [built] {R-0250}
+- The screen shows the agreement figures from the first pass. [built]
+- How much of the meeting is left is shown beside them; the app holds the meeting as a day and not a time, so there is nothing yet to count down from. [drawn]
+- The event in front of the room is shown on the picture as well as in the list. [built]
 - Only events that are new or changed since the last ratified cut are in dispute; earlier ones stand unless a new turn reopened one. [drawn] {R-0267}
 - Convergence is required but nobody is forced to converge, and settling a whole kind of disagreement with one rule is one of the tools for getting there. [drawn] {R-0251}
 - Each meeting tries an approach and teaches the next one; there is no review before the meeting beyond the ballot. [drawn] {R-0244, R-0250}
 - The two-sided comparison of two codings already drawn has to fold into either the ballot or this screen, and where is unbuilt work. [drawn]
 - The review screens are built as their own isolated piece, so changing them can never break the chat or the professional features. [drawn] {R-0245}
-- The meeting sees every disputed event with its tally, the most split first, and the unanimous ones collapsed below to confirm or reopen. [drawn] {R-0274}
-- One timeline above the list shows agreement and disagreement at a glance: one dot per event, teal where the vote agreed, amber where it did not, with a small count beside a disputed dot. [drawn] {R-0277, R-0278}
+- The meeting sees every disputed event with its tally, the most split first, and the unanimous ones collapsed below to confirm or reopen. [built] {R-0274}
+- One timeline above the list shows agreement and disagreement at a glance: one dot per event, teal where the vote agreed, amber where it did not, with a small count beside a disputed dot. [built] {R-0277, R-0278}
 
 ## After ratification
 
@@ -466,17 +467,17 @@ What it is for: what the meeting produced, with nothing left to choose.
 @frame review#f15 | The coding guidelines inside the app, always current, each rule with the settle it came from and a flag link.
 @frame review#f14 | Where you find them: tap the (i) at the top of the coding screen and the guidelines slide in over your coding.
 
-- The result screen shows how many events were ratified and how many were left unresolved. [drawn]
-- It shows agreement before the ballot and after ratification, side by side. [drawn]
-- It shows how the coach's own pass scored against the agreed record. [drawn] {R-0242}
+- The result screen shows how many events were ratified and how many were left unresolved. [built]
+- It shows agreement before the ballot and after ratification, side by side. [built]
+- It shows how the coach's own pass scored against the agreed record. [built] {R-0242}
 - The word for the agreed record is ratified; what the coach proposes is a proposal and is never called gold. [drawn] {R-0249}
-- The AI writes the guideline changes itself out of what the room settled, and they are live; there is nothing to choose on this screen. [drawn] {R-0259}
-- Each new rule shows the settled item it came from and the margin it was settled by. [drawn] {R-0259}
-- Where the AI's reading differed from the room is listed afterwards, with its reason, as an audit rather than a vote. [drawn] {R-0254}
-- What each coder tends to do differently from the others is shown. [drawn]
+- The AI writes the guideline changes itself out of what the room settled, and they are live; there is nothing to choose on this screen. [built] {R-0259}
+- Each new rule shows the settled item it came from and the margin it was settled by. [built] {R-0259}
+- Where the AI's reading differed from the room is listed afterwards, with its reason, as an audit rather than a vote. [built] {R-0254}
+- What each coder tends to do differently from the others is shown. [built]
 - Every vote, settlement and ratification is a row in the app's own tables with who did it and when. [drawn] {R-0262}
 - How last year's coding material is carried over is a choice Patrick has not made; the plan on the table keeps the rules and the agreement tables as rows and the written deliberations as text. [open] {R-0262}
-- Every rule the AI wrote carries a "flag for next meeting" link, and flagged rules, unresolved events and unfinished tasks go on the next meeting's agenda by themselves. [drawn] {R-0276}
+- Every rule the AI wrote carries a "flag for next meeting" link, and flagged rules, unresolved events and unfinished tasks go on the next meeting's agenda by themselves. [built] {R-0276}
 - The meeting's results are rows in the database — codings, votes, settles, rules with the settle each came from — so everything is traceable; the coding guidelines are the one written output. [drawn] {R-0275}
 - Anyone can read the current coding guidelines inside the app from an (i) button at the top of the coding screen. [drawn] {R-0275, R-0278}
 - The coding guidelines file in the code is generated from the rules the app holds and is never edited by hand. [drawn] {R-0275}
