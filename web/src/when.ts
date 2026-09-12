@@ -56,6 +56,14 @@ export function whenText(d: Date, now: Date, sameDayCount: number): string {
   return shortDate(d, now);
 }
 
+/** The next meeting, named the same way wherever it is named: the table
+ * screen's own title, and the sessions sheet's way in to it. */
+export function meetingTitle(date: string | null): string {
+  if (!date) return "Next meeting";
+  const d = new Date(`${date}T00:00:00`);
+  return `Next meeting · ${WD[d.getDay()].slice(0, 3)}, ${MON[d.getMonth()]} ${d.getDate()}`;
+}
+
 export function shortDate(d: Date, now: Date): string {
   if (sameDay(d, now)) return "today";
   if (sameDay(d, yesterday(now))) return "yesterday";

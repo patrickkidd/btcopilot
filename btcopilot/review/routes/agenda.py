@@ -3,6 +3,8 @@ flagged, items left unresolved, codings nobody finished (R-0276)."""
 
 from flask import jsonify, request
 
+from btcopilot.extensions import db
+from btcopilot.review import adapter
 from btcopilot.review.models import Coding, Cut, Item, ReviewStatus, Rule
 from btcopilot.review.routes import bp, coder
 from btcopilot.review.routes.codings import blind_payload
@@ -43,9 +45,20 @@ def agenda_read():
             "cut_ids": cut_ids,
             "flagged_rules": [rule_payload(r) for r in flagged],
             "unresolved_items": [item_payload(i, False) for i in unresolved],
-            "unfinished_codings": [blind_payload(c) for c in unfinished],
+            "unfinished_codings": [waiting_on(c) for c in unfinished],
         }
     )
+
+
+def waiting_on(coding: Coding) -> dict:
+    """An unfinished coding named on the agenda the way the room says it out
+    loud: who has not finished, and which conversation it is."""
+    cut = db.session.get(Cut, coding.cut_id)
+    discussion = adapter.discussion_of(cut.discussion_id)
+    return blind_payload(coding) | {
+        "coder": adapter.given(db.session.get(adapter.User, coding.user_id)),
+        "session": (discussion.title or "").strip() or "an untitled conversation",
+    }
 
 
 def _cuts(meeting_date: str | None) -> list[Cut]:

@@ -532,7 +532,12 @@ export interface Agenda {
   cut_ids: number[];
   flagged_rules: Rule[];
   unresolved_items: { id: number; item_kind: string; takes: Take[] }[];
-  unfinished_codings: { id: number; cut_id: number }[];
+  unfinished_codings: {
+    id: number;
+    cut_id: number;
+    coder: string;
+    session: string;
+  }[];
 }
 
 /** One coder's reading of one item, without their name (R-0252). */

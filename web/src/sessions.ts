@@ -2,7 +2,14 @@ import * as api from "./api";
 import { $, el, esc } from "./dom";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
-import { clockTime, dayKey, groupLabel, whenText } from "./when";
+import { dayKey, groupLabel, meetingTitle, whenText } from "./when";
+import {
+  matching,
+  sessionTitle,
+  summaryOf,
+  untitled,
+  type Family,
+} from "./search";
 import { SessionKind, type Diagram, type Session } from "./types";
 import { PRO, RECORDS } from "./pro";
 import { Recording } from "./recording";
@@ -39,25 +46,6 @@ export interface SessionsHandlers {
   onTableScreen(): void;
 }
 
-const untitled = (session: Session) => !session.title?.trim();
-
-/** What a session is called on screen. A session the coach has not titled yet
- * is named by when it happened, so two of them can still be told apart. */
-export const sessionTitle = (session: Session) =>
-  untitled(session)
-    ? `Untitled · ${clockTime(new Date(session.last_activity))}`
-    : (session.title as string);
-
-export const summaryOf = (session: Session) =>
-  session.summary?.trim() ||
-  (session.message_count === 0 ? "just started" : "in progress");
-
-/** One family and the sessions on it. A personal account has one of these; a
- * professional has one per client diagram. */
-interface Family {
-  diagram: Diagram;
-  sessions: Session[];
-}
 
 export class Sessions {
   private families: Family[] = [];
@@ -88,7 +76,7 @@ export class Sessions {
        <button class="fs-new fs-upload" type="button" hidden>Upload a recording</button>
        <button class="fs-new fs-note" type="button" hidden>+ new note</button>
        <button class="fs-task" type="button" hidden></button>
-       <button class="fs-task fs-table" type="button" hidden>The table</button></div>`,
+       <button class="fs-task fs-table" type="button" hidden>Next meeting</button></div>`,
   );
 
   private body: HTMLElement;
@@ -118,6 +106,7 @@ export class Sessions {
     this.taskButton = this.sheet.querySelector<HTMLButtonElement>(".fs-task")!;
     this.tableButton = this.sheet.querySelector<HTMLButtonElement>(".fs-table")!;
     this.tableButton.hidden = !this.admin;
+    if (this.admin) void this.nameTable();
     this.uploadButton.hidden = !PRO;
     this.noteButton.hidden = !PRO;
     this.recording = new Recording(this.overlay, (made) => {
@@ -176,6 +165,15 @@ export class Sessions {
   /** The family the app is on, which is the one a new session belongs to. */
   private home(): Family | undefined {
     return this.families.find((f) => f.diagram.current) ?? this.families[0];
+  }
+
+  /** The way in to the table is named by the meeting it is for, the same words
+   * the table screen's own title carries. */
+  private async nameTable(): Promise<void> {
+    const cuts = await api.onTable();
+    this.tableButton.textContent = meetingTitle(
+      cuts.find((cut) => cut.meeting_date)?.meeting_date ?? null,
+    );
   }
 
   private find(id: number): Session | undefined {
@@ -426,19 +424,17 @@ export class Sessions {
   /** What one family shows right now: the matching sessions, collapsed to the
    * three most recent unless it is expanded or a search is running. A search
    * matching the family's own name keeps all of its sessions. */
-  private shown(family: Family): { rows: Session[]; more: number } {
-    const query = this.filter.trim().toLowerCase();
-    const byName = !!query && family.diagram.name.toLowerCase().includes(query);
-    const matches =
-      query && !byName
-        ? family.sessions.filter((s) =>
-            `${sessionTitle(s)} ${summaryOf(s)}`.toLowerCase().includes(query),
-          )
-        : family.sessions;
-    if (query || this.expanded.has(family.diagram.id) || matches.length <= COLLAPSED)
-      return { rows: matches, more: 0 };
-    const rows = matches.filter((s, i) => i < COLLAPSED || s.id === this.current);
-    return { rows, more: matches.length - rows.length };
+  private shown(family: Family): {
+    rows: Session[];
+    more: number;
+    byName: boolean;
+  } {
+    const query = this.filter.trim();
+    const { rows: found, byName } = matching(family, query);
+    if (query || this.expanded.has(family.diagram.id) || found.length <= COLLAPSED)
+      return { rows: found, more: 0, byName };
+    const rows = found.filter((s, i) => i < COLLAPSED || s.id === this.current);
+    return { rows, more: found.length - rows.length, byName };
   }
 
   private render(): void {
@@ -450,9 +446,9 @@ export class Sessions {
     let html = "";
     let total = 0;
     for (const family of this.families) {
-      const { rows, more } = this.shown(family);
+      const { rows, more, byName } = this.shown(family);
       total += family.sessions.length;
-      if (searching && !rows.length) continue;
+      if (searching && !rows.length && !byName) continue;
       const id = family.diagram.id;
       html += `<section class="fs-sec" data-family="${id}">${this.headHtml(family)}`;
       // the clock only earns its place when a day holds more than one session

@@ -1,6 +1,7 @@
 import * as api from "./api";
 import { esc, type Title } from "./dom";
 import { toast } from "./toast";
+import { meetingTitle } from "./when";
 import {
   CoderState,
   type Agenda,
@@ -80,8 +81,7 @@ export class Table {
   }
 
   private title(): string {
-    const day = this.day();
-    return day === null ? "Next meeting" : `Next meeting · ${day}`;
+    return meetingTitle(this.meeting());
   }
 
   private waiting(): CoderLine[] {
@@ -178,6 +178,7 @@ export class Table {
         ? this.cuts.map((cut) => this.cutRow(cut)).join("")
         : `<div class="none">Nothing is on the table yet.</div>`) +
       `<button class="nudge tb-add" type="button">+ put another on the table</button>` +
+      `<div class="sn-hd">Coders</div>` +
       this.coders.map((one) => this.coderRow(one)).join("") +
       `<div class="plnote">closed out: ${closed} of ${this.coders.length}` +
       this.nudged() +
@@ -186,8 +187,9 @@ export class Table {
         ? `<button class="nudge tb-nudge" type="button">nudge the ${behind} ` +
           `who ${behind === 1 ? "is" : "are"} not done</button>`
         : "") +
-      `<button class="nudge tb-vote" type="button"${open ? " disabled" : ""}>` +
-      `${open ? "the vote is open" : "open the vote"}</button>` +
+      (open
+        ? `<div class="plnote">The vote is open.</div>`
+        : `<button class="nudge tb-vote" type="button">open the vote</button>`) +
       this.meetingButtons() +
       this.agendaBox();
   }
@@ -274,15 +276,15 @@ export class Table {
     if (!found) return [];
     return [
       ...found.flagged_rules.map((rule: Rule) => ({
-        text: `Rule ${rule.id} flagged`,
+        text: `flagged rule: ${rule.text}`,
         rule_id: rule.id,
       })),
       ...found.unresolved_items.map((item) => ({
-        text: `${said(item.takes) ?? item.item_kind} · unresolved`,
+        text: `unresolved: ${said(item.takes) ?? item.item_kind}`,
         rule_id: null,
       })),
-      ...found.unfinished_codings.map(() => ({
-        text: "a coding nobody finished",
+      ...found.unfinished_codings.map((one) => ({
+        text: `${one.coder} has not finished coding ${one.session}`,
         rule_id: null,
       })),
     ];

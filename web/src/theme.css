@@ -2406,14 +2406,15 @@ button { font-family: inherit; }
   width: calc(100% - 32px);
   margin: 14px 16px 0;
   min-height: 44px;
-  border: 2px dashed var(--ask);
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: none;
-  color: var(--ask-text);
+  background: var(--panel);
+  color: var(--ink);
   font: 500 15px var(--sans);
   cursor: pointer;
 }
-.nudge:disabled { border-color: var(--line); color: var(--faint); cursor: default; }
+.nudge:active { background: var(--tint); }
+.nudge:disabled { color: var(--faint); cursor: default; }
 
 /* The agenda, which fills itself. */
 .agbox {

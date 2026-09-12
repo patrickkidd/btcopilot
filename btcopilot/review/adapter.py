@@ -56,6 +56,7 @@ __all__ = [
     "commit",
     "Invalid",
     "grant_write",
+    "given",
     "initials",
     "pdp_of",
     "pdp_from",
@@ -120,6 +121,15 @@ def initials(user: User | None) -> str:
         return ".".join(letters) + "."
     parts = [part for part in re.split(r"[^A-Za-z0-9]+", user.username.split("@")[0]) if part]
     return "".join(part[0].upper() + re.sub(r"\D", "", part) + "." for part in parts)
+
+
+def given(user: User | None) -> str:
+    """What an agenda line calls a coder: their first name where they have one,
+    and their initials where they do not. A whole address is never put on a
+    screen."""
+    if user is None:
+        return "someone"
+    return user.first_name.strip() or initials(user)
 
 
 def diagram_of(diagram_id: int) -> Diagram:
