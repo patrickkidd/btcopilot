@@ -34,14 +34,13 @@ export interface Step {
   cast: number[];
 }
 
-/** Which moments in a cluster are moves the board can draw. */
+/** Every moment in a cluster is a step on the board. A moment the move
+ * language has no mark for — a pair bond forming or ending, say — still puts
+ * its people on stage with its year and its words, and draws nothing between
+ * them; dropping it instead hid two of the three moments in a cluster
+ * (REVIEW_LOG 70). */
 export function movesIn(events: TimelineEvent[]): Step[] {
-  return events
-    .filter(
-      (e) =>
-        !!e.relationship || !!e.symptom || !!e.anxiety || !!e.functioning,
-    )
-    .map((event) => ({ event, cast: castOf(event) }));
+  return events.map((event) => ({ event, cast: castOf(event) }));
 }
 
 function castOf(event: TimelineEvent): number[] {
