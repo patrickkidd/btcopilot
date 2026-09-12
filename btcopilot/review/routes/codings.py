@@ -132,11 +132,11 @@ def coding_thread(coding_id: int):
                 cut.meeting_date.isoformat() if cut.meeting_date else None
             ),
             "session": (discussion.title or "").strip() or "an untitled conversation",
-            "cut_day": _day(adapter.statement(cut.end_statement_id)),
+            "cut_day": _day(cut.discussion_id, cut.end_statement_id),
             "agreed": (
                 {
                     "order": agreed_order,
-                    "day": _day(adapter.statement(agreed.end_statement_id)),
+                    "day": _day(agreed.discussion_id, agreed.end_statement_id),
                     "ratified": agreed.ratified_at.strftime("%b %-d"),
                 }
                 if agreed
@@ -231,6 +231,6 @@ def _who(statement) -> str:
     return (speaker.name if speaker and speaker.name else None) or "Someone"
 
 
-def _day(statement) -> str:
-    when = statement.created_at if statement else None
+def _day(discussion_id: int, statement_id: int) -> str:
+    when = adapter.cut_day(discussion_id, statement_id)
     return when.strftime("%b %-d") if when else "an unknown day"

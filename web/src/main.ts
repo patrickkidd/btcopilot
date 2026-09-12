@@ -237,6 +237,7 @@ const rules = new Rules($("rules-body"));
 const coding = new Coding(
   $("coding-chat"),
   $("coding-composer"),
+  $("coding-caption"),
   $("coding-send"),
   $("coding-rows"),
   $("coding-search") as HTMLInputElement,

@@ -17,6 +17,7 @@ const FLASK = process.env.FLASK_URL ?? "http://127.0.0.1:8890";
  * is where this dev server's own modules live. */
 const SERVER_PATHS = [
   "^/personal/(?!static/web)",
+  "/review",
   "/training",
   "/static",
 ];

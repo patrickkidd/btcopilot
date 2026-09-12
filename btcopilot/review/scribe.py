@@ -24,10 +24,14 @@ with the tools, and nothing else.
 Rules:
 - Write only what the coder said. Never add events, people or detail they did \
 not give you.
-- Every event is about a person already in the record, or a person you add \
-first. Never guess who a pronoun means. If you cannot tell which person the \
-coder means, call no tool at all and reply with one short question naming the \
-people it could be.
+- When the coder names a person, use the person of that name in the record, or \
+add them first, and then write the event. A name is enough to write from.
+- Only when the coder points at a person without naming them, and the record \
+does not settle who they mean, call no tool at all and reply with one short \
+question naming the people it could be. That is the only thing you may ask \
+about.
+- The coder cannot see this exchange as a conversation, so never ask about \
+anything you could work out, and never ask twice.
 - Say nothing when the writing worked. Words are for asking only.
 
 The record as it stands:
@@ -85,15 +89,32 @@ def write(coding, statement, said: str, model=None) -> dict:
             )
         messages.append({"role": "assistant", "content": turn.blocks})
         messages.append({"role": "user", "content": results})
-        if not any(r["is_error"] for r in results):
-            asked = ""
-            break
-        _log.warning(f"Scribe step {step} was refused: {results}")
+        # A turn ends on words, never on a tool call: adding the person the
+        # event is about is one step, writing the event is the next.
+        asked = ""
+        if any(r["is_error"] for r in results):
+            _log.warning(f"Scribe step {step} was refused: {results}")
 
     lines = edit_lines(coding.diagram_id, toolbox.deltas)
     if not lines and not asked:
         raise Refused("the scribe wrote nothing and said nothing")
-    return {"lines": lines, "asked": "" if lines else asked, "turn_id": turn_id}
+    return {
+        "lines": lines,
+        "asked": "" if lines else asked,
+        "made": made(toolbox.deltas),
+        "turn_id": turn_id,
+    }
+
+
+def made(deltas: list[dict]) -> list[dict]:
+    """What the record now holds that it did not, so the picture can light it
+    as the line lands, the way it does for the coach's own edits."""
+    out: list[dict] = []
+    for delta in deltas:
+        one = {"kind": delta.get("item_kind"), "id": str(delta.get("item_id"))}
+        if delta.get("item_id") is not None and one not in out:
+            out.append(one)
+    return out
 
 
 def _who(statement) -> str:
@@ -163,8 +184,20 @@ def _event_words(event: dict, people: dict) -> str:
         about = event.get("person")
     who = _name(people.get(str(about), {})) if about is not None else "the family"
     kind = _plain(event.get("kind")) or "event"
-    when = adapter.date_text(event.get("dateTime")) or "no date yet"
-    return f"+ {who} · {kind} · {when}"
+    return f"+ {who} · {kind} · {_when(event.get('dateTime'))}"
+
+
+MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
+
+
+def _when(value) -> str:
+    """A day in the words the rest of the app uses: the month and the year."""
+    written = adapter.date_text(value)
+    if not written:
+        return "no date yet"
+    year, _, rest = written.partition("-")
+    month = rest.split("-")[0]
+    return f"{MONTHS[int(month) - 1]} {year}" if month.isdigit() else year
 
 
 def _plain(value) -> str:

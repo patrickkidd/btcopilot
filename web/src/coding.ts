@@ -56,6 +56,7 @@ export class Coding {
   constructor(
     private list: HTMLElement,
     private composer: HTMLElement,
+    private caption: HTMLElement,
     private send: HTMLElement,
     private rows: HTMLElement,
     private search: HTMLInputElement,
@@ -196,6 +197,9 @@ export class Coding {
       bubble.classList.toggle("sel", Number(bubble.dataset.turn) === this.picked);
     this.composer.dataset.ph =
       this.picked === null ? PLACEHOLDER.none : PLACEHOLDER.picked;
+    // the row under the picture says what a tap will do, until one is picked
+    this.caption.innerHTML =
+      this.picked === null ? `<span class="cta">tap a line</span>` : "";
   }
 
   /** What the coder typed, sent to the scribe: their own words go into the
@@ -264,7 +268,19 @@ export class Coding {
     }
     this.list.append(this.cutline(thread, true));
     this.paint();
-    this.list.scrollTop = this.list.scrollHeight;
+    this.toEnd();
+  }
+
+  /** The thread opens on the cut, which is what the task is about. The web
+   * font lands after the bubbles are measured and every one of them grows, so
+   * the end is held in view until the page has settled. */
+  private toEnd(): void {
+    const end = () => {
+      this.list.scrollTop = this.list.scrollHeight;
+    };
+    end();
+    requestAnimationFrame(end);
+    void document.fonts?.ready.then(end);
   }
 
   private bubble(turn: CodingTurn): HTMLElement {

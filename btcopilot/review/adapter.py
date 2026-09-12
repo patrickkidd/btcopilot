@@ -39,6 +39,7 @@ __all__ = [
     "diagram_of",
     "discussion_of",
     "statement",
+    "cut_day",
     "render_record",
     "scribe_toolbox",
     "write_tools",
@@ -90,6 +91,16 @@ def discussion_of(discussion_id: int) -> Discussion:
 
 def statement(statement_id: int) -> Statement:
     return db.session.get(Statement, statement_id)
+
+
+def cut_day(discussion_id: int, statement_id: int):
+    """The day a cut is named by: the day the conversation happened, or the day
+    the turn it ends on was written down when the session carries no date."""
+    discussion = discussion_of(discussion_id)
+    if discussion is not None and discussion.discussion_date:
+        return discussion.discussion_date
+    end = statement(statement_id)
+    return end.created_at if end else None
 
 
 def diagram_of(diagram_id: int) -> Diagram:

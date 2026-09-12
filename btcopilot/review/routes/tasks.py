@@ -137,8 +137,7 @@ def _session_name(cut: Cut) -> str:
 
 
 def _cut_day(cut: Cut) -> str:
-    end = adapter.statement(cut.end_statement_id)
-    return _day(end.created_at if end else None)
+    return _day(adapter.cut_day(cut.discussion_id, cut.end_statement_id))
 
 
 def _day(when) -> str:
