@@ -131,7 +131,12 @@ that has already cost one sandbox.
 - `dev.sh` — the Vite dev server on 8891 proxying to 8890, host header forwarded so sign-in and
   cookies mint for 8891; the service worker is off. **Patrick reviews at
   https://turin:8891/personal/** and every saved front-end edit shows on refresh, no
-  build. This is the dev mode he asked for [Oracle: R-0227].
+  build. This is the dev mode he asked for [Oracle: R-0227]. A page already open on his
+  phone reloads itself when a file is saved; that socket was refused for the host name
+  `turin` (only `turin.local` was allowed) until 2026-09-11 night, so open pages never
+  refreshed — allowed now. A home-screen app on iOS keeps its own cookies, separate from
+  Safari: the first open inside it shows the sign-in page, and the email code signs it in
+  once; an invite link opened from Mail signs in Safari, not the home-screen app.
 - `invite.sh <email>` — a sign-in link at turin, not 127.0.0.1, so his phone can open it.
   A phone already signed in needs no new invite.
 - `env.sh` — the settings both scripts source, including the path to the private prompts in the

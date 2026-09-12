@@ -808,7 +808,7 @@ relative database path opened an empty file for twelve minutes and the sandbox's
 emailed Patrick; the path is absolute now and the sandbox's error recipient is blank.
 
 ## 2026-09-11 (night) — the coding screen walked at both sizes; the scribe's silent loss fixed [T-3, T-2]
-<!-- session: session_01Y2tN76fgnoJ9pFbjbieQkB · flushed: 2026-09-12T06:45:00Z -->
+<!-- session: session_01Y2tN76fgnoJ9pFbjbieQkB · flushed: 2026-09-12T07:10:00Z -->
 
 Patrick asked for the coding screen to be tested. The Chrome extension was not connected, so
 two independent Playwright walks ran on fresh fixture coders — a phone at 393x852 and a desktop
@@ -832,4 +832,12 @@ not the app. Mid-run Patrick asked how far the coach's coding accuracy could go 
 Fable-level effort on the prompts and tool descriptions, and whether this was induction or ad
 hoc: the answer was ad hoc by design (a code defect), and that prompt work on the coach is
 unmeasured until his two conversations are coded as ground truth, which the coding screen is
-what produces. No ruling was made.
+what produces. No ruling was made. Patrick then tried it on his phone from a home-screen icon
+and asked about caching: his tap on a turn jumped the thread to the bottom with nothing
+selected. The turn was above the agreed line; its notice was inserted under the tap and the
+list then scrolled to its end, so he saw neither. A new line now scrolls into view under the
+tapped turn, verified at phone size (notice, outline, the coder's words and the scribe's line
+all in view). Two sandbox facts recorded: the dev server refused its live-reload socket for the
+host name turin, only turin.local being allowed, so an open page on his phone never refreshed
+— allowed now; and iOS gives a home-screen app its own cookie store, so it opens signed out
+and the email code signs it in once.

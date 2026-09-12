@@ -278,3 +278,6 @@ These two are still genuinely open:
 - **#69**: the Anthropic account behind the sandbox key is out of credit; the coach cannot
   answer until it is topped up.
 | 70 | 2026-09-11 | play-by-play | On a cluster with three events (the 2006 one on his record), "explain" reveals only a single event on the play-by-play; the first cluster plays all of its events and looks great | OPEN | — |
+| 71 | 2026-09-11 | coding screen | Tapping a turn jumped the thread to the bottom and nothing looked selected. The turn was above the agreed line: its notice was inserted under the tap and the list then scrolled to its end | FIXED | faadfbc — a new line scrolls into view under the tapped turn; verified at 393x852 (notice, outline, coder's words, scribe's line all in view) |
+| 72 | 2026-09-11 | sandbox | Asked whether testing from a home-screen icon hits caching. Not caching: iOS gives a home-screen app its own cookie store, so it opens signed out | NOT A BUG | sign in once inside the home-screen app with the email code; the invite link opened from Mail signs in Safari only |
+| 73 | 2026-09-11 | sandbox | An open page on the phone never picked up a code change: the dev server refused its live-reload socket for the host name turin (only turin.local allowed) | FIXED | faadfbc — turin allowed; handshake 101 confirmed |
