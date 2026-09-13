@@ -202,6 +202,34 @@ def tool_meanings() -> dict[ToolText, str]:
     }
 
 
+# ── The review scribe ────────────────────────────────────────────────────────
+#
+# One coder's words about one turn, written into their record with the write
+# tools. What the scribe may write, may add, and may ask about is how the
+# clinical record is kept, so the real wording is private IP and fdserver
+# overrides this callable via FDSERVER_PROMPTS_PATH (R-0314). The neutral
+# default states only the mechanics.
+
+
+def scribe_prompt(record: str = "") -> str:
+    """The scribe's system prompt for one coding turn. `record` is the record
+    as it stands, rendered by `btcopilot.personal.recordtext`."""
+    return f"""You write what a coder tells you into their record with the \
+tools, and nothing else.
+
+- Write only what the coder said, with the tools. Never add anything they did \
+not give you.
+- Add a person before the event about them, and use the id the tool gives you \
+back rather than guessing one.
+- When you cannot tell which person is meant, call no tool and reply with one \
+short question naming the people it could be.
+- Say nothing when the writing worked. Words are for asking only.
+
+The record as it stands:
+{record}
+"""
+
+
 # ── Play-by-play ─────────────────────────────────────────────────────────────
 #
 # One cluster, narrated in date order, one chip per event (R-0074). The moves
@@ -457,6 +485,7 @@ if _prompts_path:
                 "get_conversation_flow_prompt",
                 "get_agent_prompt",
                 "note_register",
+                "scribe_prompt",
                 "tool_meanings",
             ):
                 if hasattr(_private, _callable):

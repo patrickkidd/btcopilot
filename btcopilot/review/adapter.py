@@ -12,7 +12,7 @@ import re
 import btcopilot
 from btcopilot import diagramjson
 from btcopilot.extensions import db
-from btcopilot.personal import record
+from btcopilot.personal import prompts, record
 from btcopilot.personal.record import Invalid
 from btcopilot.personal.coachmodel import CoachModel
 from btcopilot.personal.coachturn import CoachTurn
@@ -43,6 +43,7 @@ __all__ = [
     "statement",
     "cut_day",
     "render_record",
+    "scribe_prompt",
     "scribe_toolbox",
     "write_tools",
     "Diagram",
@@ -77,6 +78,12 @@ def write_tools() -> list[dict]:
 def coded_in(diagram_id: int) -> dict[int, dict]:
     """Which turn each event on a record was written from."""
     return record.coded_in(diagram_id)
+
+
+def scribe_prompt(record_text: str) -> str:
+    """The scribe's system prompt, read at call time so fdserver's override is
+    the one in force (R-0314)."""
+    return prompts.scribe_prompt(record_text)
 
 
 def scribe_toolbox(diagram_id: int, user_id: int, statement_id: int, turn_id: str):

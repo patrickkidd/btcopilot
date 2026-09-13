@@ -1,9 +1,12 @@
 """The scribe writes what a coder says, adding the people they name (R-0270)."""
 
+import importlib
+import os
 import re
 
 from mock import patch
 
+from btcopilot.personal import prompts
 from btcopilot.personal.coachmodel import ModelTurn, ToolCall
 from btcopilot.personal.models import Change
 from btcopilot.review import adapter
@@ -238,3 +241,37 @@ def test_says_so_when_it_runs_out_of_steps(coder, cut, turns):
 
     record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     assert len(record["people"]) == 8
+
+
+class Heard:
+    """A model that keeps the system prompt it was handed and writes nothing."""
+
+    def __init__(self):
+        self.system = ""
+
+    def turn(self, system, messages, tools):
+        if False:
+            yield
+        self.system = system
+        return ModelTurn(text="which one?")
+
+
+def test_fdserver_replaces_the_scribe_prompt(coder, cut, turns, tmp_path):
+    """The words the scribe works by come from the private prompts when one is
+    named, and reach the model whole (R-0314)."""
+    private = tmp_path / "private_prompts.py"
+    private.write_text(
+        "def scribe_prompt(record=''):\n"
+        "    return f'the private scribe words\\n{record}'\n"
+    )
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Heard()
+    try:
+        with patch.dict(os.environ, {"FDSERVER_PROMPTS_PATH": str(private)}):
+            importlib.reload(prompts)
+            scribe(coder, coding, turns[0], model, "James Cooper moved in 1971")
+    finally:
+        importlib.reload(prompts)
+    assert model.system.startswith("the private scribe words")
+    assert "Marcus" in model.system
+    assert "the private scribe words" not in prompts.scribe_prompt("")
