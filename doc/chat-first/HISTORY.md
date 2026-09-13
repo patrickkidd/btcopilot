@@ -892,3 +892,25 @@ Three questions for Patrick came out of the night (in T-3's Next action). The sa
 off during the walks so nudges would not send, and is on again for his sign-in code; the
 sandbox stands at Walk 1's start: cut 3 on the table for 18 September, three fixture coders
 finished, the vote not yet opened.
+
+## 2026-09-12/13 — the platform reset ruled: one public repo with encrypted prompts, a new droplet, Stripe for money only, agent-run admin [T-11, T-1]
+
+Patrick asked for a ground-up evaluation of repo layout, deployment, users, billing and admin
+for the rebuild, with web research rather than memory. Three code surveys, two web research
+passes and one adversarial pass produced a document; he then challenged it point by point over
+two days and the verdicts moved. The repo question went three rounds: one private repo (his
+resume reason killed it), a nested private worktree inside the public one (a submodule by
+hand), then his own suggestion, encrypting the prompts in place with sops, which held once the
+key-leak objection was weighed properly: secrets rotate, prompts do not, and files with real
+people in them stay out regardless. Prompts move to one `.prompty` file per prompt over
+dotprompt, whose Python lives inside Genkit. Deployment: a new droplet with Caddy, secrets in
+sops with one age key per machine, the DigitalOcean backup add-on, Datadog kept; the old
+droplet frozen for Pro, which supersedes the merge-first direction of 2026-09-10. Billing:
+Stripe's new usage path is Metronome with unpublished pricing, so flat plans through the hosted
+page and customer portal, tokens metered in our own table with a hard cap; every subscription
+email links to the portal so nobody asks him to cancel. Old users are imported, diagrams
+converted once. Admin is an agent running a CLI whose skill file is generated and test-checked;
+no MCP unless an agent without a shell appears. Two findings need action regardless: the
+committed compose file holds every live key in plain text and the TLS private key, and
+production has no automated database backup. A process rule was added after his correction:
+never repeat an artifact's content in the console.

@@ -1327,3 +1327,56 @@ conflict marks in triangles; a per-case "+" in the sessions sheet; trend lines b
 
 **Revisit trigger:** the first two review meetings.
 
+
+## 2026-09-12: Billing and old users for the chat-first product (Patrick's word: "sounds good")
+
+**Decision:** Stripe owns money only: flat plans sold through Stripe's hosted payment page and
+customer portal, subscription state mirrored into the users table by webhook that re-fetches
+the full subscription. Tokens are metered in our own table, one row per coach turn, with a
+hard cap and a paid top-up. Old Pro users are imported, not carried as a schema: email, name,
+Stripe customer id and the diagram, every diagram converted from pickle to JSON once, up front.
+**Rejected:** per-token billing through Stripe (their new usage path is Metronome, pricing
+unpublished; the Meters path is kept only for existing integrations); a soft cap (no billing
+consequence); converting diagrams on demand (keeps the pickle classes alive indefinitely);
+Stripe as the CRM or identity store.
+**Open:** the model the coach runs on sets the price floor (Sonnet 5 about 2.4 cents a turn,
+Opus 5 about 6); whether to sell worldwide from day one decides Stripe's merchant-of-record
+add-on at 3.5%.
+
+## 2026-09-13: Platform reset rulings (Patrick: "yes" to 2, 3, 4, 5)
+
+**Decision:** (2) The chat-first product gets its own DigitalOcean droplet with Caddy for
+TLS; the existing droplet is frozen to serve the Pro desktop app until Pro is sunset.
+(3) Stripe owns money only, flat monthly plans with our own token metering and a hard cap;
+customers manage and cancel their own subscription through Stripe's customer portal, and
+every subscription email (renewal, receipt, failed payment) links straight to it, so nobody
+has to ask Patrick to cancel. (4) Old Pro users are imported, every diagram converted once.
+(5) No admin web app. Administration is done by an agent, Claude Code or Patrick's
+self-hosted Qwen through OpenClaw, against an admin tool surface that carries its own
+reference manual, so any agentic tool can operate it without being taught.
+**Rejected:** per-token billing through Stripe; converting diagrams on demand; a hand-built
+admin UI; an admin surface only Claude Code can use.
+**Secrets (Patrick, 2026-09-13: "I like the sops route"):** one sops-encrypted env file in
+the repo; one age key pair per machine, the Mac's and the droplet's, private keys never
+copied between machines; both public keys in the repo config; the droplet decrypts at deploy
+into Docker's secrets mount. Rejected: GitHub Actions secrets (no history, no matching
+local sandbox), a hand-made env file on the server, 1Password.
+**Repo shape, re-judged 2026-09-13 after Patrick's challenge (not yet ruled):** one public
+repo with the prompts and the oracle rulings encrypted in place by the same sops and age
+keys; no second repo in the daily loop, so no worktree switch and one PR per ticket.
+Boundary: files with real people in them (coach transcripts, training exports) never enter
+the public repo, encrypted or not; fdserver keeps them as an archive. Costs accepted:
+ciphertext in GitHub's PR view (local diff is cleartext), manual merge if two sessions edit
+the same encrypted file, the age key in CI if prompt tests run there. The earlier "key leak"
+objection was overweighted; the real asymmetry is that secrets rotate and prompts do not.
+**Ruled 2026-09-13 ("go with prompty and use sops"):** one public repo; prompts move
+out of Python string constants into one `.prompty` file per prompt (markdown body, YAML
+frontmatter, Jinja2) with shared fragments as Jinja2 includes; prompts and the oracle
+rulings are encrypted in place with the same sops and age keys as the secrets. Files with
+real people in them never enter the public repo. Prompty over dotprompt because dotprompt's
+Python lives inside Genkit and uses Handlebars; prompty is Python-first (2.0.1, 2026-09-10),
+Jinja2, with an Anthropic invoker. Risk accepted: single maintainer; fragments through
+the prompty runtime unverified, fallback is rendering the body with plain Jinja2.
+**Open:** the admin surface
+is a CLI on the engine plus one skill file generated from the CLI's declarations and checked
+by a test, no MCP server unless an agent without a shell appears.

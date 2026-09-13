@@ -228,7 +228,7 @@ Dockerfile has no Node step to build it, and `pyproject.toml` names package data
 Training and Pro packages but not the Personal one, so even a built bundle is left out of the
 wheel. Deploying today serves the API with no page. Three edits, one place each.
 
-**Where the beta runs is not yet ruled.** Two shapes, decision pending with Patrick:
+**Where the beta runs: ruled 2026-09-13, its own droplet (T-11 in TOPICS.md).** The chat app gets a new 2 GB DigitalOcean droplet with Caddy, secrets in sops with age, the DigitalOcean backup add-on, Datadog kept; the old droplet is frozen to serve Pro until Pro is sunset. Prompts and the oracle rulings move into btcopilot encrypted in place with sops, one `.prompty` file per prompt; files with real people in them stay in fdserver as an archive. Full evaluation: https://claude.ai/code/artifact/355dc50c-086b-417c-8cdb-4b10735cc9d8. The two shapes weighed before that ruling, kept for the record:
 (a) a second compose stack beside production — its own Postgres, its own hostname, the
 image built by hand from this branch under a branch tag — so the three clinicians use the
 branch without it ever merging, Pro users share nothing with it, and the three pre-merge
@@ -272,7 +272,7 @@ loop and scores the record with the existing F1 code.
    `git -C ~/theapp/fdserver/.claude/worktrees/FD-362 show HEAD -- prompts/private_prompts.py`.
    The author's account of what was dropped from the batch prompts is the newest entry in
    doc/PROMPT_ENGINEERING_LOG.md. Unreviewed; unmeasured until his conversations are coded.
-2. **Deploy on the existing production server, merge first** [his direction 2026-09-10]: a
+2. **Deploy on the existing production server, merge first** [his direction 2026-09-10; superseded 2026-09-13 by the own-droplet ruling, T-11]: a
    read-only review of every table and endpoint change against master is being written to
    doc/chat-first/MERGE_REVIEW.md; nothing merges before he has read it.
 3. **Existing rows must work in the new app** — diagrams and discussions made on master

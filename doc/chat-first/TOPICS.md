@@ -20,8 +20,9 @@ record only.
 
 ## T-1 · Ship the personal app to the first beta users
 
-**Status:** ready for Patrick's review before merge; deploying on the existing production
-server, merge-first (his direction 2026-09-10).
+**Status:** ready for Patrick's review before merge. Deployment target changed 2026-09-13:
+the chat app gets its own droplet and the old server is frozen for Pro (see T-11), which
+supersedes the merge-first-on-production direction of 2026-09-10.
 **Decided:** one server for Pro, training and the chat app; old Pro diagrams stay pickle and
 new rows are JSON in the same column [Oracle: R-0241]; the beta users are the app working
 group of three clinicians [R-0079]; sign-in is passwordless with Face ID on a capable phone;
@@ -324,3 +325,32 @@ shape mockups https://claude.ai/code/artifact/fefb75e5-dade-4cf9-8892-eb7e61af6d
 rewrites this session's names, tightens the filter — then he reviews the page for fidelity.
 **Updated:** 2026-09-11.
 
+
+## T-11 · Platform reset: repo, deployment, billing, identity, admin
+
+**Status:** ruled in one session with Patrick, 2026-09-12/13; nothing built yet.
+**Decided:** one public repo (btcopilot); prompts leave the Python constants for one
+`.prompty` file per prompt with Jinja2 fragments; prompts and the oracle rulings are encrypted
+in place with sops and age, one key pair per machine, private keys never copied; files with
+real people in them never enter the public repo, fdserver keeps them as an archive. The chat
+app gets its own 2 GB DigitalOcean droplet with Caddy, the DigitalOcean backup add-on, Datadog
+kept; the old droplet is frozen to serve the Pro desktop app until Pro is sunset. Stripe owns
+money only: flat monthly plans through Stripe's hosted payment page and customer portal, every
+subscription email linking to the portal so nobody asks Patrick to cancel; tokens metered in
+our own table with a hard cap and paid top-up. Old Pro users are imported, every diagram
+converted once. No admin web app: an agent (Claude Code or the self-hosted Qwen through
+OpenClaw) runs a CLI on the engine whose skill file is generated from the CLI's declarations
+and checked by a test.
+**Open:** (1) [ruling] the coach's model, which sets the price floor; (2) [ruling] US-only or
+worldwide at launch, which decides Stripe's merchant-of-record add-on at 3.5%; (3) [verify]
+fragments through the prompty runtime, fallback plain Jinja2; (4) [verify] sops' cleartext git
+diff on a binary-mode markdown file; (5) [build] rotate every secret in the committed compose
+file before any new box or repo change; (6) [build] the admin verb list; (7) [waiting] these
+rulings are not yet in the oracle store, which lives in the fdserver worktree this session
+could not reach.
+**Lives in:** the evaluation https://claude.ai/code/artifact/355dc50c-086b-417c-8cdb-4b10735cc9d8;
+decisions/log.md entries dated 2026-09-12 and 2026-09-13.
+**Next action:** a session with fdserver access logs the rulings to the oracle store; then the
+repo move (prompty files, sops, private data out) at the next checkpoint after the current
+build lands, never mid-session.
+**Updated:** 2026-09-13.
