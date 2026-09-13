@@ -6,7 +6,9 @@ Backend for Pro/Personal apps, training app, AI extraction system.
 
 - **Never coin a term.** Say the thing in common words every time ("signing in with an email
   code also creates the account", never "login-is-signup"). A phrase from a doc is not his term
-  unless he used it.
+  unless he used it. That includes the corpus's own vocabulary: "topic block", "two clocks",
+  "state clock", "flush", "T-11" (verified failure 2026-09-13: "topic block?? again, with the
+  clever language!"). Say "the notes on the branch", "the list of open items", "the file".
 - **He is Patrick (2026-09-11).** Never "the owner" in a document or a reply; it is ambiguous.
 - **Sandbox addresses use `turin`, never `turin.local` (2026-09-11).** The review app is
   https://turin:8891/personal/.
