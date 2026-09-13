@@ -1386,6 +1386,14 @@ leaves the daily loop entirely: the oracle store and prompts move into btcopilot
 the files with real people in them (coach transcripts, training exports, database dumps)
 move to the corpus folder that already lives outside every repo, with their own backup; the
 fdserver repo is archived, not deleted.
+**Ruled 2026-09-13:** no plan price or pricing structure until the beta is in use; Patrick
+does not trust projections from his experience and wants to see real usage first. The
+per-turn token table is still built, since it is what the beta will be read from.
+**Verified 2026-09-13, prompty fragments:** prompty 2.0.1 renders the body in a sandboxed
+Jinja2 environment whose loader holds only the prompt itself, so `{% include %}` of a
+fragment file cannot resolve out of the box. The fix is a renderer subclass with a file
+loader pointed at the prompts folder, registered under prompty's renderer entry point;
+about ten lines. Also learned: 2.0 input declarations need a `kind` field.
 **Open:** the admin surface
 is a CLI on the engine plus one skill file generated from the CLI's declarations and checked
 by a test, no MCP server unless an agent without a shell appears.

@@ -345,12 +345,12 @@ and checked by a test.
 launch US-only, Stripe Tax on from day one; fdserver leaves the daily loop, the oracle store
 and prompts move into btcopilot encrypted, files with real people in them move to the corpus
 folder outside every repo, and the fdserver repo is archived.
-**Open:** (1) [verify] fragments through the prompty runtime, fallback plain Jinja2;
-(2) [verify] sops' cleartext local diff on a binary-mode markdown file; (3) [build] rotate every
+**Open:** (1) [build] a prompty renderer subclass with a file loader so fragments resolve
+(verified 2026-09-13: the stock renderer holds only the prompt itself); (2) [verify] sops' cleartext local diff on a binary-mode markdown file; (3) [build] rotate every
 secret in the committed compose file before any new box or repo change; (4) [build] the admin
 verb list; (5) [build] the rulings of 2026-09-12/13 go into the oracle store as part of the
-move, since the store itself moves into btcopilot; (6) [ruling] the plan price, given Opus at
-roughly 6 to 10 cents a turn.
+move, since the store itself moves into btcopilot; (6) [waiting] the plan price and pricing
+structure wait for real beta usage (his word 2026-09-13: he does not trust projections).
 **Lives in:** the evaluation https://claude.ai/code/artifact/355dc50c-086b-417c-8cdb-4b10735cc9d8;
 decisions/log.md entries dated 2026-09-12 and 2026-09-13.
 **Next action:** the repo move (prompty files, sops, oracle store in, private data out to the
