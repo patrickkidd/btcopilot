@@ -1,5 +1,5 @@
 """Votes: one per item per coder, before the meeting. Names are hidden while
-people are voting (R-0272); the vote informs, the meeting settles (R-0274)."""
+people are voting (R-0272); the vote informs, the meeting decides (R-0274)."""
 
 from flask import jsonify, request
 

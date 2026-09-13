@@ -544,11 +544,11 @@ export interface Take {
 }
 
 /** How the snapshot found the coders reading one item: the same way, or not.
- * Settled and unresolved are what the meeting makes of it afterwards. */
+ * Decided and unresolved are what the meeting makes of it afterwards. */
 export enum ItemStatus {
   Agreed = "agreed",
   Disputed = "disputed",
-  Settled = "settled",
+  Decided = "decided",
   Unresolved = "unresolved",
 }
 
@@ -568,7 +568,7 @@ export interface BallotItem {
   people: { id: number; name: string }[];
   /** The transcript line the item came from, which is never edited here. */
   line: { statement_id: number; who: string; text: string } | null;
-  /** Who settled it, which only the meeting's own reading carries. */
+  /** Who decided it, which only the meeting's own reading carries. */
   user_id?: number | null;
 }
 
@@ -592,9 +592,9 @@ export interface Vote {
  * every open item is given a choice before the cut is ratified (R-0252,
  * R-0257, R-0274). */
 
-/** What the room does with one open item. Reopen puts a settled or agreed one
+/** What the room does with one open item. Reopen puts a decided or agreed one
  * back in front of everybody. */
-export enum Settle {
+export enum Decision {
   Keep = "keep",
   Change = "change",
   Unresolved = "unresolved",

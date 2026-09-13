@@ -52,6 +52,26 @@ def add_kind(db: sqlite3.Connection) -> list[str]:
     return ["discussions.kind"]
 
 
+def decision_column(db: sqlite3.Connection) -> list[str]:
+    """The meeting's choice on an item is a decision, not a settle (R-0309)."""
+    if "review_items" not in tables(db):
+        return []
+    here = columns(db, "review_items")
+    done = []
+    if "settle_change_id" in here and "decision_change_id" not in here:
+        db.execute(
+            "ALTER TABLE review_items "
+            "RENAME COLUMN settle_change_id TO decision_change_id"
+        )
+        done.append("review_items.settle_change_id → decision_change_id")
+    changed = db.execute(
+        "UPDATE review_items SET status = 'decided' WHERE status = 'settled'"
+    ).rowcount
+    if changed:
+        done.append(f"{changed} items settled → decided")
+    return done
+
+
 def create_review(path: str) -> list[str]:
     """The five review tables, from the models themselves."""
     os.environ["FLASK_SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{path}"
@@ -80,7 +100,7 @@ def main(path: str) -> None:
     if not os.path.exists(path):
         raise SystemExit(f"no database at {path}")
     db = sqlite3.connect(path)
-    done = rename(db) + add_kind(db)
+    done = rename(db) + add_kind(db) + decision_column(db)
     db.commit()
     db.close()
     done += create_review(path)

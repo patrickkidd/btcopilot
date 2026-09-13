@@ -1,12 +1,12 @@
 """Items: one event, person or pair bond as every coder saw it, and the
-settle the meeting makes on it."""
+decision the meeting makes on it."""
 
 import enum
 
 from flask import jsonify, request
 
 from btcopilot.extensions import db
-from btcopilot.review import adapter, settle, snapshot
+from btcopilot.review import adapter, decision, snapshot
 from btcopilot.review.models import Item, ReviewStatus
 from btcopilot.schema import ItemKind
 from btcopilot.review.routes import (
@@ -20,18 +20,18 @@ from btcopilot.review.routes import (
 )
 
 
-class Settle(enum.StrEnum):
+class Decision(enum.StrEnum):
     Keep = "keep"
     Change = "change"
     Unresolved = "unresolved"
     Reopen = "reopen"
 
 
-SETTLE_STATUS = {
-    Settle.Keep: ReviewStatus.Settled,
-    Settle.Change: ReviewStatus.Settled,
-    Settle.Unresolved: ReviewStatus.Unresolved,
-    Settle.Reopen: ReviewStatus.Disputed,
+DECISION_STATUS = {
+    Decision.Keep: ReviewStatus.Decided,
+    Decision.Change: ReviewStatus.Decided,
+    Decision.Unresolved: ReviewStatus.Unresolved,
+    Decision.Reopen: ReviewStatus.Disputed,
 }
 
 
@@ -167,27 +167,27 @@ def item_index():
 
 @bp.route("/items/<int:item_id>", methods=["PATCH"])
 def item_patch(item_id: int):
-    """The meeting's settle: keep what a coder had, change it, or leave it
+    """The meeting's decision: keep what a coder had, change it, or leave it
     unresolved. Every item must carry one before a cut is ratified (R-0257)."""
     user = admin()
     item = item_or_404(item_id)
     if item.cut.ratified_at is not None:
-        raise ValueError("that cut is ratified and cannot be settled again")
+        raise ValueError("that cut is ratified and cannot be decided again")
     body = request.get_json() or {}
     try:
-        choice = Settle(body.get("choice"))
+        choice = Decision(body.get("choice"))
     except ValueError:
-        raise ValueError("a settle is keep, change, unresolved or reopen")
+        raise ValueError("a decision is keep, change, unresolved or reopen")
 
-    item.status = SETTLE_STATUS[choice]
-    item.user_id = None if choice is Settle.Reopen else user.id
+    item.status = DECISION_STATUS[choice]
+    item.user_id = None if choice is Decision.Reopen else user.id
 
-    if choice is Settle.Reopen:
-        item.settle_change_id = None
-    elif choice is not Settle.Unresolved:
-        value = settle.value_of(item, body.get("value"))
-        change = settle.write(item, value, user)
-        item.settle_change_id = change.id
+    if choice is Decision.Reopen:
+        item.decision_change_id = None
+    elif choice is not Decision.Unresolved:
+        value = decision.value_of(item, body.get("value"))
+        change = decision.write(item, value, user)
+        item.decision_change_id = change.id
 
     db.session.commit()
     return jsonify(payload(item, True))

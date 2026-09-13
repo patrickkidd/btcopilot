@@ -49,7 +49,7 @@ def _coder(coding, items: list[Item], agreed: dict[str, dict]) -> dict:
         theirs = mine[item.id]
         room = (
             agreed.get(str(item.item_id))
-            if item.status is ReviewStatus.Settled
+            if item.status is ReviewStatus.Decided
             else None
         )
         if theirs is None or room is None:

@@ -8,7 +8,7 @@ import type { Differed, Result, Rule, Tendency } from "./types";
  * How many events were ratified and how many were left unresolved, agreement
  * before the ballot and after ratification side by side, how the coach's own
  * pass scored against the agreed record, the guideline changes the AI wrote
- * with the settle each came from, where its reading differed from the room,
+ * with the decision each came from, where its reading differed from the room,
  * and what each coder tends to do (R-0242, R-0249, R-0254, R-0259).
  */
 
@@ -22,7 +22,7 @@ const day = (value: string): string =>
     day: "numeric",
   });
 
-/** A rule's provenance in the words of the settle it came from. */
+/** A rule's provenance in the words of the decision it came from. */
 function from(rule: Rule): string {
   const source = rule.source as {
     label?: string;
@@ -31,7 +31,7 @@ function from(rule: Rule): string {
   };
   const said = [
     source.label ? `from ${source.label}` : "from this meeting",
-    source.margin ? `settled ${source.margin}` : null,
+    source.margin ? `decided ${source.margin}` : null,
   ].filter(Boolean);
   return said.join(" · ");
 }
@@ -45,7 +45,7 @@ function tends(one: Tendency): string[] {
     );
   if (one.apart)
     said.push(
-      `${one.name} read ${one.apart} of ${one.items} differently from what the room settled.`,
+      `${one.name} read ${one.apart} of ${one.items} differently from what the room decided.`,
     );
   if (one.leans)
     said.push(
@@ -101,13 +101,13 @@ export class ResultScreen {
     );
   }
 
-  /** The guideline changes the AI wrote, each with the settle it came from and
+  /** The guideline changes the AI wrote, each with the decision it came from and
    * a link that puts it on the next meeting's agenda (R-0259, R-0276). */
   private rules(found: Result): string {
     if (!found.rules.length)
       return (
         `<div class="rcard"><h4>Guidelines changed by this meeting · 0</h4>` +
-        `<div class="prov">Nothing the room settled asked for a new rule.</div>` +
+        `<div class="prov">Nothing the room decided asked for a new rule.</div>` +
         `</div>`
       );
     return (

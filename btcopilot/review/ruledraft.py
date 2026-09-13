@@ -2,7 +2,7 @@
 ratified.
 
 The rules survive only as a first draft people may overwrite (R-0287), and
-they come from what the meeting settled, never from the vote. A model that is
+they come from what the meeting decided, never from the vote. A model that is
 not reachable drafts nothing; the ratification still stands.
 """
 
@@ -17,23 +17,23 @@ from btcopilot.review.models import Item, ReviewStatus, Rule, RuleSource
 _log = logging.getLogger(__name__)
 
 PROMPT = """You are drafting coding guidelines for a family-systems research
-review. Below is what a review meeting settled on, one numbered item per line:
+review. Below is what a review meeting decided on, one numbered item per line:
 what the coders each wrote down and what the meeting decided.
 
 Write one short guideline per recurring judgement call, each a single sentence
-in plain words. Write nothing if the settles show no rule worth stating. One
-guideline per line, no preamble. Begin every line with the number of the settle
+in plain words. Write nothing if the decisions show no rule worth stating. One
+guideline per line, no preamble. Begin every line with the number of the decision
 it came from in square brackets.
 
-{settles}"""
+{decisions}"""
 
 
-def settled_items(cut) -> list[Item]:
-    return Item.query.filter_by(cut_id=cut.id, status=ReviewStatus.Settled).all()
+def decided_items(cut) -> list[Item]:
+    return Item.query.filter_by(cut_id=cut.id, status=ReviewStatus.Decided).all()
 
 
 def draft(items: list[Item], model=None) -> dict[int, str]:
-    """Rule texts the coach proposes, each against the settle it came from."""
+    """Rule texts the coach proposes, each against the decision it came from."""
     if not items:
         return {}
     lines = [
@@ -49,7 +49,7 @@ def draft(items: list[Item], model=None) -> dict[int, str]:
                 [
                     {
                         "role": "user",
-                        "content": PROMPT.format(settles="\n".join(lines)),
+                        "content": PROMPT.format(decisions="\n".join(lines)),
                     }
                 ],
                 [],
@@ -66,13 +66,13 @@ def draft(items: list[Item], model=None) -> dict[int, str]:
 
 
 def source_of(cut, item: Item) -> dict:
-    """Where a rule came from: the settled item, what it says and the margin
-    the room settled it by, so a reader can go back to the argument
+    """Where a rule came from: the decided item, what it says and the margin
+    the room decided it by, so a reader can go back to the argument
     (R-0259)."""
     counts: dict[str, int] = {}
     for vote in item.votes:
         counts[vote.choice.value] = counts.get(vote.choice.value, 0) + 1
-    # The two biggest sides, which is how the room hears a settle: "3 to 2", or
+    # The two biggest sides, which is how the room hears a decision: "3 to 2", or
     # "3 to 0" when nobody said anything else.
     margin = (sorted(counts.values(), reverse=True) + [0, 0])[:2] if counts else []
     return {
@@ -91,7 +91,7 @@ def _label(item: Item) -> str:
 
 
 def draft_for(cut, model=None) -> list[Rule]:
-    items = settled_items(cut)
+    items = decided_items(cut)
     rules = [
         Rule(
             text=text,

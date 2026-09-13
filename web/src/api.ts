@@ -24,7 +24,7 @@ import type {
   Result,
   Session,
   SessionKind,
-  Settle,
+  Decision,
   Tally,
   Statement,
   Timeline,
@@ -329,10 +329,10 @@ export const tallies = (cutId: number) =>
   ask<Tally[]>("GET", `/tallies?cut_id=${cutId}`);
 
 /** What the room does with one open item: keep a take, change it to something
- * written out, leave it unresolved, or put a settled one back. */
-export const settle = (
+ * written out, leave it unresolved, or put a decided one back. */
+export const decide = (
   itemId: number,
-  choice: Settle,
+  choice: Decision,
   value: Record<string, unknown> | null = null,
 ) => ask<BallotItem>("PATCH", `/items/${itemId}`, { choice, value });
 

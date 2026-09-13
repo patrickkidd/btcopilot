@@ -103,12 +103,12 @@ the end of a finished conversation or recording is the whole thing, and anything
 the last cut is re-coded [R-0267]; the coder's screen is one card for the one task and history
 under it, never a list [R-0258, R-0265]; Patrick's administration is the agenda screen — date,
 what is on the agenda, who is done, nudge; the AI writes the guideline changes itself from the
-settles and a result screen shows them with their provenance, nothing to choose [R-0259]; the
+decisions and a result screen shows them with their provenance, nothing to choose [R-0259]; the
 page is approved as drawn [R-0268].
 **Open:** (1) [build] the review screens are approved as drawn, version 7, nothing open
 (https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9): names hidden whenever
 people vote and shown only at the meeting [R-0272]; the vote opens when Patrick opens it
-[R-0273]; no numerical rule settles an item, the meeting sees every disputed item most split
+[R-0273]; no numerical rule decides an item, the meeting sees every disputed item most split
 first with the unanimous ones collapsed [R-0274]; the database is the record and the coding
 guidelines are the one written output, readable from an (i) at the top of the coding screen
 [R-0275, R-0278]; flags, unresolved items and unfinished tasks fill the next meeting's agenda
@@ -140,7 +140,7 @@ and triangle positions redrawn on the move language page [R-0288]; the event edi
 moves board is his to make on his phone at https://turin.local:8891/personal/; (7) [waiting] migrating last year's IRR material, the last follow-up item of this unit [R-0262, R-0273] — inventory 2026-09-11 of
 doc/irr/: 25 rules in tables keyed to meeting number with unanimity and confidence (migrate as
 rows with the meeting as provenance); six meetings' agreement/disagreement/action tables keyed
-to statement ids of last year's discussions, about 40–60 rows (migrate as settle rows once
+to statement ids of last year's discussions, about 40–60 rows (migrate as decision rows once
 those discussions are imported through the upload path); six deliberation records in prose
 (keep as text, mine for rationale later); six raw transcripts (irreplaceable, never migrated);
 the old per-statement feedback stays the batch harness's ground truth until re-coded — his yes

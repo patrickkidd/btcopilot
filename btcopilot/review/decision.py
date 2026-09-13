@@ -12,7 +12,7 @@ from btcopilot.review.models import Item, ReviewStatus
 
 
 def value_of(item: Item, given) -> dict:
-    """What the meeting settled on: a coder's take picked by its coding, or a
+    """What the meeting decided on: a coder's take picked by its coding, or a
     written-out item of its own."""
     if isinstance(given, dict) and "coding_id" in given and "item" not in given:
         for take in item.takes or []:
@@ -45,7 +45,7 @@ def write(item: Item, value: dict, user):
         for field, field_value in value.items()
         if field != "id"
     ]
-    change = adapter.commit(case.id, deltas, user.id, f"review-settle-{item.id}")
+    change = adapter.commit(case.id, deltas, user.id, f"review-decision-{item.id}")
     item.item_id = target
     return change
 
@@ -61,7 +61,7 @@ def confirm_agreed(cut, user) -> list[Item]:
     for item in found:
         # Agreed means every coder wrote it the same way, so any take is it.
         change = write(item, item.takes[0]["item"], user)
-        item.settle_change_id = change.id
+        item.decision_change_id = change.id
     db.session.flush()
     return found
 

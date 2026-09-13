@@ -62,7 +62,7 @@ def rows(cut) -> list[dict]:
 
 
 def _room(item: Item, theirs: list[dict]) -> dict | None:
-    """What the room ended with: nothing when it settled the item away or
+    """What the room ended with: nothing when it decided the item away or
     nobody but the coach wrote it down."""
     if item.status is ReviewStatus.Unresolved or not theirs:
         return None

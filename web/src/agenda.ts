@@ -25,7 +25,7 @@ export interface AgendaHandlers {
   onAdd(): void;
   /** Open one cut again to move its line. */
   onPlace(discussionId: number): void;
-  /** Run the meeting on what is on the agenda: settle the open items and
+  /** Run the meeting on what is on the agenda: decide the open items and
    * ratify (R-0250). */
   onMeeting(cutId: number): void;
   /** What the screen is called, which the title row shows. */
@@ -199,7 +199,7 @@ export class Agenda {
   }
 
   /** Once the vote is open the meeting can be run on that cut: the room
-   * settles what the ballot left and ratifies (R-0250, R-0273). */
+   * decides what the ballot left and ratifies (R-0250, R-0273). */
   private meetingButtons(): string {
     return this.cuts
       .filter((cut) => cut.vote_opened_at !== null)

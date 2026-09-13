@@ -411,7 +411,7 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 ## The vote before the meeting
 
 
-What it is for: settling as much as possible on your own phone, so the meeting only handles what is left.
+What it is for: deciding as much as possible on your own phone, so the meeting only handles what is left.
 
 @frame review#f1 | The vote on a phone, one disputed event per screen, the takes shown without names.
 @frame review#f2 | Choosing change: the editor opens prefilled so you can write a take none of the coders wrote.
@@ -431,7 +431,7 @@ What it is for: settling as much as possible on your own phone, so the meeting o
 - The transcript line and the session it came from stay attached to the event and are not edited here. [drawn]
 - Names are hidden whenever anyone is voting; only the meeting shows who coded what. [drawn] {R-0272}
 - The vote opens when Patrick opens it, never at a coder count. [drawn] {R-0273}
-- No rule settles an item before the meeting; the vote's tallies inform the meeting and the meeting settles. [drawn] {R-0274}
+- No rule decides an item before the meeting; the vote's tallies inform the meeting and the meeting decides. [drawn] {R-0274}
 - The same agreement timeline sits above the item you are voting on, with the event you are on enlarged in green. [drawn] {R-0278}
 
 ## The meeting
@@ -443,7 +443,7 @@ What it is for: closing what the vote could not, and ratifying the record.
 
 - The meeting screen carries only the items the ballot left open. [built] {R-0250}
 - Names and counts appear here for the first time. [built] {R-0252}
-- The items the vote settled are listed separately and are not read aloud, each with a way to reopen it. [built]
+- The items the vote decided are listed separately and are not read aloud, each with a way to reopen it. [built]
 - Every open item must be given one of three choices: keep a take, change it, or mark it unresolved. [built] {R-0257}
 - The ratify button stays dead until every open item has a choice, and says how many still need one. [built] {R-0257}
 - An item marked unresolved is kept as data and left out of the agreed record. [built] {R-0250}
@@ -451,7 +451,7 @@ What it is for: closing what the vote could not, and ratifying the record.
 - How much of the meeting is left is shown beside them; the app holds the meeting as a day and not a time, so there is nothing yet to count down from. [drawn]
 - The event in front of the room is shown on the picture as well as in the list. [built]
 - Only events that are new or changed since the last ratified cut are in dispute; earlier ones stand unless a new turn reopened one. [drawn] {R-0267}
-- Convergence is required but nobody is forced to converge, and settling a whole kind of disagreement with one rule is one of the tools for getting there. [drawn] {R-0251}
+- Convergence is required but nobody is forced to converge, and deciding a whole kind of disagreement with one rule is one of the tools for getting there. [drawn] {R-0251}
 - Each meeting tries an approach and teaches the next one; there is no review before the meeting beyond the ballot. [drawn] {R-0244, R-0250}
 - The two-sided comparison of two codings already drawn has to fold into either the ballot or this screen, and where is unbuilt work. [drawn]
 - The review screens are built as their own isolated piece, so changing them can never break the chat or the professional features. [drawn] {R-0245}
@@ -464,20 +464,20 @@ What it is for: closing what the vote could not, and ratifying the record.
 What it is for: what the meeting produced, with nothing left to choose.
 
 @frame review#f13 | The result screen: what was ratified, the guideline changes the AI wrote, where it disagreed with the room, and what each coder tends to do.
-@frame review#f15 | The coding guidelines inside the app, always current, each rule with the settle it came from and a flag link.
+@frame review#f15 | The coding guidelines inside the app, always current, each rule with the decision it came from and a flag link.
 @frame review#f14 | Where you find them: tap the (i) at the top of the coding screen and the guidelines slide in over your coding.
 
 - The result screen shows how many events were ratified and how many were left unresolved. [built]
 - It shows agreement before the ballot and after ratification, side by side. [built]
 - It shows how the coach's own pass scored against the agreed record. [built] {R-0242}
 - The word for the agreed record is ratified; what the coach proposes is a proposal and is never called gold. [drawn] {R-0249}
-- The AI writes the guideline changes itself out of what the room settled, and they are live; there is nothing to choose on this screen. [built] {R-0259}
-- Each new rule shows the settled item it came from and the margin it was settled by. [built] {R-0259}
+- The AI writes the guideline changes itself out of what the room decided, and they are live; there is nothing to choose on this screen. [built] {R-0259}
+- Each new rule shows the decided item it came from and the margin it was decided by. [built] {R-0259}
 - Where the AI's reading differed from the room is listed afterwards, with its reason, as an audit rather than a vote. [built] {R-0254}
 - What each coder tends to do differently from the others is shown. [built]
-- Every vote, settlement and ratification is a row in the app's own tables with who did it and when. [drawn] {R-0262}
+- Every vote, decision and ratification is a row in the app's own tables with who did it and when. [drawn] {R-0262}
 - How last year's coding material is carried over is a choice Patrick has not made; the plan under consideration keeps the rules and the agreement tables as rows and the written deliberations as text. [open] {R-0262}
 - Every rule the AI wrote carries a "flag for next meeting" link, and flagged rules and unresolved events go on the next meeting's agenda by themselves; who has not finished a coding is the coder list's own line, not the agenda's. [built] {R-0276, R-0308}
-- The meeting's results are rows in the database — codings, votes, settles, rules with the settle each came from — so everything is traceable; the coding guidelines are the one written output. [drawn] {R-0275}
+- The meeting's results are rows in the database — codings, votes, decisions, rules with the decision each came from — so everything is traceable; the coding guidelines are the one written output. [drawn] {R-0275}
 - Anyone can read the current coding guidelines inside the app from an (i) button at the top of the coding screen. [drawn] {R-0275, R-0278}
 - The coding guidelines file in the code is generated from the rules the app holds and is never edited by hand. [drawn] {R-0275}

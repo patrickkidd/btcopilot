@@ -37,7 +37,7 @@ def result_read():
             "cut_id": cut.id,
             "ratified_at": cut.ratified_at.isoformat(),
             "items": len(theirs),
-            "ratified": counts[ReviewStatus.Settled.value]
+            "ratified": counts[ReviewStatus.Decided.value]
             + counts[ReviewStatus.Agreed.value],
             "unresolved": counts[ReviewStatus.Unresolved.value],
             "first_pass": figures.get(snapshot.AgreementPhase.FirstPass.value),
@@ -52,7 +52,7 @@ def result_read():
 
 def _rules(cut) -> list[Rule]:
     """The guidelines this meeting wrote, which are the ones the coach drafted
-    off its own settles."""
+    off its own decisions."""
     return [
         rule
         for rule in Rule.query.filter(Rule.retired_at.is_(None)).order_by(Rule.id).all()

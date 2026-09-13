@@ -10,7 +10,7 @@ from btcopilot.review import (
     divergence,
     export,
     ruledraft,
-    settle,
+    decision,
     snapshot,
 )
 from btcopilot.review.models import Cut
@@ -133,7 +133,7 @@ def cut_patch(cut_id: int):
         cut.ratified_at = adapter.utcnow()
         # What every coder already read the same way goes into the record too:
         # the room confirms those by ratifying rather than by choosing.
-        settle.confirm_agreed(cut, user)
+        decision.confirm_agreed(cut, user)
         snapshot.recompute(cut, snapshot.AgreementPhase.Ratified)
         export.write(cut)
         ruledraft.draft_for(cut)

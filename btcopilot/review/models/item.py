@@ -12,7 +12,7 @@ from btcopilot.schema import ItemKind
 class ReviewStatus(enum.StrEnum):
     Agreed = "agreed"
     Disputed = "disputed"
-    Settled = "settled"
+    Decided = "decided"
     Unresolved = "unresolved"
 
 
@@ -36,7 +36,7 @@ class Item(db.Model, ModelMixin):
         Enum(ReviewStatus, values_callable=lambda e: [x.value for x in e]),
         nullable=False,
     )
-    settle_change_id = Column(
+    decision_change_id = Column(
         Integer, ForeignKey("diagram_changes.id"), nullable=True
     )
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)

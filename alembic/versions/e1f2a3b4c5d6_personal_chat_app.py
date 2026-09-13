@@ -24,7 +24,7 @@ ITEM_KIND = sa.Enum(
 KIND = sa.Enum("turn", "play", name="statementkind")
 DISCUSSION_KIND = sa.Enum("chat", "recording", "note", name="discussionkind")
 REVIEW_STATUS = sa.Enum(
-    "agreed", "disputed", "settled", "unresolved", name="reviewstatus"
+    "agreed", "disputed", "decided", "unresolved", name="reviewstatus"
 )
 VOTE_CHOICE = sa.Enum("take", "change", "drop", name="votechoice")
 RULE_SOURCE = sa.Enum("ai", "migration", "human", name="rulesource")
@@ -256,7 +256,7 @@ def upgrade():
         sa.Column("takes", _json(), nullable=False),
         sa.Column("status", REVIEW_STATUS, nullable=False),
         sa.Column(
-            "settle_change_id",
+            "decision_change_id",
             sa.Integer(),
             sa.ForeignKey("diagram_changes.id"),
             nullable=True,

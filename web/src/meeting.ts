@@ -13,7 +13,7 @@ import { openEditor } from "./editor";
 import { toast } from "./toast";
 import {
   ItemStatus,
-  Settle,
+  Decision,
   VoteChoice,
   type BallotItem,
   type CastVote,
@@ -28,7 +28,7 @@ import {
  *
  * Only the items the ballot left open are here, the most split first, with the
  * names and the counts shown for the first time (R-0250, R-0252, R-0274). The
- * ones the vote settled are collapsed below to confirm or reopen. Every open
+ * ones the vote decided are collapsed below to confirm or reopen. Every open
  * item must be given one of three choices and the ratify button stays dead
  * until each one has, saying how many still need one (R-0257).
  */
@@ -41,9 +41,9 @@ export interface MeetingHandlers {
 
 /** Which choice a row is showing as taken, worked out from what the item is
  * now rather than kept on the side. */
-function choiceOf(item: BallotItem): Settle | null {
-  if (item.status === ItemStatus.Unresolved) return Settle.Unresolved;
-  if (item.status === ItemStatus.Settled) return Settle.Keep;
+function choiceOf(item: BallotItem): Decision | null {
+  if (item.status === ItemStatus.Unresolved) return Decision.Unresolved;
+  if (item.status === ItemStatus.Decided) return Decision.Keep;
   return null;
 }
 
@@ -102,7 +102,7 @@ export class Meeting {
     this.render();
   }
 
-  /** What the room has still to settle, the most split first: an item nobody
+  /** What the room has still to decide, the most split first: an item nobody
    * agreed on is read before one that only one coder read differently. */
   private open_(): BallotItem[] {
     return this.items
@@ -111,7 +111,7 @@ export class Meeting {
   }
 
   /** An item somebody in the room wrote. What only the coach wrote down is
-   * never the room's to settle; it is read afterwards as an audit
+   * never the room's to decide; it is read afterwards as an audit
    * (R-0254). The reading only carries the room's own takes, so an item with
    * none is the coach's alone. */
   private theirs(item: BallotItem): boolean {
@@ -126,8 +126,8 @@ export class Meeting {
     return sides.length * 100 - biggest;
   }
 
-  /** What the vote settled, which is not read aloud but can be reopened. */
-  private settled(): BallotItem[] {
+  /** What the vote decided, which is not read aloud but can be reopened. */
+  private decided(): BallotItem[] {
     return this.items.filter(
       (one) => one.status !== ItemStatus.Disputed && this.theirs(one),
     );
@@ -138,8 +138,8 @@ export class Meeting {
     if (!cut) return;
     this.handlers.onTitle({ name: cut.session, tail: "ratify" });
     const open = this.open_();
-    const settled = this.settled();
-    this.stats.innerHTML = this.figures(open.length, settled.length);
+    const decided = this.decided();
+    this.stats.innerHTML = this.figures(open.length, decided.length);
     this.view.style.height = `${LINE.height}px`;
     this.view.innerHTML = drawTimeline(eventsOf(this.items), open[0]?.id ?? null);
     this.body.innerHTML =
@@ -148,17 +148,17 @@ export class Meeting {
       (open.length
         ? open.map((one) => this.row(one)).join("")
         : `<div class="none">Every open item has a choice.</div>`) +
-      (settled.length
-        ? `<div class="div">Everyone agreed · ${settled.length}` +
+      (decided.length
+        ? `<div class="div">Everyone agreed · ${decided.length}` +
           `<span class="dcount">confirm or reopen</span></div>` +
-          settled.map((one) => this.collapsed(one)).join("")
+          decided.map((one) => this.collapsed(one)).join("")
         : "");
     this.bar.innerHTML = this.ratifyBar(open.length);
   }
 
   /** The agreement figures from the first pass, what is in this cut, and the
    * day the meeting falls on. */
-  private figures(open: number, settled: number): string {
+  private figures(open: number, decided: number): string {
     const cut = this.cut;
     const first = (cut?.agreement ?? {}).first_pass ?? null;
     const day = cut?.meeting_date
@@ -170,7 +170,7 @@ export class Meeting {
     return (
       (day ? `<span>meeting ${esc(day)}</span>` : "") +
       `<span>${this.items.length} items in this cut</span>` +
-      `<span>${open} open</span><span>${settled} agreed</span>` +
+      `<span>${open} open</span><span>${decided} agreed</span>` +
       (first?.percent === null || first?.percent === undefined
         ? ""
         : `<span>first pass <b>${first.percent}%</b></span>`)
@@ -210,15 +210,15 @@ export class Meeting {
       `<span class="verdict">${esc(verdict(sides))}</span></div>` +
       line +
       `<div class="acts2">` +
-      this.choice(Settle.Keep, "keep", chosen) +
-      this.choice(Settle.Change, "change…", chosen) +
-      this.choice(Settle.Unresolved, "mark unresolved", chosen) +
+      this.choice(Decision.Keep, "keep", chosen) +
+      this.choice(Decision.Change, "change…", chosen) +
+      this.choice(Decision.Unresolved, "mark unresolved", chosen) +
       `</div></div>`
     );
   }
 
-  private choice(which: Settle, label: string, chosen: Settle | null): string {
-    const on = which === chosen ? (which === Settle.Keep ? " primary on" : " on") : "";
+  private choice(which: Decision, label: string, chosen: Decision | null): string {
+    const on = which === chosen ? (which === Decision.Keep ? " primary on" : " on") : "";
     return (
       `<button class="btn${on} mt-choice" type="button" ` +
       `data-choice="${which}">${label}</button>`
@@ -270,13 +270,13 @@ export class Meeting {
 
   private collapsed(item: BallotItem): string {
     const first = item.takes[0];
-    const settled =
+    const note =
       item.status === ItemStatus.Unresolved ? " · left unresolved" : "";
     return (
       `<div class="collapsed" data-item="${item.id}">` +
       `<span>${esc(when(first?.item.dateTime))} · ` +
       `${esc(String(first?.item.description ?? first?.item.kind ?? "an item"))}` +
-      `${settled}</span>` +
+      `${note}</span>` +
       `<span class="reopen mt-reopen">reopen</span></div>`
     );
   }
@@ -302,26 +302,26 @@ export class Meeting {
     const item = this.items.find((one) => one.id === Number(row.dataset.item));
     if (!item) return;
     if (target.closest(".mt-reopen")) {
-      await this.settle(item, Settle.Reopen);
+      await this.decide(item, Decision.Reopen);
       return;
     }
     const choice = target.closest<HTMLElement>(".mt-choice")?.dataset.choice;
-    if (choice === Settle.Change) this.change(item);
-    else if (choice === Settle.Keep)
-      await this.settle(item, Settle.Keep, {
+    if (choice === Decision.Change) this.change(item);
+    else if (choice === Decision.Keep)
+      await this.decide(item, Decision.Keep, {
         coding_id: item.takes[0]?.coding_id,
       });
-    else if (choice === Settle.Unresolved)
-      await this.settle(item, Settle.Unresolved);
+    else if (choice === Decision.Unresolved)
+      await this.decide(item, Decision.Unresolved);
   }
 
-  private async settle(
+  private async decide(
     item: BallotItem,
-    choice: Settle,
+    choice: Decision,
     value: Record<string, unknown> | null = null,
   ): Promise<void> {
     try {
-      await api.settle(item.id, choice, value);
+      await api.decide(item.id, choice, value);
     } catch (error) {
       // The record refuses some takes — a shift with no variable, say — and
       // says why in its own words, which is what the room needs to hear.
@@ -336,7 +336,7 @@ export class Meeting {
   }
 
   /** "change…" opens the app's own event editor over the meeting, prefilled,
-   * so the room can settle on something nobody wrote. */
+   * so the room can decide on something nobody wrote. */
   private change(item: BallotItem): void {
     const from = item.takes[0]?.item ?? {};
     const people = item.people.map(
@@ -350,7 +350,7 @@ export class Meeting {
       undefined,
       (body) => void this.written(item, body),
     );
-    editor.querySelector(".save")!.textContent = "settle on this";
+    editor.querySelector(".save")!.textContent = "decide on this";
     editor
       .querySelector(".acts")
       ?.before(
@@ -382,7 +382,7 @@ export class Meeting {
     body: Record<string, unknown>,
   ): Promise<void> {
     this.close();
-    await this.settle(item, Settle.Change, body);
+    await this.decide(item, Decision.Change, body);
   }
 
   private close(): void {

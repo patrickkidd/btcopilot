@@ -43,7 +43,7 @@ def _value_error(e):
 
 @bp.errorhandler(adapter.Invalid)
 def _invalid_record(e):
-    """A settle the record itself refuses — a shift with no variable, say. The
+    """A decision the record itself refuses — a shift with no variable, say. The
     room chose it, so it is told in the record's own words rather than shown a
     server error."""
     return str(e), 400
@@ -94,10 +94,10 @@ def human_codings(cut: Cut) -> set[int]:
 
 
 def open_items(cut: Cut) -> list[Item]:
-    """What the meeting has to settle: every disputed item of the cut that a
+    """What the meeting has to decide: every disputed item of the cut that a
     person wrote, of any kind. People and pair bonds never reach the ballot;
     they wait for the room (R-0250). An item only the coach wrote is not the
-    room's to settle (R-0254)."""
+    room's to decide (R-0254)."""
     people = human_codings(cut)
     return [
         item
@@ -110,7 +110,7 @@ def open_items(cut: Cut) -> list[Item]:
 def on_ballot(cut: Cut) -> list[Item]:
     """What a coder votes on: the disputed events of the cut, one per screen
     (R-0257). What the coders already read the same way is not voted on,
-    people and pair bonds are settled at the meeting, and an item only the
+    people and pair bonds are decided at the meeting, and an item only the
     coach wrote down is not on the ballot."""
     return [
         item for item in open_items(cut) if item.item_kind is ItemKind.Event

@@ -16,7 +16,7 @@ import {
 /** The vote before the meeting: one disputed event per screen, the takes shown
  * without names so nobody defers to the most senior person in the room
  * (R-0252, R-0257). Nothing the coach thinks is in here at all (R-0254). No
- * rule settles anything before the meeting; the tallies only inform it
+ * rule decides anything before the meeting; the tallies only inform it
  * (R-0274). */
 
 export interface BallotHandlers {

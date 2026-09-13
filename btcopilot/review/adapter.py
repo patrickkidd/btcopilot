@@ -193,7 +193,7 @@ def grant_write(diagram: Diagram, user):
 
 
 def commit(diagram_id: int, deltas: list[dict], user_id: int, turn_id: str) -> Change:
-    """A settle written onto the case's record, logged as the review's own."""
+    """A decision written onto the case's record, logged as the review's own."""
     return record.apply(
         diagram_id,
         deltas,

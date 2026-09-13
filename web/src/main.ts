@@ -356,7 +356,7 @@ const agenda = new Agenda($("agenda-body"), {
   },
 });
 
-/** The meeting: the room settles what the vote left open and ratifies the cut
+/** The meeting: the room decides what the vote left open and ratifies the cut
  * (R-0250, R-0257). Patrick's screen, reached from the agenda. */
 const meeting = new Meeting(
   $("meeting-stats"),

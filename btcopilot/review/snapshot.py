@@ -151,7 +151,7 @@ def agreement(cut) -> dict:
     for row in rows:
         counts[row.status.value] += 1
     total = len(rows)
-    agreed = counts[ReviewStatus.Agreed.value] + counts[ReviewStatus.Settled.value]
+    agreed = counts[ReviewStatus.Agreed.value] + counts[ReviewStatus.Decided.value]
     return {
         "codings": len(voters(cut)),
         "items": total,

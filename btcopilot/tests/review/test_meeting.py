@@ -1,4 +1,4 @@
-"""The meeting and the result screen: settling what the vote left open,
+"""The meeting and the result screen: deciding what the vote left open,
 ratifying, and what the meeting produced."""
 
 import datetime
@@ -49,7 +49,7 @@ def open_vote(patrick, cut):
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
 
 
-def settle_all(patrick, cut, choice="keep"):
+def decide_all(patrick, cut, choice="keep"):
     for item in list(db.session.get(Cut, cut.id).items):
         if item.status is not ReviewStatus.Disputed:
             continue
@@ -155,7 +155,7 @@ def test_ratify_waits_until_every_open_item_has_a_choice(
     assert "still need a choice" in refused.get_data(as_text=True)
     assert db.session.get(Cut, cut.id).ratified_at is None
 
-    settle_all(patrick, cut)
+    decide_all(patrick, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
     assert db.session.get(Cut, cut.id).ratified_at is not None
 
@@ -166,7 +166,7 @@ def test_an_item_marked_unresolved_is_kept_and_left_out_of_the_record(
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
-    settle_all(patrick, cut, choice="unresolved")
+    decide_all(patrick, cut, choice="unresolved")
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
 
     result = patrick.get(f"/review/result?cut_id={cut.id}").get_json()
@@ -176,13 +176,13 @@ def test_an_item_marked_unresolved_is_kept_and_left_out_of_the_record(
     ).count() >= 1
 
 
-def test_reopening_a_settled_item_puts_it_back_in_front_of_the_room(
+def test_reopening_a_decided_item_puts_it_back_in_front_of_the_room(
     patrick, test_user, test_user_2, cut
 ):
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
-    settle_all(patrick, cut)
+    decide_all(patrick, cut)
     item = db.session.get(Cut, cut.id).items[0]
     patrick.patch(f"/review/items/{item.id}", json={"choice": "reopen"})
 
@@ -195,7 +195,7 @@ def test_both_agreement_figures_are_kept(patrick, test_user, test_user_2, cut):
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
-    settle_all(patrick, cut)
+    decide_all(patrick, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
 
     result = patrick.get(f"/review/result?cut_id={cut.id}").get_json()
@@ -219,7 +219,7 @@ def test_what_every_coder_read_the_same_way_is_ratified_too(
     assert agreed
     assert all(item.item_id is None for item in agreed)
 
-    settle_all(patrick, cut)
+    decide_all(patrick, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
 
     record = export.ratified_record(db.session.get(Cut, cut.id))
@@ -232,7 +232,7 @@ def test_the_result_scores_the_coachs_own_pass(
 ):
     three_readings(test_user, test_user_2, coach_user, cut)
     open_vote(patrick, cut)
-    settle_all(patrick, cut)
+    decide_all(patrick, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
 
     result = patrick.get(f"/review/result?cut_id={cut.id}").get_json()
@@ -245,7 +245,7 @@ def test_where_the_coach_differed_is_written_once_at_ratification(
 ):
     three_readings(test_user, test_user_2, coach_user, cut)
     open_vote(patrick, cut)
-    settle_all(patrick, cut)
+    decide_all(patrick, cut)
     with patch.object(divergence, "reasons", side_effect=lambda rows: rows):
         patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
 
@@ -253,13 +253,13 @@ def test_where_the_coach_differed_is_written_once_at_ratification(
     assert any("father left" in row["label"] for row in result["differed"])
 
 
-def test_a_rule_carries_the_settle_it_came_from(
+def test_a_rule_carries_the_decision_it_came_from(
     patrick, test_user, test_user_2, cut
 ):
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
-    settle_all(patrick, cut)
+    decide_all(patrick, cut)
     with patch.object(ruledraft, "draft", return_value={1: "Date a shift by its start"}):
         patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
 
@@ -275,7 +275,7 @@ def test_the_result_says_what_each_coder_tends_to_do(
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
-    settle_all(patrick, cut)
+    decide_all(patrick, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
 
     result = patrick.get(f"/review/result?cut_id={cut.id}").get_json()
@@ -303,7 +303,7 @@ def test_changing_a_take_rewords_the_same_moment(patrick, test_user, test_user_2
     assert db.session.get(Item, item.id).item_id == "10"
 
 
-def test_a_settle_the_record_refuses_is_the_rooms_fault(
+def test_a_decision_the_record_refuses_is_the_rooms_fault(
     patrick, test_user, test_user_2, cut
 ):
     """A shift with no variable is refused in the record's own words, not as a
@@ -335,17 +335,17 @@ def test_every_contributor_can_read_the_result(
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
-    settle_all(patrick, cut)
+    decide_all(patrick, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
 
     assert coder.get(f"/review/result?cut_id={cut.id}").status_code == 200
 
 
-def test_a_ratified_cut_cannot_be_settled_again(patrick, test_user, test_user_2, cut):
+def test_a_ratified_cut_cannot_be_decided_again(patrick, test_user, test_user_2, cut):
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
-    settle_all(patrick, cut)
+    decide_all(patrick, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
 
     item = db.session.get(Cut, cut.id).items[0]
