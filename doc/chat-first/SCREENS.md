@@ -444,8 +444,13 @@ What it is for: closing what the vote could not, and ratifying the record.
 
 - The meeting screen carries only the items the ballot left open. [built] {R-0250}
 - Names and counts appear here for the first time. [built] {R-0252}
-- The items the vote decided are listed separately and are not read aloud, each with a way to reopen it. [built]
-- Every open item must be given one of three choices: keep an opinion, change it, or mark it unresolved. [built] {R-0257}
+- The header is one title line — the word Meeting, the day, the conversation — then one line of three labelled figures (how many events, how many disputed, what agreement was before the vote), then the three colours of the wire with one word each; no figure appears twice on the screen and the tally chip that read the margin as shorthand is gone. [built] {R-0321}
+- The list is read either most split first or in the order the events happened; sorted by time every event is in one list, the agreed ones marked agreed. [built] {R-0316}
+- An item the vote agreed on opens the same card as a disputed one on a tap of its row, with a close button at its top right; keeping is disabled once it is kept, and change and mark unresolved stay. [built] {R-0317}
+- Every row names who and what; an event with no date says it has no date yet, and an item with no description is named by its kind in words. [built] {R-0318}
+- On a split, each version carries its own keep button; with one version there is one. [built] {R-0319}
+- Every dot on the wire answers a tap, on the meeting as on the ballot: it puts the room on that event and brings its card up. [built] {R-0320}
+- Every open item must be given one of three choices: keep a version, change it, or mark it unresolved. [built] {R-0257}
 - The ratify button stays dead until every open item has a choice, and says how many still need one. [built] {R-0257}
 - An item marked unresolved is kept as data and left out of the agreed record. [built] {R-0250}
 - The screen shows the agreement figures from the first pass. [built]
@@ -456,7 +461,7 @@ What it is for: closing what the vote could not, and ratifying the record.
 - Each meeting tries an approach and teaches the next one; there is no review before the meeting beyond the ballot. [drawn] {R-0244, R-0250}
 - The two-sided comparison of two codings already drawn has to fold into either the ballot or this screen, and where is unbuilt work. [drawn]
 - The review screens are built as their own isolated piece, so changing them can never break the chat or the professional features. [drawn] {R-0245}
-- The meeting sees every disputed event with its tally, the most split first, and the unanimous ones collapsed below to confirm or reopen. [built] {R-0274}
+- The meeting sees every disputed event with its tally, the most split first, and the unanimous ones collapsed below. [built] {R-0274}
 - One timeline above the list shows agreement and disagreement at a glance: one dot per event, teal where the vote agreed, amber where it did not, with a small count beside a disputed dot. [built] {R-0277, R-0278}
 
 ## After ratification

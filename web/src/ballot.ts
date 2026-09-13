@@ -103,7 +103,7 @@ export function eventsOf(items: BallotItem[]): BallotItem[] {
 }
 
 export const when = (value: unknown): string => {
-  if (typeof value !== "string" || !value) return "undated";
+  if (typeof value !== "string" || !value) return "no date yet";
   if (/^\d{4}$/.test(value)) return value;
   const day = new Date(`${value}T00:00:00`);
   if (Number.isNaN(day.getTime())) return value;
@@ -113,6 +113,36 @@ export const when = (value: unknown): string => {
     day: "numeric",
   });
 };
+
+/** An event kind said the way a first-time reader would say it, for an item
+ * whose writer left the description empty (R-0318). */
+const KIND_WORDS: Record<string, string> = {
+  shift: "a shift",
+  birth: "a birth",
+  adopted: "an adoption",
+  bonded: "a new bond",
+  married: "a marriage",
+  separated: "a separation",
+  divorced: "a divorce",
+  moved: "a move",
+  death: "a death",
+};
+
+/** What happened, never a placeholder: with no description the kind is said in
+ * words (R-0318). */
+export function what(item: BallotItem): string {
+  const first = item.opinions[0];
+  const kind = String(first?.item.kind ?? "");
+  return String(first?.item.description ?? "") || KIND_WORDS[kind] || kind;
+}
+
+/** Who a row is about and what happened, which is what every row of the meeting
+ * is named by (R-0318). */
+export function names(item: BallotItem): string {
+  const said = what(item);
+  const who = item.opinions[0]?.person_name ?? "";
+  return who && said ? `${who} · ${said}` : who || said;
+}
 
 /** What one opinion says, in the record's own words, for the fields given. */
 export function words(opinion: Opinion, fields: readonly string[]): string {
@@ -306,7 +336,7 @@ export class Ballot {
       `<div class="bl-card">` +
       `<div class="progress">${esc(when(first?.item.dateTime))}` +
       `${first?.person_name ? ` · → ${esc(first.person_name)}` : ""}</div>` +
-      `<h3>${esc(String(first?.item.description ?? first?.item.kind ?? "an event"))}</h3>` +
+      `<h3>${esc(what(item))}</h3>` +
       opinions +
       ownOpinion +
       left +

@@ -367,6 +367,7 @@ const agenda = new Agenda($("agenda-body"), {
 const meeting = new Meeting(
   $("meeting-stats"),
   $("meeting-view"),
+  $("meeting-sort"),
   $("meeting-body"),
   $("meeting-bar"),
   $("overlay"),

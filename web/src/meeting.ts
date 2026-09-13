@@ -4,6 +4,7 @@ import {
   drawTimeline,
   eventsOf,
   group,
+  names,
   telling,
   when,
   words,
@@ -26,11 +27,13 @@ import {
 
 /** The meeting: closing what the vote could not, and ratifying the record.
  *
- * Only the items the ballot left open are here, the most split first, with the
- * names and the counts shown for the first time (R-0250, R-0252, R-0274). The
- * ones the vote decided are collapsed below to confirm or reopen. Every open
- * item must be given one of three choices and the ratify button stays dead
- * until each one has, saying how many still need one (R-0257).
+ * The items the ballot left open are here with the names and the counts shown
+ * for the first time (R-0250, R-0252, R-0274), read either most split first or
+ * in the order the events happened (R-0316). The ones the vote decided are in
+ * the list too and open the same card on a tap (R-0317). Every open item must
+ * be given a choice — keep one of the versions, change it, or mark it
+ * unresolved — and the ratify button stays dead until each one has, saying how
+ * many still need one (R-0257).
  */
 
 export interface MeetingHandlers {
@@ -55,12 +58,11 @@ interface Side {
   opinion: Opinion;
 }
 
-/** The margin a row stands at, as the room hears it: the two biggest sides, or
- * the one side when nobody said anything else. */
-function verdict(sides: Side[]): string {
-  const sizes = sides.map((one) => one.names.length).sort((a, b) => b - a);
-  if (sizes.length < 2) return "nobody voted against";
-  return `${sizes[0]} to ${sizes[1]} — talk`;
+/** The order the list is read in: the most split first, or the day each event
+ * happened (R-0316). */
+enum Sort {
+  Divergence = "divergence",
+  Time = "time",
 }
 
 const dots = (filled: number, empty: number): string =>
@@ -71,12 +73,17 @@ export class Meeting {
   private cut: Cut | null = null;
   private items: BallotItem[] = [];
   private tallies = new Map<number, Tally>();
+  private sort = Sort.Divergence;
+  /** The event the room is on: its dot is green and, when the vote agreed on
+   * it, its card is the one open (R-0317, R-0320). */
+  private at: number | null = null;
   private scrim = el("div", "fs-scrim");
   private sheet = el("div", "fs-sheet bl-sheet");
 
   constructor(
     private stats: HTMLElement,
     private view: HTMLElement,
+    private sorter: HTMLElement,
     private body: HTMLElement,
     private bar: HTMLElement,
     private overlay: HTMLElement,
@@ -87,6 +94,8 @@ export class Meeting {
     this.sheet.hidden = true;
     this.scrim.addEventListener("click", () => this.close());
     this.body.addEventListener("click", (clicked) => void this.onTap(clicked));
+    this.view.addEventListener("click", (clicked) => this.onDot(clicked));
+    this.sorter.addEventListener("click", (clicked) => this.onSort(clicked));
     this.bar.addEventListener("click", (clicked) => void this.onBar(clicked));
   }
 
@@ -105,9 +114,15 @@ export class Meeting {
   /** What the room has still to decide, the most split first: an item nobody
    * agreed on is read before one that only one coder read differently. */
   private open_(): BallotItem[] {
-    return this.items
-      .filter((one) => one.status === ItemStatus.Disputed && this.theirs(one))
+    return this.listed()
+      .filter((one) => one.status === ItemStatus.Disputed)
       .sort((a, b) => this.split(b) - this.split(a));
+  }
+
+  /** What the meeting reads: the events of the cut the room itself coded, which
+   * is what the wire draws and what the header counts. */
+  private listed(): BallotItem[] {
+    return eventsOf(this.items).filter((one) => this.theirs(one));
   }
 
   /** An item somebody in the room wrote. What only the coach wrote down is
@@ -128,9 +143,7 @@ export class Meeting {
 
   /** What the vote decided, which is not read aloud but can be reopened. */
   private decided(): BallotItem[] {
-    return this.items.filter(
-      (one) => one.status !== ItemStatus.Disputed && this.theirs(one),
-    );
+    return this.listed().filter((one) => one.status !== ItemStatus.Disputed);
   }
 
   private render(): void {
@@ -138,79 +151,125 @@ export class Meeting {
     if (!cut) return;
     this.handlers.onTitle({ name: cut.session, tail: "ratify" });
     const open = this.open_();
-    const decided = this.decided();
-    this.stats.innerHTML = this.figures(open.length, decided.length);
+    this.stats.innerHTML = this.head(open.length);
     this.view.style.height = `${LINE.height}px`;
-    this.view.innerHTML = drawTimeline(eventsOf(this.items), open[0]?.id ?? null);
+    this.view.innerHTML = drawTimeline(
+      eventsOf(this.items),
+      this.at ?? open[0]?.id ?? null,
+    );
+    this.sorter.innerHTML = this.sorts();
     this.body.innerHTML =
-      `<div class="div">Disputed · ${open.length}` +
-      `<span class="dcount">most split first</span></div>` +
-      (open.length
-        ? open.map((one) => this.row(one)).join("")
-        : `<div class="none">Every open item has a choice.</div>`) +
-      (decided.length
-        ? `<div class="div">Everyone agreed · ${decided.length}` +
-          `<span class="dcount">confirm or reopen</span></div>` +
-          decided.map((one) => this.collapsed(one)).join("")
-        : "");
+      this.sort === Sort.Time ? this.byTime() : this.byDivergence(open);
     this.bar.innerHTML = this.ratifyBar(open.length);
   }
 
-  /** The agreement figures from the first pass, what is in this cut, and the
-   * day the meeting falls on. */
-  private figures(open: number, decided: number): string {
+  /** The header: the title, one line of labelled figures, and the colours the
+   * wire under it is drawn in. Nothing here is said again below (R-0321). */
+  private head(open: number): string {
     const cut = this.cut;
-    const first = (cut?.agreement ?? {}).first_pass ?? null;
     const day = cut?.meeting_date
       ? new Date(`${cut.meeting_date}T00:00:00`).toLocaleDateString(undefined, {
+          weekday: "short",
           month: "short",
           day: "numeric",
         })
       : null;
+    const first = (cut?.agreement ?? {}).first_pass ?? null;
+    const events = eventsOf(this.items).length;
     return (
-      (day ? `<span>meeting ${esc(day)}</span>` : "") +
-      `<span>${this.items.length} items in this cut</span>` +
-      `<span>${open} open</span><span>${decided} agreed</span>` +
+      `<div class="mtitle">Meeting${day ? ` · ${esc(day)}` : ""}` +
+      `${cut?.session ? ` · ${esc(cut.session)}` : ""}</div>` +
+      `<div class="mfigs"><span>${events} event${events === 1 ? "" : "s"}</span>` +
+      `<span>${open} disputed</span>` +
       (first?.percent === null || first?.percent === undefined
         ? ""
-        : `<span>first pass <b>${first.percent}%</b></span>`)
+        : `<span>${first.percent}% agreed before the vote</span>`) +
+      `</div>` +
+      `<div class="mkey"><span><i class="sw ok"></i>agreed</span>` +
+      `<span><i class="sw no"></i>disputed</span>` +
+      `<span><i class="sw now"></i>now</span></div>`
     );
   }
 
-  /** One disputed item: its tally, what each side wrote with who wrote it, the
-   * line it came from, and the three choices. */
-  private row(item: BallotItem): string {
+  private sorts(): string {
+    const one = (which: Sort, label: string): string =>
+      `<button class="seg${which === this.sort ? " on" : ""}" type="button" ` +
+      `data-sort="${which}">${label}</button>`;
+    return (
+      one(Sort.Divergence, "by divergence") + one(Sort.Time, "by time")
+    );
+  }
+
+  /** The most split first, with what the vote agreed on listed after it. */
+  private byDivergence(open: BallotItem[]): string {
+    const decided = this.decided();
+    return (
+      `<div class="div">Disputed<span class="dcount">most split first</span></div>` +
+      (open.length
+        ? open.map((one) => this.row(one)).join("")
+        : `<div class="none">Every open item has a choice.</div>`) +
+      (decided.length
+        ? `<div class="div">Everyone agreed` +
+          `<span class="dcount">tap one to change it</span></div>` +
+          decided.map((one) => this.agreed(one)).join("")
+        : "")
+    );
+  }
+
+  /** Every event the room wrote, in the order they happened, the agreed ones in
+   * the same list and marked agreed (R-0316). */
+  private byTime(): string {
+    const rows = this.listed();
+    if (!rows.length) return `<div class="none">Nothing to decide.</div>`;
+    return rows
+      .map((one) =>
+        one.status === ItemStatus.Disputed ? this.row(one) : this.agreed(one),
+      )
+      .join("");
+  }
+
+  /** One item's card: its tally, every version with who wrote it and its own
+   * button to keep it, the line it came from, and what else can be done with it
+   * (R-0318, R-0319). An agreed item opens the same card, with a way to close
+   * it again (R-0317). */
+  private row(item: BallotItem, closable = false): string {
     const chosen = choiceOf(item);
     const first = item.opinions[0];
     const sides = this.sides(item);
     const biggest = Math.max(...sides.map((one) => one.names.length), 0);
-    const lines = sides
+    const kept = item.status === ItemStatus.Decided;
+    const versions = sides
       .map(
         (one) =>
-          `<span>${dots(one.names.length, 0)} ${esc(one.label)} · ` +
-          `${esc(one.names.join(", "))} = ${one.names.length}</span>`,
+          `<div class="side"><span class="sdots">${dots(one.names.length, 0)}</span>` +
+          `<span class="slab">${esc(one.label)}</span>` +
+          `<span class="swho">${esc(one.names.join(", "))} = ${one.names.length}</span>` +
+          `<button class="btn mt-keep" type="button" ` +
+          `data-coding="${one.opinion.coding_id}"${kept ? " disabled" : ""}>` +
+          `keep this</button></div>`,
       )
       .join("");
     const missing = item.not_coded
-      ? `<span>${dots(0, item.not_coded)} not coded = ${item.not_coded}</span>`
+      ? `<div class="side"><span class="sdots">${dots(0, item.not_coded)}</span>` +
+        `<span class="slab">left this event out</span>` +
+        `<span class="swho">= ${item.not_coded}</span></div>`
       : "";
     const line = item.line
       ? `<div class="quote"><b>${esc(item.line.who)}:</b> ` +
         `&ldquo;${esc(item.line.text)}&rdquo;</div>`
       : "";
     return (
-      `<div class="drow" data-item="${item.id}">` +
+      `<div class="drow${closable ? " hasx" : ""}" data-item="${item.id}">` +
+      (closable
+        ? `<button class="mt-close cardx" type="button" aria-label="close">×</button>`
+        : "") +
       `<div class="top"><span class="tally">` +
       `${dots(biggest, item.coders - biggest)}</span>` +
       `<span class="pick">${esc(when(first?.item.dateTime))} · ` +
-      `${first?.person_name ? `${esc(first.person_name)} · ` : ""}` +
-      `${esc(String(first?.item.description ?? first?.item.kind ?? "an item"))}` +
-      `</span></div>` +
-      `<div class="tline">${lines}${missing}` +
-      `<span class="verdict">${esc(verdict(sides))}</span></div>` +
+      `${esc(names(item))}</span></div>` +
+      `<div class="tline">${versions}${missing}</div>` +
       line +
       `<div class="acts2">` +
-      this.choice(Decision.Keep, "keep", chosen) +
       this.choice(Decision.Change, "change…", chosen) +
       this.choice(Decision.Unresolved, "mark unresolved", chosen) +
       `</div></div>`
@@ -268,16 +327,17 @@ export class Meeting {
     );
   }
 
-  private collapsed(item: BallotItem): string {
+  /** An item the vote settled: one row saying who and what and that it is
+   * agreed, which opens the same card as a disputed one on a tap (R-0317). */
+  private agreed(item: BallotItem): string {
+    if (this.at === item.id) return this.row(item, true);
     const first = item.opinions[0];
-    const note =
-      item.status === ItemStatus.Unresolved ? " · left unresolved" : "";
+    const mark =
+      item.status === ItemStatus.Unresolved ? "left unresolved" : "agreed";
     return (
       `<div class="collapsed" data-item="${item.id}">` +
-      `<span>${esc(when(first?.item.dateTime))} · ` +
-      `${esc(String(first?.item.description ?? first?.item.kind ?? "an item"))}` +
-      `${note}</span>` +
-      `<span class="reopen mt-reopen">reopen</span></div>`
+      `<span>${esc(when(first?.item.dateTime))} · ${esc(names(item))}</span>` +
+      `<span class="mark">${mark}</span></div>`
     );
   }
 
@@ -301,18 +361,53 @@ export class Meeting {
     if (!row) return;
     const item = this.items.find((one) => one.id === Number(row.dataset.item));
     if (!item) return;
-    if (target.closest(".mt-reopen")) {
-      await this.decide(item, Decision.Reopen);
+    if (target.closest(".mt-close")) {
+      this.at = null;
+      this.render();
+      return;
+    }
+    if (row.classList.contains("collapsed")) {
+      this.at = item.id;
+      this.render();
+      return;
+    }
+    const keep = target.closest<HTMLElement>(".mt-keep");
+    if (keep) {
+      await this.decide(item, Decision.Keep, {
+        coding_id: Number(keep.dataset.coding),
+      });
       return;
     }
     const choice = target.closest<HTMLElement>(".mt-choice")?.dataset.choice;
     if (choice === Decision.Change) this.change(item);
-    else if (choice === Decision.Keep)
-      await this.decide(item, Decision.Keep, {
-        coding_id: item.opinions[0]?.coding_id,
-      });
     else if (choice === Decision.Unresolved)
       await this.decide(item, Decision.Unresolved);
+  }
+
+  /** Every dot answers: it puts the room on that event and brings its card up,
+   * opening it when the vote had agreed on it (R-0320). */
+  private onDot(clicked: Event): void {
+    const dot = (clicked.target as Element).closest<HTMLElement>("[data-item]");
+    if (!dot) return;
+    const id = Number(dot.dataset.item);
+    const item = this.items.find((one) => one.id === id);
+    if (!item || !this.theirs(item)) {
+      toast("Only the coach wrote that one down");
+      return;
+    }
+    this.at = id;
+    this.render();
+    this.body
+      .querySelector(`[data-item="${id}"]`)
+      ?.scrollIntoView({ block: "center" });
+  }
+
+  private onSort(clicked: Event): void {
+    const chosen = (clicked.target as Element).closest<HTMLElement>("[data-sort]")
+      ?.dataset.sort;
+    if (!chosen || chosen === this.sort) return;
+    this.sort = chosen as Sort;
+    this.render();
   }
 
   private async decide(
