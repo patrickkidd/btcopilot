@@ -506,6 +506,17 @@ def test_the_vote_task_goes_when_every_disputed_event_has_a_vote(
     assert coder.get("/review/tasks").get_json()["task"] is None
 
 
+def test_only_an_auditor_reaches_the_coding_work(subscriber, cut):
+    """A professional licence or a plain subscription is not a coding role
+    (R-0311)."""
+    refused = subscriber.get("/review/tasks")
+    assert refused.status_code == 302
+
+
+def test_an_auditor_reaches_the_coding_work(coder, cut):
+    assert coder.get("/review/tasks").status_code == 200
+
+
 def test_a_coder_without_a_name_is_still_shown_as_initials(flask_app):
     named = User(username="s.a@example.com", first_name="Sam", last_name="Ang")
     assert initials(named) == "S.A."

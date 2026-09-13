@@ -9,7 +9,7 @@ import { Cut } from "./cut";
 import { Agenda } from "./agenda";
 import { Meeting } from "./meeting";
 import { ResultScreen } from "./result";
-import { OneTask, beforeMeeting, coder } from "./task";
+import { CODER, OneTask, beforeMeeting, coder } from "./task";
 import { Rules } from "./rules";
 import { Sessions } from "./sessions";
 import { sessionTitle, summaryOf } from "./search";
@@ -57,7 +57,13 @@ declare global {
   interface Window {
     BOOTSTRAP: {
       /** Patrick alone puts conversations on the agenda and opens the vote. */
-      user: { username: string; admin: boolean; pro: boolean } | null;
+      user: {
+        username: string;
+        admin: boolean;
+        pro: boolean;
+        /** Only an auditor takes part in the coding work (R-0311). */
+        coder: boolean;
+      } | null;
       diagram: { id: number; name: string } | null;
       session: { id: number } | null;
       statements: Statement[];
@@ -1016,18 +1022,21 @@ if (import.meta.env.PROD && "serviceWorker" in navigator)
 
 // A coder opens on their one task rather than on the chat (R-0265, frame f1),
 // and still does between meetings, when the card carries what they finished
-// instead. A reader who has never coded never sees it, and a server without the
-// review tables leaves the chat exactly as it was.
-void api
-  .tasks()
-  .then((found) => {
-    sessions.task(coder(found) ? "Your coding task" : null);
-    if (coder(found)) void openTask();
-  })
-  .catch((error) => {
-    if (!(error instanceof api.Failed)) throw error;
-    console.warn(error.message);
-  });
+// instead. Only an auditor is a coder (R-0311): a professional or a plain
+// subscriber never asks for a task and opens on the chat. A reader who has
+// never coded never sees the card, and a server without the review tables
+// leaves the chat exactly as it was.
+if (CODER)
+  void api
+    .tasks()
+    .then((found) => {
+      sessions.task(coder(found) ? "Your coding task" : null);
+      if (coder(found)) void openTask();
+    })
+    .catch((error) => {
+      if (!(error instanceof api.Failed)) throw error;
+      console.warn(error.message);
+    });
 
 // The page is only served to a signed-in reader, so this is the moment to ask
 // about a key on this device, and then about the home screen — one card at a

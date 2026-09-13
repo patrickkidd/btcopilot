@@ -49,6 +49,13 @@ def patrick(flask_app, test_user):
 
 @pytest.fixture
 def coder(flask_app, test_user_2):
+    """Only the auditor role takes part in the coding work (R-0311)."""
+    return sign_in(flask_app, test_user_2, btcopilot.ROLE_AUDITOR)
+
+
+@pytest.fixture
+def subscriber(flask_app, test_user_2):
+    """A reader of the chat and nothing else: no coding role (R-0311)."""
     return sign_in(flask_app, test_user_2, btcopilot.ROLE_SUBSCRIBER)
 
 

@@ -358,6 +358,7 @@ What it is for: saying what each line of a conversation tells you happened, so w
 @frame coding#f7 | Tapping Done asks once and explains that your coding will be saved and submitted for the meeting.
 
 - Coding is stage one of reaching agreement, and it is done blind: you never see anyone else's coding of that conversation until you press Done. [drawn] {R-0242, R-0250}
+- Only a user with the auditor role is a coder; a professional licence holder and a plain subscriber open on the chat and never see the task card, the coding task in the sessions sheet, the ballot or the meeting. [ruled] {R-0311}
 - You are given one task at a time and never a list to choose from. [drawn] {R-0265}
 - The task names the conversation, the point it is frozen at, how many turns are new since you last pressed Done, and roughly how long it will take. [drawn] {R-0267}
 - One green button starts it, and under it is a faint record of the tasks you have already finished. [drawn] {R-0265}

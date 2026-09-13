@@ -1,6 +1,6 @@
 """The review's door: one resource per table, nothing shaped like a verb.
 
-A coder is any signed-in user who can reach the review. Opening a vote and
+A coder is a signed-in user with the auditor role (R-0311). Opening a vote and
 ratifying are Patrick's, so they need the admin role (R-0273).
 """
 
@@ -55,9 +55,15 @@ def _inject_globals():
 
 
 def coder():
-    """The signed-in user, whoever reaches the review."""
+    """A coder is a user with the auditor role (R-0311). A professional licence
+    is not a coder, and neither is a plain subscriber. Patrick is admin, and
+    the review is his, so admin counts too."""
     user = auth.current_user()
     if user is None:
+        abort(403)
+    if not user.has_role(btcopilot.ROLE_AUDITOR) and not user.has_role(
+        btcopilot.ROLE_ADMIN
+    ):
         abort(403)
     return user
 

@@ -38,6 +38,8 @@ def _page() -> str:
             "last_name": user.last_name,
             "username": user.username,
             "admin": user.has_role(btcopilot.ROLE_ADMIN),
+            "coder": user.has_role(btcopilot.ROLE_AUDITOR)
+            or user.has_role(btcopilot.ROLE_ADMIN),
             "pro": professional(user),
         },
         "session": session_payload(discussion) if discussion else None,

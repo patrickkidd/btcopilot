@@ -31,6 +31,11 @@ export function beforeMeeting(task: Task | null): string {
 export const coder = (found: Tasks): boolean =>
   Boolean(found.task) || found.done.length > 0;
 
+/** Whether this reader takes part in the coding work at all: only a user with
+ * the auditor role does, Patrick included (R-0311). A professional licence is
+ * not a coding role. */
+export const CODER = window.BOOTSTRAP.user?.coder === true;
+
 const CHECK = "&#10003;";
 
 export class OneTask {
