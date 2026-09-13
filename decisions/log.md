@@ -1377,6 +1377,15 @@ real people in them never enter the public repo. Prompty over dotprompt because 
 Python lives inside Genkit and uses Handlebars; prompty is Python-first (2.0.1, 2026-09-10),
 Jinja2, with an Anthropic invoker. Risk accepted: single maintainer; fragments through
 the prompty runtime unverified, fallback is rendering the body with plain Jinja2.
+**Ruled 2026-09-13, pricing inputs:** the coach stays on the model in use, Claude Opus 4.6
+with thinking on (the default in llmutil, no override in the sandbox or production compose);
+it is conversational on small scopes, not extraction, and needs the long context because
+users care about small details across a long conversation. Launch US-only, Stripe Tax on from
+day one; going global later is a flag on Stripe's hosted payment page, not a rebuild. fdserver
+leaves the daily loop entirely: the oracle store and prompts move into btcopilot encrypted;
+the files with real people in them (coach transcripts, training exports, database dumps)
+move to the corpus folder that already lives outside every repo, with their own backup; the
+fdserver repo is archived, not deleted.
 **Open:** the admin surface
 is a CLI on the engine plus one skill file generated from the CLI's declarations and checked
 by a test, no MCP server unless an agent without a shell appears.

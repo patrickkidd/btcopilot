@@ -341,16 +341,18 @@ our own table with a hard cap and paid top-up. Old Pro users are imported, every
 converted once. No admin web app: an agent (Claude Code or the self-hosted Qwen through
 OpenClaw) runs a CLI on the engine whose skill file is generated from the CLI's declarations
 and checked by a test.
-**Open:** (1) [ruling] the coach's model, which sets the price floor; (2) [ruling] US-only or
-worldwide at launch, which decides Stripe's merchant-of-record add-on at 3.5%; (3) [verify]
-fragments through the prompty runtime, fallback plain Jinja2; (4) [verify] sops' cleartext git
-diff on a binary-mode markdown file; (5) [build] rotate every secret in the committed compose
-file before any new box or repo change; (6) [build] the admin verb list; (7) [waiting] these
-rulings are not yet in the oracle store, which lives in the fdserver worktree this session
-could not reach.
+**Also decided 2026-09-13:** the coach stays on Claude Opus 4.6 with thinking, the model in use;
+launch US-only, Stripe Tax on from day one; fdserver leaves the daily loop, the oracle store
+and prompts move into btcopilot encrypted, files with real people in them move to the corpus
+folder outside every repo, and the fdserver repo is archived.
+**Open:** (1) [verify] fragments through the prompty runtime, fallback plain Jinja2;
+(2) [verify] sops' cleartext local diff on a binary-mode markdown file; (3) [build] rotate every
+secret in the committed compose file before any new box or repo change; (4) [build] the admin
+verb list; (5) [build] the rulings of 2026-09-12/13 go into the oracle store as part of the
+move, since the store itself moves into btcopilot; (6) [ruling] the plan price, given Opus at
+roughly 6 to 10 cents a turn.
 **Lives in:** the evaluation https://claude.ai/code/artifact/355dc50c-086b-417c-8cdb-4b10735cc9d8;
 decisions/log.md entries dated 2026-09-12 and 2026-09-13.
-**Next action:** a session with fdserver access logs the rulings to the oracle store; then the
-repo move (prompty files, sops, private data out) at the next checkpoint after the current
-build lands, never mid-session.
+**Next action:** the repo move (prompty files, sops, oracle store in, private data out to the
+corpus folder) at the next checkpoint after the current build lands, never mid-session.
 **Updated:** 2026-09-13.
