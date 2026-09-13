@@ -54,7 +54,8 @@ def invite(token):
             ),
             400,
         )
-    invitation.consume()
+    if not current_app.config["INVITATION_REUSABLE"]:
+        invitation.consume()
     sign_in(ensure_user(invitation.email))
     return redirect(chat_home())
 

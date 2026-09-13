@@ -24,6 +24,9 @@ CONFIG_DEFAULTS = {
     "LOGIN_CODE_MINUTES": 10,
     "LOGIN_CODES_PER_HOUR": 5,
     "INVITATION_DAYS": 14,
+    # A test sandbox sets this so a fixture link keeps working across windows
+    # and devices until it expires; production links are used once.
+    "INVITATION_REUSABLE": False,
     "SITE_URL": "http://127.0.0.1:8888",
 }
 

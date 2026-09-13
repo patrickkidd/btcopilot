@@ -105,6 +105,14 @@ def test_invite_is_single_use(flask_app, browser):
     assert browser.get(f"/personal/invite/{invitation.token}").status_code == 400
 
 
+def test_invite_is_reusable_where_the_sandbox_says_so(flask_app, browser):
+    flask_app.config["INVITATION_REUSABLE"] = True
+    invitation = Invitation.issue(INVITED, flask_app.config["INVITATION_DAYS"])
+    browser.get(f"/personal/invite/{invitation.token}")
+    assert browser.get(f"/personal/invite/{invitation.token}").status_code == 302
+    flask_app.config["INVITATION_REUSABLE"] = False
+
+
 def test_code_signs_in_an_existing_user(flask_app, browser, test_user):
     response, outbox = request_code(browser, test_user.username)
     assert response.status_code == 200
