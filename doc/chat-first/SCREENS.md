@@ -478,7 +478,7 @@ What it is for: what the meeting produced, with nothing left to choose.
 - What each coder tends to do differently from the others is shown. [built]
 - Every vote, decision and ratification is a row in the app's own tables with who did it and when. [drawn] {R-0262}
 - How last year's coding material is carried over is a choice Patrick has not made; the plan under consideration keeps the rules and the agreement tables as rows and the written deliberations as text. [open] {R-0262}
-- Every rule the AI wrote carries a "flag for next meeting" link, and flagged rules and unresolved events go on the next meeting's agenda by themselves; who has not finished a coding is the coder list's own line, not the agenda's. [built] {R-0276, R-0308}
+- Every rule the AI wrote carries a "flag for next meeting" link, and flagged rules go on the next meeting's agenda by themselves; an event the room left unresolved stays unresolved as data and is never brought back to a later meeting; who has not finished a coding is the coder list's own line, not the agenda's. [built] {R-0276, R-0308, R-0312}
 - The meeting's results are rows in the database — codings, votes, decisions, rules with the decision each came from — so everything is traceable; the coding guidelines are the one written output. [drawn] {R-0275}
 - Anyone can read the current coding guidelines inside the app from an (i) button at the top of the coding screen. [drawn] {R-0275, R-0278}
 - The coding guidelines file in the code is generated from the rules the app holds and is never edited by hand. [drawn] {R-0275}

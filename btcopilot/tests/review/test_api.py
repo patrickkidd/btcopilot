@@ -287,8 +287,8 @@ def test_the_agenda_gathers_what_the_meeting_must_take_up(
     rule = coder.post("/review/rules", json={"text": "A rule to look at"}).get_json()
     coder.patch(f"/review/rules/{rule['id']}", json={"flag": True})
     agenda = patrick.get("/review/agenda").get_json()
-    assert [i["id"] for i in agenda["unresolved_items"]] == [item.id]
     assert [r["id"] for r in agenda["flagged_rules"]] == [rule["id"]]
+    assert "unresolved_items" not in agenda
     assert "unfinished_codings" not in agenda
 
 

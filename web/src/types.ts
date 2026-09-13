@@ -519,13 +519,13 @@ export interface SessionTurns {
   turns: SessionTurn[];
 }
 
-/** The next meeting's agenda, which fills itself from flagged rules and items
- * left unresolved (R-0276, R-0308). */
+/** The next meeting's agenda, which fills itself from the flagged rules
+ * (R-0276, R-0308). An event the room left unresolved stays unresolved and is
+ * never brought back to a later meeting (R-0312). */
 export interface NextMeeting {
   meeting_date: string | null;
   cut_ids: number[];
   flagged_rules: Rule[];
-  unresolved_items: { id: number; item_kind: string; takes: Take[] }[];
 }
 
 /** One coder's reading of one item, without their name (R-0252). */

@@ -8,7 +8,6 @@ import {
   type CoderLine,
   type Cut,
   type Rule,
-  type Take,
 } from "./types";
 
 /** The agenda: the whole of Patrick's administration (R-0259, R-0267).
@@ -16,8 +15,9 @@ import {
  * The meeting date, what is on the agenda, each coder's state with a count of
  * who is closed out, one control that nudges the ones who are not done, and
  * the one button that opens the vote — nothing else opens it (R-0273). Under
- * it the next meeting's agenda fills itself from flagged rules and items left
- * unresolved (R-0276, R-0308).
+ * it the next meeting's agenda fills itself from the flagged rules (R-0276,
+ * R-0308). An event the room left unresolved stays unresolved and is never
+ * brought back to a later meeting (R-0312).
  */
 
 export interface AgendaHandlers {
@@ -33,13 +33,6 @@ export interface AgendaHandlers {
 }
 
 const CROSS = "&#10005;";
-
-/** What the coders wrote for an item, so an agenda line names the thing rather
- * than its kind. */
-function said(takes: Take[]): string | null {
-  const written = takes?.[0]?.item?.description;
-  return typeof written === "string" && written ? written : null;
-}
 
 export class Agenda {
   private cuts: Cut[] = [];
@@ -278,15 +271,9 @@ export class Agenda {
   private agendaLines(): { text: string; rule_id: number | null }[] {
     const found = this.next;
     if (!found) return [];
-    return [
-      ...found.flagged_rules.map((rule: Rule) => ({
-        text: `flagged rule: ${rule.text}`,
-        rule_id: rule.id,
-      })),
-      ...found.unresolved_items.map((item) => ({
-        text: `unresolved: ${said(item.takes) ?? item.item_kind}`,
-        rule_id: null,
-      })),
-    ];
+    return found.flagged_rules.map((rule: Rule) => ({
+      text: `flagged rule: ${rule.text}`,
+      rule_id: rule.id,
+    }));
   }
 }
