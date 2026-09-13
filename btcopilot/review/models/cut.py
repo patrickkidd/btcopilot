@@ -7,7 +7,7 @@ from btcopilot.modelmixin import ModelMixin
 
 
 class Cut(db.Model, ModelMixin):
-    """A window of one session's turns, frozen and put on the table (R-0296).
+    """A window of one session's turns, frozen and put on the agenda (R-0296).
 
     The window is two cursors so any stretch of turns can be a cut later. The
     app sets the start to the previous cut's end plus one and refuses overlap

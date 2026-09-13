@@ -1,7 +1,7 @@
-"""Who is coding what is on the table, and how far each of them has got.
+"""Who is coding what is on the agenda, and how far each of them has got.
 
 The state is read across every cut of one meeting, because that is what the
-table screen shows: one line per coder, not one line per cut (R-0258).
+agenda screen shows: one line per coder, not one line per cut (R-0258).
 """
 
 import enum
@@ -12,7 +12,7 @@ from btcopilot import ROLE_ADMIN, ROLE_AUDITOR
 from btcopilot.review.adapter import User, initials
 from btcopilot.review.models import Coding, Cut
 from btcopilot.review.routes import bp, coder, voted
-from btcopilot.review.routes.cuts import table_cuts
+from btcopilot.review.routes.cuts import agenda_cuts
 
 
 class CoderState(str, enum.Enum):
@@ -28,9 +28,9 @@ CLOSED = CoderState.Voted
 
 def roster(cuts: list[Cut]) -> list[User]:
     """Everyone who codes: the auditors, Patrick, who codes too, and anyone
-    who has already started on what is on the table."""
+    who has already started on what is on the agenda."""
     # The coach codes but is never a voter (R-0242, R-0254), so it is not one
-    # of the people the table is waiting on.
+    # of the people the agenda is waiting on.
     started = {
         coding.user_id
         for cut in cuts
@@ -62,9 +62,9 @@ def state_of(user, cuts: list[Cut]) -> CoderState:
 @bp.route("/coders")
 def coder_index():
     """One line per coder for the meeting asked for, or for everything on the
-    table when no date is given."""
+    agenda when no date is given."""
     me = coder()
-    cuts = table_cuts(request.args.get("meeting_date"))
+    cuts = agenda_cuts(request.args.get("meeting_date"))
     rows = [(user, state_of(user, cuts)) for user in roster(cuts)]
     return jsonify(
         [

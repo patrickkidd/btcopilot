@@ -2371,11 +2371,11 @@ button { font-family: inherit; }
 }
 .fs-task:active { background: var(--tint); }
 
-/* ── The table ────────────────────────────────────────────────────────────
- * Patrick's own screens: putting a conversation on the table, placing the cut
+/* ── The agenda ────────────────────────────────────────────────────────────
+ * Patrick's own screens: putting a conversation on the agenda, placing the cut
  * and the one screen that carries the whole of his administration (f7–f10). */
 
-/* His swipe offers a third action, and "Put on the table" is too many words
+/* His swipe offers a third action, and "Put on the agenda" is too many words
  * for a strip of three, so his actions stack the way the drawing has them. */
 .fs-body .row.swiped.wide { transform: translateX(-216px); }
 .fs-acts.wide { width: 216px; flex-direction: column; padding: 6px 8px; }

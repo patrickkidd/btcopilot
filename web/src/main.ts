@@ -6,7 +6,7 @@ import { Menu, Tab } from "./menu";
 import { Ballot } from "./ballot";
 import { Coding } from "./coding";
 import { Cut } from "./cut";
-import { Table } from "./table";
+import { Agenda } from "./agenda";
 import { Meeting } from "./meeting";
 import { ResultScreen } from "./result";
 import { OneTask, beforeMeeting, coder } from "./task";
@@ -56,7 +56,7 @@ import {
 declare global {
   interface Window {
     BOOTSTRAP: {
-      /** Patrick alone puts conversations on the table and opens the vote. */
+      /** Patrick alone puts conversations on the agenda and opens the vote. */
       user: { username: string; admin: boolean; pro: boolean } | null;
       diagram: { id: number; name: string } | null;
       session: { id: number } | null;
@@ -73,7 +73,7 @@ enum Screen {
   Ballot = "ballot",
   Rules = "rules",
   Cut = "cut",
-  Table = "table",
+  Agenda = "agenda",
   Meeting = "meeting",
   Result = "result",
 }
@@ -85,7 +85,7 @@ const CODING_SCREENS = [
   Screen.Ballot,
   Screen.Rules,
   Screen.Cut,
-  Screen.Table,
+  Screen.Agenda,
   Screen.Meeting,
   Screen.Result,
 ];
@@ -244,14 +244,14 @@ const sessions = new Sessions(
     },
     onDiagram: (diagram, how) => onDiagram(diagram, how),
     onTask: () => void openTask(),
-    onTable: (picked) => void placeCut(picked.id),
-    onTableScreen: () => void openTable(),
+    onAgenda: (picked) => void placeCut(picked.id),
+    onAgendaScreen: () => void openAgenda(),
   },
 );
 
 /** ── Coding ───────────────────────────────────────────────────────────────
  * A coder is given one task at a time: read one conversation up to the cut
- * Patrick put on the table, and say what each line tells you happened
+ * Patrick put on the agenda, and say what each line tells you happened
  * (R-0265, R-0267). Done is in the title row, never in the composer (R-0271). */
 
 const oneTask = new OneTask($("task-body"), {
@@ -337,17 +337,17 @@ async function openLine(statementId: number): Promise<void> {
 }
 
 /** ── Patrick's own screens ────────────────────────────────────────────────
- * Putting a conversation on the table, placing the cut everyone codes up to,
- * and the table itself (R-0258, R-0267). Nobody but Patrick sees these. */
+ * Putting a conversation on the agenda, placing the cut everyone codes up to,
+ * and the agenda itself (R-0258, R-0267). Nobody but Patrick sees these. */
 
 const placing = new Cut($("cut-chat"), $("cut-bar"), {
-  onPlaced: () => void openTable(),
+  onPlaced: () => void openAgenda(),
   onTitle: (title) => {
     setTitle(title);
   },
 });
 
-const table = new Table($("table-body"), {
+const agenda = new Agenda($("agenda-body"), {
   onAdd: () => sessions.show(),
   onPlace: (discussionId) => void placeCut(discussionId),
   onMeeting: (cutId) => void openMeeting(cutId),
@@ -357,7 +357,7 @@ const table = new Table($("table-body"), {
 });
 
 /** The meeting: the room settles what the vote left open and ratifies the cut
- * (R-0250, R-0257). Patrick's screen, reached from the table. */
+ * (R-0250, R-0257). Patrick's screen, reached from the agenda. */
 const meeting = new Meeting(
   $("meeting-stats"),
   $("meeting-view"),
@@ -395,9 +395,9 @@ async function placeCut(discussionId: number): Promise<void> {
   screen(Screen.Cut);
 }
 
-async function openTable(): Promise<void> {
-  await table.load();
-  screen(Screen.Table);
+async function openAgenda(): Promise<void> {
+  await agenda.load();
+  screen(Screen.Agenda);
 }
 
 /** Where the guidelines were opened from, so closing them goes back there:
@@ -418,7 +418,7 @@ $("coding-back").addEventListener("click", () => {
   // it on the item it was left on.
   if (here === Screen.Coding && voting) void openBallot(voting.cutId, voting.codingId);
   else if (here === Screen.Coding || here === Screen.Ballot) void openTask();
-  else if (here === Screen.Cut || here === Screen.Meeting) void openTable();
+  else if (here === Screen.Cut || here === Screen.Meeting) void openAgenda();
   else if (here === Screen.Result) void openTask();
   else {
     $("title").textContent = familyTitle;
@@ -869,7 +869,7 @@ function screen(which: Screen): void {
   $("task-screen").hidden = which !== Screen.Task;
   $("ballot-screen").hidden = which !== Screen.Ballot;
   $("cut-screen").hidden = which !== Screen.Cut;
-  $("table-screen").hidden = which !== Screen.Table;
+  $("agenda-screen").hidden = which !== Screen.Agenda;
   $("meeting-screen").hidden = which !== Screen.Meeting;
   $("result-screen").hidden = which !== Screen.Result;
   $("coding-screen").hidden = which !== Screen.Coding;
@@ -892,7 +892,7 @@ function screen(which: Screen): void {
   $("coding-inbar").hidden = !writing;
   // The guidelines are read from the (i) at the top of the coding screen, and
   // from the one task card too, so they are still reachable in the window after
-  // a meeting when nothing is on the table (R-0275, R-0278).
+  // a meeting when nothing is on the agenda (R-0275, R-0278).
   $("coding-info").hidden = which !== Screen.Coding && which !== Screen.Task;
   $("coding-back").hidden = !CODING_SCREENS.includes(which);
   $("account").hidden = which === Screen.Rules;

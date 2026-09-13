@@ -1,6 +1,6 @@
 import type {
   Account,
-  Agenda,
+  NextMeeting,
   BallotItem,
   Vote,
   VoteChoice,
@@ -259,19 +259,19 @@ export const scribe = (codingId: number, statementId: number, text: string) =>
 export const finishCoding = (codingId: number) =>
   ask<Coding>("PATCH", `/codings/${codingId}`, { done_at: true });
 
-/** ── The table ──────────────────────────────────────────────────────────
- * What Patrick put on the table, who is coding it and the one tap that opens
+/** ── The agenda ──────────────────────────────────────────────────────────
+ * What Patrick put on the agenda, who is coding it and the one tap that opens
  * the vote (R-0258, R-0267). */
 
-export const onTable = () => ask<Cut[]>("GET", "/cuts?on_table=true");
+export const onAgenda = () => ask<Cut[]>("GET", "/cuts?on_agenda=true");
 
 /** The whole conversation, so the cut can be placed on any line of it. */
 export const sessionTurns = (discussionId: number) =>
   ask<SessionTurns>("GET", `/turns?discussion_id=${discussionId}`);
 
-/** Putting a conversation on the table: the cut ends on the turn tapped, and
+/** Putting a conversation on the agenda: the cut ends on the turn tapped, and
  * starts where the last cut left off. */
-export const putOnTable = (discussionId: number, endStatementId: number) =>
+export const putOnAgenda = (discussionId: number, endStatementId: number) =>
   ask<Cut>("POST", "/cuts", {
     discussion_id: discussionId,
     end_statement_id: endStatementId,
@@ -287,8 +287,8 @@ export const setMeetingDate = (cutId: number, meetingDate: string) =>
 export const openVote = (cutId: number) =>
   ask<Cut>("PATCH", `/cuts/${cutId}`, { vote_opened_at: true });
 
-/** Off the table again, which only works before anyone has started. */
-export const offTable = (cutId: number) =>
+/** Off the agenda again, which only works before anyone has started. */
+export const offAgenda = (cutId: number) =>
   ask<{ id: number }>("DELETE", `/cuts/${cutId}`);
 
 /** One line per coder: not started, coding, done or voted (R-0258). */
@@ -344,7 +344,7 @@ export const ratify = (cutId: number) =>
 export const result = (cutId: number) =>
   ask<Result>("GET", `/result?cut_id=${cutId}`);
 
-export const agenda = () => ask<Agenda>("GET", "/agenda");
+export const agenda = () => ask<NextMeeting>("GET", "/agenda");
 
 export const rules = () => ask<Rule[]>("GET", "/rules");
 

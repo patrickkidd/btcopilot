@@ -345,7 +345,7 @@ export interface PasskeyCreationOptions {
 
 /** ── The review ─────────────────────────────────────────────────────────
  * Coding is stage one of reaching agreement: one task at a time, done blind,
- * on the conversation up to the cut Patrick put on the table (R-0265, R-0267). */
+ * on the conversation up to the cut Patrick put on the agenda (R-0265, R-0267). */
 
 export enum TaskKind {
   Code = "code",
@@ -451,11 +451,11 @@ export interface Rule {
   retired_at: string | null;
 }
 
-/** ── The table ──────────────────────────────────────────────────────────
- * Patrick's whole administration: what is on the table, who is done, and the
+/** ── The agenda ──────────────────────────────────────────────────────────
+ * Patrick's whole administration: what is on the agenda, who is done, and the
  * one tap that opens the vote (R-0258, R-0259, R-0267). */
 
-/** One window of a conversation, frozen and put on the table. */
+/** One window of a conversation, frozen and put on the agenda. */
 export interface Cut {
   id: number;
   discussion_id: number;
@@ -493,7 +493,7 @@ export interface CoderLine {
 }
 
 /** Where a line falls across a conversation: the last ratified cut, or the one
- * on the table now. */
+ * on the agenda now. */
 export interface CutLine {
   statement_id: number;
   order: number;
@@ -514,30 +514,18 @@ export interface SessionTurns {
   discussion_id: number;
   session: string;
   agreed: CutLine | null;
-  on_table: CutLine | null;
+  on_agenda: CutLine | null;
   cut_id: number | null;
   turns: SessionTurn[];
 }
 
-/** One line of the next meeting's agenda, which fills itself from flagged
- * rules, items left unresolved and coding nobody finished (R-0276). */
-export interface AgendaLine {
-  text: string;
-  /** A flagged rule is the reader's own line to close; the rest are not. */
-  rule_id: number | null;
-}
-
-export interface Agenda {
+/** The next meeting's agenda, which fills itself from flagged rules and items
+ * left unresolved (R-0276, R-0308). */
+export interface NextMeeting {
   meeting_date: string | null;
   cut_ids: number[];
   flagged_rules: Rule[];
   unresolved_items: { id: number; item_kind: string; takes: Take[] }[];
-  unfinished_codings: {
-    id: number;
-    cut_id: number;
-    coder: string;
-    session: string;
-  }[];
 }
 
 /** One coder's reading of one item, without their name (R-0252). */

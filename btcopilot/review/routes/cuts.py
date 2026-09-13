@@ -1,4 +1,4 @@
-"""Cuts: the windows Patrick puts on the table."""
+"""Cuts: the windows Patrick puts on the agenda."""
 
 import datetime
 
@@ -18,7 +18,7 @@ from btcopilot.review.routes import admin, bp, coder, cut_or_404, open_items
 
 
 def payload(cut: Cut) -> dict:
-    """The row, plus what the table screen names it by: the session it cuts,
+    """The row, plus what the agenda screen names it by: the session it cuts,
     the turn it ends on and whether anyone has started coding it."""
     data = cut.as_dict()
     discussion = adapter.discussion_of(cut.discussion_id)
@@ -34,8 +34,8 @@ def payload(cut: Cut) -> dict:
     return data
 
 
-def table_cuts(meeting_date: str | None) -> list[Cut]:
-    """What is on the table for one meeting, or everything not yet ratified."""
+def agenda_cuts(meeting_date: str | None) -> list[Cut]:
+    """What is on the agenda for one meeting, or everything not yet ratified."""
     query = Cut.query.filter(Cut.ratified_at.is_(None))
     if meeting_date:
         query = query.filter(Cut.meeting_date == _date(meeting_date))
@@ -52,7 +52,7 @@ def cut_index():
     meeting_date = request.args.get("meeting_date")
     if meeting_date is not None:
         query = query.filter_by(meeting_date=_date(meeting_date))
-    if request.args.get("on_table") == "true":
+    if request.args.get("on_agenda") == "true":
         query = query.filter(Cut.ratified_at.is_(None))
     return jsonify([payload(c) for c in query.order_by(Cut.id).all()])
 
@@ -145,7 +145,7 @@ def cut_patch(cut_id: int):
 
 @bp.route("/cuts/<int:cut_id>", methods=["DELETE"])
 def cut_delete(cut_id: int):
-    """Taking a conversation off the table, which is one tap and only before
+    """Taking a conversation off the agenda, which is one tap and only before
     anyone has started coding it."""
     admin()
     cut = cut_or_404(cut_id)

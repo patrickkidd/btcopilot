@@ -101,8 +101,8 @@ conversation up to a cut Patrick selects — the cut is the last turn when he pu
 table, he can move it back by tapping a line but never before the last ratified cut, a cut at
 the end of a finished conversation or recording is the whole thing, and anything changed since
 the last cut is re-coded [R-0267]; the coder's screen is one card for the one task and history
-under it, never a list [R-0258, R-0265]; Patrick's administration is the table screen — date,
-what is on the table, who is done, nudge; the AI writes the guideline changes itself from the
+under it, never a list [R-0258, R-0265]; Patrick's administration is the agenda screen — date,
+what is on the agenda, who is done, nudge; the AI writes the guideline changes itself from the
 settles and a result screen shows them with their provenance, nothing to choose [R-0259]; the
 page is approved as drawn [R-0268].
 **Open:** (1) [build] the review screens are approved as drawn, version 7, nothing open
@@ -197,7 +197,7 @@ doc/irr/.
 **Next action:** Patrick walks doc/chat-first/TEST_2026-09-12.md on his phone (nine walks,
 each with its sign-in link) and rules on the three questions it raised: (a) a professional
 signing in lands on a coding task card rather than their chat, because nobody is assigned
-and every subscriber is offered what is on the table; (b) ratifying takes about eleven
+and every subscriber is offered what is on the agenda; (b) ratifying takes about eleven
 seconds because the guideline drafting runs inside the request (a background task needs a
 worker the sandbox does not run); (c) whether the scribe's own prompt, which never lived in
 fdserver, also moves behind the private override.

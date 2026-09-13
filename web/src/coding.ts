@@ -13,7 +13,7 @@ import {
 } from "./types";
 
 /** The coding screen: one conversation, read-only, up to the cut Patrick put
- * on the table. You tap a line, say in your own words what it tells you
+ * on the agenda. You tap a line, say in your own words what it tells you
  * happened, and the scribe writes it into your own record of that family.
  *
  * Nobody else's coding is ever on this screen, and nothing here submits the

@@ -1,6 +1,6 @@
 """One session's turns as the cut-placing screen reads them: the whole
 conversation, where the last ratified cut fell, and where a cut already on the
-table falls (R-0267).
+agenda falls (R-0267).
 
 This is the same thread the coding screen shows, read before any coding of it
 exists, so it is the session's turns rather than a coding's.
@@ -28,7 +28,7 @@ def turn_index():
     if first is None or last is None:
         raise ValueError("that session has no turns to cut")
     ratified = _last_ratified(discussion_id)
-    standing = _on_table(discussion_id)
+    standing = _on_agenda(discussion_id)
 
     return jsonify(
         {
@@ -36,7 +36,7 @@ def turn_index():
             "session": (discussion.title or "").strip()
             or "an untitled conversation",
             "agreed": _line(ratified),
-            "on_table": _line(standing),
+            "on_agenda": _line(standing),
             "cut_id": standing.id if standing else None,
             "turns": [
                 {
@@ -78,7 +78,7 @@ def _last_ratified(discussion_id: int) -> Cut | None:
     )
 
 
-def _on_table(discussion_id: int) -> Cut | None:
+def _on_agenda(discussion_id: int) -> Cut | None:
     return (
         Cut.query.filter(
             Cut.discussion_id == discussion_id, Cut.ratified_at.is_(None)

@@ -392,19 +392,19 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 
 @frame coding#f1 | Your phone before a meeting: one card, one button, and under it what you have already finished.
 @frame coding#f6 | After Done the next single card takes its place, greyed until Patrick opens the vote.
-@frame review#f10 | Patrick's screen: the date, what is on the table, who is done, the button that opens the vote, and the agenda that fills itself.
+@frame review#f10 | Patrick's screen: the date, what is on the agenda, who is done, the button that opens the vote, and the agenda that fills itself.
 
-- Patrick opens the sessions sheet like anyone else, swipes the conversation he wants, and taps to put it on the table. [drawn] {R-0267}
+- Patrick opens the sessions sheet like anyone else, swipes the conversation he wants, and taps to put it on the agenda. [drawn] {R-0267}
 - That opens the conversation so he can place the cut: the point everyone codes up to. [drawn] {R-0267}
 - The cut starts at the last turn, and tapping any line moves it there. [drawn] {R-0267}
 - The cut can never be moved back past the last point that was already ratified. [drawn] {R-0267}
 - Turns after the cut are dimmed and wait for a later cut. [drawn] {R-0267}
 - A cut placed at the end of a finished conversation or recording takes in the whole thing, so a whole transcript is not a different kind of task. [drawn] {R-0267}
 - Anything that changed since the last cut is coded again. [drawn] {R-0267}
-- The table screen is the whole of Patrick's administration: the meeting date, what is on the table, and who is done. [drawn] {R-0259, R-0267}
+- The agenda screen is the whole of Patrick's administration: the meeting date, what is on the agenda, and who is done. [drawn] {R-0259, R-0267}
 - Each coder's state is shown as not started, coding, done or voted, with a count of who is closed out. [drawn] {R-0258}
 - One control nudges the people who are not done. [drawn] {R-0258}
-- Taking a conversation off the table is one tap, before anyone has started. [drawn]
+- Taking a conversation off the agenda is one tap, before anyone has started. [drawn]
 - Every coder's single task card is derived from that screen. [drawn] {R-0265}
 - Asking a coder to correct the coach's pass instead of coding from scratch was dropped, because coding is blind. [drawn] {R-0250}
 
@@ -476,8 +476,8 @@ What it is for: what the meeting produced, with nothing left to choose.
 - Where the AI's reading differed from the room is listed afterwards, with its reason, as an audit rather than a vote. [built] {R-0254}
 - What each coder tends to do differently from the others is shown. [built]
 - Every vote, settlement and ratification is a row in the app's own tables with who did it and when. [drawn] {R-0262}
-- How last year's coding material is carried over is a choice Patrick has not made; the plan on the table keeps the rules and the agreement tables as rows and the written deliberations as text. [open] {R-0262}
-- Every rule the AI wrote carries a "flag for next meeting" link, and flagged rules, unresolved events and unfinished tasks go on the next meeting's agenda by themselves. [built] {R-0276}
+- How last year's coding material is carried over is a choice Patrick has not made; the plan under consideration keeps the rules and the agreement tables as rows and the written deliberations as text. [open] {R-0262}
+- Every rule the AI wrote carries a "flag for next meeting" link, and flagged rules and unresolved events go on the next meeting's agenda by themselves; who has not finished a coding is the coder list's own line, not the agenda's. [built] {R-0276, R-0308}
 - The meeting's results are rows in the database — codings, votes, settles, rules with the settle each came from — so everything is traceable; the coding guidelines are the one written output. [drawn] {R-0275}
 - Anyone can read the current coding guidelines inside the app from an (i) button at the top of the coding screen. [drawn] {R-0275, R-0278}
 - The coding guidelines file in the code is generated from the rules the app holds and is never edited by hand. [drawn] {R-0275}

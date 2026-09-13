@@ -4,7 +4,7 @@ import { TaskKind, type FinishedTask, type Task, type Tasks } from "./types";
 
 /** The coder's one task. One card, one button, and under it a faint record of
  * what is already finished — never a list to choose from (R-0265). What to
- * code comes from what Patrick put on the table. */
+ * code comes from what Patrick put on the agenda. */
 
 export interface TaskHandlers {
   /** Start this task: the conversation opens as the coding screen. */
@@ -94,6 +94,6 @@ export class OneTask {
   }
 
   private nothing(): string {
-    return `<div class="none">Nothing is on the table to code yet.</div>`;
+    return `<div class="none">Nothing is on the agenda to code yet.</div>`;
   }
 }

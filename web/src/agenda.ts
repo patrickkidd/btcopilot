@@ -4,28 +4,28 @@ import { toast } from "./toast";
 import { meetingTitle } from "./when";
 import {
   CoderState,
-  type Agenda,
+  type NextMeeting,
   type CoderLine,
   type Cut,
   type Rule,
   type Take,
 } from "./types";
 
-/** The table: the whole of Patrick's administration (R-0259, R-0267).
+/** The agenda: the whole of Patrick's administration (R-0259, R-0267).
  *
- * The meeting date, what is on the table, each coder's state with a count of
+ * The meeting date, what is on the agenda, each coder's state with a count of
  * who is closed out, one control that nudges the ones who are not done, and
  * the one button that opens the vote — nothing else opens it (R-0273). Under
- * it the agenda fills itself from flagged rules, items left unresolved and
- * coding nobody finished (R-0276).
+ * it the next meeting's agenda fills itself from flagged rules and items left
+ * unresolved (R-0276, R-0308).
  */
 
-export interface TableHandlers {
-  /** Put another conversation on the table: the sessions sheet opens. */
+export interface AgendaHandlers {
+  /** Put another conversation on the agenda: the sessions sheet opens. */
   onAdd(): void;
   /** Open one cut again to move its line. */
   onPlace(discussionId: number): void;
-  /** Run the meeting on what is on the table: settle the open items and
+  /** Run the meeting on what is on the agenda: settle the open items and
    * ratify (R-0250). */
   onMeeting(cutId: number): void;
   /** What the screen is called, which the title row shows. */
@@ -41,22 +41,22 @@ function said(takes: Take[]): string | null {
   return typeof written === "string" && written ? written : null;
 }
 
-export class Table {
+export class Agenda {
   private cuts: Cut[] = [];
   private coders: CoderLine[] = [];
-  private agenda: Agenda | null = null;
+  private next: NextMeeting | null = null;
 
   constructor(
     private body: HTMLElement,
-    private handlers: TableHandlers,
+    private handlers: AgendaHandlers,
   ) {
     this.body.addEventListener("click", (e) => void this.onClick(e));
     this.body.addEventListener("change", (e) => void this.onDate(e));
   }
 
   async load(): Promise<void> {
-    [this.cuts, this.coders, this.agenda] = await Promise.all([
-      api.onTable(),
+    [this.cuts, this.coders, this.next] = await Promise.all([
+      api.onAgenda(),
       api.coders(),
       api.agenda(),
     ]);
@@ -64,7 +64,7 @@ export class Table {
     this.render();
   }
 
-  /** The meeting the table is for, which is the date on the cuts on it. */
+  /** The meeting the agenda is for, which is the date on the cuts on it. */
   private meeting(): string | null {
     return this.cuts.find((cut) => cut.meeting_date)?.meeting_date ?? null;
   }
@@ -134,16 +134,16 @@ export class Table {
     }
   }
 
-  /** Taking a conversation off the table is one tap, and only before anyone
+  /** Taking a conversation off the agenda is one tap, and only before anyone
    * has started coding it. */
   private async take(cutId: number): Promise<void> {
     try {
-      await api.offTable(cutId);
+      await api.offAgenda(cutId);
     } catch (error) {
       toast(
         error instanceof api.Failed && error.status === 400
           ? "Someone has already started coding that one"
-          : "That did not come off the table",
+          : "That did not come off the agenda",
       );
       return;
     }
@@ -170,18 +170,18 @@ export class Table {
   private render(): void {
     const closed = this.coders.filter((one) => one.closed_out).length;
     const behind = this.waiting().length;
-    // The button stands while anything on the table still needs the vote
+    // The button stands while anything on the agenda still needs the vote
     // opening on it; once every one of them is open it becomes a plain line.
     const open =
       this.cuts.length > 0 &&
       this.cuts.every((cut) => cut.vote_opened_at !== null);
     this.body.innerHTML =
       this.dateRow() +
-      `<div class="sn-hd">On the table</div>` +
+      `<div class="sn-hd">On the agenda</div>` +
       (this.cuts.length
         ? this.cuts.map((cut) => this.cutRow(cut)).join("")
-        : `<div class="none">Nothing is on the table yet.</div>`) +
-      `<button class="nudge tb-add" type="button">+ put another on the table</button>` +
+        : `<div class="none">Nothing is on the agenda yet.</div>`) +
+      `<button class="nudge tb-add" type="button">+ put another on the agenda</button>` +
       `<div class="sn-hd">Coders</div>` +
       this.coders.map((one) => this.coderRow(one)).join("") +
       `<div class="plnote">closed out: ${closed} of ${this.coders.length}` +
@@ -238,7 +238,7 @@ export class Table {
     const off = cut.started
       ? ""
       : `<button class="pl-btn" type="button" data-cut="${cut.id}" ` +
-        `aria-label="take off the table">${CROSS}</button>`;
+        `aria-label="take off the agenda">${CROSS}</button>`;
     return (
       `<div class="sn-row tb-cut" data-discussion="${cut.discussion_id}">` +
       `<div class="sn-m"><div class="sn-t">${esc(cut.session)}</div>` +
@@ -276,7 +276,7 @@ export class Table {
 
   /** What put itself on the agenda, in the words of the thing it came from. */
   private agendaLines(): { text: string; rule_id: number | null }[] {
-    const found = this.agenda;
+    const found = this.next;
     if (!found) return [];
     return [
       ...found.flagged_rules.map((rule: Rule) => ({
@@ -285,10 +285,6 @@ export class Table {
       })),
       ...found.unresolved_items.map((item) => ({
         text: `unresolved: ${said(item.takes) ?? item.item_kind}`,
-        rule_id: null,
-      })),
-      ...found.unfinished_codings.map((one) => ({
-        text: `${one.coder} has not finished coding ${one.session}`,
         rule_id: null,
       })),
     ];

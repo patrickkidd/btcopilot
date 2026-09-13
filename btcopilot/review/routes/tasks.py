@@ -1,7 +1,7 @@
 """The one thing a coder is doing now, and what they have already finished.
 
 Never a list to choose from (R-0265): one card, one button, and under it the
-tasks that are done. What to code comes from what Patrick put on the table.
+tasks that are done. What to code comes from what Patrick put on the agenda.
 """
 
 import datetime

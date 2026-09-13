@@ -286,32 +286,10 @@ def test_the_agenda_gathers_what_the_meeting_must_take_up(
     patrick.patch(f"/review/items/{item.id}", json={"choice": "unresolved"})
     rule = coder.post("/review/rules", json={"text": "A rule to look at"}).get_json()
     coder.patch(f"/review/rules/{rule['id']}", json={"flag": True})
-    later = Cut(
-        discussion_id=cut.discussion_id,
-        start_statement_id=cut.start_statement_id,
-        end_statement_id=cut.end_statement_id,
-        user_id=test_user.id,
-    )
-    db.session.add(later)
-    db.session.commit()
-    unfinished = coded(test_user_2, later, {}, done=False)
-
     agenda = patrick.get("/review/agenda").get_json()
     assert [i["id"] for i in agenda["unresolved_items"]] == [item.id]
     assert [r["id"] for r in agenda["flagged_rules"]] == [rule["id"]]
-    assert unfinished.id in [c["id"] for c in agenda["unfinished_codings"]]
-
-
-def test_an_unfinished_coding_names_who_it_waits_on_and_which_conversation(
-    patrick, coder, test_user, test_user_2, cut
-):
-    test_user_2.first_name = "Lena"
-    db.session.commit()
-    coded(test_user_2, cut, {}, done=False)
-
-    line = patrick.get("/review/agenda").get_json()["unfinished_codings"][0]
-    assert line["coder"] == "Lena"
-    assert line["session"]
+    assert "unfinished_codings" not in agenda
 
 
 def test_the_coachs_replay_is_a_coding_with_its_model(patrick, test_user, cut):
@@ -329,7 +307,7 @@ def test_the_coachs_replay_is_a_coding_with_its_model(patrick, test_user, cut):
     assert coding.agent["model"] == "claude-sonnet-5"
 
 
-def test_the_table_says_what_each_coder_is_doing(patrick, coder, cut, test_user_2):
+def test_the_agenda_says_what_each_coder_is_doing(patrick, coder, cut, test_user_2):
     """Patrick has not started; the other coder has a coding under way."""
     coder.post("/review/codings", json={"cut_id": cut.id})
     rows = patrick.get("/review/coders").get_json()
@@ -346,7 +324,7 @@ def test_a_coder_who_pressed_done_reads_as_done(patrick, test_user_2, cut):
     assert not any(row["closed_out"] for row in rows)
 
 
-def test_the_coach_is_not_one_of_the_coders_the_table_waits_on(
+def test_the_coach_is_not_one_of_the_coders_the_agenda_waits_on(
     patrick, test_user_2, cut
 ):
     coded(test_user_2, cut, {}, agent={"model": "claude-sonnet-5"})
@@ -354,13 +332,13 @@ def test_the_coach_is_not_one_of_the_coders_the_table_waits_on(
     assert test_user_2.id not in [row["user_id"] for row in rows]
 
 
-def test_taking_a_conversation_off_the_table(patrick, cut):
+def test_taking_a_conversation_off_the_agenda(patrick, cut):
     gone = patrick.delete(f"/review/cuts/{cut.id}")
     assert gone.status_code == 200
     assert db.session.get(Cut, cut.id) is None
 
 
-def test_a_cut_someone_started_cannot_be_taken_off_the_table(patrick, coder, cut):
+def test_a_cut_someone_started_cannot_be_taken_off_the_agenda(patrick, coder, cut):
     coder.post("/review/codings", json={"cut_id": cut.id})
     refused = patrick.delete(f"/review/cuts/{cut.id}")
     assert refused.status_code == 400
@@ -402,7 +380,7 @@ def test_the_turns_of_a_session_carry_the_ratified_line(patrick, session, turns,
     read = patrick.get(f"/review/turns?discussion_id={session.id}").get_json()
     assert len(read["turns"]) == len(turns)
     assert read["agreed"]["statement_id"] == turns[1].id
-    assert read["on_table"] is None
+    assert read["on_agenda"] is None
 
 
 def test_a_coder_cannot_read_a_session_whole(coder, session):

@@ -5,7 +5,7 @@ import { toast } from "./toast";
 import type { SessionTurn, SessionTurns } from "./types";
 
 /** Placing the cut: the conversation read-only, the point everyone codes up
- * to, and the one button that puts it on the table (R-0267).
+ * to, and the one button that puts it on the agenda (R-0267).
  *
  * The cut starts at the last turn. Tapping any line moves it there, turns
  * after it are dimmed and wait for a later cut, and it can never be placed
@@ -13,7 +13,7 @@ import type { SessionTurn, SessionTurns } from "./types";
  */
 
 export interface CutHandlers {
-  /** The cut is on the table: the table screen takes over. */
+  /** The cut is on the agenda: the agenda screen takes over. */
   onPlaced(): void;
   /** What the screen is called, which the title row shows. */
   onTitle(title: string | Title): void;
@@ -39,11 +39,11 @@ export class Cut {
   }
 
   /** Open one conversation to place its cut. A conversation already on the
-   * table opens on the line it was cut at. */
+   * agenda opens on the line it was cut at. */
   async open(discussionId: number): Promise<void> {
     this.read = await api.sessionTurns(discussionId);
     const last = this.read.turns[this.read.turns.length - 1];
-    this.at = this.read.on_table?.statement_id ?? last?.id ?? null;
+    this.at = this.read.on_agenda?.statement_id ?? last?.id ?? null;
     this.handlers.onTitle(this.read.session);
     this.render();
   }
@@ -65,12 +65,12 @@ export class Cut {
     this.render();
   }
 
-  /** One tap puts it on the table: a new cut, or the line moved on the one
+  /** One tap puts it on the agenda: a new cut, or the line moved on the one
    * already there. */
   private async place(): Promise<void> {
     const read = this.read;
     if (!read || this.at === null) return;
-    if (read.cut_id === null) await api.putOnTable(read.discussion_id, this.at);
+    if (read.cut_id === null) await api.putOnAgenda(read.discussion_id, this.at);
     else await api.moveCut(read.cut_id, this.at);
     this.handlers.onPlaced();
   }
@@ -100,7 +100,7 @@ export class Cut {
     }
     this.bar.innerHTML =
       `<div class="ct-hint">tap any line to move the cut</div>` +
-      `<button class="btn ct-go" type="button">put on the table at turn ` +
+      `<button class="btn ct-go" type="button">put on the agenda at turn ` +
       `${this.order()}</button>`;
     // The cut is what the screen is about, so it is what the screen opens on.
     this.list

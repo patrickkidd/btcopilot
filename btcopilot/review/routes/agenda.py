@@ -1,13 +1,11 @@
 """The next meeting's agenda, derived and never stored: rules somebody
-flagged, items left unresolved, codings nobody finished (R-0276)."""
+flagged and items left unresolved (R-0276, R-0308). Who has not finished a
+coding is the coder list's own line, not the agenda's."""
 
 from flask import jsonify, request
 
-from btcopilot.extensions import db
-from btcopilot.review import adapter
-from btcopilot.review.models import Coding, Cut, Item, ReviewStatus, Rule
+from btcopilot.review.models import Cut, Item, ReviewStatus, Rule
 from btcopilot.review.routes import bp, coder
-from btcopilot.review.routes.codings import blind_payload
 from btcopilot.review.routes.items import payload as item_payload
 from btcopilot.review.routes.rules import payload as rule_payload
 
@@ -26,13 +24,6 @@ def agenda_read():
         if cut_ids
         else []
     )
-    unfinished = (
-        Coding.query.filter(
-            Coding.cut_id.in_(cut_ids), Coding.done_at.is_(None)
-        ).all()
-        if cut_ids
-        else []
-    )
     flagged = [
         r
         for r in Rule.query.filter(Rule.retired_at.is_(None)).all()
@@ -45,20 +36,8 @@ def agenda_read():
             "cut_ids": cut_ids,
             "flagged_rules": [rule_payload(r) for r in flagged],
             "unresolved_items": [item_payload(i, False) for i in unresolved],
-            "unfinished_codings": [waiting_on(c) for c in unfinished],
         }
     )
-
-
-def waiting_on(coding: Coding) -> dict:
-    """An unfinished coding named on the agenda the way the room says it out
-    loud: who has not finished, and which conversation it is."""
-    cut = db.session.get(Cut, coding.cut_id)
-    discussion = adapter.discussion_of(cut.discussion_id)
-    return blind_payload(coding) | {
-        "coder": adapter.given(db.session.get(adapter.User, coding.user_id)),
-        "session": (discussion.title or "").strip() or "an untitled conversation",
-    }
 
 
 def _cuts(meeting_date: str | None) -> list[Cut]:

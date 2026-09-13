@@ -56,7 +56,7 @@ export function whenText(d: Date, now: Date, sameDayCount: number): string {
   return shortDate(d, now);
 }
 
-/** The next meeting, named the same way wherever it is named: the table
+/** The next meeting, named the same way wherever it is named: the agenda
  * screen's own title, and the sessions sheet's way in to it. */
 export function meetingTitle(date: string | null): string {
   if (!date) return "Next meeting";

@@ -39,11 +39,11 @@ export interface SessionsHandlers {
   onList(sessions: Session[]): void;
   /** The coder's one task, reached from the foot of the sheet (R-0265). */
   onTask(): void;
-  /** Patrick putting a conversation on the table: it opens so he can place
+  /** Patrick putting a conversation on the agenda: it opens so he can place
    * the cut (R-0267). Admins only. */
-  onTable(session: Session): void;
-  /** The table itself, which is Patrick's whole administration (R-0259). */
-  onTableScreen(): void;
+  onAgenda(session: Session): void;
+  /** The agenda itself, which is Patrick's whole administration (R-0259). */
+  onAgendaScreen(): void;
 }
 
 
@@ -59,7 +59,7 @@ export class Sessions {
   /** True between the swipe revealing the actions and the click it ends with. */
   private opening = false;
   private drag: { kind: "open" | "close"; y0: number; dy: number } | null = null;
-  /** Only Patrick puts a conversation on the table, so only he is offered it. */
+  /** Only Patrick puts a conversation on the agenda, so only he is offered it. */
   private admin = window.BOOTSTRAP.user?.admin === true;
 
   private scrim = el("div", "fs-scrim");
@@ -76,7 +76,7 @@ export class Sessions {
        <button class="fs-new fs-upload" type="button" hidden>Upload a recording</button>
        <button class="fs-new fs-note" type="button" hidden>+ new note</button>
        <button class="fs-task" type="button" hidden></button>
-       <button class="fs-task fs-table" type="button" hidden>Next meeting</button></div>`,
+       <button class="fs-task fs-agenda" type="button" hidden>Next meeting</button></div>`,
   );
 
   private body: HTMLElement;
@@ -85,7 +85,7 @@ export class Sessions {
   private uploadButton: HTMLButtonElement;
   private noteButton: HTMLButtonElement;
   private taskButton: HTMLButtonElement;
-  private tableButton: HTMLButtonElement;
+  private agendaButton: HTMLButtonElement;
   private recording: Recording;
 
   constructor(
@@ -104,9 +104,9 @@ export class Sessions {
     this.uploadButton = this.sheet.querySelector<HTMLButtonElement>(".fs-upload")!;
     this.noteButton = this.sheet.querySelector<HTMLButtonElement>(".fs-note")!;
     this.taskButton = this.sheet.querySelector<HTMLButtonElement>(".fs-task")!;
-    this.tableButton = this.sheet.querySelector<HTMLButtonElement>(".fs-table")!;
-    this.tableButton.hidden = !this.admin;
-    if (this.admin) void this.nameTable();
+    this.agendaButton = this.sheet.querySelector<HTMLButtonElement>(".fs-agenda")!;
+    this.agendaButton.hidden = !this.admin;
+    if (this.admin) void this.nameAgenda();
     this.uploadButton.hidden = !PRO;
     this.noteButton.hidden = !PRO;
     this.recording = new Recording(this.overlay, (made) => {
@@ -118,7 +118,7 @@ export class Sessions {
   }
 
   /** Raise the sheet from somewhere other than its own button — which is how
-   * the table puts another conversation on. */
+   * the agenda puts another conversation on. */
   show(): void {
     void this.raise(false);
   }
@@ -167,11 +167,11 @@ export class Sessions {
     return this.families.find((f) => f.diagram.current) ?? this.families[0];
   }
 
-  /** The way in to the table is named by the meeting it is for, the same words
-   * the table screen's own title carries. */
-  private async nameTable(): Promise<void> {
-    const cuts = await api.onTable();
-    this.tableButton.textContent = meetingTitle(
+  /** The way in to the agenda is named by the meeting it is for, the same words
+   * the agenda screen's own title carries. */
+  private async nameAgenda(): Promise<void> {
+    const cuts = await api.onAgenda();
+    this.agendaButton.textContent = meetingTitle(
       cuts.find((cut) => cut.meeting_date)?.meeting_date ?? null,
     );
   }
@@ -205,9 +205,9 @@ export class Sessions {
       this.lower();
       this.handlers.onTask();
     });
-    this.tableButton.addEventListener("click", () => {
+    this.agendaButton.addEventListener("click", () => {
       this.lower();
-      this.handlers.onTableScreen();
+      this.handlers.onAgendaScreen();
     });
     this.body.addEventListener("click", (e) => this.onBodyClick(e));
     this.pressToRename();
@@ -223,7 +223,7 @@ export class Sessions {
       const row = action.closest<HTMLElement>(".row")!;
       if (action.classList.contains("tbl")) {
         this.closeActions();
-        this.table(row);
+        this.openAgenda(row);
       } else if (action.classList.contains("ren")) {
         this.closeActions();
         this.rename(row);
@@ -301,7 +301,7 @@ export class Sessions {
       "beforeend",
       `<div class="fs-acts${this.admin ? " wide" : ""}">` +
         (this.admin
-          ? `<button class="fs-act tbl" type="button">Put on the table</button>`
+          ? `<button class="fs-act tbl" type="button">Put on the agenda</button>`
           : "") +
         `<button class="fs-act ren" type="button">Rename</button>` +
         `<button class="fs-act del" type="button">Delete</button></div>`,
@@ -321,11 +321,11 @@ export class Sessions {
 
   /** Patrick's swipe action: the conversation opens so he can place the cut
    * everyone will code up to. */
-  private table(row: HTMLElement): void {
+  private openAgenda(row: HTMLElement): void {
     const session = this.find(Number(row.dataset.id));
     if (!session) return;
     this.lower();
-    this.handlers.onTable(session);
+    this.handlers.onAgenda(session);
   }
 
   private async remove(row: HTMLElement): Promise<void> {
