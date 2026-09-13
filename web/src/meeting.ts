@@ -20,7 +20,7 @@ import {
   type Cut,
   type Person,
   type Tally,
-  type Take,
+  type Opinion,
   type TimelineEvent,
 } from "./types";
 
@@ -52,7 +52,7 @@ function choiceOf(item: BallotItem): Decision | null {
 interface Side {
   label: string;
   names: string[];
-  take: Take;
+  opinion: Opinion;
 }
 
 /** The margin a row stands at, as the room hears it: the two biggest sides, or
@@ -112,10 +112,10 @@ export class Meeting {
 
   /** An item somebody in the room wrote. What only the coach wrote down is
    * never the room's to decide; it is read afterwards as an audit
-   * (R-0254). The reading only carries the room's own takes, so an item with
+   * (R-0254). The reading only carries the room's own opinions, so an item with
    * none is the coach's alone. */
   private theirs(item: BallotItem): boolean {
-    return item.takes.length > 0;
+    return item.opinions.length > 0;
   }
 
   /** How split an item is: the more sides it has, and the smaller the biggest
@@ -181,7 +181,7 @@ export class Meeting {
    * line it came from, and the three choices. */
   private row(item: BallotItem): string {
     const chosen = choiceOf(item);
-    const first = item.takes[0];
+    const first = item.opinions[0];
     const sides = this.sides(item);
     const biggest = Math.max(...sides.map((one) => one.names.length), 0);
     const lines = sides
@@ -227,10 +227,10 @@ export class Meeting {
 
   /** Each reading of an item with everybody behind it: whoever wrote it and
    * whoever voted for it. The meeting is where the names appear, and the count
-   * beside a reading is how many people it is, not how many takes (R-0252,
+   * beside a reading is how many people it is, not how many opinions (R-0252,
    * R-0274). */
   private sides(item: BallotItem): Side[] {
-    const fields = telling(item.takes);
+    const fields = telling(item.opinions);
     const votes = this.tallies.get(item.id)?.votes ?? [];
     // A vote is a coder's last word: whoever voted counts on the side they
     // voted for, not on the one they first wrote.
@@ -239,21 +239,21 @@ export class Meeting {
     );
     return group(item)
       .map((one) => {
-        const wrote = item.takes
-          .filter((take) => (words(take, fields) || "as written") === one.label)
-          .map((take) => take.coder)
+        const wrote = item.opinions
+          .filter((opinion) => (words(opinion, fields) || "as written") === one.label)
+          .map((opinion) => opinion.coder)
           .filter(
             (name) =>
               name !== undefined &&
-              (!decided.has(name) || decided.get(name) === one.take.coding_id),
+              (!decided.has(name) || decided.get(name) === one.opinion.coding_id),
           ) as string[];
         const voted = votes
-          .filter((vote) => this.votedFor(vote, one.take))
+          .filter((vote) => this.votedFor(vote, one.opinion))
           .map((vote) => vote.name);
         return {
           label: one.label,
           names: [...new Set([...wrote, ...voted])],
-          take: one.take,
+          opinion: one.opinion,
         };
       })
       // A reading everybody who wrote it has since voted away from is not a
@@ -261,15 +261,15 @@ export class Meeting {
       .filter((one) => one.names.length > 0);
   }
 
-  private votedFor(vote: CastVote, take: Take): boolean {
+  private votedFor(vote: CastVote, opinion: Opinion): boolean {
     return (
-      vote.choice === VoteChoice.Take &&
-      vote.value?.coding_id === take.coding_id
+      vote.choice === VoteChoice.Opinion &&
+      vote.value?.coding_id === opinion.coding_id
     );
   }
 
   private collapsed(item: BallotItem): string {
-    const first = item.takes[0];
+    const first = item.opinions[0];
     const note =
       item.status === ItemStatus.Unresolved ? " · left unresolved" : "";
     return (
@@ -309,7 +309,7 @@ export class Meeting {
     if (choice === Decision.Change) this.change(item);
     else if (choice === Decision.Keep)
       await this.decide(item, Decision.Keep, {
-        coding_id: item.takes[0]?.coding_id,
+        coding_id: item.opinions[0]?.coding_id,
       });
     else if (choice === Decision.Unresolved)
       await this.decide(item, Decision.Unresolved);
@@ -323,7 +323,7 @@ export class Meeting {
     try {
       await api.decide(item.id, choice, value);
     } catch (error) {
-      // The record refuses some takes — a shift with no variable, say — and
+      // The record refuses some opinions — a shift with no variable, say — and
       // says why in its own words, which is what the room needs to hear.
       toast(
         error instanceof api.Failed && error.status === 400
@@ -338,7 +338,7 @@ export class Meeting {
   /** "change…" opens the app's own event editor over the meeting, prefilled,
    * so the room can decide on something nobody wrote. */
   private change(item: BallotItem): void {
-    const from = item.takes[0]?.item ?? {};
+    const from = item.opinions[0]?.item ?? {};
     const people = item.people.map(
       (one) => ({ id: one.id, name: one.name }) as Person,
     );

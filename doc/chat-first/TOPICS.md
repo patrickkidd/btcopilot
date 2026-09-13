@@ -91,8 +91,8 @@ teaches the next [R-0244]; the review front end is isolated so it can never brea
 Pro [R-0245]; two families, data slices and an AI-guided walk, with the AI's help important
 [R-0246]; "gold" means ratified — the AI's set is the proposed record, the ratified record is
 ground truth [R-0249]; **three stages** — code blind from scratch; once three coders are done,
-each votes on a phone before the meeting on every disputed item, takes shown without names and
-with no AI takes at all; the meeting sees only what the vote left open, with names and tallies,
+each votes on a phone before the meeting on every disputed item, opinions shown without names and
+with no AI opinions at all; the meeting sees only what the vote left open, with names and tallies,
 every item given one of keep / change / unresolved before ratify, and ratifies with unresolved
 items kept as data [R-0250, R-0254, R-0257]; nobody is paid, the work is a rolling window, and
 convergence is required but not forced [R-0251]; original opinions are kept in full fidelity,

@@ -17,7 +17,7 @@ from btcopilot.modelmixin import ModelMixin
 
 
 class VoteChoice(enum.StrEnum):
-    Take = "take"
+    Opinion = "opinion"
     Change = "change"
     Drop = "drop"
 
@@ -25,7 +25,7 @@ class VoteChoice(enum.StrEnum):
 class Vote(db.Model, ModelMixin):
     """One coder's vote on one item before the meeting.
 
-    `value` is {coding_id} for take, or the coder's own item dict for change.
+    `value` is {coding_id} for opinion, or the coder's own item dict for change.
     Names are never shown until the meeting (R-0272).
     """
 

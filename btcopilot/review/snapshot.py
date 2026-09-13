@@ -2,7 +2,7 @@
 
 When the vote opens, each finished coding's record is matched against the
 first one with the same matcher the F1 harness uses, and one row per item is
-written with the take each coding had. The snapshot is never maintained after
+written with the opinion each coding had. The snapshot is never maintained after
 that: the rows are the event clock (R-0275).
 
 Agreement is recomputed from the rows whenever a coding finishes and again
@@ -54,12 +54,12 @@ def coach_coding(cut) -> Coding | None:
 
 
 def build(cut) -> list[Item]:
-    """One row per item of the cut, with every coding's take on it."""
+    """One row per item of the cut, with every coding's opinion on it."""
     Item.query.filter_by(cut_id=cut.id).delete()
     people = voters(cut)
     if not people:
         return []
-    # The coach is matched in last so its take is on the row without ever
+    # The coach is matched in last so its opinion is on the row without ever
     # standing as the reference the others are paired against.
     codings = people + [c for c in done_codings(cut) if c.agent is not None]
     voter_ids = {c.id for c in people}
@@ -68,13 +68,13 @@ def build(cut) -> list[Item]:
     reference = people[0]
     rows = []
     for kind in KINDS:
-        for takes in _groups(kind, reference, codings, records):
+        for opinions in _groups(kind, reference, codings, records):
             rows.append(
                 Item(
                     cut_id=cut.id,
                     item_kind=kind,
-                    takes=takes,
-                    status=_status(takes, voter_ids),
+                    opinions=opinions,
+                    status=_status(opinions, voter_ids),
                 )
             )
     db.session.add_all(rows)
@@ -125,10 +125,10 @@ def _match(kind, pdp, reference):
     return result.matched_pairs, result.ai_unmatched
 
 
-def _status(takes: list[dict], voter_ids: set[int]) -> ReviewStatus:
+def _status(opinions: list[dict], voter_ids: set[int]) -> ReviewStatus:
     """Agreed when every coder has this item and wrote it the same way. What
     the coach wrote is on the row but never decides it (R-0254)."""
-    theirs = [t for t in takes if t["coding_id"] in voter_ids]
+    theirs = [t for t in opinions if t["coding_id"] in voter_ids]
     if len(theirs) < len(voter_ids) or not theirs:
         return ReviewStatus.Disputed
     first = _comparable(theirs[0]["item"])

@@ -26,7 +26,7 @@ DISCUSSION_KIND = sa.Enum("chat", "recording", "note", name="discussionkind")
 REVIEW_STATUS = sa.Enum(
     "agreed", "disputed", "decided", "unresolved", name="reviewstatus"
 )
-VOTE_CHOICE = sa.Enum("take", "change", "drop", name="votechoice")
+VOTE_CHOICE = sa.Enum("opinion", "change", "drop", name="votechoice")
 RULE_SOURCE = sa.Enum("ai", "migration", "human", name="rulesource")
 
 
@@ -253,7 +253,7 @@ def upgrade():
         ),
         sa.Column("item_kind", ITEM_KIND, nullable=False),
         sa.Column("item_id", sa.String(64), nullable=True),
-        sa.Column("takes", _json(), nullable=False),
+        sa.Column("opinions", _json(), nullable=False),
         sa.Column("status", REVIEW_STATUS, nullable=False),
         sa.Column(
             "decision_change_id",

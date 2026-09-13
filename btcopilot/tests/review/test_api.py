@@ -123,7 +123,7 @@ def decide_everything(patrick, cut):
             f"/review/items/{item.id}",
             json={
                 "choice": "keep",
-                "value": {"coding_id": item.takes[0]["coding_id"]},
+                "value": {"coding_id": item.opinions[0]["coding_id"]},
             },
         )
 
@@ -146,7 +146,7 @@ def test_snapshot_marks_the_shared_event_agreed_and_the_lone_one_disputed(
     events = Item.query.filter_by(cut_id=cut.id, item_kind="event").all()
     statuses = sorted(i.status for i in events)
     assert statuses == [ReviewStatus.Agreed, ReviewStatus.Disputed]
-    assert len(next(i for i in events if i.status is ReviewStatus.Agreed).takes) == 2
+    assert len(next(i for i in events if i.status is ReviewStatus.Agreed).opinions) == 2
 
 
 def test_agreement_lands_on_the_cut(patrick, test_user, test_user_2, cut):
@@ -163,7 +163,7 @@ def test_one_vote_per_coder_per_item(patrick, coder, test_user, test_user_2, cut
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
     item = disputed_event(cut)
 
-    coder.put(f"/review/items/{item.id}/vote", json={"choice": "take"})
+    coder.put(f"/review/items/{item.id}/vote", json={"choice": "opinion"})
     coder.put(f"/review/items/{item.id}/vote", json={"choice": "drop"})
     votes = coder.get(f"/review/votes?cut_id={cut.id}").get_json()
     assert len(votes) == 1
@@ -174,12 +174,12 @@ def test_a_coder_reads_only_their_own_votes(patrick, coder, test_user, test_user
     two_codings(test_user, test_user_2, cut)
     patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
     item = disputed_event(cut)
-    patrick.put(f"/review/items/{item.id}/vote", json={"choice": "take"})
+    patrick.put(f"/review/items/{item.id}/vote", json={"choice": "opinion"})
 
     assert coder.get(f"/review/votes?cut_id={cut.id}").get_json() == []
     tallies = patrick.get(f"/review/tallies?cut_id={cut.id}").get_json()
     counted = next(t for t in tallies if t["review_item_id"] == item.id)
-    assert counted["counts"]["take"] == 1
+    assert counted["counts"]["opinion"] == 1
 
 
 def test_decision_writes_a_change_on_the_case_record(
@@ -195,7 +195,7 @@ def test_decision_writes_a_change_on_the_case_record(
 
     decided = patrick.patch(
         f"/review/items/{item.id}",
-        json={"choice": "keep", "value": {"coding_id": item.takes[0]["coding_id"]}},
+        json={"choice": "keep", "value": {"coding_id": item.opinions[0]["coding_id"]}},
     )
     assert decided.status_code == 200
 
@@ -219,7 +219,7 @@ def test_ratifying_writes_the_ground_truth_export(
     )
     patrick.patch(
         f"/review/items/{agreed.id}",
-        json={"choice": "keep", "value": {"coding_id": agreed.takes[0]["coding_id"]}},
+        json={"choice": "keep", "value": {"coding_id": agreed.opinions[0]["coding_id"]}},
     )
     decide_everything(patrick, db.session.get(Cut, cut.id))
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
@@ -410,7 +410,7 @@ def wrote_from(coding, event_id: int, statement_id: int, user_id: int):
     db.session.commit()
 
 
-def test_the_ballot_carries_the_turn_and_the_person_of_each_take(
+def test_the_ballot_carries_the_turn_and_the_person_of_each_opinion(
     patrick, test_user, test_user_2, cut, turns
 ):
     first, _ = two_codings(test_user, test_user_2, cut)
@@ -423,8 +423,8 @@ def test_the_ballot_carries_the_turn_and_the_person_of_each_take(
     )
     assert agreed["coders"] == 2
     assert agreed["not_coded"] == 0
-    assert agreed["takes"][0]["person_name"] == "Ann"
-    assert agreed["takes"][0]["statement_id"] == turns[1].id
+    assert agreed["opinions"][0]["person_name"] == "Ann"
+    assert agreed["opinions"][0]["statement_id"] == turns[1].id
     assert agreed["line"]["text"] == "turn 1"
     assert [one["name"] for one in agreed["people"]] == ["Ann"]
 
@@ -448,7 +448,7 @@ def test_no_name_reaches_the_ballot(patrick, test_user, test_user_2, cut):
 
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     assert all("user_id" not in row for row in rows)
-    assert all("user_id" not in take for row in rows for take in row["takes"])
+    assert all("user_id" not in opinion for row in rows for opinion in row["opinions"])
 
 
 def test_the_coachs_own_reading_is_not_on_the_ballot(
@@ -465,10 +465,10 @@ def test_the_coachs_own_reading_is_not_on_the_ballot(
 
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     shared = next(
-        r for r in rows if r["item_kind"] == "event" and len(r["takes"]) > 1
+        r for r in rows if r["item_kind"] == "event" and len(r["opinions"]) > 1
     )
     assert shared["coders"] == 2
-    assert len(shared["takes"]) == 2
+    assert len(shared["opinions"]) == 2
     assert shared["not_coded"] == 0
 
 
@@ -481,7 +481,7 @@ def test_an_agreed_item_cannot_be_voted_on(patrick, test_user, test_user_2, cut)
         if i.status is ReviewStatus.Agreed
     )
 
-    refused = patrick.put(f"/review/items/{agreed.id}/vote", json={"choice": "take"})
+    refused = patrick.put(f"/review/items/{agreed.id}/vote", json={"choice": "opinion"})
     assert refused.status_code == 400
     assert "not on the ballot" in refused.get_data(as_text=True)
 

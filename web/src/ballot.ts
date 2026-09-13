@@ -8,12 +8,12 @@ import {
   VoteChoice,
   type BallotItem,
   type Person,
-  type Take,
+  type Opinion,
   type TimelineEvent,
   type Vote,
 } from "./types";
 
-/** The vote before the meeting: one disputed event per screen, the takes shown
+/** The vote before the meeting: one disputed event per screen, the opinions shown
  * without names so nobody defers to the most senior person in the room
  * (R-0252, R-0257). Nothing the coach thinks is in here at all (R-0254). No
  * rule decides anything before the meeting; the tallies only inform it
@@ -27,7 +27,7 @@ export interface BallotHandlers {
   onTranscript(statementId: number): void;
 }
 
-/** The fields a take can differ from the others by, in the order they read. */
+/** The fields an opinion can differ from the others by, in the order they read. */
 export const TELLING = [
   "dateTime",
   "person_name",
@@ -65,13 +65,13 @@ export function drawTimeline(
         return `<circle class="d-on" cx="${x}" cy="${LINE.y}" r="7.5" data-item="${one.id}"/>`;
       if (one.status === ItemStatus.Agreed)
         return `<circle class="d-ok" cx="${x}" cy="${LINE.y}" r="4.5" data-item="${one.id}"/>`;
-      // The small number says how many different takes there are, so it is
+      // The small number says how many different opinions there are, so it is
       // only there when there is more than one to tell apart.
-      const takes = group(one).length;
+      const opinions = group(one).length;
       return (
         `<circle class="d-no" cx="${x}" cy="${LINE.y}" r="5.5" data-item="${one.id}"/>` +
-        (takes > 1
-          ? `<text class="d-n" x="${x + 8}" y="${LINE.y - 12}">${takes}</text>`
+        (opinions > 1
+          ? `<text class="d-n" x="${x + 8}" y="${LINE.y - 12}">${opinions}</text>`
           : "")
       );
     })
@@ -85,18 +85,18 @@ export function drawTimeline(
 }
 
 /** What a coder votes on: a disputed event that at least one person wrote. An
- * item only the coach wrote carries no take here, and is the meeting's to take
+ * item only the coach wrote carries no opinion here, and is the meeting's to take
  * up rather than the room's to vote on (R-0254); the server refuses a vote on
  * one, so it never reaches the ballot. */
 export const onBallot = (one: BallotItem) =>
   one.item_kind === ItemKind.Event &&
   one.status === ItemStatus.Disputed &&
-  one.takes.length > 0;
+  one.opinions.length > 0;
 
 /** Every event of a cut in the order they happened, which is the order both
  * screens walk them in. */
 export function eventsOf(items: BallotItem[]): BallotItem[] {
-  const day = (item: BallotItem) => String(item.takes[0]?.item.dateTime ?? "");
+  const day = (item: BallotItem) => String(item.opinions[0]?.item.dateTime ?? "");
   return items
     .filter((one) => one.item_kind === ItemKind.Event)
     .sort((a, b) => day(a).localeCompare(day(b)));
@@ -114,12 +114,12 @@ export const when = (value: unknown): string => {
   });
 };
 
-/** What one take says, in the record's own words, for the fields given. */
-export function words(take: Take, fields: readonly string[]): string {
+/** What one opinion says, in the record's own words, for the fields given. */
+export function words(opinion: Opinion, fields: readonly string[]): string {
   const said = fields
     .map((field) => {
       const value =
-        field === "person_name" ? take.person_name : take.item[field];
+        field === "person_name" ? opinion.person_name : opinion.item[field];
       if (value === null || value === undefined || value === "") return "";
       const text = String(value);
       if (field === "dateTime") return when(text);
@@ -130,9 +130,9 @@ export function words(take: Take, fields: readonly string[]): string {
   return said.join(" · ");
 }
 
-/** What a take says when the coders differ by nothing the words can show —
+/** What an opinion says when the coders differ by nothing the words can show —
  * one of them simply left the item out. The date, the person and the words are
- * already above the takes, so only the variables are left to say. */
+ * already above the opinions, so only the variables are left to say. */
 const REST = [
   "symptom",
   "anxiety",
@@ -140,15 +140,15 @@ const REST = [
   "relationship",
 ] as const;
 
-/** The fields the coders read differently, which is what a take is chosen by.
+/** The fields the coders read differently, which is what an opinion is chosen by.
  * When they wrote the same thing and only differ by who left it out, the whole
- * take is shown instead. */
-export function telling(takes: Take[]): readonly string[] {
+ * opinion is shown instead. */
+export function telling(opinions: Opinion[]): readonly string[] {
   const differs = TELLING.filter((field) => {
     const seen = new Set(
-      takes.map((take) =>
+      opinions.map((opinion) =>
         String(
-          (field === "person_name" ? take.person_name : take.item[field]) ?? "",
+          (field === "person_name" ? opinion.person_name : opinion.item[field]) ?? "",
         ),
       ),
     );
@@ -157,22 +157,22 @@ export function telling(takes: Take[]): readonly string[] {
   return differs.length ? differs : REST;
 }
 
-/** Takes worded the same way are one take with a count beside it: the ballot
+/** Opinions worded the same way are one opinion with a count beside it: the ballot
  * is about the readings, not about how many people are in the room. */
 export interface Grouped {
   label: string;
   coders: number;
-  take: Take;
+  opinion: Opinion;
 }
 
 export function group(item: BallotItem): Grouped[] {
-  const fields = telling(item.takes);
+  const fields = telling(item.opinions);
   const found = new Map<string, Grouped>();
-  for (const take of item.takes) {
-    const label = words(take, fields) || "as written";
+  for (const opinion of item.opinions) {
+    const label = words(opinion, fields) || "as written";
     const already = found.get(label);
     if (already) already.coders += 1;
-    else found.set(label, { label, coders: 1, take });
+    else found.set(label, { label, coders: 1, opinion });
   }
   return [...found.values()];
 }
@@ -259,7 +259,7 @@ export class Ballot {
     this.caption.innerHTML =
       `<span class="cta">tap a dot to jump</span>` +
       `<button class="tok g" type="button">now · ` +
-      `${esc(when(current.takes[0]?.item.dateTime))}</button>` +
+      `${esc(when(current.opinions[0]?.item.dateTime))}</button>` +
       `<button class="tok" type="button">${left} open</button>`;
   }
 
@@ -268,32 +268,34 @@ export class Ballot {
   }
 
   private card(item: BallotItem): string {
-    const first = item.takes[0];
+    const first = item.opinions[0];
     const vote = this.mine.get(item.id);
-    const chosen = vote?.choice === VoteChoice.Take ? vote.value : null;
+    const chosen = vote?.choice === VoteChoice.Opinion ? vote.value : null;
     const mine = vote?.choice === VoteChoice.Change ? vote.value : null;
-    const takes = group(item)
+    const opinions = group(item)
       .map((one, index) => {
         const on =
-          chosen && chosen.coding_id === one.take.coding_id ? " on" : "";
-        // How many coders backed a take is not shown here: names and counts
+          chosen && chosen.coding_id === one.opinion.coding_id ? " on" : "";
+        // How many coders backed an opinion is not shown here: names and counts
         // appear for the first time at the meeting, so nobody votes with the
         // room in view (R-0252, R-0272).
         return (
-          `<div class="take tap${on}" data-coding="${one.take.coding_id}">` +
-          `<span>take ${index + 1} · ${esc(one.label)}</span></div>`
+          `<div class="opinion tap${on}" data-coding="${one.opinion.coding_id}">` +
+          `<span>opinion ${index + 1} · ${esc(one.label)}</span></div>`
         );
       })
       .join("");
-    const ownTake = mine
-      ? `<div class="take tap on"><span>your take · ` +
-        `${esc(words({ item: mine } as Take, TELLING))}</span></div>`
+    const ownOpinion = mine
+      ? `<div class="opinion tap on"><span>your opinion · ` +
+        `${esc(words({ item: mine } as Opinion, TELLING))}</span></div>`
       : "";
     // The one count the ballot does show, because leaving an item out is not a
-    // vote for any take and the room needs to know it happened.
-    const left =
-      `<div class="take off"><span>left out by ${item.not_coded} ` +
-      `coder${item.not_coded === 1 ? "" : "s"}</span></div>`;
+    // vote for any opinion and the room needs to know it happened. It is a
+    // plain label, never a row you can tap.
+    const left = item.not_coded
+      ? `<div class="note">${item.not_coded} ` +
+        `coder${item.not_coded === 1 ? "" : "s"} left this event out</div>`
+      : "";
     const line = item.line
       ? `<div class="quote"><b>${esc(item.line.who)}:</b> ` +
         `&ldquo;${esc(item.line.text)}&rdquo;</div>` +
@@ -305,8 +307,8 @@ export class Ballot {
       `<div class="progress">${esc(when(first?.item.dateTime))}` +
       `${first?.person_name ? ` · → ${esc(first.person_name)}` : ""}</div>` +
       `<h3>${esc(String(first?.item.description ?? first?.item.kind ?? "an event"))}</h3>` +
-      takes +
-      ownTake +
+      opinions +
+      ownOpinion +
       left +
       line +
       `</div>` +
@@ -335,10 +337,10 @@ export class Ballot {
     const target = clicked.target as Element;
     const item = this.item();
     if (!item) return;
-    const take = target.closest<HTMLElement>(".take.tap:not(.off)");
-    if (take?.dataset.coding) {
-      void this.vote(VoteChoice.Take, {
-        coding_id: Number(take.dataset.coding),
+    const opinion = target.closest<HTMLElement>(".opinion.tap");
+    if (opinion?.dataset.coding) {
+      void this.vote(VoteChoice.Opinion, {
+        coding_id: Number(opinion.dataset.coding),
       });
       return;
     }
@@ -403,14 +405,14 @@ export class Ballot {
   }
 
   /** "change…" opens the app's own event editor over the ballot, prefilled, so
-   * you can write a take nobody wrote; it joins the count as one more take
+   * you can write an opinion nobody wrote; it joins the count as one more opinion
    * (R-0257). The turn it came from is kept with the event, not edited here. */
   private change(item: BallotItem): void {
     const vote = this.mine.get(item.id);
     const from =
       vote?.choice === VoteChoice.Change
         ? vote.value
-        : (item.takes[0]?.item ?? {});
+        : (item.opinions[0]?.item ?? {});
     const people = item.people.map(
       (one) => ({ id: one.id, name: one.name }) as Person,
     );
@@ -422,7 +424,7 @@ export class Ballot {
       undefined,
       (body) => void this.own(body),
     );
-    editor.querySelector(".save")!.textContent = "save as my take";
+    editor.querySelector(".save")!.textContent = "save as my opinion";
     editor
       .querySelector(".acts")
       ?.before(

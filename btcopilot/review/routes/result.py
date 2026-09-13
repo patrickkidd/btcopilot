@@ -26,7 +26,7 @@ def result_read():
     theirs = [
         item
         for item in cut.items
-        if any(take.get("coding_id") in people for take in item.takes or [])
+        if any(opinion.get("coding_id") in people for opinion in item.opinions or [])
     ]
     counts = {status.value: 0 for status in ReviewStatus}
     for item in theirs:

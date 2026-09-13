@@ -1,7 +1,7 @@
 """Writing what the room agreed onto the case's own record.
 
 One item of the review's snapshot becomes one item of the case, whether the
-room chose between the takes or every coder had already read it the same way.
+room chose between the opinions or every coder had already read it the same way.
 Ratifying confirms the agreed ones, which is why they are collapsed on the
 meeting screen rather than argued over (R-0257, R-0274).
 """
@@ -12,19 +12,19 @@ from btcopilot.review.models import Item, ReviewStatus
 
 
 def value_of(item: Item, given) -> dict:
-    """What the meeting decided on: a coder's take picked by its coding, or a
+    """What the meeting decided on: a coder's opinion picked by its coding, or a
     written-out item of its own."""
     if isinstance(given, dict) and "coding_id" in given and "item" not in given:
-        for take in item.takes or []:
-            if take.get("coding_id") == given["coding_id"]:
-                return take["item"]
-        raise ValueError("no take on this item from that coding")
+        for opinion in item.opinions or []:
+            if opinion.get("coding_id") == given["coding_id"]:
+                return opinion["item"]
+        raise ValueError("no opinion on this item from that coding")
     if isinstance(given, dict) and given:
         return given.get("item", given)
-    takes = item.takes or []
-    if len(takes) != 1:
-        raise ValueError("say which take or what to write")
-    return takes[0]["item"]
+    opinions = item.opinions or []
+    if len(opinions) != 1:
+        raise ValueError("say which opinion or what to write")
+    return opinions[0]["item"]
 
 
 def write(item: Item, value: dict, user):
@@ -33,7 +33,7 @@ def write(item: Item, value: dict, user):
     )
     data = adapter.record_of(case)
     # A change is a rewording of the same moment, so it lands on the item the
-    # takes already name rather than adding a second one beside it.
+    # opinions already name rather than adding a second one beside it.
     target = str(item.item_id or value.get("id") or _take_id(item) or _next_id(data))
     deltas = [
         {
@@ -59,8 +59,8 @@ def confirm_agreed(cut, user) -> list[Item]:
         if item.status is ReviewStatus.Agreed and item.item_id is None
     ]
     for item in found:
-        # Agreed means every coder wrote it the same way, so any take is it.
-        change = write(item, item.takes[0]["item"], user)
+        # Agreed means every coder wrote it the same way, so any opinion is it.
+        change = write(item, item.opinions[0]["item"], user)
         item.decision_change_id = change.id
     db.session.flush()
     return found
@@ -69,9 +69,9 @@ def confirm_agreed(cut, user) -> list[Item]:
 def _take_id(item: Item) -> str | None:
     """The id the coders' own records gave this moment, which the case record
     shares because every coding of a cut is written onto the same case."""
-    for take in item.takes or []:
-        if take.get("item_id") is not None:
-            return str(take["item_id"])
+    for opinion in item.opinions or []:
+        if opinion.get("item_id") is not None:
+            return str(opinion["item_id"])
     return None
 
 

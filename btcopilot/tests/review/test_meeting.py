@@ -57,7 +57,7 @@ def decide_all(patrick, cut, choice="keep"):
             f"/review/items/{item.id}",
             json={
                 "choice": choice,
-                "value": {"coding_id": item.takes[0]["coding_id"]},
+                "value": {"coding_id": item.opinions[0]["coding_id"]},
             },
         )
 
@@ -83,7 +83,7 @@ def test_what_only_the_coach_read_differently_is_not_disputed(
     father = next(
         item
         for item in db.session.get(Cut, cut.id).items
-        if any(t["item"].get("description") == "father left" for t in item.takes)
+        if any(t["item"].get("description") == "father left" for t in item.opinions)
     )
     assert father.status is ReviewStatus.Agreed
 
@@ -107,15 +107,15 @@ def test_the_meeting_lists_people_as_well_as_events(
 def test_names_are_on_the_meetings_reading_and_not_the_ballots(
     patrick, coder, test_user, test_user_2, cut
 ):
-    three_takes = {"people": [person(1, "Ann")], "events": [shift(10, 1, "a shift")]}
-    coded(test_user, cut, three_takes)
+    three_opinions = {"people": [person(1, "Ann")], "events": [shift(10, 1, "a shift")]}
+    coded(test_user, cut, three_opinions)
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
 
     blind = coder.get(f"/review/items?cut_id={cut.id}").get_json()
-    assert all("user_id" not in take for item in blind for take in item["takes"])
+    assert all("user_id" not in opinion for item in blind for opinion in item["opinions"])
     named = patrick.get(f"/review/items?cut_id={cut.id}&named=true").get_json()
-    assert any("user_id" in take for item in named for take in item["takes"])
+    assert any("user_id" in opinion for item in named for opinion in item["opinions"])
 
 
 def test_a_coder_cannot_ask_for_the_names(coder, test_user, test_user_2, cut):
@@ -283,9 +283,9 @@ def test_the_result_says_what_each_coder_tends_to_do(
     assert max(left_out.values()) >= 1
 
 
-def test_changing_a_take_rewords_the_same_moment(patrick, test_user, test_user_2, cut):
+def test_changing_an_opinion_rewords_the_same_moment(patrick, test_user, test_user_2, cut):
     """A change is a rewording, not a second event beside the first: it lands
-    on the moment the takes already name."""
+    on the moment the opinions already name."""
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann")], "events": []})
     open_vote(patrick, cut)
@@ -294,7 +294,7 @@ def test_changing_a_take_rewords_the_same_moment(patrick, test_user, test_user_2
         for i in db.session.get(Cut, cut.id).items
         if i.status is ReviewStatus.Disputed and i.item_kind.value == "event"
     )
-    written = dict(item.takes[0]["item"], description="what the room said")
+    written = dict(item.opinions[0]["item"], description="what the room said")
     written.pop("id")
     patrick.patch(
         f"/review/items/{item.id}", json={"choice": "change", "value": written}
@@ -316,7 +316,7 @@ def test_a_decision_the_record_refuses_is_the_rooms_fault(
         for i in db.session.get(Cut, cut.id).items
         if i.status is ReviewStatus.Disputed and i.item_kind.value == "event"
     )
-    bare = {k: v for k, v in item.takes[0]["item"].items() if k != "symptom"}
+    bare = {k: v for k, v in item.opinions[0]["item"].items() if k != "symptom"}
     refused = patrick.patch(
         f"/review/items/{item.id}", json={"choice": "change", "value": bare}
     )

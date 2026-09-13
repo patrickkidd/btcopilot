@@ -19,7 +19,7 @@ class ReviewStatus(enum.StrEnum):
 class Item(db.Model, ModelMixin):
     """One event, person or pair bond as every coder saw it.
 
-    `takes` is the list of {coding_id, item_id, item} the matcher paired across
+    `opinions` is the list of {coding_id, item_id, item} the matcher paired across
     the codings, each item the schema's own dict. It is a snapshot taken when
     the vote opens and is never maintained afterwards.
     """
@@ -31,7 +31,7 @@ class Item(db.Model, ModelMixin):
         Enum(ItemKind, values_callable=lambda e: [x.value for x in e]), nullable=False
     )
     item_id = Column(String(64), nullable=True)
-    takes = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=False)
+    opinions = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=False)
     status = Column(
         Enum(ReviewStatus, values_callable=lambda e: [x.value for x in e]),
         nullable=False,

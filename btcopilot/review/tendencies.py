@@ -18,7 +18,7 @@ def rows(cut) -> list[dict]:
     items = [
         item
         for item in sorted(cut.items, key=lambda i: i.id)
-        if any(t["coding_id"] in ids for t in item.takes or [])
+        if any(t["coding_id"] in ids for t in item.opinions or [])
     ]
     agreed = _agreed(cut)
     return [_coder(coding, items, agreed) for coding in people]
@@ -39,7 +39,7 @@ def _agreed(cut) -> dict[str, dict]:
 def _coder(coding, items: list[Item], agreed: dict[str, dict]) -> dict:
     mine = {
         item.id: next(
-            (t["item"] for t in item.takes or [] if t["coding_id"] == coding.id), None
+            (t["item"] for t in item.opinions or [] if t["coding_id"] == coding.id), None
         )
         for item in items
     }

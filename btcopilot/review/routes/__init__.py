@@ -109,7 +109,7 @@ def open_items(cut: Cut) -> list[Item]:
         item
         for item in cut.items
         if item.status is ReviewStatus.Disputed
-        and any(take.get("coding_id") in people for take in item.takes or [])
+        and any(opinion.get("coding_id") in people for opinion in item.opinions or [])
     ]
 
 

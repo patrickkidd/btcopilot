@@ -529,14 +529,14 @@ export interface NextMeeting {
 }
 
 /** One coder's reading of one item, without their name (R-0252). */
-export interface Take {
+export interface Opinion {
   coding_id?: number;
   item_id?: number | string | null;
-  /** The turn of the conversation this take was written from. */
+  /** The turn of the conversation this opinion was written from. */
   statement_id?: number | null;
-  /** The person this take is about, named on the record it was written on. */
+  /** The person this opinion is about, named on the record it was written on. */
   person_name?: string | null;
-  /** Who wrote this take, which appears at the meeting and nowhere before it
+  /** Who wrote this opinion, which appears at the meeting and nowhere before it
    * (R-0252). */
   coder?: string;
   user_id?: number;
@@ -559,11 +559,11 @@ export interface BallotItem {
   item_kind: ItemKind;
   item_id: string | null;
   status: ItemStatus;
-  takes: Take[];
+  opinions: Opinion[];
   /** How many coders finished, and how many of them left this item out. */
   coders: number;
   not_coded: number;
-  /** The people of the record the first take was written on, so a take of your
+  /** The people of the record the first opinion was written on, so an opinion of your
    * own can name one of them. */
   people: { id: number; name: string }[];
   /** The transcript line the item came from, which is never edited here. */
@@ -574,7 +574,7 @@ export interface BallotItem {
 
 /** The three things a vote can say (R-0257). */
 export enum VoteChoice {
-  Take = "take",
+  Opinion = "opinion",
   Change = "change",
   Drop = "drop",
 }

@@ -38,7 +38,7 @@ def draft(items: list[Item], model=None) -> dict[int, str]:
         return {}
     lines = [
         f"[{index + 1}] {item.item_kind.value}: coders wrote "
-        f"{[t.get('item') for t in item.takes or []]}; "
+        f"{[t.get('item') for t in item.opinions or []]}; "
         f"the meeting kept {item.item_id}"
         for index, item in enumerate(items)
     ]
@@ -86,7 +86,7 @@ def source_of(cut, item: Item) -> dict:
 
 
 def _label(item: Item) -> str:
-    first = (item.takes or [{}])[0].get("item") or {}
+    first = (item.opinions or [{}])[0].get("item") or {}
     return str(first.get("description") or first.get("name") or item.item_kind.value)
 
 

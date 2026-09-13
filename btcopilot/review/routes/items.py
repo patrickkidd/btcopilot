@@ -38,16 +38,16 @@ DECISION_STATUS = {
 def payload(item: Item, named: bool) -> dict:
     data = item.as_dict()
     if not named:
-        data["takes"] = [
-            {k: v for k, v in take.items() if k != "user_id"}
-            for take in (item.takes or [])
+        data["opinions"] = [
+            {k: v for k, v in opinion.items() if k != "user_id"}
+            for opinion in (item.opinions or [])
         ]
         data.pop("user_id", None)
     return data
 
 
 def read(cut) -> dict:
-    """What every take needs beside its own words: the turn the coder wrote it
+    """What every opinion needs beside its own words: the turn the coder wrote it
     from, and the people of the record they wrote it on. Read once per cut, and
     only for the codings people made (R-0254)."""
     people = human_codings(cut)
@@ -66,34 +66,34 @@ def read(cut) -> dict:
 
 
 def voting_payload(item: Item, records: dict, named: bool = False) -> dict:
-    """One item as the ballot reads it: the takes without names, each with the
+    """One item as the ballot reads it: the opinions without names, each with the
     turn it came from and the name of the person it is about, and how many
     coders left the item out (R-0252, R-0257). The meeting reads the same item
     with the names on, which is where they first appear (R-0252)."""
     data = payload(item, named=named)
-    raws = [one for one in item.takes or [] if one["coding_id"] in records]
-    data["takes"] = [
-        take
-        for raw, take in zip(item.takes or [], data["takes"])
+    raws = [one for one in item.opinions or [] if one["coding_id"] in records]
+    data["opinions"] = [
+        opinion
+        for raw, opinion in zip(item.opinions or [], data["opinions"])
         if raw["coding_id"] in records
     ]
     coders = len(records)
     data["coders"] = coders
     data["not_coded"] = max(coders - len(raws), 0)
-    for raw, take in zip(raws, data["takes"]):
+    for raw, opinion in zip(raws, data["opinions"]):
         record = records[raw["coding_id"]]
-        take["statement_id"] = _turn_of(item, raw, record)
-        take["person_name"] = _name_of(raw["item"], record)
+        opinion["statement_id"] = _turn_of(item, raw, record)
+        opinion["person_name"] = _name_of(raw["item"], record)
         if named:
-            take["user_id"] = record["user_id"]
-            take["coder"] = record["coder"]
+            opinion["user_id"] = record["user_id"]
+            opinion["coder"] = record["coder"]
     data["people"] = _people_of(item, records)
-    data["line"] = _line(data["takes"])
+    data["line"] = _line(data["opinions"])
     return data
 
 
 def _turn_of(item: Item, raw: dict, record: dict) -> int | None:
-    """Which turn of the conversation the coder wrote this take from. Only
+    """Which turn of the conversation the coder wrote this opinion from. Only
     events carry that: the record stamps the turn on the event it wrote."""
     if item.item_kind is not ItemKind.Event:
         return None
@@ -115,22 +115,22 @@ def _name_of(value: dict, record: dict) -> str | None:
 
 
 def _people_of(item: Item, records: dict) -> list[dict]:
-    """The people of the record the first take was written on, so a take of
+    """The people of the record the first opinion was written on, so an opinion of
     your own can name one of them (R-0257)."""
-    takes = [one for one in item.takes or [] if one["coding_id"] in records]
-    if not takes:
+    opinions = [one for one in item.opinions or [] if one["coding_id"] in records]
+    if not opinions:
         return []
-    record = records[takes[0]["coding_id"]]
+    record = records[opinions[0]["coding_id"]]
     return [
         {"id": one.get("id"), "name": one.get("name")}
         for one in record.get("people") or []
     ]
 
 
-def _line(takes: list[dict]) -> dict | None:
+def _line(opinions: list[dict]) -> dict | None:
     """The transcript line the item came from, which the ballot shows and can
     open, and which is never edited there."""
-    ids = [t.get("statement_id") for t in takes if t.get("statement_id")]
+    ids = [t.get("statement_id") for t in opinions if t.get("statement_id")]
     if not ids:
         return None
     said = adapter.statement(ids[0])

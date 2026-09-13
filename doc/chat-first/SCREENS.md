@@ -414,18 +414,18 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 
 What it is for: deciding as much as possible on your own phone, so the meeting only handles what is left.
 
-@frame review#f1 | The vote on a phone, one disputed event per screen, the takes shown without names.
-@frame review#f2 | Choosing change: the editor opens prefilled so you can write a take none of the coders wrote.
+@frame review#f1 | The vote on a phone, one disputed event per screen, the opinions shown without names.
+@frame review#f2 | Choosing change: the editor opens prefilled so you can write an opinion none of the coders wrote.
 
 - Once enough coders have finished, a ballot opens on each coder's phone. [drawn] {R-0250}
 - The ballot shows one disputed event per screen. [drawn] {R-0257}
 - Each screen shows the date, who it happened to, what happened, and the transcript line it came from. [drawn]
-- The takes are shown without names, so nobody defers to the most senior person in the room. [drawn] {R-0252}
+- The opinions are shown without names, so nobody defers to the most senior person in the room. [drawn] {R-0252}
 - Nothing the coach or any other AI thinks is in the ballot at all. [drawn] {R-0254}
-- Tapping a take votes for it exactly as written. [drawn] {R-0257}
-- "Change" opens the app's own event editor over the ballot, prefilled, so you can write a take nobody wrote, and it joins the count as one more take. [drawn] {R-0257}
+- Tapping an opinion votes for it exactly as written. [drawn] {R-0257}
+- "Change" opens the app's own event editor over the ballot, prefilled, so you can write an opinion nobody wrote, and it joins the count as one more opinion. [drawn] {R-0257}
 - "Drop" votes that this should not be an event in the record at all. [drawn] {R-0257}
-- A count of coders who left the item out is shown, but leaving it out is not a vote. [drawn]
+- When any coder left the item out, a plain faint label says so — "2 coders left this event out" — never a row you can tap, because leaving it out is not a vote. [built] {R-0315}
 - You may say why you voted as you did, and you may skip it. [drawn]
 - An item you skip stays on your list until the ballot closes. [drawn]
 - You can open the transcript at the line in question from the ballot. [drawn]
@@ -445,7 +445,7 @@ What it is for: closing what the vote could not, and ratifying the record.
 - The meeting screen carries only the items the ballot left open. [built] {R-0250}
 - Names and counts appear here for the first time. [built] {R-0252}
 - The items the vote decided are listed separately and are not read aloud, each with a way to reopen it. [built]
-- Every open item must be given one of three choices: keep a take, change it, or mark it unresolved. [built] {R-0257}
+- Every open item must be given one of three choices: keep an opinion, change it, or mark it unresolved. [built] {R-0257}
 - The ratify button stays dead until every open item has a choice, and says how many still need one. [built] {R-0257}
 - An item marked unresolved is kept as data and left out of the agreed record. [built] {R-0250}
 - The screen shows the agreement figures from the first pass. [built]

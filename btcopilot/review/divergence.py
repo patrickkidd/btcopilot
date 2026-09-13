@@ -39,11 +39,11 @@ def rows(cut) -> list[dict]:
     found = []
     for item in sorted(cut.items, key=lambda i: i.id):
         mine = next(
-            (t for t in item.takes or [] if t["coding_id"] == coding.id), None
+            (t for t in item.opinions or [] if t["coding_id"] == coding.id), None
         )
         if mine is None:
             continue
-        theirs = [t for t in item.takes or [] if t["coding_id"] in people]
+        theirs = [t for t in item.opinions or [] if t["coding_id"] in people]
         room = _room(item, theirs)
         apart = differs(mine["item"], room)
         if not apart:
