@@ -113,8 +113,19 @@ the work, never a reference to a rule the reader has not read.
 does next, nothing restated, no evidence walk unless he asks [R-0304]. His words after a
 three-screen report on a scroll bug: "You could have given me that in 25% of the length."
 
+**Never repeat an artifact's content in the console (2026-09-12).** When the deliverable is
+an artifact, document or page, the console reply is the link plus the decisions he must make
+and nothing else: no summary of the artifact, no restated findings, no "TLDR" that duplicates
+its first section. His mental token budget is the bottleneck; anything he must read twice
+is a cost, and most output tokens are not necessary. His words: "It just makes for double
+reading where the main bottleneck to productivity is my own mental token budget."
+
 **Fixtures are Claude's to stand up; bugs are fixed before he looks (2026-09-11).** If a
 harness, a role or a permission blocks a test fixture, fix the harness — never hand the block
 to Patrick. Every known bug is fixed before he is asked to test, and the ask names one clear
 thing to test [R-0302]. His words: "You need total freedom to stand up test fixtures" and
 "why not fix all the bugs before asking me to test?"
+
+**Build, then hand over a walk (2026-09-12; his words: "this follows exactly my ideal vision for our dev flow").** When a batch of work is finished, stand up the sandbox with fixture people and records on the stand-in family, with history kept the way real use leaves it (sessions, codings, votes), each fixture with a way to put it back. Then write one testing document for Patrick: one numbered walk per screen, what to tap and what he should see, in plain words for someone who was not in the room, with the sign-in links at the top and the order dependencies stated. Independent browser verification runs before he sees it, and known bugs are fixed first. That is the whole handover; nothing else is reported. Keep this instruction light so it never treads on what the model already does well.
+
+**Precedent is tracked (2026-09-12, Patrick).** Every dilemma or question about process or methodology in the coding and review work (units, agreement, unresolved items, codebook revision, blinding, adjudication) gets its intersections with the literature noted in doc/chat-first/LITERATURE.md as it comes up: author, year, what they did, how it maps or differs here. Social-science content analysis and the AI labs' labeling practice both count. This feeds a future literature review; the app's scope is wider and more exploratory than most published IRR work, and the notes say so where it matters.
