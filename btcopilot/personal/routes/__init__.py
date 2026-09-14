@@ -5,6 +5,7 @@ from flask_wtf.csrf import CSRFError, generate_csrf
 
 from btcopilot import auth
 from btcopilot.extensions import csrf, db
+from btcopilot.personal import record
 from btcopilot.personal.models import Discussion
 from btcopilot.pro.models import Diagram
 from btcopilot.personal.discussions import create_discussion
@@ -38,6 +39,14 @@ def _csrf_error(e):
 def _value_error(e):
     """A rejected value is the client's fault, not a server fault: every
     endpoint here validates by raising ValueError."""
+    return str(e), 400
+
+
+@bp.errorhandler(record.Invalid)
+def _invalid_record(e):
+    """A write the record itself refuses — a bond of one person with themselves,
+    say. The editor offered it, so it is told in the record's own words rather
+    than shown a server error."""
     return str(e), 400
 
 
@@ -139,6 +148,7 @@ from btcopilot.personal.routes import (  # noqa: E402  bp must exist first
     fixtures,
     interactions,
     migrate,
+    pairbonds,
     people,
     play,
     recordings,

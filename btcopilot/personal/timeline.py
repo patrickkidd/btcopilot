@@ -459,6 +459,7 @@ def build_timeline(data: DiagramData) -> dict:
                 "id": bond["id"],
                 "person_a": bond.get("person_a"),
                 "person_b": bond.get("person_b"),
+                "married": bool(bond.get("married")),
                 "label": label,
             }
         )
@@ -595,6 +596,9 @@ def build_timeline(data: DiagramData) -> dict:
                 "gender": _enum_val(p.get("gender")),
                 "notes": p.get("notes"),
                 "primary": bool(p.get("primary")),
+                # the bond they were born into, which is how the record holds
+                # who somebody's parents are
+                "parents": p.get("parents"),
                 # when someone was born is an event about them, not a field on
                 # them, so the list is handed the date its rows are ordered by
                 "birth": _born(p["id"], data.events),

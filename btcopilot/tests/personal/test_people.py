@@ -53,6 +53,7 @@ def test_changing_someone_keeps_their_id(web, family):
         "last_name": "Ellis",
         "gender": "female",
         "notes": None,
+        "parents": None,
     }
 
 

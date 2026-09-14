@@ -16,7 +16,7 @@ from btcopilot.personal.models import Author
 from btcopilot.personal.routes import asked_diagram, bp, writable_diagram
 from btcopilot.schema import ItemKind, PersonKind
 
-WRITABLE = ("name", "last_name", "gender", "notes")
+WRITABLE = ("name", "last_name", "gender", "notes", "parents")
 
 
 def _payload(person: dict) -> dict:
