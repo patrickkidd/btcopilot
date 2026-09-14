@@ -70,3 +70,28 @@ split the rulings into one file per ruling so a change shows as a new file.
 **The import is one-way.** Step 13 has no way back once clinicians are writing on the new
 box. The dry run in step 7 against a real dump is what makes it safe, and it is worth running
 twice.
+
+## Deploy checkpoint (flushed 2026-09-14; nothing below runs until Patrick says deploy may start)
+
+Ruled: the droplet is created only after Patrick has tested the new build (R-0330).
+
+**What is already in hand**
+- DigitalOcean API token in ~/theapp/.env as DIGITALOCEAN_ADMIN; every admin action is confirmed with Patrick here first, production boxes.
+- Patrick's age public key on this Mac: age105g6wq3zc6xszu75ejeqryqjq69xrfm4hp8hktq89u3jpyafvq7sf23nqu (saved in the sandbox keys folder as patrick-mac.pub; not yet added to the encryption rules).
+- Read-only listing done: old boxes in sfo1 (database.familydiagram.com = Pro API, 107.170.236.117; alaskafamilysystems.com = 107.170.200.120), one sfo3 droplet discussions.familydiagram.com (137.184.42.58, purpose unconfirmed), one SSH key on the account (turin).
+- familydiagram.com records: root and database → Pro box; www → 198.199.116.86 (stale, nothing of ours); pypi → alaskafamilysystems box; discussions → sfo3 box. No mail on familydiagram.com. alaskafamilysystems.com carries mail (Google MX, Brevo SPF/DKIM/DMARC) and is never touched.
+- The old box's nginx serves on familydiagram.com: the desktop app's Sparkle appcast files, and a 301 of everything else to alaskafamilysystems.com/family-diagram (fdserver nginx/conf.d/default.conf:34-58).
+
+**The create, when he says go**
+droplet familydiagram-app · sfo3 · s-2vcpu-2gb ($18/mo) · Ubuntu 24.04 · backups on · monitoring on · ssh key turin · tag familydiagram-app. sfo3 chosen because sfo1 lacks block-storage volumes and services must never be limited by region (R-0328).
+
+**DNS, after the app answers on the new IP**
+1. Lower TTL on familydiagram.com root and www to 300 a day before.
+2. familydiagram.com A → new IP; www CNAME → familydiagram.com. database.familydiagram.com untouched.
+3. Caddy on the new box: /app → the chat app; the appcast paths copied from the old nginx so desktop updates keep working; everything else → 301 to alaskafamilysystems.com/family-diagram until the new site exists.
+
+**Observability (R-0328, R-0329)**: Datadog free host tier for now (paid host waits); logs ingest-only with exclusion filters, errors indexed, Error Tracking on logs on; RUM with Session Replay from day one; LLM Observability within its free tier with a span-count monitor; one uptime check; browser logs and error tracking. APM and product analytics later. See DATADOG.md.
+
+**Box shape**: one compose file — caddy, app, postgres (config in repo), datadog agent (container logs by label), nightly pg_dump; secrets as one sops-encrypted env decrypted at deploy with the box's own age key; deploy = tag → one image from GitHub Actions → compose pull and up over SSH, also drivable from the admin CLI.
+
+**Still needs Patrick at that time**: the droplet's own age key; rotated credentials; Stripe account and keys; the Pro freeze; import cutover approval; fdserver archive; what discussions.familydiagram.com is.
