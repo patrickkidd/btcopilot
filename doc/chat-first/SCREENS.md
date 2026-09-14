@@ -6,7 +6,7 @@ behaviour, tagged `[built]` if it is in the app today, `[drawn]` if it is approv
 but not built, and `[open]` if it is a choice Patrick has not made yet. It is rewritten as
 decisions land; the exact sizes and colours live in the internal interface spec, not here.
 
-Updated: 2026-09-12
+Updated: 2026-09-13
 
 ---
 
@@ -231,6 +231,12 @@ What it is for: one person's own details.
 - The jump works in reverse, from an event back to the person. [built] {R-0201}
 - Your own birthdate anchors your own line on the picture. [built]
 - Every diagram that ever had a chat on it carries a person called Assistant, which is a defect and not yet fixed. [built]
+- The editor asks who the person was born to: a list of the couples on the record, and nobody. [built] {R-0326}
+- Somebody with nobody on the record is offered "add parents", which makes the couple, naming a parent nobody named after the child — "Corinne's father". [built] {R-0325, R-0326}
+- Under it is one row per other person they have ever been bonded to, and a row to add one; a row opens that bond's own small editor. [built] {R-0326}
+- That bond editor asks who the other person is and whether they married; when it started and when it ended are events about the two of them. [built] {R-0326}
+- The people list itself is unchanged: no chips and no second line under a name, because a chip means a tap into the chat. [built] {R-0326}
+- A person cannot be their own parent or their own partner, a bond is between two different people, and any two people have one bond ever; the record refuses the rest, so the coach and the scribe are held to it too. [built] {R-0326}
 
 ## The sessions sheet
 
@@ -374,6 +380,8 @@ What it is for: saying what each line of a conversation tells you happened, so w
 - Done ends the task, and the next single task card takes its place. [drawn] {R-0265}
 - A task you cannot start yet is shown greyed with what it is waiting for, rather than leaving you an empty screen. [drawn]
 - On a phone it is the same screen, with the drawer sliding over instead of pinned, and the sessions button giving way to Done. [drawn]
+- A sentence about a marriage or a parent is written the same way, and the line under it reads "+ Marcus & Delphine · married · 1970" or "+ Corinne · daughter of Marcus & Delphine". [built] {R-0326}
+- A bond or a birth the coder gives only one side of still gets written: the record adds the other as a generically named person. [built] {R-0325}
 - Your own typed words stay in the thread under the line you coded, with the scribe's edit line beneath them, so the thread reads as a coding conversation. [drawn] {R-0270}
 - Done sits in the top bar beside your account mark, never in the composer bar, so it cannot be mistaken for adding something. [drawn] {R-0271}
 - Tapping Done asks once, in a sheet, and explains that your coding will be saved and submitted for the meeting and cannot be changed after that. [drawn] {R-0271}
@@ -434,6 +442,10 @@ What it is for: deciding as much as possible on your own phone, so the meeting o
 - The vote opens when Patrick opens it, never at a coder count. [drawn] {R-0273}
 - No rule decides an item before the meeting; the vote's tallies inform the meeting and the meeting decides. [drawn] {R-0274}
 - The same agreement timeline sits above the item you are voting on, with the event you are on enlarged in green. [drawn] {R-0278}
+- People and bonds are on the ballot too, read before the events, because an event about somebody nobody has agreed on yet cannot be settled. [built] {R-0326}
+- Each version of a person or a bond is drawn as a small family with that person in the middle, so two readings of who somebody's parents are read as two shapes. [built] {R-0326}
+- "Change" on one of those opens the person's or the bond's own editor, the same one the record is corrected in. [built] {R-0326}
+- When the matcher cannot tell which person of another coding a version is, the item says the room decides who is who and carries both versions. [built] {R-0326}
 
 ## The meeting
 
@@ -462,6 +474,8 @@ What it is for: closing what the vote could not, and ratifying the record.
 - The two-sided comparison of two codings already drawn has to fold into either the ballot or this screen, and where is unbuilt work. [drawn]
 - The review screens are built as their own isolated piece, so changing them can never break the chat or the professional features. [drawn] {R-0245}
 - The meeting sees every disputed event with its tally, the most split first, and the unanimous ones collapsed below. [built] {R-0274}
+- People and bonds are in the meeting's list, read before the events, each version with its own "keep this" and its own drawing. [built] {R-0326}
+- They are not on the wire: the wire stays one dot per event, and how many people and bonds the cut holds is a count beside its colours. [built] {R-0326}
 - One timeline above the list shows agreement and disagreement at a glance: one dot per event, teal where the vote agreed, amber where it did not, with a small count beside a disputed dot. [built] {R-0277, R-0278}
 
 ## After ratification
@@ -475,6 +489,7 @@ What it is for: what the meeting produced, with nothing left to choose.
 
 - The result screen shows how many events were ratified and how many were left unresolved. [built]
 - It shows agreement before the ballot and after ratification, side by side. [built]
+- One more count says how many people and bonds the room ratified and how many it left open; an unresolved person is the one that matters most, because every event about them stands on it. [built] {R-0326}
 - It shows how the coach's own pass scored against the agreed record. [built] {R-0242}
 - The word for the agreed record is ratified; what the coach proposes is a proposal and is never called gold. [drawn] {R-0249}
 - The AI writes the guideline changes itself out of what the room decided, and they are live; there is nothing to choose on this screen. [built] {R-0259}

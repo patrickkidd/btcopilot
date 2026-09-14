@@ -460,7 +460,10 @@ function bornTo(person: Person | null, family: Family, canWrite: boolean): strin
       continue;
     options.push({ value: bond.id, label: bothNames(bond, family.people) });
   }
-  if (person && canWrite) options.push({ value: ADD_PARENTS, label: "+ add parents" });
+  // Only for somebody who has nobody: a person is born to one couple, so the
+  // way to change that is to pick another, never to make a second one.
+  if (person && canWrite && person.parents === null)
+    options.push({ value: ADD_PARENTS, label: "+ add parents" });
   return `<div class="lab">Born to</div>` + chips("parents", options, person?.parents ?? "");
 }
 
