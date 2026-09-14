@@ -6,12 +6,12 @@ import pytest
 from btcopilot import diagramjson, proimport
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram, User
-from btcopilot.tests.conftest import WHITLOCK
+from btcopilot.tests.olddump import WHITLOCK, build
 
 
 @pytest.fixture
-def dump(old_pro_dump):
-    return f"sqlite:///{old_pro_dump}"
+def dump(tmp_path):
+    return f"sqlite:///{build(tmp_path / 'old.db')}"
 
 
 def test_dry_run_counts_and_writes_nothing(flask_app, dump):

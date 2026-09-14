@@ -5,6 +5,7 @@ import pytest
 import btcopilot
 from btcopilot.admin import admin
 from btcopilot.admin import setting, skill
+from btcopilot.tests import olddump
 from btcopilot.admin.setting import SettingKey
 
 
@@ -66,8 +67,9 @@ def test_diagram_counts_and_export(run, test_user):
     assert isinstance(exported, dict)
 
 
-def test_import_dry_run_counts_and_writes_nothing(run, old_pro_dump):
-    counted = rows(run("imports", "dry-run", str(old_pro_dump), "--json"))
+def test_import_dry_run_counts_and_writes_nothing(run, tmp_path):
+    dump = olddump.build(tmp_path / "old.db")
+    counted = rows(run("imports", "dry-run", dump, "--json"))
     assert [one["what"] for one in counted[:2]] == ["users", "diagrams"]
     assert counted[1]["written"] == 1
     assert counted[-1]["why"].startswith("UnpicklingError")

@@ -17,6 +17,7 @@ from sqlalchemy import MetaData, Table
 from btcopilot.extensions import db
 
 # Importing the model modules is what registers their tables on db.metadata.
+import btcopilot.admin.setting  # noqa: F401
 import btcopilot.auth.invitation  # noqa: F401
 import btcopilot.auth.logincode  # noqa: F401
 import btcopilot.auth.passkey  # noqa: F401
@@ -29,6 +30,7 @@ import btcopilot.review.models  # noqa: F401
 TABLES = frozenset(
     {
         "access_rights",
+        "admin_settings",
         "diagram_changes",
         "diagram_interactions",
         "diagrams",

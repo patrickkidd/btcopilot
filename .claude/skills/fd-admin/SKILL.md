@@ -54,7 +54,7 @@ The one-time read of the old Pro database.
 
 ### `flask admin imports dry-run <dump>`
 
-Read the dump and report what would come across, writing nothing.
+Read the dump, or a live connection string, and report what would come across, writing nothing.
 
 | Argument | What it is |
 |---|---|

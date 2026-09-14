@@ -12,15 +12,16 @@ def imports():
 
 
 @imports.command("dry-run")
-@click.argument("dump", type=click.Path(exists=True, dir_okay=False))
+@click.argument("dump")
 @rows_option
 def import_dry_run(dump):
-    """Read the dump and report what would come across, writing nothing."""
+    """Read the dump, or a live connection string, and report what would come
+    across, writing nothing."""
     return proimport.dry_run(dump)
 
 
 @imports.command("run")
-@click.argument("dump", type=click.Path(exists=True, dir_okay=False))
+@click.argument("dump")
 @click.confirmation_option(prompt="This writes accounts and records. Go ahead?")
 @rows_option
 def import_run(dump):
