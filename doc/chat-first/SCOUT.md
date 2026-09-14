@@ -4,6 +4,11 @@ The scout looks outward once a week and proposes changes to this project's own w
 working. It never changes application code and never applies its own proposals. Ruling
 R-0333. Its brief is `.claude/skills/scout/SKILL.md`.
 
+**Everything proposed here comes from outside [R-0335].** At both levels — the scout's
+proposals and the loop review's experiments — the source is a development on the internet,
+cited with a link and a date. An item with no external source is dropped, however good it
+looks. The corpus says where this project hurts; the outside world has to supply the answer.
+
 Every session reads this file after STATE.md and says in its first reply whether any open
 item applies to that day's work.
 

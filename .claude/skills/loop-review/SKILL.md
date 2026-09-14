@@ -5,6 +5,13 @@ description: Reviews the scout itself. Two agents run together as one team — a
 
 # Loop review — the scout's own review
 
+**The first rule [R-0335].** The experiment you propose comes from a development on the
+internet, cited with a link and a date — a published method, a released capability, a result
+someone measured. Not from your own reasoning about the scout, not from a pattern you have
+seen elsewhere. The ledger tells you where the scout is failing; the outside world has to
+supply the fix. An experiment with no external source is dropped, and so is a proposed new
+measurement, however sensible either looks.
+
 Ruling R-0334. The scout improves the project; this improves the scout. Nobody is present
 while you run. Your whole output is one entry appended to `doc/chat-first/SCOUT.md` and one
 draft pull request.
