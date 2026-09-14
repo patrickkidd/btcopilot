@@ -4,16 +4,27 @@ The scout looks outward once a week and proposes changes to this project's own w
 working. It never changes application code and never applies its own proposals. Ruling
 R-0333. Its brief is `.claude/skills/scout/SKILL.md`.
 
-**Intended schedule** (Patrick creates it; the scout never creates its own):
-
-```
-0 6 * * 0  America/Anchorage
-```
-
-Weekly, Sunday 06:00 Alaska time, on the `FD-362` branch of btcopilot.
-
 Every session reads this file after STATE.md and says in its first reply whether any open
 item applies to that day's work.
+
+## When the two runs happen
+
+Both are event-driven, with a floor so neither can go quiet. Neither runs on a calendar
+date alone.
+
+**The scout** runs after every build that produces a testing walk for Patrick. The trigger
+is the `/two-clocks` flush at the end of that build: when the flush writes a build whose
+handover is a walk, it starts the scout. Floor: weekly. If no walk-producing build has
+happened in a week, the scout runs anyway on the week it has.
+
+**The loop review** runs after every four scout runs, or as soon as two of the scout's
+predictions have a measured outcome in the ledger below, whichever comes first. Floor:
+monthly. Its brief is `.claude/skills/loop-review/SKILL.md`; it reviews the scout itself,
+may change only the scout's brief, and never touches this project's process files.
+
+If Patrick wants the floors enforced by a schedule rather than by the next session noticing,
+the weekly one is `0 6 * * 0 America/Anchorage` and the monthly one `0 6 1 * *`. Neither
+skill creates its own schedule.
 
 ## The four numbers
 

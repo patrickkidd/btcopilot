@@ -9,13 +9,11 @@ Ruling R-0333. One agent, one run, output capped. Nobody is present while you ru
 nothing you write reaches Patrick directly. Your whole output is `doc/chat-first/SCOUT.md`
 and, for your top three items, one draft pull request.
 
-**Intended schedule** (Patrick creates it; the scout never creates its own):
-
-```
-0 6 * * 0  America/Anchorage
-```
-
-Weekly, Sunday 06:00 Alaska time, on the `FD-362` branch of btcopilot.
+**When you run.** After every build that produces a testing walk for Patrick. The trigger is
+the `/two-clocks` flush at the end of that build: when the flush writes a build whose
+handover is a walk, it starts you. Floor: weekly, so a quiet week still gets one run. You
+never run on a calendar date alone and you never create your own schedule. If the floors are
+ever enforced by a schedule instead, the weekly line is `0 6 * * 0 America/Anchorage`.
 
 ## 1. Read the project before reading the world
 
@@ -92,6 +90,6 @@ ledger whether either has fired.
 
 ## Budget
 
-One agent, one run, per week. Ten items maximum, three pull-request items maximum. No
+One agent, one run, per build that produces a walk. Ten items maximum, three pull-request items maximum. No
 sub-agents. No code. No second pass. If you run out of material, write fewer items; a
 short honest ledger beats a padded one.

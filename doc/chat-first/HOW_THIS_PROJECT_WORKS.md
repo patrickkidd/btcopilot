@@ -34,7 +34,9 @@ only and are never said to him.
 
 ## The scout: every session reads SCOUT.md after STATE.md
 
-A scout runs once a week, unattended, and looks outward — at what Anthropic and OpenAI
+A scout runs unattended after every build that produces a testing walk for Patrick — the
+`/two-clocks` flush at the end of that build is what starts it, with a weekly floor so a
+quiet week still gets one run — and looks outward — at what Anthropic and OpenAI
 published, at what the Claude Code changelog changed, at new research on evaluating agents
 and deriving tests from a specification, and at a fixed list of accounts on X.com when the
 browser extension is connected. It proposes at most ten ranked changes to this project's own
@@ -47,6 +49,15 @@ open items, the rules that retire the scout if it stops earning its keep, and th
 every proposal and whether its number moved. **Every session reads SCOUT.md immediately after
 STATE.md and says in its first reply whether any open item applies to today's work** — naming
 the item and what it would change, or saying plainly that none applies.
+
+A second pair of agents reviews the scout itself [R-0334]: an adversarial auditor who argues
+kill or keep on each kind of scout proposal, catching proposals that were safe trivia, sources
+picked because they agreed, and numbers moved by covering less rather than working better; and
+a designer who proposes exactly one change to the scout's brief per run, framed as an
+experiment with a stopping rule. They write one ledger entry together and open one draft pull
+request touching the scout's brief alone — never these process rules and never code. It runs
+after every four scout runs or as soon as two predictions have a measured outcome, with a
+monthly floor. Its brief is `.claude/skills/loop-review/SKILL.md`.
 
 ## Sessions start at any altitude, from any angle
 Patrick will start sessions this week to learn and to pivot, sometimes at product
