@@ -32,6 +32,22 @@ continue designing the pro and training features", "list the open issues" — an
 matches the words to a block and continues from its Open and Next action; ids are for tags
 only and are never said to him.
 
+## The scout: every session reads SCOUT.md after STATE.md
+
+A scout runs once a week, unattended, and looks outward — at what Anthropic and OpenAI
+published, at what the Claude Code changelog changed, at new research on evaluating agents
+and deriving tests from a specification, and at a fixed list of accounts on X.com when the
+browser extension is connected. It proposes at most ten ranked changes to this project's own
+process files, each carrying a source, the dated line in the corpus it answers, the exact
+file it would change, and a prediction on one of four measured numbers: hours from brief to
+walk-ready, Patrick's findings per walk, re-walks per screen, chat suite minutes. It never
+touches application code and never applies its own proposals; its top three arrive as a draft
+pull request on a branch of their own. [SCOUT.md](SCOUT.md) carries the current baselines, the
+open items, the rules that retire the scout if it stops earning its keep, and the record of
+every proposal and whether its number moved. **Every session reads SCOUT.md immediately after
+STATE.md and says in its first reply whether any open item applies to today's work** — naming
+the item and what it would change, or saying plainly that none applies.
+
 ## Sessions start at any altitude, from any angle
 Patrick will start sessions this week to learn and to pivot, sometimes at product
 altitude, sometimes at architecture, sometimes on a single surface. The corpus is what
@@ -129,3 +145,7 @@ thing to test [R-0302]. His words: "You need total freedom to stand up test fixt
 **Build, then hand over a walk (2026-09-12; his words: "this follows exactly my ideal vision for our dev flow").** When a batch of work is finished, stand up the sandbox with fixture people and records on the stand-in family, with history kept the way real use leaves it (sessions, codings, votes), each fixture with a way to put it back. Then write one testing document for Patrick: one numbered walk per screen, what to tap and what he should see, in plain words for someone who was not in the room, with the sign-in links at the top and the order dependencies stated. Independent browser verification runs before he sees it, and known bugs are fixed first. That is the whole handover; nothing else is reported. Keep this instruction light so it never treads on what the model already does well.
 
 **Precedent is tracked (2026-09-12, Patrick).** Every dilemma or question about process or methodology in the coding and review work (units, agreement, unresolved items, codebook revision, blinding, adjudication) gets its intersections with the literature noted in doc/chat-first/LITERATURE.md as it comes up: author, year, what they did, how it maps or differs here. Social-science content analysis and the AI labs' labeling practice both count. This feeds a future literature review; the app's scope is wider and more exploratory than most published IRR work, and the notes say so where it matters.
+
+- **Every screen has a visible hierarchy (2026-09-13, Patrick).** A header is a title, then at most one line of figures, each labelled; a datum with no place in the hierarchy is cut, never parked as a bare span. No figure appears twice on a screen. No label is built from counts into shorthand ("2 to 1 — talk"); a label is a word a first-time reader already knows, or it goes. Verifiers check words on new screens, not only behaviour.
+
+**An Opus-level auditor for wall-clock time overall (2026-09-14, R-0331).** With judgement, not a stopwatch: flags test suites run too early or unfiltered (only the changed components run mid-build; the whole suite once at the end), flags tests not derived from a ruling (the chat app is greenfield and its tests are 100% oracle-derived), flags unit tests that do I/O beyond the logic under test or take more than an instant, flags integration tests without a reason for their fixtures, flags database fixture and spin-up waste, and flags code organisation and prioritisation that will cost later. Fable-level oversight where the call needs it.
