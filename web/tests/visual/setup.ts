@@ -127,6 +127,11 @@ export const steady = (page: Page) => ({
 });
 
 export default async function setup() {
+  // The review walks sign in with links the review sandbox minted and drive its
+  // own fixture state. Installing the personal fixtures would delete the records
+  // they are about, so a run that only wants the walks says so and this does
+  // nothing (tests/visual/sandbox.ts).
+  if (process.env.SANDBOX_WALKS_ONLY) return;
   await takeLock();
   const base = process.env.SANDBOX_URL ?? "http://127.0.0.1:8889";
   const command = (
