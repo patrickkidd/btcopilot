@@ -1,41 +1,29 @@
-/** Writes doc/chat-first/mockups/fragment.html. Every picture on that page is
- * produced by the shipping renderer, so the page shows what the code draws.
- * Run it with: node --experimental-strip-types is not enough (enums), so:
+/** Writes doc/chat-first/mockups/fragment.html — the record of what was ruled
+ * about the family fragment (R-0325). Every picture is produced by the shipping
+ * renderer, so the page shows what the code now draws, and only that: the rows
+ * keep their numbers and letters so the ruling can still be read off the page,
+ * but each row shows one picture, the ruled one.
+ * Run it from web/ with:
  *   npx esbuild test/fragmentgallery.ts --bundle --format=esm --platform=node \
  *     --outfile=/tmp/gal.mjs && node /tmp/gal.mjs
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  AdoptLine,
-  Apex,
-  BondOrder,
-  Loose,
-  NameFit,
-  Side,
-  Single,
-  Slash,
-  TwinBar,
-  Unnamed,
-  UnknownMark,
-  render,
-  type Fragment,
-  type Options,
-} from "../src/fragment";
+import { render, type Fragment } from "../src/fragment";
 import {
   cases,
   adopted,
   ended,
+  genericParent,
+  genericPartner,
   longName,
   loss,
   nogender,
   orphan,
   plain,
-  single,
   twins,
   twoBonds,
-  unnamed,
 } from "./fragmentcases";
 
 /** Run from the web/ directory. */
@@ -54,19 +42,15 @@ enum Where {
   Editor = "editor",
 }
 
-type Choice = {
-  letter: string;
-  caption: string;
-  fragment: Fragment;
-  options: Partial<Options>;
-};
-
 type Row = {
   n: number;
   title: string;
   lead: string;
   where: Where;
-  choices: Choice[];
+  /** The letter Patrick named, or the sentence he ruled when none fitted. */
+  ruled: string;
+  caption: string;
+  fragment: Fragment;
 };
 
 const u = 40;
@@ -88,292 +72,119 @@ const rows: Row[] = [
   {
     n: 1,
     title: "No gender recorded",
-    lead: "The desktop code draws a rounded box and nothing inside it. The written specification says a question mark goes inside.",
+    lead: "The written specification wanted a question mark inside the shape. The desktop code draws nothing inside it.",
     where: Where.Ballot,
-    choices: [
-      {
-        letter: "a",
-        caption: "A rounded box, empty. You cannot tell an unrecorded person from one drawn quietly.",
-        fragment: nogender(),
-        options: { unknownMark: UnknownMark.None },
-      },
-      {
-        letter: "b",
-        caption: "A question mark inside the box. It reads as asking, and the amber question mark then means two things.",
-        fragment: nogender(),
-        options: { unknownMark: UnknownMark.Question },
-      },
-    ],
+    ruled: "a",
+    caption: "A rounded box with nothing inside it. The amber question mark stays free to mean one thing only: the fragment is asking you something.",
+    fragment: nogender(),
   },
   {
     n: 2,
     title: "The miscarriage triangle",
-    lead: "The code points the triangle up. The specification says it points down.",
+    lead: "The specification pointed the triangle down; the desktop code points it up.",
     where: Where.Ballot,
-    choices: [
-      {
-        letter: "a",
-        caption: "Apex at the top, as the desktop draws it today. Every existing diagram already looks like this.",
-        fragment: loss(),
-        options: { apex: Apex.Up },
-      },
-      {
-        letter: "b",
-        caption: "Apex at the bottom, as the written spec says. It breaks with every diagram already drawn.",
-        fragment: loss(),
-        options: { apex: Apex.Down },
-      },
-    ],
+    ruled: "a",
+    caption: "The point at the top, as every diagram already drawn on the desktop has it.",
+    fragment: loss(),
   },
   {
     n: 3,
     title: "The marks that say a bond ended",
-    lead: "One mark for a separation, two for a divorce. With no custody recorded the code draws them straight up and down; the spec leans them.",
+    lead: "One mark for a separation, two for a divorce. The specification leaned them toward the parent the children stayed with.",
     where: Where.Ballot,
-    choices: [
-      {
-        letter: "a",
-        caption: "Straight marks. Nothing is implied about who the children stayed with.",
-        fragment: ended(),
-        options: { slash: Slash.Vertical },
-      },
-      {
-        letter: "b",
-        caption: "Leaning marks. They look like they mean something about custody when nothing was recorded.",
-        fragment: ended(),
-        options: { slash: Slash.Diagonal },
-      },
-    ],
+    ruled: "a",
+    caption: "Straight up and down. Nothing is implied about who the children stayed with, because nothing about that was recorded.",
+    fragment: ended(),
   },
   {
     n: 4,
     title: "Where the twins' shared line sits",
     lead: "Two children born together are joined by one line, with a single riser to their parents' bar.",
     where: Where.Ballot,
-    choices: [
-      {
-        letter: "a",
-        caption: "A fixed short rise above the two children, as the code does it. The riser is long.",
-        fragment: twins(),
-        options: { twinBar: TwinBar.Fixed },
-      },
-      {
-        letter: "b",
-        caption: "Halfway up to the parents' bar, as the spec says. It floats between the two rows.",
-        fragment: twins(),
-        options: { twinBar: TwinBar.Midpoint },
-      },
-    ],
+    ruled: "a",
+    caption: "A short fixed rise above the two children, the way the desktop draws it.",
+    fragment: twins(),
   },
   {
     n: 5,
     title: "The line to an adopted child",
-    lead: "The code dashes it. Your own note asks for a solid line to every parent, with dashes kept for chosen parents.",
+    lead: "A note in the reproductive-scenarios plan asked for a solid line to every parent.",
     where: Where.Ballot,
-    choices: [
-      {
-        letter: "a",
-        caption: "Dashed, as the desktop draws it. Adoption is visible at a glance, and dashes are then spent.",
-        fragment: adopted(),
-        options: { adoptLine: AdoptLine.Dashed },
-      },
-      {
-        letter: "b",
-        caption: "Solid, like any other child. Adoption is not visible in the drawing at all.",
-        fragment: adopted(),
-        options: { adoptLine: AdoptLine.Solid },
-      },
-    ],
+    ruled: "a",
+    caption: "Dashed, the way the desktop draws it. Adoption is visible at a glance.",
+    fragment: adopted(),
   },
   {
     n: 6,
     title: "Which partner goes on the left",
-    lead: "The code has no rule: people sit where the user put them. A fragment has to choose.",
+    lead: "The desktop has no rule: people sit where the user put them. A fragment has to choose.",
     where: Where.Editor,
-    choices: [
-      {
-        letter: "a",
-        caption: "The man on the left always. Same-sex couples need a second rule.",
-        fragment: plain(),
-        options: { side: Side.MaleLeft },
-      },
-      {
-        letter: "b",
-        caption: "The older person on the left. It holds for every couple, and moves people when a birth year is corrected.",
-        fragment: plain(),
-        options: { side: Side.OlderLeft },
-      },
-      {
-        letter: "c",
-        caption: "Whoever the record wrote first. Nothing moves, and the sides mean nothing.",
-        fragment: plain(),
-        options: { side: Side.RecordOrder },
-      },
-    ],
+    ruled: "a",
+    caption: "The man on the left, the woman on the right. With no man in the bond the older person goes left, then whoever the record wrote first.",
+    fragment: plain(),
   },
   {
     n: 7,
     title: "How far apart the children sit",
-    lead: "Two person boxes apart is the specification's spacing. On a phone it costs width fast.",
+    lead: "Sibling spacing costs phone width fast.",
     where: Where.Editor,
-    choices: [
-      {
-        letter: "a",
-        caption: "Two boxes apart. Roomy, and four children no longer fit across a phone.",
-        fragment: loss(),
-        options: { siblingGap: 2 },
-      },
-      {
-        letter: "b",
-        caption: "One and a half boxes. A little tight, one more child fits.",
-        fragment: loss(),
-        options: { siblingGap: 1.5 },
-      },
-      {
-        letter: "c",
-        caption: "One and a quarter boxes. Names start to collide.",
-        fragment: loss(),
-        options: { siblingGap: 1.25 },
-      },
-    ],
+    ruled: "a",
+    caption: "Two person boxes apart, centre to centre, as the picture was drawn.",
+    fragment: loss(),
   },
   {
     n: 8,
-    title: "Two bonds in a row",
-    lead: "The middle person had two partners. Which one sits nearer them.",
+    title: "One person with two bonds",
+    lead: "The middle person had two partners. The two bonds have to share the same row.",
     where: Where.Editor,
-    choices: [
-      {
-        letter: "a",
-        caption: "The earliest partner nearest, later ones further out. Time reads outward.",
-        fragment: twoBonds(),
-        options: { bondOrder: BondOrder.EarliestNearest },
-      },
-      {
-        letter: "b",
-        caption: "The current partner nearest. The life now is closest, and the order flips when a bond is added.",
-        fragment: twoBonds(),
-        options: { bondOrder: BondOrder.LatestNearest },
-      },
-    ],
+    ruled: "a",
+    caption: "The two bond lines overlap side to side, one reaching further right than the other. The earlier bond sits left, the later one right, ordered by when the bond started and otherwise by the order the record holds them in.",
+    fragment: twoBonds(),
   },
   {
     n: 9,
-    title: "A parent with no partner recorded",
-    lead: "The desktop cannot draw a bond with one person in it. The fragment has to draw something.",
+    title: "A partner nobody named",
+    lead: "None of the three drawn answers was taken: no half bond, no faint invented partner, no bare stub.",
     where: Where.Editor,
-    choices: [
-      {
-        letter: "a",
-        caption: "Half of the usual U: down, across, and the children hang from the stub. Nothing claims a second parent exists.",
-        fragment: single(),
-        options: { single: Single.HalfU },
-      },
-      {
-        letter: "b",
-        caption: "A faint empty partner in the usual place. It looks normal, and it invents a person.",
-        fragment: single(),
-        options: { single: Single.Ghost },
-      },
-      {
-        letter: "c",
-        caption: "A short line straight down and nothing else. Smallest, and the children hang off one point.",
-        fragment: single(),
-        options: { single: Single.NoStub },
-      },
-    ],
+    ruled: "none of a, b, c",
+    caption: "The partner is a real person in the record, named for their relation — Marcus's partner — and the fragment draws them like anybody else. Putting that person in the record is the scribe's and the coach's work, not the drawing's.",
+    fragment: genericPartner(),
   },
   {
     n: 10,
-    title: "A partner with no name",
-    lead: "The record holds the person but not what they are called.",
+    title: "A parent nobody named",
+    lead: "None of the three drawn answers was taken: no faint nameless shape, no dash, no amber question mark where the name goes.",
     where: Where.Editor,
-    choices: [
-      {
-        letter: "a",
-        caption: "A faint shape and no words under it. Quiet, and easy to read as a drawing mistake.",
-        fragment: unnamed(),
-        options: { unnamed: Unnamed.Faint },
-      },
-      {
-        letter: "b",
-        caption: "A dash where the name goes. Clearly a blank, and it adds clutter to every such person.",
-        fragment: unnamed(),
-        options: { unnamed: Unnamed.Dashes },
-      },
-      {
-        letter: "c",
-        caption: "An amber question mark where the name goes. It asks you to fill it in, and spends the asking colour.",
-        fragment: unnamed(),
-        options: { unnamed: Unnamed.Asked },
-      },
-    ],
+    ruled: "none of a, b, c",
+    caption: "The parent is a real person in the record, named for their relation — Marcus's mother — and the fragment draws them like anybody else, with that name under the shape.",
+    fragment: genericParent(),
   },
   {
     n: 11,
-    title: "A child whose parents are not in the record",
-    lead: "There is no bond to hang the child from.",
+    title: "A child whose parents' bond is not in the record",
+    lead: "None of the three drawn answers was taken: no faint stub of bar, no line rising into nothing, no invented pair of parents.",
     where: Where.Ballot,
-    choices: [
-      {
-        letter: "a",
-        caption: "A faint stub of bar with nobody on it, and an amber question mark. Honest, and it draws a bar that does not exist.",
-        fragment: orphan(),
-        options: { loose: Loose.Stub },
-      },
-      {
-        letter: "b",
-        caption: "A dashed line rising into nothing, with the question mark at its end. Nothing invented, harder to read.",
-        fragment: orphan(),
-        options: { loose: Loose.AskOnly },
-      },
-      {
-        letter: "c",
-        caption: "Two faint empty parents above them. Reads like a family, and invents two people.",
-        fragment: orphan(),
-        options: { loose: Loose.GhostBond },
-      },
-    ],
+    ruled: "none of a, b, c",
+    caption: "The child stands alone on the children's row with no line above them. Nothing is drawn that the record does not hold.",
+    fragment: orphan(),
   },
   {
     n: 12,
     title: "A name too long for the box",
     lead: "The desktop has no rule. Phone width forces one.",
     where: Where.Editor,
-    choices: [
-      {
-        letter: "a",
-        caption: "Cut it with a trailing dot dot dot. One line always, and you may not be able to tell two people apart.",
-        fragment: longName(),
-        options: { nameFit: NameFit.Ellipsis },
-      },
-      {
-        letter: "b",
-        caption: "Break it over two lines. The whole name shows, and the rows grow taller.",
-        fragment: longName(),
-        options: { nameFit: NameFit.TwoLines },
-      },
-      {
-        letter: "c",
-        caption: "Shrink the type until it fits. The whole name shows, and long names get hard to read.",
-        fragment: longName(),
-        options: { nameFit: NameFit.Shrink },
-      },
-    ],
+    ruled: "a",
+    caption: "Cut the name and end it with three dots, always on one line.",
+    fragment: longName(),
   },
 ];
 
 const rowHtml = (row: Row) => {
-  const frames = row.choices
-    .map((choice) => {
-      const svg = render(choice.fragment, { ...choice.options, u });
-      const tag = `${row.n}${choice.letter}`;
-      return `<div class="col">${frame(row.where, tag, svg, row.title)}<div class="mk-cap">${tag} &mdash; ${choice.caption}</div></div>`;
-    })
-    .join("\n");
+  const tag = `${row.n}`;
+  const svg = render(row.fragment, { u });
   return `<div class="mk-sec"><h2><span>${row.n}</span>${row.title}</h2>
 <p>${row.lead}</p>
-<div class="mk-row">${frames}</div></div>`;
+<div class="mk-row"><div class="col">${frame(row.where, tag, svg, row.title)}<div class="mk-cap"><b>ruled: ${row.ruled}</b> &mdash; ${row.caption}</div></div></div></div>`;
 };
 
 const hostile = cases
@@ -398,6 +209,7 @@ body { padding: 28px 20px 48px !important; background: var(--bg); }
 .frame.fr { position: relative; width: 393px; max-width: 100%; height: 620px; overflow: hidden; border: 1px solid var(--line); border-radius: 28px; background: var(--bg); box-shadow: 0 8px 24px var(--shadow); }
 .frame.fr .app { max-width: none; height: 100%; display: flex; flex-direction: column; }
 .mk-cap { font: 12px/1.45 var(--mono); color: var(--faint); margin: 6px 0 0; width: 100%; }
+.mk-cap b { color: var(--ink); }
 .tagbadge { position: absolute; top: 10px; left: 12px; z-index: 4; font: 500 12px var(--mono); color: var(--onaccent); background: var(--data); border-radius: 6px; padding: 2px 7px; }
 .fragwrap { display: flex; justify-content: center; padding: 10px 0 14px; overflow-x: auto; }
 .fragwrap svg { max-width: 100%; height: auto; }
@@ -410,10 +222,10 @@ const page = `<title>The Family Fragment</title>
 ${style}
 <style>${extra}</style>
 <div class="mk-h1">The family fragment &mdash; one person, their parents&rsquo; bond above, their own bonds beside, the children under each</div>
-<div class="mk-lead">Every picture on this page was drawn by the app&rsquo;s own fragment code, not by hand. The first twelve rows are the places where the desktop drawing code and the written specification disagree, or where neither says anything and a choice had to be made. Each alternative is drawn inside the screen it will live in &mdash; the ballot card a coder votes on, or the family block in the person editor. Answer by naming the frames you want, for example 2a, 6b, 9a. The last block draws the sixteen hard cases with the code&rsquo;s own way of doing things, so you can see nothing collides. Fictional people only.</div>
+<div class="mk-lead">Every picture on this page was drawn by the app&rsquo;s own fragment code, not by hand. The twelve rows below were the places where the desktop drawing code and the written specification disagreed, or where neither said anything. All twelve are now decided, and each row shows the one way the code draws it, with the answer named above the words. Rows 9, 10 and 11 were answered with something none of the drawn pictures offered, and the words say what. The last block draws the sixteen hard cases, so you can see nothing collides. Fictional people only.</div>
 ${rows.map(rowHtml).join("\n")}
-<div class="mk-sec"><h2><span>H</span>The sixteen hard cases, drawn the code&rsquo;s way</h2>
-<p>No choices here. This is what the renderer produces today for each awkward family, at phone width.</p>
+<div class="mk-sec"><h2><span>H</span>The sixteen hard cases</h2>
+<p>No choices here. This is what the renderer produces for each awkward family, at phone width.</p>
 <div class="mk-row">${hostile}</div></div>
 `;
 

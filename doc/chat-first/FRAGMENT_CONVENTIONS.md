@@ -9,6 +9,11 @@ Ground truth is the desktop app's drawing code under
 `btcopilot/doc/FAMILY_DIAGRAM_VISUAL_SPEC.md` is second. **Where they disagree the code
 wins**, and the line says so. One line per convention, each with its source.
 
+Everywhere this sheet once said a rule was open, Patrick has now ruled (R-0325) and the
+renderer draws that one way only — there are no drawing options left in the code, only the
+size the picture is drawn at. `doc/chat-first/mockups/fragment.html` is the record of the
+twelve rulings; each row there names what was ruled.
+
 ## Base unit and phone size
 
 - The desktop person box is 100 x 100 units, centred on the person's own origin
@@ -42,12 +47,13 @@ wins**, and the line says so. One line per convention, each with its source.
 - **Unknown or unrecorded gender: the box with fully rounded corners**, 40% relative
   radius (`scene/person.py:264`, `path.addRoundedRect(rect, 40, 40, Qt.RelativeSize)`).
   **Code vs spec**: the spec says a "?" is shown inside this shape (spec §1, Basic
-  Shapes); the code draws no "?" at all. The code wins — no "?" inside the shape. Use the
-  amber question mark of the drawability rules if the fragment needs to ask about gender.
+  Shapes); the code draws no "?" at all. **Ruled**: no "?" inside the shape. The amber
+  question mark of the drawability rules keeps its single meaning — the fragment is asking
+  you something.
 - **Miscarriage and abortion: one triangle, and the same triangle for both**
   (`scene/person.py:255-261`, both kinds take the identical path). **Code vs spec**: the
   spec says the triangle points *down* (spec §1); the code draws apex at top centre, base
-  along the bottom, i.e. pointing **up**. The code wins.
+  along the bottom, i.e. pointing **up**. **Ruled**: point at the top.
 - Nothing in the code distinguishes a miscarriage from an abortion visually; the
   difference lives in the record's wording only. `doc/plans/REPRODUCTIVE_SCENARIOS.md`
   asks for a number of weeks inside the triangle and for separate stillbirth and
@@ -63,9 +69,9 @@ wins**, and the line says so. One line per convention, each with its source.
   (`doc/DRAWABILITY.md`, rule 5).
 - **Age**, when known, is a number centred inside the shape (spec §1); the desktop uses
   age at death for a deceased person (`scene/person.py:517`).
-- The name sits under the shape. The fragment shows the given name only, on one line,
-  truncated with an ellipsis at the box width plus one sibling gap; the desktop has no
-  rule for this and the phone width forces one.
+- The name sits under the shape. **Ruled**: the given name only, on one line, cut with a
+  trailing ellipsis at the box width plus one sibling gap; the desktop has no rule for this
+  and the phone width forces one.
 
 ## The bond between two partners
 
@@ -78,11 +84,10 @@ wins**, and the line says so. One line per convention, each with its source.
   partners two box widths apart, centre to centre, so the U is **2 `u`** wide.
 - When the two partners sit at different heights, the crossbar takes the **lower**
   partner's level plus the depth (`scene/marriage.py:114`, the `max` of the two).
-- **Which partner takes which side**: the spec says male left, female right, and for a
-  same-gender couple the older person left (spec §2). **The code has no such rule** — the
-  bond is drawn between wherever the two people already sit. The code leaves this
-  undefined, so the fragment adopts the spec's convention as the only stated one, and
-  falls back to older-left, then to record order.
+- **Which partner takes which side**: **ruled** male on the left, female on the right; with
+  no man in the bond, the older person on the left, then the order the record holds them in.
+  The code has no such rule — the bond is drawn between wherever the two people already sit —
+  so this is the fragment's own.
 - **A bond that is married is a solid crossbar; a bond that is only bonded, or has no
   recorded marriage, is dashed** (`scene/marriage.py:288-300`). Matches spec §2.
 - **A divorce makes the line solid again**, not dashed (`scene/marriage.py:291-292`): once
@@ -97,8 +102,8 @@ wins**, and the line says so. One line per convention, each with its source.
 - **Code vs spec on the slash angle**: the spec says the slashes are diagonal and lean
   toward the parent with custody (spec §2). In the code the lean is 20% of a box width
   **only when custody is recorded**; with no custody the run is zero and the slashes are
-  **vertical** (`scene/marriage.py:41-54`). The code wins: no custody recorded, straight
-  vertical marks.
+  **vertical** (`scene/marriage.py:41-54`). **Ruled**: straight up-and-down marks. The
+  fragment never leans them, because nothing about custody was recorded.
 - **A bond that ended vs one that continues**: nothing in the geometry says "ended" beyond
   the slashes. Separation and divorce marks appear only once their date has passed
   (`scene/marriage.py:303-320`), so a bond with no slashes and no end date reads as
@@ -119,44 +124,45 @@ wins**, and the line says so. One line per convention, each with its source.
   and in record order otherwise (spec §5, Birth Order). The code imposes no order; it
   draws lines to wherever the children already sit. The spec wins here because the code
   leaves it undefined.
-- **Sibling spacing** is two box widths centre to centre, **2 `u`** (spec §5); the code
-  has no spacing rule at all, positions being the user's.
+- **Sibling spacing** is two box widths centre to centre, **2 `u`** (spec §5), **ruled** as
+  drawn; the code has no spacing rule at all, positions being the user's.
 - **Generation gap** is twice the box height, **2 `u`** (spec §4); again the spec only.
   On the phone that is 88px between rows.
 - **Adopted: the child's line is dashed** (`scene/childof.py:139-140`); the shape is
   unchanged. Matches spec §3. Note the conflict of intent: `REPRODUCTIVE_SCENARIOS.md`
-  records Patrick's stated preference for a **solid** line to every parent, biological or
-  adoptive, with dashes reserved for chosen parents. That is not built and the fragment
-  follows the code. Flagged as unresolved.
+  records an older preference for a **solid** line to every parent, with dashes reserved for
+  chosen parents. **Ruled**: the dashed line stays.
 - **Twins and other multiple births**: the siblings born together are joined by a
   horizontal line across their top centres, and one single line rises from the middle of
   that line to the parents' crossbar (`scene/multiplebirth.py:54-64`). Each child's own
   short line runs from its top to the shared line.
 - The shared line sits the box height ÷ 2.9 = **0.34 `u`** above the highest of those
   children (`scene/multiplebirth.py:157-176`). **Code vs spec**: the spec says it sits at
-  the midpoint between the children and the parents' bar (spec §3). The code wins — a
-  fixed rise above the children, not a midpoint.
+  the midpoint between the children and the parents' bar (spec §3). **Ruled**: the fixed
+  rise above the children.
 - **A child whose parents' bond is not in the record** has nothing to hang from. The code
   has no case for this; a child line always needs a bond object
-  (`scene/childof.py:34-46`). The fragment draws the child hanging from a short stub of
-  bar with no partners on it, in `var(--faint)`, and puts the amber question mark on the
-  stub.
+  (`scene/childof.py:34-46`). **Ruled**: the child stands alone on the children's row — no
+  bar, no line rising into nothing, no question mark. Nothing is drawn that the record does
+  not hold.
 
 ## One person with more than one bond
 
-- The partners go on the **opposite side from the person's own family of origin**, ordered
-  **earliest bond nearest, latest bond furthest out** (spec §5, Multiple Partnerships).
-  The code has no layout engine and no such rule; this is the spec only.
+- **Ruled**: the bond lines overlap side to side, each one reaching further right than the
+  one before it, with the earliest bond on the left and the latest on the right. The order is
+  by the date the bond started, and by the order the record holds the bonds in when no date
+  is known. The code has no layout engine and no such rule; this is the fragment's own.
 - The person in the middle stays fixed and the partners arrange around them (spec §5, the
   anchor). In a fragment the middle person is always the anchor by definition.
 - Each bond keeps its own U at its own depth, and each bond's children hang under that
   bond's own crossbar. Bonds do not share a crossbar.
-- **A single parent with no partner recorded**: the code cannot draw a bond with one
-  person — `Marriage.pathFor` needs a second point (`scene/marriage.py:108-121`). The
-  fragment draws the half U: down from the parent, across one box width, and the children
-  hang from that stub. This is a fragment invention; nothing in the code covers it.
-- **A partner who exists but is unnamed**: draw the unknown-gender rounded box, no name
-  under it, in `var(--faint)`, and hang the bond from it normally.
+- **A parent or partner nobody named**: **ruled** — that person is a person in the record
+  like any other, named for their relation ("Marcus's father", "Corinne's mother"), and the
+  fragment draws them exactly like anybody else, with that name under the shape. The renderer
+  never invents a shape and never draws half a bond: **putting that person into the record is
+  the scribe's and the coach's work**, part of extraction, not part of drawing. A bond that
+  reaches the renderer with a side missing is a fault in the record, and the renderer fails on
+  it rather than drawing around it.
 
 ## Hostile cases the gallery must draw
 
@@ -165,15 +171,15 @@ Every case below must be drawn, at 393px wide and at 1280px wide.
 1. One bond with children under it.
 2. A bond that ended: one slash for a separation, two for a divorce, drawn right of centre.
 3. Two bonds in sequence for the middle person, with children under each.
-4. A single parent with no partner recorded.
-5. A partner who exists but has no name.
+4. A partner nobody named, held in the record under a generic name.
+5. A parent nobody named, held in the record under a generic name.
 6. A deceased person, with an age and without one (four corner ticks vs a full X).
 7. A miscarriage among the children.
 8. An abortion among the children, next to the miscarriage, to show they draw identically.
 9. Twins: the shared horizontal line and the single riser.
 10. An adopted child: the dashed line.
 11. A person with no gender recorded: the rounded box, and no "?" inside it.
-12. A child whose parents' bond is not in the record.
+12. A child whose parents' bond is not in the record, standing alone.
 13. Two versions of one person that disagree, drawn side by side.
 14. A 40-character name under a shape.
 15. A name in non-Latin characters, and one with combining marks.

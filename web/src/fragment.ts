@@ -2,7 +2,8 @@
  * their own bond or bonds beside, the children under each bond. Fixed template
  * positions, no search, no crossing avoidance. Every measure is a fraction of
  * `u`, the person box, exactly as doc/chat-first/FRAGMENT_CONVENTIONS.md sets
- * it out; where that sheet leaves a rule open the choice is an Options field. */
+ * it out. Every rule the gallery put to Patrick is ruled (R-0325); there are no
+ * drawing options left, only the size the picture is drawn at. */
 
 export enum Sex {
   Male = "male",
@@ -54,7 +55,7 @@ export interface Fragment {
   /** People and bonds the record is unsure about, drawn faint. */
   unsurePeople?: number[];
   unsureBonds?: number[];
-  /** Children whose parents' bond is not in the record. */
+  /** Children whose parents' bond is not in the record; they stand alone. */
   loose?: number[];
   /** People the record has adopted into a bond rather than born into it, when
    * no adoption event carries it. */
@@ -63,109 +64,12 @@ export interface Fragment {
   ask?: number[];
 }
 
-/** The spec draws a "?" inside the unknown-gender shape; the code draws none. */
-export enum UnknownMark {
-  None = "none",
-  Question = "question",
-}
-
-/** The code points the miscarriage triangle up; the spec says down. */
-export enum Apex {
-  Up = "up",
-  Down = "down",
-}
-
-/** With no custody recorded the code draws vertical slashes; the spec leans them. */
-export enum Slash {
-  Vertical = "vertical",
-  Diagonal = "diagonal",
-}
-
-/** The code rises the twins' shared line a fixed 0.34u above them; the spec puts
- * it midway to the parents' bar. */
-export enum TwinBar {
-  Fixed = "fixed",
-  Midpoint = "midpoint",
-}
-
-/** The code dashes an adopted child's line; Patrick's stated preference is solid
- * to every parent, with dashes kept for chosen parents. */
-export enum AdoptLine {
-  Dashed = "dashed",
-  Solid = "solid",
-}
-
-export enum Side {
-  MaleLeft = "male-left",
-  OlderLeft = "older-left",
-  RecordOrder = "record-order",
-}
-
-export enum BondOrder {
-  EarliestNearest = "earliest-nearest",
-  LatestNearest = "latest-nearest",
-}
-
-export enum Single {
-  HalfU = "half-u",
-  Ghost = "ghost",
-  NoStub = "no-stub",
-}
-
-export enum Unnamed {
-  Faint = "faint",
-  Dashes = "dashes",
-  Asked = "asked",
-}
-
-export enum Loose {
-  Stub = "stub",
-  AskOnly = "ask-only",
-  GhostBond = "ghost-bond",
-}
-
-export enum NameFit {
-  Ellipsis = "ellipsis",
-  TwoLines = "two-lines",
-  Shrink = "shrink",
-}
-
 export interface Options {
+  /** Pixels per person box. */
   u: number;
-  unknownMark: UnknownMark;
-  apex: Apex;
-  slash: Slash;
-  twinBar: TwinBar;
-  adoptLine: AdoptLine;
-  side: Side;
-  bondOrder: BondOrder;
-  single: Single;
-  unnamed: Unnamed;
-  loose: Loose;
-  nameFit: NameFit;
-  /** Centre to centre, in person boxes. */
-  siblingGap: number;
-  generationGap: number;
-  partnerGap: number;
 }
 
-export const defaults: Options = {
-  u: 44,
-  unknownMark: UnknownMark.None,
-  apex: Apex.Up,
-  slash: Slash.Vertical,
-  twinBar: TwinBar.Fixed,
-  adoptLine: AdoptLine.Dashed,
-  side: Side.MaleLeft,
-  bondOrder: BondOrder.EarliestNearest,
-  single: Single.HalfU,
-  unnamed: Unnamed.Faint,
-  loose: Loose.Stub,
-  nameFit: NameFit.Ellipsis,
-  siblingGap: 2,
-  generationGap: 2,
-  partnerGap: 2,
-};
+export const defaults: Options = { u: 44 };
 
 const STROKE = 0.03;
 const DEPTH = 0.45;
@@ -174,13 +78,16 @@ const SLASH_RIGHT = 0.75;
 const SLASH_RISE = 0.4;
 const SLASH_DROP = 0.15;
 const SLASH_STEP = 0.1;
-const SLASH_LEAN = 0.2;
 const TWIN_RISE = 0.34;
 const TICK = 0.3;
 const NAME_SIZE = 0.25;
 const AGE_SIZE = 0.3;
 const NAME_DROP = 0.78;
 const CHAR = 0.53;
+/** Centre to centre, in person boxes. */
+const SIBLING_GAP = 2;
+const GENERATION_GAP = 2;
+const PARTNER_GAP = 2;
 
 type At = { p: FragPerson; x: number; y: number; index: boolean; faint: boolean };
 
@@ -200,31 +107,14 @@ const sexOf = (p: FragPerson): Sex =>
     ? (p.gender as Sex)
     : Sex.Unknown;
 
-const nameRoom = (gap: number) => gap;
-
-/** The given name only, on one line, cut to the box width plus one sibling gap. */
-export const fitName = (
-  name: string,
-  fit: NameFit,
-  gap: number,
-  size: number,
-): { lines: string[]; size: number } => {
+/** The given name only, on one line, cut with an ellipsis at the box width plus
+ * one sibling gap. */
+export const fitName = (name: string, size: number): string => {
   const given = [...name.trim().split(/\s+/)[0]];
-  const room = nameRoom(gap);
-  const max = Math.max(3, Math.floor(room / (size * CHAR)));
-  if (given.length <= max) return { lines: [given.join("")], size };
-  if (fit === NameFit.TwoLines) {
-    const half = Math.ceil(given.length / 2);
-    return {
-      lines: [given.slice(0, half).join(""), given.slice(half).join("")],
-      size,
-    };
-  }
-  if (fit === NameFit.Shrink) {
-    const shrunk = Math.max(size * 0.6, room / (given.length * CHAR));
-    return { lines: [given.join("")], size: shrunk };
-  }
-  return { lines: [given.slice(0, max - 1).join("") + "…"], size };
+  const max = Math.max(3, Math.floor(SIBLING_GAP / (size * CHAR)));
+  return given.length <= max
+    ? given.join("")
+    : given.slice(0, max - 1).join("") + "…";
 };
 
 class Draw {
@@ -273,13 +163,12 @@ class Draw {
   }
 }
 
-const shapePath = (sex: Sex, x: number, y: number, half: number, apex: Apex) => {
+const shapePath = (sex: Sex, x: number, y: number, half: number) => {
   if (sex === Sex.Miscarriage || sex === Sex.Abortion) {
-    return apex === Apex.Up
-      ? `M ${num(x)} ${num(y - half)} L ${num(x + half)} ${num(y + half)} ` +
-          `L ${num(x - half)} ${num(y + half)} Z`
-      : `M ${num(x - half)} ${num(y - half)} L ${num(x + half)} ${num(y - half)} ` +
-          `L ${num(x)} ${num(y + half)} Z`;
+    return (
+      `M ${num(x)} ${num(y - half)} L ${num(x + half)} ${num(y + half)} ` +
+      `L ${num(x - half)} ${num(y + half)} Z`
+    );
   }
   if (sex === Sex.Female) {
     return (
@@ -346,20 +235,26 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
     return at;
   };
 
-  const bondOf = (id: number) => bondById.get(id) ?? null;
+  /** Both sides of a bond are people in the record: a parent or partner nobody
+   * named is still extracted as a person with a generic name. A bond with a
+   * side missing is a record fault, not something to draw around. */
+  const sideOf = (bond: FragBond, which: "person_a" | "person_b") => {
+    const id = bond[which];
+    const p = id !== null ? byId.get(id) : undefined;
+    if (!p) throw new Error(`bond ${bond.id} has no ${which} in the fragment`);
+    return p;
+  };
 
   const partnerIn = (bond: FragBond, self: number) =>
-    (bond.person_a === self ? bond.person_b : bond.person_a) ?? null;
+    sideOf(bond, bond.person_a === self ? "person_b" : "person_a");
 
-  const ordered = (bond: FragBond): [FragPerson | null, FragPerson | null] => {
-    const a = bond.person_a !== null ? (byId.get(bond.person_a) ?? null) : null;
-    const b = bond.person_b !== null ? (byId.get(bond.person_b) ?? null) : null;
-    if (!a || !b) return [a, b];
-    if (o.side === Side.RecordOrder) return [a, b];
-    if (o.side === Side.MaleLeft) {
-      if (sexOf(a) === Sex.Male && sexOf(b) !== Sex.Male) return [a, b];
-      if (sexOf(b) === Sex.Male && sexOf(a) !== Sex.Male) return [b, a];
-    }
+  /** Male on the left, female on the right; with no man, the older person left,
+   * then record order. */
+  const ordered = (bond: FragBond): [FragPerson, FragPerson] => {
+    const a = sideOf(bond, "person_a");
+    const b = sideOf(bond, "person_b");
+    if (sexOf(a) === Sex.Male && sexOf(b) !== Sex.Male) return [a, b];
+    if (sexOf(b) === Sex.Male && sexOf(a) !== Sex.Male) return [b, a];
     const ya = born(a.id);
     const yb = born(b.id);
     if (ya !== null && yb !== null && yb < ya) return [b, a];
@@ -376,52 +271,39 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
         return ya - yb;
       });
 
-  const bondStroke = (bond: FragBond) => {
-    const married = bond.married === true || !!eventFor(Kind.Married, bond.person_a, bond.person_b);
+  const bondDashed = (bond: FragBond) => {
+    const married =
+      bond.married === true || !!eventFor(Kind.Married, bond.person_a, bond.person_b);
     const divorced = !!eventFor(Kind.Divorced, bond.person_a, bond.person_b);
-    return { dashed: !married && !divorced, faint: unsureB.has(bond.id) };
+    return !married && !divorced;
   };
 
-  /** The squared U, its crossbar level, and the slashes that say it ended. */
+  /** The squared U and its crossbar level. */
   const drawBond = (
-    bond: FragBond | null,
-    left: { x: number; y: number } | null,
-    right: { x: number; y: number } | null,
+    bond: FragBond,
+    left: { x: number; y: number },
+    right: { x: number; y: number },
     faint: boolean,
     depth: number,
   ): { bar: number; x1: number; x2: number } => {
-    const ends = [left, right].filter((e): e is { x: number; y: number } => !!e);
-    const bar = Math.max(...ends.map((e) => e.y + 0.5)) + depth;
-    const dashed = bond ? bondStroke(bond).dashed : true;
-    if (left && right) {
-      draw.line(
-        `M ${num(left.x)} ${num(left.y + 0.5)} V ${num(bar)} H ${num(right.x)} V ${num(right.y + 0.5)}`,
-        { faint, dashed },
-      );
-    } else if (ends.length === 1) {
-      const one = ends[0];
-      const to = one.x + (left ? 1 : -1);
-      draw.line(`M ${num(one.x)} ${num(one.y + 0.5)} V ${num(bar)} H ${num(to)}`, {
-        faint,
-        dashed,
-      });
-      return { bar, x1: Math.min(one.x, to), x2: Math.max(one.x, to) };
-    }
-    const xs = ends.map((e) => e.x);
-    return { bar, x1: Math.min(...xs), x2: Math.max(...xs) };
+    const bar = Math.max(left.y, right.y) + 0.5 + depth;
+    draw.line(
+      `M ${num(left.x)} ${num(left.y + 0.5)} V ${num(bar)} H ${num(right.x)} V ${num(right.y + 0.5)}`,
+      { faint, dashed: bondDashed(bond) },
+    );
+    return { bar, x1: Math.min(left.x, right.x), x2: Math.max(left.x, right.x) };
   };
 
+  /** One mark for a separation, two for a divorce, straight up and down. */
   const drawSlashes = (bond: FragBond, bar: number, x1: number, x2: number) => {
     const sep = eventFor(Kind.Separated, bond.person_a, bond.person_b);
     const div = eventFor(Kind.Divorced, bond.person_a, bond.person_b);
     const count = div ? 2 : sep ? 1 : 0;
-    if (!count) return;
     const mid = (x1 + x2) / 2 + SLASH_RIGHT;
-    const lean = o.slash === Slash.Diagonal ? SLASH_LEAN : 0;
     for (let i = 0; i < count; i += 1) {
       const x = mid + i * SLASH_STEP;
       draw.line(
-        `M ${num(x)} ${num(bar + SLASH_DROP)} L ${num(x + lean)} ${num(bar + SLASH_DROP - SLASH_RISE)}`,
+        `M ${num(x)} ${num(bar + SLASH_DROP)} L ${num(x)} ${num(bar + SLASH_DROP - SLASH_RISE)}`,
       );
     }
   };
@@ -436,10 +318,11 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
   ) => {
     const top = child.y - 0.5;
     const x = Math.min(Math.max(child.x, x1), x2);
-    draw.line(
-      `M ${num(child.x)} ${num(top)} L ${num(x)} ${num(bar)}`,
-      { flat: true, dashed, faint },
-    );
+    draw.line(`M ${num(child.x)} ${num(top)} L ${num(x)} ${num(bar)}`, {
+      flat: true,
+      dashed,
+      faint,
+    });
   };
 
   const drawPerson = (at: At) => {
@@ -447,7 +330,7 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
     const colour = at.faint ? "faint" : "ink";
     const paint = (half: number) =>
       draw.add(
-        `<path class="frag-shape" d="${shapePath(sex, at.x, at.y, half, o.apex)}" ` +
+        `<path class="frag-shape" d="${shapePath(sex, at.x, at.y, half)}" ` +
           `fill="none" stroke="var(--${colour})" stroke-width="${num(STROKE)}" ` +
           `stroke-linejoin="round" stroke-linecap="round" />`,
       );
@@ -455,9 +338,6 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
     if (at.index) paint(0.5 + INDEX_GROW);
     draw.seen(at.x - 0.75, at.y - 0.75);
     draw.seen(at.x + 0.75, at.y + 0.75);
-
-    if (sex === Sex.Unknown && o.unknownMark === UnknownMark.Question)
-      draw.text("?", at.x, at.y + AGE_SIZE * 0.36, AGE_SIZE, colour, "frag-age");
 
     const age = ageOf(at.p.id);
     const dead = !!died(at.p.id);
@@ -490,61 +370,42 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
     if (asked.has(at.p.id))
       draw.text("?", at.x + 0.62, at.y - 0.46, AGE_SIZE, "ask", "frag-ask");
 
-    const unnamedShown = !at.p.name && o.unnamed === Unnamed.Dashes;
-    if (at.p.name || unnamedShown) {
-      const fitted = fitName(
-        at.p.name ?? "—",
-        o.nameFit,
-        o.siblingGap,
+    if (at.p.name) {
+      draw.text(
+        fitName(at.p.name, NAME_SIZE),
+        at.x,
+        at.y + NAME_DROP,
         NAME_SIZE,
+        colour,
+        "frag-name",
       );
-      fitted.lines.forEach((line, i) => {
-        draw.text(
-          line,
-          at.x,
-          at.y + NAME_DROP + i * fitted.size * 1.15,
-          fitted.size,
-          colour,
-          "frag-name",
-        );
-        draw.seen(at.x, at.y + NAME_DROP + i * fitted.size * 1.15 + 0.2);
-      });
+      draw.seen(at.x, at.y + NAME_DROP + 0.2);
     }
-    if (!at.p.name && o.unnamed === Unnamed.Asked)
-      draw.text("?", at.x, at.y + NAME_DROP, NAME_SIZE, "ask", "frag-ask");
   };
 
   // --- the parents' bond, above -------------------------------------------
   const centreAt = place(centre, 0, 0, true);
-  const parentBond = centre.parents !== null ? bondOf(centre.parents) : null;
+  const parentBond = centre.parents !== null ? (bondById.get(centre.parents) ?? null) : null;
   if (parentBond) {
     const [l, r] = ordered(parentBond);
-    const y = -o.generationGap;
-    const half = o.partnerGap / 2;
+    const y = -GENERATION_GAP;
+    const half = PARTNER_GAP / 2;
     const faint = unsureB.has(parentBond.id);
-    const lAt = l ? place(l, -half, y) : null;
-    const rAt = r ? place(r, half, y) : null;
-    let geom;
-    if (lAt && rAt) {
-      geom = drawBond(parentBond, lAt, rAt, faint, DEPTH);
-    } else if (o.single === Single.Ghost) {
-      const only = lAt ?? rAt!;
-      const ghost: FragPerson = { id: -1, name: null, gender: null, parents: null };
-      const other = place(ghost, only === lAt ? half : -half, y);
-      other.faint = true;
-      geom = drawBond(parentBond, lAt ?? other, rAt ?? other, faint, DEPTH);
-    } else if (o.single === Single.NoStub) {
-      const only = (lAt ?? rAt)!;
-      geom = { bar: only.y + 0.5 + DEPTH, x1: only.x, x2: only.x };
-      draw.line(`M ${num(only.x)} ${num(only.y + 0.5)} V ${num(geom.bar)}`, { faint });
-    } else {
-      geom = drawBond(parentBond, lAt, rAt, faint, DEPTH);
-    }
+    const geom = drawBond(
+      parentBond,
+      place(l, -half, y),
+      place(r, half, y),
+      faint,
+      DEPTH,
+    );
     drawSlashes(parentBond, geom.bar, geom.x1, geom.x2);
-    drawChildLine(centreAt, geom.bar, geom.x1, geom.x2, adoptedSet.has(centre.id) && o.adoptLine === AdoptLine.Dashed, faint);
+    drawChildLine(centreAt, geom.bar, geom.x1, geom.x2, adoptedSet.has(centre.id), faint);
   }
 
   // --- the centre person's own bonds, beside -------------------------------
+  // Earliest bond nearest the middle person, later ones further right; each U
+  // is deeper than the one before it, so the bars overlap horizontally and one
+  // reaches further right than the other.
   const own = fragment.bonds.filter(
     (b) => b.person_a === fragment.center || b.person_b === fragment.center,
   );
@@ -552,36 +413,24 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
     year(
       (eventFor(Kind.Married, bond.person_a, bond.person_b) ??
         eventFor(Kind.Bonded, bond.person_a, bond.person_b))?.dateTime ?? null,
-    ) ?? 0;
-  own.sort((a, b) =>
-    o.bondOrder === BondOrder.EarliestNearest
-      ? startOf(a) - startOf(b)
-      : startOf(b) - startOf(a),
-  );
+    );
+  own.sort((a, b) => {
+    const ya = startOf(a);
+    const yb = startOf(b);
+    return ya === null || yb === null ? 0 : ya - yb;
+  });
 
   let cursor = -Infinity;
   own.forEach((bond, i) => {
-    const partnerId = partnerIn(bond, fragment.center);
-    const partner = partnerId !== null ? (byId.get(partnerId) ?? null) : null;
-    const x = (i + 1) * o.partnerGap;
+    const partner = partnerIn(bond, fragment.center);
     const faint = unsureB.has(bond.id);
-    const depth = DEPTH + i * 0.5;
-    let geom;
-    if (partner) {
-      const pAt = place(partner, x, 0);
-      if (!partner.name && o.unnamed !== Unnamed.Dashes) pAt.faint = true;
-      geom = drawBond(bond, centreAt, pAt, faint, depth);
-    } else if (o.single === Single.Ghost) {
-      const ghost: FragPerson = { id: -2 - i, name: null, gender: null, parents: null };
-      const gAt = place(ghost, x, 0);
-      gAt.faint = true;
-      geom = drawBond(bond, centreAt, gAt, faint, depth);
-    } else if (o.single === Single.NoStub) {
-      geom = { bar: 0.5 + depth, x1: 0, x2: 0 };
-      draw.line(`M 0 ${num(0.5)} V ${num(geom.bar)}`, { faint });
-    } else {
-      geom = drawBond(bond, centreAt, null, faint, depth);
-    }
+    const geom = drawBond(
+      bond,
+      centreAt,
+      place(partner, (i + 1) * PARTNER_GAP, 0),
+      faint,
+      DEPTH + i * 0.5,
+    );
     drawSlashes(bond, geom.bar, geom.x1, geom.x2);
 
     const kids = kidsOf(bond.id);
@@ -590,12 +439,12 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
     // Each bond's children keep their own block on the row: centred under their
     // own bar, pushed right when the bond before them already took that room.
     const start = Math.max(
-      mid - ((kids.length - 1) / 2) * o.siblingGap,
-      cursor + o.siblingGap,
+      mid - ((kids.length - 1) / 2) * SIBLING_GAP,
+      cursor + SIBLING_GAP,
     );
     kids.forEach((kid, k) => {
-      const kx = start + k * o.siblingGap;
-      kidAt.set(kid.id, place(kid, kx, o.generationGap));
+      const kx = start + k * SIBLING_GAP;
+      kidAt.set(kid.id, place(kid, kx, GENERATION_GAP));
       cursor = kx;
     });
 
@@ -606,13 +455,12 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
 
     for (const kid of kids) {
       if (twinned.has(kid.id)) continue;
-      const at = kidAt.get(kid.id)!;
       drawChildLine(
-        at,
+        kidAt.get(kid.id)!,
         geom.bar,
         geom.x1,
         geom.x2,
-        adoptedSet.has(kid.id) && o.adoptLine === AdoptLine.Dashed,
+        adoptedSet.has(kid.id),
         faint,
       );
     }
@@ -621,8 +469,7 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
       if (ids.length < 2) continue;
       const ats = ids.map((id) => kidAt.get(id)!);
       const top = Math.min(...ats.map((a) => a.y - 0.5));
-      const shared =
-        o.twinBar === TwinBar.Fixed ? top - TWIN_RISE : (top + geom.bar) / 2;
+      const shared = top - TWIN_RISE;
       const xs = ats.map((a) => a.x);
       draw.line(`M ${num(Math.min(...xs))} ${num(shared)} H ${num(Math.max(...xs))}`, {
         flat: true,
@@ -632,7 +479,7 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
         draw.line(`M ${num(a.x)} ${num(a.y - 0.5)} V ${num(shared)}`, {
           flat: true,
           faint,
-          dashed: adoptedSet.has(a.p.id) && o.adoptLine === AdoptLine.Dashed,
+          dashed: adoptedSet.has(a.p.id),
         });
       const centreX = (Math.min(...xs) + Math.max(...xs)) / 2;
       const riseX = Math.min(Math.max(centreX, geom.x1), geom.x2);
@@ -644,53 +491,14 @@ export const render = (fragment: Fragment, over: Partial<Options> = {}): string 
   });
 
   // --- a child whose parents' bond is not in the record --------------------
+  // They stand alone on the children's row: no bar, no riser, nothing invented.
   const loose = (fragment.loose ?? [])
     .map((id) => byId.get(id))
     .filter((p): p is FragPerson => !!p);
-  if (loose.length) {
-    const startX = Math.max(
-      (own.length + 1) * o.partnerGap,
-      cursor + o.siblingGap * 1.5,
-    );
-    loose.forEach((p, i) => {
-      const at = place(p, startX + i * o.siblingGap, o.generationGap);
-      at.faint = false;
-      const bar = 0.5 + DEPTH;
-      if (o.loose === Loose.Stub || o.loose === Loose.GhostBond) {
-        const half = o.loose === Loose.GhostBond ? o.partnerGap / 2 : 0.5;
-        draw.line(`M ${num(at.x - half)} ${num(bar)} H ${num(at.x + half)}`, {
-          faint: true,
-          dashed: true,
-        });
-        if (o.loose === Loose.GhostBond) {
-          for (const gx of [at.x - half, at.x + half]) {
-            const ghost = place(
-              { id: -50 - i - gx, name: null, gender: null, parents: null },
-              gx,
-              0,
-            );
-            ghost.faint = true;
-            draw.line(`M ${num(gx)} ${num(0.5)} V ${num(bar)}`, {
-              faint: true,
-              dashed: true,
-            });
-          }
-        }
-        draw.line(`M ${num(at.x)} ${num(at.y - 0.5)} V ${num(bar)}`, {
-          flat: true,
-          faint: true,
-        });
-        draw.text("?", at.x + 0.62, bar - 0.12, AGE_SIZE, "ask", "frag-ask");
-      } else {
-        draw.line(`M ${num(at.x)} ${num(at.y - 0.5)} V ${num(bar + 0.3)}`, {
-          flat: true,
-          faint: true,
-          dashed: true,
-        });
-        draw.text("?", at.x, bar + 0.1, AGE_SIZE, "ask", "frag-ask");
-      }
-    });
-  }
+  const looseStart = Math.max((own.length + 1) * PARTNER_GAP, cursor + SIBLING_GAP * 1.5);
+  loose.forEach((p, i) => {
+    place(p, looseStart + i * SIBLING_GAP, GENERATION_GAP);
+  });
 
   for (const at of placed) drawPerson(at);
 

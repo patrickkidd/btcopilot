@@ -90,19 +90,21 @@ export const cases: { key: string; title: string; fragment: Fragment }[] = [
   },
   {
     key: "4",
-    title: "A single parent with no partner recorded",
+    title: "A partner nobody named, held in the record as Marcus's partner",
     fragment: with_((f) => {
-      f.bonds[1] = { id: 11, person_a: 3, person_b: null, married: null };
-      f.people = f.people.filter((p) => p.id !== 4);
+      f.people[3] = person(4, "Marcus's partner", null);
+      f.bonds[1] = { id: 11, person_a: 3, person_b: 4, married: null };
       f.events = f.events.filter((e) => e.person !== 4 && e.spouse !== 4);
     }),
   },
   {
     key: "5",
-    title: "A partner who exists but has no name",
+    title: "A parent nobody named, held in the record as Marcus's mother",
     fragment: with_((f) => {
-      f.people[3] = person(4, null, null);
-      f.bonds[1] = { id: 11, person_a: 3, person_b: 4, married: null };
+      f.people[1] = person(2, "Marcus's mother", null);
+      f.events = f.events.filter(
+        (e) => !(e.kind === Kind.Birth && e.person === 2),
+      );
     }),
   },
   {
@@ -164,7 +166,7 @@ export const cases: { key: string; title: string; fragment: Fragment }[] = [
   },
   {
     key: "12",
-    title: "A child whose parents' bond is not in the record",
+    title: "A child whose parents' bond is not in the record: they stand alone",
     fragment: with_((f) => {
       f.people.push(person(12, "Ines", Sex.Female, null));
       f.loose = [12];
@@ -234,7 +236,7 @@ export const twins = () => cases.find((c) => c.key === "9")!.fragment;
 export const adopted = () => cases.find((c) => c.key === "10")!.fragment;
 export const nogender = () => cases.find((c) => c.key === "11")!.fragment;
 export const loss = () => cases.find((c) => c.key === "8")!.fragment;
-export const single = () => cases.find((c) => c.key === "4")!.fragment;
-export const unnamed = () => cases.find((c) => c.key === "5")!.fragment;
+export const genericPartner = () => cases.find((c) => c.key === "4")!.fragment;
+export const genericParent = () => cases.find((c) => c.key === "5")!.fragment;
 export const orphan = () => cases.find((c) => c.key === "12")!.fragment;
 export const longName = () => cases.find((c) => c.key === "14")!.fragment;
