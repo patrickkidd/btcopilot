@@ -35,7 +35,10 @@ test.describe(() => {
     await page.waitForTimeout(1200);
     if (await visible("#task-screen")) {
       say(`the one card says: ${(await text("#task-body")).replace(/\s+/g, " ")}`);
-      await page.locator("#task-screen .addbtn").first().click();
+      // A card with nothing to open is the vote that is waiting on Patrick;
+      // the skip below is what says so, and clicking nothing gets there.
+      const open = page.locator("#task-screen .addbtn").first();
+      if (await open.count()) await open.click();
       await page.waitForTimeout(2500);
     } else {
       await page.locator("#sessions-open").click();

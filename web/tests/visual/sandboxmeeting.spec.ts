@@ -126,10 +126,23 @@ test.describe(() => {
     await shot("6-unresolved");
 
     // ── 6. every remaining item given a choice, then ratify ───────────────
-    for (let guard = 0; guard < 12; guard += 1) {
-      if ((await page.locator(".drow").count()) === 0) break;
-      await page.locator('.drow .mt-keep:not([disabled])').first().click();
-      await page.waitForTimeout(1400);
+    // An item nobody wrote a second reading of has nothing to keep, so it is
+    // closed the only way the room can close it: marked unresolved. Each row
+    // is waited out rather than counted out, so a slow answer is not read as a
+    // row that refused its choice.
+    for (let guard = 0; guard < 20; guard += 1) {
+      const row = page.locator(".drow").first();
+      if ((await row.count()) === 0) break;
+      const item = await row.getAttribute("data-item");
+      const keep = row.locator(".mt-keep:not([disabled])").first();
+      if (await keep.count()) await keep.click();
+      else await row.locator('.mt-choice[data-choice="unresolved"]').click();
+      await page
+        .waitForSelector(`.drow[data-item="${item}"]`, {
+          state: "detached",
+          timeout: 30_000,
+        })
+        .catch(() => {});
     }
     check(
       (await page.locator(".drow").count()) === 0,

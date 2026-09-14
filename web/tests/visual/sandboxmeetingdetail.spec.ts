@@ -19,9 +19,15 @@ test.describe(() => {
     // ── open the meeting on the cut that is on the table ──────────────────
     await page.goto(invite, { waitUntil: "networkidle" });
     await page.waitForTimeout(1200);
-    await page.locator("#sessions-open").click();
-    await page.waitForTimeout(700);
-    await page.locator(".fs-task.fs-agenda").first().click();
+    // One thing to do is shown as the one card, and the sessions glyph is not
+    // there to open; more than one, and the list is behind the glyph.
+    if (await visible("#task-screen"))
+      await page.locator("#task-screen .addbtn").first().click();
+    else {
+      await page.locator("#sessions-open").click();
+      await page.waitForTimeout(700);
+      await page.locator(".fs-task.fs-agenda").first().click();
+    }
     await page.waitForTimeout(1200);
     if (!(await visible("#meeting-screen"))) {
       await page.locator(".tb-meet").first().click();

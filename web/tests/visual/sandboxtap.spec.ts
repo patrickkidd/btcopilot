@@ -39,9 +39,12 @@ test.describe(() => {
 
     await page.goto(invite, { waitUntil: "networkidle" });
     await page.waitForTimeout(1200);
-    if (await visible("#task-screen"))
-      await page.locator("#task-screen .addbtn").first().click();
-    else {
+    if (await visible("#task-screen")) {
+      // A card with nothing to open is the vote that is waiting on Patrick;
+      // the skip below is what says so.
+      const open = page.locator("#task-screen .addbtn").first();
+      if (await open.count()) await open.click();
+    } else {
       await page.locator("#sessions-open").click();
       await page.waitForTimeout(800);
       await page.locator(".fs-task").first().click();

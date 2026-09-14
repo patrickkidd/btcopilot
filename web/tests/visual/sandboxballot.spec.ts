@@ -77,7 +77,19 @@ test.describe(() => {
     );
     await shot("2b-transcript");
     await page.locator("#coding-back").click();
-    await page.waitForTimeout(1600);
+    // Stepping back into the ballot re-reads it, which takes as long as the
+    // sandbox takes; waiting for the takes to be drawn again rather than a
+    // fixed count is what makes this step honest.
+    await page
+      .waitForSelector("#ballot-screen:not([hidden]) .opinion", {
+        timeout: 60_000,
+      })
+      .catch(() => {});
+    say(
+      `back from the transcript: ballot=${await visible("#ballot-screen")}` +
+        ` task=${await visible("#task-screen")} coding=${await visible("#coding-screen")}` +
+        ` title="${await text("#title")}" was="${was}"`,
+    );
     check(
       (await visible("#ballot-screen")) && (await text("#title")) === was,
       "back from the transcript is the same item of the ballot",
@@ -119,7 +131,17 @@ test.describe(() => {
       .locator('.bl-sheet [data-name="description"]')
       .fill("came back for a winter and left again");
     await page.locator(".bl-sheet .save").click();
-    await page.waitForTimeout(1200);
+    // Saving writes the take and re-reads the ballot; waiting for the sheet to
+    // go and the take to be drawn is what says it landed, and it leaves the
+    // next button clickable rather than under a sheet that is still closing.
+    await page
+      .waitForSelector(".bl-sheet", { state: "detached", timeout: 60_000 })
+      .catch(() => {});
+    await page
+      .locator(".opinion.on", { hasText: "came back for a winter" })
+      .first()
+      .waitFor({ timeout: 60_000 })
+      .catch(() => {});
     const own = await page.locator(".opinion.on").allInnerTexts();
     say(`own take: ${JSON.stringify(own)}`);
     check(
