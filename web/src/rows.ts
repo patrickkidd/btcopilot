@@ -71,19 +71,13 @@ export function eventRow(
   );
 }
 
+/** The people list stays as it is: the name alone, no second line under it
+ * (R-0326). */
 export function personRow(person: Person, on = false): string {
-  const meta = [
-    person.birth ? `born ${person.birth.slice(0, 4)}` : "no birth on the record",
-    person.gender,
-    person.primary ? "you" : "",
-  ]
-    .filter(Boolean)
-    .join(" \u00b7 ");
   return (
     `<div class="row${on ? " on" : ""}" data-person="${person.id}" ` +
     `role="button" tabindex="0">` +
-    `<div class="r1">${esc(fullName(person))}</div>` +
-    `<div class="r2">${esc(meta)}</div></div>`
+    `<div class="r1">${esc(fullName(person))}</div></div>`
   );
 }
 
