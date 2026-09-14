@@ -9,7 +9,7 @@ from btcopilot.personal.coachturn import CoachTurn
 from btcopilot.personal.models import Discussion, DiscussionKind, SpeakerType
 from btcopilot.personal.prompts import note_register
 from btcopilot.schema import Person, PersonKind, asdict
-from btcopilot.tests.personal.conftest import Model, csrf_token, said
+from btcopilot.tests.chat.personal.conftest import Model, csrf_token, said
 
 UTTERANCES = [
     {"speaker": "A", "text": "When did your father go down to Arizona, roughly?"},

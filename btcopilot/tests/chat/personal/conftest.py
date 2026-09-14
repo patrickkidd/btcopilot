@@ -11,7 +11,7 @@ from btcopilot.extensions import db
 from btcopilot.personal.coachmodel import ModelTurn, ToolCall
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.personal.toolbox import ToolName
-from btcopilot.tests.pro.conftest import pro_client, subscriber, admin
+from btcopilot.tests.fixtures import pro_client, subscriber, admin  # noqa: F401
 
 
 def said(text: str) -> ModelTurn:

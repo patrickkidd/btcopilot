@@ -18,7 +18,7 @@ class SyntheticPersona(db.Model, ModelMixin):
     age = Column(Integer, nullable=False)
 
     def to_persona(self):
-        from btcopilot.tests.personal.synthetic import (
+        from btcopilot.tests.chat.personal.synthetic import (
             Persona,
             PersonaTrait,
             AttachmentStyle,

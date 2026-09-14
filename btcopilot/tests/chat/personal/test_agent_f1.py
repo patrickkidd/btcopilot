@@ -8,7 +8,7 @@ from btcopilot.personal.models import Discussion, Speaker, SpeakerType, Statemen
 from btcopilot.personal.toolbox import ToolName
 from btcopilot.training.models import Feedback
 from btcopilot.training.run_agent_f1 import run_agent_f1
-from btcopilot.tests.personal.conftest import Model, called, said
+from btcopilot.tests.chat.personal.conftest import Model, called, said
 
 AUDITOR = "auditor-1"
 

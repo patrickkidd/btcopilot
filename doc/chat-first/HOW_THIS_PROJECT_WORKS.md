@@ -82,6 +82,19 @@ makes that possible. So:
 - Test to the audience: a mockup gets one look; only real code gets the full loop.
 - No real names, emails, case identifiers or clinical content in any repo.
 
+## Running tests: `bin/t`, and nothing else, while you build
+
+`bin/t` is the only way an agent runs tests mid-build. Given a component name — chat,
+review, personal, admin, prompts, web, walks, pro, training, or all — it runs that
+component and prints what it chose and why; given nothing, it reads the working diff and
+runs only the suites whose paths the diff touches, so a change to the review runs the
+review's ninety tests in five seconds instead of everything in fifty. It exits non-zero if
+any suite fails. Run one component per change while building; run the whole suite once at
+the end, never per item. The chat app's tests are their own suite under
+`btcopilot/tests/chat` with their own settings file and their own fixtures imported by
+name (R-0332) — they do not inherit Pro's stubs, Pro's failures, or the training app's
+markers, and the suites are meant to be run one invocation each.
+
 ## Rules that came from things going wrong (dated; these bind every session)
 
 Each of these was written down after a specific failure on this project. They are copied

@@ -4,10 +4,9 @@ fails if one comes back, or if a new one arrives that looks like it."""
 
 import re
 import subprocess
-from pathlib import Path
 
 
-REPO = Path(__file__).resolve().parents[2]
+from btcopilot.tests.repo import REPO
 
 # A recording's transcript, or anything filed under a meetings folder that is
 # not one of its templates.

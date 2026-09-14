@@ -23,7 +23,7 @@ from btcopilot.schema import (
     VariableShift,
     asdict,
 )
-from btcopilot.tests.personal.conftest import csrf_token
+from btcopilot.tests.chat.personal.conftest import csrf_token
 
 
 @pytest.fixture(autouse=True)

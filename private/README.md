@@ -43,5 +43,5 @@ repo in the sandbox folder. Patrick's own key and the new box's key replace it.
 
 No real names, emails, case identifiers or clinical content in any repo. Files
 that hold those do not belong here either, encrypted or not — they live in
-`fd-corpus/private`, outside every repo. `btcopilot/tests/test_noprivatepeople.py`
+`fd-corpus/private`, outside every repo. `btcopilot/tests/chat/test_noprivatepeople.py`
 fails if one arrives.

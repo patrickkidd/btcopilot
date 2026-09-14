@@ -7,7 +7,7 @@ import btcopilot
 from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 
-from btcopilot.tests.personal.conftest import discussion, discussions
+from btcopilot.tests.chat.personal.conftest import discussion, discussions
 
 
 def set_test_session(sess, user_id):

@@ -1,310 +1,54 @@
-import os
-import sys
-
-# The private prompts are encrypted. Without a key that opens them the run uses
-# the open-source ones, rather than failing to start — and says which it used, so
-# a green run is never mistaken for a run against the real wording.
-from btcopilot.personal.promptdir import key_present
-
-if not key_present():
-    os.environ.setdefault("FD_PRIVATE_PROMPTS", "/nonexistent")
-    print("no sops key: running on the open-source prompts", file=sys.stderr)
+"""The Pro and training world: the paid services stubbed out, licences,
+machines and activations. The chat app's suite lives in chat/ and imports what
+it wants by name (R-0332)."""
 
 import pickle
 import datetime
-import warnings
-import subprocess
-import logging
-import contextlib
-import typing_extensions  # preemptive
 
 import pytest
-import flask
-from flask.testing import FlaskClient
-
-# from flask.testing import FlaskClient
-import pydantic
-from mock import patch
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from flask_mail import Mail
-
-
+from unittest.mock import Mock
 import btcopilot
-from btcopilot.app import create_app
+import btcopilot.extensions as extension_module
 from btcopilot.extensions import db
-import btcopilot.extensions as extensions
-from btcopilot.params import truthy
 from btcopilot.pro.models import (
     Session,
     Activation,
     License,
     Machine,
-    User,
     Policy,
     Diagram,
 )
-
-# Import personal models to register them with SQLAlchemy
-from btcopilot.personal.models import Discussion, Statement, Speaker
-
-
-# HARDWARE_UUID = (
-#     subprocess.check_output(
-#         "system_profiler SPHardwareDataType | awk '/UUID/ { print $3; }'", shell=True
-#     )
-#     .decode("utf-8")
-#     .strip()
-# )
-HARDWARE_UUID = "1B825A8F-32CB-5419-B6C2-BB08A7DEA901"
+from btcopilot.tests.fixtures import (
+    PRO_STUBS,
+    HARDWARE_UUID,
+    add_e2e_option,
+    add_markers,
+    stubbed,
+    anonymous,  # noqa: F401
+    db_session,  # noqa: F401
+    e2e,  # noqa: F401
+    fast_passwords,  # noqa: F401
+    flask_app,  # noqa: F401
+    test_license,  # noqa: F401
+    test_policy,  # noqa: F401
+    test_user,  # noqa: F401
+    test_user_2,  # noqa: F401
+    unmocks,  # noqa: F401
+)
 
 
 def pytest_addoption(parser):
-    parser.addoption(
-        "--e2e",
-        action="store_true",
-        default=False,
-        help="Run end-to-end tests with third-party api calls (costs money)",
-    )
+    add_e2e_option(parser)
 
 
 def pytest_configure(config):
-    config.addinivalue_line(
-        "markers",
-        "access_rights: set access rights prior to init",
-    )
-    config.addinivalue_line(
-        "markers", "e2e: Run end-to-end test cases which access paid third-party tools"
-    )
-    config.addinivalue_line(
-        "markers", "init_datadog: Un-mock the init_datadog extension"
-    )
-    config.addinivalue_line(
-        "markers", "real_passwords: Use real bcrypt hashing instead of mocks"
-    )
-    warnings.filterwarnings(
-        "ignore",
-        category=pydantic.warnings.PydanticDeprecatedSince211,
-        module="chromadb.types",
-    )
-
-
-# def pytest_collection_modifyitems(config, items):
-#     skip_marker = pytest.mark.skip(reason=f"needs --e2e to run")
-#     for item in items:
-#         if item.get_closest_marker("e2e") and not config.getoption("--e2e"):
-#             item.add_marker(skip_marker)
-
-
-@pytest.fixture(autouse=True)
-def e2e(request):
-    if request.node.get_closest_marker("e2e") is not None:
-        if not request.config.getoption("--e2e"):
-            pytest.skip("need --e2e option to run")
-
-
-@pytest.fixture(autouse=True)
-def fast_passwords(request):
-    """
-    Mock User password methods to skip bcrypt hashing for speed.
-    Use @pytest.mark.real_passwords to enable real hashing for password tests.
-    """
-    if request.node.get_closest_marker("real_passwords"):
-        yield
-        return
-
-    def _mock_set_password(self, plaintext):
-        self.password = f"mock_hash:{plaintext}"
-        self.reset_password_code = None
-
-    def _mock_check_password(self, plaintext):
-        return self.password == f"mock_hash:{plaintext}"
-
-    def _mock_set_reset_code(self, plaintext):
-        self.reset_password_code = f"mock_hash:{plaintext}"
-
-    def _mock_check_reset_code(self, plaintext):
-        return self.reset_password_code == f"mock_hash:{plaintext}"
-
-    with contextlib.ExitStack() as stack:
-        stack.enter_context(patch.object(User, "set_password", _mock_set_password))
-        stack.enter_context(patch.object(User, "check_password", _mock_check_password))
-        stack.enter_context(
-            patch.object(User, "set_reset_password_code", _mock_set_reset_code)
-        )
-        stack.enter_context(
-            patch.object(User, "check_reset_password_code", _mock_check_reset_code)
-        )
-        yield
+    add_markers(config)
 
 
 @pytest.fixture(scope="session", autouse=True)
 def extensions():
-    """
-    These extension initializers are like modules. Can re-enable for certain
-    tests through marks if needed.
-    """
-    import btcopilot.extensions
-
-    originals = {
-        "init_logging": btcopilot.extensions.init_logging,
-        "init_excepthook": btcopilot.extensions.init_excepthook,
-        "init_mail": btcopilot.extensions.init_mail,
-        "init_datadog": btcopilot.extensions.init_datadog,
-        "init_stripe": btcopilot.extensions.init_stripe,
-        "init_chroma": btcopilot.extensions.init_chroma,
-        "init_celery": btcopilot.extensions.init_celery,
-    }
-    with contextlib.ExitStack() as stack:
-        stack.enter_context(patch("btcopilot.extensions.init_logging"))
-        stack.enter_context(patch("btcopilot.extensions.init_excepthook"))
-        stack.enter_context(patch("btcopilot.extensions.init_datadog"))
-        stack.enter_context(patch("btcopilot.extensions.init_stripe"))
-        stack.enter_context(patch("btcopilot.extensions.init_chroma"))
-        stack.enter_context(patch("btcopilot.extensions.init_celery"))
-        # assert sys.excepthook == sys.__excepthook__
+    with stubbed(PRO_STUBS) as originals:
         yield originals
-
-
-@pytest.fixture(autouse=True)
-def unmocks(request, extensions):
-    """
-    Un-mock anything automatically mocked out (currently just extensions init
-    funcs) by name.
-    """
-    unmocked = []
-    with contextlib.ExitStack() as stack:
-        for init_funcname, original in extensions.items():
-            if request.node.get_closest_marker(init_funcname):
-                stack.enter_context(
-                    patch(f"btcopilot.extensions.{init_funcname}", original)
-                )
-                unmocked.append(init_funcname)
-        yield unmocked
-
-
-@pytest.fixture
-def flask_app(request, tmp_path):
-
-    logging.getLogger("btcopilot").setLevel(logging.DEBUG)
-
-    vector_db = request.node.get_closest_marker("vector_db")
-    if vector_db and "path" in vector_db.kwargs:
-        VECTOR_DB_PATH = vector_db.kwargs["path"]
-    else:
-        VECTOR_DB_PATH = os.path.join(tmp_path, "vector_db")
-
-    kwargs = {
-        "ENV": "unittest",
-        "CONFIG": "testing",
-        "TESTING": True,
-        "SECRET_KEY": "test_secret_key",
-        "FD_DIR": tmp_path,
-        "DATABASE": tmp_path,
-        "VECTOR_DB_PATH": VECTOR_DB_PATH,
-        "MAIL_DEFAULT_SENDER": "patrickkidd@gmail.com",
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
-        "SQLALCHEMY_TRACK_MODIFICATIONS": False,
-        "SERVER_NAME": "127.0.0.1",
-        "STRIPE_ENABLED": truthy(os.getenv("ENABLE_STRIPE", False)),
-        "STRIPE_KEY": os.getenv("FD_TEST_STRIPE_KEY"),
-        "CHROMA_PERSIST_PATH": f"{tmp_path}/vector_db",
-        "SCHEDULER_API_ENABLED": False,
-        "CELERY_BROKER_URL": "memory://",
-        "CELERY_RESULT_BACKEND": "cache+memory://",
-    }
-
-    app = create_app(config=kwargs)
-    app.instance_path = str(tmp_path)
-
-    extensions.mail = Mail()
-    extensions.mail.init_app(app)
-
-    with app.app_context():
-        db.create_all()
-        yield app
-        db.session.remove()
-        db.drop_all()
-
-
-@pytest.fixture
-def db_session():
-    from sqlalchemy.orm import declarative_base
-
-    # Base = declarative_base()
-    Base = db.Model
-
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    with patch.object(db, "session", session):
-        yield session
-
-    session.close()
-    Base.metadata.drop_all(engine)
-
-
-TEST_USER_ATTRS = {
-    "username": "patrickkidd+unittest@gmail.com",
-    "password": "something",
-    "first_name": "Unit",
-    "last_name": "Tester",
-}
-
-
-@pytest.fixture
-def test_user(flask_app):
-    user = User(status="confirmed", **TEST_USER_ATTRS)
-    user._plaintext_password = TEST_USER_ATTRS["password"]
-    db.session.add(user)
-    db.session.merge(user)
-    user.set_free_diagram(pickle.dumps({}))
-    db.session.commit()
-    return user
-
-
-TEST_USER_2_ATTRS = {
-    "username": "patrickkidd+unittest+2@gmail.com",
-    "password": "something else",
-    "first_name": "Unit",
-    "last_name": "Tester 2",
-}
-
-
-@pytest.fixture
-def test_user_2(flask_app):
-    user = User(status="confirmed", **TEST_USER_2_ATTRS)
-    user._plaintext_password = TEST_USER_2_ATTRS["password"]
-    db.session.add(user)
-    db.session.commit()
-    return user
-
-
-@pytest.fixture
-def test_policy(flask_app):
-    policy = Policy(
-        code=btcopilot.LICENSE_PROFESSIONAL_MONTHLY,
-        product=btcopilot.LICENSE_PROFESSIONAL,
-        name="Unit Test Monthly",
-        interval="month",
-        amount=0.99,
-        maxActivations=2,
-        active=True,
-        public=True,
-    )
-    db.session.add(policy)
-    db.session.commit()
-    return policy
-
-
-@pytest.fixture
-def test_license(test_user, test_policy):
-    license = License(user=test_user, policy=test_policy)
-    db.session.add(license)
-    db.session.commit()
-
-    return license
 
 
 @pytest.fixture
@@ -366,16 +110,11 @@ def test_client_activation(test_client_license, test_machine):
 
 @pytest.fixture
 def mock_celery():
-    from btcopilot import extensions
-    from unittest.mock import Mock
-
-    original_celery = extensions.celery
-    mock = Mock()
-    extensions.celery = mock
-
-    yield mock
-
-    extensions.celery = original_celery
+    original = extension_module.celery
+    celery = Mock()
+    extension_module.celery = celery
+    yield celery
+    extension_module.celery = original
 
 
 NEW_SCENE_DATA = {
@@ -421,10 +160,7 @@ def test_user_diagrams(test_user, test_user_2):
     data = pickle.dumps(NEW_SCENE_DATA)
     ids = []
     for i in range(NUM_DIAGRAMS):
-        if i % 2 == 0:
-            user = test_user
-        else:
-            user = test_user_2
+        user = test_user if i % 2 == 0 else test_user_2
         diagram = Diagram(
             user_id=user.id, data=data, updated_at=datetime.datetime.now()
         )
@@ -432,30 +168,3 @@ def test_user_diagrams(test_user, test_user_2):
         db.session.merge(diagram)
         ids.append(diagram.id)
     return Diagram.query.filter(Diagram.id.in_(ids)).all()
-
-
-@pytest.fixture
-def anonymous(flask_app):
-    flask_app.test_client_class = FlaskClient
-    with flask_app.test_client() as client:
-        yield client
-
-
-# # TODO: Should go away, but (was once?) used in a lot of familydiagram tests.
-# @pytest.fixture
-# def test_user_client(flask_qnam, test_user):
-#     """A logged in client that is also encrypted."""
-#     from flaskr import customclient
-
-#     flask_app.test_client_class = customclient.CustomClient
-#     return flask_app.test_client(app=flask_app, user=test_user)
-
-# from btcopilot.extensions.chroma import Chroma
-
-
-# @pytest.fixture
-# def chroma_client(app):
-#     app.config["CHROMA_PERSIST_PATH"] = "/tmp/test_chroma"
-#     chroma = Chroma()
-#     chroma.init_app(app)
-#     return chroma

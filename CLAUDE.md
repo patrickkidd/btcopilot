@@ -177,7 +177,7 @@ The isolation test at `btcopilot/tests/schema/test_isolation.py` enforces this b
 | SARF Editor | `training/templates/components/sarf_editor.html` | Review/edit extracted clinical data (collapsed/expanded views, in-place editing, feedback, cumulative display) |
 | Diagram Renderer | `training/templates/components/family_diagram_svg.html`, `training/routes/diagrams.py` | SVG family diagram visualization. Standalone: `/training/diagrams/render/<statement_id>/<auditor_id>`, embed: `?embed=true`, modal via Discussion page "Diagram" buttons |
 | Chat Flow | [doc/CHAT_FLOW.md](doc/CHAT_FLOW.md) | Chat-only AI conversation (no extraction). Extraction is endpoint-driven via `pdp.extract_full()` — see [PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md) |
-| Synthetic Testing | `btcopilot.tests.personal.synthetic`, [tests README](btcopilot/tests/personal/README.md) | Persona generator, conversation simulator, quality evaluator. Run: `uv run pytest btcopilot/btcopilot/tests/personal/test_synthetic.py -v -m e2e` |
+| Synthetic Testing | `btcopilot.tests.chat.personal.synthetic`, [tests README](btcopilot/tests/chat/personal/README.md) | Persona generator, conversation simulator, quality evaluator. Run: `uv run pytest btcopilot/btcopilot/tests/chat/personal/test_synthetic.py -v -m e2e` |
 | F1 Metrics | [doc/F1_METRICS.md](doc/F1_METRICS.md) | F1 score calculation, entity matching, GT workflow, matching criteria, cache strategy |
 | Visual Spec | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md) | Platform-independent layout spec: person symbols, PairBond geometry, ChildOf connections, MultipleBirth, generational layout, label positioning |
 

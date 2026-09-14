@@ -24,7 +24,7 @@ from btcopilot.schema import (
     Person,
     asdict,
 )
-from btcopilot.tests.personal.conftest import Model, called, csrf_token, said
+from btcopilot.tests.chat.personal.conftest import Model, called, csrf_token, said
 
 
 @pytest.fixture(autouse=True)

@@ -11,7 +11,7 @@ from btcopilot.review.adapter import initials
 from btcopilot.pro.models import User
 from btcopilot.review.freeze import frozen
 from btcopilot.review.models import Coding, Cut, Item, ReviewStatus, Rule, RuleSource
-from btcopilot.tests.review.conftest import coded, person, shift
+from btcopilot.tests.chat.review.conftest import coded, person, shift
 
 
 def test_cut_starts_after_the_previous_one(patrick, session, turns, cut):

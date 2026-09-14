@@ -27,7 +27,7 @@ from btcopilot.schema import (
     Person,
     asdict,
 )
-from btcopilot.tests.personal.conftest import Model, called, calling, said
+from btcopilot.tests.chat.personal.conftest import Model, called, calling, said
 
 
 def run(discussion, statement, model) -> dict:
@@ -235,7 +235,7 @@ def test_play_by_play_names_every_event_once_in_date_order(test_user):
 
 
 def test_chat_returns_the_words_and_the_events_behind_them(web, family, monkeypatch):
-    from btcopilot.tests.personal.conftest import csrf_token
+    from btcopilot.tests.chat.personal.conftest import csrf_token
 
     monkeypatch.setattr(
         "btcopilot.personal.coachturn.CoachModel",
@@ -513,7 +513,7 @@ def test_a_play_by_play_is_marked_as_one_and_names_its_stretch(discussion, famil
 def test_every_message_the_page_reads_back_carries_its_kind(web, family, monkeypatch):
     """The page routes a chip tap by the kind of message it sits in, so the
     kind travels with the message everywhere the page reads one."""
-    from btcopilot.tests.personal.conftest import csrf_token
+    from btcopilot.tests.chat.personal.conftest import csrf_token
 
     monkeypatch.setattr(
         "btcopilot.personal.coachturn.CoachModel",
@@ -557,7 +557,7 @@ def test_a_csrf_token_older_than_an_hour_still_posts(web, family, monkeypatch):
     typing had every send refused and read an empty coach bubble."""
     import time
 
-    from btcopilot.tests.personal.conftest import csrf_token
+    from btcopilot.tests.chat.personal.conftest import csrf_token
 
     monkeypatch.setattr(
         "btcopilot.personal.coachturn.CoachModel",
@@ -582,7 +582,7 @@ def test_a_moment_the_coach_wrote_traces_to_the_message_that_wrote_it(
     """The page offers the way back to where a moment was said. Nothing stamps
     that on the moment itself outside the fixtures, so it is read from the
     command log: the coach's own message against the commands that turn made."""
-    from btcopilot.tests.personal.conftest import csrf_token
+    from btcopilot.tests.chat.personal.conftest import csrf_token
 
     monkeypatch.setattr(
         "btcopilot.personal.coachturn.CoachModel",

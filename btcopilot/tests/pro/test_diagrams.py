@@ -11,7 +11,7 @@ import btcopilot
 from btcopilot.extensions import db
 from btcopilot.pro.models import Diagram
 
-from btcopilot.tests.conftest import TEST_USER_2_ATTRS
+from btcopilot.tests.fixtures import TEST_USER_2_ATTRS
 
 
 def test_diagrams_create(flask_app, test_user):

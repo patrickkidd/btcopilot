@@ -3,7 +3,9 @@
 import ast
 from pathlib import Path
 
-PACKAGE = Path(__file__).resolve().parents[2] / "review"
+from btcopilot.tests.repo import PACKAGE as SOURCE
+
+PACKAGE = SOURCE / "review"
 DOOR = "adapter.py"
 FORBIDDEN = ("btcopilot.personal", "btcopilot.pro")
 

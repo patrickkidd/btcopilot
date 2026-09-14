@@ -11,7 +11,7 @@ from btcopilot.personal.coachmodel import ModelTurn, ToolCall
 from btcopilot.personal.models import Change
 from btcopilot.review import adapter
 from btcopilot.review.scribe import written
-from btcopilot.tests.review.conftest import coded, person
+from btcopilot.tests.chat.review.conftest import coded, person
 
 
 class Scripted:

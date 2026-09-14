@@ -148,7 +148,7 @@ Five personas implemented with:
 
 This enables systematic testing of extraction prompts without real clinical data.
 
-Source: [btcopilot/tests/personal/synthetic.py](btcopilot/tests/personal/synthetic.py)
+Source: [btcopilot/tests/chat/personal/synthetic.py](btcopilot/tests/chat/personal/synthetic.py)
 
 ![Synthetic Data Generator](doc/images/6--Synthetic-Data.png)
 ![Synthetic Discussion](doc/images/7--Synthetic-Discussion.jpg)
@@ -165,7 +165,7 @@ Automated quality scoring measures clinical interview effectiveness:
 
 These metrics apply equally to AI prompts and human trainee clinicians—same rubric, objective comparison.
 
-Source: QualityEvaluator in [btcopilot/tests/personal/synthetic.py](btcopilot/tests/personal/synthetic.py)
+Source: QualityEvaluator in [btcopilot/tests/chat/personal/synthetic.py](btcopilot/tests/chat/personal/synthetic.py)
 
 ### Phase 8: Ground Truth Collection via Expert Auditing ✓
 *In Progress*

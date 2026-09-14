@@ -11,7 +11,7 @@ from btcopilot.pro.models import User
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 import btcopilot
 
-from btcopilot.tests.conftest import flask_app
+from btcopilot.tests.fixtures import flask_app
 
 
 def pytest_configure(config):

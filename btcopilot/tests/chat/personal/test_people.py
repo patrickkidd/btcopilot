@@ -6,7 +6,7 @@ import pytest
 from btcopilot.extensions import db
 from btcopilot.personal.models import Author, Change
 from btcopilot.schema import Person, PersonKind, asdict
-from btcopilot.tests.personal.conftest import csrf_token
+from btcopilot.tests.chat.personal.conftest import csrf_token
 
 
 @pytest.fixture

@@ -1,17 +1,14 @@
 """The one migration the branch adds, run against SQLite."""
 
 import importlib.util
-from pathlib import Path
 
 import sqlalchemy as sa
 from mock import MagicMock, patch
 
 from btcopilot.extensions import db
+from btcopilot.tests.repo import REPO
 
-REVISION = (
-    Path(__file__).resolve().parents[3]
-    / "alembic/versions/e1f2a3b4c5d6_personal_chat_app.py"
-)
+REVISION = REPO / "alembic/versions/e1f2a3b4c5d6_personal_chat_app.py"
 
 RENAMED = {"diagram_changes", "diagram_interactions"}
 REVIEW = {

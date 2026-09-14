@@ -7,17 +7,17 @@ import json
 import os
 import subprocess
 import sys
-from pathlib import Path
 
 import pytest
 from jinja2 import TemplateNotFound
 
 from btcopilot.personal import prompts
 from btcopilot.personal.promptdir import PromptDir, key_present, read, split
+from btcopilot.tests.repo import REPO
 
 GOLDENS = os.path.join(os.path.dirname(__file__), "prompt_goldens.json")
 # Where the private files sit in this repo, whatever the run was pointed at.
-REAL_PRIVATE = Path(__file__).resolve().parents[3] / "private" / "prompts"
+REAL_PRIVATE = REPO / "private" / "prompts"
 
 RECORD = "RECORD-SENTINEL\nsecond line"
 INTERACTIONS = "INTERACTIONS-SENTINEL"
@@ -146,7 +146,7 @@ def test_importing_the_app_decrypts_nothing(tmp_path):
     (fake / "sops").chmod(0o755)
     env = dict(os.environ, PATH=f"{fake}:{os.environ['PATH']}")
     env.pop("FD_PRIVATE_PROMPTS", None)
-    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[3])
+    env["PYTHONPATH"] = str(REPO)
     done = subprocess.run(
         [sys.executable, "-c", "import btcopilot.app, btcopilot.pdp"],
         capture_output=True,

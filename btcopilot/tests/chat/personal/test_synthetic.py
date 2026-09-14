@@ -12,7 +12,7 @@ import pytest
 from btcopilot.extensions import db
 from btcopilot.personal import ask
 from btcopilot.personal.models import Discussion, Statement, Speaker
-from btcopilot.tests.personal.synthetic import (
+from btcopilot.tests.chat.personal.synthetic import (
     DEPRECATED_PERSONAS,
     Persona,
     PersonaTrait,
@@ -392,7 +392,7 @@ def test_generate_persona(test_user, monkeypatch):
         }
     )
     monkeypatch.setattr(
-        "btcopilot.tests.personal.synthetic.gemini_text_sync",
+        "btcopilot.tests.chat.personal.synthetic.gemini_text_sync",
         lambda *a, **kw: mock_response,
     )
 
