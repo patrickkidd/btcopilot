@@ -60,6 +60,7 @@ __all__ = [
     "given",
     "initials",
     "pdp_of",
+    "plain",
     "pdp_from",
     "record_of",
     "to_json",
@@ -155,6 +156,14 @@ def case_diagram(discussion: Discussion) -> Diagram:
 def to_json(value):
     """A plain Python value in the record's own tagged JSON form."""
     return diagramjson.to_json(value)
+
+
+def plain(value):
+    """One field of a record as a screen reads it: an enum as its word, a day
+    as its date, everything else as it stands."""
+    if isinstance(value, str) or isinstance(value, (int, float, bool)) or value is None:
+        return getattr(value, "value", value)
+    return date_text(value) or getattr(value, "value", value)
 
 
 def record_of(diagram: Diagram) -> dict:

@@ -255,6 +255,7 @@ def upgrade():
         sa.Column("item_id", sa.String(64), nullable=True),
         sa.Column("opinions", _json(), nullable=False),
         sa.Column("status", REVIEW_STATUS, nullable=False),
+        sa.Column("ambiguous", sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column(
             "decision_change_id",
             sa.Integer(),

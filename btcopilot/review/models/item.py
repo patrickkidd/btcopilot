@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import Column, Enum, ForeignKey, Integer, JSON, String
+from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, JSON, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
@@ -36,6 +36,9 @@ class Item(db.Model, ModelMixin):
         Enum(ReviewStatus, values_callable=lambda e: [x.value for x in e]),
         nullable=False,
     )
+    #: The matcher could not tell which person of another coding this is, so the
+    #: room decides who is who rather than the match being guessed (R-0326).
+    ambiguous = Column(Boolean, nullable=False, default=False, server_default="0")
     decision_change_id = Column(
         Integer, ForeignKey("diagram_changes.id"), nullable=True
     )
