@@ -62,7 +62,15 @@ def unclear(said: str, people: list[dict]) -> str:
         for person in people
         if " ".join(WORDS.findall(_name(person))).lower() in lowered
     ]
-    matched = whole or [
+    if whole:
+        # Naming two people outright is naming them, not pointing vaguely at
+        # one: "Marcus married Delphine" is a sentence about a bond. Only two
+        # people the sentence cannot tell apart are asked about, and a name
+        # inside a longer one ("Marcus" in "Marcus's father") is the shorter
+        # reading of the same words.
+        rival = _rival(whole)
+        return _which(rival) if rival else ""
+    matched = [
         person
         for person in people
         if spoken & {word.lower() for word in WORDS.findall(_name(person))}
@@ -77,6 +85,17 @@ def unclear(said: str, people: list[dict]) -> str:
         if len(could) != 1:
             return _which(could or people)
     return ""
+
+
+def _rival(named: list[dict]) -> list[dict]:
+    """Two of the people the sentence names outright whose names are the same
+    words, which is the one case naming somebody does not say who."""
+    words = {id(p): frozenset(w.lower() for w in WORDS.findall(_name(p))) for p in named}
+    for person in named:
+        same = [p for p in named if words[id(p)] == words[id(person)]]
+        if len(same) > 1:
+            return same
+    return []
 
 
 #: Words that name a person by their place in the family, which a coder uses

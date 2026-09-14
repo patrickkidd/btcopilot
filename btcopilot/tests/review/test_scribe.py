@@ -278,6 +278,50 @@ def test_fdserver_replaces_the_scribe_prompt(coder, cut, turns, tmp_path):
     assert "the private scribe words" not in prompts.scribe_prompt("")
 
 
+def test_a_marriage_and_a_child_are_written_and_said_back(coder, cut, turns):
+    """The coder says who belongs to whom; the lines under their words are the
+    marriage and the child, in the record's own words (R-0326, drawing 1a)."""
+    coding = coded(
+        coder.user,
+        cut,
+        {
+            "people": [
+                {"id": 1, "name": "Marcus", "gender": "male"},
+                {"id": 2, "name": "Delphine", "gender": "female"},
+            ],
+            "lastItemId": 2,
+        },
+        done=False,
+    )
+    model = Scripted(
+        [("edit_pair_bond", {"person_a": 1, "person_b": 2, "married": True})],
+        [
+            (
+                "edit_event",
+                {
+                    "kind": "married",
+                    "date": "1970-06-01",
+                    "person": 1,
+                    "spouse": 2,
+                },
+            )
+        ],
+        [("edit_person", {"name": "Corinne", "gender": "female", "parents": 3})],
+    )
+    response = scribe(
+        coder,
+        coding,
+        turns[0],
+        model,
+        "Marcus married Delphine in 1970 and Corinne is their daughter",
+    )
+    assert response.status_code == 200
+    assert response.json["lines"] == [
+        "+ Marcus & Delphine · married · Jun 1970",
+        "+ Corinne · daughter of Marcus & Delphine",
+    ]
+
+
 STRUCTURE = {
     "people": [
         {"id": 1, "name": "Marcus", "gender": "male"},
