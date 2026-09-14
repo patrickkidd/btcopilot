@@ -12,6 +12,7 @@ import re
 import uuid
 
 from btcopilot.review import adapter
+from btcopilot.schema import DateCertainty
 
 _log = logging.getLogger(__name__)
 
@@ -337,7 +338,7 @@ def _bond_words(bond: dict, people: dict, events: dict) -> str:
         and _pair_of(event.get("person"), event.get("spouse")) == pair
     ]
     word = "married" if bond.get("married") else "together"
-    when = _when(started[0].get("dateTime")) if started else "no date yet"
+    when = _when(*_dated(started[0])) if started else "no date yet"
     return f"+ {_both(bond, people)} · {word} · {when}"
 
 
@@ -346,30 +347,43 @@ def _add(out: list[str], line: str):
         out.append(line)
 
 
+def _dated(event: dict) -> tuple:
+    return event.get("dateTime"), event.get("dateCertainty")
+
+
 def _event_words(event: dict, people: dict) -> str:
     kind = _plain(event.get("kind"))
     if kind in PAIR_KINDS and event.get("spouse") is not None:
         both = _joined(people, event.get("person"), event.get("spouse"))
-        return f"+ {both} · {kind} · {_when(event.get('dateTime'))}"
+        return f"+ {both} · {kind} · {_when(*_dated(event))}"
     about = event.get("child")
     if about is None:
         about = event.get("person")
     who = _name(people.get(str(about), {})) if about is not None else "the family"
     kind = _plain(event.get("kind")) or "event"
-    return f"+ {who} · {kind} · {_when(event.get('dateTime'))}"
+    return f"+ {who} · {kind} · {_when(*_dated(event))}"
 
 
 MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
 
 
-def _when(value) -> str:
-    """A day in the words the rest of the app uses: the month and the year."""
+def _when(value, certainty=None) -> str:
+    """A day in the words the rest of the app uses: the month and the year.
+
+    A coder who says only a year leaves the scribe writing the first of
+    January and marking it approximate, which is within a year either way; the
+    month there was never said, so it is not read back (R-0326)."""
     written = adapter.date_text(value)
     if not written:
         return "no date yet"
     year, _, rest = written.partition("-")
-    month = rest.split("-")[0]
-    return f"{MONTHS[int(month) - 1]} {year}" if month.isdigit() else year
+    month, _, day = rest.partition("-")
+    if not month.isdigit():
+        return year
+    approximate = _plain(certainty) == DateCertainty.Approximate.value
+    if approximate and month == "01" and day == "01":
+        return year
+    return f"{MONTHS[int(month) - 1]} {year}"
 
 
 def _plain(value) -> str:

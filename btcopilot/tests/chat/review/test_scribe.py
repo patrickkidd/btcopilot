@@ -408,3 +408,37 @@ def test_a_bond_with_no_event_says_it_has_no_date_yet():
     assert written(record, [], [], ["10"]) == [
         "+ Marcus & Delphine · married · no date yet"
     ]
+
+
+def test_a_year_the_coder_only_said_as_a_year_reads_as_the_year():
+    """A year alone is stored as the first of January, approximate; the month
+    was never said, so it is not read back (R-0326)."""
+    record = dict(
+        STRUCTURE,
+        events=[
+            dict(
+                STRUCTURE["events"][0],
+                dateTime="1970-01-01",
+                dateCertainty="approximate",
+            )
+        ],
+    )
+    assert written(record, ["20"], [], ["10"]) == [
+        "+ Marcus & Delphine · married · 1970"
+    ]
+
+
+def test_a_january_date_the_coder_stated_keeps_its_month():
+    record = dict(
+        STRUCTURE,
+        events=[
+            dict(
+                STRUCTURE["events"][0],
+                dateTime="1970-01-01",
+                dateCertainty="certain",
+            )
+        ],
+    )
+    assert written(record, ["20"], [], ["10"]) == [
+        "+ Marcus & Delphine · married · Jan 1970"
+    ]
