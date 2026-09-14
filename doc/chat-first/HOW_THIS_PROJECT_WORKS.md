@@ -34,12 +34,15 @@ only and are never said to him.
 
 ## The scout: every session reads SCOUT.md after STATE.md
 
-A scout runs unattended after every build that produces a testing walk for Patrick — the
-`/two-clocks` flush at the end of that build is what starts it, with a weekly floor so a
-quiet week still gets one run — and looks outward — at what Anthropic and OpenAI
-published, at what the Claude Code changelog changed, at new research on evaluating agents
-and deriving tests from a specification, and at a fixed list of accounts on X.com when the
-browser extension is connected. It proposes at most ten ranked changes to this project's own
+A scout runs locally, inside a session, at the flush of any build that handed Patrick a
+testing walk — `/two-clocks` invokes it, there is no schedule [R-0336] — and looks outward: at
+what Anthropic and OpenAI published, at what the Claude Code changelog changed, at new
+research on evaluating agents and deriving tests from a specification, and at a fixed list of
+accounts on X.com through the Chrome extension, asking Patrick to connect or sign in when it
+cannot reach them rather than skipping the source. It reads inward too — the corpus, and
+Patrick's own typed statements as the trace script mines them out of the local transcripts —
+so a bottleneck is one he hit, not one inferred from a commit. It proposes at most ten ranked
+changes to this project's own
 process files, each carrying a source, the dated line in the corpus it answers, the exact
 file it would change, and a prediction on one of four measured numbers: hours from brief to
 walk-ready, Patrick's findings per walk, re-walks per screen, chat suite minutes. It never
@@ -55,9 +58,12 @@ kill or keep on each kind of scout proposal, catching proposals that were safe t
 picked because they agreed, and numbers moved by covering less rather than working better; and
 a designer who proposes exactly one change to the scout's brief per run, framed as an
 experiment with a stopping rule. They write one ledger entry together and open one draft pull
-request touching the scout's brief alone — never these process rules and never code. It runs
-after every four scout runs or as soon as two predictions have a measured outcome, with a
-monthly floor. Its brief is `.claude/skills/loop-review/SKILL.md`.
+request touching the scout's brief alone — never these process rules and never code. The same
+flush step invokes it, after every fourth scout run or as soon as two predictions have a
+measured outcome, both counted in SCOUT.md. Its brief is
+`.claude/skills/loop-review/SKILL.md`. Every proposal and every experiment at both levels
+must come from a development on the internet, cited with a link and a date [R-0335]; an item
+with no external source is dropped.
 
 ## Sessions start at any altitude, from any angle
 Patrick will start sessions this week to learn and to pivot, sometimes at product

@@ -16,9 +16,12 @@ Ruling R-0334. The scout improves the project; this improves the scout. Nobody i
 while you run. Your whole output is one entry appended to `doc/chat-first/SCOUT.md` and one
 draft pull request.
 
-**When it runs.** After every four scout runs, or as soon as two of the scout's predictions
-have a measured outcome in the ledger, whichever comes first. Monthly floor: if neither has
-happened in a month, it runs anyway. It never runs on a calendar date alone.
+**When it runs, and where** [R-0336]. Locally, inside a session, never on a schedule. The
+`/two-clocks` flush invokes it at step 10, straight after a scout run, when either count in
+`doc/chat-first/SCOUT.md` has come due: the fourth scout run since the last loop review, or
+two of the scout's predictions carrying a measured outcome. The ledger holds both counts;
+read them there rather than guessing from dates. A disabled cloud routine exists as a
+fallback for stretches when no build happens.
 
 **What it may change.** `.claude/skills/scout/SKILL.md` only. Not
 `doc/chat-first/HOW_THIS_PROJECT_WORKS.md`, not any other process file, not application

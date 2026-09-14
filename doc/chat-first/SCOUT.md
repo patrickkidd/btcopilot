@@ -14,22 +14,31 @@ item applies to that day's work.
 
 ## When the two runs happen
 
-Both are event-driven, with a floor so neither can go quiet. Neither runs on a calendar
-date alone.
+**The loop is local and lives inside sessions** [R-0336]. Neither run is scheduled and
+neither runs on a calendar date. The `/two-clocks` flush is what invokes them, at its step
+10.
 
-**The scout** runs after every build that produces a testing walk for Patrick. The trigger
-is the `/two-clocks` flush at the end of that build: when the flush writes a build whose
-handover is a walk, it starts the scout. Floor: weekly. If no walk-producing build has
-happened in a week, the scout runs anyway on the week it has.
+**The scout** runs at the flush of any build that handed Patrick a testing walk. A flush of
+a build with no walk does not run it. Alongside the corpus it reads the session transcripts
+— `bin/trace.py` mines Patrick's own typed statements into `doc/chat-first/trace.json`,
+read-only to the scout — so a bottleneck is one he actually hit rather than one inferred
+from a commit. It reads X.com through the Chrome extension for a fixed account list, and
+when the extension is not connected or not signed in it asks him to connect or sign in and
+waits, rather than skipping the source.
 
-**The loop review** runs after every four scout runs, or as soon as two of the scout's
-predictions have a measured outcome in the ledger below, whichever comes first. Floor:
-monthly. Its brief is `.claude/skills/loop-review/SKILL.md`; it reviews the scout itself,
-may change only the scout's brief, and never touches this project's process files.
+**The loop review** runs at the same flush step, straight after a scout run, when either
+count below has come due: the fourth scout run since the last loop review, or two of the
+scout's predictions carrying a measured outcome. Both counts are read from this file. Its
+brief is `.claude/skills/loop-review/SKILL.md`; it reviews the scout itself, may change only
+the scout's brief, and never touches this project's process files.
 
-If Patrick wants the floors enforced by a schedule rather than by the next session noticing,
-the weekly one is `0 6 * * 0 America/Anchorage` and the monthly one `0 6 1 * *`. Neither
-skill creates its own schedule.
+**Counts, kept here.** Scout runs since the last loop review: 0. Predictions with a measured
+outcome: 0.
+
+**The fallback.** Two cloud routines exist, both disabled, to cover a stretch where no build
+happens and so no flush runs — a weekly scout and a monthly loop review. They are turned on
+deliberately by Patrick and are not the normal path. Neither skill creates or enables a
+schedule.
 
 ## The four numbers
 

@@ -15,11 +15,12 @@ Ruling R-0333. One agent, one run, output capped. Nobody is present while you ru
 nothing you write reaches Patrick directly. Your whole output is `doc/chat-first/SCOUT.md`
 and, for your top three items, one draft pull request.
 
-**When you run.** After every build that produces a testing walk for Patrick. The trigger is
-the `/two-clocks` flush at the end of that build: when the flush writes a build whose
-handover is a walk, it starts you. Floor: weekly, so a quiet week still gets one run. You
-never run on a calendar date alone and you never create your own schedule. If the floors are
-ever enforced by a schedule instead, the weekly line is `0 6 * * 0 America/Anchorage`.
+**When you run, and where** [R-0336]. Locally, inside a session, never on a schedule. The
+`/two-clocks` flush invokes you at step 10, after any build that handed Patrick a testing
+walk. A flush of a build with no walk does not run you. You never create a schedule and you
+never run from a calendar date. Patrick is usually at the keyboard while you work, which is
+why you are allowed to ask him for the one thing you cannot do alone (see the X.com source
+below). Two cloud routines exist, disabled, as a fallback for weeks when no build happens.
 
 ## 1. Read the project before reading the world
 
@@ -32,6 +33,15 @@ In `/Users/patrick/theapp/btcopilot/.claude/worktrees/FD-362`:
 - `git log --since="7 days ago"` on this branch.
 - `doc/chat-first/SCOUT.md` — the ledger, including every proposal you made before and
   whether it merged and whether its number moved.
+- **The session transcripts** [R-0336]. `python bin/trace.py` mines Patrick's own typed
+  statements out of the local transcripts into `doc/chat-first/trace.json`, one row per thing
+  he typed, in order, with each statement's time. Read that file; treat it as read-only and
+  never rewrite a row — naming rows is the flush's job, not yours. It is the only place the
+  friction he expressed in his own words is recorded, which is what separates a bottleneck he
+  actually hit from one you inferred from a commit.
+- **The decrypted private files** where they bear on the question — the oracle's rulings and
+  evidence in the fdserver worktree, and the private prompts. Never copy their contents into
+  the ledger; cite the ruling id.
 
 From those, write down in your own notes the three to five things that actually cost this
 project time this week. Name them from evidence in the corpus, not from a list of things
@@ -46,13 +56,15 @@ Sources, in this order:
   Claude Code changelog and release notes, OpenAI's engineering and cookbook posts.
 - **arXiv** — agent evaluation, specification-derived testing, multi-agent coordination,
   LLM-as-judge reliability. Last seven days.
-- **X.com, through the browser extension, for a fixed list of accounts** — and only when
-  the extension reports a connected browser. Check first with
-  `mcp__claude-in-chrome__list_connected_browsers`. If no browser is connected, skip this
-  source entirely and write one line in SCOUT.md saying the browser was not connected and
-  X.com was not read. Never substitute a web search for it and never present a search
-  result as if it came from these accounts. The accounts:
+- **X.com, through the Chrome extension, for the fixed account list below.** Check first
+  with `mcp__claude-in-chrome__list_connected_browsers`. **If the extension is not connected,
+  or the browser is not signed in to X.com, ask Patrick to connect or sign in, and wait**
+  [R-0336]. Do not skip the source, do not carry on without it, and do not substitute a web
+  search or present a search result as if it came from these accounts. One plain line is
+  enough: say which of the two is missing and that you are waiting. The accounts:
   `@AnthropicAI`, `@alexalbert__`, `@simonw`, `@_catwu`, `@OpenAIDevs`, `@swyx`.
+  Keep this list here in the skill; a run that finds an account dead says so in the ledger
+  rather than quietly substituting another.
 
 Use `WebSearch` and `WebFetch` for everything else. Read the source, not a summary of it.
 
