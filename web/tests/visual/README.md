@@ -30,6 +30,21 @@ The fixture command needs the same `FLASK_APP`, `FLASK_CONFIG`,
 `FLASK_SQLALCHEMY_DATABASE_URI` and `PYTHONPATH` the sandbox runs with, so run
 the tests from a shell that has them.
 
+## The review walks
+
+`sandbox*.spec.ts` are not pictures. Each one drives a whole journey through
+the running review sandbox — the table, the ballot, the meeting and its
+result, the meeting read line by line, the family structure, the chat app's own
+screens, the scribe, and tapping on the coding thread — and checks a sentence
+about behaviour at every step. They run as their own projects
+(`sandbox-phone`, `sandbox-webkit`, `sandbox-desktop`) and skip unless the
+sandbox and its sign-in links are named in the environment, so a plain golden
+run never waits on them. `tests/visual/sandbox.ts` says which variables.
+
+The scripts in `~/worktrees/fd362-sandbox` set those variables and reset the
+fixture between walks: `runspec.sh <spec> <width> <height> <tag>` runs one,
+`runall.sh` runs the table, the ballot and the meeting in order.
+
 ## Accepting a change
 
 ```
