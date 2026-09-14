@@ -1,2 +1,3 @@
-private/**/*.md diff=sops
-private/**/*.prompty diff=sops
+private/prompts/** diff=sops
+private/oracle/** diff=sops
+private/goldens.json diff=sops

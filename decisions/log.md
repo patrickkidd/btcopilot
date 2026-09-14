@@ -1140,6 +1140,47 @@ the earlier friction auto-report ruling.
 
 ## 2026-09
 
+### 2026-09-13: FD-362 platform — prompts become files, secrets are encrypted in place
+
+**Context:** Steps 1-5 of `doc/chat-first/PLATFORM_BUILD.md`. The chat app was
+reading its real prompts out of a second private repo through a runtime path
+override, which made that repo a dependency of every run and of the tests.
+
+**Decisions accepted:**
+- **One .prompty file per prompt**, open-source defaults in
+  `btcopilot/personal/prompty/`, private wording in `private/prompts/`. A private
+  file replaces the public one of the same name; anything it does not carry falls
+  through. The app runs whole with no private directory at all.
+- **The prompt files are rendered with Jinja2 directly, not with the prompty
+  package.** The package's value is its invoker, and the app has its own model
+  client, so taking the dependency would have bought a YAML parser. The file
+  format is unchanged; only the renderer is ours. A fragment that is missing
+  raises rather than rendering empty, which was the risk named in the plan.
+- **Defaults live in each prompt file's frontmatter**, because Jinja2's include
+  does not see a value the including template set, and the coach's chat prompt
+  and its agent prompt want different words when the record is empty.
+- **The tool parameter meanings merge key by key**, so the private file names
+  only the parameters whose meaning is clinical. Before this the private file had
+  to restate the eleven it did carry and silently dropped three.
+- **sops with age, whole-file, and the key outside every repo.** Today's key is a
+  throwaway for development; Patrick's own key and the new box's replace it.
+- **The rulings stay as whole files, not one file per ruling.** The plan made the
+  split conditional on the diff being unreadable. The committed bytes are one
+  opaque blob either way, and `.gitattributes` with a decrypting textconv gives a
+  full readable `git diff` locally, so splitting 300-odd index lines into 300
+  files would buy only a filename in a pull request's view. Open for Patrick if
+  he reviews rulings on GitHub rather than locally.
+
+**Rejected:** keeping the second repo on the path "just for tests" — it was the
+reason the tests had been running on the open-source stubs without anyone
+noticing, since the path it computed did not exist in a worktree.
+
+**Proved:** every prompt renders the text its Python constant produced, asserted
+string for string, public and private, from the encrypted files. The coach
+answered a real chat turn on the sandbox and wrote to the record with no second
+repo on the import path.
+
+
 ### 2026-09-12: FD-362 Pro surfaces — one licence gate, no second app
 
 **Context:** Building the Pro screens drawn in `doc/chat-first/mockups/pro.html` (frames f1–f7):
