@@ -12,6 +12,7 @@ from btcopilot.review import coachscore, snapshot, tendencies
 from btcopilot.review.models import ReviewStatus, Rule
 from btcopilot.review.routes import bp, coder, cut_or_404, human_codings
 from btcopilot.review.routes.rules import payload as rule_payload
+from btcopilot.schema import ItemKind
 
 
 @bp.route("/result")
@@ -40,6 +41,7 @@ def result_read():
             "ratified": counts[ReviewStatus.Decided.value]
             + counts[ReviewStatus.Agreed.value],
             "unresolved": counts[ReviewStatus.Unresolved.value],
+            "structure": _structure(theirs),
             "first_pass": figures.get(snapshot.AgreementPhase.FirstPass.value),
             "after": figures.get(snapshot.AgreementPhase.Ratified.value),
             "coach": coachscore.score(cut),
@@ -48,6 +50,24 @@ def result_read():
             "coders": tendencies.rows(cut),
         }
     )
+
+
+def _structure(items: list) -> dict:
+    """How much of the family the room settled: an unresolved person is the one
+    that matters most, because every event about them stands on it (R-0326)."""
+    found = [item for item in items if item.item_kind in (ItemKind.Person, ItemKind.PairBond)]
+    return {
+        "people": len([i for i in found if i.item_kind is ItemKind.Person]),
+        "bonds": len([i for i in found if i.item_kind is ItemKind.PairBond]),
+        "ratified": len(
+            [
+                i
+                for i in found
+                if i.status in (ReviewStatus.Decided, ReviewStatus.Agreed)
+            ]
+        ),
+        "unresolved": len([i for i in found if i.status is ReviewStatus.Unresolved]),
+    }
 
 
 def _rules(cut) -> list[Rule]:

@@ -88,6 +88,16 @@ export class ResultScreen {
       `<span>${found.items} items</span>` +
       `<span>${found.ratified} ratified</span>` +
       `<span>${found.unresolved} unresolved</span>` +
+      // One more count beside the events: an unresolved person is the one that
+      // matters most, because every event about them stands on it (R-0326).
+      (found.structure
+        ? `<span>${found.structure.people} ` +
+          `${found.structure.people === 1 ? "person" : "people"} and ` +
+          `${found.structure.bonds} ` +
+          `${found.structure.bonds === 1 ? "bond" : "bonds"} · ` +
+          `${found.structure.ratified} ratified, ` +
+          `${found.structure.unresolved} unresolved</span>`
+        : "") +
       `<span>agreement first pass <b>${percent(found.first_pass?.percent)}</b></span>` +
       `<span>after ratification <b>${percent(found.after?.percent)}</b></span>` +
       (coach

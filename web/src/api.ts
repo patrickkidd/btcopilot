@@ -7,6 +7,7 @@ import type {
   CoderLine,
   Coding,
   Cut,
+  CodingRecord,
   SessionTurns,
   CodingThread,
   Rule,
@@ -16,6 +17,7 @@ import type {
   InteractionKind,
   ItemKind,
   PlayReply,
+  PairBond,
   Person,
   Passkey,
   PasskeyCreationOptions,
@@ -166,6 +168,27 @@ export const savePerson = (
 export const deletePerson = (id: number, diagramId?: number) =>
   call<void>("DELETE", onDiagram(`/people/${id}`, diagramId));
 
+/** The bond between two people: one ever between any two of them, saying
+ * whether they married. When it started and ended are events (R-0326). */
+export const savePairBond = (
+  id: number | null,
+  body: Partial<PairBond>,
+  diagramId?: number,
+) =>
+  id === null
+    ? call<PairBond>("POST", onDiagram("/pair_bonds", diagramId), body)
+    : call<PairBond>("PATCH", onDiagram(`/pair_bonds/${id}`, diagramId), body);
+
+export const deletePairBond = (id: number, diagramId?: number) =>
+  call<void>("DELETE", onDiagram(`/pair_bonds/${id}`, diagramId));
+
+/** Parents for somebody who has none on the record: the bond is made with
+ * generically named people where nobody named them (R-0325). */
+export const addParents = (personId: number, diagramId?: number) =>
+  call<PairBond>("POST", onDiagram("/pair_bonds", diagramId), {
+    parent_of: personId,
+  });
+
 /** Sessions, newest activity first. The server has no current-session pointer:
  * posting into a session is what makes it the one you come back to. */
 export const sessionIndex = (diagramId?: number) =>
@@ -307,6 +330,11 @@ export const items = (cutId: number) =>
   ask<BallotItem[]>("GET", `/items?cut_id=${cutId}`);
 
 export const votes = (cutId: number) => ask<Vote[]>("GET", `/votes?cut_id=${cutId}`);
+
+/** The family each coding was written on, which is what a person or a bond is
+ * drawn against: a version of a person says nothing on its own (R-0326). */
+export const records = (cutId: number) =>
+  ask<CodingRecord[]>("GET", `/records?cut_id=${cutId}`);
 
 /** One vote on one item: a take as it was written, a take of your own, or that
  * this should not be an event in the record at all (R-0257). */

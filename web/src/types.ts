@@ -74,6 +74,19 @@ export interface Person {
   /** Those two events themselves, so the reader can be sent to them. */
   birth_event: number | null;
   death_event: number | null;
+  /** The pair bond they were born into, which is how the record holds who
+   * somebody's parents are. */
+  parents: number | null;
+}
+
+/** The bond between two people. There is one ever between any two of them, it
+ * says whether they married, and a child is born into it (R-0326). */
+export interface PairBond {
+  id: number;
+  person_a: number | null;
+  person_b: number | null;
+  married: boolean;
+  label?: string;
 }
 
 export interface TimelineEvent {
@@ -127,6 +140,7 @@ export interface Question {
 
 export interface Timeline {
   people: Person[];
+  pair_bonds: PairBond[];
   events: TimelineEvent[];
   clusters: Cluster[];
   questions: Question[];
@@ -141,6 +155,7 @@ export interface Timeline {
  * fresh one each time, so two surfaces never share one object. */
 export const emptyTimeline = (): Timeline => ({
   people: [],
+  pair_bonds: [],
   events: [],
   clusters: [],
   questions: [],
@@ -543,6 +558,15 @@ export interface Opinion {
   item: Record<string, unknown>;
 }
 
+/** The family one coding was written on, which a person or a bond is drawn
+ * against: the version being voted on stands in the middle of it (R-0326). */
+export interface CodingRecord {
+  coding_id: number;
+  people: Person[];
+  pair_bonds: PairBond[];
+  events: TimelineEvent[];
+}
+
 /** How the snapshot found the coders reading one item: the same way, or not.
  * Decided and unresolved are what the meeting makes of it afterwards. */
 export enum ItemStatus {
@@ -568,6 +592,9 @@ export interface BallotItem {
   people: { id: number; name: string }[];
   /** The transcript line the item came from, which is never edited here. */
   line: { statement_id: number; who: string; text: string } | null;
+  /** The matcher could not tell which person of another coding this is, so the
+   * room decides who is who before anything else about them (R-0326). */
+  ambiguous?: boolean;
   /** Who decided it, which only the meeting's own reading carries. */
   user_id?: number | null;
 }
@@ -662,6 +689,14 @@ export interface Result {
   items: number;
   ratified: number;
   unresolved: number;
+  /** How much of the family the room settled, which is counted beside the
+   * events rather than mixed into them (R-0326). */
+  structure: {
+    people: number;
+    bonds: number;
+    ratified: number;
+    unresolved: number;
+  } | null;
   first_pass: Agreement | null;
   after: Agreement | null;
   coach: CoachScore | null;

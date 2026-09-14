@@ -2471,6 +2471,12 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 .opinion .n { font: 400 13px var(--mono); color: var(--faint); }
+/* A version of a person or a bond is drawn as well as written: the drawing sits
+ * under the words and takes the whole width of the card (R-0326). */
+.opinion:has(.frag) { grid-template-columns: 1fr; }
+.frag { display: flex; justify-content: center; padding: 4px 0; }
+.frag svg { max-width: 100%; height: auto; }
+.side .frag { flex-basis: 100%; justify-content: flex-start; }
 .opinion:active { background: var(--tint); }
 .opinion.on { border-color: var(--data); color: var(--data); background: var(--tint); }
 .bl-card .note { font: 400 13px var(--mono); color: var(--faint); }
@@ -2571,6 +2577,9 @@ button { font-family: inherit; }
 .sw.ok { background: var(--data); }
 .sw.no { background: var(--ask); }
 .sw.now { background: var(--move); }
+/* The family is a count beside the wire's colours, because a person and a bond
+ * have no place on a line of years (R-0326). */
+.mkey .mcount { color: var(--faint); }
 
 /* Which order the list is read in (R-0316). */
 .sortbar {

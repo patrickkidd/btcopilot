@@ -199,16 +199,16 @@ export class Menu {
   }
 
   private personEditor(person: Person | null): HTMLElement {
-    return openPersonEditor(
-      person,
-      () => {
+    return openPersonEditor(person, {
+      done: () => {
         this.editing = null;
         this.adding = false;
         void this.reload().then((data) => this.show(data));
       },
-      (eventId) => this.goTo(Tab.Events, eventId),
-      this.diagramId,
-    );
+      goToEvent: (eventId: number) => this.goTo(Tab.Events, eventId),
+      diagramId: this.diagramId,
+      family: this.data,
+    });
   }
 
   private editor(event: TimelineEvent | null): HTMLElement {

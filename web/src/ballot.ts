@@ -1,12 +1,26 @@
 import * as api from "./api";
 import { esc, el, type Title } from "./dom";
-import { openEditor } from "./editor";
+import {
+  openBondEditor,
+  openEditor,
+  openPersonEditor,
+  type Family,
+} from "./editor";
 import { toast } from "./toast";
+import {
+  drawVersion,
+  fieldsOf,
+  isStructure,
+  structureName,
+  versionWords,
+} from "./structure";
 import {
   ItemKind,
   ItemStatus,
   VoteChoice,
   type BallotItem,
+  type CodingRecord,
+  type PairBond,
   type Person,
   type Opinion,
   type TimelineEvent,
@@ -89,9 +103,17 @@ export function drawTimeline(
  * up rather than the room's to vote on (R-0254); the server refuses a vote on
  * one, so it never reaches the ballot. */
 export const onBallot = (one: BallotItem) =>
-  one.item_kind === ItemKind.Event &&
+  (one.item_kind === ItemKind.Event || isStructure(one.item_kind)) &&
   one.status === ItemStatus.Disputed &&
   one.opinions.length > 0;
+
+/** The order the ballot walks: the people and the bonds first, then the events,
+ * because an event about somebody nobody has agreed on yet cannot be settled
+ * (R-0326). */
+export function ballotOrder(items: BallotItem[]): BallotItem[] {
+  const structure = items.filter((one) => isStructure(one.item_kind));
+  return [...structure, ...eventsOf(items).filter(onBallot)].filter(onBallot);
+}
 
 /** Every event of a cut in the order they happened, which is the order both
  * screens walk them in. */
@@ -173,8 +195,12 @@ const REST = [
 /** The fields the coders read differently, which is what an opinion is chosen by.
  * When they wrote the same thing and only differ by who left it out, the whole
  * opinion is shown instead. */
-export function telling(opinions: Opinion[]): readonly string[] {
-  const differs = TELLING.filter((field) => {
+export function telling(
+  opinions: Opinion[],
+  kind: ItemKind = ItemKind.Event,
+): readonly string[] {
+  const all = isStructure(kind) ? fieldsOf(kind) : TELLING;
+  const differs = all.filter((field) => {
     const seen = new Set(
       opinions.map((opinion) =>
         String(
@@ -184,7 +210,8 @@ export function telling(opinions: Opinion[]): readonly string[] {
     );
     return seen.size > 1;
   });
-  return differs.length ? differs : REST;
+  if (differs.length) return differs;
+  return isStructure(kind) ? all : REST;
 }
 
 /** Opinions worded the same way are one opinion with a count beside it: the ballot
@@ -195,11 +222,17 @@ export interface Grouped {
   opinion: Opinion;
 }
 
-export function group(item: BallotItem): Grouped[] {
-  const fields = telling(item.opinions);
+export function group(
+  item: BallotItem,
+  records?: Map<number, CodingRecord>,
+): Grouped[] {
+  const fields = telling(item.opinions, item.item_kind);
   const found = new Map<string, Grouped>();
   for (const opinion of item.opinions) {
-    const label = words(opinion, fields) || "as written";
+    const label =
+      (isStructure(item.item_kind)
+        ? versionWords(records?.get(opinion.coding_id ?? -1), opinion.item, fields)
+        : words(opinion, fields)) || "as written";
     const already = found.get(label);
     if (already) already.coders += 1;
     else found.set(label, { label, coders: 1, opinion });
@@ -212,6 +245,9 @@ export class Ballot {
   private items: BallotItem[] = [];
   private ballot: BallotItem[] = [];
   private mine = new Map<number, Vote>();
+  /** The family each coding was written on, which a person or a bond is drawn
+   * against (R-0326). */
+  private records = new Map<number, CodingRecord>();
   private at = 0;
   private scrim = el("div", "fs-scrim");
   private sheet = el("div", "fs-sheet bl-sheet");
@@ -238,14 +274,16 @@ export class Ballot {
   /** Open the ballot of one cut on the first item this coder has not voted
    * on. An item they skipped is still on the list (R-0257). */
   async open(cutId: number): Promise<void> {
-    const [cut, items, votes] = await Promise.all([
+    const [cut, items, votes, records] = await Promise.all([
       api.cut(cutId),
       api.items(cutId),
       api.votes(cutId),
+      api.records(cutId),
     ]);
     this.session = cut.session;
     this.items = items;
-    this.ballot = items.filter(onBallot);
+    this.records = new Map(records.map((one) => [one.coding_id, one]));
+    this.ballot = ballotOrder(items);
     this.mine = new Map(votes.map((vote) => [vote.review_item_id, vote]));
     this.at = Math.max(this.unvoted(0), 0);
     this.render();
@@ -289,8 +327,15 @@ export class Ballot {
     this.caption.innerHTML =
       `<span class="cta">tap a dot to jump</span>` +
       `<button class="tok g" type="button">now · ` +
-      `${esc(when(current.opinions[0]?.item.dateTime))}</button>` +
+      `${esc(this.nowWords(current))}</button>` +
       `<button class="tok" type="button">${left} open</button>`;
+  }
+
+  /** What the strip says the room is on: an event by its date, a person or a
+   * bond by their name, because structure is not on the wire (R-0326, 4d). */
+  private nowWords(item: BallotItem): string {
+    if (!isStructure(item.item_kind)) return when(item.opinions[0]?.item.dateTime);
+    return structureName(item.item_kind, item.opinions[0]?.item ?? {}, item.people);
   }
 
   private events(): BallotItem[] {
@@ -299,32 +344,44 @@ export class Ballot {
 
   private card(item: BallotItem): string {
     const first = item.opinions[0];
+    const structure = isStructure(item.item_kind);
     const vote = this.mine.get(item.id);
     const chosen = vote?.choice === VoteChoice.Opinion ? vote.value : null;
     const mine = vote?.choice === VoteChoice.Change ? vote.value : null;
-    const opinions = group(item)
+    const opinions = group(item, this.records)
       .map((one, index) => {
         const on =
           chosen && chosen.coding_id === one.opinion.coding_id ? " on" : "";
         // How many coders backed an opinion is not shown here: names and counts
         // appear for the first time at the meeting, so nobody votes with the
-        // room in view (R-0252, R-0272).
+        // room in view (R-0252, R-0272). A person or a bond is drawn as well as
+        // written, so the argument reads as a shape (R-0326, 3b).
+        const drawn = structure
+          ? `<div class="frag">` +
+            drawVersion(this.records, item.item_kind, one.opinion) +
+            `</div>`
+          : "";
         return (
           `<div class="opinion tap${on}" data-coding="${one.opinion.coding_id}">` +
-          `<span>opinion ${index + 1} · ${esc(one.label)}</span></div>`
+          `<span>opinion ${index + 1} · ${esc(one.label)}</span>${drawn}</div>`
         );
       })
       .join("");
     const ownOpinion = mine
       ? `<div class="opinion tap on"><span>your opinion · ` +
-        `${esc(words({ item: mine } as Opinion, TELLING))}</span></div>`
+        `${esc(
+          structure
+            ? versionWords(undefined, mine, fieldsOf(item.item_kind))
+            : words({ item: mine } as Opinion, TELLING),
+        )}</span></div>`
       : "";
     // The one count the ballot does show, because leaving an item out is not a
     // vote for any opinion and the room needs to know it happened. It is a
     // plain label, never a row you can tap.
     const left = item.not_coded
       ? `<div class="note">${item.not_coded} ` +
-        `coder${item.not_coded === 1 ? "" : "s"} left this event out</div>`
+        `coder${item.not_coded === 1 ? "" : "s"} left this ` +
+        `${isStructure(item.item_kind) ? "out" : "event out"}</div>`
       : "";
     const line = item.line
       ? `<div class="quote"><b>${esc(item.line.who)}:</b> ` +
@@ -334,9 +391,14 @@ export class Ballot {
     const dropped = vote?.choice === VoteChoice.Drop ? " on" : "";
     return (
       `<div class="bl-card">` +
-      `<div class="progress">${esc(when(first?.item.dateTime))}` +
-      `${first?.person_name ? ` · → ${esc(first.person_name)}` : ""}</div>` +
-      `<h3>${esc(what(item))}</h3>` +
+      (structure
+        ? `<div class="progress">${
+            item.item_kind === ItemKind.Person ? "a person" : "a couple"
+          }${item.ambiguous ? " · the room decides who is who" : ""}</div>` +
+          `<h3>${esc(this.nowWords(item))}</h3>`
+        : `<div class="progress">${esc(when(first?.item.dateTime))}` +
+          `${first?.person_name ? ` · → ${esc(first.person_name)}` : ""}</div>` +
+          `<h3>${esc(what(item))}</h3>`) +
       opinions +
       ownOpinion +
       left +
@@ -434,9 +496,34 @@ export class Ballot {
     this.render();
   }
 
-  /** "change…" opens the app's own event editor over the ballot, prefilled, so
-   * you can write an opinion nobody wrote; it joins the count as one more opinion
-   * (R-0257). The turn it came from is kept with the event, not edited here. */
+  /** The family one version was written on, which the editor of a person or a
+   * bond needs to offer the couples and the partners it can name. */
+  private family(item: BallotItem): Family {
+    const record = this.records.get(item.opinions[0]?.coding_id ?? -1);
+    return {
+      people: (record?.people ?? []) as Person[],
+      pair_bonds: record?.pair_bonds ?? [],
+      events: record?.events ?? [],
+    };
+  }
+
+  /** A version of a bond, opened in the bond's own editor: whose bond it is
+   * stands as person_a, and the editor asks for the other and whether they
+   * married. */
+  private bondEditor(item: BallotItem, bond: PairBond): HTMLElement {
+    const family = this.family(item);
+    const self =
+      family.people.find((one) => one.id === bond.person_a) ?? family.people[0];
+    return openBondEditor(bond, self, family, {
+      done: () => this.close(),
+      onSave: (body) => void this.own({ ...bond, ...body }),
+    });
+  }
+
+  /** "change…" opens the app's own editor over the ballot, prefilled, so you can
+   * write an opinion nobody wrote; it joins the count as one more opinion
+   * (R-0257). A person or a bond opens their own editor, the same one the record
+   * is corrected in (R-0326). The turn it came from is kept with the item. */
   private change(item: BallotItem): void {
     const vote = this.mine.get(item.id);
     const from =
@@ -446,14 +533,23 @@ export class Ballot {
     const people = item.people.map(
       (one) => ({ id: one.id, name: one.name }) as Person,
     );
-    const editor = openEditor(
-      from as unknown as TimelineEvent,
-      people,
-      () => this.close(),
-      undefined,
-      undefined,
-      (body) => void this.own(body),
-    );
+    const editor =
+      item.item_kind === ItemKind.Person
+        ? openPersonEditor(from as unknown as Person, {
+            done: () => this.close(),
+            family: this.family(item),
+            onSave: (body) => void this.own({ ...from, ...body }),
+          })
+        : item.item_kind === ItemKind.PairBond
+          ? this.bondEditor(item, from as unknown as PairBond)
+          : openEditor(
+              from as unknown as TimelineEvent,
+              people,
+              () => this.close(),
+              undefined,
+              undefined,
+              (body) => void this.own(body),
+            );
     editor.querySelector(".save")!.textContent = "save as my opinion";
     editor
       .querySelector(".acts")

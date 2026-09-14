@@ -73,6 +73,19 @@ def test_a_child_is_born_to_a_bond_and_never_to_one_they_are_in(web, family):
     assert "their own parent" in refused.get_data(as_text=True)
 
 
+def test_add_parents_makes_a_bond_of_two_generically_named_people(web, family):
+    """"Add parents" on a person with none: the record gains a father and a
+    mother named after them, and the person is born to their bond."""
+    added = _post(web, {"parent_of": 3})
+    assert added.status_code == 201
+
+    db.session.refresh(family)
+    data = family.get_diagram_data()
+    names = [p["name"] for p in data.people]
+    assert names[-2:] == ["Corinne's father", "Corinne's mother"]
+    assert [p for p in data.people if p["id"] == 3][0]["parents"] == added.get_json()["id"]
+
+
 def test_ending_a_bond_leaves_its_children_without_parents(web, family):
     bond = _post(web, {"person_a": 1, "person_b": 2}).get_json()
     token = csrf_token(web)

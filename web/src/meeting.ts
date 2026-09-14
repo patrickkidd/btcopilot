@@ -10,15 +10,29 @@ import {
   words,
 } from "./ballot";
 import { esc, el, type Title } from "./dom";
-import { openEditor } from "./editor";
+import {
+  openBondEditor,
+  openEditor,
+  openPersonEditor,
+  type Family,
+} from "./editor";
+import {
+  drawVersion,
+  isStructure,
+  structureName,
+  versionWords,
+} from "./structure";
 import { toast } from "./toast";
 import {
   ItemStatus,
   Decision,
   VoteChoice,
+  ItemKind,
   type BallotItem,
   type CastVote,
+  type CodingRecord,
   type Cut,
+  type PairBond,
   type Person,
   type Tally,
   type Opinion,
@@ -73,6 +87,9 @@ export class Meeting {
   private cut: Cut | null = null;
   private items: BallotItem[] = [];
   private tallies = new Map<number, Tally>();
+  /** The family each coding was written on, which a person or a bond is drawn
+   * against (R-0326). */
+  private records = new Map<number, CodingRecord>();
   private sort = Sort.Divergence;
   /** The event the room is on: its dot is green and, when the vote agreed on
    * it, its card is the one open (R-0317, R-0320). */
@@ -100,14 +117,16 @@ export class Meeting {
   }
 
   async open(cutId: number): Promise<void> {
-    const [cut, items, tallies] = await Promise.all([
+    const [cut, items, tallies, records] = await Promise.all([
       api.cut(cutId),
       api.namedItems(cutId),
       api.tallies(cutId),
+      api.records(cutId),
     ]);
     this.cut = cut;
     this.items = items;
     this.tallies = new Map(tallies.map((one) => [one.review_item_id, one]));
+    this.records = new Map(records.map((one) => [one.coding_id, one]));
     this.render();
   }
 
@@ -119,10 +138,30 @@ export class Meeting {
       .sort((a, b) => this.split(b) - this.split(a));
   }
 
-  /** What the meeting reads: the events of the cut the room itself coded, which
-   * is what the wire draws and what the header counts. */
+  /** What the meeting reads: the people, the bonds and the events of the cut
+   * the room itself coded. The people and the bonds come first, because an
+   * event about somebody nobody has agreed on yet cannot be settled; the wire
+   * still draws the events alone (R-0326, 4d). */
   private listed(): BallotItem[] {
-    return eventsOf(this.items).filter((one) => this.theirs(one));
+    const structure = this.items.filter((one) => isStructure(one.item_kind));
+    return [...structure, ...eventsOf(this.items)].filter((one) =>
+      this.theirs(one),
+    );
+  }
+
+  /** How much of the family is on this cut, which is the line under the wire
+   * because a person and a bond have no place on it (R-0326, 4d). */
+  private structureCount(): string {
+    const words: [ItemKind, string, string][] = [
+      [ItemKind.Person, "person", "people"],
+      [ItemKind.PairBond, "bond", "bonds"],
+    ];
+    return words
+      .map(([kind, one, many]) => {
+        const count = this.listed().filter((row) => row.item_kind === kind).length;
+        return `${count} ${count === 1 ? one : many}`;
+      })
+      .join(" · ");
   }
 
   /** An item somebody in the room wrote. What only the coach wrote down is
@@ -187,7 +226,10 @@ export class Meeting {
       `</div>` +
       `<div class="mkey"><span><i class="sw ok"></i>agreed</span>` +
       `<span><i class="sw no"></i>disputed</span>` +
-      `<span><i class="sw now"></i>now</span></div>`
+      `<span><i class="sw now"></i>now</span>` +
+      // The wire is one dot per event and stays that way; the family is a count
+      // beside its colours (R-0326, 4d).
+      `<span class="mcount">and ${esc(this.structureCount())}</span></div>`
     );
   }
 
@@ -234,15 +276,22 @@ export class Meeting {
    * it again (R-0317). */
   private row(item: BallotItem, closable = false): string {
     const chosen = choiceOf(item);
-    const first = item.opinions[0];
     const sides = this.sides(item);
     const biggest = Math.max(...sides.map((one) => one.names.length), 0);
     const kept = item.status === ItemStatus.Decided;
+    const structure = isStructure(item.item_kind);
     const versions = sides
       .map(
         (one) =>
           `<div class="side"><span class="sdots">${dots(one.names.length, 0)}</span>` +
           `<span class="slab">${esc(one.label)}</span>` +
+          // Each version of a person or a bond is drawn as well as written, so
+          // the room reads the argument as a shape (R-0326).
+          (structure
+            ? `<div class="frag">` +
+              drawVersion(this.records, item.item_kind, one.opinion) +
+              `</div>`
+            : "") +
           `<span class="swho">${esc(one.names.join(", "))} = ${one.names.length}</span>` +
           `<button class="btn mt-keep" type="button" ` +
           `data-coding="${one.opinion.coding_id}"${kept ? " disabled" : ""}>` +
@@ -251,7 +300,7 @@ export class Meeting {
       .join("");
     const missing = item.not_coded
       ? `<div class="side"><span class="sdots">${dots(0, item.not_coded)}</span>` +
-        `<span class="slab">left this event out</span>` +
+        `<span class="slab">left this ${structure ? "out" : "event out"}</span>` +
         `<span class="swho">= ${item.not_coded}</span></div>`
       : "";
     const line = item.line
@@ -265,8 +314,7 @@ export class Meeting {
         : "") +
       `<div class="top"><span class="tally">` +
       `${dots(biggest, item.coders - biggest)}</span>` +
-      `<span class="pick">${esc(when(first?.item.dateTime))} · ` +
-      `${esc(names(item))}</span></div>` +
+      `<span class="pick">${esc(this.rowName(item))}</span></div>` +
       `<div class="tline">${versions}${missing}</div>` +
       line +
       `<div class="acts2">` +
@@ -289,17 +337,25 @@ export class Meeting {
    * beside a reading is how many people it is, not how many opinions (R-0252,
    * R-0274). */
   private sides(item: BallotItem): Side[] {
-    const fields = telling(item.opinions);
+    const fields = telling(item.opinions, item.item_kind);
+    const said = (opinion: Opinion) =>
+      (isStructure(item.item_kind)
+        ? versionWords(
+            this.records.get(opinion.coding_id ?? -1),
+            opinion.item,
+            fields,
+          )
+        : words(opinion, fields)) || "as written";
     const votes = this.tallies.get(item.id)?.votes ?? [];
     // A vote is a coder's last word: whoever voted counts on the side they
     // voted for, not on the one they first wrote.
     const decided = new Map(
       votes.map((vote) => [vote.name, vote.value?.coding_id ?? null]),
     );
-    return group(item)
+    return group(item, this.records)
       .map((one) => {
         const wrote = item.opinions
-          .filter((opinion) => (words(opinion, fields) || "as written") === one.label)
+          .filter((opinion) => said(opinion) === one.label)
           .map((opinion) => opinion.coder)
           .filter(
             (name) =>
@@ -327,16 +383,25 @@ export class Meeting {
     );
   }
 
+  /** What a row is named by: an event by its date and who it is about, a person
+   * by their name, a bond by both names (R-0318, R-0326). */
+  private rowName(item: BallotItem): string {
+    const first = item.opinions[0];
+    if (!isStructure(item.item_kind))
+      return `${when(first?.item.dateTime)} · ${names(item)}`;
+    const said = structureName(item.item_kind, first?.item ?? {}, item.people);
+    return item.ambiguous ? `${said} · the room decides who is who` : said;
+  }
+
   /** An item the vote settled: one row saying who and what and that it is
    * agreed, which opens the same card as a disputed one on a tap (R-0317). */
   private agreed(item: BallotItem): string {
     if (this.at === item.id) return this.row(item, true);
-    const first = item.opinions[0];
     const mark =
       item.status === ItemStatus.Unresolved ? "left unresolved" : "agreed";
     return (
       `<div class="collapsed" data-item="${item.id}">` +
-      `<span>${esc(when(first?.item.dateTime))} · ${esc(names(item))}</span>` +
+      `<span>${esc(this.rowName(item))}</span>` +
       `<span class="mark">${mark}</span></div>`
     );
   }
@@ -432,19 +497,51 @@ export class Meeting {
 
   /** "change…" opens the app's own event editor over the meeting, prefilled,
    * so the room can decide on something nobody wrote. */
+  /** The family one version was written on, which the editor of a person or a
+   * bond needs to offer the couples and the partners it can name. */
+  private family(item: BallotItem): Family {
+    const record = this.records.get(item.opinions[0]?.coding_id ?? -1);
+    return {
+      people: (record?.people ?? []) as Person[],
+      pair_bonds: record?.pair_bonds ?? [],
+      events: record?.events ?? [],
+    };
+  }
+
+  /** A version of a bond in the bond's own editor: whose bond it is stands as
+   * one side, and the editor asks for the other and whether they married. */
+  private bondEditor(item: BallotItem, bond: PairBond): HTMLElement {
+    const family = this.family(item);
+    const self =
+      family.people.find((one) => one.id === bond.person_a) ?? family.people[0];
+    return openBondEditor(bond, self, family, {
+      done: () => this.close(),
+      onSave: (body) => void this.written(item, { ...bond, ...body }),
+    });
+  }
+
   private change(item: BallotItem): void {
     const from = item.opinions[0]?.item ?? {};
     const people = item.people.map(
       (one) => ({ id: one.id, name: one.name }) as Person,
     );
-    const editor = openEditor(
-      from as unknown as TimelineEvent,
-      people,
-      () => this.close(),
-      undefined,
-      undefined,
-      (body) => void this.written(item, body),
-    );
+    const editor =
+      item.item_kind === ItemKind.Person
+        ? openPersonEditor(from as unknown as Person, {
+            done: () => this.close(),
+            family: this.family(item),
+            onSave: (body) => void this.written(item, { ...from, ...body }),
+          })
+        : item.item_kind === ItemKind.PairBond
+          ? this.bondEditor(item, from as unknown as PairBond)
+          : openEditor(
+              from as unknown as TimelineEvent,
+              people,
+              () => this.close(),
+              undefined,
+              undefined,
+              (body) => void this.written(item, body),
+            );
     editor.querySelector(".save")!.textContent = "decide on this";
     editor
       .querySelector(".acts")

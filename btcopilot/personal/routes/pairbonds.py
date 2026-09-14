@@ -12,10 +12,10 @@ import uuid
 from flask import abort, jsonify, request
 
 from btcopilot import auth
-from btcopilot.personal import record
+from btcopilot.personal import prompts, record
 from btcopilot.personal.models import Author
 from btcopilot.personal.routes import asked_diagram, bp, writable_diagram
-from btcopilot.schema import ItemKind
+from btcopilot.schema import ItemKind, PersonKind
 
 WRITABLE = ("person_a", "person_b", "married")
 
@@ -63,17 +63,71 @@ def _delta(bond_id, field, after) -> dict:
     }
 
 
+#: What a parent nobody named is called, one role per side of the bond.
+PARENT_ROLES = (prompts.Role.Father, prompts.Role.Mother)
+PARENT_GENDER = {
+    prompts.Role.Father: PersonKind.Male.value,
+    prompts.Role.Mother: PersonKind.Female.value,
+}
+
+
+def _person_delta(person_id, field, after) -> dict:
+    return {
+        "item_kind": ItemKind.Person.value,
+        "item_id": person_id,
+        "field": field,
+        "after": after,
+    }
+
+
+def _named_parent(person_id: int, child: dict, role) -> list[dict]:
+    """A parent nobody named, added so the bond has two sides. What they are
+    called comes from the overridable prompts (R-0325 rules 9 and 10)."""
+    name = prompts.generic_name(child.get("name") or "someone", role)
+    return [
+        _person_delta(person_id, "name", name),
+        _person_delta(person_id, "gender", PARENT_GENDER[role]),
+    ]
+
+
+def _find_person(data, person_id: int) -> dict:
+    for person in data.people:
+        if person.get("id") == person_id:
+            return person
+    abort(404, description=f"No person {person_id} on this diagram")
+
+
 @bp.route("/pair_bonds", methods=["POST"])
 def create_pair_bond():
-    values = _fields(request.get_json())
-    if values.get("person_a") is None or values.get("person_b") is None:
-        raise ValueError("A pair bond is between two people")
+    """A bond between two people. `parent_of` names a person it is the parents
+    of, and a side nobody named is added as a generically named person, which is
+    how "add parents" makes a family out of one child."""
+    body = request.get_json() or {}
+    child_id = body.pop("parent_of", None)
+    values = _fields(body)
     dia = asked_diagram()
     if dia is None:
         abort(404)
     data = dia.get_diagram_data()
-    bond_id = (data.lastItemId or 0) + 1
-    deltas = [_delta(bond_id, field, value) for field, value in values.items()]
+    child = _find_person(data, child_id) if child_id is not None else None
+    if child is None and (
+        values.get("person_a") is None or values.get("person_b") is None
+    ):
+        raise ValueError("A pair bond is between two people")
+
+    next_id = (data.lastItemId or 0)
+    deltas = []
+    for side, role in zip(("person_a", "person_b"), PARENT_ROLES):
+        if values.get(side) is not None:
+            continue
+        next_id += 1
+        deltas += _named_parent(next_id, child, role)
+        values[side] = next_id
+    next_id += 1
+    bond_id = next_id
+    deltas += [_delta(bond_id, field, value) for field, value in values.items()]
+    if child is not None:
+        deltas.append(_person_delta(child["id"], "parents", bond_id))
     deltas.append(
         {
             "item_kind": ItemKind.Diagram.value,
