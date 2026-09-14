@@ -19,6 +19,16 @@ app and the tools decrypt it.
 `bin/sops-setup.sh /path/to/your.agekey` also teaches `git diff` to decrypt, so
 a change to a ruling reads as the changed line rather than a changed blob.
 
+## Running without a key
+
+Nothing is decrypted when a module loads — a prompt is read the first time it is
+asked for. So the app, the migration chain and the test run all start on a
+machine with no key at all. A test run with no key uses the open-source prompts
+and says so on stderr; the tests that assert the private wording skip.
+
+The app itself never falls back. Ask it for a prompt it cannot decrypt and it
+fails, loudly, rather than quietly coaching with the wrong words.
+
 ## Which key opens it
 
 `.sops.yaml` names the public keys that may read these files, one per machine.

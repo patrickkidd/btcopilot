@@ -1,4 +1,6 @@
 import json
+import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -18,6 +20,18 @@ def encrypted(raw: str) -> bool:
         return "sops" in json.loads(raw)
     except json.JSONDecodeError:
         return False
+
+
+def key_present() -> bool:
+    """Whether this machine can open the encrypted files at all. Nothing in the
+    app asks: the app decrypts and fails loudly if it cannot. It is the test run
+    that needs to know, so it can use the open-source prompts instead of failing
+    to start."""
+    key = os.environ.get("SOPS_AGE_KEY_FILE")
+    return bool(
+        shutil.which("sops")
+        and (os.environ.get("SOPS_AGE_KEY") or (key and Path(key).is_file()))
+    )
 
 
 def read(path: Path) -> str:

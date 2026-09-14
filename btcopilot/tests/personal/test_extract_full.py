@@ -120,7 +120,7 @@ def test_extract_full_uses_discussion_date(discussion):
     # Use a prompt template that includes {current_date} to verify it flows through
     with (
         patch(
-            "btcopilot.pdp.DATA_EXTRACTION_PASS1_PROMPT",
+            "btcopilot.personal.prompts.DATA_EXTRACTION_PASS1_PROMPT",
             "date={current_date}",
         ),
         patch(
@@ -161,7 +161,7 @@ def test_import_text_uses_reference_date():
 
     with (
         patch(
-            "btcopilot.pdp.DATA_EXTRACTION_PASS1_PROMPT",
+            "btcopilot.personal.prompts.DATA_EXTRACTION_PASS1_PROMPT",
             "date={current_date}",
         ),
         patch(
@@ -186,11 +186,11 @@ def test_import_text_passes_text_as_conversation_history():
 
     with (
         patch(
-            "btcopilot.pdp.DATA_EXTRACTION_PASS1_CONTEXT",
+            "btcopilot.personal.prompts.DATA_EXTRACTION_PASS1_CONTEXT",
             "{conversation_history}",
         ),
         patch(
-            "btcopilot.pdp.DATA_EXTRACTION_PASS1_PROMPT",
+            "btcopilot.personal.prompts.DATA_EXTRACTION_PASS1_PROMPT",
             "{current_date}",
         ),
         patch(

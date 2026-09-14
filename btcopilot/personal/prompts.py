@@ -7,6 +7,7 @@ open source default, so the app runs whole with the private directory absent.
 """
 
 import enum
+import functools
 import os
 from pathlib import Path
 
@@ -14,11 +15,15 @@ from btcopilot.llmutil import RESPONSE_MODEL, _is_claude_model
 from btcopilot.personal.promptdir import PromptDir
 
 PUBLIC = Path(__file__).parent / "prompty"
-PRIVATE = Path(
-    os.environ.get("FD_PRIVATE_PROMPTS", Path(__file__).parents[2] / "private" / "prompts")
-)
+PRIVATE = Path(__file__).parents[2] / "private" / "prompts"
 
-files = PromptDir([PRIVATE, PUBLIC])
+
+@functools.cache
+def files() -> PromptDir:
+    """Where the prompts are read from. Resolved on first use, not at import,
+    so a caller that points FD_PRIVATE_PROMPTS somewhere else is heard however
+    early this module was imported."""
+    return PromptDir([Path(os.environ.get("FD_PRIVATE_PROMPTS", PRIVATE)), PUBLIC])
 
 
 class ToolText(enum.StrEnum):
@@ -48,21 +53,44 @@ class Role(enum.StrEnum):
     Partner = "partner"
 
 
-SUMMARIZE_MESSAGES_PROMPT = files.text("summarize_messages")
-DISCUSSION_TITLE_PROMPT = files.text("discussion_title")
-COACH_REFERENCE_INSTRUCTION = files.fragment("coach_reference")
-PLAY_BY_PLAY_PROMPT = files.text("play_by_play")
-CLUSTER_PROMPT = files.text("cluster")
-CLUSTER_REJECTED = files.text("cluster_rejected")
-DOCK_PROMPT = files.text("dock")
-DATA_EXTRACTION_CORRECTION = files.text("extraction_correction")
-DATA_EXTRACTION_PASS1_PROMPT = files.text("extraction_pass1")
-DATA_EXTRACTION_PASS1_CONTEXT = files.text("extraction_pass1_context")
-DATA_EXTRACTION_PASS2_PROMPT = files.text("extraction_pass2")
-DATA_EXTRACTION_PASS2_CONTEXT = files.text("extraction_pass2_context")
-SARF_REVIEW_PROMPT = files.text("sarf_review")
-CURSOR_MARKER_TEMPLATE = files.text("cursor_marker")
-CURSOR_EXTRACTION_RULE_TEMPLATE = files.text("cursor_rule")
+# The prompts that take no inputs still read as module constants, but nothing is
+# read from disk until one is asked for: importing this module must not decrypt
+# anything, or a test run and the migration chain need a key to start.
+FIXED = {
+    "SUMMARIZE_MESSAGES_PROMPT": "summarize_messages",
+    "DISCUSSION_TITLE_PROMPT": "discussion_title",
+    "PLAY_BY_PLAY_PROMPT": "play_by_play",
+    "CLUSTER_PROMPT": "cluster",
+    "CLUSTER_REJECTED": "cluster_rejected",
+    "DOCK_PROMPT": "dock",
+    "DATA_EXTRACTION_CORRECTION": "extraction_correction",
+    "DATA_EXTRACTION_PASS1_PROMPT": "extraction_pass1",
+    "DATA_EXTRACTION_PASS1_CONTEXT": "extraction_pass1_context",
+    "DATA_EXTRACTION_PASS2_PROMPT": "extraction_pass2",
+    "DATA_EXTRACTION_PASS2_CONTEXT": "extraction_pass2_context",
+    "SARF_REVIEW_PROMPT": "sarf_review",
+    "CURSOR_MARKER_TEMPLATE": "cursor_marker",
+    "CURSOR_EXTRACTION_RULE_TEMPLATE": "cursor_rule",
+}
+FRAGMENTS = {"COACH_REFERENCE_INSTRUCTION": "coach_reference"}
+
+# What has been read so far. Kept out of the module's own namespace: reloading a
+# module updates that namespace rather than emptying it, so a value cached there
+# would outlive a caller that reloads to point somewhere else.
+READ: dict[str, str] = {}
+
+
+def __getattr__(name: str) -> str:
+    if name in READ:
+        return READ[name]
+    if name in FIXED:
+        value = files().text(FIXED[name])
+    elif name in FRAGMENTS:
+        value = files().fragment(FRAGMENTS[name])
+    else:
+        raise AttributeError(name)
+    READ[name] = value
+    return value
 
 
 def get_conversation_flow_prompt(
@@ -71,7 +99,7 @@ def get_conversation_flow_prompt(
     """The coach's system prompt for a plain chat turn. Which model is answering
     is a deployment setting, so it is resolved here and never named in a prompt
     file."""
-    return files.text(
+    return files().text(
         "conversation_flow",
         committed_state=committed_state,
         claude=_is_claude_model(model or RESPONSE_MODEL),
@@ -82,18 +110,18 @@ def get_agent_prompt(record: str = "", interactions: str = "") -> str:
     """The coach's system prompt for one agent-loop turn. `record` is the whole
     family record rendered by `btcopilot.personal.recordtext`; `interactions` is
     what the user has been looking at."""
-    return files.text("agent", committed_state=record, interactions=interactions)
+    return files().text("agent", committed_state=record, interactions=interactions)
 
 
 def note_register() -> str:
     """What changes when the session is a clinician's note rather than a chat
     about their own family (R-0281)."""
-    return files.text("note_register")
+    return files().text("note_register")
 
 
 def scribe_prompt(record: str = "") -> str:
     """The review scribe's system prompt for one coding turn."""
-    return files.text("scribe", committed_state=record)
+    return files().text("scribe", committed_state=record)
 
 
 def tool_meanings() -> dict[ToolText, str]:
@@ -101,7 +129,7 @@ def tool_meanings() -> dict[ToolText, str]:
     wording of the parameters it names and leaves the rest as they are, because
     what most of them mean is the shape of a value and not clinical."""
     meanings = {}
-    for head in files.heads("tool_meanings"):
+    for head in files().heads("tool_meanings"):
         meanings.update({ToolText(k): v for k, v in head["meanings"].items()})
     return meanings
 

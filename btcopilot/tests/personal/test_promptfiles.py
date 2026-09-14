@@ -5,30 +5,30 @@ a fragment that is missing raises rather than rendering empty."""
 import importlib
 import json
 import os
-import shutil
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 from jinja2 import TemplateNotFound
 
 from btcopilot.personal import prompts
-from btcopilot.personal.promptdir import PromptDir, read, split
+from btcopilot.personal.promptdir import PromptDir, key_present, read, split
 
 GOLDENS = os.path.join(os.path.dirname(__file__), "prompt_goldens.json")
-PRIVATE_GOLDENS = os.path.join(prompts.PRIVATE.parent, "goldens.json")
+# Where the private files sit in this repo, whatever the run was pointed at.
+REAL_PRIVATE = Path(__file__).resolve().parents[3] / "private" / "prompts"
 
 RECORD = "RECORD-SENTINEL\nsecond line"
 INTERACTIONS = "INTERACTIONS-SENTINEL"
 STATE = "STATE-SENTINEL"
 
 
-def rendered(module) -> dict:
+def rendered(module, names) -> dict:
     """What every prompt says right now, under the same inputs the goldens were
-    captured with."""
-    out = {
-        name: getattr(module, name)
-        for name in dir(module)
-        if name.isupper() and isinstance(getattr(module, name), str)
-    }
+    captured with. `names` is asked for by name because the fixed prompts are
+    read on first use, so they are not in `dir()` until something asks."""
+    out = {name: getattr(module, name) for name in names if name.isupper()}
     out["get_agent_prompt/empty"] = module.get_agent_prompt()
     out["get_agent_prompt/record"] = module.get_agent_prompt(record=RECORD)
     out["get_agent_prompt/both"] = module.get_agent_prompt(
@@ -70,14 +70,22 @@ def compare(want: dict, got: dict):
 
 def test_the_open_source_prompts_say_what_their_constants_said(public):
     with open(GOLDENS) as f:
-        compare(json.load(f), rendered(public))
+        want = json.load(f)
+    compare(want, rendered(public, want))
 
 
-@pytest.mark.skipif(
-    not os.path.exists(PRIVATE_GOLDENS), reason="the private prompts are not installed"
-)
-def test_the_private_prompts_say_what_their_constants_said():
-    compare(json.loads(read(prompts.PRIVATE.parent / "goldens.json")), rendered(prompts))
+def test_the_private_prompts_say_what_their_constants_said(monkeypatch):
+    goldens = REAL_PRIVATE.parent / "goldens.json"
+    if not goldens.exists() or not key_present():
+        pytest.skip("the private prompts are not installed, or no key opens them")
+    monkeypatch.delenv("FD_PRIVATE_PROMPTS", raising=False)
+    module = importlib.reload(prompts)
+    try:
+        want = json.loads(read(goldens))
+        compare(want, rendered(module, want))
+    finally:
+        monkeypatch.undo()
+        importlib.reload(prompts)
 
 
 def test_the_app_runs_whole_with_no_private_prompts(public):
@@ -122,8 +130,27 @@ def test_a_private_file_wins_over_the_public_one_of_the_same_name(tmp_path):
 
 
 def test_an_encrypted_prompt_reads_as_its_plain_text():
-    if shutil.which("sops") is None or not prompts.PRIVATE.is_dir():
-        pytest.skip("sops or the private prompts are not installed")
-    head, body = split(read(prompts.PRIVATE / "scribe.prompty"))
+    if not key_present() or not REAL_PRIVATE.is_dir():
+        pytest.skip("the private prompts are not installed, or no key opens them")
+    head, body = split(read(REAL_PRIVATE / "scribe.prompty"))
     assert head["name"] == "scribe"
     assert "{{ committed_state }}" in body
+
+
+def test_importing_the_app_decrypts_nothing(tmp_path):
+    """A prompt is read when it is called for, never when a module loads, or a
+    test run and the migration chain would need a key before they could start."""
+    fake = tmp_path / "bin"
+    fake.mkdir()
+    (fake / "sops").write_text("#!/bin/sh\nexit 99\n")
+    (fake / "sops").chmod(0o755)
+    env = dict(os.environ, PATH=f"{fake}:{os.environ['PATH']}")
+    env.pop("FD_PRIVATE_PROMPTS", None)
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[3])
+    done = subprocess.run(
+        [sys.executable, "-c", "import btcopilot.app, btcopilot.pdp"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert done.returncode == 0, done.stderr[-2000:]

@@ -5,7 +5,7 @@ something the picture can actually show."""
 from btcopilot.personal.seed import seed_diagram_data
 from btcopilot.personal.timeline import aimable, build_timeline
 from btcopilot.personal.chat import summarize_committed_state
-from btcopilot.personal.prompts import COACH_REFERENCE_INSTRUCTION
+from btcopilot.personal import prompts
 from btcopilot.personal.refs import RefKind, index, parse, resolve
 
 
@@ -54,7 +54,7 @@ def test_the_instruction_teaches_the_markup_the_parser_reads():
     """Guards the one thing that silently breaks chips: the instruction and
     the parser drifting apart on the markup."""
     for kind in RefKind:
-        assert f"[[{kind.value}:" in COACH_REFERENCE_INSTRUCTION
+        assert f"[[{kind.value}:" in prompts.COACH_REFERENCE_INSTRUCTION
     _, refs = parse(
         "[[cluster:cl1|a]] [[events:10,11|b]] [[person:1|c]] "
         "[[range:1988-04-02..1999-11-05|d]]"

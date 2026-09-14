@@ -8,7 +8,7 @@ from mock import patch, AsyncMock
 
 from btcopilot.extensions import db
 from btcopilot.pdp import _windowed_conversation
-from btcopilot.personal.prompts import CURSOR_MARKER_TEMPLATE
+from btcopilot.personal import prompts
 from btcopilot.schema import PDP, PDPDeltas, PairBond, Person
 
 MARKER_SENTINEL = "⟪CURSOR "
@@ -29,7 +29,7 @@ def test_cursor_with_tail_inserts_marker_active(discussion):
     discussion.extracted_through_order = 0
     text, nonce = _windowed_conversation(discussion)
     assert nonce is not None
-    marker = CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
+    marker = prompts.CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
     assert marker in text
     pre, post = text.split(marker)
     assert "Hello" in pre  # order 0, already captured
@@ -42,7 +42,7 @@ def test_cursor_at_end_no_new_statements_marker_active_empty_tail(discussion):
     discussion.extracted_through_order = 1  # == max order, nothing after
     text, nonce = _windowed_conversation(discussion)
     assert nonce is not None
-    marker = CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
+    marker = prompts.CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
     assert text.endswith(marker)
     assert text == discussion.conversation_history() + marker
 
@@ -51,7 +51,7 @@ def test_cursor_beyond_max_does_not_crash(discussion):
     discussion.extracted_through_order = 99  # e.g. statements deleted
     text, nonce = _windowed_conversation(discussion)
     assert nonce is not None
-    marker = CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
+    marker = prompts.CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
     assert text.endswith(marker)
 
 
@@ -203,7 +203,7 @@ def test_second_extract_after_accept_windows_from_cursor(subscriber, discussion)
     db.session.commit()
     text, nonce = _windowed_conversation(discussion)
     assert nonce is not None
-    pre, post = text.split(CURSOR_MARKER_TEMPLATE.format(nonce=nonce))
+    pre, post = text.split(prompts.CURSOR_MARKER_TEMPLATE.format(nonce=nonce))
     assert "Aunt Sue" in post
     assert "Hello" in pre
 
