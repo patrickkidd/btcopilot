@@ -97,8 +97,13 @@ def scribe_prompt(record: str = "") -> str:
 
 
 def tool_meanings() -> dict[ToolText, str]:
-    """What each tool parameter means to the model."""
-    return {ToolText(k): v for k, v in files.head("tool_meanings")["meanings"].items()}
+    """What each tool parameter means to the model. A private file replaces the
+    wording of the parameters it names and leaves the rest as they are, because
+    what most of them mean is the shape of a value and not clinical."""
+    meanings = {}
+    for head in files.heads("tool_meanings"):
+        meanings.update({ToolText(k): v for k, v in head["meanings"].items()})
+    return meanings
 
 
 def generic_name(other: str, role: Role) -> str:

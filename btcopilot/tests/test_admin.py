@@ -66,13 +66,12 @@ def test_diagram_counts_and_export(run, test_user):
     assert isinstance(exported, dict)
 
 
-def test_import_says_it_is_not_written(flask_app, tmp_path):
-    dump = tmp_path / "old.sql"
-    dump.write_text("")
-    result = flask_app.test_cli_runner().invoke(
-        admin, ["imports", "dry-run", str(dump)]
-    )
-    assert isinstance(result.exception, NotImplementedError)
+def test_import_dry_run_counts_and_writes_nothing(run, old_pro_dump):
+    counted = rows(run("imports", "dry-run", str(old_pro_dump), "--json"))
+    assert [one["what"] for one in counted[:2]] == ["users", "diagrams"]
+    assert counted[1]["written"] == 1
+    assert counted[-1]["why"].startswith("UnpicklingError")
+    assert rows(run("users", "list", "--json")) == []
 
 
 def test_token_cap_default_and_one_person(run, test_user):

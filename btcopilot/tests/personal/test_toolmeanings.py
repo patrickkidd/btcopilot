@@ -1,5 +1,5 @@
 """btcopilot's tool schemas say the shape of a value; what a field means to a
-clinician comes from the private prompts fdserver loads over them (R-0305)."""
+clinician comes from the private prompt files loaded over them (R-0305)."""
 
 import importlib
 import os
@@ -8,13 +8,10 @@ import pytest
 
 from btcopilot.personal import prompts, toolbox
 
-PRIVATE = '''
-from btcopilot.personal.prompts import ToolText
-
-
-def tool_meanings() -> dict:
-    return {member: f"private {member.value}" for member in ToolText}
-'''
+def private_meanings() -> str:
+    lines = ["---", "name: tool_meanings", "description: private", "meanings:"]
+    lines += [f"  {member.value}: private {member.value}" for member in prompts.ToolText]
+    return "\n".join(lines + ["---", ""])
 
 
 def _event_properties() -> dict:
@@ -26,16 +23,15 @@ def _event_properties() -> dict:
 
 @pytest.fixture
 def private(tmp_path):
-    path = tmp_path / "private_prompts.py"
-    path.write_text(PRIVATE)
-    before = os.environ.get("FDSERVER_PROMPTS_PATH")
-    os.environ["FDSERVER_PROMPTS_PATH"] = str(path)
+    (tmp_path / "tool_meanings.prompty").write_text(private_meanings())
+    before = os.environ.get("FD_PRIVATE_PROMPTS")
+    os.environ["FD_PRIVATE_PROMPTS"] = str(tmp_path)
     importlib.reload(prompts)
     yield
     if before is None:
-        del os.environ["FDSERVER_PROMPTS_PATH"]
+        del os.environ["FD_PRIVATE_PROMPTS"]
     else:
-        os.environ["FDSERVER_PROMPTS_PATH"] = before
+        os.environ["FD_PRIVATE_PROMPTS"] = before
     importlib.reload(prompts)
 
 
@@ -44,7 +40,18 @@ def test_every_tool_parameter_has_a_default_meaning():
     assert set(means) == set(prompts.ToolText)
 
 
-def test_the_default_schemas_say_nothing_clinical():
+@pytest.fixture
+def public(monkeypatch):
+    """The app with no private prompt files, which is what the open-source
+    repo ships."""
+    monkeypatch.setenv("FD_PRIVATE_PROMPTS", "/nonexistent")
+    importlib.reload(prompts)
+    yield
+    monkeypatch.undo()
+    importlib.reload(prompts)
+
+
+def test_the_default_schemas_say_nothing_clinical(public):
     overridable = {member.value for member in prompts.ToolText}
     said = " ".join(
         str(field.get("description", ""))
@@ -56,7 +63,7 @@ def test_the_default_schemas_say_nothing_clinical():
         assert word not in said
 
 
-def test_the_private_module_replaces_the_tool_meanings(private):
+def test_a_private_prompt_file_replaces_the_tool_meanings(private):
     properties = _event_properties()
     assert properties["relationship"]["description"] == "private relationship"
     assert properties["anxiety"]["description"] == "private anxiety"

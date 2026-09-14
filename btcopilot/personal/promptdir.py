@@ -1,3 +1,4 @@
+import json
 import subprocess
 from pathlib import Path
 
@@ -5,18 +6,29 @@ import yaml
 from jinja2 import BaseLoader, Environment, StrictUndefined, TemplateNotFound
 
 FRONTMATTER = "---"
-SOPS_KEY = '"sops"'
+
+
+def encrypted(raw: str) -> bool:
+    """Whether sops holds this file. The envelope is JSON with a `sops` key, and
+    that key sits at the end of it, so the whole file has to be parsed rather
+    than its first few lines scanned."""
+    if not raw.lstrip().startswith("{"):
+        return False
+    try:
+        return "sops" in json.loads(raw)
+    except json.JSONDecodeError:
+        return False
 
 
 def read(path: Path) -> str:
     """The file's text, decrypted when sops holds it."""
     raw = path.read_text()
-    if raw.startswith("{") and SOPS_KEY in raw[:4096]:
-        done = subprocess.run(
-            ["sops", "-d", str(path)], capture_output=True, text=True, check=True
-        )
-        return done.stdout
-    return raw
+    if not encrypted(raw):
+        return raw
+    done = subprocess.run(
+        ["sops", "-d", str(path)], capture_output=True, text=True, check=True
+    )
+    return done.stdout
 
 
 def split(text: str) -> tuple[dict, str]:
@@ -78,3 +90,16 @@ class PromptDir:
             if path.is_file():
                 return split(read(path))[0]
         raise TemplateNotFound(name + ".prompty")
+
+    def heads(self, name: str) -> list[dict]:
+        """Every directory's frontmatter for this name, least important first, so
+        a caller can take one entry from the private file and the rest from the
+        public one."""
+        found = [
+            split(read(d / (name + ".prompty")))[0]
+            for d in reversed(self.dirs)
+            if (d / (name + ".prompty")).is_file()
+        ]
+        if not found:
+            raise TemplateNotFound(name + ".prompty")
+        return found

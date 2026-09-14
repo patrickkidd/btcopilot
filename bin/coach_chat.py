@@ -34,14 +34,6 @@ import sys
 import tempfile
 import warnings
 
-# fdserver prompts must load before btcopilot.personal.prompts import.
-_FD = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "fdserver",
-                 "prompts", "private_prompts.py")
-)
-if os.path.exists(_FD):
-    os.environ.setdefault("FDSERVER_PROMPTS_PATH", _FD)
-
 # Load API keys from theapp/.env if not already in env.
 _ENV = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
 if os.path.exists(_ENV):

@@ -257,18 +257,18 @@ class Heard:
         return ModelTurn(text="which one?")
 
 
-def test_fdserver_replaces_the_scribe_prompt(coder, cut, turns, tmp_path):
-    """The words the scribe works by come from the private prompts when one is
-    named, and reach the model whole (R-0314)."""
-    private = tmp_path / "private_prompts.py"
-    private.write_text(
-        "def scribe_prompt(record=''):\n"
-        "    return f'the private scribe words\\n{record}'\n"
+def test_a_private_file_replaces_the_scribe_prompt(coder, cut, turns, tmp_path):
+    """The words the scribe works by come from the private prompt file when one
+    is installed, and reach the model whole (R-0314)."""
+    (tmp_path / "scribe.prompty").write_text(
+        "---\nname: scribe\ndescription: private\n"
+        "inputs:\n  committed_state:\n    type: string\n---\n"
+        "the private scribe words\n{{ committed_state }}"
     )
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Heard()
     try:
-        with patch.dict(os.environ, {"FDSERVER_PROMPTS_PATH": str(private)}):
+        with patch.dict(os.environ, {"FD_PRIVATE_PROMPTS": str(tmp_path)}):
             importlib.reload(prompts)
             scribe(coder, coding, turns[0], model, "James Cooper moved in 1971")
     finally:
