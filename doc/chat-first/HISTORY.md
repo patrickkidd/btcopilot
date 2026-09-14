@@ -808,7 +808,6 @@ relative database path opened an empty file for twelve minutes and the sandbox's
 emailed Patrick; the path is absolute now and the sandbox's error recipient is blank.
 
 ## 2026-09-11 (night) — the coding screen walked at both sizes; the scribe's silent loss fixed [T-3, T-2]
-<!-- session: session_01Y2tN76fgnoJ9pFbjbieQkB · flushed: 2026-09-12T07:10:00Z -->
 
 Patrick asked for the coding screen to be tested. The Chrome extension was not connected, so
 two independent Playwright walks ran on fresh fixture coders — a phone at 393x852 and a desktop
@@ -860,39 +859,6 @@ branch stays in fdserver [R-0305]. He corrected the reply length [R-0304] and as
 worktree switches and shell commands never block on permission. Then he went to bed and asked
 for the whole build overnight with a testing document in the morning.
 
-## 2026-09-12 (overnight) — the whole review loop built, walked in three browsers, and a walk written for Patrick [T-3, T-2, T-5]
-
-Five Opus builders in sequence under a Sonnet auditor, then an independent Opus verifier and
-an Opus fixer, all in the one btcopilot worktree. Landed on FD-362: the clinical tool text
-moved out of btcopilot into fdserver's private prompts behind a new overridable callable, so
-the tool schemas say the shape and fdserver says the meaning, coach and scribe alike
-[R-0305]; Patrick's screens — put a conversation on the table from the sessions sheet, place
-the cut (never before the last ratified line, later turns dimmed), the table with each
-coder's state, the nudge by mail, taking a cut off before anyone starts, the meeting day, and
-the one button that opens the vote; the ballot — one disputed event per screen, takes without
-names or counts, the agreement timeline above, drop, skip, change through the app's own event
-editor, a count of coders who left the item out, an optional reason, the transcript opened at
-the line; the meeting — items most split first with names and tallies for the first time,
-keep / change / unresolved on each, the settled ones collapsed, ratify dead until every open
-item has a choice, the coach scored against the ratified record and never counted as a voter,
-unanimous items ratified too; the result — counts, both agreement figures, the coach's score,
-the AI's guideline changes with the settle each came from and a flag link, the audit of where
-the AI differed, what each coder tends to do; Pro — a professional licence turns on cases on
-the account page, the recording upload reusing the training app's transcription path with the
-speaker-mapping sheet, notes as a session and on people and events, the drawer pinned on a
-desktop; the small items — every event of a cluster steps the play-by-play (row 70), "event"
-for "moment" everywhere, the title's name gives way and the stretch stays, hidden editor
-fields are not saved. The verifier ran 366 checks in Chromium and WebKit at 393x852 and
-Chromium at 1280x800: 24 failed, and the fixer closed all of them at the cause (the sessions
-button off the chat, the task card and the guidelines reachable between meetings, ratify with
-feedback, no counts on the ballot, one naming rule, the two missing ballot controls); 9 checks
-remain that are fixture or walk artefacts. Ten stale web unit tests were rewritten to the
-rulings. Suites at the end: review and personal 495 passed, web units 58, type check clean.
-Three questions for Patrick came out of the night (in T-3's Next action). The sandbox mail was
-off during the walks so nudges would not send, and is on again for his sign-in code; the
-sandbox stands at Walk 1's start: cut 3 on the table for 18 September, three fixture coders
-finished, the vote not yet opened.
-
 ## 2026-09-12/13 — the platform reset ruled: one public repo with encrypted prompts, a new droplet, Stripe for money only, agent-run admin [T-11, T-1]
 
 Patrick asked for a ground-up evaluation of repo layout, deployment, users, billing and admin
@@ -914,3 +880,123 @@ no MCP unless an agent without a shell appears. Two findings need action regardl
 committed compose file holds every live key in plain text and the TLS private key, and
 production has no automated database backup. A process rule was added after his correction:
 never repeat an artifact's content in the console.
+
+## 2026-09-12 to 14 — the review loop built and walked, the pivot to people and family structure, the platform built on its own database, and a learning loop [T-3, T-2, T-5, T-9, T-11, T-12]
+<!-- session: session_01Y2tN76fgnoJ9pFbjbieQkB · flushed: 2026-09-14T09:00:00Z -->
+
+**The overnight build of the review loop.** Five Opus builders in sequence under a Sonnet
+auditor, then an independent Opus verifier and an Opus fixer, all in the one btcopilot
+worktree. Landed: the clinical tool text moved out of btcopilot into fdserver's private
+prompts behind a new overridable callable, so the tool schemas say the shape and fdserver says
+the meaning, coach and scribe alike [R-0305]; Patrick's screens — put a conversation on the
+agenda from the sessions sheet, place the cut (never before the last ratified line, later turns
+dimmed), the table with each coder's state, the nudge by mail, taking a cut off before anyone
+starts, the meeting day, and the one button that opens the vote; the ballot — one disputed
+event per screen, opinions without names or counts, the agreement wire above, drop, skip,
+change through the app's own event editor, a count of coders who left the item out, an optional
+reason, the transcript opened at the line; the meeting — items most split first with names and
+tallies for the first time, keep / change / unresolved on each, the settled ones collapsed,
+ratify dead until every open item has a choice, the coach scored against the ratified record
+and never counted as a voter; the result — counts, both agreement figures, the coach's score,
+the AI's guideline changes with the decision each came from and a flag link, the audit of where
+the AI differed; Pro — a professional licence turns on cases on the account page, the recording
+upload reusing the training app's transcription path with the speaker-mapping sheet, notes as a
+session and on people and events, the drawer pinned on a desktop; and the small items. The
+verifier ran 366 checks in Chromium and WebKit at 393x852 and Chromium at 1280x800: 24 failed,
+the fixer closed all of them at the cause, 9 remain that are fixture or walk artefacts
+(VERIFY_2026-09-12.md). Suites at the end: review and personal 495 passed, web units 58, type
+check clean.
+
+**Patrick walked it, and most of what he found was the words.** "On the table" becomes "on the
+agenda" everywhere, screens, code and the walk document [R-0308]; the meeting's choice on a
+disputed event is a "decision", never a "settle", and many unresolved events are expected
+because only resolved ones feed the guidelines [R-0309]; the screen says "coding guidelines",
+not codebook [R-0310]; one coder's version of an event is an "opinion", never a "take", and
+the "left out by N coders" line is a plain sentence hidden when nobody left it out [R-0315];
+no placeholder titles — every event row names who and what [R-0318]. Behaviour he ruled as he
+walked: a professional licence holder is not a coder, only the auditor role sees the task card,
+the ballot and the meeting [R-0311]; an unresolved event never returns to a later meeting, it
+stays unresolved as data, and the agenda box holds only flagged rules [R-0312]; the
+eleven-second wait on ratify, which is the AI drafting guideline rules inside the request, is
+accepted [R-0313]; the scribe's prompt moves to fdserver too, because anything prompt induction
+will run on is valuable [R-0314]; fixture rows must read like real use, since filler hides what
+a screen does [R-0307]; and the dev flow itself is written down — build the batch, stand the
+sandbox up on fixtures, verify independently in real browsers, fix, then hand him one document
+of numbered walks with the sign-in links [R-0306]. A sandbox sign-in link now works as many
+times as you like until it expires, so a walk can be repeated. On the meeting screen he ruled
+the header whole: one title, one labelled figures line, a colour legend, the wire, the sort
+control, then the list, and the teal tally chip deleted [R-0321]; the list sorts by divergence
+or by time and agreed events are readable [R-0316]; an agreed event opens on a tap of its row
+with a close button top right, no reopen button [R-0317]; on a split the room selects which
+version to keep rather than a keep button hiding the choice [R-0319]; every dot on the wire
+answers a tap [R-0320].
+
+**The pivot.** He stopped the testing [R-0322]: people and family structure — people,
+pair-bonds and who somebody is born to — are designed pixel by pixel first, for the coach, the
+scribe, the ballot and the meeting, and only then is everything built on the separation plan,
+after which a fresh sandbox is stood up and the walks run again from the first one. Structure
+is ADDED to the flow already decided, never a re-conception of it [R-0323]. The order he set
+was a conventions sheet, then a gallery, then goldens [R-0324]: the sheet was taken from the
+desktop app's own drawing code, with the written visual specification second and the code
+winning where they disagree; the gallery was drawn by the real renderer over every hostile
+case; and from it he ruled twelve drawing rules [R-0325], of which two reach beyond drawing —
+a missing or unnamed parent or partner is added as a generically named person ("Sarah's
+father") so the bond can exist, which extraction now has to do, and a child whose parents are
+not on the record simply stands alone. In the review [R-0326] the coding thread writes
+structure words in the same lines as events; the people list stays exactly as it is, because
+chips would imply a tap into chat and that language must not break; the person editor gains
+"born to" and lists a person's pair-bonds one per other person ever, never a single "with";
+the ballot shows a family fragment per version; structure items stay off the meeting wire and
+are counted in the legend. He also said which costs he weighs: technical and architectural
+complexity, inference cost and accuracy — never agent effort. All of it was then built:
+pair-bonds and parents through the app, the record refusing a bond that cannot exist and naming
+a missing parent, people matched by where they stand with the room told when the match is
+unsure, the editor, the ballot and the meeting carrying people and bonds, and a person votable
+and decidable like an event.
+
+**The platform, built on the local sandbox.** Every prompt left the Python constants for one
+file per prompt with shared fragments, and the private prompts and the oracle rulings now live
+in this repo encrypted with sops, so the public checkout holds only ciphertext and the runtime
+override to the other repo is gone; a prompt is read when it is asked for rather than when a
+module loads, so a checkout with no key still runs the tests that do not need one, and the test
+run no longer reaches for a second repo. Files naming real people left every repo. The chat app
+took its own database chain and its own database file, starting from empty, with its own
+accounts rather than sharing Pro's [R-0327], and the importer of the old Pro users and diagrams
+was written and dry-run. The site is run from a command line whose skill file it generates from
+its own declarations. The chat app's tests became a suite of their own with `bin/t` running only
+what changed [R-0332], under an Opus auditor whose measure is wall-clock time and who checks
+that tests are derived from rulings [R-0331]; TEST_STRATEGY.md measured them at 89 back-end
+tests in 6.4 seconds and 113 front-end in 1.9, and says to spend no worker making them faster.
+The deterministic walks moved out of the sandbox into the repo and fold into the goldens' own
+harness.
+
+**The deploy checkpoint.** PLATFORM_BUILD.md sets the build order in fifteen steps, eight of
+which are provable locally today and seven of which need the new box or an account only he
+holds. Observability is Datadog on the recommended low-cost set with session replay from day
+one, the paid infrastructure host waiting [R-0328, R-0329]. The droplet is specified and ready
+to create — familydiagram-app, sfo3 because sfo1 has no volumes, 2 GB, backups and monitoring
+on — and is created only after he has tested this build and says deploy work may start
+[R-0330].
+
+**A learning loop.** A scout runs in this repo, reads the corpus and his own typed statements
+out of the session transcripts, researches what changed outside, and proposes at most ten
+ranked changes to the project's own process files, each with an external source, a link and a
+date, and one prediction against one of four measured numbers [R-0333, R-0335]. A loop review
+of two agents — a conservative auditor and a progressive designer — reviews the scout itself
+and may change only the scout's brief [R-0334]. Both are local and event-driven, invoked by
+this flush rather than by a calendar: the scout after every build that hands him a walk, the
+review after every fourth scout run or two measured outcomes [R-0336]. Two cloud routines were
+created and then disabled as a fallback. Kill rules are written down: fewer than one proposal
+in six merged after eight runs retires the scout, and a merged change that does not move its
+number within two builds stops that kind of proposal.
+
+**The independent verification and the walk.** An agent that read no builder's report walked
+every screen a browser can drive, in three browsers, against the chat app's own database:
+683 checks, 671 passed. Of the twelve failures one was a real mismatch with the written spec —
+a person's row in the people list carried a second faint line where the spec says the name
+alone — one was a ruled behaviour the gate misread, and ten were artefacts of the walk scripts.
+The people list is the name alone again, and a year the coder gave only as a year reads back as
+the year rather than gaining a month. TEST_2026-09-14.md is his walk: the whole app by hand, in
+dependency order, on the new sandbox, with three reusable sign-in links and every step waiting
+for what it asked for rather than a fixed count. TEST_2026-09-12.md is archived, superseded by
+it.

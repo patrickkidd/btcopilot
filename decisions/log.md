@@ -1438,3 +1438,54 @@ about ten lines. Also learned: 2.0 input declarations need a `kind` field.
 **Open:** the admin surface
 is a CLI on the engine plus one skill file generated from the CLI's declarations and checked
 by a test, no MCP server unless an agent without a shell appears.
+
+## 2026-09-13: The pivot — design people and family structure pixel by pixel before any more testing
+
+Testing stopped [R-0322, R-0323, R-0324]. People, pair-bonds and parents are designed to
+the pixel for the coach, the scribe, the ballot and the meeting, added to the decided flow
+rather than re-conceiving it. The order was set: a conventions sheet taken from the desktop
+app's drawing code (the code is ground truth over the written visual specification), then a
+renderer-drawn gallery of hostile cases for his ruling, then goldens he approves. Then build
+the whole separation plan, then a fresh sandbox and the walks from the start.
+
+## 2026-09-13/14: Fragment drawing rules ruled from the gallery
+
+Twelve rules fixed the renderer to one way of drawing [R-0325, R-0326]; the notable ones are
+that a missing or unnamed parent is added as a generically named person so the bond can
+exist, which reaches extraction, and that a child whose parents are not on the record stands
+alone. In the review the people list stays as it is because chips would imply a tap into
+chat, the person editor gains "born to" and lists every pair-bond one per other person, the
+ballot shows a fragment per version, and structure items stay off the meeting wire and are
+counted in the legend. The only costs weighed are technical complexity, inference cost and
+accuracy, never agent effort.
+
+## 2026-09-14: The chat app starts over with its own accounts
+
+Its own user table on its own database, not shared with Pro; old Pro users are imported once
+rather than shared live. [R-0327]
+
+## 2026-09-14: Observability is Datadog on the recommended low-cost set, and the droplet waits for his word
+
+One host, logs ingest-only with exclusion filters and errors indexed, LLM observability
+inside the free tier with a span-count monitor, one uptime check, browser logs and error
+tracking, plus session replay from day one; APM and product analytics later; the paid
+infrastructure host waits. [R-0328, R-0329, R-0330] The droplet is created only after he has
+tested the build and says deploy work may start; region sfo3 because sfo1 lacks volumes.
+
+## 2026-09-14: The chat app's tests are their own suite, audited for time by an Opus auditor
+
+Own tree, own configuration and fixtures, filtered to the changed component and run whole
+once at the end [R-0331, R-0332]; the chat app is greenfield so its tests are derived from
+rulings; unit tests do no I/O beyond the logic under test.
+
+## 2026-09-14: A self-improving loop runs locally inside sessions
+
+A scout reads the corpus and the session transcripts, researches what changed outside, and
+proposes at most ten ranked process changes, each with an external source and one prediction
+on one of four measured numbers; a loop review of two agents reviews the scout itself and may
+change only the scout's brief. [R-0333, R-0334, R-0335, R-0336] Both are invoked by the flush
+rather than a calendar: the scout after every build that hands him a walk, the review after
+every fourth scout run or two measured outcomes. Kill rules: fewer than one proposal in six
+merged after eight runs retires the scout; a merged change that does not move its number
+within two builds stops that kind of proposal. Two cloud routines exist as a fallback and
+stay disabled.

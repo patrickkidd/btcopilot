@@ -1106,3 +1106,29 @@ harness scores the two batch passes, not tool calls made mid-conversation. An
 agent-path harness is being built separately; until it exists this change is
 unmeasured and the claim is confined to "the definitions are now present in the
 loop". The 26 agent tests pass, which proves assembly and schema validity only.
+
+
+### September 2026: Prompts move to files, encrypted in place (FD-362)
+
+**Change**: every prompt leaves the Python constants and becomes one `.prompty`
+file per prompt with shared Jinja2 fragments, encrypted in place with sops so
+the public repo holds only ciphertext. The stock renderer holds only the
+prompt itself, so a subclass with a file loader resolves fragments and a
+missing fragment raises rather than rendering empty. [R-0305, R-0314]
+
+### September 2026: A prompt is read when it is asked for
+
+**Change**: a prompt is read when it is asked for, not when a module is
+imported, so a checkout with no key can still run the tests that do not need
+one.
+
+### September 2026: The scribe reasons about who a sentence names
+
+**Change**: the scribe's prompt learned that a sentence naming two people is
+about both of them, and refuses a pair-bond that cannot exist rather than
+guessing; a missing parent is named.
+
+### September 2026: The scribe keeps a date at the precision it was given
+
+**Change**: the scribe keeps a date at the precision the coder gave it, so a
+year given as a year reads back as the year alone.

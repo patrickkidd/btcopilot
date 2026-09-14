@@ -78,4 +78,4 @@ None yet. The first run fills this section.
 
 | Date | Item | Prediction | Merged / closed | Measured two builds later |
 |---|---|---|---|---|
-| | | | | |
+| 2026-09-14 | first run pending: needs the Chrome extension connected for the X.com list | — | not run | — |

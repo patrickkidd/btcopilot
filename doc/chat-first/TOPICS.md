@@ -37,172 +37,109 @@ unmeasured until the coding loop produces numbers.
 **Lives in:** btcopilot PR #136, fdserver PR #30; merge-risk review with the seven fixes
 landed: doc/chat-first/MERGE_REVIEW.md (fix commit 9f1707a); review log
 doc/chat-first/REVIEW_LOG.md; sandbox scripts /Users/patrick/worktrees/fd362-sandbox/.
-**Next action:** Patrick reviews; then merge, deploy, invite the three.
-**Updated:** 2026-09-11.
+**Next action:** Patrick walks doc/chat-first/TEST_2026-09-14.md; then, on his word, the deploy
+work starts (T-11) and the three are invited.
+**Updated:** 2026-09-14.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
 
-**Status:** built on the sandbox, unreviewed by Patrick, unmeasured.
+**Status:** built on the sandbox, unreviewed by Patrick, unmeasured. The prompts moved:
+every prompt is now one encrypted file in this repo rather than a Python constant in a second
+repo.
 **Decided:** the agent loop is the only writer and must carry the data model and clinical
 definitions [R-0236]; placement rule — a rule the computer can test becomes a refusal in the
 record's commit function, a field's meaning goes on the tool parameter, judgement goes in the
 system prompt; Patrick's own prompt-improvement process does not change: Claude Code is the
 entry point and finds the instructions itself [R-0239]; IRR compares final records, not
-per-statement deltas [R-0242].
-**Open:** (1) [ruling] his review of the 168-line "What goes in the record" section in the
-private prompt file, which is his clinical content rewritten for the loop; the author's list of
-what was dropped is the newest entry in the prompt engineering log; (2) [waiting] the first
-measurement cannot run: the replay harness has nothing to score against until his two
-conversations are coded as ground truth; (3) [build] the induction instructions have not yet
-been retargeted at the agent path; (4) [build] the coach codes the clinical variables in session, and the goal is that its coding
-matches the review's agreement — the F1 outcome of the project [R-0293].
+per-statement deltas [R-0242]; every variable definition, prompt and fragment that lived in
+fdserver before this branch is private and stays private — the tool schemas say the shape and
+the private text says the meaning, coach and scribe alike [R-0305]; the scribe's prompt is
+private too, because anything prompt induction will run on is valuable [R-0314]; the prompts
+and the rulings are encrypted in place with sops and live in this repo, so the public checkout
+holds only ciphertext and there is no second repo to reach for.
+**Open:** (1) [ruling] his review of the "What goes in the record" section, which is his
+clinical content rewritten for the loop; the author's list of what was dropped is in the prompt
+engineering log; (2) [waiting] the first measurement cannot run: the replay harness has nothing
+to score against until his two conversations are coded as ground truth; (3) [build] the
+induction instructions have not yet been retargeted at the agent path; (4) [build] the coach
+codes the clinical variables in session, and the goal is that its coding matches the review's
+agreement — the F1 outcome of the project [R-0293]; (5) [build] the scribe now has to add a
+generically named parent or partner when the coder names a relation that is not on the record,
+which is a drawing ruling that reaches extraction [R-0325].
 **Lives in:** btcopilot/personal/{record.py,toolbox.py,timeline.py}, training/run_agent_f1.py;
-the private prompt section (`git -C ~/theapp/fdserver/.claude/worktrees/FD-362 show HEAD~3 --
-prompts/private_prompts.py`, or the file's section by that title); the induction instructions
-(btcopilot/training/prompts/induction_agent.md, doc/PROMPT_OPTIMIZATION.md, the strategy doc);
-doc/PROMPT_ENGINEERING_LOG.md; his sandbox record re-coded once by the loop (session "Living
-With Chronic Insomnia (re-coded)").
-**Next action:** his prompt review; code his two conversations (T-3's coding mode, or by hand
-in the editor); run the harness once.
-**Updated:** 2026-09-11.
+the prompts as encrypted `.prompty` files under private/prompts/ with shared fragments;
+doc/PROMPT_ENGINEERING_LOG.md; his sandbox record re-coded once by the loop.
+**Next action:** his prompt review after he walks the app; code his two conversations; run the
+harness once.
+**Updated:** 2026-09-14.
 
 ## T-3 · One app: Pro and Training as thin layers on the chat
 
-**Status:** built on the sandbox through the whole loop, unreviewed by Patrick beyond the
-coding screen: the coding screen (his eyeball 2026-09-11 night: works; bubbles reshaped to
-C6 at his pick), his table / cut / vote-opening screens, the ballot, the meeting, the result,
-Pro's cases / recording upload / notes / desktop drawer, the small items, and the clinical
-tool text moved back to fdserver (R-0305) — all built overnight 2026-09-12 by five builders
-under a Sonnet auditor, walked by an independent verifier in Chromium and WebKit at phone
-size and Chromium at desktop (366 checks; 24 failures, all fixed at the cause; 9 left that
-are fixture or walk artefacts, listed in VERIFY_2026-09-12.md). Patrick's walk:
-doc/chat-first/TEST_2026-09-12.md.
+**Status:** the whole loop is built, including people and family structure, and stands on the
+chat app's own database on a fresh sandbox. An independent agent that read no builder's report
+walked every screen a browser can drive, in three browsers, and passed 671 of 683 checks
+(VERIFY_2026-09-14.md). Patrick's own walk is written and waiting: doc/chat-first/TEST_2026-09-14.md.
 **Decided:** one Vite app, features by licence, role and view; coding is documenting a case,
 Pro on desktop; training is auditor/admin features on top [R-0237]; never a new view where an
-existing surface can carry the addition [R-0243]; Pro adds cases (= the family switcher on the
-account page), sessions (= the sessions sheet + "upload a recording" with a speaker-mapping
-sheet), notes, and a wider desktop layout with the drawer pinned; coding is a read-only session
-whose composer bar becomes "select a line, type an instruction, a cheap scribe records it" with
-Done; coding protocol: no assignments, any coder any time, each Done joins the pool and
-recomputes agreement, results visible only to contributors, blind until your own Done [R-0242];
-the coach's replay is one coding among others; the upload/speaker-mapping sheet is approved as
-drawn; the coding-page design is tabled except where it overlaps the review [R-0247].
-**The IRR review, ruled 2026-09-11:** the approaches are tried in the meetings and each meeting
-teaches the next [R-0244]; the review front end is isolated so it can never break Personal or
-Pro [R-0245]; two families, data slices and an AI-guided walk, with the AI's help important
-[R-0246]; "gold" means ratified — the AI's set is the proposed record, the ratified record is
-ground truth [R-0249]; **three stages** — code blind from scratch; once three coders are done,
-each votes on a phone before the meeting on every disputed item, opinions shown without names and
-with no AI opinions at all; the meeting sees only what the vote left open, with names and tallies,
-every item given one of keep / change / unresolved before ratify, and ratifies with unresolved
-items kept as data [R-0250, R-0254, R-0257]; nobody is paid, the work is a rolling window, and
-convergence is required but not forced [R-0251]; original opinions are kept in full fidelity,
-leaning yes to hiding who chose what until ratification [R-0252]; **the unit** is a
-conversation up to a cut Patrick selects — the cut is the last turn when he puts it on the
-table, he can move it back by tapping a line but never before the last ratified cut, a cut at
-the end of a finished conversation or recording is the whole thing, and anything changed since
-the last cut is re-coded [R-0267]; the coder's screen is one card for the one task and history
-under it, never a list [R-0258, R-0265]; Patrick's administration is the agenda screen — date,
-what is on the agenda, who is done, nudge; the AI writes the guideline changes itself from the
-decisions and a result screen shows them with their provenance, nothing to choose [R-0259]; the
-page is approved as drawn [R-0268].
-**Open:** (1) [build] the review screens are approved as drawn, version 7, nothing open
-(https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9): names hidden whenever
-people vote and shown only at the meeting [R-0272]; the vote opens when Patrick opens it
-[R-0273]; no numerical rule decides an item, the meeting sees every disputed item most split
-first with the unanimous ones collapsed [R-0274]; the database is the record and the coding
-guidelines are the one written output, readable from an (i) at the top of the coding screen
-[R-0275, R-0278]; flags, unresolved items and unfinished tasks fill the next meeting's agenda
-by themselves, each with a close link [R-0276]; one agreement timeline — one dot per event,
-teal agreed, amber disputed with a count — in the vote and the meeting [R-0277, R-0278];
-(2) [build] the coding screens carry the (i) button beside Done, version 4; (3) [build] the catalogue for beta users
-(https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba) shows every screen as a
-whole phone or desktop frame in live code, the app's markup and stylesheet, never an image
-[R-0279]; the 19 built screens are hand-drawn from the shell and the TypeScript renderers
-(checked against six goldens) because no database was running to capture the real app —
-replacing them with captures from a fixture sandbox is the next fix; (4) [build] Pro's surfaces approved as drawn [R-0281]
-(https://claude.ai/code/artifact/fdb8a5b5-d043-46f4-afea-700a886210a3): cases on the account
-page, the sessions sheet with upload and the speaker-mapping sheet, the desktop layout, notes
-both as a session of its own (codable in the IRR study like a chat session) and as the existing
-notes field on people and events; the drawn family diagram stays in the plan behind the
-auto-arrange question; (5) [waiting] the interface calls, all ruled on the page
-(https://claude.ai/code/artifact/14ca039a-b28e-4d01-95fb-93ba403bf19e): the two-event grouping as a box or two dots; the
-double ring kept or dropped; the step line on an alternating stretch as a zigzag or dots only;
-the event chip outlined or filled; "+" on another family switching or refusing; the triangle
-and the compare views as built; the remaining pixel defaults accepted or not; ruled from it 2026-09-11: the nodal
-ring stays and the flag follows the clinical definition [R-0283]; no trend lines until real
-data [R-0284]; "case" is the word for Pro only, one case selected at a time, sessions added
-from within the case, no per-case "+" in the sessions sheet [R-0285]; the two-events-compared
-boxes dropped, and the triangle view and the outside move must be redrawn without conflict
-marks once the concept is confirmed [R-0286]; the chip stays outlined [R-0282]; ruled since:
-grouping is the coach's judgement, every grouping with a one-line scope, the rules only a first
-draft, correctness unmeasured until the beta [R-0287]; triangles confirmed and the outside move
-and triangle positions redrawn on the move language page [R-0288]; the event editor's relationship fields are build work with no call; the feel of the
-moves board is his to make on his phone at https://turin.local:8891/personal/; (7) [waiting] migrating last year's IRR material, the last follow-up item of this unit [R-0262, R-0273] — inventory 2026-09-11 of
-doc/irr/: 25 rules in tables keyed to meeting number with unanimity and confidence (migrate as
-rows with the meeting as provenance); six meetings' agreement/disagreement/action tables keyed
-to statement ids of last year's discussions, about 40–60 rows (migrate as decision rows once
-those discussions are imported through the upload path); six deliberation records in prose
-(keep as text, mine for rationale later); six raw transcripts (irreplaceable, never migrated);
-the old per-statement feedback stays the batch harness's ground truth until re-coded — his yes
-or no on that plan; (8) [build] the coding screens are approved as drawn, version 3, nothing open
-(https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a): the one-task card; the
-transcript up to the cut with the last ratified cut as a hairline, earlier turns shown in full
-but not codable; the coder's own words in the thread with the scribe's edit line under them;
-Done in the top bar with a confirmation sheet; the next task card [R-0270, R-0271]; (9) [build] the two-sided
-compare view already drawn folds into the ballot or the meeting screen; (10) [build] Pro
-"notes" has no mockup; (11) [build] step one landed 2026-09-11 (commits c391068, 5a8cb4d, 03f20c2): the tables
-renamed to diagram_changes and diagram_interactions inside the branch's single migration,
-discussions.kind, the review author, the five review_ tables as a new package btcopilot/review
-with one adapter module (isolation asserted by a test), table-shaped endpoints under /review,
-the coach's replay as a background task, the export on ratification, 26 tests, the review and
-personal suites at 430 passed; deviations from the brief the builder chose: creating a cut is
-admin-only; a coder's record is frozen while every coding on it is done and the next cut thaws
-it; a role refusal is a 302 to login by the app's convention; the migration test runs this
-revision's operations against SQLite because the older revisions assume Postgres; the replay
-task is not exercised against a live coach. step two landed 2026-09-12 (commits 5384d18, 014d4a3, cfd1fd0): the coding screens as
-drawn — the one-task card, the read-only thread up to the cut with the agreed hairline and the
-cut line, the scribe on a cheap tier with only the record-writing tools, Done in the title row
-with its confirmation, the guidelines behind (i), the drawer pinned at 840 — new routes
-/review/tasks, /review/codings/<id>/thread and /scribe, the sandbox database migrated by
-bin/reviewdb.py after backup beta2.db.bak-1602 and the API restarted; suites 430 passed; ten
-web unit tests were already failing before; awaiting Patrick's eyeball at
-https://turin:8891/personal/ (the one-task card is the first screen). Deviations: no "+ Add
-event" in the coding drawer (the editor writes to the reader's own record, not the coding's);
-the ask, explain and in-chat chips are not wired on the coding screen; the vote card says it
-opens when Patrick opens the vote. A fix pass followed (d1a9b55, bd8b360, 25298c8): the sign-in code submits once;
-the coding drawer writes to the coding's own record; the row under the picture always carries
-words; "ask" and "in chat" are hidden on the coding screen and the play-by-play carries no
-"explain", since coding has no coach turn (deviation from the drawing). Patrick's sandbox
-account was given the admin role directly (backup beta2.db.bak-2043-adminrole) under R-0302. An
-independent walk on a fixture account passed 8 of 9 steps; the failure — the scribe asked
-instead of adding a person the instruction named — was a prompt fault fixed in 692ee35 with two
-stubbed-model tests; a second walk found two more: the drawer and the picture did not refresh after a write, and a bare-pronoun instruction was written instead of asked (it changed an existing event's certainty); fixed in 3c23753 with a deterministic pronoun guard before any model call, a prompt rule that a statement adds and never edits an event the coder did not name, one shared re-read path, and three stubbed-model tests (review suite 30 passed); the sandbox API now runs on the absolute database path after a restart of mine had opened an empty file for twelve minutes and the sandbox's error mailer, carrying production mail settings, emailed Patrick — the error recipient in the sandbox environment is blank from now on. A third round (2026-09-11 night; two fresh fixture coders, a phone at 393x852 and a desktop at 1280x800, 71 and 63 checks with gates for console errors, failed requests, horizontal scroll and the page changing after every click) passed every ruled behaviour of the card, the thread, the two lines across it, the pronoun ask, the guidelines, Done and its sheet, and the next card, and found one more defect: on an empty record the scribe lost the event — its loop was capped at three steps, the cheap model guessed an id, was refused, spent the rest adding two people, and the coder saw "+ Marcus" as if it had worked; fixed by raising the cap to eight, answering with what was written when a loop still runs out (a 400 the screen shows as the amber line, then a re-read of the record), and three prompt lines (ids only from the record or a tool result; a relative named by relation is added under that relation, never "someone"; the coder's date kept at its precision), with two stubbed-model tests (review suite 32 passed); the sandbox API was restarted on the fix after a backup and the re-walk on a fresh coder passed 74 of 75, the failing check being the dev server's hot-reload socket, not the app. Patrick's first tap on his phone found one more: tapping a turn above the agreed line jumped the thread to the bottom with nothing selected, because the notice was inserted under the tap and the list then scrolled to its end; a new line now scrolls into view under the tapped turn (verified at 393x852: notice, outline, the coder's words and the scribe's line all in view). Two sandbox facts from the same test: the dev server refused its live-reload socket for the host name turin, so an open page on his phone never picked up a change — allowed now; and iOS gives a home-screen app its own cookie store, so it opens signed out and the email code signs it in once. Fixture codings left on the sandbox by the walks: three finished, one in progress, all on the fixture conversation. Next steps: Patrick's screens, the vote, the meeting and result, Pro,
-the small items, each eyeballed on the sandbox [R-0300]; (12) [build] the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238].
-**Lives in:** the spec sheet for beta users, every screen's behaviour in plain words, kept by the
-flush: https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba (source
-doc/chat-first/SCREENS.md, renderer bin/screenspage.py); the review screens, version 5, approved
-https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9 (source
-/Users/patrick/.claude/jobs/16d9eee6/tmp/ballot-meeting.html, ephemeral — the artifact is the
-durable copy); the coding loop plan
-https://claude.ai/code/artifact/7a033173-bff2-41ca-bbde-39385d4ab7f3; thin layers
-https://claude.ai/code/artifact/daeb8856-4a5b-42d4-ab62-4c14bc3784b4; upload and compare
-https://claude.ai/code/artifact/c5040b6a-75e3-47de-aba7-54aabbda69f4; IRR concepts round 1
-https://claude.ai/code/artifact/a7637a73-8ebc-4166-8b5b-c6a3269aa973; review-room ideas
-https://claude.ai/code/artifact/40ba5500-7be3-4bc2-82ed-193f8367448f; the three-stage analysis
-(text; superseded in form by R-0255)
-https://claude.ai/code/artifact/67988998-6e49-4924-a9b3-579979901eaf; the coding page
-https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a; mockups are drawn with
-web/src/theme.css and the app's markup (his rule 2026-09-10); last year's material in
-doc/irr/.
-**Next action:** Patrick walks doc/chat-first/TEST_2026-09-12.md on his phone (nine walks,
-each with its sign-in link) and rules on the three questions it raised: (a) a professional
-signing in lands on a coding task card rather than their chat, because nobody is assigned
-and every subscriber is offered what is on the agenda; (b) ratifying takes about eleven
-seconds because the guideline drafting runs inside the request (a background task needs a
-worker the sandbox does not run); (c) whether the scribe's own prompt, which never lived in
-fdserver, also moves behind the private override.
-**Updated:** 2026-09-11.
+existing surface can carry the addition [R-0243]; Pro adds cases, sessions with a recording
+upload and a speaker-mapping sheet, notes, and a wider desktop layout with the drawer pinned;
+coding protocol: no assignments, any coder any time, each Done joins the pool and recomputes
+agreement, blind until your own Done [R-0242]; three stages — code blind, vote on a phone
+without names, then a meeting with names and tallies that ratifies [R-0250, R-0254, R-0257];
+the unit is a conversation up to a cut Patrick selects [R-0267]; the coder's screen is one card
+for the one task [R-0258, R-0265]; the agenda screen is his administration [R-0259]; the review
+front end is isolated so it can never break Personal or Pro [R-0245].
+**Ruled walking it, 2026-09-12/13, and built:** the word is "on the agenda", never "on the
+table" [R-0308]; the meeting's choice is a "decision", never a "settle", and only resolved
+events feed the guidelines [R-0309]; the screen says "coding guidelines", not codebook
+[R-0310]; a professional licence holder is not a coder — only the auditor role sees the task
+card, the ballot and the meeting [R-0311]; an unresolved event never returns to a later
+meeting and the agenda box holds only flagged rules [R-0312]; the eleven-second wait on ratify
+is accepted [R-0313]; a coder's version of an event is an "opinion", and the "left out by N
+coders" line is a sentence hidden when nobody left it out [R-0315]; every event row names who
+and what [R-0318]; the meeting list sorts by divergence or by time and agreed events are
+readable [R-0316]; an agreed event opens on a tap of its row with a close button top right
+[R-0317]; on a split the room selects which version to keep [R-0319]; every dot on the
+agreement wire answers a tap [R-0320]; the meeting header is one title, a labelled figures
+line, a colour legend, the wire, the sort control and the list, with the teal tally chip gone
+[R-0321]; fixture data reads like real use [R-0307]; the dev flow is build, sandbox, verify
+independently, fix, then one walk document with sign-in links [R-0306].
+**People and family structure, ruled and built:** testing stopped so that people, pair-bonds
+and who somebody is born to could be designed pixel by pixel before anything else was built
+[R-0322], and they are ADDED to the decided flow, never a re-conception of it [R-0323]. The
+order was a conventions sheet from the desktop app's drawing code (the code wins over the
+written visual specification), then a renderer-drawn gallery of hostile cases, then goldens
+[R-0324]. Twelve drawing rules came out of the gallery [R-0325]; two of them reach past
+drawing — a missing or unnamed parent or partner is added as a generically named person
+("Sarah's father") so the bond can exist, and a child whose parents are not on the record
+stands alone. In the review [R-0326]: structure words go in the coding thread's own lines; the
+people list stays as it is, with no chips and no second line, because chips imply a tap into
+chat; the person editor gains "born to" and lists pair-bonds one per other person ever; the
+ballot shows a family fragment per version; structure items stay off the meeting wire and are
+counted in the legend. The costs he weighs are technical and architectural complexity,
+inference cost and accuracy — never agent effort.
+**Open:** (1) [verify] Patrick has not walked this build; TEST_2026-09-14.md is nine walks in
+dependency order with three reusable sign-in links; (2) [ruling] two questions his walk raises:
+whether a professional signing in should land on their chat rather than anything from the
+review, and whether the ratify wait should move to a background worker the sandbox does not
+run; (3) [build] the catalogue for beta users still draws its built screens by hand rather than
+from captures of a running fixture sandbox [R-0279]; (4) [build] Pro "notes" has no mockup;
+(5) [build] the two-sided compare view folds into the ballot or the meeting screen; (6) [build]
+the old SARF coding page becomes a legacy link, deleted after re-coding [R-0238]; (7) [waiting]
+migrating last year's IRR material — 25 rules keyed to meeting number, six meetings'
+agreement tables of about 40–60 rows, six deliberation records in prose, six raw transcripts
+never migrated — needs his yes on the plan [R-0262, R-0273]; (8) [waiting] the interface calls
+still on the drawing page, none of which block the beta.
+**Lives in:** the spec sheet for beta users, doc/chat-first/SCREENS.md, rendered by
+bin/screenspage.py to https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba; the
+review screens https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9; the coding
+page https://claude.ai/code/artifact/62abcc8b-0e87-4bfa-962f-cdaa03475d5a; Pro's surfaces
+https://claude.ai/code/artifact/fdb8a5b5-d043-46f4-afea-700a886210a3; the fragment conventions
+doc/chat-first/FRAGMENT_CONVENTIONS.md and the gallery doc/chat-first/mockups/fragment.html;
+btcopilot/review/, web/src/, the walks in web/tests/walks/, the chat suite btcopilot/tests/chat
+run by bin/t; VERIFY_2026-09-14.md; TEST_2026-09-14.md.
+**Next action:** Patrick walks doc/chat-first/TEST_2026-09-14.md.
+**Updated:** 2026-09-14.
 
 ## T-4 · Existing records and conversations in the new app; wipe and re-code
 
@@ -234,16 +171,18 @@ region; who·what words [T-2].
 **Open:** (1) [build] grouping is the coach's judgement with a one-line scope and the floor
 binds only the automatic draft [R-0287]; the nodal ring stays and its flag follows the clinical
 definition [R-0283]; the thirteen interface rows are closed as built [R-0291]; no trend lines
-until real data [R-0284]; (2) [build] the event editor's relationship fields and its hiding of
-fields by event kind; (3) [build] the play-by-play defect: on a cluster with three events
-"explain" reveals only one (review log's newest row) [R-0292]; (4) [build] "moment" becomes
-"event" and "moves board" becomes "play-by-play" in the app's own copy [R-0289, R-0292];
-(5) [build] the sessions sheet loses its per-case "+", and a personal user never sees the word
-case [R-0285]; (6) [ruling] whether tapping an event's words inside an open cluster jumps to
-its editor, which he will say after testing [R-0207].
-**Lives in:** doc/chat-first/UI_GAP.md, REVIEW_LOG.md, STATE.md.
-**Next action:** build items; one ruling after he tests the cluster tap.
-**Updated:** 2026-09-11.
+until real data [R-0284]; (2) [build] the event editor's relationship fields; its hiding of
+fields by event kind landed 2026-09-12 and no longer saves a hidden field; (3) [ruling] whether
+tapping an event's words inside an open cluster jumps to its editor, which he will say after
+testing [R-0207]. Closed since the last flush: the play-by-play now steps every event of a
+cluster including one the move language has no mark for [R-0292]; "moment" became "event"
+throughout the app's own copy [R-0289]; the sessions sheet keeps a "+" per family and a
+personal reader never meets the word case [R-0285]; the app draws a family fragment to twelve
+fixed rules [R-0325].
+**Lives in:** doc/chat-first/UI_GAP.md, REVIEW_LOG.md, STATE.md,
+doc/chat-first/FRAGMENT_CONVENTIONS.md.
+**Next action:** the relationship fields; one ruling after he tests the cluster tap.
+**Updated:** 2026-09-14.
 
 ## T-6 · Clusters by example
 
@@ -272,87 +211,130 @@ and cannot be tested until the coding work produces structure data.
 
 ## T-8 · Isolation of the Personal package (option A)
 
-**Status:** ruled, not built [R-0233].
+**Status:** largely overtaken by the platform reset and the separate database. The chat app no
+longer shares a database, a migration chain, a user table or a prompt file with Pro; what is
+left of the original ruling is the lint-held package boundary inside the repo.
 **Decided:** a package boundary inside btcopilot — one adapter module is the only importer of
 Pro code and the shared schema, held by a lint rule; a second service later; never a separate
-repository.
-**Open:** (1) [build] the package boundary is unbuilt, one to two days when it is scheduled.
-**Lives in:** doc/chat-first/ISOLATION_OPTIONS.md.
-**Next action:** after the beta is up.
-**Updated:** 2026-09-11.
+repository [R-0233]. Since then: the chat app takes its own database and its own accounts, and
+old Pro users are imported once rather than shared live [R-0327]; the review package is already
+isolated and a test asserts it [R-0245].
+**Open:** (1) [build] the lint rule holding the adapter as the only importer is still unwritten;
+(2) [verify] the importer of the old Pro users and diagrams has been dry-run only, never run
+against a real dump.
+**Lives in:** doc/chat-first/ISOLATION_OPTIONS.md; doc/chat-first/PLATFORM_BUILD.md steps 6 and 7;
+btcopilot/review/.
+**Next action:** after Patrick's walk, with the platform work.
+**Updated:** 2026-09-14.
 
 ## T-9 · How sessions run (process)
 
-**Status:** binding; extended 2026-09-09/10/11.
+**Status:** binding; extended 2026-09-12/13/14.
 **Decided:** everything in doc/chat-first/HOW_THIS_PROJECT_WORKS.md plus: never coin a term;
-estimate the work not the validation; build only on an explicit go — a question about an
-estimate or a plan is part of the brainstorm; mockups are drawn with the app's own stylesheet;
-the flush at session end is `/two-clocks` and is idempotent. Added 2026-09-11: sub-agents do the
-work, one status line only, one short final reply per turn, model and effort chosen per agent
-[R-0248]; he is Patrick, never "Patrick" [R-0261]; artifacts are UI drawings in the app's
-style, never text documents, and the open decisions live on the drawing in one numbered list,
-never repeated in the reply [R-0255]; every turn on a design topic shows drawn options with
-descriptions long enough to explain what is not self-evident, never a research project
-[R-0256, R-0260]; every question mark is covered somewhere, not recited [R-0253, R-0264].
+build only on an explicit go; mockups are drawn with the app's own stylesheet; the flush at
+session end is `/two-clocks` and is idempotent; sub-agents do the work, one status line only
+[R-0248]; he is Patrick, never "Patrick" [R-0261]; artifacts are UI drawings, never text
+documents [R-0255]; every turn on a design topic shows drawn options [R-0256, R-0260]. Added
+this session: a reply to him is a quarter of what feels complete — the answer, the one thing he
+does next, nothing restated [R-0304]; the dev flow is build the batch, stand the sandbox up on
+fixtures with history kept, verify independently in real browsers, fix, then hand him one
+document of numbered walks in plain words with the sign-in links [R-0306]; fixture data is
+realistic, because filler hides what a screen shows [R-0307]; the corpus's own vocabulary is
+not his, so it is said in plain words; an Opus-level auditor watches wall-clock time, that no
+suite is run too early or unfiltered, and that tests are derived from rulings [R-0331]; the
+chat app's tests are their own suite, filtered to the changed component and run whole once at
+the end [R-0332].
 **Open:** none.
-**Lives in:** doc/chat-first/HOW_THIS_PROJECT_WORKS.md; btcopilot/CLAUDE.md (his corrections);
-.claude/skills/two-clocks/SKILL.md; bin/flushcheck.py.
+**Lives in:** doc/chat-first/HOW_THIS_PROJECT_WORKS.md; doc/chat-first/TEST_STRATEGY.md;
+btcopilot/CLAUDE.md; .claude/skills/two-clocks/SKILL.md; bin/flushcheck.py; bin/t.
 **Next action:** none.
-**Updated:** 2026-09-11.
+**Updated:** 2026-09-14.
 
 ## T-10 · Project memory: the two clocks, the flush, the trace
 
-**Status:** built in first form; names are mechanical until a flush rewrites them.
-**Decided:** one thought-and-decision trace in the order of Patrick's own statements,
-mined statement by statement from the transcripts, branching where a thread starts; a node at
-rest is a name plus one line, his words behind a click; shape B — threads as stacked lines
-across time, his trace stepping between them; dates, commits and artifacts are secondary
-under the statement that caused them [R-0244]; the flush is idempotent and topics are picked
-up by name; he never runs a command — he reads pages or files.
-**Open:** (1) [build] 253 of 723 statements are not yet placed on a piece of work, and every
-name and summary is script-made until a flush session rewrites this session's; the word lists
-are one mechanism and the flush's judgement step is the other; (2) [build] the session filter
-pulled in about 14 statements from two unrelated sessions that mention "coach", so the filter
-needs tightening; (3) [build] revision chains between rulings do not draw yet, because the store
-marks a superseded ruling in a column the ledger does not read; (4) [ruling] whether the opening
-view should sit at the newest statements, with "fit" showing the whole; (5) [verify] the flush
-step that rewrites names has never been run in anger.
-**Lives in:** bin/{trace.py,tracepage.py,ledger.py,eventpage.py,topicpage.py,flushcheck.py},
-doc/chat-first/{trace.json,events.json,TOPICS.md,HISTORY.md}, .claude/skills/two-clocks/SKILL.md;
-the trace page https://claude.ai/code/artifact/be081e64-9efa-45de-b329-42e82f9d4857; the
-shape mockups https://claude.ai/code/artifact/fefb75e5-dade-4cf9-8892-eb7e61af6dc7.
-**Next action:** a fresh session runs `/two-clocks` for real — assigns the unplaced statements,
-rewrites this session's names, tightens the filter — then he reviews the page for fidelity.
-**Updated:** 2026-09-11.
-
+**Status:** the two clocks are the working system of record; the trace and dashboard pages are
+retired as things he reads, kept for the record only.
+**Decided:** one thought-and-decision trace in the order of Patrick's own statements, mined
+from the transcripts; the flush is idempotent and topics are picked up by name; he never runs a
+command — he reads pages or files; the register and dashboard pages are retired, his word
+2026-09-11, too verbose to read. The oracle store itself moved into this repo encrypted with
+sops, with his own key added as a recipient, so the rulings are readable on his machine without
+a second repo.
+**Open:** (1) [build] the word lists still leave records the ledger cannot assign to a topic,
+and every trace name and summary that no flush has rewritten is a machine guess; (2) [build]
+revision chains between rulings do not draw, because the store marks a superseded ruling in a
+column the ledger does not read; (3) [verify] whether the ledger and trace scripts still run
+against the encrypted store has not been checked since the move.
+**Lives in:** bin/{trace.py,tracepage.py,ledger.py,eventpage.py,topicpage.py,flushcheck.py};
+doc/chat-first/{TOPICS.md,HISTORY.md,trace.json,events.json}; private/oracle/ (encrypted);
+.claude/skills/two-clocks/SKILL.md.
+**Next action:** none until he asks for a page.
+**Updated:** 2026-09-14.
 
 ## T-11 · Platform reset: repo, deployment, billing, identity, admin
 
-**Status:** ruled in one session with Patrick, 2026-09-12/13; nothing built yet.
-**Decided:** one public repo (btcopilot); prompts leave the Python constants for one
-`.prompty` file per prompt with Jinja2 fragments; prompts and the oracle rulings are encrypted
-in place with sops and age, one key pair per machine, private keys never copied; files with
-real people in them never enter the public repo, fdserver keeps them as an archive. The chat
-app gets its own 2 GB DigitalOcean droplet with Caddy, the DigitalOcean backup add-on, Datadog
-kept; the old droplet is frozen to serve the Pro desktop app until Pro is sunset. Stripe owns
-money only: flat monthly plans through Stripe's hosted payment page and customer portal, every
-subscription email linking to the portal so nobody asks Patrick to cancel; tokens metered in
-our own table with a hard cap and paid top-up. Old Pro users are imported, every diagram
-converted once. No admin web app: an agent (Claude Code or the self-hosted Qwen through
-OpenClaw) runs a CLI on the engine whose skill file is generated from the CLI's declarations
-and checked by a test.
-**Also decided 2026-09-13:** the coach stays on Claude Opus 4.6 with thinking, the model in use;
-launch US-only, Stripe Tax on from day one; fdserver leaves the daily loop, the oracle store
-and prompts move into btcopilot encrypted, files with real people in them move to the corpus
-folder outside every repo, and the fdserver repo is archived.
-**Open:** (1) [build] a prompty renderer subclass with a file loader so fragments resolve
-(verified 2026-09-13: the stock renderer holds only the prompt itself); (2) [verify] sops' cleartext local diff on a binary-mode markdown file; (3) [build] rotate every
-secret in the committed compose file before any new box or repo change; (4) [build] the admin
-verb list; (5) [build] the rulings of 2026-09-12/13 go into the oracle store as part of the
-move, since the store itself moves into btcopilot; (6) [waiting] the plan price and pricing
-structure wait for real beta usage (his word 2026-09-13: he does not trust projections).
-**Lives in:** the evaluation https://claude.ai/code/artifact/355dc50c-086b-417c-8cdb-4b10735cc9d8;
-decisions/log.md entries dated 2026-09-12 and 2026-09-13.
-**Next action:** the repo move (prompty files, sops, oracle store in, private data out to the
-corpus folder) at the next checkpoint after the current build lands, never mid-session.
-**Updated:** 2026-09-13.
+**Status:** the local half is built and proved on the sandbox; the box, the DNS name and the
+money wait for his word after he walks the app.
+**Decided:** one public repo; prompts leave the Python constants for one `.prompty` file per
+prompt with shared fragments, encrypted in place with sops and age, one key pair per machine,
+private keys never copied; files naming real people never enter a repo. The chat app gets its
+own 2 GB droplet with Caddy and the backup add-on; the old droplet is frozen to serve the Pro
+desktop app. Stripe owns money only: flat monthly plans through the hosted page and customer
+portal, tokens metered in our own table with a hard cap. Old Pro users are imported once. No
+admin web app: an agent runs a command line whose skill file is generated from its own
+declarations and checked by a test. The coach stays on Claude Opus 4.6 with thinking; launch
+US-only with Stripe Tax on; fdserver leaves the daily loop and is archived. Added this session:
+the chat app starts over with its own accounts on its own database [R-0327]; observability is
+Datadog on the recommended low-cost set — one host, logs ingest-only with exclusion filters and
+errors indexed, LLM observability inside the free tier with a span-count monitor, one uptime
+check, browser logs and error tracking — plus session replay from day one, with APM and product
+analytics later [R-0328]; the paid infrastructure host waits and the free tier serves for now
+[R-0329]; the droplet is created only after he has tested this build and says deploy work may
+start, and the region is sfo3 because sfo1 has no volumes [R-0330].
+**Built and proved locally:** prompts as encrypted files with a fragment-resolving renderer;
+the private prompts and the oracle rulings moved into this repo; files naming real people moved
+out of every repo; the chat app on its own migration chain and its own database from empty; the
+importer of the old Pro accounts and diagrams, dry-run; the admin command line and its
+generated skill file.
+**Open:** (1) [build] rotate every secret in the committed compose file, which still holds live
+keys and a TLS private key in git history — he issues the new credentials; (2) [build] a key
+pair on his Mac and on the new box, private keys never copied; (3) [build] create the droplet
+to the written spec — familydiagram-app, sfo3, 2 GB, backups and monitoring on — and point
+familydiagram.com at it; (4) [build] freeze the old droplet for Pro; (5) [verify] run the
+importer for real against a live dump and have a named clinician sign in and see their own
+diagram; (6) [build] money through Stripe: account, keys, and the price; (7) [build] archive
+the fdserver repo once nothing refers to it; (8) [waiting] the plan price waits for real beta
+usage, his word 2026-09-13: he does not trust projections; (9) [verify] production still has no
+automated database backup.
+**Lives in:** doc/chat-first/PLATFORM_BUILD.md (fifteen steps, eight local and seven needing
+him); doc/chat-first/DATADOG.md; private/prompts/ and private/oracle/, encrypted;
+decisions/log.md entries of 2026-09-12, 13 and 14.
+**Next action:** on his word after the walk, start the deploy work at step 9.
+**Updated:** 2026-09-14.
+
+## T-12 · The learning loop: a scout that looks outward and a review of the scout
+
+**Status:** built and wired into the flush; never run.
+**Decided:** a scout runs in this repo, reads the process docs, the week's history and his own
+typed statements out of the session transcripts, researches current agentic-development
+practice, and writes at most ten ranked items, each with a source, why it matters here, the
+exact file and line it would change, and one prediction against one of four measured numbers —
+hours from brief to walk, his findings per walk, re-walks per screen, suite minutes; it opens
+draft pull requests touching only process files and never applies its own proposals [R-0333].
+Everything proposed at either level comes from a cited development outside this project, with a
+link and a date [R-0335]. A conservative auditor and a progressive designer form one two-agent
+review of the scout itself, writing one ledger entry and touching only the scout's own brief
+[R-0334]. The loop is local and event-driven, not scheduled: the flush invokes the scout after
+any build that handed him a walk, and the review after every fourth scout run or two measured
+outcomes; two cloud routines exist as a fallback for weeks with no build and stay disabled
+[R-0336]. Kill rules: fewer than one proposal in six merged after eight runs retires the scout;
+a merged change that does not move its number within two builds stops that kind of proposal.
+**Open:** (1) [waiting] the first scout run has not happened: it reads a fixed list of accounts
+on X.com through the Chrome extension, and the extension is not connected in this session, so
+the run waits rather than skipping the source; (2) [verify] none of the four baseline numbers
+has been measured twice, so no prediction can yet be scored.
+**Lives in:** doc/chat-first/SCOUT.md (the ledger and the counts);
+.claude/skills/scout/SKILL.md; .claude/skills/loop-review/SKILL.md; the two disabled cloud
+routines.
+**Next action:** connect the Chrome extension, then the next flush after a walk runs the scout.
+**Updated:** 2026-09-14.

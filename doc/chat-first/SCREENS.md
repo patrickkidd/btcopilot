@@ -6,7 +6,7 @@ behaviour, tagged `[built]` if it is in the app today, `[drawn]` if it is approv
 but not built, and `[open]` if it is a choice Patrick has not made yet. It is rewritten as
 decisions land; the exact sizes and colours live in the internal interface spec, not here.
 
-Updated: 2026-09-13
+Updated: 2026-09-14
 
 ---
 
@@ -26,7 +26,9 @@ What it is for: getting into the app without a password.
 - The card never blocks the conversation; you can ignore it and keep typing. [built]
 - Signed out, you see the app name, who you are signing in as, and one button to sign in. [drawn]
 - Invite links sent for review use the machine name rather than a numeric address, so they open on a phone. [built] {R-0234}
+- An invite link signs you in as many times as you like until it expires. [built]
 - The app is called Family Diagram wherever you can see it. [built] {R-0216}
+- The chat app has its own accounts on its own database; old subscribers of the existing Pro app are brought in once rather than shared live with it. [built] {R-0327}
 
 ## The chat
 
@@ -237,6 +239,7 @@ What it is for: one person's own details.
 - That bond editor asks who the other person is and whether they married; when it started and when it ended are events about the two of them. [built] {R-0326}
 - The people list itself is unchanged: no chips and no second line under a name, because a chip means a tap into the chat. [built] {R-0326}
 - A person cannot be their own parent or their own partner, a bond is between two different people, and any two people have one bond ever; the record refuses the rest, so the coach and the scribe are held to it too. [built] {R-0326}
+- The record refuses a bond that cannot exist, and names a missing parent rather than guessing who they are. [built] {R-0325}
 
 ## The sessions sheet
 
@@ -364,7 +367,7 @@ What it is for: saying what each line of a conversation tells you happened, so w
 @frame coding#f7 | Tapping Done asks once and explains that your coding will be saved and submitted for the meeting.
 
 - Coding is stage one of reaching agreement, and it is done blind: you never see anyone else's coding of that conversation until you press Done. [drawn] {R-0242, R-0250}
-- Only a user with the auditor role is a coder; a professional licence holder and a plain subscriber open on the chat and never see the task card, the coding task in the sessions sheet, the ballot or the meeting. [ruled] {R-0311}
+- Only a user with the auditor role is a coder; a professional licence holder and a plain subscriber open on the chat and never see the task card, the coding task in the sessions sheet, the ballot or the meeting. [drawn] {R-0311}
 - You are given one task at a time and never a list to choose from. [drawn] {R-0265}
 - The task names the conversation, the point it is frozen at, how many turns are new since you last pressed Done, and roughly how long it will take. [drawn] {R-0267}
 - One green button starts it, and under it is a faint record of the tasks you have already finished. [drawn] {R-0265}
@@ -382,6 +385,8 @@ What it is for: saying what each line of a conversation tells you happened, so w
 - On a phone it is the same screen, with the drawer sliding over instead of pinned, and the sessions button giving way to Done. [drawn]
 - A sentence about a marriage or a parent is written the same way, and the line under it reads "+ Marcus & Delphine · married · 1970" or "+ Corinne · daughter of Marcus & Delphine". [built] {R-0326}
 - A bond or a birth the coder gives only one side of still gets written: the record adds the other as a generically named person. [built] {R-0325}
+- A sentence naming two people is written as being about both of them, not just the one the line was tapped for. [built]
+- A date the coder gave only as a year reads back as that year alone, never guessed down to a month. [built]
 - Your own typed words stay in the thread under the line you coded, with the scribe's edit line beneath them, so the thread reads as a coding conversation. [drawn] {R-0270}
 - Done sits in the top bar beside your account mark, never in the composer bar, so it cannot be mistaken for adding something. [drawn] {R-0271}
 - Tapping Done asks once, in a sheet, and explains that your coding will be saved and submitted for the meeting and cannot be changed after that. [drawn] {R-0271}
@@ -464,7 +469,9 @@ What it is for: closing what the vote could not, and ratifying the record.
 - Every dot on the wire answers a tap, on the meeting as on the ballot: it puts the room on that event and brings its card up. [built] {R-0320}
 - Every open item must be given one of three choices: keep a version, change it, or mark it unresolved. [built] {R-0257}
 - The ratify button stays dead until every open item has a choice, and says how many still need one. [built] {R-0257}
+- Each choice made in the meeting is a decision, and only decided events feed the coding guidelines; plenty stay unresolved for a while, and that is expected. [built] {R-0309}
 - An item marked unresolved is kept as data and left out of the agreed record. [built] {R-0250}
+- Ratifying takes about eleven seconds while the AI drafts the guideline rules from the decisions, and that wait is accepted. [built] {R-0313}
 - The screen shows the agreement figures from the first pass. [built]
 - How much of the meeting is left is shown beside them; the app holds the meeting as a day and not a time, so there is nothing yet to count down from. [drawn]
 - The event in front of the room is shown on the picture as well as in the list. [built]
@@ -492,7 +499,7 @@ What it is for: what the meeting produced, with nothing left to choose.
 - One more count says how many people and bonds the room ratified and how many it left open; an unresolved person is the one that matters most, because every event about them stands on it. [built] {R-0326}
 - It shows how the coach's own pass scored against the agreed record. [built] {R-0242}
 - The word for the agreed record is ratified; what the coach proposes is a proposal and is never called gold. [drawn] {R-0249}
-- The AI writes the guideline changes itself out of what the room decided, and they are live; there is nothing to choose on this screen. [built] {R-0259}
+- The AI writes the guideline changes itself out of what the room decided, and they are live; there is nothing to choose on this screen. [built] {R-0259, R-0310}
 - Each new rule shows the decided item it came from and the margin it was decided by. [built] {R-0259}
 - Where the AI's reading differed from the room is listed afterwards, with its reason, as an audit rather than a vote. [built] {R-0254}
 - What each coder tends to do differently from the others is shown. [built]

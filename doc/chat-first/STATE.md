@@ -95,7 +95,56 @@ the home screen. Every finding, round by round, with the commit that fixed it:
 [REVIEW_LOG.md](REVIEW_LOG.md), 66 rows. Rounds 1–4 are folded into the oracle store as
 R-0165..R-0228.
 
-**Built 2026-09-11/12 on the same branch, unreviewed by Patrick:** the review's tables
+**Built 2026-09-12 to 14 on the same branch, unreviewed by Patrick.** Three things happened
+after the overnight review-loop build was walked. First, most of what he found walking it was
+the words, and they are all renamed in the screens, the code and the walk document: "on the
+agenda" rather than "on the table" [R-0308], a "decision" rather than a "settle" [R-0309],
+"coding guidelines" rather than codebook [R-0310], an "opinion" rather than a "take" [R-0315],
+and no placeholder titles [R-0318]. With them came ruled behaviour, all built: only the auditor
+role sees the task card, the ballot and the meeting, and a professional signs in to their chat
+[R-0311]; an unresolved event never returns to a later meeting and the agenda box holds only
+flagged rules [R-0312]; the eleven-second wait on ratify is accepted [R-0313]; the meeting
+header is one title, a labelled figures line, a colour legend, the wire, the sort control and
+the list, sorted by divergence or by time, with agreed events readable, every wire dot tappable,
+an agreed event opening on a tap of its row, and the room selecting which version to keep on a
+split [R-0316, R-0317, R-0319, R-0320, R-0321].
+
+Second, he stopped the testing and had people and family structure designed pixel by pixel
+before anything else was built [R-0322], added to the flow already decided rather than
+re-conceiving it [R-0323]. A conventions sheet was taken from the desktop app's own drawing
+code, a gallery of hostile cases was drawn by the real renderer, and twelve drawing rules came
+out of it [R-0324, R-0325]; two of them reach past drawing, because a missing or unnamed parent
+or partner is now added as a generically named person ("Sarah's father") so the bond can exist,
+and a child whose parents are not on the record stands alone. Structure then reached the app:
+pair-bonds and who somebody is born to through the coach and the scribe, the record refusing a
+bond that cannot exist and naming a missing parent, people matched by where they stand with the
+room told when the match is unsure, the person editor carrying "born to" and every pair-bond one
+per other person, the ballot showing a family fragment per version, and structure items off the
+meeting wire and counted in the legend [R-0326]. The people list stays as it is, name alone.
+
+Third, the platform work was built and proved locally: every prompt is one encrypted file with
+shared fragments rather than a Python constant in a second repo, the oracle rulings moved here
+encrypted too, files naming real people left every repo, the chat app took its own migration
+chain and its own database from empty with its own accounts [R-0327], the importer of the old
+Pro users and diagrams was written and dry-run, and the site is run from a command line whose
+skill file it generates from its own declarations. The chat app's tests are their own suite
+under `btcopilot/tests/chat`, run by `bin/t` filtered to what changed [R-0331, R-0332]; they
+measure at 89 back-end tests in 6.4 seconds and 113 front-end in 1.9
+(doc/chat-first/TEST_STRATEGY.md), and are not worth optimising. The deterministic walks moved
+out of the sandbox into `web/tests/walks/` and fold into the goldens' harness.
+
+An independent agent that read no builder's report then walked every screen a browser can
+drive, in Chromium and WebKit at 393x852 and Chromium at 1280x800, against the chat app's own
+database: 683 checks, 671 passed (doc/chat-first/VERIFY_2026-09-14.md). One failure was a real
+mismatch with the written spec — a second faint line under a name in the people list — one was
+a ruled behaviour the gate misread, and ten were walk-script artefacts. The list is the name
+alone again, and a year the coder gave only as a year reads back as the year.
+
+**Patrick's walk is written and waiting: doc/chat-first/TEST_2026-09-14.md** — the whole app by
+hand in dependency order, nine walks, three reusable sign-in links. The walk of 12 September is
+archived.
+
+**Built 2026-09-11/12 on the same branch:** the review's tables
 (`review_cuts`, `review_codings`, `review_items`, `review_votes`, `review_rules`, one column
 `discussions.kind`, the branch's `changes` and `interactions` renamed `diagram_changes` and
 `diagram_interactions`) in an isolated package `btcopilot/review` with endpoints, the coach's
@@ -136,7 +185,7 @@ It predates the three-event floor and is grandfathered; see Open issues.
 every job directory on purpose: a database inside a job directory is deleted with the job, and
 that has already cost one sandbox.
 
-- `serve.sh 8890 beta2.db` — the Flask API from this worktree, bound to every interface, no
+- `serve.sh 8890 beta3.db` — the Flask API from this worktree, bound to every interface, no
   reload, so a Python change needs a restart.
 - `dev.sh` — the Vite dev server on 8891 proxying to 8890, host header forwarded so sign-in and
   cookies mint for 8891; the service worker is off. **Patrick reviews at
@@ -147,13 +196,21 @@ that has already cost one sandbox.
   refreshed — allowed now. A home-screen app on iOS keeps its own cookies, separate from
   Safari: the first open inside it shows the sign-in page, and the email code signs it in
   once; an invite link opened from Mail signs in Safari, not the home-screen app.
-- `invite.sh <email>` — a sign-in link at turin, not 127.0.0.1, so his phone can open it.
-  A phone already signed in needs no new invite.
-- `env.sh` — the settings both scripts source, including the path to the private prompts in the
-  fdserver worktree.
-- `beta2.db` is the review database: never seeded, never wiped, backed up before any restart,
-  migrated with `flask personal migrate`. Its session history is kept across code changes
-  [Oracle: R-0191].
+- `invite.sh <email>` — a sign-in link at turin, not 127.0.0.1, so his phone can open it. A
+  sandbox link is reusable: it signs that browser in as many times as you like until it
+  expires, so a walk can be repeated. A phone already signed in needs no new invite.
+- `env.sh` — the settings both scripts source. It no longer points at a second repo: the
+  prompts are encrypted files in this one, read with the key at
+  `/Users/patrick/worktrees/fd362-sandbox/keys/dev.agekey` (set `SOPS_AGE_KEY_FILE` to it).
+  His own public key is beside it as `patrick-mac.pub`, so the same files decrypt on his Mac.
+- `beta3.db` is the chat app's own database, on its own migration chain from empty, with its
+  own accounts — nothing shared with Pro [R-0327]. It is never seeded blindly, never wiped,
+  and backed up before any restart. `beta2.db` is the older shared-chain database, kept only
+  for reference. Session history is kept across code changes [Oracle: R-0191].
+- Mail is on, so sign-in codes and nudges send. It was off during the overnight walks.
+- **On this Mac, open `https://127.0.0.1:8891/personal/`, not turin** — the name turin only
+  resolves over the network, and with Tailscale off the Mac cannot look it up. On his phone,
+  on his own wifi, turin works.
 
 **Suites (re-run 2026-09-09 evening).** Backend Personal tests: 389 pass, 23 skipped, run in
 this worktree; the whole backend was last recorded at 905 passed, 33 skipped. Web unit tests:
