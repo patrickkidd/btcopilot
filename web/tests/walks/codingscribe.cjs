@@ -46,6 +46,10 @@ const check = (ok, what) => {
     await page.waitForTimeout(400);
     await page.locator("#coding-composer").click();
     await page.keyboard.type(sentence);
+    say(
+      `typed into the box: "${await page.locator("#coding-composer").innerText()}"` +
+        ` send enabled=${await page.locator("#coding-send").isEnabled()}`,
+    );
     await page.locator("#coding-send").click();
     await page.waitForTimeout(25000);
     const lines = await page.locator("#coding-chat .did").allInnerTexts();
@@ -54,14 +58,16 @@ const check = (ok, what) => {
 
   await page.goto(invite, { waitUntil: "networkidle" });
   await page.waitForTimeout(1200);
-  await page.locator("#sessions-open").click();
-  await page.waitForTimeout(800);
-  const card = page.locator(".fs-task").first();
-  say(`the card says: ${(await card.innerText()).replace(/\s+/g, " ")}`);
-  await card.click();
-  await page.waitForTimeout(1500);
   if (await visible("#task-screen")) {
-    await page.locator("#task-screen .btn").first().click();
+    say(`the one card says: ${(await text("#task-body")).replace(/\s+/g, " ")}`);
+    await page.locator("#task-screen .addbtn").first().click();
+    await page.waitForTimeout(2500);
+  } else {
+    await page.locator("#sessions-open").click();
+    await page.waitForTimeout(800);
+    const card = page.locator(".fs-task").first();
+    say(`the card says: ${(await card.innerText()).replace(/\s+/g, " ")}`);
+    await card.click();
     await page.waitForTimeout(2000);
   }
   check(await visible("#coding-screen"), "the coding thread opens");
@@ -72,14 +78,14 @@ const check = (ok, what) => {
     process.exit(1);
   }
 
-  const married = await code(1, "Marcus and Delphine married in 1970.");
+  const married = await code(6, "Marcus and Delphine married in 1970.");
   say(`after the marriage sentence: ${JSON.stringify(married.slice(-3))}`);
   check(
     married.some((l) => /Marcus & Delphine/.test(l) && /married/.test(l)),
     "a sentence about a marriage is written as a bond line",
   );
 
-  const born = await code(2, "Corinne is the daughter of Marcus and Delphine.");
+  const born = await code(7, "Corinne is the daughter of Marcus and Delphine.");
   say(`after the parent sentence: ${JSON.stringify(born.slice(-3))}`);
   check(
     born.some((l) => /Corinne/.test(l) && /Marcus & Delphine/.test(l)),
