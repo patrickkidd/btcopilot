@@ -1,0 +1,10 @@
+---
+name: extraction_correction
+description: Re-extract deltas that failed validation.
+---
+
+Fix errors in these deltas:
+{failed_deltas}
+{error_history}
+
+Valid committed person IDs (use ONLY these as positive person IDs — do NOT invent others): {committed_person_ids}

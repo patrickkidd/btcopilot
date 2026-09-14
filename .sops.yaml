@@ -1,0 +1,4 @@
+creation_rules:
+  - path_regex: ^private/.*\.(prompty|md)$
+    input_type: binary
+    age: age13p5vtq39x8vs6w43kdwsnkark3e6h40unmny76hxcsdy4mhp6ydqmma3yl

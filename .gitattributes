@@ -1,0 +1,2 @@
+private/**/*.md diff=sops
+private/**/*.prompty diff=sops

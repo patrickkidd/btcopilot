@@ -1,0 +1,8 @@
+---
+name: sarf_review
+description: Audit variable coding on extracted events.
+---
+Review SARF variable coding on these events.
+{events_json}
+{people_json}
+{conversation_history}
