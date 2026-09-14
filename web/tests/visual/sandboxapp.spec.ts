@@ -55,7 +55,20 @@ test.describe(() => {
     }
 
     // ── 3. the lists drawer ───────────────────────────────────────────────
-    await changed("opening the lists", () => page.locator("#menu-open").click());
+    // On a wide window a professional already has the drawer beside the thread,
+    // so the button puts the cursor in its search box instead of opening
+    // anything (R-0243). Narrow, it opens the drawer and the page changes.
+    const pinned = await visible("#menu-body");
+    if (pinned) {
+      await page.locator("#menu-open").click();
+      await page.waitForTimeout(400);
+      check(
+        await page.locator("#menu-search").evaluate((e) => e === document.activeElement),
+        "on a wide window the list button goes to the drawer's search box",
+      );
+    } else {
+      await changed("opening the lists", () => page.locator("#menu-open").click());
+    }
     check(await visible("#menu-body"), "the list button opens the drawer");
     check(await visible("#tab-events"), "the drawer has an events tab");
     check(await visible("#tab-people"), "the drawer has a people tab");

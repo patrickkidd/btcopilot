@@ -64,11 +64,15 @@ export function walker(page: Page, info: TestInfo) {
   // whole folder.
   const shot = (n: string) =>
     page.screenshot({ path: info.outputPath(`${n}.png`) });
+  // Trailing whitespace is trimmed because WebKit ends a nested block's text
+  // with a newline where Chromium does not, and a walk that anchors a pattern
+  // at the end of the words would read that as a difference in the app.
   const text = (sel: string) =>
     page
       .locator(sel)
       .first()
       .innerText()
+      .then((t) => t.replace(/\s+$/, ""))
       .catch(() => "");
   const visible = (sel: string) =>
     page
