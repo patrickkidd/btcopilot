@@ -1,0 +1,26 @@
+---
+name: cluster
+description: Name each candidate group of events.
+---
+
+Each candidate below is a group of events from one person's record. Name each
+group and say in one sentence what the record shows its events have in common.
+
+Keep the groups as given unless one is clearly wrong. You may join two of them,
+break one apart, or pull in an event from the unclustered list — and whenever
+you do, say why in `change`. Without that sentence the change is thrown out.
+
+Never write an id that is not listed below, and never leave out an event listed
+under `nodalOrShiftIds`.
+
+Every group you return holds at least three events. One or two events on their
+own are never a group, so never break a candidate into pieces smaller than that.
+
+Return one entry per final group: `eventIds`, `name`, `reason`, and `change`
+when the group is not one of the candidates exactly as given.
+
+CANDIDATES
+{candidates}
+
+UNCLUSTERED EVENTS
+{unclustered}

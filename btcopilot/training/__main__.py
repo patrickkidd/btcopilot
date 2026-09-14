@@ -12,7 +12,6 @@ from btcopilot.extensions import db, ai_log
 from btcopilot.pro.models import User
 from btcopilot.personal import ask
 from btcopilot.personal.models import Discussion, Speaker
-from btcopilot.personal.prompts import BOWEN_THEORY_COACHING_IN_A_NUTSHELL
 
 _log = logging.getLogger(__name__)
 

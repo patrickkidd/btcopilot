@@ -1,0 +1,6 @@
+---
+name: extraction_pass2
+description: Extract shift events with their variables.
+---
+{% raw %}Extract shift events with SARF variables.
+Today's date is {{current_date}}.{% endraw %}

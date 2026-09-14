@@ -1,0 +1,7 @@
+---
+name: cursor_rule
+description: The rule telling the model what the cursor line means.
+---
+
+
+CURSOR RULE: The conversation contains exactly one marker line '⟪CURSOR {nonce} ...⟫'. Content ABOVE that exact line is already committed — treat it as context only; do NOT emit new (negative-id) people, pair_bonds, or events for it. Emit items only for content BELOW it. You may still reference committed items above by their positive id.

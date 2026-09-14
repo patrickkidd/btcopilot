@@ -1,0 +1,101 @@
+import { expect, test, type Page } from "@playwright/test";
+import { stateFor } from "./setup";
+
+/** Putting the picture down, and what a label does.
+ *
+ * Anything on the picture that is not a moment, a label or a control is
+ * ground: a tap there clears what is picked and shows the whole line again.
+ * The name of the picture does the same.
+ *
+ * A label picks the moment it names; tapping the words of the moment already
+ * picked goes to where it was said in the conversation. Only the words travel:
+ * a dot picks and never moves the thread. */
+
+const settle = async (page: Page) => {
+  await page.goto("/personal/");
+  await expect(page.locator(".ss")).toBeVisible();
+  await page.waitForTimeout(500);
+};
+
+/** The resting picture: clusters to open, and nothing written on the wire. */
+const resting = (page: Page) => page.locator('.ss-hit[data-target="cluster"]');
+
+const openCluster = async (page: Page) => {
+  await resting(page).first().click();
+  await expect(page.locator('.ss-hit[data-target="zone"]').first()).toBeVisible();
+  await page.waitForTimeout(400);
+};
+
+const pickMoment = async (page: Page) => {
+  await page.locator('.ss-hit[data-target="zone"]').first().click();
+  await expect(page.locator(".ss-t.on").first()).toBeVisible();
+};
+
+test.describe("putting the picture down", () => {
+  test.use({ storageState: stateFor("three40") });
+
+  test("a tap on empty wire shows the whole line again", async ({ page }) => {
+    await settle(page);
+    await openCluster(page);
+    await pickMoment(page);
+
+    // the far right of the picture, clear of every moment and every label
+    const box = (await page.locator(".ss").boundingBox())!;
+    await page.mouse.click(box.x + box.width - 4, box.y + box.height - 4);
+
+    await expect(page.locator(".ss-t.on")).toHaveCount(0);
+    await expect(resting(page).first()).toBeVisible();
+  });
+
+  test("the name of the picture goes back one step at a time", async ({ page }) => {
+    await settle(page);
+    await openCluster(page);
+    await pickMoment(page);
+
+    // from the moment picked back to the cluster it is in
+    await page.locator("#crumb").click();
+    await expect(page.locator(".ss-yr.on")).toHaveCount(0);
+    await expect(page.locator(".ss-t.on").first()).toHaveText("Leaving and losing");
+
+    // and from the cluster back to all of them
+    await page.locator("#crumb").click();
+    await expect(resting(page).first()).toBeVisible();
+    await expect(page.locator("#crumb")).toHaveText("Family timeline");
+  });
+});
+
+/** The labels sit under the band's tap target, so a tap on one is a press at
+ * its own place on the picture. */
+const tapWords = async (page: Page, index = 0) => {
+  const label = page.locator(".ss-t.on").nth(index);
+  const box = (await label.boundingBox())!;
+  await page.mouse.click(box.x + Math.min(40, box.width / 2), box.y + box.height / 2);
+};
+
+test.describe("a tap on the words of the moment picked", () => {
+  test.use({ storageState: stateFor("moves") });
+
+  /** Pick a moment, so the band carries its words rather than the cluster's. */
+  const pickOne = async (page: Page) => {
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    await expect(page.locator(".ss-yr.on")).toHaveCount(1);
+  };
+
+  test("opens its editor", async ({ page }) => {
+    await settle(page);
+    await pickOne(page);
+    await tapWords(page);
+    await expect(page.locator("#menu-screen")).toBeVisible();
+    await expect(page.locator("#tab-events")).toHaveClass(/on/);
+    await expect(page.locator("#menu-body .editor")).toBeVisible();
+  });
+
+  test("a dot picks its moment and never travels", async ({ page }) => {
+    await settle(page);
+    await pickOne(page);
+    // the same dot again: still picked, and the thread has not moved
+    await page.locator('.ss-hit[data-target="zone"]').first().click();
+    await expect(page.locator(".ss-yr.on")).toHaveCount(1);
+    await expect(page.locator(".bub.traced")).toHaveCount(0);
+  });
+});

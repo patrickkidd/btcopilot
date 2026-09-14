@@ -23,6 +23,7 @@ def test_PDPerson_as_dict():
         "name": "Alice",
         "last_name": None,
         "gender": None,
+        "notes": None,
         "parents": None,
         "confidence": 0.9,
     }
@@ -109,6 +110,7 @@ def as_dict():
                 "name": "Alice",
                 "last_name": None,
                 "gender": None,
+                "notes": None,
                 "parents": None,
                 "confidence": None,
             },
@@ -117,6 +119,7 @@ def as_dict():
                 "name": "Bob",
                 "last_name": None,
                 "gender": None,
+                "notes": None,
                 "parents": None,
                 "confidence": None,
             },
@@ -161,6 +164,7 @@ def as_dict():
                     "name": "Alice",
                     "last_name": None,
                     "gender": None,
+                    "notes": None,
                     "parents": None,
                     "confidence": None,
                 }

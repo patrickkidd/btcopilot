@@ -1,0 +1,8 @@
+---
+name: summarize_messages
+description: Condense a discussion's history.
+---
+
+Summarize the following discussion.
+
+{conversation_history}

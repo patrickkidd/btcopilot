@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#171d1c" media="(prefers-color-scheme: dark)" />
+    <title>Family Diagram</title>
+    <link rel="apple-touch-icon" href="/personal/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Libre+Franklin:wght@400;500;600;800&display=swap" />
+    <style>
+      /* The same tokens as the app's own page (web/src/theme.css); this page is
+         served before the bundle, so it carries the few it needs itself. */
+      :root {
+        --bg: #f7f6f2;
+        --panel: #fff;
+        --ink: #26312f;
+        --faint: #67746f;
+        --line: #d8d5cc;
+        --data: #0e7d78;
+        --tint: rgba(14, 125, 120, 0.08);
+        --onaccent: #fff;
+        --sans: "Libre Franklin", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+        --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #171d1c;
+          --panel: #1f2725;
+          --ink: #e6e9e6;
+          --faint: #818f8a;
+          --line: #31403c;
+          --data: #3fc4bc;
+          --tint: rgba(63, 196, 188, 0.13);
+          --onaccent: #0d1413;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--ink);
+        font: 400 15px/1.5 var(--sans);
+        display: flex;
+        justify-content: center;
+        padding: 14vh 22px 22px;
+      }
+      main { width: 100%; max-width: 340px; }
+      h1 { font: 800 21px var(--sans); margin: 0 0 6px; }
+      .lead { color: var(--faint); margin: 0 0 22px; }
+      form { display: grid; gap: 12px; }
+      input {
+        font: 400 16px var(--sans);
+        color: var(--ink);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 13px 14px;
+        width: 100%;
+      }
+      input#code { font: 500 20px var(--mono); letter-spacing: 6px; text-align: center; }
+      input:focus { outline: none; border-color: var(--data); box-shadow: 0 0 0 3px var(--tint); }
+      button {
+        font: 600 15px var(--sans);
+        color: var(--onaccent);
+        background: var(--data);
+        border: none;
+        border-radius: 12px;
+        padding: 14px;
+        width: 100%;
+      }
+      button:active { opacity: 0.85; }
+      .again {
+        display: inline-block;
+        margin-top: 16px;
+        font: 500 13px var(--mono);
+        color: var(--data);
+        text-decoration: none;
+      }
+      .error { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 0 0 16px; }
+      #device {
+        display: none;
+        color: var(--data);
+        background: none;
+        border: 1px solid var(--data);
+        margin-bottom: 14px;
+      }
+      .or { display: none; color: var(--faint); font: 400 13px var(--sans); text-align: center; margin: 0 0 14px; }
+      #device.on, #device.on + .or { display: block; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Family Diagram</h1>
+      {% if error %}<p class="error">{{ error }}</p>{% endif %}
+      {% if sent %}
+        <p class="lead">We sent a code to {{ email }}. It lasts {{ minutes }} minutes.</p>
+        <form method="post" action="{{ url_for('chatauth.verify') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="email" value="{{ email }}" />
+          <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" required autofocus />
+          <button type="submit">Continue</button>
+        </form>
+        <a class="again" href="{{ url_for('chatauth.login') }}">Use a different email</a>
+      {% else %}
+        <button id="device" type="button">Sign in with this device</button>
+        <p class="or">or</p>
+        <p class="lead">Sign in with your email. There is no password.</p>
+        <form method="post" action="{{ url_for('chatauth.login') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required autofocus />
+          <button type="submit">Email me a code</button>
+        </form>
+      {% endif %}
+    </main>
+    <script>
+      // A sent form is finished. Signing in replaces the session, so a second
+      // submit carries a code already consumed and a token the new session has
+      // never heard of, and the reader is shown a CSRF failure instead of the
+      // app they just signed in to.
+      (function () {
+        for (var i = 0; i < document.forms.length; i++) {
+          document.forms[i].addEventListener("submit", function (sent) {
+            if (this.dataset.sent) {
+              sent.preventDefault();
+              return;
+            }
+            this.dataset.sent = "1";
+            var go = this.querySelector('button[type="submit"]');
+            if (go) window.setTimeout(function () { go.disabled = true; }, 0);
+          });
+        }
+      })();
+    </script>
+    <script>
+      // The key already on the phone signs the reader in without an email round
+      // trip. The button only appears where the phone can actually do it.
+      (function () {
+        var button = document.getElementById("device");
+        if (!button || !window.PublicKeyCredential) return;
+        var apple = /iphone|ipad|ipod|macintosh/i.test(navigator.userAgent);
+        var android = /android/i.test(navigator.userAgent);
+        if (apple || android) button.textContent = "Sign in with Face ID or fingerprint";
+
+        function fromB64(value) {
+          var raw = atob(value.replace(/-/g, "+").replace(/_/g, "/"));
+          return Uint8Array.from(raw, function (c) { return c.charCodeAt(0); });
+        }
+        function toB64(buffer) {
+          var bytes = new Uint8Array(buffer), out = "";
+          for (var i = 0; i < bytes.length; i++) out += String.fromCharCode(bytes[i]);
+          return btoa(out).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        }
+        function post(path, body) {
+          return fetch(path, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: body === undefined ? undefined : JSON.stringify(body),
+          });
+        }
+        function failed() {
+          var say = document.createElement("p");
+          say.className = "error";
+          say.textContent = "That did not work. Sign in with your email instead.";
+          button.parentNode.insertBefore(say, button);
+          button.classList.remove("on");
+        }
+
+        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+          .then(function (ok) { if (ok) button.classList.add("on"); })
+          .catch(function () {});
+
+        button.addEventListener("click", function () {
+          button.disabled = true;
+          post("/personal/passkeys/login/options")
+            .then(function (r) { return r.json(); })
+            .then(function (options) {
+              options.challenge = fromB64(options.challenge);
+              options.allowCredentials = (options.allowCredentials || []).map(function (c) {
+                return { id: fromB64(c.id), type: c.type, transports: c.transports };
+              });
+              return navigator.credentials.get({ publicKey: options });
+            })
+            .then(function (credential) {
+              return post("/personal/passkeys/login", {
+                id: credential.id,
+                rawId: toB64(credential.rawId),
+                type: credential.type,
+                response: {
+                  clientDataJSON: toB64(credential.response.clientDataJSON),
+                  authenticatorData: toB64(credential.response.authenticatorData),
+                  signature: toB64(credential.response.signature),
+                  userHandle: credential.response.userHandle
+                    ? toB64(credential.response.userHandle)
+                    : null,
+                },
+              });
+            })
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+            .then(function (answer) { window.location.href = answer.next; })
+            .catch(function () {
+              button.disabled = false;
+              failed();
+            });
+        });
+      })();
+    </script>
+  </body>
+</html>
