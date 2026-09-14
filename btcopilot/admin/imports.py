@@ -1,0 +1,28 @@
+"""Bringing the old Pro accounts and records across, once."""
+
+import click
+
+from btcopilot.admin import proimport
+from btcopilot.admin.output import rows_option
+
+
+@click.group()
+def imports():
+    """The one-time read of the old Pro database."""
+
+
+@imports.command("dry-run")
+@click.argument("dump", type=click.Path(exists=True, dir_okay=False))
+@rows_option
+def import_dry_run(dump):
+    """Read the dump and report what would come across, writing nothing."""
+    return proimport.dry_run(dump)
+
+
+@imports.command("run")
+@click.argument("dump", type=click.Path(exists=True, dir_okay=False))
+@click.confirmation_option(prompt="This writes accounts and records. Go ahead?")
+@rows_option
+def import_run(dump):
+    """Read the dump and write the accounts and records it holds."""
+    return proimport.run(dump)

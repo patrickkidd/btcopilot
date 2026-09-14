@@ -2,6 +2,7 @@
 
 from flask import jsonify, request
 
+from btcopilot.admin.setting import nudges_on
 from btcopilot.auth.emails import send_nudge
 from btcopilot.extensions import db
 from btcopilot.review import adapter
@@ -17,6 +18,8 @@ WAITING = (CoderState.NotStarted, CoderState.Coding)
 def nudge_create():
     admin()
     body = request.get_json() or {}
+    if not nudges_on():
+        raise ValueError("nudging is switched off (flask admin review nudge on)")
     cuts = agenda_cuts(body.get("meeting_date"))
     if not cuts:
         raise ValueError("nothing is on the agenda to nudge anyone about")

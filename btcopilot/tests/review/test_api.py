@@ -1,5 +1,7 @@
 import datetime
 
+from btcopilot.admin import setting
+from btcopilot.admin.setting import SettingKey
 from btcopilot.extensions import db
 from btcopilot.personal.models import Author, Change
 from mock import patch
@@ -523,3 +525,10 @@ def test_a_coder_without_a_name_is_still_shown_as_initials(flask_app):
     assert initials(User(username="ballot1@fd362-fixture.invalid")) == "B1."
     assert initials(User(username="ballot3@fd362-fixture.invalid")) == "B3."
     assert initials(User(username="patrickkidd+beta@gmail.com")) == "P.B."
+
+
+def test_nudges_switched_off_are_refused(patrick, cut):
+    setting.write(SettingKey.NudgesOn, False)
+    refused = patrick.post("/review/nudges", json={})
+    assert refused.status_code == 400
+    assert "switched off" in refused.get_data(as_text=True)
