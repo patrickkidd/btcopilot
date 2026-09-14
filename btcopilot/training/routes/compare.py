@@ -11,10 +11,9 @@ from btcopilot.extensions import db
 from btcopilot.personal.models import Discussion, Statement, Speaker, SpeakerType
 from btcopilot.schema import DiagramData, asdict
 from btcopilot.training.models import Feedback
+from btcopilot.training import litreview
 from btcopilot.training.litreview import (
     AUDITOR_ID as LITREVIEW_AUDITOR_ID,
-    LITREVIEW_PASS2_PROMPT,
-    LITREVIEW_SARF_REVIEW_PROMPT,
     PROMPTS_UNAVAILABLE_ERROR,
 )
 from btcopilot.training.utils import get_discussion_breadcrumbs
@@ -336,7 +335,7 @@ def timeline(discussion_id):
 @bp.route("/litreview/<int:discussion_id>", methods=["POST"])
 @minimum_role(btcopilot.ROLE_ADMIN)
 def run_litreview(discussion_id):
-    if LITREVIEW_PASS2_PROMPT is None:
+    if litreview.pass2_prompt() is None:
         abort(503, PROMPTS_UNAVAILABLE_ERROR)
     disc = Discussion.query.get_or_404(discussion_id)
 
@@ -365,8 +364,8 @@ def run_litreview(discussion_id):
         pdp.extract_full(
             disc,
             diagram_data,
-            pass2_prompt=LITREVIEW_PASS2_PROMPT,
-            sarf_review_prompt=LITREVIEW_SARF_REVIEW_PROMPT,
+            pass2_prompt=litreview.pass2_prompt(),
+            sarf_review_prompt=litreview.sarf_review_prompt(),
         )
     )
 
@@ -375,7 +374,7 @@ def run_litreview(discussion_id):
         auditor_id=LITREVIEW_AUDITOR_ID,
         feedback_type="extraction",
         edited_extraction=asdict(ai_pdp),
-        meta={"prompt": LITREVIEW_PASS2_PROMPT},
+        meta={"prompt": litreview.pass2_prompt()},
     )
     db.session.add(fb)
     db.session.commit()

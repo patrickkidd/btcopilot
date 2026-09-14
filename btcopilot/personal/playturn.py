@@ -16,7 +16,7 @@ from btcopilot.personal import chips, recordtext
 from btcopilot.personal.coachmodel import CoachModel
 from btcopilot.personal.coachturn import narrate, shorten_labels
 from btcopilot.personal.models import Discussion, Statement, StatementKind
-from btcopilot.personal.prompts import PLAY_BY_PLAY_PROMPT, get_agent_prompt
+from btcopilot.personal import prompts
 from btcopilot.schema import DiagramData
 
 _log = logging.getLogger(__name__)
@@ -62,11 +62,11 @@ class PlayTurn:
         events = self.events
         if not events:
             raise ValueError(f"Cluster {self.cluster['id']} has no events to play")
-        prompt = PLAY_BY_PLAY_PROMPT.format(
+        prompt = prompts.PLAY_BY_PLAY_PROMPT.format(
             cluster=recordtext.cluster_line(self.cluster),
             events="\n".join(recordtext.event_line(e) for e in events),
         )
-        system = get_agent_prompt(record=recordtext.render(self.data))
+        system = prompts.get_agent_prompt(record=recordtext.render(self.data))
         messages = [{"role": "user", "content": prompt}]
         words = self.model.turn(system, messages, [])
         while True:

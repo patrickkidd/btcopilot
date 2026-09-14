@@ -10,16 +10,7 @@ from btcopilot.extensions import ai_log
 from btcopilot.llmutil import gemini_structured, SARF_REVIEW_MODEL
 from btcopilot.personal.models import SpeakerType
 from btcopilot.training.f1_metrics import match_people
-from btcopilot.personal.prompts import (
-    DATA_EXTRACTION_CORRECTION,
-    DATA_EXTRACTION_PASS1_PROMPT,
-    DATA_EXTRACTION_PASS1_CONTEXT,
-    DATA_EXTRACTION_PASS2_PROMPT,
-    DATA_EXTRACTION_PASS2_CONTEXT,
-    SARF_REVIEW_PROMPT,
-    CURSOR_MARKER_TEMPLATE,
-    CURSOR_EXTRACTION_RULE_TEMPLATE,
-)
+from btcopilot.personal import prompts
 from btcopilot.schema import (
     DateCertainty,
     DiagramData,
@@ -1090,7 +1081,7 @@ async def _extract_and_validate(
             committed_person_ids = sorted(
                 p["id"] for p in diagram_data.people if "id" in p
             )
-            current_prompt = prompt + DATA_EXTRACTION_CORRECTION.format(
+            current_prompt = prompt + prompts.DATA_EXTRACTION_CORRECTION.format(
                 failed_deltas=json.dumps(asdict(pdp_deltas), indent=2, default=str),
                 error_history="\n".join(history_lines),
                 committed_person_ids=committed_person_ids,
@@ -1148,14 +1139,14 @@ async def _two_pass_extract(
 
     # Pass 1: People + PairBonds + Structural Events
     committed_state = _committed_state_for_prompt(diagram_data)
-    prompt1 = DATA_EXTRACTION_PASS1_PROMPT.format(
+    prompt1 = prompts.DATA_EXTRACTION_PASS1_PROMPT.format(
         current_date=current_date
-    ) + DATA_EXTRACTION_PASS1_CONTEXT.format(
+    ) + prompts.DATA_EXTRACTION_PASS1_CONTEXT.format(
         diagram_data=json.dumps(committed_state, indent=2, default=str),
         conversation_history=conversation_history,
     )
     if cursor_nonce:
-        prompt1 += CURSOR_EXTRACTION_RULE_TEMPLATE.format(nonce=cursor_nonce)
+        prompt1 += prompts.CURSOR_EXTRACTION_RULE_TEMPLATE.format(nonce=cursor_nonce)
     pass1_pdp, pass1_deltas = await _extract_and_validate(
         prompt1,
         diagram_data,
@@ -1171,10 +1162,10 @@ async def _two_pass_extract(
         if committed_shifts
         else "None"
     )
-    _pass2_prompt = pass2_prompt or DATA_EXTRACTION_PASS2_PROMPT
+    _pass2_prompt = pass2_prompt or prompts.DATA_EXTRACTION_PASS2_PROMPT
     prompt2 = _pass2_prompt.format(
         current_date=current_date
-    ) + DATA_EXTRACTION_PASS2_CONTEXT.format(
+    ) + prompts.DATA_EXTRACTION_PASS2_CONTEXT.format(
         pass1_data=pass1_data,
         committed_shift_events=committed_shift_json,
         conversation_history=conversation_history,
@@ -1196,7 +1187,7 @@ async def _two_pass_extract(
         people_json = json.dumps(
             [asdict(p) for p in pass2_pdp.people], indent=2, default=str
         )
-        _sarf_review = sarf_review_prompt or SARF_REVIEW_PROMPT
+        _sarf_review = sarf_review_prompt or prompts.SARF_REVIEW_PROMPT
         review_prompt = _sarf_review.format(
             events_json=events_json,
             people_json=people_json,
@@ -1255,7 +1246,7 @@ def _windowed_conversation(discussion) -> tuple[str, str | None]:
     ordered = sorted(discussion.statements, key=lambda s: (s.order or 0, s.id or 0))
     tail_stmts = [s for s in ordered if (s.order or 0) > cursor]
     nonce = secrets.token_hex(8)
-    marker = CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
+    marker = prompts.CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
     if not tail_stmts:
         return prior + marker, nonce
     tail = "\n".join(
@@ -1406,7 +1397,7 @@ async def extract_full(
         prior = prior_committed + to_extract[:start]
         if prior:
             nonce = secrets.token_hex(8)
-            marker = CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
+            marker = prompts.CURSOR_MARKER_TEMPLATE.format(nonce=nonce)
             conversation = _fmt_stmts(prior) + marker + _fmt_stmts(window)
         else:
             nonce = None

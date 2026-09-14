@@ -16,7 +16,7 @@ from btcopilot.llmutil import gemini_structured_sync
 from btcopilot.personal import record
 from btcopilot.personal.intake import NODAL_KINDS, SHIFT_FIELDS, _parse_iso_date
 from btcopilot.personal.models import Author
-from btcopilot.personal.prompts import CLUSTER_PROMPT, CLUSTER_REJECTED
+from btcopilot.personal import prompts
 from btcopilot.pro.models import Diagram
 from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
@@ -273,7 +273,7 @@ def _prompt(cands: list[Candidate], free: list[Event]) -> str:
         for n, candidate in enumerate(cands)
     ]
     grouped = {i for candidate in cands for i in candidate.eventIds}
-    return CLUSTER_PROMPT.format(
+    return prompts.CLUSTER_PROMPT.format(
         candidates=json.dumps(blocks, indent=2),
         unclustered=json.dumps(
             [_event_json(e) for e in free if e.id not in grouped], indent=2
@@ -348,7 +348,7 @@ def detect_clusters(data: DiagramData) -> ClusterResult:
         _log.warning(f"Grouping sent back: {rejected}")
         named = _check(
             gemini_structured_sync(
-                prompt + CLUSTER_REJECTED.format(why=rejected), ClusterListResponse
+                prompt + prompts.CLUSTER_REJECTED.format(why=rejected), ClusterListResponse
             ),
             cands,
             free,

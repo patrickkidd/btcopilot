@@ -4,9 +4,10 @@ Produces a cumulative PDP using the same extraction pipeline but with SARF
 definitions from doc/sarf-definitions/ instead of the tuned inline summaries.
 """
 
+import functools
 import logging
 
-from btcopilot.personal.prompts import DATA_EXTRACTION_PASS2_PROMPT
+from btcopilot.personal import prompts
 from btcopilot.training.sarfdefinitions import all_condensed_definitions
 
 _log = logging.getLogger(__name__)
@@ -50,10 +51,17 @@ EVENT FIELD RULES
 ═══════════════════════════════════════════════════════════════════════════════"""
 
 
-def _build_pass2_prompt() -> str:
-    base = DATA_EXTRACTION_PASS2_PROMPT
+# The coder rewrites one section of the private second-pass prompt. The
+# open-source default has no such section, so both prompts read as None and the
+# route answers with PROMPTS_UNAVAILABLE_ERROR instead. Read on first use, never
+# at import: the private prompts are encrypted and a test run holds no key.
+@functools.cache
+def pass2_prompt() -> str | None:
+    base = prompts.DATA_EXTRACTION_PASS2_PROMPT
     start_idx = base.find(_SARF_SECTION_START)
     end_idx = base.find(_SARF_SECTION_END)
+    if start_idx < 0 or end_idx < 0:
+        return None
     return (
         base[:start_idx]
         + _LITREVIEW_SARF_SECTION
@@ -61,7 +69,10 @@ def _build_pass2_prompt() -> str:
     )
 
 
-def _build_sarf_review_prompt() -> str:
+@functools.cache
+def sarf_review_prompt() -> str | None:
+    if pass2_prompt() is None:
+        return None
     return f"""\
 You are reviewing clinical shift events extracted from a family therapy discussion.
 
@@ -81,16 +92,3 @@ People context:
 Original conversation:
 {{conversation_history}}
 """
-
-
-# The coder rewrites one section of the private second-pass prompt. The
-# open-source default has no such section, so the module still imports and the
-# route answers with PROMPTS_UNAVAILABLE_ERROR instead.
-_HAS_SARF_SECTION = (
-    _SARF_SECTION_START in DATA_EXTRACTION_PASS2_PROMPT
-    and _SARF_SECTION_END in DATA_EXTRACTION_PASS2_PROMPT
-)
-LITREVIEW_PASS2_PROMPT = _build_pass2_prompt() if _HAS_SARF_SECTION else None
-LITREVIEW_SARF_REVIEW_PROMPT = (
-    _build_sarf_review_prompt() if _HAS_SARF_SECTION else None
-)

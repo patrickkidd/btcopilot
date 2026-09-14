@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship
 from btcopilot.extensions import db
 from btcopilot.llmutil import response_text_sync
 from btcopilot.modelmixin import ModelMixin
-from btcopilot.personal.prompts import DISCUSSION_TITLE_PROMPT
+from btcopilot.personal import prompts
 
 
 class DiscussionKind(enum.StrEnum):
@@ -159,10 +159,8 @@ class Discussion(db.Model, ModelMixin):
         )
 
     def update_summary(self):
-        from btcopilot.personal.prompts import SUMMARIZE_MESSAGES_PROMPT
-
         self.summary = response_text_sync(
-            SUMMARIZE_MESSAGES_PROMPT.format(
+            prompts.SUMMARIZE_MESSAGES_PROMPT.format(
                 conversation_history=self.conversation_history()
             ),
         )
@@ -172,7 +170,7 @@ class Discussion(db.Model, ModelMixin):
         if self.title_set_by_user:
             return
         self.title = response_text_sync(
-            DISCUSSION_TITLE_PROMPT.format(
+            prompts.DISCUSSION_TITLE_PROMPT.format(
                 conversation_history=self.conversation_history()
             ),
         ).strip()
