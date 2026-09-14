@@ -402,6 +402,13 @@ export interface Coding {
 
 /** One turn of the transcript, with what this coder has already written from
  * it. Nobody else's coding is ever here (R-0242). */
+/** One thing the coder typed about a turn, and the edit lines the scribe wrote
+ * from it, which sit beneath those words. */
+export interface Said {
+  text: string;
+  lines: string[];
+}
+
 export interface CodingTurn {
   id: number;
   order: number;
@@ -409,7 +416,9 @@ export interface CodingTurn {
   /** The client's turn, drawn as the user's bubble; otherwise the coach's. */
   client: boolean;
   text: string;
-  lines: string[];
+  /** What the coder typed about this turn, each with what the scribe wrote
+   * from those words, oldest first. */
+  said: Said[];
   /** Before the last ratified cut: read it, but coding happens below it. */
   above: boolean;
 }

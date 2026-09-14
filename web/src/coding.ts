@@ -338,13 +338,25 @@ export class Coding {
         this.list.append(this.cutline(thread, false));
       }
       this.list.append(this.bubble(turn));
-      for (const line of turn.lines)
+      for (const said of turn.said) {
         this.list.append(
           this.tagged(
-            el("div", `bub coach sub${this.side(turn.id)}`, `<div class="did">${esc(line)}</div>`),
+            el("div", `bub said${this.side(turn.id)}`, esc(said.text)),
             turn.id,
           ),
         );
+        for (const line of said.lines)
+          this.list.append(
+            this.tagged(
+              el(
+                "div",
+                `bub coach sub${this.side(turn.id)}`,
+                `<div class="did">${esc(line)}</div>`,
+              ),
+              turn.id,
+            ),
+          );
+      }
     }
     this.list.append(this.cutline(thread, true));
     this.paint();

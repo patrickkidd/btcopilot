@@ -4,7 +4,7 @@ from flask import abort, jsonify, request
 
 from btcopilot.extensions import db
 from btcopilot.review import adapter, scribe, snapshot
-from btcopilot.review.models import Coding, Cut
+from btcopilot.review.models import Coding, Cut, Note
 from btcopilot.review.routes import (
     bp,
     coder,
@@ -119,7 +119,7 @@ def coding_thread(coding_id: int):
     agreed = _last_ratified(cut)
     agreed_order = _order_of(agreed.end_statement_id) if agreed else None
     data = adapter.record_of(adapter.diagram_of(coding.diagram_id))
-    written = _written_by_turn(coding.diagram_id, data)
+    said = _said_by_turn(coding.id, coding.diagram_id, data)
     discussion = adapter.discussion_of(cut.discussion_id)
 
     return jsonify(
@@ -149,7 +149,7 @@ def coding_thread(coding_id: int):
                     "who": _who(turn),
                     "client": _client(turn),
                     "text": turn.text or "",
-                    "lines": written.get(turn.id, []),
+                    "said": said.get(turn.id, []),
                     "above": agreed_order is not None
                     and (turn.order or 0) <= agreed_order,
                 }
@@ -177,6 +177,16 @@ def coding_scribe(coding_id: int):
         raise ValueError("coding happens between the last agreed line and the cut")
 
     written = scribe.write(coding, statement, said)
+    # The coder's own words stay in the thread under the line they coded, so
+    # they are kept rather than left to the screen that typed them (R-0270).
+    db.session.add(
+        Note(
+            coding_id=coding.id,
+            statement_id=statement.id,
+            text=said,
+            turn_id=written["turn_id"],
+        )
+    )
     db.session.commit()
     return jsonify(written)
 
@@ -214,16 +224,32 @@ def _order_of(statement_id: int) -> int | None:
     return (statement.order or 0) if statement else None
 
 
-def _written_by_turn(diagram_id: int, data: dict) -> dict[int, list[str]]:
-    """What this coder wrote from each turn, in the record's own words."""
-    by_turn: dict[int, list[int]] = {}
+def _said_by_turn(
+    coding_id: int, diagram_id: int, data: dict
+) -> dict[int, list[dict]]:
+    """What this coder typed about each turn, oldest first, each with the lines
+    the scribe wrote from those words (R-0270)."""
+    by_scribe_turn = _written_by_scribe_turn(diagram_id, data)
+    by_turn: dict[int, list[dict]] = {}
+    notes = Note.query.filter(Note.coding_id == coding_id).order_by(Note.id.asc())
+    for note in notes:
+        by_turn.setdefault(note.statement_id, []).append(
+            {"text": note.text, "lines": by_scribe_turn.get(note.turn_id, [])}
+        )
+    return by_turn
+
+
+def _written_by_scribe_turn(diagram_id: int, data: dict) -> dict[str, list[str]]:
+    """What the scribe wrote from each of its own turns, in the record's own
+    words, so a later correction to an event still reads as the record has it."""
+    by_turn: dict[str, list[int]] = {}
     for event_id, where in adapter.coded_in(diagram_id).items():
-        statement_id = where.get("statement_id")
-        if statement_id is not None:
-            by_turn.setdefault(statement_id, []).append(event_id)
+        turn_id = where.get("turn_id")
+        if turn_id is not None:
+            by_turn.setdefault(turn_id, []).append(event_id)
     return {
-        statement_id: scribe.written(data, event_ids)
-        for statement_id, event_ids in by_turn.items()
+        turn_id: scribe.written(data, event_ids)
+        for turn_id, event_ids in by_turn.items()
     }
 
 

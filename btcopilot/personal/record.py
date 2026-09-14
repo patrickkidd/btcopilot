@@ -636,5 +636,6 @@ def coded_in(diagram_id: int) -> dict[int, dict]:
             found[event_id] = {
                 "discussion_id": said.get(row.statement_id),
                 "statement_id": row.statement_id,
+                "turn_id": row.turn_id,
             }
     return found

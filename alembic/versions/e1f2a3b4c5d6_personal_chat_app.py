@@ -240,6 +240,23 @@ def upgrade():
     )
 
     op.create_table(
+        "review_notes",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=True),
+        sa.Column(
+            "coding_id",
+            sa.Integer(),
+            sa.ForeignKey("review_codings.id"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column("statement_id", sa.Integer(), nullable=False, index=True),
+        sa.Column("text", sa.Text(), nullable=False),
+        sa.Column("turn_id", sa.String(64), nullable=False, index=True),
+    )
+
+    op.create_table(
         "review_items",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
@@ -304,6 +321,7 @@ def downgrade():
     op.drop_table("review_rules")
     op.drop_table("review_votes")
     op.drop_table("review_items")
+    op.drop_table("review_notes")
     op.drop_table("review_codings")
     op.drop_table("review_cuts")
     bind = op.get_bind()

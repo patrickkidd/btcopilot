@@ -78,6 +78,53 @@ def test_adds_the_person_the_coder_names(coder, cut, turns):
     assert len(changes) == 2
 
 
+def test_the_coders_words_stay_in_the_thread(coder, cut, turns):
+    """Re-reading the thread gives the coder their own words back under the
+    line they coded, with the scribe's line after them (R-0270)."""
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted(
+        [("edit_event", {"kind": "moved", "date": "1971-01-01", "person": "1"})]
+    )
+    scribe(coder, coding, turns[0], model, "Marcus moved to Ohio in 1971")
+
+    thread = coder.get(f"/review/codings/{coding.id}/thread").json
+    said = {turn["id"]: turn["said"] for turn in thread["turns"]}
+    assert [one["text"] for one in said[turns[0].id]] == ["Marcus moved to Ohio in 1971"]
+    assert said[turns[0].id][0]["lines"]
+    assert said[turns[1].id] == []
+
+
+def test_two_things_said_about_one_turn_keep_their_own_lines(coder, cut, turns):
+    """Each utterance carries the lines the scribe wrote from it, so the thread
+    reads words, then what they did, then the next words (R-0270)."""
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    scribe(
+        coder,
+        coding,
+        turns[0],
+        Scripted([("edit_event", {"kind": "moved", "date": "1971-01-01", "person": "1"})]),
+        "Marcus moved to Ohio in 1971",
+    )
+    scribe(
+        coder,
+        coding,
+        turns[0],
+        Scripted([("edit_event", {"kind": "moved", "date": "1972-01-01", "person": "1"})]),
+        "Marcus moved again the year after",
+    )
+
+    said = {
+        turn["id"]: turn["said"]
+        for turn in coder.get(f"/review/codings/{coding.id}/thread").json["turns"]
+    }
+    assert [one["text"] for one in said[turns[0].id]] == [
+        "Marcus moved to Ohio in 1971",
+        "Marcus moved again the year after",
+    ]
+    assert all(one["lines"] for one in said[turns[0].id])
+    assert said[turns[0].id][0]["lines"] != said[turns[0].id][1]["lines"]
+
+
 class Never:
     """A model the scribe must not reach."""
 
